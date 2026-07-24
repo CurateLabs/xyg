@@ -413,10 +413,19 @@ Mechanics per entry kind:
   and swaps its palette LUT for a variant whose other entries are blended
   toward `--chart-bg`. RGB-blend, not alpha: the mark shaders read
   `texture(u_lut, …).rgb` and force alpha to 1, so an alpha fade would be a
-  silent no-op. The original LUT is restored on leave. A categorical row
-  cannot dim sibling categories *inside* an aggregated density plane — the
-  plane is one texture (§28: recorded, not silent); the whole trace still
-  dims when some other row is hovered.
+  silent no-op. The original LUT is restored on leave. An aggregated
+  density plane cannot dim sibling categories *exactly* (one texture,
+  §28), but its mean-color cells carry the categories' own drawn colors,
+  so the LUT-dim rule applies at CELL granularity: each occupied cell is
+  classified by nearest palette color, sibling-class cells blend toward
+  the background by the same factor, the hovered category's cells keep
+  their full color, and cell alpha (the physical compositing of the
+  cell's own points, LOD doc §2) is untouched. Mixed boundary cells dim
+  by their nearest class — the recorded (§28) approximation of the exact
+  per-point dim. The retained sample overlay dims its sibling points
+  through the same palette LUT. All of it restores on leave (the dimmed
+  plane is a temporary texture; the original is put back), and the whole
+  trace still dims when some other row is hovered.
 
 Legend entry labels (same build, `_buildLegend`): a continuous row is titled
 by `t.name`, else the encoding's declarative `color.label` (the
@@ -427,6 +436,72 @@ unnamed renders no legend box — the same rule the static SVG/raster exports
 follow (name-bearing entries only). Exports additionally have no hover state;
 this section is live-client behavior.
 
-Click-to-toggle (hiding a series) is **not** part of this contract — it
-invalidates precomputed density tiers and needs a kernel round-trip; see
-dossier §34 for the filtering model it belongs to.
+Click-to-toggle (hiding a series) is a separate contract: §10.
+
+## 10. Legend click-to-toggle
+
+Clicking a legend row hides — click again, shows — what the row stands for.
+This is the first shipped §34 filter predicate: a hidden series is out of
+*every* pipeline (drawing, picking, selections, decimation, aggregation),
+not merely transparent. Gating: `xy.legend(toggle=False)`; on by default,
+opt-out only on the wire. `extra_legends` rows stay inert (no trace
+linkage). A toggled-off row fades (35%, grayscale, `data-xy-legend-off`
+attribute for author styling) and is inert for §9 hover emphasis. The DOM
+event `xy:legendtoggle` fires with `{name, hidden, traces, category?}`.
+
+**State sync.** Every toggle sends `legend_toggle {trace, category?,
+hidden}` — fire-and-forget, no reply. The kernel records `Trace.hidden` /
+`Trace.hidden_categories`; from then on `select`/`select_polygon` exclude
+hidden rows, `decimate_view` skips hidden traces, and `density_view`
+narrows rows before any aggregation. Malformed toggles (unknown category,
+non-bool hidden) are dropped without mutating state.
+
+**Per entry kind:**
+
+- **Whole-trace rows** (named / constant / continuous — a deduped
+  continuous row hides *all* its backing traces): pure client hide. Vertex
+  buffers and density grids are per-trace, so nothing needs re-aggregation;
+  the trace skips the draw loop, the pick pass, and the reduction badges.
+- **Category rows on a direct-tier trace**: the client re-filters its
+  vertex buffers from the CPU columns retained at build — 0 wire bytes
+  (§37's filter-toggle row). Per-point style/stroke buffers, which keep no
+  CPU copy, are read back once (`getBufferSubData`) and cached. `_visMap`
+  translates drawn vertices back to shipped rows so hover readouts and
+  kernel picks stay exact; `_visInv` maps the kernel's shipped-space
+  selection indices onto the filtered buffers.
+- **Category rows on a density-tier trace** (the rows exist because the
+  first-paint density entry ships a slim categorical `color` spec —
+  categories + palette, no per-point buffer; wire-protocol doc): local
+  aggregates were computed unfiltered and are stale under the predicate
+  (§34) — worse, a cached window that still "covers" the view would elide
+  the kernel request entirely, and so would the *standing home aggregate*
+  at an unzoomed view. The client drops its density and point-window
+  caches, filters the retained sample overlays locally (the pre-reply
+  frame stops showing the category immediately), marks the trace
+  **filter-dirty** — request planning skips aggregate-stands elision until
+  a reply stamped with the current hidden set lands an *aggregate*; a
+  stamped points-mode reply (masked drill) is admitted but leaves the flag
+  set, since it bins no grid under the mask and the standing aggregate is
+  still the previous predicate's — and re-requests
+  through the normal `density_view` path. Density textures are keyed by
+  the hidden set they were binned under: the display stands-rule (T13
+  facts-only landing) holds only between same-key textures, so a reply
+  carrying a different key repaints the standing surface — in either
+  direction, mask applied or lifted. The T13 duplicate-request memo carries
+  the same key: a sub-texel twin window under a different hidden set is a
+  new request, never an answered duplicate. The kernel bypasses the unfiltered pyramid (the
+  §34 point: static aggregates are wrong under any dynamic predicate),
+  re-bins the visible rows (Tier B), tags the reply's `binning` with
+  `-masked`, and stamps it with `filter: {hidden_categories}`. The client
+  compares that stamp against its current hidden set and drops
+  stale-predicate replies; drills ship only visible rows with canonical
+  `shipped_sel`.
+
+**Deliberate limits (recorded, not silent — §28):** toggles never rescale
+axes (the view is the user's; Fit Data is the re-fit tool). Toggle state
+does not enter durable view state or gesture history yet — a context-loss
+restore re-applies it from the live view object, but a full page reload
+starts all-visible. On a kernel-less standalone page, whole-trace and
+direct-tier category toggles are exact; a density-tier category toggle
+filters the sample overlays but the standalone worker's re-binned grid is
+not masked — kernel-connected sessions are exact.

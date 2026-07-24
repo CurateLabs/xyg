@@ -73,6 +73,92 @@ def _screen_shape(w: int, h: int) -> tuple[int, int]:
     return lod.screen_shape(w, h)
 
 
+def _hidden_predicate(t: "Trace") -> Optional[tuple[np.ndarray, np.ndarray]]:
+    """(sorted hidden codes, live code column) for a masked trace, else None.
+
+    None also covers a stale mask left behind after an encoding change —
+    a hidden-category set is only meaningful against live categorical codes.
+    """
+    if not t.hidden_categories:
+        return None
+    if t.color_ch is None or t.color_ch.codes is None:
+        return None
+    return np.fromiter(sorted(t.hidden_categories), dtype=np.int64), t.color_ch.codes
+
+
+def _drop_hidden_rows(t: "Trace", indices: np.ndarray) -> np.ndarray:
+    """Narrow canonical row indices to legend-visible rows (§34 predicate).
+
+    Row-level pre-selection is the filter contract: no bin/sample kernel
+    takes a mask, so every aggregation path narrows its rows first.
+    """
+    pred = _hidden_predicate(t)
+    if pred is None or len(indices) == 0:
+        return indices
+    hidden, codes = pred
+    return indices[~np.isin(codes[indices], hidden)]
+
+
+def _legend_visible_rows(t: "Trace") -> Optional[np.ndarray]:
+    """Canonical rows outside the hidden-category set, or None when unmasked.
+
+    Cached per (hidden set, column length) on the trace: density_view runs per
+    pan/zoom step and the O(N) code scan must not repeat while the predicate
+    is unchanged. A streaming append changes the length and recomputes.
+    """
+    pred = _hidden_predicate(t)
+    if pred is None:
+        return None
+    hidden, codes = pred
+    key = (frozenset(t.hidden_categories), len(codes))
+    cached = t._legend_vis_cache
+    if cached is not None and cached[0] == key:
+        return cached[1]
+    rows = np.flatnonzero(~np.isin(codes, hidden))
+    t._legend_vis_cache = (key, rows)
+    return rows
+
+
+def _legend_filter_spec(t: "Trace") -> dict[str, Any]:
+    """The filter state a reply was computed under (§34/§37 filter_hash-lite).
+
+    Rides every masked reply so the client can drop one that raced a newer
+    toggle instead of rendering a stale predicate's aggregate.
+    """
+    return {"hidden_categories": sorted(int(c) for c in t.hidden_categories)}
+
+
+def legend_toggle(
+    fig: "Figure", trace_id: int, hidden: bool, category: Optional[int] = None
+) -> None:
+    """Record a legend visibility toggle (§34 predicate; interaction spec §10).
+
+    State-sync only, deliberately reply-free: the predicate lives on the
+    trace so every subsequent aggregation, decimation, and selection honors
+    it, and re-aggregation rides the normal `density_view` request the client
+    issues next — one predicate, one re-bin path, no second wire shape.
+    Flipping back to a previous state costs the kernel nothing new (§37's
+    filter-toggle row): the pyramid was never filtered and the visible-row
+    cache keys on the hidden set.
+    """
+    t = _trace(fig, trace_id)
+    if not isinstance(hidden, (bool, np.bool_)):
+        raise ValueError("legend_toggle hidden must be a boolean")
+    if category is None:
+        t.hidden = bool(hidden)
+        return
+    code = _integer_id(category, "category")
+    cc = t.color_ch
+    if cc is None or cc.mode != "categorical" or cc.categories is None:
+        raise ValueError("legend_toggle category requires a categorical color channel")
+    if not 0 <= code < len(cc.categories):
+        raise ValueError(f"legend_toggle category {code} is out of range")
+    if bool(hidden):
+        t.hidden_categories.add(code)
+    else:
+        t.hidden_categories.discard(code)
+
+
 def pick(
     fig: "Figure", trace_id: int, index: int, drill_seq: Optional[int] = None
 ) -> Optional[dict[str, Any]]:
@@ -202,6 +288,10 @@ def select_range(
             continue
         if tid is not None and t.id != tid:
             continue
+        # Legend-hidden traces are out of the selection universe entirely
+        # (§34): a brush must not report rows the user just excluded.
+        if t.hidden:
+            continue
         x_chunks = _zone_candidate_chunks(t.x, lo_x, hi_x)
         y_chunks = _zone_candidate_chunks(t.y, lo_y, hi_y)
         candidate_chunks = np.intersect1d(x_chunks, y_chunks, assume_unique=True)
@@ -215,6 +305,7 @@ def select_range(
                 t.x.values[candidates], t.y.values[candidates], lo_x, hi_x, lo_y, hi_y
             )
             out[t.id] = candidates[out[t.id]]
+        out[t.id] = _drop_hidden_rows(t, out[t.id])
     return out
 
 
@@ -337,6 +428,10 @@ def decimate_view(
     for t in fig.traces:
         if t.kind not in {"line", "area"} or t.n_points <= DECIMATION_THRESHOLD:
             continue
+        # A legend-hidden trace is not drawn; re-decimating it per pan/zoom
+        # would ship dead buffers (§34 — hidden means out of every pipeline).
+        if t.hidden:
+            continue
         if t.kind == "area" and t.base is None:
             continue
         x_scale = fig._axis_scale(t.x_axis)
@@ -415,6 +510,17 @@ def trace_bin_colors(t: Trace) -> Optional[dict]:
             t._bin_colors = 0 if resolved is None else resolved
         return resolved
     return None if cached == 0 else cached
+
+
+def _view_bin_colors(t: Trace, vis_rows: Optional[np.ndarray]) -> Optional[dict]:
+    """Mean-color source for one view's re-bin. Unmasked views share the
+    trace-level cache; a legend mask (§34) narrows xv/yv to visible rows, so
+    the full-column cache would be row-misaligned with the binned arrays —
+    resolve over the mask, uncached, like every other aggregate under a
+    dynamic predicate."""
+    if vis_rows is None:
+        return trace_bin_colors(t)
+    return channels.resolve_bin_colors(t.color_ch, vis_rows, DEFAULT_PALETTE)
 
 
 def bin_color_cache_bytes(fig: Any) -> int:
@@ -736,9 +842,16 @@ def density_view(
     lo_x, hi_x = request.x_range
     lo_y, hi_y = request.y_range
     w, h = request.width, request.height
-    if not t.use_density():
+    if not t.use_density() or t.hidden:
         return {"traces": []}, []
     xv, yv = t.x.values, t.y.values
+    # Legend-toggle predicate (§34): hidden categories narrow the rows BEFORE
+    # any aggregation. Everything downstream — counts, tier decisions, grids,
+    # drill selections — then runs in visible-row space; drill selections are
+    # translated back to canonical via `vis_rows` before they ship or persist.
+    vis_rows = _legend_visible_rows(t)
+    if vis_rows is not None:
+        xv, yv = xv[vis_rows], yv[vis_rows]
     # Nonlinear axes aggregate in scale coordinates (§28) so grid cells are
     # uniform on screen. The raw-space tile pyramid can't compose such a grid,
     # so those traces always take the exact scan; selection/count queries stay
@@ -776,8 +889,11 @@ def density_view(
     max_upsample = _PYRAMID_UNBOUNDED_UPSAMPLE if no_rescan else 2
     est = None
     # Nonlinear axes can't compose from the raw-space pyramid (see above) → no
-    # pyramid, exact scan instead.
-    pyr = None if nonlinear else _ensure_pyramid(t)
+    # pyramid, exact scan instead. A hidden-category mask also bypasses it:
+    # the pyramid holds UNFILTERED counts, and §34's whole point is that a
+    # static aggregate is wrong under any dynamic predicate — the masked view
+    # takes the honest Tier-B re-bin below, recorded via the binning label.
+    pyr = None if (nonlinear or vis_rows is not None) else _ensure_pyramid(t)
     if pyr is not None:
         est = kernels.pyramid_count(pyr, lo_x, hi_x, lo_y, hi_y)
         # Serve from the pyramid when the window is clearly aggregate territory,
@@ -877,7 +993,7 @@ def density_view(
         visible = plan.visible
         w, h = plan.grid_w, plan.grid_h
         grid = kernels.bin_2d(xv, yv, lo_x, hi_x, lo_y, hi_y, w, h)
-        bin_colors = trace_bin_colors(t) if mean_colors else None
+        bin_colors = _view_bin_colors(t, vis_rows) if mean_colors else None
         if bin_colors is not None:
             # This branch is already the O(N) correctness net; the mean-color
             # pass (LOD doc §2) rides the same full-column scan cost.
@@ -892,6 +1008,10 @@ def density_view(
         plan = lod.plan_view_lod(request, len(sel), SCATTER_DENSITY_THRESHOLD, t.drill_mode)
         visible = plan.visible
         if plan.exact:
+            if vis_rows is not None:
+                # range_indices ran in visible-row space; drill bookkeeping
+                # (shipped_sel, pick/selection translation) speaks canonical.
+                sel = vis_rows[sel]
             # Ship the widest aligned window that still fits the budget (T13)
             # so the client's point-window cache answers nearby pans/zooms
             # locally; the raw view window is the floor. `visible` describes
@@ -900,16 +1020,20 @@ def density_view(
             padded = _padded_drill_window(fig, t, pyr, lo_x, hi_x, lo_y, hi_y)
             if padded is not None:
                 lo_x, hi_x, lo_y, hi_y, sel = padded
-            return _drill_points(
+                sel = _drop_hidden_rows(t, sel)
+            reply, reply_buffers = _drill_points(
                 fig, t, sel, len(sel), lo_x, hi_x, lo_y, hi_y, w, h, blend_visible=visible
             )
+            if vis_rows is not None:
+                reply["traces"][0]["filter"] = _legend_filter_spec(t)
+            return reply, reply_buffers
 
         lod.exit_drill(t)
         w, h = plan.grid_w, plan.grid_h
         bx, (bx0, bx1) = fig._binning_coords(t.x_axis, xv, (lo_x, hi_x))
         by, (by0, by1) = fig._binning_coords(t.y_axis, yv, (lo_y, hi_y))
         grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-        bin_colors = trace_bin_colors(t) if mean_colors else None
+        bin_colors = _view_bin_colors(t, vis_rows) if mean_colors else None
         if bin_colors is not None:
             # Mean point color per cell (LOD doc §2): same window, same
             # binning space, occupied cells match the count grid exactly.
@@ -943,22 +1067,18 @@ def density_view(
         density["color_agg"] = "mean"
     if t.color_ch and t.color_ch.mode == "constant" and t.color_ch.constant is not None:
         density["color"] = t.color_ch.constant
-    return (
-        {
-            "traces": [
-                {
-                    "id": trace_id,
-                    "mode": "density",
-                    "tier": plan.tier,
-                    "visible": visible,
-                    "reduction": plan.reduction,
-                    "binning": binning,
-                    "density": density,
-                }
-            ]
-        },
-        writer.buffers,
-    )
+    entry = {
+        "id": trace_id,
+        "mode": "density",
+        "tier": plan.tier,
+        "visible": visible,
+        "reduction": plan.reduction,
+        "binning": binning if vis_rows is None else binning + "-masked",
+        "density": density,
+    }
+    if vis_rows is not None:
+        entry["filter"] = _legend_filter_spec(t)
+    return {"traces": [entry]}, writer.buffers
 
 
 def _drill_points(

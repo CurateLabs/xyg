@@ -1,9 +1,9 @@
 import { PROTOCOL, xyByteSpan } from "./00_header";
 import { buildLutData, colormapStops } from "./10_colormaps";
-import { cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
+import { chartBackdrop, cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
 import { categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtValue, linearTicks, logTicks, timeTicks } from "./30_ticks";
 import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
-import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
+import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
 import { markOf } from "./55_marks";
 
 // ---------------------------------------------------------------------------
@@ -27,6 +27,8 @@ let XY_A11Y_ID = 0;
 // the marks canvas, and by non-hovered rows in the legend box itself.
 const LEGEND_DIM_OPACITY = 0.2;
 const LEGEND_DIM_ROW = 0.4;
+// Legend click-toggle (interaction spec §10): opacity of a toggled-off row.
+const LEGEND_OFF_ROW = 0.35;
 // SVG gradient ids resolve document-wide; a module counter keeps every chart
 // instance's legend swatch ramps distinct.
 let legendGradientSeq = 0;
@@ -1689,6 +1691,7 @@ export class ChartView {
       : (this.spec.traces || []);
     for (const entry of traces) {
       const t = entry.trace || entry;
+      if (entry._legendHidden) continue; // hidden series badge nothing
       if (t.tier !== "density" || !t.density) continue;
       // Badge what is actually drawn: the overlay _drawDensitySample chose
       // for the current view (T9 pairing). Before the first frame runs, the
@@ -1740,6 +1743,10 @@ export class ChartView {
     // never fires; release any active dim state before dropping the old boxes.
     this._clearLegendHover();
     this._legends = [];
+    // Toggle state survives chrome/GPU rebuilds: it lives on the view keyed
+    // by spec-trace index, and freshly built rows re-adopt it below.
+    this._legendOffTraces = this._legendOffTraces || new Set();
+    this._legendOffCats = this._legendOffCats || new Map();
     const items = [];
     if (s.show_legend !== false) {
       // Two identically-encoded unnamed continuous traces must not stack two
@@ -1780,6 +1787,12 @@ export class ChartView {
           items.push({ swatch: c, name: t.name, symbol: t.kind === "scatter" ? (t.style?.symbol || "circle") : null, line, style: t.style || {}, traces: [ti] });
         }
       });
+      for (const it of items) {
+        if (!it.traces) continue;
+        it.off = it.cat != null
+          ? !!this._legendOffCats.get(it.traces[0])?.has(it.cat)
+          : it.traces.every((ti) => this._legendOffTraces.has(ti));
+      }
       if (items.length) this._legendBox(root, items, s.legend || {});
     }
     // Manually added Legend artists ship explicit items + their own loc, so a
@@ -1900,7 +1913,14 @@ export class ChartView {
         row.addEventListener("pointerenter", () => this._setLegendHover(it, lg, row));
         row.addEventListener("pointerleave", () => this._clearLegendHover());
       }
-      rows.push(row);
+      // Click-to-toggle (interaction spec §10): hide/show what the row
+      // stands for. Same trace-linkage rule keeps extra_legends rows inert.
+      if (options.toggle !== false && it.traces && it.traces.length) {
+        row.style.cursor = "pointer";
+        row.addEventListener("click", () => this._legendToggle(it, row));
+      }
+      this._syncLegendRow(row, it);
+      rows.push({ row, it });
       lg.appendChild(row);
     }
     lg._xyItemRows = rows;
@@ -1936,27 +1956,55 @@ export class ChartView {
   // categories dim through a background-blended palette LUT — the point
   // shaders ignore LUT alpha, so the fade is baked into the RGB ramp).
   // Whole density-tier traces dim through _drawDensity's uniform like any
-  // other series, but a categorical row cannot dim sibling categories inside
-  // an aggregated density plane (§28 — recorded in the dossier, not silent).
+  // other series; a categorical row dims siblings inside an aggregated plane
+  // at CELL granularity (_densityRgbaDimmed — §28-recorded approximation).
   _setLegendHover(item, lg, hoveredRow) {
+    if (item.off) return; // a hidden series has nothing to emphasize
     this._legendHover = item;
     const keep = new Set(item.traces);
+    // Resolved once for the whole pass: every blend below wants the same
+    // backdrop, and resolving it per trace would re-walk the ancestor chain
+    // (a forced style recalc) and defeat the _lutCache hit.
+    const bg = chartBackdrop(this.root, this.theme.bg);
     for (let i = 0; i < (this.gpuTraces || []).length; i++) {
       const g = this.gpuTraces[i];
       g._legendDim = keep.has(i) ? 1 : LEGEND_DIM_OPACITY;
-      if (g._legendPrevLut !== undefined) {
-        g.lut = g._legendPrevLut;
-        delete g._legendPrevLut;
-      }
+      this._restoreLegendLuts(g);
       const t = g.trace;
-      if (item.cat != null && keep.has(i) && g.tier !== "density" &&
-          t.color && t.color.mode === "categorical" && g.lut) {
-        g._legendPrevLut = g.lut;
-        g.lut = this._paletteLutDimmed(t.color.palette, item.cat);
+      if (item.cat != null && keep.has(i) &&
+          t.color && t.color.mode === "categorical") {
+        if (g.tier === "density") {
+          // The plane cannot dim sibling categories exactly (§28), but its
+          // mean-color cells carry the categories' own drawn colors, so the
+          // LUT-dim rule applies at CELL granularity: classify each cell by
+          // nearest palette color and blend sibling cells toward the
+          // background; the hovered category's cells keep their full color.
+          // Mixed boundary cells dim by their nearest class — the recorded
+          // approximation of the exact per-point dim.
+          const d = g.density;
+          if (d && d.rgba && d.tex) {
+            g._legendHoverPrevTex = d.tex;
+            g._legendHoverTex = this._uploadGrid(
+              d.grid, d.w, d.h, d.normMax ?? d.max,
+              this._densityRgbaDimmed(d.rgba, t.color.palette, item.cat, bg),
+              d.filter, this._fillOpacity(t.style),
+            );
+            d.tex = g._legendHoverTex;
+          }
+          // The retained sample overlays ARE per-point scatters, so they dim
+          // siblings exactly, through the same palette LUT.
+          for (const s of this._densityOverlays(g)) {
+            this._dimLut(s, t.color.palette, item.cat, bg);
+          }
+        } else {
+          this._dimLut(g, t.color.palette, item.cat, bg);
+        }
       }
     }
-    for (const row of lg._xyItemRows || []) {
-      row.style.opacity = row === hoveredRow ? "" : String(LEGEND_DIM_ROW);
+    for (const pair of lg._xyItemRows || []) {
+      pair.row.style.opacity = pair.it.off
+        ? String(LEGEND_OFF_ROW)
+        : pair.row === hoveredRow ? "" : String(LEGEND_DIM_ROW);
     }
     // Color-pass-only change: geometry and view are untouched, so the pick
     // snapshot stays valid (§17).
@@ -1968,15 +2016,270 @@ export class ChartView {
     this._legendHover = null;
     for (const g of this.gpuTraces || []) {
       delete g._legendDim;
-      if (g._legendPrevLut !== undefined) {
-        g.lut = g._legendPrevLut;
-        delete g._legendPrevLut;
-      }
+      this._restoreLegendLuts(g);
     }
     for (const lg of this._legends || []) {
-      for (const row of lg._xyItemRows || []) row.style.opacity = "";
+      for (const pair of lg._xyItemRows || []) this._syncLegendRow(pair.row, pair.it);
     }
     this.draw(true);
+  }
+
+  // The per-point scatter entries a density-tier trace keeps alongside its
+  // aggregated plane (the retained deterministic sample and, when a reply
+  // carried one, the density's own overlay). Deduped: the two are often the
+  // same object.
+  _densityOverlays(g) {
+    return new Set([g.sampleOverlay, g.density && g.density.overlay].filter(Boolean));
+  }
+
+  // Swap a scatter-shaped entry's palette LUT for the hover-dimmed variant,
+  // stashing the original for _restoreLegendLuts.
+  _dimLut(s, palette, keepIdx, bg) {
+    if (!s || !s.lut) return;
+    s._legendPrevLut = s.lut;
+    s.lut = this._paletteLutDimmed(palette, keepIdx, bg);
+  }
+
+  // Undo any hover LUT swap on a trace and its density sample overlays,
+  // and put back the plane's original texture if hover dimmed it.
+  _restoreLegendLuts(g) {
+    for (const s of new Set([g, ...this._densityOverlays(g)])) {
+      if (s._legendPrevLut !== undefined) {
+        s.lut = s._legendPrevLut;
+        delete s._legendPrevLut;
+      }
+    }
+    if (g._legendHoverTex) {
+      // A density reply may have replaced g.density mid-hover; only restore
+      // onto the object still wearing the hover texture.
+      if (g.density && g.density.tex === g._legendHoverTex) {
+        g.density.tex = g._legendHoverPrevTex;
+      }
+      this.gl.deleteTexture(g._legendHoverTex);
+      g._legendHoverTex = null;
+      g._legendHoverPrevTex = null;
+    }
+  }
+
+  // Per-cell sibling dim for an aggregated categorical plane: each occupied
+  // cell classified by nearest palette color, non-hovered classes blended
+  // toward the background exactly like `_paletteLutDimmed` blends LUT
+  // entries. Alpha (the physical compositing of the cell's own points, LOD
+  // doc §2) is untouched — the dim is a color statement, not a count one.
+  _densityRgbaDimmed(rgba, palette, keepIdx, bg = chartBackdrop(this.root, this.theme.bg)) {
+    const cls = this._densityCellClasses(rgba, palette);
+    const keep = keepIdx % palette.length;
+    const w = LEGEND_DIM_OPACITY;
+    const out = new Uint8Array(rgba.length);
+    for (let i = 0, c = 0; i < rgba.length; i += 4, c++) {
+      const a = rgba[i + 3];
+      out[i + 3] = a;
+      if (!a) continue;
+      if (cls[c] === keep) {
+        out[i] = rgba[i]; out[i + 1] = rgba[i + 1]; out[i + 2] = rgba[i + 2];
+      } else {
+        out[i] = (rgba[i] / 255 * w + bg[0] * (1 - w)) * 255;
+        out[i + 1] = (rgba[i + 1] / 255 * w + bg[1] * (1 - w)) * 255;
+        out[i + 2] = (rgba[i + 2] / 255 * w + bg[2] * (1 - w)) * 255;
+      }
+    }
+    return out;
+  }
+
+  // Nearest-palette class per occupied cell of a mean-color plane. Depends
+  // only on (rgba, palette) — NOT on which row is hovered — so it is memoized
+  // against the plane's own buffer: scanning a legend's rows reclassifies the
+  // same grid once instead of once per row. Weak-keyed, so the map dies with
+  // the grid it describes (a reply replaces `density.rgba` wholesale).
+  _densityCellClasses(rgba, palette) {
+    if (!this._dimClassCache) this._dimClassCache = new WeakMap();
+    const paletteKey = palette.join(",");
+    const memo = this._dimClassCache.get(rgba);
+    if (memo && memo.paletteKey === paletteKey) return memo.classes;
+    const cols = palette.map((p) => hexColor(p));
+    const classes = new Uint8Array(rgba.length / 4);
+    for (let i = 0, c = 0; i < rgba.length; i += 4, c++) {
+      if (!rgba[i + 3]) continue;
+      const r = rgba[i] / 255, gc = rgba[i + 1] / 255, b = rgba[i + 2] / 255;
+      let best = 0, bestD = Infinity;
+      for (let k = 0; k < cols.length; k++) {
+        const dr = r - cols[k][0], dg = gc - cols[k][1], db = b - cols[k][2];
+        const dist = dr * dr + dg * dg + db * db;
+        if (dist < bestD) { bestD = dist; best = k; }
+      }
+      classes[c] = best;
+    }
+    this._dimClassCache.set(rgba, { paletteKey, classes });
+    return classes;
+  }
+
+  // Toggled-off rows stay visible but read as inactive; the state is also
+  // exposed as a data attribute so author styles can restyle it per slot.
+  _syncLegendRow(row, it) {
+    const off = !!it.off;
+    row.style.opacity = off ? String(LEGEND_OFF_ROW) : "";
+    row.style.filter = off ? "grayscale(1)" : "";
+    if (off) row.dataset.xyLegendOff = "";
+    else delete row.dataset.xyLegendOff;
+  }
+
+  // Legend click-to-toggle (interaction spec §10). Whole-trace rows hide
+  // locally — buffers and density grids are per-trace, so there is nothing
+  // to re-aggregate. Category rows are a §34 filter predicate: direct-tier
+  // traces re-filter from the CPU columns already on the client (0 wire
+  // bytes, §37 filter-toggle row), density tiers drop their now-stale local
+  // aggregates and re-request a kernel re-bin computed under the mask.
+  // Either way the kernel records the state so selections stay truthful.
+  _legendToggle(it, row) {
+    const off = !it.off;
+    it.off = off;
+    this._clearLegendHover();
+    this._syncLegendRow(row, it);
+    this._hideTooltip?.();
+    if (it.cat != null) {
+      const ti = it.traces[0];
+      let set = this._legendOffCats.get(ti);
+      if (!set) this._legendOffCats.set(ti, (set = new Set()));
+      if (off) set.add(it.cat);
+      else set.delete(it.cat);
+      if (this.comm) {
+        this.comm.send({
+          type: "legend_toggle", trace: this.spec.traces[ti].id, category: it.cat, hidden: off,
+        });
+      }
+      this._applyCategoryVisibility(ti);
+    } else {
+      for (const ti of it.traces) {
+        if (off) this._legendOffTraces.add(ti);
+        else this._legendOffTraces.delete(ti);
+        const g = this.gpuTraces && this.gpuTraces[ti];
+        if (g) g._legendHidden = off;
+        if (this.comm) {
+          this.comm.send({ type: "legend_toggle", trace: this.spec.traces[ti].id, hidden: off });
+        }
+      }
+      this._refreshReductionBadges();
+    }
+    this._pickDirty = true;
+    this._updatePickable();
+    this._dispatchChartEvent("legendtoggle", {
+      name: it.name,
+      hidden: off,
+      traces: it.traces.map((ti) => this.spec.traces[ti].id),
+      ...(it.cat != null ? { category: it.cat } : {}),
+    });
+    this.draw();
+  }
+
+  _applyCategoryVisibility(ti) {
+    const g = this.gpuTraces && this.gpuTraces[ti];
+    if (!g) return;
+    const hidden = this._legendOffCats.get(ti);
+    if (g.tier === "density") {
+      // Local aggregates were computed unfiltered — stale under the new
+      // predicate (§34), and a cached window that still "serves" the view
+      // would elide the kernel request that applies the mask. Drop them and
+      // re-request. The retained sample overlays are filtered locally so
+      // the pre-reply frame (and the kernel-less standalone page) stops
+      // drawing the hidden category immediately.
+      lodDropPointCache(this, g);
+      this._dropDrill(g);
+      lodDropDensityCache(this, g);
+      // The live home grid survives the cache drop (it is what draws until
+      // the reply) but must not elide the request — it was binned under the
+      // previous mask (§34).
+      g._filterDirty = true;
+      for (const s of this._densityOverlays(g)) this._filterScatterRows(s, hidden);
+      this._scheduleViewRequest(this.view, { delay: 0 });
+    } else {
+      this._filterScatterRows(g, hidden);
+    }
+  }
+
+  // Filter a scatter-shaped gpu entry's vertex buffers down to the rows whose
+  // categorical code is not hidden; an empty/absent set restores the full
+  // buffers. Gathers from the CPU views retained at build; per-point
+  // style/stroke buffers have no retained CPU copy, so they are read back
+  // once (WebGL2 getBufferSubData) and cached for later re-toggles.
+  // `_visMap` translates drawn vertex → shipped row (picks/readouts);
+  // `_visInv` maps shipped selection indices onto the filtered buffers.
+  _filterScatterRows(g, hidden) {
+    const gl = this.gl;
+    const codes = g._cpu && g._cpu.color;
+    if (!gl || !codes || g.colorMode !== 2) return;
+    if (g._fullN === undefined) g._fullN = g.n;
+    const full = g._fullN;
+    const readback = (buf, Type, comps) => {
+      const out = new Type(full * comps);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.getBufferSubData(gl.ARRAY_BUFFER, 0, out);
+      return out;
+    };
+    if (g.styleBuf && !g._cpuStyle) g._cpuStyle = readback(g.styleBuf, Float32Array, 4);
+    if (g.strokeBuf && !g._cpuStroke) g._cpuStroke = readback(g.strokeBuf, Uint8Array, 4);
+    let vis = null;
+    if (hidden && hidden.size) {
+      const idx = new Uint32Array(full);
+      let m = 0;
+      for (let i = 0; i < full; i++) if (!hidden.has(codes[i])) idx[m++] = i;
+      vis = idx.subarray(0, m);
+    }
+    const gather = (src, comps) => {
+      if (!vis) return src.length === full * comps ? src : src.subarray(0, full * comps);
+      const out = new (src.constructor)(vis.length * comps);
+      for (let j = 0; j < vis.length; j++) {
+        const r = vis[j];
+        for (let c = 0; c < comps; c++) out[j * comps + c] = src[r * comps + c];
+      }
+      return out;
+    };
+    const reupload = (buf, data) => {
+      if (!buf || !data) return;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    };
+    reupload(g.xBuf, gather(g._cpu.x, 1));
+    reupload(g.yBuf, gather(g._cpu.y, 1));
+    reupload(g.cBuf, gather(codes, 1));
+    if (g.sBuf && g._cpu.size) reupload(g.sBuf, gather(g._cpu.size, 1));
+    if (g.styleBuf && g._cpuStyle) reupload(g.styleBuf, gather(g._cpuStyle, 4));
+    if (g.strokeBuf && g._cpuStroke) reupload(g.strokeBuf, gather(g._cpuStroke, 4));
+    g.n = vis ? vis.length : full;
+    if (vis) {
+      g._visMap = vis;
+      const inv = new Int32Array(full).fill(-1);
+      for (let j = 0; j < vis.length; j++) inv[vis[j]] = j;
+      g._visInv = inv;
+    } else {
+      delete g._visMap;
+      delete g._visInv;
+    }
+    // A per-vertex selection mask built for the other vertex count would
+    // highlight arbitrary points; the kernel's canonical Selection (already
+    // hidden-aware) re-syncs the visual on the next brush.
+    g.selActive = false;
+    this._pickDirty = true;
+  }
+
+  // Rebuilds (context restore, streaming append) recreate gpuTraces from the
+  // spec, dropping transient per-trace state; toggle state lives on the view
+  // and is re-applied here after every rebuild.
+  _reapplyLegendVisibility() {
+    if (!this._legendOffTraces && !this._legendOffCats) return;
+    for (let i = 0; i < (this.gpuTraces || []).length; i++) {
+      const g = this.gpuTraces[i];
+      if (this._legendOffTraces && this._legendOffTraces.has(i)) g._legendHidden = true;
+      const cats = this._legendOffCats && this._legendOffCats.get(i);
+      if (!cats || !cats.size) continue;
+      if (g.tier === "density") {
+        // The rebuilt grid comes from the spec — unfiltered — so the next
+        // view request must re-bin under the mask, not stand on it.
+        g._filterDirty = true;
+        if (g.sampleOverlay) this._filterScatterRows(g.sampleOverlay, cats);
+      } else {
+        this._filterScatterRows(g, cats);
+      }
+    }
   }
 
   _positionLegend(lg, loc) {
@@ -2138,6 +2441,7 @@ export class ChartView {
     gl.bindVertexArray(null);
 
     this.gpuTraces = this.spec.traces.map((t) => this._buildTrace(buffer, t));
+    this._reapplyLegendVisibility();
     this._updatePickable();
   }
 
@@ -2216,11 +2520,16 @@ export class ChartView {
   // background — the legend-hover dim for categorical traces. RGB-only on
   // purpose: the point/line shaders read `texture(u_lut, ...).rgb` and force
   // alpha to 1, so an alpha-based fade would be a silent no-op.
-  _paletteLutDimmed(palette, keepIdx) {
-    const key = "pal:" + palette.join(",") + ":dim" + keepIdx + ":" + (this.theme.bg || "");
+  // `bg` is the resolved backdrop (see chartBackdrop); callers that dim
+  // several entries in one pass resolve it once and pass it in. theme.bg is
+  // a resolved [r,g,b,a] (or null for a transparent chart, in which case the
+  // page paints the backdrop) — never a CSS string, so it must not go
+  // through parseColor, which would silently fall back to white and BRIGHTEN
+  // dimmed entries on dark pages.
+  _paletteLutDimmed(palette, keepIdx, bg = chartBackdrop(this.root, this.theme.bg)) {
+    const key = "pal:" + palette.join(",") + ":dim" + keepIdx + ":" + bg.join(",");
     if (this._lutCache.has(key)) return this._lutCache.get(key);
     const gl = this.gl;
-    const bg = parseColor(this.root, this.theme.bg || "#ffffff", [1, 1, 1, 1]);
     const data = new Uint8Array(256 * 4);
     for (let i = 0; i < 256; i++) {
       const c = hexColor(palette[i % palette.length]);
@@ -3275,6 +3584,7 @@ export class ChartView {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const drawTrace = (g) => {
+      if (g._legendHidden) return; // legend click-toggle (interaction spec §10)
       if (g.tier === "density") {
         // Tier frame (drill/fades/cache) lives in 45_lod.js — chart-agnostic.
         const [gx0, gx1] = this._axisRange(g.xAxis);
@@ -3524,13 +3834,15 @@ export class ChartView {
     const hit = this._hoverTarget;
     if (!hit || !hit.g) return;
     const g = hit.g;
-    if (g.trace.kind !== "scatter" || g.tier === "density") return;
-    if (!Number.isInteger(hit.index) || hit.index < 0 || hit.index >= g.n) return;
+    if (g.trace.kind !== "scatter" || g.tier === "density" || g._legendHidden) return;
+    // Filtered buffers are addressed by the drawn index, not the shipped one.
+    const index = hit.drawIndex ?? hit.index;
+    if (!Number.isInteger(index) || index < 0 || index >= g.n) return;
     const [x0, x1] = this._axisRange(g.xAxis);
     const [y0, y1] = this._axisRange(g.yAxis);
     this._drawHoverPoint(
       g,
-      hit.index,
+      index,
       this._map(g.xMeta, x0, x1, g.xAxis),
       this._map(g.yMeta, y0, y1, g.yAxis)
     );
@@ -4792,7 +5104,8 @@ export class ChartView {
     for (const g of this.gpuTraces) {
       // Density traces pick only while drilled to points (§5); the drill
       // sibling carries the buffers, the host g keeps the range → trace id.
-      const pg = g.tier === "density"
+      // Legend-hidden traces draw nothing, so they must pick nothing.
+      const pg = g._legendHidden ? null : g.tier === "density"
         ? (g.drill && !g._drillDying && this._viewInside(g.drill.win) ? g.drill : null)
         : (markOf(g.trace.kind).pointPick ? g : null);
       if (!pg || !pg.n || base + pg.n > 0x7fffffff) {
@@ -4880,7 +5193,13 @@ export class ChartView {
       (t) => t.pickBase > 0 && id >= t.pickBase && id < t.pickBase + t.pickCount
     );
     if (!g) return null;
-    return { trace: g.trace.id, index: id - g.pickBase, g };
+    const raw = id - g.pickBase;
+    // Category-filtered buffers draw a subset (interaction spec §10):
+    // `index` translates back to the shipped row so CPU readouts and kernel
+    // picks stay exact; `drawIndex` keeps addressing the filtered GPU
+    // buffers (hover marker).
+    const index = g._visMap ? g._visMap[raw] : raw;
+    return { trace: g.trace.id, index, drawIndex: raw, g };
   }
 
   _decodeValue(values, meta, index) {
@@ -5274,6 +5593,10 @@ export class ChartView {
     for (const d of g.densityCache || []) textures.push(d && d.tex);
     if (g.density) textures.push(g.density.tex);
     if (g._shownDensity) textures.push(g._shownDensity.tex);
+    // Mid-hover the plane's ORIGINAL texture lives only here (density.tex is
+    // the dimmed one), and the paths that destroy a live trace — append,
+    // spec swap, animation — do not clear legend hover first.
+    textures.push(g._legendHoverTex, g._legendHoverPrevTex);
     for (const tex of textures) {
       if (tex && !texSeen.has(tex)) {
         texSeen.add(tex);
@@ -5283,6 +5606,8 @@ export class ChartView {
     g.drill = null;
     g.density = null;
     g._shownDensity = null;
+    g._legendHoverTex = null;
+    g._legendHoverPrevTex = null;
     g.densityCache = [];
     g.heatmap = null;
     g._cpu = null;
