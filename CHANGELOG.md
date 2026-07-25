@@ -6,7 +6,7 @@ adheres to [Semantic Versioning](https://semver.org/) once `1.0.0` ships;
 pre-1.0, minor versions may contain breaking changes (see the stability table
 in the README).
 
-## Unreleased
+## [0.0.3] - 2026-07-24
 
 ### Changed
 - The runtime-verified WebAssembly wheel now targets the standardized PEP 783
