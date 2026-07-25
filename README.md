@@ -44,7 +44,20 @@ uv add xy
 
 ## Getting started
 
-Chart a hundred million points as a density surface:
+A chart is a container plus the marks inside it. Any sequence works — plain
+Python lists need no NumPy:
+
+```python
+import xy
+
+chart = xy.line_chart(xy.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]))
+# chart.to_html("chart.html")
+# chart.to_png("chart.png")
+# chart.to_svg("chart.svg")
+chart  # notebooks render it
+```
+
+The same API scales. Chart a hundred million points as a density surface:
 
 <p align="center">
   <picture>
@@ -83,28 +96,8 @@ chart = xy.scatter_chart(
     ),
     title="100 million points",
 )
-# chart.to_html("chart.html")
-# chart.to_png("chart.png")
-# chart.to_svg("chart.svg")
 chart
 ```
-
-Past a threshold a scatter becomes a density surface: counts drive alpha and
-the colour channel aggregates to a per-cell mean, so a hundred million points
-compose in 0.2 s and reach the browser as a 1.03 MB payload whose size is set
-by the screen, not by `n`. Zoom far enough into a sparse region and the ladder
-runs out the other end &mdash; the surface is replaced by the real rows, 189,319
-of them at the depth shown above. The same chart exports unchanged. The dark
-recording is this chart with `colormap="magma"` on a dark theme.
-
-That recording is the [live drilldown example](examples/fastapi/), where every
-view re-queries the engine. A self-contained `to_html` export has no host to
-ask, so it re-bins its retained sample instead and says so in the corner.
-
-XY also covers line, area, histogram, bar and column, heatmap, error bar and
-band, box, violin, ECDF, hexbin, contour, step, stairs, stem, triangle mesh, and
-faceted charts &mdash; see the
-[copyable examples](spec/api/api-examples.md).
 
 ### Coming from matplotlib
 
@@ -157,6 +150,15 @@ chart = xy.line_chart(
 With the `reflex-xy` adapter, any XY chart becomes a regular Reflex component.
 Place it inside cards, grids, tabs, or dashboards with no JavaScript, iframe,
 or separate chart service.
+
+The adapter ships as its own package, and pulls in `xy` and `reflex`:
+
+```bash
+pip install reflex-xy
+
+# or, with uv
+uv add reflex-xy
+```
 
 Register the adapter once:
 
@@ -256,3 +258,22 @@ Start with the [XY documentation](https://reflex.dev/docs/xy/) for installation,
 the chart gallery, guides, and API reference. The repository also includes
 [copyable API examples](spec/api/api-examples.md),
 [benchmark details](benchmarks/README.md), and the [changelog](CHANGELOG.md).
+
+## Roadmap
+
+XY is 2D-first: broad chart coverage on top of the binary transport and
+screen-bounded rendering, before any 3D work. Queued next, no dates implied:
+
+- **Categorical distributions** &mdash; strip, swarm, beeswarm, boxen, rug
+- **Regression diagnostics** &mdash; trendline, residual, QQ, PP
+- **Scatter matrix and joint plots** &mdash; SPLOM, pair grid, marginal histograms
+- **Pie / donut** &mdash; in `xy.pyplot` today, promoting to `xy.pie_chart(xy.pie(...))`
+- **Candlestick / OHLC and finance overlays** &mdash; SMA, VWAP, Bollinger, RSI, MACD; prototyped, awaiting a fresh landing
+- **Waterfall and funnel**
+- **Treemap, sunburst, and icicle**
+- **Radar / polar and gauge** &mdash; needs polar axes first
+- **Slope, bump, and dumbbell**
+
+The full ranked backlog is in the [chart roadmap](spec/api/chart-roadmap.md).
+Want a chart or feature that isn't listed?
+[Open an issue](https://github.com/reflex-dev/xy/issues/new).
