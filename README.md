@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <b><a href="https://reflex.dev/docs/xy/" target="_blank" rel="noopener noreferrer">Try it live: a million points in your browser &rarr;</a></b>
+</p>
+
+<p align="center">
   <a href="https://github.com/reflex-dev/xy/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/reflex-dev/xy/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://app.codspeed.io/reflex-dev/xy?utm_source=badge"><img alt="CodSpeed" src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json"></a>
   <a href="pyproject.toml"><img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white"></a>
@@ -29,22 +33,6 @@ share interactive notebook results, or ship self-contained charts on the web.
 Build charts once, then display them in notebooks and apps or export them as
 HTML, images, and vector graphics.
 
-## Benchmarks
-
-<p align="center">
-  <img src="spec/assets/launch-benchmark-comparison.svg" alt="Cold-render time for a 10-million-point chart in XY, Matplotlib, and Plotly. Lower is better." width="1200">
-</p>
-
-In the recorded 10-million-point baseline, XY produced a static PNG in 0.023 s
-versus 2.8 s for Matplotlib and 9.6 s for Plotly, and reached first interactive
-render 16–20× sooner.
-
-The committed launch baseline uses identical seeded data, a 900×420 output,
-and three isolated cold runs. See the
-[launch report](benchmarks/launch_baselines/xy-0.1.0/macos-arm64-m5-pro/report.md)
-and [benchmark runbook](benchmarks/README.md) for the environment,
-methodology, and raw results.
-
 ## Installation
 
 ```bash
@@ -54,41 +42,46 @@ pip install xy
 uv add xy
 ```
 
-Published wheels contain the Python package, JavaScript client, and native Rust
-core. End users do not need Rust, Node, npm, or a CDN.
-
-In Pyodide 314:
-
-First load `micropip` in the Pyodide JavaScript runtime:
-
-```javascript
-await pyodide.loadPackage("micropip");
-```
-
-```python
-import micropip
-
-await micropip.install("xy")
-```
-
 ## Getting started
 
-Create a small business chart:
+Chart a hundred million points as a density surface:
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="spec/assets/xy-density-100m-dark.gif">
+    <img src="spec/assets/xy-density-100m-light.gif" alt="A hundred-million-point spiral rendered as a density surface, then zoomed until the surface resolves into individual points." width="780">
+  </picture>
+</p>
 
 ```python
+import numpy as np
+
 import xy
 
-months = [1, 2, 3, 4, 5, 6]
-revenue = [42, 45, 48, 51, 55, 59]
-pipeline = [35, 38, 42, 40, 46, 50]
+rng = np.random.default_rng(7)
+n = 100_000_000
 
-chart = xy.line_chart(
-    xy.line(months, revenue, name="revenue", color="#2563eb"),
-    xy.line(months, pipeline, name="pipeline", color="#16a34a"),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="USD thousands"),
-    xy.legend(),
-    title="Revenue vs pipeline",
+r = 6.0 * rng.beta(1.2, 3.0, n)
+theta = 2.9 * np.log1p(r) + rng.integers(0, 4, n) * (np.pi / 2) + rng.normal(0, 0.045 + 0.016 * r, n)
+
+chart = xy.scatter_chart(
+    xy.scatter(
+        r * np.cos(theta),
+        r * np.sin(theta),
+        color=np.exp(-r / 2.2),
+        colormap="magma_r",
+        density=True,
+        opacity=0.85,
+        # Grow and solidify markers once a view drills through to real rows.
+        size=2.5,
+        zoom_size_factor=2.6,
+        zoom_opacity=0.95,
+    ),
+    xy.theme(
+        background="#ffffff", plot_background="#ffffff", grid_color="#e6e6e1",
+        axis_color="#c3c2b7", text_color="#0b0b0b",
+    ),
+    title="100 million points",
 )
 # chart.to_html("chart.html")
 # chart.to_png("chart.png")
@@ -96,12 +89,22 @@ chart = xy.line_chart(
 chart
 ```
 
-The same chart can be exported without changing how it is built.
+Past a threshold a scatter becomes a density surface: counts drive alpha and
+the colour channel aggregates to a per-cell mean, so a hundred million points
+compose in 0.2 s and reach the browser as a 1.03 MB payload whose size is set
+by the screen, not by `n`. Zoom far enough into a sparse region and the ladder
+runs out the other end &mdash; the surface is replaced by the real rows, 189,319
+of them at the depth shown above. The same chart exports unchanged. The dark
+recording is this chart with `colormap="magma"` on a dark theme.
 
-XY currently includes line, scatter, area, histogram, bar and column, heatmap,
-error bar and band, box, violin, ECDF, hexbin, contour, step, stairs, stem,
-triangle mesh, and faceted charts. See the
-[copyable examples](spec/api/api-examples.md) for the complete surface.
+That recording is the [live drilldown example](examples/fastapi/), where every
+view re-queries the engine. A self-contained `to_html` export has no host to
+ask, so it re-bins its retained sample instead and says so in the corner.
+
+XY also covers line, area, histogram, bar and column, heatmap, error bar and
+band, box, violin, ECDF, hexbin, contour, step, stairs, stem, triangle mesh, and
+faceted charts &mdash; see the
+[copyable examples](spec/api/api-examples.md).
 
 ### Coming from matplotlib
 
@@ -120,6 +123,22 @@ plt.show()
 
 The shim intentionally covers common plotting workflows rather than every
 matplotlib feature. See the [compatibility guide](spec/matplotlib/compat.md).
+
+## Benchmarks
+
+<p align="center">
+  <img src="spec/assets/launch-benchmark-comparison.svg" alt="Cold-render time for a 10-million-point chart in XY, Matplotlib, and Plotly. Lower is better." width="1200">
+</p>
+
+In the recorded 10-million-point baseline, XY produced a static PNG in 0.023 s
+versus 2.8 s for Matplotlib and 9.6 s for Plotly, and reached first interactive
+render 16–20× sooner.
+
+The committed launch baseline uses identical seeded data, a 900×420 output,
+and three isolated cold runs. See the
+[launch report](benchmarks/launch_baselines/xy-0.1.0/macos-arm64-m5-pro/report.md)
+and [benchmark runbook](benchmarks/README.md) for the environment,
+methodology, and raw results.
 
 ## Styling
 
