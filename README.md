@@ -57,6 +57,20 @@ uv add xy
 Published wheels contain the Python package, JavaScript client, and native Rust
 core. End users do not need Rust, Node, npm, or a CDN.
 
+In Pyodide 314:
+
+First load `micropip` in the Pyodide JavaScript runtime:
+
+```javascript
+await pyodide.loadPackage("micropip");
+```
+
+```python
+import micropip
+
+await micropip.install("xy")
+```
+
 ## Getting started
 
 Create a small business chart:
