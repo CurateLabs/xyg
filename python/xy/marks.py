@@ -345,9 +345,12 @@ def segments(
     arrays = [self._as_1d_float(values, "segments color geometry") for values in (x0, y0, x1, y1)]
     if len({len(values) for values in arrays}) != 1:
         raise ValueError("segments coordinate columns must have equal length")
-    default = self.palette_color(len(self.traces))
     color_ch = channels.resolve_color(
-        color, len(arrays[0]), colormap=colormap, default_constant=default, palette=self.palette
+        color,
+        len(arrays[0]),
+        colormap=colormap,
+        default_constant=self.next_series_color,
+        palette=self.palette,
     )
     if domain is not None:
         if color_ch.mode != "continuous":
@@ -437,9 +440,12 @@ def triangle_mesh(
         and ("stroke_width" not in style_channels)
     ):
         stroke_width_value = 1.0
-    default_color = self.palette_color(len(self.traces))
     color_ch = channels.resolve_color(
-        color, n, colormap=colormap, default_constant=default_color, palette=self.palette
+        color,
+        n,
+        colormap=colormap,
+        default_constant=self.next_series_color,
+        palette=self.palette,
     )
     if domain is not None:
         if color_ch.mode != "continuous":
@@ -656,6 +662,11 @@ def _bar_like(
         if direct_colors is not None
         else self._series_colors(color, colors, n_series)
     )
+    if direct_colors is None:
+        # One palette slot per *series* the mark emits — a grouped bar with
+        # three series takes three, and each bakes its color here rather than
+        # at payload time, where only the trace index is left to cycle on.
+        series_colors = [self.next_series_color() if c is None else c for c in series_colors]
     direct_strokes = _series_direct_paints(stroke, n_series, n_items, f"{kind} stroke")
     scalar_stroke = stroke if direct_strokes is None else None
     opacity_values, opacity_channels = _series_style_values(
@@ -811,6 +822,8 @@ def line(
     dash = css.get("dash", dash)
     name = self._optional_text(name, "line name")
     color = self._optional_css_color(color, "line color")
+    if color is None:
+        color = self.next_series_color()
     width = self._positive_scalar(width, "line width")
     opacity = self._opacity(opacity, "line opacity")
     curve = _validate.curve(curve, "line curve")
@@ -886,6 +899,8 @@ def area(
     dash = css.get("dash", dash)
     name = self._optional_text(name, "area name")
     color = self._optional_css_color(color, "area color")
+    if color is None:
+        color = self.next_series_color()
     opacity = self._opacity(opacity, "area opacity")
     line_color = self._optional_css_color(line_color, "area line_color")
     line_width = self._nonnegative_scalar(line_width, "area line_width")
@@ -969,6 +984,8 @@ def error_band(
     fill = css.get("fill", fill)
     name = self._optional_text(name, "error_band name")
     color = self._optional_css_color(color, "error_band color")
+    if color is None:
+        color = self.next_series_color()
     opacity = self._opacity(opacity, "error_band opacity")
     line_width = self._nonnegative_scalar(line_width, "error_band line_width")
     line_opacity = self._opacity(line_opacity, "error_band line_opacity")
@@ -1068,7 +1085,7 @@ def errorbar(
     name = self._optional_text(name, "errorbar name")
     color = self._optional_css_color(color, "errorbar color")
     if color is None:
-        color = self.palette_color(len(self.traces))
+        color = self.next_series_color()
     width = self._positive_scalar(width, "errorbar width")
     if cap_size is not None:
         cap_size = self._nonnegative_scalar(cap_size, "errorbar cap_size")
@@ -1307,7 +1324,7 @@ def stem(
     name = self._optional_text(name, "stem name")
     color = self._optional_css_color(color, "stem color")
     if color is None:
-        color = self.palette_color(len(self.traces))
+        color = self.next_series_color()
     width = self._positive_scalar(width, "stem width")
     opacity = self._opacity(opacity, "stem opacity")
     marker_size = self._nonnegative_scalar(marker_size, "stem marker_size")
@@ -1446,12 +1463,11 @@ def scatter(
             and (stroke_width_value or "stroke_width" in style_channels)
         ):
             stroke_ch = channels.ColorChannel(mode="match_fill")
-        default_color = self.palette_color(len(self.traces))
         color_ch = channels.resolve_color(
             color,
             n,
             colormap=colormap,
-            default_constant=default_color,
+            default_constant=self.next_series_color,
             domain=color_domain,
             palette=self.palette,
         )
@@ -1610,6 +1626,8 @@ def histogram(
         else None
     )
     color_value = color if direct_color is None else None
+    if direct_color is None and color_value is None:
+        color_value = self.next_series_color()
     stroke_value, stroke_channel = _stroke_channel(stroke, n_bins, "histogram stroke")
     opacity_value, opacity_channels = _series_style_values(
         opacity,
@@ -1734,7 +1752,7 @@ def box(
     name = self._optional_text(name, "box name")
     color = self._optional_css_color(color, "box color")
     if color is None:
-        color = self.palette_color(len(self.traces))
+        color = self.next_series_color()
     width = self._positive_scalar(width, "box width")
     opacity = self._opacity(opacity, "box opacity")
     show_outliers = self._bool_param(show_outliers, "box show_outliers")
@@ -1897,6 +1915,8 @@ def violin(
         raise ValueError("violin bins must be an integer between 4 and 1024")
     name = self._optional_text(name, "violin name")
     color = self._optional_css_color(color, "violin color")
+    if color is None:
+        color = self.next_series_color()
     width = self._positive_scalar(width, "violin width")
     opacity = self._opacity(opacity, "violin opacity")
     groups, positions = _distribution_groups(self, values, x, group, "violin")
@@ -2090,7 +2110,7 @@ def hexbin(
                 y=self.store.ingest(centers_y),
                 name=name,
                 style={
-                    "color": self.palette_color(len(self.traces)),
+                    "color": self.next_series_color(),
                     "opacity": opacity,
                     "hex_dx": dx,
                     "hex_dy": dy,
@@ -2208,6 +2228,8 @@ def contour(
         )
     colormap = channels.resolve_colormap(colormap)
     name = self._optional_text(name, "contour name")
+    # No `color=` means "colormap the level set", not "take a palette slot" —
+    # `color_ch` below keys off exactly this None.
     color = self._optional_css_color(color, "contour color")
     width = self._positive_scalar(width, "contour width")
     opacity = self._opacity(opacity, "contour opacity")
@@ -2488,6 +2510,7 @@ def heatmap(
                 count=int(z_flat.size),
                 name=name,
                 style={
+                    "color": self.next_series_color(),
                     "opacity": opacity,
                     "role": "heatmap",
                     "colormap": colormap,
