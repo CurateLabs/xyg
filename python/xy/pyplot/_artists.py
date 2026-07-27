@@ -1207,6 +1207,16 @@ class PolyCollection(Artist):
     def set_clim(self, vmin: Any = None, vmax: Any = None) -> None:
         _set_entry_clim(self, vmin, vmax)
 
+    def set_rasterized(self, rasterized: bool) -> None:
+        if self._entry.get("factory") == "heatmap" or self._entry.get("kind") == "heatmap":
+            # Regular pcolormesh is already an image-backed mark in SVG/PDF
+            # and a raster texture in HTML/PNG, so Matplotlib's selective
+            # rasterization request is naturally satisfied.
+            self._rasterized = bool(rasterized)
+            self._touch()
+            return
+        super().set_rasterized(rasterized)
+
     def get_facecolors(self) -> np.ndarray:
         """Return the collection's constant face paint as one RGBA row."""
         return resolve_rgba_array(

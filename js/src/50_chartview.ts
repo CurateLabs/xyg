@@ -1,7 +1,7 @@
 import { PROTOCOL, xyByteSpan } from "./00_header";
 import { buildLutData, colormapKey, colormapStops } from "./10_colormaps";
 import { chartBackdrop, cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
-import { categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtValue, linearTicks, logTicks, timeTicks } from "./30_ticks";
+import { categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtLog, fmtValue, linearTicks, logTicks, timeTicks } from "./30_ticks";
 import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
 import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
 import { markOf } from "./55_marks";
@@ -497,18 +497,26 @@ export class ChartView {
     const colorbar = this.spec.colorbar;
     const verticalColorbar = colorbar && colorbar.orientation !== "horizontal";
     const horizontalColorbar = colorbar && colorbar.orientation === "horizontal";
+    const axesColorbar = colorbar && colorbar.placement === "axes";
     // Fluid charts have to remain useful inside dashboard columns. On compact
     // widths, cap only oversized authored horizontal padding and collapse a
     // vertical colorbar to its gradient; the full tick/title chrome returns
     // automatically when the container widens again.
     const responsivePad = this.fluid && compact && pad;
-    this._compactVerticalColorbar = Boolean(this.fluid && compact && verticalColorbar);
+    this._compactVerticalColorbar = Boolean(
+      this.fluid && compact && verticalColorbar && !axesColorbar
+    );
+    const automaticColorbarGap = colorbar && colorbar.pad === 0 ? 0 : 24;
     const colorbarRightRoom = verticalColorbar
-      ? (this._compactVerticalColorbar
-        ? COMPACT_COLORBAR_GAP + COLORBAR_THICKNESS + 8
-        : 86 + (colorbar.label ? 18 : 0))
+      ? axesColorbar
+        ? 44 + (colorbar.label ? 18 : 0)
+        : (this._compactVerticalColorbar
+          ? COMPACT_COLORBAR_GAP + COLORBAR_THICKNESS + 8
+          : 62 + automaticColorbarGap + (colorbar.label ? 18 : 0))
       : 0;
-    const colorbarBottomRoom = horizontalColorbar ? 38 + (colorbar.label ? 16 : 0) : 0;
+    const colorbarBottomRoom = horizontalColorbar
+      ? (axesColorbar ? 24 : 38) + (colorbar.label ? 16 : 0)
+      : 0;
     const baseRight = pad ? (responsivePad ? Math.min(pad[1], 8) : pad[1]) : compact ? 8 : MARGIN.r;
     const marginRight = baseRight + colorbarRightRoom;
     const marginTop = pad ? pad[0] : compact ? 6 : MARGIN.t;
@@ -2470,19 +2478,44 @@ export class ChartView {
     if (!cb) return;
     const box = document.createElement("div");
     const horizontal = cb.orientation === "horizontal";
+    const axesPlacement = cb.placement === "axes";
     box.style.cssText = "position:absolute;pointer-events:none;z-index:4;";
     this._applySlot(box, "colorbar");
 
     const bar = document.createElement("div");
     const levels = Math.max(0, Number(cb.levels) || 0);
+    const lineOnly = Boolean(cb.line_only);
     let gradient;
-    if (levels > 0) {
+    if (lineOnly) {
+      gradient = "linear-gradient(white,white)";
+    } else if (levels > 0) {
       const lut = buildLutData(cb.colormap || "viridis");
+      const exactColors = Array.isArray(cb.band_colors) && cb.band_colors.length === levels
+        ? cb.band_colors
+        : null;
+      const boundaries = Array.isArray(cb.boundaries)
+        ? cb.boundaries.map(Number)
+        : [];
+      const proportional =
+        cb.spacing === "proportional" &&
+        boundaries.length === levels + 1 &&
+        boundaries.every(Number.isFinite) &&
+        boundaries.every((value, index) => index === 0 || value > boundaries[index - 1]);
+      const fractions = proportional
+        ? boundaries.map(
+          (value) =>
+            (value - boundaries[0]) /
+            (boundaries[boundaries.length - 1] - boundaries[0]),
+        )
+        : Array.from({ length: levels + 1 }, (_, index) => index / levels);
       const bands = [];
       for (let index = 0; index < levels; index++) {
         const sample = Math.min(255, Math.round(255 * (index + 0.5) / levels));
-        const color = `rgb(${lut[sample * 4]},${lut[sample * 4 + 1]},${lut[sample * 4 + 2]})`;
-        bands.push(`${color} ${100 * index / levels}% ${100 * (index + 1) / levels}%`);
+        const row = exactColors && exactColors[index];
+        const color = row
+          ? `rgb(${Number(row[0])},${Number(row[1])},${Number(row[2])})`
+          : `rgb(${lut[sample * 4]},${lut[sample * 4 + 1]},${lut[sample * 4 + 2]})`;
+        bands.push(`${color} ${100 * fractions[index]}% ${100 * fractions[index + 1]}%`);
       }
       gradient = `linear-gradient(to ${horizontal ? "right" : "top"},${bands.join(",")})`;
     } else {
@@ -2490,32 +2523,99 @@ export class ChartView {
       gradient = `linear-gradient(to ${horizontal ? "right" : "top"},${stops.map((c) =>
         `rgb(${c[0]},${c[1]},${c[2]})`).join(",")})`;
     }
+    const barThickness = axesPlacement
+      ? (horizontal ? this.plot.h : this.plot.w)
+      : COLORBAR_THICKNESS;
     bar.style.cssText = horizontal
-      ? `position:absolute;inset:0 0 auto 0;height:${COLORBAR_THICKNESS}px;`
-      : `position:absolute;inset:0 auto 0 0;width:${COLORBAR_THICKNESS}px;`;
+      ? `position:absolute;inset:0 0 auto 0;height:${barThickness}px;`
+      : `position:absolute;inset:0 auto 0 0;width:${barThickness}px;`;
     bar.style.setProperty("--xy-colorbar-gradient", gradient);
+    if (lineOnly) {
+      bar.style.border = "1px solid currentColor";
+      bar.style.boxSizing = "border-box";
+      bar.dataset.xyColorbarLineOnly = "true";
+    }
     this._applySlot(bar, "colorbar_bar");
     box.appendChild(bar);
+    if (lineOnly && ["min", "max", "both"].includes(String(cb.extend))) {
+      const extension = (side) => {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        const atMinimum = side === "min";
+        svg.dataset.xyColorbarExtend = side;
+        svg.setAttribute("width", String(horizontal ? 9 : barThickness));
+        svg.setAttribute("height", String(horizontal ? barThickness : 9));
+        svg.style.cssText = horizontal
+          ? `position:absolute;top:0;${atMinimum ? "right:100%" : "left:100%"};overflow:visible;`
+          : `position:absolute;left:0;${atMinimum ? "top:100%" : "bottom:100%"};overflow:visible;`;
+        polygon.setAttribute("points", horizontal
+          ? (atMinimum
+            ? `9,0 9,${barThickness} 0,${barThickness / 2}`
+            : `0,0 0,${barThickness} 9,${barThickness / 2}`)
+          : (atMinimum
+            ? `0,0 ${barThickness},0 ${barThickness / 2},9`
+            : `0,9 ${barThickness},9 ${barThickness / 2},0`));
+        polygon.setAttribute("fill", "white");
+        polygon.setAttribute("stroke", "currentColor");
+        svg.appendChild(polygon);
+        bar.appendChild(svg);
+      };
+      if (cb.extend === "min" || cb.extend === "both") extension("min");
+      if (cb.extend === "max" || cb.extend === "both") extension("max");
+    }
 
     const domain = cb.domain || [0, 1];
     const lo = Number(domain[0]), hi = Number(domain[1]);
     const span = hi - lo || 1;
+    const logScale = cb.scale === "log";
+    const colorbarFraction = (value) => logScale
+      ? (hi === lo ? 0 : Math.log(value / lo) / Math.log(hi / lo))
+      : (value - lo) / span;
+    for (const line of Array.isArray(cb.lines) ? cb.lines : []) {
+      const value = Number(line && line.value);
+      if (!Number.isFinite(value) || value < Math.min(lo, hi) || value > Math.max(lo, hi)) continue;
+      const fraction = colorbarFraction(value);
+      const marker = document.createElement("i");
+      marker.dataset.xyColorbarLine = "true";
+      const color = safeCssPaint(this.root, line.color || "currentColor");
+      const width = Math.max(0.5, Number(line.width) || 1);
+      const lineStyle = line.dash === "dashed" ? "dashed" : "solid";
+      marker.style.cssText = horizontal
+        ? `position:absolute;left:${100 * fraction}%;inset-block:0;border-left:${width}px ${lineStyle} ${color};`
+        : `position:absolute;top:${100 * (1 - fraction)}%;inset-inline:0;border-top:${width}px ${lineStyle} ${color};`;
+      bar.appendChild(marker);
+    }
     const shrink = Math.max(0.01, Math.min(1, Number(cb.shrink) || 1));
     const barLength = (horizontal ? this.plot.w : this.plot.h) * shrink;
     const tickTarget = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
-    const tickResult = linearTicks(lo, hi, tickTarget);
+    const tickResult = logScale ? logTicks(lo, hi, tickTarget) : linearTicks(lo, hi, tickTarget);
     const hasExplicitTicks = Array.isArray(cb.ticks);
-    const tickValues = hasExplicitTicks ? cb.ticks : tickResult.ticks;
+    const tickValues = hasExplicitTicks
+      ? cb.ticks
+      : (logScale ? (tickResult as any).labels : tickResult.ticks);
     const tickStep = tickResult.step;
-    for (const raw of tickValues) {
+    const fractionFor = (value) => logScale
+      ? (hi === lo ? 0 : Math.log(value / lo) / Math.log(hi / lo))
+      : (value - lo) / span;
+    for (let tickIndex = 0; tickIndex < tickValues.length; tickIndex++) {
+      const raw = tickValues[tickIndex];
       const value = Number(raw);
       if (!Number.isFinite(value) || value < Math.min(lo, hi) || value > Math.max(lo, hi)) continue;
       const tick = document.createElement("span");
-      tick.textContent = hasExplicitTicks ? fmtGeneral(value) : fmtLinear(value, tickStep);
-      const fraction = (value - lo) / span;
+      tick.textContent =
+        hasExplicitTicks &&
+          Array.isArray(cb.tick_labels) &&
+          cb.tick_labels.length === tickValues.length
+          ? String(cb.tick_labels[tickIndex])
+          : hasExplicitTicks
+            ? fmtGeneral(value)
+            : logScale
+              ? fmtLog(value)
+              : fmtLinear(value, tickStep);
+      const fraction = fractionFor(value);
       tick.style.cssText = horizontal
-        ? `position:absolute;left:${100 * fraction}%;top:${COLORBAR_THICKNESS + 2}px;transform:translateX(-50%);white-space:nowrap;`
-        : `position:absolute;left:${COLORBAR_THICKNESS + 5}px;top:${100 * (1 - fraction)}%;transform:translateY(-50%);white-space:nowrap;`;
+        ? `position:absolute;left:${100 * fraction}%;top:${barThickness + 2}px;transform:translateX(-50%);white-space:nowrap;`
+        : `position:absolute;left:${barThickness + 5}px;top:${100 * (1 - fraction)}%;transform:translateY(-50%);white-space:nowrap;`;
       this._applySlot(tick, "colorbar_tick");
       box.appendChild(tick);
     }
@@ -2527,13 +2627,15 @@ export class ChartView {
       for (let index = 0; index + 1 < orderedTicks.length; index++) {
         const left = orderedTicks[index], right = orderedTicks[index + 1];
         for (let step = 1; step < 5; step++) {
-          const value = left + (right - left) * step / 5;
-          const fraction = (value - lo) / span;
+          const value = logScale
+            ? Math.pow(10, Math.log10(left) + (Math.log10(right) - Math.log10(left)) * step / 5)
+            : left + (right - left) * step / 5;
+          const fraction = fractionFor(value);
           const tick = document.createElement("i");
           tick.dataset.xyColorbarMinor = "true";
           tick.style.cssText = horizontal
-            ? `position:absolute;left:${100 * fraction}%;top:${COLORBAR_THICKNESS}px;height:3px;border-left:1px solid currentColor;`
-            : `position:absolute;left:${COLORBAR_THICKNESS}px;top:${100 * (1 - fraction)}%;width:3px;border-top:1px solid currentColor;`;
+            ? `position:absolute;left:${100 * fraction}%;top:${barThickness}px;height:3px;border-left:1px solid currentColor;`
+            : `position:absolute;left:${barThickness}px;top:${100 * (1 - fraction)}%;width:3px;border-top:1px solid currentColor;`;
           box.appendChild(tick);
         }
       }
@@ -2542,8 +2644,8 @@ export class ChartView {
       const label = document.createElement("span");
       label.textContent = String(cb.label);
       label.style.cssText = horizontal
-        ? `position:absolute;left:50%;top:${COLORBAR_THICKNESS + 18}px;transform:translateX(-50%);white-space:nowrap;`
-        : `position:absolute;left:${COLORBAR_THICKNESS + 40}px;top:50%;writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg);white-space:nowrap;`;
+        ? `position:absolute;left:50%;top:${barThickness + 18}px;transform:translateX(-50%);white-space:nowrap;`
+        : `position:absolute;left:${barThickness + 40}px;top:50%;writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg);white-space:nowrap;`;
       this._applySlot(label, "colorbar_title");
       box.appendChild(label);
     }
@@ -2558,22 +2660,35 @@ export class ChartView {
     if (!this._colorbar) return;
     const cb = this.spec.colorbar || {};
     const horizontal = this._colorbarHorizontal;
+    const axesPlacement = cb.placement === "axes";
     const compactVertical = !horizontal && this._compactVerticalColorbar;
-    const gap = compactVertical ? COMPACT_COLORBAR_GAP : COLORBAR_GAP;
+    const gap = axesPlacement
+      ? 0
+      : (cb.pad == null
+        ? (compactVertical ? COMPACT_COLORBAR_GAP : COLORBAR_GAP)
+        : Number(cb.pad) * (horizontal ? this.plot.h : this.plot.w));
     const shrink = Math.max(0.01, Math.min(1, Number(cb.shrink) || 1));
     const anchor = Array.isArray(cb.anchor) ? cb.anchor : [0.5, 0.5];
     const barWidth = this.plot.w * shrink;
     const barHeight = this.plot.h * shrink;
     this._colorbar.style.left = (horizontal
-      ? this.plot.x + (this.plot.w - barWidth) * Number(anchor[0] ?? 0.5)
-      : this.plot.x + this.plot.w + this._rightAxisRoom + gap) + "px";
+      ? axesPlacement
+        ? this.plot.x
+        : this.plot.x + (this.plot.w - barWidth) * Number(anchor[0] ?? 0.5)
+      : axesPlacement
+        ? this.plot.x
+        : this.plot.x + this.plot.w + this._rightAxisRoom + gap) + "px";
     this._colorbar.style.top = (horizontal
-      ? this.plot.y + this.plot.h + (this._bottomAxisRoom || 8)
+      ? axesPlacement
+        ? this.plot.y
+        : this.plot.y + this.plot.h + gap
       : this.plot.y + (this.plot.h - barHeight) * (1 - Number(anchor[1] ?? 0.5))) + "px";
     this._colorbar.style.width = (horizontal
-      ? barWidth
-      : compactVertical ? COLORBAR_THICKNESS : 66) + "px";
-    this._colorbar.style.height = (horizontal ? 50 : Math.max(24, barHeight)) + "px";
+      ? axesPlacement ? this.plot.w : barWidth
+      : axesPlacement ? this.plot.w + 44 : compactVertical ? COLORBAR_THICKNESS : 66) + "px";
+    this._colorbar.style.height = (horizontal
+      ? axesPlacement ? this.plot.h + 24 : 50
+      : Math.max(24, barHeight)) + "px";
     this._colorbar.dataset.xyCompact = compactVertical ? "true" : "false";
     for (const node of this._colorbar.querySelectorAll(
       '[data-xy-slot="colorbar_tick"], [data-xy-slot="colorbar_title"]'

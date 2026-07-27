@@ -392,6 +392,58 @@ COLORMAP_STOPS: dict[str, list[tuple[int, int, int]]] = {
         (25, 151, 80),
         (0, 104, 55),
     ],
+    "rdylbu": [
+        (165, 0, 38),
+        (214, 47, 38),
+        (244, 109, 67),
+        (252, 172, 96),
+        (254, 224, 144),
+        (254, 254, 192),
+        (224, 243, 247),
+        (169, 216, 232),
+        (116, 173, 209),
+        (68, 115, 179),
+        (49, 54, 149),
+    ],
+    "ylgn": [
+        (255, 255, 229),
+        (248, 252, 194),
+        (229, 244, 171),
+        (200, 232, 154),
+        (162, 216, 137),
+        (119, 197, 120),
+        (75, 176, 98),
+        (46, 146, 76),
+        (21, 120, 62),
+        (0, 96, 51),
+        (0, 69, 41),
+    ],
+    "wistia": [
+        (228, 255, 122),
+        (238, 245, 84),
+        (249, 236, 45),
+        (255, 223, 21),
+        (255, 206, 10),
+        (255, 188, 0),
+        (255, 177, 0),
+        (255, 165, 0),
+        (254, 153, 0),
+        (253, 139, 0),
+        (252, 127, 0),
+    ],
+    "puor": [
+        (127, 59, 8),
+        (177, 87, 6),
+        (224, 130, 20),
+        (252, 182, 97),
+        (254, 224, 182),
+        (246, 246, 246),
+        (216, 218, 235),
+        (177, 169, 209),
+        (128, 115, 172),
+        (83, 38, 134),
+        (45, 0, 75),
+    ],
     "spectral": [
         (158, 1, 66),
         (212, 61, 79),
@@ -1725,10 +1777,15 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
         top_axis_room = 26 if compact else 32
         top += top_axis_room
     colorbar = spec.get("colorbar") or {}
-    if colorbar.get("orientation") == "horizontal":
-        bottom += 38 + (16 if colorbar.get("label") else 0)
+    if colorbar.get("placement") == "axes":
+        if colorbar.get("orientation") == "horizontal":
+            bottom += 24 + (16 if colorbar.get("label") else 0)
+        else:
+            right += 44 + (18 if colorbar.get("label") else 0)
+    elif colorbar.get("orientation") == "horizontal":
+        bottom += (18 if colorbar.get("pad") == 0 else 38) + (16 if colorbar.get("label") else 0)
     elif colorbar:
-        right += 86 + (18 if colorbar.get("label") else 0)
+        right += (62 if colorbar.get("pad") == 0 else 86) + (18 if colorbar.get("label") else 0)
     if any(
         axis_id.startswith("y")
         and axis.get("side", "right") == "right"
@@ -3247,13 +3304,22 @@ def _hexbin_marks(
     xs = np.asarray(sx(cx[:n, None] + ring_x[None, :]), dtype=np.float64)
     ys = np.asarray(sy(cy[:n, None] + ring_y[None, :]), dtype=np.float64)
     fill_op = _fill_opacity(style)
-    group_attr = f' fill-opacity="{_num(fill_op)}"' if fill_op < 1 else ""
+    group_attr = (
+        f' fill-opacity="{_num(fill_op)}" stroke-opacity="{_num(fill_op)}"' if fill_op < 1 else ""
+    )
     out = [f"<g{group_attr}>"]
     for i in range(n):
         points = " ".join(
             f"{_num(float(x))},{_num(float(y))}" for x, y in zip(xs[i], ys[i], strict=True)
         )
-        out.append(f'<polygon points="{points}" fill="{escape(fills[i])}"/>')
+        paint = escape(fills[i])
+        # Matplotlib's default ``edgecolors="face"`` covers antialiasing
+        # cracks where adjacent hexagons meet. A same-color hairline preserves
+        # the face color while preventing white striping in vector viewers.
+        out.append(
+            f'<polygon points="{points}" fill="{paint}" stroke="{paint}" '
+            'stroke-width="0.5" stroke-linejoin="round"/>'
+        )
     out.append("</g>")
     return "".join(out)
 
@@ -4078,8 +4144,9 @@ def _legend(
 def _legend_hatch_svg(x0: float, x1: float, y0: float, y1: float, hatch: str, color: str) -> str:
     """Small, bounded hatch sample for explicit patch legend handles."""
     paths: list[str] = []
+    shapes: list[str] = []
     mid_y = (y0 + y1) / 2
-    if "-" in hatch or "*" in hatch:
+    if "-" in hatch:
         paths.append(f"M{_num(x0)},{_num(mid_y)} L{_num(x1)},{_num(mid_y)}")
     for char, direction in (("/", 1), ("\\", -1)):
         count = min(3, hatch.count(char))
@@ -4091,13 +4158,23 @@ def _legend_hatch_svg(x0: float, x1: float, y0: float, y1: float, hatch: str, co
                 f"L{_num(center + half)},{_num(mid_y - direction * half)}"
             )
     if "." in hatch:
+        radius = min(1.1, (y1 - y0) * 0.09)
         for fraction in (0.3, 0.7):
-            paths.append(f"M{_num(x0 + fraction * (x1 - x0))},{_num(mid_y)} l0.1,0")
+            shapes.append(
+                f'<circle cx="{_num(x0 + fraction * (x1 - x0))}" cy="{_num(mid_y)}" '
+                f'r="{_num(radius)}" fill="{escape(color)}"/>'
+            )
     if "*" in hatch:
-        paths.append(f"M{_num((x0 + x1) / 2)},{_num(y0)} L{_num((x0 + x1) / 2)},{_num(y1)}")
-    if not paths:
-        return ""
-    return f'<path d="{" ".join(paths)}" fill="none" stroke="{escape(color)}" stroke-width="1"/>'
+        radius = min(x1 - x0, y1 - y0) * 0.28
+        shapes.append(
+            _star_path((x0 + x1) / 2, mid_y, radius, 5, 0.45, -90.0) + f' fill="{escape(color)}"/>'
+        )
+    if paths:
+        shapes.insert(
+            0,
+            f'<path d="{" ".join(paths)}" fill="none" stroke="{escape(color)}" stroke-width="1"/>',
+        )
+    return "".join(shapes)
 
 
 def _colorbar(
@@ -4136,16 +4213,30 @@ def _colorbar(
     shrink = float(options.get("shrink", 1.0))
     anchor = options.get("anchor") or [0.5, 0.5]
     domain = options.get("domain", [0.0, 1.0])
-    if orientation == "horizontal":
+    placement = options.get("placement")
+    if placement == "axes":
+        x, y, width, height = plot["x"], plot["y"], plot["w"], plot["h"]
+        gradient_attrs = (
+            'x1="0" y1="0" x2="100%" y2="0"'
+            if orientation == "horizontal"
+            else 'x1="0" y1="100%" x2="0" y2="0"'
+        )
+    elif orientation == "horizontal":
         width = plot["w"] * shrink
         x = plot["x"] + (plot["w"] - width) * float(anchor[0])
-        y = plot["y"] + plot["h"] + (plot["bottom_axis_room"] or 10)
+        gap = (
+            float(options["pad"]) * plot["h"]
+            if options.get("pad") is not None
+            else (plot["bottom_axis_room"] or 10)
+        )
+        y = plot["y"] + plot["h"] + gap
         height = 18
         gradient_attrs = 'x1="0" y1="0" x2="100%" y2="0"'
     else:
         # right_axis_room shifts the whole colorbar clear of right-side named
         # y-axis chrome (layout() reserves room for both additively).
-        x = plot["x"] + plot["w"] + right_axis_room + 24
+        gap = float(options["pad"]) * plot["w"] if options.get("pad") is not None else 24.0
+        x = plot["x"] + plot["w"] + right_axis_room + gap
         height = plot["h"] * shrink
         y = plot["y"] + (plot["h"] - height) * (1.0 - float(anchor[1]))
         width = 18
@@ -4164,74 +4255,117 @@ def _colorbar(
         )
     )
     lo, hi = float(domain[0]), float(domain[1])
-    span = (hi - lo) or 1.0
+    log_scale = options.get("scale") == "log"
+
+    def fraction(value: float) -> float:
+        if log_scale:
+            return np.log(value / lo) / np.log(hi / lo) if hi != lo else 0.0
+        return (value - lo) / ((hi - lo) or 1.0)
+
     ticks = options.get("ticks")
-    tick_positions = (
-        [float(value) for value in ticks if lo <= float(value) <= hi]
-        if ticks is not None
-        else (
-            _linear_ticks(
+    supplied_labels = options.get("tick_labels")
+    paired_labels = (
+        supplied_labels
+        if isinstance(supplied_labels, list)
+        and isinstance(ticks, list)
+        and len(supplied_labels) == len(ticks)
+        else None
+    )
+    if ticks is not None:
+        tick_pairs = [
+            (
+                float(value),
+                None if paired_labels is None else str(paired_labels[index]),
+            )
+            for index, value in enumerate(ticks)
+            if lo <= float(value) <= hi
+        ]
+    else:
+        automatic_positions = (
+            _log_ticks(
+                lo,
+                hi,
+                _colorbar_tick_target(width if orientation == "horizontal" else height),
+            )[1]
+            if log_scale
+            else _linear_ticks(
                 lo,
                 hi,
                 _colorbar_tick_target(width if orientation == "horizontal" else height),
             )[0]
-            or [lo, hi]
-        )
-    )
+        ) or [lo, hi]
+        tick_pairs = [(float(value), None) for value in automatic_positions]
+    tick_positions = [value for value, _label in tick_pairs]
+    format_tick = _fmt_log if log_scale else lambda value: f"{value:g}"
     tick_nodes = (
         "".join(
             f'<text x="{_num(x + width + 4)}" '
-            f'y="{_num(y + height * (1 - (value - lo) / span) + 4)}"'
-            f'{tick_attrs} fill="{tick_paint}">{value:g}</text>'
-            for value in tick_positions
+            f'y="{_num(y + height * (1 - fraction(value)) + 4)}" '
+            f'{tick_attrs} fill="{tick_paint}">'
+            f"{escape(label if label is not None else format_tick(value))}</text>"
+            for value, label in tick_pairs
         )
         if orientation != "horizontal"
         else "".join(
-            f'<text x="{_num(x + width * (value - lo) / span)}" '
-            f'y="{_num(y + height + 12)}" text-anchor="middle"'
-            f'{tick_attrs} fill="{tick_paint}">{value:g}</text>'
-            for value in tick_positions
+            f'<text x="{_num(x + width * fraction(value))}" '
+            f'y="{_num(y + height + 12)}" text-anchor="middle" '
+            f'{tick_attrs} fill="{tick_paint}">'
+            f"{escape(label if label is not None else format_tick(value))}</text>"
+            for value, label in tick_pairs
         )
     )
     minor_nodes = ""
     if options.get("minor_ticks") and len(tick_positions) >= 2:
         ordered = sorted(set(tick_positions))
-        minor_positions = [
-            left + (right - left) * step / 5.0
-            for left, right in pairwise(ordered)
-            for step in range(1, 5)
-        ]
+        minor_positions = (
+            [
+                10 ** (np.log10(left) + (np.log10(right) - np.log10(left)) * step / 5.0)
+                for left, right in pairwise(ordered)
+                for step in range(1, 5)
+            ]
+            if log_scale
+            else [
+                left + (right - left) * step / 5.0
+                for left, right in pairwise(ordered)
+                for step in range(1, 5)
+            ]
+        )
         if orientation != "horizontal":
             minor_nodes = "".join(
                 f'<line data-xy-colorbar-minor="true" x1="{_num(x + width)}" '
                 f'x2="{_num(x + width + 3)}" '
-                f'y1="{_num(y + height * (1 - (value - lo) / span))}" '
-                f'y2="{_num(y + height * (1 - (value - lo) / span))}" '
+                f'y1="{_num(y + height * (1 - fraction(value)))}" '
+                f'y2="{_num(y + height * (1 - fraction(value)))}" '
                 f'stroke="{escape(text_color)}"/>'
                 for value in minor_positions
             )
         else:
             minor_nodes = "".join(
                 f'<line data-xy-colorbar-minor="true" '
-                f'x1="{_num(x + width * (value - lo) / span)}" '
-                f'x2="{_num(x + width * (value - lo) / span)}" '
+                f'x1="{_num(x + width * fraction(value))}" '
+                f'x2="{_num(x + width * fraction(value))}" '
                 f'y1="{_num(y + height)}" y2="{_num(y + height + 3)}" '
                 f'stroke="{escape(text_color)}"/>'
                 for value in minor_positions
             )
     extend = options.get("extend")
     extend_nodes = ""
+    line_only = bool(options.get("line_only"))
     if extend in ("max", "both"):
-        r, g, b = stops[-1]
+        r, g, b = options.get("over_color", stops[-1])
         points = (
             f"{_num(x)},{_num(y)} {_num(x + width)},{_num(y)} {_num(x + width / 2)},{_num(y - 9)}"
             if orientation != "horizontal"
             else f"{_num(x + width)},{_num(y)} {_num(x + width)},{_num(y + height)} "
             f"{_num(x + width + 9)},{_num(y + height / 2)}"
         )
-        extend_nodes += f'<polygon points="{points}" fill="rgb({r},{g},{b})"/>'
+        extend_nodes += (
+            f'<polygon points="{points}" fill="white" stroke="{escape(text_color)}"/>'
+            if line_only
+            else f'<polygon points="{points}" fill="rgb({r},{g},{b})"/>'
+        )
     if extend in ("min", "both"):
-        r, g, b = stops[0]
+        r, g, b = options.get("under_color", stops[0])
         points = (
             f"{_num(x)},{_num(y + height)} {_num(x + width)},{_num(y + height)} "
             f"{_num(x + width / 2)},{_num(y + height + 9)}"
@@ -4239,12 +4373,43 @@ def _colorbar(
             else f"{_num(x)},{_num(y)} {_num(x)},{_num(y + height)} "
             f"{_num(x - 9)},{_num(y + height / 2)}"
         )
-        extend_nodes += f'<polygon points="{points}" fill="rgb({r},{g},{b})"/>'
+        extend_nodes += (
+            f'<polygon points="{points}" fill="white" stroke="{escape(text_color)}"/>'
+            if line_only
+            else f'<polygon points="{points}" fill="rgb({r},{g},{b})"/>'
+        )
+    line_nodes = ""
+    for line in options.get("lines") or []:
+        value = float(line.get("value", np.nan))
+        if not np.isfinite(value) or value < min(lo, hi) or value > max(lo, hi):
+            continue
+        line_fraction = fraction(value)
+        color = escape(_css(line.get("color"), text_color))
+        line_width = _num(max(0.5, float(line.get("width", 1.0))))
+        dash = (
+            f' stroke-dasharray="{_num(3.7 * float(line_width))} {_num(1.6 * float(line_width))}"'
+            if line.get("dash") == "dashed"
+            else ""
+        )
+        if orientation == "horizontal":
+            position = x + width * line_fraction
+            line_nodes += (
+                f'<line data-xy-colorbar-line="true" x1="{_num(position)}" '
+                f'x2="{_num(position)}" y1="{_num(y)}" y2="{_num(y + height)}" '
+                f'stroke="{color}" stroke-width="{line_width}"{dash}/>'
+            )
+        else:
+            position = y + height * (1.0 - line_fraction)
+            line_nodes += (
+                f'<line data-xy-colorbar-line="true" x1="{_num(x)}" '
+                f'x2="{_num(x + width)}" y1="{_num(position)}" y2="{_num(position)}" '
+                f'stroke="{color}" stroke-width="{line_width}"{dash}/>'
+            )
     return (
         f'<defs><linearGradient id="{gradient_id}" {gradient_attrs}>'
         f"{stop_nodes}</linearGradient></defs>"
-        f"{_colorbar_body(options, x, y, width, height, orientation, gradient_id)}"
-        f"{extend_nodes}{minor_nodes}{tick_nodes}{label_node}"
+        f"{_colorbar_body(options, x, y, width, height, orientation, gradient_id, text_color)}"
+        f"{line_nodes}{extend_nodes}{minor_nodes}{tick_nodes}{label_node}"
     )
 
 
@@ -4261,9 +4426,16 @@ def _colorbar_body(
     height: float,
     orientation: str,
     gradient_id: str,
+    text_color: str,
 ) -> str:
     """Colorbar bar fill: a smooth gradient, or N solid bands for a discrete
     (resampled) colormap so it reads like Matplotlib's segmented colorbar."""
+    if options.get("line_only"):
+        return (
+            f'<rect data-xy-colorbar-line-only="true" x="{_num(x)}" y="{_num(y)}" '
+            f'width="{_num(width)}" height="{_num(height)}" fill="white" '
+            f'stroke="{escape(text_color)}" stroke-width="1"/>'
+        )
     levels = options.get("levels")
     if not levels or int(levels) < 1:
         return (
@@ -4271,22 +4443,39 @@ def _colorbar_body(
             f'height="{_num(height)}" fill="url(#{gradient_id})"/>'
         )
     n = int(levels)
-    cmap = options.get("colormap", "viridis")
-    positions = (np.arange(n, dtype=np.float64) + 0.5) / n
-    colors = _lut(cmap, positions)
+    exact_colors = options.get("band_colors")
+    if isinstance(exact_colors, list) and len(exact_colors) == n:
+        colors = np.asarray(exact_colors, dtype=np.uint8)
+    else:
+        cmap = options.get("colormap", "viridis")
+        positions = (np.arange(n, dtype=np.float64) + 0.5) / n
+        colors = _lut(cmap, positions)
+    fractions = np.linspace(0.0, 1.0, n + 1)
+    boundaries = np.asarray(options.get("boundaries", []), dtype=np.float64).reshape(-1)
+    if (
+        options.get("spacing") == "proportional"
+        and len(boundaries) == n + 1
+        and np.isfinite(boundaries).all()
+        and boundaries[-1] > boundaries[0]
+        and np.all(np.diff(boundaries) > 0.0)
+    ):
+        fractions = (boundaries - boundaries[0]) / (boundaries[-1] - boundaries[0])
     rects = []
     for index, (r, g, b) in enumerate(colors):
+        lower, upper = float(fractions[index]), float(fractions[index + 1])
         if orientation == "horizontal":
-            bx0 = x + width * index / n
+            bx0 = x + width * lower
+            bx1 = x + width * upper
             rects.append(
-                f'<rect x="{_num(bx0)}" y="{_num(y)}" width="{_num(width / n + 0.5)}" '
+                f'<rect x="{_num(bx0)}" y="{_num(y)}" width="{_num(bx1 - bx0 + 0.5)}" '
                 f'height="{_num(height)}" fill="rgb({int(r)},{int(g)},{int(b)})"/>'
             )
         else:
-            by0 = y + height * (n - 1 - index) / n
+            by0 = y + height * (1.0 - upper)
+            by1 = y + height * (1.0 - lower)
             rects.append(
                 f'<rect x="{_num(x)}" y="{_num(by0)}" width="{_num(width)}" '
-                f'height="{_num(height / n + 0.5)}" fill="rgb({int(r)},{int(g)},{int(b)})"/>'
+                f'height="{_num(by1 - by0 + 0.5)}" fill="rgb({int(r)},{int(g)},{int(b)})"/>'
             )
     return "".join(rects)
 
