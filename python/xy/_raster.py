@@ -1565,6 +1565,107 @@ def _trace_paint_rgba(
     return rgba
 
 
+def _emit_authored_scatter(
+    cmd: _Cmd,
+    t: dict[str, Any],
+    blob: bytes,
+    cols: list[dict[str, Any]],
+    sx: _Scale,
+    sy: _Scale,
+    style: dict[str, Any],
+    color: str,
+) -> None:
+    """Paint bounded pyplot-authored paths/glyphs in display-list space."""
+    xv, yv = _column(blob, cols[t["x"]]), _column(blob, cols[t["y"]])
+    px, py = sx(xv), sy(yv)
+    n = len(xv)
+    if not n:
+        return
+
+    def read(index: int) -> np.ndarray:
+        return _column(blob, cols[index])
+
+    face = _trace_paint_rgba(t, "color", n, color, read)
+    fills = np.rint(
+        _paint.effective_rgba(face, t, read, component="fill", default_opacity=0.8) * 255.0
+    ).astype(np.uint8)
+    if (t.get("stroke") or {}).get("mode") == "match_fill":
+        stroke_intrinsic = face
+    elif t.get("stroke") is not None:
+        stroke_intrinsic = _trace_paint_rgba(t, "stroke", n, color, read)
+    elif style.get("stroke") is not None:
+        stroke_intrinsic = np.tile(
+            np.asarray(
+                _parse_color(_css(style.get("stroke"), color)),
+                dtype=np.float64,
+            )
+            / 255.0,
+            (n, 1),
+        )
+    else:
+        stroke_intrinsic = face
+    strokes = np.rint(
+        _paint.effective_rgba(
+            stroke_intrinsic,
+            t,
+            read,
+            component="stroke",
+            default_opacity=0.8,
+        )
+        * 255.0
+    ).astype(np.uint8)
+    size_ch = t.get("size") or {}
+    if size_ch.get("mode") == "continuous":
+        values = _column(blob, cols[size_ch["buf"]])
+        r0, r1 = size_ch.get("range_px", [2, 18])
+        radii = (r0 + (r1 - r0) * np.clip(values, 0, 1)) / 2
+    else:
+        radii = np.full(n, float(size_ch.get("size", 4.0)) / 2)
+    widths = _paint.style_values(t, "stroke_width", n, read, float(style.get("stroke_width", 0)))
+    marker_path = style.get("marker_path")
+    marker_glyph = style.get("marker_glyph")
+    filled = bool(marker_path and marker_path.get("filled", True))
+
+    for index in range(n):
+        fill = tuple(int(value) for value in fills[index])
+        stroke = tuple(int(value) for value in strokes[index])
+        diameter = max(0.0, 2 * (float(radii[index]) - float(widths[index]) / 2))
+        if marker_glyph:
+            cmd.text(
+                float(px[index]),
+                float(py[index]) + diameter * 0.34,
+                1,
+                diameter,
+                fill,
+                str(marker_glyph),
+            )
+            continue
+        if not marker_path:
+            continue
+        contours = []
+        for contour in marker_path.get("contours") or ():
+            values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
+            contours.append(
+                [
+                    (
+                        float(px[index]) + diameter * float(x),
+                        float(py[index]) - diameter * float(y),
+                    )
+                    for x, y in values
+                ]
+            )
+        if filled:
+            for points in contours:
+                cmd.fill(points, fill)
+            if float(widths[index]) > 0:
+                for points in contours:
+                    cmd.stroke(points, float(widths[index]), stroke, closed=True)
+        else:
+            width = max(1.0, float(widths[index]))
+            for points in contours:
+                cmd.stroke(points, width, fill)
+
+
 def _emit_scatter(
     cmd: _Cmd,
     t: dict[str, Any],
@@ -1577,6 +1678,9 @@ def _emit_scatter(
 ) -> None:
     ch = t.get("color") or {}
     size_ch = t.get("size") or {}
+    if style.get("marker_path") or style.get("marker_glyph"):
+        _emit_authored_scatter(cmd, t, blob, cols, sx, sy, style, color)
+        return
 
     def read(index: int) -> np.ndarray:
         return _column(blob, cols[index])
@@ -2317,28 +2421,25 @@ def _emit_legend(
         hx0, hx1, cy = rx, rx + handle, ry + text_h / 2
         kind = t.get("kind")
         if kind == "scatter":
-            symbol = style.get("symbol", "circle")
-            sym = _SYMBOLS.get(symbol, 0)
-            sw = float(style.get("stroke_width", 0.0))
-            if symbol in {"plus_line", "x_line"} and sw <= 0:
-                sw = 1.0
-            stroke = _rgba(style.get("stroke"), color_str) if sw > 0 else (0, 0, 0, 0)
-            cmd.point(
-                (hx0 + hx1) / 2,
-                cy,
-                max(0.5, float(style.get("size", 8.0)) / 2.0),
-                sym,
-                c,
-                sw,
-                stroke,
-            )
+            _emit_legend_marker(cmd, style, (hx0 + hx1) / 2, cy, color_str)
         elif kind in _LEGEND_LINE_KINDS:
+            width = float(style.get("width", 1.5))
+            gap_color = style.get("legend_gap_color")
+            if gap_color is not None and style.get("dash"):
+                cmd.stroke(
+                    [(hx0, cy), (hx1, cy)],
+                    width,
+                    _parse_color(_css(gap_color, color_str)),
+                )
             cmd.stroke(
                 [(hx0, cy), (hx1, cy)],
-                float(style.get("width", 1.5)),
+                width,
                 c,
                 dash=style.get("dash"),
             )
+            marker = style.get("legend_marker")
+            if isinstance(marker, dict):
+                _emit_legend_marker(cmd, marker, (hx0 + hx1) / 2, cy, color_str)
         else:
             swatch_points = _rect_pts(hx0, cy - swatch_h / 2, hx1, cy + swatch_h / 2)
             cmd.fill(swatch_points, c)
@@ -2369,6 +2470,44 @@ def _emit_legend(
             _parse_color(slot_text_color(label_slot, text_color)),
             legend["names"][i],
         )
+
+
+def _emit_legend_marker(
+    cmd: _Cmd,
+    style: dict[str, Any],
+    x: float,
+    y: float,
+    default_color: str,
+) -> None:
+    """Render one Matplotlib marker centered on its legend line sample."""
+    symbol = str(style.get("symbol", "circle"))
+    sym = _SYMBOLS.get(symbol, 0)
+    marker_path = style.get("marker_path")
+    marker_glyph = style.get("marker_glyph")
+    color_str = _css(style.get("color"), default_color)
+    color = _parse_color(color_str)
+    sw = float(style.get("stroke_width", 0.0))
+    if (
+        symbol in {"plus_line", "x_line"}
+        or (marker_path and not bool(marker_path.get("filled", True)))
+    ) and sw <= 0:
+        sw = 1.0
+    stroke = _rgba(style.get("stroke"), color_str) if sw > 0 else (0, 0, 0, 0)
+    radius = max(0.5, float(style.get("size", 8.0)) / 2.0)
+    if marker_glyph:
+        cmd.text(x, y + radius * 0.68, 1, 2 * radius, color, str(marker_glyph))
+    elif marker_path:
+        for contour in marker_path.get("contours") or ():
+            values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
+            points = [(x + 2 * radius * float(px), y - 2 * radius * float(py)) for px, py in values]
+            if bool(marker_path.get("filled", True)):
+                cmd.fill(points, color)
+                if sw > 0:
+                    cmd.stroke(points, sw, stroke if stroke[3] else color, closed=True)
+            else:
+                cmd.stroke(points, max(1.0, sw), color)
+    else:
+        cmd.point(x, y, radius, sym, color, sw, stroke)
 
 
 def _emit_legend_hatch(

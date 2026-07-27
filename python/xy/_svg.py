@@ -3061,6 +3061,22 @@ def _segment_marks(
 _SVG_MARK_BLOCK = 4096
 
 
+def _authored_marker_path_d(
+    marker_path: dict[str, Any], cx: float, cy: float, diameter: float
+) -> str:
+    parts: list[str] = []
+    for contour in marker_path.get("contours") or ():
+        values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
+        if not len(values):
+            continue
+        points = [(cx + diameter * float(x), cy - diameter * float(y)) for x, y in values]
+        parts.append(f"M {_num(points[0][0])} {_num(points[0][1])}")
+        parts.extend(f"L {_num(x)} {_num(y)}" for x, y in points[1:])
+        if bool(marker_path.get("filled", True)):
+            parts.append("Z")
+    return " ".join(parts)
+
+
 def _scatter_marks(
     t: dict, blob: bytes, cols: list, sx: _Scale, sy: _Scale, style: dict, fallback: str
 ) -> list[str]:
@@ -3128,6 +3144,8 @@ def _scatter_marks(
     stroke_rgba = _paint.effective_rgba(
         stroke_source, effective_trace, read, component="stroke", default_opacity=0.8
     )
+    marker_path = style.get("marker_path")
+    marker_glyph = style.get("marker_glyph")
     if grouped_alpha:
         fill_group = float(scalar_artist) * _fill_opacity(style, 1.0)
         stroke_group = float(scalar_artist) * _stroke_opacity(style, 1.0)
@@ -3147,13 +3165,16 @@ def _scatter_marks(
         )
         symbol = symbols[i]
         builder = _SYMBOL_BUILDERS.get(symbol)
-        line_symbol = symbol in {"plus_line", "x_line"}
+        authored_line = bool(marker_path) and not bool(marker_path.get("filled", True))
+        line_symbol = symbol in {"plus_line", "x_line"} or authored_line
         stroke_w = float(stroke_widths[i])
         if line_symbol and stroke_w <= 0:
             stroke_w = 1.0
         stroke_color = stroke_rgba[i]
         stroke_value = (
-            escape(stroke_css)
+            fill_value
+            if authored_line
+            else escape(stroke_css)
             if stroke_css_constant
             else f"rgb({round(stroke_color[0] * 255)},{round(stroke_color[1] * 255)},{round(stroke_color[2] * 255)})"
         )
@@ -3170,7 +3191,18 @@ def _scatter_marks(
         )
         # `size` includes the edge; SVG strokes are centered on the path.
         marker_radius = max(0.0, float(radii[i]) - stroke_w / 2)
-        if builder is None:
+        if marker_glyph:
+            out.append(
+                f'<text x="{_num(px[i])}" y="{_num(py[i])}" '
+                f'font-family="DejaVu Sans" font-size="{_num(2 * marker_radius)}" '
+                f'text-anchor="middle" dominant-baseline="central"'
+                f"{fill_attr}{stroke_attr}>{escape(str(marker_glyph))}</text>"
+            )
+        elif marker_path:
+            d = _authored_marker_path_d(marker_path, float(px[i]), float(py[i]), 2 * marker_radius)
+            authored_fill = fill_attr if bool(marker_path.get("filled", True)) else ' fill="none"'
+            out.append(f'<path d="{d}"{authored_fill}{stroke_attr}/>')
+        elif builder is None:
             out.append(
                 f'<circle cx="{_num(px[i])}" cy="{_num(py[i])}" r="{_num(marker_radius)}"'
                 f"{fill_attr}{stroke_attr}/>"
@@ -3807,16 +3839,25 @@ def legend_items(traces: list[dict], palette: Sequence[str] = DEFAULT_PALETTE) -
     exactly as `ChartView._legend` does for the live client."""
     items: list[dict] = []
     for trace in traces:
+        style = dict(trace.get("style") or {})
+        use_trace_size = bool(style.pop("_legend_trace_size", False))
+        size = trace.get("size") or {}
+        if trace.get("kind") == "scatter" and use_trace_size and size.get("mode") == "constant":
+            style["size"] = float(size.get("size", 8.0))
         color = trace.get("color") or {}
         if color.get("mode") == "categorical":
             categories = color.get("categories") or []
             entry_palette = list(color.get("palette") or palette) or list(palette)
             for index, category in enumerate(categories):
-                style = dict(trace.get("style") or {})
-                style["color"] = entry_palette[index % len(entry_palette)]
-                items.append({"name": str(category), "kind": trace.get("kind"), "style": style})
+                item_style = dict(style)
+                item_style["color"] = entry_palette[index % len(entry_palette)]
+                items.append(
+                    {"name": str(category), "kind": trace.get("kind"), "style": item_style}
+                )
         elif trace.get("name"):
-            items.append(trace)
+            item = dict(trace)
+            item["style"] = style
+            items.append(item)
     return items
 
 
@@ -4078,34 +4119,25 @@ def _legend(
         hx0, hx1, cy = rx, rx + handle, ry + text_h / 2
         kind = t.get("kind")
         if kind == "scatter":
-            symbol = style.get("symbol", "circle")
-            builder = _SYMBOL_BUILDERS.get(symbol)
-            radius = max(0.5, float(style.get("size", 8.0)) / 2.0)
-            stroke_w = float(style.get("stroke_width", 0.0))
-            line_symbol = symbol in {"plus_line", "x_line"}
-            if line_symbol and stroke_w <= 0:
-                stroke_w = 1.0
-            stroke = _css(style.get("stroke"), color) if stroke_w or line_symbol else None
-            stroke_attr = (
-                f' stroke="{escape(stroke)}" stroke-width="{_num(stroke_w)}"' if stroke else ""
-            )
-            cxm = (hx0 + hx1) / 2
-            if builder is None:
-                rows.append(
-                    f'<circle cx="{_num(cxm)}" cy="{_num(cy)}" r="{_num(radius)}" '
-                    f'fill="{escape(color)}"{stroke_attr}/>'
-                )
-            else:
-                rows.append(
-                    builder(float(cxm), float(cy), radius)
-                    + f' fill="{escape(color)}"{stroke_attr}/>'
-                )
+            rows.append(_legend_marker_svg(style, (hx0 + hx1) / 2, cy, color))
         elif kind in _LEGEND_LINE_KINDS:
+            width = float(style.get("width", 1.5))
+            gap_color = style.get("legend_gap_color")
+            if gap_color is not None and style.get("dash"):
+                rows.append(
+                    f'<line x1="{_num(hx0)}" y1="{_num(cy)}" '
+                    f'x2="{_num(hx1)}" y2="{_num(cy)}" '
+                    f'stroke="{escape(_css(gap_color, color))}" '
+                    f'stroke-width="{_num(width)}"/>'
+                )
             rows.append(
                 f'<line x1="{_num(hx0)}" y1="{_num(cy)}" x2="{_num(hx1)}" y2="{_num(cy)}" '
-                f'stroke="{escape(color)}" stroke-width="{_num(float(style.get("width", 1.5)))}"'
+                f'stroke="{escape(color)}" stroke-width="{_num(width)}"'
                 f"{_dash_attr(style)}/>"
             )
+            marker = style.get("legend_marker")
+            if isinstance(marker, dict):
+                rows.append(_legend_marker_svg(marker, (hx0 + hx1) / 2, cy, color))
         else:
             stroke_width = max(0.0, float(style.get("stroke_width", 0.0)))
             stroke = style.get("stroke")
@@ -4139,6 +4171,41 @@ def _legend(
         )
     clip = "" if options.get("anchor") else f' clip-path="url(#{clip_id})"'
     return f"<g{clip}>{''.join(rows)}</g>"
+
+
+def _legend_marker_svg(style: dict[str, Any], x: float, y: float, default_color: str) -> str:
+    """Render one Matplotlib legend marker at the center of its line handle."""
+    symbol = str(style.get("symbol", "circle"))
+    builder = _SYMBOL_BUILDERS.get(symbol)
+    marker_path = style.get("marker_path")
+    marker_glyph = style.get("marker_glyph")
+    radius = max(0.5, float(style.get("size", 8.0)) / 2.0)
+    color = _css(style.get("color"), default_color)
+    stroke_w = float(style.get("stroke_width", 0.0))
+    line_symbol = symbol in {"plus_line", "x_line"} or (
+        bool(marker_path) and not bool(marker_path.get("filled", True))
+    )
+    if line_symbol and stroke_w <= 0:
+        stroke_w = 1.0
+    stroke = _css(style.get("stroke"), color) if stroke_w or line_symbol else None
+    stroke_attr = f' stroke="{escape(stroke)}" stroke-width="{_num(stroke_w)}"' if stroke else ""
+    if marker_glyph:
+        return (
+            f'<text x="{_num(x)}" y="{_num(y)}" '
+            f'font-family="DejaVu Sans" font-size="{_num(2 * radius)}" '
+            f'text-anchor="middle" dominant-baseline="central" '
+            f'fill="{escape(color)}"{stroke_attr}>{escape(str(marker_glyph))}</text>'
+        )
+    if marker_path:
+        d = _authored_marker_path_d(marker_path, float(x), float(y), 2 * radius)
+        fill = escape(color) if bool(marker_path.get("filled", True)) else "none"
+        return f'<path d="{d}" fill="{fill}"{stroke_attr}/>'
+    if builder is None:
+        return (
+            f'<circle cx="{_num(x)}" cy="{_num(y)}" r="{_num(radius)}" '
+            f'fill="{escape(color)}"{stroke_attr}/>'
+        )
+    return builder(float(x), float(y), radius) + f' fill="{escape(color)}"{stroke_attr}/>'
 
 
 def _legend_hatch_svg(x0: float, x1: float, y0: float, y1: float, hatch: str, color: str) -> str:

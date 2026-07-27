@@ -34,6 +34,7 @@ from ._artists import (
     PathCollection,
     PolyCollection,
     Text,
+    _PatchFacade,
     unit_converted_values,
 )
 from ._colors import (
@@ -49,6 +50,7 @@ from ._colors import (
     scalar_grid_rgba,
 )
 from ._fmt import parse_fmt
+from ._markers import marker_render_spec
 from ._mathtext import mathtext_italic_ranges, mathtext_to_unicode
 from ._plot_types import PlotTypeMixin
 from ._rc import RcParams, rcParams
@@ -56,7 +58,6 @@ from ._ticker import AutoLocator, Locator, NullLocator, ScalarFormatter, as_form
 from ._transforms import Bbox, CoordinateTransform, IdentityTransform
 from ._translate import (
     LINESTYLE_TO_DASH,
-    MARKER_TO_SYMBOL,
     MPL_DASH_PATTERN,
     check_unsupported,
     line_kwargs,
@@ -782,6 +783,11 @@ class _SpineProxy:
             raise KeyError(next(iter(unknown)))
         return _SpineProxy(self.axes, names)
 
+    def __getattr__(self, name: str) -> "_SpineProxy":
+        if name in {"left", "bottom", "top", "right"}:
+            return self[name]
+        raise AttributeError(name)
+
     def values(self) -> list["_SpineProxy"]:
         return [_SpineProxy(self.axes, (name,)) for name in self.names]
 
@@ -801,6 +807,9 @@ class _SpineProxy:
             else:
                 self.axes._hidden_spines.add(name)
         self.axes._invalidate()
+
+    def get_visible(self) -> bool:
+        return all(name not in self.axes._hidden_spines for name in self.names)
 
 
 def _cached_theme(grid: bool, tokens: dict[str, Any], style: dict[str, Any]) -> Any:
@@ -862,6 +871,12 @@ class Axes(PlotTypeMixin):
         # is a draw-order list, so removing an earlier axes must not slide
         # every later subplot into the preceding cell.
         self._subplot_index: Optional[int] = None
+        # Figure.add_subplot() always creates a new axes, while pyplot.subplot()
+        # activates an existing axes with the same subplot arguments.  Keep the
+        # normalized spec separate from draw order so those two APIs can share
+        # the grid implementation without sharing creation semantics.
+        self._subplot_key: Optional[tuple[Any, ...]] = None
+        self._subplot_claimed = False
         self._absolute_plot_ratio: Optional[float] = None
         # The plot rectangle the exporter demands, in chart pixels
         # (left, top, width, height).  Set by the grid compositor for a panel,
@@ -904,6 +919,10 @@ class Axes(PlotTypeMixin):
             "y": {"labelleft": y2_of is None, "labelright": y2_of is not None},
         }
         self._tick_lengths: dict[str, float] = {}
+        # Matplotlib's `axison` is an axes-wide draw-time gate. It does not
+        # mutate the individual Axis or Spine visibility settings, so turning
+        # it back on restores whatever those settings were before.
+        self.axison = True
         self._hidden_spines: set[str] = set()
         self._grid = bool(rcParams["axes.grid"])
         self._grid_axes = {"x": self._grid, "y": self._grid}
@@ -912,8 +931,10 @@ class Axes(PlotTypeMixin):
         self._grid_style: dict[str, Any] = {}
         self._anchor: Optional[str] = None
         self._cycle = 0
+        self._patch_cycle = 0
         self._prop_cycle: Optional[list[str]] = None
         self._load_rc_chrome()
+        self.patch = _PatchFacade(self)
         self._chart: Any = None
         self._twin: Optional[Axes] = None
         self._y2_of = y2_of  # when set, our marks target axis id "y2" on the host
@@ -1088,6 +1109,14 @@ class Axes(PlotTypeMixin):
         host._cycle += 1
         return color
 
+    def _next_patch_color(self) -> str:
+        """Advance Matplotlib's independent fill/patch property cycle."""
+        host = self._y2_of or self
+        cycle = getattr(host, "_prop_cycle", None) or PROP_CYCLE
+        color = cycle[host._patch_cycle % len(cycle)]
+        host._patch_cycle += 1
+        return color
+
     def _categorical_position(self, axis: str, label: Any) -> float:
         props = self._axis_props(axis)
         labels = props.setdefault("tick_labels", [])
@@ -1190,6 +1219,7 @@ class Axes(PlotTypeMixin):
             "y": {"labelleft": self._y2_of is None, "labelright": self._y2_of is not None},
         }
         self._tick_lengths = {}
+        self.axison = True
         self._hidden_spines = set()
         self._title = None
         self._title_style = {}
@@ -1224,6 +1254,7 @@ class Axes(PlotTypeMixin):
         self._grid_axis = "both"
         self._grid_style = {}
         self._cycle = 0
+        self._patch_cycle = 0
         self._load_rc_chrome()
         self._chart = None
         self._twin = None
@@ -1410,7 +1441,7 @@ class Axes(PlotTypeMixin):
                     "y": y,
                     "kwargs": {
                         **{k: v for k, v in entry_kwargs.items() if k != "width"},
-                        "symbol": _marker_symbol(this_marker or "o"),
+                        **marker_render_spec(this_marker or "o"),
                         "size": marker_size_px,
                         **marker_edge_style,
                         **(
@@ -1502,7 +1533,7 @@ class Axes(PlotTypeMixin):
                         "kwargs": {
                             "color": entry_kwargs["color"],
                             "opacity": entry_kwargs["opacity"],
-                            "symbol": _marker_symbol(this_marker),
+                            **marker_render_spec(this_marker),
                             # Matplotlib marker sizes are points while the
                             # engine consumes CSS-pixel diameters.  At the
                             # default 96 dpi, 6 pt is 8 px.
@@ -1643,7 +1674,8 @@ class Axes(PlotTypeMixin):
                         edgecolors = edge_array[finite_color]
             x, y, c = xv, yv, cv
 
-        symbol = _marker_symbol(marker) if marker else "circle"
+        marker_spec = marker_render_spec(marker) if marker is not None else {"symbol": "circle"}
+        symbol = str(marker_spec["symbol"])
         marker_path_px = marker_size_to_scatter_size(
             s,
             default=6.0 * self._point_scale(),
@@ -1677,7 +1709,7 @@ class Axes(PlotTypeMixin):
             # core receives alpha through the override channel below.
             "opacity": scalar_float(alpha) if alpha is not None and np.isscalar(alpha) else 1.0,
             "name": str(label) if label is not None else None,
-            "symbol": symbol,
+            **marker_spec,
         }
         if alpha is not None:
             entry_kwargs["_artist_alpha"] = (
@@ -1746,7 +1778,7 @@ class Axes(PlotTypeMixin):
         self,
         x: float | ArrayLike,
         height: float | ArrayLike,
-        width: float = 0.8,
+        width: float | ArrayLike = 0.8,
         bottom: float | ArrayLike | None = None,
         **kwargs: Any,
     ) -> BarContainer:
@@ -1766,7 +1798,7 @@ class Axes(PlotTypeMixin):
         self,
         y: float | ArrayLike,
         width: float | ArrayLike,
-        height: float = 0.8,
+        height: float | ArrayLike = 0.8,
         left: float | ArrayLike | None = None,
         **kwargs: Any,
     ) -> BarContainer:
@@ -1815,6 +1847,26 @@ class Axes(PlotTypeMixin):
         vals = materialize_iterable(vals)
         thickness = materialize_iterable(thickness)
         base = materialize_iterable(base)
+        thickness_is_scalar = np.asarray(thickness).ndim == 0
+        base_is_none = base is None
+        base_is_scalar = base_is_none or np.asarray(base).ndim == 0
+        try:
+            cats, vals, broadcast_thickness, broadcast_base = np.broadcast_arrays(
+                np.atleast_1d(cats),
+                np.atleast_1d(vals),
+                np.atleast_1d(thickness),
+                np.atleast_1d(0.0 if base_is_none else base),
+                subok=True,
+            )
+        except ValueError:
+            raise ValueError(
+                "shape mismatch: bar positional inputs cannot be broadcast to a single shape"
+            ) from None
+        if cats.ndim != 1:
+            raise ValueError("bar positional inputs must be scalar or 1-D")
+        thickness = thickness if thickness_is_scalar else broadcast_thickness
+        if not base_is_none:
+            base = base if base_is_scalar else np.array(broadcast_base, copy=True)
         cat_array = np.asarray(cats)
         if cat_array.dtype.kind == "U" and cat_array.dtype.isnative:
             # _plain_text only rewrites labels containing TeX markers; a
@@ -2459,7 +2511,7 @@ class Axes(PlotTypeMixin):
         )
         starts = np.flatnonzero(valid_intervals & np.r_[True, ~valid_intervals[:-1]])
         ends = np.flatnonzero(valid_intervals & np.r_[~valid_intervals[1:], True]) + 2
-        resolved_color = resolve_color(color) if color is not None else self._next_color()
+        resolved_color = resolve_color(color) if color is not None else self._next_patch_color()
         entries: list[dict[str, Any]] = []
         for start, end in zip(starts, ends, strict=True):
             sx, su, sl = xv[start:end], upper[start:end], lower[start:end]
@@ -2558,20 +2610,23 @@ class Axes(PlotTypeMixin):
                         )
                     )
         if not entries:
-            entries.append(
-                self._add(
-                    "area",
-                    {
-                        "x": [0.0, 0.0],
-                        "y": [np.nan, np.nan],
-                        "kwargs": {
-                            "base": [np.nan, np.nan],
-                            "color": resolved_color,
-                            "opacity": 0.0,
-                        },
-                    },
-                )
-            )
+            # Matplotlib still returns a collection handle, but there is no
+            # polygon to retain when no pair of adjacent points is selected.
+            # Keep that logical empty artist out of the render-entry list
+            # instead of exporting an all-NaN transparent area.
+            empty = {
+                "kind": "area",
+                "y_axis": "y2" if self._y2_of is not None else "y",
+                "x": np.empty(0, dtype=np.float64),
+                "y": np.empty(0, dtype=np.float64),
+                "kwargs": {
+                    "base": np.empty(0, dtype=np.float64),
+                    "color": resolved_color,
+                    "opacity": float(alpha) if alpha is not None else 1.0,
+                    "name": str(label) if label is not None else None,
+                },
+            }
+            return PolyCollection(self, empty)
         return PolyCollection(self, entries[0])
 
     def imshow(self, z: ArrayLike, cmap: Any = None, **kwargs: Any) -> AxesImage:
@@ -2638,7 +2693,11 @@ class Axes(PlotTypeMixin):
             cmap = getattr(colorizer, "cmap", cmap)
         self._aspect_equal = aspect != "auto"
         check_unsupported(kwargs, "imshow()")
-        masked_grid = np.ma.asarray(z, dtype=np.float64)
+        # Matplotlib images own their array.  Keep the logical source separate
+        # from the normalized/resampled render buffer so later caller mutation
+        # cannot rewrite either side of the artist behind its back.
+        source_grid = np.ma.asarray(z).copy()
+        masked_grid = np.ma.asarray(source_grid, dtype=np.float64)
         grid = masked_grid.filled(np.nan)
         truecolor = grid.ndim == 3 and grid.shape[-1] in (3, 4)
         if not truecolor and grid.ndim != 2:
@@ -2910,11 +2969,26 @@ class Axes(PlotTypeMixin):
         entry = self._add(
             "heatmap",
             {
-                "z": grid,
-                "source_z": np.asanyarray(z),
+                "z": np.asanyarray(grid).copy(),
+                "source_z": source_grid,
                 "kwargs": entry_kwargs,
                 "clip_path": clip_path,
                 "extent": bounds,
+                "_imshow_state": {
+                    "cmap": cmap,
+                    "kwargs": {
+                        "vmin": vmin,
+                        "vmax": vmax,
+                        "alpha": alpha,
+                        "origin": origin,
+                        "aspect": aspect,
+                        "extent": extent,
+                        "interpolation": interpolation,
+                        "interpolation_stage": interpolation_stage,
+                        "norm": norm,
+                        "clip_path": clip_path,
+                    },
+                },
             },
         )
         if norm_scale != "linear":
@@ -2931,6 +3005,39 @@ class Axes(PlotTypeMixin):
         if clip_path is not None:
             image.set_clip_path(clip_path)
         return image
+
+    def _set_axes_image_data(self, image: AxesImage, z: Any) -> None:
+        """Re-run an AxesImage through imshow's canonical preparation path.
+
+        A temporary artist is used only as the normalized result carrier; it is
+        removed before returning, leaving the original artist and entry identity
+        stable for colorbars, ownership lists, and external handles.
+        """
+        entry = image._entry
+        state = entry.get("_imshow_state")
+        if state is None:
+            entry["source_z"] = np.ma.asarray(z).copy()
+            entry["z"] = np.asanyarray(z).copy()
+            self._invalidate()
+            return
+        replacement = self.imshow(z, state["cmap"], **state["kwargs"])
+        prepared = replacement._entry
+        self._remove_entry(prepared)
+        self._unregister_artist(replacement)
+
+        entry["source_z"] = np.ma.asarray(prepared["source_z"]).copy()
+        entry["z"] = np.asanyarray(prepared["z"]).copy()
+        entry["extent"] = prepared["extent"]
+        for coordinate in ("x", "y"):
+            if coordinate in prepared["kwargs"]:
+                entry["kwargs"][coordinate] = np.asanyarray(prepared["kwargs"][coordinate]).copy()
+            else:
+                entry["kwargs"].pop(coordinate, None)
+        if "discrete_levels" in prepared:
+            entry["discrete_levels"] = prepared["discrete_levels"]
+        else:
+            entry.pop("discrete_levels", None)
+        self._invalidate()
 
     def step(self, x: ArrayLike, y: ArrayLike, *args: Any, **kwargs: Any) -> list[Line2D]:
         """A step plot of ``y`` versus ``x``.
@@ -3008,6 +3115,16 @@ class Axes(PlotTypeMixin):
         alpha = kwargs.pop("alpha", None)
         lw = kwargs.pop("linewidth", kwargs.pop("lw", None))
         label = kwargs.pop("label", None)
+        marker = kwargs.pop("marker", None)
+        marker_size = kwargs.pop("markersize", kwargs.pop("ms", None))
+        marker_face = kwargs.pop("markerfacecolor", kwargs.pop("mfc", None))
+        marker_edge = kwargs.pop("markeredgecolor", kwargs.pop("mec", None))
+        marker_edge_width = kwargs.pop("markeredgewidth", kwargs.pop("mew", None))
+        if kind not in {"hline", "vline"} and any(
+            value is not None
+            for value in (marker, marker_size, marker_face, marker_edge, marker_edge_width)
+        ):
+            raise TypeError(f"xy.pyplot ax{kind}() does not accept line marker keywords")
         if kind == "hline":
             span_start = kwargs.pop("xmin", 0.0)
             span_end = kwargs.pop("xmax", 1.0)
@@ -3042,7 +3159,47 @@ class Axes(PlotTypeMixin):
         if dash not in (None, "none"):
             scaled = self._mpl_dash(dash, akw.get("width", rcParams["lines.linewidth"]))
             akw.setdefault("style", {})["dash"] = ",".join(map(str, scaled))
-        return self._add(f"@{kind}", {"args": args, "kwargs": akw})
+        marker_base_color = (
+            resolve_color(color) if color is not None else self._next_color() if marker else None
+        )
+        if marker_base_color is not None:
+            akw.setdefault("color", marker_base_color)
+        entry = self._add(f"@{kind}", {"args": args, "kwargs": akw})
+        if marker is not None:
+            path_size = (
+                float(rcParams["lines.markersize"] if marker_size is None else marker_size)
+                * self._point_scale()
+            )
+            edge_visible = not (isinstance(marker_edge, str) and marker_edge.lower() == "none")
+            edge_width = (
+                float(
+                    rcParams["lines.markeredgewidth"]
+                    if marker_edge_width is None
+                    else marker_edge_width
+                )
+                * self._point_scale()
+                if edge_visible
+                else 0.0
+            )
+            entry["endpoint_marker"] = {
+                **marker_render_spec(marker),
+                "size": path_size + edge_width,
+                "color": resolve_color(
+                    marker_face if marker_face not in (None, "auto") else marker_base_color
+                ),
+                "opacity": float(alpha) if alpha is not None else 1.0,
+                **(
+                    {
+                        "stroke": resolve_color(
+                            marker_edge if marker_edge not in (None, "auto") else marker_base_color
+                        ),
+                        "stroke_width": edge_width,
+                    }
+                    if edge_visible
+                    else {}
+                ),
+            }
+        return entry
 
     def text(
         self,
@@ -3916,8 +4073,7 @@ class Axes(PlotTypeMixin):
             self.set_axis_off()
         elif arg == "on":
             self._materialize_axis_view_domains()
-            self.xaxis.set_visible(True)
-            self.yaxis.set_visible(True)
+            self.set_axis_on()
         elif arg in {"auto", "equal", "scaled", "image", "square"}:
             # All five Matplotlib modes begin with autoscale_view(tight=False),
             # whose limits include the configured x/y margins.
@@ -4029,7 +4185,14 @@ class Axes(PlotTypeMixin):
             return None
         nrows, ncols = figure._nrows, figure._ncols
         cell_count = nrows * ncols
-        if cell_count <= 0 or len(figure._axes) < cell_count:
+        uniform_axes = [
+            axes
+            for axes in figure._axes
+            if axes._figure_rect is None
+            and axes._subplot_index is not None
+            and 0 <= axes._subplot_index < cell_count
+        ]
+        if cell_count <= 0 or len({axes._subplot_index for axes in uniform_axes}) < cell_count:
             return None
         from ._mplfig import _GridSpec, _SubplotSpec
 
@@ -4040,7 +4203,9 @@ class Axes(PlotTypeMixin):
             width_ratios=figure._width_ratios,
             height_ratios=figure._height_ratios,
         )
-        for index, axes in enumerate(figure._axes[:cell_count]):
+        for axes in uniform_axes:
+            index = axes._subplot_index
+            assert index is not None
             row, col = divmod(index, ncols)
             spec = _SubplotSpec(
                 grid,
@@ -4408,6 +4573,7 @@ class Axes(PlotTypeMixin):
                 resolved for color in colors if (resolved := resolve_color(color)) is not None
             ]
         self._cycle = 0
+        self._patch_cycle = 0
         self._invalidate()
 
     def secondary_xaxis(
@@ -4496,9 +4662,14 @@ class Axes(PlotTypeMixin):
         self._invalidate()
 
     def set_axis_off(self) -> None:
-        """Hide both axes, like matplotlib's ``axis("off")``."""
-        self.xaxis.set_visible(False)
-        self.yaxis.set_visible(False)
+        """Suppress every x/y-axis decoration without changing its settings."""
+        self.axison = False
+        self._invalidate()
+
+    def set_axis_on(self) -> None:
+        """Draw x/y-axis decorations using their existing visibility settings."""
+        self.axison = True
+        self._invalidate()
 
     def inset_axes(
         self, bounds: tuple[float, float, float, float] | Sequence[float], **kwargs: Any
@@ -5814,7 +5985,11 @@ class Axes(PlotTypeMixin):
             direction = (0.0, 1.0) if np.isinf(slope) else (1.0, slope)
         return _clip_infinite_line(xy1, direction, xlim, ylim)
 
-    def _chart_children(self) -> list[Any]:
+    def _chart_children(
+        self,
+        *,
+        resolved_domains: Optional[Mapping[str, tuple[float, float]]] = None,
+    ) -> list[Any]:
         children: list[Any] = []
         for e in self._entries:
             kind = e["kind"]
@@ -5867,6 +6042,11 @@ class Axes(PlotTypeMixin):
                 children.append(xy.line(x=x, y=y, **kw, **axis_kw))
             elif kind == "scatter":
                 kw = dict(kw)
+                if np.isscalar(kw.get("size")):
+                    # The core keeps scatter size as a channel rather than a
+                    # mark style. Opt this pyplot trace into carrying that
+                    # constant through automatic legend-item derivation.
+                    kw["_legend_trace_size"] = True
                 if "_artist_alpha" in kw:
                     # pyplot alpha overrides intrinsic RGBA. Core opacity is
                     # an independent multiplier, so do not apply it twice.
@@ -5947,10 +6127,44 @@ class Axes(PlotTypeMixin):
                 children.append(getattr(xy, e["factory"])(*e["args"], **kw, **axis_kw))
             elif kind == "@hline":
                 children.append(xy.hline(*e["args"], **kw))
+                if e.get("endpoint_marker"):
+                    x_domain = (
+                        (resolved_domains or {}).get("x")
+                        or self._axis_props("x").get("domain")
+                        or self._auto_domain("x")
+                    )
+                    span = kw.get("style") or {}
+                    start = float(span.get("span_start", 0.0))
+                    end = float(span.get("span_end", 1.0))
+                    x0, x1 = map(float, x_domain)
+                    children.append(
+                        xy.scatter(
+                            x=[x0 + start * (x1 - x0), x0 + end * (x1 - x0)],
+                            y=[float(e["args"][0]), float(e["args"][0])],
+                            **e["endpoint_marker"],
+                        )
+                    )
             elif kind == "@arrow":
                 children.append(xy.arrow(*e["args"], **kw))
             elif kind == "@vline":
                 children.append(xy.vline(*e["args"], **kw))
+                if e.get("endpoint_marker"):
+                    y_domain = (
+                        (resolved_domains or {}).get("y")
+                        or self._axis_props("y").get("domain")
+                        or self._auto_domain("y")
+                    )
+                    span = kw.get("style") or {}
+                    start = float(span.get("span_start", 0.0))
+                    end = float(span.get("span_end", 1.0))
+                    y0, y1 = map(float, y_domain)
+                    children.append(
+                        xy.scatter(
+                            x=[float(e["args"][0]), float(e["args"][0])],
+                            y=[y0 + start * (y1 - y0), y0 + end * (y1 - y0)],
+                            **e["endpoint_marker"],
+                        )
+                    )
             elif kind == "@x_band":
                 children.append(xy.x_band(*e["args"], **kw))
             elif kind == "@y_band":
@@ -6069,6 +6283,60 @@ class Axes(PlotTypeMixin):
                     }
                     children.append(xy.text(x, y, *e["args"][2:], **text_kw))
         return children
+
+    def _apply_legend_handle_styles(
+        self,
+        core_figure: Any,
+        claimed_trace_ids: Optional[set[int]] = None,
+    ) -> set[int]:
+        """Attach Matplotlib-only handle paint to automatic legend traces.
+
+        Plot markers and dash gap colors are separate XY marks so the data
+        renderer can stay compact, but Matplotlib's ``HandlerLine2D`` combines
+        them into one legend handle. Match each named source entry to its
+        materialized trace and retain that handle-only state without changing
+        the plotted geometry or replacing the automatic interactive legend.
+        """
+        from ._artists import _legend_marker_style
+
+        claimed = set() if claimed_trace_ids is None else claimed_trace_ids
+        traces = list(core_figure.traces)
+        line_factories = {"segments", "step", "stairs", "errorbar"}
+        for index, entry in enumerate(self._entries):
+            kwargs = entry.get("kwargs") or {}
+            name = kwargs.get("name")
+            if not name or str(name).startswith("_"):
+                continue
+            kind = entry.get("kind")
+            if kind in {"line", "@axline"}:
+                trace_kind = "line"
+            elif kind == "@mark" and entry.get("factory") in line_factories:
+                trace_kind = str(entry["factory"])
+            else:
+                continue
+            target = next(
+                (
+                    trace
+                    for trace in traces
+                    if trace.id not in claimed
+                    and trace.kind == trace_kind
+                    and trace.name == str(name)
+                ),
+                None,
+            )
+            if target is None:
+                continue
+            claimed.add(target.id)
+            gap_color = kwargs.get("_gapcolor")
+            if isinstance(gap_color, str):
+                target.style["legend_gap_color"] = gap_color
+            if index + 1 >= len(self._entries):
+                continue
+            marker_entry = self._entries[index + 1]
+            if marker_entry.get("kind") != "scatter" or not marker_entry.get("_legend_skip"):
+                continue
+            target.style["legend_marker"] = _legend_marker_style(marker_entry)
+        return claimed
 
     def _plot_rect_px(
         self,
@@ -6598,9 +6866,6 @@ class Axes(PlotTypeMixin):
         if self._chart is not None:
             return self._chart
         self._materialize_insets()
-        children = self._chart_children()
-        if self._twin is not None:
-            children.extend(self._twin._chart_children())
         chart_padding = (
             self._frame_padding(width, height) if self._padding is None else list(self._padding)
         )
@@ -6740,6 +7005,12 @@ class Axes(PlotTypeMixin):
         empty_view = {axis for axis, dataless in axis_dataless.items() if dataless}
         x_props = {k: v for k, v in self._axis["x"].items() if v is not None}
         y_props = {k: v for k, v in self._axis["y"].items() if v is not None}
+        if not self.axison:
+            # `set_axis_off()` is a draw-time override in Matplotlib: suppress
+            # labels, ticks, grid lines and axis titles while leaving the
+            # authored Axis state intact for a later `set_axis_on()`.
+            x_props["tick_label_strategy"] = "none"
+            y_props["tick_label_strategy"] = "none"
         for axis, props in (("x", x_props), ("y", y_props)):
             if adjusted_aspect or axis in self._explicit_domains:
                 continue
@@ -6773,6 +7044,18 @@ class Axes(PlotTypeMixin):
         self._apply_tickers("x", x_props, auto_tick_counts["x"])
         self._apply_tickers("y", y_props, auto_tick_counts["y"])
         self._apply_auto_tick_density(x_props, y_props, auto_tick_counts)
+        resolved_domains: dict[str, tuple[float, float]] = {}
+        if any(
+            entry.get("kind") == "@hline" and entry.get("endpoint_marker")
+            for entry in self._entries
+        ):
+            resolved_domains["x"] = tuple(x_props.get("domain") or self._auto_domain("x"))
+        if any(
+            entry.get("kind") == "@vline" and entry.get("endpoint_marker")
+            for entry in self._entries
+        ):
+            resolved_domains["y"] = tuple(y_props.get("domain") or self._auto_domain("y"))
+        children = self._chart_children(resolved_domains=resolved_domains)
         # The left gutter is no longer reserved here. `_svg.layout()` measures
         # it from the axis's own tick/title extents once the range is resolved,
         # which covers numeric ticks (this shim's 13.89 px rcParam fonts overrun
@@ -6794,6 +7077,18 @@ class Axes(PlotTypeMixin):
                     else:
                         y2_props["margin"] = margin
             self._apply_tickers("y2", y2_props, auto_tick_counts["y"])
+            twin_domains: dict[str, tuple[float, float]] = {}
+            if any(
+                entry.get("kind") == "@hline" and entry.get("endpoint_marker")
+                for entry in self._twin._entries
+            ):
+                twin_domains["x"] = tuple(x_props.get("domain") or self._auto_domain("x"))
+            if any(
+                entry.get("kind") == "@vline" and entry.get("endpoint_marker")
+                for entry in self._twin._entries
+            ):
+                twin_domains["y"] = tuple(y2_props.get("domain") or self._twin._auto_domain("y"))
+            children.extend(self._twin._chart_children(resolved_domains=twin_domains))
             children.append(xy.y_axis(id="y2", side="right", **y2_props))
         legend_needs_best = False
         if self._legend and self._legend_artist is not None:
@@ -6849,6 +7144,9 @@ class Axes(PlotTypeMixin):
             styles=chrome_styles,
         )
         core_figure = self._chart.figure()
+        claimed_legend_traces = self._apply_legend_handle_styles(core_figure)
+        if self._twin is not None:
+            self._twin._apply_legend_handle_styles(core_figure, claimed_legend_traces)
         if self._legend and self._legend_artist is None and "border_pad" in self._legend_options:
             core_figure.legend_options["border_pad"] = self._legend_options["border_pad"]
         if self._legend_items is not None:
@@ -6870,9 +7168,15 @@ class Axes(PlotTypeMixin):
         for key in ("handlelength", "handletextpad"):
             if key in self._legend_options:
                 core_figure.legend_options[key] = self._legend_options[key]
-        core_figure.frame_sides = [
-            side for side in ("left", "bottom", "top", "right") if side not in self._hidden_spines
-        ]
+        core_figure.frame_sides = (
+            []
+            if not self.axison
+            else [
+                side
+                for side in ("left", "bottom", "top", "right")
+                if side not in self._hidden_spines
+            ]
+        )
         if self._colorbar is not None:
             figure = core_figure
             options = dict(self._colorbar)
@@ -7488,10 +7792,12 @@ def _title_css_style(style: dict[str, Any], *, point_scale: float) -> dict[str, 
 
 
 def _marker_symbol(marker: Any) -> str:
-    try:
-        return MARKER_TO_SYMBOL.get(marker, "circle")
-    except TypeError:
-        return "circle"
+    """Named-symbol helper retained for plot-type adapters.
+
+    Authored markers need the complete renderer spec and are handled by
+    ``marker_render_spec`` at the direct plot/scatter call sites.
+    """
+    return str(marker_render_spec(marker)["symbol"])
 
 
 _SUPERSCRIPT_DIGITS = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")

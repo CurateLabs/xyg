@@ -945,6 +945,8 @@ class PlotTypeMixin:
 
         def _next_color(self) -> str: ...
 
+        def _next_patch_color(self) -> str: ...
+
         def _mpl_dash(self, dash: Any, linewidth: Any) -> Any: ...
 
         def _point_scale(self) -> float: ...
@@ -1076,7 +1078,7 @@ class PlotTypeMixin:
                 "kwargs": {
                     "color": resolve_color(chosen_color)
                     if chosen_color is not None
-                    else self._next_color(),
+                    else resolve_color(rcParams["lines.color"]),
                     "width": _float(np.asarray(width).reshape(-1)[0]),
                     "opacity": 1.0 if alpha is None else float(alpha),
                     "name": str(label) if label else None,
@@ -1146,7 +1148,11 @@ class PlotTypeMixin:
                 "factory": "segments",
                 "args": (sx0, sy0, sx1, sy1),
                 "kwargs": {
-                    "color": resolve_color(color) if color is not None else self._next_color(),
+                    "color": (
+                        resolve_color(color)
+                        if color is not None
+                        else resolve_color(rcParams["lines.color"])
+                    ),
                     "width": _float(np.asarray(width).reshape(-1)[0]),
                     "opacity": 1.0 if alpha is None else float(alpha),
                     "name": str(label) if label else None,
@@ -1187,7 +1193,11 @@ class PlotTypeMixin:
         check_unsupported(kwargs, "broken_barh()")
         entry_kwargs: dict[str, Any] = {
             "base": ranges[:, 0],
-            "color": resolve_color(color) if color is not None else self._next_color(),
+            "color": (
+                resolve_color(color)
+                if color is not None
+                else resolve_color(rcParams["patch.facecolor"])
+            ),
             "name": None if label is None else str(label),
             "opacity": 1.0 if alpha is None else float(alpha),
             "orientation": "horizontal",
@@ -1261,9 +1271,13 @@ class PlotTypeMixin:
         from xy import kernels
 
         mark_kwargs: dict[str, Any] = {
-            "color": resolve_color(color) if color is not None else self._next_color(),
+            "color": resolve_color(color) if color is not None else self._next_patch_color(),
             "name": None if label is None else str(label),
             "opacity": 1.0 if alpha is None else float(alpha),
+            # Static exporters must paint each contiguous strip as one polygon.
+            # Independently antialiased triangles expose their shared edges as
+            # hairline seams, and translucent triangles can double-apply alpha.
+            "_joined_fill": True,
         }
         # Triangle meshes cannot stroke only the polygon perimeter; stroking
         # every tessellated triangle creates false internal striping. Keep the
@@ -1351,7 +1365,9 @@ class PlotTypeMixin:
             if chosen is None and positional_color is not None:
                 chosen = positional_color
             mark_kwargs: dict[str, Any] = {
-                "color": resolve_color(chosen) if chosen is not None else self._next_color(),
+                "color": (
+                    resolve_color(chosen) if chosen is not None else self._next_patch_color()
+                ),
                 "name": None if label is None else str(label),
                 "opacity": 1.0 if alpha is None else float(alpha),
                 "_joined_fill": True,
@@ -4998,7 +5014,6 @@ class PlotTypeMixin:
         self.set_aspect("equal", adjustable="box")
         if not frame:
             self.set_axis_off()
-            self._hidden_spines.update(("left", "bottom", "top", "right"))
         return PieContainer(wedges, source_values, bool(normalize), texts, autotexts)
 
     def pie_label(

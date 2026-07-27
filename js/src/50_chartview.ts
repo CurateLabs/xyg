@@ -1835,38 +1835,45 @@ export class ChartView {
         // traces join the first row's hover-target list instead.
         const continuousRows = new Map();
         s.traces.forEach((t, ti) => {
-        // A density-tier surface encodes count as alpha and wears the mean
-        // point color (LOD doc §2), so it gets no colormap gradient swatch —
-        // a gradient would claim color == density. A named density trace
-        // falls through to the plain marker swatch below, matching the
-        // static SVG/raster exporters.
-        const line = ["line", "segments", "step", "stairs", "errorbar"].includes(t.kind);
-        if (t.color && t.color.mode === "categorical") {
-          t.color.categories.forEach((cat, i) =>
-            items.push({ swatch: t.color.palette[i], name: cat, symbol: t.kind === "scatter" ? (t.style?.symbol || "circle") : null, style: t.style || {}, traces: [ti], cat: i }));
-        } else if (t.color && t.color.mode === "continuous") {
-          // Label precedence: explicit series name, then the encoding's own
-          // declarative label (the color="column" idiom). No generic fallback:
-          // an unnamed encoding has nothing truthful to say, so it gets no
-          // row — matching the static exporters, which draw name-bearing
-          // entries only.
-          const name = t.name || t.color.label;
-          if (!name) return;
-          const key = name + "\u0000" + colormapKey(t.color.colormap);
-          const existing = continuousRows.get(key);
-          if (existing) {
-            existing.traces.push(ti);
-            return;
+          const style = { ...(t.style || {}) };
+          const useTraceSize = style._legend_trace_size === true;
+          delete style._legend_trace_size;
+          if (t.kind === "scatter" && useTraceSize &&
+              t.size?.mode === "constant" && Number.isFinite(Number(t.size.size))) {
+            style.size = Number(t.size.size);
           }
-          const item = { swatch: "gradient", cmap: t.color.colormap, name, symbol: t.kind === "scatter" ? (t.style?.symbol || "circle") : null, line, style: t.style || {}, traces: [ti] };
-          continuousRows.set(key, item);
-          items.push(item);
-        } else if (t.name) {
-          const c = (t.color && t.color.color) || (t.style && t.style.color);
-          // Line-family kinds get a short line sample (honoring the dash), the
-          // same handle the raster/SVG exporters draw — not a filled swatch.
-          items.push({ swatch: c, name: t.name, symbol: t.kind === "scatter" ? (t.style?.symbol || "circle") : null, line, style: t.style || {}, traces: [ti] });
-        }
+          // A density-tier surface encodes count as alpha and wears the mean
+          // point color (LOD doc §2), so it gets no colormap gradient swatch —
+          // a gradient would claim color == density. A named density trace
+          // falls through to the plain marker swatch below, matching the
+          // static SVG/raster exporters.
+          const line = ["line", "segments", "step", "stairs", "errorbar"].includes(t.kind);
+          if (t.color && t.color.mode === "categorical") {
+            t.color.categories.forEach((cat, i) =>
+              items.push({ swatch: t.color.palette[i], name: cat, symbol: t.kind === "scatter" ? (style.symbol || "circle") : null, style, traces: [ti], cat: i }));
+          } else if (t.color && t.color.mode === "continuous") {
+            // Label precedence: explicit series name, then the encoding's own
+            // declarative label (the color="column" idiom). No generic fallback:
+            // an unnamed encoding has nothing truthful to say, so it gets no
+            // row — matching the static exporters, which draw name-bearing
+            // entries only.
+            const name = t.name || t.color.label;
+            if (!name) return;
+            const key = name + "\u0000" + colormapKey(t.color.colormap);
+            const existing = continuousRows.get(key);
+            if (existing) {
+              existing.traces.push(ti);
+              return;
+            }
+            const item = { swatch: "gradient", cmap: t.color.colormap, name, symbol: t.kind === "scatter" ? (style.symbol || "circle") : null, line, style, traces: [ti] };
+            continuousRows.set(key, item);
+            items.push(item);
+          } else if (t.name) {
+            const c = (t.color && t.color.color) || (t.style && t.style.color);
+            // Line-family kinds get a short line sample (honoring the dash), the
+            // same handle the raster/SVG exporters draw — not a filled swatch.
+            items.push({ swatch: c, name: t.name, symbol: t.kind === "scatter" ? (style.symbol || "circle") : null, line, style, traces: [ti] });
+          }
         });
       }
       for (const it of items) {
@@ -1956,34 +1963,11 @@ export class ChartView {
         svg.setAttribute("viewBox", "0 0 18 14");
         svg.setAttribute("width", "100%");
         svg.setAttribute("height", "14");
-        const path = document.createElementNS(ns, "path");
-        const paths = {
-          square: "M4.5 2.5h9v9h-9z", diamond: "M9 2l5 5-5 5-5-5z",
-          thin_diamond: "M9 2l3 5-3 5-3-5z",
-          triangle: "M9 2l-5 10h10z", triangle_down: "M9 12L4 2h10z",
-          triangle_left: "M4 7L14 2v10z", triangle_right: "M14 7L4 2v10z",
-          plus_line: "M9 2v10M4 7h10", x_line: "M5 3l8 8M13 3l-8 8",
-          cross: "M7.5 2h3v3.5H14v3h-3.5V12h-3V8.5H4v-3h3.5z",
-          x: "M5.5 2L9 5.5 12.5 2 14 3.5 10.5 7 14 10.5 12.5 12 9 8.5 5.5 12 4 10.5 7.5 7 4 3.5z",
-          pentagon: "M9 2.5L13.28 5.61 11.65 10.64H6.35L4.72 5.61z",
-          hexagon: "M9 2L13.3 4.5v5L9 12l-4.3-2.5v-5z",
-          star: "M9 2l1.5 3.1 3.5.5-2.5 2.5.6 3.5L9 10l-3.1 1.6.6-3.5L4 5.6l3.5-.5z"
-        };
+        svg.style.overflow = "visible";
         const color = gradientPaint ? gradientPaint(svg) : safeCssPaint(this.root, bg);
-        if (it.symbol === "circle" || it.symbol === "point" || it.symbol === "pixel") {
-          if (it.symbol === "pixel") path.setAttribute("d", "M8.5 6.5h1v1h-1z");
-          else path.setAttribute("d", `M9 ${it.symbol === "point" ? 4.75 : 2.5}a${it.symbol === "point" ? 2.25 : 4.5} ${it.symbol === "point" ? 2.25 : 4.5} 0 1 0 0 ${it.symbol === "point" ? 4.5 : 9}a${it.symbol === "point" ? 2.25 : 4.5} ${it.symbol === "point" ? 2.25 : 4.5} 0 1 0 0 -${it.symbol === "point" ? 4.5 : 9}`);
-        } else path.setAttribute("d", paths[it.symbol] || paths.square);
-        sw.style.setProperty(
-          "--xy-legend-swatch-fill",
-          it.symbol.endsWith("_line") ? "none" : color,
+        this._appendLegendMarker(
+          svg, sw, { ...(it.style || {}), symbol: it.symbol }, color, 9, 7, true,
         );
-        sw.style.setProperty("--xy-legend-swatch-stroke", color);
-        sw.style.setProperty(
-          "--xy-legend-swatch-stroke-width",
-          String(it.style?.stroke_width || 1),
-        );
-        svg.appendChild(path);
         sw.appendChild(svg);
         sw.style.setProperty("--xy-legend-swatch-height", "14px");
       } else if (it.line) {
@@ -1997,10 +1981,27 @@ export class ChartView {
         ln.setAttribute("y1", "6");
         ln.setAttribute("x2", "21");
         ln.setAttribute("y2", "6");
+        const lineColor = gradientPaint
+          ? gradientPaint(svg)
+          : safeCssPaint(this.root, bg);
+        if (it.style?.legend_gap_color && it.style?.dash?.length) {
+          const gaps = document.createElementNS(ns, "line");
+          gaps.setAttribute("x1", "1");
+          gaps.setAttribute("y1", "6");
+          gaps.setAttribute("x2", "21");
+          gaps.setAttribute("y2", "6");
+          gaps.setAttribute(
+            "stroke",
+            safeCssPaint(this.root, it.style.legend_gap_color),
+          );
+          gaps.setAttribute("stroke-width", String(it.style?.width ?? 1.5));
+          gaps.setAttribute("stroke-dasharray", "none");
+          svg.appendChild(gaps);
+        }
         sw.style.setProperty("--xy-legend-swatch-fill", "none");
         sw.style.setProperty(
           "--xy-legend-swatch-stroke",
-          gradientPaint ? gradientPaint(svg) : safeCssPaint(this.root, bg),
+          lineColor,
         );
         // ?? not ||: an explicit lw=0 keeps 0 and draws nothing, like the
         // exporters' dict-default and Matplotlib itself.
@@ -2012,6 +2013,11 @@ export class ChartView {
           sw.style.setProperty("--xy-legend-swatch-dasharray", it.style.dash.join(" "));
         }
         svg.appendChild(ln);
+        if (it.style?.legend_marker) {
+          this._appendLegendMarker(
+            svg, sw, it.style.legend_marker, lineColor, 11, 6, false,
+          );
+        }
         sw.appendChild(svg);
         sw.style.setProperty("--xy-legend-swatch-height", "12px");
       } else if (it.swatch !== "gradient") {
@@ -2077,6 +2083,100 @@ export class ChartView {
     root.appendChild(lg);
     this._legends.push(lg); // _resize refreshes each box's responsive anchor
     return lg;
+  }
+
+  _appendLegendMarker(svg, sw, marker, defaultColor, cx, cy, wrapperPaint) {
+    const ns = "http://www.w3.org/2000/svg";
+    const requestedMarkerSize = Number(marker?.size);
+    const hasMarkerSize = Number.isFinite(requestedMarkerSize) && requestedMarkerSize >= 0;
+    const markerSize = hasMarkerSize ? requestedMarkerSize : 9;
+    const symbol = String(marker?.symbol || "circle");
+    // The generated default can be an internal SVG url(...); sanitize only
+    // user-authored paints so the gradient reference remains intact.
+    const fillColor = marker?.color != null
+      ? safeCssPaint(this.root, marker.color)
+      : defaultColor;
+    const hasStroke = marker?.stroke != null || marker?.stroke_width != null;
+    const strokeColor = hasStroke
+      ? (marker?.stroke != null
+          ? safeCssPaint(this.root, marker.stroke)
+          : fillColor)
+      : (wrapperPaint ? fillColor : "none");
+    const paths = {
+      square: "M4.5 2.5h9v9h-9z", diamond: "M9 2l5 5-5 5-5-5z",
+      thin_diamond: "M9 2l3 5-3 5-3-5z",
+      triangle: "M9 2l-5 10h10z", triangle_down: "M9 12L4 2h10z",
+      triangle_left: "M4 7L14 2v10z", triangle_right: "M14 7L4 2v10z",
+      plus_line: "M9 2v10M4 7h10", x_line: "M5 3l8 8M13 3l-8 8",
+      cross: "M7.5 2h3v3.5H14v3h-3.5V12h-3V8.5H4v-3h3.5z",
+      x: "M5.5 2L9 5.5 12.5 2 14 3.5 10.5 7 14 10.5 12.5 12 9 8.5 5.5 12 4 10.5 7.5 7 4 3.5z",
+      pentagon: "M9 2.5L13.28 5.61 11.65 10.64H6.35L4.72 5.61z",
+      hexagon: "M9 2L13.3 4.5v5L9 12l-4.3-2.5v-5z",
+      star: "M9 2l1.5 3.1 3.5.5-2.5 2.5.6 3.5L9 10l-3.1 1.6.6-3.5L4 5.6l3.5-.5z"
+    };
+    if (marker?.marker_glyph) {
+      const text = document.createElementNS(ns, "text");
+      text.setAttribute("x", String(cx));
+      text.setAttribute("y", String(cy));
+      text.setAttribute("font-family", "DejaVu Sans");
+      text.setAttribute("font-size", String(markerSize));
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "central");
+      if (wrapperPaint) {
+        sw.style.setProperty("--xy-legend-swatch-fill", fillColor);
+        sw.style.setProperty("--xy-legend-swatch-stroke", "none");
+        sw.style.setProperty("--xy-legend-swatch-stroke-width", "0");
+      } else {
+        text.setAttribute("fill", fillColor);
+      }
+      text.textContent = String(marker.marker_glyph);
+      svg.appendChild(text);
+      return;
+    }
+    const path = document.createElementNS(ns, "path");
+    if (marker?.marker_path) {
+      const commands = [];
+      for (const contour of marker.marker_path.contours || []) {
+        for (let offset = 0; offset + 1 < contour.length; offset += 2) {
+          const x = cx + markerSize * Number(contour[offset]);
+          const y = cy - markerSize * Number(contour[offset + 1]);
+          commands.push(`${offset === 0 ? "M" : "L"}${x} ${y}`);
+        }
+        if (marker.marker_path.filled) commands.push("Z");
+      }
+      path.setAttribute("d", commands.join(" "));
+    } else if (symbol === "circle" || symbol === "point" || symbol === "pixel") {
+      const radius = markerSize / 2;
+      if (symbol === "pixel")
+        path.setAttribute("d", `M${cx - radius} ${cy - radius}h${markerSize}v${markerSize}h-${markerSize}z`);
+      else
+        path.setAttribute("d", `M${cx} ${cy - radius}a${radius} ${radius} 0 1 0 0 ${markerSize}a${radius} ${radius} 0 1 0 0 -${markerSize}`);
+    } else {
+      path.setAttribute("d", paths[symbol] || paths.square);
+      const scale = hasMarkerSize ? markerSize / 9 : 1;
+      path.setAttribute(
+        "transform",
+        `translate(${cx} ${cy}) scale(${scale}) translate(-9 -7)`,
+      );
+    }
+    const lineMarker = symbol.endsWith("_line") ||
+      (marker?.marker_path && !marker.marker_path.filled);
+    const fill = lineMarker ? "none" : fillColor;
+    const requestedStrokeWidth = Number(marker?.stroke_width);
+    const strokeWidth = Number.isFinite(requestedStrokeWidth)
+      ? requestedStrokeWidth
+      : (wrapperPaint ? 1 : 0);
+    if (wrapperPaint) {
+      sw.style.setProperty("--xy-legend-swatch-fill", fill);
+      sw.style.setProperty("--xy-legend-swatch-stroke", strokeColor);
+      sw.style.setProperty("--xy-legend-swatch-stroke-width", String(strokeWidth));
+    } else {
+      path.setAttribute("fill", fill);
+      path.setAttribute("stroke", strokeColor);
+      path.setAttribute("stroke-width", String(strokeWidth));
+      path.setAttribute("stroke-dasharray", "none");
+    }
+    svg.appendChild(path);
   }
 
   // Paint an SVG swatch with the item's colormap ramp: registers a
@@ -2978,6 +3078,10 @@ export class ChartView {
       copy("artist_alpha", 1);
       copy(widthName, 2, this.dpr);
       copy("symbol", 3);
+      // Canvas-authored markers consume the same canonical style rows as the
+      // point shader.  Keep them CPU-readable instead of treating styleBuf as
+      // the only copy; filtering may still gather/reupload from this array.
+      g._cpuStyle = values;
       g.styleBuf = this._upload(values);
       // Width rows are baked at the dpr in force right now. Record it so the
       // streaming-append fast path can tell whether a later tail upload would
@@ -2996,7 +3100,8 @@ export class ChartView {
       g.radiusBuf = this._upload(values);
     }
     if (t.stroke && t.stroke.mode === "direct_rgba") {
-      g.strokeBuf = this._upload(this._columnView(buffer, this.spec.columns[t.stroke.buf]));
+      g._cpuStroke = this._columnView(buffer, this.spec.columns[t.stroke.buf]);
+      g.strokeBuf = this._upload(g._cpuStroke);
     }
   }
 
@@ -3036,6 +3141,7 @@ export class ChartView {
   // use each point's resolved LUT/palette color, never a generic trace color.
   _pointMarkStyle(g, t) {
     const s = t.style || {};
+    g.authoredMarker = s.marker_path || s.marker_glyph || null;
     g.symbol = { circle: 0, square: 1, diamond: 2, triangle: 3, cross: 4, hexagon: 5, pentagon: 6, star: 7, triangle_down: 8, triangle_left: 9, triangle_right: 10, x: 11, point: 12, pixel: 13, thin_diamond: 14, plus_line: 15, x_line: 16 }[s.symbol] || 0;
     g.pointStrokeWidth = Number(s.stroke_width) || 0;
     g.pointStrokeFace = !s.stroke && (!t.stroke || t.stroke.mode === "match_fill");
@@ -3158,16 +3264,21 @@ export class ChartView {
       size: (sample.size && sample.size.size) || 4.0,
       sizeRange: [2, 18],
     };
+    const xValues = this._asF32(buffers[sample.x.buf]);
+    const yValues = this._asF32(buffers[sample.y.buf]);
+    s._cpu = { x: xValues, y: yValues, xMeta: s.xMeta, yMeta: s.yMeta };
     gl.bindBuffer(gl.ARRAY_BUFFER, s.xBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, this._asF32(buffers[sample.x.buf]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, xValues, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, s.yBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, this._asF32(buffers[sample.y.buf]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, yValues, gl.STATIC_DRAW);
     if (sample.color && sample.color.buf !== undefined) {
       s.colorMode = sample.color.mode === "continuous" ? 1 :
         (sample.color.mode === "categorical" ? 2 : 3);
       const colorValues = sample.color.dtype === "u8"
         ? this._asU8(buffers[sample.color.buf])
         : this._asF32(buffers[sample.color.buf]);
+      if (s.colorMode === 3) s._cpu.rgba = colorValues;
+      else s._cpu.color = colorValues;
       const colorBufferName = s.colorMode === 3 ? "rgbaBuf" : "cBuf";
       s[colorBufferName] = gl.createBuffer();
       this._tagChannelBuf(s[colorBufferName], colorValues, s.colorMode === 1);
@@ -3184,6 +3295,7 @@ export class ChartView {
       const sizeValues = sample.size.dtype === "u8"
         ? this._asU8(buffers[sample.size.buf])
         : this._asF32(buffers[sample.size.buf]);
+      s._cpu.size = sizeValues;
       s.sBuf = gl.createBuffer();
       this._tagChannelBuf(s.sBuf, sizeValues, true);
       gl.bindBuffer(gl.ARRAY_BUFFER, s.sBuf);
@@ -3214,10 +3326,12 @@ export class ChartView {
       copy("artist_alpha", 1);
       copy("stroke_width", 2, this.dpr);
       copy("symbol", 3);
+      s._cpuStyle = values;
       s.styleBuf = this._upload(values);
     }
     if (sample.stroke && sample.stroke.mode === "direct_rgba") {
-      s.strokeBuf = this._upload(this._asU8(buffers[sample.stroke.buf]));
+      s._cpuStroke = this._asU8(buffers[sample.stroke.buf]);
+      s.strokeBuf = this._upload(s._cpuStroke);
     }
     this._pointMarkStyle(s, trace);
     if (g.density) {
@@ -3901,6 +4015,11 @@ export class ChartView {
   _drawNow() {
     if (this._destroyed || !this.gl || this._glLost) return;
     this._healStaleTheme();
+    // `_drawPoints` records authored-marker draws here so the Canvas overlay
+    // paints the exact direct/sample/drill entries and LOD alpha chosen by
+    // this frame.  Reconstructing them from gpuTraces would lose density
+    // window selection and transition fades.
+    this._authoredScatterDraws = [];
     const gl = this.gl;
     const { x0, x1, y0, y1 } = this.view;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -3999,6 +4118,14 @@ export class ChartView {
 
   _drawPoints(g, xm, ym, opacityScale = 1) {
     opacityScale *= (g._transitionOpacity ?? 1) * (g._legendDim ?? 1);
+    // Pyplot-authored contours and glyphs keep these resident point buffers
+    // for picking/transitions but paint on the Canvas2D overlay below. Queue
+    // the actual draw invocation (including density-sample/drill fades)
+    // instead of rediscovering only top-level direct traces in `_drawChrome`.
+    if (g.authoredMarker) {
+      (this._authoredScatterDraws ||= []).push({ g, opacityScale });
+      return;
+    }
     const animationScale = g._transitionScale ?? 1;
     if (this._canDrawSimplePoints(g)) {
       this._drawSimplePoints(g, xm, ym, opacityScale);
@@ -5482,6 +5609,7 @@ export class ChartView {
     this._drawAnnotationLabels(updateLabels);
     // Label layout resolves responsive callout offsets before the pointer is
     // painted, keeping its start attached when an edge clamp moves the text.
+    this._drawAuthoredScatterMarkers(octx);
     this._drawAnnotationShapes(octx);
   }
 
