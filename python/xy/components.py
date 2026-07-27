@@ -3842,6 +3842,20 @@ def _resolve_color(data: Any, color: Any, *, context: Optional[str] = None) -> A
         raise
 
 
+# First prefix at which `_encode_transition_keys` tests digest uniqueness, then
+# doubling. Small enough that the common duplicate — an id column that is not
+# actually unique — is caught in about a millisecond, large enough that the
+# vectorized test is never run on a handful of rows where the per-row
+# dictionaries it replaced would have been cheaper anyway.
+_TRANSITION_KEY_CHECK_STRIDE = 4096
+# Growth factor between those prefixes. The intermediate tests are pure
+# insurance, so they are kept far below the final full test's cost: at x8 they
+# sum to about an eighth of it, where x2 would have tripled the total uniqueness
+# work and cost the success path ~8%. The price is that a duplicate is seen
+# within 8x rather than 2x the rows needed to reach it.
+_TRANSITION_KEY_CHECK_GROWTH = 8
+
+
 def _transition_key_token(value: Any, index: int) -> bytes:
     """Canonical, type-sensitive bytes for one supported stable key."""
     if isinstance(value, np.generic):
@@ -3981,6 +3995,27 @@ def _fixed_transition_key_values(value: Any) -> np.ndarray | None:
     return None
 
 
+def _transition_key_digests(result: np.ndarray, stop: int) -> np.ndarray:
+    """The first `stop` rows' identity digests, one uint64 per row.
+
+    `result` is Fortran-order — the native encoder's layout, so the payload ships
+    `values[:, 0]` copy-free — which makes `reshape(-1).view(np.uint64)` wrong
+    twice over. For a one-row prefix numpy can satisfy the reshape with a strided
+    *view* rather than a copy, and re-viewing that as a wider dtype raises "the
+    last axis must be contiguous"; for longer prefixes it silently copies. Both
+    columns are contiguous in this order, so combining them is correct whatever
+    the layout and costs the same 8 bytes a row the reshape copy did.
+
+    The two words are packed hi-word-first here rather than in the wire's
+    little-endian order. Only injectivity matters: equal packed values iff equal
+    (lo, hi) pairs, which is what the uniqueness test is asking.
+    """
+    packed = result[:stop, 0].astype(np.uint64)
+    packed <<= np.uint64(32)
+    packed |= result[:stop, 1]
+    return packed
+
+
 def _encode_transition_keys(value: Any, expected: int, label: str) -> np.ndarray:
     fixed = _fixed_transition_key_values(value)
     if fixed is not None:
@@ -3998,22 +4033,85 @@ def _encode_transition_keys(value: Any, expected: int, label: str) -> np.ndarray
     if len(arr) != expected:
         raise ValueError(f"{label} must have length {expected}, got {len(arr)}")
     result = np.empty((expected, 2), dtype=np.uint32, order="F")
+    # Equal tokens hash equally, so distinct digests prove distinct keys *and*
+    # no collision: a vectorized uniqueness test stands in for the two per-row
+    # dictionaries this carried, which held a token and a digest bytes object for
+    # every row — hundreds of bytes of peak per 8-byte result row. A conflict is
+    # re-walked by `_raise_transition_key_conflict` so the message, and the rows
+    # it names, are exactly what the per-row bookkeeping produced.
+    #
+    # The test runs on growing prefixes rather than once at the end. Testing only
+    # at the end would make a duplicate cost the entire walk plus a full re-walk:
+    # a non-unique id column, which is the ordinary form of this mistake, went
+    # from 16 ms and 32 MB peak on the dictionaries to 7.1 s and 65 MB — so the
+    # rewrite raised peak on a reachable path, the one thing it exists to lower.
+    # Prefixes bound both the wasted walk and the `np.unique` transient to the
+    # rows actually needed to see the duplicate.
+    #
+    # Blocked rather than checked per row on purpose: `arr[start:stop]` is a view
+    # of an object array, so the inner loop is exactly the loop it was, while one
+    # extra compare per row cost 8% of the success path in a 2M-row walk.
+    #
+    # Each test packs the prefix it checks into one uint64 a row
+    # (`_transition_key_digests`) — 8 bytes per row against the dictionaries'
+    # hundreds, and the x8 growth keeps those temporaries to about an eighth of
+    # the final one on top of it.
+    start = 0
+    block = _TRANSITION_KEY_CHECK_STRIDE
+    while start < expected:
+        stop = min(start + block, expected)
+        for index, raw in enumerate(arr[start:stop], start):
+            try:
+                token = _transition_key_token(raw, index)
+            except Exception:
+                # A later bad row must not mask an earlier duplicate: for
+                # `["a", "a", None]` the dictionaries reported the row-0/1
+                # duplicate, and that is still the first thing wrong. Rows
+                # already walked tokenized cleanly, so their digests are
+                # complete and any conflict among them precedes this row.
+                #
+                # `except Exception`, not ValueError: which row was first does
+                # not depend on what the token raised, and a key type whose
+                # __format__/isoformat/encode raises something else would
+                # otherwise still slip past the earlier duplicate.
+                if np.unique(_transition_key_digests(result, index)).size != index:
+                    _raise_transition_key_conflict(arr[:index], label)
+                raise
+            digest = hashlib.blake2s(token, digest_size=8, person=b"xykeyv1").digest()
+            result[index, 0] = int.from_bytes(digest[:4], "little")
+            result[index, 1] = int.from_bytes(digest[4:], "little")
+        if np.unique(_transition_key_digests(result, stop)).size != stop:
+            _raise_transition_key_conflict(arr[:stop], label)
+        start = stop
+        block *= _TRANSITION_KEY_CHECK_GROWTH
+    return result
+
+
+def _raise_transition_key_conflict(arr: np.ndarray, label: str) -> None:
+    """Name the conflict the vectorized digest check found (error path only).
+
+    Every raise here is `from None`. One caller is the prefix re-check inside an
+    `except`, where the token error it is deliberately superseding would
+    otherwise be chained in front of this one — so the first thing printed would
+    be the very error this function exists to *not* report. The other caller is
+    outside any handler, where `from None` costs nothing.
+    """
     seen: dict[bytes, int] = {}
     digests: dict[bytes, bytes] = {}
     for index, raw in enumerate(arr):
         token = _transition_key_token(raw, index)
         previous = seen.get(token)
         if previous is not None:
-            raise ValueError(f"{label} contains duplicate value at rows {previous} and {index}")
+            raise ValueError(
+                f"{label} contains duplicate value at rows {previous} and {index}"
+            ) from None
         seen[token] = index
         digest = hashlib.blake2s(token, digest_size=8, person=b"xykeyv1").digest()
         collision = digests.get(digest)
         if collision is not None and collision != token:
-            raise ValueError(f"{label} produced an identity digest collision")
+            raise ValueError(f"{label} produced an identity digest collision") from None
         digests[digest] = token
-        result[index, 0] = int.from_bytes(digest[:4], "little")
-        result[index, 1] = int.from_bytes(digest[4:], "little")
-    return result
+    raise AssertionError(f"{label} digest conflict did not reproduce")
 
 
 def _original_mark_positions(

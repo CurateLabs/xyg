@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import re
 
 import numpy as np
 import pytest
@@ -770,3 +771,212 @@ def test_animation_validation(kwargs: dict) -> None:
 def test_exit_is_not_a_supported_animation_option() -> None:
     with pytest.raises(TypeError, match="unexpected keyword argument 'exit'"):
         xy.animation(**{"exit": "fade"})
+
+
+# --- stable-key encoding: same answers, without the per-row dictionaries -----
+
+
+def test_transition_key_digests_are_stable_and_row_aligned() -> None:
+    """Encoding is a pure per-row hash: order-independent and reproducible."""
+    from xy.components import _encode_transition_keys
+
+    keys = ["a", "b", "c", "d"]
+    first = _encode_transition_keys(keys, 4, "keys")
+    assert first.dtype == np.uint32 and first.shape == (4, 2)
+    np.testing.assert_array_equal(first, _encode_transition_keys(keys, 4, "keys"))
+    # Row i's digest depends only on key i, so permuting the input permutes the
+    # output rows and nothing else.
+    shuffled = _encode_transition_keys(["c", "a", "d", "b"], 4, "keys")
+    np.testing.assert_array_equal(shuffled, first[[2, 0, 3, 1]])
+    # Distinct keys must give distinct digests, which is what the vectorized
+    # uniqueness check the encoder now relies on is asserting.
+    assert len({tuple(row) for row in first}) == 4
+
+
+@pytest.mark.parametrize(
+    "keys",
+    [
+        ["a", "b", "a"],
+        [1, 2, 1],
+        [1.5, 2.5, 1.5],
+        [True, False, True],
+        [b"x", b"y", b"x"],
+    ],
+    ids=["str", "int", "float", "bool", "bytes"],
+)
+def test_duplicate_transition_keys_name_both_rows(keys: list) -> None:
+    """The duplicate message still names the first and second offending rows.
+
+    The encoder no longer keeps a token dictionary while hashing; a conflict is
+    re-walked to produce this message, so it must be unchanged.
+    """
+    from xy.components import _encode_transition_keys
+
+    with pytest.raises(ValueError, match=r"keys contains duplicate value at rows 0 and 2"):
+        _encode_transition_keys(keys, 3, "keys")
+
+
+def test_transition_key_type_errors_still_report_their_row() -> None:
+    from xy.components import _encode_transition_keys
+
+    with pytest.raises(ValueError, match="animation key is missing at row 1"):
+        _encode_transition_keys(["a", None, "c"], 3, "keys")
+    with pytest.raises(ValueError, match="animation key must be finite at row 2"):
+        _encode_transition_keys([1.0, 2.0, float("nan")], 3, "keys")
+    with pytest.raises(ValueError, match="row 1 has list"):
+        _encode_transition_keys(["a", [], "c"], 3, "keys")
+
+
+@pytest.mark.parametrize("n_good", [1, 2, 3, 17])
+def test_a_short_fallback_prefix_is_packable(n_good: int) -> None:
+    """Date keys always take the Python fallback, so this reaches the prefix
+    digest test at tiny lengths — where the Fortran-order buffer bites.
+
+    `result[:1]` is a one-row slice of an F-order (N, 2) array, and numpy can
+    satisfy `reshape(-1)` on it with a strided *view*; re-viewing that as uint64
+    raises "the last axis must be contiguous", replacing the key error with a
+    numpy internal one. The digests are packed from the two columns instead.
+    """
+    from xy.components import _encode_transition_keys
+
+    keys: list = [dt.date(2024, 1, 1) + dt.timedelta(days=i) for i in range(n_good)]
+    encoded = _encode_transition_keys(keys, n_good, "keys")
+    assert encoded.shape == (n_good, 2)
+    assert encoded[:, 0].flags.c_contiguous and encoded[:, 1].flags.c_contiguous
+
+    # ...and the error path, which packs the completed prefix before re-raising.
+    with pytest.raises(ValueError, match=f"animation key is missing at row {n_good}"):
+        _encode_transition_keys([*keys, None], n_good + 1, "keys")
+    # ...and with a duplicate inside that prefix, which must win instead.
+    if n_good >= 2:
+        dup = [keys[0], *keys[:-1], None]
+        with pytest.raises(ValueError, match=r"keys contains duplicate value at rows 0 and 1"):
+            _encode_transition_keys(dup, len(dup), "keys")
+
+
+@pytest.mark.parametrize(
+    ("keys", "rows"),
+    [
+        pytest.param(["a", "a", None], (0, 1), id="missing"),
+        pytest.param([1.0, 1.0, float("nan")], (0, 1), id="non-finite"),
+        pytest.param(["a", "a", {}], (0, 1), id="wrong-type"),
+        pytest.param(["a", "b", "a", None], (0, 2), id="later-duplicate"),
+    ],
+)
+def test_a_duplicate_outranks_a_later_invalid_row(keys: list, rows: tuple[int, int]) -> None:
+    """First bad row wins, whichever kind of bad it is.
+
+    The uniqueness test runs after the walk, so a duplicate would otherwise be
+    reported only once every later row had tokenized — and any invalid row
+    behind it would mask the duplicate entirely. Both inputs are wrong twice
+    over; which error surfaces is the contract.
+    """
+    from xy.components import _encode_transition_keys
+
+    expected = f"keys contains duplicate value at rows {rows[0]} and {rows[1]}"
+    with pytest.raises(ValueError, match=re.escape(expected)):
+        _encode_transition_keys(keys, len(keys), "keys")
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        (0, 1),  # both in the first block
+        (0, 4095),  # first block, at its last row
+        (0, 4096),  # spans the first block boundary
+        (4095, 4096),  # straddles it
+        (4096, 4097),  # both in the second block
+        (0, 32768),  # spans the second boundary (stride x8)
+        (5000, 40000),  # neither in the first block, different blocks
+        (0, 49999),  # last row of all
+    ],
+)
+def test_a_duplicate_is_named_the_same_wherever_the_block_boundaries_fall(
+    first: int, second: int
+) -> None:
+    """Uniqueness is tested on growing prefixes, so a duplicate whose two rows
+    land in different blocks must still be reported — and reported with the same
+    two row numbers a single trailing test would have produced."""
+    from xy.components import _encode_transition_keys
+
+    n = 50_000
+    keys = [f"k-{i:09d}" for i in range(n)]
+    keys[second] = keys[first]
+    expected = f"keys contains duplicate value at rows {first} and {second}"
+    with pytest.raises(ValueError, match=re.escape(expected)):
+        _encode_transition_keys(keys, n, "keys")
+
+
+def test_prefix_checks_do_not_change_the_encoding() -> None:
+    """The blocked walk must produce the same digests as one straight pass, at
+    sizes below, at, and above the first block boundary."""
+    from xy.components import _encode_transition_keys
+
+    for n in (1, 4095, 4096, 4097, 32769, 40000):
+        keys = [f"k-{i:09d}" for i in range(n)]
+        got = _encode_transition_keys(keys, n, "keys")
+        assert got.shape == (n, 2) and got.dtype == np.uint32
+        # Every row is an independent hash of its own key, so a one-row encode
+        # of key i must equal row i of the bulk encode.
+        for probe in {0, n // 2, n - 1}:
+            single = _encode_transition_keys([keys[probe]], 1, "keys")
+            np.testing.assert_array_equal(single[0], got[probe])
+
+
+def test_the_superseded_token_error_is_not_chained_onto_the_duplicate() -> None:
+    """The prefix re-check runs inside an `except`, so without suppression the
+    error it deliberately discards would print *first*, above a 'During handling
+    of the above exception' banner — the traceback would lead with the one
+    message this is not supposed to report."""
+    import traceback
+
+    from xy.components import _encode_transition_keys
+
+    try:
+        _encode_transition_keys(["a", "a", None], 3, "keys")
+    except ValueError as exc:
+        assert exc.__context__ is None or exc.__suppress_context__
+        rendered = "".join(traceback.format_exception(exc))
+        assert "During handling of the above exception" not in rendered
+        assert "is missing at row 2" not in rendered
+        assert "keys contains duplicate value at rows 0 and 1" in rendered
+    else:  # pragma: no cover
+        raise AssertionError("expected a duplicate-key error")
+
+
+def test_a_duplicate_outranks_a_non_valueerror_token_failure() -> None:
+    """Which row was first cannot depend on which exception the token raised.
+
+    A key type whose `encode` raises something other than ValueError must not
+    smuggle a later row's failure past an earlier duplicate.
+    """
+    from xy.components import _encode_transition_keys
+
+    class BadStr(str):
+        def encode(self, *args: object, **kwargs: object) -> bytes:
+            raise RuntimeError("boom-encode")
+
+    with pytest.raises(ValueError, match="keys contains duplicate value at rows 0 and 1"):
+        _encode_transition_keys(["a", "a", BadStr("z")], 3, "keys")
+    # With no earlier duplicate the original failure still propagates untouched.
+    with pytest.raises(RuntimeError, match="boom-encode"):
+        _encode_transition_keys(["a", "b", BadStr("z")], 3, "keys")
+
+
+def test_an_invalid_row_before_a_duplicate_still_wins() -> None:
+    """The converse: nothing about the prefix re-check promotes a later
+    duplicate over an earlier bad row."""
+    from xy.components import _encode_transition_keys
+
+    with pytest.raises(ValueError, match="animation key is missing at row 0"):
+        _encode_transition_keys([None, "a", "a"], 3, "keys")
+
+
+def test_transition_keys_length_and_shape_are_validated() -> None:
+    from xy.components import _encode_transition_keys
+
+    with pytest.raises(ValueError, match="must have length 4"):
+        _encode_transition_keys(["a", "b"], 4, "keys")
+    with pytest.raises(ValueError, match="must be one-dimensional"):
+        _encode_transition_keys([["a"], ["b"]], 2, "keys")
+    assert _encode_transition_keys([], 0, "keys").shape == (0, 2)
