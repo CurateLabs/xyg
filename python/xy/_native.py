@@ -24,7 +24,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 44
+ABI_VERSION = 45
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -34,6 +34,8 @@ ABI_VERSION = 44
 # would be sliced as data.
 _USIZE_MAX = ctypes.c_size_t(-1).value
 _FACTORIZE_CAPACITY_EXCEEDED = _USIZE_MAX - 1
+# Canonical row ids ship as u32 (the index ceiling the kernels enforce).
+_U32_MAX = 2**32 - 1
 
 
 def _lib_filename() -> str:
@@ -558,6 +560,19 @@ def _load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_void_p,
     ]
+    lib.xy_range_indices_rows.restype = ctypes.c_size_t
+    lib.xy_range_indices_rows.argtypes = [
+        ctypes.c_void_p,  # x
+        ctypes.c_void_p,  # y
+        ctypes.c_size_t,  # len
+        ctypes.c_void_p,  # candidate row ids
+        ctypes.c_size_t,  # candidate count
+        ctypes.c_double,  # lo_x
+        ctypes.c_double,  # hi_x
+        ctypes.c_double,  # lo_y
+        ctypes.c_double,  # hi_y
+        ctypes.c_void_p,  # output row IDs
+    ]
     lib.xy_polygon_select.restype = ctypes.c_size_t
     lib.xy_polygon_select.argtypes = [
         ctypes.c_void_p,  # x
@@ -815,6 +830,38 @@ def _as_f64(arr: npt.NDArray[np.float64], label: str = "data") -> npt.NDArray[np
     if out.ndim != 1:
         raise ValueError(f"{label} must be 1-D, got shape {out.shape}")
     return out
+
+
+def _as_row_ids(rows: npt.NDArray[np.uint32], label: str = "rows") -> npt.NDArray[np.uint32]:
+    """Canonical row ids as contiguous u32, rejecting anything that would wrap.
+
+    `ascontiguousarray(..., dtype=np.uint32)` is an unchecked C cast: an id of
+    `2**32 + 3` becomes 3 and a negative id becomes a huge one. The kernels
+    bounds-check the ids they are *given*, so a wrapped id is indistinguishable
+    from a real one there — the call would answer with a row the caller never
+    asked for instead of returning the error sentinel. Range-check before the
+    cast so the out-of-range contract holds for the value the caller passed.
+
+    Integer dtypes only, and deliberately so: a float id has no row, and
+    deciding one by cast is both silent and platform-dependent. `3.9` would
+    become row 3 and `nan` would become row 0 on arm64, where the NaN cast
+    saturates, while the same `nan` traps as `INT64_MIN` on x86_64 — the guard
+    itself would disagree across the wheels we ship.
+    """
+    out = np.ascontiguousarray(rows)
+    if out.ndim != 1:
+        raise ValueError(f"{label} must be 1-D, got shape {out.shape}")
+    if out.dtype == np.uint32:
+        return out
+    if out.size == 0:
+        # `np.asarray([])` is float64; selecting no rows is not a dtype error.
+        return np.empty(0, dtype=np.uint32)
+    if not np.issubdtype(out.dtype, np.integer):
+        raise ValueError(f"{label} must be an integer array of row ids, got dtype {out.dtype}")
+    widened = out.astype(np.int64, copy=False)
+    if widened.min() < 0 or widened.max() > _U32_MAX:
+        raise ValueError(f"{label} must be canonical row ids in [0, 2**32)")
+    return np.ascontiguousarray(widened, dtype=np.uint32)
 
 
 def _ptr_f64(arr: npt.NDArray[np.float64]) -> int:
@@ -2623,6 +2670,49 @@ def range_indices(
     return out if written == len(out) else out[:written].copy()
 
 
+def range_indices_rows(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    rows: npt.NDArray[np.uint32],
+    lo_x: float,
+    hi_x: float,
+    lo_y: float,
+    hi_y: float,
+) -> npt.NDArray[np.uint32]:
+    """Those of `rows` whose canonical point is in the inclusive window.
+
+    The row-restricted form of `range_indices`, shaped like `polygon_select`.
+    A caller that already knows its candidate rows (zone-map pruning, a drill
+    window) reads them in place instead of gathering `x[rows]`/`y[rows]` into
+    two fresh f64 columns first.
+    """
+    lo_x, hi_x = _finite_ordered(lo_x, hi_x, "x range")
+    lo_y, hi_y = _finite_ordered(lo_y, hi_y, "y range")
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("x and y must have equal length")
+    rows = _as_row_ids(rows)
+    out = np.empty(len(rows), dtype=np.uint32)
+    if len(rows) == 0:
+        return out
+    written = _lib.xy_range_indices_rows(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        len(x),
+        rows.ctypes.data,
+        len(rows),
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        out.ctypes.data,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid range_indices_rows arguments")
+    return out if written == len(out) else out[:written].copy()
+
+
 def polygon_select(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],
@@ -2642,9 +2732,7 @@ def polygon_select(
     poly_y = _as_f64(poly_y, "polygon y")
     if len(poly_x) != len(poly_y):
         raise ValueError("polygon x and y must have equal length")
-    rows = np.ascontiguousarray(rows, dtype=np.uint32)
-    if rows.ndim != 1:
-        raise ValueError("rows must be 1-D")
+    rows = _as_row_ids(rows)
     out = np.empty(len(rows), dtype=np.uint32)
     if len(rows) == 0:
         return out

@@ -83,7 +83,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 44;
+pub const ABI_VERSION: u32 = 45;
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -2872,9 +2872,57 @@ pub unsafe extern "C" fn xy_range_indices(
     })
 }
 
+/// Canonical row ids from `rows` that fall inside the rectangular window —
+/// the row-restricted twin of `xy_range_indices`, shaped like
+/// `xy_polygon_select`. Returns the count written; `out` must hold `n_rows`
+/// u32s. Row ids must be < `len`; an out-of-range id returns the error
+/// sentinel on every target, including panic-abort ones where the kernel's own
+/// indexing panic could not (see `kernels::range_scan_rows`).
+///
+/// # Safety
+/// `x`/`y` must point to `len` readable f64s, `rows` to `n_rows` readable
+/// u32s, and `out` to `n_rows` writable u32s.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xy_range_indices_rows(
+    x: *const f64,
+    y: *const f64,
+    len: usize,
+    rows: *const u32,
+    n_rows: usize,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    out: *mut u32,
+) -> usize {
+    if !finite_ordered(lo_x, hi_x) || !finite_ordered(lo_y, hi_y) {
+        return usize::MAX;
+    }
+    // u32 index ceiling — see xy_m4_indices.
+    if len > u32::MAX as usize {
+        return usize::MAX;
+    }
+    if n_rows == 0 {
+        return 0;
+    }
+    if x.is_null() || y.is_null() || rows.is_null() || out.is_null() {
+        return usize::MAX;
+    }
+    let x = std::slice::from_raw_parts(x, len);
+    let y = std::slice::from_raw_parts(y, len);
+    let rows = std::slice::from_raw_parts(rows, n_rows);
+    let out = std::slice::from_raw_parts_mut(out, n_rows);
+    ffi_guard(usize::MAX, || {
+        kernels::range_indices_rows(x, y, rows, lo_x, hi_x, lo_y, hi_y, out).unwrap_or(usize::MAX)
+    })
+}
+
 /// Canonical row ids from `rows` that fall inside the lasso polygon, by
 /// even-odd ray casting. Returns the count written; `out` must hold
-/// `n_rows` u32s. A polygon of fewer than 3 vertices selects nothing.
+/// `n_rows` u32s. A polygon of fewer than 3 vertices selects nothing. Row ids
+/// must be < `len`; an out-of-range id returns the error sentinel on every
+/// target (see `kernels::range_scan_rows`).
 ///
 /// # Safety
 /// `x`/`y` must point to `len` readable f64s, `rows` to `n_rows` readable
@@ -2919,10 +2967,8 @@ pub unsafe extern "C" fn xy_polygon_select(
     let poly_x = std::slice::from_raw_parts(poly_x, n_poly);
     let poly_y = std::slice::from_raw_parts(poly_y, n_poly);
     let out = std::slice::from_raw_parts_mut(out, n_rows);
-    // An out-of-range row id panics the bounds check inside; ffi_guard turns
-    // that into the error sentinel rather than unwinding across the ABI.
     ffi_guard(usize::MAX, || {
-        kernels::polygon_select(x, y, rows, poly_x, poly_y, out)
+        kernels::polygon_select(x, y, rows, poly_x, poly_y, out).unwrap_or(usize::MAX)
     })
 }
 
