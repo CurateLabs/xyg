@@ -77,6 +77,29 @@ def test_bar_patch_labels_validate_against_the_bar_count() -> None:
         ax.bar(["apple", "orange"], [1, 2], label=["only one"])
 
 
+def test_bar_materializes_dictionary_views_before_shape_and_autoscale() -> None:
+    data = {"January": 2.0, "February": 5.0, "March": 3.0}
+    widths = [0.4, 0.6, 0.8]
+    bottoms = [1.0, 2.0, 4.0]
+    _fig, ax = plt.subplots()
+
+    bars = ax.bar(
+        data.keys(),
+        data.values(),
+        width=(value for value in widths),
+        bottom=(value for value in bottoms),
+    )
+
+    entry = ax._entries[0]
+    assert list(entry["x"]) == list(data)
+    assert list(entry["y"]) == list(data.values())
+    np.testing.assert_allclose(entry["kwargs"]["width"], widths)
+    np.testing.assert_allclose(entry["kwargs"]["base"], bottoms)
+    np.testing.assert_allclose(bars.tops, np.asarray(bottoms) + list(data.values()))
+    assert ax.get_xlim()[1] > 1.0
+    assert ax.get_ylim()[1] >= 7.0
+
+
 def test_barh_gallery_width_vector_remains_bar_value_geometry() -> None:
     people = ("Tom", "Dick", "Harry", "Slim", "Jim")
     performance = [5, 7, 6, 4, 9]

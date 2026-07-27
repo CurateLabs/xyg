@@ -48,6 +48,7 @@ COLORMAPS = (
     "rdbu",
     "jet",
     "binary",
+    "flag",
     "reds",
     "bone",
     "winter",

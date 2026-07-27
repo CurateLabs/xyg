@@ -4,7 +4,11 @@ against the JS client tables it mirrors."""
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import json
 import re
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -761,9 +765,14 @@ def test_colormap_stops_stay_in_sync_with_js_client() -> None:
     verbatim in the JS source, and the map names must match."""
     js = (ROOT / "js" / "src" / "10_colormaps.ts").read_text(encoding="utf-8")
     body = js.split("COLORMAP_STOPS = {", 1)[1].split("};", 1)[0]
-    js_names = set(re.findall(r"^\s*(\w+): \[", body, re.MULTILINE))
+    js_names = set(re.findall(r"^\s*(\w+): (?:\[|flagStops\(\))", body, re.MULTILINE))
     assert js_names == set(COLORMAP_STOPS), "colormap names diverged from 10_colormaps.ts"
     for name, stops in COLORMAP_STOPS.items():
+        if name == "flag":
+            assert "function flagStops()" in js
+            assert "x * 31.5 + 0.25" in js
+            assert "x * 31.5 - 0.25" in js
+            continue
         for r, g, b in stops:
             assert f"[{r}, {g}, {b}]" in body, (
                 f"{name} stop ({r},{g},{b}) missing in 10_colormaps.ts"
@@ -846,6 +855,53 @@ def test_matplotlib_gallery_colormap_stops_and_reversal() -> None:
         assert channels.is_colormap(name)
         assert channels.is_colormap(f"{name}_r")
         assert _colormap_stops(f"{name}_r") == list(reversed(stops))
+
+
+def test_flag_colormap_matches_matplotlib_lut_and_gray_aliases() -> None:
+    """Gallery cmap names resolve without flattening flag's rapid color cycle."""
+    from xy.pyplot._colors import resolve_cmap
+
+    flag = COLORMAP_STOPS["flag"]
+    assert len(flag) == 256
+
+    # Full Matplotlib 3.11 ``colormaps["flag"](linspace(...), bytes=True)``
+    # parity. The digest guards every channel of all 256 entries, including
+    # the truncation behavior that sparse samples previously missed.
+    flag_bytes = np.asarray(flag, dtype=np.uint8).tobytes()
+    assert hashlib.sha256(flag_bytes).hexdigest() == (
+        "c84ac1f0b2edd3a53ed05fc90dcf6a41e78c2cf52adf1b2288b2d03777505443"
+    )
+
+    js_path = ROOT / "js" / "src" / "10_colormaps.ts"
+    encoded_source = base64.b64encode(js_path.read_bytes()).decode("ascii")
+    completed = subprocess.run(
+        [
+            "node",
+            "--input-type=module",
+            "--eval",
+            (
+                f'const module = await import("data:text/javascript;base64,{encoded_source}");'
+                'console.log(JSON.stringify(module.colormapStops("flag")));'
+            ),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    assert json.loads(completed.stdout) == [list(rgb) for rgb in flag]
+
+    assert channels.is_colormap("flag")
+    assert channels.is_colormap("flag_r")
+    assert _colormap_stops("flag_r") == list(reversed(flag))
+    assert resolve_cmap("flag") == "flag"
+    assert resolve_cmap("flag_r") == "flag_r"
+
+    assert resolve_cmap("gray") == "gray"
+    assert resolve_cmap("grey") == "gray"
+    assert resolve_cmap("gray_r") == "gray_r"
+    assert resolve_cmap("grey_r") == "gray_r"
 
 
 def test_scalar_stroke_color_survives_vectorized_style_path() -> None:
