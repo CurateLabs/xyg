@@ -141,18 +141,55 @@ for examples. For a detailed breakdown of what can be customized, see the
 
 ## Benchmarks
 
+Live interactive charts, 10k to 100M points. Every library gets every row and
+is driven through its own input path in a real browser. The clock stops only
+when the canvas is both correct (planted sentinel points verified lit) and
+stable (10 byte-identical frames), so progressive renderers are charged until
+their last chunk lands.
+
 <p align="center">
-  <img src="spec/assets/launch-benchmark-comparison.svg" alt="Cold-render time for a 10-million-point chart in XY, Matplotlib, and Plotly. Lower is better." width="1200">
+  <img src="spec/assets/ux-render-time.png" alt="Time until every point is on screen, 10k to 100M points, for XY, Matplotlib, and Plotly. Lower is better." width="1200">
 </p>
 
-In the recorded 10-million-point launch baseline, XY wrote a static PNG in
-0.018 s against 2.7 s for Matplotlib and 9.6 s for Plotly, and reached first
-interactive render 16–18× sooner. The baseline uses identical seeded data, a
-900×420 output, and three isolated cold runs.
+XY holds **0.071 s at 10k and 0.081 s at 100M**, flat across four orders of
+magnitude, because above 200k rows it draws a screen-bounded density surface
+instead of one marker per row, and zoom drills back to exact rows. Every
+exact-marker path scales with N instead: Matplotlib crosses a second at ~3M
+and reaches 13.4 s at 50M; Plotly crosses at ~2.5M and reaches 9.8 s at 25M.
 
-For the environment, methodology, and raw results, see the
-[launch report](benchmarks/launch_baselines/xy-main-2026-07-26/macos-arm64-m5-pro/report.md),
-[benchmark runbook](benchmarks/README.md), and
+The pale line is XY with `density=False`: the same engine drawing one marker
+per row, no aggregation credit. It renders 100M exact markers in 1.34 s on
+5.26 GiB.
+
+Time until every point is on screen, in seconds. `✕` is a size the library
+did not render: Plotly never finishes constructing the figure at 50M, and
+Matplotlib draws at 100M but never resolves the zoom that follows.
+
+| Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| *XY speedup* | *1×* | *2×* | *3×* | *4×* | *9×* | *16×* | *34×* | *89×* | *177×* | *—* |
+| **XY** | **0.071** | **0.072** | **0.075** | **0.084** | **0.083** | **0.089** | **0.083** | **0.077** | **0.076** | **0.081** |
+| XY (`density=False`) | 0.085 | 0.074 | 0.087 | 0.098 | 0.111 | 0.144 | 0.206 | 0.424 | 0.645 | 1.343 |
+| Matplotlib (WebAgg) | 0.086 | 0.115 | 0.224 | 0.357 | 0.758 | 1.424 | 2.804 | 6.838 | 13.385 | ✕ |
+| Plotly (scattergl) | 0.341 | 0.373 | 0.477 | 0.614 | 1.033 | 1.785 | 3.367 | 9.794 | ✕ | ✕ |
+
+Peak Python-side resident memory, in GiB. Browser memory is tracked separately
+and excluded here, since a headless Chrome resides ~1 GiB before drawing
+anything.
+
+| Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| *XY advantage* | *1.8×* | *1.7×* | *1.9×* | *2.1×* | *2.1×* | *2.4×* | *2.6×* | *2.9×* | *2.8×* | *—* |
+| **XY** | **0.05** | **0.05** | **0.06** | **0.07** | **0.13** | **0.19** | **0.32** | **0.70** | **1.36** | **2.58** |
+| XY (`density=False`) | 0.05 | 0.05 | 0.07 | 0.10 | 0.18 | 0.31 | 0.57 | 1.35 | 2.66 | 5.26 |
+| Matplotlib (WebAgg) | 0.09 | 0.09 | 0.12 | 0.15 | 0.28 | 0.46 | 0.84 | 2.06 | 3.85 | ✕ |
+| Plotly (scattergl) | 0.21 | 0.18 | 0.28 | 0.36 | 0.60 | 1.05 | 1.86 | 4.70 | ✕ | ✕ |
+
+One machine (Apple M5 Pro), one run per cell; at the small end the timings
+carry roughly ±10 ms of run-to-run spread.
+
+For the environment, methodology, per-size videos, and raw results, see the
+[benchmark runbook](benchmarks/README.md) and
 [competitive benchmark specification](spec/benchmarks/results.md).
 
 ## Embed XY in a Reflex app
