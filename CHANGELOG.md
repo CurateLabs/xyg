@@ -8,6 +8,17 @@ in the README).
 
 ## [Unreleased]
 
+### Changed
+- Contributor-only test, lint, type-check, and CodSpeed packages now live in
+  PEP 735 dependency groups instead of published package extras. The unused
+  Plotly-only `bench` extra was removed; cross-library benchmark environments
+  continue to install their pinned external baselines explicitly. Published
+  `xy` metadata now advertises only its two runtime dependencies.
+- Pyplot's sub-millisecond relative timing check is no longer a blocking
+  pytest test, where shared-runner jitter made it flaky. Deterministic
+  structural invariants remain hard gates, while the paired CodSpeed rows
+  continue to track shim overhead.
+
 ## [0.0.4] - 2026-07-27
 
 ### Added
