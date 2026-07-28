@@ -33,6 +33,8 @@ _DEFAULTS: dict[str, Any] = {
     "figure.figsize": (6.4, 4.8),  # inches, matplotlib default
     "figure.dpi": 100.0,
     "figure.facecolor": "white",
+    "figure.labelsize": "large",
+    "figure.labelweight": "normal",
     "lines.color": "C0",
     "lines.linewidth": 1.5,
     "lines.markersize": 6.0,
@@ -45,6 +47,7 @@ _DEFAULTS: dict[str, Any] = {
     "scatter.edgecolors": "face",
     "font.size": 10.0,
     "font.family": ["sans-serif"],
+    "text.color": "black",
     "axes.grid": False,
     "grid.color": "#b0b0b0",
     "axes.facecolor": "white",
@@ -54,6 +57,9 @@ _DEFAULTS: dict[str, Any] = {
     "axes.labelweight": "normal",
     "axes.titlesize": "large",
     "axes.titlecolor": "auto",
+    "axes.titlelocation": "center",
+    "axes.titlepad": 6.0,
+    "axes.titley": None,
     "axes.titleweight": "normal",
     "axes.linewidth": 0.8,
     "axes.autolimit_mode": "data",
@@ -158,6 +164,12 @@ class RcParams(dict):
                 raise ValueError("axes.prop_cycle must provide a non-empty color cycle")
         if key == "axes.autolimit_mode" and value not in {"data", "round_numbers"}:
             raise ValueError("axes.autolimit_mode must be 'data' or 'round_numbers'")
+        if key == "axes.titlelocation" and value not in {"left", "center", "right"}:
+            raise ValueError("axes.titlelocation must be 'left', 'center', or 'right'")
+        if key == "axes.titley" and value is not None:
+            value = float(value)
+            if not math.isfinite(value):
+                raise ValueError("axes.titley must be finite or None")
         if key == "contour.negative_linestyle" and value not in {"solid", "dashed"}:
             raise ValueError("contour.negative_linestyle must be 'solid' or 'dashed'")
         if key == "contour.corner_mask" and not isinstance(value, bool):
@@ -167,6 +179,7 @@ class RcParams(dict):
             if value <= 0:
                 raise ValueError(f"{key} must be positive")
         if key in {
+            "axes.titlepad",
             "xtick.major.pad",
             "ytick.major.pad",
             "xtick.minor.pad",
@@ -195,6 +208,8 @@ class RcParams(dict):
             value = float(value)
             if value < 0:
                 raise ValueError(f"{key} must be non-negative")
+            if key == "grid.alpha" and value > 1:
+                raise ValueError("grid.alpha must be between 0 and 1")
         if isinstance(value, list):
             value = list(value)  # never share list defaults; rcdefaults() must stay pristine
         super().__setitem__(key, value)

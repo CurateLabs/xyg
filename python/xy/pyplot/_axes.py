@@ -25,6 +25,7 @@ import numpy as np
 
 import xy
 
+from .. import _textblock
 from .._typing import ArrayLike, ColorLike, ColorsLike, LimitsLike, Scalar
 from ._artists import (
     Artist,
@@ -58,6 +59,8 @@ from ._rc import RcParams, rcParams
 from ._ticker import (
     AsinhLocator,
     AutoLocator,
+    AutoMinorLocator,
+    FixedLocator,
     Locator,
     LogFormatterSciNotation,
     LogitFormatter,
@@ -77,6 +80,8 @@ from ._translate import (
     marker_size_to_scatter_size,
     not_implemented,
 )
+
+_UNSET = object()
 
 # matplotlib's default look: white panel, no grid until grid(True).
 _MPL_THEME_TOKENS = {
@@ -395,8 +400,14 @@ def _clip_infinite_line(
     for candidate in candidates:
         if not unique or not np.allclose(candidate[1:], unique[-1][1:], rtol=0.0, atol=1e-11):
             unique.append(candidate)
-    if len(unique) < 2:
+    if not unique:
         return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    if len(unique) == 1:
+        # A line tangent to one view corner has two coincident middle
+        # intersections in Matplotlib's draw-time solve. Preserve that
+        # degenerate two-vertex segment rather than turning it into an invalid
+        # empty line trace.
+        unique.append(unique[0])
     start, stop = unique[0], unique[-1]
     return (
         np.asarray([start[1], stop[1]], dtype=np.float64),
@@ -593,7 +604,7 @@ class _AxisProxy:
         axes = self.axes
         host = axes._y2_of or axes
         key = "y2" if (self.axis == "y" and axes._y2_of is not None) else self.axis
-        return host, key
+        return host._shared_ticker_source(key), key
 
     def set_inverted(self, inverted: bool) -> None:
         props = self.axes._axis_props(self.axis)
@@ -632,14 +643,14 @@ class _AxisProxy:
         host, key = self._ticker_slot()
         host._tickers[(key, "major_locator")] = locator
         # A locator displaces explicit ticks, and vice versa: last call wins.
-        props = self.axes._axis_props(self.axis)
+        props = host._axis[key]
         for stale in ("tick_values", "tick_labels", "tick_count"):
             props.pop(stale, None)
         host._auto_scale_axis_ticks.discard(key)
         if key in host._tick_expanded_domains:
             host._tick_expanded_domains.discard(key)
             props.pop("domain", None)
-        self.axes._invalidate()
+        host._invalidate_shared_ticker_axis(key)
 
     def get_major_locator(self) -> Any:
         host, key = self._ticker_slot()
@@ -650,16 +661,17 @@ class _AxisProxy:
             return
         host, key = self._ticker_slot()
         host._tickers[(key, "major_formatter")] = as_formatter(formatter, "set_major_formatter()")
-        self.axes._invalidate()
+        host._invalidate_shared_ticker_axis(key)
 
     def get_major_formatter(self) -> Any:
         host, key = self._ticker_slot()
         return host._tickers.get((key, "major_formatter")) or ScalarFormatter()
 
     def set_minor_locator(self, locator: Any) -> None:
+        """Set the locator used for the independent unlabeled minor tick set."""
         host, key = self._ticker_slot()
         host._tickers[(key, "minor_locator")] = locator
-        self.axes._invalidate()
+        host._invalidate_shared_ticker_axis(key)
 
     def get_minor_locator(self) -> Any:
         host, key = self._ticker_slot()
@@ -670,8 +682,114 @@ class _AxisProxy:
         return _ScaleTransformProxy(host._scale_specs[key])
 
     def set_minor_formatter(self, formatter: Any) -> None:
+        """Set a minor formatter, used when a labeled minor set is promoted."""
         host, key = self._ticker_slot()
         host._tickers[(key, "minor_formatter")] = as_formatter(formatter, "set_minor_formatter()")
+        host._invalidate_shared_ticker_axis(key)
+
+    def set_tick_params(
+        self,
+        which: str = "major",
+        reset: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Forward tick styling to this proxy's axes dimension."""
+        which = str(which).lower()
+        if which not in {"major", "minor", "both"}:
+            raise ValueError("Axis.set_tick_params() which must be 'major', 'minor', or 'both'")
+        if reset:
+            raise not_implemented(
+                "Axis.set_tick_params(reset=True)",
+                alternative="reset=False",
+            )
+        self.axes.tick_params(axis=self.axis, which=which, **kwargs)
+
+    def set_ticks_position(self, position: str) -> None:
+        """Move tick marks (and, for an edge, their labels) like Matplotlib."""
+        position = str(position).lower()
+        allowed = (
+            {"top", "bottom", "both", "default", "none"}
+            if self.axis == "x"
+            else {"left", "right", "both", "default", "none"}
+        )
+        if position not in allowed:
+            raise ValueError(
+                f"{self.axis}axis.set_ticks_position() position must be one of {sorted(allowed)}"
+            )
+        if self.axis == "x":
+            if position == "top":
+                updates = {
+                    "top": True,
+                    "labeltop": True,
+                    "bottom": False,
+                    "labelbottom": False,
+                }
+            elif position == "bottom":
+                updates = {
+                    "top": False,
+                    "labeltop": False,
+                    "bottom": True,
+                    "labelbottom": True,
+                }
+            elif position == "both":
+                updates = {"top": True, "bottom": True}
+            elif position == "none":
+                updates = {"top": False, "bottom": False}
+            else:
+                updates = {
+                    "top": True,
+                    "labeltop": False,
+                    "bottom": True,
+                    "labelbottom": True,
+                }
+        elif position == "right":
+            updates = {
+                "right": True,
+                "labelright": True,
+                "left": False,
+                "labelleft": False,
+            }
+        elif position == "left":
+            updates = {
+                "right": False,
+                "labelright": False,
+                "left": True,
+                "labelleft": True,
+            }
+        elif position == "both":
+            updates = {"right": True, "left": True}
+        elif position == "none":
+            updates = {"right": False, "left": False}
+        else:
+            updates = {
+                "right": True,
+                "labelright": False,
+                "left": True,
+                "labelleft": True,
+            }
+        self.axes.tick_params(axis=self.axis, which="both", **updates)
+
+    def set_label_position(self, position: str) -> None:
+        """Move only the axis title, independently from ticks and labels."""
+        position = str(position).lower()
+        allowed = {"top", "bottom"} if self.axis == "x" else {"left", "right"}
+        if position not in allowed:
+            raise ValueError(
+                f"{self.axis}axis.set_label_position() position must be one of {sorted(allowed)}"
+            )
+        props = self.axes._axis_props(self.axis)
+        # Core's ``side`` owns the axis title and is also the fallback for tick
+        # sides. Materialize the current independent tick state first so moving
+        # a title never moves ticks that the caller did not request.
+        props["tick_sides"] = [
+            side for side, visible in self.axes._tick_sides[self.axis].items() if visible
+        ]
+        props["tick_label_sides"] = [
+            side.removeprefix("label")
+            for side, visible in self.axes._tick_label_sides[self.axis].items()
+            if visible
+        ]
+        props["side"] = position
         self.axes._invalidate()
 
     def grid(self, visible: bool | None = None, which: str = "major", **kwargs: Any) -> None:
@@ -687,16 +805,22 @@ class _AxisProxy:
         self.axes.grid(visible, which=which, axis=self.axis, **kwargs)
 
     def tick_bottom(self) -> None:
-        pass  # exact no-op: the engine only draws bottom x ticks
+        if self.axis != "x":
+            raise AttributeError("tick_bottom() is only available on an x axis")
+        self.set_ticks_position("bottom")
 
     def tick_left(self) -> None:
-        pass  # exact no-op: the engine only draws left y ticks
+        if self.axis != "y":
+            raise AttributeError("tick_left() is only available on a y axis")
+        self.set_ticks_position("left")
 
     def get_majorticklabels(self) -> list["_TickLabel"]:
         return self.axes._tick_label_handles(self.axis)
 
     def get_minorticklabels(self) -> list["_TickLabel"]:
-        return []  # minor ticks are outside the native axis contract
+        # The wire's independent minor set is intentionally unlabeled. A
+        # labeled minor pair is promoted to the ordinary label set at build.
+        return []
 
     def get_minor_formatter(self) -> Any:
         from ._ticker import NullFormatter
@@ -818,6 +942,27 @@ class _TickLabel:
         style["tick_label_color"] = resolve_color(color)
         self._axes._invalidate()
 
+    def set_horizontalalignment(self, align: str) -> None:
+        align = str(align).lower()
+        anchors = {"left": "start", "center": "center", "right": "end"}
+        if align not in anchors:
+            raise ValueError("align must be 'left', 'center', or 'right'")
+        self._axes._axis_props(self._axis)["tick_label_anchor"] = anchors[align]
+        self._axes._invalidate()
+
+    set_ha = set_horizontalalignment
+
+    def get_horizontalalignment(self) -> str:
+        anchors = {"start": "left", "center": "center", "end": "right"}
+        props = self._axes._axis_props(self._axis)
+        anchor = props.get("tick_label_anchor")
+        if anchor is None:
+            if self._axis == "x":
+                return "center"
+            sides = props.get("tick_label_sides") or [props.get("side", "left")]
+            return "left" if sides[0] == "right" else "right"
+        return anchors.get(str(anchor), "center")
+
     def set_rotation(self, angle: float) -> None:
         angle = float(angle)
         self._axes._axis_props(self._axis)["tick_label_angle"] = angle
@@ -846,18 +991,28 @@ class _SharedAxesGroup:
         return list(fig._axes) if fig is not None else [ax]
 
     def get_siblings(self, ax: Axes) -> list[Any]:
+        source = ax._shared_ticker_source(self._axis)
         props = ax._axis_props(self._axis)
-        return [a for a in self._pool(ax) if a._axis_props(self._axis) is props] or [ax]
+        return [
+            other
+            for other in self._pool(ax)
+            if other._shared_ticker_source(self._axis) is source
+            or other._axis_props(self._axis) is props
+        ] or [ax]
 
     def joined(self, a: Axes, b: Axes) -> bool:
-        return a._axis_props(self._axis) is b._axis_props(self._axis)
+        return a._shared_ticker_source(self._axis) is b._shared_ticker_source(
+            self._axis
+        ) or a._axis_props(self._axis) is b._axis_props(self._axis)
 
     def join(self, *axes_list: Any) -> None:
         first = axes_list[0]
+        source = first._shared_ticker_source(self._axis)
         shared = first._axis_props(self._axis)
         for other in axes_list[1:]:
             key = "y2" if (self._axis == "y" and other._y2_of is not None) else self._axis
             (other._y2_of or other)._axis[key] = shared
+            other._shared_axis_sources[self._axis] = source
             other._invalidate()
 
 
@@ -955,6 +1110,7 @@ class Axes(PlotTypeMixin):
         self._axis: dict[str, dict[str, Any]] = {"x": {}, "y": {}, "y2": {}}
         self._title: Optional[str] = None
         self._title_style: dict[str, Any] = {}
+        self._titles: dict[str, dict[str, Any]] = {}
         self._legend = False
         self._legend_options: dict[str, Any] = {}
         self._legend_items: Optional[list[dict[str, Any]]] = None
@@ -990,6 +1146,9 @@ class Axes(PlotTypeMixin):
         # chart *is* the figure and the rectangle comes from get_position().
         self._plot_box_px: Optional[tuple[float, float, float, float]] = None
         self._padding: Optional[list[float]] = None
+        # Natural ``table(loc="bottom")`` height in Matplotlib points. It is
+        # converted at render time so savefig DPI changes preserve cell size.
+        self._table_bottom_points = 0.0
         # Matplotlib snapshots the rc autoscale margins when an Axes is
         # created.  Keep those values on the axes so ordinary get_*lim() and
         # rendering use the advertised 5% defaults without requiring an
@@ -1001,6 +1160,11 @@ class Axes(PlotTypeMixin):
             "y": self._ymargin,
         }
         self._margin_overrides: set[str] = set()
+        # Whether autoscaling should stop at the margin-expanded data limits
+        # instead of asking the locator for round-number limits. ``None`` has
+        # Matplotlib's initial false-like behavior and lets tight=None preserve
+        # the preceding explicit choice.
+        self._tight: bool | None = None
         # Edge annotations (notably bar_label) need more than the raw 5% data
         # margin to contain a 10 pt glyph plus point padding.  Keep that
         # renderer-independent reservation separate so an explicit margins()
@@ -1016,6 +1180,11 @@ class Axes(PlotTypeMixin):
         self._auto_scale_axis_ticks: set[str] = set()
         self._tick_expanded_domains: set[str] = set()
         self._tickers: dict[tuple[str, str], Any] = {}
+        # Matplotlib shares the Axis ticker containers (locator/formatter)
+        # while keeping per-Axes Tick artists and their visibility separate.
+        # Figure.apply_sharing records the first panel in each shared group,
+        # matching GridSpec.subplots' share source.
+        self._shared_axis_sources: dict[str, Axes] = {}
         self._tick_rotation_modes: dict[str, str | None] = {"x": None, "y": None}
         self._tick_sides: dict[str, dict[str, bool]] = {
             "x": {"bottom": True, "top": False},
@@ -1093,6 +1262,10 @@ class Axes(PlotTypeMixin):
     def _invalidate(self) -> None:
         host = self._y2_of or self
         host._chart = None
+        # Shared render domains are a snapshot from the preceding Figure
+        # materialization pass. Any artist/limit mutation must make the next
+        # pass discover the group's new final view before clipping axlines.
+        host.__dict__.pop("_shared_render_domains", None)
         if host.figure is not None:
             host.figure._invalidate()
 
@@ -1320,6 +1493,7 @@ class Axes(PlotTypeMixin):
         self._hidden_spines = set()
         self._title = None
         self._title_style = {}
+        self._titles = {}
         self._legend = False
         self._legend_options = {}
         self._legend_items = None
@@ -1337,6 +1511,7 @@ class Axes(PlotTypeMixin):
         self._absolute_plot_ratio = None
         self._plot_box_px = None
         self._padding = None
+        self._table_bottom_points = 0.0
         self._annotation_margins = {"x": 0.0, "y": 0.0}
         self._xmargin = float(rcParams["axes.xmargin"])
         self._ymargin = float(rcParams["axes.ymargin"])
@@ -1345,6 +1520,7 @@ class Axes(PlotTypeMixin):
             "y": self._ymargin,
         }
         self._margin_overrides = set()
+        self._tight = None
         self._explicit_domains = set()
         self._grid = bool(rcParams["axes.grid"])
         self._grid_axes = {"x": self._grid, "y": self._grid}
@@ -1386,6 +1562,9 @@ class Axes(PlotTypeMixin):
         ``markevery``, ``drawstyle``, and ``transform``; anything else raises
         loudly. Returns the list of `Line2D` handles, one per series.
         """
+        data = kwargs.pop("data", None)
+        if data is not None:
+            args = _replace_plot_data(args, data)
         scalex = kwargs.pop("scalex", True)
         scaley = kwargs.pop("scaley", True)
         if scalex is not True or scaley is not True:
@@ -1998,9 +2177,21 @@ class Axes(PlotTypeMixin):
         linewidth = kwargs.pop("linewidth", None)
         xerr = kwargs.pop("xerr", None)
         yerr = kwargs.pop("yerr", None)
-        error_kw = kwargs.pop("error_kw", {}) or {}
-        capsize = kwargs.pop("capsize", error_kw.pop("capsize", None))
-        kwargs.pop("ecolor", error_kw.pop("ecolor", None))
+        raw_error_kw = kwargs.pop("error_kw", None)
+        if raw_error_kw is None:
+            error_kw: dict[str, Any] = {}
+        elif isinstance(raw_error_kw, Mapping):
+            # Matplotlib copies this caller-owned mapping before adding the
+            # independent bar defaults.  Its setdefault order deliberately
+            # gives nested error_kw values precedence over direct ecolor and
+            # capsize arguments.
+            error_kw = dict(raw_error_kw)
+        else:
+            raise TypeError("bar()/barh() error_kw must be a mapping or None")
+        direct_capsize = kwargs.pop("capsize", rcParams["errorbar.capsize"])
+        direct_ecolor = kwargs.pop("ecolor", "#000000")
+        error_kw.setdefault("capsize", direct_capsize)
+        error_kw.setdefault("ecolor", direct_ecolor)
         align = kwargs.pop("align", "center")
         if align not in {"center", "edge"}:
             raise ValueError("bar()/barh() align must be 'center' or 'edge'")
@@ -2089,7 +2280,7 @@ class Axes(PlotTypeMixin):
                 **({"patch_labels": patch_labels} if patch_labels is not None else {}),
             },
         )
-        container = BarContainer(self, entry)
+        errorbar = None
         if xerr is not None or yerr is not None:
             positions = np.asarray(cats)
             values = np.asarray(vals, dtype=np.float64)
@@ -2098,13 +2289,17 @@ class Axes(PlotTypeMixin):
                 ex, ey, exerr, eyerr = positions, bases + values, xerr, yerr
             else:
                 ex, ey, exerr, eyerr = bases + values, positions, xerr, yerr
-            err_kwargs = {
-                "xerr": exerr,
-                "yerr": eyerr,
-                "color": error_kw.pop("color", "#000000"),
-                "cap_size": capsize,
-            }
-            self._add("@mark", {"factory": "errorbar", "args": (ex, ey), "kwargs": err_kwargs})
+            error_kw.setdefault("label", "_nolegend_")
+            errorbar = self.errorbar(
+                ex,
+                ey,
+                xerr=exerr,
+                yerr=eyerr,
+                fmt="none",
+                **error_kw,
+            )
+        container = BarContainer(self, entry)
+        container.errorbar = errorbar
         return container
 
     def hist(
@@ -3333,7 +3528,10 @@ class Axes(PlotTypeMixin):
         rotation = kwargs.pop("rotation", None)
         bbox = kwargs.pop("bbox", None)
         check_unsupported(kwargs, "text()")
-        akw = {"color": resolve_color(color)} if color is not None else {}
+        # Matplotlib snapshots the active text default when the Text artist is
+        # created.  Preserve that value on the entry so a later style-context
+        # change cannot recolor an already-authored label at render time.
+        akw = {"color": resolve_color(rcParams["text.color"] if color is None else color)}
         if bbox is not None:
             if not isinstance(bbox, Mapping):
                 raise TypeError("text() bbox must be a mapping or None")
@@ -3395,10 +3593,14 @@ class Axes(PlotTypeMixin):
         weight = kwargs.pop("weight", kwargs.pop("fontweight", None))
         rotation = kwargs.pop("rotation", None)
         bbox = kwargs.pop("bbox", None)
+        zorder = kwargs.pop("zorder", None)
         check_unsupported(kwargs, "annotate()")
-        akw: dict[str, Any] = {}
-        if color is not None:
-            akw["color"] = resolve_color(color)
+        # Match Text creation semantics: the active rc default belongs to the
+        # annotation even if materialization happens after a style context
+        # exits.
+        akw: dict[str, Any] = {
+            "color": resolve_color(rcParams["text.color"] if color is None else color)
+        }
         if arrowprops is not None:
             akw["arrowprops"] = dict(arrowprops)
         if bbox is not None:
@@ -3430,7 +3632,7 @@ class Axes(PlotTypeMixin):
         elif xycoords in {getattr(self.figure, "transFigure", None), "figure fraction"}:
             style["coordinate_space"] = "figure_fraction"
         if fontsize is not None:
-            style["font_size"] = float(fontsize)
+            style["font_size"] = _font_size_points(fontsize, rcParams["font.size"])
         if va is not None:
             style["vertical_align"] = str(va)
         if weight is not None:
@@ -3441,6 +3643,7 @@ class Axes(PlotTypeMixin):
             style["rotation"] = 90.0 if rotation == "vertical" else float(rotation)
         if style:
             akw["style"] = style
+        annotation_entries: list[dict[str, Any]] = []
         if arrowprops is not None and text_xy != xy:
             if style.get("coordinate_space"):
                 raise not_implemented(
@@ -3484,23 +3687,29 @@ class Axes(PlotTypeMixin):
             )
             if attach is not None and not shrink:
                 arrow_style = {**arrow_style, **attach}
-            self._add(
-                "@arrow",
-                {
-                    "args": (sx0, sy0, ex0, ey0),
-                    "kwargs": {
-                        "color": arrow_color,
-                        "width": arrow_width,
-                        "style": arrow_style,
+            annotation_entries.append(
+                self._add(
+                    "@arrow",
+                    {
+                        "args": (sx0, sy0, ex0, ey0),
+                        "kwargs": {
+                            "color": arrow_color,
+                            "width": arrow_width,
+                            "style": arrow_style,
+                        },
                     },
-                },
+                )
             )
-        return Text(
-            self,
-            self._add(
-                "@text", {"args": (text_xy[0], text_xy[1], _plain_text(text)), "kwargs": akw}
-            ),
+        text_entry = self._add(
+            "@text", {"args": (text_xy[0], text_xy[1], _plain_text(text)), "kwargs": akw}
         )
+        annotation_entries.append(text_entry)
+        if zorder is not None:
+            for entry in annotation_entries:
+                entry["_zorder"] = float(zorder)
+            host = self._y2_of or self
+            host._entries.sort(key=lambda entry: float(entry.get("_zorder", 0.0)))
+        return Text(self, text_entry)
 
     # -- axis config -----------------------------------------------------------
 
@@ -3535,11 +3744,39 @@ class Axes(PlotTypeMixin):
         Basic mathtext (``$...$``) is rendered.
         """
         host = self._y2_of or self
-        host._title_style = _title_css_style(
+        loc = str(kwargs.pop("loc", rcParams["axes.titlelocation"])).lower()
+        if loc not in {"left", "center", "right"}:
+            raise ValueError("set_title() loc must be 'left', 'center', or 'right'")
+        authored_y = kwargs.pop("y", None)
+        rc_y = rcParams["axes.titley"]
+        automatic_y = authored_y is None and rc_y is None
+        y = 1.0 if automatic_y else float(rc_y if authored_y is None else authored_y)
+        if not np.isfinite(y):
+            raise ValueError("set_title() y must be finite")
+        pad = float(kwargs.pop("pad", rcParams["axes.titlepad"]))
+        if not np.isfinite(pad):
+            raise ValueError("set_title() pad must be finite")
+        style = _title_css_style(
             _pop_text_style_kwargs(kwargs, "set_title()"),
             point_scale=self._point_scale(),
         )
-        host._title = _plain_text(title)
+        text = _plain_text(title)
+        if text:
+            host._titles[loc] = {
+                "text": text,
+                "loc": loc,
+                "y": y,
+                "pad": pad * self._point_scale(),
+                "automatic_y": automatic_y,
+                "style": style,
+            }
+        else:
+            host._titles.pop(loc, None)
+        # Keep the historical center aliases for get_title() and downstream
+        # code that inspects the ordinary single-title state.
+        if loc == "center":
+            host._title = text or None
+            host._title_style = style
         host._invalidate()
 
     def set(self, **kwargs: Any) -> "Axes":
@@ -3608,11 +3845,12 @@ class Axes(PlotTypeMixin):
         """
         if isinstance(left, (tuple, list)):
             left, right = left
-        spec = (self._y2_of or self)._scale_specs["x"]
+        host = (self._y2_of or self)._shared_ticker_source("x")
+        spec = host._scale_specs["x"]
         current_start, current_end = self.get_xlim()
         if spec["name"] == "log":
             auto_start, auto_end = self._auto_domain("x")
-            if self._axis_props("x").get("reverse"):
+            if host._axis["x"].get("reverse"):
                 auto_start, auto_end = auto_end, auto_start
             if not np.isfinite(current_start) or current_start <= 0:
                 current_start = auto_start
@@ -3638,22 +3876,21 @@ class Axes(PlotTypeMixin):
                 )
                 end = current_end
         transformed = _scale_values(np.asarray((start, end)), spec)
-        self._axis_props("x")["domain"] = tuple(sorted(map(float, transformed)))
-        self._axis_props("x")["reverse"] = start > end
-        self._explicit_domains.add("x")
-        (self._y2_of or self)._tick_expanded_domains.discard("x")
-        self._invalidate()
+        host._axis["x"]["domain"] = tuple(sorted(map(float, transformed)))
+        host._axis["x"]["reverse"] = start > end
+        host._explicit_domains.add("x")
+        host._tick_expanded_domains.discard("x")
+        host._invalidate_shared_ticker_axis("x")
 
     def get_xlim(self) -> tuple[float, float]:
         """The current x view limits, in data space and display order."""
-        lo, hi = self._axis_props("x").get("domain", self._auto_domain("x"))
+        host = (self._y2_of or self)._shared_ticker_source("x")
+        lo, hi = host._axis["x"].get("domain", self._auto_domain("x"))
         lo, hi = map(
             float,
-            _scale_values(
-                np.asarray((lo, hi)), (self._y2_of or self)._scale_specs["x"], inverse=True
-            ),
+            _scale_values(np.asarray((lo, hi)), host._scale_specs["x"], inverse=True),
         )
-        return (hi, lo) if self._axis_props("x").get("reverse") else (lo, hi)
+        return (hi, lo) if host._axis["x"].get("reverse") else (lo, hi)
 
     def set_ylim(self, bottom: float | LimitsLike | None = None, top: float | None = None) -> None:
         """Set the y view limits (forms as in `set_xlim`).
@@ -3663,12 +3900,14 @@ class Axes(PlotTypeMixin):
         """
         if isinstance(bottom, (tuple, list)):
             bottom, top = bottom
+        base = self._y2_of or self
         key = "y2" if self._y2_of is not None else "y"
-        spec = (self._y2_of or self)._scale_specs[key]
+        host = base._shared_ticker_source(key)
+        spec = host._scale_specs[key]
         current_start, current_end = self.get_ylim()
         if spec["name"] == "log":
             auto_start, auto_end = self._auto_domain("y")
-            if self._axis_props("y").get("reverse"):
+            if host._axis[key].get("reverse"):
                 auto_start, auto_end = auto_end, auto_start
             if not np.isfinite(current_start) or current_start <= 0:
                 current_start = auto_start
@@ -3694,23 +3933,23 @@ class Axes(PlotTypeMixin):
                 )
                 end = current_end
         transformed = _scale_values(np.asarray((start, end)), spec)
-        self._axis_props("y")["domain"] = tuple(sorted(map(float, transformed)))
-        self._axis_props("y")["reverse"] = start > end
-        self._explicit_domains.add("y")
-        (self._y2_of or self)._tick_expanded_domains.discard(key)
-        self._invalidate()
+        host._axis[key]["domain"] = tuple(sorted(map(float, transformed)))
+        host._axis[key]["reverse"] = start > end
+        host._explicit_domains.add(key)
+        host._tick_expanded_domains.discard(key)
+        host._invalidate_shared_ticker_axis(key)
 
     def get_ylim(self) -> tuple[float, float]:
         """The current y view limits, in data space and display order."""
-        lo, hi = self._axis_props("y").get("domain", self._auto_domain("y"))
+        base = self._y2_of or self
         key = "y2" if self._y2_of is not None else "y"
+        host = base._shared_ticker_source(key)
+        lo, hi = host._axis[key].get("domain", self._auto_domain("y"))
         lo, hi = map(
             float,
-            _scale_values(
-                np.asarray((lo, hi)), (self._y2_of or self)._scale_specs[key], inverse=True
-            ),
+            _scale_values(np.asarray((lo, hi)), host._scale_specs[key], inverse=True),
         )
-        return (hi, lo) if self._axis_props("y").get("reverse") else (lo, hi)
+        return (hi, lo) if host._axis[key].get("reverse") else (lo, hi)
 
     def _aspect_coordinates(
         self,
@@ -3738,7 +3977,14 @@ class Axes(PlotTypeMixin):
             with np.errstate(divide="ignore", invalid="ignore"):
                 transformed = np.log(values) / np.log(base)
         if not np.isfinite(transformed).all():
-            raise ValueError("log aspect limits must be positive and finite")
+            # A scale mutation can leave the aspect snapshot in the previous
+            # scale's coordinates. Re-resolve from the current positive data
+            # instead of making get_position()/export fail on stale bounds.
+            fallback = np.asarray(self._auto_domain(axis), dtype=np.float64)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                transformed = np.log(fallback) / np.log(base)
+            if not np.isfinite(transformed).all():
+                raise ValueError("log aspect limits must be positive and finite")
         return tuple(map(float, transformed))
 
     def get_position(self, original: bool = False) -> Bbox:
@@ -3750,12 +3996,17 @@ class Axes(PlotTypeMixin):
         ``original=False`` applies adjustable-box aspect geometry, while
         ``original=True`` returns the allocated subplot rectangle.
         """
-        if self._figure_rect is not None:
-            rect = self._figure_rect
-        elif self.figure is not None:
+        if self.figure is not None:
+            # A factory-authored tight/constrained layout first records an
+            # empty-axes rectangle, then becomes dirty as artists and
+            # colorbars arrive. Always enter the Figure resolver before
+            # trusting that cached rectangle so get_position() observes the
+            # same final-content solve as every exporter.
             rect = self.figure._axes_rect(self)
             if rect is None:
-                rect = _DEFAULT_AXES_RECT
+                rect = self._figure_rect or _DEFAULT_AXES_RECT
+        elif self._figure_rect is not None:
+            rect = self._figure_rect
         else:
             rect = _DEFAULT_AXES_RECT
         if original or not (
@@ -3870,6 +4121,21 @@ class Axes(PlotTypeMixin):
 
         for entry in host._entries:
             if axis == "y" and entry.get("y_axis", "y") != y_axis:
+                continue
+            if entry.get("_quiver_key_recipe") is not None:
+                # QuiverKey is an Artist offset in axes/figure/data display
+                # coordinates; Matplotlib never lets it change dataLim.
+                continue
+            quiver_recipe = entry.get("_quiver_recipe")
+            if quiver_recipe is not None:
+                # Quiver.get_datalim contributes only its offset locations,
+                # not the display-sized arrow polygons. Keep that invariant
+                # after materialization expands the entry into shaft/head
+                # segments outside the data-position extent.
+                key = "x" if axis == "x" else "y"
+                scale_key = "y2" if axis == "y" and self._y2_of is not None else axis
+                values = _scale_values(quiver_recipe[key], host._scale_specs[scale_key])
+                yield np.asarray(values, dtype=np.float64).reshape(-1), True
                 continue
             if entry.get("kind") == "@axline":
                 # Matplotlib includes only untransformed defining points in
@@ -4261,6 +4527,7 @@ class Axes(PlotTypeMixin):
         elif arg in {"auto", "equal", "scaled", "image", "square"}:
             # All five Matplotlib modes begin with autoscale_view(tight=False),
             # whose limits include the configured x/y margins.
+            self._tight = False
             self._aspect_equal = False
             self._aspect_value = 1.0
             self._aspect_adjustable = "box"
@@ -4269,7 +4536,7 @@ class Axes(PlotTypeMixin):
             # the placeholder (0, 1) view into explicit limits. Matplotlib
             # continues autoscaling when artists are added afterwards.
             if self._entries:
-                self._set_tight_domains()
+                self._set_tight_domains(tight=False)
             if arg in {"equal", "scaled", "image", "square"}:
                 if self._entries:
                     self._set_aspect_equal_from_current()
@@ -4292,6 +4559,10 @@ class Axes(PlotTypeMixin):
                 self.set_ylim(y0, y0 + edge)
                 self._aspect_bounds = (x0, x0 + edge, y0, y0 + edge)
                 self._set_box_aspect_ratio(1.0)
+            if arg == "image":
+                # image follows the shared tight=False transition with its
+                # own autoscale_view(tight=True).
+                self._tight = True
         elif arg == "tight":
             self._aspect_equal = False
             self._aspect_value = 1.0
@@ -4439,27 +4710,37 @@ class Axes(PlotTypeMixin):
         self.get_gridspec()
         return self._subplot_spec
 
-    def margins(self, *args: Any, **kwargs: Any) -> None:
-        """Set the autoscaling padding around the data, as axis fractions.
+    def margins(self, *args: Any, **kwargs: Any) -> tuple[float, float] | None:
+        """Set or return autoscaling padding around the data, as axis fractions.
 
         Call as ``margins(m)``, ``margins(x, y)``, or with ``x=``/``y=``;
         values must be finite and greater than -0.5 (negative margins clip).
-        ``tight`` is accepted and ignored; explicitly set limits are left alone.
+        With no values, return the current ``(xmargin, ymargin)``. ``tight``
+        controls round-number locator expansion; ``None`` preserves its prior
+        setting. Explicitly set limits are left alone.
         """
-        tight = kwargs.pop("tight", None)
-        del tight
+        tight = kwargs.pop("tight", True)
         x = kwargs.pop("x", None)
         y = kwargs.pop("y", None)
         if kwargs:
             raise TypeError(f"margins() got unsupported keyword argument {next(iter(kwargs))!r}")
-        if len(args) > 2:
-            raise TypeError("margins() takes at most two positional arguments")
+        if args and (x is not None or y is not None):
+            raise TypeError("Cannot pass both positional and keyword arguments for x and/or y.")
         if len(args) == 1:
             x = y = args[0]
         elif len(args) == 2:
             x, y = args
+        elif args:
+            raise TypeError(
+                "Must pass a single positional argument for all margins, "
+                "or one for each margin (x, y)."
+            )
         if x is None and y is None:
-            return
+            if tight is not True:
+                warnings.warn(f"ignoring tight={tight!r} in get mode", stacklevel=2)
+            return self._xmargin, self._ymargin
+        if tight is not None:
+            self._tight = bool(tight)
         if x is not None:
             self._xmargin = _validate_margin(x, "x")
             self._margin_overrides.add("x")
@@ -4493,11 +4774,11 @@ class Axes(PlotTypeMixin):
 
     def set_xmargin(self, margin: float) -> None:
         """Set x-axis autoscale padding as a fraction of the data interval."""
-        self.margins(x=margin)
+        self.margins(x=margin, tight=None)
 
     def set_ymargin(self, margin: float) -> None:
         """Set y-axis autoscale padding as a fraction of the data interval."""
-        self.margins(y=margin)
+        self.margins(y=margin, tight=None)
 
     def relim(self, visible_only: bool = False) -> None:
         """Recompute the data limits from the plotted entries.
@@ -4512,26 +4793,36 @@ class Axes(PlotTypeMixin):
         self._invalidate()
 
     def autoscale(
-        self, enable: bool = True, axis: str = "both", tight: Optional[bool] = None
+        self, enable: bool | None = True, axis: str = "both", tight: Optional[bool] = None
     ) -> None:
         """Turn autoscaling on or off and re-fit the limits.
 
         ``axis`` restricts to ``"x"`` or ``"y"`` (default ``"both"``);
-        ``tight=True`` pins the limits to the raw data extent, and
+        ``tight=True`` removes margins from axes receiving the request, and
         ``enable=False`` freezes the current auto limits.
         """
         if axis not in {"both", "x", "y"}:
             raise ValueError("autoscale() axis must be 'both', 'x', or 'y'")
         axes = ("x", "y") if axis == "both" else (axis,)
-        for item in axes:
-            if enable:
-                self._explicit_domains.discard(item)
-                if tight:
-                    self._axis_props(item)["domain"] = self._entry_extent(item)
-                    self._explicit_domains.add(item)
+        # Matplotlib forwards ``tight`` to both axes when enable=None,
+        # regardless of ``axis``. Their enabled/disabled state itself remains
+        # unchanged.
+        forwarded_axes = ("x", "y") if enable is None else axes if enable else ()
+        if forwarded_axes and tight is not None:
+            self._tight = bool(tight)
+        for item in forwarded_axes:
+            if tight:
+                if item == "x":
+                    self._xmargin = 0.0
                 else:
-                    self._axis_props(item).pop("domain", None)
-            else:
+                    self._ymargin = 0.0
+                self._margin_overrides.add(item)
+            if enable is True:
+                self._explicit_domains.discard(item)
+            if item not in self._explicit_domains:
+                self._axis_props(item).pop("domain", None)
+        if enable is False:
+            for item in axes:
                 self._axis_props(item)["domain"] = self._auto_domain(item)
                 self._explicit_domains.add(item)
         self._invalidate()
@@ -4541,13 +4832,16 @@ class Axes(PlotTypeMixin):
     ) -> None:
         """Re-fit the axes limits to the data (see `autoscale`).
 
-        ``scalex``/``scaley`` select which axes to autoscale; ``tight``
-        drops the data margins.
+        ``scalex``/``scaley`` select which currently enabled axes to
+        recompute. ``tight`` controls locator rounding while preserving the
+        configured margins.
         """
-        if scalex:
-            self.autoscale(True, axis="x", tight=tight)
-        if scaley:
-            self.autoscale(True, axis="y", tight=tight)
+        if tight is not None:
+            self._tight = bool(tight)
+        for item, selected in (("x", scalex), ("y", scaley)):
+            if selected and item not in self._explicit_domains:
+                self._axis_props(item).pop("domain", None)
+        self._invalidate()
 
     def get_xbound(self) -> tuple[float, float]:
         """The x bounds as a ``(lower, upper)`` pair (see `get_xlim`)."""
@@ -4620,16 +4914,29 @@ class Axes(PlotTypeMixin):
         self._invalidate()
 
     def minorticks_on(self) -> None:
-        """Show minor ticks on both axes."""
-        self._axis_props("x")["minor_ticks"] = True
-        self._axis_props("y")["minor_ticks"] = True
-        self._invalidate()
+        """Show automatically subdivided minor ticks on both axes."""
+        for axis in ("x", "y"):
+            host, key = _AxisProxy(self, axis)._ticker_slot()
+            spec = host._scale_specs.get(key) or {"name": "linear"}
+            if spec.get("name") == "log":
+                from ._ticker import LogLocator
+
+                locator = LogLocator(
+                    base=float(spec.get("base", 10.0)),
+                    subs=spec.get("subs"),
+                )
+            else:
+                locator = AutoMinorLocator()
+            host._tickers[(key, "minor_locator")] = locator
+            host._invalidate_shared_ticker_axis(key)
 
     def minorticks_off(self) -> None:
         """Hide minor ticks on both axes."""
-        self._axis_props("x")["minor_ticks"] = False
-        self._axis_props("y")["minor_ticks"] = False
-        self._invalidate()
+        for axis in ("x", "y"):
+            host, key = _AxisProxy(self, axis)._ticker_slot()
+            host._tickers[(key, "minor_locator")] = NullLocator()
+            host._axis[key].pop("minor_tick_values", None)
+            host._invalidate_shared_ticker_axis(key)
 
     def get_xlabel(self) -> str:
         """The x-axis label text (empty string when unset)."""
@@ -4639,9 +4946,13 @@ class Axes(PlotTypeMixin):
         """The y-axis label text (empty string when unset)."""
         return str(self._axis_props("y").get("label", ""))
 
-    def get_title(self) -> str:
-        """The axes title text (empty string when unset)."""
-        return "" if self._title is None else str(self._title)
+    def get_title(self, loc: str = "center") -> str:
+        """The axes title text for ``loc`` (empty string when unset)."""
+        resolved = str(loc).lower()
+        if resolved not in {"left", "center", "right"}:
+            raise ValueError("get_title() loc must be 'left', 'center', or 'right'")
+        title = (self._y2_of or self)._titles.get(resolved)
+        return "" if title is None else str(title["text"])
 
     def get_xaxis(self) -> _AxisProxy:
         """The x-axis proxy (the same object as ``ax.xaxis``)."""
@@ -4727,19 +5038,17 @@ class Axes(PlotTypeMixin):
             for container in host._containers
             if isinstance(container, ErrorbarContainer)
         }
+        bar_containers = {
+            id(container._entry): container
+            for container in host._containers
+            if isinstance(container, BarContainer) and container._entry.get("kind") == "bar"
+        }
         handles: list[Any] = []
         labels: list[str] = []
         for entry in host._entries:
             patch_labels = entry.get("patch_labels")
             if patch_labels is not None:
-                container = next(
-                    (
-                        item
-                        for item in host._containers
-                        if isinstance(item, BarContainer) and item._entry is entry
-                    ),
-                    None,
-                )
+                container = bar_containers.get(id(entry))
                 for index, label in enumerate(patch_labels):
                     if label and not str(label).startswith("_"):
                         handles.append(
@@ -4747,10 +5056,28 @@ class Axes(PlotTypeMixin):
                         )
                         labels.append(str(label))
                 continue
+            # Matplotlib scans ordinary child artists first, then containers.
+            # Defer container-owned entries so an errorbar/bar pair follows
+            # the public Axes.containers registration order.
+            if id(entry) in errorbar_containers or id(entry) in bar_containers:
+                continue
             label = entry.get("kwargs", {}).get("name")
             if label and not str(label).startswith("_"):
-                handle = errorbar_containers.get(id(entry))
-                handles.append(handle if handle is not None else Artist(self, entry))
+                handles.append(Artist(self, entry))
+                labels.append(str(label))
+        for container in host._containers:
+            if not isinstance(container, (BarContainer, ErrorbarContainer)):
+                continue
+            if isinstance(container, BarContainer) and container._entry.get("kind") != "bar":
+                continue
+            if (
+                isinstance(container, BarContainer)
+                and container._entry.get("patch_labels") is not None
+            ):
+                continue
+            label = container.get_label()
+            if label and not str(label).startswith("_"):
+                handles.append(container)
                 labels.append(str(label))
         return handles, labels
 
@@ -4824,11 +5151,11 @@ class Axes(PlotTypeMixin):
         self._invalidate()
         return made
 
-    def _set_tight_domains(self) -> None:
-        # Matplotlib's axis("tight") disables further autoscaling after an
-        # autoscale_view(tight=True), but that view still includes the current
-        # axes.xmargin/axes.ymargin (5% by default).  "Tight" suppresses tick
-        # locator expansion; it does not mean raw data extrema.
+    def _set_tight_domains(self, *, tight: bool = True) -> None:
+        # Axis modes materialize the margin-expanded view before applying
+        # their aspect/autoscale policy. "Tight" suppresses tick-locator
+        # expansion; it does not mean raw data extrema.
+        self._tight = bool(tight)
         for axis in ("x", "y"):
             self._axis_props(axis)["domain"] = self._auto_domain(axis)
         self._explicit_domains.update({"x", "y"})
@@ -5009,9 +5336,51 @@ class Axes(PlotTypeMixin):
         del kwargs
         return "yaxis transform"
 
-    def label_outer(self, **kwargs: Any) -> None:
-        """Compat-noop: the engine lays out shared-axis tick labels itself."""
-        del kwargs
+    def label_outer(self, remove_inner_ticks: bool = False) -> None:
+        """Keep axis labels and tick labels only on the GridSpec's outer edges."""
+        spec = self.get_subplotspec()
+        if spec is None:
+            return
+
+        x_label_side = self._axis_props("x").get("side", "bottom")
+        if spec.rows[0] != 0:
+            if x_label_side == "top":
+                self.set_xlabel("")
+            self.tick_params(
+                axis="x",
+                which="both",
+                labeltop=False,
+                **({"top": False} if remove_inner_ticks else {}),
+            )
+        if spec.rows[1] != spec.nrows:
+            if x_label_side == "bottom":
+                self.set_xlabel("")
+            self.tick_params(
+                axis="x",
+                which="both",
+                labelbottom=False,
+                **({"bottom": False} if remove_inner_ticks else {}),
+            )
+
+        y_label_side = self._axis_props("y").get("side", "left")
+        if spec.cols[0] != 0:
+            if y_label_side == "left":
+                self.set_ylabel("")
+            self.tick_params(
+                axis="y",
+                which="both",
+                labelleft=False,
+                **({"left": False} if remove_inner_ticks else {}),
+            )
+        if spec.cols[1] != spec.ncols:
+            if y_label_side == "right":
+                self.set_ylabel("")
+            self.tick_params(
+                axis="y",
+                which="both",
+                labelright=False,
+                **({"right": False} if remove_inner_ticks else {}),
+            )
 
     def add_artist(self, artist: Any) -> Any:
         """Add a prebuilt artist to the axes.
@@ -5521,42 +5890,56 @@ class Axes(PlotTypeMixin):
             self._tick_lengths[axis] = float(length) * self._point_scale()
         if any(sides.values()):
             style["tick_length"] = self._tick_lengths[axis]
-            visible_sides = [side for side, shown in sides.items() if shown]
-            if len(visible_sides) == 1:
-                props["side"] = visible_sides[0]
+            props["tick_sides"] = [side for side, shown in sides.items() if shown]
         else:
             # The native axis has one tick side, so zero length is its exact
             # representation of Matplotlib's tick1On=False/tick2On=False.
             style["tick_length"] = 0.0
+            props["tick_sides"] = []
 
     def _apply_tick_label_side_visibility(self, axis: str, side_updates: dict[str, bool]) -> None:
         sides = self._tick_label_sides[axis]
         sides.update({key: value for key, value in side_updates.items() if key in sides})
-        self._axis_props(axis)["tick_label_strategy"] = None if any(sides.values()) else "off"
+        props = self._axis_props(axis)
+        props["tick_label_strategy"] = None if any(sides.values()) else "off"
+        props["tick_label_sides"] = [
+            key.removeprefix("label") for key, shown in sides.items() if shown
+        ]
 
     def tick_params(self, axis: str = "both", **kwargs: Any) -> None:
         """Change tick, tick-label, and axis-color appearance.
 
         ``axis`` selects ``"x"``/``"y"``/``"both"``. Supported keywords:
-        ``labelrotation``/``rotation``, ``colors``, ``color``,
-        ``labelcolor``, ``length``, ``width``, ``pad``, ``direction``
+        ``which`` selects major/minor/both. ``labelrotation``/``rotation``,
+        ``colors``, ``color``, ``labelcolor``, ``length``/``size``, ``width``,
+        ``pad``, ``labelsize``, ``direction``
         (``"in"``/``"out"``/``"inout"``), and the ``labelbottom``/
         ``labeltop``/``labelleft``/``labelright`` and ``bottom``/``top``/
-        ``left``/``right`` visibility flags. ``rotation_mode`` and
+        ``left``/``right`` visibility flags. The legacy ``tick1On``/
+        ``tick2On`` names are accepted. ``rotation_mode`` and
         ``labelrotation_mode`` support Matplotlib 3.11's special tick-label
         anchors; anything else raises loudly.
         """
         if axis not in {"both", "x", "y"}:
             raise ValueError("tick_params() axis must be 'both', 'x', or 'y'")
+        which = str(kwargs.pop("which", "major")).lower()
+        if which not in {"major", "minor", "both"}:
+            raise ValueError("tick_params() which must be 'major', 'minor', or 'both'")
+        reset = bool(kwargs.pop("reset", False))
+        if reset:
+            raise not_implemented("tick_params(reset=True)", "reset=False")
         rotation = kwargs.pop("labelrotation", kwargs.pop("rotation", None))
         rotation_mode = kwargs.pop("labelrotation_mode", kwargs.pop("rotation_mode", None))
         colors = kwargs.pop("colors", None)
         color = kwargs.pop("color", colors)
         labelcolor = kwargs.pop("labelcolor", colors)
-        length = kwargs.pop("length", None)
+        length = kwargs.pop("length", kwargs.pop("size", None))
         pad = kwargs.pop("pad", None)
         width = kwargs.pop("width", None)
+        labelsize = kwargs.pop("labelsize", None)
         direction = kwargs.pop("direction", None)
+        tick1_on = kwargs.pop("tick1On", None)
+        tick2_on = kwargs.pop("tick2On", None)
         side_updates = {
             key: bool(kwargs.pop(key))
             for key in ("bottom", "top", "left", "right")
@@ -5573,28 +5956,60 @@ class Axes(PlotTypeMixin):
             )
         for ax in ("x", "y") if axis == "both" else (axis,):
             props = self._axis_props(ax)
-            if rotation is not None:
+            physical_sides = ("bottom", "top") if ax == "x" else ("left", "right")
+            legacy_sides = dict(side_updates)
+            if tick1_on is not None:
+                legacy_sides[physical_sides[0]] = bool(tick1_on)
+            if tick2_on is not None:
+                legacy_sides[physical_sides[1]] = bool(tick2_on)
+            if rotation is not None and which in {"major", "both"}:
                 props["tick_label_angle"] = float(rotation)
-            if rotation_mode is not None:
+            if rotation_mode is not None and which in {"major", "both"}:
                 self._set_tick_rotation_mode(ax, rotation_mode)
-            elif rotation is not None:
+            elif rotation is not None and which in {"major", "both"}:
                 self._apply_tick_rotation_mode(ax, float(rotation))
-            style = props.setdefault("style", {})
-            if color is not None:
-                style["tick_color"] = resolve_color(color)
-            if labelcolor is not None:
-                style["tick_label_color"] = resolve_color(labelcolor)
-            if length is not None or side_updates:
-                self._apply_tick_side_visibility(ax, side_updates, length)
-            if pad is not None:
-                style["tick_padding"] = float(pad) * self._point_scale()
-            if width is not None:
-                style["tick_width"] = float(width) * self._point_scale()
-            if direction is not None:
-                if direction not in {"in", "out", "inout"}:
-                    raise ValueError("tick_params() direction must be 'in', 'out', or 'inout'")
-                style["tick_direction"] = direction
-            if label_side_updates:
+            style_names = (
+                ("style", "minor_style")
+                if which == "both"
+                else ("style" if which == "major" else "minor_style",)
+            )
+            for style_name in style_names:
+                style = props.setdefault(style_name, {})
+                if color is not None:
+                    style["tick_color"] = resolve_color(color)
+                if labelcolor is not None:
+                    style["tick_label_color"] = resolve_color(labelcolor)
+                if length is not None:
+                    style["tick_length"] = float(length) * self._point_scale()
+                if pad is not None:
+                    style["tick_padding"] = float(pad) * self._point_scale()
+                if width is not None:
+                    style["tick_width"] = float(width) * self._point_scale()
+                if labelsize is not None:
+                    style["tick_label_size"] = (
+                        _font_size_points(labelsize, rcParams["font.size"]) * self._point_scale()
+                    )
+                if direction is not None:
+                    if direction not in {"in", "out", "inout"}:
+                        raise ValueError("tick_params() direction must be 'in', 'out', or 'inout'")
+                    style["tick_direction"] = direction
+            if legacy_sides and which in {"major", "both"}:
+                self._apply_tick_side_visibility(ax, legacy_sides, length)
+            if legacy_sides and which == "minor":
+                visible_minor_sides = [
+                    side
+                    for side in physical_sides
+                    if legacy_sides.get(side, self._tick_sides[ax][side])
+                ]
+                if not visible_minor_sides:
+                    props.setdefault("minor_style", {})["tick_length"] = 0.0
+                elif (
+                    length is None and props.setdefault("minor_style", {}).get("tick_length") == 0.0
+                ):
+                    props["minor_style"]["tick_length"] = _rc_minor_axis_style(
+                        ax, self.figure.get_dpi()
+                    )["tick_length"]
+            if label_side_updates and which in {"major", "both"}:
                 self._apply_tick_label_side_visibility(ax, label_side_updates)
         self._invalidate()
 
@@ -5615,11 +6030,12 @@ class Axes(PlotTypeMixin):
         """
         if kwargs.pop("minor", False):
             return
-        props = self._axis_props("x")
+        host = (self._y2_of or self)._shared_ticker_source("x")
+        props = host._axis["x"]
         if ticks is not None:
-            spec = (self._y2_of or self)._scale_specs["x"]
-            (self._y2_of or self)._auto_scale_axis_ticks.discard("x")
-            (self._y2_of or self)._tickers.pop(("x", "major_locator"), None)
+            spec = host._scale_specs["x"]
+            host._auto_scale_axis_ticks.discard("x")
+            host._tickers.pop(("x", "major_locator"), None)
             props["tick_values"] = list(map(float, _scale_values(ticks, spec)))
             props["tick_count"] = max(1, len(props["tick_values"]))
             self._expand_domain_to_ticks("x")
@@ -5637,10 +6053,10 @@ class Axes(PlotTypeMixin):
                 raise ValueError("labels must have the same length as ticks")
             # matplotlib: explicit labels install a FixedFormatter, displacing
             # any user formatter.
-            (self._y2_of or self)._tickers.pop(("x", "major_formatter"), None)
+            host._tickers.pop(("x", "major_formatter"), None)
         if rotation is not None:
-            props["tick_label_angle"] = float(rotation)
-        self._invalidate()
+            self._axis_props("x")["tick_label_angle"] = float(rotation)
+        host._invalidate_shared_ticker_axis("x")
 
     def set_yticks(
         self,
@@ -5653,12 +6069,14 @@ class Axes(PlotTypeMixin):
         """Place the y ticks at the given positions (see `set_xticks`)."""
         if kwargs.pop("minor", False):
             return
-        props = self._axis_props("y")
+        base = self._y2_of or self
+        key = "y2" if self._y2_of is not None else "y"
+        host = base._shared_ticker_source(key)
+        props = host._axis[key]
         if ticks is not None:
-            key = "y2" if self._y2_of is not None else "y"
-            spec = (self._y2_of or self)._scale_specs[key]
-            (self._y2_of or self)._auto_scale_axis_ticks.discard(key)
-            (self._y2_of or self)._tickers.pop((key, "major_locator"), None)
+            spec = host._scale_specs[key]
+            host._auto_scale_axis_ticks.discard(key)
+            host._tickers.pop((key, "major_locator"), None)
             props["tick_values"] = list(map(float, _scale_values(ticks, spec)))
             props["tick_count"] = max(1, len(props["tick_values"]))
             self._expand_domain_to_ticks("y")
@@ -5674,11 +6092,10 @@ class Axes(PlotTypeMixin):
             props["tick_labels"] = [_plain_text(value) for value in labels]
             if len(props["tick_labels"]) != len(props.get("tick_values", [])):
                 raise ValueError("labels must have the same length as ticks")
-            key = "y2" if self._y2_of is not None else "y"
-            (self._y2_of or self)._tickers.pop((key, "major_formatter"), None)
+            host._tickers.pop((key, "major_formatter"), None)
         if rotation is not None:
-            props["tick_label_angle"] = float(rotation)
-        self._invalidate()
+            self._axis_props("y")["tick_label_angle"] = float(rotation)
+        host._invalidate_shared_ticker_axis(key)
 
     def _expand_domain_to_ticks(self, axis: str) -> None:
         """Apply Matplotlib's mandatory view expansion for explicit ticks."""
@@ -5810,7 +6227,10 @@ class Axes(PlotTypeMixin):
         return self._computed_ticks("y", minor)
 
     def _computed_ticks(self, axis: str, minor: bool) -> np.ndarray:
-        props = self._axis_props(axis)
+        base = self._y2_of or self
+        key = "y2" if axis == "y" and self._y2_of is not None else axis
+        host = base._shared_ticker_source(key)
+        props = host._axis[key]
         if minor:
             key = "y2" if axis == "y" and self._y2_of is not None else axis
             return np.asarray(
@@ -5822,11 +6242,8 @@ class Axes(PlotTypeMixin):
                 dtype=float,
             )
         if "tick_values" in props:
-            key = "y2" if axis == "y" and self._y2_of is not None else axis
             return np.asarray(
-                _scale_values(
-                    props["tick_values"], (self._y2_of or self)._scale_specs[key], inverse=True
-                ),
+                _scale_values(props["tick_values"], host._scale_specs[key], inverse=True),
                 dtype=float,
             )
         # Auto-ticked axes report the same nice locations the exporters draw.
@@ -5835,8 +6252,6 @@ class Axes(PlotTypeMixin):
         lo, hi = sorted(self.get_xlim() if axis == "x" else self.get_ylim())
         if not (np.isfinite(lo) and np.isfinite(hi)) or lo == hi:
             return np.asarray([], dtype=float)
-        host = self._y2_of or self
-        key = "y2" if (axis == "y" and self._y2_of is not None) else axis
         locator = host._tickers.get((key, "major_locator"))
         if locator is not None:
             ticks = np.asarray(locator.tick_values(lo, hi), dtype=float).reshape(-1)
@@ -6210,6 +6625,44 @@ class Axes(PlotTypeMixin):
         key = "y2" if (axis == "y" and self._y2_of is not None) else axis
         return host._axis[key]
 
+    def _shared_ticker_source(self, key: str) -> "Axes":
+        """Axis whose locator/formatter and authored ticks this panel uses."""
+        if key == "y2":
+            return self
+        return self._shared_axis_sources.get(key, self)
+
+    def _invalidate_shared_ticker_axis(self, key: str) -> None:
+        """Drop every chart cache that consumes one shared ticker container."""
+        source = self._shared_ticker_source(key)
+        figure = source.figure
+        if figure is None:
+            source._chart = None
+            return
+        for ax in figure._axes:
+            if ax._shared_ticker_source(key) is source:
+                ax._chart = None
+        figure._invalidate()
+
+    def _inherit_shared_axis_state(self, axis: str, props: dict[str, Any]) -> None:
+        """Overlay the shared Axis state while retaining local tick visibility."""
+        source = self._shared_ticker_source(axis)
+        if source is self:
+            return
+        source_props = source._axis[axis]
+        for name in (
+            "domain",
+            "reverse",
+            "tick_values",
+            "tick_labels",
+            "tick_count",
+            "minor_tick_values",
+        ):
+            if name in source_props:
+                props[name] = source_props[name]
+
+    def _has_explicit_shared_domain(self, axis: str) -> bool:
+        return axis in self._shared_ticker_source(axis)._explicit_domains
+
     def _ticker_view(self, key: str, props: dict[str, Any]) -> tuple[float, float]:
         """The axis view interval in *data* space, for locator math."""
         axis = "y" if key == "y2" else key
@@ -6227,28 +6680,28 @@ class Axes(PlotTypeMixin):
         self, key: str, props: dict[str, Any], nbins_hint: Optional[int] = None
     ) -> None:
         """Resolve a user locator/formatter into concrete tick props (in place)."""
-        from ._ticker import LogLocator, NullFormatter
+        from ._ticker import LogLocator
 
-        locator = self._tickers.get((key, "major_locator"))
-        formatter = self._tickers.get((key, "major_formatter"))
-        minor_locator = self._tickers.get((key, "minor_locator"))
-        minor_formatter = self._tickers.get((key, "minor_formatter"))
-        # The engine draws a single tick set. When a script blanks the major
-        # labels and puts the text on located minors (matplotlib's centered
-        # date-label idiom: major NullFormatter + labeled minor locator), the
-        # minor pair is the one carrying information — promote it.
-        if (
-            isinstance(formatter, NullFormatter)
+        ticker_source = self._shared_ticker_source(key)
+        locator = ticker_source._tickers.get((key, "major_locator"))
+        formatter = ticker_source._tickers.get((key, "major_formatter"))
+        minor_locator = ticker_source._tickers.get((key, "minor_locator"))
+        minor_formatter = ticker_source._tickers.get((key, "minor_formatter"))
+        # Core's minor tier is deliberately unlabeled. When a script blanks
+        # the majors and labels located minors (Matplotlib's centered-date
+        # idiom), promote that pair to the labeled tier.
+        promoted_minor = (
+            _is_null_formatter(formatter)
             and minor_locator is not None
-            and hasattr(minor_locator, "tick_values")
             and minor_formatter is not None
-            and not isinstance(minor_formatter, NullFormatter)
-        ):
+            and not _is_null_formatter(minor_formatter)
+        )
+        if promoted_minor:
             locator, formatter = minor_locator, minor_formatter
         is_log = (
             props.get("type_") == "log" or (self._scale_specs.get(key) or {}).get("name") == "log"
         )
-        if locator is None and formatter is None and not is_log:
+        if locator is None and formatter is None and minor_locator is None and not is_log:
             return
         spec = self._scale_specs.get(key) or {"name": "linear"}
         authored_labels = list(props["tick_labels"]) if "tick_labels" in props else None
@@ -6259,7 +6712,12 @@ class Axes(PlotTypeMixin):
                 # Third-party locators only promise tick_values(); the density
                 # hint is an xy-locator protocol, never forced onto them.
                 locator._nbins_hint = nbins_hint
-            ticks = np.asarray(locator.tick_values(lo, hi), dtype=float).reshape(-1)
+            ticks = _locator_tick_values(
+                locator,
+                lo,
+                hi,
+                datetime_axis=self._axis_holds_datetimes("y" if key == "y2" else key),
+            )
             pad = (hi - lo) * 1e-9
             ticks = ticks[(ticks >= lo - pad) & (ticks <= hi + pad)]
         elif "tick_values" in props:
@@ -6276,12 +6734,11 @@ class Axes(PlotTypeMixin):
             auto_log = is_log
         props["tick_values"] = list(map(float, _scale_values(ticks, spec)))
         if formatter is not None:
-            if hasattr(formatter, "set_locs"):
-                formatter.set_locs(ticks)
-            props["tick_labels"] = [
-                _plain_text(formatter(float(value), position))
-                for position, value in enumerate(ticks)
-            ]
+            props["tick_labels"] = _formatter_tick_labels(
+                formatter,
+                ticks,
+                datetime_axis=self._axis_holds_datetimes("y" if key == "y2" else key),
+            )
         elif auto_log:
             # matplotlib's LogFormatter look: decades label as 10^k.
             props["tick_labels"] = [
@@ -6297,28 +6754,44 @@ class Axes(PlotTypeMixin):
             props["tick_count"] = len(ticks)
         else:
             props.pop("tick_count", None)
-        # Minor positions are an independent wire tier. Log axes get
-        # Matplotlib's automatic subdivisions even without an explicit minor
-        # locator; linear axes only publish a user locator.
+        if promoted_minor:
+            props.pop("minor_tick_values", None)
+            props["style"] = {
+                **(props.get("style") or {}),
+                **(props.get("minor_style") or {}),
+            }
+            return
+
+        # PR #336 owns the independent minor wire tier and the automatic log
+        # subdivisions. This shim layer adds AutoMinorLocator and foreign-date
+        # adaptation on top of that core contract.
         if is_log and minor_locator is None:
             minor_locator = LogLocator(base=float(spec.get("base", 10.0)), subs=spec.get("subs"))
-        if minor_locator is not None and hasattr(minor_locator, "tick_values"):
-            minor = np.asarray(minor_locator.tick_values(lo, hi), dtype=float).reshape(-1)
-            pad = (hi - lo) * 1e-9
-            minor = minor[(minor >= lo - pad) & (minor <= hi + pad)]
-            if len(ticks):
-                minor = minor[
-                    ~np.isclose(minor[:, None], ticks[None, :], rtol=1e-12, atol=0).any(axis=1)
-                ]
-            props["minor_tick_values"] = list(map(float, _scale_values(minor, spec)))
-        else:
+        if minor_locator is None:
             props.pop("minor_tick_values", None)
+            return
+        minor = _minor_locator_tick_values(
+            minor_locator,
+            lo,
+            hi,
+            ticks,
+            datetime_axis=self._axis_holds_datetimes("y" if key == "y2" else key),
+        )
+        pad = (hi - lo) * 1e-9
+        minor = minor[(minor >= lo - pad) & (minor <= hi + pad)]
+        if len(ticks) and len(minor):
+            minor = minor[
+                ~np.isclose(minor[:, None], ticks[None, :], rtol=1e-12, atol=0.0).any(axis=1)
+            ]
+        props["minor_tick_values"] = list(map(float, _scale_values(minor, spec)))
 
     # -- materialization -----------------------------------------------------------
 
     def _axline_data(self, entry: dict[str, Any]) -> tuple[np.ndarray, np.ndarray]:
         """Resolve deferred axline point transforms and clip to the final view."""
-        xlim, ylim = self.get_xlim(), self.get_ylim()
+        shared_view = getattr(self, "_shared_render_domains", {})
+        xlim = shared_view["x"] if "x" in shared_view else self.get_xlim()
+        ylim = shared_view["y"] if "y" in shared_view else self.get_ylim()
         xy1 = entry["xy1"]
         xy2 = entry.get("xy2")
         if entry.get("transform_space") == "axes_fraction":
@@ -6381,6 +6854,12 @@ class Axes(PlotTypeMixin):
                 kw.pop("dash_capstyle", None)
                 gapcolor = kw.pop("_gapcolor", None)
                 x, y = self._axline_data(e)
+                if not len(x):
+                    # A transformed infinite line can miss the current view
+                    # entirely. Matplotlib clips it to no visible geometry;
+                    # do not emit an empty line component that static SVG
+                    # would later try to convert into a path.
+                    continue
                 if gapcolor is not None and kw.get("dash"):
                     children.append(
                         xy.line(
@@ -6484,6 +6963,91 @@ class Axes(PlotTypeMixin):
                     # and does not accept the Matplotlib-only keyword.
                     kw.pop("dash_capstyle", None)
                 children.append(getattr(xy, e["factory"])(*e["args"], **kw, **axis_kw))
+            elif kind == "@table_cell":
+                geometry = e["table_geometry"]
+                plot_width, plot_height = getattr(
+                    self, "_materialize_plot_px", _DEFAULT_BEST_PLOT_SIZE
+                )
+                point_scale = self._point_scale()
+                font_points = _font_size_points(
+                    (kw.get("style") or {}).get("font_size", rcParams["font.size"]),
+                    rcParams["font.size"],
+                )
+                font_px = font_points * point_scale
+                x1 = float(geometry["x1"])
+                dynamic_width = geometry.get("dynamic_width_points")
+                x0 = (
+                    x1 - float(dynamic_width) * point_scale / plot_width
+                    if dynamic_width is not None
+                    else float(geometry["x0"])
+                )
+                row_height = geometry.get("row_height_points")
+                if row_height is not None:
+                    height_fraction = float(row_height) * point_scale / plot_height
+                    y1 = -float(geometry["row_from_top"]) * height_fraction
+                    y0 = y1 - height_fraction
+                else:
+                    y0, y1 = float(geometry["y0"]), float(geometry["y1"])
+                center_x, center_y = (x0 + x1) * 0.5, (y0 + y1) * 0.5
+                cell_width_px = max(1.0, (x1 - x0) * plot_width)
+                cell_height_px = max(1.0, (y1 - y0) * plot_height)
+                # One transparent space supplies a DOM/SVG/native label box;
+                # pixel padding expands it to the exact axes-fraction cell.
+                # The visible text is a separate annotation so its left/right
+                # anchor is independent of the cell background.
+                space_width_px = font_px * 0.32
+                box_style: dict[str, Any] = {
+                    "coordinate_space": "axes_fraction",
+                    "vertical_align": "center",
+                    "font_size": font_px,
+                    "label_color": "transparent",
+                    "background": geometry["facecolor"],
+                    "padding": (
+                        f"{max(0.0, (cell_height_px - font_px) * 0.5):.4g}px "
+                        f"{max(0.0, (cell_width_px - space_width_px) * 0.5):.4g}px"
+                    ),
+                }
+                if geometry.get("border"):
+                    box_style["border"] = geometry["border"]
+                children.append(
+                    xy.text(
+                        center_x,
+                        center_y,
+                        " ",
+                        dx=0.0,
+                        dy=0.0,
+                        anchor="middle",
+                        class_name="xy-mpl-table-cell",
+                        style=box_style,
+                    )
+                )
+                anchor = kw.get("anchor", "middle")
+                inset = min((x1 - x0) * 0.08, 3.0 / plot_width)
+                text_x = (
+                    x0 + inset if anchor == "start" else x1 - inset if anchor == "end" else center_x
+                )
+                text_style = {
+                    **(kw.get("style") or {}),
+                    "coordinate_space": "axes_fraction",
+                    "vertical_align": "center",
+                    "font_size": font_px,
+                    "label_color": kw.get("color")
+                    or resolve_color(rcParams.get("text.color", "black"))
+                    or "black",
+                }
+                children.append(
+                    xy.text(
+                        text_x,
+                        center_y,
+                        str(e["args"][2]),
+                        dx=0.0,
+                        dy=0.0,
+                        color=kw.get("color"),
+                        anchor=anchor,
+                        class_name="xy-mpl-table-cell",
+                        style=text_style,
+                    )
+                )
             elif kind == "@hline":
                 children.append(xy.hline(*e["args"], **kw))
                 if e.get("endpoint_marker"):
@@ -6717,8 +7281,7 @@ class Axes(PlotTypeMixin):
             )
         else:
             top, right, bottom, left = map(float, padding)
-        if self._title:
-            top += 26.0 if compact else 30.0
+        top += self._title_room(compact)
         if x_side == "top":
             top += 26.0 if compact else 32.0
         return (
@@ -6775,6 +7338,7 @@ class Axes(PlotTypeMixin):
             "width": figure.width,
             "height": figure.height,
             "title": figure.title,
+            "title_options": figure.title_options,
             "x_axis": axis_specs["x"],
             "y_axis": axis_specs["y"],
             "axes": axis_specs,
@@ -7142,13 +7706,11 @@ class Axes(PlotTypeMixin):
         the panel it allocates so that subtraction always fits, and the
         equal-aspect solve measures the real plot rect with it.
         """
-        top = 0.0
-        if self._title:
-            top += 26.0 if compact else 30.0
+        top = self._title_room(compact)
         if self._axis["x"].get("side") == "top":
-            top += 26.0 if compact else 32.0
+            top += (26.0 if compact else 32.0) + self._x_multiline_extra()
         right = 0.0
-        bottom = 0.0
+        bottom = self._x_multiline_extra() if self._axis["x"].get("side") != "top" else 0.0
         if self._colorbar is not None:
             colorbar_right, colorbar_bottom = self._colorbar_outside_room(compact)
             right += colorbar_right
@@ -7159,6 +7721,57 @@ class Axes(PlotTypeMixin):
         ):
             right += 42.0 if compact else 54.0
         return top, right, bottom
+
+    def _title_room(self, compact: bool) -> float:
+        """Maximum top gutter required by the three independent title slots."""
+        room = 0.0
+        base_style = self._chrome_styles.get("title", {})
+        for title in self._titles.values():
+            style = {**base_style, **(title.get("style") or {})}
+            raw_size = style.get("font-size", 14.0)
+            try:
+                size = float(str(raw_size).removesuffix("px"))
+            except (TypeError, ValueError):
+                size = 14.0
+            measured = _textblock.measure(title["text"], size).height
+            if title.get("automatic_y", True):
+                candidate = max(26.0 if compact else 30.0, measured + float(title["pad"]))
+            else:
+                # Explicit y is an axes-fraction placement. Only reserve the
+                # ordinary title block when its anchor is at/above the top.
+                # The renderers use the final plot height for the exact
+                # fractional offset.
+                candidate = max(
+                    0.0,
+                    measured + float(title["pad"]) if float(title["y"]) >= 1.0 else 0.0,
+                )
+            room = max(room, candidate)
+        return room
+
+    def _x_multiline_extra(self) -> float:
+        """Extra cross-axis room beyond the single-line matplotlib gutter."""
+        props = self._axis["x"]
+        style = props.get("style") or {}
+        size = float(style.get("tick_label_size", style.get("tick_size", 11.0)))
+        labels = props.get("tick_labels") or ()
+        angle = float(props.get("tick_label_angle", 0.0))
+        extra = 0.0
+        for label in labels:
+            lines = _textblock.split_lines(label)
+            if len(lines) == 1:
+                continue
+            block = _textblock.measure(label, size)
+            first = _textblock.measure(lines[0], size)
+            extra = max(
+                extra,
+                _textblock.rotated_extent(block, angle)[1]
+                - _textblock.rotated_extent(first, angle)[1],
+            )
+        if props.get("label") and len(_textblock.split_lines(props["label"])) > 1:
+            label_size = float(style.get("label_size", 12.0))
+            label_lines = _textblock.measure(props["label"], label_size).line_count
+            extra = max(extra, max(0, label_lines - 1) * label_size * _textblock.LINE_HEIGHT)
+        return extra
 
     def _colorbar_outside_room(self, compact: bool) -> tuple[float, float]:
         """Renderer room consumed by this axes' colorbar, in CSS pixels."""
@@ -7224,10 +7837,25 @@ class Axes(PlotTypeMixin):
             return self._y2_of._build_chart(width, height)
         if self._chart is not None:
             return self._chart
+        with _textblock.measurement_cache():
+            return self._build_chart_uncached(width, height)
+
+    def _build_chart_uncached(self, width: int, height: int) -> Any:
+        """Build a fresh chart while one pass owns repeated text metrics."""
         self._materialize_insets()
+        self._materialize_quiver_geometry(width, height)
         chart_padding = (
             self._frame_padding(width, height) if self._padding is None else list(self._padding)
         )
+        if self._table_bottom_points:
+            compact = width < 520
+            extra_bottom = self._outside_padding(compact)[2]
+            if chart_padding is None:
+                chart_padding = [6.0, 8.0, 36.0, 46.0] if compact else [10.0, 14.0, 42.0, 62.0]
+            else:
+                chart_padding = list(map(float, chart_padding))
+            table_bottom = self._table_bottom_points * self._point_scale()
+            chart_padding[2] = max(chart_padding[2], table_bottom - extra_bottom)
         adjusted_aspect = False
         aspect_domains: Optional[tuple[tuple[float, float], tuple[float, float]]] = None
         if self._aspect_equal and self._aspect_bounds is not None:
@@ -7365,12 +7993,25 @@ class Axes(PlotTypeMixin):
             axis: self._axis_is_dataless(axis)
             for axis in ("x", "y")
             if not adjusted_aspect
-            and axis not in self._explicit_domains
+            and not self._has_explicit_shared_domain(axis)
             and self._axis[axis].get("domain") is None
         }
         empty_view = {axis for axis, dataless in axis_dataless.items() if dataless}
         x_props = {k: v for k, v in self._axis["x"].items() if v is not None}
         y_props = {k: v for k, v in self._axis["y"].items() if v is not None}
+        self._inherit_shared_axis_state("x", x_props)
+        self._inherit_shared_axis_state("y", y_props)
+        rotation_source = self._shared_ticker_source("x")
+        if (
+            rotation_source._tick_rotation_modes.get("x") == "xtick"
+            and x_props.get("tick_label_angle") is not None
+        ):
+            # Matplotlib angles are counter-clockwise in display coordinates;
+            # SVG/CSS and the native y-down raster surface rotate positive
+            # angles clockwise. Keep the public Text angle unchanged, but
+            # convert the materialized special-mode geometry so the selected
+            # edge points toward the tick instead of pivoting into the plot.
+            x_props["tick_label_angle"] = -float(x_props["tick_label_angle"])
         if not self.axison:
             # `set_axis_off()` is a draw-time override in Matplotlib: suppress
             # labels, ticks, grid lines and axis titles while leaving the
@@ -7380,7 +8021,7 @@ class Axes(PlotTypeMixin):
         for axis, props in (("x", x_props), ("y", y_props)):
             if (
                 adjusted_aspect
-                or axis in self._explicit_domains
+                or self._has_explicit_shared_domain(axis)
                 or axis in self._tick_expanded_domains
             ):
                 continue
@@ -7413,11 +8054,27 @@ class Axes(PlotTypeMixin):
         if aspect_domains is not None:
             x_props["domain"], y_props["domain"] = aspect_domains
         auto_tick_counts = self._auto_tick_counts(x_props, width, height)
-        if rcParams["axes.autolimit_mode"] == "round_numbers" and not adjusted_aspect:
+        if (
+            rcParams["axes.autolimit_mode"] == "round_numbers"
+            and not adjusted_aspect
+            and not self._tight
+        ):
             self._apply_round_number_domains(x_props, y_props, auto_tick_counts)
         self._apply_tickers("x", x_props, auto_tick_counts["x"])
         self._apply_tickers("y", y_props, auto_tick_counts["y"])
         self._apply_auto_tick_density(x_props, y_props, auto_tick_counts)
+        compact = width < 520
+        if chart_padding is None:
+            top, right, bottom, left = (
+                (6.0, 8.0, 36.0, 46.0) if compact else (10.0, 14.0, 42.0, 62.0)
+            )
+        else:
+            top, right, bottom, left = map(float, chart_padding)
+        extra_top, extra_right, extra_bottom = self._outside_padding(compact)
+        self._materialize_plot_px = (
+            max(1.0, width - left - right - extra_right),
+            max(1.0, height - top - bottom - extra_top - extra_bottom),
+        )
         resolved_domains: dict[str, tuple[float, float]] = {}
         if any(
             entry.get("kind") == "@hline" and entry.get("endpoint_marker")
@@ -7430,6 +8087,8 @@ class Axes(PlotTypeMixin):
         ):
             resolved_domains["y"] = tuple(y_props.get("domain") or self._auto_domain("y"))
         children = self._chart_children(resolved_domains=resolved_domains)
+        if self._twin is not None:
+            self._twin._materialize_plot_px = self._materialize_plot_px
         # The left gutter is no longer reserved here. `_svg.layout()` measures
         # it from the axis's own tick/title extents once the range is resolved,
         # which covers numeric ticks (this shim's 13.89 px rcParam fonts overrun
@@ -7511,7 +8170,10 @@ class Axes(PlotTypeMixin):
         if self._title_style:
             chrome_styles = {
                 **chrome_styles,
-                "title": {**chrome_styles.get("title", {}), **self._title_style},
+                "title": {
+                    **chrome_styles.get("title", {}),
+                    **self._title_style,
+                },
             }
         self._chart = xy.chart(
             *children,
@@ -7522,6 +8184,32 @@ class Axes(PlotTypeMixin):
             styles=chrome_styles,
         )
         core_figure = self._chart.figure()
+        core_figure.title_options = [
+            {
+                **title,
+                "style": dict(title.get("style") or {}),
+            }
+            for loc in ("left", "center", "right")
+            if (title := self._titles.get(loc)) is not None
+        ]
+        # Matplotlib's categorical converter installs one fixed location per
+        # first-seen category, and FixedLocator/set_*ticks draw every authored
+        # location even when labels collide. The core chart API deliberately
+        # auto-thins ordinary category axes; author the stronger policy only at
+        # this compatibility boundary.
+        for axis_id in ("x", "y"):
+            options = core_figure.axis_options.get(axis_id, {})
+            categories = core_figure._axis_categories.get(axis_id)
+            ticker_source = self._shared_ticker_source(axis_id)
+            locator = ticker_source._tickers.get((axis_id, "major_locator"))
+            explicit_ticks = "tick_values" in ticker_source._axis[axis_id]
+            if categories and options.get("tick_values") is None:
+                options["tick_values"] = [float(index) for index in range(len(categories))]
+                options["tick_count"] = max(1, len(categories))
+            if (categories or isinstance(locator, FixedLocator) or explicit_ticks) and options.get(
+                "tick_label_strategy"
+            ) not in {"off", "none"}:
+                options["tick_label_strategy"] = "preserve"
         claimed_legend_traces = self._apply_legend_handle_styles(core_figure)
         if self._twin is not None:
             self._twin._apply_legend_handle_styles(core_figure, claimed_legend_traces)
@@ -7621,7 +8309,7 @@ class Axes(PlotTypeMixin):
         """
         for axis, props in (("x", x_props), ("y", y_props)):
             if (
-                axis in self._explicit_domains
+                self._has_explicit_shared_domain(axis)
                 or axis in self._tick_expanded_domains
                 or self._axis_is_dataless(axis)
             ):
@@ -7636,7 +8324,8 @@ class Axes(PlotTypeMixin):
                 margin = self._rc_margins[axis]
                 pad = (hi - lo) * margin
                 domain = (lo - pad, hi + pad)
-            locator = self._tickers.get((axis, "major_locator")) or AutoLocator()
+            ticker_source = self._shared_ticker_source(axis)
+            locator = ticker_source._tickers.get((axis, "major_locator")) or AutoLocator()
             if not hasattr(locator, "view_limits"):
                 continue
             if isinstance(locator, Locator):
@@ -7655,7 +8344,7 @@ class Axes(PlotTypeMixin):
             if (
                 "tick_count" not in props
                 and "tick_values" not in props
-                and (axis, "major_locator") not in self._tickers
+                and (axis, "major_locator") not in self._shared_ticker_source(axis)._tickers
             ):
                 props["tick_count"] = counts[axis]
 
@@ -7745,10 +8434,7 @@ def _parse_style_options(spec: str) -> dict[str, float]:
 
 
 def _connection_curve(connectionstyle: Any) -> dict[str, float]:
-    """matplotlib ``connectionstyle`` → quadratic-curve style keys (see
-    ``_arrowgeom.py``): arc3's rad becomes ``curve``; angle3/angle become the
-    ``angle_a``/``angle_b`` departure/arrival angles (corner rounding is
-    approximated by the quadratic)."""
+    """Matplotlib ``connectionstyle`` → shared arrow-geometry style keys."""
     if not isinstance(connectionstyle, str):
         return {}
     name = connectionstyle.split(",")[0].strip()
@@ -7757,7 +8443,15 @@ def _connection_curve(connectionstyle: Any) -> dict[str, float]:
         rad = options.get("rad", 0.0)
         return {"curve": rad} if rad else {}
     if name in ("angle3", "angle"):
-        return {"angle_a": options.get("angleA", 90.0), "angle_b": options.get("angleB", 0.0)}
+        result = {
+            "angle_a": options.get("angleA", 90.0),
+            "angle_b": options.get("angleB", 0.0),
+        }
+        if name == "angle":
+            # ``angle`` is a sharp two-segment elbow. ``angle3`` uses the
+            # same ray intersection as a quadratic Bézier control point.
+            result["elbow"] = 1.0
+        return result
     return {}
 
 
@@ -8019,6 +8713,7 @@ def _rc_axis_style(axis: str, dpi: float = 96.0) -> dict[str, Any]:
 
 
 def _rc_minor_axis_style(axis: str, dpi: float = 96.0) -> dict[str, Any]:
+    """Snapshot Matplotlib's independent minor-tick stroke geometry."""
     prefix = "xtick" if axis == "x" else "ytick"
     point_scale = float(dpi) / 72.0
     style = {
@@ -8119,6 +8814,8 @@ def _apply_axis_label_kwargs(
             axis_style[target] = float(value) * point_scale if source == "font_size" else value
     if labelpad is not None:
         props["label_offset"] = float(labelpad)
+    if "rotation" in text_style:
+        props["label_angle"] = float(text_style["rotation"])
     if loc is not None:
         positions = {
             "left": "start",
@@ -8153,12 +8850,12 @@ def _pop_text_style_kwargs(kwargs: dict[str, Any], context: str) -> dict[str, An
     family = pop_alias("fontfamily", "family")
     font_style = pop_alias("fontstyle", "style")
     color = kwargs.pop("color", None)
+    rotation = kwargs.pop("rotation", _UNSET)
     for key in (
         "horizontalalignment",
         "ha",
         "verticalalignment",
         "va",
-        "rotation",
         "pad",
         "y",
         "x",
@@ -8182,6 +8879,16 @@ def _pop_text_style_kwargs(kwargs: dict[str, Any], context: str) -> dict[str, An
         style["font_style"] = font_style
     if color is not None:
         style["color"] = resolve_color(color)
+    if rotation is not _UNSET:
+        if rotation is None or rotation == "horizontal":
+            rotation = 0.0
+        elif rotation == "vertical":
+            rotation = 90.0
+        # Matplotlib angles use a y-up coordinate system, while SVG/CSS uses
+        # y-down coordinates.  Store the renderer-facing angle with the
+        # opposite sign so positive Matplotlib rotation stays counterclockwise.
+        rendered_rotation = -float(rotation)
+        style["rotation"] = 0.0 if rendered_rotation == 0.0 else rendered_rotation
     return style
 
 
@@ -8489,6 +9196,111 @@ def _plot_series_columns(x: Any, y: Any) -> list[tuple[Any, Any]]:
     if x.shape != y.shape:
         raise ValueError("2-D plot x and y must have matching shapes")
     return [(x[:, i], y[:, i]) for i in range(x.shape[1])]
+
+
+_MILLISECONDS_PER_DAY = 86_400_000.0
+_MATPLOTLIB_EPOCH = datetime(1970, 1, 1)
+
+
+def _is_foreign_matplotlib_date_object(value: Any) -> bool:
+    return (type(value).__module__ or "").startswith("matplotlib.dates")
+
+
+def _is_null_formatter(value: Any) -> bool:
+    return value is not None and type(value).__name__ == "NullFormatter"
+
+
+def _locator_tick_values(
+    locator: Any,
+    lo: float,
+    hi: float,
+    *,
+    datetime_axis: bool,
+) -> np.ndarray:
+    """Resolve ordinary and Matplotlib-date locators into engine units."""
+    if not _is_foreign_matplotlib_date_object(locator):
+        return np.asarray(locator.tick_values(lo, hi), dtype=float).reshape(-1)
+    unit = 1.0 if not datetime_axis else _MILLISECONDS_PER_DAY
+    try:
+        lo_datetime = _MATPLOTLIB_EPOCH + timedelta(days=float(lo) / unit)
+        hi_datetime = _MATPLOTLIB_EPOCH + timedelta(days=float(hi) / unit)
+    except (OverflowError, OSError, ValueError):
+        return np.asarray([], dtype=float)
+    values = np.asarray(locator.tick_values(lo_datetime, hi_datetime), dtype=float).reshape(-1)
+    return values * unit
+
+
+def _formatter_tick_labels(
+    formatter: Any,
+    ticks: np.ndarray,
+    *,
+    datetime_axis: bool,
+) -> list[str]:
+    """Format a complete tick set, retaining foreign formatter context."""
+    values = np.asarray(ticks, dtype=float)
+    if _is_foreign_matplotlib_date_object(formatter) and datetime_axis:
+        values = values / _MILLISECONDS_PER_DAY
+    format_ticks = getattr(formatter, "format_ticks", None)
+    if callable(format_ticks):
+        labels = format_ticks(values)
+    else:
+        set_locs = getattr(formatter, "set_locs", None)
+        if callable(set_locs):
+            set_locs(values)
+        labels = [formatter(float(value), position) for position, value in enumerate(values)]
+    return [_plain_text(label) for label in labels]
+
+
+def _auto_minor_tick_values(
+    locator: Any,
+    lo: float,
+    hi: float,
+    major: np.ndarray,
+) -> np.ndarray:
+    """Matplotlib AutoMinorLocator's subdivision over resolved major ticks."""
+    major = np.unique(np.asarray(major, dtype=float))
+    if len(major) < 2:
+        return np.asarray([], dtype=float)
+    major_step = float(major[1] - major[0])
+    ndivs = getattr(locator, "ndivs", None)
+    if ndivs in (None, "auto"):
+        mantissa = 10 ** (np.log10(abs(major_step)) % 1)
+        ndivs = 5 if np.isclose(mantissa, [1.0, 2.5, 5.0, 10.0]).any() else 4
+    ndivs = max(1, int(ndivs))
+    minor_step = major_step / ndivs
+    start = round((lo - major[0]) / minor_step)
+    stop = round((hi - major[0]) / minor_step) + 1
+    return np.arange(start, stop, dtype=float) * minor_step + major[0]
+
+
+def _minor_locator_tick_values(
+    locator: Any,
+    lo: float,
+    hi: float,
+    major: np.ndarray,
+    *,
+    datetime_axis: bool,
+) -> np.ndarray:
+    if isinstance(locator, AutoMinorLocator) or type(locator).__name__ == "AutoMinorLocator":
+        return _auto_minor_tick_values(locator, lo, hi, major)
+    return _locator_tick_values(locator, lo, hi, datetime_axis=datetime_axis)
+
+
+def _replace_plot_data(args: tuple[Any, ...], data: Any) -> tuple[Any, ...]:
+    """Resolve string positional arguments through Matplotlib's ``data=`` map."""
+    replaced: list[Any] = []
+    for value in args:
+        if not isinstance(value, str):
+            replaced.append(value)
+            continue
+        try:
+            candidate = data[value]
+        except (IndexError, KeyError, TypeError, ValueError):
+            # A non-key string is still meaningful as a plot format.
+            replaced.append(value)
+        else:
+            replaced.append(candidate)
+    return tuple(replaced)
 
 
 def _iter_plot_groups(args: tuple) -> list[tuple[Any, Any, Optional[str]]]:

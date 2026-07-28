@@ -52,9 +52,21 @@ from ._axisgrid import FacetGrid
 from ._colors import Cmap, LinearSegmentedColormap, ListedColormap
 from ._mplfig import Figure, GridSpec
 from ._rc import _PropCycle, rc, rc_context, rcdefaults, rcParams
-from ._state import all_figures, close, figlabels, fignum_exists, fignums, figure, gca, gcf, sca
+from ._state import (
+    _apply_factory_layout,
+    all_figures,
+    close,
+    figlabels,
+    fignum_exists,
+    fignums,
+    figure,
+    gca,
+    gcf,
+    sca,
+)
 from ._ticker import (
     AutoLocator,
+    AutoMinorLocator,
     FixedFormatter,
     FixedLocator,
     FormatStrFormatter,
@@ -72,6 +84,7 @@ from ._translate import not_implemented
 
 __all__ = [
     "AutoLocator",
+    "AutoMinorLocator",
     "Axes",
     "FacetGrid",
     "Figure",
@@ -362,19 +375,6 @@ def subplot_mosaic(mosaic: str | list[Any], **kwargs: Any) -> tuple[Figure, dict
     return fig, axes
 
 
-def _apply_factory_layout(fig: Figure, layout: Any) -> None:
-    """Apply Matplotlib's figure-factory layout option after axes exist."""
-    if layout is None or layout == "none":
-        return
-    if layout in {"tight", "constrained", "compressed"}:
-        # The shim's deterministic tight-layout pass reserves the native
-        # panels' tick/title chrome.  Apply it after the factory has created
-        # the grid; applying it in figure() would run against an empty figure.
-        fig.tight_layout()
-        return
-    raise ValueError(f"Invalid value for 'layout': {layout!r}")
-
-
 def axes(arg: Sequence[float] | None = None, **kwargs: Any) -> Axes:
     """Add an axes to the current figure and make it current.
 
@@ -420,7 +420,7 @@ def figtext(x: float, y: float, s: str, **kwargs: Any) -> Text:
     return gcf().text(x, y, s, **kwargs)
 
 
-def figlegend(*args: Any, **kwargs: Any) -> None:
+def figlegend(*args: Any, **kwargs: Any) -> Legend:
     """Add a figure-level legend (same call forms and keywords as `legend`)."""
     return gcf().legend(*args, **kwargs)
 
@@ -1792,7 +1792,7 @@ def pie(
     colors: ColorsLike | None = None,
     autopct: str | Callable[[float], str] | None = None,
     pctdistance: float = 0.6,
-    shadow: bool = False,
+    shadow: bool | Mapping[str, Any] = False,
     labeldistance: float | None = 1.1,
     startangle: float = 0,
     radius: float = 1,
@@ -1812,8 +1812,9 @@ def pie(
     ``explode`` offsets slices, ``autopct`` labels them with their share
     (%-format or callable), ``startangle``/``counterclock`` control
     orientation, and ``wedgeprops``/``textprops`` style slices and
-    labels. Returns ``(wedges, texts)`` or ``(wedges, texts, autotexts)``
-    as matplotlib does.
+    labels. ``hatch`` cycles patterns over wedges, and ``shadow`` accepts
+    either a boolean or Matplotlib ``Shadow`` properties. Returns
+    ``(wedges, texts)`` or ``(wedges, texts, autotexts)`` as matplotlib does.
     """
     return gca().pie(
         x,
@@ -2971,6 +2972,7 @@ _NAMED_STYLES: dict[str, dict[str, Any]] = {
         "axes.facecolor": "black",
         "axes.edgecolor": "white",
         "axes.labelcolor": "white",
+        "text.color": "white",
         "grid.color": "white",
         "xtick.color": "white",
         "ytick.color": "white",

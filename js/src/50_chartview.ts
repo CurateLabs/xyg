@@ -19,6 +19,36 @@ export interface ChartView {
 }
 
 const MARGIN = { l: 62, r: 14, t: 10, b: 42 };
+// DejaVu Sans advances at 16 px, generated beside python/xy/_fontmetrics.py
+// and the native rasterizer. Layout must retain proportional glyph metrics:
+// character count makes "WWWW" and "iiii" reserve the same (wrong) width.
+const XY_FONT_BASE_PX = 16;
+const XY_ASCII_FIRST = 32;
+const XY_ASCII_LAST = 126;
+const XY_ASCII_ADVANCES = [
+  5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10,
+  10, 10, 10, 10, 10, 10, 5, 5, 13, 13, 13, 8, 16, 11, 11, 11, 12, 10, 9, 12,
+  12, 5, 5, 10, 9, 14, 12, 13, 10, 13, 11, 10, 10, 12, 11, 16, 11, 10, 11, 6,
+  5, 6, 13, 8, 8, 10, 10, 9, 10, 10, 6, 10, 10, 4, 4, 9, 4, 16, 10, 10,
+  10, 10, 7, 8, 6, 10, 9, 13, 9, 9, 8, 10, 5, 10, 13,
+];
+const XY_MISSING_ADVANCE = 16;
+// Canvas measureText() returns advances while the DOM clamp below operates on
+// painted element rectangles. Keep a small guard for an outside y title so
+// font rasterization/rounding cannot consume its authored title-to-tick gap.
+const Y_TITLE_MEASURE_SAFETY_PX = 2;
+
+function xyTextAdvance(text, fontSize) {
+  let units = 0;
+  for (const char of String(text)) {
+    const code = char.codePointAt(0) ?? 0;
+    units += code >= XY_ASCII_FIRST && code <= XY_ASCII_LAST
+      ? XY_ASCII_ADVANCES[code - XY_ASCII_FIRST]
+      : XY_MISSING_ADVANCE;
+  }
+  return Number(fontSize) * units / XY_FONT_BASE_PX;
+}
+
 const COLORBAR_THICKNESS = 18;
 const COLORBAR_GAP = 24;
 const COMPACT_COLORBAR_GAP = 8;
@@ -344,6 +374,9 @@ export class ChartView {
       throw new Error("protocol mismatch");
     }
     this.spec = spec;
+    // Title y/pad placement is a binary geometry column, so it must be
+    // available before the constructor's first layout pass.
+    this._payload = buffer;
     this.interaction = spec.interaction || {};
     this.markStyle = spec.mark_style || {};
     this.axes = this._normalizeAxes(spec);
@@ -410,7 +443,6 @@ export class ChartView {
     // Retained for GL context restore: the payload is screen-bounded (§29) so
     // keeping it is cheap, and every GPU object is rebuildable from
     // spec + payload by design (§18/§27).
-    this._payload = buffer;
     this._glLost = false;
     this._ctxReleasedExt = null;
     this._ctxReleases = 0;
@@ -520,22 +552,40 @@ export class ChartView {
     const baseRight = pad ? (responsivePad ? Math.min(pad[1], 8) : pad[1]) : compact ? 8 : MARGIN.r;
     const marginRight = baseRight + colorbarRightRoom;
     const marginTop = pad ? pad[0] : compact ? 6 : MARGIN.t;
-    const marginBottom = (pad ? pad[2] : compact ? 36 : MARGIN.b) + colorbarBottomRoom;
-    const hasBottomAxis = Object.values<any>(this.axes || {}).some((axis: any) =>
-      axis && String(axis.id || "").startsWith("x") && axis.side !== "top" &&
+    const baseBottom = pad ? pad[2] : compact ? 36 : MARGIN.b;
+    const bottomAxes = Object.values<any>(this.axes || {}).filter((axis: any) =>
+      axis && String(axis.id || "").startsWith("x") &&
+      (this._axisTickLabelSides(axis).includes("bottom") || axis.side !== "top") &&
       this._axisTickLabelStrategy(axis) !== "none");
-    this._bottomAxisRoom = hasBottomAxis ? (compact ? 36 : MARGIN.b) : 0;
+    const hasBottomAxis = bottomAxes.length > 0;
     // A named x axis can own the top edge even when the primary x axis stays
     // on the bottom. Reserve one shared gutter for every top-side x axis;
     // multiple axes on the same side intentionally overlay until axis offsets
     // become part of the public API (the same rule used by secondary y axes).
-    const topAxisRoom = Object.values<any>(this.axes || {}).some((axis: any) =>
-      axis && String(axis.id || "").startsWith("x") && axis.side === "top" &&
-      this._axisTickLabelStrategy(axis) !== "none")
-      ? (compact ? 26 : 32)
-      : 0;
-    const top = marginTop + (this.spec.title ? (compact ? 26 : 30) : 0) + topAxisRoom;
-    const plotHeight = Math.max(40, this.size.h - top - marginBottom);
+    const topAxes = Object.values<any>(this.axes || {}).filter((axis: any) =>
+      axis && String(axis.id || "").startsWith("x") &&
+      (this._axisTickLabelSides(axis).includes("top") || axis.side === "top") &&
+      this._axisTickLabelStrategy(axis) !== "none");
+    const hasTopAxis = topAxes.length > 0;
+    const titleRoom = this._titleEntries().reduce((room, entry) => {
+      const authoredSize = Number.parseFloat(entry.style?.["font-size"]);
+      const titleFontSize = Number.isFinite(authoredSize)
+        ? authoredSize
+        : this._slotFontSize("title", 14);
+      const measured = this._estimateTickLabel(entry.text, titleFontSize).h;
+      const pad = Number.isFinite(Number(entry.pad)) ? Number(entry.pad) : 8;
+      const candidate = entry.automatic_y !== false
+        ? Math.max(compact ? 26 : 30, measured + pad)
+        : (Number(entry.y ?? 1) >= 1 ? measured + pad : 0);
+      return Math.max(room, candidate);
+    }, 0);
+    this._titleRoom = titleRoom;
+    const provisionalTopAxisRoom = hasTopAxis ? (compact ? 26 : 32) : 0;
+    const provisionalBottomAxisRoom = hasBottomAxis ? (compact ? 36 : MARGIN.b) : 0;
+    const provisionalTop = marginTop + titleRoom + provisionalTopAxisRoom;
+    const provisionalBottom =
+      Math.max(baseBottom, provisionalBottomAxisRoom) + colorbarBottomRoom;
+    const plotHeight = Math.max(40, this.size.h - provisionalTop - provisionalBottom);
     const authoredLeft = pad
       ? (responsivePad ? Math.min(pad[3], 46) : pad[3])
       : (compact ? 46 : MARGIN.l);
@@ -545,7 +595,8 @@ export class ChartView {
     const measuredLeft = Math.max(authoredLeft, this._yAxisLeftRoom(plotHeight));
     const rightAxes = Object.values<any>(this.axes || {}).filter((axis: any) =>
       axis && String(axis.id || "").startsWith("y") &&
-      axis.side === "right" && this._axisTickLabelStrategy(axis) !== "none");
+      (this._axisTickLabelSides(axis).includes("right") || axis.side === "right") &&
+      this._axisTickLabelStrategy(axis) !== "none");
     // The vertical colorbar shifts right by this room (see _positionColorbar);
     // the Python SVG/raster exporters apply the identical 42/54 rule.
     this._rightAxisRoom = rightAxes.length ? (compact ? 42 : 54) : 0;
@@ -556,18 +607,73 @@ export class ChartView {
     // labels retain their full text in `title`/ARIA and ellipsize in bounds.
     const measuredLeftCap = Math.max(authoredLeft, this.size.w - right - 40);
     const marginLeft = Math.min(measuredLeft, measuredLeftCap);
+    const plotWidth = Math.max(40, this.size.w - marginLeft - right);
+    const measuredTopAxisRoom = this._xAxisRoom("top", plotWidth);
+    const measuredBottomAxisRoom = this._xAxisRoom("bottom", plotWidth);
+    const topAxisRoom = hasTopAxis
+      ? Math.max(provisionalTopAxisRoom, measuredTopAxisRoom)
+      : 0;
+    this._topAxisRoom = topAxisRoom;
+    const bottomAxisRoom = hasBottomAxis
+      ? Math.max(provisionalBottomAxisRoom, measuredBottomAxisRoom)
+      : 0;
+    this._bottomAxisRoom = bottomAxisRoom;
+    const top = marginTop + titleRoom + topAxisRoom;
+    const marginBottom =
+      (measuredBottomAxisRoom ? Math.max(baseBottom, measuredBottomAxisRoom) : baseBottom)
+      + colorbarBottomRoom;
     this.plot = {
       x: marginLeft,
       y: top,
-      w: Math.max(40, this.size.w - marginLeft - right),
+      w: plotWidth,
       h: Math.max(40, this.size.h - top - marginBottom),
     };
+  }
+
+  _titleEntries() {
+    if (Array.isArray(this.spec.title_options) && this.spec.title_options.length) {
+      return this.spec.title_options
+        .filter((entry) => entry && entry.text)
+        .map((entry) => {
+          if (!Number.isInteger(entry.geometry)) return entry;
+          const values = this._columnView(
+            this._payload,
+            this.spec.columns[entry.geometry],
+          );
+          return { ...entry, y: Number(values[0]), pad: Number(values[1]) };
+        });
+    }
+    return this.spec.title
+      ? [{ text: this.spec.title, loc: "center", y: 1, pad: 8, automatic_y: true, style: {} }]
+      : [];
+  }
+
+  _positionTitles() {
+    for (const { element: title, entry } of this._titleElements || []) {
+      const loc = ["left", "center", "right"].includes(entry.loc) ? entry.loc : "center";
+      const x = loc === "left"
+        ? this.plot.x
+        : loc === "right"
+          ? this.plot.x + this.plot.w
+          : this.plot.x + this.plot.w / 2;
+      const anchorY = entry.automatic_y !== false
+        ? this.plot.y - this._topAxisRoom
+        : this.plot.y + (1 - Number(entry.y ?? 1)) * this.plot.h;
+      const shiftX = loc === "left" ? "0%" : loc === "right" ? "-100%" : "-50%";
+      title.style.textAlign = loc;
+      title.style.left = `${x}px`;
+      title.style.top = `${anchorY}px`;
+      title.style.transform = `translate(${shiftX}, calc(-100% - ${Number(entry.pad ?? 8)}px))`;
+    }
   }
 
   _yAxisLeftRoom(plotHeight) {
     let room = 0;
     for (const axis of Object.values<any>(this.axes || {})) {
-      if (!axis || !String(axis.id || "").startsWith("y") || axis.side === "right") continue;
+      if (!axis || !String(axis.id || "").startsWith("y")) continue;
+      const labelsOnLeft = this._axisTickLabelSides(axis).includes("left");
+      const titleOnLeft = axis.side !== "right";
+      if (!labelsOnLeft && !titleOnLeft) continue;
       if (this._axisTickLabelStrategy(axis) === "none") continue;
       const size = Math.max(
         8,
@@ -578,10 +684,12 @@ export class ChartView {
         ),
       );
       const angle = Math.abs(Number(this._axisTickLabelAngle(axis) || 0)) * Math.PI / 180;
-      const ticks = this._axisTicks(
-        axis.id,
-        this._axisTickTarget(axis.id, Math.max(3, plotHeight / 45)),
-      );
+      const ticks = labelsOnLeft
+        ? this._axisTicks(
+          axis.id,
+          this._axisTickTarget(axis.id, Math.max(3, plotHeight / 45)),
+        )
+        : { ticks: [], labels: [] };
       let tickRoom = 0;
       for (const value of (ticks.labels || ticks.ticks)) {
         const text = this._axisTickText(axis, value, ticks.step);
@@ -594,19 +702,120 @@ export class ChartView {
       const length = Math.max(0, this._axisStyleNumber(axis, "tick_length", 0));
       const direction = String(this._axisStyleValue(axis, "tick_direction") || "out");
       const outward = direction === "in" ? 0 : direction === "inout" ? length / 2 : length;
-      const tickOffset =
-        outward + Math.max(0, this._axisStyleNumber(axis, "tick_padding", 4));
-      let needed = 4 + tickOffset + tickRoom;
+      const tickOffset = labelsOnLeft
+        ? outward + Math.max(0, this._axisStyleNumber(axis, "tick_padding", 4))
+        : 0;
+      let needed = labelsOnLeft ? 4 + tickOffset + tickRoom : 0;
       const rawPosition = axis.label_position;
       const position = typeof rawPosition === "string" ? rawPosition.replace(/-/g, "_") : "";
-      if (axis.label && !position.startsWith("inside_")) {
+      if (titleOnLeft && axis.label && !position.startsWith("inside_")) {
         const labelSize = Math.max(8, this._axisStyleNumber(axis, "label_size", 12));
         const gap = Number.isFinite(Number(axis.label_offset))
           ? Number(axis.label_offset)
           : 0.4 * labelSize;
-        needed += gap + 1.2 * labelSize;
+        const labelBlock = this._estimateTickLabel(axis.label, labelSize);
+        const rawLabelAngle = Number(axis.label_angle);
+        // The default quarter-turn consumes the text block's height. An
+        // authored angle projects both dimensions into the left gutter.
+        const labelExtent = Number.isFinite(rawLabelAngle)
+          ? Math.abs(Math.cos(rawLabelAngle * Math.PI / 180)) * labelBlock.w
+            + Math.abs(Math.sin(rawLabelAngle * Math.PI / 180)) * labelBlock.h
+          : labelBlock.h;
+        needed +=
+          Y_TITLE_MEASURE_SAFETY_PX
+          + gap
+          + labelExtent;
       }
       room = Math.max(room, needed);
+    }
+    return room;
+  }
+
+  _slotFontSize(slot, fallback) {
+    const styles = this.spec.dom && this.spec.dom.styles;
+    const value = styles && styles[slot] && styles[slot]["font-size"];
+    const parsed = parseFloat(String(value ?? ""));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  }
+
+  _xAxisRoom(side, plotWidth) {
+    let room = 0;
+    for (const axis of Object.values<any>(this.axes || {})) {
+      if (!axis || !String(axis.id || "").startsWith("x")) continue;
+      const titleSide = axis.side === "top" ? "top" : "bottom";
+      const labelsOnSide = this._axisTickLabelSides(axis).includes(side);
+      if (!labelsOnSide && titleSide !== side) continue;
+      const strategy = this._axisTickLabelStrategy(axis);
+      if (["none", "off"].includes(strategy)) continue;
+      const sideAxis = { ...axis, side };
+      const size = Math.max(
+        8,
+        this._axisStyleNumber(
+          axis,
+          "tick_label_size",
+          this._axisStyleNumber(axis, "tick_size", 11),
+        ),
+      );
+      const ticks = this._axisTicks(
+        axis.id,
+        this._axisTickTarget(axis.id, Math.max(3, plotWidth / (axis.kind === "time" ? 90 : 80))),
+      );
+      const [lo, hi] = this._axisRange(axis.id);
+      const c0 = this._axisCoord(axis, lo);
+      const c1 = this._axisCoord(axis, hi);
+      const candidates = (labelsOnSide ? (ticks.labels || ticks.ticks) : []).map((value) => ({
+        pos: c1 === c0 ? plotWidth / 2 : ((this._axisCoord(axis, value) - c0) / (c1 - c0)) * plotWidth,
+        text: this._axisTickText(axis, value, ticks.step),
+      }));
+      const items = this._layoutTickLabels(sideAxis, "x", candidates);
+      const hasAdaptiveLayout = items.some(
+        (item) => Number(item.angle || 0) || Number(item.row || 0),
+      );
+      const hasMultilineTicks = items.some(
+        (item) => this._estimateTickLabel(item.text, size).lines.length > 1,
+      );
+      const position = typeof axis.label_position === "string"
+        ? axis.label_position.replace(/-/g, "_") : "center";
+      const labelSize = Math.max(8, this._axisStyleNumber(axis, "label_size", 12));
+      const labelBlock = titleSide === side && axis.label && !position.startsWith("inside_")
+        ? this._estimateTickLabel(axis.label, labelSize) : null;
+      const labelExtra = labelBlock
+        ? Math.max(0, labelBlock.h - labelSize * 1.2) : 0;
+      if (
+        !hasAdaptiveLayout
+        && !hasMultilineTicks
+        && !labelExtra
+        && strategy === "auto"
+        && this._axisTickLabelAngle(axis) === null
+      ) {
+        continue;
+      }
+      let extent = 0;
+      let rows = 0;
+      for (const item of items) {
+        const measured = this._estimateTickLabel(item.text, size);
+        const angle = Math.abs(Number(item.angle || 0)) * Math.PI / 180;
+        extent = Math.max(
+          extent,
+          Math.abs(Math.sin(angle)) * measured.w + Math.abs(Math.cos(angle)) * measured.h,
+        );
+        rows = Math.max(rows, Number(item.row || 0));
+      }
+      const rawPadding = this._axisStyleValue(axis, "tick_padding");
+      const rawLength = this._axisStyleValue(axis, "tick_length");
+      const rawWidth = this._axisStyleValue(axis, "tick_width");
+      const hiddenSentinel = Number(rawLength) === 0 && Number(rawWidth) === 0;
+      const authored = rawPadding !== undefined
+        || (rawLength !== undefined && !hiddenSentinel);
+      let offset = side === "top" ? 7 : 16;
+      if (authored) {
+        const length = Math.max(0, this._axisStyleNumber(axis, "tick_length", 0));
+        const direction = String(this._axisStyleValue(axis, "tick_direction") || "out");
+        const outward = direction === "in" ? 0 : direction === "inout" ? length / 2 : length;
+        offset = outward + this._axisStyleNumber(axis, "tick_padding", 4)
+          + (side === "top" ? size * 0.2 : size * 0.8);
+      }
+      room = Math.max(room, 4 + offset + rows * (size + 4) + extent + labelExtra);
     }
     return room;
   }
@@ -1639,6 +1848,7 @@ export class ChartView {
       const anchor = lg.dataset.xyLegendAnchor ? JSON.parse(lg.dataset.xyLegendAnchor) : null;
       this._positionLegend(lg, lg.dataset.xyLegendLoc || "upper right", anchor);
     }
+    this._positionTitles();
     this._positionReductionBadges();
     this._positionColorbar();
     this._fitModebar();
@@ -1685,7 +1895,8 @@ export class ChartView {
       document.getElementById(`${a11yId}-summary`) || document.getElementById(`${a11yId}-live`)
     );
     root.setAttribute("role", "region");
-    root.setAttribute("aria-label", s.title ? `Chart: ${s.title}` : "Interactive chart");
+    const titleText = this._titleEntries().map((entry) => String(entry.text)).join(". ");
+    root.setAttribute("aria-label", titleText ? `Chart: ${titleText}` : "Interactive chart");
     this.a11ySummary = document.createElement("div");
     this.a11ySummary.id = `${a11yId}-summary`;
     this.a11ySummary.style.cssText = XY_SR_ONLY_STYLE;
@@ -1699,13 +1910,22 @@ export class ChartView {
     this.a11yLive.style.cssText = XY_SR_ONLY_STYLE;
     root.appendChild(this.a11yLive);
 
-    if (s.title) {
+    this._titleElements = [];
+    for (const entry of this._titleEntries()) {
       const t = document.createElement("div");
-      t.textContent = s.title;
-      t.style.cssText = "position:absolute;top:6px;left:0;right:0;";
+      t.textContent = entry.text;
+      t.style.cssText =
+        "position:absolute;white-space:pre-line;line-height:1.2;";
       this._applySlot(t, "title");
+      for (const [property, value] of Object.entries(entry.style || {})) {
+        if (["color", "font-family", "font-size", "font-style", "font-weight"].includes(property)) {
+          t.style.setProperty(property, String(value));
+        }
+      }
       root.appendChild(t);
+      this._titleElements.push({ element: t, entry });
     }
+    this._positionTitles();
 
     this.chrome = document.createElement("canvas");
     this.chrome.style.cssText = "position:absolute;inset:0;pointer-events:none;";
@@ -1769,7 +1989,8 @@ export class ChartView {
 
   _a11ySummaryText() {
     const traces = Array.isArray(this.spec.traces) ? this.spec.traces : [];
-    const parts = [this.spec.title ? `${this.spec.title}.` : "Interactive chart."];
+    const titles = this._titleEntries().map((entry) => String(entry.text));
+    const parts = [titles.length ? `${titles.join(". ")}.` : "Interactive chart."];
     parts.push(`${traces.length} data series.`);
     const names = traces.map((trace) => trace && trace.name).filter(Boolean).slice(0, 6);
     if (names.length) parts.push(`Series: ${names.join(", ")}.`);
@@ -4991,7 +5212,32 @@ export class ChartView {
 
   _axisTickLabelStrategy(axis) {
     const value = String((axis && axis.tick_label_strategy) || "auto").replace(/-/g, "_");
-    return ["auto", "hide", "rotate", "stagger", "none", "off"].includes(value) ? value : "auto";
+    return ["auto", "hide", "rotate", "stagger", "preserve", "none", "off"].includes(value)
+      ? value : "auto";
+  }
+
+  _axisDefaultSide(axis) {
+    const id = String(axis && axis.id || "x");
+    if (id.startsWith("x")) return "bottom";
+    return id === "y" ? "left" : "right";
+  }
+
+  _axisTickSides(axis) {
+    const isX = String(axis && axis.id || "x").startsWith("x");
+    const allowed = isX ? ["bottom", "top"] : ["left", "right"];
+    if (!Array.isArray(axis && axis.tick_sides)) {
+      return [axis && axis.side || this._axisDefaultSide(axis)];
+    }
+    return allowed.filter((side) => axis.tick_sides.includes(side));
+  }
+
+  _axisTickLabelSides(axis) {
+    const isX = String(axis && axis.id || "x").startsWith("x");
+    const allowed = isX ? ["bottom", "top"] : ["left", "right"];
+    if (!Array.isArray(axis && axis.tick_label_sides)) {
+      return [axis && axis.side || this._axisDefaultSide(axis)];
+    }
+    return allowed.filter((side) => axis.tick_label_sides.includes(side));
   }
 
   _axisTickLabelAnchor(axis) {
@@ -5017,8 +5263,26 @@ export class ChartView {
   }
 
   _estimateTickLabel(text, fontSize) {
-    const s = String(text || "");
-    return { w: Math.max(fontSize * 0.7, s.length * fontSize * 0.62), h: fontSize * 1.2 };
+    const lines = String(text ?? "").replace(/\r\n?/g, "\n").split("\n");
+    const context = typeof document !== "undefined"
+      ? (
+        this._tickMeasureCanvas
+        || (this._tickMeasureCanvas = document.createElement("canvas"))
+      ).getContext("2d")
+      : null;
+    // Match the root's default font shorthand in 20_theme.ts. Measuring with
+    // the browser's generic sans-serif while the DOM paints system-ui can
+    // under-reserve long y labels enough to consume the title's 0.4 em gap.
+    if (context) context.font = `${fontSize}px system-ui, sans-serif`;
+    return {
+      lines,
+      w: Math.max(
+        fontSize * 0.7,
+        ...lines.map((line) => context?.measureText(line).width || xyTextAdvance(line, fontSize)),
+      ),
+      h: Math.max(fontSize * 1.2, lines.length * fontSize * 1.2),
+      lineStep: fontSize * 1.2,
+    };
   }
 
   _tickLabelExtent(label, dim, fontSize) {
@@ -5097,6 +5361,7 @@ export class ChartView {
     const explicitAngle = this._axisTickLabelAngle(axis);
     const baseAngle = explicitAngle === null ? 0 : explicitAngle;
     const withBase = labels.map((label) => ({ ...label, angle: baseAngle, row: 0 }));
+    if (strategyValue === "preserve") return withBase;
     let strategy = strategyValue;
     if (strategy === "auto") {
       if (!this._tickLabelsCollide(withBase, dim, fontSize, minGap, anchor)) return withBase;
@@ -5158,7 +5423,7 @@ export class ChartView {
     const hasAngle = axis && Number.isFinite(Number(axis.label_angle));
     if (!hasPosition && !hasOffset && !hasAngle) return { css: fallbackCss, style: null };
     if (rawPosition && typeof rawPosition === "object" && !Array.isArray(rawPosition)) {
-      return { css: "white-space:nowrap;", style: rawPosition };
+      return { css: "white-space:pre-line;text-align:center;", style: rawPosition };
     }
 
     const p = this.plot;
@@ -5181,7 +5446,7 @@ export class ChartView {
         css:
           `left:${x}px;top:${y}px;` +
           `transform:translateX(${translateX}%) rotate(${angle}deg);` +
-          "transform-origin:center;white-space:nowrap;",
+          "transform-origin:center;white-space:pre-line;text-align:center;",
         style: null,
       };
     }
@@ -5196,7 +5461,7 @@ export class ChartView {
       css:
         `left:${x}px;top:${y}px;` +
         `transform:translate(-50%,-50%) rotate(${angle}deg);` +
-        "transform-origin:center;white-space:nowrap;",
+        "transform-origin:center;white-space:pre-line;text-align:center;",
       style: null,
     };
   }
@@ -5388,13 +5653,21 @@ export class ChartView {
           );
         }
         const tick = tickParts(xAxis);
-        const side = xAxis.side || "bottom";
-        const edge = side === "top" ? p.y : p.y + p.h;
-        for (const value of xt.ticks) {
-          const x = this._dataPx("x", value);
-          if (!Number.isFinite(x) || x < p.x - 1 || x > p.x + p.w + 1) continue;
-          const top = side === "top" ? edge - tick.outward : edge - tick.inward;
-          rule(xAxis, x - tick.width / 2, top, tick.width, tick.inward + tick.outward, "tick_color");
+        for (const side of this._axisTickSides(xAxis)) {
+          const edge = side === "top" ? p.y : p.y + p.h;
+          for (const value of xt.ticks) {
+            const x = this._dataPx("x", value);
+            if (!Number.isFinite(x) || x < p.x - 1 || x > p.x + p.w + 1) continue;
+            const top = side === "top" ? edge - tick.outward : edge - tick.inward;
+            rule(
+              xAxis,
+              x - tick.width / 2,
+              top,
+              tick.width,
+              tick.inward + tick.outward,
+              "tick_color",
+            );
+          }
         }
       }
       if (!hideY) {
@@ -5412,13 +5685,21 @@ export class ChartView {
           );
         }
         const tick = tickParts(yAxis);
-        const side = yAxis.side || "left";
-        const edge = side === "right" ? p.x + p.w : p.x;
-        for (const value of yt.ticks) {
-          const y = this._dataPx("y", value);
-          if (!Number.isFinite(y) || y < p.y - 1 || y > p.y + p.h + 1) continue;
-          const left = side === "right" ? edge - tick.inward : edge - tick.outward;
-          rule(yAxis, left, y - tick.width / 2, tick.inward + tick.outward, tick.width, "tick_color");
+        for (const side of this._axisTickSides(yAxis)) {
+          const edge = side === "right" ? p.x + p.w : p.x;
+          for (const value of yt.ticks) {
+            const y = this._dataPx("y", value);
+            if (!Number.isFinite(y) || y < p.y - 1 || y > p.y + p.h + 1) continue;
+            const left = side === "right" ? edge - tick.inward : edge - tick.outward;
+            rule(
+              yAxis,
+              left,
+              y - tick.width / 2,
+              tick.inward + tick.outward,
+              tick.width,
+              "tick_color",
+            );
+          }
         }
       }
       for (const axis of extraXAxes) {
@@ -5428,13 +5709,21 @@ export class ChartView {
           this._axisTickTarget(axis.id, Math.max(3, p.w / (axis.kind === "time" ? 90 : 80))),
         );
         const tick = tickParts(axis);
-        const side = axis.side || "bottom";
-        const edge = side === "top" ? p.y : p.y + p.h;
-        for (const value of ticks.ticks) {
-          const x = this._dataPx(axis.id, value);
-          if (!Number.isFinite(x) || x < p.x - 1 || x > p.x + p.w + 1) continue;
-          const top = side === "top" ? edge - tick.outward : edge - tick.inward;
-          rule(axis, x - tick.width / 2, top, tick.width, tick.inward + tick.outward, "tick_color");
+        for (const side of this._axisTickSides(axis)) {
+          const edge = side === "top" ? p.y : p.y + p.h;
+          for (const value of ticks.ticks) {
+            const x = this._dataPx(axis.id, value);
+            if (!Number.isFinite(x) || x < p.x - 1 || x > p.x + p.w + 1) continue;
+            const top = side === "top" ? edge - tick.outward : edge - tick.inward;
+            rule(
+              axis,
+              x - tick.width / 2,
+              top,
+              tick.width,
+              tick.inward + tick.outward,
+              "tick_color",
+            );
+          }
         }
       }
       for (const axis of extraYAxes) {
@@ -5444,13 +5733,21 @@ export class ChartView {
           this._axisTickTarget(axis.id, Math.max(3, p.h / 45)),
         );
         const tick = tickParts(axis);
-        const side = axis.side || "right";
-        const edge = side === "right" ? p.x + p.w : p.x;
-        for (const value of ticks.ticks) {
-          const y = this._dataPx(axis.id, value);
-          if (!Number.isFinite(y) || y < p.y - 1 || y > p.y + p.h + 1) continue;
-          const left = side === "right" ? edge - tick.inward : edge - tick.outward;
-          rule(axis, left, y - tick.width / 2, tick.inward + tick.outward, tick.width, "tick_color");
+        for (const side of this._axisTickSides(axis)) {
+          const edge = side === "right" ? p.x + p.w : p.x;
+          for (const value of ticks.ticks) {
+            const y = this._dataPx(axis.id, value);
+            if (!Number.isFinite(y) || y < p.y - 1 || y > p.y + p.h + 1) continue;
+            const left = side === "right" ? edge - tick.inward : edge - tick.outward;
+            rule(
+              axis,
+              left,
+              y - tick.width / 2,
+              tick.inward + tick.outward,
+              tick.width,
+              "tick_color",
+            );
+          }
         }
       }
     }
@@ -5481,7 +5778,9 @@ export class ChartView {
       if (this._axisStyleValue(axis, sizeKey) !== undefined) {
         size = `font-size:${Math.max(8, this._axisStyleNumber(axis, sizeKey, 11))}px;`;
       }
-      d.style.cssText = `position:absolute;line-height:1.2;white-space:nowrap;${color}${size}${css}`;
+      d.style.cssText =
+        `position:absolute;line-height:1.2;white-space:pre-line;text-align:center;` +
+        `${color}${size}${css}`;
       // Categorical y labels can exceed the space between their pinned anchor
       // and the chart edge. Placement owns side/anchor/angle; consume that
       // metadata here instead of re-deriving it and drifting from rendering.
@@ -5571,18 +5870,21 @@ export class ChartView {
       const pad = outward + this._axisStyleNumber(axis, "tick_padding", 4);
       return pad + fontRoomPx;
     };
-    for (const item of this._layoutTickLabels(xAxis, "x", xLabelCandidates)) {
-      const rowOffset = Number(item.row || 0) * (Math.max(8, tickLabelSize) + 4);
-      const top = xAxis.side === "top"
-        ? p.y - tickLabelOffset(xAxis, 18, Math.max(8, tickLabelSize) * 1.2) - rowOffset
-        : p.y + p.h + tickLabelOffset(xAxis, 6) + rowOffset;
-      const placement = this._xTickLabelTransform(xAxis, item.angle);
-      label(
-        item.text,
-        `left:${item.pos}px;top:${top}px;transform:${placement.transform};` +
-          `transform-origin:${placement.origin};`,
-        xAxis,
-      );
+    for (const side of this._axisTickLabelSides(xAxis)) {
+      const sideAxis = { ...xAxis, side };
+      for (const item of this._layoutTickLabels(sideAxis, "x", xLabelCandidates)) {
+        const rowOffset = Number(item.row || 0) * (Math.max(8, tickLabelSize) + 4);
+        const top = side === "top"
+          ? p.y - tickLabelOffset(xAxis, 18, Math.max(8, tickLabelSize) * 1.2) - rowOffset
+          : p.y + p.h + tickLabelOffset(xAxis, 6) + rowOffset;
+        const placement = this._xTickLabelTransform(sideAxis, item.angle);
+        label(
+          item.text,
+          `left:${item.pos}px;top:${top}px;transform:${placement.transform};` +
+            `transform-origin:${placement.origin};`,
+          sideAxis,
+        );
+      }
     }
     for (const axis of extraXAxes) {
       const ticks = this._axisTicks(
@@ -5595,23 +5897,26 @@ export class ChartView {
         if (px < p.x - 1 || px > p.x + p.w + 1) continue;
         labelCandidates.push({ pos: px, text: this._axisTickText(axis, value, ticks.step) });
       }
-      for (const item of this._layoutTickLabels(axis, "x", labelCandidates)) {
-        const tickLabelSize = this._axisStyleNumber(
-          axis,
-          "tick_label_size",
-          this._axisStyleNumber(axis, "tick_size", 11),
-        );
-        const rowOffset = Number(item.row || 0) * (Math.max(8, tickLabelSize) + 4);
-        const top = axis.side === "top"
-          ? p.y - tickLabelOffset(axis, 18, Math.max(8, tickLabelSize) * 1.2) - rowOffset
-          : p.y + p.h + tickLabelOffset(axis, 6) + rowOffset;
-        const placement = this._xTickLabelTransform(axis, item.angle);
-        label(
-          item.text,
-          `left:${item.pos}px;top:${top}px;transform:${placement.transform};` +
-            `transform-origin:${placement.origin};`,
-          axis,
-        );
+      for (const side of this._axisTickLabelSides(axis)) {
+        const sideAxis = { ...axis, side };
+        for (const item of this._layoutTickLabels(sideAxis, "x", labelCandidates)) {
+          const tickLabelSize = this._axisStyleNumber(
+            axis,
+            "tick_label_size",
+            this._axisStyleNumber(axis, "tick_size", 11),
+          );
+          const rowOffset = Number(item.row || 0) * (Math.max(8, tickLabelSize) + 4);
+          const top = side === "top"
+            ? p.y - tickLabelOffset(axis, 18, Math.max(8, tickLabelSize) * 1.2) - rowOffset
+            : p.y + p.h + tickLabelOffset(axis, 6) + rowOffset;
+          const placement = this._xTickLabelTransform(sideAxis, item.angle);
+          label(
+            item.text,
+            `left:${item.pos}px;top:${top}px;transform:${placement.transform};` +
+              `transform-origin:${placement.origin};`,
+            sideAxis,
+          );
+        }
       }
       if (axis.label && this._axisTickLabelStrategy(axis) !== "none") {
         const top = axis.side === "top" ? p.y - 34 : p.y + p.h + 24;
@@ -5648,48 +5953,41 @@ export class ChartView {
         angle,
       };
     };
-    for (const item of this._layoutTickLabels(yAxis, "y", yLabelCandidates)) {
-      const placement = yLabelPlacement(yAxis, yAxis.side === "right", item);
-      label(item.text, placement.css, yAxis, "tick", null, placement);
-    }
-    for (const axis of extraYAxes) {
-      const ticks = this._axisTicks(axis.id, this._axisTickTarget(axis.id, Math.max(3, p.h / 45)));
-      const labelCandidates = [];
-      for (const v of (ticks.labels || ticks.ticks)) {
-        const py = this._dataPx(axis.id, v);
-        if (py < p.y - 1 || py > p.y + p.h + 1) continue;
-        const text = this._axisTickText(axis, v, ticks.step);
-        labelCandidates.push({ pos: py, text });
-      }
-      for (const item of this._layoutTickLabels(axis, "y", labelCandidates)) {
-        const placement = yLabelPlacement(axis, axis.side !== "left", item);
-        label(item.text, placement.css, axis, "tick", null, placement);
-      }
-      if (axis.label && this._axisTickLabelStrategy(axis) !== "none") {
-        const fallbackCss = axis.side === "left"
-          ? `left:10px;top:${p.y + p.h / 2}px;transform:rotate(-90deg) translateX(50%);transform-origin:left;`
-          : `left:${p.x + p.w + 40}px;top:${p.y + p.h / 2}px;transform:rotate(90deg) translateX(-50%);transform-origin:left;`;
-        const placement = this._axisLabelCss(axis, "y", fallbackCss);
-        label(axis.label, placement.css, axis, "label", placement.style);
+    for (const side of this._axisTickLabelSides(yAxis)) {
+      const sideAxis = { ...yAxis, side };
+      for (const item of this._layoutTickLabels(sideAxis, "y", yLabelCandidates)) {
+        const placement = yLabelPlacement(sideAxis, side === "right", item);
+        label(item.text, placement.css, sideAxis, "tick", null, placement);
       }
     }
-    const attachYTitleToTicks = (title, axis, onRight) => {
+    const pendingYTitleAttachments = [];
+    const measureYTitleAttachment = (title, axis, onRight, root) => {
       if (!title || !axis) return;
       const position = String(axis.label_position || "center").replace(/-/g, "_");
       if (position.startsWith("inside_")) return;
       const tickLabels = [...this.labels.children].filter((element) =>
         element.dataset.xyLabelKind === "tick"
         && element.dataset.xyAxis === String(axis.id ?? "")
+        && element.dataset.xyAxisSide === (onRight ? "right" : "left")
       );
-      if (!tickLabels.length) return;
-      const root = this.root.getBoundingClientRect();
       const tickRects = tickLabels.map((element) => element.getBoundingClientRect());
       const titleRect = title.getBoundingClientRect();
       const fontSize = parseFloat(getComputedStyle(title).fontSize) || 12;
-      const labelOffset = Number(axis.label_offset || 0);
-      const targetEdge = onRight
-        ? Math.max(...tickRects.map((rect) => rect.right)) + 0.4 * fontSize + labelOffset
-        : Math.min(...tickRects.map((rect) => rect.left)) - 0.4 * fontSize - labelOffset;
+      const rawOffset = axis.label_offset;
+      const gap = rawOffset !== undefined
+        && rawOffset !== null
+        && Number.isFinite(Number(rawOffset))
+        ? Number(rawOffset)
+        : 0.4 * fontSize;
+      // Matplotlib centers the title along the axis, then offsets it
+      // perpendicular to the union of the tick-label bounds and the
+      // corresponding spine. Including the spine keeps inward/negative-pad
+      // labels from pulling an outside title back into the plot.
+      const spineEdge = root.left + (onRight ? p.x + p.w : p.x);
+      const tickEdge = onRight
+        ? Math.max(spineEdge, ...tickRects.map((rect) => rect.right))
+        : Math.min(spineEdge, ...tickRects.map((rect) => rect.left));
+      const targetEdge = onRight ? tickEdge + gap : tickEdge - gap;
       const currentEdge = onRight ? titleRect.left : titleRect.right;
       const currentLeft = parseFloat(title.style.left) || 0;
       const delta = targetEdge - currentEdge;
@@ -5702,8 +6000,43 @@ export class ChartView {
       const correction = adjustedLeft < root.left
         ? root.left - adjustedLeft + 1
         : adjustedRight > root.right ? root.right - adjustedRight - 1 : 0;
-      title.style.left = `${currentLeft + delta + correction}px`;
+      return { title, left: currentLeft + delta + correction };
     };
+    const renderYTitle = (axis, text, onRight) => {
+      const angle = onRight ? 90 : -90;
+      const fallbackCss =
+        `left:${onRight ? p.x + p.w : p.x}px;top:${p.y + p.h / 2}px;` +
+        `transform:translate(-50%,-50%) rotate(${angle}deg);` +
+        "transform-origin:center;";
+      const placement = this._axisLabelCss(axis, "y", fallbackCss);
+      const title = label(text, placement.css, axis, "label", placement.style);
+      // A structured CSS label_position is the placement authority. It may
+      // deliberately omit `left` in favor of `right`, so tick attachment must
+      // not synthesize a competing left offset.
+      if (title && placement.style === null) {
+        pendingYTitleAttachments.push({ title, axis, onRight });
+      }
+    };
+    for (const axis of extraYAxes) {
+      const ticks = this._axisTicks(axis.id, this._axisTickTarget(axis.id, Math.max(3, p.h / 45)));
+      const labelCandidates = [];
+      for (const v of (ticks.labels || ticks.ticks)) {
+        const py = this._dataPx(axis.id, v);
+        if (py < p.y - 1 || py > p.y + p.h + 1) continue;
+        const text = this._axisTickText(axis, v, ticks.step);
+        labelCandidates.push({ pos: py, text });
+      }
+      for (const side of this._axisTickLabelSides(axis)) {
+        const sideAxis = { ...axis, side };
+        for (const item of this._layoutTickLabels(sideAxis, "y", labelCandidates)) {
+          const placement = yLabelPlacement(sideAxis, side === "right", item);
+          label(item.text, placement.css, sideAxis, "tick", null, placement);
+        }
+      }
+      if (axis.label && this._axisTickLabelStrategy(axis) !== "none") {
+        renderYTitle(axis, axis.label, axis.side !== "left");
+      }
+    }
     if (s.x_axis.label && !hideX) {
       const top = xAxis.side === "top" ? p.y - 34 : p.y + p.h + 24;
       const fallbackCss = `left:${p.x + p.w / 2}px;top:${top}px;transform:translateX(-50%);`;
@@ -5711,16 +6044,20 @@ export class ChartView {
       label(s.x_axis.label, placement.css, xAxis, "label", placement.style);
     }
     if (s.y_axis.label && !hideY) {
-      const fallbackCss = yAxis.side === "right"
-        ? `left:${p.x + p.w + 40}px;top:${p.y + p.h / 2}px;transform:rotate(90deg) translateX(-50%);transform-origin:left;`
-        : `left:10px;top:${p.y + p.h / 2}px;transform:rotate(-90deg) translateX(50%);transform-origin:left;`;
-      const placement = this._axisLabelCss(yAxis, "y", fallbackCss);
-      const title = label(s.y_axis.label, placement.css, yAxis, "label", placement.style);
-      // A structured CSS label_position is the placement authority. It may
-      // deliberately omit `left` in favor of `right`, so tick attachment must
-      // not synthesize a competing left offset.
-      if (placement.style === null) {
-        attachYTitleToTicks(title, yAxis, yAxis.side === "right");
+      renderYTitle(yAxis, s.y_axis.label, yAxis.side === "right");
+    }
+    if (pendingYTitleAttachments.length) {
+      // Finish creating every y-axis label before the first geometry read,
+      // then apply all offsets after the complete measurement pass. Keeping
+      // DOM reads and writes in separate phases avoids one forced layout per
+      // named axis during settled interaction redraws.
+      const root = this.root.getBoundingClientRect();
+      const adjustments = pendingYTitleAttachments
+        .map(({ title, axis, onRight }) =>
+          measureYTitleAttachment(title, axis, onRight, root))
+        .filter(Boolean);
+      for (const { title, left } of adjustments) {
+        title.style.left = `${left}px`;
       }
     }
     this._drawAnnotationLabels(updateLabels);

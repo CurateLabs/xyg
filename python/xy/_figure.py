@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from os import PathLike
 from typing import Any, Optional, TypeAlias, Union
 
@@ -112,6 +112,10 @@ class Figure(AnnotationsMixin, PayloadMixin):
         # padding + hidden axes gives an edge-to-edge sparkline for dashboards.
         self.padding = self._padding(padding, "padding")
         self.title = self._optional_text(title, "title")
+        # Optional renderer-owned title slots. Declarative charts keep using
+        # ``title``; the pyplot shim fills this with Matplotlib's independent
+        # left/center/right title artists.
+        self.title_options: list[dict[str, Any]] = []
         self.x_label = self._optional_text(x_label, "x_label")
         self.y_label = self._optional_text(y_label, "y_label")
         self.axis_options: dict[str, dict[str, Any]] = {
@@ -254,6 +258,8 @@ class Figure(AnnotationsMixin, PayloadMixin):
         tick_label_anchor: Optional[str] = None,
         tick_label_min_gap: Optional[float] = None,
         side: Optional[str] = None,
+        tick_sides: Optional[Any] = None,
+        tick_label_sides: Optional[Any] = None,
         style: Optional[dict[str, Any]] = None,
         minor_style: Optional[dict[str, Any]] = None,
         nonpositive: Optional[str] = None,
@@ -287,6 +293,28 @@ class Figure(AnnotationsMixin, PayloadMixin):
             raise ValueError("x axis side must be 'top' or 'bottom'")
         elif axis_dim == "y" and side not in {"left", "right"}:
             raise ValueError("y axis side must be 'left' or 'right'")
+        if tick_sides is not None:
+            if isinstance(tick_sides, (str, bytes)) or not isinstance(tick_sides, Sequence):
+                raise ValueError(f"{axis_id} axis tick_sides must be a sequence")
+            allowed_tick_sides = ("bottom", "top") if axis_dim == "x" else ("left", "right")
+            tick_sides = list(tick_sides)
+            if any(value not in allowed_tick_sides for value in tick_sides):
+                raise ValueError(
+                    f"{axis_id} axis tick_sides must contain only {list(allowed_tick_sides)}"
+                )
+            tick_sides = [value for value in allowed_tick_sides if value in tick_sides]
+        if tick_label_sides is not None:
+            if isinstance(tick_label_sides, (str, bytes)) or not isinstance(
+                tick_label_sides, Sequence
+            ):
+                raise ValueError(f"{axis_id} axis tick_label_sides must be a sequence")
+            allowed_label_sides = ("bottom", "top") if axis_dim == "x" else ("left", "right")
+            tick_label_sides = list(tick_label_sides)
+            if any(value not in allowed_label_sides for value in tick_label_sides):
+                raise ValueError(
+                    f"{axis_id} axis tick_label_sides must contain only {list(allowed_label_sides)}"
+                )
+            tick_label_sides = [value for value in allowed_label_sides if value in tick_label_sides]
         values = (
             None
             if tick_values is None
@@ -338,6 +366,8 @@ class Figure(AnnotationsMixin, PayloadMixin):
             if tick_label_min_gap is None
             else self._nonnegative_scalar(tick_label_min_gap, f"{axis_id} axis tick_label_min_gap"),
             "side": side,
+            "tick_sides": tick_sides,
+            "tick_label_sides": tick_label_sides,
             "style": styles.compile_axis_style(style, f"{axis_id} axis style"),
             "minor_style": styles.compile_axis_style(minor_style, f"{axis_id} minor axis style"),
             "nonpositive": nonpositive,
@@ -1273,6 +1303,10 @@ class Figure(AnnotationsMixin, PayloadMixin):
             "range": list(range_),
             "side": opts.get("side", "bottom" if axis == "x" else "left"),
         }
+        if opts.get("tick_sides") is not None:
+            spec["tick_sides"] = list(opts["tick_sides"])
+        if opts.get("tick_label_sides") is not None:
+            spec["tick_label_sides"] = list(opts["tick_label_sides"])
         if label_position is not None:
             spec["label_position"] = label_position
         if label_offset is not None:

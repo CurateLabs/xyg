@@ -20,7 +20,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from . import _paint, _png, _scene
+from . import _paint, _png, _scene, _textblock
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._svg import (
     _AXIS,
@@ -30,19 +30,24 @@ from ._svg import (
     _TEXT,
     COLORBAR_FONT_SIZE,
     DEFAULT_PALETTE,
+    _annotation_connector_unclipped,
+    _annotation_first_baseline,
     _axis_label_geometry,
     _axis_scales,
     _axis_tick_font_size,
     _axis_tick_label_baseline_shift,
     _axis_tick_label_layout,
     _axis_tick_label_offset,
+    _axis_tick_label_sides,
     _axis_tick_label_strategy,
+    _axis_tick_sides,
     _box_corner_radius,
     _colorbar_right_axis_room,
     _colormap_stops,
     _column,
     _corner_radii,
     _css,
+    _decode_title_geometry,
     _density_column,
     _estimated_text_width,
     _heatmap_rgba_grid,
@@ -55,6 +60,8 @@ from ._svg import (
     _solid_paint,
     _step_arrays,
     _tick_label_anchor,
+    _title_entries,
+    _title_metrics,
     annotation_label_placement,
     apply_export_background,
     axis_ticks,
@@ -671,6 +678,43 @@ class _Cmd:
         self.buf += data
 
 
+def _emit_text_block(
+    cmd: _Cmd,
+    x: float,
+    first_baseline: float,
+    anchor: int,
+    size: float,
+    color: tuple[int, ...],
+    text: object,
+    *,
+    angle: float = 0.0,
+    italic: bool = False,
+    bold: bool = False,
+) -> None:
+    """Emit lines using the same block geometry SVG and layout measure."""
+    block = _textblock.measure(text, size)
+    radians = math.radians(float(angle))
+    for index, line in enumerate(block.lines):
+        local_y = index * block.line_step
+        line_x = x - local_y * math.sin(radians)
+        line_y = first_baseline + local_y * math.cos(radians)
+        args = (line_x, line_y, anchor, size, color, line)
+        normalized = float(angle) % 360.0
+        quarter_flag = (
+            _TEXT_ROT_CW
+            if abs(normalized - 90.0) < 1e-9
+            else _TEXT_ROT_CCW
+            if abs(normalized - 270.0) < 1e-9
+            else 0
+        )
+        if quarter_flag and not italic and not bold:
+            cmd.text(line_x, line_y, anchor | quarter_flag, size, color, line)
+        elif angle or italic or bold:
+            cmd.text(*args, angle=angle, italic=italic, bold=bold)
+        else:
+            cmd.text(*args)
+
+
 def _rect_pts(x0: float, y0: float, x1: float, y1: float) -> list[tuple[float, float]]:
     return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
 
@@ -726,6 +770,7 @@ def _grad_stops(fill_spec: dict, mark_color: str) -> list:
     return [(float(o), _parse_color(_css(c, mark_color))) for o, c in fill_spec.get("stops", [])]
 
 
+@_textblock.cached_measurements
 def render_raster(
     spec: dict[str, Any],
     blob: bytes,
@@ -735,6 +780,7 @@ def render_raster(
     borrowed: tuple[np.ndarray, ...] = (),
 ) -> np.ndarray | bytes:
     """Paint `spec` into an ``(h, w, 4)`` RGBA8 image via the native rasterizer."""
+    spec = _decode_title_geometry(spec, blob)
     spec = _resolve_static_css_vars(spec)
     width, height, compact, plot = layout(spec)
     xa, ya = spec["x_axis"], spec["y_axis"]
@@ -963,20 +1009,20 @@ def render_raster(
                 _parse_color(_css(xmstyle.get("tick_color"), default_axis)),
             )
         inward, outward = tick_span(xstyle)
-        side = xa.get("side", "bottom")
-        edge = py0 if side == "top" else py1
-        for value in xt:
-            x = float(sx(value))
-            y0, y1 = (
-                (edge - outward, edge + inward)
-                if side == "top"
-                else (edge - inward, edge + outward)
-            )
-            cmd.stroke(
-                [(x, y0), (x, y1)],
-                float(xstyle.get("tick_width", 1)),
-                _parse_color(_css(xstyle.get("tick_color"), default_axis)),
-            )
+        for side in _axis_tick_sides(xa, is_x=True):
+            edge = py0 if side == "top" else py1
+            for value in xt:
+                x = float(sx(value))
+                y0, y1 = (
+                    (edge - outward, edge + inward)
+                    if side == "top"
+                    else (edge - inward, edge + outward)
+                )
+                cmd.stroke(
+                    [(x, y0), (x, y1)],
+                    float(xstyle.get("tick_width", 1)),
+                    _parse_color(_css(xstyle.get("tick_color"), default_axis)),
+                )
     if not hide_y:
         inward, outward = tick_span(ymstyle)
         side = ya.get("side", "left")
@@ -994,58 +1040,58 @@ def render_raster(
                 _parse_color(_css(ymstyle.get("tick_color"), default_axis)),
             )
         inward, outward = tick_span(ystyle)
-        side = ya.get("side", "left")
-        edge = px1 if side == "right" else px0
-        for value in yt:
-            y = float(sy(value))
-            x0, x1 = (
-                (edge - inward, edge + outward)
-                if side == "right"
-                else (edge - outward, edge + inward)
-            )
-            cmd.stroke(
-                [(x0, y), (x1, y)],
-                float(ystyle.get("tick_width", 1)),
-                _parse_color(_css(ystyle.get("tick_color"), default_axis)),
-            )
+        for side in _axis_tick_sides(ya, is_x=False):
+            edge = px1 if side == "right" else px0
+            for value in yt:
+                y = float(sy(value))
+                x0, x1 = (
+                    (edge - inward, edge + outward)
+                    if side == "right"
+                    else (edge - outward, edge + inward)
+                )
+                cmd.stroke(
+                    [(x0, y), (x1, y)],
+                    float(ystyle.get("tick_width", 1)),
+                    _parse_color(_css(ystyle.get("tick_color"), default_axis)),
+                )
     for axis_id, axis, axis_scale in extra_x_axes:
         if _axis_tick_label_strategy(axis) == "none":
             continue
         axis_style = axis.get("style") or {}
         inward, outward = tick_span(axis_style)
-        side = axis.get("side", "bottom")
-        edge = py0 if side == "top" else py1
-        for value in extra_x_ticks[axis_id][0]:
-            x = float(axis_scale(value))
-            y0, y1 = (
-                (edge - outward, edge + inward)
-                if side == "top"
-                else (edge - inward, edge + outward)
-            )
-            cmd.stroke(
-                [(x, y0), (x, y1)],
-                float(axis_style.get("tick_width", 1)),
-                _parse_color(_css(axis_style.get("tick_color"), default_axis)),
-            )
+        for side in _axis_tick_sides(axis, is_x=True):
+            edge = py0 if side == "top" else py1
+            for value in extra_x_ticks[axis_id][0]:
+                x = float(axis_scale(value))
+                y0, y1 = (
+                    (edge - outward, edge + inward)
+                    if side == "top"
+                    else (edge - inward, edge + outward)
+                )
+                cmd.stroke(
+                    [(x, y0), (x, y1)],
+                    float(axis_style.get("tick_width", 1)),
+                    _parse_color(_css(axis_style.get("tick_color"), default_axis)),
+                )
     for axis_id, axis, axis_scale in extra_y_axes:
         if _axis_tick_label_strategy(axis) == "none":
             continue
         axis_style = axis.get("style") or {}
         inward, outward = tick_span(axis_style)
-        side = axis.get("side", "right")
-        edge = px1 if side == "right" else px0
-        for value in extra_y_ticks[axis_id][0]:
-            y = float(axis_scale(value))
-            x0, x1 = (
-                (edge - inward, edge + outward)
-                if side == "right"
-                else (edge - outward, edge + inward)
-            )
-            cmd.stroke(
-                [(x0, y), (x1, y)],
-                float(axis_style.get("tick_width", 1)),
-                _parse_color(_css(axis_style.get("tick_color"), default_axis)),
-            )
+        for side in _axis_tick_sides(axis, is_x=False):
+            edge = px1 if side == "right" else px0
+            for value in extra_y_ticks[axis_id][0]:
+                y = float(axis_scale(value))
+                x0, x1 = (
+                    (edge - inward, edge + outward)
+                    if side == "right"
+                    else (edge - outward, edge + inward)
+                )
+                cmd.stroke(
+                    [(x0, y), (x1, y)],
+                    float(axis_style.get("tick_width", 1)),
+                    _parse_color(_css(axis_style.get("tick_color"), default_axis)),
+                )
 
     slots = slot_styles(spec)
 
@@ -1053,14 +1099,6 @@ def render_raster(
         """A slot's text paint, or the writer's own default."""
         resolved = slot_text_color(slots.get(slot) or {}, "")
         return _parse_color(resolved or fallback)
-
-    def rotation_flag(angle: float) -> int:
-        normalized = angle % 360.0
-        if abs(normalized - 90.0) < 1e-9:
-            return _TEXT_ROT_CW
-        if abs(normalized - 270.0) < 1e-9:
-            return _TEXT_ROT_CCW
-        return 0
 
     def emit_tick_labels(
         axis: dict[str, Any],
@@ -1071,17 +1109,6 @@ def render_raster(
         is_x: bool,
     ) -> None:
         axis_style = axis.get("style") or {}
-        items = _axis_tick_label_layout(axis, values, step, axis_scale, is_x)
-        # The native glyph protocol supports quarter-turns, not arbitrary
-        # angles. When SVG/browser collision relief chose a diagonal rotation,
-        # fall back to horizontal downsampling rather than paint overlapping text.
-        if any(rotation_flag(float(item["angle"])) == 0 and item["angle"] for item in items):
-            fallback_axis = {
-                **axis,
-                "tick_label_angle": 0,
-                "tick_label_strategy": "hide",
-            }
-            items = _axis_tick_label_layout(fallback_axis, values, step, axis_scale, is_x)
         # The axis's own tick_label_color/tick_color is the narrower
         # selector and wins; the chart-wide slot fills in when it says nothing.
         axis_tick_paint = _css(axis_style.get("tick_label_color", axis_style.get("tick_color")), "")
@@ -1091,39 +1118,64 @@ def render_raster(
             else slot_paint("tick_label", default_text)
         )
         font_size = slot_font_size(slots.get("tick_label") or {}, _axis_tick_font_size(axis))
-        side = axis.get("side", "bottom" if is_x else "left")
-        # Unstyled defaults reproduce the pre-`tick_label_pad` placement exactly.
-        # The bottom gap is 15 here against the SVG exporter's 16: that 1 px has
-        # always separated the two and is not this seam's to change.
-        if is_x:
-            label_offset = (
-                _axis_tick_label_offset(axis, 7.0, 0.2)
-                if side == "top"
-                else _axis_tick_label_offset(axis, 15.0, 0.8)
-            )
-        else:
-            label_offset = _axis_tick_label_offset(axis, 8.0)
         baseline_shift = _axis_tick_label_baseline_shift(axis)
         # An explicit tick_label_anchor (axis spec or style) overrides the
         # side-derived default, matching the browser client and SVG export.
         explicit_anchor = _tick_label_anchor(axis, axis_style, "")
-        for item in items:
-            flag = rotation_flag(float(item["angle"]))
+        for side in _axis_tick_label_sides(axis, is_x=is_x):
+            side_axis = {**axis, "side": side}
+            side_items = _axis_tick_label_layout(side_axis, values, step, axis_scale, is_x)
+            # Unstyled defaults reproduce the pre-`tick_label_pad` placement exactly.
+            # The bottom gap is 15 here against the SVG exporter's 16: that 1 px has
+            # always separated the two and is not this seam's to change.
             if is_x:
-                row_offset = float(item["row"]) * (font_size + 4)
-                x = float(item["pos"])
-                y = (
-                    py0 - label_offset - row_offset
+                label_offset = (
+                    _axis_tick_label_offset(axis, 7.0, 0.2)
                     if side == "top"
-                    else py1 + label_offset + row_offset
+                    else _axis_tick_label_offset(axis, 15.0, 0.8)
                 )
-                anchor = _TEXT_ANCHOR_CODES[explicit_anchor] if explicit_anchor else 1
             else:
-                x = px1 + label_offset if side == "right" else px0 - label_offset
-                y = float(item["pos"]) + baseline_shift
-                default_anchor = 0 if side == "right" else 2
-                anchor = _TEXT_ANCHOR_CODES[explicit_anchor] if explicit_anchor else default_anchor
-            cmd.text(x, y, anchor | flag, font_size, tick_color, item["text"])
+                label_offset = _axis_tick_label_offset(axis, 8.0)
+            for item in side_items:
+                block = _textblock.measure(item["text"], font_size)
+                if is_x:
+                    row_offset = float(item["row"]) * (font_size + 4)
+                    x = float(item["pos"])
+                    y = (
+                        py0 - label_offset - row_offset
+                        if side == "top"
+                        else py1 + label_offset + row_offset
+                    )
+                    angle = float(item["angle"])
+                    if explicit_anchor:
+                        anchor = _TEXT_ANCHOR_CODES[explicit_anchor]
+                    elif angle == 0:
+                        anchor = 1
+                    elif (side == "bottom" and angle < 0) or (side == "top" and angle > 0):
+                        anchor = 2
+                    else:
+                        anchor = 0
+                else:
+                    x = px1 + label_offset if side == "right" else px0 - label_offset
+                    y = (
+                        float(item["pos"])
+                        + baseline_shift
+                        - (block.line_count - 1) * block.line_step / 2.0
+                    )
+                    default_anchor = 0 if side == "right" else 2
+                    anchor = (
+                        _TEXT_ANCHOR_CODES[explicit_anchor] if explicit_anchor else default_anchor
+                    )
+                _emit_text_block(
+                    cmd,
+                    x,
+                    y,
+                    anchor,
+                    font_size,
+                    tick_color,
+                    item["text"],
+                    angle=float(item["angle"]),
+                )
 
     emit_tick_labels(xa, xlab, xstep, sx, is_x=True)
     emit_tick_labels(ya, ylab, ystep, sy, is_x=False)
@@ -1133,17 +1185,12 @@ def render_raster(
     for axis_id, axis, axis_scale in extra_y_axes:
         _ticks, tick_labels, step = extra_y_ticks[axis_id]
         emit_tick_labels(axis, tick_labels, step, axis_scale, is_x=False)
-    if spec.get("title"):
-        # Through `slots`, not the raw `dom.styles` block: chrome_styles keeps
-        # whatever spelling the caller used, so a `{"font_size": 22}` would miss
-        # a `font-size` lookup. `slot_styles` canonicalizes both to kebab-case.
+    legacy_title = spec.get("title") if not spec.get("title_options") else None
+    if legacy_title:
         title_slot = slots.get("title") or {}
         title_italic, title_bold = _native_font_emphasis(
             {
                 "font_style": title_slot.get("font-style"),
-                # 400 = Matplotlib's `axes.titleweight: normal`; the baked
-                # atlas only has a bold face, so anything >= 600 rounds up to
-                # it. Mirrors the SVG/browser title default.
                 "font_weight": title_slot.get("font-weight", 400),
             }
         )
@@ -1153,7 +1200,40 @@ def render_raster(
             1,
             slot_font_size(title_slot, 14.0),
             slot_paint("title", default_text),
-            str(spec["title"]),
+            str(legacy_title),
+            italic=title_italic,
+            bold=title_bold,
+        )
+    for title_entry in [] if legacy_title else _title_entries(spec):
+        title_style, title_size, title_block = _title_metrics(spec, title_entry)
+        title_italic, title_bold = _native_font_emphasis(
+            {
+                "font_style": title_style.get("font-style"),
+                # 400 = Matplotlib's `axes.titleweight: normal`; the baked
+                # atlas only has a bold face, so anything >= 600 rounds up to
+                # it. Mirrors the SVG/browser title default.
+                "font_weight": title_style.get("font-weight", 400),
+            }
+        )
+        trailing = (title_block.line_count - 1) * title_block.line_step
+        if title_entry.get("automatic_y", True):
+            title_anchor_y = plot["y"] - plot["top_axis_room"]
+        else:
+            title_anchor_y = plot["y"] + (1.0 - float(title_entry.get("y", 1.0))) * plot["h"]
+        loc = str(title_entry.get("loc", "center"))
+        title_x = {
+            "left": plot["x"],
+            "center": plot["x"] + plot["w"] / 2.0,
+            "right": plot["x"] + plot["w"],
+        }.get(loc, plot["x"] + plot["w"] / 2.0)
+        _emit_text_block(
+            cmd,
+            title_x,
+            title_anchor_y - float(title_entry.get("pad", 8.0)) - title_block.descent - trailing,
+            {"left": 0, "center": 1, "right": 2}.get(loc, 1),
+            title_size,
+            _parse_color(slot_text_color(title_style, default_text)),
+            str(title_entry["text"]),
             italic=title_italic,
             bold=title_bold,
         )
@@ -1174,9 +1254,10 @@ def render_raster(
                 ),
             }
         )
-        args = (
-            geometry["x"],
-            geometry["y"],
+        _emit_text_block(
+            cmd,
+            float(geometry["x"]),
+            float(geometry["y"]),
             anchor,
             slot_font_size(slots.get("axis_title") or {}, float(geometry["font_size"])),
             (
@@ -1185,16 +1266,10 @@ def render_raster(
                 else slot_paint("axis_title", default_text)
             ),
             str(axis["label"]),
+            angle=float(geometry["angle"]),
+            italic=italic,
+            bold=bold,
         )
-        if italic or bold:
-            cmd.text(*args, angle=float(geometry["angle"]), italic=italic, bold=bold)
-        else:
-            cmd.text(
-                args[0],
-                args[1],
-                anchor | rotation_flag(float(geometry["angle"])),
-                *args[3:],
-            )
 
     emit_axis_title(xa, is_x=True)
     emit_axis_title(ya, is_x=False)
@@ -1333,6 +1408,7 @@ def _emit_annotations(
         # pass; every label draws in the unclipped chrome pass, matching
         # matplotlib's Text and the client's DOM labels.
         style = ann.get("style") or {}
+        restore_plot_clip = False
         color = _rgba(style.get("color"), "#667085", float(style.get("opacity", 1.0)))
         start = max(0.0, min(1.0, float(style.get("span_start", 0.0))))
         end = max(start, min(1.0, float(style.get("span_end", 1.0))))
@@ -1368,6 +1444,9 @@ def _emit_annotations(
                 _rgba(style.get("color"), "#64748b", float(style.get("opacity", 0.14))),
             )
         elif ann.get("kind") in ("arrow", "callout"):
+            if _annotation_connector_unclipped(ann, sx, sy, plot):
+                cmd.clip(0, 0, width, height)
+                restore_plot_clip = True
             if ann.get("kind") == "arrow":
                 x0, y0 = float(sx(float(ann["x0"]))), float(sy(float(ann["y0"])))
                 x1, y1 = float(sx(float(ann["x1"]))), float(sy(float(ann["y1"])))
@@ -1415,6 +1494,8 @@ def _emit_annotations(
                         else (0, 0, 0, 0)
                     ),
                 )
+        if restore_plot_clip:
+            cmd.clip(plot["x"], plot["y"], plot["w"], plot["h"])
         if text_phase and ann.get("text"):
             x, y, label_anchor, vertical_align = annotation_label_placement(
                 ann, style, sx, sy, plot, width, height
@@ -1474,16 +1555,15 @@ def _emit_annotations(
                     )
                     line_offset += len(line) + 1
                 continue
-            first_y = y - (len(lines) - 1) * line_height / 2
             vertical_align = style.get("vertical_align")
-            if vertical_align in ("center", "middle"):
-                first_y += font_size * 0.35
-            elif vertical_align == "top":
-                first_y += font_size * 0.8
-            elif vertical_align == "bottom":
-                first_y -= font_size * 0.2
             text_x = x + float(ann.get("dx", 0.0))
-            text_y = first_y + float(ann.get("dy", 0.0))
+            text_y = _annotation_first_baseline(
+                y + float(ann.get("dy", 0.0)),
+                len(lines),
+                line_height,
+                font_size,
+                vertical_align,
+            )
             _emit_text_box(cmd, style, lines, text_x, text_y, line_height, font_size, anchor)
             for index, line in enumerate(lines):
                 line_ranges = [

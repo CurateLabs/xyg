@@ -23,6 +23,7 @@ const XY_ANNOTATION_SHAPE_STYLE_KEYS = new Set([
   "curve",
   "angle_a",
   "angle_b",
+  "elbow",
   "gap_start",
   "gap_end",
   "start_offset",
@@ -106,7 +107,14 @@ function xyArrowGeometry(x0, y0, x1, y1, style) {
   // Tangent INTO each endpoint (head/tail orientation).
   const dir1 = cx === null ? toward(p0[0], p0[1], p1[0], p1[1]) : toward(cx, cy, p1[0], p1[1]);
   const dir0 = cx === null ? toward(p1[0], p1[1], p0[0], p0[1]) : toward(cx, cy, p0[0], p0[1]);
-  return { p0, p1, control: cx === null ? null : [cx, cy], dir0, dir1 };
+  return {
+    p0,
+    p1,
+    control: cx === null ? null : [cx, cy],
+    elbow: Boolean(style.elbow),
+    dir0,
+    dir1,
+  };
 }
 
 // The shaft as a point list (quadratic Bézier sampled when curved).
@@ -115,6 +123,7 @@ function xyArrowShaftPoints(geom, samples = 24) {
   const [x1, y1] = geom.p1;
   if (!geom.control) return [[x0, y0], [x1, y1]];
   const [cx, cy] = geom.control;
+  if (geom.elbow) return [[x0, y0], [cx, cy], [x1, y1]];
   const points = [];
   for (let i = 0; i <= samples; i++) {
     const t = i / samples;
@@ -555,20 +564,41 @@ Object.assign(ChartView.prototype, {
     const annotations = Array.isArray(this.spec.annotations) ? this.spec.annotations : [];
     if (!annotations.length) return;
     const p = this.plot;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(p.x, p.y, p.w, p.h);
-    ctx.clip();
     for (const [annotationIndex, ann] of annotations.entries()) {
+      ctx.save();
+      let targetX = NaN;
+      let targetY = NaN;
+      if (ann.kind === "arrow") {
+        targetX = this._dataPxX(Number(ann.x1));
+        targetY = this._dataPxY(Number(ann.y1));
+      } else if (ann.kind === "callout") {
+        targetX = this._dataPxX(Number(ann.x));
+        targetY = this._dataPxY(Number(ann.y));
+      }
+      const connectorTargetInBounds =
+        Number.isFinite(targetX) && Number.isFinite(targetY) &&
+        targetX >= p.x && targetX <= p.x + p.w &&
+        targetY >= p.y && targetY <= p.y + p.h;
+      if (!connectorTargetInBounds) {
+        ctx.beginPath();
+        ctx.rect(p.x, p.y, p.w, p.h);
+        ctx.clip();
+      }
       const style = ann && typeof ann.style === "object" ? ann.style : {};
       if (ann.kind === "band") {
         const vertical = ann.axis === "x";
         const a = vertical ? this._dataPxX(Number(ann.start)) : this._dataPxY(Number(ann.start));
         const b = vertical ? this._dataPxX(Number(ann.end)) : this._dataPxY(Number(ann.end));
-        if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+        if (!Number.isFinite(a) || !Number.isFinite(b)) {
+          ctx.restore();
+          continue;
+        }
         const lo = Math.max(vertical ? p.x : p.y, Math.min(a, b));
         const hi = Math.min(vertical ? p.x + p.w : p.y + p.h, Math.max(a, b));
-        if (hi <= lo) continue;
+        if (hi <= lo) {
+          ctx.restore();
+          continue;
+        }
         ctx.save();
         ctx.globalAlpha = this._styleNumber(style, "opacity", 0.14);
         ctx.fillStyle = this._annotationPaint(style, [0.39, 0.45, 0.55, 1]);
@@ -581,9 +611,18 @@ Object.assign(ChartView.prototype, {
       } else if (ann.kind === "rule") {
         const vertical = ann.axis === "x";
         const pos = vertical ? this._dataPxX(Number(ann.value)) : this._dataPxY(Number(ann.value));
-        if (!Number.isFinite(pos)) continue;
-        if (vertical && (pos < p.x - 1 || pos > p.x + p.w + 1)) continue;
-        if (!vertical && (pos < p.y - 1 || pos > p.y + p.h + 1)) continue;
+        if (!Number.isFinite(pos)) {
+          ctx.restore();
+          continue;
+        }
+        if (vertical && (pos < p.x - 1 || pos > p.x + p.w + 1)) {
+          ctx.restore();
+          continue;
+        }
+        if (!vertical && (pos < p.y - 1 || pos > p.y + p.h + 1)) {
+          ctx.restore();
+          continue;
+        }
         const crisp = Math.round(pos) + 0.5;
         ctx.save();
         ctx.globalAlpha = this._styleNumber(style, "opacity", 1);
@@ -634,8 +673,8 @@ Object.assign(ChartView.prototype, {
           ann
         );
       }
+      ctx.restore();
     }
-    ctx.restore();
   },
 
   _drawAnnotationLabels(updateLabels) {

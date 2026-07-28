@@ -231,6 +231,8 @@ class Axis(Component):
     style: dict[str, StyleValue] = field(default_factory=dict)
     # New fields append after the v0.0.3 positional surface.
     margin: Optional[float] = None
+    tick_sides: Optional[list[str]] = None
+    tick_label_sides: Optional[list[str]] = None
     minor_tick_values: Optional[list[float]] = None
     minor_style: dict[str, StyleValue] = field(default_factory=dict)
     nonpositive: Optional[Literal["clip", "mask"]] = None
@@ -2394,6 +2396,8 @@ def x_axis(
     tick_label_anchor: Optional[str] = None,
     tick_label_min_gap: Optional[float] = None,
     side: Optional[str] = None,
+    tick_sides: Optional[Sequence[str]] = None,
+    tick_label_sides: Optional[Sequence[str]] = None,
     show: Optional[bool] = None,
     line: Optional[bool] = None,
     ticks: Optional[bool] = None,
@@ -2434,6 +2438,11 @@ def x_axis(
             bottom axis instead of seesawing around its midpoint.
         tick_label_min_gap: Minimum gap between tick labels in pixels.
         side: Side of the plot where the axis is drawn.
+        tick_sides: Plot sides where tick marks are drawn. Defaults to
+            ``side``; supplying both draws mirrored ticks without moving the
+            axis labels.
+        tick_label_sides: Plot sides where tick labels are drawn. Defaults to
+            ``side`` and remains independent of ``tick_sides``.
         show: Draw this axis at all. ``False`` hides its baseline, tick marks,
             tick labels, title, and grid lines in one switch; the four
             narrower switches below override it either way, so
@@ -2486,6 +2495,8 @@ def x_axis(
         ),
         side=_axis_side(side, "x"),
         style=_axis_visibility_style(show, line, ticks, grid, text, style, "x_axis"),
+        tick_sides=_axis_tick_sides(tick_sides, "x"),
+        tick_label_sides=_axis_tick_label_sides(tick_label_sides, "x"),
         minor_style=styles.compile_axis_style(minor_style, "x_axis minor style"),
         nonpositive=nonpositive,
     )
@@ -2514,6 +2525,8 @@ def y_axis(
     tick_label_anchor: Optional[str] = None,
     tick_label_min_gap: Optional[float] = None,
     side: Optional[str] = None,
+    tick_sides: Optional[Sequence[str]] = None,
+    tick_label_sides: Optional[Sequence[str]] = None,
     show: Optional[bool] = None,
     line: Optional[bool] = None,
     ticks: Optional[bool] = None,
@@ -2554,6 +2567,11 @@ def y_axis(
             the label rotates about the pinned edge.
         tick_label_min_gap: Minimum gap between tick labels in pixels.
         side: Side of the plot where the axis is drawn.
+        tick_sides: Plot sides where tick marks are drawn. Defaults to
+            ``side``; supplying both draws mirrored ticks without moving the
+            axis labels.
+        tick_label_sides: Plot sides where tick labels are drawn. Defaults to
+            ``side`` and remains independent of ``tick_sides``.
         show: Draw this axis at all. ``False`` hides its baseline, tick marks,
             tick labels, title, and grid lines in one switch; the four
             narrower switches below override it either way, so
@@ -2606,6 +2624,8 @@ def y_axis(
         ),
         side=_axis_side(side, "y"),
         style=_axis_visibility_style(show, line, ticks, grid, text, style, "y_axis"),
+        tick_sides=_axis_tick_sides(tick_sides, "y"),
+        tick_label_sides=_axis_tick_label_sides(tick_label_sides, "y"),
         minor_style=styles.compile_axis_style(minor_style, "y_axis minor style"),
         nonpositive=nonpositive,
     )
@@ -3325,6 +3345,8 @@ class Chart(Component):
                 tick_label_anchor=axis.tick_label_anchor,
                 tick_label_min_gap=axis.tick_label_min_gap,
                 side=axis.side,
+                tick_sides=axis.tick_sides,
+                tick_label_sides=axis.tick_label_sides,
                 style=axis.style,
                 minor_style=axis.minor_style,
                 nonpositive=axis.nonpositive,
@@ -5202,6 +5224,26 @@ def _axis_side(value: Any, which: str) -> Optional[str]:
     if value not in allowed:
         raise ValueError(f"{which}_axis side must be one of {sorted(allowed)}")
     return value
+
+
+def _axis_tick_sides(value: Any, which: str) -> Optional[list[str]]:
+    return _axis_sides(value, which, "tick_sides")
+
+
+def _axis_tick_label_sides(value: Any, which: str) -> Optional[list[str]]:
+    return _axis_sides(value, which, "tick_label_sides")
+
+
+def _axis_sides(value: Any, which: str, field: str) -> Optional[list[str]]:
+    if value is None:
+        return None
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(f"{which}_axis {field} must be a sequence")
+    allowed = ("bottom", "top") if which == "x" else ("left", "right")
+    sides = list(value)
+    if any(side not in allowed for side in sides):
+        raise ValueError(f"{which}_axis {field} must contain only {list(allowed)}")
+    return [side for side in allowed if side in sides]
 
 
 def _annotation_axis_name(value: Any, label: str) -> str:

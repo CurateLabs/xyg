@@ -116,7 +116,7 @@ def test_chrome_visual_defaults_are_a_defeatable_where_stylesheet() -> None:
 def test_client_user_text_surfaces_use_text_nodes_not_html() -> None:
     """User labels may be hostile strings; the client must never parse them."""
     required_text_sinks = (
-        "t.textContent = s.title;",
+        "t.textContent = entry.text;",
         "label.textContent = it.name;",
         "badge.textContent = item;",
         "d.textContent = text;",
@@ -827,6 +827,28 @@ def test_annotation_labels_and_cursor_stay_css_defeatable() -> None:
     assert "this.canvas.style.cursor" not in interaction, "drag-mode re-pins cursor inline"
     assert "this.canvas.dataset.xyDragmode = mode;" in interaction
     assert "cursor:pointer" not in interaction, "modebar button pins cursor inline"
+
+
+def test_client_multiline_text_keeps_matplotlib_baseline_box_anchor() -> None:
+    """Default multiline text anchors its final baseline, including bbox padding."""
+    annotations = _read(ROOT / "js/src/51_annotations.ts")
+    assert ': "calc(-100% + 0.35em)";' in annotations
+    assert 'vAnchor === "-50%" ? 0 : vAnchor === "0px" ? -padT : padB' in annotations
+
+
+def test_annotation_shape_loop_restores_canvas_before_early_continue() -> None:
+    """Every early annotation exit must balance the per-shape canvas save."""
+    annotations = _read(ROOT / "js/src/51_annotations.ts")
+    draw_start = annotations.index("_drawAnnotationShapes(ctx) {")
+    draw_body = annotations[
+        draw_start : annotations.index("\n  _drawAnnotationLabels(updateLabels)", draw_start)
+    ]
+    lines = draw_body.splitlines()
+    continue_lines = [index for index, line in enumerate(lines) if line.strip() == "continue;"]
+
+    assert continue_lines
+    for index in continue_lines:
+        assert lines[index - 1].strip() == "ctx.restore();"
 
 
 def test_client_renders_mark_level_styling() -> None:
