@@ -215,6 +215,13 @@ Object.assign(ChartView.prototype, {
         this._dataAnimRaf = null;
         for (const record of records) this._clearTransitionVisual(record.g);
         this._finishDataAnimation(phase);
+        // The label layer is throttled while `_dataAnim` is live (see the
+        // cadence in `_drawChrome`), so force one settled rebuild now that it is
+        // cleared. Same completion contract as the view animation in
+        // 53_interaction.ts — without it a transition could leave labels from up
+        // to one cadence tick earlier on screen.
+        this._lastLabelDraw = null;
+        this.draw();
       }
     };
     this._dataAnimRaf = requestAnimationFrame(tick);
@@ -364,6 +371,19 @@ Object.assign(ChartView.prototype, {
   },
 
   _prepareBarPositionInterpolation(previous, next, match) {
+    // BAR_VS mixes the transition into p/v0/v1 in CLIP space, but its polar
+    // branch needs data space and re-derives theta and both radii from the raw
+    // attributes — so only the scalar half-width survives the mix. The result
+    // was not a snap but a hybrid matching neither old nor new data: the wedge
+    // jumped to its destination angle on frame 0 while its angular width
+    // animated. polar-axes.md defers polar animation; make that deferral
+    // guarded like its siblings so the wedge snaps cleanly and says why.
+    // (Polar scatter and line interpolate correctly — they mix before
+    // projecting — and entrance `grow` still honours u_animationProgress.)
+    if (this.spec?.coords === "polar") {
+      match.fallback ||= "snap:polar-unsupported";
+      return false;
+    }
     const oldBar = previous._cpuBar;
     const newBar = next._cpuBar;
     if (!oldBar || !newBar || previous.orientation !== next.orientation ||

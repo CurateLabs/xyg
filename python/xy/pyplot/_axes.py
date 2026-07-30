@@ -11,6 +11,7 @@ test in tests/pyplot/.
 from __future__ import annotations
 
 import copy
+import math
 import warnings
 
 # Runtime imports, not TYPE_CHECKING: `typing.get_type_hints()` on the public
@@ -27,6 +28,7 @@ import xy
 
 from .. import _textblock
 from .._typing import ArrayLike, ColorLike, ColorsLike, LimitsLike, Scalar
+from ..components import _polar_axis_kwargs
 from ._artists import (
     Artist,
     AxesImage,
@@ -1093,6 +1095,35 @@ def _cached_modebar(show: bool) -> Any:
 
 def _cached_axis(which: str, props: dict) -> Any:
     if props:
+        if which == "x" and any(
+            key in props
+            for key in ("theta_unit", "theta_zero", "theta_direction", "sector", "grid_shape")
+        ):
+            # `_polar_axis_kwargs` drops the keywords `theta_axis` refuses. This
+            # bag is not hand-authored: every Axes carries an rcParam-derived
+            # `minor_style`, and `minorticks_on()`/`tick_params(ha=)` add more.
+            # Dropping them is what all three renderers already do with those
+            # values; refusing would turn `projection="polar"` into an error over
+            # a default nobody asked for. Recorded in spec/matplotlib/compat.md.
+            angular = _polar_axis_kwargs(props)
+            unit = angular.pop("theta_unit", None)
+            zero = angular.pop("theta_zero", None)
+            direction = angular.pop("theta_direction", None)
+            sector = angular.pop("sector", None)
+            grid_shape = angular.pop("grid_shape", None)
+            return xy.theta_axis(
+                unit=unit,
+                zero=zero,
+                direction=direction,
+                sector=sector,
+                grid_shape=grid_shape,
+                **angular,
+            )
+        if which == "y" and any(key in props for key in ("hole", "r_origin")):
+            radial = _polar_axis_kwargs(props)
+            hole = radial.pop("hole", None)
+            origin = radial.pop("r_origin", None)
+            return xy.r_axis(hole=hole, origin=origin, **radial)
         factory = xy.x_axis if which == "x" else xy.y_axis
         return factory(**props)
     key = ("axis", which)
@@ -1350,6 +1381,13 @@ class Axes(PlotTypeMixin):
         # chart *is* the figure and the rectangle comes from get_position().
         self._plot_box_px: Optional[tuple[float, float, float, float]] = None
         self._padding: Optional[list[float]] = None
+        # "cartesian" or "polar" — matplotlib's `projection=` argument. Polar
+        # reinterprets the same two axes (x carries theta, y carries r), which
+        # is exactly how PolarAxes works: ordinary plot/scatter/bar/fill calls
+        # render into the projection rather than into polar-specific artists.
+        self._projection: str = "cartesian"
+        self._polar_options: dict[str, Any] = {}
+        self._polar_r_options: dict[str, Any] = {}
         # Natural ``table(loc="bottom")`` height in Matplotlib points. It is
         # converted at render time so savefig DPI changes preserve cell size.
         self._table_bottom_points = 0.0
@@ -1735,6 +1773,10 @@ class Axes(PlotTypeMixin):
         self._cycle = 0
         self._patch_cycle = 0
         self._load_rc_chrome()
+        self._polar_options = {}
+        self._polar_r_options = {}
+        if self._projection == "polar":
+            self._set_projection("polar")
         self._chart = None
         self._twin = None
         self.xaxis = _AxisProxy(self, "x")
@@ -4013,8 +4055,13 @@ class Axes(PlotTypeMixin):
         xticklabels = kwargs.pop("xticklabels", None)
         yticklabels = kwargs.pop("yticklabels", None)
         projection = kwargs.pop("projection", None)
-        if projection not in (None, "rectilinear"):
-            raise not_implemented(f"projection={projection!r} axes", "2-D rectilinear charts")
+        if projection is not None:
+            # Pre-polar this raised NotImplementedError for every non-default
+            # value, which left `plt.subplot(111, projection="polar")` on an
+            # already-claimed slot rejecting a now-supported idiom.
+            # _set_projection accepts 'polar'/'rectilinear' and stays loud
+            # (ValueError) for anything else.
+            self._set_projection(projection)
         unknown: list[str] = []
         for name, value in kwargs.items():
             setter = aliases.get(name)
@@ -4089,6 +4136,12 @@ class Axes(PlotTypeMixin):
     def get_xlim(self) -> tuple[float, float]:
         """The current x view limits, in data space and display order."""
         host = (self._y2_of or self)._shared_ticker_source("x")
+        if self._projection == "polar" and not self._has_explicit_shared_domain("x"):
+            # Polar theta defaults to one complete turn, independently of the
+            # data's angular extent. This is also the single source read by the
+            # theta-limit setters/getters below; automatic Cartesian x padding
+            # must never become an authored sector.
+            return (0.0, 2.0 * math.pi)
         lo, hi = host._axis["x"].get("domain", self._auto_domain("x"))
         lo, hi = map(
             float,
@@ -4668,6 +4721,15 @@ class Axes(PlotTypeMixin):
         spec = host._scale_specs[key]
         if self._axis_is_dataless(axis):
             return (1.0, 10.0) if spec["name"] == "log" else (0.0, 1.0)
+        if axis == "y" and self._projection == "polar" and spec["name"] != "log":
+            # The radial preview must match the engine's polar autorange
+            # (centre origin, no outer pad — _figure._range), or every
+            # rlim call snapshots cartesian-padded values: set_rmax(2.0)
+            # froze [0.85, 2.0] where matplotlib gives [0, 2].
+            lo, hi = self._entry_extent(axis)
+            lo = min(0.0, float(lo))
+            hi = float(hi) if hi > lo else lo + 1.0
+            return lo, hi
         if spec["name"] == "log":
             # The core consumes log domains in the original positive data
             # space, while Matplotlib applies margins after transforming to
@@ -5924,6 +5986,196 @@ class Axes(PlotTypeMixin):
             aspect="auto",
             interpolation="nearest",
         )
+
+    # -- polar projection (matplotlib PolarAxes surface) --------------------
+
+    def _set_projection(self, projection: Any) -> None:
+        """Back `subplot(projection=...)`; only 'polar' changes anything."""
+        name = "cartesian" if projection in (None, "rectilinear") else str(projection)
+        if name not in ("cartesian", "polar"):
+            raise ValueError(
+                f"projection {projection!r} is not supported; use 'polar' or 'rectilinear'"
+            )
+        self._projection = name
+        if name == "polar":
+            # Matplotlib's PolarAxes defaults: theta=0 due east, increasing
+            # counterclockwise, angles in radians.
+            self._polar_options.setdefault("theta_unit", "radians")
+            self._polar_options.setdefault("theta_zero", "E")
+            self._polar_options.setdefault("theta_direction", "counterclockwise")
+
+    def _require_polar(self, method: str) -> None:
+        if self._projection != "polar":
+            raise AttributeError(
+                f"{method} is only available on a polar axes; "
+                "create one with subplot(projection='polar')"
+            )
+
+    def set_theta_zero_location(self, loc: str, offset: float = 0.0) -> None:
+        """Direction that theta=0 points: 'N', 'NW', 'W', 'SW', 'S', 'SE', 'E'
+        or 'NE', plus an optional offset in degrees."""
+        self._require_polar("set_theta_zero_location")
+        compass = {
+            "E": 0.0,
+            "NE": 45.0,
+            "N": 90.0,
+            "NW": 135.0,
+            "W": 180.0,
+            "SW": 225.0,
+            "S": 270.0,
+            "SE": 315.0,
+        }
+        key = str(loc).upper()
+        if key not in compass:
+            raise ValueError(f"theta zero location must be one of {sorted(compass)}")
+        degrees = compass[key] + float(offset)
+        # The four cardinals keep their letter so the wire stays readable and
+        # one shared table resolves them; anything else ships as radians.
+        letters = {0.0: "E", 90.0: "N", 180.0: "W", 270.0: "S"}
+        normalized = degrees % 360.0
+        self._polar_options["theta_zero"] = letters.get(normalized, math.radians(degrees))
+
+    def set_theta_direction(self, direction: Any) -> None:
+        """1/'counterclockwise'/'anticlockwise' or -1/'clockwise'."""
+        self._require_polar("set_theta_direction")
+        clockwise = {-1, "clockwise", "cw"}
+        counter = {1, "counterclockwise", "anticlockwise", "ccw"}
+        key = direction if isinstance(direction, int) else str(direction).lower()
+        if key in clockwise:
+            self._polar_options["theta_direction"] = "clockwise"
+        elif key in counter:
+            self._polar_options["theta_direction"] = "counterclockwise"
+        else:
+            raise ValueError("theta direction must be 1/-1 or 'clockwise'/'counterclockwise'")
+
+    def set_theta_offset(self, offset: float) -> None:
+        """Rotation of the theta=0 direction, in radians."""
+        self._require_polar("set_theta_offset")
+        self._polar_options["theta_zero"] = float(offset)
+
+    def get_theta_offset(self) -> float:
+        self._require_polar("get_theta_offset")
+        zero = self._polar_options.get("theta_zero", "E")
+        # Matplotlib's mapping is 0..2pi ccw from east, so "S" reads 3*pi/2 —
+        # not the -pi/2 the render tables use. Same angle, but a compat getter
+        # has to return matplotlib's number: `get_theta_offset() > 0` and
+        # round-trips through `set_theta_offset` both break on the negative.
+        table = {"E": 0.0, "N": math.pi / 2, "W": math.pi, "S": 3 * math.pi / 2}
+        return table[zero] if isinstance(zero, str) else float(zero) % (2 * math.pi)
+
+    def get_theta_direction(self) -> int:
+        self._require_polar("get_theta_direction")
+        return -1 if self._polar_options.get("theta_direction") == "clockwise" else 1
+
+    def set_rlim(self, bottom: Any = None, top: Any = None, **kwargs: Any) -> Any:
+        """Radial limits — the polar spelling of `set_ylim`.
+
+        Accepts matplotlib's documented ``rmin``/``rmax`` keywords; anything
+        else is refused by name rather than forwarded to `set_ylim`, whose
+        signature does not know them.
+        """
+        self._require_polar("set_rlim")
+        if "rmin" in kwargs:
+            if bottom is not None:
+                raise ValueError("set_rlim: pass either bottom or rmin, not both")
+            bottom = kwargs.pop("rmin")
+        if "rmax" in kwargs:
+            if top is not None:
+                raise ValueError("set_rlim: pass either top or rmax, not both")
+            top = kwargs.pop("rmax")
+        if kwargs:
+            raise TypeError(f"set_rlim got unexpected keyword(s) {sorted(kwargs)}")
+        return self.set_ylim(bottom, top)
+
+    def set_rmin(self, rmin: float) -> None:
+        self._require_polar("set_rmin")
+        self.set_ylim(float(rmin), self.get_ylim()[1])
+
+    def set_rmax(self, rmax: float) -> None:
+        self._require_polar("set_rmax")
+        self.set_ylim(self.get_ylim()[0], float(rmax))
+
+    def get_rmin(self) -> float:
+        self._require_polar("get_rmin")
+        return float(self.get_ylim()[0])
+
+    def get_rmax(self) -> float:
+        self._require_polar("get_rmax")
+        return float(self.get_ylim()[1])
+
+    def set_rticks(self, ticks: Any, labels: Any = None, **kwargs: Any) -> Any:
+        self._require_polar("set_rticks")
+        return self.set_yticks(ticks, labels, **kwargs)
+
+    def set_rgrids(self, radii: Any, labels: Any = None, **kwargs: Any) -> Any:
+        """Radial gridline positions — matplotlib's `set_rgrids`."""
+        self._require_polar("set_rgrids")
+        return self.set_yticks(list(radii), labels, **kwargs)
+
+    def set_thetagrids(self, angles: Any, labels: Any = None, **kwargs: Any) -> Any:
+        """Angular gridline positions, in DEGREES.
+
+        Matplotlib takes degrees here regardless of the data's unit, which is
+        the one place its polar API is not unit-consistent; matching it matters
+        more than being tidy.
+        """
+        values = [float(a) for a in angles]
+        self._require_polar("set_thetagrids")
+        if self._polar_options.get("theta_unit", "radians") == "radians":
+            values = [math.radians(a) for a in values]
+        return self.set_xticks(values, labels, **kwargs)
+
+    def set_thetamin(self, thetamin: float) -> None:
+        self._require_polar("set_thetamin")
+        value = float(thetamin)
+        if not math.isfinite(value):
+            raise ValueError("thetamin must be finite")
+        _lo, hi = sorted(self.get_xlim())
+        lo = math.radians(value)
+        if lo >= hi:
+            raise ValueError("thetamin must be less than thetamax")
+        self.set_xlim(lo, hi)
+
+    def set_thetamax(self, thetamax: float) -> None:
+        self._require_polar("set_thetamax")
+        value = float(thetamax)
+        if not math.isfinite(value):
+            raise ValueError("thetamax must be finite")
+        lo, _hi = sorted(self.get_xlim())
+        hi = math.radians(value)
+        if hi <= lo:
+            raise ValueError("thetamax must be greater than thetamin")
+        self.set_xlim(lo, hi)
+
+    def get_thetamin(self) -> float:
+        """Minimum visible theta in degrees, matching Matplotlib PolarAxes."""
+        self._require_polar("get_thetamin")
+        lo, _hi = sorted(self.get_xlim())
+        return math.degrees(float(lo))
+
+    def get_thetamax(self) -> float:
+        """Maximum visible theta in degrees, matching Matplotlib PolarAxes."""
+        self._require_polar("get_thetamax")
+        _lo, hi = sorted(self.get_xlim())
+        return math.degrees(float(hi))
+
+    def set_rorigin(self, origin: Optional[float]) -> None:
+        """Set the data-space radial origin; ``None`` restores rmin."""
+        self._require_polar("set_rorigin")
+        if origin is None:
+            self._polar_r_options.pop("r_origin", None)
+        else:
+            value = float(origin)
+            if not math.isfinite(value):
+                raise ValueError("rorigin must be finite")
+            self._polar_r_options["r_origin"] = value
+        self._invalidate()
+
+    def get_rorigin(self) -> float:
+        """Return the authored radial origin, or the current radial minimum."""
+        self._require_polar("get_rorigin")
+        value = self._polar_r_options.get("r_origin")
+        return self.get_rmin() if value is None else float(value)
 
     def set_xscale(self, scale: str, **kwargs: Any) -> None:
         """Set the x-axis scale.
@@ -8322,6 +8574,23 @@ class Axes(PlotTypeMixin):
         self._apply_tickers("x", x_props, auto_tick_counts["x"])
         self._apply_tickers("y", y_props, auto_tick_counts["y"])
         self._apply_auto_tick_density(x_props, y_props, auto_tick_counts)
+        if self._projection == "polar":
+            # A polar angular view defaults to one complete turn. Cartesian
+            # autoscaling above can materialize a padded x domain (bars are a
+            # common trigger), but that internal domain is not an authored
+            # theta limit and must not become a sector. set_xlim() and
+            # set_thetamin/max share the explicit-domain state, so preserve it
+            # only when either public spelling has actually authored it.
+            if not self._has_explicit_shared_domain("x"):
+                x_props.pop("domain", None)
+                x_props.pop("margin", None)
+            # The angular descriptors are axis properties, so route them
+            # through the authored x-axis component with its ticks, labels and
+            # explicit limits intact. Calling Figure.set_axis() after chart
+            # construction replaces unspecified fields with defaults and used
+            # to erase set_thetagrids()/set_xticks() from polar axes.
+            x_props.update(self._polar_options)
+            y_props.update(self._polar_r_options)
         compact = width < 520
         if chart_padding is None:
             top, right, bottom, left = (
@@ -8441,6 +8710,7 @@ class Axes(PlotTypeMixin):
             height=height,
             padding=chart_padding,
             styles=chrome_styles,
+            coords=self._projection,
         )
         core_figure = self._chart.figure()
         core_figure.title_options = [

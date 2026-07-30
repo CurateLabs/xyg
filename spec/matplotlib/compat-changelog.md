@@ -63,6 +63,35 @@ which covers user-visible releases across the whole package.
   whole patch instead of only its body. `set_color` paints edge and face
   alike, as `matplotlib.patches.Patch.set_color` does.
 
+## Polar projection depth — 2026-07-28 (Matplotlib 3.11.1 reference)
+
+- Polar heatmap/image and contour now use the core polar grid/segment paths,
+  and `errorbar` uses the same allowlisted projected-segment contract. The
+  heatmap samples through a fragment-stage screen→(θ, r) inverse rather than
+  stretching a Cartesian image into the disc.
+- `set_thetamin`/`set_thetamax` and their getters use Matplotlib's degree
+  surface while the core axis remains in its declared angular unit.
+  `set_rorigin`/`get_rorigin` route to the radial-origin geometry, including
+  annular views.
+- Categorical θ, positive log-r autorange, symlog radius, partial-sector
+  layout/clipping, and the core polygonal radial grid are shared across HTML,
+  PNG, and SVG.
+- This does not generalize every segment or mesh artist to polar. Polar
+  rules/spans, LOD, facets/animation, angular navigation/selection, and the
+  stateful `plt.polar`/`plt.thetagrids`/`plt.rgrids` wrappers remain deferred
+  or absent and fail loudly where a Cartesian fallback would be misleading.
+- Minor ticks, minor tick styling, tick-label horizontal alignment, and the
+  tick-label collision strategies are now recorded as **dropped** on a polar
+  Axes rather than left undocumented. No renderer draws minor rings or spokes,
+  and rim labels have neither an edge-relative collision pass nor an anchor.
+  A hand-authored `xy.theta_axis`/`xy.r_axis` refuses them; the shim drops them,
+  because every Axes carries an rcParam-derived minor style and refusing would
+  break `projection="polar"` over a default nobody authored.
+- A polar radial axis carrying datetimes now autoranges from its data instead of
+  from epoch zero, which had compressed every modern instant into a hairline
+  ring at the rim. `set_rlim` and an explicit radial `margin` are unaffected and
+  still win.
+
 ## Box and violin default geometry — 2026-07-26 (Matplotlib 3.11.1 reference)
 
 - `xy.pyplot.boxplot` no longer routes its default call through the native

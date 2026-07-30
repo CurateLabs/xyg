@@ -54,6 +54,7 @@ from ._svg import (
     _legend_layout,
     _lut,
     _physical_density_alpha,
+    _PolarProjection,
     _px_size,
     _resolve_static_css_vars,
     _Scale,
@@ -62,14 +63,19 @@ from ._svg import (
     _tick_label_anchor,
     _title_entries,
     _title_metrics,
+    affine_fast_path,
     annotation_label_placement,
     apply_export_background,
     axis_ticks,
     hexbin_ring,
     layout,
+    legend_clip_rect,
     legend_items,
     legend_options_with_slot,
     minor_axis_ticks,
+    polar_heatmap_rgba,
+    polar_tick_label_layout,
+    polar_wedge_points,
     slot_font_size,
     slot_styles,
     slot_text_color,
@@ -96,7 +102,8 @@ from ._svg import (
     _AFFINE_CHANNEL_POINTS,
     _STROKED_TRIANGLES,
     _STYLED_TEXT,
-) = range(18)
+    _POLAR_CLIP,
+) = range(19)
 # Anchor-byte rotation flags — must match TEXT_ROTATED/TEXT_ROTATED_CW in
 # src/raster.rs. CCW reads bottom-to-top (y-axis titles), CW top-to-bottom
 # (right-margin titles, matplotlib rotation=270).
@@ -212,6 +219,21 @@ class _Cmd:
         self._f(y)
         self._f(w)
         self._f(h)
+
+    def polar_clip(self, polar: _PolarProjection) -> None:
+        """Clip subsequent commands to one annular sector.
+
+        Coordinates/radii follow the display list's device-scale convention;
+        angles remain dimensionless. A later rectangular ``clip`` resets this
+        state, matching the marks→chrome transition in ``render_raster``.
+        """
+        self.buf.append(_POLAR_CLIP)
+        self._f(polar.cx)
+        self._f(polar.cy)
+        self._f(polar.inner_radius)
+        self._f(polar.radius)
+        self._raw_f(polar.sector_a0)
+        self._raw_f(polar.sector_a1 - polar.sector_a0)
 
     def fill(self, pts: Sequence[tuple[float, float]], color: tuple[int, ...]) -> None:
         if len(pts) < 3:
@@ -770,6 +792,135 @@ def _grad_stops(fill_spec: dict, mark_color: str) -> list:
     return [(float(o), _parse_color(_css(c, mark_color))) for o, c in fill_spec.get("stops", [])]
 
 
+def _emit_polar_grid(
+    cmd: _Cmd,
+    polar: _PolarProjection,
+    theta_ticks: list[float],
+    r_ticks: list[float],
+    theta_style: dict[str, Any],
+    r_style: dict[str, Any],
+    default_grid: str,
+    hide_theta: bool,
+    hide_r: bool,
+) -> None:
+    """Concentric rings and radial spokes, in display-list commands.
+
+    The rasterizer has no arc, wedge or circle opcode — its only curves are
+    pre-flattened polylines — so each ring ships as a closed polyline from
+    `_PolarProjection.ring`. The SVG exporter draws the same rings as exact
+    `<circle>` elements; both read the same tick list, so they agree on which
+    rings exist even though the curve is expressed differently.
+    """
+    theta_ticks = polar.filter_theta_values(theta_ticks)
+    r_ticks = [value for value in r_ticks if bool(polar.visible_mask(value))]
+    if not hide_r:
+        for v in r_ticks:
+            radius = float(polar.norm_radius(v)) * polar.radius
+            if radius <= 0.0:
+                continue
+            ring = (
+                polar.polygon_ring(v, theta_ticks)
+                if polar.grid_shape == "linear"
+                else polar.ring(v)
+            )
+            if len(ring) < 2:
+                continue
+            cmd.stroke(
+                [*ring, ring[0]] if polar.full_sector else ring,
+                float(r_style.get("grid_width", 1)),
+                _parse_color(
+                    _css(r_style.get("grid_color"), default_grid),
+                    float(r_style.get("grid_opacity", 1.0)),
+                ),
+                dash=_AXIS_GRID_DASHES.get(str(r_style.get("grid_dash", "solid"))),
+            )
+    if hide_theta:
+        return
+    for v in theta_ticks:
+        angle = float(polar.angle(v))
+        inner = polar.inner_radius
+        cmd.stroke(
+            [
+                (
+                    polar.cx + inner * math.cos(angle),
+                    polar.cy - inner * math.sin(angle),
+                ),
+                (
+                    polar.cx + polar.radius * math.cos(angle),
+                    polar.cy - polar.radius * math.sin(angle),
+                ),
+            ],
+            float(theta_style.get("grid_width", 1)),
+            _parse_color(
+                _css(theta_style.get("grid_color"), default_grid),
+                float(theta_style.get("grid_opacity", 1.0)),
+            ),
+            dash=_AXIS_GRID_DASHES.get(str(theta_style.get("grid_dash", "solid"))),
+        )
+
+
+def _polar_label_paint(axis: dict[str, Any], slot_paint: Any, default_text: str) -> tuple[int, ...]:
+    """Axis tick_label_color/tick_color first, chart slot second.
+
+    Mirrors `tick_color` inside `_svg._polar_tick_labels`. Without the axis
+    lookup the `text=False`/`show=False` shorthands — which work by setting
+    tick_label_color transparent — silently did nothing on a polar chart.
+    """
+    axis_style = axis.get("style") or {}
+    own = _css(axis_style.get("tick_label_color", axis_style.get("tick_color")), "")
+    return _parse_color(own) if own else slot_paint("tick_label", default_text)
+
+
+def _emit_polar_tick_labels(
+    cmd: _Cmd,
+    polar: _PolarProjection,
+    theta_values: list[float],
+    r_values: list[float],
+    theta_step: float,
+    r_step: float,
+    theta_axis: dict[str, Any],
+    r_axis: dict[str, Any],
+    theta_size: float,
+    r_size: float,
+    theta_color: tuple[int, ...],
+    r_color: tuple[int, ...],
+    hide_theta: bool,
+    hide_r: bool,
+) -> None:
+    """Emit polar tick labels as display-list text, from the shared placement.
+
+    Placement lives in `_svg.polar_tick_label_layout`; this is only the sink,
+    so the two exporters cannot drift on rim offsets, quadrant anchors or the
+    radial spoke angle.
+    """
+    angular, radial = polar_tick_label_layout(
+        polar,
+        theta_values,
+        r_values,
+        theta_step,
+        r_step,
+        theta_axis,
+        r_axis,
+        theta_size,
+        r_size,
+        hide_theta,
+        hide_r,
+    )
+    for placed, paint in ((angular, theta_color), (radial, r_color)):
+        for item in placed:
+            cmd.text(
+                item.x,
+                item.y,
+                # The layout speaks SVG's anchor vocabulary; the display list
+                # calls the same thing "center".
+                _TEXT_ANCHOR_CODES["center" if item.anchor == "middle" else item.anchor],
+                item.size,
+                paint,
+                item.text,
+                angle=item.spin,
+            )
+
+
 @_textblock.cached_measurements
 def render_raster(
     spec: dict[str, Any],
@@ -785,6 +936,13 @@ def render_raster(
     width, height, compact, plot = layout(spec)
     xa, ya = spec["x_axis"], spec["y_axis"]
     x_scales, y_scales, sx, sy, extra_x_axes, extra_y_axes = _axis_scales(spec, plot)
+    # Polar reinterprets the same two axes: x carries theta, y carries r. The
+    # projection comes from _svg so the vector and raster exports cannot drift.
+    polar = (
+        _PolarProjection(spec["x_axis"], spec["y_axis"], plot)
+        if spec.get("coords") == "polar"
+        else None
+    )
     cols = spec["columns"]
     cmd = _Cmd(scale)
 
@@ -848,7 +1006,9 @@ def render_raster(
     hide_y = ya.get("tick_label_strategy") == "none"
 
     cmd.clip(px0, py0, plot["w"], plot["h"])
-    for v in [] if hide_x else xmt:
+    if polar is not None:
+        _emit_polar_grid(cmd, polar, xt, yt, xstyle, ystyle, default_grid, hide_x, hide_y)
+    for v in [] if hide_x or polar is not None else xmt:
         gx = float(sx(v))
         cmd.stroke(
             [(gx, py0), (gx, py1)],
@@ -859,7 +1019,7 @@ def render_raster(
             ),
             dash=_AXIS_GRID_DASHES.get(str(xmstyle.get("grid_dash", "solid"))),
         )
-    for v in [] if hide_y else ymt:
+    for v in [] if hide_y or polar is not None else ymt:
         gy = float(sy(v))
         cmd.stroke(
             [(px0, gy), (px1, gy)],
@@ -870,7 +1030,7 @@ def render_raster(
             ),
             dash=_AXIS_GRID_DASHES.get(str(ymstyle.get("grid_dash", "solid"))),
         )
-    for v in [] if hide_x else xt:
+    for v in [] if hide_x or polar is not None else xt:
         gx = float(sx(v))
         cmd.stroke(
             [(gx, py0), (gx, py1)],
@@ -881,7 +1041,7 @@ def render_raster(
             ),
             dash=_AXIS_GRID_DASHES.get(str(xstyle.get("grid_dash", "solid"))),
         )
-    for v in [] if hide_y else yt:
+    for v in [] if hide_y or polar is not None else yt:
         gy = float(sy(v))
         cmd.stroke(
             [(px0, gy), (px1, gy)],
@@ -893,6 +1053,12 @@ def render_raster(
             dash=_AXIS_GRID_DASHES.get(str(ystyle.get("grid_dash", "solid"))),
         )
 
+    # Grid/frame chrome is drawn before the shaped clip. Marks then share one
+    # analytic annular-sector clip in the native painter, matching SVG's
+    # polar clipPath without flattening every mark at the boundary.
+    if polar is not None:
+        cmd.polar_clip(polar)
+
     spec_palette: Sequence[str] = spec.get("palette") or DEFAULT_PALETTE
     for palette_i, t in enumerate(spec["traces"]):
         style = t.get("style") or {}
@@ -903,20 +1069,29 @@ def render_raster(
         if t.get("tier") == "density" and t.get("density"):
             _emit_grid(cmd, "density", t["density"], blob, cols, trace_sx, trace_sy, style)
         elif kind == "line":
-            _emit_line(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
+            _emit_line(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
         elif kind in ("area", "error_band"):
-            _emit_area(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot)
+            _emit_area(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
         elif kind == "scatter":
-            _emit_scatter(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
+            _emit_scatter(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
         elif kind == "hexbin":
             _emit_hexbin(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
         elif kind in {"errorbar", "stem", "box_whisker", "box_median", "contour", "segments"}:
-            _emit_segments(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
+            _emit_segments(cmd, t, blob, cols, trace_sx, trace_sy, style, color, polar)
         elif kind in ("bar", "column") and t.get("bar"):
-            _emit_bars(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot)
+            _emit_bars(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
         elif kind == "heatmap" and t.get("heatmap"):
             _emit_grid(
-                cmd, "heatmap", t["heatmap"], blob, cols, trace_sx, trace_sy, style, borrowed
+                cmd,
+                "heatmap",
+                t["heatmap"],
+                blob,
+                cols,
+                trace_sx,
+                trace_sy,
+                style,
+                borrowed,
+                polar,
             )
         elif kind == "triangle_mesh":
             _emit_triangle_mesh(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
@@ -925,21 +1100,61 @@ def render_raster(
             # too, so a later branch would draw every band as a rectangle.
             _emit_ribbon(cmd, t, blob, cols, trace_sx, trace_sy, style, color)
         elif all(k in t for k in ("x0", "x1", "y0", "y1")):
-            _emit_rects(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot)
+            _emit_rects(cmd, t, blob, cols, trace_sx, trace_sy, style, color, plot, polar)
 
-    _emit_annotations(cmd, spec.get("annotations") or [], sx, sy, plot, width, height)
+    _emit_annotations(cmd, spec.get("annotations") or [], sx, sy, plot, width, height, polar=polar)
 
     # Chrome (unclipped): baselines, labels, title, legend.
     cmd.clip(0, 0, width, height)
     # Text annotations are unclipped like matplotlib Text (clip_on=False):
     # margin titles and edge labels may live outside the plot rectangle.
-    _emit_annotations(cmd, spec.get("annotations") or [], sx, sy, plot, width, height, phase="text")
+    _emit_annotations(
+        cmd,
+        spec.get("annotations") or [],
+        sx,
+        sy,
+        plot,
+        width,
+        height,
+        phase="text",
+        polar=polar,
+    )
     # "none" silences the whole axis chrome (sparklines); "off" hides only the
     # label text and keeps baselines and the axis title (mpl shared axes).
     frame_sides = spec.get("frame_sides")
     explicit_frame_sides = frame_sides is not None
     if frame_sides is None:
         frame_sides = [xa.get("side", "bottom"), ya.get("side", "left")]
+    if polar is not None:
+        # One annular-sector outline replaces the four straight spines; "side"
+        # has no polar meaning, so frame_sides is deliberately not consulted.
+        frame_sides = []
+        explicit_frame_sides = False
+        if not hide_x:
+            width_ = float(xstyle.get("axis_width", 1))
+            paint = _parse_color(_css(xstyle.get("axis_color"), default_axis))
+            outer = polar.frame_points(xt)
+            if outer:
+                if polar.full_sector:
+                    cmd.stroke([*outer, outer[0]], width_, paint)
+                    if polar.inner_radius > 0.0:
+                        inner = (
+                            polar.polygon_ring(polar.r_lo, xt)
+                            if polar.grid_shape == "linear"
+                            else polar.ring(polar.r_lo)
+                        )
+                        if inner:
+                            cmd.stroke([*inner, inner[0]], width_, paint)
+                else:
+                    inner = (
+                        polar.polygon_ring(polar.r_lo, xt)
+                        if polar.inner_radius > 0.0 and polar.grid_shape == "linear"
+                        else polar.ring(polar.r_lo)
+                        if polar.inner_radius > 0.0
+                        else [(polar.cx, polar.cy)]
+                    )
+                    boundary = [*outer, *reversed(inner)]
+                    cmd.stroke([*boundary, boundary[0]], width_, paint)
     if not hide_y or explicit_frame_sides:
         if "left" in frame_sides:
             cmd.stroke(
@@ -996,7 +1211,7 @@ def render_raster(
             return length / 2, length / 2
         return 0.0, length
 
-    if not hide_x:
+    if not hide_x and polar is None:
         inward, outward = tick_span(xmstyle)
         side = xa.get("side", "bottom")
         edge = py0 if side == "top" else py1
@@ -1027,7 +1242,7 @@ def render_raster(
                     float(xstyle.get("tick_width", 1)),
                     _parse_color(_css(xstyle.get("tick_color"), default_axis)),
                 )
-    if not hide_y:
+    if not hide_y and polar is None:
         inward, outward = tick_span(ymstyle)
         side = ya.get("side", "left")
         edge = px1 if side == "right" else px0
@@ -1181,8 +1396,26 @@ def render_raster(
                     angle=float(item["angle"]),
                 )
 
-    emit_tick_labels(xa, xlab, xstep, sx, is_x=True)
-    emit_tick_labels(ya, ylab, ystep, sy, is_x=False)
+    if polar is not None:
+        _emit_polar_tick_labels(
+            cmd,
+            polar,
+            xlab,
+            ylab,
+            xstep,
+            ystep,
+            xa,
+            ya,
+            slot_font_size(slots.get("tick_label") or {}, _axis_tick_font_size(xa)),
+            slot_font_size(slots.get("tick_label") or {}, _axis_tick_font_size(ya)),
+            _polar_label_paint(xa, slot_paint, default_text),
+            _polar_label_paint(ya, slot_paint, default_text),
+            hide_x or xa.get("tick_label_strategy") == "off",
+            hide_y or ya.get("tick_label_strategy") == "off",
+        )
+    else:
+        emit_tick_labels(xa, xlab, xstep, sx, is_x=True)
+        emit_tick_labels(ya, ylab, ystep, sy, is_x=False)
     for axis_id, axis, axis_scale in extra_x_axes:
         _ticks, tick_labels, step = extra_x_ticks[axis_id]
         emit_tick_labels(axis, tick_labels, step, axis_scale, is_x=True)
@@ -1190,6 +1423,9 @@ def render_raster(
         _ticks, tick_labels, step = extra_y_ticks[axis_id]
         emit_tick_labels(axis, tick_labels, step, axis_scale, is_x=False)
     legacy_title = spec.get("title") if not spec.get("title_options") else None
+    # The width layout measured the title band at; wrapping anywhere else would
+    # draw more lines than `title_room` reserved (see _svg._title_wrap_width).
+    title_wrap_width = plot.get("title_wrap_width")
     if legacy_title:
         title_slot = slots.get("title") or {}
         title_italic, title_bold = _native_font_emphasis(
@@ -1198,18 +1434,25 @@ def render_raster(
                 "font_weight": title_slot.get("font-weight", 400),
             }
         )
-        cmd.text(
+        legacy_size = slot_font_size(title_slot, 14.0)
+        legacy_block = _textblock.measure(legacy_title, legacy_size, max_width=title_wrap_width)
+        # Lines run downward from the baseline, so lift the block by its trailing
+        # lines: the last line keeps the historical single-line baseline. A
+        # one-line title has no trailing lines and emits exactly as before.
+        legacy_trailing = (legacy_block.line_count - 1) * legacy_block.line_step
+        _emit_text_block(
+            cmd,
             width / 2,
-            plot["y"] - plot["top_axis_room"] - (10 if compact else 12),
+            plot["y"] - plot["top_axis_room"] - (10 if compact else 12) - legacy_trailing,
             1,
-            slot_font_size(title_slot, 14.0),
+            legacy_size,
             slot_paint("title", default_text),
-            str(legacy_title),
+            "\n".join(legacy_block.lines),
             italic=title_italic,
             bold=title_bold,
         )
     for title_entry in [] if legacy_title else _title_entries(spec):
-        title_style, title_size, title_block = _title_metrics(spec, title_entry)
+        title_style, title_size, title_block = _title_metrics(spec, title_entry, title_wrap_width)
         title_italic, title_bold = _native_font_emphasis(
             {
                 "font_style": title_style.get("font-style"),
@@ -1237,7 +1480,9 @@ def render_raster(
             {"left": 0, "center": 1, "right": 2}.get(loc, 1),
             title_size,
             _parse_color(slot_text_color(title_style, default_text)),
-            str(title_entry["text"]),
+            # The wrapped lines, not the raw string: one long line inside a
+            # two-line band is the clipping bug this reservation exists to stop.
+            "\n".join(title_block.lines),
             italic=title_italic,
             bold=title_bold,
         )
@@ -1298,12 +1543,16 @@ def render_raster(
     # must not lift the clip off its non-anchored siblings. The clip is a
     # stateful raster command, so only emit it on a transition — an
     # all-anchored or all-unanchored figure yields the same stream as before.
+    # The clip is the plot rect unioned with any polar legend gutter, which sits
+    # outside it — the plot rect alone erased a polar legend. Shared with the
+    # SVG clipPath via `legend_clip_rect`.
+    lx, ly, lw, lh = legend_clip_rect(plot)
     clipped_to_plot = False
     for items, options in legends:
         want_clip = not options.get("anchor")
         if want_clip != clipped_to_plot:
             if want_clip:
-                cmd.clip(px0, py0, plot["w"], plot["h"])
+                cmd.clip(lx, ly, lw, lh)
             else:
                 cmd.clip(0, 0, width, height)
             clipped_to_plot = want_clip
@@ -1352,6 +1601,7 @@ def _emit_line(
     sy: _Scale,
     style: dict[str, Any],
     color: str,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     xv, yv = _column(blob, cols[t["x"]]), _column(blob, cols[t["y"]])
     if style.get("step"):
@@ -1364,7 +1614,28 @@ def _emit_line(
     # the byte packer.
     cap = str(style.get("linecap", "round"))
     cap = cap if cap in _CAP_CODES else "round"
-    if style.get("curve") == "smooth" and len(xv) >= 3 and sx.affine and sy.affine:
+    if polar is not None:
+        # Chords between projected points (polar-axes.md §5). The smooth branch
+        # is skipped outright: its Bezier control points are only exact under an
+        # affine map, and `smooth_stroke` bakes that map into Rust. Vertices
+        # outside the radial range split the stroke into visible runs — the
+        # same cull the client shader applies. The shaped clip contains paint at
+        # the boundary, but it cannot restore gap semantics after an invalid
+        # data vertex has been projected through the centre.
+        px, py = polar(xv, yv)
+        visible = polar.position_mask(xv, yv)
+        indices = np.flatnonzero(visible)
+        runs = (
+            [np.arange(len(xv))]
+            if bool(visible.all())
+            else np.split(indices, np.flatnonzero(np.diff(indices) > 1) + 1)
+        )
+        for run in runs:
+            if len(run) < 2:
+                continue
+            points = list(zip(px[run].tolist(), py[run].tolist(), strict=True))
+            cmd.stroke(points, width, c, dash=style.get("dash"), cap=cap)
+    elif style.get("curve") == "smooth" and len(xv) >= 3 and affine_fast_path(sx, sy, polar):
         cmd.smooth_stroke(xv, yv, sx, sy, width, c, dash=style.get("dash"), cap=cap)
     else:
         pts = _scene.curve_points(xv, yv, sx, sy, False)
@@ -1404,9 +1675,18 @@ def _emit_annotations(
     height: float,
     *,
     phase: str = "marks",
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     px0, py0 = plot["x"], plot["y"]
     text_phase = phase == "text"
+
+    def point(x: float, y: float) -> tuple[float, float]:
+        """Jointly project point-anchored geometry under polar coordinates."""
+        if polar is not None:
+            px, py = polar(x, y)
+            return float(px), float(py)
+        return float(sx(x)), float(sy(y))
+
     for ann in annotations:
         # Geometry (rules/bands/arrows/markers) draws in the clipped marks
         # pass; every label draws in the unclipped chrome pass, matching
@@ -1448,14 +1728,14 @@ def _emit_annotations(
                 _rgba(style.get("color"), "#64748b", float(style.get("opacity", 0.14))),
             )
         elif ann.get("kind") in ("arrow", "callout"):
-            if _annotation_connector_unclipped(ann, sx, sy, plot):
+            if _annotation_connector_unclipped(ann, sx, sy, plot, polar):
                 cmd.clip(0, 0, width, height)
                 restore_plot_clip = True
             if ann.get("kind") == "arrow":
-                x0, y0 = float(sx(float(ann["x0"]))), float(sy(float(ann["y0"])))
-                x1, y1 = float(sx(float(ann["x1"]))), float(sy(float(ann["y1"])))
+                x0, y0 = point(float(ann["x0"]), float(ann["y0"]))
+                x1, y1 = point(float(ann["x1"]), float(ann["y1"]))
             else:  # pointer from the offset label back to the data point
-                x1, y1 = float(sx(float(ann["x"]))), float(sy(float(ann["y"])))
+                x1, y1 = point(float(ann["x"]), float(ann["y"]))
                 x0, y0 = x1 + float(ann.get("dx", 0.0)), y1 + float(ann.get("dy", 0.0))
             if all(np.isfinite(v) for v in (x0, y0, x1, y1)):
                 shapes = _arrow_shapes(x0, y0, x1, y1, style)
@@ -1481,7 +1761,7 @@ def _emit_annotations(
                     else:
                         cmd.stroke(decoration["points"], stroke_width, color)
         elif ann.get("kind") == "marker":
-            mx, my = float(sx(float(ann["x"]))), float(sy(float(ann["y"])))
+            mx, my = point(float(ann["x"]), float(ann["y"]))
             if np.isfinite(mx) and np.isfinite(my):
                 alpha = float(style.get("opacity", 1.0))
                 stroke_w = float(style.get("stroke_width", 0.0))
@@ -1500,9 +1780,11 @@ def _emit_annotations(
                 )
         if restore_plot_clip:
             cmd.clip(plot["x"], plot["y"], plot["w"], plot["h"])
+            if polar is not None:
+                cmd.polar_clip(polar)
         if text_phase and ann.get("text"):
             x, y, label_anchor, vertical_align = annotation_label_placement(
-                ann, style, sx, sy, plot, width, height
+                ann, style, sx, sy, plot, width, height, polar
             )
             if not (np.isfinite(x) and np.isfinite(y)):
                 continue
@@ -1648,33 +1930,70 @@ def _emit_area(
     style: dict[str, Any],
     color: str,
     plot: dict[str, float],
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     xv = _column(blob, cols[t["x"]])
     yv = _column(blob, cols[t["y"]])
     bv = _column(blob, cols[t["base"]])
     smooth = style.get("curve") == "smooth"
-    top = _scene.curve_points(xv, yv, sx, sy, smooth)
-    base = _scene.curve_points(xv[::-1], bv[::-1], sx, sy, smooth)
-    poly = np.vstack([top, base])
+    if polar is not None:
+        # Chord-bounded polygon (polar-axes.md §5); smoothing is skipped because
+        # its control points are only exact under an affine map. Radii clamp to
+        # the radial range — the fill at each theta is [base, top] ∩
+        # [r_lo, r_hi], and a base below r_lo would otherwise mirror through
+        # the centre (mirrors the SVG area branch and AREA_VS). Vertices
+        # outside the theta sector (or NaN) are CULLED, splitting the fill
+        # into visible runs — the SVG path applies position_mask inside
+        # _curve_path and the client NaN-culls in the shader; painting them
+        # here drew chords across the sector boundary and let NaN reach the
+        # display list (§19).
+        radial_min, radial_max = sorted((polar.r_lo, polar.r_hi))
+        top_r = np.clip(yv, radial_min, radial_max)
+        base_r = np.clip(bv, radial_min, radial_max)
+        visible = polar.position_mask(xv, top_r) & polar.position_mask(xv, base_r)
+        if bool(visible.all()):
+            runs = [np.arange(len(xv))]
+        else:
+            indices = np.flatnonzero(visible)
+            runs = (
+                []
+                if indices.size == 0
+                else np.split(indices, np.flatnonzero(np.diff(indices) > 1) + 1)
+            )
+        pieces = []
+        for run in runs:
+            if len(run) < 2:
+                continue
+            run_top = np.column_stack(polar(xv[run], top_r[run]))
+            run_base = np.column_stack(polar(xv[run][::-1], base_r[run][::-1]))
+            pieces.append((run_top, run_base))
+    else:
+        top = _scene.curve_points(xv, yv, sx, sy, smooth)
+        base = _scene.curve_points(xv[::-1], bv[::-1], sx, sy, smooth)
+        pieces = [(top, base)]
     op = _fill_opacity(style, 0.35)
     fill_spec = style.get("fill")
-    if isinstance(fill_spec, dict):
-        xs, ys = poly[:, 0], poly[:, 1]
-        bbox = (xs.min(), ys.min(), xs.max() - xs.min(), ys.max() - ys.min())
-        g0, g1 = _grad_line(
-            fill_spec.get("space", "mark"), fill_spec.get("dir", "down"), bbox, plot
-        )
-        stops = [(o, (c[0], c[1], c[2], int(c[3] * op))) for o, c in _grad_stops(fill_spec, color)]
-        cmd.grad(poly.tolist(), g0, g1, stops)
-    else:
-        cmd.fill(poly.tolist(), _rgba(style.get("color"), color, op))
-    lw = float(style.get("line_width", 1.2))
-    if lw > 0:
-        lop = _stroke_opacity(style, 0.35) * float(style.get("line_opacity", 1.0))
-        line_color = _rgba(style.get("line_color"), style.get("color") or color, lop)
-        cmd.stroke(top, lw, line_color, dash=style.get("dash"))
-        if style.get("stroke_perimeter"):
-            cmd.stroke(base, lw, line_color, dash=style.get("dash"))
+    for top, base in pieces:
+        poly = np.vstack([top, base])
+        if isinstance(fill_spec, dict):
+            xs, ys = poly[:, 0], poly[:, 1]
+            bbox = (xs.min(), ys.min(), xs.max() - xs.min(), ys.max() - ys.min())
+            g0, g1 = _grad_line(
+                fill_spec.get("space", "mark"), fill_spec.get("dir", "down"), bbox, plot
+            )
+            stops = [
+                (o, (c[0], c[1], c[2], int(c[3] * op))) for o, c in _grad_stops(fill_spec, color)
+            ]
+            cmd.grad(poly.tolist(), g0, g1, stops)
+        else:
+            cmd.fill(poly.tolist(), _rgba(style.get("color"), color, op))
+        lw = float(style.get("line_width", 1.2))
+        if lw > 0:
+            lop = _stroke_opacity(style, 0.35) * float(style.get("line_opacity", 1.0))
+            line_color = _rgba(style.get("line_color"), style.get("color") or color, lop)
+            cmd.stroke(top, lw, line_color, dash=style.get("dash"))
+            if style.get("stroke_perimeter"):
+                cmd.stroke(base, lw, line_color, dash=style.get("dash"))
 
 
 def _trace_paint_rgba(
@@ -1715,10 +2034,16 @@ def _emit_authored_scatter(
     sy: _Scale,
     style: dict[str, Any],
     color: str,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     """Paint bounded pyplot-authored paths/glyphs in display-list space."""
     xv, yv = _column(blob, cols[t["x"]]), _column(blob, cols[t["y"]])
-    px, py = sx(xv), sy(yv)
+    px, py = polar(xv, yv) if polar is not None else (sx(xv), sy(yv))
+    # Out-of-range radii are culled like the client shader culls them. The
+    # shaped clip contains glyph extent at the boundary, but a below-range
+    # position itself mirrors into the visible annulus and must still be
+    # rejected before projection.
+    visible = polar.position_mask(xv, yv) if polar is not None else None
     n = len(xv)
     if not n:
         return
@@ -1768,6 +2093,8 @@ def _emit_authored_scatter(
     filled = bool(marker_path and marker_path.get("filled", True))
 
     for index in range(n):
+        if visible is not None and not visible[index]:
+            continue
         fill = tuple(int(value) for value in fills[index])
         stroke = tuple(int(value) for value in strokes[index])
         diameter = max(0.0, 2 * (float(radii[index]) - float(widths[index]) / 2))
@@ -1816,11 +2143,12 @@ def _emit_scatter(
     sy: _Scale,
     style: dict[str, Any],
     color: str,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     ch = t.get("color") or {}
     size_ch = t.get("size") or {}
     if style.get("marker_path") or style.get("marker_glyph"):
-        _emit_authored_scatter(cmd, t, blob, cols, sx, sy, style, color)
+        _emit_authored_scatter(cmd, t, blob, cols, sx, sy, style, color, polar)
         return
 
     def read(index: int) -> np.ndarray:
@@ -1850,8 +2178,7 @@ def _emit_scatter(
     color_mode = ch.get("mode")
     size_mode = size_ch.get("mode")
     if (
-        sx.affine
-        and sy.affine
+        affine_fast_path(sx, sy, polar)
         and not t.get("channels")
         and (t.get("stroke") is None or t["stroke"].get("mode") == "match_fill")
         and (color_mode in {"continuous", "categorical"} or size_mode == "continuous")
@@ -1878,8 +2205,7 @@ def _emit_scatter(
     # spans and applies the same affine math while painting.  Keep the existing
     # command as the full-fidelity fallback for log axes and channel styling.
     if (
-        sx.affine
-        and sy.affine
+        affine_fast_path(sx, sy, polar)
         and ch.get("mode") not in {"continuous", "categorical", "direct_rgba"}
         and size_ch.get("mode") != "continuous"
         and not t.get("channels")
@@ -1893,7 +2219,7 @@ def _emit_scatter(
         return
 
     xv, yv = _column(blob, cols[t["x"]]), _column(blob, cols[t["y"]])
-    px, py = sx(xv), sy(yv)
+    px, py = polar(xv, yv) if polar is not None else (sx(xv), sy(yv))
     n = len(xv)
     if n == 0:
         return
@@ -1932,6 +2258,18 @@ def _emit_scatter(
         _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=0.8)
         * 255.0
     ).astype(np.uint8)
+    if polar is not None:
+        # Cull out-of-range radii the way the client shader does: below r_lo a
+        # sprite mirrors through the centre. The shaped clip contains glyph
+        # extent at valid boundaries, but cannot distinguish that mirrored
+        # invalid position from an honest in-range one.
+        visible = polar.position_mask(xv, yv)
+        if not bool(visible.all()):
+            px, py, radii, fills = px[visible], py[visible], radii[visible], fills[visible]
+            symbols, widths, strokes = symbols[visible], widths[visible], strokes[visible]
+            n = len(px)
+            if n == 0:
+                return
     if (
         np.all(widths == widths[0])
         and np.all(symbols == symbols[0])
@@ -1968,6 +2306,7 @@ def _emit_segments(
     sy: _Scale,
     style: dict[str, Any],
     color: str,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     x0 = _column(blob, cols[t["x0"]])
     x1 = _column(blob, cols[t["x1"]])
@@ -1983,6 +2322,44 @@ def _emit_segments(
         _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0) * 255.0
     ).astype(np.uint8)
     widths = _paint.style_values(t, "width", n, read, float(style.get("width", 1.2)))
+    if polar is None:
+        px0, py0, px1, py1 = sx(x0), sy(y0), sx(x1), sy(y1)
+    else:
+        c0 = np.asarray(polar.r_scale.coord(y0), dtype=np.float64)
+        c1 = np.asarray(polar.r_scale.coord(y1), dtype=np.float64)
+        lo = min(polar.r_lo_coord, polar.r_hi_coord)
+        hi = max(polar.r_lo_coord, polar.r_hi_coord)
+        keep = (
+            np.isfinite(x0)
+            & np.isfinite(x1)
+            & np.isfinite(c0)
+            & np.isfinite(c1)
+            & (np.maximum(c0, c1) >= lo)
+            & (np.minimum(c0, c1) <= hi)
+        )
+        dr = c1 - c0
+        ta = np.zeros(n, dtype=np.float64)
+        tb = np.ones(n, dtype=np.float64)
+        moving = np.abs(dr) > 1e-30
+        ta[moving] = (lo - c0[moving]) / dr[moving]
+        tb[moving] = (hi - c0[moving]) / dr[moving]
+        t0 = np.maximum(0.0, np.minimum(ta, tb))
+        t1 = np.minimum(1.0, np.maximum(ta, tb))
+        clipped_x0 = x0 + (x1 - x0) * t0
+        clipped_x1 = x0 + (x1 - x0) * t1
+        clipped_c0 = np.clip(c0 + dr * t0, lo, hi)
+        clipped_c1 = np.clip(c0 + dr * t1, lo, hi)
+        keep &= polar.theta_visible_mask(clipped_x0)
+        keep &= polar.theta_visible_mask(clipped_x1)
+        clipped_y0 = polar.r_scale.value(clipped_c0)
+        clipped_y1 = polar.r_scale.value(clipped_c1)
+        px0, py0 = polar(clipped_x0[keep], clipped_y0[keep])
+        px1, py1 = polar(clipped_x1[keep], clipped_y1[keep])
+        colors = colors[keep]
+        widths = widths[keep]
+        n = len(widths)
+    if n == 0:
+        return
     dash = style.get("dash")
     if dash:
         # The batched segments primitive cannot dash; fall back to one dashed
@@ -1990,8 +2367,7 @@ def _emit_segments(
         dash_pattern = (
             [float(value) for value in dash.split(",")] if isinstance(dash, str) else list(dash)
         )
-        px0, py0, px1, py1 = sx(x0), sy(y0), sx(x1), sy(y1)
-        for index in range(len(x0)):
+        for index in range(n):
             cmd.stroke(
                 [(float(px0[index]), float(py0[index])), (float(px1[index]), float(py1[index]))],
                 float(widths[index]),
@@ -1999,12 +2375,9 @@ def _emit_segments(
                 dash=dash_pattern,
             )
         return
-    if n == 0:
-        return
     if np.all(widths == widths[0]):
-        cmd.segments(sx(x0), sy(y0), sx(x1), sy(y1), float(widths[0]), colors)
+        cmd.segments(px0, py0, px1, py1, float(widths[0]), colors)
     else:
-        px0, py0, px1, py1 = sx(x0), sy(y0), sx(x1), sy(y1)
         for index in range(n):
             cmd.stroke(
                 [
@@ -2247,6 +2620,35 @@ def _bar_geom(
             cmd.stroke(poly, sw, stroke_c, closed=True)
 
 
+def _polar_wedge_fill(
+    cmd: _Cmd,
+    style: dict[str, Any],
+    color: str,
+    plot: dict[str, float],
+    fills: np.ndarray,
+) -> Callable[[list[tuple[float, float]], int], None]:
+    """Paint one flattened wedge, honoring a gradient `fill=` like the cartesian
+    path does.
+
+    The polar branches used to call `cmd.fill(poly, flat)` unconditionally, so a
+    gradient reached the SVG (`fill="url(#g3)"`) and the browser but came out
+    flat in the PNG — a three-way divergence with the raster the odd one out.
+    Per-item colors still win when there is no gradient, since each wedge in a
+    pie carries its own.
+    """
+    if isinstance(style.get("fill"), dict):
+        grad_only, _stroke_c, _sw = _fill_maker(cmd, style, color, plot)
+
+        def paint(poly: list[tuple[float, float]], index: int) -> None:
+            grad_only(poly)
+    else:
+
+        def paint(poly: list[tuple[float, float]], index: int) -> None:
+            cmd.fill(poly, tuple(int(value) for value in fills[index]))
+
+    return paint
+
+
 def _fill_maker(
     cmd: _Cmd,
     style: dict[str, Any],
@@ -2332,6 +2734,7 @@ def _emit_bars(
     style: dict[str, Any],
     color: str,
     plot: dict[str, float],
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     b = t["bar"]
     pos = _column(blob, cols[b["pos"]])
@@ -2348,6 +2751,30 @@ def _emit_bars(
         return _column(blob, cols[index])
 
     fills, strokes, widths, radii = _rect_style_arrays(t, len(pos), color, read, 0.85)
+    if polar is not None:
+        # Annular sectors, flattened: the display list has no arc opcode, so the
+        # same wedge the SVG exporter draws with `A` ships as a polygon here.
+        paint = _polar_wedge_fill(cmd, style, color, plot, fills)
+        for i in range(len(pos)):
+            poly = polar_wedge_points(
+                polar,
+                float(pos[i]) - half,
+                float(pos[i]) + half,
+                float(min(v0[i], v1[i])),
+                float(max(v0[i], v1[i])),
+                corner_radius=float(np.max(radii[i])) if len(radii) else 0.0,
+                wedge_gap=float(style.get("wedge_gap", 0.0) or 0.0),
+            )
+            if len(poly) < 3:
+                continue
+            paint(poly, i)
+            if widths[i] > 0:
+                cmd.stroke(
+                    [*poly, poly[0]],
+                    float(widths[i]),
+                    tuple(int(v) for v in strokes[i]),
+                )
+        return
     if not isinstance(style.get("fill"), dict) and not np.any(radii) and not np.any(widths):
         if horizontal:
             xa, xb = sx(np.minimum(v0, v1)), sx(np.maximum(v0, v1))
@@ -2416,6 +2843,7 @@ def _emit_rects(
     style: dict[str, Any],
     color: str,
     plot: dict[str, float],
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     x0v, x1v = _column(blob, cols[t["x0"]]), _column(blob, cols[t["x1"]])
     y0v, y1v = _column(blob, cols[t["y0"]]), _column(blob, cols[t["y1"]])
@@ -2424,6 +2852,26 @@ def _emit_rects(
         return _column(blob, cols[index])
 
     fills, strokes, widths, radii = _rect_style_arrays(t, len(x0v), color, read, 0.85)
+    if polar is not None:
+        # Four edge columns are an annular sector, flattened (no arc opcode).
+        # This is the path unequal-width slices — a pie or donut — take.
+        paint = _polar_wedge_fill(cmd, style, color, plot, fills)
+        for i in range(len(x0v)):
+            poly = polar_wedge_points(
+                polar,
+                float(x0v[i]),
+                float(x1v[i]),
+                float(min(y0v[i], y1v[i])),
+                float(max(y0v[i], y1v[i])),
+                corner_radius=float(np.max(radii[i])) if len(radii) else 0.0,
+                wedge_gap=float(style.get("wedge_gap", 0.0) or 0.0),
+            )
+            if len(poly) < 3:
+                continue
+            paint(poly, i)
+            if widths[i] > 0:
+                cmd.stroke([*poly, poly[0]], float(widths[i]), tuple(int(v) for v in strokes[i]))
+        return
     if not isinstance(style.get("fill"), dict) and not np.any(radii) and not np.any(widths):
         xa, xb = sx(x0v), sx(x1v)
         ya, yb = sy(y0v), sy(y1v)
@@ -2482,8 +2930,34 @@ def _emit_grid(
     sy: _Scale,
     style: dict[str, Any],
     borrowed: tuple[np.ndarray, ...] = (),
+    polar: "Optional[_PolarProjection]" = None,
 ) -> None:
     if kind == "heatmap":
+        if polar is not None:
+            rgba = np.ascontiguousarray(
+                polar_heatmap_rgba(
+                    g,
+                    blob,
+                    cols,
+                    style,
+                    polar,
+                    borrowed,
+                    output_scale=cmd.s,
+                )
+            )
+            out_h, out_w = rgba.shape[:2]
+            plot = polar.plot
+            cmd.image(
+                plot["x"],
+                plot["y"],
+                plot["w"],
+                plot["h"],
+                out_w,
+                out_h,
+                rgba.tobytes(),
+                nearest=True,
+            )
+            return
         w, h = int(g["w"]), int(g["h"])
         if not (sx.affine and sy.affine):
             # Heatmap cells are uniform in *data* space, but the native image

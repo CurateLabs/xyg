@@ -195,6 +195,105 @@ Object.assign(ChartView.prototype, {
     return { label: fallback, customized: false };
   },
 
+  // The trace's own name, when it has one. The hover row carries `trace` (an
+  // id), never the label, so the default readout used to identify a mark only
+  // by its coordinates — on a pie that meant "x: 102.6, y: 0.94" for a slice
+  // whose whole identity is "Cloudpeak $13B". Every other library leads its
+  // tooltip with the series name; so does this one now.
+  _tooltipSeriesName(row) {
+    const traces = Array.isArray(this.spec.traces) ? this.spec.traces : [];
+    const trace = traces.find((t) => t && t.id === row.trace);
+    const name = trace && trace.name;
+    return typeof name === "string" && name.trim() ? name : null;
+  },
+
+  // Under polar the two channels are not x and y, and saying so is actively
+  // misleading: "x: 1.5708" on a radar names a spoke the chart labels "power".
+  // More than that: the default readout shows VALUES, not angles — on most
+  // polar charts the angle is where the layout put the mark, and the cursor
+  // is already sitting on it. A numeric angle row is therefore OMITTED by
+  // default; an authored spoke label (a radar category) survives because it
+  // is a name, not an angle; and an explicit `labels={"x": ...}` opts the
+  // angle row back in, formatted through the axis's own text function so
+  // degrees keep their sign and radians read as pi-fractions.
+  _polarTooltipField(channel, value, kind) {
+    if (this.spec?.coords !== "polar") return null;
+    const axis = this._axis(channel === "x" ? "x" : "y") || {};
+    if (channel === "y") return { label: "r", value: fmtValue(value, kind) };
+    // Authored spoke labels first, matched with tolerance. `_axisTickText`
+    // compares tick values exactly, but the hovered angle arrives as decoded
+    // offset-encoded f32 (§4/§16) while the tick was authored in f64 — so a
+    // radar's pi/2 spoke missed its own label by ~1e-7 and fell back to
+    // "1.57". The tolerance is relative to the spacing, so it can never reach
+    // a neighbouring spoke.
+    const values = Array.isArray(axis.tick_values) ? axis.tick_values : null;
+    const texts = Array.isArray(axis.tick_labels) ? axis.tick_labels : null;
+    if (values && texts) {
+      let span = Infinity;
+      for (let i = 1; i < values.length; i++) {
+        span = Math.min(span, Math.abs(Number(values[i]) - Number(values[i - 1])));
+      }
+      const tol = Number.isFinite(span) ? span / 8 : 1e-6;
+      for (let i = 0; i < values.length && i < texts.length; i++) {
+        if (Math.abs(Number(values[i]) - Number(value)) <= tol) {
+          return { label: "θ", value: String(texts[i]) };
+        }
+      }
+    }
+    const step = this._axisTicks?.("x", 6)?.step ?? 1;
+    let text;
+    try {
+      text = this._axisTickText(axis, value, step);
+    } catch {
+      text = null;
+    }
+    return { label: "θ", value: text || fmtValue(value, kind), omit: true };
+  },
+
+  // A pie slice or a gauge band is one named wedge: the name IS the datum,
+  // and theta/r are how the layout happened to place it — "Direct - 40%"
+  // followed by "theta: 72, r: 1" answers a question nobody asked. A trace
+  // with MANY wedges (a wind rose, an angular histogram) keeps theta/r,
+  // because there each wedge's angle and radius are the data. Explicit
+  // `labels=` overrides still win via the customized path below.
+  _isNamedSingleWedge(row) {
+    return this._namedWedge(row) !== null;
+  },
+
+  // A pie slice or a gauge band is ONE named wedge whose datum is its angular
+  // width. Returns that trace when the hovered row is such a wedge.
+  _namedWedge(row) {
+    if (this.spec?.coords !== "polar") return null;
+    const traces = Array.isArray(this.spec.traces) ? this.spec.traces : [];
+    const trace = traces.find((t) => t && t.id === row.trace);
+    if (!trace || typeof trace.name !== "string" || !trace.name.trim()) return null;
+    const wedge = trace.kind === "bar" || trace.kind === "column" || trace.bar !== undefined
+      || (trace.x0 !== undefined && trace.y0 !== undefined);
+    const count = trace.n_marks ?? trace.n_points;
+    return wedge && count === 1 ? trace : null;
+  },
+
+  // A single wedge's share of the wedges actually drawn. The angular width IS
+  // the datum, so the readout that means something is "how much of the whole"
+  // — and the whole is the span the wedges cover between them, not the axis
+  // range: a gauge's four bands sweep 240 degrees of a full-turn axis, and
+  // their shares must add to 100% of the gauge, not 67% of a circle.
+  _wedgeSharePercent(trace) {
+    const traces = Array.isArray(this.spec.traces) ? this.spec.traces : [];
+    let total = 0;
+    let own = 0;
+    for (const t of traces) {
+      const width = Number(t?.bar?.width);
+      if (!Number.isFinite(width) || width <= 0) continue;
+      const marks = t.n_marks ?? t.n_points;
+      if (marks !== 1) return null; // a multi-wedge trace makes "share" undefined
+      total += width;
+      if (t.id === trace.id) own = width;
+    }
+    if (!(total > 0) || !(own > 0)) return null;
+    return (own / total) * 100;
+  },
+
   _defaultTooltipItems(row, labels = {}, aliases = {}) {
     const items = [];
     if (row.source !== undefined && row.target !== undefined) {
@@ -219,13 +318,41 @@ Object.assign(ChartView.prototype, {
       }
       return items;
     }
+    const seriesName = this._tooltipSeriesName(row);
+    if (seriesName) items.push({ kind: "title", value: seriesName });
+    const wedge = this._namedWedge(row);
+    if (seriesName && wedge) {
+      // The wedge's share is the only number that means anything here: theta
+      // is where layout put it and the radius is the ring thickness. Skipped
+      // when the name already carries a percentage (pie_chart bakes one in),
+      // so a slice never reads "40% ... 40%".
+      const share = /\d\s*%/.test(seriesName) ? null : this._wedgeSharePercent(wedge);
+      if (share !== null) {
+        items.push({ kind: "field", label: "share", value: `${share.toFixed(1)}%` });
+      }
+      return items;
+    }
     if (row.x !== undefined) {
-      const { label } = this._defaultTooltipLabel("x", "x", labels, aliases);
-      items.push({ kind: "field", label, value: fmtValue(row.x, row.x_kind) });
+      const polar = this._polarTooltipField("x", row.x, row.x_kind);
+      const { label, customized } = this._defaultTooltipLabel("x", "x", labels, aliases);
+      // A numeric polar angle only appears when the user asked for the row
+      // by naming it (`labels={"x": ...}`); authored spoke labels always show.
+      if (!polar || !polar.omit || customized) {
+        items.push({
+          kind: "field",
+          label: polar && !customized ? polar.label : label,
+          value: polar ? polar.value : fmtValue(row.x, row.x_kind),
+        });
+      }
     }
     if (row.y !== undefined) {
-      const { label } = this._defaultTooltipLabel("y", "y", labels, aliases);
-      items.push({ kind: "field", label, value: fmtValue(row.y, row.y_kind) });
+      const polar = this._polarTooltipField("y", row.y, row.y_kind);
+      const { label, customized } = this._defaultTooltipLabel("y", "y", labels, aliases);
+      items.push({
+        kind: "field",
+        label: polar && !customized ? polar.label : label,
+        value: fmtValue(row.y, row.y_kind),
+      });
     }
     if (row.color_value !== undefined) {
       const { label } = this._defaultTooltipLabel(
@@ -252,6 +379,15 @@ Object.assign(ChartView.prototype, {
   },
 
   _tooltipLookup(row, field) {
+    // "name" is a pseudo-field: the hovered trace's series name. Rows carry
+    // only a trace id, but compositions whose category lives in the mark name
+    // (a pie slice, a wind-rose band) need the tooltip template to reach it —
+    // `xy.tooltip(title="{name}")` is how a pie shows category + value and
+    // nothing else.
+    if (field === "name") {
+      const name = this._tooltipSeriesName(row);
+      return name === null ? [undefined, undefined] : [name, undefined];
+    }
     const aliases = (this.spec.tooltip && this.spec.tooltip.aliases) || {};
     const key = row[field] !== undefined ? field : aliases[field];
     if (!key || row[key] === undefined) return [undefined, undefined];
@@ -350,8 +486,7 @@ Object.assign(ChartView.prototype, {
   _tooltipAnchorPx() {
     const a = this._tooltipAnchor;
     if (!a) return null;
-    const lx = this._dataPx(a.xAxis, a.x);
-    const ly = this._dataPx(a.yAxis, a.y);
+    const [lx, ly] = this._projectDataPoint(a.xAxis, a.yAxis, a.x, a.y);
     const p = this.plot;
     if (!Number.isFinite(lx) || !Number.isFinite(ly)
         || lx < p.x || lx > p.x + p.w || ly < p.y || ly > p.y + p.h) {

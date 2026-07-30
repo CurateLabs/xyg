@@ -25,13 +25,13 @@ from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from itertools import pairwise
 from os import PathLike
-from typing import Any, Optional
+from typing import Any, NamedTuple, Optional
 
 import numpy as np
 
 from . import _fontmetrics, _native, _paint, _png, _textblock
 from ._arrowgeom import arrow_shapes as _arrow_shapes
-from .config import DEFAULT_PALETTE
+from .config import DEFAULT_PALETTE, polar_bar_segments
 
 
 def escape(data: str, entities: dict[str, str] | None = None) -> str:
@@ -505,6 +505,42 @@ def _linear_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], f
     return out, step
 
 
+# Angular tick ladders. `_nice_step`'s [1, 2, 2.5, 5, 10] cannot produce 15,
+# 30, 45 or 90, so feeding it degrees yields 0/50/100/150 — a grid nobody reads
+# angles on. Fixed ladders instead, in the style of the time-tick steps.
+# Mirrored by DEGREE_STEPS/RADIAN_STEPS in js/src/30_ticks.ts.
+_DEGREE_STEPS = (1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0, 90.0, 120.0, 180.0, 360.0)
+_RADIAN_STEPS = tuple(
+    math.pi * f for f in (1 / 12, 1 / 8, 1 / 6, 1 / 4, 1 / 3, 1 / 2, 2 / 3, 1.0, 2.0)
+)
+
+
+def _angular_ticks(lo: float, hi: float, unit: str, target: int = 6) -> tuple[list[float], float]:
+    """Ticks for an angular axis, on a ladder humans read angles on.
+
+    Mirrors `angularTicks` in js/src/30_ticks.ts.
+    """
+    a, b = min(lo, hi), max(lo, hi)
+    if not (np.isfinite(a) and np.isfinite(b)):
+        return [], 1.0
+    if a == b:
+        return [a], 1.0
+    ladder = _DEGREE_STEPS if unit == "degrees" else _RADIAN_STEPS
+    rough = (b - a) / max(1, target)
+    step = next((s for s in ladder if s >= rough * (1 - 1e-12)), ladder[-1])
+    v = math.ceil(a / step) * step
+    out: list[float] = []
+    while v <= b + step * 1e-9 and len(out) < 200:
+        out.append(0.0 if abs(v) < step * 1e-9 else v)
+        v += step
+    # A full turn puts a tick at both ends of the seam; they are the same
+    # spoke, so the duplicate label is dropped rather than overdrawn.
+    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+    if len(out) > 1 and abs((out[-1] - out[0]) - turn) < step * 1e-9:
+        out.pop()
+    return out, step
+
+
 def _log_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], list[float], float]:
     """Returns (ticks, labeled_ticks, step)."""
     a, b = min(lo, hi), max(lo, hi)
@@ -740,12 +776,46 @@ def _collapsed_to_zero(formatted: Optional[str]) -> bool:
         return False
 
 
+def _fmt_angle(value: float, unit: str, step: float = 1.0) -> str:
+    """Angular tick text. Mirrors `fmtAngle` in js/src/30_ticks.ts.
+
+    Degrees get a degree sign; radians are written as multiples of pi, because
+    "2.094" is not a readable angle and "2pi/3" is. `step` sets the degree
+    precision: the generated ladder is all integers, but authored fractional
+    tick_values (a 22.5° compass grid) mislabel under a hardcoded step of 1.
+    """
+    if unit == "degrees":
+        return f"{_fmt_linear(value, step or 1.0)}°"
+    if abs(value) < 1e-12:
+        return "0"
+    frac = value / math.pi
+    for denominator in (1, 2, 3, 4, 6, 8, 12):
+        scaled = frac * denominator
+        nearest = round(scaled)
+        # 1e-6, not 1e-9 — mirrors fmtAngle in js/src/30_ticks.ts: hover
+        # values arrive f32-decoded, and pi/2 misses its f64 self by ~2e-8.
+        if nearest and abs(scaled - nearest) < 1e-6:
+            numerator = "" if abs(nearest) == 1 else str(abs(nearest))
+            sign = "-" if nearest < 0 else ""
+            body = f"{sign}{numerator}π"
+            return body if denominator == 1 else f"{body}/{denominator}"
+    return _fmt_linear(value, 0.01)
+
+
 def _fmt_axis(axis: dict[str, Any], v: float, step: float) -> str:
+    # Mirrors the same first branch in `fmtAxis` (js/src/30_ticks.ts).
     kind = axis.get("kind")
     if kind == "category":
         cats = axis.get("categories") or []
         i = round(v)
         return str(cats[i]) if 0 <= i < len(cats) else ""
+    if axis.get("theta_unit"):
+        # An authored `format` wins over the angular default. It used to lose:
+        # this branch ran first, so `theta_axis(format="{:.0f} deg")` shipped, was
+        # accepted, and was then overwritten by the built-in degree/radian text in
+        # every renderer. The default only applies when nothing was authored.
+        authored = _fmt_number_spec(v, axis.get("format"))
+        return authored if authored is not None else _fmt_angle(v, axis["theta_unit"], step)
     if kind == "time":
         return _fmt_time_spec(v, axis.get("format")) or _fmt_time(v, step)
     formatted = _fmt_number_spec(v, axis.get("format"))
@@ -841,6 +911,330 @@ class _Scale:
     @property
     def affine(self) -> bool:
         return not (self.log or self.symlog)
+
+
+# Direction that theta=0 points, as an angle in radians measured
+# counterclockwise from due East. Mirrored by THETA_ZERO in
+# js/src/50_chartview.ts.
+THETA_ZERO = {"E": 0.0, "N": math.pi / 2.0, "W": math.pi, "S": -math.pi / 2.0}
+
+
+class _PolarProjection:
+    """(theta, r) -> px for a polar chart — spec/design/polar-axes.md §3.
+
+    The joint replacement for the separable `_Scale` pair: polar position needs
+    both coordinates at once, so this is *not* two 1-D maps. `theta` and `r`
+    still arrive in scaled data space (a `_Scale.coord` has already applied any
+    log/symlog), and this class only performs the final placement.
+
+    Screen space grows downward, so the y term is a **subtraction**. The GLSL
+    twin in `xyPolar` (js/src/40_gl.ts) adds instead, because clip space grows
+    upward. `tests/test_polar_transform.py` binds both to the same fixtures.
+    """
+
+    def __init__(
+        self,
+        theta_axis: dict[str, Any],
+        r_axis: dict[str, Any],
+        plot: dict[str, float],
+    ) -> None:
+        self.plot = plot
+        self.theta_axis = theta_axis
+        self.r_axis = r_axis
+        self.unit = theta_axis.get("theta_unit", "radians")
+        self.unit_scale = math.pi / 180.0 if self.unit == "degrees" else 1.0
+        self.turn = 360.0 if self.unit == "degrees" else 2.0 * math.pi
+        zero = theta_axis.get("theta_zero", "E")
+        self.zero = THETA_ZERO[zero] if isinstance(zero, str) else float(zero)
+        self.direction = theta_axis.get("theta_direction", "counterclockwise")
+        self.dir = -1.0 if self.direction == "clockwise" else 1.0
+        sector = theta_axis.get("sector") or (0.0, self.turn)
+        self.sector_start, self.sector_end = (float(sector[0]), float(sector[1]))
+        self.sector_span = self.sector_end - self.sector_start
+        self.full_sector = self.sector_span >= self.turn * (1.0 - 1e-9)
+        self.sector_a0 = self.zero + self.dir * self.unit_scale * self.sector_start
+        self.sector_a1 = self.zero + self.dir * self.unit_scale * self.sector_end
+        self.grid_shape = theta_axis.get("grid_shape", "circular")
+        self.categories = tuple(theta_axis.get("categories") or ())
+        self.category_count = len(self.categories)
+
+        r_lo, r_hi = r_axis["range"]
+        self.r_lo, self.r_hi = float(r_lo), float(r_hi)
+        self.r_scale = _Scale(r_axis, 0.0, 1.0)
+        self.r_lo_coord = float(self.r_scale.coord(self.r_lo))
+        self.r_hi_coord = float(self.r_scale.coord(self.r_hi))
+        origin = r_axis.get("r_origin")
+        self.r_origin = self.r_lo if origin is None else float(origin)
+        self.r_origin_coord = float(self.r_scale.coord(self.r_origin))
+        self.hole = float(r_axis.get("hole") or 0.0)
+
+        # Full turns retain the original normative layout exactly. A partial
+        # sector instead fills the plot with its own bounding box: a gauge must
+        # not reserve dead space for the missing part of the circle.
+        if self.full_sector:
+            self.radius = min(plot["w"], plot["h"]) / 2.0
+            self.cx = plot["x"] + plot["w"] / 2.0
+            self.cy = plot["y"] + plot["h"] / 2.0
+        else:
+            lo_angle = min(self.sector_a0, self.sector_a1)
+            hi_angle = max(self.sector_a0, self.sector_a1)
+            angles = [self.sector_a0, self.sector_a1]
+            for cardinal in (0.0, math.pi / 2.0, math.pi, 3.0 * math.pi / 2.0):
+                first = math.ceil((lo_angle - cardinal) / (2.0 * math.pi))
+                last = math.floor((hi_angle - cardinal) / (2.0 * math.pi))
+                angles.extend(
+                    cardinal + turn_index * 2.0 * math.pi for turn_index in range(first, last + 1)
+                )
+            angles_array = np.asarray(angles, dtype=np.float64)
+            inner = max(0.0, min(1.0, float(self.norm_radius(self.r_lo))))
+            xs = np.concatenate((np.cos(angles_array), inner * np.cos(angles_array)))
+            ys = np.concatenate((-np.sin(angles_array), -inner * np.sin(angles_array)))
+            if inner <= 1e-12:
+                xs = np.append(xs, 0.0)
+                ys = np.append(ys, 0.0)
+            xmin, xmax = float(np.min(xs)), float(np.max(xs))
+            ymin, ymax = float(np.min(ys)), float(np.max(ys))
+            xspan = max(xmax - xmin, 1e-12)
+            yspan = max(ymax - ymin, 1e-12)
+            self.radius = min(plot["w"] / xspan, plot["h"] / yspan)
+            left = plot["x"] + (plot["w"] - self.radius * xspan) / 2.0
+            top = plot["y"] + (plot["h"] - self.radius * yspan) / 2.0
+            self.cx = left - self.radius * xmin
+            self.cy = top - self.radius * ymin
+
+    def theta_value(self, theta: Any) -> Any:
+        """Category code or numeric theta -> angular value in declared units."""
+        th = np.asarray(theta, dtype=np.float64)
+        if not self.category_count:
+            return th
+        divisor = (
+            float(self.category_count)
+            if self.full_sector
+            else float(max(self.category_count - 1, 1))
+        )
+        return self.sector_start + th * self.sector_span / divisor
+
+    def angle(self, theta: Any) -> Any:
+        """Data theta -> screen angle in radians, ccw from East."""
+        th = self.theta_value(theta) * self.unit_scale
+        return self.zero + self.dir * th
+
+    def theta_from_angle(self, angle: Any, *, near: Optional[float] = None) -> Any:
+        """Screen angle -> numeric theta/category code.
+
+        The result is wrapped relative to the authored sector. ``near`` is a
+        heatmap range start and selects the equivalent full-turn value nearest
+        that grid, matching the fragment shader at the angular seam.
+        """
+        raw = (np.asarray(angle, dtype=np.float64) - self.zero) / (self.dir * self.unit_scale)
+        anchor = self.sector_start if near is None else float(near)
+        raw = anchor + np.mod(raw - anchor, self.turn)
+        if not self.category_count:
+            return raw
+        divisor = (
+            float(self.category_count)
+            if self.full_sector
+            else float(max(self.category_count - 1, 1))
+        )
+        return (raw - self.sector_start) * divisor / (self.sector_span or 1.0)
+
+    def theta_visible_mask(self, theta: Any) -> np.ndarray:
+        """Which angular values fall in the authored sector."""
+        raw = np.asarray(self.theta_value(theta), dtype=np.float64)
+        return self._angular_value_visible_mask(raw)
+
+    def _angular_value_visible_mask(self, raw: Any) -> np.ndarray:
+        raw = np.asarray(raw, dtype=np.float64)
+        if self.full_sector:
+            return np.isfinite(raw)
+        offset = np.mod(raw - self.sector_start, self.turn)
+        return np.isfinite(raw) & (offset <= self.sector_span + self.turn * 1e-9)
+
+    def angle_visible(self, angle: float) -> bool:
+        raw = (float(angle) - self.zero) / (self.dir * self.unit_scale)
+        return bool(self._angular_value_visible_mask(raw))
+
+    def filter_theta_values(self, values: Sequence[float]) -> list[float]:
+        if not values:
+            return []
+        mask = self.theta_visible_mask(values)
+        return [float(value) for value, keep in zip(values, mask, strict=True) if bool(keep)]
+
+    def norm_radius(self, r: Any) -> Any:
+        coord = np.asarray(self.r_scale.coord(r), dtype=np.float64)
+        span = self.r_hi_coord - self.r_origin_coord
+        if abs(span) <= 1e-30:
+            return np.full_like(coord, np.nan, dtype=np.float64)
+        base = (coord - self.r_origin_coord) / span
+        return self.hole + (1.0 - self.hole) * base
+
+    def radius_value(self, normalized: Any) -> Any:
+        """Inverse of ``norm_radius`` back to radial data space."""
+        normalized = np.asarray(normalized, dtype=np.float64)
+        base = (normalized - self.hole) / max(1.0 - self.hole, 1e-30)
+        coord = self.r_origin_coord + base * (self.r_hi_coord - self.r_origin_coord)
+        return self.r_scale.value(coord)
+
+    @property
+    def inner_fraction(self) -> float:
+        return max(0.0, min(1.0, float(self.norm_radius(self.r_lo))))
+
+    @property
+    def inner_radius(self) -> float:
+        return self.inner_fraction * self.radius
+
+    def visible_mask(self, r: Any) -> np.ndarray:
+        """Which radii have an honest polar position — `xyPolarPos`'s cull.
+
+        Below the radial minimum a point would mirror through the centre into
+        the opposite quadrant (still *inside* the disc, so no clip saves it);
+        above the maximum it lands past the outer ring. Even though both static
+        exporters now have a shaped mark clip, invalid data vertices must still
+        split paths consistently with the client's shader NaN cull
+        (`rn < 0 || rn > 1 + 1e-6` in js/src/40_gl.ts). Same epsilon, so the
+        outermost home-view point survives everywhere.
+        """
+        coord = np.asarray(self.r_scale.coord(r), dtype=np.float64)
+        lo = min(self.r_lo_coord, self.r_hi_coord)
+        hi = max(self.r_lo_coord, self.r_hi_coord)
+        return np.isfinite(coord) & (coord >= lo - 1e-6) & (coord <= hi + 1e-6)
+
+    def position_mask(self, theta: Any, r: Any) -> np.ndarray:
+        return self.theta_visible_mask(theta) & self.visible_mask(r)
+
+    def __call__(self, theta: Any, r: Any) -> tuple[Any, Any]:
+        a = self.angle(theta)
+        rn = self.norm_radius(r) * self.radius
+        return self.cx + rn * np.cos(a), self.cy - rn * np.sin(a)
+
+    def ring(self, r: float, steps: int = 180) -> list[tuple[float, float]]:
+        """A constant-r sector arc (a closed circle for a full turn).
+
+        The raster display list has no arc, wedge or circle opcode — every
+        curve is a pre-flattened polygon (`_round_rect_pts` is the existing
+        precedent) — so grid rings flatten here and both exporters consume the
+        same points.
+        """
+        rn = float(self.norm_radius(r)) * self.radius
+        count = steps if self.full_sector else steps + 1
+        return [
+            (
+                self.cx
+                + rn * math.cos(self.sector_a0 + (self.sector_a1 - self.sector_a0) * i / steps),
+                self.cy
+                - rn * math.sin(self.sector_a0 + (self.sector_a1 - self.sector_a0) * i / steps),
+            )
+            for i in range(count)
+        ]
+
+    def polygon_ring(self, r: float, theta_values: Sequence[float]) -> list[tuple[float, float]]:
+        values = self.filter_theta_values(theta_values)
+        if not values:
+            return []
+        values.sort(
+            key=lambda value: float(
+                np.mod(float(self.theta_value(value)) - self.sector_start, self.turn)
+            )
+        )
+        values = [
+            value
+            for index, value in enumerate(values)
+            if index == 0
+            or not math.isclose(
+                float(
+                    np.mod(
+                        float(self.theta_value(value)) - float(self.theta_value(values[index - 1])),
+                        self.turn,
+                    )
+                ),
+                0.0,
+                rel_tol=0,
+                abs_tol=self.turn * 1e-10,
+            )
+        ]
+        if not self.full_sector:
+            if not math.isclose(
+                float(self.theta_value(values[0])), self.sector_start, rel_tol=0, abs_tol=1e-9
+            ):
+                values.insert(0, self._theta_data_for_sector(self.sector_start))
+            if not math.isclose(
+                float(self.theta_value(values[-1])), self.sector_end, rel_tol=0, abs_tol=1e-9
+            ):
+                values.append(self._theta_data_for_sector(self.sector_end))
+        x, y = self(values, np.full(len(values), r, dtype=np.float64))
+        return list(zip(np.asarray(x, dtype=float), np.asarray(y, dtype=float), strict=True))
+
+    def _theta_data_for_sector(self, value: float) -> float:
+        if not self.category_count:
+            return value
+        divisor = (
+            float(self.category_count)
+            if self.full_sector
+            else float(max(self.category_count - 1, 1))
+        )
+        return (value - self.sector_start) * divisor / (self.sector_span or 1.0)
+
+    def wedge_angles(self, theta0: float, theta1: float) -> Optional[tuple[float, float]]:
+        """Visible screen-angle interval for an authored angular band."""
+        raw0 = float(self.theta_value(theta0))
+        raw1 = float(self.theta_value(theta1))
+        if not (math.isfinite(raw0) and math.isfinite(raw1)):
+            return None
+        if self.full_sector:
+            return (
+                self.zero + self.dir * self.unit_scale * raw0,
+                self.zero + self.dir * self.unit_scale * raw1,
+            )
+
+        low, high = min(raw0, raw1), max(raw0, raw1)
+        midpoint = (low + high) / 2.0
+        sector_midpoint = (self.sector_start + self.sector_end) / 2.0
+        nearest_turn = round((sector_midpoint - midpoint) / self.turn)
+        best: Optional[tuple[float, float]] = None
+        best_span = -1.0
+        for turn_index in (nearest_turn - 1, nearest_turn, nearest_turn + 1):
+            shifted_low = low + turn_index * self.turn
+            shifted_high = high + turn_index * self.turn
+            clipped_low = max(self.sector_start, shifted_low)
+            clipped_high = min(self.sector_end, shifted_high)
+            span = clipped_high - clipped_low
+            if span > best_span and span > 1e-12:
+                best = (clipped_low, clipped_high)
+                best_span = span
+        if best is None:
+            return None
+        clipped0, clipped1 = best if raw0 <= raw1 else (best[1], best[0])
+        return (
+            self.zero + self.dir * self.unit_scale * clipped0,
+            self.zero + self.dir * self.unit_scale * clipped1,
+        )
+
+    def frame_points(
+        self, theta_values: Sequence[float] = (), steps: int = 180
+    ) -> list[tuple[float, float]]:
+        if self.grid_shape == "linear" and theta_values:
+            return self.polygon_ring(self.r_hi, theta_values)
+        return self.ring(self.r_hi, steps)
+
+    @property
+    def affine(self) -> bool:
+        """Never affine — see `affine_fast_path`."""
+        return False
+
+
+def affine_fast_path(
+    sx: "_Scale", sy: "_Scale", polar: "Optional[_PolarProjection]" = None
+) -> bool:
+    """May an emitter bake a straight-line data->pixel map into Rust?
+
+    Several emitters hand Rust two affine scales and let it project while
+    painting. A polar chart on linear axes satisfies `sx.affine and sy.affine`
+    while being emphatically non-affine, so every such gate must ask this
+    instead — one predicate rather than a `polar is None` conjunct repeated at
+    each site, which is how one gate got missed and shipped a colormapped polar
+    scatter projected as cartesian (§6).
+    """
+    return polar is None and sx.affine and sy.affine
 
 
 def _colormap_key(colormap: Any) -> str:
@@ -1405,11 +1799,84 @@ def _poly_path(px: np.ndarray, py: np.ndarray) -> str:
     return _native.svg_poly_path(px, py)
 
 
-def _curve_path(xv: np.ndarray, yv: np.ndarray, sx: _Scale, sy: _Scale, smooth: bool) -> str:
+def _polar_visible_runs(
+    xv: np.ndarray, yv: np.ndarray, polar: "_PolarProjection"
+) -> list[np.ndarray]:
+    """Index runs of consecutive vertices the polar transform keeps.
+
+    The same split `_curve_path` performs, exposed so a filled area can close
+    each run against its own base instead of stitching every run to one base.
+    """
+    visible = polar.position_mask(xv, yv)
+    if visible.size == 0:
+        return []
+    idx = np.flatnonzero(visible)
+    if idx.size == 0:
+        return []
+    runs = np.split(idx, np.flatnonzero(np.diff(idx) > 1) + 1)
+    return [run for run in runs if len(run) >= 2]
+
+
+def _area_fill_path(
+    xv: np.ndarray,
+    yv: np.ndarray,
+    bv: np.ndarray,
+    sx: _Scale,
+    sy: _Scale,
+    smooth: bool,
+    polar: "Optional[_PolarProjection]" = None,
+) -> str:
+    """Closed fill path between a top curve and its base, or "" if nothing is
+    visible. Under polar each visible run closes separately."""
+    if polar is None:
+        top = _curve_path(xv, yv, sx, sy, smooth, None)
+        base = _curve_path(xv[::-1], bv[::-1], sx, sy, smooth, None)
+        return f"{top} L {base[2:]} Z" if top and base else ""
+    parts = []
+    for run in _polar_visible_runs(xv, yv, polar):
+        top = _curve_path(xv[run], yv[run], sx, sy, smooth, polar)
+        base = _curve_path(xv[run][::-1], bv[run][::-1], sx, sy, smooth, polar)
+        if top and base:
+            parts.append(f"{top} L {base[2:]} Z")
+    return " ".join(parts)
+
+
+def _curve_path(
+    xv: np.ndarray,
+    yv: np.ndarray,
+    sx: _Scale,
+    sy: _Scale,
+    smooth: bool,
+    polar: "Optional[_PolarProjection]" = None,
+) -> str:
     """Pixel-space path for a polyline; smooth -> exact cubic Béziers of the
     monotone-cubic Hermite (affine axes), else polyline. The Bézier control
     points of a Hermite segment are P0 + h/3·(1, m0) and P1 - h/3·(1, m1),
-    and affine axis maps carry control points exactly."""
+    and affine axis maps carry control points exactly.
+
+    Under `polar` the separable (sx, sy) pair is replaced by the joint
+    projection and the result is always a polyline: consecutive data points are
+    joined by straight **chords**, which is Plotly's polar semantics and what
+    makes radar/spider edges come out straight (polar-axes.md §5). Vertices
+    outside the radial range are culled like the client shader culls them —
+    the path splits into visible runs, dropping any chord with a culled
+    endpoint whole (§8)."""
+    if len(xv) == 0:
+        # `visible.all()` is vacuously true on an empty array, so this fell
+        # through to the native poly-path builder, which rejects a zero-length
+        # buffer. A log radial axis annihilating every row, or an all-NaN
+        # series, therefore crashed the export instead of drawing nothing.
+        return ""
+    if polar is not None:
+        px, py = polar(xv, yv)
+        visible = polar.position_mask(xv, yv)
+        if bool(visible.all()):
+            return _poly_path(px, py)
+        runs = np.split(
+            np.flatnonzero(visible),
+            np.flatnonzero(np.diff(np.flatnonzero(visible)) > 1) + 1,
+        )
+        return " ".join(_poly_path(px[run], py[run]) for run in runs if len(run) >= 2)
     px, py = sx(xv), sy(yv)
     if not smooth or len(xv) < 3 or not (sx.affine and sy.affine):
         return _poly_path(px, py)
@@ -2045,19 +2512,34 @@ def _decode_title_geometry(spec: dict[str, Any], blob: bytes) -> dict[str, Any]:
     return {**spec, "title_options": decoded} if changed else spec
 
 
+def _title_wrap_width(width: float, left: float, right: float) -> float:
+    """Width a chart title wraps at, in CSS px.
+
+    Deliberately derived from the *authored/default* horizontal gutters rather
+    than the final plot rect: the measured left gutter depends on the plot
+    height, which depends on the title band, so wrapping at the final width
+    would be circular. `_recut_polar_plot` and the measured gutters may narrow
+    the plot afterwards; the title keeps this width so what layout reserved is
+    what gets drawn. Mirrored by `_titleWrapWidth` in js/src/50_chartview.ts.
+    """
+    return max(40.0, float(width) - float(left) - float(right))
+
+
 def _title_metrics(
-    spec: dict[str, Any], entry: dict[str, Any]
+    spec: dict[str, Any],
+    entry: dict[str, Any],
+    wrap_width: float | None = None,
 ) -> tuple[dict[str, Any], float, _textblock.TextBlock]:
     base = slot_styles(spec).get("title") or {}
     style = {**base, **(entry.get("style") or {})}
     size = _px_size(style.get("font-size"), 14.0)
-    return style, size, _textblock.measure(entry["text"], size)
+    return style, size, _textblock.measure(entry["text"], size, max_width=wrap_width)
 
 
-def _title_room(spec: dict[str, Any], compact: bool) -> float:
+def _title_room(spec: dict[str, Any], compact: bool, wrap_width: float | None = None) -> float:
     room = 0.0
     for entry in _title_entries(spec):
-        _style, _size, block = _title_metrics(spec, entry)
+        _style, _size, block = _title_metrics(spec, entry, wrap_width)
         pad = float(entry.get("pad", 8.0))
         if entry.get("automatic_y", True):
             candidate = max(26.0 if compact else 30.0, block.height + pad)
@@ -2086,11 +2568,14 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
         top = 6 if compact else 10
         bottom = 36 if compact else 42
     axes = _axes_by_id(spec)
-    title_room = _title_room(spec, compact)
     # The first pass uses the authored/default horizontal allocation. A second
     # pass after the measured left gutter catches an auto-collision decision
     # whose final plot width changes the chosen label set.
     provisional_w = max(40.0, width - left - right)
+    # Resolved before the title band, because the band's height now depends on
+    # how many lines the title wraps into at this width.
+    title_wrap_width = _title_wrap_width(width, left, right)
+    title_room = _title_room(spec, compact, title_wrap_width)
     top_axis_room, bottom_axis_room, measured_bottom_room = _x_axis_rooms(
         axes, provisional_w, compact
     )
@@ -2163,10 +2648,310 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
         # Emitters place the figure title above this gutter; recording it here
         # keeps layout() the single source of the top-axis reservation.
         "title_room": title_room,
+        # The width the title band was measured at. Emitters must wrap at the
+        # same width or they draw more lines than `title_room` reserved.
+        "title_wrap_width": title_wrap_width,
         "top_axis_room": top_axis_room,
         "bottom_axis_room": bottom_axis_room,
     }
+    if spec.get("coords") == "polar":
+        _recut_polar_plot(spec, plot, width, height, compact)
     return width, height, compact, plot
+
+
+# Room reserved outside the outer ring for angular tick labels. Cartesian
+# gutters are per-side because labels hug two edges; a polar chart carries them
+# all the way around, so the allowance is uniform.
+# Mirrored by POLAR_LABEL_ROOM in js/src/50_chartview.ts.
+_POLAR_LABEL_ROOM = 30.0
+# Ceiling on the measured allowance: past this a long label shrinks the disc
+# more than it helps, so it truncates against the canvas instead.
+_POLAR_LABEL_ROOM_MAX = 90.0
+
+# Angle of the spoke the radial tick labels run along, in degrees off the theta
+# zero direction. Matplotlib's default `rlabel_position`; keeping the labels off
+# the zero spoke stops them colliding with the theta=0 angular label. Shared by
+# both exporters so they cannot drift apart.
+# Mirrored by POLAR_RLABEL_DEG in js/src/50_chartview.ts.
+_POLAR_RLABEL_DEG = 22.5
+
+# Gap in px between the outer ring and the angular tick labels.
+# Mirrored by POLAR_TICK_GAP in js/src/50_chartview.ts.
+_POLAR_TICK_GAP = 8.0
+
+# Gutter reserved for a legend beside a disc. A Cartesian legend overlays the
+# plot because data rarely reaches a corner; a disc inscribed in its rect leaves
+# no corner at all, so an inside legend lands on the marks — an `upper right` box
+# covered a wind rose's whole north-east quadrant and the outer radial label
+# under it. Both incumbents' answer is to move it out (Plotly puts polar legends
+# in the figure margin), which needs room the disc gives back.
+#
+# A FRACTION OF THE CANVAS, clamped, rather than a measurement of the label set:
+# every renderer knows the canvas width to the pixel, so all three reserve the
+# identical box, while a measured reservation would drift with each renderer's
+# font metrics (DejaVu here, system-ui in the browser). A flat constant was tried
+# first and is the wrong shape — 96 px ellipsized `Partner  (30%)`, an ordinary
+# pie slice's default name, while being a fifth of a phone canvas and a
+# fifteenth of a wide one.
+#
+# The floor keeps a narrow chart's legend readable; the ceiling stops a wide one
+# from spending 300 px on four short rows. A label still wider than the gutter
+# ellipsizes with its full text in `title`/ARIA, exactly as the static exporters
+# already ellipsize against the plot width.
+# Mirrored by xyPolarLegendRoom in js/src/50_chartview.ts.
+_POLAR_LEGEND_ROOM_FRACTION = 0.22
+_POLAR_LEGEND_ROOM_MIN = 120.0
+_POLAR_LEGEND_ROOM_MAX = 200.0
+
+
+def _polar_legend_room(width: float) -> float:
+    """Side-gutter width for a polar legend on a `width`-px canvas.
+
+    `floor`, not `round`: Python and JavaScript disagree about half-way cases
+    (banker's rounding versus round-half-up) and the two must land on the same
+    integer pixel.
+    """
+    scaled = math.floor(float(width) * _POLAR_LEGEND_ROOM_FRACTION)
+    return min(_POLAR_LEGEND_ROOM_MAX, max(_POLAR_LEGEND_ROOM_MIN, float(scaled)))
+
+
+_POLAR_LEGEND_BAND = 64.0
+
+
+def _polar_legend_reserve(spec: dict[str, Any], compact: bool, width: float) -> tuple[str, float]:
+    """Side and px a polar legend gutter claims: ``("right", 158.0)`` etc.
+
+    ``("", 0.0)`` when nothing is reserved — a non-polar figure, no legend rows,
+    an authored ``anchor`` (an explicit plot-relative placement the author owns),
+    or an authored 4-tuple ``padding`` (which already states the box the plot
+    should occupy, and is the documented way to hand-reserve a caption band).
+
+    Mirrored by `_polarLegendReserve` in js/src/50_chartview.ts.
+    """
+    if spec.get("coords") != "polar" or not spec.get("show_legend", True):
+        return "", 0.0
+    padding = spec.get("padding")
+    if isinstance(padding, list) and len(padding) == 4:
+        return "", 0.0
+    options = spec.get("legend") or {}
+    anchor = options.get("anchor")
+    if anchor and len(anchor) in (2, 4):
+        return "", 0.0
+    rows = options.get("items") or legend_items(spec.get("traces") or [])
+    if not rows and not (spec.get("extra_legends") or []):
+        return "", 0.0
+    if compact:
+        return "bottom", _POLAR_LEGEND_BAND
+    loc = str(options.get("loc") or "upper right")
+    return ("left" if "left" in loc else "right"), _polar_legend_room(width)
+
+
+def _polar_label_room(theta_axis: dict[str, Any]) -> float:
+    """Room outside the ring for the angular tick labels.
+
+    Measured, not fixed: authored category names ("EAST-NORTH-EAST") are far
+    wider than an angle, and a constant allowance hard-clipped them at the
+    canvas edge. Only the widest AUTHORED label is measured — generated angle
+    text is bounded and already fits the floor — and the result is capped so a
+    pathological label shrinks the disc rather than erasing it.
+
+    Mirrored by `polarLabelRoom` in js/src/50_chartview.ts.
+    """
+    room = _POLAR_LABEL_ROOM
+    # A category axis carries its authored names in `categories` and usually has
+    # no `tick_labels` at all (`axis_ticks` hands the categories straight to
+    # `_category_ticks`), so measuring only `tick_labels` fell back to the
+    # uniform default and long names spilled over the disc.
+    labels = theta_axis.get("tick_labels")
+    if not labels and theta_axis.get("kind") == "category":
+        labels = theta_axis.get("categories")
+    if not labels:
+        return room
+    size = _axis_tick_font_size(theta_axis)
+    widest = max((_textblock.measure(str(text), size).width for text in labels), default=0.0)
+    return min(_POLAR_LABEL_ROOM_MAX, max(room, widest + _POLAR_TICK_GAP + _AXIS_TEXT_EDGE_PAD))
+
+
+def _recut_polar_plot(
+    spec: dict[str, Any],
+    plot: dict[str, float],
+    width: float,
+    height: float,
+    compact: bool = False,
+) -> None:
+    """Re-cut the plot rect for a disc, in place.
+
+    Mirrored by `_recutPolarPlot` in js/src/50_chartview.ts — the two must agree
+    or the same chart renders at a different size and centre in the browser than
+    in an export.
+
+    Two things happen here, both after the cartesian gutter passes have
+    converged so they cannot perturb that fixed point.
+
+    First, the cartesian tick-label gutters are given back. They exist to hold
+    labels hugging the left and bottom edges; a polar chart carries its labels
+    all the way around the rim instead, so leaving them reserved pushed the disc
+    right and up (a 400x400 chart centred its circle at x=219) and shrank it for
+    no reason. The horizontal and vertical reservations are symmetrised rather
+    than simply zeroed, so a colorbar or right-side axis that genuinely claimed
+    space still keeps it.
+
+    Second, a uniform allowance is reserved all the way around for the angular
+    tick labels. The radius is `min(w, h) / 2` with no fill factor
+    (polar-axes.md §3), so that room has to come out of the rect rather than out
+    of the transform — otherwise every renderer would need the same fudge factor
+    and they would eventually disagree about it.
+
+    Third, a legend gutter (`_polar_legend_reserve`) is taken off the rect and
+    recorded as `plot["legend_box"]`, so the legend sits beside the disc instead
+    of on top of it. `_legend_layout` places and bounds itself in that box.
+    """
+    theta_axis = spec.get("x_axis") or {}
+    # Hiding the angular tick labels removes the LABEL inset, not the legend
+    # gutter. Returning here skipped `_polar_legend_reserve` outright, so the
+    # legend fell back to the plain plot rect and drew on top of the marks —
+    # and the disc kept the cartesian gutters it should have given back. Track
+    # it and skip only the inset.
+    labels_hidden = theta_axis.get("tick_label_strategy") == "none"
+    # The legend gutter is taken off the canvas edge FIRST, before the disc is
+    # fitted to what is left, so the disc never occupies the gutter and the
+    # legend never occupies the disc. Recorded as four floats rather than a
+    # nested rect so `plot` stays a flat float map.
+    canvas_x0 = 0.0
+    legend_side, legend_room = _polar_legend_reserve(spec, compact, width)
+    if legend_room:
+        if legend_side == "left":
+            box = (0.0, plot["y"], legend_room, plot["h"])
+            canvas_x0 = legend_room
+            plot["x"] = max(plot["x"], legend_room)
+        elif legend_side == "right":
+            width -= legend_room
+            box = (width, plot["y"], legend_room, plot["h"])
+        else:
+            height -= legend_room
+            box = (plot["x"], height, plot["w"], legend_room)
+        plot["legend_box_x"], plot["legend_box_y"] = box[0], box[1]
+        plot["legend_box_w"], plot["legend_box_h"] = box[2], box[3]
+        plot["w"] = max(40.0, min(plot["w"], width - plot["x"]))
+        plot["h"] = max(40.0, min(plot["h"], height - plot["y"]))
+    # The top gutter also holds the figure title, which emitters place at
+    # `plot.y - top_axis_room - pad`; it is a floor, never given back.
+    reserved_top = plot["y"]
+    reserved_right = width - plot["x"] - plot["w"]
+    reserved_bottom = height - plot["y"] - plot["h"]
+
+    room = 0.0 if labels_hidden else _polar_label_room(theta_axis)
+    authored_pad = spec.get("padding")
+    if isinstance(authored_pad, list) and len(authored_pad) == 4:
+        # An explicit `padding` states the box the author wants the plot to
+        # occupy — most often to reserve a band under the disc for a legend or
+        # caption, which is what every donut composition needs. Reclaiming the
+        # gutters below would throw that away (a chart authored with
+        # `padding=[0, 0, 140, 0]` came out with its disc filling the canvas,
+        # the reserved band gone). So an authored box is only inset by the
+        # uniform label room, and the disc centres in what is left.
+        left = plot["x"] + room
+        right = plot["x"] + plot["w"] - room
+        top = plot["y"] + room
+        bottom = plot["y"] + plot["h"] - room
+        box_w, box_h = right - left, bottom - top
+        if box_w >= 40.0 and box_h >= 40.0:
+            plot["x"], plot["y"], plot["w"], plot["h"] = left, top, box_w, box_h
+            plot["top_axis_room"] = plot["top_axis_room"] + room
+            return
+    side = max(room, reserved_right)
+    # A radial-axis title is still drawn in the left gutter — a disc gives it no
+    # natural home — and `_axis_label_geometry` positions it outward from the
+    # plot edge past the tick-label room. So when one is set, the original
+    # gutter is kept whole rather than part-reclaimed: shaving it put the title
+    # at x = -10, off the canvas. Charts with no radial title (the common case)
+    # still get the full reclaim.
+    y_axis = spec.get("y_axis") or {}
+    titled = bool(y_axis.get("label")) and _axis_text_paint_visible(y_axis, "label_color")
+    # `canvas_x0` is a left legend gutter; the label room still applies inside it.
+    # With no gutter it is 0 and `side >= room`, so this is the previous value.
+    left = max(max(side, plot["x"]) if titled else side, canvas_x0 + room)
+    right = width - side
+    # Vertically the title side is fixed, so only the bottom can be
+    # symmetrised — and only when the theta axis has no title of its own,
+    # because that title is drawn in the bottom gutter and reclaiming the band
+    # pushed it below the canvas edge.
+    x_axis = spec.get("x_axis") or {}
+    x_titled = bool(x_axis.get("label")) and _axis_text_paint_visible(x_axis, "label_color")
+    # A horizontal colorbar is placed relative to the plot's BOTTOM edge, so
+    # extending the rect downward walks it off the canvas. Its gutter is real
+    # chrome, not a tick-label gutter: keep it whole, like a theta title.
+    colorbar = spec.get("colorbar") or {}
+    keeps_bottom = x_titled or colorbar.get("orientation") == "horizontal"
+    bottom_reserve = reserved_bottom if keeps_bottom else min(reserved_bottom, reserved_top)
+    bottom = height - max(room, bottom_reserve)
+    top = reserved_top + room
+
+    # Measure BEFORE clamping: clamping first made the guard below unreachable,
+    # so a chart too small for the label room silently got a 40px floor rect
+    # instead of keeping its circle. Mirrored by _recutPolarPlot's early return.
+    box_w = right - left
+    box_h = bottom - top
+    if box_w < 40.0 or box_h < 40.0:
+        # Too small for the label room. Do NOT fall back to the cartesian rect:
+        # its own 40px floor can be wider than the canvas, and a disc centred
+        # in it leaves the page (an 80x80 chart drew its circle out to x=86).
+        # Take the largest centred box the canvas itself allows instead.
+        margin = min(4.0, width / 8.0, height / 8.0)
+        plot["x"] = margin
+        plot["y"] = max(margin, min(reserved_top, height / 4.0))
+        plot["w"] = max(8.0, width - 2 * margin)
+        plot["h"] = max(8.0, height - plot["y"] - margin)
+        return
+    plot["x"] = left
+    plot["y"] = top
+    plot["w"] = box_w
+    plot["h"] = box_h
+    # The top slice is angular-label room, so it belongs to the axis
+    # reservation: without this the title would ride the rect down and the
+    # topmost angular label would land on top of it.
+    plot["top_axis_room"] = plot["top_axis_room"] + room
+    # Re-square the legend gutter against the FINAL rect so the box tracks the
+    # disc it sits beside rather than the pre-recut rect it was cut from.
+    if legend_room:
+        if legend_side in ("left", "right"):
+            plot["legend_box_y"], plot["legend_box_h"] = plot["y"], plot["h"]
+        else:
+            plot["legend_box_x"], plot["legend_box_w"] = plot["x"], plot["w"]
+
+
+def _tick_window(axis: dict[str, Any]) -> tuple[float, float]:
+    """The value window ticks are drawn in — the sector for an angular axis."""
+    lo, hi = axis["range"]
+    if axis.get("theta_unit") is not None:
+        if axis.get("kind") == "category":
+            lo, hi = 0.0, float(max(0, len(axis.get("categories") or []) - 1))
+        else:
+            lo, hi = axis.get("sector") or (lo, hi)
+    return float(lo), float(hi)
+
+
+def _tick_window_filter(axis: dict[str, Any], lo: float, hi: float) -> Callable[[float], bool]:
+    """Predicate keeping the tick values that fall inside the axis window.
+
+    An angular window may cross the 0/turn seam — ``sector=(300, 420)``, or the
+    compass-natural ``(-30, 30)``. The plain ``low <= v <= high`` test throws
+    away every tick authored on the far side of that seam (0, 30 and 60 for the
+    first; 330, 340, 350 for the second) while a *data point* at the very same
+    angle plots inside the sector, because mark culling is modular. Ticks now
+    use the same modular containment as
+    `_PolarProjection._angular_value_visible_mask`, so the spokes and the marks
+    agree about what the sector contains.
+    """
+    low, high = min(lo, hi), max(lo, hi)
+    unit = axis.get("theta_unit")
+    if unit is None or axis.get("kind") == "category":
+        return lambda value: low <= value <= high
+    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+    span = high - low
+    # NaN falls out of both branches: np.mod propagates it and the comparison
+    # is False, matching the linear test it replaces.
+    return lambda value: bool(np.mod(value - low, turn) <= span + turn * 1e-9)
 
 
 def axis_ticks(
@@ -2174,10 +2959,11 @@ def axis_ticks(
 ) -> tuple[list[float], list[float], float]:
     """(ticks, labeled ticks, step) for an axis at a given pixel length — shared
     tick density so SVG and PNG label the same values."""
+    kind = axis.get("kind")
+    lo, hi = _tick_window(axis)
     if axis.get("tick_values") is not None:
-        lo, hi = axis["range"]
-        low, high = min(lo, hi), max(lo, hi)
-        ticks = [float(v) for v in axis["tick_values"] if low <= float(v) <= high]
+        keep = _tick_window_filter(axis, lo, hi)
+        ticks = [float(v) for v in axis["tick_values"] if keep(float(v))]
         step = abs(ticks[1] - ticks[0]) if len(ticks) > 1 else 1.0
         return ticks, ticks, step
     requested = axis.get("tick_count")
@@ -2185,8 +2971,21 @@ def axis_ticks(
         target = max(1, min(200, int(requested)))
     else:
         target = max(3, int(length_px / 80)) if is_x else max(3, int(length_px / 45))
-    kind = axis.get("kind")
-    lo, hi = axis["range"]
+    # Category theta is category-index space, even though it also carries the
+    # angular descriptors. Its labels and tick positions must win over angle
+    # formatting/generation; the projection maps the codes into the sector.
+    # Each category is also one spoke/polygon vertex, so the default must not
+    # thin them by pixel density. An explicit tick_count remains the opt-in
+    # control for authors who want fewer spokes.
+    if kind == "category":
+        categories = axis.get("categories") or []
+        if axis.get("theta_unit") is not None and requested is None:
+            target = len(categories)
+        t = [float(v) for v in _category_ticks(lo, hi, len(axis.get("categories") or []), target)]
+        return t, t, 1.0
+    if axis.get("theta_unit") is not None:
+        t, step = _angular_ticks(lo, hi, axis["theta_unit"], target)
+        return t, t, step
     if axis.get("scale") == "log" or kind == "log":
         return _log_ticks(lo, hi, target)
     if axis.get("scale") == "symlog":
@@ -2204,9 +3003,6 @@ def axis_ticks(
             ticks.append(0.0)
             ticks.sort(reverse=lo > hi)
         return ticks, ticks, abs(float(inverse(step)))
-    if kind == "category":
-        t = [float(v) for v in _category_ticks(lo, hi, len(axis.get("categories") or []), target)]
-        return t, t, 1.0
     if kind == "time":
         t, step = _time_ticks(lo, hi, target)
         return t, t, step
@@ -2218,13 +3014,8 @@ def minor_axis_ticks(axis: dict[str, Any]) -> list[float]:
     values = axis.get("minor_tick_values")
     if values is None:
         return []
-    lo, hi = axis["range"]
-    low, high = min(lo, hi), max(lo, hi)
-    return [
-        float(value)
-        for value in values
-        if np.isfinite(float(value)) and low <= float(value) <= high
-    ]
+    keep = _tick_window_filter(axis, *_tick_window(axis))
+    return [float(value) for value in values if np.isfinite(float(value)) and keep(float(value))]
 
 
 def _axis_tick_label_strategy(axis: dict[str, Any]) -> str:
@@ -2507,7 +3298,552 @@ def _axis_label_geometry(
     }
 
 
-@_textblock.cached_measurements
+def polar_wedge_points(
+    polar: "_PolarProjection",
+    theta0: float,
+    theta1: float,
+    r0: float,
+    r1: float,
+    steps: Optional[int] = None,
+    corner_radius: float = 0.0,
+    wedge_gap: float = 0.0,
+) -> list[tuple[float, float]]:
+    """An annular sector as a closed polygon — the flattened twin of
+    `_polar_wedge_path`, for the raster display list (no arc opcode).
+
+    Both are driven by the same angles and radii, so the two exports agree to
+    within the flattening. `steps` defaults to `config.polar_bar_segments` over
+    this wedge's own sweep — a 22.5-degree wind-rose sector is flattened with six
+    segments rather than the full-turn worst case of 96, at the same sagitta
+    bound. Pass an explicit count only to pin one.
+    """
+    # Clamp both radii into the visible radial interval: a bar crossing r_lo or
+    # r_hi retains the visible part instead of becoming an invalid endpoint.
+    # The client clamps identically in BAR_VS; the static shaped clips then
+    # contain stroke antialiasing at the exact annular-sector boundary.
+    floor = polar.inner_fraction
+    # Order the NORMALIZED fractions before clamping: on a reversed radial
+    # axis `norm_radius` is decreasing, so norm(r1) < norm(r0) for r1 > r0 and
+    # taking them positionally dropped every wedge from both static exports
+    # while the shader (which min/maxes u_rrange) kept drawing them.
+    lo_frac, hi_frac = sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+    outer = min(1.0, max(floor, hi_frac)) * polar.radius
+    inner = min(1.0, max(floor, lo_frac)) * polar.radius
+    if outer <= 0.0 or outer <= inner:
+        return []
+    angles = polar.wedge_angles(theta0, theta1)
+    if angles is None:
+        return []
+    a0, a1 = angles
+    if steps is None:
+        steps = polar_bar_segments(a1 - a0, 2.0 * math.pi)
+
+    if corner_radius > 0.0 and inner > 0.0:
+        return _rounded_wedge_points(polar, a0, a1, inner, outer, corner_radius, steps, wedge_gap)
+
+    # A constant ANGULAR pad makes the gap between neighbours `r · dtheta` wide,
+    # so it tapers to nothing at the hole and is widest at the rim — the seam
+    # between two pie slices visibly converges toward the centre. A constant
+    # gap in px needs an angular inset that grows as the radius shrinks; the
+    # two radial edges then become straight lines a fixed distance apart, which
+    # is what d3's padAngle/padRadius pair and every pie in the wild produce.
+    inset = _wedge_edge_inset(wedge_gap, a0, a1)
+
+    def arc(radius: float, reverse: bool) -> list[tuple[float, float]]:
+        d = inset(radius)
+        start, end = (a1 - d, a0 + d) if reverse else (a0 + d, a1 - d)
+        out = []
+        for i in range(steps + 1):
+            angle = start + (end - start) * (i / steps)
+            out.append((polar.cx + radius * math.cos(angle), polar.cy - radius * math.sin(angle)))
+        return out
+
+    if inner <= 0.0:
+        return [(polar.cx, polar.cy), *arc(outer, False)]
+    return [*arc(outer, False), *arc(inner, True)]
+
+
+def _wedge_edge_inset(wedge_gap: float, a0: float, a1: float):
+    """Per-radius angular inset that realises a constant px gap between wedges.
+
+    Half the gap is taken off each side, and `gap / (2r)` radians at radius `r`
+    is `gap / 2` px of arc — so neighbouring slices end up separated by the same
+    number of pixels from the hole to the rim. Clamped so a gap wider than the
+    slice collapses it rather than inverting the edges.
+    """
+    half = max(0.0, float(wedge_gap)) / 2.0
+    sign = 1.0 if a1 >= a0 else -1.0
+    span = abs(a1 - a0)
+
+    def inset(radius: float) -> float:
+        if half <= 0.0 or radius <= 1e-9:
+            return 0.0
+        return sign * min(half / radius, span / 2.0)
+
+    return inset
+
+
+def _rounded_wedge_points(
+    polar: "_PolarProjection",
+    a0: float,
+    a1: float,
+    inner: float,
+    outer: float,
+    corner_radius: float,
+    steps: int,
+    wedge_gap: float = 0.0,
+) -> list[tuple[float, float]]:
+    """An annular sector with rounded corners, as a closed polygon.
+
+    `corner_radius` on a slice is what every donut, progress ring and gauge
+    design in the wild asks for, and it has no rectangle to hang off. The
+    definition used here is the one the client's fragment SDF uses, so the
+    three renderers agree: unroll the wedge into an (arc, radial) frame — where
+    it *is* a rectangle, of half-height `hr` and half-width `sweep/2 · dist` at
+    each radius — round it there with the standard rounded-rect profile, and
+    roll it back. The corners then follow the arc instead of being chorded off.
+
+    Sampled rather than expressed as SVG arcs: the rounded profile is not a
+    circular arc once rolled back (its angular inset varies with radius), so a
+    polyline is the honest shape rather than an approximation of one. Plain
+    wedges keep their exact `A` arcs — this path is only taken when a radius is
+    actually asked for.
+    """
+    r_mid = (inner + outer) / 2.0
+    hr = (outer - inner) / 2.0
+    sweep = abs(a1 - a0)
+    mid = (a0 + a1) / 2.0
+    sign = 1.0 if a1 >= a0 else -1.0
+
+    def half_angle(lr: float) -> float:
+        dist = r_mid + lr
+        if dist <= 1e-9:
+            return 0.0
+        # Taking a constant number of px off the arc half-width at every
+        # radius is exactly the constant-width gap (see `_wedge_edge_inset`);
+        # the corner radius then clamps against the reduced width.
+        ha_px = max(sweep * 0.5 * dist - max(0.0, wedge_gap) / 2.0, 0.0)
+        rad = min(corner_radius, hr, ha_px)
+        over = abs(lr) - (hr - rad)
+        if over <= 0.0:
+            half_px = ha_px
+        else:
+            half_px = (ha_px - rad) + math.sqrt(max(0.0, rad * rad - over * over))
+        return half_px / dist
+
+    def at(dist: float, angle: float) -> tuple[float, float]:
+        return polar.cx + dist * math.cos(angle), polar.cy - dist * math.sin(angle)
+
+    out: list[tuple[float, float]] = []
+    # Outer rim, then the trailing edge inward, then the inner rim back, then
+    # the leading edge outward. Each edge samples the rounded profile, so the
+    # corner arcs fall out of the same walk rather than being spliced in.
+    for i in range(steps + 1):
+        t = i / steps
+        out.append(at(outer, mid - sign * half_angle(hr) + sign * half_angle(hr) * 2.0 * t))
+    for i in range(1, steps + 1):
+        lr = hr - 2.0 * hr * (i / steps)
+        out.append(at(r_mid + lr, mid + sign * half_angle(lr)))
+    for i in range(1, steps + 1):
+        t = i / steps
+        out.append(at(inner, mid + sign * half_angle(-hr) - sign * half_angle(-hr) * 2.0 * t))
+    for i in range(1, steps):
+        lr = -hr + 2.0 * hr * (i / steps)
+        out.append(at(r_mid + lr, mid - sign * half_angle(lr)))
+    return out
+
+
+def _polar_wedge_path(
+    polar: "_PolarProjection",
+    theta0: float,
+    theta1: float,
+    r0: float,
+    r1: float,
+    corner_radius: float = 0.0,
+    wedge_gap: float = 0.0,
+) -> str:
+    """An annular sector as an SVG path: outer arc, inner arc reversed, closed.
+
+    A polar bar is a wedge, not a rectangle — a 180-degree bar with chorded ends
+    would read as a triangle. SVG expresses the two arcs exactly with `A`; the
+    raster exporter flattens the same sector because its display list has no arc
+    opcode (polar-axes.md §5/§6).
+    """
+    floor = polar.inner_fraction
+    # Order the NORMALIZED fractions before clamping: on a reversed radial
+    # axis `norm_radius` is decreasing, so norm(r1) < norm(r0) for r1 > r0 and
+    # taking them positionally dropped every wedge from both static exports
+    # while the shader (which min/maxes u_rrange) kept drawing them.
+    lo_frac, hi_frac = sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+    outer = min(1.0, max(floor, hi_frac)) * polar.radius
+    inner = min(1.0, max(floor, lo_frac)) * polar.radius
+    if outer <= 0.0 or outer <= inner:
+        return ""
+    angles = polar.wedge_angles(theta0, theta1)
+    if angles is None:
+        return ""
+    a0, a1 = angles
+    if corner_radius > 0.0 and inner > 0.0:
+        # Rounded corners are not circular arcs once rolled back out of the
+        # unrolled frame, so the shared polygon is the honest shape here too.
+        pts = _rounded_wedge_points(
+            polar,
+            a0,
+            a1,
+            inner,
+            outer,
+            corner_radius,
+            # Same span-proportional count `polar_wedge_points` flattens with, so
+            # a rounded wedge and its raster twin sample the identical profile.
+            polar_bar_segments(a1 - a0, 2.0 * math.pi),
+            wedge_gap,
+        )
+        if len(pts) < 3:
+            return ""
+        head = f"M {_num(pts[0][0])} {_num(pts[0][1])}"
+        rest = " ".join(f"L {_num(x)} {_num(y)}" for x, y in pts[1:])
+        return f"{head} {rest} Z"
+    # `sweep` is in SVG's screen sense: y grows downward, so a counterclockwise
+    # data sweep draws as a clockwise-negative arc.
+    sweep = 0 if a1 > a0 else 1
+    large = 1 if abs(a1 - a0) > math.pi else 0
+
+    def at(radius: float, angle: float) -> tuple[float, float]:
+        return polar.cx + radius * math.cos(angle), polar.cy - radius * math.sin(angle)
+
+    if abs(a1 - a0) >= 2.0 * math.pi * (1.0 - 1e-9):
+        # A full turn makes the arc endpoints coincide, and SVG omits such an
+        # arc segment entirely — a 100% donut slice rendered as nothing. Each
+        # circle is drawn as two half-turn arcs instead; the inner ring winds
+        # the opposite way so the default nonzero fill leaves the hole open.
+        def full_circle(radius: float, sweep_flag: int) -> str:
+            x0, y0 = at(radius, a0)
+            xm, ym = at(radius, a0 + math.pi)
+            arc = f"A {_num(radius)} {_num(radius)} 0 1 {sweep_flag}"
+            return (
+                f"M {_num(x0)} {_num(y0)} {arc} {_num(xm)} {_num(ym)} {arc} {_num(x0)} {_num(y0)} Z"
+            )
+
+        if inner <= 0.0:
+            return full_circle(outer, sweep)
+        return f"{full_circle(outer, sweep)} {full_circle(inner, 1 - sweep)}"
+
+    # The gap is a constant number of PIXELS, so its angular cost grows as the
+    # radius shrinks (`_wedge_edge_inset`). Both arcs stay exact `A` commands —
+    # only their endpoints move inward — and the radial edges become straight
+    # lines a fixed distance apart, which `L` already draws.
+    inset = _wedge_edge_inset(wedge_gap, a0, a1)
+    d_out, d_in = inset(outer), inset(max(inner, 1e-9))
+    ox0, oy0 = at(outer, a0 + d_out)
+    ox1, oy1 = at(outer, a1 - d_out)
+    if inner <= 0.0:
+        return (
+            f"M {_num(polar.cx)} {_num(polar.cy)} L {_num(ox0)} {_num(oy0)} "
+            f"A {_num(outer)} {_num(outer)} 0 {large} {sweep} {_num(ox1)} {_num(oy1)} Z"
+        )
+    ix1, iy1 = at(inner, a1 - d_in)
+    ix0, iy0 = at(inner, a0 + d_in)
+    return (
+        f"M {_num(ox0)} {_num(oy0)} "
+        f"A {_num(outer)} {_num(outer)} 0 {large} {sweep} {_num(ox1)} {_num(oy1)} "
+        f"L {_num(ix1)} {_num(iy1)} "
+        f"A {_num(inner)} {_num(inner)} 0 {large} {1 - sweep} {_num(ix0)} {_num(iy0)} Z"
+    )
+
+
+def _polar_radial_tick_length(polar: "_PolarProjection") -> float:
+    """Label-density length for the radial axis under polar.
+
+    Radial labels march along a `_POLAR_RLABEL_DEG` spoke, so their usable run
+    is the annulus width projected onto that spoke — about a fifth of the plot
+    at the default 22.5 degrees. Mirrored by _radialTickLength in
+    js/src/50_chartview.ts.
+    """
+    span = polar.radius * (1.0 - polar.inner_fraction)
+    return max(1.0, span * abs(math.sin(math.radians(_POLAR_RLABEL_DEG))))
+
+
+def _polar_thin_radial_labels(labels: list[float], length_px: float) -> list[float]:
+    """Stride-thin radial tick LABELS to what the spoke can hold.
+
+    The grid rings and the labels come from one tick list, so sizing the whole
+    list to the spoke thinned the rings too — a 520px disc dropped from three
+    rings to two. Ring density stays tied to the plot; only the labels, which
+    are the things that actually collide, are thinned. Endpoints are kept so
+    the radial extent stays readable.
+    """
+    capacity = max(2, int(length_px / 45))
+    if len(labels) <= capacity:
+        return labels
+    stride = math.ceil(len(labels) / capacity)
+    thinned = labels[::stride]
+    if labels and labels[-1] not in thinned:
+        thinned.append(labels[-1])
+    return thinned
+
+
+def _polar_frame_path(polar: "_PolarProjection") -> str:
+    """SVG path for the visible annular sector, shared by clip and frame."""
+    return _polar_wedge_path(
+        polar,
+        polar._theta_data_for_sector(polar.sector_start),
+        polar._theta_data_for_sector(polar.sector_end),
+        polar.r_lo,
+        polar.r_hi,
+    )
+
+
+def _polar_linear_frame_path(polar: "_PolarProjection", theta_values: Sequence[float]) -> str:
+    """Polygon-grid counterpart of ``_polar_frame_path``."""
+    outer = polar.polygon_ring(polar.r_hi, theta_values)
+    if len(outer) < 2:
+        return _polar_frame_path(polar)
+
+    def polyline(points: Sequence[tuple[float, float]], close: bool = False) -> str:
+        commands = [f"M {_num(points[0][0])} {_num(points[0][1])}"]
+        commands.extend(f"L {_num(x)} {_num(y)}" for x, y in points[1:])
+        if close:
+            commands.append("Z")
+        return " ".join(commands)
+
+    parts = [polyline(outer, polar.full_sector)]
+    if polar.inner_radius > 0.0:
+        inner = polar.polygon_ring(polar.r_lo, theta_values)
+        if inner:
+            parts.append(polyline(inner, polar.full_sector))
+    else:
+        inner = [(polar.cx, polar.cy)]
+    if not polar.full_sector:
+        parts.append(polyline([outer[0], inner[0]]))
+        parts.append(polyline([outer[-1], inner[-1]]))
+    return " ".join(parts)
+
+
+def _polar_grid(
+    grid: list[str],
+    polar: "_PolarProjection",
+    theta_ticks: list[float],
+    r_ticks: list[float],
+    theta_style: dict[str, Any],
+    r_style: dict[str, Any],
+    default_grid: str,
+    hide_theta: bool,
+    hide_r: bool,
+) -> None:
+    """Concentric rings for the radial ticks, spokes for the angular ones.
+
+    SVG has `<circle>`, so rings are exact here rather than flattened; the
+    raster exporter has no arc opcode and consumes `_PolarProjection.ring`
+    instead. Both read the same tick lists, so the two outputs agree on *which*
+    rings exist even though they differ in how the curve is expressed.
+    """
+    theta_ticks = polar.filter_theta_values(theta_ticks)
+    r_ticks = [value for value in r_ticks if bool(polar.visible_mask(value))]
+    r_grid = escape(_css(r_style.get("grid_color"), default_grid))
+    r_width = _num(float(r_style.get("grid_width", 1)))
+    r_attrs = _axis_grid_attrs(r_style)
+    if not hide_r:
+        for v in r_ticks:
+            radius = float(polar.norm_radius(v)) * polar.radius
+            if radius <= 0.0:
+                continue  # the r=0 ring is a point at the centre
+            if polar.grid_shape == "linear":
+                points = polar.polygon_ring(v, theta_ticks)
+                if len(points) < 2:
+                    continue
+                commands = " ".join(f"{_num(x)},{_num(y)}" for x, y in points)
+                tag = "polygon" if polar.full_sector else "polyline"
+                grid.append(
+                    f'<{tag} data-xy-grid="ring" points="{commands}" fill="none" '
+                    f'stroke="{r_grid}" stroke-width="{r_width}"{r_attrs}/>'
+                )
+            elif polar.full_sector:
+                grid.append(
+                    f'<circle data-xy-grid="ring" cx="{_num(polar.cx)}" cy="{_num(polar.cy)}" '
+                    f'r="{_num(radius)}" fill="none" stroke="{r_grid}" '
+                    f'stroke-width="{r_width}"{r_attrs}/>'
+                )
+            else:
+                a0, a1 = polar.sector_a0, polar.sector_a1
+                x0 = polar.cx + radius * math.cos(a0)
+                y0 = polar.cy - radius * math.sin(a0)
+                x1 = polar.cx + radius * math.cos(a1)
+                y1 = polar.cy - radius * math.sin(a1)
+                large = 1 if abs(a1 - a0) > math.pi else 0
+                sweep = 0 if a1 > a0 else 1
+                grid.append(
+                    f'<path data-xy-grid="ring" d="M {_num(x0)} {_num(y0)} '
+                    f"A {_num(radius)} {_num(radius)} 0 {large} {sweep} "
+                    f'{_num(x1)} {_num(y1)}" fill="none" stroke="{r_grid}" '
+                    f'stroke-width="{r_width}"{r_attrs}/>'
+                )
+    if hide_theta:
+        return
+    t_grid = escape(_css(theta_style.get("grid_color"), default_grid))
+    t_width = _num(float(theta_style.get("grid_width", 1)))
+    t_attrs = _axis_grid_attrs(theta_style)
+    for v in theta_ticks:
+        angle = float(polar.angle(v))
+        inner = polar.inner_radius
+        x0 = polar.cx + inner * math.cos(angle)
+        y0 = polar.cy - inner * math.sin(angle)
+        x1 = polar.cx + polar.radius * math.cos(angle)
+        y1 = polar.cy - polar.radius * math.sin(angle)
+        grid.append(
+            f'<line data-xy-grid="spoke" x1="{_num(x0)}" y1="{_num(y0)}" '
+            f'x2="{_num(x1)}" y2="{_num(y1)}" stroke="{t_grid}" '
+            f'stroke-width="{t_width}"{t_attrs}/>'
+        )
+
+
+class PolarTickLabel(NamedTuple):
+    """One placed polar tick label, in renderer-neutral terms.
+
+    `anchor` is the SVG vocabulary ("start"/"middle"/"end"); the raster
+    exporter maps it to its own enum at the call site. `dy` is already folded
+    into `y`; it is carried separately only so a caller can re-derive the
+    unshifted anchor point if it ever needs one.
+    """
+
+    x: float
+    y: float
+    anchor: str
+    size: float
+    text: str
+    spin: float
+
+
+def polar_tick_label_layout(
+    polar: "_PolarProjection",
+    theta_values: list[float],
+    r_values: list[float],
+    theta_step: float,
+    r_step: float,
+    theta_axis: dict[str, Any],
+    r_axis: dict[str, Any],
+    theta_size: float,
+    r_size: float,
+    hide_theta: bool,
+    hide_r: bool,
+) -> "tuple[list[PolarTickLabel], list[PolarTickLabel]]":
+    """Where every polar tick label goes: (angular, radial).
+
+    The placement — rim offset, quadrant anchor, baseline nudge, the 22.5-degree
+    radial spoke — lives here once so the two exporters cannot drift on it; each
+    keeps only its own sink loop. The cartesian label machinery is
+    edge-relative (a side in {top, bottom, left, right} plus a 1-D collision
+    axis) and neither concept survives a disc, so polar places its own rather
+    than bending that code.
+
+    Mirrored by the polar label loop in js/src/50_chartview.ts, which places DOM
+    nodes with CSS translate percentages instead of anchors.
+    """
+    angular: list[PolarTickLabel] = []
+    radial: list[PolarTickLabel] = []
+    theta_spin = float(theta_axis.get("tick_label_angle") or 0.0)
+    r_spin = float(r_axis.get("tick_label_angle") or 0.0)
+    if not hide_theta:
+        for v in polar.filter_theta_values(theta_values):
+            angle = float(polar.angle(v))
+            # Just outside the rim, nudged along the outward normal so the
+            # glyph box clears the ring rather than straddling it.
+            x = polar.cx + (polar.radius + _POLAR_TICK_GAP) * math.cos(angle)
+            y = polar.cy - (polar.radius + _POLAR_TICK_GAP) * math.sin(angle)
+            cos_a, sin_a = math.cos(angle), math.sin(angle)
+            anchor = "middle" if abs(cos_a) < 0.3 else ("start" if cos_a > 0 else "end")
+            # The baseline sits at the glyph bottom, so a label above the circle
+            # needs no shift while one below needs close to a full ascent.
+            dy = 0.0 if abs(sin_a) < 0.3 else (-0.1 * theta_size if sin_a > 0 else 0.8 * theta_size)
+            # _tick_text, not _fmt_angle: authored tick_labels (the category
+            # names on a radar chart) must win over the angle.
+            angular.append(
+                PolarTickLabel(
+                    x, y + dy, anchor, theta_size, _tick_text(theta_axis, v, theta_step), theta_spin
+                )
+            )
+    if not hide_r:
+        # Matplotlib's default rlabel_position: off the zero spoke, so the
+        # radial labels do not pile onto the theta=0 angular label.
+        angle = polar.zero + polar.dir * math.radians(_POLAR_RLABEL_DEG)
+        if not polar.angle_visible(angle):
+            angle = (polar.sector_a0 + polar.sector_a1) / 2.0
+        for v in r_values:
+            if not bool(polar.visible_mask(v)):
+                continue
+            radius = float(polar.norm_radius(v)) * polar.radius
+            if radius <= 0.0:
+                continue
+            radial.append(
+                PolarTickLabel(
+                    polar.cx + radius * math.cos(angle) + 3.0,
+                    polar.cy - radius * math.sin(angle) - 3.0,
+                    "start",
+                    r_size,
+                    _tick_text(r_axis, v, r_step),
+                    r_spin,
+                )
+            )
+    return angular, radial
+
+
+def _polar_tick_labels(
+    labels: list[str],
+    polar: "_PolarProjection",
+    theta_values: list[float],
+    r_values: list[float],
+    theta_step: float,
+    r_step: float,
+    theta_axis: dict[str, Any],
+    r_axis: dict[str, Any],
+    slots: dict[str, Any],
+    default_text: str,
+    hide_theta: bool,
+    hide_r: bool,
+) -> None:
+    """Emit polar tick labels as SVG text, from the shared placement."""
+    slot = slots.get("tick_label") or {}
+    attrs = slot_text_attrs(slot)
+
+    def tick_color(axis: dict[str, Any]) -> str:
+        """Axis tick_label_color/tick_color first, chart slot second.
+
+        Same precedence the cartesian labels use: the axis's own setting is the
+        narrower selector and wins. Reading only the slot made the `text=False`
+        and `show=False` shorthands — which work by setting tick_label_color to
+        a transparent value — silently do nothing on a polar chart.
+        """
+        axis_style = axis.get("style") or {}
+        own = _css(axis_style.get("tick_label_color", axis_style.get("tick_color")), "")
+        return escape(own or slot_text_color(slot, default_text))
+
+    angular, radial = polar_tick_label_layout(
+        polar,
+        theta_values,
+        r_values,
+        theta_step,
+        r_step,
+        theta_axis,
+        r_axis,
+        slot_font_size(slot, _axis_tick_font_size(theta_axis)),
+        slot_font_size(slot, _axis_tick_font_size(r_axis)),
+        hide_theta,
+        hide_r,
+    )
+    for kind, placed, axis in (("theta", angular, theta_axis), ("r", radial, r_axis)):
+        color = tick_color(axis)
+        for item in placed:
+            spin = (
+                f' transform="rotate({_num(item.spin)} {_num(item.x)} {_num(item.y)})"'
+                if item.spin
+                else ""
+            )
+            labels.append(
+                f'<text data-xy-tick="{kind}" x="{_num(item.x)}" y="{_num(item.y)}" '
+                f'fill="{color}" font-size="{_num(item.size)}" '
+                f'text-anchor="{item.anchor}"{attrs}{spin}>{escape(item.text)}</text>'
+            )
+
+
 def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str:
     spec = _decode_title_geometry(spec, blob)
     spec = _resolve_static_css_vars(spec)
@@ -2516,12 +3852,36 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
     x_scales, y_scales, sx, sy, extra_x_axes, extra_y_axes = _axis_scales(spec, plot)
     svg = _Svg(id_prefix)
     cols = spec["columns"]
-    # One plot-rect clipPath serves the marks group and every legend.
+    # Polar reinterprets the same two axes: x carries theta, y carries r.
+    polar = _PolarProjection(xa, ya, plot) if spec.get("coords") == "polar" else None
+    # One plot-rect clipPath serves the marks group and every legend. Polar
+    # clips to the disc instead, so nothing bleeds into the corners outside the
+    # outer ring.
     clip_id = svg.uid("clip")
+    # A polar legend lives in its own gutter OUTSIDE the plot rect, so the shared
+    # clip has to cover the union of the two boxes or the legend is clipped away
+    # entirely (`legend_clip_rect`, shared with the raster exporter).
+    clip_x, clip_y, clip_w, clip_h = legend_clip_rect(plot)
     svg.defs.append(
-        f'<clipPath id="{clip_id}"><rect x="{_num(plot["x"])}" y="{_num(plot["y"])}" '
-        f'width="{_num(plot["w"])}" height="{_num(plot["h"])}"/></clipPath>'
+        f'<clipPath id="{clip_id}"><rect x="{_num(clip_x)}" y="{_num(clip_y)}" '
+        f'width="{_num(clip_w)}" height="{_num(clip_h)}"/></clipPath>'
     )
+    # Marks clip to the disc under polar so nothing bleeds into the corners the
+    # outer ring does not cover. This is a SECOND id: `clip_id` also bounds
+    # every legend, and a legend sitting outside the circle would vanish.
+    marks_clip_id = clip_id
+    if polar is not None:
+        marks_clip_id = svg.uid("clip")
+        if polar.full_sector and polar.inner_fraction <= 0.0:
+            svg.defs.append(
+                f'<clipPath id="{marks_clip_id}"><circle cx="{_num(polar.cx)}" '
+                f'cy="{_num(polar.cy)}" r="{_num(polar.radius)}"/></clipPath>'
+            )
+        else:
+            svg.defs.append(
+                f'<clipPath id="{marks_clip_id}"><path d="{_polar_frame_path(polar)}" '
+                f'clip-rule="nonzero"/></clipPath>'
+            )
 
     def ticks_for(axis: dict[str, Any], length_px: float) -> tuple[list[float], list[float], float]:
         return axis_ticks(axis, length_px, axis is xa)
@@ -2529,6 +3889,9 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
     # -- grid + tick labels + baselines ------------------------------------
     xt, xlab, xstep = ticks_for(xa, plot["w"])
     yt, ylab, ystep = ticks_for(ya, plot["h"])
+    if polar is not None:
+        # Rings keep full density; only the labels ride the spoke.
+        ylab = _polar_thin_radial_labels(ylab, _polar_radial_tick_length(polar))
     xmt, ymt = minor_axis_ticks(xa), minor_axis_ticks(ya)
     dom_style = (spec.get("dom") or {}).get("style") or {}
     xstyle, ystyle = xa.get("style") or {}, ya.get("style") or {}
@@ -2543,7 +3906,11 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
     # label text and keeps grid, baselines and the axis title (mpl shared axes).
     hide_x = xa.get("tick_label_strategy") == "none"
     hide_y = ya.get("tick_label_strategy") == "none"
+    if polar is not None:
+        _polar_grid(grid, polar, xt, yt, xstyle, ystyle, default_grid, hide_x, hide_y)
     for v in xmt:
+        if polar is not None:
+            break
         if hide_x:
             break
         px = float(sx(v))
@@ -2555,6 +3922,8 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f"{_axis_grid_attrs(xmstyle)}/>"
         )
     for v in ymt:
+        if polar is not None:
+            break
         if hide_y:
             break
         py = float(sy(v))
@@ -2566,6 +3935,8 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f"{_axis_grid_attrs(ymstyle)}/>"
         )
     for v in xt:
+        if polar is not None:
+            break
         if hide_x:
             break
         px = float(sx(v))
@@ -2577,6 +3948,8 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f"{_axis_grid_attrs(xstyle)}/>"
         )
     for v in yt:
+        if polar is not None:
+            break
         if hide_y:
             break
         py = float(sy(v))
@@ -2669,8 +4042,26 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
                     f"{_text_block_content(item['text'], x, block.line_step)}</text>"
                 )
 
-    append_tick_labels(xa, xlab, xstep, sx, is_x=True)
-    append_tick_labels(ya, ylab, ystep, sy, is_x=False)
+    if polar is not None:
+        # "off" hides only the label text (cartesian keeps grid and titles);
+        # "none" — folded into hide_x/hide_y — silences the whole axis chrome.
+        _polar_tick_labels(
+            labels,
+            polar,
+            xlab,
+            ylab,
+            xstep,
+            ystep,
+            xa,
+            ya,
+            slots,
+            default_text,
+            hide_x or xa.get("tick_label_strategy") == "off",
+            hide_y or ya.get("tick_label_strategy") == "off",
+        )
+    else:
+        append_tick_labels(xa, xlab, xstep, sx, is_x=True)
+        append_tick_labels(ya, ylab, ystep, sy, is_x=False)
     extra_x_ticks: dict[str, tuple[list[float], list[float], float]] = {}
     for axis_id, axis, axis_scale in extra_x_axes:
         ticks, tick_labels, step = axis_ticks(axis, plot["w"], True)
@@ -2718,7 +4109,7 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             yv = _column(blob, cols[t["y"]])
             if style.get("step"):
                 xv, yv = _step_arrays(xv, yv, style["step"])
-            d = _curve_path(xv, yv, trace_sx, trace_sy, style.get("curve") == "smooth")
+            d = _curve_path(xv, yv, trace_sx, trace_sy, style.get("curve") == "smooth", polar)
             marks.append(f'<path d="{d}" {line_attrs(style, color)}/>')
 
         elif kind in ("area", "error_band"):
@@ -2726,8 +4117,13 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             yv = _column(blob, cols[t["y"]])
             bv = _column(blob, cols[t["base"]])
             smooth = style.get("curve") == "smooth"
-            top_path = _curve_path(xv, yv, trace_sx, trace_sy, smooth)
-            base_path = _curve_path(xv[::-1], bv[::-1], trace_sx, trace_sy, smooth)
+            if polar is not None:
+                radial_min, radial_max = sorted((polar.r_lo, polar.r_hi))
+                yv = np.clip(yv, radial_min, radial_max)
+                bv = np.clip(bv, radial_min, radial_max)
+            # Still needed for the (non-perimeter) outline below; the fill
+            # builds its own paired paths so each visible run can close alone.
+            top_path = _curve_path(xv, yv, trace_sx, trace_sy, smooth, polar)
             fill_spec = style.get("fill")
             fill = (
                 svg.gradient(fill_spec, color, plot)
@@ -2735,10 +4131,17 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
                 else escape(color)
             )
             op = _fill_opacity(style, 0.35)
-            joined = f"{top_path} L {base_path[2:]} Z"  # strip the M of the return path
-            marks.append(f'<path d="{joined}" fill="{fill}" fill-opacity="{_num(op)}"/>')
+            # A polar area can be culled away entirely — every vertex outside
+            # the authored sector, or a log radial axis annihilating each row —
+            # or split into several visible runs. The flat join then produced
+            # " L  Z", malformed path data that also reached the PDF
+            # converter's _parse_path, or stitched the first top run onto the
+            # base with a stray L. Close each visible run on its own.
+            joined = _area_fill_path(xv, yv, bv, trace_sx, trace_sy, smooth, polar)
+            if joined:
+                marks.append(f'<path d="{joined}" fill="{fill}" fill-opacity="{_num(op)}"/>')
             lw = float(style.get("line_width", 1.2))
-            if lw > 0:
+            if lw > 0 and (joined or top_path):
                 lop = _stroke_opacity(style, 0.35) * float(style.get("line_opacity", 1.0))
                 line_color = style.get("line_color") or color
                 outline_path = joined if style.get("stroke_perimeter") else top_path
@@ -2755,19 +4158,21 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
                 )
 
         elif kind == "scatter":
-            marks.extend(_scatter_marks(t, blob, cols, trace_sx, trace_sy, style, color))
+            marks.extend(_scatter_marks(t, blob, cols, trace_sx, trace_sy, style, color, polar))
 
         elif kind == "hexbin":
             marks.append(_hexbin_marks(t, blob, cols, trace_sx, trace_sy, style, color))
 
         elif kind in {"errorbar", "stem", "box_whisker", "box_median", "contour", "segments"}:
-            marks.append(_segment_marks(t, blob, cols, trace_sx, trace_sy, style, color))
+            marks.append(_segment_marks(t, blob, cols, trace_sx, trace_sy, style, color, polar))
 
         elif kind in ("bar", "column") and t.get("bar"):
-            marks.append(_bar_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg, plot))
+            marks.append(
+                _bar_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg, plot, polar)
+            )
 
         elif kind == "heatmap" and t.get("heatmap"):
-            marks.append(_heatmap_image(t["heatmap"], blob, cols, trace_sx, trace_sy, style))
+            marks.append(_heatmap_image(t["heatmap"], blob, cols, trace_sx, trace_sy, style, polar))
 
         elif kind == "triangle_mesh":
             marks.append(_triangle_mesh_marks(t, blob, cols, trace_sx, trace_sy, style, color))
@@ -2779,23 +4184,37 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             marks.append(_ribbon_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg))
 
         elif all(k in t for k in ("x0", "x1", "y0", "y1")):  # histogram / rect family
-            marks.append(_rect_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg, plot))
+            marks.append(
+                _rect_marks(t, blob, cols, trace_sx, trace_sy, style, color, svg, plot, polar)
+            )
 
     # -- chrome text ----------------------------------------------------------
     chrome: list[str] = []
     legacy_title = spec.get("title") if not spec.get("title_options") else None
+    title_wrap_width = plot.get("title_wrap_width")
     if legacy_title:
         title_slot = slots.get("title") or {}
+        legacy_size = slot_font_size(title_slot, 14.0)
+        legacy_block = _textblock.measure(legacy_title, legacy_size, max_width=title_wrap_width)
+        # Wrapped lines run downward from the baseline, so lift the block by its
+        # trailing lines: the LAST line keeps the historical single-line baseline
+        # and the extra lines fill the room `_title_room` reserved above it. A
+        # one-line title has no trailing lines and is byte-identical to before.
+        legacy_trailing = (legacy_block.line_count - 1) * legacy_block.line_step
+        legacy_y = plot["y"] - plot["top_axis_room"] - (10 if compact else 12) - legacy_trailing
+        legacy_x = width / 2
+        legacy_text = "\n".join(legacy_block.lines)
+        legacy_content = _text_block_content(legacy_text, legacy_x, legacy_block.line_step)
         chrome.append(
-            f'<text x="{_num(width / 2)}" '
-            f'y="{_num(plot["y"] - plot["top_axis_room"] - (10 if compact else 12))}" '
-            f'text-anchor="middle" font-size="{_num(slot_font_size(title_slot, 14.0))}"'
+            f'<text x="{_num(legacy_x)}" '
+            f'y="{_num(legacy_y)}" '
+            f'text-anchor="middle" font-size="{_num(legacy_size)}"'
             f"{slot_text_attrs(title_slot, font_weight='400')} "
             f'fill="{escape(slot_text_color(title_slot, default_text))}">'
-            f"{escape(str(legacy_title))}</text>"
+            f"{legacy_content}</text>"
         )
     for title_entry in [] if legacy_title else _title_entries(spec):
-        title_style, title_size, title_block = _title_metrics(spec, title_entry)
+        title_style, title_size, title_block = _title_metrics(spec, title_entry, title_wrap_width)
         # Matplotlib's `axes.titleweight`/`axes.labelweight` both default to
         # "normal", so chrome text stays at 400 unless a style or rcParam asks
         # for more. Keep this in step with the `title`/`axis_title` slot rules
@@ -2816,13 +4235,18 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             "right": plot["x"] + plot["w"],
         }.get(loc, plot["x"] + plot["w"] / 2.0)
         anchor = {"left": "start", "center": "middle", "right": "end"}.get(loc, "middle")
+        # `title_block.lines` is the wrapped set — drawing `entry["text"]` here
+        # would put the whole title on one line inside a band reserved for two.
+        title_content = _text_block_content(
+            "\n".join(title_block.lines), title_x, title_block.line_step
+        )
         chrome.append(
             f'<text x="{_num(title_x)}" '
             f'y="{_num(title_y)}" '
             f'text-anchor="{anchor}" font-size="{_num(title_size)}" '
             f"{title_font_attrs.lstrip()} "
             f'fill="{escape(slot_text_color(title_style, default_text))}">'
-            f"{_text_block_content(title_entry['text'], title_x, title_block.line_step)}</text>"
+            f"{title_content}</text>"
         )
 
     def append_axis_title(axis: dict[str, Any], *, is_x: bool) -> None:
@@ -2909,7 +4333,7 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
         )
 
     annotation_marks, unclipped_annotation_marks, annotation_labels = _annotation_svg(
-        spec.get("annotations") or [], sx, sy, plot, width, height
+        spec.get("annotations") or [], sx, sy, plot, width, height, polar
     )
     marks.extend(annotation_marks)
     labels.extend(annotation_labels)
@@ -2920,6 +4344,29 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
     explicit_frame_sides = frame_sides is not None
     if frame_sides is None:
         frame_sides = [xa.get("side", "bottom"), ya.get("side", "left")]
+    if polar is not None:
+        # One annular-sector outline replaces the four straight spines; "side"
+        # has no polar meaning, so frame_sides is deliberately not consulted.
+        frame_sides = []
+        if not hide_x:
+            frame_paint = escape(_css(xstyle.get("axis_color"), default_axis))
+            frame_width = _num(float(xstyle.get("axis_width", 1)))
+            if polar.full_sector and polar.inner_fraction <= 0.0 and polar.grid_shape != "linear":
+                baselines += (
+                    f'<circle data-xy-frame="polar" cx="{_num(polar.cx)}" '
+                    f'cy="{_num(polar.cy)}" r="{_num(polar.radius)}" fill="none" '
+                    f'stroke="{frame_paint}" stroke-width="{frame_width}"/>'
+                )
+            else:
+                frame_path = (
+                    _polar_linear_frame_path(polar, xt)
+                    if polar.grid_shape == "linear"
+                    else _polar_frame_path(polar)
+                )
+                baselines += (
+                    f'<path data-xy-frame="polar" d="{frame_path}" fill="none" '
+                    f'stroke="{frame_paint}" stroke-width="{frame_width}"/>'
+                )
     if not hide_y or explicit_frame_sides:
         for side, x in (("left", plot["x"]), ("right", plot["x"] + plot["w"])):
             if side in frame_sides:
@@ -2970,7 +4417,7 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             return length / 2, length / 2, float(style.get("tick_width", 1))
         return 0.0, length, float(style.get("tick_width", 1))
 
-    if not hide_x:
+    if not hide_x and polar is None:
         inward, outward, tick_width = tick_span(xmstyle)
         side = xa.get("side", "bottom")
         edge = plot["y"] if side == "top" else plot["y"] + plot["h"]
@@ -3003,7 +4450,7 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
                     f'stroke="{escape(_css(xstyle.get("tick_color"), default_axis))}" '
                     f'stroke-width="{_num(tick_width)}"/>'
                 )
-    if not hide_y:
+    if not hide_y and polar is None:
         inward, outward, tick_width = tick_span(ymstyle)
         side = ya.get("side", "left")
         edge = plot["x"] + plot["w"] if side == "right" else plot["x"]
@@ -3113,7 +4560,7 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             "<g>",
             *grid,
             "</g>",
-            f'<g clip-path="url(#{clip_id})">',
+            f'<g clip-path="url(#{marks_clip_id})">',
             *marks,
             "</g>",
             *unclipped_annotation_marks,
@@ -3135,6 +4582,7 @@ def annotation_label_placement(
     plot: dict[str, float],
     width: float,
     height: float,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> tuple[float, float, Optional[str], Optional[str]]:
     """Where an annotation's `text=` hangs, as `(x, y, anchor, vertical_align)`.
 
@@ -3165,10 +4613,21 @@ def annotation_label_placement(
             vertical_align = vertical_align or "middle"
         return x, y, anchor or "end", vertical_align
     if kind == "arrow":
-        x = (float(sx(float(ann["x0"]))) + float(sx(float(ann["x1"])))) / 2
-        y = (float(sy(float(ann["y0"]))) + float(sy(float(ann["y1"])))) / 2
+        if polar is not None:
+            x0, y0 = polar(float(ann["x0"]), float(ann["y0"]))
+            x1, y1 = polar(float(ann["x1"]), float(ann["y1"]))
+            x = (float(x0) + float(x1)) / 2
+            y = (float(y0) + float(y1)) / 2
+        else:
+            x = (float(sx(float(ann["x0"]))) + float(sx(float(ann["x1"])))) / 2
+            y = (float(sy(float(ann["y0"]))) + float(sy(float(ann["y1"])))) / 2
         return x, y, anchor or "middle", vertical_align or "middle"
     if kind == "marker":
+        if polar is not None:
+            # (theta, r) projects jointly; the separable pair would read the
+            # disc centre (r = 0, any angle) as the bottom-left corner.
+            ax, ay = polar(float(ann["x"]), float(ann["y"]))
+            return float(ax), float(ay), anchor, vertical_align
         return float(sx(float(ann["x"]))), float(sy(float(ann["y"]))), anchor, vertical_align
     x, y = float(ann.get("x", 0.0)), float(ann.get("y", 0.0))
     space = style.get("coordinate_space")
@@ -3180,6 +4639,12 @@ def annotation_label_placement(
         return px0 + x * plot["w"], float(sy(y)), anchor, vertical_align
     if space == "xaxis_transform":
         return float(sx(x)), py0 + (1.0 - y) * plot["h"], anchor, vertical_align
+    if polar is not None:
+        # Data-space (theta, r) projects jointly; the separable pair would read
+        # the disc centre (r = 0, at any angle) as the bottom-left corner. The
+        # fraction-space branches above are already renderer-neutral.
+        ax, ay = polar(x, y)
+        return float(ax), float(ay), anchor, vertical_align
     return float(sx(x)), float(sy(y)), anchor, vertical_align
 
 
@@ -3219,6 +4684,7 @@ def _annotation_connector_unclipped(
     sx: Callable[[float], float],
     sy: Callable[[float], float],
     plot: dict[str, float],
+    polar: "Optional[_PolarProjection]" = None,
 ) -> bool:
     """Whether an arrow may leave the axes because its target is in bounds.
 
@@ -3234,7 +4700,14 @@ def _annotation_connector_unclipped(
     else:
         return False
     try:
-        px, py = float(sx(float(target[0]))), float(sy(float(target[1])))
+        x, y = float(target[0]), float(target[1])
+        if polar is not None:
+            if not bool(polar.position_mask(x, y)):
+                return False
+            px, py = polar(x, y)
+            px, py = float(px), float(py)
+        else:
+            px, py = float(sx(x)), float(sy(y))
     except (TypeError, ValueError):
         return False
     return (
@@ -3252,11 +4725,30 @@ def _annotation_svg(
     plot: dict[str, float],
     width: float,
     height: float,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> tuple[list[str], list[str], list[str]]:
     marks: list[str] = []
     unclipped_marks: list[str] = []
     labels: list[str] = []
     px0, py0 = plot["x"], plot["y"]
+
+    def point(x: float, y: float) -> tuple[float, float]:
+        """A point-anchored annotation's position.
+
+        Under polar the pair is (theta, r) and must project jointly — the
+        separable sx/sy would read them as cartesian, putting `(0, 0)` (the
+        disc centre, at any angle) in the bottom-left corner instead.
+
+        Only point-anchored kinds route through here. `rule` and `band` are
+        genuinely different geometry on a disc — a theta rule is a spoke, an r
+        rule is a ring, a band is an annulus or a sector — and stay deferred
+        (polar-axes.md §9) rather than being drawn as straight cartesian bars.
+        """
+        if polar is not None:
+            px, py = polar(x, y)
+            return float(px), float(py)
+        return float(sx(x)), float(sy(y))
+
     for ann in annotations:
         style = ann.get("style") or {}
         color = escape(_css(style.get("color"), "#667085"))
@@ -3291,13 +4783,15 @@ def _annotation_svg(
             )
         elif kind in ("arrow", "callout"):
             connector_marks = (
-                unclipped_marks if _annotation_connector_unclipped(ann, sx, sy, plot) else marks
+                unclipped_marks
+                if _annotation_connector_unclipped(ann, sx, sy, plot, polar)
+                else marks
             )
             if kind == "arrow":
-                x0, y0 = float(sx(float(ann["x0"]))), float(sy(float(ann["y0"])))
-                x1, y1 = float(sx(float(ann["x1"]))), float(sy(float(ann["y1"])))
+                x0, y0 = point(float(ann["x0"]), float(ann["y0"]))
+                x1, y1 = point(float(ann["x1"]), float(ann["y1"]))
             else:  # pointer from the offset label back to the data point
-                x1, y1 = float(sx(float(ann["x"]))), float(sy(float(ann["y"])))
+                x1, y1 = point(float(ann["x"]), float(ann["y"]))
                 x0, y0 = x1 + float(ann.get("dx", 0.0)), y1 + float(ann.get("dy", 0.0))
             if all(np.isfinite(v) for v in (x0, y0, x1, y1)):
                 shapes = _arrow_shapes(x0, y0, x1, y1, style)
@@ -3329,7 +4823,7 @@ def _annotation_svg(
                             f'stroke-width="{stroke_width}" stroke-opacity="{_num(opacity)}"/>'
                         )
         elif kind == "marker":
-            mx, my = float(sx(float(ann["x"]))), float(sy(float(ann["y"])))
+            mx, my = point(float(ann["x"]), float(ann["y"]))
             if all(np.isfinite(v) for v in (mx, my)):
                 radius = max(0.5, float(ann.get("size", 8.0)) / 2.0)
                 builder = _SYMBOL_BUILDERS.get(str(ann.get("symbol", "circle")))
@@ -3350,7 +4844,7 @@ def _annotation_svg(
                 marks.append(f'{shape} fill="{fill}" fill-opacity="{_num(opacity)}"{stroke_attr}/>')
         if ann.get("text"):
             tx, ty, label_anchor, vertical_align = annotation_label_placement(
-                ann, style, sx, sy, plot, width, height
+                ann, style, sx, sy, plot, width, height, polar
             )
             if not (np.isfinite(tx) and np.isfinite(ty)):
                 continue
@@ -3594,7 +5088,14 @@ def _estimated_text_width(lines: list[str], font_size: float) -> float:
 
 
 def _segment_marks(
-    t: dict[str, Any], blob: bytes, cols: list, sx: _Scale, sy: _Scale, style: dict, color: str
+    t: dict[str, Any],
+    blob: bytes,
+    cols: list,
+    sx: _Scale,
+    sy: _Scale,
+    style: dict,
+    color: str,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> str:
     x0 = _column(blob, cols[t["x0"]])
     x1 = _column(blob, cols[t["x1"]])
@@ -3615,14 +5116,48 @@ def _segment_marks(
     # effective_rgba, so repeating it inside stroke= would apply it twice.
     constant_paint = paint.get("mode") in {None, "constant"} and _paint_rgba8(plain_css)[3] == 255
     css_paint = escape(plain_css)
+    if polar is None:
+        px0, py0 = sx(x0), sy(y0)
+        px1, py1 = sx(x1), sy(y1)
+        keep = np.ones(n, dtype=bool)
+    else:
+        # Clip each independent segment jointly in radial *scale coordinates*.
+        # Clamping endpoints independently bends a diagonal error bar along the
+        # ring; interpolating theta at the two intersections preserves its
+        # authored chord and mirrors SEGMENT_VS.
+        c0 = np.asarray(polar.r_scale.coord(y0), dtype=np.float64)
+        c1 = np.asarray(polar.r_scale.coord(y1), dtype=np.float64)
+        lo = min(polar.r_lo_coord, polar.r_hi_coord)
+        hi = max(polar.r_lo_coord, polar.r_hi_coord)
+        finite = np.isfinite(x0) & np.isfinite(x1) & np.isfinite(c0) & np.isfinite(c1)
+        keep = finite & (np.maximum(c0, c1) >= lo) & (np.minimum(c0, c1) <= hi)
+        dr = c1 - c0
+        ta = np.zeros(n, dtype=np.float64)
+        tb = np.ones(n, dtype=np.float64)
+        moving = np.abs(dr) > 1e-30
+        ta[moving] = (lo - c0[moving]) / dr[moving]
+        tb[moving] = (hi - c0[moving]) / dr[moving]
+        t0 = np.maximum(0.0, np.minimum(ta, tb))
+        t1 = np.minimum(1.0, np.maximum(ta, tb))
+        clipped_x0 = x0 + (x1 - x0) * t0
+        clipped_x1 = x0 + (x1 - x0) * t1
+        clipped_c0 = np.clip(c0 + dr * t0, lo, hi)
+        clipped_c1 = np.clip(c0 + dr * t1, lo, hi)
+        clipped_y0 = polar.r_scale.value(clipped_c0)
+        clipped_y1 = polar.r_scale.value(clipped_c1)
+        keep &= polar.theta_visible_mask(clipped_x0)
+        keep &= polar.theta_visible_mask(clipped_x1)
+        px0, py0 = polar(clipped_x0, clipped_y0)
+        px1, py1 = polar(clipped_x1, clipped_y1)
     return "".join(
-        f'<line x1="{_num(float(sx(x0[i])))}" y1="{_num(float(sy(y0[i])))}" '
-        f'x2="{_num(float(sx(x1[i])))}" y2="{_num(float(sy(y1[i])))}" '
+        f'<line x1="{_num(float(px0[i]))}" y1="{_num(float(py0[i]))}" '
+        f'x2="{_num(float(px1[i]))}" y2="{_num(float(py1[i]))}" '
         f'stroke="{css_paint if constant_paint else f"rgb({round(colors[i, 0] * 255)},{round(colors[i, 1] * 255)},{round(colors[i, 2] * 255)})"}" '
         f'stroke-opacity="{_num(float(colors[i, 3]))}" '
         f'stroke-width="{_num(float(widths[i]))}" fill="none" stroke-linecap="round"'
         f"{_dash_attr(style)}/>"
         for i in range(len(x0))
+        if keep[i]
     )
 
 
@@ -3652,11 +5187,23 @@ def _authored_marker_path_d(
 
 
 def _scatter_marks(
-    t: dict, blob: bytes, cols: list, sx: _Scale, sy: _Scale, style: dict, fallback: str
+    t: dict,
+    blob: bytes,
+    cols: list,
+    sx: _Scale,
+    sy: _Scale,
+    style: dict,
+    fallback: str,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> list[str]:
     xv = _column(blob, cols[t["x"]])
     yv = _column(blob, cols[t["y"]])
-    px, py = sx(xv), sy(yv)
+    # Only the centres move under polar; the marker glyphs are pixel-space
+    # around each centre and stay round. Out-of-range radii are culled like
+    # the client shader culls them — below r_lo a point mirrors through the
+    # centre INSIDE the disc, where no clip can save it.
+    px, py = polar(xv, yv) if polar is not None else (sx(xv), sy(yv))
+    visible = polar.position_mask(xv, yv) if polar is not None else None
     n = len(xv)
 
     def read(index: int) -> np.ndarray:
@@ -3728,6 +5275,8 @@ def _scatter_marks(
         blocks = ["<g>"]
     out: list[str] = []
     for i in range(n):
+        if visible is not None and not visible[i]:
+            continue
         fill = face_rgba[i]
         fill_value = (
             escape(face_css)
@@ -4190,6 +5739,7 @@ def _bar_marks(
     color: str,
     svg: _Svg,
     plot: dict,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> str:
     b = t["bar"]
     pos = _column(blob, cols[b["pos"]])
@@ -4207,6 +5757,22 @@ def _bar_marks(
 
     fills, extras, radii = _rect_svg_styles(t, len(pos), color, read, style, svg, plot)
     out = []
+    if polar is not None:
+        # Annular sectors. SVG has real arcs, so these are exact `A` commands
+        # rather than the flattened polygons the raster path needs.
+        for i in range(len(pos)):
+            d = _polar_wedge_path(
+                polar,
+                float(pos[i]) - half,
+                float(pos[i]) + half,
+                float(min(v0[i], v1[i])),
+                float(max(v0[i], v1[i])),
+                float(np.max(radii[i])) if radii is not None and len(radii) else 0.0,
+                float(style.get("wedge_gap", 0.0) or 0.0),
+            )
+            if d:
+                out.append(f'<path d="{d}" fill="{fills[i]}"{extras[i]}/>')
+        return "".join(out)
     for i in range(len(pos)):
         if horizontal:
             x0, x1 = float(sx(min(v0[i], v1[i]))), float(sx(max(v0[i], v1[i])))
@@ -4239,6 +5805,7 @@ def _rect_marks(
     color: str,
     svg: _Svg,
     plot: dict,
+    polar: "Optional[_PolarProjection]" = None,
 ) -> str:
     x0v = _column(blob, cols[t["x0"]])
     x1v = _column(blob, cols[t["x1"]])
@@ -4250,6 +5817,24 @@ def _rect_marks(
 
     fills, extras, radii = _rect_svg_styles(t, len(x0v), color, read, style, svg, plot)
     out = []
+    if polar is not None:
+        # Four edge columns are an annular sector: (x0, x1) is the angular span
+        # and (y0, y1) the radial one. This is the path unequal-width slices (a
+        # pie or donut) take, since the compact bar path ships one scalar width.
+        out = []
+        for i in range(len(x0v)):
+            d = _polar_wedge_path(
+                polar,
+                float(x0v[i]),
+                float(x1v[i]),
+                float(min(y0v[i], y1v[i])),
+                float(max(y0v[i], y1v[i])),
+                float(np.max(radii[i])) if radii is not None and len(radii) else 0.0,
+                float(style.get("wedge_gap", 0.0) or 0.0),
+            )
+            if d:
+                out.append(f'<path d="{d}" fill="{fills[i]}"{extras[i]}/>')
+        return "".join(out)
     for i in range(len(x0v)):
         xa_, xb = float(sx(x0v[i])), float(sx(x1v[i]))
         ya_, yb = float(sy(y0v[i])), float(sy(y1v[i]))
@@ -4338,6 +5923,194 @@ def _heatmap_rgba_grid(
     return np.dstack([rgb, alpha])
 
 
+_POLAR_HEATMAP_MAX_DIMENSION = 4096
+# Keep inverse-projection scratch well below the returned RGBA image. At the
+# maximum output width this is 64 rows, so the one dense float tile is 2 MiB
+# instead of the old implementation's many 128 MiB full-frame arrays.
+_POLAR_HEATMAP_TILE_PIXELS = 256 * 1024
+
+
+def _heatmap_sample_column(
+    meta: dict[str, Any],
+    indices: np.ndarray,
+    blob: bytes,
+    borrowed: tuple[np.ndarray, ...],
+) -> np.ndarray:
+    """Decode only selected rows from one heatmap source column.
+
+    Polar inverse-raster output is screen-bounded. Expanding a source grid
+    before sampling defeats that contract (and the raster payload's borrowed
+    canonical-f64 path), so this helper indexes the wire/canonical storage
+    first and widens only the selected values.
+    """
+    dtype_name = str(meta.get("dtype", "f32"))
+    dtype = {"u8": np.uint8, "f32": np.dtype("<f4"), "f64": np.dtype("<f8")}.get(dtype_name)
+    if dtype is None:
+        raise ValueError(f"unsupported heatmap column dtype {dtype_name!r}")
+    span = int(meta.get("span", 0))
+    if span:
+        # Do not pass dtype= here: a defensive metadata/array mismatch would
+        # cast the *entire* borrowed source before we sample it, defeating the
+        # source-bounded contract. Index first, then cast only selected cells.
+        values = np.asarray(borrowed[span - 1]).reshape(-1)[: int(meta["len"])]
+        selected = values[indices].astype(dtype, copy=False)
+    else:
+        values = np.frombuffer(
+            blob,
+            dtype=dtype,
+            count=int(meta["len"]),
+            offset=int(meta.get("byte_offset", 0)),
+        )
+        selected = values[indices]
+    selected = selected.astype(np.float64, copy=False)
+    return selected / (meta.get("scale") or 1.0) + meta.get("offset", 0.0)
+
+
+def _heatmap_rgba_samples(
+    hm: dict[str, Any],
+    indices: np.ndarray,
+    blob: bytes,
+    cols: list[dict[str, Any]],
+    style: dict[str, Any],
+    borrowed: tuple[np.ndarray, ...],
+) -> np.ndarray:
+    """Color selected flat heatmap cells without expanding the source grid."""
+    count = len(indices)
+    if "rgba_bufs" in hm:
+        rgba = np.empty((count, 4), dtype=np.uint8)
+        for channel, column_index in enumerate(hm["rgba_bufs"]):
+            values = _heatmap_sample_column(cols[column_index], indices, blob, borrowed)
+            rgba[:, channel] = np.clip(values * 255.0, 0.0, 255.0).astype(np.uint8)
+        rgba[:, 3] = (rgba[:, 3].astype(np.float64) * _fill_opacity(style)).astype(np.uint8)
+        return rgba
+
+    values = _heatmap_sample_column(cols[hm["buf"]], indices, blob, borrowed)
+    finite = np.isfinite(values)
+    if hm.get("enc") == "canonical-f64":
+        d0, d1 = (float(value) for value in hm["domain"])
+        # Browser payload normalization and the native Cartesian heatmap opcode
+        # both round each normalized canonical value to f32 before LUT lookup.
+        # Preserve that exact seam while touching only sampled source cells.
+        t = np.zeros(count, dtype=np.float64)
+        normalized = np.clip((values[finite] - d0) / ((d1 - d0) or 1.0), 0.0, 1.0)
+        t[finite] = normalized.astype(np.float32).astype(np.float64)
+    else:
+        t = np.clip(np.where(finite, values, 0.0), 0.0, 1.0)
+    rgb = _lut(hm.get("colormap", "viridis"), t)
+    alpha = np.full(count, int(255 * _fill_opacity(style, 0.95)), dtype=np.uint8)
+    alpha[~finite] = 0
+    return np.column_stack((rgb, alpha))
+
+
+def polar_heatmap_rgba(
+    hm: dict[str, Any],
+    blob: bytes,
+    cols: list[dict[str, Any]],
+    style: dict[str, Any],
+    polar: _PolarProjection,
+    borrowed: tuple[np.ndarray, ...] = (),
+    *,
+    output_scale: float = 1.0,
+) -> np.ndarray:
+    """Inverse-raster a regular heatmap into the visible annular sector.
+
+    The returned image is top-first RGBA and covers ``polar.plot``. Each output
+    pixel is inverted through the joint polar transform, then nearest-samples
+    the source cell grid (whose row 0 is the radial-range bottom). This is the
+    CPU twin of ``HEATMAP_FS`` and is shared by SVG and native raster export.
+
+    Work is bounded by output pixels, not source cells: source values are
+    gathered only after inverse mapping, and projection scratch is tiled.
+    ``output_scale`` lets native raster export sample once per device pixel;
+    SVG uses the default one sample per logical pixel.
+    """
+    source_w, source_h = int(hm["w"]), int(hm["h"])
+    if source_w <= 0 or source_h <= 0:
+        raise ValueError("polar heatmap dimensions must be positive")
+    plot = polar.plot
+    output_scale = float(output_scale)
+    if not math.isfinite(output_scale) or output_scale <= 0.0:
+        raise ValueError("polar heatmap output_scale must be positive and finite")
+    out_w = max(
+        1,
+        min(
+            _POLAR_HEATMAP_MAX_DIMENSION,
+            int(math.ceil(float(plot["w"]) * output_scale)),
+        ),
+    )
+    out_h = max(
+        1,
+        min(
+            _POLAR_HEATMAP_MAX_DIMENSION,
+            int(math.ceil(float(plot["h"]) * output_scale)),
+        ),
+    )
+    xs = float(plot["x"]) + (np.arange(out_w, dtype=np.float64) + 0.5) * (float(plot["w"]) / out_w)
+    dx = xs - polar.cx
+    xr = hm["x_range"]
+    yr = hm["y_range"]
+    out = np.zeros((out_h, out_w, 4), dtype=np.uint8)
+    tile_rows = max(1, min(out_h, _POLAR_HEATMAP_TILE_PIXELS // out_w))
+    near = float(polar.theta_value(float(xr[0])))
+    inner = polar.inner_fraction
+    radius = max(polar.radius, 1e-30)
+    x_span = (float(xr[1]) - float(xr[0])) or 1.0
+    y_span = (float(yr[1]) - float(yr[0])) or 1.0
+
+    for row_start in range(0, out_h, tile_rows):
+        row_stop = min(out_h, row_start + tile_rows)
+        rows = np.arange(row_start, row_stop, dtype=np.float64)
+        ys = float(plot["y"]) + (rows + 0.5) * (float(plot["h"]) / out_h)
+        dy = polar.cy - ys
+        normalized = np.hypot(dy[:, None], dx[None, :]) / radius
+        candidate_rows, candidate_cols = np.nonzero(
+            (normalized >= inner - 1e-9) & (normalized <= 1.0 + 1e-9)
+        )
+        if not len(candidate_rows):
+            continue
+
+        candidate_norm = normalized[candidate_rows, candidate_cols]
+        angles = np.arctan2(dy[candidate_rows], dx[candidate_cols])
+        theta = np.asarray(polar.theta_from_angle(angles, near=near), dtype=np.float64)
+        radial = np.asarray(polar.radius_value(candidate_norm), dtype=np.float64)
+        fx = (theta - float(xr[0])) / x_span
+        fy = (radial - float(yr[0])) / y_span
+        raw_theta = np.asarray(polar.theta_value(theta), dtype=np.float64)
+        visible = (
+            np.isfinite(fx)
+            & np.isfinite(fy)
+            & polar._angular_value_visible_mask(raw_theta)
+            & (fx >= 0.0)
+            & (fx <= 1.0)
+            & (fy >= 0.0)
+            & (fy <= 1.0)
+        )
+        if not bool(visible.any()):
+            continue
+        target_rows = candidate_rows[visible]
+        target_cols = candidate_cols[visible]
+        source_x = np.clip(
+            np.floor(fx[visible] * source_w).astype(np.int64),
+            0,
+            source_w - 1,
+        )
+        source_y = np.clip(
+            np.floor(fy[visible] * source_h).astype(np.int64),
+            0,
+            source_h - 1,
+        )
+        source_indices = source_y * source_w + source_x
+        out[row_start + target_rows, target_cols] = _heatmap_rgba_samples(
+            hm,
+            source_indices,
+            blob,
+            cols,
+            style,
+            borrowed,
+        )
+    return out
+
+
 def _grid_image(
     w: int, h: int, rgba: bytes, x_range: list, y_range: list, sx: _Scale, sy: _Scale
 ) -> str:
@@ -4414,7 +6187,26 @@ def _density_image(
     return _grid_image(w, h, rgba, d["x_range"], d["y_range"], sx, sy)
 
 
-def _heatmap_image(hm: dict, blob: bytes, cols: list, sx: _Scale, sy: _Scale, style: dict) -> str:
+def _heatmap_image(
+    hm: dict,
+    blob: bytes,
+    cols: list,
+    sx: _Scale,
+    sy: _Scale,
+    style: dict,
+    polar: "Optional[_PolarProjection]" = None,
+) -> str:
+    if polar is not None:
+        grid_rgba = polar_heatmap_rgba(hm, blob, cols, style, polar)
+        out_h, out_w = grid_rgba.shape[:2]
+        b64 = base64.b64encode(_png_rgba(out_w, out_h, grid_rgba.tobytes())).decode("ascii")
+        plot = polar.plot
+        return (
+            f'<image data-xy-polar-heatmap="true" x="{_num(plot["x"])}" '
+            f'y="{_num(plot["y"])}" width="{_num(plot["w"])}" height="{_num(plot["h"])}" '
+            f'preserveAspectRatio="none" style="image-rendering:pixelated" '
+            f'href="data:image/png;base64,{b64}"/>'
+        )
     grid_rgba = _heatmap_rgba_grid(hm, blob, cols, style)
     # Heatmap cells are uniform in *data* space; on a nonlinear axis the image
     # must be resampled so internal cell edges land at their transformed
@@ -4542,6 +6334,24 @@ def legend_items(traces: list[dict], palette: Sequence[str] = DEFAULT_PALETTE) -
     return items
 
 
+def legend_clip_rect(plot: dict) -> tuple[float, float, float, float]:
+    """Rect that bounds a static legend: the plot, union any polar gutter.
+
+    A polar legend lives in a `legend_box_*` gutter OUTSIDE the plot rect
+    (`_recut_polar_plot`), so clipping a legend to the plot rect alone erases it
+    entirely. Union, not replacement: the same rect still bounds in-plot chrome.
+    Shared so the SVG clipPath and the raster clip command cannot drift.
+    """
+    x0, y0 = float(plot["x"]), float(plot["y"])
+    x1, y1 = x0 + float(plot["w"]), y0 + float(plot["h"])
+    if "legend_box_w" in plot:
+        x0 = min(x0, float(plot["legend_box_x"]))
+        y0 = min(y0, float(plot["legend_box_y"]))
+        x1 = max(x1, float(plot["legend_box_x"]) + float(plot["legend_box_w"]))
+        y1 = max(y1, float(plot["legend_box_y"]) + float(plot["legend_box_h"]))
+    return x0, y0, x1 - x0, y1 - y0
+
+
 def _legend_layout(named: list[dict], plot: dict, options: dict) -> dict[str, Any]:
     """Shared bounded legend geometry for SVG and native raster exports.
 
@@ -4549,7 +6359,19 @@ def _legend_layout(named: list[dict], plot: dict, options: dict) -> dict[str, An
     legend is kept inside the plot and its labels are visibly ellipsized. A
     Columns follow Matplotlib's handle/text/column spacing and size to their
     own labels rather than inheriting the width of the longest label.
+
+    A polar chart hands over a `legend_box_*` gutter beside the disc
+    (`_recut_polar_plot`); everything below then bounds and places the legend in
+    that box instead of over the marks, and `loc` chooses where within it.
     """
+    if "legend_box_w" in plot:
+        plot = {
+            **plot,
+            "x": plot["legend_box_x"],
+            "y": plot["legend_box_y"],
+            "w": plot["legend_box_w"],
+            "h": plot["legend_box_h"],
+        }
     style_opts = options.get("style") or {}
     font_size = _legend_font_size(style_opts)
     char_width = font_size * (_LEGEND_CHAR_WIDTH / 11.0)

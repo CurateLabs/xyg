@@ -947,6 +947,7 @@ def _bar_like(
     series: Optional[list[str]],
     opacity: Any,
     corner_radius: Any = 0.0,
+    wedge_gap: float = 0.0,
     stroke: Any = None,
     stroke_width: Any = 0.0,
     artist_alpha: Any = None,
@@ -958,14 +959,33 @@ def _bar_like(
         raise ValueError(f"{kind} mode must be 'grouped', 'stacked', or 'normalized'")
     if orientation not in {"vertical", "horizontal"}:
         raise ValueError(f"{kind} orientation must be 'vertical' or 'horizontal'")
+    if orientation == "horizontal" and getattr(self, "coords", "cartesian") == "polar":
+        # A polar bar is an annular sector: the position column is the ANGLE and
+        # the value column is the RADIUS. "Horizontal" swaps those roles, which
+        # a disc has no meaning for — the renderers all read `pos` as theta
+        # regardless, so the bar came out transposed rather than rotated.
+        # Refuse it rather than draw a plausible wrong picture (§28).
+        raise ValueError(
+            f"coords='polar' does not support {kind} orientation='horizontal'; "
+            "a polar bar's position is its angle and its value is its radius, "
+            "so the orientation is fixed. See spec/design/polar-axes.md."
+        )
     category_axis = "x" if orientation == "vertical" else "y"
     pos, category_labels = self._axis_positions_with_labels(x, category_axis)
+    # Zero is legal and draws nothing, like the library-wide `line_width=0` rule.
+    # A bar of no size is an ordinary DATA state, not an author error: a 0%
+    # progress ring, an empty category in aggregated output, and the first frame
+    # of a grow animation all produce one. Refusing it made every hand-rolled
+    # wedge recipe — the pie/gauge compositions the docs show — die at exactly
+    # 0% with "bar width must be positive", a message about the author's code
+    # from a value that came out of their data. Negative and non-finite widths
+    # are still refused: they are not degenerate, they are meaningless.
     if np.isscalar(width):
         # Scalar widths are overwhelmingly the common path. Preserve the
         # established scalar validator (including bool rejection) without
         # allocating two temporary NumPy arrays for every bar chart.
         try:
-            width_values: float | np.ndarray = self._positive_scalar(width, f"{kind} width")
+            width_values: float | np.ndarray = self._nonnegative_scalar(width, f"{kind} width")
         except ValueError as exc:
             if isinstance(width, (str, bytes)):
                 raise ValueError(f"{kind} width must be scalar or contain numeric values") from exc
@@ -973,7 +993,7 @@ def _bar_like(
     elif isinstance(width, np.ndarray) and width.ndim == 0:
         if np.issubdtype(width.dtype, np.bool_):
             raise ValueError(f"{kind} width must be scalar or contain numeric values")
-        width_values = self._positive_scalar(width.item(), f"{kind} width")
+        width_values = self._nonnegative_scalar(width.item(), f"{kind} width")
     else:
         try:
             raw_width_array = np.asarray(width)
@@ -991,8 +1011,8 @@ def _bar_like(
             raise ValueError(
                 f"{kind} width must be scalar or broadcast to the {len(pos)} bars"
             ) from None
-        if not np.isfinite(width_values).all() or np.any(width_values <= 0.0):
-            raise ValueError(f"{kind} width values must be finite and positive")
+        if not np.isfinite(width_values).all() or np.any(width_values < 0.0):
+            raise ValueError(f"{kind} width values must be finite and non-negative")
     vals = self._bar_value_matrix(y, len(pos), kind)
     n_series, n_items = vals.shape
     if mode == "normalized":
@@ -1062,6 +1082,7 @@ def _bar_like(
             scalar_stroke,
             stroke_width_values[index],
             fill,
+            wedge_gap,
         )
         mark_style.update(style_extra or {})
         merged_channels = {
@@ -1194,7 +1215,14 @@ def line(
     checkpoint = self._checkpoint()
     try:
         xc, yc = self._ingest_xy(x, y, "line")
-        if not kernels.is_sorted(xc.values):
+        # Polar keeps the caller's sequence. Theta is the order marks are
+        # JOINED in, not a domain to be scanned: sorting it redrew a path that
+        # crosses the 0/turn seam (350 -> 10) or doubles back as an
+        # ascending-angle fan instead of the authored track. Safe because polar
+        # forces tier="direct" (config.py: "M4 decimation buckets on a
+        # monotonic screen-x column, which a spiral is not"), so the sorted
+        # precondition the sort exists to satisfy never applies here.
+        if self.coords != "polar" and not kernels.is_sorted(xc.values):
             # LOD contract (§28): line x must be sorted; the engine sorts once
             # at ingest, and says so. The predicate is NaN-safe on purpose:
             # a NaN fails its pairs, so a NaN-carrying x cannot skip the sort
@@ -1282,7 +1310,7 @@ def area(
         )
         if len(bc) != len(xc):
             raise ValueError(f"area base must have length {len(xc)}, got {len(bc)}")
-        if not kernels.is_sorted(xc.values):
+        if self.coords != "polar" and not kernels.is_sorted(xc.values):
             order = np.argsort(xc.values, kind="stable")
             xc = self.store.ingest(xc.values[order])
             yc = self.store.ingest(yc.values[order])
@@ -1359,7 +1387,7 @@ def error_band(
         uc = self.store.ingest(self._as_1d_float(upper, "error_band upper"))
         if len(uc) != len(xc):
             raise ValueError(f"error_band upper must have length {len(xc)}, got {len(uc)}")
-        if not kernels.is_sorted(xc.values):
+        if self.coords != "polar" and not kernels.is_sorted(xc.values):
             order = np.argsort(xc.values, kind="stable")
             xc = self.store.ingest(xc.values[order])
             lc = self.store.ingest(lc.values[order])
@@ -2992,6 +3020,7 @@ def bar(
     series: Optional[list[str]] = None,
     opacity: Any = 0.85,
     corner_radius: Any = 0.0,
+    wedge_gap: float = 0.0,
     stroke: Any = None,
     stroke_width: Any = 0.0,
     _artist_alpha: Any = None,
@@ -3008,6 +3037,7 @@ def bar(
     color = css.get("color", color)
     opacity = css.get("opacity", opacity)
     corner_radius = css.get("corner_radius", corner_radius)
+    wedge_gap = css.get("wedge_gap", wedge_gap)
     stroke = css.get("stroke", stroke)
     stroke_width = css.get("stroke_width", stroke_width)
     fill = css.get("fill", fill)
@@ -3026,6 +3056,7 @@ def bar(
         series=series,
         opacity=opacity,
         corner_radius=corner_radius,
+        wedge_gap=wedge_gap,
         stroke=stroke,
         stroke_width=stroke_width,
         artist_alpha=_artist_alpha,
@@ -3049,6 +3080,7 @@ def column(
     series: Optional[list[str]] = None,
     opacity: float = 0.85,
     corner_radius: Union[float, tuple[float, float]] = 0.0,
+    wedge_gap: float = 0.0,
     stroke: Optional[str] = None,
     stroke_width: float = 0.0,
     fill: Union[str, dict[str, str], None] = None,
@@ -3059,6 +3091,7 @@ def column(
     color = css.get("color", color)
     opacity = css.get("opacity", opacity)
     corner_radius = css.get("corner_radius", corner_radius)
+    wedge_gap = css.get("wedge_gap", wedge_gap)
     stroke = css.get("stroke", stroke)
     stroke_width = css.get("stroke_width", stroke_width)
     fill = css.get("fill", fill)
@@ -3077,6 +3110,7 @@ def column(
         series=series,
         opacity=opacity,
         corner_radius=corner_radius,
+        wedge_gap=wedge_gap,
         stroke=stroke,
         stroke_width=stroke_width,
         fill=fill,

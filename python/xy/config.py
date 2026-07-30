@@ -7,6 +7,7 @@ recorded in the shipped spec, never silent (§28).
 
 from __future__ import annotations
 
+import math
 import warnings
 
 # Wire protocol version: the client refuses a mismatched spec loudly (§33).
@@ -28,12 +29,75 @@ import warnings
 # including axes-fraction y and pixel padding. A v9 client would ignore that
 # field and silently omit non-center slots and their placement, so it must
 # reject the payload.
-# v11 adds the `ribbon` trace kind (flow bands: six geometry columns and an
+# v11 adds the chart-level `coords` key ("polar"), plus `theta_unit`,
+# `theta_zero` and `theta_direction` on the angular (x) axis spec. A v10 client
+# would ignore `coords` entirely and draw the (theta, r) columns as cartesian
+# x/y — a plausible, completely wrong picture — so it must reject the payload.
+# It also adds the `ribbon` trace kind (flow bands: six geometry columns and an
 # optional second paint channel, `color_target`). markOf() falls back to
 # scatter for unknown kinds, so a v10 client would silently draw every ribbon
-# as a point cloud of its y-corner columns — a plausible wrong picture, so it
-# must reject the payload.
-PROTOCOL_VERSION = 11
+# as a point cloud of its y-corner columns.
+# v12 adds polar sector/grid-shape metadata on the angular axis and hole/origin
+# metadata on the radial axis. A v11 client would silently draw a full circular
+# grid with a centre-origin radius, so the new geometry must fail the handshake.
+PROTOCOL_VERSION = 12
+
+# Mark kinds the polar transform renders correctly today. Everything else is
+# refused by Figure._validate_coords rather than approximated: the rect, area,
+# segment and mesh shaders expand geometry in pixel space after the coordinate
+# map, so under polar they would draw chord-edged shapes where arcs belong.
+# spec/design/polar-axes.md §7 tracks the order the rest land in.
+POLAR_MARK_KINDS = frozenset(
+    {"line", "scatter", "area", "bar", "column", "heatmap", "contour", "errorbar"}
+)
+
+# Polar traces ship tier="direct" (§7): M4 decimation buckets on a monotonic
+# screen-x column, which a spiral is not, and density binning in (theta, r)
+# distorts by area near the origin. Cap the direct path explicitly rather than
+# letting an unbounded polar scatter allocate its way to a cliff.
+POLAR_DIRECT_CEILING = 200_000
+
+# Subdivisions across one FULL TURN, for the renderers that flatten arcs (the
+# raster display list has no arc opcode, and the GPU sweeps a triangle strip).
+# Mirrored by POLAR_BAR_SEGMENTS in js/src/50_chartview.ts. Sized so a wedge's
+# chord sagitta stays inside the client's XY_POLAR_AA expansion up to a
+# ~1400-device-px disc, letting the fragment SDF trim the strip to an exactly
+# round arc; the raster's coverage-scanline fill smooths the same polygon.
+POLAR_BAR_SEGMENTS = 96
+
+# Floor on the subdivision of any single wedge. Two segments keep a strip that
+# still brackets the true arc after the AA expansion, even for a hairline slice.
+POLAR_BAR_SEGMENTS_MIN = 2
+
+
+def polar_bar_segments(span: float, turn: float) -> int:
+    """Subdivisions for one wedge of angular width `span` out of `turn`.
+
+    The count used to be a flat `POLAR_BAR_SEGMENTS` per wedge, sized for the
+    worst case of a wedge sweeping the whole circle. Almost no wedge does: a
+    16-sector wind rose sweeps 22.5 degrees, so every bar paid 2*(96+1) = 194
+    vertices for an arc that needs six segments, and 50k polar bars fell off a
+    performance cliff building ~9.7M vertices per frame instead of ~700k.
+
+    Sagitta is what the constant is sized against, and it is quadratic in the
+    per-segment angle: holding `span / n` fixed holds the flattening error fixed.
+    So the honest count is exactly proportional — `POLAR_BAR_SEGMENTS * span /
+    turn` — which reproduces 96 for a full turn and preserves the error bound for
+    everything narrower. §28: the decision is a recorded formula over the
+    AUTHORED angular width, not a view-dependent choice, so all three renderers
+    reach the same count for the same figure at any zoom or export size.
+    """
+    # An unmeasurable span falls back to the full-turn count, exactly as the JS
+    # mirror does: under-subdividing a wide wedge is a visible facet, and paying
+    # for one is not. Without the finite check `math.ceil` raised ValueError on
+    # NaN and OverflowError on infinity, so the two renderers disagreed about
+    # what a degenerate wedge costs — one drew it, the other crashed.
+    if not (turn > 0.0) or not math.isfinite(span):
+        return POLAR_BAR_SEGMENTS
+    fraction = abs(float(span)) / float(turn)
+    scaled = math.ceil(POLAR_BAR_SEGMENTS * fraction)
+    return max(POLAR_BAR_SEGMENTS_MIN, min(POLAR_BAR_SEGMENTS, scaled))
+
 
 # Line traces longer than this ship M4-decimated (Tier 1, §5); the canonical
 # column stays kernel-side for re-decimation on zoom (§28: recompute for the

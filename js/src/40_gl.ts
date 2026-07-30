@@ -106,7 +106,183 @@ float xyViewValue(float coord, int mode, float constant) {
   if (mode == 2) return sign(coord) * constant * (exp(abs(coord)) - 1.0);
   return coord;
 }
+// Polar placement (spec/design/polar-axes.md §3). Replaces only the final
+// affine step: theta and r arrive already decoded and scale-mapped by
+// xyAxisCoord, exactly as the cartesian path leaves them.
+//
+// pol = (cx, cy, rx, ry) in CLIP space; rx/ry differ because clip space is
+// square while the plot rect is not, and a round circle needs 2R/w
+// horizontally against 2R/h vertically. rr = (r_lo, r_hi) in scaled coord
+// space — radial zoom is a change to this uniform alone, which is why the
+// transform lives here rather than being pre-projected kernel-side.
+// zdir = (zero angle in radians, direction * unit-scale).
+//
+// The y term ADDS: clip space grows upward. The Python twin
+// (_svg._PolarProjection) subtracts, because screen space grows downward.
+float xyPositiveMod(float value, float period) {
+  return mod(mod(value, period) + period, period);
+}
+float xyPolarThetaValue(float angle, vec2 zdir, vec2 trange, float turn) {
+  float raw = (angle - zdir.x) / (abs(zdir.y) > 1e-30 ? zdir.y : 1.0);
+  return trange.x + xyPositiveMod(raw - trange.x, max(turn, 1e-30));
+}
+bool xyPolarThetaVisible(float thC, vec2 trange, float turn) {
+  float period = max(turn, 1e-30);
+  float sweep = trange.y - trange.x;
+  if (sweep >= period * (1.0 - 1e-6)) return true;
+  float offset = xyPositiveMod(thC - trange.x, period);
+  return offset <= sweep + period * 1e-6;
+}
+vec2 xyPolarPos(float thC, float rC, vec4 pol, vec2 rr, vec2 zdir,
+                vec2 trange, float turn, vec2 rshape) {
+  float rmin = min(rr.x, rr.y);
+  float rmax = max(rr.x, rr.y);
+  if (!xyPolarThetaVisible(thC, trange, turn)
+      || rC < rmin - 1e-6 || rC > rmax + 1e-6) {
+    return vec2(uintBitsToFloat(0x7fc00000u));
+  }
+  // rshape = (radial origin in scale coordinates, display-space hole).
+  // The formula is shared with the CPU/export paths. The visible lower bound
+  // remains rr.x; an origin below it creates an annulus.
+  float denom = rr.y - rshape.x;
+  if (abs(denom) <= 1e-30) return vec2(uintBitsToFloat(0x7fc00000u));
+  float base = (rC - rshape.x) / denom;
+  float rn = rshape.y + (1.0 - rshape.y) * base;
+  // Outside the radial range there is no honest position: rn < 0 would reflect
+  // the mark through the centre, and rn > 1 would draw it past the outer ring
+  // into the rect corners the disc does not cover — the GL canvas is the plot
+  // RECT, so nothing else clips it (the SVG exporter has a disc clipPath; this
+  // is the client's equivalent). NaN culls the primitive instead: the same gap
+  // semantics NaN data gets (§3 D7), and the same NaN idiom xyAxisCoord's mode
+  // 3 already uses. The epsilon keeps the outermost home-view point, which sits
+  // exactly at rn == 1.
+  if (rn < rshape.y - 1e-6 || rn > 1.0 + 1e-6) {
+    return vec2(uintBitsToFloat(0x7fc00000u));
+  }
+  float a = zdir.x + zdir.y * thC;
+  return vec2(pol.x + rn * pol.z * cos(a), pol.y + rn * pol.w * sin(a));
+}
 `;
+
+// Uniform block every polar-capable vertex shader declares. u_coordMode is 0
+// for cartesian and 1 for polar; the branch is uniform across every vertex in
+// a draw, so it costs no divergence.
+// The cartesian/polar dispatch, for the shaders whose two coordinate columns
+// are plain x/y (points, pick, line). AREA_VS and BAR_VS deliberately do NOT
+// use it: they interpolate in data space before projecting, which is what keeps
+// a fill's radial edges true radii and a bar's span an arc.
+export const POLAR_XYPOS_GLSL = `
+vec2 xyPos(float xe, float ye) {
+  if (u_coordMode == 1) {
+    return xyPolarPos(xyAxisCoord(xe, u_xmeta, u_xmode, u_xconstant),
+                      xyAxisCoord(ye, u_ymeta, u_ymode, u_yconstant),
+                      u_polar, u_rrange, u_zdir,
+                      u_trange, u_turn, u_rshape);
+  }
+  return vec2(xyMap(xe, u_xmap, u_xmeta, u_xmode, u_xconstant),
+              xyMap(ye, u_ymap, u_ymeta, u_ymode, u_yconstant));
+}`;
+
+export const POLAR_GLSL_UNIFORMS = `
+uniform int u_coordMode; uniform vec4 u_polar; uniform vec2 u_rrange; uniform vec2 u_zdir;
+uniform vec2 u_trange; uniform float u_turn; uniform vec2 u_rshape;`;
+
+// Vertex clipping can reject a point whose centre is outside the polar view,
+// but it cannot clip the pixels of a wide point or the interior of a chord,
+// triangle, or strip. Every legal polar mark therefore applies the same
+// annular-sector test in its fragment stage. u_polar is expressed in clip
+// space, while gl_FragCoord is in device pixels, so u_clipRes bridges the two
+// without an interpolated varying (and works for both the color and pick
+// framebuffers).
+const POLAR_FRAGMENT_CLIP_GLSL = `
+uniform int u_coordMode;
+uniform vec4 u_polar;
+uniform vec2 u_rrange;
+uniform vec2 u_zdir;
+uniform vec2 u_trange;
+uniform float u_turn;
+uniform vec2 u_rshape;
+uniform vec2 u_clipRes;
+float xyClipPositiveMod(float value, float period) {
+  return mod(mod(value, period) + period, period);
+}
+bool xyPolarFragmentVisible() {
+  if (u_coordMode != 1) return true;
+  vec2 clip = gl_FragCoord.xy / max(u_clipRes, vec2(1.0)) * 2.0 - 1.0;
+  vec2 local = (clip - u_polar.xy) / max(abs(u_polar.zw), vec2(1e-30));
+  float displayedRadius = length(local);
+  if (displayedRadius > 1.0 + 1e-6
+      || displayedRadius < u_rshape.y - 1e-6) return false;
+
+  // Convert the displayed radius back into radial scale coordinates. This
+  // also exposes the implicit inner hole created when r_origin lies below the
+  // visible radial minimum; testing only u_rshape.y would miss that annulus.
+  float radialFraction = (displayedRadius - u_rshape.y)
+    / max(1.0 - u_rshape.y, 1e-30);
+  float rCoord = u_rshape.x + radialFraction * (u_rrange.y - u_rshape.x);
+  float rmin = min(u_rrange.x, u_rrange.y);
+  float rmax = max(u_rrange.x, u_rrange.y);
+  if (rCoord < rmin - 1e-6 || rCoord > rmax + 1e-6) return false;
+
+  float period = max(u_turn, 1e-30);
+  float rawTheta = (atan(local.y, local.x) - u_zdir.x)
+    / (abs(u_zdir.y) > 1e-30 ? u_zdir.y : 1.0);
+  float theta = u_trange.x
+    + xyClipPositiveMod(rawTheta - u_trange.x, period);
+  float sweep = u_trange.y - u_trange.x;
+  if (sweep >= period * (1.0 - 1e-6)) return true;
+  return xyClipPositiveMod(theta - u_trange.x, period)
+    <= sweep + period * 1e-6;
+}
+void xyClipPolarFragment() {
+  if (!xyPolarFragmentVisible()) discard;
+}`;
+
+// Annular-sector vertex placement for BAR_VS/RECT_VS, with edge antialiasing.
+// The GL context is created with antialias: false, so every smooth edge in the
+// client is fragment-shader coverage — and a wedge disabled the rect SDF
+// (v_half = 1e6), which left all four of its edges hard-aliased. The strip is
+// expanded XY_POLAR_AA px outward here and RECT_FS trims it back against the
+// TRUE radii/angles (v_polarRadii/v_polarAngles, device px / screen radians):
+// the fringe gets room to ramp, and because the expanded chords stay outside
+// the true outer arc, the trimmed arc is exactly round rather than faceted.
+//
+// Positions are xyPolarPos in pixel form — same centre, radius and angle from
+// the same uniforms — computed directly because xyPolarPos's rn > 1 cull
+// would eat the expanded outer vertices.
+export const POLAR_WEDGE_GLSL = `
+const float XY_POLAR_AA = 2.0;
+flat out vec2 v_polarRadii; flat out vec2 v_polarAngles;
+vec4 xyPolarWedge(float th0, float th1, float r0C, float r1C, float t, float side) {
+  float radiusPx = u_polar.z * u_res.x * 0.5;
+  vec2 centrePx = (u_polar.xy * 0.5 + 0.5) * u_res;
+  // Match xyPolarPos exactly: r_origin may sit below the visible minimum,
+  // creating an implicit annulus, while hole reserves an explicit inner ring.
+  float denom = u_rrange.y - u_rshape.x;
+  if (abs(denom) <= 1e-30) return vec4(uintBitsToFloat(0x7fc00000u));
+  float rBase = (
+    u_rshape.y + (1.0 - u_rshape.y) * ((r0C - u_rshape.x) / denom)
+  ) * radiusPx;
+  float rTop = (
+    u_rshape.y + (1.0 - u_rshape.y) * ((r1C - u_rshape.x) / denom)
+  ) * radiusPx;
+  float a0 = u_zdir.x + u_zdir.y * th0;
+  float a1 = u_zdir.x + u_zdir.y * th1;
+  v_polarRadii = vec2(min(rBase, rTop), max(rBase, rTop));
+  v_polarAngles = vec2(a0, a1);
+  // A span collapsed by the radial clamp, or a zero angular width, draws
+  // nothing — without this cull the AA expansion would leave a ghost sliver.
+  if (rBase == rTop || a0 == a1) return vec4(uintBitsToFloat(0x7fc00000u));
+  float outward = sign(rTop - rBase);
+  float rE = max(side == 0.0 ? rBase - outward * XY_POLAR_AA : rTop + outward * XY_POLAR_AA, 0.0);
+  // No angular expansion at a full turn: the two ends are one seam, and
+  // growing past it double-covers translucent fills.
+  float grow = abs(a1 - a0) >= 6.2831853 ? 0.0 : XY_POLAR_AA / max(v_polarRadii.y, 1.0);
+  float dir = a1 >= a0 ? 1.0 : -1.0;
+  float aE = mix(a0 - dir * grow, a1 + dir * grow, t);
+  vec2 pix = centrePx + rE * vec2(cos(aE), sin(aE));
+  return vec4(pix / u_res * 2.0 - 1.0, 0.0, 1.0);
+}`;
 
 export const POINT_VS = `#version 300 es
 in float ax; in float ay; in float a_prevx; in float a_prevy;
@@ -121,10 +297,13 @@ uniform float u_transitionProgress; uniform int u_transitionActive;
 out float v_lutCoord; out float v_dim; out float v_dval; out float v_ptSize; out float v_sel;
 out vec4 v_rgba; out vec4 v_style; out vec4 v_stroke;
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
+${POLAR_XYPOS_GLSL}
+
 void main() {
   float x = u_transitionActive == 1 ? mix(a_prevx, ax, u_transitionProgress) : ax;
   float y = u_transitionActive == 1 ? mix(a_prevy, ay, u_transitionProgress) : ay;
-  gl_Position = vec4(xyMap(x, u_xmap, u_xmeta, u_xmode, u_xconstant), xyMap(y, u_ymap, u_ymeta, u_ymode, u_yconstant), 0.0, 1.0);
+  gl_Position = vec4(xyPos(x, y), 0.0, 1.0);
   float sz = u_sizeMode == 1 ? mix(u_sizeRange.x, u_sizeRange.y, a_sval) : u_size;
   int symbol = a_style.w >= 0.0 ? int(a_style.w + 0.5) : u_symbol;
   float symbolScale = symbol == 2 || symbol == 14 ? 1.414213562 : 1.0;
@@ -235,7 +414,9 @@ in float v_lutCoord; in float v_dim; in float v_dval; in float v_ptSize; in floa
 in vec4 v_rgba; in vec4 v_style; in vec4 v_stroke;
 out vec4 outColor;
 ${MARKER_SDF_GLSL}
+${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
+  xyClipPolarFragment();
   vec2 d = gl_PointCoord - 0.5;
   float sd;
   int symbol = v_style.w >= 0.0 ? int(v_style.w + 0.5) : u_symbol;
@@ -319,18 +500,23 @@ uniform vec2 u_xmeta; uniform vec2 u_ymeta; uniform int u_xmode; uniform float u
 uniform float u_size; uniform float u_dpr;
 uniform float u_transitionProgress; uniform int u_transitionActive;
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
+${POLAR_XYPOS_GLSL}
+
 void main() {
   float x = u_transitionActive == 1 ? mix(a_prevx, ax, u_transitionProgress) : ax;
   float y = u_transitionActive == 1 ? mix(a_prevy, ay, u_transitionProgress) : ay;
-  gl_Position = vec4(xyMap(x, u_xmap, u_xmeta, u_xmode, u_xconstant), xyMap(y, u_ymap, u_ymeta, u_ymode, u_yconstant), 0.0, 1.0);
+  gl_Position = vec4(xyPos(x, y), 0.0, 1.0);
   gl_PointSize = u_size * u_dpr;
 }`;
 
 export const POINT_SIMPLE_FS = `#version 300 es
-precision highp float;
+precision highp float; precision highp int;
 uniform vec4 u_color;
 out vec4 outColor;
+${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
+  xyClipPolarFragment();
   float sd = length(gl_PointCoord - 0.5) - 0.5;
   float aa = fwidth(sd) + 1e-4;
   float coverage = clamp(0.5 - sd / aa, 0.0, 1.0);
@@ -357,10 +543,13 @@ uniform float u_size; uniform int u_sizeMode; uniform vec2 u_sizeRange; uniform 
 uniform float u_transitionProgress; uniform int u_transitionActive;
 flat out int v_id;
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
+${POLAR_XYPOS_GLSL}
+
 void main() {
   float x = u_transitionActive == 1 ? mix(a_prevx, ax, u_transitionProgress) : ax;
   float y = u_transitionActive == 1 ? mix(a_prevy, ay, u_transitionProgress) : ay;
-  gl_Position = vec4(xyMap(x, u_xmap, u_xmeta, u_xmode, u_xconstant), xyMap(y, u_ymap, u_ymeta, u_ymode, u_yconstant), 0.0, 1.0);
+  gl_Position = vec4(xyPos(x, y), 0.0, 1.0);
   float sz = u_sizeMode == 1 ? mix(u_sizeRange.x, u_sizeRange.y, a_sval) : u_size;
   gl_PointSize = max(sz, 6.0) * u_dpr; // enlarge hit target
   v_id = gl_VertexID;
@@ -371,7 +560,9 @@ precision highp float; precision highp int;
 uniform int u_pick_base;
 flat in int v_id;
 out vec4 outColor;
+${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
+  xyClipPolarFragment();
   vec2 d = gl_PointCoord - 0.5;
   if (length(d) > 0.5) discard;
   int id = u_pick_base + v_id;
@@ -396,10 +587,11 @@ export const GRID_VS = `#version 300 es
 in vec2 a_corner;
 uniform vec4 u_view; // x0,x1,y0,y1
 uniform int u_xmode; uniform float u_xconstant; uniform int u_ymode; uniform float u_yconstant;
-out vec2 v_coord;
+out vec2 v_coord; out vec2 v_clip;
 ${AXIS_GLSL}
 void main() {
   gl_Position = vec4(a_corner * 2.0 - 1.0, 0.0, 1.0);
+  v_clip = gl_Position.xy;
   float x = mix(xyViewCoord(u_view.x, u_xmode, u_xconstant), xyViewCoord(u_view.y, u_xmode, u_xconstant), a_corner.x);
   float y = mix(xyViewCoord(u_view.z, u_ymode, u_yconstant), xyViewCoord(u_view.w, u_ymode, u_yconstant), a_corner.y);
   v_coord = vec2(x, y);
@@ -461,11 +653,39 @@ uniform vec4 u_gridRange; // gx0,gx1,gy0,gy1 (raw data units)
 uniform int u_xmode; uniform float u_xconstant; uniform int u_ymode; uniform float u_yconstant;
 uniform float u_opacity;
 uniform int u_truecolor;
-in vec2 v_coord;
+in vec2 v_coord; in vec2 v_clip;
 out vec4 outColor;
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
 void main() {
-  vec2 data = vec2(xyViewValue(v_coord.x, u_xmode, u_xconstant), xyViewValue(v_coord.y, u_ymode, u_yconstant));
+  vec2 data;
+  if (u_coordMode == 1) {
+    vec2 local = (v_clip - u_polar.xy) / max(abs(u_polar.zw), vec2(1e-30));
+    float displayedRadius = length(local);
+    if (displayedRadius > 1.0 + 1e-6
+        || displayedRadius < u_rshape.y - 1e-6) discard;
+    float radialFraction = (displayedRadius - u_rshape.y)
+      / max(1.0 - u_rshape.y, 1e-30);
+    float rCoord = u_rshape.x + radialFraction * (u_rrange.y - u_rshape.x);
+    float rmin = min(u_rrange.x, u_rrange.y);
+    float rmax = max(u_rrange.x, u_rrange.y);
+    if (rCoord < rmin - 1e-6 || rCoord > rmax + 1e-6) discard;
+    float thCoord = xyPolarThetaValue(
+      atan(local.y, local.x), u_zdir, u_trange, u_turn);
+    if (!xyPolarThetaVisible(thCoord, u_trange, u_turn)) discard;
+    // Grid edges commonly straddle the angular seam
+    // ([-halfCell, turn-halfCell]). Choose the equivalent theta in the
+    // heatmap's own range, not blindly [0, turn), before locating the cell.
+    thCoord = u_gridRange.x
+      + xyPositiveMod(thCoord - u_gridRange.x, max(u_turn, 1e-30));
+    data = vec2(
+      xyViewValue(thCoord, u_xmode, u_xconstant),
+      xyViewValue(rCoord, u_ymode, u_yconstant));
+  } else {
+    data = vec2(
+      xyViewValue(v_coord.x, u_xmode, u_xconstant),
+      xyViewValue(v_coord.y, u_ymode, u_yconstant));
+  }
   vec2 uv = vec2((data.x - u_gridRange.x) / (u_gridRange.y - u_gridRange.x),
                  (data.y - u_gridRange.z) / (u_gridRange.w - u_gridRange.z));
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
@@ -500,13 +720,19 @@ in float a_len0; in float a_len1;
 out float v_off; out float v_dash; out vec2 v_cap;
 const vec2 corners[4] = vec2[4](vec2(0.,-1.), vec2(0.,1.), vec2(1.,-1.), vec2(1.,1.));
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
+${POLAR_XYPOS_GLSL}
+
 void main() {
   float px0 = u_transitionActive == 1 ? mix(a_prevx, ax0, u_transitionProgress) : ax0;
   float py0 = u_transitionActive == 1 ? mix(a_prevy, ay0, u_transitionProgress) : ay0;
   float px1 = u_transitionActive == 1 ? mix(a_prevx1, ax1, u_transitionProgress) : ax1;
   float py1 = u_transitionActive == 1 ? mix(a_prevy1, ay1, u_transitionProgress) : ay1;
-  vec2 p0 = vec2(xyMap(px0, u_xmap, u_xmeta, u_xmode, u_xconstant), xyMap(py0, u_ymap, u_ymeta, u_ymode, u_yconstant));
-  vec2 p1 = vec2(xyMap(px1, u_xmap, u_xmeta, u_xmode, u_xconstant), xyMap(py1, u_ymap, u_ymeta, u_ymode, u_yconstant));
+  // Endpoints project through the coordinate map; the pixel-space expansion
+  // below then joins them with a straight CHORD, which is the polar line
+  // semantics radar/spider edges require (polar-axes.md §5).
+  vec2 p0 = xyPos(px0, py0);
+  vec2 p1 = xyPos(px1, py1);
   float reveal = clamp(u_revealProgress * u_revealSegments - float(gl_InstanceID), 0.0, 1.0);
   p1 = mix(p0, p1, reveal);
   vec2 pix0 = (p0 * 0.5 + 0.5) * u_res;
@@ -546,7 +772,9 @@ uniform vec4 u_color; uniform float u_width; uniform int u_cap;
 uniform int u_dashCount; uniform float u_dashArr[8]; uniform float u_dashPeriod;
 in float v_off; in float v_dash; in vec2 v_cap;
 out vec4 outColor;
+${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
+  xyClipPolarFragment();
   float half_w = u_width * 0.5;
   // How far past the nearest end of painted stroke this fragment lies, along
   // the path. Two kinds of end contribute and the cap shapes both: the
@@ -600,9 +828,46 @@ uniform int u_x0mode; uniform float u_x0constant; uniform int u_x1mode; uniform 
 out float v_off; out float v_cval; out float v_dash; out vec4 v_rgba; out vec4 v_style;
 const vec2 corners[4] = vec2[4](vec2(0.,-1.), vec2(0.,1.), vec2(1.,-1.), vec2(1.,1.));
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
 void main() {
-  vec2 p0 = vec2(xyMap(ax0, u_xmap, u_x0meta, u_x0mode, u_x0constant), xyMap(ay0, u_ymap, u_y0meta, u_y0mode, u_y0constant));
-  vec2 p1 = vec2(xyMap(ax1, u_xmap, u_x1meta, u_x1mode, u_x1constant), xyMap(ay1, u_ymap, u_y1meta, u_y1mode, u_y1constant));
+  vec2 p0;
+  vec2 p1;
+  if (u_coordMode == 1) {
+    float th0 = xyAxisCoord(ax0, u_x0meta, u_x0mode, u_x0constant);
+    float th1 = xyAxisCoord(ax1, u_x1meta, u_x1mode, u_x1constant);
+    float r0 = xyAxisCoord(ay0, u_y0meta, u_y0mode, u_y0constant);
+    float r1 = xyAxisCoord(ay1, u_y1meta, u_y1mode, u_y1constant);
+    float rmin = min(u_rrange.x, u_rrange.y);
+    float rmax = max(u_rrange.x, u_rrange.y);
+    if (max(r0, r1) < rmin || min(r0, r1) > rmax) {
+      p0 = vec2(uintBitsToFloat(0x7fc00000u));
+      p1 = p0;
+    } else {
+      // Independent contour/error-bar segments clip at the radial window.
+      // Interpolating theta at the clipped endpoint keeps a diagonal segment
+      // attached to the ring instead of bending it onto a radial clamp.
+      float dr = r1 - r0;
+      float t0 = 0.0;
+      float t1 = 1.0;
+      if (abs(dr) > 1e-30) {
+        float ta = (rmin - r0) / dr;
+        float tb = (rmax - r0) / dr;
+        t0 = max(0.0, min(ta, tb));
+        t1 = min(1.0, max(ta, tb));
+      }
+      float cth0 = mix(th0, th1, t0);
+      float cth1 = mix(th0, th1, t1);
+      float cr0 = clamp(mix(r0, r1, t0), rmin, rmax);
+      float cr1 = clamp(mix(r0, r1, t1), rmin, rmax);
+      p0 = xyPolarPos(cth0, cr0, u_polar, u_rrange, u_zdir,
+                      u_trange, u_turn, u_rshape);
+      p1 = xyPolarPos(cth1, cr1, u_polar, u_rrange, u_zdir,
+                      u_trange, u_turn, u_rshape);
+    }
+  } else {
+    p0 = vec2(xyMap(ax0, u_xmap, u_x0meta, u_x0mode, u_x0constant), xyMap(ay0, u_ymap, u_y0meta, u_y0mode, u_y0constant));
+    p1 = vec2(xyMap(ax1, u_xmap, u_x1meta, u_x1mode, u_x1constant), xyMap(ay1, u_ymap, u_y1meta, u_y1mode, u_y1constant));
+  }
   vec2 center = (p0 + p1) * 0.5;
   p0 = mix(center, p0, u_animationProgress);
   p1 = mix(center, p1, u_animationProgress);
@@ -629,7 +894,9 @@ uniform vec4 u_color; uniform float u_width; uniform int u_colorMode; uniform sa
 uniform int u_dashCount; uniform float u_dashArr[8]; uniform float u_dashPeriod;
 in float v_off; in float v_cval; in float v_dash; in vec4 v_rgba; in vec4 v_style;
 out vec4 outColor;
+${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
+  xyClipPolarFragment();
   float itemWidth = v_style.z >= 0.0 ? v_style.z : u_width;
   float half_w = itemWidth * 0.5;
   vec4 paint = u_colorMode == 3 ? v_rgba : (u_colorMode != 0 ? vec4(texture(u_lut, vec2(clamp(v_cval, 0.0, 1.0), 0.5)).rgb, 1.0) : u_color);
@@ -847,6 +1114,7 @@ uniform float u_revealProgress; uniform float u_revealSegments;
 out float v_top; out float v_base; out float v_pos;
 const vec2 corners[4] = vec2[4](vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(1.,1.));
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
 void main() {
   vec2 c = corners[gl_VertexID];
   float x0 = xyMap(ax0, u_xmap, u_xmeta, u_xmode, u_xconstant);
@@ -859,6 +1127,37 @@ void main() {
   x1 = mix(x0, x1, reveal);
   y1 = mix(y0, y1, reveal);
   b1 = mix(b0, b1, reveal);
+  if (u_coordMode == 1) {
+    // Polar interpolates in DATA space and projects the result, rather than
+    // interpolating already-projected clip coordinates: the quad's two radial
+    // edges must run along true radii. The outer and inner edges come out as
+    // chords between projected corners, which is the fill semantics radar
+    // polygons require (polar-axes.md §5).
+    float th = mix(xyAxisCoord(ax0, u_xmeta, u_xmode, u_xconstant),
+                   xyAxisCoord(ax1, u_xmeta, u_xmode, u_xconstant), c.x);
+    float topR = mix(xyAxisCoord(ay0, u_ymeta, u_ymode, u_yconstant),
+                     xyAxisCoord(ay1, u_ymeta, u_ymode, u_yconstant), c.x);
+    float baseR = mix(xyAxisCoord(ab0, u_bmeta, u_ymode, u_yconstant),
+                      xyAxisCoord(ab1, u_bmeta, u_ymode, u_yconstant), c.x);
+    // CLAMP the span to the visible annulus rather than letting xyPolarPos
+    // NaN-cull an out-of-range corner: the fill at a given theta is exactly
+    // [base, top] intersected with [r_lo, r_hi], and culling instead made the
+    // whole radar fill vanish the moment radial zoom lifted r_lo above the
+    // base. A span fully outside collapses to zero height and draws nothing.
+    float rmin = min(u_rrange.x, u_rrange.y);
+    float rmax = max(u_rrange.x, u_rrange.y);
+    topR = clamp(topR, rmin, rmax);
+    baseR = clamp(baseR, rmin, rmax);
+    float rr = mix(baseR, topR, c.y);
+    // The fragment stage divides these for a height fraction, so any space
+    // affine in the fill direction works — radius is that space here.
+    v_top = topR;
+    v_base = baseR;
+    v_pos = rr;
+    gl_Position = vec4(xyPolarPos(th, rr, u_polar, u_rrange, u_zdir,
+                                 u_trange, u_turn, u_rshape), 0.0, 1.0);
+    return;
+  }
   float top = mix(y0, y1, c.x);
   float base = mix(b0, b1, c.x);
   float clipY = mix(base, top, c.y);
@@ -880,7 +1179,9 @@ uniform vec2 u_res;
 in float v_top; in float v_base; in float v_pos;
 out vec4 outColor;
 ${GRAD_GLSL}
+${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
+  xyClipPolarFragment();
   vec4 premult = vec4(u_color.rgb * u_color.a, u_color.a);
   if (u_gradMode != 0) {
     // 0 at the baseline, 1 exactly at the curve — even at the curve everywhere.
@@ -910,6 +1211,9 @@ out vec2 v_local; out vec2 v_half; out float v_t;
 out vec4 v_rgba; out vec4 v_style; out vec4 v_stroke; out vec2 v_radius;
 const vec2 corners[4] = vec2[4](vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(1.,1.));
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
+${POLAR_WEDGE_GLSL}
+uniform int u_polarSegments;
 void main() {
   vec2 c = corners[gl_VertexID];
   float x0 = xyMap(ax0, u_x0map, u_x0meta, u_xmode, u_xconstant) + u_edgePad.x;
@@ -917,6 +1221,35 @@ void main() {
   float y0 = xyMap(ay0, u_y0map, u_y0meta, u_ymode, u_yconstant) + u_edgePad.z;
   float y1 = xyMap(ay1, u_y1map, u_y1meta, u_ymode, u_yconstant) + u_edgePad.w;
   v_lutCoord = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
+  if (u_coordMode == 1) {
+    // Four edge columns ARE an annular sector under polar: (x0, x1) is the
+    // angular span and (y0, y1) the radial one. Same triangle-strip sweep as
+    // BAR_VS, which is what lets a slice carry its OWN angular width — the
+    // compact bar path only ships one scalar width, so unequal slices (a pie
+    // or donut) route here.
+    float th0 = xyAxisCoord(ax0, u_x0meta, u_xmode, u_xconstant);
+    float th1 = xyAxisCoord(ax1, u_x1meta, u_xmode, u_xconstant);
+    // Clamp, do not cull: a sector's visible extent is its span intersected
+    // with the radial range (polar-axes.md §8).
+    float rmin = min(u_rrange.x, u_rrange.y);
+    float rmax = max(u_rrange.x, u_rrange.y);
+    float r0C = clamp(xyAxisCoord(ay0, u_y0meta, u_ymode, u_yconstant), rmin, rmax);
+    float r1C = clamp(xyAxisCoord(ay1, u_y1meta, u_ymode, u_yconstant), rmin, rmax);
+    int pair = gl_VertexID >> 1;
+    float t = float(pair) / float(max(u_polarSegments, 1));
+    float side = float(gl_VertexID & 1);
+    gl_Position = xyPolarWedge(th0, th1, r0C, r1C, t, side);
+    v_t = side;
+    // The rectangle SDF is inert here (v_half huge => "deep inside"); RECT_FS
+    // runs the annular-sector SDF instead, which handles coverage, the stroke
+    // and corner_radius in the unrolled (arc, radial) frame. The radius rides
+    // through unchanged so a rounded slice is rounded in the browser too.
+    v_half = vec2(1e6);
+    v_local = vec2(0.0);
+    v_radius = a_radius;
+    v_rgba = a_rgba; v_style = a_style; v_stroke = a_stroke;
+    return;
+  }
   // Pixel-space local frame for the rounded-corner/stroke SDF (v_half is
   // constant across the quad; v_local interpolates to the fragment offset).
   vec2 pA = (vec2(x0, y0) * 0.5 + 0.5) * u_res;
@@ -950,6 +1283,9 @@ out vec2 v_local; out vec2 v_half; out float v_t;
 out vec4 v_rgba; out vec4 v_style; out vec4 v_stroke; out vec2 v_radius;
 const vec2 corners[4] = vec2[4](vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(1.,1.));
 ${AXIS_GLSL}
+${POLAR_GLSL_UNIFORMS}
+${POLAR_WEDGE_GLSL}
+uniform int u_polarSegments; uniform float u_polarV0C;
 void main() {
   vec2 c = corners[gl_VertexID];
   float nextP = xyMap(a_pos, u_pmap, u_pmeta, u_pmode, u_pconstant);
@@ -971,6 +1307,47 @@ void main() {
   v1 = mix(v0, v1, u_animationProgress);
   float halfW = abs(width * u_pmap.x) * 0.5;
   v_lutCoord = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
+  if (u_coordMode == 1) {
+    // A polar bar is an annular sector, which four corners cannot express. The
+    // instance is drawn as a triangle strip of u_polarSegments+1 vertex PAIRS
+    // sweeping theta0..theta1, so both radial edges are true radii and the two
+    // arcs are subdivided rather than chorded (polar-axes.md §5).
+    //
+    // Everything here is data space: the clip-space p/v0/v1 above are the
+    // cartesian path's, and a polar bar needs its angle and radius before the
+    // affine map, not after.
+    float thC = xyAxisCoord(a_pos, u_pmeta, u_pmode, u_pconstant);
+    // Constant baselines arrive in scaled data space via u_polarV0C — the
+    // cartesian u_v0Const is already clip-space and useless here. Baselines
+    // below the radial minimum clamp to the centre, matching the exporters'
+    // max(0, inner) clamp, instead of reflecting through it.
+    // CLAMP both radii to the visible annulus: a bar crossing the zoomed outer
+    // ring draws up to the ring (matplotlib/Plotly clip semantics); relying on
+    // xyPolarPos's NaN cull instead vanished the whole wedge the moment its
+    // tip left the range. A bar fully outside collapses to zero span.
+    float rmin = min(u_rrange.x, u_rrange.y);
+    float rmax = max(u_rrange.x, u_rrange.y);
+    float r0C = clamp(
+      u_v0Mode == 0 ? u_polarV0C : xyAxisCoord(a_v0, u_v0meta, u_vmode, u_vconstant),
+      rmin, rmax);
+    float r1C = clamp(
+      mix(r0C, xyAxisCoord(a_v1, u_v1meta, u_vmode, u_vconstant), u_animationProgress),
+      rmin, rmax);
+    float hw = abs(width) * 0.5;
+    int pair = gl_VertexID >> 1;
+    float t = float(pair) / float(max(u_polarSegments, 1));
+    float side = float(gl_VertexID & 1);
+    gl_Position = xyPolarWedge(thC - hw, thC + hw, r0C, r1C, t, side);
+    v_t = side;
+    // The rectangle SDF is inert here (v_half huge => "deep inside"); RECT_FS
+    // runs the annular-sector SDF instead, which handles coverage, the stroke
+    // and corner_radius in the unrolled (arc, radial) frame.
+    v_half = vec2(1e6);
+    v_local = vec2(0.0);
+    v_radius = a_radius;
+    v_rgba = a_rgba; v_style = a_style; v_stroke = a_stroke;
+    return;
+  }
   vec2 clipA, clipB;
   if (u_orientation == 0) {
     clipA = vec2(p - halfW, v0); clipB = vec2(p + halfW, v1);
@@ -1005,9 +1382,23 @@ uniform vec2 u_res;
 in float v_lutCoord;
 in vec2 v_local; in vec2 v_half; in float v_t;
 in vec4 v_rgba; in vec4 v_style; in vec4 v_stroke; in vec2 v_radius;
+// Polar wedge coverage. The rect SDF above is inert under polar (v_half is
+// huge), so a wedge's edges were hard-aliased — the context has
+// antialias: false and coverage is the only smoothing there is. The vertex
+// stage expands the strip by XY_POLAR_AA px (POLAR_WEDGE_GLSL) and this SDF
+// trims it back to the true annular sector, which also makes the outer arc
+// exactly round rather than chord-faceted.
+// u_wedgeGap is the gap between neighbouring wedges in device px. Subtracting
+// a CONSTANT number of px from the arc half-width at every radius keeps the
+// seam between two slices the same width from the hole to the rim; an angular
+// pad's gap is r*dtheta and tapers to nothing at the centre.
+uniform float u_wedgeGap;
+flat in vec2 v_polarRadii; flat in vec2 v_polarAngles;
 out vec4 outColor;
 ${GRAD_GLSL}
+${POLAR_FRAGMENT_CLIP_GLSL}
 void main() {
+  xyClipPolarFragment();
   vec4 paint = u_colorMode == 3 ? v_rgba : (u_colorMode == 0 ? u_color : vec4(texture(u_lut, vec2(clamp(v_lutCoord, 0.0, 1.0), 0.5)).rgb, 1.0));
   float alpha = (v_style.y >= 0.0 ? v_style.y : paint.a) * v_style.x * u_opacity;
   vec4 premult = vec4(paint.rgb * alpha, alpha);
@@ -1021,7 +1412,7 @@ void main() {
   }
   vec2 radius = v_radius.x >= 0.0 ? v_radius : u_radius;
   float strokeWidth = v_style.z >= 0.0 ? v_style.z : u_strokeWidth;
-  if (radius.x > 0.0 || radius.y > 0.0 || strokeWidth > 0.0) {
+  if (u_coordMode != 1 && (radius.x > 0.0 || radius.y > 0.0 || strokeWidth > 0.0)) {
     // u_radius = (tip, base) in mark space: v_t > 0.5 is the tip half, so
     // corner_radius=(6, 0) rounds only the value end of the bar. On the
     // straight sides the SDF reduces to |local|-half independent of r, so
@@ -1033,6 +1424,44 @@ void main() {
     if (strokeWidth > 0.0) {
       // Both stroke sources ship straight alpha; the per-item alpha stack
       // applies to scalar strokes as well (parity with static exporters).
+      vec4 strokeSrc = u_strokeMode == 1 ? v_stroke : (u_strokeMode == 2 ? paint : u_stroke);
+      float strokeAlpha = (v_style.y >= 0.0 ? v_style.y : strokeSrc.a) * v_style.x * u_strokeOpacity;
+      vec4 stroke = vec4(strokeSrc.rgb * strokeAlpha, strokeAlpha);
+      float inner = 1.0 - smoothstep(-aa, aa, d + strokeWidth);
+      premult = mix(stroke, premult, inner);
+    }
+    premult *= 1.0 - smoothstep(-aa, aa, d);
+  }
+  if (u_coordMode == 1) {
+    // Annular-sector SDF: signed px distance to the wedge boundary, negative
+    // inside. Everything the rectangle path gets from its own SDF — the AA
+    // fringe, the stroke ring and corner_radius -- comes from this one.
+    vec2 rel = gl_FragCoord.xy - (u_polar.xy * 0.5 + 0.5) * u_res;
+    float dist = length(rel);
+    float rMid = (v_polarRadii.x + v_polarRadii.y) * 0.5;
+    float hr = (v_polarRadii.y - v_polarRadii.x) * 0.5;
+    float sweep = abs(v_polarAngles.y - v_polarAngles.x);
+    float d;
+    if (sweep >= 6.2831853 - 1e-4) {
+      // A full turn has no angular edges to round or stroke: a plain annulus,
+      // or a disc when the inner radius is zero.
+      d = v_polarRadii.x > 0.0 ? abs(dist - rMid) - hr : dist - v_polarRadii.y;
+    } else {
+      // Angular offset from the sector's mid angle, wrapped to (-pi, pi]:
+      // symmetric at both edges and seam-safe.
+      float mid = (v_polarAngles.x + v_polarAngles.y) * 0.5;
+      float off = mod(atan(rel.y, rel.x) - mid + 3.14159265359, 6.28318530718) - 3.14159265359;
+      // Unrolled (arc, radial) frame in px at this fragment's own radius: the
+      // wedge becomes a rectangle there, so the standard rounded-rect SDF
+      // yields corners that follow the arc -- which is what corner_radius
+      // means on a slice, and what every donut/progress-ring design uses.
+      float ha = max(sweep * 0.5 * dist - u_wedgeGap * 0.5, 0.0);
+      float rad = clamp(v_t > 0.5 ? radius.x : radius.y, 0.0, min(hr, ha));
+      vec2 q = vec2(abs(off * dist) - (ha - rad), abs(dist - rMid) - (hr - rad));
+      d = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - rad;
+    }
+    float aa = 0.75;
+    if (strokeWidth > 0.0) {
       vec4 strokeSrc = u_strokeMode == 1 ? v_stroke : (u_strokeMode == 2 ? paint : u_stroke);
       float strokeAlpha = (v_style.y >= 0.0 ? v_style.y : strokeSrc.a) * v_style.x * u_strokeOpacity;
       vec4 stroke = vec4(strokeSrc.rgb * strokeAlpha, strokeAlpha);

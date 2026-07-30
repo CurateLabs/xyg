@@ -8,7 +8,116 @@ in the README).
 
 ## [Unreleased]
 
+### Added
+- Completed the phase-6/7 polar depth surface: `xy.polar_chart` now admits
+  heatmap, contour, and error-bar traces alongside line/scatter/area/bar; the
+  heatmap uses a fragment-stage polar inverse in the browser and the matching
+  bounded inverse raster for static export. Polar axes add partial-sector
+  layout, `hole`/radial origin, categorical theta, log/symlog radius, and
+  polygonal `grid_shape="linear"` rings. `xy.pyplot` exposes degree-based
+  `set/get_thetamin`, `set/get_thetamax`, and radial
+  `set/get_rorigin`. Generic segment/mesh marks, polar rule/band annotations,
+  LOD, facets/animation, and angular navigation/selection remain deferred.
+- CodSpeed coverage for the polar coordinate system
+  (`benchmarks/test_codspeed_polar.py`, a new `polar_coordinate_system` benchmark
+  category): payload prep for a polar line, a wind rose and a pie, plus SVG,
+  native-PNG and polar-heatmap export. The polar increment previously moved no
+  benchmark at all, so the wedge-flattening cost and the polar payload path were
+  invisible to CI. The collected row count is now gated against
+  `spec/benchmarks/methodology.md` §8, so a renamed or deleted benchmark cannot
+  silently leave a stale row in the CodSpeed dashboard.
+
+### Fixed
+- Repeated data updates no longer leak GPU buffers. Trace teardown walked a
+  hand-kept list of geometry buffer names, so every rebuilt trace — each
+  state-driven update, each append that could not patch in place, each animated
+  spec swap — orphaned its style, direct-RGBA colour, stroke, corner-radius,
+  LOD-blend and dashed-line-length buffers. All three teardown paths (trace,
+  drill window, sample overlay) now read one shared `TRACE_GPU_BUFFERS` list,
+  pinned against the build paths by a test so a new channel cannot reintroduce
+  the leak.
+- Chart titles reserve the lines they actually wrap into. The browser wrapped a
+  long title while layout measured one line, so a compact Wind Rose title lost
+  about 10 px off the top of the canvas. Titles now wrap at one shared width in
+  all three renderers, and the browser caps the title element at that same width.
+  Single-line titles are unchanged.
+- A polar figure with a legend reserves a gutter for it and places it there,
+  instead of overlaying the disc. A default `upper right` legend covered a wind
+  rose's north-east sectors and its outer radial tick label; a disc inscribed in
+  its rect has no free corner to overlay. The gutter is 22% of the canvas width,
+  clamped to 120-200 px — derived from the canvas so all three renderers reserve
+  the identical box, and wide enough to hold an ordinary row rather than
+  ellipsize it. Compact widths take a 64 px band beneath the disc instead. An
+  authored `anchor` or four-tuple `padding` still wins. Both static exporters
+  bound the legend to the plot rect unioned with that gutter (`legend_clip_rect`,
+  shared so they cannot drift): the raster bounded it to the plot rect alone,
+  which is outside the gutter by construction, so a native PNG of any polar
+  figure lost its legend entirely while the SVG kept one.
+- Compact vertical colorbars keep their two extreme tick labels, restacked above
+  and below the gradient. Collapsing them hid every number, leaving an unlabelled
+  gradient; only the interior ladder, the rotated title and the text-free minor
+  ticks drop now, and the box's own `title`/ARIA text still names the scale.
+  Stacking is what makes it free: a side gutter wide enough for `0.25` would cost
+  36 px of the plot width the compact collapse exists to protect.
+- A time-valued radial axis autoranges from its data instead of from epoch zero,
+  which had squeezed every modern instant into a hairline ring at the rim. An
+  explicit `r_axis(margin=)` restores the outer pad it used to discard.
+- `theta_axis(format=...)` now wins over the built-in degree/radian tick text in
+  every renderer, instead of shipping and being overwritten.
+- A zero-width bar is legal and draws nothing, like `line_width=0`. A 0% progress
+  ring, an empty category in aggregated data, and a hand-rolled wedge at zero all
+  produce one, and each used to fail with "bar width must be positive". Negative
+  and non-finite widths are still refused.
+- Data animations no longer rebuild the whole tick-label DOM on every frame; they
+  use the same 80 ms cadence view animations use, and force one settled rebuild
+  when the transition ends.
+- A device-pixel-ratio change (browser zoom, or a window moving between displays)
+  now rescales the per-instance stroke widths and corner radii that are baked in
+  device pixels, so authored strokes and wedge corners keep their intended size
+  across a zoom. The DPR handler stays synchronous: a DPR change with no container
+  resize has no later event to piggyback on. A trace whose CPU style/radius mirror
+  no longer spans every row on the GPU — which is what a streaming tail append
+  leaves behind — is skipped rather than repaired in place, so the existing
+  append-time rebuild still does the renormalizing for it.
+- `xy.pie_chart` appears in the generated chart-factory API reference alongside
+  the other polar compositions.
+- A legend row too wide for its box wraps instead of growing a horizontal
+  scrollbar. The box is capped at `--xy-legend-max-width`, but its grid columns
+  were `max-content` and refused to shrink, so an over-wide row overflowed and
+  `overflow:auto` answered sideways — hiding the label it was meant to show.
+  Columns are now `minmax(0, max-content)` and the inline axis never scrolls.
+  Vertical scrolling is unchanged, and rows carry their full name in
+  `title`/ARIA for the ones the height cap clips.
+- `xy.pie_chart` no longer prints the same number twice. Values that already sum
+  to 100 — how most pie data arrives — made `show_values` and `show_percent`
+  collide, so `[40, 30, 20, 10]` rendered `Direct  40  (40%)`: a legend row that
+  reads as repeated text, and long enough to overflow the box. The share keeps
+  the unit and the bare value is dropped, decided once for the whole pie so rows
+  stay uniform.
+
 ### Changed
+- Polar wedge subdivision is span-proportional: `segments(span) =
+  clamp(ceil(96 · |span| / turn), 2, 96)` in every renderer, over the *authored*
+  angular width. Sagitta is quadratic in the per-segment angle, so this holds the
+  flattening bound while a 16-sector wind-rose bar costs 14 vertices instead of
+  194 — the fixed full-turn count made ~50k polar bars build ~9.7M vertices a
+  frame. A full-turn wedge still uses 96.
+- `xy.theta_axis`/`xy.r_axis` now refuse the Cartesian axis keywords no polar
+  renderer implements — `minor_tick_values`, `minor_style`,
+  `tick_label_min_gap`, `tick_label_anchor`, and the collision spellings of
+  `tick_label_strategy` (`auto`, `hide`, `rotate`, `stagger`, `preserve`) — each
+  with a pointer to the control that does work. They previously rode the wire and
+  were dropped by all three renderers, so the documented axis surface advertised
+  options that did nothing. `off` and `none` remain honoured. `xy.pyplot`'s
+  `projection="polar"` drops the same keywords instead of refusing, because every
+  matplotlib Axes carries an rcParam-derived minor style it never authored; that
+  drop is recorded in `spec/matplotlib/compat.md`.
+- The renderer/spec protocol is now v12. Angular axes resolve
+  `sector`/`grid_shape` and radial axes resolve `hole` plus optional
+  `r_origin`; a cached v11 client would silently draw full-circle,
+  centre-origin Cartesian grid/segment fallbacks, so the protocol mismatch
+  rejects it before rendering. The native renderer ABI is now v47 for the
+  annular-sector display-list clip opcode.
 - Contributor-only test, lint, type-check, and CodSpeed packages now live in
   PEP 735 dependency groups instead of published package extras. The unused
   Plotly-only `bench` extra was removed; cross-library benchmark environments

@@ -36,10 +36,39 @@
 // v10: `title_options` carries independent left/center/right title artists,
 // including axes-fraction y and pixel padding. A v9 client would silently omit
 // non-center slots and their placement, so v10 rejects it before rendering.
-// v11: the `ribbon` trace kind (flow bands; Sankey). markOf() falls back to
-// scatter for unknown kinds, so a v10 client would render ribbons as a point
-// cloud with no error; it must reject the payload instead.
-export const PROTOCOL = 11;
+// v11: the chart-level `coords: "polar"` key and the angular axis descriptors
+// (`theta_unit`, `theta_zero`, `theta_direction`). A v10 client ignores
+// `coords` and draws the (theta, r) columns as cartesian x/y, so it must
+// reject the payload rather than render a plausible wrong picture.
+// v11 also adds the `ribbon` trace kind (flow bands; Sankey). markOf() falls
+// back to scatter for unknown kinds, so a v10 client would render ribbons as
+// a point cloud with no error.
+// v12: polar angular axes carry `sector`/`grid_shape`, and radial axes carry
+// `hole`/`r_origin`. A v11 client would accept those fields but silently draw
+// full circular, centre-origin geometry.
+export const PROTOCOL = 12;
+
+// Every GL buffer field a built trace — or a drill / sample-overlay clone of
+// one — can own. Teardown reads this list instead of a hand-kept subset: the
+// previous subset covered geometry only, so every rebuilt trace (a state-driven
+// data update, an append that cannot patch in place, an animated spec swap)
+// orphaned its style, direct-rgba colour, stroke, corner-radius, LOD-blend and
+// dashed line-length buffers, and repeated updates walked the GPU out of
+// memory. It lives here, in the leaf module, because both the ChartView
+// teardown and the LOD drill teardown must delete exactly the same set and
+// 45_lod cannot import from 50_chartview. `test_trace_teardown_deletes_every_gpu_buffer`
+// pins that every `<name>Buf` field assigned anywhere in js/src appears here,
+// so adding a channel buffer cannot silently reintroduce the leak.
+export const TRACE_GPU_BUFFERS = [
+  "xBuf", "yBuf", "cBuf", "sBuf", "selBuf", "baseBuf",
+  "x0Buf", "x1Buf", "x2Buf", "y0Buf", "y1Buf", "y2Buf",
+  "t0Buf", "t1Buf",
+  "posBuf", "value1Buf", "value0Buf",
+  "rgbaBuf", "rgba2Buf", "styleBuf", "strokeBuf", "radiusBuf", "dBuf",
+  "_lenBuf", "_segmentDashOffsetBuf", "_segmentDashDirBuf",
+  "_transitionPrevXBuf", "_transitionPrevYBuf",
+  "_transitionPrevPosBuf", "_transitionPrevValue1Buf", "_transitionPrevValue0Buf",
+];
 
 // HTTP binary frame v1 (spec/design/wire-protocol.md §7; Python side in
 // python/xy/_framing.py). The chart spec's PROTOCOL

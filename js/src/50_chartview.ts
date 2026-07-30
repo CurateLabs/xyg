@@ -1,7 +1,7 @@
-import { PROTOCOL, xyByteSpan } from "./00_header";
+import { PROTOCOL, TRACE_GPU_BUFFERS, xyByteSpan } from "./00_header";
 import { buildLutData, colormapKey, colormapStops } from "./10_colormaps";
 import { chartBackdrop, cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
-import { categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtLog, fmtValue, linearTicks, logTicks, timeTicks } from "./30_ticks";
+import { angularTicks, categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtLog, fmtValue, linearTicks, logTicks, timeTicks } from "./30_ticks";
 import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, RIBBON_FS, RIBBON_STEPS, RIBBON_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
 import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
 import { markOf } from "./55_marks";
@@ -19,6 +19,77 @@ export interface ChartView {
 }
 
 const MARGIN = { l: 62, r: 14, t: 10, b: 42 };
+// Subdivisions across one polar bar's angular span. Mirrored by
+// POLAR_BAR_SEGMENTS in python/xy/config.py so the raster exporter flattens the
+// same arc; the SVG exporter draws a true `A` arc and needs no count. Sized so
+// a full-turn wedge's chord sagitta stays under the XY_POLAR_AA expansion on a
+// ~1400-device-px disc — the fragment SDF then trims the strip to an exactly
+// round arc (see POLAR_WEDGE_GLSL in 40_gl.ts).
+const POLAR_BAR_SEGMENTS = 96;
+// Floor on any single wedge's subdivision: two segments keep a strip that still
+// brackets the true arc after the AA expansion, even for a hairline slice.
+const POLAR_BAR_SEGMENTS_MIN = 2;
+
+// Subdivisions for one wedge of angular width `span` out of `turn`. Mirrors
+// `polar_bar_segments` in python/xy/config.py.
+//
+// The count used to be a flat POLAR_BAR_SEGMENTS per wedge, sized for the worst
+// case of a wedge sweeping the whole circle. Almost no wedge does: a 16-sector
+// wind rose sweeps 22.5 degrees, so every bar paid 2*(96+1) = 194 vertices for an
+// arc that needs six segments, and 50k polar bars fell off a cliff building
+// ~9.7M vertices a frame instead of ~700k. Sagitta is quadratic in the
+// per-segment angle, so holding `span / n` fixed holds the flattening error
+// fixed: the honest count is exactly proportional, which reproduces 96 at a full
+// turn and preserves the bound for everything narrower. §28 — a recorded formula
+// over the AUTHORED angular width, never a view-dependent choice, so zooming and
+// exporting cannot change it.
+function xyPolarBarSegments(span, turn) {
+  // An unmeasurable span falls back to the full-turn count: under-subdividing a
+  // wide wedge is a visible facet, and paying for one is not.
+  if (!(turn > 0) || !Number.isFinite(span)) return POLAR_BAR_SEGMENTS;
+  const scaled = Math.ceil(POLAR_BAR_SEGMENTS * (Math.abs(span) / turn));
+  return Math.max(POLAR_BAR_SEGMENTS_MIN, Math.min(POLAR_BAR_SEGMENTS, scaled));
+}
+// Uniform room outside the outer ring for angular tick labels. Mirrored by
+// _POLAR_LABEL_ROOM in python/xy/_svg.py.
+const POLAR_LABEL_ROOM = 30;
+// Radial tick labels run along a spoke this many degrees off theta zero, and
+// angular labels sit this many px outside the rim. Mirrored by
+// _POLAR_RLABEL_DEG / _POLAR_TICK_GAP in python/xy/_svg.py.
+const POLAR_LABEL_ROOM_MAX = 90;
+const POLAR_RLABEL_DEG = 22.5;
+const POLAR_TICK_GAP = 8;
+// Direction theta=0 points, in radians ccw from east. Mirrored by THETA_ZERO in
+// python/xy/_svg.py; the wire carries the letters so one table serves all
+// renderers.
+const THETA_ZERO = { E: 0, N: Math.PI / 2, W: Math.PI, S: -Math.PI / 2 };
+// Gutter reserved for a legend beside a disc. A cartesian legend overlays the
+// plot because data rarely reaches a corner; a disc inscribed in its rect leaves
+// no corner at all, so an inside legend lands on the marks — an `upper right` box
+// covered a wind rose's whole north-east quadrant and the outer radial label
+// under it.
+//
+// A FRACTION OF THE CANVAS, clamped, rather than a measurement of the label set:
+// every renderer knows the canvas width to the pixel, so all three reserve the
+// identical box, while a measured reservation would drift with each renderer's
+// font metrics (system-ui here, DejaVu in the exporters). A flat constant was
+// tried first and is the wrong shape — 96 px ellipsized `Partner  (30%)`, an
+// ordinary pie slice's default name, while being a fifth of a phone canvas and a
+// fifteenth of a wide one. A label still wider than the gutter ellipsizes with
+// its full text in `title`/ARIA.
+// Mirrored by `_polar_legend_room` in python/xy/_svg.py.
+const POLAR_LEGEND_ROOM_FRACTION = 0.22;
+const POLAR_LEGEND_ROOM_MIN = 120;
+const POLAR_LEGEND_ROOM_MAX = 200;
+
+// `Math.floor`, not `Math.round`: Python and JavaScript disagree about half-way
+// cases, and the two must land on the same integer pixel.
+function xyPolarLegendRoom(width) {
+  const scaled = Math.floor(Number(width) * POLAR_LEGEND_ROOM_FRACTION);
+  return Math.min(POLAR_LEGEND_ROOM_MAX, Math.max(POLAR_LEGEND_ROOM_MIN, scaled));
+}
+
+const POLAR_LEGEND_BAND = 64;
 // DejaVu Sans advances at 16 px, generated beside python/xy/_fontmetrics.py
 // and the native rasterizer. Layout must retain proportional glyph metrics:
 // character count makes "WWWW" and "iiii" reserve the same (wrong) width.
@@ -38,6 +109,33 @@ const XY_MISSING_ADVANCE = 16;
 // font rasterization/rounding cannot consume its authored title-to-tick gap.
 const Y_TITLE_MEASURE_SAFETY_PX = 2;
 
+// Greedy word wrap of already newline-split lines. Mirrors `wrap_lines` in
+// python/xy/_textblock.py, and matches what CSS `white-space: pre-line` does to
+// the same string: authored newlines are hard breaks, runs of other whitespace
+// collapse to one space, breaks are only taken at a space, and a word wider than
+// the limit keeps its own line and overflows (no `overflow-wrap` is set).
+function xyWrapLines(lines, advance, maxWidth) {
+  const wrapped = [];
+  for (const line of lines) {
+    const words = String(line).split(/\s+/).filter((word) => word.length);
+    if (!words.length) {
+      wrapped.push("");
+      continue;
+    }
+    let current = words[0];
+    for (const word of words.slice(1)) {
+      const candidate = `${current} ${word}`;
+      if (advance(candidate) <= maxWidth) current = candidate;
+      else {
+        wrapped.push(current);
+        current = word;
+      }
+    }
+    wrapped.push(current);
+  }
+  return wrapped;
+}
+
 function xyTextAdvance(text, fontSize) {
   let units = 0;
   for (const char of String(text)) {
@@ -52,6 +150,17 @@ function xyTextAdvance(text, fontSize) {
 const COLORBAR_THICKNESS = 18;
 const COLORBAR_GAP = 24;
 const COMPACT_COLORBAR_GAP = 8;
+// A compact vertical colorbar keeps its two EXTREME tick labels, stacked above
+// and below the gradient rather than beside it. Hiding every tick left an
+// unlabelled gradient — a colour ramp with no numbers on it says nothing at all,
+// so the compact form was not a smaller version of the chrome but the absence of
+// it. Stacking is what makes the fix free: a side gutter wide enough for `0.25`
+// cost 36 px of plot width, which is the very thing the compact collapse exists
+// to protect, while two centred labels overflow the 18 px bar by ~4 px a side and
+// fit inside the gap that is already reserved. Interior ticks and the rotated
+// title are what a phone-width chart genuinely cannot afford; the title stays
+// readable through the box's own `title`/ARIA text.
+const COMPACT_COLORBAR_LABEL_GAP = 3;
 let XY_A11Y_ID = 0;
 // Legend hover emphasis (interaction spec §9): opacity kept by non-hovered series on
 // the marks canvas, and by non-hovered rows in the legend box itself.
@@ -567,12 +676,29 @@ export class ChartView {
       (this._axisTickLabelSides(axis).includes("top") || axis.side === "top") &&
       this._axisTickLabelStrategy(axis) !== "none");
     const hasTopAxis = topAxes.length > 0;
+    const authoredLeft = pad
+      ? (responsivePad ? Math.min(pad[3], 46) : pad[3])
+      : (compact ? 46 : MARGIN.l);
+    // Width the title wraps at. Resolved from the authored/default gutters
+    // (`baseRight`, before colorbar and right-axis room) rather than the final
+    // plot rect, because the measured left gutter depends on the plot height,
+    // which depends on the title band — wrapping at the final width would be
+    // circular. Mirrors `_title_wrap_width` in python/xy/_svg.py.
+    //
+    // The title DIV wraps whether or not layout accounts for it (white-space is
+    // `pre-line`), so measuring one line and drawing two put the first line
+    // above the canvas: a compact Wind Rose title lost about 10 px off its top.
+    // `_positionTitles` caps the element at this same width, so what the DOM
+    // wraps is exactly what is reserved here.
+    this._titleWrapWidth = Math.max(40, this.size.w - authoredLeft - baseRight);
     const titleRoom = this._titleEntries().reduce((room, entry) => {
       const authoredSize = Number.parseFloat(entry.style?.["font-size"]);
       const titleFontSize = Number.isFinite(authoredSize)
         ? authoredSize
         : this._slotFontSize("title", 14);
-      const measured = this._estimateTickLabel(entry.text, titleFontSize).h;
+      const measured = this._estimateTickLabel(
+        entry.text, titleFontSize, this._titleWrapWidth,
+      ).h;
       const pad = Number.isFinite(Number(entry.pad)) ? Number(entry.pad) : 8;
       const candidate = entry.automatic_y !== false
         ? Math.max(compact ? 26 : 30, measured + pad)
@@ -586,9 +712,6 @@ export class ChartView {
     const provisionalBottom =
       Math.max(baseBottom, provisionalBottomAxisRoom) + colorbarBottomRoom;
     const plotHeight = Math.max(40, this.size.h - provisionalTop - provisionalBottom);
-    const authoredLeft = pad
-      ? (responsivePad ? Math.min(pad[3], 46) : pad[3])
-      : (compact ? 46 : MARGIN.l);
     // Explicit padding is a floor, not permission to clip. Long numeric or
     // categorical ticks and an outside y title reserve the room their actual
     // strings need before the plot rectangle is fixed.
@@ -628,6 +751,157 @@ export class ChartView {
       w: plotWidth,
       h: Math.max(40, this.size.h - top - marginBottom),
     };
+    // The box legends place themselves in. Null means "the plot rect", which is
+    // every cartesian chart and every polar chart that reserves no gutter — kept
+    // null rather than aliased to `this.plot`, because `_recutPolarPlot` REPLACES
+    // that object and an alias would freeze the pre-recut geometry.
+    this._legendRect = null;
+    this._recutPolarPlot(compact);
+  }
+
+  // Side and px a polar legend gutter claims, or null when nothing is reserved:
+  // a non-polar figure, no legend rows, an authored `anchor` (an explicit
+  // plot-relative placement the author owns), or an authored 4-tuple `padding`
+  // (which already states the box the plot should occupy, and is the documented
+  // way to hand-reserve a caption band).
+  // Mirrors `_polar_legend_reserve` in python/xy/_svg.py.
+  _polarLegendReserve(compact) {
+    const s = this.spec || {};
+    if (s.coords !== "polar" || s.show_legend === false) return null;
+    if (Array.isArray(s.padding) && s.padding.length === 4) return null;
+    const options = s.legend || {};
+    if (Array.isArray(options.anchor) && [2, 4].includes(options.anchor.length)) return null;
+    const hasRows = (options.items || []).length > 0
+      || (s.extra_legends || []).length > 0
+      || (s.traces || []).some((t) =>
+        t && (t.name || (t.color && t.color.mode === "categorical")));
+    if (!hasRows) return null;
+    if (compact) return { side: "bottom", room: POLAR_LEGEND_BAND };
+    const loc = String(options.loc || "upper right");
+    return {
+      side: loc.includes("left") ? "left" : "right",
+      room: xyPolarLegendRoom(this.size.w),
+    };
+  }
+
+  // Re-cut the plot rect for a disc. Mirrors `_recut_polar_plot` in
+  // python/xy/_svg.py; the two must agree or the same chart renders at a
+  // different size and centre in the browser than in an export.
+  //
+  // Cartesian tick-label gutters hold labels hugging the left and bottom edges.
+  // A polar chart rings its labels around the rim instead, so those gutters are
+  // symmetrised (not simply zeroed — a colorbar that genuinely claimed space
+  // keeps it), and a uniform allowance is reserved all the way around.
+  // Room outside the ring for the angular tick labels. Measured rather than
+  // fixed: authored category names are far wider than an angle, and a constant
+  // allowance hard-clipped them. Mirrors `_polar_label_room` in
+  // python/xy/_svg.py — including the ceiling, past which a pathological label
+  // truncates instead of shrinking the disc away.
+  _polarLabelRoom(axis) {
+    // A category axis carries its authored names in `categories` and usually
+    // has no `tick_labels` at all (`_axisTicks` hands the categories straight
+    // to `categoryTicks`), so measuring only `tick_labels` fell back to the
+    // uniform default and long names spilled over the disc.
+    const labels = (axis && axis.tick_labels)
+      || (axis && axis.kind === "category" ? axis.categories : null);
+    if (!Array.isArray(labels) || !labels.length) return POLAR_LABEL_ROOM;
+    const size = this._axisStyleNumber(axis, "tick_label_size", 11);
+    let widest = 0;
+    for (const text of labels) widest = Math.max(widest, xyTextAdvance(String(text), size));
+    return Math.min(
+      POLAR_LABEL_ROOM_MAX,
+      Math.max(POLAR_LABEL_ROOM, widest + POLAR_TICK_GAP + 4),
+    );
+  }
+
+  _recutPolarPlot(compact = false) {
+    if (this.spec?.coords !== "polar") return;
+    const xAxisSpec = this._axis("x") || {};
+    // Hiding the angular tick labels removes the LABEL inset, not the legend
+    // gutter. Returning here skipped `_polarLegendReserve` outright, and since
+    // `_layout` clears `_legendRect` just before this call, legend sizing and
+    // positioning then fell back to `this.plot` and drew the legend on top of
+    // the marks. Track it and skip only the inset.
+    const labelsHidden = this._axisTickLabelStrategy(xAxisSpec) === "none";
+    // A legend gutter comes off the canvas edge FIRST, before the disc is fitted
+    // to what remains, so the disc never occupies the gutter and the legend
+    // never occupies the disc. Mirrors the same block in `_recut_polar_plot`.
+    let canvasX0 = 0;
+    let canvasW = this.size.w;
+    let canvasH = this.size.h;
+    const reserve = this._polarLegendReserve(compact);
+    if (reserve) {
+      const p0 = { ...this.plot };
+      if (reserve.side === "left") {
+        canvasX0 = reserve.room;
+        this._legendRect = { x: 0, y: p0.y, w: reserve.room, h: p0.h };
+        p0.x = Math.max(p0.x, reserve.room);
+      } else if (reserve.side === "right") {
+        canvasW -= reserve.room;
+        this._legendRect = { x: canvasW, y: p0.y, w: reserve.room, h: p0.h };
+      } else {
+        canvasH -= reserve.room;
+        this._legendRect = { x: p0.x, y: canvasH, w: p0.w, h: reserve.room };
+      }
+      p0.w = Math.max(40, Math.min(p0.w, canvasW - p0.x));
+      p0.h = Math.max(40, Math.min(p0.h, canvasH - p0.y));
+      this.plot = p0;
+    }
+    const p = this.plot;
+    const reservedTop = p.y;
+    const reservedRight = canvasW - p.x - p.w;
+    const reservedBottom = canvasH - p.y - p.h;
+    const room = labelsHidden ? 0 : this._polarLabelRoom(xAxisSpec);
+    // An explicit `padding` states the box the author wants the plot to
+    // occupy — usually to reserve a band under the disc for a legend or
+    // caption. Reclaiming those gutters below would throw that away, so an
+    // authored box is only inset by the uniform label room. Mirrors the same
+    // early return in `_recut_polar_plot` (python/xy/_svg.py).
+    if (Array.isArray(this.spec.padding) && this.spec.padding.length === 4) {
+      const boxW = p.w - 2 * room;
+      const boxH = p.h - 2 * room;
+      if (boxW >= 40 && boxH >= 40) {
+        this.plot = { ...p, x: p.x + room, y: p.y + room, w: boxW, h: boxH };
+        this._topAxisRoom = (this._topAxisRoom || 0) + room;
+      }
+      return;
+    }
+    const side = Math.max(room, reservedRight);
+    // A radial-axis title still lives in the left gutter — a disc gives it no
+    // natural home — and it is placed outward past the tick-label room, so a
+    // titled radial axis keeps its gutter whole rather than part-reclaimed.
+    const yAxis = this._axis("y") || {};
+    const titled = !!yAxis.label;
+    // `canvasX0` is a left legend gutter; the label room still applies inside
+    // it. With no gutter it is 0 and `side >= room`, so this is the old value.
+    const left = Math.max(titled ? Math.max(side, p.x) : side, canvasX0 + room);
+    const right = canvasW - side;
+    // Only the bottom can be symmetrised: the top also holds the figure title,
+    // and the bottom keeps its full band when the theta axis has a title of its
+    // own (it is drawn there; reclaiming the band pushed it off the canvas).
+    const xAxis = this._axis("x") || {};
+    // A horizontal colorbar hangs off the plot's bottom edge; extending the
+    // rect downward would walk it off the canvas.
+    const keepsBottom = !!xAxis.label || this.spec?.colorbar?.orientation === "horizontal";
+    const bottomReserve = keepsBottom ? reservedBottom : Math.min(reservedBottom, reservedTop);
+    const bottom = canvasH - Math.max(room, bottomReserve);
+    const top = reservedTop + room;
+    const w = right - left;
+    const h = bottom - top;
+    if (!(w >= 40) || !(h >= 40)) return;
+    this.plot = { ...p, x: left, y: top, w, h };
+    // The top slice is angular-label room, so it belongs to the axis
+    // reservation: `_positionTitles` anchors at `plot.y - _topAxisRoom`, and
+    // without this the title rides the rect down and the topmost angular label
+    // lands on top of it. Mirrors the same line in `_recut_polar_plot`.
+    this._topAxisRoom = (this._topAxisRoom || 0) + room;
+    // Re-square the legend gutter against the FINAL rect so the box tracks the
+    // disc it sits beside rather than the pre-recut rect it was cut from.
+    if (reserve) {
+      const box = this._legendRect;
+      if (reserve.side === "bottom") this._legendRect = { ...box, x: this.plot.x, w: this.plot.w };
+      else this._legendRect = { ...box, y: this.plot.y, h: this.plot.h };
+    }
   }
 
   _titleEntries() {
@@ -663,6 +937,11 @@ export class ChartView {
       title.style.textAlign = loc;
       title.style.left = `${x}px`;
       title.style.top = `${anchorY}px`;
+      // Cap the box at the width `_layout` measured the title band at, so the
+      // DOM cannot wrap into more lines than the band reserves. The transform
+      // still positions by the element's REAL height, so an agreed line count
+      // means the reserved band and the painted block are the same box.
+      title.style.maxWidth = `${Math.max(40, Number(this._titleWrapWidth) || 40)}px`;
       title.style.transform = `translate(${shiftX}, calc(-100% - ${Number(entry.pad ?? 8)}px))`;
     }
   }
@@ -882,9 +1161,22 @@ export class ChartView {
 
   _axisPolicy(name) {
     const configured = this.interaction?.[name];
-    if (!Array.isArray(configured) || !configured.length) return this._axisIds();
-    const declared = new Set(this._axisIds());
-    return [...new Set(configured.filter((axisId) => declared.has(axisId)))];
+    const ids = (!Array.isArray(configured) || !configured.length)
+      ? this._axisIds()
+      : (() => {
+        const declared = new Set(this._axisIds());
+        return [...new Set(configured.filter((axisId) => declared.has(axisId)))];
+      })();
+    // Polar interaction is deliberately small (polar-axes.md §8): wheel zoom
+    // is RADIAL-ONLY (the y axis carries r), and pan is disabled rather than
+    // half-working — a cartesian pan would shift the theta range and rescale
+    // the disc as if the chart were rectilinear, which is exactly what it
+    // looked like: wrong.
+    if (this.spec?.coords === "polar") {
+      if (name === "pan_axes") return [];
+      if (name === "zoom_axes") return ids.filter((axisId) => axisId.startsWith("y"));
+    }
+    return ids;
   }
 
   _resetAxisPolicy() {
@@ -911,7 +1203,8 @@ export class ChartView {
     const requested = typeof this.interaction?.default_drag_action === "string"
       ? this.interaction.default_drag_action : "auto";
     const canNavigate = this._interactionFlag("navigation", true);
-    const canPan = canNavigate && this._interactionFlag("pan", true);
+    const canPan = canNavigate && this._interactionFlag("pan", true)
+      && this._axisPolicy("pan_axes").length > 0;
     const canZoom = canNavigate && this._interactionFlag("zoom", true)
       && this._interactionFlag("box_zoom", true);
     const canSelect = this._pickable && this._interactionFlag("select", true)
@@ -971,16 +1264,80 @@ export class ChartView {
     return [Number(r[0]), Number(r[1])];
   }
 
+  // Stride-thin radial tick LABELS to what the POLAR_RLABEL_DEG spoke can
+  // hold. Their usable run is the annulus width projected onto that spoke —
+  // about a fifth of the plot at the default 22.5 degrees — so a plot-height
+  // worth of labels packed into it and overlapped, the polar path skipping the
+  // collision pass that would otherwise thin them. Grid rings come from the
+  // same tick list and must keep full density, so only the labels are thinned.
+  // Mirrored by _polar_thin_radial_labels in python/xy/_svg.py.
+  _polarThinRadialLabels(labels, geom) {
+    if (!geom || !Array.isArray(labels)) return labels;
+    const span = geom.radius * (1 - (geom.hole || 0));
+    const usable = Math.max(1, span * Math.abs(Math.sin((POLAR_RLABEL_DEG * Math.PI) / 180)));
+    const capacity = Math.max(2, Math.floor(usable / 45));
+    if (labels.length <= capacity) return labels;
+    const stride = Math.ceil(labels.length / capacity);
+    const thinned = labels.filter((_, i) => i % stride === 0);
+    const last = labels[labels.length - 1];
+    if (!thinned.includes(last)) thinned.push(last);
+    return thinned;
+  }
+
+  // One full turn in the axis's own angular unit, or 0 when the axis is not a
+  // continuous angular one — mirrors _tick_window_filter in _svg.py.
+  _polarAngularTurn(axisId): number {
+    const axis = this._axis(axisId);
+    if (!axis || !axis.theta_unit || axis.kind === "category") return 0;
+    return axis.theta_unit === "degrees" ? 360 : 2 * Math.PI;
+  }
+
   _axisTicks(axisId, target): any {
     const axis = this._axis(axisId);
-    const [lo, hi] = this._axisRange(axisId);
+    let [lo, hi] = this._axisRange(axisId);
+    if (this.spec?.coords === "polar" && this._axisDim(axisId) === "x") {
+      if (axis.kind === "category") {
+        lo = 0;
+        hi = Math.max(0, (axis.categories || []).length - 1);
+      } else if (Array.isArray(axis.sector) && axis.sector.length === 2) {
+        lo = Number(axis.sector[0]);
+        hi = Number(axis.sector[1]);
+      }
+    }
     if (Array.isArray(axis.tick_values)) {
       const a = Math.min(lo, hi), b = Math.max(lo, hi);
-      const ticks = axis.tick_values.map(Number).filter((v) => Number.isFinite(v) && v >= a && v <= b);
+      // An angular window can cross the 0/turn seam (sector 300..420, or the
+      // compass-natural -30..30). The plain range test drops every tick spelled
+      // on the far side of the seam while a data point at that same angle still
+      // plots inside the sector, because mark culling is modular. Match it —
+      // mirrored by _tick_window_filter in _svg.py.
+      const turn = this._polarAngularTurn(axisId);
+      const span = b - a;
+      const inside = turn
+        ? (v) => ((v - a) % turn + turn) % turn <= span + turn * 1e-9
+        : (v) => v >= a && v <= b;
+      const ticks = axis.tick_values.map(Number).filter((v) => Number.isFinite(v) && inside(v));
       return { ticks, labels: ticks, step: ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 1 };
     }
+    // Placed after the authored-tick_values return so explicit ticks still
+    // win, and before every kind branch — mirrored by axis_ticks in _svg.py.
+    if (axis.kind === "category") {
+      const categories = axis.categories || [];
+      // Every categorical-theta value defines a spoke (and, for
+      // grid_shape="linear", one polygon vertex). Cartesian categories may be
+      // thinned for legibility, but silently thinning polar categories changes
+      // the grid geometry itself. An explicit tick_count remains the opt-in
+      // control for authors who want fewer spokes.
+      const authoredTarget = Number(axis.tick_count);
+      const categoryTarget = this.spec?.coords === "polar"
+        && this._axisDim(axisId) === "x"
+        && !(Number.isFinite(authoredTarget) && authoredTarget > 0)
+        ? categories.length
+        : target;
+      return categoryTicks(lo, hi, categories, categoryTarget);
+    }
+    if (axis.theta_unit) return angularTicks(lo, hi, axis.theta_unit, target);
     if (axis.kind === "time") return timeTicks(lo, hi, target);
-    if (axis.kind === "category") return categoryTicks(lo, hi, axis.categories || [], target);
     if (axis.scale === "log") return logTicks(lo, hi, target);
     if (axis.scale === "symlog") {
       const c0 = this._axisCoord(axis, lo), c1 = this._axisCoord(axis, hi);
@@ -1074,6 +1431,15 @@ export class ChartView {
   }
 
   _interactionFlag(name, fallback = false) {
+    // Rectangle-shaped gestures have no polar geometry yet: a screen-space box
+    // neither matches a (theta, r) region nor reads as one. Off rather than
+    // half-working, per polar-axes.md §8; hover and radial wheel zoom remain.
+    if (
+      this.spec?.coords === "polar" &&
+      (name === "box_zoom" || name === "select" || name === "brush" || name === "crosshair")
+    ) {
+      return false;
+    }
     const value = this.interaction && this.interaction[name];
     return value === undefined ? fallback : value === true;
   }
@@ -1363,6 +1729,14 @@ export class ChartView {
     const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
     this._onDprChange = () => {
       if (this._destroyed) return;
+      // Synchronous on purpose, and pinned that way: `render_smoke_nonumpy.py`'s
+      // `dprw` probe calls this and reads `dpr`/`canvas.width`/`chrome.width` on
+      // the very next line, because a DPR change with no container resize has no
+      // later event to piggyback on. Deferring it into `_queueResize` broke that
+      // contract, and the redundant second frame it was meant to save does not
+      // exist: the ResizeObserver's queued pass early-returns when width, height
+      // and dpr are all unchanged, and when the CSS size *did* change too, the
+      // second pass is doing real work at a new size.
       this._resize(this.size.w, this.size.h); // re-reads devicePixelRatio
       this._armDprWatch();
     };
@@ -1811,6 +2185,69 @@ export class ChartView {
     this._ctxIo.observe(this.root);
   }
 
+  // Re-upload the buffers whose values were baked at a device-pixel ratio, after
+  // dpr changed under them (browser zoom, or a window moving between displays).
+  //
+  // Per-instance stroke/line widths (`styleBuf` component 2) and corner radii
+  // (`radiusBuf`) are written in DEVICE pixels at build time, because the
+  // shaders consume device pixels. Everything else in the frame absorbs a dpr
+  // change through uniforms and the backing-store resize, so these two silently
+  // kept the OLD scale: after a zoom from 1x to 2x, a chart's authored 2 px
+  // strokes and 6 px wedge corners rendered at half their intended size, and
+  // only these marks were wrong. The streaming-append fast path already refuses
+  // to patch a trace whose `_styleDpr` is stale (54_kernel.ts); this is the
+  // matching repair for the traces already on the GPU.
+  _rescaleDprBakedBuffers() {
+    if (!this.gl || this._glLost) return;
+    const dpr = this.dpr;
+    const rescale = (record) => {
+      if (!record) return;
+      const previous = Number(record._styleDpr);
+      if (!(previous > 0) || previous === dpr) return;
+      // Repair in place ONLY while the CPU mirrors still cover every row the
+      // GPU holds. The streaming-append fast path extends styleBuf with a tail
+      // `bufferSubData` and advances `n` without growing `_cpuStyle`
+      // (54_kernel.ts), so after an append the mirror is short: re-uploading it
+      // would shrink the store out from under the appended rows, and scaling it
+      // would leave that tail at the old dpr either way. Leave `_styleDpr`
+      // stale instead — the append guard then refuses the fast path and its
+      // rebuild renormalizes every row at the current dpr, which is the
+      // fallback that case has always relied on.
+      const rows = Number(record.n);
+      if (!(rows > 0)) return;
+      if (record._cpuStyle && record._cpuStyle.length !== rows * 4) return;
+      if (record._cpuRadius && record._cpuRadius.length !== rows * 2) return;
+      const factor = dpr / previous;
+      // Widths ride component 2 of the canonical style row; the other three
+      // components (opacity, artist alpha, symbol) are dpr-independent.
+      const style = record._cpuStyle;
+      if (style && record.styleBuf) {
+        for (let i = 2; i < style.length; i += 4) style[i] *= factor;
+        this._reuploadBuffer(record.styleBuf, style);
+      }
+      const radius = record._cpuRadius;
+      if (radius && record.radiusBuf) {
+        for (let i = 0; i < radius.length; i++) radius[i] *= factor;
+        this._reuploadBuffer(record.radiusBuf, radius);
+      }
+      record._styleDpr = dpr;
+    };
+    for (const g of this.gpuTraces || []) {
+      rescale(g);
+      rescale(g.drill);
+      rescale(g.sampleOverlay);
+      for (const d of g.densityCache || []) rescale(d && d.overlay);
+      rescale(g.density && g.density.overlay);
+    }
+    for (const g of this._transitionOldTraces || []) rescale(g);
+  }
+
+  _reuploadBuffer(buffer, data) {
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+  }
+
   // Container size changed (fluid mode). Cheap on purpose: data GPU buffers
   // are untouched — the _map() uniforms absorb the new aspect — and the pick
   // FBO realloc is deferred to the next actual pick (_renderPick checks dims).
@@ -1826,10 +2263,16 @@ export class ChartView {
     this.dpr = dpr;
     this.size.w = w;
     this.size.h = h;
+    // Before the layout/paint below, so this frame draws at the new scale.
+    this._rescaleDprBakedBuffers();
     this._layout();
     const p = this.plot;
-    this.root.style.setProperty("--xy-legend-max-width", Math.max(40, p.w - 12) + "px");
-    this.root.style.setProperty("--xy-legend-max-height", Math.max(40, p.h - 12) + "px");
+    // Legends are bounded by the box they place in, which under polar is the
+    // reserved gutter rather than the plot rect — clamping to the plot would let
+    // a long label spill back over the disc the gutter exists to protect.
+    const lb = this._legendRect || p;
+    this.root.style.setProperty("--xy-legend-max-width", Math.max(40, lb.w - 12) + "px");
+    this.root.style.setProperty("--xy-legend-max-height", Math.max(40, lb.h - 12) + "px");
     this.canvas.style.left = p.x + "px";
     this.canvas.style.top = p.y + "px";
     this.canvas.style.width = p.w + "px";
@@ -1870,8 +2313,8 @@ export class ChartView {
     root.style.cssText =
       `position:relative;width:${this.fluid ? "100%" : this.size.w + "px"};` +
       `height:${this.fluidH ? "100%" : this.size.h + "px"};` +
-      `--xy-legend-max-width:${Math.max(40, this.plot.w - 12)}px;` +
-      `--xy-legend-max-height:${Math.max(40, this.plot.h - 12)}px;` +
+      `--xy-legend-max-width:${Math.max(40, (this._legendRect || this.plot).w - 12)}px;` +
+      `--xy-legend-max-height:${Math.max(40, (this._legendRect || this.plot).h - 12)}px;` +
       (this.fluidH ? "min-height:120px;" : "") + // parent without a height -> visible floor
       "user-select:none;";
     this._applySlot(root, "root");
@@ -2183,9 +2626,18 @@ export class ChartView {
     const handleTextPad = Number.isFinite(Number(options.handletextpad))
       ? Math.max(0, Number(options.handletextpad))
       : 0.8;
+    // `minmax(0, max-content)`, not bare `max-content`: the box is capped at
+    // `--xy-legend-max-width`, and a column that refuses to shrink below its
+    // content made a long row overflow horizontally — a legend with a horizontal
+    // SCROLLBAR, which hides the label it is meant to be showing. Shrinkable
+    // columns let a long label WRAP inside its column instead, so the inline axis
+    // never needs to scroll and the text stays whole; the block axis still
+    // scrolls, which is the browser legend's advantage over the static
+    // exporters, which can only ellipsize. Row `title`/ARIA carries the full
+    // name either way, for the rows the block-axis cap does clip.
     lg.style.cssText = "position:absolute;" +
-      `display:grid;grid-template-columns:repeat(${horizontal ? ncols : 1},max-content);` +
-      "column-gap:2em;row-gap:.5em;overflow:auto;";
+      `display:grid;grid-template-columns:repeat(${horizontal ? ncols : 1},minmax(0,max-content));` +
+      "column-gap:2em;row-gap:.5em;overflow-x:hidden;overflow-y:auto;";
     lg.dataset.xyLegendLoc = loc;
     if (Array.isArray(options.anchor)) {
       lg.dataset.xyLegendAnchor = JSON.stringify(options.anchor);
@@ -2333,6 +2785,17 @@ export class ChartView {
       label.textContent = it.name;
       this._applySlot(label, "legend_label");
       row.appendChild(label);
+      // A row too wide for the capped box ellipsizes (the `legend_item` /
+      // `legend_label` rules in 20_theme.ts) rather than pushing a horizontal
+      // scrollbar onto the legend. Only the LABEL clips: the swatch is
+      // `flex:none` and keeps `overflow:visible`, so an authored oversized
+      // marker still draws outside its 18x14 box. Same full-text-in-title/ARIA
+      // rule categorical tick labels use, so nothing an ellipsis hides becomes
+      // unreachable.
+      if (it.name) {
+        row.title = String(it.name);
+        row.setAttribute("aria-label", String(it.name));
+      }
       // Hover emphasis (interaction spec §9): rows backed by live traces dim the rest
       // of the chart while hovered. Manually-added Legend artists carry no
       // trace linkage, so extra_legends rows stay inert.
@@ -2811,7 +3274,14 @@ export class ChartView {
     // Responsive anchors flow through private custom properties consumed by a
     // zero-specificity rule. Author classes or component styles can still set
     // real left/right/top/bottom/transform declarations and win normally.
-    const rightInset = this.size.w - (this.plot.x + this.plot.w);
+    //
+    // Cartesian legends place inside the plot rect; a polar chart hands over a
+    // gutter beside the disc instead (`_recutPolarPlot`), because a disc fills
+    // its rect and an inside box lands on the marks. An authored `anchor` is
+    // still resolved against the PLOT — it is a plot-relative coordinate — and
+    // reserves no gutter, so the two cannot disagree.
+    const plot = anchor ? this.plot : (this._legendRect || this.plot);
+    const rightInset = this.size.w - (plot.x + plot.w);
     const h = loc.includes("left") ? "left" : loc.includes("right") ? "right" : "center";
     const locTokens = loc.split(/[\s_-]+/);
     const v = loc.includes("upper") || locTokens.includes("top")
@@ -2973,7 +3443,9 @@ export class ChartView {
       const raw = tickValues[tickIndex];
       const value = Number(raw);
       if (!Number.isFinite(value) || value < Math.min(lo, hi) || value > Math.max(lo, hi)) continue;
-      const tick = document.createElement("span");
+      // `any` because the node carries the stashed beside-the-bar cssText below
+      // (same reason as the legend box's `lg`).
+      const tick: any = document.createElement("span");
       tick.textContent =
         hasExplicitTicks &&
           Array.isArray(cb.tick_labels) &&
@@ -2985,9 +3457,17 @@ export class ChartView {
               ? fmtLog(value)
               : fmtLinear(value, tickStep);
       const fraction = fractionFor(value);
+      // The compact vertical form keeps only the two extreme ticks (see
+      // `_positionColorbar`), so record each tick's position on the node and let
+      // positioning decide — the tick VALUES are generated here, and which of
+      // them survive is a responsive decision that changes with the container.
+      tick.dataset.xyColorbarFraction = String(fraction);
       tick.style.cssText = horizontal
         ? `position:absolute;left:${100 * fraction}%;top:${barThickness + 2}px;transform:translateX(-50%);white-space:nowrap;`
         : `position:absolute;left:${barThickness + 5}px;top:${100 * (1 - fraction)}%;transform:translateY(-50%);white-space:nowrap;`;
+      // The compact form restacks the two endpoints above/below the gradient, so
+      // keep the beside-the-bar placement to restore when the container widens.
+      tick._xyBesideCss = tick.style.cssText;
       this._applySlot(tick, "colorbar_tick");
       box.appendChild(tick);
     }
@@ -3062,8 +3542,41 @@ export class ChartView {
       ? axesPlacement ? this.plot.h + 24 : 50
       : Math.max(24, barHeight)) + "px";
     this._colorbar.dataset.xyCompact = compactVertical ? "true" : "false";
+    // Compact keeps the two EXTREME tick labels — hiding all of them left a bare
+    // gradient with no numbers on it — and restacks them above and below the
+    // gradient. Beside the bar they would need a gutter wide enough for `0.25`,
+    // which costs 36 px of the plot width the compact collapse exists to protect;
+    // centred on an 18 px bar they overflow ~4 px a side into the gap already
+    // reserved. The interior ladder still drops, and so does the rotated title:
+    // at phone width it has nowhere to go, and the box's own `title`/ARIA text
+    // already names the scale and its range.
+    const ticks = [...this._colorbar.querySelectorAll('[data-xy-slot="colorbar_tick"]')];
+    const fractions = ticks.map((node) => Number(node.dataset.xyColorbarFraction));
+    const lowest = Math.min(...fractions);
+    const highest = Math.max(...fractions);
+    for (const [index, node] of ticks.entries()) {
+      const fraction = fractions[index];
+      const endpoint = !Number.isFinite(fraction) || fraction === lowest || fraction === highest;
+      node.hidden = compactVertical && !endpoint;
+      if (horizontal || !node._xyBesideCss) continue;
+      if (!compactVertical || !endpoint) {
+        node.style.cssText = node._xyBesideCss;
+        continue;
+      }
+      // Above the top of the gradient for the maximum, below the bottom for the
+      // minimum, both centred on the bar.
+      const above = fraction === highest;
+      const offset = COMPACT_COLORBAR_LABEL_GAP;
+      node.style.cssText =
+        "position:absolute;left:50%;white-space:nowrap;" +
+        (above
+          ? `top:-${offset}px;transform:translate(-50%,-100%);`
+          : `top:calc(100% + ${offset}px);transform:translateX(-50%);`);
+    }
+    // The rotated title and the text-free minor ticks are ink a phone-width chart
+    // cannot spend; `box.title` keeps the scale name reachable.
     for (const node of this._colorbar.querySelectorAll(
-      '[data-xy-slot="colorbar_tick"], [data-xy-slot="colorbar_title"]'
+      '[data-xy-slot="colorbar_title"], [data-xy-colorbar-minor]'
     )) {
       node.hidden = compactVertical;
     }
@@ -3382,7 +3895,15 @@ export class ChartView {
         values[i * 2] = source[i * components] * this.dpr;
         values[i * 2 + 1] = (components > 1 ? source[i * components + 1] : source[i * components]) * this.dpr;
       }
+      // Kept CPU-readable for the same reason as `_cpuStyle`: these rows are
+      // baked at the dpr in force right now, and a later dpr change rescales
+      // them in place (`_rescaleDprBakedBuffers`) instead of leaving 1x radii
+      // on a 2x canvas.
+      g._cpuRadius = values;
       g.radiusBuf = this._upload(values);
+      // Also stamped here: a trace can carry corner radii without any style
+      // channels, and an unstamped record is one the rescale pass skips.
+      g._styleDpr = this.dpr;
     }
     if (t.stroke && t.stroke.mode === "direct_rgba") {
       g._cpuStroke = this._columnView(buffer, this.spec.columns[t.stroke.buf]);
@@ -3475,10 +3996,9 @@ export class ChartView {
 
   _destroySampleOverlay(s) {
     if (!s || !this.gl) return;
-    for (const b of [s.xBuf, s.yBuf, s.cBuf, s.rgbaBuf, s.sBuf, s.styleBuf,
-      s.strokeBuf, s.selBuf, s.dBuf]) {
-      if (b) this.gl.deleteBuffer(b);
-    }
+    // Same shared list the trace teardown uses: an overlay is a point-tier
+    // clone of a trace and grows the same channel buffers.
+    this._deleteBuffers(s, TRACE_GPU_BUFFERS);
   }
 
   // Full teardown of every sample overlay this tier owns. Overlays ride their
@@ -3613,6 +4133,9 @@ export class ChartView {
       copy("symbol", 3);
       s._cpuStyle = values;
       s.styleBuf = this._upload(values);
+      // Overlays bake device-pixel widths like their parent trace, so they need
+      // the same stamp for `_rescaleDprBakedBuffers` to find them.
+      s._styleDpr = this.dpr;
     }
     if (sample.stroke && sample.stroke.mode === "direct_rgba") {
       s._cpuStroke = this._asU8(buffers[sample.stroke.buf]);
@@ -3744,6 +4267,11 @@ export class ChartView {
   // `_cpu` columns either way (`_nearestCpuIndex` limits to the source length).
   _smoothArrays(t, x, y, base, n) {
     if (!t.style || t.style.curve !== "smooth") return null;
+    // Polar draws chords, never smoothed curves: the Hermite control points
+    // are only exact under an affine map, and both static exporters already
+    // skip smoothing for the same reason (polar-axes.md §5). Resampling here
+    // made the browser render a rounded shape the exports do not have.
+    if (this.spec?.coords === "polar") return null;
     return xySmoothResample(x, y, base || null, n, 32768);
   }
 
@@ -4418,6 +4946,389 @@ export class ChartView {
     gl.uniform1f(u(`${prefix}constant`), this._axisConstant(axisId));
   }
 
+  // Widest angular span, in the theta axis's own data units, across a
+  // four-edge-column trace. Cached on the trace: it is a property of the data,
+  // not of the view, so it survives pan/zoom and cannot make the subdivision
+  // count view-dependent (§28). Rebuilt traces get a fresh object and re-measure.
+  _polarRectMaxSpan(g) {
+    if (g._polarMaxSpan !== undefined) return g._polarMaxSpan;
+    const cpu = g._cpuRect;
+    // No CPU copy to measure (a path that does not retain one) means fall back
+    // to the full-turn count rather than guess narrow.
+    let widest = cpu ? 0 : NaN;
+    if (cpu) {
+      for (let i = 0; i < g.n; i++) {
+        const span = this._decodeValue(cpu.x1, cpu.x1Meta, i)
+          - this._decodeValue(cpu.x0, cpu.x0Meta, i);
+        if (Number.isFinite(span)) widest = Math.max(widest, Math.abs(span));
+      }
+    }
+    g._polarMaxSpan = widest;
+    return widest;
+  }
+
+  // Geometry of the polar disc, in the units the shaders and the CPU-side
+  // hover math both need. Null on a cartesian chart.
+  //
+  // The GL canvas is sized and positioned to exactly the plot rect, so clip
+  // space [-1,1] IS the plot rect. Full turns center there; partial sectors fit
+  // their visible bounding box and can move the polar origin. Radius therefore
+  // converts to clip units per axis (2R/w, 2R/h) — a vec2, because a round
+  // circle in a non-square rect cannot use one scalar.
+  _polarGeometry() {
+    if (this.spec?.coords !== "polar") return null;
+    const p = this.plot;
+    if (!p || !(p.w > 0) || !(p.h > 0)) return null;
+    const thetaAxis = this._axis("x") || {};
+    const radialAxis = this._axis("y") || {};
+    const rawZero = thetaAxis.theta_zero ?? "E";
+    const zero = typeof rawZero === "string" ? (THETA_ZERO[rawZero] ?? 0) : Number(rawZero) || 0;
+    const dir = thetaAxis.theta_direction === "clockwise" ? -1 : 1;
+    const unitScale = thetaAxis.theta_unit === "degrees" ? Math.PI / 180 : 1;
+    const angularTurn = thetaAxis.theta_unit === "degrees" ? 360 : 2 * Math.PI;
+    const authoredSector = Array.isArray(thetaAxis.sector) && thetaAxis.sector.length === 2
+      ? [Number(thetaAxis.sector[0]), Number(thetaAxis.sector[1])]
+      : [0, angularTurn];
+    const sectorStart = Number.isFinite(authoredSector[0]) ? authoredSector[0] : 0;
+    const sectorEnd = Number.isFinite(authoredSector[1]) ? authoredSector[1] : angularTurn;
+    const sectorSpan = Math.max(0, sectorEnd - sectorStart);
+    const fullSector = sectorSpan >= angularTurn * (1 - 1e-10);
+    const categories = thetaAxis.kind === "category" ? (thetaAxis.categories || []) : null;
+    const categoryCount = categories ? categories.length : 0;
+    let thetaStart = sectorStart;
+    let thetaEnd = sectorEnd;
+    let dirUnit = dir * unitScale;
+    let angleBase = zero;
+    if (categories) {
+      // Full turns are N equal bands with no duplicated seam. Partial sectors
+      // instead place the first and last category centers on the authored
+      // endpoints, hence N-1 intervals.
+      const intervals = fullSector
+        ? Math.max(categoryCount, 1)
+        : Math.max(categoryCount - 1, 1);
+      dirUnit = dir * unitScale * sectorSpan / intervals;
+      angleBase = zero + dir * unitScale * sectorStart;
+      thetaStart = 0;
+      thetaEnd = fullSector ? Math.max(categoryCount, 1) : Math.max(categoryCount - 1, 0);
+    }
+    const dataTurn = (2 * Math.PI) / Math.max(Math.abs(dirUnit), 1e-30);
+    const [rLoRaw, rHiRaw] = this._axisRange("y");
+    const rLo = this._axisCoord(radialAxis, rLoRaw);
+    const rHi = this._axisCoord(radialAxis, rHiRaw);
+    const originRaw = radialAxis.r_origin != null && Number.isFinite(Number(radialAxis.r_origin))
+      ? Number(radialAxis.r_origin)
+      : Number(rLoRaw);
+    const rOrigin = this._axisCoord(radialAxis, originRaw);
+    const hole = Math.max(0, Math.min(0.999999, Number(radialAxis.hole) || 0));
+    const angleStart = zero + dir * unitScale * sectorStart;
+    const angleEnd = zero + dir * unitScale * sectorEnd;
+    let radius;
+    let cx;
+    let cy;
+    if (fullSector) {
+      radius = Math.min(p.w, p.h) / 2;
+      cx = p.x + p.w / 2;
+      cy = p.y + p.h / 2;
+    } else {
+      // Fit the sector's actual bounding box, including its visible inner
+      // boundary. A semicircular gauge should use the whole plot instead of
+      // reserving an invisible half-disc.
+      const denom = rHi - rOrigin;
+      const inner = Math.max(0, Math.min(1, Math.abs(denom) > 1e-30
+        ? hole + (1 - hole) * ((rLo - rOrigin) / denom)
+        : 0));
+      const loAngle = Math.min(angleStart, angleEnd);
+      const hiAngle = Math.max(angleStart, angleEnd);
+      const angles = [angleStart, angleEnd];
+      for (const cardinal of [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2]) {
+        const first = Math.ceil((loAngle - cardinal) / (2 * Math.PI));
+        const last = Math.floor((hiAngle - cardinal) / (2 * Math.PI));
+        for (let turnIndex = first; turnIndex <= last; turnIndex++) {
+          angles.push(cardinal + turnIndex * 2 * Math.PI);
+        }
+      }
+      const xs = [];
+      const ys = [];
+      for (const angle of angles) {
+        xs.push(Math.cos(angle), inner * Math.cos(angle));
+        ys.push(-Math.sin(angle), -inner * Math.sin(angle));
+      }
+      if (inner <= 1e-12) {
+        xs.push(0);
+        ys.push(0);
+      }
+      const xmin = Math.min(...xs);
+      const xmax = Math.max(...xs);
+      const ymin = Math.min(...ys);
+      const ymax = Math.max(...ys);
+      const xspan = Math.max(xmax - xmin, 1e-12);
+      const yspan = Math.max(ymax - ymin, 1e-12);
+      radius = Math.min(p.w / xspan, p.h / yspan);
+      const left = p.x + (p.w - radius * xspan) / 2;
+      const top = p.y + (p.h - radius * yspan) / 2;
+      cx = left - radius * xmin;
+      cy = top - radius * ymin;
+    }
+    return {
+      radius,
+      cx,
+      cy,
+      clipCx: ((cx - p.x) / p.w) * 2 - 1,
+      clipCy: 1 - ((cy - p.y) / p.h) * 2,
+      clipRx: (2 * radius) / p.w,
+      clipRy: (2 * radius) / p.h,
+      rLo,
+      rHi,
+      rLoRaw,
+      rHiRaw,
+      rOrigin,
+      rOriginRaw: originRaw,
+      hole,
+      zero: angleBase,
+      rawZero: zero,
+      dir,
+      dirUnit,
+      unitScale,
+      turn: dataTurn,
+      angularTurn,
+      thetaStart,
+      thetaEnd,
+      sectorStart,
+      sectorEnd,
+      sectorSpan,
+      fullSector,
+      angleStart,
+      angleEnd,
+      categoryCount,
+      gridShape: thetaAxis.grid_shape || "circular",
+    };
+  }
+
+  _polarPositiveMod(value, period) {
+    return ((value % period) + period) % period;
+  }
+
+  _polarThetaValue(geom, angle) {
+    const raw = (angle - geom.zero) / (geom.dirUnit || 1);
+    return geom.thetaStart
+      + this._polarPositiveMod(raw - geom.thetaStart, geom.turn || 1);
+  }
+
+  _polarThetaVisible(geom, theta) {
+    const sweep = geom.thetaEnd - geom.thetaStart;
+    if (sweep >= geom.turn * (1 - 1e-10)) return true;
+    const offset = this._polarPositiveMod(theta - geom.thetaStart, geom.turn || 1);
+    return offset <= sweep + geom.turn * 1e-10;
+  }
+
+  _polarThetaAngle(geom, theta) {
+    return geom.zero + geom.dirUnit * theta;
+  }
+
+  _polarRadius(geom, value, { coord = false } = {}) {
+    const radial = coord ? Number(value) : this._axisCoord(this._axis("y"), value);
+    const denom = geom.rHi - geom.rOrigin;
+    if (!Number.isFinite(radial) || !Number.isFinite(denom) || Math.abs(denom) <= 1e-30) {
+      return NaN;
+    }
+    const fraction = geom.hole
+      + (1 - geom.hole) * ((radial - geom.rOrigin) / denom);
+    return fraction * geom.radius;
+  }
+
+  _polarProjectCoords(thetaCoord, rCoord, geom) {
+    if (!geom || !this._polarThetaVisible(geom, thetaCoord)) return [NaN, NaN];
+    const rMin = Math.min(geom.rLo, geom.rHi);
+    const rMax = Math.max(geom.rLo, geom.rHi);
+    if (!Number.isFinite(rCoord) || rCoord < rMin - 1e-10 || rCoord > rMax + 1e-10) {
+      return [NaN, NaN];
+    }
+    const projectedRadius = this._polarRadius(geom, rCoord, { coord: true });
+    if (!Number.isFinite(projectedRadius)
+        || projectedRadius < geom.hole * geom.radius - 1e-6
+        || projectedRadius > geom.radius + 1e-6) return [NaN, NaN];
+    const angle = this._polarThetaAngle(geom, thetaCoord);
+    return [
+      geom.cx + projectedRadius * Math.cos(angle),
+      geom.cy - projectedRadius * Math.sin(angle),
+    ];
+  }
+
+  _polarProject(theta, radius, geom = this._polarGeometry()) {
+    return this._polarProjectCoords(
+      this._axisCoord(this._axis("x"), theta),
+      this._axisCoord(this._axis("y"), radius),
+      geom,
+    );
+  }
+
+  _projectDataPoint(xAxisId, yAxisId, x, y, geom = this._polarGeometry()) {
+    if (geom) return this._polarProject(x, y, geom);
+    return [this._dataPx(xAxisId, x), this._dataPx(yAxisId, y)];
+  }
+
+  _projectSegmentEndpoints(g, cpu, index, geom = this._polarGeometry()) {
+    const theta0 = this._decodeValue(cpu.x0, g.x0Meta, index);
+    const theta1 = this._decodeValue(cpu.x1, g.x1Meta, index);
+    const radial0 = this._decodeValue(cpu.y0, g.y0Meta, index);
+    const radial1 = this._decodeValue(cpu.y1, g.y1Meta, index);
+    if (!geom) {
+      return [
+        this._projectDataPoint(g.xAxis, g.yAxis, theta0, radial0, null),
+        this._projectDataPoint(g.xAxis, g.yAxis, theta1, radial1, null),
+      ];
+    }
+    const thetaAxis = this._axis("x");
+    const radialAxis = this._axis("y");
+    const th0 = this._axisCoord(thetaAxis, theta0);
+    const th1 = this._axisCoord(thetaAxis, theta1);
+    const r0 = this._axisCoord(radialAxis, radial0);
+    const r1 = this._axisCoord(radialAxis, radial1);
+    const rMin = Math.min(geom.rLo, geom.rHi);
+    const rMax = Math.max(geom.rLo, geom.rHi);
+    if (Math.max(r0, r1) < rMin || Math.min(r0, r1) > rMax) {
+      return [[NaN, NaN], [NaN, NaN]];
+    }
+    const dr = r1 - r0;
+    let t0 = 0;
+    let t1 = 1;
+    if (Math.abs(dr) > 1e-30) {
+      const ta = (rMin - r0) / dr;
+      const tb = (rMax - r0) / dr;
+      t0 = Math.max(0, Math.min(ta, tb));
+      t1 = Math.min(1, Math.max(ta, tb));
+    }
+    return [
+      this._polarProjectCoords(
+        th0 + (th1 - th0) * t0,
+        Math.max(rMin, Math.min(rMax, r0 + dr * t0)),
+        geom,
+      ),
+      this._polarProjectCoords(
+        th0 + (th1 - th0) * t1,
+        Math.max(rMin, Math.min(rMax, r0 + dr * t1)),
+        geom,
+      ),
+    ];
+  }
+
+  // Concentric rings for radial ticks and spokes for angular ticks. Partial
+  // sectors get radial edges; `grid_shape="linear"` connects spoke
+  // intersections into polygon rings instead of drawing circular arcs.
+  _drawPolarGrid(ctx, geom, thetaTicks, rTicks, thetaAxis, rAxis, hideTheta, hideR) {
+    const sweep = geom.thetaEnd - geom.thetaStart;
+    const full = sweep >= geom.turn * (1 - 1e-10);
+    const angularOffset = (value) => this._polarPositiveMod(
+      value - geom.thetaStart,
+      geom.turn || 1,
+    );
+    const thetaValues = [...thetaTicks, ...(full ? [] : [geom.thetaStart, geom.thetaEnd])]
+      .filter((value) => Number.isFinite(value) && this._polarThetaVisible(geom, value))
+      .sort((a, b) => angularOffset(a) - angularOffset(b))
+      .filter((value, index, values) => (
+        index === 0 || Math.abs(angularOffset(value) - angularOffset(values[index - 1])) > 1e-10
+      ));
+    if (full && thetaValues.length > 1) {
+      const first = angularOffset(thetaValues[0]);
+      const last = angularOffset(thetaValues[thetaValues.length - 1]);
+      if (Math.abs((last - first) - geom.turn) <= geom.turn * 1e-10) thetaValues.pop();
+    }
+    const angles = thetaValues.map((value) => this._polarThetaAngle(geom, value));
+    const point = (angle, radius) => [
+      geom.cx + radius * Math.cos(angle),
+      geom.cy - radius * Math.sin(angle),
+    ];
+    const ringPath = (radius) => {
+      if (!(radius > 0) || radius > geom.radius + 1e-6) return;
+      if (geom.gridShape === "linear" && angles.length >= (full ? 3 : 2)) {
+        const [x0, y0] = point(angles[0], radius);
+        ctx.moveTo(x0, y0);
+        for (let i = 1; i < angles.length; i++) {
+          const [x, y] = point(angles[i], radius);
+          ctx.lineTo(x, y);
+        }
+        if (full) ctx.closePath();
+        return;
+      }
+      if (full) {
+        ctx.moveTo(geom.cx + radius, geom.cy);
+        ctx.arc(geom.cx, geom.cy, radius, 0, Math.PI * 2);
+      } else {
+        const start = this._polarThetaAngle(geom, geom.thetaStart);
+        const end = this._polarThetaAngle(geom, geom.thetaEnd);
+        const [x, y] = point(start, radius);
+        ctx.moveTo(x, y);
+        ctx.arc(geom.cx, geom.cy, radius, -start, -end, geom.dir > 0);
+      }
+    };
+    if (!hideR) {
+      ctx.strokeStyle = this._axisStylePaint(rAxis, "grid_color", this.theme.grid);
+      ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(rAxis, "grid_width", 1));
+      ctx.globalAlpha = this._axisStyleNumber(rAxis, "grid_opacity", 1);
+      ctx.setLineDash(this._axisGridDash(rAxis));
+      ctx.beginPath();
+      for (const v of rTicks) {
+        ringPath(this._polarRadius(geom, v));
+      }
+      ctx.stroke();
+    }
+    if (hideTheta) return;
+    ctx.strokeStyle = this._axisStylePaint(thetaAxis, "grid_color", this.theme.grid);
+    ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(thetaAxis, "grid_width", 1));
+    ctx.globalAlpha = this._axisStyleNumber(thetaAxis, "grid_opacity", 1);
+    ctx.setLineDash(this._axisGridDash(thetaAxis));
+    ctx.beginPath();
+    const innerRadius = Math.max(
+      0,
+      Math.min(geom.radius, this._polarRadius(geom, geom.rLo, { coord: true })),
+    );
+    for (const a of angles) {
+      const [x0, y0] = point(a, innerRadius);
+      const [x1, y1] = point(a, geom.radius);
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+    }
+    ctx.stroke();
+    // Polar spines cannot be represented by the cartesian DIV spines.
+    ctx.strokeStyle = this._axisStylePaint(thetaAxis, "axis_color", this.theme.axis);
+    ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(thetaAxis, "axis_width", 1));
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ringPath(geom.radius);
+    if (innerRadius > 1e-6) ringPath(innerRadius);
+    if (!full && angles.length >= 2) {
+      for (const a of [angles[0], angles[angles.length - 1]]) {
+        const [x0, y0] = point(a, innerRadius);
+        const [x1, y1] = point(a, geom.radius);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+      }
+    }
+    ctx.stroke();
+  }
+
+  _setPolarUniforms(prog) {
+    const gl = this.gl;
+    const u = (n) => uniformOf(gl, prog, n);
+    // Fragment-stage polar clipping uses device-pixel gl_FragCoord, including
+    // in the pick framebuffer. Programs without the clip helper optimize this
+    // uniform away; WebGL treats the resulting null location as a no-op.
+    gl.uniform2f(u("u_clipRes"), this.canvas.width, this.canvas.height);
+    const g = this._polarGeometry();
+    if (!g) {
+      gl.uniform1i(u("u_coordMode"), 0);
+      return;
+    }
+    gl.uniform1i(u("u_coordMode"), 1);
+    gl.uniform4f(u("u_polar"), g.clipCx, g.clipCy, g.clipRx, g.clipRy);
+    gl.uniform2f(u("u_rrange"), g.rLo, g.rHi);
+    gl.uniform2f(u("u_zdir"), g.zero, g.dirUnit);
+    gl.uniform2f(u("u_trange"), g.thetaStart, g.thetaEnd);
+    gl.uniform1f(u("u_turn"), g.turn);
+    gl.uniform2f(u("u_rshape"), g.rOrigin, g.hole);
+  }
+
   // `keepPick` marks a frame whose ONLY trigger is hover-highlight state: the
   // highlight lives in the color pass, so the pick framebuffer's geometry/view
   // snapshot stays valid and the frame must not invalidate it. Coalescing is
@@ -4583,6 +5494,7 @@ export class ChartView {
     gl.uniform2f(u("u_ymap"), ym[0], ym[1]);
     this._setAxisUniforms(prog, "u_x", g.xMeta, g.xAxis);
     this._setAxisUniforms(prog, "u_y", g.yMeta, g.yAxis);
+    this._setPolarUniforms(prog);
     gl.uniform1f(u("u_dpr"), this.dpr);
     const zoomStyle = this._pointZoomStyle(g);
     const transitionOn = !!(g._transitionPrevXBuf && g._transitionPrevYBuf);
@@ -4704,6 +5616,7 @@ export class ChartView {
     gl.uniform2f(u("u_ymap"), ym[0], ym[1]);
     this._setAxisUniforms(prog, "u_x", g.xMeta, g.xAxis);
     this._setAxisUniforms(prog, "u_y", g.yMeta, g.yAxis);
+    this._setPolarUniforms(prog);
     gl.uniform1f(u("u_dpr"), this.dpr);
     const zoomStyle = this._pointZoomStyle(g);
     const transitionOn = !!(g._transitionPrevXBuf && g._transitionPrevYBuf);
@@ -4757,6 +5670,7 @@ export class ChartView {
     gl.uniform2f(u("u_ymap"), ym[0], ym[1]);
     this._setAxisUniforms(prog, "u_x", g.xMeta, g.xAxis);
     this._setAxisUniforms(prog, "u_y", g.yMeta, g.yAxis);
+    this._setPolarUniforms(prog);
     // Size-channel points hover at their encoded size, not the scalar default
     // (sample traces keep no CPU copy of the size column; they fall back).
     const sVal = g.sizeMode === 1 && g._cpu?.size ? g._cpu.size[index] : null;
@@ -4865,6 +5779,7 @@ export class ChartView {
     gl.uniform1f(u("u_xconstant"), this._axisConstant(g.xAxis));
     gl.uniform1i(u("u_ymode"), this._axisMode(g.yAxis));
     gl.uniform1f(u("u_yconstant"), this._axisConstant(g.yAxis));
+    this._setPolarUniforms(prog);
     // Grid row/column 0 anchors to the bottom/left edge of the grid rect in
     // *display* orientation — the raster/SVG exporters' convention (the shim's
     // imshow pre-flips rows for origin='upper' assuming it). A reversed axis
@@ -4901,6 +5816,7 @@ export class ChartView {
     gl.uniform2f(u("u_ymap"), ym[0], ym[1]);
     this._setAxisUniforms(this.lineProg, "u_x", g.xMeta, g.xAxis);
     this._setAxisUniforms(this.lineProg, "u_y", g.yMeta, g.yAxis);
+    this._setPolarUniforms(this.lineProg);
     gl.uniform2f(u("u_res"), this.canvas.width, this.canvas.height);
     const transitionOn = !!(g._transitionPrevXBuf && g._transitionPrevYBuf);
     gl.uniform1i(u("u_transitionActive"), transitionOn ? 1 : 0);
@@ -4958,6 +5874,7 @@ export class ChartView {
     this._setAxisUniforms(prog, "u_x1", g.x1Meta, g.xAxis);
     this._setAxisUniforms(prog, "u_y0", g.y0Meta, g.yAxis);
     this._setAxisUniforms(prog, "u_y1", g.y1Meta, g.yAxis);
+    this._setPolarUniforms(prog);
     gl.uniform2f(u("u_res"), this.canvas.width, this.canvas.height);
     gl.uniform1f(u("u_width"), (g.trace.style.width ?? 1.5) * this.dpr);
     gl.uniform1f(u("u_animationProgress"), g._transitionScale ?? 1);
@@ -5023,11 +5940,9 @@ export class ChartView {
     };
     const key = (x, y) => `${Math.round(x * 1000)},${Math.round(y * 1000)}`;
     const dpr = this.dpr;
+    const polarGeom = this._polarGeometry();
     for (let i = 0; i < n; i++) {
-      const x0 = this._dataPx(g.xAxis, this._decodeValue(cpu.x0, g.x0Meta, i));
-      const x1 = this._dataPx(g.xAxis, this._decodeValue(cpu.x1, g.x1Meta, i));
-      const y0 = this._dataPx(g.yAxis, this._decodeValue(cpu.y0, g.y0Meta, i));
-      const y1 = this._dataPx(g.yAxis, this._decodeValue(cpu.y1, g.y1Meta, i));
+      const [[x0, y0], [x1, y1]] = this._projectSegmentEndpoints(g, cpu, i, polarGeom);
       k0[i] = key(x0, y0); k1[i] = key(x1, y1);
       lengths[i] = Math.hypot(x1 - x0, y1 - y0) * dpr;
       add(k0[i], i); add(k1[i], i);
@@ -5134,13 +6049,24 @@ export class ChartView {
     if (!g._lenArr || g._lenArr.length !== n) g._lenArr = new Float32Array(n);
     const lens = g._lenArr;
     const dpr = this.dpr;
-    let px = this._dataPx(g.xAxis, this._decodeValue(g._dashX, g.xMeta, 0));
-    let py = this._dataPx(g.yAxis, this._decodeValue(g._dashY, g.yMeta, 0));
+    const polarGeom = this._polarGeometry();
+    let [px, py] = this._projectDataPoint(
+      g.xAxis,
+      g.yAxis,
+      this._decodeValue(g._dashX, g.xMeta, 0),
+      this._decodeValue(g._dashY, g.yMeta, 0),
+      polarGeom,
+    );
     let acc = 0;
     lens[0] = 0;
     for (let i = 1; i < n; i++) {
-      const nx = this._dataPx(g.xAxis, this._decodeValue(g._dashX, g.xMeta, i));
-      const ny = this._dataPx(g.yAxis, this._decodeValue(g._dashY, g.yMeta, i));
+      const [nx, ny] = this._projectDataPoint(
+        g.xAxis,
+        g.yAxis,
+        this._decodeValue(g._dashX, g.xMeta, i),
+        this._decodeValue(g._dashY, g.yMeta, i),
+        polarGeom,
+      );
       if (Number.isFinite(nx) && Number.isFinite(ny) && Number.isFinite(px) && Number.isFinite(py)) {
         acc += Math.hypot(nx - px, ny - py) * dpr;
       }
@@ -5177,6 +6103,7 @@ export class ChartView {
     gl.uniform2f(u("u_bmap"), bm[0], bm[1]);
     this._setAxisUniforms(prog, "u_x", g.xMeta, g.xAxis);
     this._setAxisUniforms(prog, "u_y", g.yMeta, g.yAxis);
+    this._setPolarUniforms(prog);
     this._setAxisUniforms(prog, "u_b", g.baseMeta, g.yAxis);
     const reveal = Math.max(0, Math.min(1, g._transitionReveal ?? 1));
     gl.uniform1f(u("u_revealProgress"), reveal);
@@ -5216,6 +6143,10 @@ export class ChartView {
     gl.uniform1i(u("u_ymode"), this._axisMode(g.yAxis));
     gl.uniform1f(u("u_yconstant"), this._axisConstant(g.yAxis));
     gl.uniform4f(u("u_edgePad"), edgePad[0], edgePad[1], edgePad[2], edgePad[3]);
+    // Four edge columns are an annular sector under polar — this is the path
+    // unequal-width slices (a pie or donut) take, since the compact bar path
+    // ships one scalar width.
+    this._setPolarUniforms(prog);
     const [r, gg, b, a] = g.color;
     gl.uniform4f(u("u_color"), r, gg, b, a);
     gl.uniform1f(u("u_opacity"), this._fillOpacity(g.trace.style) * (g._transitionOpacity ?? 1) * (g._legendDim ?? 1));
@@ -5255,7 +6186,21 @@ export class ChartView {
     if (!styleOn) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
     if (!strokeOn) gl.vertexAttrib4f(ATTR_SLOTS.a_stroke, ...(g.strokeColor || g.color));
     if (!radiusOn) gl.vertexAttrib2f(ATTR_SLOTS.a_radius, -1, -1);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, g.n);
+    // Unequal widths ship four edge columns, so one instanced draw covers wedges
+    // of different sweeps: the count follows the WIDEST of them (recorded once at
+    // build time, from data alone), which keeps every narrower wedge inside the
+    // same flattening bound. A pie's widest slice sets the cost for the pie.
+    const rectGeom = this._polarGeometry();
+    const rectPolarSegments = rectGeom
+      ? xyPolarBarSegments(this._polarRectMaxSpan(g) * rectGeom.dirUnit, 2 * Math.PI)
+      : 0;
+    if (rectPolarSegments) {
+      gl.uniform1f(u("u_wedgeGap"), (Number(g.trace.style?.wedge_gap) || 0) * this.dpr);
+      gl.uniform1i(u("u_polarSegments"), rectPolarSegments);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 2 * (rectPolarSegments + 1), g.n);
+    } else {
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, g.n);
+    }
   }
 
   _drawBars(g, pmap, v1map, v0map, v0Const, v0EdgePad = 0) {
@@ -5272,6 +6217,10 @@ export class ChartView {
     this._setAxisUniforms(prog, "u_p", g.posMeta, pAxis);
     this._setAxisUniforms(prog, "u_v1", g.value1Meta, vAxis);
     this._setAxisUniforms(prog, "u_v0", g.value0Meta, vAxis);
+    // Bars name their axes u_p/u_v rather than u_x/u_y, so they need this
+    // explicitly — without it u_coordMode stays 0 and a polar bar chart draws
+    // cartesian rectangles inside correct polar chrome.
+    this._setPolarUniforms(prog);
     gl.uniform1i(u("u_pmode"), this._axisMode(pAxis));
     gl.uniform1f(u("u_pconstant"), this._axisConstant(pAxis));
     gl.uniform1i(u("u_vmode"), this._axisMode(vAxis));
@@ -5343,7 +6292,25 @@ export class ChartView {
     if (!styleOn) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
     if (!strokeOn) gl.vertexAttrib4f(ATTR_SLOTS.a_stroke, ...(g.strokeColor || g.color));
     if (!radiusOn) gl.vertexAttrib2f(ATTR_SLOTS.a_radius, -1, -1);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, g.n);
+    // A polar bar sweeps an annular sector: segments+1 vertex PAIRS instead of
+    // one quad's four corners. The count follows this trace's own angular width
+    // (xyPolarBarSegments) rather than the full-turn worst case, at the same
+    // flattening bound — a 22.5-degree wind-rose sector costs 14 vertices, not
+    // 194. The compact bar path carries ONE scalar width, so the whole instanced
+    // draw shares one honest count.
+    const barGeom = this._polarGeometry();
+    const polarSegments = barGeom
+      ? xyPolarBarSegments(Number(g.width) * barGeom.dirUnit, 2 * Math.PI)
+      : 0;
+    if (polarSegments) {
+      gl.uniform1f(u("u_wedgeGap"), (Number(g.trace.style?.wedge_gap) || 0) * this.dpr);
+      gl.uniform1i(u("u_polarSegments"), polarSegments);
+      const vAxisId = g.orientation === 1 ? g.xAxis : g.yAxis;
+      gl.uniform1f(u("u_polarV0C"), this._axisCoord(this._axis(vAxisId), g.value0Const ?? 0));
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 2 * (polarSegments + 1), g.n);
+    } else {
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, g.n);
+    }
   }
 
   _dataPxX(value) {
@@ -5352,6 +6319,28 @@ export class ChartView {
 
   _dataPxY(value) {
     return this._dataPx("y", value);
+  }
+
+  // A point-anchored (theta, r) pair in canvas px. The separable _dataPxX /
+  // _dataPxY pair cannot express polar placement: it reads (0, 0) — the disc
+  // centre, at any angle — as the bottom-left corner, and strings a set of
+  // labels out in a horizontal row in theta order. Mirrors the `point()`
+  // helper in `_annotation_svg` and the `marker` branch of
+  // `annotation_label_placement` (python/xy/_svg.py), which the two exporters
+  // already share; without this the browser and the exports disagree about
+  // where every annotation on a polar chart belongs.
+  //
+  // Point-anchored kinds only. `rule` and `band` are genuinely different
+  // geometry on a disc (a theta rule is a spoke, an r rule is a ring) and stay
+  // deferred on the cartesian path, exactly as they do in the exporters.
+  _dataPxPoint(x, y, xAxisId = "x", yAxisId = "y") {
+    return this._projectDataPoint(
+      xAxisId,
+      yAxisId,
+      Number(x),
+      Number(y),
+      this._polarGeometry(),
+    );
   }
 
   _styleNumber(style, key, fallback) {
@@ -5434,8 +6423,11 @@ export class ChartView {
     return Number.isFinite(gap) && gap >= 0 ? gap : (dim === "x" ? 8 : 4);
   }
 
-  _estimateTickLabel(text, fontSize) {
-    const lines = String(text ?? "").replace(/\r\n?/g, "\n").split("\n");
+  // `maxWidth` word-wraps the block before measuring, so `h` is the height the
+  // wrapped text actually occupies. Mirrors `_textblock.measure(max_width=...)`
+  // in python/xy/_textblock.py, including the wrap rule in `xyWrapLines`.
+  _estimateTickLabel(text, fontSize, maxWidth = null) {
+    let lines = String(text ?? "").replace(/\r\n?/g, "\n").split("\n");
     const context = typeof document !== "undefined"
       ? (
         this._tickMeasureCanvas
@@ -5446,12 +6438,13 @@ export class ChartView {
     // the browser's generic sans-serif while the DOM paints system-ui can
     // under-reserve long y labels enough to consume the title's 0.4 em gap.
     if (context) context.font = `${fontSize}px system-ui, sans-serif`;
+    const advance = (line) =>
+      context?.measureText(line).width || xyTextAdvance(line, fontSize);
+    const limit = Number(maxWidth);
+    if (Number.isFinite(limit) && limit > 0) lines = xyWrapLines(lines, advance, limit);
     return {
       lines,
-      w: Math.max(
-        fontSize * 0.7,
-        ...lines.map((line) => context?.measureText(line).width || xyTextAdvance(line, fontSize)),
-      ),
+      w: Math.max(fontSize * 0.7, ...lines.map(advance)),
       h: Math.max(fontSize * 1.2, lines.length * fontSize * 1.2),
       lineStep: fontSize * 1.2,
     };
@@ -5652,7 +6645,15 @@ export class ChartView {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, this.size.w, this.size.h);
     const now = this._now();
-    const labelCadenceMs = this._viewAnim ? 80 : 0;
+    // Tick labels are DOM: `this.labels` is emptied and every label, baseline
+    // and tick div is recreated. A view animation throttles that to 80 ms
+    // because the ranges are moving. A DATA animation was not throttled at all,
+    // so an entrance or update transition rebuilt the whole label layer 60 times
+    // a second while the axes stood still — the labels are identical between
+    // those frames unless `_transitionView` is also interpolating the view, and
+    // that case is covered by the same cadence. The final frame runs with
+    // `_dataAnim` already cleared, so the settled labels always land.
+    const labelCadenceMs = (this._viewAnim || this._dataAnim) ? 80 : 0;
     const updateLabels = labelCadenceMs === 0
       || this._lastLabelDraw === null
       || now - this._lastLabelDraw >= labelCadenceMs;
@@ -5697,12 +6698,16 @@ export class ChartView {
     const xEdge = (px) => Math.min(p.x + p.w - 0.5, Math.max(p.x + 0.5, Math.round(px) + 0.5));
     const yEdge = (py) => Math.min(p.y + p.h - 0.5, Math.max(p.y + 0.5, Math.round(py) + 0.5));
 
+    const polarGeom = this._polarGeometry();
+    if (polarGeom) {
+      this._drawPolarGrid(ctx, polarGeom, xt.ticks, yt.ticks, xAxis, yAxis, hideX, hideY);
+    }
     ctx.strokeStyle = this._axisStylePaint(xmAxis, "grid_color", "transparent");
     ctx.lineWidth = Math.max(0.5, this._axisStyleNumber(xmAxis, "grid_width", 1));
     ctx.globalAlpha = this._axisStyleNumber(xmAxis, "grid_opacity", 1);
     ctx.setLineDash(this._axisGridDash(xmAxis));
     ctx.beginPath();
-    for (const v of (hideX ? [] : xmt)) {
+    for (const v of (hideX || polarGeom ? [] : xmt)) {
       const px = this._dataPx("x", v);
       if (!Number.isFinite(px)) continue;
       const x = xEdge(px);
@@ -5716,7 +6721,7 @@ export class ChartView {
     ctx.globalAlpha = this._axisStyleNumber(ymAxis, "grid_opacity", 1);
     ctx.setLineDash(this._axisGridDash(ymAxis));
     ctx.beginPath();
-    for (const v of (hideY ? [] : ymt)) {
+    for (const v of (hideY || polarGeom ? [] : ymt)) {
       const py = this._dataPx("y", v);
       if (!Number.isFinite(py)) continue;
       const y = yEdge(py);
@@ -5730,7 +6735,7 @@ export class ChartView {
     ctx.globalAlpha = this._axisStyleNumber(xAxis, "grid_opacity", 1);
     ctx.setLineDash(this._axisGridDash(xAxis));
     ctx.beginPath();
-    for (const v of (hideX ? [] : xt.ticks)) {
+    for (const v of (hideX || polarGeom ? [] : xt.ticks)) {
       const px = this._dataPx("x", v);
       if (!Number.isFinite(px)) continue;
       const x = xEdge(px);
@@ -5744,7 +6749,7 @@ export class ChartView {
     ctx.globalAlpha = this._axisStyleNumber(yAxis, "grid_opacity", 1);
     ctx.setLineDash(this._axisGridDash(yAxis));
     ctx.beginPath();
-    for (const v of (hideY ? [] : yt.ticks)) {
+    for (const v of (hideY || polarGeom ? [] : yt.ticks)) {
       const py = this._dataPx("y", v);
       if (!Number.isFinite(py)) continue;
       const y = yEdge(py);
@@ -5783,10 +6788,15 @@ export class ChartView {
           "pointer-events:none;";
         this.labels.appendChild(d);
       };
-      const frameSides = Array.isArray(s.frame_sides)
-        ? s.frame_sides
-        : [xAxis.side || "bottom", yAxis.side || "left"];
-      const explicitFrameSides = Array.isArray(s.frame_sides);
+      // Under polar the frame is one ring drawn on the chrome canvas below;
+      // "side" has no polar meaning, so frame_sides is not consulted. Axis
+      // spines are background-coloured DIVs and cannot express a circle.
+      const frameSides = polarGeom
+        ? []
+        : (Array.isArray(s.frame_sides)
+          ? s.frame_sides
+          : [xAxis.side || "bottom", yAxis.side || "left"]);
+      const explicitFrameSides = !polarGeom && Array.isArray(s.frame_sides);
       if (!hideY || explicitFrameSides) {
         const yWidth = Math.max(1, this._axisStyleNumber(yAxis, "axis_width", 1));
         if (frameSides.includes("left")) rule(yAxis, p.x, p.y, yWidth, p.h);
@@ -5810,7 +6820,9 @@ export class ChartView {
         rule(axis, x, p.y, w, p.h);
       }
 
-      if (!hideX) {
+      // Edge-anchored tick marks have no polar geometry; the spec records
+      // tick_length/tick_width/tick_direction as ignored under polar.
+      if (!hideX && !polarGeom) {
         const minorTick = tickParts(xmAxis);
         const minorSide = xAxis.side || "bottom";
         const minorEdge = minorSide === "top" ? p.y : p.y + p.h;
@@ -5842,7 +6854,7 @@ export class ChartView {
           }
         }
       }
-      if (!hideY) {
+      if (!hideY && !polarGeom) {
         const minorTick = tickParts(ymAxis);
         const minorSide = yAxis.side || "left";
         const minorEdge = minorSide === "right" ? p.x + p.w : p.x;
@@ -6043,6 +7055,11 @@ export class ChartView {
       return pad + fontRoomPx;
     };
     for (const side of this._axisTickLabelSides(xAxis)) {
+      // Polar places its own labels around the rim below; sides are meaningless
+      // on a disc. Guarded here rather than around the loop so all four axis
+      // paths keep calling _axisTickLabelSides (asserted by a source guard in
+      // tests/pyplot/test_tick_side_rendering.py).
+      if (polarGeom) break;
       const sideAxis = { ...xAxis, side };
       for (const item of this._layoutTickLabels(sideAxis, "x", xLabelCandidates)) {
         const rowOffset = Number(item.row || 0) * (Math.max(8, tickLabelSize) + 4);
@@ -6125,7 +7142,55 @@ export class ChartView {
         angle,
       };
     };
+    if (polarGeom) {
+      // Angular labels around the rim, radial labels along the 22.5-degree
+      // spoke. Mirrors _polar_tick_labels in python/xy/_svg.py; the cartesian
+      // label machinery is edge-relative and neither concept survives a disc.
+      const RLABEL = (POLAR_RLABEL_DEG * Math.PI) / 180;
+      const GAP = POLAR_TICK_GAP;
+      // "off" hides only the label text; "none" (hideX/hideY) kills the chrome.
+      const offX = this._axisTickLabelStrategy(xAxis) === "off";
+      const offY = this._axisTickLabelStrategy(yAxis) === "off";
+      if (!hideX && !offX) {
+        for (const v of (xt.labels || xt.ticks)) {
+          const a = this._polarThetaAngle(polarGeom, v);
+          const cos = Math.cos(a);
+          const sin = Math.sin(a);
+          const lx = polarGeom.cx + (polarGeom.radius + GAP) * cos;
+          const ly = polarGeom.cy - (polarGeom.radius + GAP) * sin;
+          const align = Math.abs(cos) < 0.3 ? "-50%" : (cos > 0 ? "0%" : "-100%");
+          const vshift = Math.abs(sin) < 0.3 ? "-50%" : (sin > 0 ? "-100%" : "0%");
+          const spinX = Number(xAxis.tick_label_angle) || 0;
+          label(
+            this._axisTickText(xAxis, v, xt.step),
+            `left:${lx}px;top:${ly}px;transform:translate(${align}, ${vshift})` +
+              (spinX ? ` rotate(${spinX}deg)` : "") + ";",
+            xAxis,
+          );
+        }
+      }
+      if (!hideY && !offY) {
+        const sectorSweep = Math.abs(polarGeom.dirUnit)
+          * Math.max(0, polarGeom.thetaEnd - polarGeom.thetaStart);
+        const labelOffset = Math.min(RLABEL, sectorSweep / 2);
+        const angle = this._polarThetaAngle(polarGeom, polarGeom.thetaStart)
+          + Math.sign(polarGeom.dirUnit || 1) * labelOffset;
+        for (const v of this._polarThinRadialLabels(yt.labels || yt.ticks, polarGeom)) {
+          const radius = this._polarRadius(polarGeom, v);
+          if (!(radius > 0) || radius > polarGeom.radius + 1e-6) continue;
+          const spinY = Number(yAxis.tick_label_angle) || 0;
+          label(
+            this._axisTickText(yAxis, v, yt.step),
+            `left:${polarGeom.cx + radius * Math.cos(angle) + 3}px;` +
+              `top:${polarGeom.cy - radius * Math.sin(angle) - 3}px;` +
+              `transform:translate(0, -100%)` + (spinY ? ` rotate(${spinY}deg)` : "") + ";",
+            yAxis,
+          );
+        }
+      }
+    }
     for (const side of this._axisTickLabelSides(yAxis)) {
+      if (polarGeom) break;
       const sideAxis = { ...yAxis, side };
       for (const item of this._layoutTickLabels(sideAxis, "y", yLabelCandidates)) {
         const placement = yLabelPlacement(sideAxis, side === "right", item);
@@ -6294,6 +7359,11 @@ export class ChartView {
       gl.uniform2f(u("u_ymap"), ym[0], ym[1]);
       this._setAxisUniforms(prog, "u_x", pg.xMeta, pg.xAxis || g.xAxis);
       this._setAxisUniforms(prog, "u_y", pg.yMeta, pg.yAxis || g.yAxis);
+      // The pick buffer must use the SAME transform as the colour pass. Left
+      // cartesian under polar it still returns ids, so the picture stays right
+      // while hover silently reports whichever row happens to sit at the
+      // untransformed location.
+      this._setPolarUniforms(prog);
       const zoomStyle = this._pointZoomStyle(pg);
       gl.uniform1f(u("u_size"), pg.size * zoomStyle.sizeFactor);
       gl.uniform1i(u("u_sizeMode"), pg.sizeMode);
@@ -6383,6 +7453,25 @@ export class ChartView {
     const [y0, y1] = this._axisRange(yAxisId);
     const xAxis = this._axis(xAxisId);
     const yAxis = this._axis(yAxisId);
+    const geom = this._polarGeometry();
+    if (geom) {
+      // Screen -> (theta, r), the inverse of xyPolarPos. cssX/cssY are canvas
+      // relative, whereas geometry is chart-relative.
+      const dx = cssX - (geom.cx - this.plot.x);
+      const dy = (geom.cy - this.plot.y) - cssY; // flip out of screen space
+      const displayed = Math.hypot(dx, dy) / (geom.radius || 1);
+      if (displayed > 1 + 1e-10 || displayed < geom.hole - 1e-10) {
+        return [NaN, NaN];
+      }
+      const theta = this._polarThetaValue(geom, Math.atan2(dy, dx));
+      if (!this._polarThetaVisible(geom, theta)) return [NaN, NaN];
+      const radialFraction = (displayed - geom.hole) / Math.max(1 - geom.hole, 1e-30);
+      const rCoord = geom.rOrigin + radialFraction * (geom.rHi - geom.rOrigin);
+      const rMin = Math.min(geom.rLo, geom.rHi);
+      const rMax = Math.max(geom.rLo, geom.rHi);
+      if (rCoord < rMin - 1e-10 || rCoord > rMax + 1e-10) return [NaN, NaN];
+      return [theta, this._axisValue(yAxis, rCoord)];
+    }
     const cx0 = this._axisCoord(xAxis, x0);
     const cx1 = this._axisCoord(xAxis, x1);
     const cy0 = this._axisCoord(yAxis, y0);
@@ -6419,9 +7508,66 @@ export class ChartView {
     return best;
   }
 
+  _nearestPolarCpuIndex(g, cssX, cssY) {
+    const cpu = g && g._cpu;
+    if (!cpu || !cpu.x || !cpu.y) return -1;
+    const xMeta = cpu.xMeta || g.xMeta;
+    const yMeta = cpu.yMeta || g.yMeta;
+    const progress = g._transitionPositionProgress;
+    const limit = Math.min(cpu.x.length, cpu.y.length, g.n || cpu.x.length);
+    const geom = this._polarGeometry();
+    let best = -1;
+    let bestDist = Infinity;
+    for (let i = 0; i < limit; i++) {
+      const xEncoded = g._transitionPrevXValues && Number.isFinite(progress)
+        ? g._transitionPrevXValues[i] + (cpu.x[i] - g._transitionPrevXValues[i]) * progress
+        : cpu.x[i];
+      const yEncoded = g._transitionPrevYValues && Number.isFinite(progress)
+        ? g._transitionPrevYValues[i] + (cpu.y[i] - g._transitionPrevYValues[i]) * progress
+        : cpu.y[i];
+      const x = xEncoded / (xMeta.scale || 1) + xMeta.offset;
+      const y = yEncoded / (yMeta.scale || 1) + yMeta.offset;
+      const [chartX, chartY] = this._projectDataPoint(g.xAxis, g.yAxis, x, y, geom);
+      const dist = Math.hypot(chartX - this.plot.x - cssX, chartY - this.plot.y - cssY);
+      if (Number.isFinite(dist) && dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  _segmentHover(g, cssX, cssY, maxPx) {
+    const cpu = g && g._segmentCpu;
+    if (!cpu) return null;
+    let best = null;
+    const limit = Math.min(cpu.x0.length, cpu.x1.length, cpu.y0.length, cpu.y1.length, g.n);
+    const geom = this._polarGeometry();
+    for (let i = 0; i < limit; i++) {
+      const [[x0, y0], [x1, y1]] = this._projectSegmentEndpoints(g, cpu, i, geom);
+      const ax = x0 - this.plot.x;
+      const ay = y0 - this.plot.y;
+      const bx = x1 - this.plot.x;
+      const by = y1 - this.plot.y;
+      if (![ax, ay, bx, by].every(Number.isFinite)) continue;
+      const vx = bx - ax;
+      const vy = by - ay;
+      const denom = vx * vx + vy * vy;
+      const t = denom > 0
+        ? Math.max(0, Math.min(1, ((cssX - ax) * vx + (cssY - ay) * vy) / denom))
+        : 0;
+      const dist = Math.hypot(cssX - (ax + t * vx), cssY - (ay + t * vy));
+      if (dist <= maxPx && (!best || dist < best.dist)) {
+        best = { trace: g.trace.id, index: i, g, dist, synthetic: true };
+      }
+    }
+    return best;
+  }
+
   _hoverAt(cssX, cssY) {
     const maxPx = 12;
     let best = null;
+    const polarGeom = this._polarGeometry();
     for (const g of this.gpuTraces) {
       if (g.tier === "density") continue;
       const [dataX, dataY] = this._dataFromCanvas(cssX, cssY, g.xAxis, g.yAxis);
@@ -6446,8 +7592,15 @@ export class ChartView {
         if (hit) return hit;
         continue;
       }
+      if (g._segmentCpu) {
+        const hit = this._segmentHover(g, cssX, cssY, maxPx);
+        if (hit && (!best || hit.dist < best.dist)) best = hit;
+        continue;
+      }
       if (!g._cpu || !g._cpu.x || !g._cpu.y) continue;
-      const idx = this._nearestCpuIndex(g, dataX);
+      const idx = polarGeom
+        ? this._nearestPolarCpuIndex(g, cssX, cssY)
+        : this._nearestCpuIndex(g, dataX);
       if (idx < 0) continue;
       const progress = g._transitionPositionProgress;
       const xEncoded = g._transitionPrevXValues && Number.isFinite(progress)
@@ -6458,8 +7611,15 @@ export class ChartView {
         : g._cpu.y[idx];
       const x = xEncoded / (g._cpu.xMeta.scale || 1) + g._cpu.xMeta.offset;
       const y = yEncoded / (g._cpu.yMeta.scale || 1) + g._cpu.yMeta.offset;
-      const px = this._dataPx(g.xAxis, x) - this.plot.x;
-      const py = this._dataPx(g.yAxis, y) - this.plot.y;
+      const [chartX, chartY] = this._projectDataPoint(
+        g.xAxis,
+        g.yAxis,
+        x,
+        y,
+        polarGeom,
+      );
+      const px = chartX - this.plot.x;
+      const py = chartY - this.plot.y;
       const dist = Math.hypot(px - cssX, py - cssY);
       if (dist <= maxPx && (!best || dist < best.dist)) {
         best = { trace: g.trace.id, index: idx, g, dist, synthetic: true };
@@ -6468,9 +7628,21 @@ export class ChartView {
     return best;
   }
 
+  // Seam-aware angular containment for wedge hover: |dataX - centre| in
+  // unwrapped data space misses any wedge straddling theta = 0/turn (a
+  // wind-rose "N" sector), which draws fine and was silently un-hoverable on
+  // its wrap side. Distances re-base through the same positive-mod the
+  // heatmap inverse uses (spec section 3.2: any angular metric must wrap).
+  _polarAngularDistance(geom, a, b) {
+    const turn = geom.turn || 1;
+    const forward = this._polarPositiveMod(a - b, turn);
+    return Math.min(forward, turn - forward);
+  }
+
   _barHover(g, dataX, dataY) {
     const cpu = g._cpu;
     const horizontal = g.orientation === 1;
+    const geom = this._polarGeometry();
     const limit = Math.min(cpu.x.length, cpu.y.length, g.n || cpu.x.length);
     for (let i = 0; i < limit; i++) {
       const x = this._decodeValue(cpu.x, cpu.xMeta, i);
@@ -6484,8 +7656,13 @@ export class ChartView {
         if (dataX >= lo && dataX <= hi && Math.abs(dataY - y) <= g.width / 2) {
           return { trace: g.trace.id, index: i, g, synthetic: true };
         }
-      } else if (Math.abs(dataX - x) <= g.width / 2 && dataY >= lo && dataY <= hi) {
-        return { trace: g.trace.id, index: i, g, synthetic: true };
+      } else {
+        const near = geom
+          ? this._polarAngularDistance(geom, dataX, x) <= g.width / 2
+          : Math.abs(dataX - x) <= g.width / 2;
+        if (near && dataY >= lo && dataY <= hi) {
+          return { trace: g.trace.id, index: i, g, synthetic: true };
+        }
       }
     }
     return null;
@@ -6493,16 +7670,31 @@ export class ChartView {
 
   _rectHover(g, dataX, dataY) {
     const r = g._cpuRect;
+    const geom = this._polarGeometry();
     const limit = Math.min(r.x0.length, r.x1.length, r.y0.length, r.y1.length, g.n || r.x0.length);
     for (let i = 0; i < limit; i++) {
       const x0 = this._decodeValue(r.x0, r.x0Meta, i);
       const x1 = this._decodeValue(r.x1, r.x1Meta, i);
       const y0 = this._decodeValue(r.y0, r.y0Meta, i);
       const y1 = this._decodeValue(r.y1, r.y1Meta, i);
-      if (
-        dataX >= Math.min(x0, x1) && dataX <= Math.max(x0, x1) &&
-        dataY >= Math.min(y0, y1) && dataY <= Math.max(y0, y1)
-      ) {
+      let insideX;
+      if (geom) {
+        // Both renderers draw the band as the DIRECT interval between the two
+        // edges — GLSL takes `abs(a1 - a0)` with `dir = a1 >= a0 ? 1 : -1`, and
+        // `wedge_angles` takes `min(raw0, raw1) .. max(raw0, raw1)` — so the
+        // span is unwrapped and edge order carries no meaning. Measuring it
+        // with a *directional* `mod(x1 - x0, turn)` while anchoring at
+        // `min(x0, x1)` made the two disagree: a descending pair (350, 300)
+        // covered 300..610 instead of 300..350. Only the offset needs wrapping,
+        // so a seam-crossing bar whose edges are emitted unwrapped (-15..15) is
+        // still reachable from dataX = 355.
+        const turn = geom.turn || 1;
+        const span = Math.abs(x1 - x0);
+        insideX = this._polarPositiveMod(dataX - Math.min(x0, x1), turn) <= span;
+      } else {
+        insideX = dataX >= Math.min(x0, x1) && dataX <= Math.max(x0, x1);
+      }
+      if (insideX && dataY >= Math.min(y0, y1) && dataY <= Math.max(y0, y1)) {
         return { trace: g.trace.id, index: i, g, synthetic: true };
       }
     }
@@ -6514,12 +7706,18 @@ export class ChartView {
     if (!h || !g._cpuHeatmap) return null;
     const [x0, x1] = h.xRange;
     const [y0, y1] = h.yRange;
-    if (dataX < x0 || dataX > x1 || dataY < y0 || dataY > y1) return null;
+    const geom = this._polarGeometry();
+    const sampleX = geom
+      ? x0 + this._polarPositiveMod(dataX - x0, geom.turn)
+      : dataX;
+    if (sampleX < Math.min(x0, x1) || sampleX > Math.max(x0, x1)
+        || dataY < Math.min(y0, y1) || dataY > Math.max(y0, y1)) return null;
     // Mirror _drawHeatmap's display-orientation anchoring: on a reversed axis
     // buffer row/column 0 sits at the opposite end of the data range.
     const [ax0, ax1] = this._axisRange(g.xAxis) ?? [this.view.x0, this.view.x1];
     const [ay0, ay1] = this._axisRange(g.yAxis) ?? [this.view.y0, this.view.y1];
-    const fx = ((ax0 ?? this.view.x0) > (ax1 ?? this.view.x1)) ? (x1 - dataX) : (dataX - x0);
+    const fx = ((ax0 ?? this.view.x0) > (ax1 ?? this.view.x1))
+      ? (x1 - sampleX) : (sampleX - x0);
     const fy = ((ay0 ?? this.view.y0) > (ay1 ?? this.view.y1)) ? (y1 - dataY) : (dataY - y0);
     const col = Math.min(h.w - 1, Math.max(0, Math.floor((fx / (x1 - x0)) * h.w)));
     const row = Math.min(h.h - 1, Math.max(0, Math.floor((fy / (y1 - y0)) * h.h)));
@@ -6762,23 +7960,17 @@ export class ChartView {
     this._deleteVaos(g);
     this._deleteVaos(g._homeDecimated);
     this._deleteVaos(g.drill);
-    this._deleteBuffers(g, [
-      "xBuf", "yBuf", "cBuf", "sBuf", "selBuf", "baseBuf",
-      "x0Buf", "x1Buf", "x2Buf", "y0Buf", "y1Buf", "y2Buf",
-      "t0Buf", "t1Buf", "rgbaBuf", "rgba2Buf", "styleBuf", "strokeBuf",
-      "posBuf", "value1Buf", "value0Buf",
-      "_transitionPrevXBuf", "_transitionPrevYBuf",
-      "_transitionPrevPosBuf", "_transitionPrevValue1Buf", "_transitionPrevValue0Buf",
-    ]);
+    // TRACE_GPU_BUFFERS is the single list of every buffer field a built trace
+    // can own; the build paths and this teardown must not drift apart, so both
+    // sides read the same names (see the constant for how it is enforced).
+    this._deleteBuffers(g, TRACE_GPU_BUFFERS);
     // Only geometry is owned independently by the retained M4 overview;
     // style/channel buffers are shared with the live trace and were deleted
     // above exactly once.
     if (g._decimatedRefined) {
       this._deleteBuffers(g._homeDecimated, ["xBuf", "yBuf", "baseBuf"]);
     }
-    this._deleteBuffers(g.drill, [
-      "xBuf", "yBuf", "cBuf", "rgbaBuf", "sBuf", "styleBuf", "strokeBuf", "selBuf", "dBuf",
-    ]);
+    this._deleteBuffers(g.drill, TRACE_GPU_BUFFERS);
     const textures = [];
     if (g.heatmap) textures.push(g.heatmap.tex);
     for (const d of g.densityCache || []) textures.push(d && d.tex);
