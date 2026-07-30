@@ -420,9 +420,9 @@ The reassembled bytes are identical to the source blob, which is what keeps
 
 Two independent version constants:
 
-- **Renderer/spec protocol.** `PROTOCOL_VERSION = 10` (`python/xy/config.py`)
+- **Renderer/spec protocol.** `PROTOCOL_VERSION = 11` (`python/xy/config.py`)
   rides every first-paint spec as `spec["protocol"]`; the client's
-  `PROTOCOL = 10` (`js/src/00_header.ts`) is checked in the `ChartView`
+  `PROTOCOL = 11` (`js/src/00_header.ts`) is checked in the `ChartView`
   constructor. A mismatch replaces the chart element with "update the xy
   package and restart the kernel" and throws. Requests and replies carry no
   version of their own — the handshake happens once, at first paint, before
@@ -453,7 +453,13 @@ Two independent version constants:
   axes-fraction `y` and pixel `pad` occupy a two-f32 raw geometry column
   referenced by `geometry`, keeping numeric data out of JSON. A cached v9
   client would ignore the field and silently omit non-center slots and their
-  placement, so the v10 mismatch rejects it before rendering.
+  placement, so the v10 mismatch rejects it before rendering. v11 adds the
+  `ribbon` mark kind (the flow band behind `sankey`: six span columns, two
+  resolved paints, optional semantic `tooltip_rows` — the ribbon geometry
+  contract in `spec/api/chart-kind-contract.md`). `markOf()` falls back to
+  scatter for unknown kinds, so a cached v10 client would silently draw every
+  flow diagram as a point cloud of span endpoints; the v11 mismatch rejects
+  it before rendering.
 - **Transport frame.** `FRAME_MAGIC` `"XYBF"` with `FRAME_VERSION = 1`
   versions the binary envelope separately, so the transport and the renderer
   can evolve without coupling.
