@@ -1107,9 +1107,33 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "sdist",
         "CI",
         "source artifact verification",
+        "dtolnay/rust-toolchain@",
         "uv build --sdist",
         "scripts/verify_sdist.py",
+    )
+    ci_sdist = jobs.get("sdist", "")
+    _require_step_contains(
+        errors,
+        ci_sdist,
+        "Build and load native core from sdist",
+        "Rust-backed sdist install contract",
+        "XY_REQUIRE_CARGO",
+        "uv pip install --no-cache",
+        '"reflex>=0.9.6"',
+        "import reflex_xy",
+        "import xy.kernels as kernels",
+        'kernels.BACKEND == "native"',
+    )
+    _require_step_contains(
+        errors,
+        ci_sdist,
+        "Verify coreless sdist imports reflex_xy",
+        "coreless sdist import contract",
         "XY_SKIP_CARGO",
+        "uv pip install --no-cache",
+        "import reflex_xy",
+        "assert reflex_xy.__version__ == version",
+        "native Rust core",
     )
     _require_job_contains(
         errors,
@@ -1287,19 +1311,40 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         jobs,
         "sdist",
         "release",
-        "sdist build, content verification, no-Rust clear-error smoke, and upload",
+        "sdist build, content verification, Rust-backed install smoke, and upload",
         "astral-sh/setup-uv@",
+        "dtolnay/rust-toolchain@",
         "actions/setup-node@",
         'node-version: "22"',
         "npm ci",
         "uv build --sdist",
         "scripts/verify_sdist.py",
-        "XY_SKIP_CARGO",
-        '"reflex>=0.9.6"',
-        "import reflex_xy",
-        "native Rust core",
         "actions/upload-artifact@",
         "dist/*.tar.gz",
+    )
+    release_sdist = jobs.get("sdist", "")
+    _require_step_contains(
+        errors,
+        release_sdist,
+        "Build and load native core from sdist",
+        "Rust-backed release sdist install contract",
+        "XY_REQUIRE_CARGO",
+        "uv pip install --no-cache",
+        '"reflex>=0.9.6"',
+        "import reflex_xy",
+        "import xy.kernels as kernels",
+        'kernels.BACKEND == "native"',
+    )
+    _require_step_contains(
+        errors,
+        release_sdist,
+        "Verify coreless sdist imports reflex_xy",
+        "coreless release sdist import contract",
+        "XY_SKIP_CARGO",
+        "uv pip install --no-cache",
+        "import reflex_xy",
+        "assert reflex_xy.__version__ == version",
+        "native Rust core",
     )
     _require_job_contains(
         errors,

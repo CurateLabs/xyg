@@ -35,6 +35,11 @@ in the README).
   silently leave a stale row in the CodSpeed dashboard.
 
 ### Fixed
+- Source-distribution CI and release validation now exercise both installation
+  contracts independently: a forced Cargo build must load the native backend,
+  while a cache-isolated coreless build must still import `reflex_xy`, report
+  the installed version, and raise the documented error only when compute is
+  requested.
 - Polar customization now stays consistent across the browser, SVG, and native
   raster renderers: point-anchored annotations use the joint `(theta, r)`
   projection, explicit chart padding survives the polar layout pass, gradient
