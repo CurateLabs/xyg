@@ -39,5 +39,10 @@ if [[ ${#tests[@]} -eq 0 ]]; then
 fi
 
 echo "XY_NATIVE_LIB=${XY_NATIVE_LIB}"
+if [[ "${PYTHON}" == "uv" ]]; then
+  echo "running: uv run python -m pytest -q ${tests[*]}"
+  cd "${ROOT}"
+  exec uv run python -m pytest -q "${tests[@]}"
+fi
 echo "running: ${PYTHON} -m pytest -q ${tests[*]}"
 exec "${PYTHON}" -m pytest -q "${tests[@]}"

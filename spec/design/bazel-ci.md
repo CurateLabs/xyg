@@ -36,6 +36,7 @@ this workflow.
 ./bazel test //:rust_test //:abi_smoke //:python_graph_test //:node_graph_test
 ```
 
-`./bazel` invokes the committed `tools/bazelisk` (see `.bazelversion`).
-Alternatively install bazelisk and export `USE_BAZEL_VERSION` from
-`.bazelversion`.
+`./bazel` prefers a committed `tools/bazelisk` when present, otherwise
+`bazelisk` / `bazel` on `PATH`. Pin the version with `.bazelversion` or
+`USE_BAZEL_VERSION` (bazelisk). On Blacksmith CI,
+`useblacksmith/setup-bazel@v2` installs Bazel and the wrapper uses it.

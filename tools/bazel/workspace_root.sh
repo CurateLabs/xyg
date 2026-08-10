@@ -20,8 +20,8 @@ if [[ -n "${TEST_WORKSPACE_DIRECTORY:-}" && -f "${TEST_WORKSPACE_DIRECTORY}/Carg
   exit 0
 fi
 
-# no-sandbox test cwd is usually the execroot; Cargo.toml is a symlink into
-# the real checkout — resolve it so cargo writes to the developer's target/.
+# no-sandbox test cwd is usually the runfiles tree; Cargo.toml is a symlink
+# into the real checkout — resolve it so cargo/pytest see target/ and .venv.
 if [[ -f "${PWD}/Cargo.toml" ]]; then
   _resolve_from_cargo_toml "${PWD}/Cargo.toml"
   exit 0
@@ -37,6 +37,21 @@ for cand in \
   fi
 done
 
+# Last resort: walk parents for a checkout that has both MODULE.bazel and Cargo.toml.
+d="${PWD}"
+while [[ "${d}" != "/" ]]; do
+  if [[ -f "${d}/MODULE.bazel" && -f "${d}/Cargo.toml" ]]; then
+    # If this is a runfiles execroot copy, prefer the physical Cargo.toml path.
+    if [[ -L "${d}/Cargo.toml" ]]; then
+      _resolve_from_cargo_toml "${d}/Cargo.toml"
+      exit 0
+    fi
+    printf '%s\n' "${d}"
+    exit 0
+  fi
+  d="$(dirname "${d}")"
+done
+
 if command -v git >/dev/null 2>&1; then
   if root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
     if [[ -f "${root}/Cargo.toml" ]]; then
@@ -47,4 +62,9 @@ if command -v git >/dev/null 2>&1; then
 fi
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# tools/bazel -> repo root when scripts live in the real checkout.
+if [[ -f "${HERE}/../../Cargo.toml" ]]; then
+  _resolve_from_cargo_toml "${HERE}/../../Cargo.toml"
+  exit 0
+fi
 printf '%s\n' "$(cd "${HERE}/../.." && pwd)"

@@ -28,5 +28,10 @@ export XY_NATIVE_LIB="${LIB}"
 
 PYTHON="$(resolve_python "${ROOT}")"
 echo "XY_NATIVE_LIB=${XY_NATIVE_LIB}"
+if [[ "${PYTHON}" == "uv" ]]; then
+  echo "running: uv run python scripts/abi_smoke.py"
+  cd "${ROOT}"
+  exec uv run python scripts/abi_smoke.py
+fi
 echo "running: ${PYTHON} scripts/abi_smoke.py"
 exec "${PYTHON}" scripts/abi_smoke.py

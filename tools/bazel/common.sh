@@ -53,8 +53,18 @@ find_native_lib() {
 
 resolve_python() {
   local root="${1}"
+  # Prefer an explicit project venv (uv sync / CI), then VIRTUAL_ENV, then PATH.
   if [[ -x "${root}/.venv/bin/python" ]]; then
     printf '%s\n' "${root}/.venv/bin/python"
+    return 0
+  fi
+  if [[ -n "${VIRTUAL_ENV:-}" && -x "${VIRTUAL_ENV}/bin/python" ]]; then
+    printf '%s\n' "${VIRTUAL_ENV}/bin/python"
+    return 0
+  fi
+  if command -v uv >/dev/null 2>&1; then
+    # uv run picks the project environment when cwd is the checkout.
+    printf '%s\n' "uv"
     return 0
   fi
   if command -v python3 >/dev/null 2>&1; then
@@ -63,6 +73,18 @@ resolve_python() {
   fi
   echo "python3 not found" >&2
   return 1
+}
+
+run_python() {
+  local root="${1}"
+  shift
+  local py
+  py="$(resolve_python "${root}")"
+  if [[ "${py}" == "uv" ]]; then
+    (cd "${root}" && exec uv run python "$@")
+  else
+    exec "${py}" "$@"
+  fi
 }
 
 expected_abi_from_source() {
