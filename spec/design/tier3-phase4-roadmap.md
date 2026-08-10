@@ -5,11 +5,9 @@ on Python and Node ([lod-architecture.md](lod-architecture.md) §4 /
 Phase 3; [tier3-testing.md](tier3-testing.md);
 [xy-coverage.md](xy-coverage.md)).
 
-**Tracking issue:** GitHub Issues are currently **disabled** on this repo.
-Until they are enabled, track Phase 4 in
-[`issues/phase4-tile-spill.md`](issues/phase4-tile-spill.md). After Issues are
-on, open the GitHub issue from that body and replace this paragraph with
-`Tracked by #N`.
+**Tracking issue:** [#5](https://github.com/CurateLabs/graphforge-xy/issues/5)
+(“Phase 4: Tier-3 disk-resident 256² tile spill”). In-repo pointer:
+[`issues/phase4-tile-spill.md`](issues/phase4-tile-spill.md).
 
 ## Why Phase 4
 
