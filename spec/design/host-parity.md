@@ -56,6 +56,9 @@ Node must not reimplement layouts or mark geometry in TypeScript.
   produce the same figure spec shape and §29 buffers for the same inputs.
   Graph is the core feature and first golden suite; other types MUST not ship
   on a slower or thinner host path.
+- **REQ-HOSTPARITY-2b (MUST).** Non-graph marks retain the same composition
+  quality and performance bar (Rust kernels, binary transport, WebGL). Graph
+  work MUST NOT regress them or leave them second-class.
 - **REQ-HOSTPARITY-2c (MUST).** Graph ingest helpers (including any GraphForge
   primary path) MUST NOT be the only way to build a graph chart on either host.
   xy-native column/sequence formats from
