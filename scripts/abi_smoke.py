@@ -486,6 +486,47 @@ def load() -> ctypes.CDLL:
         U64P,
         U64P,
     ]
+    lib.xy_hexbin.restype = ctypes.c_size_t
+    lib.xy_hexbin.argtypes = [
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+    ]
+    lib.xy_violin_density.restype = ctypes.c_int32
+    lib.xy_violin_density.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+    ]
+    lib.xy_histogram_edges.restype = ctypes.c_size_t
+    lib.xy_histogram_edges.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+    ]
     return lib
 
 
@@ -1654,6 +1695,67 @@ def main() -> None:
     )
     ok(total == 4, "histogram valid total")
     ok(list(hist) == [2.0, 0.0, 0.0, 2.0], "histogram counts")
+
+    # histogram_edges: NumPy auto on 1..10 → 5 bins / 6 edges.
+    he_data = array("d", [float(i) for i in range(1, 11)])
+    he_out = array("d", [0.0]) * 16
+    he_n = lib.xy_histogram_edges(
+        _ptr(he_data, ctypes.c_double),
+        len(he_data),
+        0.0,
+        0.0,
+        0,
+        0,
+        _ptr(he_out, ctypes.c_double),
+        len(he_out),
+    )
+    ok(he_n == 6 and abs(he_out[0] - 1.0) < 1e-12 and abs(he_out[5] - 10.0) < 1e-12, "histogram_edges auto")
+
+    # violin_density: constant sample expands ±0.5 and yields positive density.
+    vd = array("d", [3.0, 3.0, 3.0])
+    vd_edges = array("d", [0.0]) * 5
+    vd_dens = array("d", [0.0]) * 4
+    ok(
+        lib.xy_violin_density(_ptr(vd, ctypes.c_double), len(vd), 4, _ptr(vd_edges, ctypes.c_double), _ptr(vd_dens, ctypes.c_double))
+        == 1
+        and abs(vd_edges[0] - 2.5) < 1e-12
+        and abs(vd_edges[4] - 3.5) < 1e-12
+        and all(v > 0.0 for v in vd_dens),
+        "violin_density constant span",
+    )
+
+    # hexbin: four points, mincnt=1, count reduce.
+    hx_x = array("d", [0.1, 0.5, 0.9, 0.2])
+    hx_y = array("d", [0.1, 0.5, 0.9, 0.8])
+    hx_cap = (4 + 1) * (4 + 1) + 4 * 4
+    hx_cx = array("d", [0.0]) * hx_cap
+    hx_cy = array("d", [0.0]) * hx_cap
+    hx_m = array("d", [0.0]) * hx_cap
+    hx_c = array("d", [0.0]) * hx_cap
+    hx_dx = ctypes.c_double()
+    hx_dy = ctypes.c_double()
+    hx_n = lib.xy_hexbin(
+        _ptr(hx_x, ctypes.c_double),
+        _ptr(hx_y, ctypes.c_double),
+        null_f64,
+        len(hx_x),
+        4,
+        4,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        1,
+        0,
+        _ptr(hx_cx, ctypes.c_double),
+        _ptr(hx_cy, ctypes.c_double),
+        _ptr(hx_m, ctypes.c_double),
+        _ptr(hx_c, ctypes.c_double),
+        hx_cap,
+        ctypes.byref(hx_dx),
+        ctypes.byref(hx_dy),
+    )
+    ok(hx_n == 4 and abs(hx_dx.value - 0.25) < 1e-12 and sum(hx_c[:hx_n]) == 4.0, "hexbin count cells")
 
     # normalize_f32: clamp finite values, route non-finite values by mode.
     nx = array("d", [-1.0, 0.0, 5.0, 10.0, 11.0, float("nan"), float("inf")])

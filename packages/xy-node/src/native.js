@@ -117,6 +117,15 @@ export const xyQuantiles = lib.func(
 export const xyBoxStats = lib.func(
   "int32_t xy_box_stats(const double *data, size_t len, double *out_stats, double *out_outliers, size_t outliers_cap, size_t *out_n_outliers)",
 );
+export const xyHexbin = lib.func(
+  "size_t xy_hexbin(const double *x, const double *y, const double *c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, size_t mincnt, int32_t reduce, double *out_cx, double *out_cy, double *out_metric, double *out_counts, size_t capacity, double *out_dx, double *out_dy)",
+);
+export const xyViolinDensity = lib.func(
+  "int32_t xy_violin_density(const double *data, size_t len, size_t n_bins, double *out_edges, double *out_density)",
+);
+export const xyHistogramEdges = lib.func(
+  "size_t xy_histogram_edges(const double *data, size_t len, double lo, double hi, int32_t use_range, int32_t method, double *out_edges, size_t capacity)",
+);
 
 // --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(

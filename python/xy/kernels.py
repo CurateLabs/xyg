@@ -95,6 +95,9 @@ lod_grid_shape = _impl.lod_grid_shape
 lod_plan = _impl.lod_plan
 quantiles = _impl.quantiles
 box_stats = _impl.box_stats
+hexbin = _impl.hexbin
+violin_density = _impl.violin_density
+histogram_edges = _impl.histogram_edges
 
 __all__ = [
     "BACKEND",
@@ -121,7 +124,9 @@ __all__ = [
     "factorize_fixed_u8_counts",
     "factorize_unicode1_u8_counts",
     "heatmap_rgba",
+    "hexbin",
     "histogram2d",
+    "histogram_edges",
     "histogram_uniform",
     "indexed_triangles",
     "is_sorted",
@@ -162,6 +167,7 @@ __all__ = [
     "triangle_edges",
     "valid_indices_f64",
     "vector_segments",
+    "violin_density",
     "weighted_ecdf",
     "welch_spectra",
     "zone_maps",

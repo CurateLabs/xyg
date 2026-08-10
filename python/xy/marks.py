@@ -2095,6 +2095,23 @@ def histogram(
         else:
             lo, hi = self._finite_increasing_pair(range, "histogram range")
         counts, edges = kernels.histogram_uniform(vals, lo, hi, n_bins, density=density)
+    elif isinstance(bins, str) and bins.lower() in {"auto", "sturges"}:
+        # Empty finite + estimator strings historically used 10 bins over the
+        # resolved range (or [0, 1]); keep that host policy. Non-empty data
+        # uses Rust edges matching NumPy `bins="auto"` / `"sturges"`.
+        finite = vals[np.isfinite(vals)]
+        hist_range = (
+            None if range is None else self._finite_increasing_pair(range, "histogram range")
+        )
+        if len(finite) == 0:
+            lo, hi = (0.0, 1.0) if hist_range is None else hist_range
+            counts, edges = kernels.histogram_uniform(vals, lo, hi, 10, density=density)
+        else:
+            edges = kernels.histogram_edges(vals, range=hist_range, method=bins.lower())
+            lo, hi = float(edges[0]), float(edges[-1])
+            counts, edges = kernels.histogram_uniform(
+                vals, lo, hi, len(edges) - 1, density=density
+            )
     else:
         finite = vals[np.isfinite(vals)]
         hist_bins = 10 if len(finite) == 0 and isinstance(bins, str) else bins
@@ -2398,10 +2415,11 @@ def violin(
 ) -> "Figure":
     """Add bounded-resolution violin distributions.
 
-    Density estimation is a smoothed histogram computed once in Python; each
-    group ships its fixed ``bins``-sized band set. The client draws the bands
-    through the shared instanced rectangle path, so input cardinality does not
-    become DOM/GPU object cardinality.
+    Density estimation is a smoothed histogram computed once in the native
+    core (`xy_violin_density`); each group ships its fixed ``bins``-sized
+    band set. The client draws the bands through the shared instanced
+    rectangle path, so input cardinality does not become DOM/GPU object
+    cardinality.
     """
     css = styles.compile_mark_style("violin", style)
     color = css.get("color", color)
@@ -2427,22 +2445,11 @@ def violin(
     rect_y0: list[np.ndarray] = []
     rect_y1: list[np.ndarray] = []
     n_bins = int(bins)
-    kernel = np.array([1.0, 2.0, 3.0, 2.0, 1.0])
-    # mode="same" truncates the kernel at the boundaries; dividing by the
-    # per-bin kernel coverage keeps edge bins at full weight instead of
-    # pinching violins whose data piles at the min/max.
-    coverage = np.convolve(np.ones(n_bins), kernel, mode="same")
     for center, group_values in zip(positions, groups, strict=True):
         finite = group_values[np.isfinite(group_values)]
         if len(finite) == 0:
             continue
-        lo, hi = float(np.min(finite)), float(np.max(finite))
-        if lo == hi:
-            lo -= 0.5
-            hi += 0.5
-        edges = np.linspace(lo, hi, n_bins + 1)
-        counts, _ = np.histogram(finite, bins=edges)
-        smooth = np.convolve(counts.astype(np.float64), kernel, mode="same") / coverage
+        edges, smooth = kernels.violin_density(finite, n_bins)
         peak = float(np.max(smooth)) or 1.0
         half_width = width * 0.5 * smooth / peak
         if orientation == "vertical":
@@ -2496,8 +2503,10 @@ def hexbin(
 ) -> "Figure":
     """Add a screen-bounded hexagonal density plot.
 
-    Binning is performed by the native 2-D kernel. Only occupied bins are
-    shipped as centers plus one scalar count/color channel.
+    Binning is performed by the native ``xy_hexbin`` kernel (count / mean /
+    sum). Custom ``reduce_C_function`` callables fall back to a host reduce
+    over the same lattice. Only threshold-passing bins are shipped as centers
+    plus one scalar count/color channel.
     """
     css = styles.compile_mark_style("hexbin", style)
     opacity = css.get("opacity", opacity)
@@ -2557,38 +2566,57 @@ def hexbin(
     threshold = (0 if cv is None else 1) if mincnt is None else int(mincnt)
     if threshold < 0:
         raise ValueError("hexbin mincnt must be nonnegative")
-    # Matplotlib's hex lattice is the union of an integer grid and a half-cell
-    # offset grid. Assign each point to the nearer center in the hex metric;
-    # rectangular binning plus staggered display centers leaves overlaps and
-    # gaps and, more importantly, puts values in the wrong cells.
-    fx = (xv - xr[0]) * w / (xr[1] - xr[0])
-    fy = (yv - yr[0]) * h / (yr[1] - yr[0])
-    ix1 = np.rint(fx).astype(np.int64)
-    iy1 = np.rint(fy).astype(np.int64)
-    ix2 = np.floor(fx).astype(np.int64)
-    iy2 = np.floor(fy).astype(np.int64)
-    use_first = (fx - ix1) ** 2 + 3.0 * (fy - iy1) ** 2 < (
-        (fx - ix2 - 0.5) ** 2 + 3.0 * (fy - iy2 - 0.5) ** 2
-    )
-    valid_first = use_first & (ix1 >= 0) & (ix1 <= w) & (iy1 >= 0) & (iy1 <= h)
-    valid_second = ~use_first & (ix2 >= 0) & (ix2 < w) & (iy2 >= 0) & (iy2 < h)
-    if not np.any(valid_first | valid_second):
-        raise ValueError("hexbin range contains no finite points")
-    flat1 = iy1 * (w + 1) + ix1
-    flat2 = iy2 * w + ix2
-    count1 = np.bincount(flat1[valid_first], minlength=(w + 1) * (h + 1)).astype(float)
-    count2 = np.bincount(flat2[valid_second], minlength=w * h).astype(float)
-    keep1 = np.flatnonzero(count1 >= threshold)
-    keep2 = np.flatnonzero(count2 >= threshold)
-    counts = np.concatenate((count1[keep1], count2[keep2]))
-    if len(counts) == 0:
-        raise ValueError("hexbin range contains no finite points")
-    dx, dy = (xr[1] - xr[0]) / w, (yr[1] - yr[0]) / h
-    centers_x = np.concatenate((xr[0] + (keep1 % (w + 1)) * dx, xr[0] + (keep2 % w + 0.5) * dx))
-    centers_y = np.concatenate((yr[0] + (keep1 // (w + 1)) * dy, yr[0] + (keep2 // w + 0.5) * dy))
+
+    native_reduce: str | None
     if cv is None:
-        metric = counts
+        native_reduce = "count"
+    elif reduce_C_function is np.mean or reduce_C_function is np.nanmean:
+        native_reduce = "mean"
+    elif reduce_C_function is np.sum or reduce_C_function is np.nansum:
+        native_reduce = "sum"
     else:
+        native_reduce = None
+
+    if native_reduce is not None:
+        centers_x, centers_y, metric, counts, dx, dy = kernels.hexbin(
+            xv,
+            yv,
+            gridsize=(w, h),
+            range=(xr, yr),
+            mincnt=threshold,
+            C=cv,
+            reduce=native_reduce,
+        )
+        if len(counts) == 0:
+            raise ValueError("hexbin range contains no finite points")
+    else:
+        # Custom reducers: same lattice assignment as ``xy_hexbin``, host reduce.
+        fx = (xv - xr[0]) * w / (xr[1] - xr[0])
+        fy = (yv - yr[0]) * h / (yr[1] - yr[0])
+        ix1 = np.rint(fx).astype(np.int64)
+        iy1 = np.rint(fy).astype(np.int64)
+        ix2 = np.floor(fx).astype(np.int64)
+        iy2 = np.floor(fy).astype(np.int64)
+        use_first = (fx - ix1) ** 2 + 3.0 * (fy - iy1) ** 2 < (
+            (fx - ix2 - 0.5) ** 2 + 3.0 * (fy - iy2 - 0.5) ** 2
+        )
+        valid_first = use_first & (ix1 >= 0) & (ix1 <= w) & (iy1 >= 0) & (iy1 <= h)
+        valid_second = ~use_first & (ix2 >= 0) & (ix2 < w) & (iy2 >= 0) & (iy2 < h)
+        if not np.any(valid_first | valid_second):
+            raise ValueError("hexbin range contains no finite points")
+        flat1 = iy1 * (w + 1) + ix1
+        flat2 = iy2 * w + ix2
+        count1 = np.bincount(flat1[valid_first], minlength=(w + 1) * (h + 1)).astype(float)
+        count2 = np.bincount(flat2[valid_second], minlength=w * h).astype(float)
+        keep1 = np.flatnonzero(count1 >= threshold)
+        keep2 = np.flatnonzero(count2 >= threshold)
+        counts = np.concatenate((count1[keep1], count2[keep2]))
+        if len(counts) == 0:
+            raise ValueError("hexbin range contains no finite points")
+        dx, dy = (xr[1] - xr[0]) / w, (yr[1] - yr[0]) / h
+        centers_x = np.concatenate((xr[0] + (keep1 % (w + 1)) * dx, xr[0] + (keep2 % w + 0.5) * dx))
+        centers_y = np.concatenate((yr[0] + (keep1 // (w + 1)) * dy, yr[0] + (keep2 // w + 0.5) * dy))
+        assert cv is not None
         reduced: list[float] = []
         memberships = [cv[valid_first & (flat1 == flat)] for flat in keep1] + [
             cv[valid_second & (flat2 == flat)] for flat in keep2
@@ -2599,6 +2627,7 @@ def hexbin(
                 raise ValueError("hexbin reduce_C_function must return one finite scalar per bin")
             reduced.append(float(made))
         metric = np.asarray(reduced, dtype=np.float64)
+
     if bins == "log":
         # Matplotlib's ``bins="log"`` is LogNorm over the original cell
         # values. Non-positive cells use the bad color (transparent by

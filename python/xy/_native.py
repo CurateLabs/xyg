@@ -25,7 +25,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 53
+ABI_VERSION = 54
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -886,6 +886,47 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
+    ]
+    lib.xy_hexbin.restype = ctypes.c_size_t
+    lib.xy_hexbin.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_violin_density.restype = ctypes.c_int32
+    lib.xy_violin_density.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_histogram_edges.restype = ctypes.c_size_t
+    lib.xy_histogram_edges.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
     ]
     lib.xy_local_log_density.restype = ctypes.c_int32
     lib.xy_local_log_density.argtypes = [
@@ -4200,6 +4241,166 @@ def box_stats(
         float(stats[4]),
         outliers[: int(n_out.value)].copy(),
     )
+
+
+HEX_REDUCE_COUNT = 0
+HEX_REDUCE_MEAN = 1
+HEX_REDUCE_SUM = 2
+
+
+def hexbin(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    gridsize: tuple[int, int],
+    range: tuple[tuple[float, float], tuple[float, float]],
+    mincnt: int = 0,
+    C: npt.NDArray[np.float64] | None = None,
+    reduce: str = "count",
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    float,
+    float,
+]:
+    """Hexagonal binning via ``xy_hexbin`` (count / mean / sum).
+
+    Returns ``(centers_x, centers_y, metrics, counts, dx, dy)``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("hexbin x and y must have equal length")
+    if len(gridsize) != 2:
+        raise ValueError("hexbin gridsize must be (width, height)")
+    w, h = int(gridsize[0]), int(gridsize[1])
+    if w < 2 or h < 2 or w > 2048 or h > 2048:
+        raise ValueError("hexbin gridsize dimensions must be in 2..=2048")
+    (x0, x1), (y0, y1) = range
+    x0, x1 = _finite_increasing(x0, x1, "hexbin x range")
+    y0, y1 = _finite_increasing(y0, y1, "hexbin y range")
+    if mincnt < 0:
+        raise ValueError("hexbin mincnt must be nonnegative")
+    reduce_key = str(reduce).strip().lower()
+    reduce_map = {
+        "count": HEX_REDUCE_COUNT,
+        "mean": HEX_REDUCE_MEAN,
+        "sum": HEX_REDUCE_SUM,
+    }
+    if reduce_key not in reduce_map:
+        raise ValueError("hexbin reduce must be 'count', 'mean', or 'sum'")
+    reduce_code = reduce_map[reduce_key]
+    c_arr = None if C is None else _as_f64(C, "C")
+    if c_arr is not None and len(c_arr) != len(x):
+        raise ValueError("hexbin C must have the same length as x and y")
+    if reduce_code != HEX_REDUCE_COUNT and c_arr is None:
+        raise ValueError("hexbin mean/sum reduce requires C")
+    capacity = (w + 1) * (h + 1) + w * h
+    out_cx = np.empty(capacity, dtype=np.float64)
+    out_cy = np.empty(capacity, dtype=np.float64)
+    out_metric = np.empty(capacity, dtype=np.float64)
+    out_counts = np.empty(capacity, dtype=np.float64)
+    dx = ctypes.c_double()
+    dy = ctypes.c_double()
+    written = _lib.xy_hexbin(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        0 if c_arr is None else _ptr_f64(c_arr),
+        len(x),
+        w,
+        h,
+        x0,
+        x1,
+        y0,
+        y1,
+        int(mincnt),
+        reduce_code,
+        _ptr_f64(out_cx),
+        _ptr_f64(out_cy),
+        _ptr_f64(out_metric),
+        _ptr_f64(out_counts),
+        capacity,
+        ctypes.byref(dx),
+        ctypes.byref(dy),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid hexbin arguments")
+    n = int(written)
+    return (
+        out_cx[:n].copy(),
+        out_cy[:n].copy(),
+        out_metric[:n].copy(),
+        out_counts[:n].copy(),
+        float(dx.value),
+        float(dy.value),
+    )
+
+
+def violin_density(
+    data: npt.NDArray[np.float64],
+    n_bins: int,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Histogram + fixed smooth kernel; returns ``(edges, density)``."""
+    data = _as_f64(data, "data")
+    n_bins = int(n_bins)
+    if n_bins < 4 or n_bins > 1024:
+        raise ValueError("violin bins must be an integer between 4 and 1024")
+    edges = np.empty(n_bins + 1, dtype=np.float64)
+    density = np.empty(n_bins, dtype=np.float64)
+    ok = _lib.xy_violin_density(
+        _ptr_f64(data),
+        len(data),
+        n_bins,
+        _ptr_f64(edges),
+        _ptr_f64(density),
+    )
+    if ok != 1:
+        raise ValueError("violin density requires at least one finite value")
+    return edges, density
+
+
+def histogram_edges(
+    data: npt.NDArray[np.float64],
+    *,
+    range: tuple[float, float] | None = None,
+    method: str = "auto",
+) -> npt.NDArray[np.float64]:
+    """Uniform histogram edges via Rust.
+
+    ``method="auto"`` matches NumPy ``bins="auto"`` (min of Sturges bandwidth
+    and Freedman–Diaconis bandwidth floored by ``sqrt/2``). ``method="sturges"``
+    is Sturges alone.
+    """
+    data = _as_f64(data, "data")
+    key = str(method).strip().lower()
+    method_map = {"auto": 0, "sturges": 1}
+    if key not in method_map:
+        raise ValueError("histogram_edges method must be 'auto' or 'sturges'")
+    if range is None:
+        use_range = 0
+        lo = hi = 0.0
+    else:
+        use_range = 1
+        lo, hi = _finite_increasing(range[0], range[1], "histogram range")
+    # NumPy auto floors FD by sqrt/2, so n_bins ≤ ceil(2√n); sturges is ~log2(n).
+    n = max(len(data), 1)
+    capacity = max(int(2 * (n**0.5) + 4), 16)
+    out = np.empty(capacity, dtype=np.float64)
+    written = _lib.xy_histogram_edges(
+        _ptr_f64(data),
+        len(data),
+        lo,
+        hi,
+        use_range,
+        method_map[key],
+        _ptr_f64(out),
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid histogram_edges arguments")
+    return out[: int(written)].copy()
 
 
 # xy_css_check kinds — keep in sync with `src/lib.rs`.

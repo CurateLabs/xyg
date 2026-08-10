@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xy/lod.encode_f32_values when calling xy_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32 } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -180,6 +180,157 @@ export function histogramUniform(data, lo, hi, nBins, { density = false } = {}) 
     edges[i] = lo + i * width;
   }
   return { counts, edges, total };
+}
+
+/** NumPy-compatible auto/sturges edges (`method`: `"auto"` | `"sturges"`). */
+export function histogramEdges(data, { range = null, method = "auto" } = {}) {
+  const arr = asF64Array(data);
+  const methodId = method === "sturges" ? 1 : method === "auto" ? 0 : -1;
+  if (methodId < 0) {
+    throw new Error("histogramEdges method must be 'auto' or 'sturges'");
+  }
+  const useRange = range == null ? 0 : 1;
+  const lo = range == null ? 0 : Number(range[0]);
+  const hi = range == null ? 0 : Number(range[1]);
+  const n = Math.max(arr.length, 1);
+  const capacity = Math.max(Math.ceil(2 * Math.sqrt(n) + 4), 16);
+  const out = new Float64Array(capacity);
+  const written = Number(
+    xyHistogramEdges(
+      f64Ptr(arr),
+      BigInt(arr.length),
+      lo,
+      hi,
+      useRange,
+      methodId,
+      f64Ptr(out),
+      BigInt(capacity),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xy_histogram_edges failed");
+  }
+  return out.subarray(0, written);
+}
+
+const HEX_REDUCE = Object.freeze({ count: 0, mean: 1, sum: 2 });
+
+/** Matplotlib-compatible hexbin; `reduce` is count|mean|sum. */
+export function hexbin(x, y, { gridsize, range, mincnt = 0, C = null, reduce = "count" } = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("hexbin x/y length mismatch");
+  }
+  const [w, h] = Array.isArray(gridsize) ? gridsize : [gridsize, gridsize];
+  const [[x0, x1], [y0, y1]] = range;
+  const reduceId = HEX_REDUCE[reduce];
+  if (reduceId == null) {
+    throw new Error("hexbin reduce must be count, mean, or sum");
+  }
+  const ca = C == null ? null : asF64Array(C);
+  if (ca != null && ca.length !== xa.length) {
+    throw new RangeError("hexbin C length mismatch");
+  }
+  const capacity = (w + 1) * (h + 1) + w * h;
+  const outCx = new Float64Array(capacity);
+  const outCy = new Float64Array(capacity);
+  const outMetric = new Float64Array(capacity);
+  const outCounts = new Float64Array(capacity);
+  const dx = new Float64Array(1);
+  const dy = new Float64Array(1);
+  const written = Number(
+    xyHexbin(
+      f64Ptr(xa),
+      f64Ptr(ya),
+      ca == null ? null : f64Ptr(ca),
+      BigInt(xa.length),
+      BigInt(w),
+      BigInt(h),
+      Number(x0),
+      Number(x1),
+      Number(y0),
+      Number(y1),
+      BigInt(mincnt),
+      reduceId,
+      f64Ptr(outCx),
+      f64Ptr(outCy),
+      f64Ptr(outMetric),
+      f64Ptr(outCounts),
+      BigInt(capacity),
+      f64Ptr(dx),
+      f64Ptr(dy),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xy_hexbin failed");
+  }
+  return {
+    centersX: outCx.subarray(0, written),
+    centersY: outCy.subarray(0, written),
+    metrics: outMetric.subarray(0, written),
+    counts: outCounts.subarray(0, written),
+    dx: dx[0],
+    dy: dy[0],
+  };
+}
+
+/** Violin density: edges (n_bins+1) + smoothed density (n_bins). */
+export function violinDensity(data, nBins) {
+  const arr = asF64Array(data);
+  if (!Number.isInteger(nBins) || nBins < 4 || nBins > 1024) {
+    throw new RangeError("violinDensity nBins must be in 4..=1024");
+  }
+  const edges = new Float64Array(nBins + 1);
+  const density = new Float64Array(nBins);
+  const ok = xyViolinDensity(
+    f64Ptr(arr),
+    BigInt(arr.length),
+    BigInt(nBins),
+    f64Ptr(edges),
+    f64Ptr(density),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_violin_density failed");
+  }
+  return { edges, density };
+}
+
+export function boxStats(data) {
+  const arr = asF64Array(data);
+  const stats = new Float64Array(5);
+  const outliers = new Float64Array(arr.length);
+  const nOut = new BigUint64Array(1);
+  const ok = xyBoxStats(
+    f64Ptr(arr),
+    BigInt(arr.length),
+    f64Ptr(stats),
+    arr.length ? f64Ptr(outliers) : null,
+    BigInt(arr.length),
+    pointer(nOut, "size_t *"),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_box_stats failed");
+  }
+  return {
+    q1: stats[0],
+    median: stats[1],
+    q3: stats[2],
+    low: stats[3],
+    high: stats[4],
+    outliers: outliers.subarray(0, Number(nOut[0])),
+  };
+}
+
+export function quantiles(data, probs) {
+  const arr = asF64Array(data);
+  const p = asF64Array(probs);
+  const out = new Float64Array(p.length);
+  const written = Number(xyQuantiles(f64Ptr(arr), BigInt(arr.length), f64Ptr(p), BigInt(p.length), f64Ptr(out)));
+  if (!Number.isFinite(written) || written < 0) {
+    throw new Error("xy_quantiles failed");
+  }
+  return out;
 }
 
 export function normalizeF32(data, lo, hi, { nanMode = "nan" } = {}) {

@@ -1649,7 +1649,7 @@ def hexbin(
     x_axis: str = "x",
     y_axis: str = "y",
 ) -> Mark:
-    """A native-kernel binned hexagonal density plot.
+    """A hexagonal density plot binned by the shared native ``xy_hexbin`` kernel.
 
     Args:
         x: X values or a column name resolved from ``data``.

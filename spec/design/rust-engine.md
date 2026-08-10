@@ -61,8 +61,9 @@ declined only for a near-unique id/key column, where Python must materialize
 essentially the whole label set regardless. Wide records cross over sooner —
 above 32 B they are declined once the probe is 95% distinct, at or below 32 B
 only when it is entirely distinct) · histogram stats ✅ · quantiles (`xy_quantiles` ✅, linear/NumPy-default) · box stats
-(`xy_box_stats` ✅ Tukey; violin density assembly still host-side) · hexbin
-reducer (`xy_hexbin` TODO — count path not yet ABI-exported) · multi-resolution tile
+(`xy_box_stats` ✅ Tukey; `xy_violin_density` ✅ fixed smooth kernel) · hexbin
+reducer (`xy_hexbin` ✅ count/mean/sum) · histogram edges (`xy_histogram_edges`
+✅ NumPy `bins="auto"` / Sturges) · multi-resolution tile
 generation (`tiles.rs` ✅, including stable-domain incremental updates) ·
 Rust-owned streaming column buffers (plan: `stream.rs`, §5 below).
 
@@ -125,7 +126,9 @@ src/                                          # 15,423 lines shipped, 8 modules
                         #   pyramids refuse appends and rebuild lazily). Owns tile
                         #   memory; handles are opaque u64 ids over the ABI (§3.3).
   stream.rs             # (plan) Rust-owned canonical append buffers.
-  stats.rs              # quantiles + Tukey box_stats ✅; violin/hexbin TODO.
+  stats.rs              # quantiles + Tukey box_stats + violin_density +
+                        #   histogram_edges (NumPy auto) ✅
+  hexbin.rs             # matplotlib-compatible hex lattice (`xy_hexbin`) ✅
   lod_plan.rs           # view LOD drill/grid decision math ✅ (`xy_lod_plan`).
 ```
 
@@ -379,6 +382,8 @@ landed; the remainder, in order:
    negative enum (with the next ABI bump, cheap insurance).
 2. `xy_bin_2d_channels` (LOD doc phase 1) — first FcOpts-style kernel.
 3. Fold drill visible-count into `xy_range_indices` (one pass, count+idx).
-4. `stats.rs`: `xy_quantiles` + `xy_box_stats` ✅ — violin density assembly
-   and `xy_hexbin` (count reducer) remain TODO.
+4. `stats.rs`: `xy_quantiles` + `xy_box_stats` + `xy_violin_density` ✅;
+   `hexbin.rs`: `xy_hexbin` (count/mean/sum) ✅; `xy_histogram_edges`
+   (NumPy `bins="auto"` = min of Sturges bandwidth and FD floored by
+   `sqrt/2`) ✅.
 5. `stream.rs` append (after Arrow ingest lands).
