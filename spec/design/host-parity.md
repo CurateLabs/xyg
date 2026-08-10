@@ -8,10 +8,12 @@ Core GraphForge already exposes one Rust engine to **Python and Node**. This
 extension targets the same matrix: **semantic parity across all chart types**
 from both hosts, over one viz Rust C ABI and one WebGL render client.
 
-**Priority:** the first product surface that must exercise dual-host end to end
-is **graph visualization**
-([graph-fork-requirements.md](graph-fork-requirements.md)) — the main reason
-this fork exists. Other chart families follow on the same Node package.
+**Priority:** **graph visualization** is the core feature of this extension
+([graph-fork-requirements.md](graph-fork-requirements.md)) and the first
+surface that must prove dual-host end to end. **All other chart types** must
+keep the same first-class API feel and speed (shared ABI, §29 wire, WebGL
+client) — sequencing graph first is allowed; a degraded non-graph path is not
+([graphforge-extension.md](graphforge-extension.md) §3).
 
 Does not change runtime behavior until a Node host package lands.
 
@@ -57,8 +59,11 @@ Node must not reimplement layouts or mark geometry in TypeScript.
   and Node (N-API). `ABI_VERSION` bumps apply to both loaders.
 - **REQ-HOSTPARITY-2 (MUST).** For every public chart type, Python and Node
   produce the same figure spec shape and §29 buffers for the same inputs.
-  Graph is first; existing types gain Node coverage as the host package lands.
-- **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
+  Graph is the core feature and first golden suite; other types MUST not ship
+  on a slower or thinner host path.
+- **REQ-HOSTPARITY-2b (MUST).** Non-graph marks retain upstream xy performance
+  and composition quality (Rust kernels, binary transport, WebGL). Graph work
+  MUST NOT regress them or leave them as second-class APIs.- **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment.
 - **REQ-HOSTPARITY-4 (MUST).** Graph viz is the **lead feature** for dual-host
   delivery in this extension ([graph-fork-requirements.md](graph-fork-requirements.md)).

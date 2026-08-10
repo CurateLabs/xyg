@@ -57,15 +57,29 @@ GraphForge (or convenience adapters like NetworkX) — see
 
 ---
 
-## 3. Priority
+## 3. Priority and quality bar
 
-1. **Main need:** core **graph data visualization** on top of GraphForge data
-   (node–link mark, layouts, WebGL, encodings, read/explore).
-2. **Platform:** keep full XY chart breadth with Python↔Node parity so the
-   extension is a complete charting surface for GraphForge apps/notebooks, not
-   a graph-only sidecar.
-3. **Integration:** first-class ingest from GraphForge Arrow / node–edge
-   exports; optional NetworkX only as a plotting convenience.
+**Graph data viz is the core feature** of this extension — the reason
+graphforge-xy exists beside GraphForge. It is not the only first-class
+surface.
+
+| Rule | Meaning |
+|---|---|
+| Core feature | Node–link graph charts on GraphForge data: layouts, WebGL, encodings, explore interaction ([graph-fork-requirements.md](graph-fork-requirements.md)) |
+| Equal class | Every other chart type (scatter, line, bar, heatmap, …) MUST keep the same **first-class API feel** and **speed** contract as upstream xy / as the graph mark — no “sidecar” or degraded path for non-graph charts |
+| Equal hosts | Python and Node parity for **all** chart types ([host-parity.md](host-parity.md)), matching GraphForge’s matrix |
+| Integration | Primary graph ingest from GraphForge Arrow / node–edge exports; NetworkX only as plotting convenience |
+
+**Speed / feel (all marks, including graph):**
+
+- Declarative composition API with shared defaults and styling.
+- Rust kernels + §29 binary transport + WebGL client (no JSON geometry).
+- Screen-bounded work on interaction; recorded LOD/layout decisions (§28).
+- Notebook, app, and static export paths that do not demote non-graph charts.
+
+Delivery may **sequence** graph first, but must not ship a product where
+non-graph charts feel slower, thinner, or second-class relative to graph or to
+upstream xy.
 
 ---
 
@@ -76,3 +90,5 @@ GraphForge (or convenience adapters like NetworkX) — see
   chrome, analysis UI).
 - Requiring GraphForge at import time for non-graph charts (soft dependency /
   adapter for graph ingest).
+- Treating non-graph charts as optional leftovers or lowering their perf bar
+  to fund graph work.

@@ -18,9 +18,12 @@ toolkits (centrality, community detection, pathfinding as a product surface).
 not in this viz extension. Competitor sections below mark what Sigma/vis/Ogma
 sell that we deliberately leave to GraphForge or ignore.
 
-**North star:** give GraphForge users a first-class node–link chart (beat
-Plotly’s network UX; match Sigma/Ogma on WebGL + layout quality) without
-forking the GraphForge engine.
+**North star:** Graph data viz is the **core feature** of graphforge-xy for
+GraphForge users (first-class node–link charts; beat Plotly’s network UX;
+match Sigma/Ogma on WebGL + layout quality) **without** demoting other chart
+types — scatter, line, and the rest keep the same first-class feel and speed
+([graphforge-extension.md](graphforge-extension.md) §3). Analysis stays in
+GraphForge; this extension does not fork the engine.
 
 **Host parity:** Python and Node for *all* chart types, matching GraphForge’s
 dual-host matrix ([host-parity.md](host-parity.md)). Graph viz is the **lead
@@ -237,7 +240,7 @@ filter UIs.
 | Slice | Requirements | Closes |
 |---|---|---|
 | **A — Spec + ABI** | CORE-*; platform [host-parity.md](host-parity.md) | Dual-host foundation for all marks |
-| **B — MVP graph viz** | API-1..3, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | Plotly gap; Sigma display+explore (**main need**) |
+| **B — MVP graph viz** | API-1..3/5, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | GraphForge users get node–link charts (**main need**) |
 | **C — Layout & style depth** | LAY-3..5, REN-2 curve / REN-5, IX-3/4 | vis/Ogma/D3 viz quality |
 | **D — Dual-host graph parity** | API-4, CORE-5, HOSTPARITY-* | Graph proves Python↔Node; then other chart types on Node |
 
