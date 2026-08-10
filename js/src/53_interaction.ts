@@ -1046,6 +1046,8 @@ Object.assign(ChartView.prototype, {
   },
 
   // Standalone selection (no kernel): mask the retained CPU f32 columns (§37).
+  // Graph nodes are ordinary scatter traces (graph-mark.md §6), so they already
+  // participate in box select here — no separate graph selection path.
   _selectLocal(x0, x1, y0, y1, opts: any = {}) {
     let total = 0;
     for (const g of this.gpuTraces) {

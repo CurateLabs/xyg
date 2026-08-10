@@ -10,6 +10,7 @@ import "./53_interaction";
 import "./54_kernel";
 import "./56_animation";
 import "./57_viewstate";
+import "./58_graph";
 
 // ---------------------------------------------------------------------------
 // Entry points
