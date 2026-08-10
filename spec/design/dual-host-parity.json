@@ -68,21 +68,21 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "layout, force, LOD, render-graph; goldens + dual-host force benches"
+      "notes": "layout, force, LOD, render-graph; tests/test_graph_node_parity.py circle goldens + dual-host force benches"
     },
     {
       "kind": "sankey",
       "python": "partial",
       "node": "partial",
       "rust": "ready",
-      "notes": "layout in Rust; thin loaders on both hosts"
+      "notes": "layout in Rust; Node composeSankey thin loader; band polygons follow-up"
     },
     {
       "kind": "scatter",
       "python": "ready",
-      "node": "missing",
+      "node": "partial",
       "rust": "ready",
-      "notes": "Shared encode/m4/hist; Node composition TBD"
+      "notes": "Shared encode/m4/hist; Node figure MVP ships scatter/segments for graph"
     },
     {
       "kind": "line",

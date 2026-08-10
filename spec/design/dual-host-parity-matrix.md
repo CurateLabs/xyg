@@ -60,9 +60,9 @@ ABI and Node exports land; do not claim `ready` without a shared Rust path.
 
 | Kind | Python | Node | Rust decisions | Parity evidence |
 | --- | --- | --- | --- | --- |
-| graph | design → ready with ABI | design → ready with ABI | **ready (design):** layout, force, LOD, render-graph | Goldens + dual-host force benches when shipped |
-| sankey | promote to Rust | thin loader | layout in Rust | Layout ABI parity |
-| scatter / line / hist / … | ready (Python) | missing composition | kernels ready / partial | Shared encode/m4/hist; Node composition TBD |
+| graph | ready | ready (`packages/xy-node` composition) | ready: layout, force, LOD, render-graph | `tests/test_graph_node_parity.py` circle goldens + dual-host force benches |
+| sankey | promote to Rust | thin `composeSankey` loader | layout in Rust | Layout ABI parity |
+| scatter / line / hist / … | ready (Python) | partial (figure MVP: scatter/segments) | kernels ready / partial | Shared encode/m4/hist; Node figure subset for graph |
 | polar / pie / wind_rose / facet | ready (Python) | missing | partial | Host surface gap, not kernel gap |
 
 Update this table in the same change that lands a Node export or Rust

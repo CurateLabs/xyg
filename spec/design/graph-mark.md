@@ -305,10 +305,17 @@ python/xy/
   _graph.py    # ingest helpers, id map, from_networkx thin
   marks.py     # graph() → layout/LOD ABI → segments + scatter
 packages/xy-node/
-  # thin N-API/ffi loader over same cdylib
+  src/abi.js            # koffi loader over same cdylib
+  src/graph.js          # normalize + runLayout (+ edge segments / meta)
+  src/figure.js         # minimal Figure + buildPayload (§29 subset)
+  src/force_scheduler.js  # progressive ticks (setImmediate / worker_threads)
+  src/sankey.js         # thin composeSankey
 js/src/
   # shared GLHost paint; graph meta / CSR highlight only
 ```
+
+Parity evidence: `tests/test_graph_node_parity.py` (4-node circle f64 + f32
+bit-identical across Python and Node).
 
 Sankey and any other host-only layouts promote into Rust under the same
 “Rust owns decisions” rule for dual-host MVP ([host-parity.md](host-parity.md)).

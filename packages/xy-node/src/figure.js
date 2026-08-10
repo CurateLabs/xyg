@@ -1,0 +1,298 @@
+/**
+ * Minimal Node figure — holds scatter/segments traces and builds a §29-ish
+ * payload subset for graph goldens (PROTOCOL_VERSION matches Python).
+ *
+ * Documented subset vs full Python `Figure.build_payload`:
+ * - Emits `protocol`, width/height, axes ranges, traces, columns, graph meta.
+ * - Geometry columns are offset-encoded f32 via `xy_encode_f32` (§29).
+ * - Omits density/M4 tiers, legend resolution, animation keys, polar, etc.
+ * - Enough for graph layout/encode parity goldens across hosts.
+ */
+
+import {
+  Column,
+  PROTOCOL_VERSION,
+  encodeF32Values,
+  geometryOffset,
+  minMax,
+  pinsOffsetToZero,
+} from "./encode.js";
+import { composeGraph } from "./graph.js";
+import { composeSankey } from "./sankey.js";
+
+export { PROTOCOL_VERSION };
+
+let nextTraceId = 1;
+
+function asF64(value) {
+  if (value instanceof Float64Array) return value;
+  if (value == null) return new Float64Array(0);
+  return Float64Array.from(value, Number);
+}
+
+function finiteBounds(arr) {
+  const mm = minMax(arr);
+  return mm == null ? [0.0, 0.0] : mm;
+}
+
+export class PayloadWriter {
+  constructor({ split = false } = {}) {
+    this.split = split;
+    this.columns = [];
+    this._chunks = [];
+    this._pos = 0;
+  }
+
+  shipValues(values, { kind = "float", scale = null } = {}) {
+    const vals = asF64(values);
+    const [lo, hi] = finiteBounds(vals);
+    const offset = pinsOffsetToZero(scale) ? geometryOffset(scale, lo, hi) : (lo + hi) / 2.0;
+    const { values: encoded, meta } = encodeF32Values(vals, offset, lo, hi, { kind });
+    return this._append(encoded, meta);
+  }
+
+  ship(values, column, { scale = null } = {}) {
+    const vals = asF64(values);
+    const col = column instanceof Column ? column : new Column(vals);
+    const [lo, hi] = col.bounds();
+    const offset = pinsOffsetToZero(scale)
+      ? geometryOffset(scale, lo, hi)
+      : col.suggestOffset();
+    const { values: encoded, meta } = encodeF32Values(vals, offset, lo, hi, {
+      kind: col.kind,
+    });
+    return this._append(encoded, meta);
+  }
+
+  _append(enc, meta) {
+    const idx = this.columns.length;
+    if (this.split) {
+      this.columns.push({
+        buf: this._chunks.length,
+        byte_offset: 0,
+        len: enc.length,
+        ...meta,
+      });
+    } else {
+      this.columns.push({ byte_offset: this._pos, len: enc.length, ...meta });
+    }
+    this._chunks.push(enc);
+    this._pos += enc.byteLength;
+    return idx;
+  }
+
+  blob() {
+    return Buffer.concat(this._chunks.map((c) => Buffer.from(c.buffer, c.byteOffset, c.byteLength)));
+  }
+
+  buffers() {
+    return this._chunks.map((c) => c);
+  }
+}
+
+export class Figure {
+  constructor(opts = {}) {
+    this.width = opts.width ?? 640;
+    this.height = opts.height ?? 400;
+    this.title = opts.title ?? null;
+    this.traces = [];
+    this._graphMeta = null;
+    this._axisRange = { x: null, y: null };
+  }
+
+  scatter(x, y, opts = {}) {
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "scatter",
+      name: opts.name ?? null,
+      x: asF64(x),
+      y: asF64(y),
+      style: { ...(opts.style ?? {}) },
+      x_axis: opts.xAxis ?? "x",
+      y_axis: opts.yAxis ?? "y",
+    });
+    return this;
+  }
+
+  segments(x0, y0, x1, y1, opts = {}) {
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "segments",
+      name: opts.name ?? null,
+      x0: asF64(x0),
+      y0: asF64(y0),
+      x1: asF64(x1),
+      y1: asF64(y1),
+      style: { ...(opts.style ?? {}) },
+      x_axis: opts.xAxis ?? "x",
+      y_axis: opts.yAxis ?? "y",
+    });
+    return this;
+  }
+
+  /**
+   * Compose a graph mark (normalize → layout → render-graph → traces + meta).
+   */
+  graph(nodes, edges, opts = {}) {
+    const composed = composeGraph(nodes, edges, opts);
+    for (const t of composed.traces) {
+      if (t.kind === "segments") {
+        this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
+      } else if (t.kind === "scatter") {
+        this.scatter(t.x, t.y, { name: t.name, style: t.style });
+      }
+    }
+    const meta = {
+      ...composed.graphMeta,
+      node_trace: this.traces.length - 1,
+      edge_trace: this.traces.length - 2,
+    };
+    if (this._graphMeta == null) {
+      this._graphMeta = [meta];
+    } else {
+      this._graphMeta.push(meta);
+    }
+    return this;
+  }
+
+  /**
+   * Compose a sankey mark when straightforward (rects + link bands as segments).
+   */
+  sankey(nodes, links, opts = {}) {
+    const composed = composeSankey(nodes, links, opts);
+    for (const t of composed.traces) {
+      if (t.kind === "segments") {
+        this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
+      } else if (t.kind === "scatter") {
+        this.scatter(t.x, t.y, { name: t.name, style: t.style });
+      }
+    }
+    return this;
+  }
+
+  _range(axisId) {
+    if (this._axisRange[axisId] != null) {
+      return this._axisRange[axisId];
+    }
+    let lo = Number.POSITIVE_INFINITY;
+    let hi = Number.NEGATIVE_INFINITY;
+    for (const t of this.traces) {
+      const pick =
+        t.kind === "segments"
+          ? axisId === "x" || axisId === (t.x_axis ?? "x")
+            ? [t.x0, t.x1]
+            : [t.y0, t.y1]
+          : axisId === "x" || axisId === (t.x_axis ?? "x")
+            ? [t.x]
+            : [t.y];
+      for (const col of pick) {
+        if (col == null) continue;
+        const mm = minMax(col);
+        if (mm == null) continue;
+        lo = Math.min(lo, mm[0]);
+        hi = Math.max(hi, mm[1]);
+      }
+    }
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+      lo = 0;
+      hi = 1;
+    }
+    if (lo === hi) {
+      hi = lo + 1;
+    }
+    const pad = (hi - lo) * 0.05;
+    const range = [lo - pad, hi + pad];
+    this._axisRange[axisId] = range;
+    return range;
+  }
+
+  _emitScatter(t, pw) {
+    const xCol = new Column(t.x);
+    const yCol = new Column(t.y);
+    return {
+      id: t.id,
+      kind: "scatter",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.x.length,
+      n_marks: t.x.length,
+      x: pw.ship(t.x, xCol),
+      y: pw.ship(t.y, yCol),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+  }
+
+  _emitSegments(t, pw) {
+    const x0 = new Column(t.x0);
+    const x1 = new Column(t.x1);
+    const y0 = new Column(t.y0);
+    const y1 = new Column(t.y1);
+    return {
+      id: t.id,
+      kind: "segments",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.x0.length,
+      n_marks: t.x0.length,
+      x0: pw.ship(t.x0, x0),
+      x1: pw.ship(t.x1, x1),
+      y0: pw.ship(t.y0, y0),
+      y1: pw.ship(t.y1, y1),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+  }
+
+  /**
+   * @returns {{spec: object, buffers: Buffer|Float32Array[]}}
+   */
+  buildPayload({ split = false } = {}) {
+    const pw = new PayloadWriter({ split });
+    const xr = this._range("x");
+    const yr = this._range("y");
+    const specTraces = [];
+    for (const t of this.traces) {
+      if (t.kind === "scatter") {
+        specTraces.push(this._emitScatter(t, pw));
+      } else if (t.kind === "segments") {
+        specTraces.push(this._emitSegments(t, pw));
+      } else {
+        throw new Error(`unsupported trace kind ${t.kind} in Node figure MVP`);
+      }
+    }
+    const axisSpecs = {
+      x: { range: xr, scale: "linear" },
+      y: { range: yr, scale: "linear" },
+    };
+    const spec = {
+      protocol: PROTOCOL_VERSION,
+      width: this.width,
+      height: this.height,
+      title: this.title,
+      x_axis: axisSpecs.x,
+      y_axis: axisSpecs.y,
+      axes: axisSpecs,
+      traces: specTraces,
+      columns: pw.columns,
+      backend: "native",
+      view: { ranges: { x: [...xr], y: [...yr] } },
+    };
+    if (split) {
+      spec.buffer_layout = "split";
+    }
+    if (this._graphMeta) {
+      spec.graph = this._graphMeta;
+    }
+    return {
+      spec,
+      buffers: split ? pw.buffers() : pw.blob(),
+    };
+  }
+}
+
+export function figure(opts) {
+  return new Figure(opts);
+}
