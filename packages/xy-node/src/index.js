@@ -70,3 +70,29 @@ export { Figure, PayloadWriter, figure } from "./figure.js";
 export { runForceTicks } from "./force_scheduler.js";
 
 export { composeSankey } from "./sankey.js";
+
+export {
+  composeScatter,
+  attachScatter,
+  encodeScatterPositions,
+} from "./marks/scatter.js";
+
+export {
+  composeLine,
+  attachLine,
+  prepareLineSeries,
+  m4DecimateLine,
+  F64_EPS,
+} from "./marks/line.js";
+
+export {
+  composeHistogram,
+  attachHistogram,
+} from "./marks/histogram.js";
+
+export {
+  scatterChart,
+  lineChart,
+  histogramChart,
+  graphChart,
+} from "./charts.js";

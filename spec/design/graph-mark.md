@@ -307,6 +307,8 @@ python/xy/
 packages/xy-node/
   src/abi.js            # koffi loader over same cdylib
   src/graph.js          # normalize + runLayout (+ edge segments / meta)
+  src/marks/            # scatter / line / histogram thin builders
+  src/charts.js         # scatterChart / lineChart / histogramChart / graphChart
   src/figure.js         # minimal Figure + buildPayload (§29 subset)
   src/force_scheduler.js  # progressive ticks (setImmediate / worker_threads)
   src/sankey.js         # thin composeSankey
@@ -315,7 +317,9 @@ js/src/
 ```
 
 Parity evidence: `tests/test_graph_node_parity.py` (4-node circle f64 + f32
-bit-identical across Python and Node).
+bit-identical across Python and Node);
+`tests/test_node_mark_parity.py` (scatter encode, M4 index count, histogram
+counts).
 
 Sankey and any other host-only layouts promote into Rust under the same
 “Rust owns decisions” rule for dual-host MVP ([host-parity.md](host-parity.md)).

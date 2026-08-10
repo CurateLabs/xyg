@@ -80,23 +80,23 @@
     {
       "kind": "scatter",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "ready",
-      "notes": "Shared encode/m4/hist; Node figure MVP ships scatter/segments for graph"
+      "notes": "packages/xy-node marks/scatter + charts.scatterChart; tests/test_node_mark_parity.py encode f32 goldens"
     },
     {
       "kind": "line",
       "python": "ready",
-      "node": "missing",
+      "node": "ready",
       "rust": "ready",
-      "notes": "Shared encode/m4; Node composition TBD"
+      "notes": "packages/xy-node marks/line M4 via xy_m4_*; tests/test_node_mark_parity.py index-count goldens"
     },
     {
       "kind": "histogram",
       "python": "ready",
-      "node": "missing",
-      "rust": "partial",
-      "notes": "Shared histogram_uniform; Node composition TBD"
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/histogram via xy_histogram_uniform; tests/test_node_mark_parity.py fixed-edge counts"
     },
     {
       "kind": "polar",

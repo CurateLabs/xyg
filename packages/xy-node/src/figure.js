@@ -1,24 +1,31 @@
 /**
- * Minimal Node figure — holds scatter/segments traces and builds a §29-ish
- * payload subset for graph goldens (PROTOCOL_VERSION matches Python).
+ * Minimal Node figure — holds scatter/line/histogram/segments traces and builds
+ * a §29-ish payload subset (PROTOCOL_VERSION matches Python).
  *
  * Documented subset vs full Python `Figure.build_payload`:
  * - Emits `protocol`, width/height, axes ranges, traces, columns, graph meta.
  * - Geometry columns are offset-encoded f32 via `xy_encode_f32` (§29).
- * - Omits density/M4 tiers, legend resolution, animation keys, polar, etc.
- * - Enough for graph layout/encode parity goldens across hosts.
+ * - Line traces apply Rust M4 when over DECIMATION_THRESHOLD (§28).
+ * - Histogram traces ship as rectangle columns from `xy_histogram_uniform`.
+ * - Omits density tiers, legend resolution, animation keys, polar, etc.
+ * - Enough for mark encode / M4 / hist + graph layout goldens across hosts.
  */
 
 import {
   Column,
+  DECIMATION_THRESHOLD,
   PROTOCOL_VERSION,
   encodeF32Values,
   geometryOffset,
+  m4Points,
   minMax,
   pinsOffsetToZero,
 } from "./encode.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
+import { composeScatter } from "./marks/scatter.js";
+import { composeLine, F64_EPS } from "./marks/line.js";
+import { composeHistogram } from "./marks/histogram.js";
 
 export { PROTOCOL_VERSION };
 
@@ -101,15 +108,65 @@ export class Figure {
   }
 
   scatter(x, y, opts = {}) {
+    if (opts._composed) {
+      this.traces.push({
+        id: opts.id ?? nextTraceId++,
+        kind: "scatter",
+        name: opts.name ?? null,
+        x: asF64(x),
+        y: asF64(y),
+        style: { ...(opts.style ?? {}) },
+        x_axis: opts.xAxis ?? "x",
+        y_axis: opts.yAxis ?? "y",
+      });
+      return this;
+    }
+    const composed = composeScatter(x, y, opts);
+    const t = composed.traces[0];
     this.traces.push({
       id: opts.id ?? nextTraceId++,
       kind: "scatter",
-      name: opts.name ?? null,
-      x: asF64(x),
-      y: asF64(y),
-      style: { ...(opts.style ?? {}) },
-      x_axis: opts.xAxis ?? "x",
-      y_axis: opts.yAxis ?? "y",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      style: { ...t.style },
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  line(x, y, opts = {}) {
+    const composed = composeLine(x, y, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "line",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      style: { ...t.style },
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  histogram(values, opts = {}) {
+    const composed = composeHistogram(values, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "histogram",
+      name: t.name,
+      x0: t.x0,
+      x1: t.x1,
+      y0: t.y0,
+      y1: t.y1,
+      style: { ...t.style },
+      count: t.count,
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
     });
     return this;
   }
@@ -139,7 +196,7 @@ export class Figure {
       if (t.kind === "segments") {
         this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
       } else if (t.kind === "scatter") {
-        this.scatter(t.x, t.y, { name: t.name, style: t.style });
+        this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
       }
     }
     const meta = {
@@ -164,7 +221,7 @@ export class Figure {
       if (t.kind === "segments") {
         this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
       } else if (t.kind === "scatter") {
-        this.scatter(t.x, t.y, { name: t.name, style: t.style });
+        this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
       }
     }
     return this;
@@ -177,15 +234,14 @@ export class Figure {
     let lo = Number.POSITIVE_INFINITY;
     let hi = Number.NEGATIVE_INFINITY;
     for (const t of this.traces) {
-      const pick =
-        t.kind === "segments"
-          ? axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x0, t.x1]
-            : [t.y0, t.y1]
-          : axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x]
-            : [t.y];
-      for (const col of pick) {
+      let cols;
+      if (t.kind === "segments" || t.kind === "histogram") {
+        cols =
+          axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x0, t.x1] : [t.y0, t.y1];
+      } else {
+        cols = axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x] : [t.y];
+      }
+      for (const col of cols) {
         if (col == null) continue;
         const mm = minMax(col);
         if (mm == null) continue;
@@ -224,6 +280,59 @@ export class Figure {
     };
   }
 
+  _emitLine(t, pw, xr, pxWidth) {
+    let xv = t.x;
+    let yv = t.y;
+    let tier = "direct";
+    if (xv.length > DECIMATION_THRESHOLD) {
+      const [outX, outY] = m4Points(xv, yv, xr[0], xr[1] + F64_EPS, pxWidth);
+      xv = outX;
+      yv = outY;
+      tier = "decimated";
+    }
+    const xCol = new Column(xv);
+    const yCol = new Column(yv);
+    const entry = {
+      id: t.id,
+      kind: "line",
+      name: t.name,
+      style: { ...t.style },
+      tier,
+      n_points: t.x.length,
+      n_marks: xv.length,
+      x: pw.ship(xv, xCol),
+      y: pw.ship(yv, yCol),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+    if (tier === "decimated") {
+      entry.decimation_px = pxWidth;
+    }
+    return entry;
+  }
+
+  _emitHistogram(t, pw) {
+    const x0 = new Column(t.x0);
+    const x1 = new Column(t.x1);
+    const y0 = new Column(t.y0);
+    const y1 = new Column(t.y1);
+    return {
+      id: t.id,
+      kind: "histogram",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.count ?? t.x0.length,
+      n_marks: t.x0.length,
+      x0: pw.ship(t.x0, x0),
+      x1: pw.ship(t.x1, x1),
+      y0: pw.ship(t.y0, y0),
+      y1: pw.ship(t.y1, y1),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+  }
+
   _emitSegments(t, pw) {
     const x0 = new Column(t.x0);
     const x1 = new Column(t.x1);
@@ -249,14 +358,19 @@ export class Figure {
   /**
    * @returns {{spec: object, buffers: Buffer|Float32Array[]}}
    */
-  buildPayload({ split = false } = {}) {
+  buildPayload({ split = false, pxWidth = null } = {}) {
     const pw = new PayloadWriter({ split });
     const xr = this._range("x");
     const yr = this._range("y");
+    const widthPx = pxWidth ?? Math.max(16, Math.floor(this.width));
     const specTraces = [];
     for (const t of this.traces) {
       if (t.kind === "scatter") {
         specTraces.push(this._emitScatter(t, pw));
+      } else if (t.kind === "line") {
+        specTraces.push(this._emitLine(t, pw, xr, widthPx));
+      } else if (t.kind === "histogram") {
+        specTraces.push(this._emitHistogram(t, pw));
       } else if (t.kind === "segments") {
         specTraces.push(this._emitSegments(t, pw));
       } else {
