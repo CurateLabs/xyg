@@ -308,11 +308,14 @@ Slice B is intentionally broad: product MVP is not “graph only, Sankey later.�
 - Search/filter chrome, compounds/nested nodes, node-image programs.
 - Cytoscape Desktop / CX, Neo4j connectors, GEXF-as-platform.
 - D3-level SVG DIY; shipping vis-network or Cytoscape.js.
-- Unaggregated “millions of nodes” claims without measured LOD.
+- Unaggregated “billions of elements” claims without the same LOD discipline xy
+  uses for scatter — measure at scatter-class bands (REQ-LOD-4).
 - Demoting non-graph charts’ feel or speed to fund graph work.
 - Making GraphForge (or NetworkX) the sole ingest path, or dropping xy’s
   sequence / NumPy / pandas / columnar input formats when GraphForge helpers
   become the documented primary.
+- Crippling interactive graph paths to satisfy export parity.
+- Keeping Python host-only layout/encode paths in MVP.
 
 ---
 
@@ -328,43 +331,27 @@ Slice B is intentionally broad: product MVP is not “graph only, Sankey later.�
 
 ---
 
-## 8. Known gaps (block implementation, not this requirements review)
+## 8. Decided courses of action (was: open questions)
 
-These must be resolved in `graph-mark.md` / rust-engine updates before coding
-the mark. Call them out so reviewers do not assume they are settled here.
-
-1. **Wire + ID model.** How string/int node IDs map to dense Rust indices;
-   what adjacency/CSR is retained for neighborhood highlight (REQ-IX-2) vs
-   recomputed; what ships on §29 vs stays host-side.
-2. **Force algorithm identity.** REQ-LAY-1 says “one force-directed” but does
-   not name FA2 vs FR vs CoSE — golden Python↔Node tests need a named, seeded
-   contract.
-3. **Progressive ticks + hosts.** Tick streaming across widget/Reflex/Node
-   transports is required (REQ-LAY-2) but not designed; must stay screen-bounded
-   and cancelable without blocking the UI thread.
-4. **Native export.** REQ-REN-6 assumes graph marks in `to_png`/`to_svg`; the
-   native display-list today has no graph primitives — export MVP may be
-   WebGL-capture or a minimal node/edge command set (pick in `graph-mark.md`).
-5. **Tension with upstream rust-engine §1.** Host-parity is intentionally
-   Rust-stricter than “Python owns decisions.” Dual-host work must amend
-   [rust-engine.md](rust-engine.md) (and dossier §32 when Node lands) so the
-   tree does not carry two conflicting placement rules.
-6. **Platform tax vs graph MVP.** REQ-HOSTPARITY-6 (promote Sankey etc. to
-   Rust) and “all chart types on Node” are **platform** follow-ons. Graph MVP
-   (slice B) must not be blocked on rewriting every host-only layout; slice D
-   and later promote marks as they gain Node coverage.
-7. **GraphForge helper shape.** REQ-API-3b allows a documented primary helper
-   without specifying Arrow column names or subgraph extract API — define at
-   adapter implementation time without narrowing REQ-API-3.
+| # | Decision | Course of action |
+|---|---|---|
+| 1 | Index width | Use **`u64`** for graph node/edge indices in the ABI and buffers. Do not use `u32` — it already limited GraphForge-class scale and xy large-row paths. External IDs remain string/int at the API; dense internal indices are u64. (CSR/wire packing details still land in `graph-mark.md`.) |
+| 2 | Layout API | Single `layout=` parameter with a **default**; every layout algorithm is selectable through it as algorithms ship (REQ-API-5, REQ-LAY-*). |
+| 3 | Progressive ticks | Needs a full architecture section in `graph-mark.md`. Must be performant at scale on **Python and Node** over the same Rust tick engine (REQ-CORE-6). |
+| 4 | Export vs interactive | **Interactive primary.** Export matters but must not cripple interaction paths (REQ-REN-6). |
+| 5 | Placement | **Rust owns decisions** for parity/performance. Amend rust-engine away from “Python owns decisions” for this product line ([host-parity.md](host-parity.md)). |
+| 6 | MVP scope | **All charts / viz features in MVP** on both hosts; remove Python host-only layout/encode paths (promote Sankey etc. into Rust as part of MVP dual-host). |
+| 7 | GraphForge helper | **Thin helper only** now. Build charting independently first; use that as the target to design any later extension framework. |
+| 8 | Scale evidence | Test and build to the **same scale class xy claims for scatter and other large charts** (10M / 100M / 1B-class with screen-bounded LOD), on both bindings (REQ-LOD-1, REQ-LOD-4). |
 
 ## 9. Downstream
 
-1. [host-parity.md](host-parity.md) — Python↔Node; Rust-first; equal feel/speed.
-2. `spec/design/graph-mark.md` — data model, wire buffers, layout catalog, LOD,
-   answers to §8.
-3. [rust-engine.md](rust-engine.md) — reconcile Rust-first dual-host rule; add
-   `graph` viz module.
+1. [host-parity.md](host-parity.md) — Rust owns decisions; all-charts MVP dual-host.
+2. `spec/design/graph-mark.md` — wire/ID (`u64`), `layout=` catalog + default,
+   **tick architecture at scale**, LOD ladder aligned to scatter claims.
+3. [rust-engine.md](rust-engine.md) — replace “Python owns decisions” with Rust
+   owns decisions for this line; add `graph` module; promote remaining host-only
+   layouts (Sankey, …) into Rust for MVP.
 4. [chart-roadmap.md](../api/chart-roadmap.md) status when implementation lands.
-5. Capability-matrix regeneration once the `graph` mark exists in code.
-6. Evidence: add graph rows to the benchmark/capability story when the mark
-   ships (scale tiers in REQ-LOD-1 are claims until measured).
+5. Capability-matrix regeneration once the `graph` mark exists.
+6. Benchmarks: graph rows at scatter-class scale bands, Python and Node.
