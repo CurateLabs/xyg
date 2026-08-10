@@ -750,8 +750,8 @@ cache and dedicated 100M latency gate still open)**
 
 **Phase 4 — Tier-3 residency (disk-resident 256² tiles)**
 
-Roadmap: [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md). Tracked by a
-dedicated GitHub issue (file from that doc’s template if missing).
+Roadmap: [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md). Tracked by
+[#5](https://github.com/CurateLabs/graphforge-xy/issues/5).
 
 10. Tile spill/load under byte budget; zone-map-pruned tile index for
     unordered scatter (bucket at ingest, dossier §32b). Rust owns
