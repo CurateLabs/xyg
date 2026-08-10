@@ -106,8 +106,12 @@ def test_histogram_uniform_counts_fixed_edges(node_mark_golden: dict) -> None:
     counts, edges = _native.histogram_uniform(
         values, float(hist["lo"]), float(hist["hi"]), int(hist["n_bins"]), density=False
     )
-    np.testing.assert_array_equal(counts.astype(np.float64), np.asarray(hist["counts"], dtype=np.float64))
-    np.testing.assert_array_equal(edges.astype(np.float64), np.asarray(hist["edges"], dtype=np.float64))
+    np.testing.assert_array_equal(
+        counts.astype(np.float64), np.asarray(hist["counts"], dtype=np.float64)
+    )
+    np.testing.assert_array_equal(
+        edges.astype(np.float64), np.asarray(hist["edges"], dtype=np.float64)
+    )
     counts_node = np.frombuffer(bytes.fromhex(hist["counts_f64_hex"]), dtype="<f8")
     assert counts.astype(np.float64).tobytes() == counts_node.tobytes()
 
