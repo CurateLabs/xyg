@@ -148,11 +148,44 @@ sh_test(
     ],
 )
 
+filegroup(
+    name = "perf_parity_sources",
+    srcs = glob(
+        [
+            "benchmarks/bench_dual_host_graph.py",
+            "benchmarks/bench_parity_kernels.py",
+            "benchmarks/baseline.json",
+            "python/xy/**/*.py",
+        ],
+        allow_empty = True,
+    ),
+)
+
+sh_test(
+    name = "perf_parity_test",
+    size = "medium",
+    srcs = ["//tools/bazel:run_perf_parity.sh"],
+    data = [
+        ":perf_parity_sources",
+        ":rust_sources",
+        ":xy_core",
+        "Cargo.toml",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+    ],
+)
+
 test_suite(
     name = "graph_mvp_tests",
     tests = [
         ":abi_smoke",
         ":node_graph_test",
+        ":perf_parity_test",
         ":python_graph_test",
         ":rust_test",
     ],

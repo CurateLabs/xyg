@@ -8,6 +8,7 @@ exports_files(
         "run_python_graph_tests.sh",
         "run_node_graph_tests.sh",
         "run_abi_smoke.sh",
+        "run_perf_parity.sh",
         "workspace_root.sh",
     ],
     visibility = ["//visibility:public"],

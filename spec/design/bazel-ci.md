@@ -14,7 +14,8 @@ not by converting every existing GitHub Actions workflow.
 | `//:abi_smoke` | `scripts/abi_smoke.py` with `XY_NATIVE_LIB` |
 | `//:python_graph_test` | pytest `tests/test_graph.py` (+ sankey when present) |
 | `//:node_graph_test` | `packages/xy-node` tests against the same `.so` |
-| `//:graph_mvp_tests` | suite of the four test targets above |
+| `//:perf_parity_test` | dual-host graph + kernel soft ceilings (small N) |
+| `//:graph_mvp_tests` | suite of the graph dual-host test targets above |
 
 Cargo.toml / Cargo.lock remain authoritative. Root Bazel targets wrap
 cargo / pytest / npm so crates.io does not need to be reachable through

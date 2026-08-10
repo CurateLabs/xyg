@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "title": "Dual-host parity matrix (machine-readable twin)",
+  "source": "spec/design/dual-host-parity-matrix.md",
+  "status_values": ["ready", "partial", "missing", "design"],
+  "architecture_principle": "GraphForge/canonical → Rust (layout, viewport, graph LOD, edge LOD, encode, render-graph emission) → bounded §29 buffers → shared WebGL host (paint only).",
+  "pipeline_layers": [
+    {
+      "layer": "GraphForge / canonical ingest helpers",
+      "python": "design",
+      "node": "design",
+      "shared_artifact": "Same mark buffers",
+      "notes": "Optional; never the only path (REQ-API-3)"
+    },
+    {
+      "layer": "Dense u64 indices + f64 columns",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "Host→Rust pointers",
+      "notes": "No u32 element identity"
+    },
+    {
+      "layer": "Layout (preset/grid/circle/force/…)",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "xy_graph_layout / force handle",
+      "notes": "Seeded FR goldens bit-identical"
+    },
+    {
+      "layer": "Force ticks (progressive)",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "xy_graph_force_*",
+      "notes": "Never JS main thread; Barnes–Hut/grid approx at scale"
+    },
+    {
+      "layer": "Viewport + graph LOD + edge LOD",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "xy_graph_lod_* / cluster / sample",
+      "notes": "Recorded §28; Rust emits render graph"
+    },
+    {
+      "layer": "Encode → §29 f32",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "Same binary payloads",
+      "notes": "Offset-encoded; no JSON numbers"
+    },
+    {
+      "layer": "Shared WebGL host paint",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "GLHost (dossier §18)",
+      "notes": "Paint / pick / gestures only; no raw V/E past direct tier"
+    }
+  ],
+  "complexity_budgets": {
+    "ingest": "O(V+E)",
+    "layout": "approx (exact only when small)",
+    "lod_plan": "O(V+E)",
+    "interactive": "≈ O(visible)",
+    "gpu": "≈ O(screen) past direct tier"
+  },
+  "mark_kinds": [
+    {
+      "kind": "graph",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "layout, force, LOD, render-graph; goldens + dual-host force benches"
+    },
+    {
+      "kind": "sankey",
+      "python": "partial",
+      "node": "partial",
+      "rust": "ready",
+      "notes": "layout in Rust; thin loaders on both hosts"
+    },
+    {
+      "kind": "scatter",
+      "python": "ready",
+      "node": "missing",
+      "rust": "ready",
+      "notes": "Shared encode/m4/hist; Node composition TBD"
+    },
+    {
+      "kind": "line",
+      "python": "ready",
+      "node": "missing",
+      "rust": "ready",
+      "notes": "Shared encode/m4; Node composition TBD"
+    },
+    {
+      "kind": "histogram",
+      "python": "ready",
+      "node": "missing",
+      "rust": "partial",
+      "notes": "Shared histogram_uniform; Node composition TBD"
+    },
+    {
+      "kind": "polar",
+      "python": "ready",
+      "node": "missing",
+      "rust": "partial",
+      "notes": "Host surface gap, not kernel gap"
+    },
+    {
+      "kind": "pie",
+      "python": "ready",
+      "node": "missing",
+      "rust": "partial",
+      "notes": "Host surface gap, not kernel gap"
+    },
+    {
+      "kind": "wind_rose",
+      "python": "ready",
+      "node": "missing",
+      "rust": "partial",
+      "notes": "Host surface gap, not kernel gap"
+    },
+    {
+      "kind": "facet",
+      "python": "ready",
+      "node": "missing",
+      "rust": "partial",
+      "notes": "Host surface gap, not kernel gap"
+    }
+  ],
+  "references": [
+    "spec/design/dual-host-parity-matrix.md",
+    "spec/design/graph-mark.md",
+    "spec/design/host-parity.md",
+    "spec/design/rust-engine.md"
+  ]
+}
