@@ -1,10 +1,11 @@
 /**
  * Thin Sankey composition over `xy_sankey_layout` (host-parity.md).
- * Emits node rectangles as scatter centers + link bands as segments — enough
- * for layout goldens; full band polygons remain a follow-up on both hosts.
+ * Emits link + node ribbons (Python parity): gradient flow bands, not midlines.
  */
 
 import { sankeyLayout } from "./abi.js";
+import { DEFAULT_PALETTE } from "./encode.js";
+import { composeRibbon } from "./marks/ribbon.js";
 
 /**
  * @param {Iterable|object} nodes — id list or `{id: [...]}`
@@ -73,52 +74,78 @@ export function composeSankey(nodes, links, opts = {}) {
     iterations: opts.iterations,
   });
 
-  // Node centers for a scatter placeholder; link midlines as segments.
-  const cx = new Float64Array(ids.length);
-  const cy = new Float64Array(ids.length);
-  for (let i = 0; i < ids.length; i += 1) {
-    cx[i] = (layout.x0[i] + layout.x1[i]) / 2;
-    cy[i] = (layout.y0[i] + layout.y1[i]) / 2;
+  const palette = opts.colors ?? DEFAULT_PALETTE;
+  if (opts.colors != null && opts.colors.length !== ids.length) {
+    throw new RangeError(
+      `sankey colors must have one entry per node (${ids.length}); got ${opts.colors.length}`,
+    );
+  }
+  const nodeCss = ids.map((_, i) => palette[i % palette.length]);
+  const linkOpacity = opts.linkOpacity ?? 0.4;
+  if (!(linkOpacity > 0 && linkOpacity <= 1)) {
+    throw new RangeError("sankey linkOpacity must be in (0, 1]");
   }
 
+  const traces = [];
   const nLinks = sources.length;
-  const x0 = new Float64Array(nLinks);
-  const y0 = new Float64Array(nLinks);
-  const x1 = new Float64Array(nLinks);
-  const y1 = new Float64Array(nLinks);
-  for (let i = 0; i < nLinks; i += 1) {
-    const s = Number(sources[i]);
-    const t = Number(targets[i]);
-    x0[i] = layout.x1[s];
-    y0[i] = (layout.sourceY0[i] + layout.sourceY1[i]) / 2;
-    x1[i] = layout.x0[t];
-    y1[i] = (layout.targetY0[i] + layout.targetY1[i]) / 2;
+  if (nLinks > 0) {
+    const linkX0 = new Float64Array(nLinks);
+    const linkX1 = new Float64Array(nLinks);
+    const sourceLo = new Float64Array(nLinks);
+    const sourceHi = new Float64Array(nLinks);
+    const targetLo = new Float64Array(nLinks);
+    const targetHi = new Float64Array(nLinks);
+    const linkColors = [];
+    const linkTargets = [];
+    const tooltipRows = [];
+    for (let i = 0; i < nLinks; i += 1) {
+      const s = Number(sources[i]);
+      const t = Number(targets[i]);
+      linkX0[i] = layout.x1[s];
+      linkX1[i] = layout.x0[t];
+      sourceLo[i] = layout.sourceY0[i];
+      sourceHi[i] = layout.sourceY1[i];
+      targetLo[i] = layout.targetY0[i];
+      targetHi[i] = layout.targetY1[i];
+      linkColors.push(nodeCss[s]);
+      linkTargets.push(nodeCss[t]);
+      tooltipRows.push({
+        source: ids[s],
+        target: ids[t],
+        value: values[i],
+      });
+    }
+    const linkRibbon = composeRibbon(linkX0, linkX1, sourceLo, sourceHi, targetLo, targetHi, {
+      color: linkColors,
+      colorTarget: linkTargets,
+      opacity: linkOpacity,
+      name: opts.name == null ? null : `${opts.name}:links`,
+      style: opts.style,
+      tooltipRows,
+    });
+    traces.push(...linkRibbon.traces);
   }
+
+  // Nodes: equal-span ribbons are axis-aligned rectangles (Python parity).
+  const nodeRibbon = composeRibbon(
+    layout.x0,
+    layout.x1,
+    layout.y0,
+    layout.y1,
+    layout.y0,
+    layout.y1,
+    {
+      color: nodeCss,
+      opacity: 1.0,
+      name: opts.name == null ? null : `${opts.name}:nodes`,
+      tooltipRows: ids.map((id, i) => ({ node: id, value: layout.value[i] })),
+    },
+  );
+  traces.push(...nodeRibbon.traces);
 
   return {
     layout,
     ids,
-    traces: [
-      {
-        kind: "segments",
-        name: opts.name == null ? null : `${opts.name}:links`,
-        x0,
-        y0,
-        x1,
-        y1,
-        style: { color: opts.linkColor ?? "#888888", ...(opts.style ?? {}) },
-      },
-      {
-        kind: "scatter",
-        name: opts.name == null ? null : `${opts.name}:nodes`,
-        x: cx,
-        y: cy,
-        style: {
-          color: opts.color ?? "#3987e5",
-          size: opts.size ?? 10,
-          ...(opts.style ?? {}),
-        },
-      },
-    ],
+    traces,
   };
 }

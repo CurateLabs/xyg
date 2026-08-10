@@ -1,9 +1,10 @@
 /**
- * Thin polar / pie / wind_rose / facet composers for the Node host.
+ * Polar / pie / wind_rose / facet composers for the Node host.
  *
  * Polar geometry and wind-rose binning live in Rust (`xy_wind_rose_bins`,
- * `xy_bar_stack`, `xy_sector_triangles`). These helpers only assemble marks
- * the same way Python `components.pie_chart` / `wind_rose` do.
+ * `xy_bar_stack`, `xy_sector_triangles`). These helpers assemble marks the same
+ * way Python `components.pie_chart` / `wind_rose` / `facet_chart` do, and the
+ * Node figure emits a real `coords: "polar"` payload with theta/r axis meta.
  */
 
 import { asF64Array, windRoseBins, DEFAULT_PALETTE } from "../encode.js";
@@ -12,8 +13,9 @@ import { figure } from "../figure.js";
 
 /**
  * Polar chart shell — marks use angle as x and radius as y.
- * The Node figure MVP does not yet emit a full polar payload; this documents
- * `coords: "polar"` on the returned figure for host consumers.
+ *
+ * Emits `coords: "polar"` plus resolved theta/r axis descriptors on
+ * {@link Figure.buildPayload} (Python polar-axes.md defaults).
  *
  * @param {object} [opts]
  */
@@ -22,8 +24,20 @@ export function polarChart(opts = {}) {
     width: opts.width,
     height: opts.height,
     title: opts.title,
+    coords: "polar",
   });
-  fig.coords = "polar";
+  const meta = {
+    thetaUnit: opts.thetaUnit ?? opts.theta_unit ?? "radians",
+    thetaZero: opts.thetaZero ?? opts.theta_zero ?? "E",
+    thetaDirection: opts.thetaDirection ?? opts.theta_direction ?? "counterclockwise",
+    hole: opts.hole ?? 0.0,
+    sector: opts.sector ?? null,
+    gridShape: opts.gridShape ?? opts.grid_shape ?? "circular",
+  };
+  fig.setPolarMeta(meta);
+  if (typeof opts.thetaAxis === "function") {
+    // no-op hook for API familiarity
+  }
   return fig;
 }
 
@@ -96,6 +110,7 @@ export function composePie(labels, values, opts = {}) {
     thetaUnit: "degrees",
     thetaZero: "N",
     thetaDirection: "clockwise",
+    hole,
   };
 }
 
@@ -106,16 +121,22 @@ export function composePie(labels, values, opts = {}) {
  */
 export function pieChart(labels, values, opts = {}) {
   const { width, height, title, ...pieOpts } = opts;
-  const fig = polarChart({ width, height, title });
   const composed = composePie(labels, values, pieOpts);
-  for (const t of composed.traces) {
-    fig._pushRectTrace("bar", t, {});
-  }
-  fig._polarMeta = {
+  const fig = polarChart({
+    width,
+    height,
+    title,
     thetaUnit: composed.thetaUnit,
     thetaZero: composed.thetaZero,
     thetaDirection: composed.thetaDirection,
-  };
+    hole: composed.hole,
+  });
+  for (const t of composed.traces) {
+    fig._pushRectTrace("bar", t, {});
+  }
+  // Pie spans the full turn in degrees; pin domains so chrome matches Python.
+  fig.setAxisDomain("x", [0, 360]);
+  fig.setAxisDomain("y", [0, 1]);
   return fig;
 }
 
@@ -160,6 +181,9 @@ export function composeWindRose(directions, speeds, opts = {}) {
   return {
     traces,
     coords: "polar",
+    thetaUnit: "degrees",
+    thetaZero: "N",
+    thetaDirection: "clockwise",
     edges: binned.edges,
     centres,
     counts: binned.counts,
@@ -175,29 +199,84 @@ export function composeWindRose(directions, speeds, opts = {}) {
  */
 export function windRoseChart(directions, speeds, opts = {}) {
   const { width, height, title, ...roseOpts } = opts;
-  const fig = polarChart({ width, height, title });
   const composed = composeWindRose(directions, speeds, roseOpts);
+  const fig = polarChart({
+    width,
+    height,
+    title,
+    thetaUnit: composed.thetaUnit,
+    thetaZero: composed.thetaZero,
+    thetaDirection: composed.thetaDirection,
+  });
   for (const t of composed.traces) {
     fig._pushRectTrace("bar", t, {});
   }
-  fig._polarMeta = { thetaUnit: "degrees", thetaZero: "N", thetaDirection: "clockwise" };
   fig._windRose = {
     edges: composed.edges,
     centres: composed.centres,
     nObs: composed.nObs,
     sectors: composed.sectors,
   };
+  fig.setAxisDomain("x", [0, 360]);
   return fig;
 }
 
 /**
- * Minimal facet stub.
+ * Merge shared axis domains across panel figures (Python facet_chart share_x/y).
  *
- * Full Python `facet_chart` repeats a child composition per `by` value with
- * shared axes. The Node MVP either:
- *   1. documents "compose N figures" via {@link facetChart} when `panels` is
- *      an array of already-built figures, or
- *   2. runs a `composePanel(key, values)` callback once per facet key.
+ * @param {import("../figure.js").Figure[]} panels
+ * @param {{shareX?: boolean, shareY?: boolean}} [opts]
+ */
+export function shareFacetAxes(panels, opts = {}) {
+  const shareX = opts.shareX !== false;
+  const shareY = opts.shareY !== false;
+  if (!Array.isArray(panels) || panels.length === 0) {
+    return panels;
+  }
+  if (shareX) {
+    let lo = Number.POSITIVE_INFINITY;
+    let hi = Number.NEGATIVE_INFINITY;
+    for (const fig of panels) {
+      if (fig == null || typeof fig._range !== "function") continue;
+      const [a, b] = fig._range("x");
+      lo = Math.min(lo, a, b);
+      hi = Math.max(hi, a, b);
+    }
+    if (Number.isFinite(lo) && Number.isFinite(hi)) {
+      for (const fig of panels) {
+        if (fig != null && typeof fig.setAxisDomain === "function") {
+          fig.setAxisDomain("x", [lo, hi]);
+        }
+      }
+    }
+  }
+  if (shareY) {
+    let lo = Number.POSITIVE_INFINITY;
+    let hi = Number.NEGATIVE_INFINITY;
+    for (const fig of panels) {
+      if (fig == null || typeof fig._range !== "function") continue;
+      const [a, b] = fig._range("y");
+      lo = Math.min(lo, a, b);
+      hi = Math.max(hi, a, b);
+    }
+    if (Number.isFinite(lo) && Number.isFinite(hi)) {
+      for (const fig of panels) {
+        if (fig != null && typeof fig.setAxisDomain === "function") {
+          fig.setAxisDomain("y", [lo, hi]);
+        }
+      }
+    }
+  }
+  return panels;
+}
+
+/**
+ * Facet composition with shared-axis domain merging.
+ *
+ * Full Python `facet_chart` repeats a child composition per `by` value. The
+ * Node host:
+ *   1. accepts `panels:[figure, ...]` and optionally shares x/y domains, or
+ *   2. runs `composePanel(key, index)` once per facet key, then shares axes.
  *
  * @param {{
  *   by?: ArrayLike,
@@ -207,42 +286,63 @@ export function windRoseChart(directions, speeds, opts = {}) {
  *   width?: number,
  *   height?: number,
  *   gap?: number,
+ *   shareX?: boolean,
+ *   shareY?: boolean,
+ *   title?: string|null,
  * }} [opts]
  */
 export function facetChart(opts = {}) {
   const cols = opts.cols ?? 3;
   const gap = opts.gap ?? 12;
+  const shareX = opts.shareX !== false;
+  const shareY = opts.shareY !== false;
+
+  let panels;
+  let keys = null;
   if (Array.isArray(opts.panels)) {
+    panels = [...opts.panels];
+  } else if (typeof opts.composePanel === "function") {
+    keys = opts.by == null ? [0] : [...new Set([...opts.by])];
+    panels = keys.map((key, index) => opts.composePanel(key, index));
+  } else {
     return {
       kind: "facet",
       cols,
       gap,
-      panels: opts.panels,
-      note: "compose N figures — attach each panel's buildPayload() independently",
+      shareX,
+      shareY,
+      panels: [],
+      note:
+        "Node facet: pass panels:[figure, ...] or composePanel(key) to run child marks.",
     };
   }
-  if (typeof opts.composePanel === "function") {
-    const keys = opts.by == null ? [0] : [...new Set([...opts.by])];
-    const panels = keys.map((key, index) => opts.composePanel(key, index));
-    return {
-      kind: "facet",
-      cols,
-      gap,
-      keys,
-      panels,
-      width: opts.width,
-      height: opts.height,
-    };
-  }
-  return {
+
+  shareFacetAxes(panels, { shareX, shareY });
+
+  const result = {
     kind: "facet",
     cols,
     gap,
-    panels: [],
-    note:
-      "Node facet is a thin stub: pass panels:[figure, ...] or composePanel(key) " +
-      "to run child marks. Full shared-axis FacetChart remains Python-side.",
+    shareX,
+    shareY,
+    keys,
+    panels,
+    width: opts.width,
+    height: opts.height,
+    title: opts.title ?? null,
+    /**
+     * Build §29 payloads for every panel (shared domains already applied).
+     * @param {object} [payloadOpts]
+     */
+    buildPayloads(payloadOpts = {}) {
+      return panels.map((p) =>
+        p != null && typeof p.buildPayload === "function"
+          ? p.buildPayload(payloadOpts)
+          : null,
+      );
+    },
   };
+  return result;
 }
 
 /** @deprecated alias documenting the compose-N-figures path */

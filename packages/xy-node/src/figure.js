@@ -7,7 +7,9 @@
  * - Geometry columns are offset-encoded f32 via `xy_encode_f32` (§29).
  * - Line traces apply Rust M4 when over DECIMATION_THRESHOLD (§28).
  * - Histogram traces ship as rectangle columns from `xy_histogram_uniform`.
- * - Omits density tiers, legend resolution, animation keys, polar, etc.
+ * - Polar charts emit `coords: "polar"` + theta/r axis descriptors.
+ * - Ribbon / sankey ship flow-band geometry (`target_y0`/`target_y1`).
+ * - Omits density tiers, legend resolution, animation keys.
  * - Enough for mark encode / M4 / hist + graph layout goldens across hosts.
  */
 
@@ -34,6 +36,7 @@ import { composeSegments } from "./marks/segments.js";
 import { composeHeatmap } from "./marks/heatmap.js";
 import { composeHexbin } from "./marks/hexbin.js";
 import { composeViolin } from "./marks/violin.js";
+import { composeRibbon } from "./marks/ribbon.js";
 
 export { PROTOCOL_VERSION };
 
@@ -79,6 +82,43 @@ export class PayloadWriter {
     return this._append(encoded, meta);
   }
 
+  /**
+   * Raw u8 column (RGBA8 / categorical codes), 4-byte padded like Python.
+   * @param {Uint8Array|ArrayLike} values
+   */
+  shipU8(values) {
+    const enc =
+      values instanceof Uint8Array ? values : Uint8Array.from(values, (v) => Number(v) & 0xff);
+    const idx = this.columns.length;
+    if (this.split) {
+      const padding = (-enc.length) % 4;
+      const padded =
+        padding === 0 ? enc : (() => {
+          const out = new Uint8Array(enc.length + padding);
+          out.set(enc);
+          return out;
+        })();
+      this.columns.push({
+        buf: this._chunks.length,
+        byte_offset: 0,
+        len: enc.length,
+        dtype: "u8",
+      });
+      this._chunks.push(padded);
+      this._pos += padded.byteLength;
+      return idx;
+    }
+    this.columns.push({ byte_offset: this._pos, len: enc.length, dtype: "u8" });
+    this._chunks.push(enc);
+    this._pos += enc.byteLength;
+    const padding = (-this._pos) % 4;
+    if (padding) {
+      this._chunks.push(new Uint8Array(padding));
+      this._pos += padding;
+    }
+    return idx;
+  }
+
   _append(enc, meta) {
     const idx = this.columns.length;
     if (this.split) {
@@ -110,9 +150,42 @@ export class Figure {
     this.width = opts.width ?? 640;
     this.height = opts.height ?? 400;
     this.title = opts.title ?? null;
+    this.coords = opts.coords ?? "cartesian";
     this.traces = [];
     this._graphMeta = null;
     this._axisRange = { x: null, y: null };
+    this._polarMeta = null;
+  }
+
+  /**
+   * @param {{
+   *   thetaUnit?: string,
+   *   thetaZero?: string|number,
+   *   thetaDirection?: string,
+   *   hole?: number,
+   *   sector?: [number, number]|null,
+   *   gridShape?: string,
+   * }} meta
+   */
+  setPolarMeta(meta = {}) {
+    this.coords = "polar";
+    this._polarMeta = {
+      thetaUnit: meta.thetaUnit ?? "radians",
+      thetaZero: meta.thetaZero ?? "E",
+      thetaDirection: meta.thetaDirection ?? "counterclockwise",
+      hole: meta.hole ?? 0.0,
+      sector: meta.sector ?? null,
+      gridShape: meta.gridShape ?? "circular",
+      ...(meta ?? {}),
+    };
+    return this;
+  }
+
+  /** Pin an axis domain (used by facet shared-axis + polar pie domains). */
+  setAxisDomain(axisId, range) {
+    const [a, b] = range;
+    this._axisRange[axisId] = [Math.min(a, b), Math.max(a, b)];
+    return this;
   }
 
   scatter(x, y, opts = {}) {
@@ -353,17 +426,35 @@ export class Figure {
   }
 
   /**
-   * Compose a sankey mark when straightforward (rects + link bands as segments).
+   * Compose a sankey mark as ribbon bands (Python parity).
    */
   sankey(nodes, links, opts = {}) {
     const composed = composeSankey(nodes, links, opts);
     for (const t of composed.traces) {
-      if (t.kind === "segments") {
+      if (t.kind === "ribbon") {
+        this.traces.push({
+          id: nextTraceId++,
+          ...t,
+        });
+      } else if (t.kind === "segments") {
         this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
       } else if (t.kind === "scatter") {
         this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
       }
     }
+    return this;
+  }
+
+  /**
+   * Flow band primitive (Sankey / alluvial).
+   */
+  ribbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, opts = {}) {
+    const composed = composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      ...t,
+    });
     return this;
   }
 
@@ -375,7 +466,13 @@ export class Figure {
     let hi = Number.NEGATIVE_INFINITY;
     for (const t of this.traces) {
       let cols;
-      if (t.kind === "segments" || t.kind === "histogram" || t.kind === "bar" || t.kind === "violin") {
+      if (t.kind === "ribbon") {
+        // x: faces; y: all four span edges (incl. target y in x/y slots).
+        cols =
+          axisId === "x" || axisId === (t.x_axis ?? "x")
+            ? [t.x0, t.x1]
+            : [t.y0, t.y1, t.x, t.y];
+      } else if (t.kind === "segments" || t.kind === "histogram" || t.kind === "bar" || t.kind === "violin") {
         cols =
           axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x0, t.x1] : [t.y0, t.y1];
       } else if (t.kind === "area") {
@@ -601,6 +698,84 @@ export class Figure {
     };
   }
 
+  _shipColor(channel, pw) {
+    if (channel == null) return undefined;
+    if (channel.mode === "direct_rgba" && channel.rgba != null) {
+      return {
+        mode: "direct_rgba",
+        buf: pw.shipU8(channel.rgba),
+        n: Math.floor(channel.rgba.length / 4),
+      };
+    }
+    if (channel.mode === "constant") {
+      return { mode: "constant", color: channel.color };
+    }
+    return { ...channel };
+  }
+
+  _emitRibbon(t, pw) {
+    const x0 = new Column(t.x0);
+    const x1 = new Column(t.x1);
+    const y0 = new Column(t.y0);
+    const y1 = new Column(t.y1);
+    const t0 = new Column(t.x);
+    const t1 = new Column(t.y);
+    const entry = {
+      id: t.id,
+      kind: "ribbon",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.count ?? t.x0.length,
+      n_marks: t.x0.length,
+      x0: pw.ship(t.x0, x0),
+      x1: pw.ship(t.x1, x1),
+      y0: pw.ship(t.y0, y0),
+      y1: pw.ship(t.y1, y1),
+      // Target span y values on the y scale (Python ribbon contract).
+      target_y0: pw.ship(t.x, t0),
+      target_y1: pw.ship(t.y, t1),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+    const color = this._shipColor(t.color, pw);
+    if (color != null) entry.color = color;
+    const colorTarget = this._shipColor(t.color_target, pw);
+    if (colorTarget != null) entry.color_target = colorTarget;
+    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    return entry;
+  }
+
+  _polarAxisSpecs(xr, yr) {
+    const meta = this._polarMeta ?? {
+      thetaUnit: "radians",
+      thetaZero: "E",
+      thetaDirection: "counterclockwise",
+      hole: 0.0,
+      sector: null,
+      gridShape: "circular",
+    };
+    const unit = meta.thetaUnit ?? "radians";
+    const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
+    const sector = meta.sector != null ? [...meta.sector] : [0.0, turn];
+    return {
+      x: {
+        range: xr,
+        scale: "linear",
+        theta_unit: unit,
+        theta_zero: meta.thetaZero ?? "E",
+        theta_direction: meta.thetaDirection ?? "counterclockwise",
+        sector,
+        grid_shape: meta.gridShape ?? "circular",
+      },
+      y: {
+        range: yr,
+        scale: "linear",
+        hole: meta.hole ?? 0.0,
+      },
+    };
+  }
+
   /**
    * @returns {{spec: object, buffers: Buffer|Float32Array[]}}
    */
@@ -629,14 +804,17 @@ export class Figure {
         specTraces.push(this._emitHeatmap(t, pw));
       } else if (t.kind === "hexbin") {
         specTraces.push(this._emitHexbin(t, pw));
+      } else if (t.kind === "ribbon") {
+        specTraces.push(this._emitRibbon(t, pw));
       } else {
         throw new Error(`unsupported trace kind ${t.kind} in Node figure MVP`);
       }
     }
-    const axisSpecs = {
-      x: { range: xr, scale: "linear" },
-      y: { range: yr, scale: "linear" },
-    };
+    const axisSpecs =
+      this.coords === "polar" ? this._polarAxisSpecs(xr, yr) : {
+        x: { range: xr, scale: "linear" },
+        y: { range: yr, scale: "linear" },
+      };
     const spec = {
       protocol: PROTOCOL_VERSION,
       width: this.width,
@@ -650,6 +828,9 @@ export class Figure {
       backend: "native",
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
+    if (this.coords === "polar") {
+      spec.coords = "polar";
+    }
     if (split) {
       spec.buffer_layout = "split";
     }

@@ -1,137 +1,167 @@
 /**
- * Box plot mark — Tukey stats via `xy_box_stats`, single-group MVP.
+ * Box plot mark — Tukey stats via `xy_box_stats`, multi-group parity with Python.
  */
 
-import { asF64Array, boxStats } from "../encode.js";
+import { boxStats } from "../encode.js";
+import { distributionGroups } from "./distribution.js";
 
 /**
- * @param {ArrayLike|TypedArray} values
+ * @param {ArrayLike|TypedArray|ArrayLike[]} values
  * @param {{
- *   x?: number,
+ *   x?: ArrayLike|number|null,
+ *   group?: ArrayLike|null,
  *   width?: number,
  *   orientation?: "vertical"|"horizontal",
  *   showOutliers?: boolean,
  *   name?: string|null,
  *   style?: object,
  *   color?: string,
+ *   opacity?: number,
  * }} [opts]
  */
 export function composeBox(values, opts = {}) {
-  const arr = asF64Array(values, "values");
-  const finite = arr.filter((v) => Number.isFinite(v));
-  if (finite.length === 0) {
-    throw new RangeError("box values must contain at least one finite value");
+  const { groups, positions } = distributionGroups(values, {
+    x: opts.x,
+    group: opts.group,
+    kind: "box",
+  });
+  if (groups.length !== positions.length) {
+    throw new RangeError("box groups and positions must have equal length");
   }
-  const stats = boxStats(Float64Array.from(finite));
-  const center = Number(opts.x ?? 0);
   const width = Number(opts.width ?? 0.6);
   const orientation = opts.orientation ?? "vertical";
-  const half = width / 2.0;
-  const { q1, median, q3, low, high } = stats;
   const color = opts.color ?? "#3987e5";
   const opacity = opts.opacity ?? 0.85;
-  const traces = [];
-  let wx0;
-  let wx1;
-  let wy0;
-  let wy1;
-  let bx0;
-  let bx1;
-  let by0;
-  let by1;
-  let mx0;
-  let mx1;
-  let my0;
-  let my1;
-  if (orientation === "vertical") {
-    bx0 = center - half;
-    bx1 = center + half;
-    by0 = q1;
-    by1 = q3;
-    wx0 = [center, center - width * 0.3, center - width * 0.3];
-    wx1 = [center, center + width * 0.3, center + width * 0.3];
-    wy0 = [low, low, high];
-    wy1 = [high, low, high];
-    mx0 = center - half;
-    mx1 = center + half;
-    my0 = median;
-    my1 = median;
-  } else {
-    bx0 = q1;
-    bx1 = q3;
-    by0 = center - half;
-    by1 = center + half;
-    wx0 = [low, low, high];
-    wx1 = [high, low, high];
-    wy0 = [center, center - width * 0.3, center - width * 0.3];
-    wy1 = [center, center + width * 0.3, center + width * 0.3];
-    mx0 = median;
-    mx1 = median;
-    my0 = center - half;
-    my1 = center + half;
+  const half = width / 2.0;
+
+  const statsList = groups.map((g) => {
+    const finite = g.filter((v) => Number.isFinite(v));
+    if (finite.length === 0) {
+      return null;
+    }
+    return boxStats(Float64Array.from(finite));
+  });
+  const finiteStats = statsList.filter((s) => s != null);
+  if (finiteStats.length === 0) {
+    throw new RangeError("box values must contain at least one finite group");
   }
-  traces.push({
-    kind: "segments",
-    name: null,
-    x0: Float64Array.from(wx0),
-    x1: Float64Array.from(wx1),
-    y0: Float64Array.from(wy0),
-    y1: Float64Array.from(wy1),
-    style: { color, opacity, role: "box-whisker", width: 1.0 },
-    x_axis: opts.xAxis ?? "x",
-    y_axis: opts.yAxis ?? "y",
-  });
-  traces.push({
-    kind: "bar",
-    name: opts.name ?? null,
-    x0: Float64Array.from([bx0]),
-    x1: Float64Array.from([bx1]),
-    y0: Float64Array.from([by0]),
-    y1: Float64Array.from([by1]),
-    style: { color, opacity, role: "box", box_orientation: orientation },
-    count: 1,
-    x_axis: opts.xAxis ?? "x",
-    y_axis: opts.yAxis ?? "y",
-  });
-  traces.push({
-    kind: "segments",
-    name: null,
-    x0: Float64Array.from([mx0]),
-    x1: Float64Array.from([mx1]),
-    y0: Float64Array.from([my0]),
-    y1: Float64Array.from([my1]),
-    style: { color, opacity, role: "box-median", width: 2.0 },
-    x_axis: opts.xAxis ?? "x",
-    y_axis: opts.yAxis ?? "y",
-  });
-  if (opts.showOutliers !== false && stats.outliers.length > 0) {
-    const ox = new Float64Array(stats.outliers.length);
-    const oy = new Float64Array(stats.outliers.length);
-    for (let i = 0; i < stats.outliers.length; i += 1) {
-      if (orientation === "vertical") {
-        ox[i] = center;
-        oy[i] = stats.outliers[i];
-      } else {
-        ox[i] = stats.outliers[i];
-        oy[i] = center;
+
+  const bx0 = [];
+  const bx1 = [];
+  const by0 = [];
+  const by1 = [];
+  const wx0 = [];
+  const wx1 = [];
+  const wy0 = [];
+  const wy1 = [];
+  const mx0 = [];
+  const mx1 = [];
+  const my0 = [];
+  const my1 = [];
+  const ox = [];
+  const oy = [];
+
+  for (let i = 0; i < statsList.length; i += 1) {
+    const stats = statsList[i];
+    if (stats == null) continue;
+    const center = positions[i];
+    const { q1, median, q3, low, high } = stats;
+    if (orientation === "vertical") {
+      bx0.push(center - half);
+      bx1.push(center + half);
+      by0.push(q1);
+      by1.push(q3);
+      wx0.push(center, center - width * 0.3, center - width * 0.3);
+      wx1.push(center, center + width * 0.3, center + width * 0.3);
+      wy0.push(low, low, high);
+      wy1.push(high, low, high);
+      mx0.push(center - half);
+      mx1.push(center + half);
+      my0.push(median);
+      my1.push(median);
+      for (const o of stats.outliers) {
+        ox.push(center);
+        oy.push(o);
+      }
+    } else {
+      bx0.push(q1);
+      bx1.push(q3);
+      by0.push(center - half);
+      by1.push(center + half);
+      wx0.push(low, low, high);
+      wx1.push(high, low, high);
+      wy0.push(center, center - width * 0.3, center - width * 0.3);
+      wy1.push(center, center + width * 0.3, center + width * 0.3);
+      mx0.push(median);
+      mx1.push(median);
+      my0.push(center - half);
+      my1.push(center + half);
+      for (const o of stats.outliers) {
+        ox.push(o);
+        oy.push(center);
       }
     }
+  }
+
+  const traces = [
+    {
+      kind: "segments",
+      name: null,
+      x0: Float64Array.from(wx0),
+      x1: Float64Array.from(wx1),
+      y0: Float64Array.from(wy0),
+      y1: Float64Array.from(wy1),
+      style: { color, opacity, role: "box-whisker", width: 1.0 },
+      x_axis: opts.xAxis ?? "x",
+      y_axis: opts.yAxis ?? "y",
+    },
+    {
+      kind: "bar",
+      name: opts.name ?? null,
+      x0: Float64Array.from(bx0),
+      x1: Float64Array.from(bx1),
+      y0: Float64Array.from(by0),
+      y1: Float64Array.from(by1),
+      style: { color, opacity, role: "box", box_orientation: orientation },
+      count: bx0.length,
+      x_axis: opts.xAxis ?? "x",
+      y_axis: opts.yAxis ?? "y",
+    },
+    {
+      kind: "segments",
+      name: null,
+      x0: Float64Array.from(mx0),
+      x1: Float64Array.from(mx1),
+      y0: Float64Array.from(my0),
+      y1: Float64Array.from(my1),
+      style: { color, opacity, role: "box-median", width: 2.0 },
+      x_axis: opts.xAxis ?? "x",
+      y_axis: opts.yAxis ?? "y",
+    },
+  ];
+  if (opts.showOutliers !== false && ox.length > 0) {
     traces.push({
       kind: "scatter",
       name: null,
-      x: ox,
-      y: oy,
+      x: Float64Array.from(ox),
+      y: Float64Array.from(oy),
       style: { color, opacity: 1.0, role: "box-outlier", size: 4.0 },
       x_axis: opts.xAxis ?? "x",
       y_axis: opts.yAxis ?? "y",
     });
   }
-  return { traces, stats };
+  return {
+    traces,
+    stats: finiteStats.length === 1 ? finiteStats[0] : finiteStats,
+    groupStats: finiteStats,
+    positions,
+    groups: groups.length,
+  };
 }
 
 /**
  * @param {import("../figure.js").Figure} fig
- * @param {ArrayLike|TypedArray} values
+ * @param {ArrayLike|TypedArray|ArrayLike[]} values
  * @param {object} [opts]
  */
 export function attachBox(fig, values, opts = {}) {

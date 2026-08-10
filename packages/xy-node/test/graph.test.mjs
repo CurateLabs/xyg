@@ -183,3 +183,13 @@ test("graphBuildRender respects node/edge budgets", () => {
   assert.ok(out.edgeSources.length <= 4);
   assert.deepEqual([...out.memberOf], [0n, 0n, 0n, 1n, 1n, 1n]);
 });
+
+test("10M / 100M / 1B-class LOD decisions stay screen-bounded", () => {
+  const nodeBudget = 50_000;
+  const edgeBudget = 100_000;
+  for (const n of [10_000_000, 100_000_000, 1_000_000_000]) {
+    const d = graphLodDecision(n, n * 2, { nodeBudget, edgeBudget });
+    assert.ok(d.tier >= 1, `class n=${n} should leave Direct`);
+    assert.ok(Number(d.edgesKept) <= edgeBudget);
+  }
+});

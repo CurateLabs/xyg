@@ -38,7 +38,7 @@ XY_EXPECTED_ABI=57 npm test   # optional ABI golden override
 | `src/charts.js` | `scatterChart` / `lineChart` / `histogramChart` / `graphChart` convenience |
 | `src/figure.js` | Minimal `Figure` holding `scatter` / `line` / `histogram` / `segments` traces; `buildPayload()` → `{spec, buffers}` with `protocol: PROTOCOL_VERSION` (12) and §29 f32 columns via `xy_encode_f32`. Line M4 when over `DECIMATION_THRESHOLD`. Documented subset of Python `Figure.build_payload`. |
 | `src/force_scheduler.js` | Progressive `force_tick` helper — default chunked `setImmediate` loop; `mode: "worker"` uses `worker_threads`. Node-host only (never browser main thread). |
-| `src/sankey.js` | Thin `composeSankey` over `xy_sankey_layout` → segment + scatter traces |
+| `src/sankey.js` | Thin `composeSankey` over `xy_sankey_layout` → ribbon band polygons (link + node) |
 | `src/vscode.js` | VS Code extension-host re-export + webview/host split notes |
 
 ```js

@@ -119,6 +119,18 @@ def test_lod_decision_records_edge_sample():
     assert kept == 1_000
 
 
+def test_lod_decision_scale_classes_10m_100m_1b():
+    """Scatter-class graph scale evidence: budgets stay screen-bounded."""
+    node_budget = 50_000
+    edge_budget = 100_000
+    for n in (10_000_000, 100_000_000, 1_000_000_000):
+        tier, kept = _native.graph_lod_decision(
+            n, n * 2, node_budget=node_budget, edge_budget=edge_budget
+        )
+        assert tier >= 1
+        assert kept <= edge_budget
+
+
 def test_cluster_aggregate_records_tier_and_centroids():
     x = np.array([0.0, 1.0, 0.0, 100.0, 101.0, 100.0], dtype=np.float64)
     y = np.array([0.0, 0.0, 1.0, 100.0, 100.0, 101.0], dtype=np.float64)

@@ -219,13 +219,22 @@ test("bar stacked/grouped offsets via xy_bar_stack", () => {
 });
 
 test("pie / wind_rose / facet composers", async () => {
-  const { pieChart, windRoseChart, facetChart, composePie } = await import("../src/index.js");
+  const { pieChart, windRoseChart, facetChart, composePie, scatterChart } = await import(
+    "../src/index.js"
+  );
   const pie = composePie(["a", "b", "c"], [1, 2, 3], { hole: 0.4 });
   assert.ok(pie.traces.length >= 2);
   assert.equal(pie.coords, "polar");
   const pieFig = pieChart(["a", "b"], [10, 20], { width: 200, height: 200 });
   assert.equal(pieFig.coords, "polar");
   assert.ok(pieFig.traces.length >= 1);
+  const piePayload = pieFig.buildPayload();
+  assert.equal(piePayload.spec.coords, "polar");
+  assert.equal(piePayload.spec.x_axis.theta_unit, "degrees");
+  assert.equal(piePayload.spec.x_axis.theta_zero, "N");
+  assert.equal(piePayload.spec.x_axis.theta_direction, "clockwise");
+  assert.equal(piePayload.spec.y_axis.hole, 0.55);
+  assert.deepEqual(piePayload.spec.x_axis.sector, [0, 360]);
 
   const rose = windRoseChart(
     new Float64Array([0, 0, 90]),
@@ -235,16 +244,94 @@ test("pie / wind_rose / facet composers", async () => {
   assert.equal(rose.coords, "polar");
   assert.ok(rose.traces.length >= 1);
   assert.equal(rose._windRose.sectors, 4);
+  const rosePayload = rose.buildPayload();
+  assert.equal(rosePayload.spec.coords, "polar");
+  assert.equal(rosePayload.spec.x_axis.theta_unit, "degrees");
 
   const stub = facetChart({ cols: 2 });
   assert.equal(stub.kind, "facet");
-  assert.ok(String(stub.note).includes("compose N figures") || stub.panels.length === 0);
+  assert.ok(stub.panels.length === 0);
+
+  const left = scatterChart([0, 1], [0, 1]);
+  const right = scatterChart([10, 11], [-5, 5]);
+  const shared = facetChart({
+    panels: [left, right],
+    shareX: true,
+    shareY: true,
+  });
+  assert.equal(shared.kind, "facet");
+  assert.equal(shared.shareX, true);
+  const [lx0, lx1] = left._range("x");
+  const [rx0, rx1] = right._range("x");
+  assert.equal(lx0, rx0);
+  assert.equal(lx1, rx1);
+  const [ly0, ly1] = left._range("y");
+  const [ry0, ry1] = right._range("y");
+  assert.equal(ly0, ry0);
+  assert.equal(ly1, ry1);
+  const payloads = shared.buildPayloads();
+  assert.equal(payloads.length, 2);
+  assert.ok(payloads[0].spec.traces.length >= 1);
+
   const panels = facetChart({
     by: ["x", "y", "x"],
     composePanel: (key) => ({ key, traces: [] }),
+    shareX: false,
+    shareY: false,
   });
   assert.deepEqual(panels.keys, ["x", "y"]);
   assert.equal(panels.panels.length, 2);
+});
+
+test("multi-group box / violin", () => {
+  const groups = [
+    new Float64Array([1, 2, 2, 3, 4]),
+    new Float64Array([10, 11, 12, 13, 50]),
+  ];
+  const box = composeBox(groups);
+  assert.equal(box.groups, 2);
+  assert.equal(box.groupStats.length, 2);
+  assert.ok(box.traces.find((t) => t.kind === "bar").x0.length === 2);
+
+  const grouped = composeBox(new Float64Array([1, 2, 10, 11, 12]), {
+    group: ["a", "a", "b", "b", "b"],
+  });
+  assert.equal(grouped.groups, 2);
+
+  const violin = composeViolin(groups, { bins: 8 });
+  assert.equal(violin.groups, 2);
+  assert.equal(violin.traces[0].x0.length, 16);
+  const fig = violinChart(groups, { bins: 8 });
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "violin");
+});
+
+test("sankey emits ribbon band polygons", async () => {
+  const { composeSankey, figure } = await import("../src/index.js");
+  const composed = composeSankey(["A", "B"], [["A", "B", 1]], { linkOpacity: 0.4 });
+  assert.equal(composed.traces.length, 2);
+  assert.ok(composed.traces.every((t) => t.kind === "ribbon"));
+  // One link → constant source/target paints; two nodes → direct_rgba node ribbon.
+  assert.equal(composed.traces[0].kind, "ribbon");
+  assert.equal(composed.traces[1].color.mode, "direct_rgba");
+  const multi = composeSankey(
+    ["A", "B", "C"],
+    [
+      ["A", "B", 2],
+      ["A", "C", 1],
+    ],
+  );
+  assert.equal(multi.traces[0].color.mode, "direct_rgba");
+  assert.equal(multi.traces[0].color_target.mode, "direct_rgba");
+  const fig = figure();
+  fig.sankey(["A", "B", "C"], [
+    ["A", "B", 2],
+    ["A", "C", 1],
+  ]);
+  const payload = fig.buildPayload();
+  assert.ok(payload.spec.traces.every((t) => t.kind === "ribbon"));
+  assert.ok(payload.spec.traces[0].target_y0 != null);
+  assert.ok(payload.spec.traces[0].target_y1 != null);
+  assert.equal(payload.spec.traces[0].color.mode, "direct_rgba");
 });
 
 test("box stats match Python fixture when present", () => {

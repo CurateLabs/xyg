@@ -185,6 +185,7 @@ filegroup(
     srcs = glob(
         [
             "benchmarks/bench_scale_all_charts.py",
+            "benchmarks/bench_graph_scale_classes_node.mjs",
             "benchmarks/baseline.json",
             "python/xy/**/*.py",
         ],

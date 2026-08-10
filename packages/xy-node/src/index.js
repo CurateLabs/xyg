@@ -93,6 +93,20 @@ export { runForceTicks } from "./force_scheduler.js";
 
 export { composeSankey } from "./sankey.js";
 
+export { composeRibbon, attachRibbon } from "./marks/ribbon.js";
+
+export {
+  parseCssColor,
+  cssColorsToRgba8,
+  resolveColorChannel,
+} from "./color.js";
+
+export {
+  distributionGroups,
+  categoryPositions,
+  splitByPositions,
+} from "./marks/distribution.js";
+
 export {
   composeScatter,
   attachScatter,
@@ -137,6 +151,7 @@ export {
   composePie,
   composeWindRose,
   composeFacet,
+  shareFacetAxes,
 } from "./marks/polar.js";
 
 export {

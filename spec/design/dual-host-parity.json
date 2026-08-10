@@ -145,10 +145,10 @@
     },
     {
       "kind": "sankey",
-      "python": "partial",
-      "node": "partial",
+      "python": "ready",
+      "node": "ready",
       "rust": "ready",
-      "notes": "layout in Rust; Node composeSankey thin loader; band polygons follow-up"
+      "notes": "layout in Rust; Node composeSankey emits ribbon band polygons (link + node)"
     },
     {
       "kind": "scatter",
@@ -195,9 +195,9 @@
     {
       "kind": "box",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/box single-group via xy_box_stats; multi-group follow-up"
+      "notes": "packages/xy-node marks/box multi-group via xy_box_stats + distributionGroups"
     },
     {
       "kind": "ecdf",
@@ -230,16 +230,16 @@
     {
       "kind": "violin",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/violin single-group via xy_violin_density; multi-group follow-up"
+      "notes": "packages/xy-node marks/violin multi-group via xy_violin_density + distributionGroups"
     },
     {
       "kind": "polar",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "ready",
-      "notes": "Node polarChart shell + pie/wind_rose composers; full polar payload still Python-first"
+      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready"
     },
     {
       "kind": "pie",
@@ -258,9 +258,9 @@
     {
       "kind": "facet",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "partial",
-      "notes": "Node facetChart stub: compose N figures or composePanel(key); shared-axis FacetChart remains Python"
+      "notes": "Node facetChart shares x/y domains across panels (shareX/shareY); composePanel or panels[]"
     }
   ],
   "references": [

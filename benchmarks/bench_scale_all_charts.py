@@ -8,11 +8,15 @@ scatter/line/hist kernel metrics with the same 3× advisory gate as
 ``bench_parity_kernels.py``.
 
 Graph sizes 10k / 50k assert ``graph_build_render`` / ``run_layout`` emit
-render-graph geometry within the requested node/edge budgets.
+render-graph geometry within the requested node/edge budgets. Every profile
+also records **10M / 100M / 1B-class** LOD decision evidence (screen-bounded
+budgets); the ``evidence`` profile additionally runs a real ``build_render``
+at 10M when memory allows.
 
 Usage:
   PYTHONPATH=python python3 benchmarks/bench_scale_all_charts.py
   PYTHONPATH=python python3 benchmarks/bench_scale_all_charts.py --profile smoke
+  PYTHONPATH=python python3 benchmarks/bench_scale_all_charts.py --profile evidence
 """
 
 from __future__ import annotations
@@ -41,22 +45,40 @@ LAUNCH_SIZES = (10_000, 100_000, 1_000_000)
 # Kernel keys in baseline.json are primarily at 1e6 / 1e7.
 KERNEL_SIZES = (1_000_000,)
 GRAPH_SIZES = (10_000, 50_000)
+# Scatter-class scale claims for graph (with aggregation) — lod_decision always.
+GRAPH_CLASS_SIZES = (10_000_000, 100_000_000, 1_000_000_000)
+CLASS_NODE_BUDGET = 50_000
+CLASS_EDGE_BUDGET = 100_000
 
 PROFILES = {
     "smoke": {
         "chart_sizes": (10_000,),
         "kernel_sizes": (1_000_000,),
         "graph_sizes": (10_000, 50_000),
+        "graph_class_sizes": GRAPH_CLASS_SIZES,
+        "graph_build_class_sizes": (),
     },
     "standard": {
         "chart_sizes": (10_000, 100_000),
         "kernel_sizes": (1_000_000,),
-        "graph_sizes": (10_000, 50_000),
+        "graph_sizes": (10_000, 50_000, 100_000),
+        "graph_class_sizes": GRAPH_CLASS_SIZES,
+        "graph_build_class_sizes": (),
     },
     "stress": {
         "chart_sizes": LAUNCH_SIZES,
         "kernel_sizes": (1_000_000, 10_000_000),
-        "graph_sizes": GRAPH_SIZES,
+        "graph_sizes": GRAPH_SIZES + (100_000, 1_000_000),
+        "graph_class_sizes": GRAPH_CLASS_SIZES,
+        "graph_build_class_sizes": (),
+    },
+    "evidence": {
+        "chart_sizes": (10_000,),
+        "kernel_sizes": (1_000_000,),
+        "graph_sizes": (10_000, 50_000, 100_000, 1_000_000),
+        "graph_class_sizes": GRAPH_CLASS_SIZES,
+        # Real build_render at 10M (ring+chords); 100M/1B stay lod_decision-only.
+        "graph_build_class_sizes": (10_000_000,),
     },
 }
 
@@ -327,6 +349,86 @@ def bench_graph_render(n_nodes: int, *, node_budget: int, edge_budget: int) -> d
     }
 
 
+def _class_label(n: int) -> str:
+    if n >= 1_000_000_000:
+        return "1B"
+    if n >= 100_000_000:
+        return "100M"
+    if n >= 10_000_000:
+        return "10M"
+    if n >= 1_000_000:
+        return "1M"
+    if n >= 1_000:
+        return f"{n // 1000}k"
+    return str(n)
+
+
+def bench_graph_scale_class(
+    n_nodes: int,
+    *,
+    node_budget: int = CLASS_NODE_BUDGET,
+    edge_budget: int = CLASS_EDGE_BUDGET,
+    build_render: bool = False,
+) -> dict[str, Any]:
+    """10M/100M/1B-class evidence: LOD decision always; optional build_render."""
+    n_edges = max(n_nodes, int(n_nodes * 2))  # ring + chords class
+    tier, edges_kept = _native.graph_lod_decision(
+        n_nodes, n_edges, node_budget=node_budget, edge_budget=edge_budget
+    )
+    row: dict[str, Any] = {
+        "family": "graph_scale_class",
+        "class": _class_label(n_nodes),
+        "n_nodes": n_nodes,
+        "n_edges": n_edges,
+        "node_budget": node_budget,
+        "edge_budget": edge_budget,
+        "lod_tier": int(tier),
+        "edges_kept": int(edges_kept),
+        "mode": "lod_decision",
+        "budget_ok": True,
+    }
+    # Past direct tier the decision must force aggregation / sampling.
+    if n_nodes > node_budget:
+        assert int(tier) >= 1, f"expected non-direct LOD tier for n={n_nodes}"
+    if not build_render:
+        return row
+
+    # Real render-graph emission at this source size (memory-sensitive).
+    data = _synthetic_graph(n_nodes, avg_degree=2.0)
+    data.x = np.linspace(0.0, 1.0, n_nodes, dtype=np.float64)
+    data.y = np.sin(np.arange(n_nodes, dtype=np.float64) * 0.01)
+
+    def run():
+        return _native.graph_build_render(
+            data.x,
+            data.y,
+            data.sources,
+            data.targets,
+            node_budget=node_budget,
+            edge_budget=edge_budget,
+        )
+
+    t = _best(run, repeat=1)
+    out_x, out_y, _member, edge_s, edge_t, out_tier, kept = run()
+    n_out = int(len(out_x))
+    e_out = int(len(edge_s))
+    assert n_out <= node_budget, f"class render-graph nodes {n_out} > {node_budget}"
+    assert e_out <= edge_budget, f"class render-graph edges {e_out} > {edge_budget}"
+    row.update(
+        {
+            "mode": "build_render",
+            "render_n_nodes": n_out,
+            "render_n_edges": e_out,
+            "lod_tier": int(out_tier),
+            "edges_kept": int(kept),
+            "render_graph_ms": t * 1e3,
+            "budget_ok": True,
+        }
+    )
+    del out_y, edge_t  # silence unused
+    return row
+
+
 def bench_kernels(n: int, baseline: dict[str, float] | None) -> tuple[dict[str, Any], list[dict]]:
     x = np.arange(n, dtype=np.float64)
     y = np.sin(x * 1e-3)
@@ -463,10 +565,18 @@ def main() -> int:
             )
         )
 
+    # 10M / 100M / 1B-class LOD evidence (always); optional real build_render.
+    build_class = set(profile.get("graph_build_class_sizes") or ())
+    for n_nodes in profile.get("graph_class_sizes") or ():
+        results.append(
+            bench_graph_scale_class(
+                n_nodes,
+                build_render=n_nodes in build_class,
+            )
+        )
+
     advisory_ok = all(c.get("ok", True) for c in comparisons)
-    hard_ok = all(
-        r.get("budget_ok", True) for r in results if "budget_ok" in r
-    )
+    hard_ok = all(r.get("budget_ok", True) for r in results if "budget_ok" in r)
     summary = {
         "host": "python",
         "abi_version": int(_native.ABI_VERSION),
