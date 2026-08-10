@@ -2,8 +2,23 @@
 
 Thin Node.js bindings for the shared `xy_core` C ABI cdylib. Uses
 [`koffi`](https://koffi.dev/) to load the same `libxy_core.so` as Python
-`ctypes` — graph/Sankey layout and LOD decisions stay in Rust
+`ctypes` — layout, LOD, and encode decisions for **all marks** stay in Rust
 (`spec/design/host-parity.md`).
+
+## Runtime surface
+
+XY has three product-wide runtimes (not graph-only):
+
+1. **Python host** — notebooks (anywidget / `show()`), HTML export (`to_html()`), Reflex
+2. **Node host (this package)** — server-side Node **and** VS Code extensions
+   (VS Code consumes these bindings; it is not a separate stack)
+3. **Browser client** — `js/src` → `python/xy/static/{index,standalone}.js`
+   (WebGL2 paint/pick/gestures only; draws uploaded §29 buffers)
+
+This package MUST stay Node-only (no `window` / DOM / WebGL). The browser
+client MUST NOT import `koffi` or `node:fs`. Python and Node emit the same
+figure spec + §29 payloads; the browser is the shared renderer. Notebook UX
+on the Python host remains first-class and must not regress.
 
 ## Setup
 

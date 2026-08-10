@@ -1,7 +1,15 @@
 # Host parity — Python and Node
 
 **Status:** requirements locked with [graph-fork-requirements.md](graph-fork-requirements.md);
-implementation design in [graph-mark.md](graph-mark.md).
+implementation design in [graph-mark.md](graph-mark.md). Runtime taxonomy and
+machine-readable twin:
+[dual-host-parity-matrix.md](dual-host-parity-matrix.md) /
+[`dual-host-parity.json`](dual-host-parity.json).
+
+**Scope:** the **entire product** — every chart type and mark family, not
+graph-only. Graph is the core dual-host feature, but the three runtime surfaces
+and the placement rule below apply to scatter, line, hist, area, bar, box,
+heatmap, hexbin, violin, sankey, polar, and every other shipped kind.
 
 **Priority:** **graph visualization** is the core feature. **MVP includes all
 chart / visualization features** on Python and Node with equal feel and speed —
@@ -11,9 +19,44 @@ no degraded non-graph path, and **no Python host-only layout/encode leftovers**.
 the shared Rust C ABI so Python and Node stay thin loaders over identical
 behavior. **Rust owns decisions** that affect buffers, layout, encodings, LOD,
 and recorded §28 outcomes — not only O(N) loops. Hosts own ergonomics and
-idiomatic I/O only; the JS client owns screen-bounded draw and gestures only.
-This **replaces** upstream rust-engine §1’s “Python owns decisions” for this
-product line (amend that doc when implementing).
+idiomatic I/O only; the browser client owns screen-bounded draw and gestures
+only. This **replaces** upstream rust-engine §1’s “Python owns decisions” for
+this product line (amend that doc when implementing).
+
+---
+
+## 0. Three runtime surfaces (product-wide)
+
+XY has exactly **three** runtime surfaces. They cover all chart types. Do not
+treat VS Code, notebooks, or Reflex as separate engine stacks.
+
+| Surface | Location | Role |
+|---|---|---|
+| **1. Python host** | `python/xy/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. |
+| **2. Node host** | `packages/xy-node` | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. |
+| **3. Browser client** | `js/src/*.ts` → `python/xy/static/{index,standalone}.js` | Shared WebGL2 renderer: **paint / pick / gestures only**. Draws §29 buffers uploaded by any host. Never owns layout, LOD, or encode on the product path. |
+
+### Contracts (MUST)
+
+- **Rust owns decisions for all marks.** Hosts are thin: coerce inputs, schedule
+  progressive work, attach transport, and assemble figure specs. They MUST NOT
+  reimplement layout, LOD tiering, channel encode, or other buffer-affecting
+  decisions in Python or TypeScript.
+- **Browser never reimplements layout / LOD / encode in JS** for the product
+  path. The client applies uploaded §29 buffers and runs screen-bounded
+  interaction; force ticks and LOD plans stay off the browser main thread’s
+  decision path (hosts + Rust).
+- **Isolation:** the Node package MUST NOT use browser-only APIs (`window`,
+  `document`, WebGL, DOM). The browser client MUST NOT import `koffi`,
+  `node:fs`, or other Node-only modules.
+- **Same figure spec + §29** across Python and Node for the same inputs; the
+  browser client is the **shared renderer** for both.
+- **Notebooks stay first-class:** `show()` / anywidget / `to_html()` MUST NOT
+  regress as Node or graph work lands. Python notebook UX remains a primary
+  product surface, not a legacy path.
+
+See [dual-host-parity-matrix.md](dual-host-parity-matrix.md) §0 and the
+`runtimes` section of [`dual-host-parity.json`](dual-host-parity.json).
 
 ---
 
@@ -23,11 +66,12 @@ product line (amend that doc when implementing).
 |---|---|
 | Rust viz `cdylib` C ABI | All kernels (existing marks + `xy_graph_*`); **u64** graph element indices |
 | Wire / §29 buffers | Identical binary payloads for the same figure spec |
-| JS render client | One bundled WebGL client |
+| JS render client | One bundled WebGL client (`index.js` / `standalone.js`) |
 | Public chart semantics | Same mark kinds, options, defaults, layout/LOD decisions |
 
 Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
-notebook/Reflex vs Node embed). Names and defaults match.
+notebook/Reflex vs Node embed / VS Code webview attach). Names and defaults
+match.
 
 ---
 
@@ -37,20 +81,30 @@ notebook/Reflex vs Node embed). Names and defaults match.
 |---|---|
 | **xy Rust (shared)** | Display layouts (including today’s Python-only ones such as Sankey), graph adjacency/position buffers, channel resolution, decimation, LOD aggregates, layout/LOD **decisions**, thresholds that change buffers, progressive layout ticks |
 | **Host (Python *or* Node)** | Public API shapes, idiomatic ingest coercion (list/NumPy/TypedArray → pointers), error message text, transport attach — **no** second layout/algorithm/encode/decision path |
-| **JS client** | WebGL draw, hit-test, pan/zoom/select/drag gestures applying uploaded buffers |
+| **Browser client** | WebGL draw, hit-test, pan/zoom/select/drag gestures applying uploaded buffers |
 
 Graph **analysis algorithms** (paths, centrality, communities, Cypher, …) are
 not owned here — they live in GraphForge (and similar peers). This charting
 stack plots their outputs; it does not reimplement them.
 
-Node must not reimplement layouts or mark geometry in TypeScript.
+Node must not reimplement layouts or mark geometry in TypeScript. The browser
+client must not grow a parallel “JS layout/LOD” product path.
 
 ---
 
 ## 3. Requirements
 
+- **REQ-HOSTPARITY-0 (MUST).** The product exposes exactly the three runtime
+  surfaces in §0 (Python host, Node host, browser client). VS Code extensions
+  consume `packages/xy-node`; they are not a separate runtime stack.
+- **REQ-HOSTPARITY-0b (MUST).** Notebook UX (`show()`, anywidget, `to_html()`)
+  remains first-class on the Python host and MUST NOT regress.
+- **REQ-HOSTPARITY-0c (MUST).** Node bindings MUST NOT depend on browser-only
+  APIs; the browser client MUST NOT import Node-only modules (`koffi`,
+  `node:fs`, …).
 - **REQ-HOSTPARITY-1 (MUST).** One xy Rust C ABI serves Python (`ctypes` today)
-  and Node (N-API). `ABI_VERSION` bumps apply to both loaders.
+  and Node (koffi / N-API-shaped loader). `ABI_VERSION` bumps apply to both
+  loaders.
 - **REQ-HOSTPARITY-1b (MUST).** **Rust owns decisions:** chart/graph behavior
   that affects buffers, layout, encodings, or recorded LOD/layout decisions is
   implemented in Rust. Hosts MAY validate and coerce inputs but MUST NOT own a
@@ -68,7 +122,8 @@ Node must not reimplement layouts or mark geometry in TypeScript.
   [graph-fork-requirements.md](graph-fork-requirements.md) REQ-API-3 remain
   available with the same semantics on Python and Node.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
-  in transport attachment.
+  in transport attachment. The client draws uploaded §29 buffers and MUST NOT
+  reimplement layout/LOD/encode for the product path.
 - **REQ-HOSTPARITY-4 (MUST).** Graph viz is the core dual-host feature surface
   ([graph-fork-requirements.md](graph-fork-requirements.md)); other marks are
   first-class in the same MVP.
@@ -86,22 +141,29 @@ Node must not reimplement layouts or mark geometry in TypeScript.
 ## 4. Delivery order
 
 1. Amend placement docs; extend C ABI (**u64** graph indices; Rust-owned
-   decisions).
+   decisions); lock the three-runtime taxonomy (§0).
 2. Promote host-only layouts into Rust; Node loader over the same ABI.
 3. Graph mark + interactive client (core feature); tick architecture at scale.
 4. All chart types on Python and Node; golden parity; scatter-class scale
-   evidence for graphs on both bindings.
+   evidence for graphs on both bindings. Keep notebook `show()` / anywidget /
+   `to_html()` green throughout.
 
 ---
 
 ## 5. Non-goals
 
-- Separate Node-only renderers or host-side reimplementations of Rust kernels.
+- Separate Node-only or VS Code-only renderers, or host-side reimplementations
+  of Rust kernels.
+- Reimplementing layout/LOD/encode inside the browser client for the product
+  path.
+- Mixing Node-only modules into `js/src` or browser-only APIs into
+  `packages/xy-node`.
 - Reimplementing GraphForge (or peer) analysis algorithms inside xy.
 - Leaving layout/encode/LOD **decisions** in one host language.
 - Requiring Node for Python users or vice versa.
 - A heavy GraphForge extension framework in this pass (thin helper only;
   independent charting first).
+- Treating notebooks as secondary once Node lands.
 
 ---
 

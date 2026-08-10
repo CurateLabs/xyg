@@ -3,7 +3,80 @@
   "title": "Dual-host parity matrix (machine-readable twin)",
   "source": "spec/design/dual-host-parity-matrix.md",
   "status_values": ["ready", "partial", "missing", "design"],
-  "architecture_principle": "GraphForge/canonical → Rust (layout, viewport, graph LOD, edge LOD, encode, render-graph emission) → bounded §29 buffers → shared WebGL host (paint only).",
+  "scope": "Entire product — all chart types, not graph-only.",
+  "architecture_principle": "GraphForge/canonical → Rust (layout, viewport, graph LOD, edge LOD, encode, render-graph emission, all mark decisions) → bounded §29 buffers → shared WebGL browser client (paint only). Hosts are thin; browser never reimplements layout/LOD/encode on the product path.",
+  "runtimes": [
+    {
+      "id": "python",
+      "name": "Python host",
+      "paths": ["python/xy/", "python/reflex_xy/"],
+      "abi_loader": "ctypes",
+      "consumers": [
+        "notebooks (anywidget / show())",
+        "HTML export (to_html() / standalone)",
+        "Reflex"
+      ],
+      "owns": [
+        "idiomatic Python ingest",
+        "transport attach (widget comm / Reflex routes)",
+        "public composition API ergonomics"
+      ],
+      "must_not": [
+        "parallel layout/LOD/encode decisions",
+        "regress show()/anywidget/to_html() notebook UX"
+      ],
+      "notes": "Primary notebook UX; first-class and must not regress."
+    },
+    {
+      "id": "node",
+      "name": "Node host",
+      "paths": ["packages/xy-node"],
+      "abi_loader": "koffi (same libxy_core C ABI)",
+      "consumers": [
+        "server-side Node",
+        "VS Code extensions (consumer of Node bindings — not a separate stack)"
+      ],
+      "owns": [
+        "TypedArray ingest",
+        "embed / webview transport attach",
+        "progressive force scheduling off the browser main thread"
+      ],
+      "must_not": [
+        "browser-only APIs (window, document, DOM, WebGL)",
+        "reimplement Rust layout/LOD/encode in TypeScript"
+      ],
+      "notes": "VS Code uses packages/xy-node; do not invent a fourth runtime stack."
+    },
+    {
+      "id": "browser",
+      "name": "Browser client",
+      "paths": ["js/src/", "python/xy/static/index.js", "python/xy/static/standalone.js"],
+      "abi_loader": null,
+      "consumers": [
+        "anywidget notebooks",
+        "HTML export / standalone",
+        "Reflex",
+        "Node / VS Code webview embeds"
+      ],
+      "owns": [
+        "WebGL2 paint",
+        "pick / hit-test",
+        "pan/zoom/select/drag gestures applying uploaded §29 buffers"
+      ],
+      "must_not": [
+        "reimplement layout/LOD/encode in JS for the product path",
+        "import koffi, node:fs, or other Node-only modules"
+      ],
+      "notes": "Shared renderer for every host; draws uploaded §29 buffers only."
+    }
+  ],
+  "invariants": [
+    "Rust owns decisions for all marks; hosts are thin",
+    "Same figure spec + §29 buffers across Python and Node for the same inputs",
+    "Browser is the shared renderer",
+    "Notebook show()/anywidget/to_html() remain first-class and must not regress",
+    "Node package must not use browser-only APIs; browser client must not import koffi/node:fs"
+  ],
   "pipeline_layers": [
     {
       "layer": "GraphForge / canonical ingest helpers",
@@ -31,7 +104,7 @@
       "python": "ready",
       "node": "ready",
       "shared_artifact": "xy_graph_force_*",
-      "notes": "Never JS main thread; Barnes–Hut/grid approx at scale"
+      "notes": "Never browser main-thread decisions; Barnes–Hut/grid approx at scale"
     },
     {
       "layer": "Viewport + graph LOD + edge LOD",
@@ -48,11 +121,11 @@
       "notes": "Offset-encoded; no JSON numbers"
     },
     {
-      "layer": "Shared WebGL host paint",
+      "layer": "Shared WebGL browser paint",
       "python": "ready",
       "node": "ready",
-      "shared_artifact": "GLHost (dossier §18)",
-      "notes": "Paint / pick / gestures only; no raw V/E past direct tier"
+      "shared_artifact": "GLHost (dossier §18); python/xy/static/{index,standalone}.js",
+      "notes": "Paint / pick / gestures only; no raw V/E past direct tier; no JS layout/LOD/encode product path"
     }
   ],
   "complexity_budgets": {
@@ -192,8 +265,9 @@
   ],
   "references": [
     "spec/design/dual-host-parity-matrix.md",
-    "spec/design/graph-mark.md",
     "spec/design/host-parity.md",
-    "spec/design/rust-engine.md"
+    "spec/design/graph-mark.md",
+    "spec/design/rust-engine.md",
+    "packages/xy-node/README.md"
   ]
 }

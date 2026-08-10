@@ -74,18 +74,25 @@ control.
   The core `python/xy` package must never import Reflex. The render client is
   linked out of that package at app compile (no second copy to drift).
   Tests: `tests/reflex_adapter/` (skip unless Reflex is installed).
-- `js/src/*.ts` — the render client as TypeScript ES modules (one module per
-  former concat part; `60_entries.ts` is the entry and the only public export
-  surface). `node js/build.mjs` typechecks (`js/tsconfig.json`), lints the
-  shaders, and has vite bundle + minify into `python/xy/static/index.js`
-  (anywidget ESM) and `standalone.js` (IIFE, `window.xy`). Those bundles are a
-  **generated artifact, git-ignored, not committed** (§33): `hatch_build.py`
-  builds them and force-includes them into the wheel/sdist at packaging time
-  (exactly as it does the Rust core), so published distributions carry them
-  prebuilt. From a source checkout run `npm ci && node js/build.mjs` once so the
-  widget, HTML export, and tests have the bundles on disk. npm devDependencies
-  (vite/typescript/playwright, pinned in `package-lock.json`) are build/test-time
-  only — the shipped client stays runtime-dependency-free.
+- `packages/xy-node/` — Node host bindings (koffi → same Rust C ABI). Covers
+  server-side Node and VS Code extensions (VS Code is a consumer of these
+  bindings, not a separate stack). Thin TypedArray loaders only; no
+  browser-only APIs. See `spec/design/host-parity.md` §0.
+- `js/src/*.ts` — the **browser client** as TypeScript ES modules (one module
+  per former concat part; `60_entries.ts` is the entry and the only public
+  export surface). WebGL2 paint/pick/gestures only — draws §29 buffers from
+  any host; does not reimplement layout/LOD/encode on the product path and
+  must not import `koffi` / `node:fs`. `node js/build.mjs` typechecks
+  (`js/tsconfig.json`), lints the shaders, and has vite bundle + minify into
+  `python/xy/static/index.js` (anywidget ESM) and `standalone.js` (IIFE,
+  `window.xy`). Those bundles are a **generated artifact, git-ignored, not
+  committed** (§33): `hatch_build.py` builds them and force-includes them into
+  the wheel/sdist at packaging time (exactly as it does the Rust core), so
+  published distributions carry them prebuilt. From a source checkout run
+  `npm ci && node js/build.mjs` once so the widget, HTML export, and tests have
+  the bundles on disk. npm devDependencies (vite/typescript/playwright, pinned
+  in `package-lock.json`) are build/test-time only — the shipped client stays
+  runtime-dependency-free.
 - `tests/`, `scripts/bench.py` (§12 harness), `scripts/smoke_render.py`
   (headless Chromium pixel probe).
 
