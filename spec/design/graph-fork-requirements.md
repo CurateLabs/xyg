@@ -24,11 +24,12 @@ Other chart types keep the **same first-class feel and speed**
 **Host parity:** Python and Node for *all* chart types. Graph viz leads
 dual-host delivery.
 
-**Architecture principle:** do **as much as possible in Rust** so Python and
-Node bindings stay thin and bit-identical
-([host-parity.md](host-parity.md)). Display layouts, channel resolution, and
-LOD aggregates over |V|/|E| live in the xy C ABI; hosts coerce inputs;
-JS draws. Analysis algorithms stay in GraphForge (and peers).
+**Architecture principle:** **Rust owns decisions** that affect chart
+behavior, buffers, layout, encodings, and LOD — not only O(N) loops.
+Python and Node are thin bindings for ergonomics and I/O so parity and
+performance stay identical ([host-parity.md](host-parity.md)). Display
+layouts, channel resolution, and LOD aggregates live in the xy C ABI; JS
+draws. Analysis algorithms stay in GraphForge (and peers).
 
 ---
 
@@ -156,8 +157,11 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 
 - **REQ-API-1 (MUST).** First-class `graph_chart` / `network_chart` and a
   `graph` mark — not a scatter+segments recipe.
-- **REQ-API-2 (MUST).** Nodes and edges with stable IDs, optional attributes for
-  encodings, optional preset `x`/`y`.
+- **REQ-API-2 (MUST).** Nodes and edges with stable external IDs (string or
+  int), optional attributes for encodings, optional preset `x`/`y`. Internally,
+  element indices are **`u64`** (not `u32`) end-to-end in the graph ABI and
+  buffers — `u32` has already proven too small for GraphForge-class scale and
+  for xy’s own large-row paths; do not reintroduce that ceiling for graphs.
 - **REQ-API-3 (MUST).** Ingest for plotting keeps **xy-native input formats
   first-class** — the same kinds of values existing marks already accept for
   columns (Python sequences, NumPy arrays, pandas Series / DataFrame columns,
@@ -170,7 +174,10 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
   subgraph → `graph_chart`) MAY be the **documented primary** path for
   GraphForge users, but MUST compile into the same mark/buffer path as
   xy-native inputs. Shipping GraphForge helpers MUST NOT remove, gate, or
-  degrade the xy-native formats in REQ-API-3.
+  degrade the xy-native formats in REQ-API-3. For now the helper is **thin
+  only**; this charting work is built **independently first** so the extension
+  framework can be designed against a real target later — do not invent a
+  heavy extension framework in this requirements pass.
 - **REQ-API-3c (SHOULD).** `from_networkx(G, *, pos=None, ...)` preserves
   attributes used by encodings. Precomputed metric columns from GraphForge
   (or peers) are ordinary encoding channels — do not call their engines from
@@ -179,33 +186,52 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
   names/defaults on Python and Node (idiomatic types may differ). Node hosts
   mirror the same format families via TypedArrays / arrays of numbers /
   Arrow where applicable — not GraphForge-only ingest.
+- **REQ-API-5 (MUST).** Layout selection is a single parameter (e.g.
+  `layout=...`) with a **documented default**. Every supported layout algorithm
+  (preset, grid, circle, force variants, hierarchy/DAG, radial/concentric,
+  `auto`, … as they ship) is selectable through that same parameter — not a
+  one-off force-only API with other layouts bolted on sideways.
 
 ### 4.2 Engine placement
 
 - **REQ-CORE-1 (MUST).** Display layout kernels, viz adjacency/position
-  buffers, and bulk channel resolution live in xy Rust (`xy_graph_*` C ABI) —
-  Rust-first per [host-parity.md](host-parity.md). Do not reimplement GraphForge
-  algorithm surfaces here; do not leave layout/encode logic in Python-only or
+  buffers, bulk channel resolution, and **layout/LOD decisions that change
+  buffers** live in xy Rust (`xy_graph_*` C ABI) with **`u64` element
+  indices**. Rust owns these decisions for binding parity
+  ([host-parity.md](host-parity.md)). Do not reimplement GraphForge algorithm
+  surfaces here; do not leave layout/encode/decision logic in Python-only or
   Node-only code.
 - **REQ-CORE-2 (MUST).** Positions and channels: canonical f64 in-core, §29 f32
-  on the wire — no JSON numbers for geometry.
+  on the wire — no JSON numbers for geometry. Index planes that identify
+  nodes/edges use **u64** (not u32).
 - **REQ-CORE-3 (MUST).** JS does not run large-graph layout; it draws uploaded
   buffers and handles gestures.
-- **REQ-CORE-4 (MUST).** Layout/LOD choices are recorded in the spec (§28), with
-  the decision computation in Rust whenever it affects buffers.
-- **REQ-CORE-5 (MUST).** Graph is the first mark with enforced Python↔Node
-  golden-buffer tests ([host-parity.md](host-parity.md)).
+- **REQ-CORE-4 (MUST).** Layout/LOD choices are recorded in the spec (§28);
+  the decision computation runs in Rust whenever it affects buffers.
+- **REQ-CORE-5 (MUST).** Graph is held to Python↔Node golden-buffer tests
+  ([host-parity.md](host-parity.md)).
+- **REQ-CORE-6 (MUST).** Progressive/cancelable layout tick architecture is
+  specified in `graph-mark.md` before implementation: must be **performant at
+  scale for both Python and Node** bindings (same Rust ticks; thin host
+  schedulers). Further architectural detail is required; do not leave tick
+  scheduling as an ad-hoc host detail.
 
 ### 4.3 Layout (display positioning)
 
-- **REQ-LAY-1 (MUST).** `preset`, `grid`, `circle`, one force-directed, one
-  hierarchy (`breadthfirst` minimum).
-- **REQ-LAY-2 (MUST).** Force layout: cancel, iteration cap, progressive ticks
-  to the client.
+- **REQ-LAY-1 (MUST).** Layout catalog is selected via the single `layout=`
+  parameter (REQ-API-5). MVP includes at least: `preset`, `grid`, `circle`,
+  one default force-directed algorithm, and one hierarchy (`breadthfirst`
+  minimum). **Default** `layout=` is documented (recommend `force` or `auto`
+  once `auto` exists — pick in `graph-mark.md`).
+- **REQ-LAY-2 (MUST).** Force (and other iterative) layouts: cancel, iteration
+  cap, progressive ticks to the client (REQ-CORE-6).
 - **REQ-LAY-3 (SHOULD).** `layout="auto"` from size/structure.
-- **REQ-LAY-4 (SHOULD).** DAG/hierarchical and radial/concentric for dependency
-  and ego-style views.
+- **REQ-LAY-4 (SHOULD).** DAG/hierarchical and radial/concentric — also via
+  `layout=`, not separate entry points.
 - **REQ-LAY-5 (MAY).** Fixed/pinned nodes during force.
+- **REQ-LAY-6 (MUST).** Additional layout algorithms added later remain
+  callable through the same `layout=` parameter (string name or enum), with
+  the original default unchanged unless a versioned migration says otherwise.
 
 Live continuous “play with physics” configure UIs are **not** requirements; a
 stabilize-then-draw force layout is enough for viz.
@@ -219,7 +245,11 @@ stabilize-then-draw force layout is enough for viz.
 - **REQ-REN-4 (MUST).** Labels with zoom LOD.
 - **REQ-REN-5 (SHOULD).** Additional node shapes and group/discrete styles.
 - **REQ-REN-6 (MUST).** Graph marks participate in `to_png` / `to_svg` /
-  `to_html`.
+  `to_html` when practical, but **interactive graph performance is primary**.
+  Export MUST NOT dictate data paths, LOD, or interaction architecture that
+  would cripple interactivity. Prefer a simpler export path (e.g. SVG
+  circles/polylines or existing capture) over blocking interactive MVP on
+  full native graph display-list parity.
 
 ### 4.5 Interaction (reading the chart)
 
@@ -234,11 +264,19 @@ filter UIs.
 
 ### 4.6 Scale
 
-- **REQ-LOD-1 (MUST).** Published direct vs aggregated tiers with explicit spec
-  fields.
-- **REQ-LOD-2 (SHOULD).** Edge simplification / cluster aggregates from Rust
-  when over budget.
+- **REQ-LOD-1 (MUST).** Graph interactive scale targets the **same class of
+  claim as upstream xy scatter and other large marks**: screen-bounded work on
+  interaction, with an explicit tier ladder, through the large regimes xy
+  already advertises for scatter (10M / 100M / 1B-class *with* aggregation —
+  dossier north star). Do not treat graphs as a “tens of thousands only”
+  product while scatter claims billions.
+- **REQ-LOD-2 (MUST).** Edge simplification / cluster aggregates (and any
+  other graph LOD) are produced in Rust when over budget; JS draws aggregates.
 - **REQ-LOD-3 (MUST).** Label/overlay budgets stay screen-bounded.
+- **REQ-LOD-4 (MUST).** Evidence: build harness rows that exercise graph at the
+  same scale bands used for scatter launch/large-data claims (adapted to
+  node–link LOD), for **both** Python and Node bindings over the same Rust
+  core.
 
 ### 4.7 Hosts
 
@@ -249,15 +287,16 @@ filter UIs.
 
 ---
 
-## 5. Delivery slices (viz only)
+## 5. Delivery slices
 
 | Slice | Requirements | Closes |
 |---|---|---|
-| **A — Spec + ABI** | CORE-*; [host-parity.md](host-parity.md) | Dual-host foundation for all marks |
-| **B — MVP graph viz** | API-1..3/3b, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | Core feature: node–link charts; xy-native inputs retained |
-| **C — Layout & style depth** | LAY-3..5, REN-2 curve / REN-5, IX-3/4 | vis/Ogma/D3 viz quality |
-| **D — Dual-host graph parity** | API-4, CORE-5; HOSTPARITY-1..4 | Graph proves Python↔Node |
-| **E — Platform follow-on** | HOSTPARITY-6; remaining marks on Node | Promote host-only layouts as each mark gains Node — **not** a graph-MVP gate |
+| **A — Spec + ABI** | CORE-* (incl. u64 indices, tick arch in `graph-mark.md`); [host-parity.md](host-parity.md); rust-engine amend (Rust owns decisions) | Dual-host foundation; no host-only layout leftovers in plan |
+| **B — Graph viz + full chart dual-host MVP** | API-*; LAY-*; REN-* (interactive-first); IX-*; LOD-*; HOST-*; HOSTPARITY-* | Graph core feature **and** all chart types on Python+Node with Rust-owned layout/encode — no Python host-only shenanigans |
+| **C — Layout & style depth** | LAY-3..6 expansions, REN curves/shapes, IX-3/4 | Broader `layout=` catalog + polish |
+| **D — Evidence** | LOD-4 | Scale bands matching xy scatter claims on both bindings |
+
+Slice B is intentionally broad: product MVP is not “graph only, Sankey later.”
 
 ---
 
