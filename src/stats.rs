@@ -158,7 +158,9 @@ mod tests {
             s.high,
             inside.iter().copied().fold(f64::NEG_INFINITY, f64::max)
         );
-        assert_eq!(s.outliers, vec![40.0]);
+        assert_eq!(s.low, 10.0);
+        assert_eq!(s.high, 14.0);
+        assert_eq!(s.outliers, vec![0.0, 40.0]);
     }
 
     #[test]

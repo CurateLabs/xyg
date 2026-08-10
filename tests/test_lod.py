@@ -628,6 +628,7 @@ def test_pins_offset_to_zero_agrees_with_geometry_offset() -> None:
         assert not lod.pins_offset_to_zero(scale)
         assert lod.geometry_offset(scale, 10.0, 20.0) == 15.0
 
+
 def test_plan_view_lod_uses_native_decision_math() -> None:
     """Numeric half of LodPlan comes from xy_lod_plan (Rust), not a host reimplementation."""
     request = lod.ViewportRequest.from_client(0.0, 1.0, 0.0, 1.0, 1200, 800)
@@ -640,4 +641,3 @@ def test_plan_view_lod_uses_native_decision_math() -> None:
     assert plan.grid_w == gw and plan.grid_h == gh
     assert lod.drill_decision(100_000, 200_000, False) is True
     assert lod.drill_decision(350_000, 200_000, False) is False
-

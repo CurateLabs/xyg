@@ -12,9 +12,8 @@ defined, and it is a loud failure, never a silent degrade).
 
 from __future__ import annotations
 
-import numbers
-
 import ctypes
+import numbers
 import operator
 import os
 import sys
@@ -3952,9 +3951,7 @@ def density_log_u8(grid: npt.NDArray[np.float32]) -> tuple[npt.NDArray[np.uint8]
     return out, float(maximum.value)
 
 
-def drill_decision(
-    visible: int, budget: float, in_drill: bool, exit_factor: float = 1.15
-) -> bool:
+def drill_decision(visible: int, budget: float, in_drill: bool, exit_factor: float = 1.15) -> bool:
     """Native hysteresis-guarded LOD drill decision (§5)."""
     if isinstance(visible, (bool, np.bool_)) or not isinstance(visible, numbers.Integral):
         raise ValueError("visible must be an integer >= 0")
@@ -3968,9 +3965,7 @@ def drill_decision(
     if not isinstance(in_drill, (bool, np.bool_)):
         raise ValueError("in_drill must be True or False")
     out = ctypes.c_int32()
-    ok = _lib.xy_drill_decision(
-        visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out)
-    )
+    ok = _lib.xy_drill_decision(visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out))
     if ok != 1:
         raise ValueError("invalid drill_decision arguments")
     return bool(out.value)

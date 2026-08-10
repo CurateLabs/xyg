@@ -37,7 +37,7 @@ def _legacy_distribution_stats(group: np.ndarray):
 def test_box_stats_match_legacy_percentiles(vals: np.ndarray) -> None:
     got = _distribution_stats(vals)
     exp = _legacy_distribution_stats(vals)
-    for a, b in zip(got[:5], exp[:5]):
+    for a, b in zip(got[:5], exp[:5], strict=True):
         if np.isnan(b):
             assert np.isnan(a)
         else:

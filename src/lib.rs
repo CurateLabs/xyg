@@ -3336,14 +3336,6 @@ pub unsafe extern "C" fn xy_graph_layout(
                 };
                 graph::layout_breadthfirst(n_nodes, sources, targets, roots_slice, out_x, out_y)
             }
-            graph::LAYOUT_HIERARCHICAL => {
-                let roots_slice = if n_roots == 0 || roots.is_null() {
-                    &[][..]
-                } else {
-                    std::slice::from_raw_parts(roots, n_roots as usize)
-                };
-                graph::layout_hierarchical(n_nodes, sources, targets, roots_slice, out_x, out_y)
-            }
             graph::LAYOUT_AUTO => graph::layout_auto(n_nodes, sources, targets, out_x, out_y, seed),
             graph::LAYOUT_RADIAL => {
                 let root = if n_roots == 0 || roots.is_null() {
