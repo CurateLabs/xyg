@@ -16,14 +16,12 @@
  *   node benchmarks/bench_dual_host_graph_node.mjs --sizes 1000
  */
 
-import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { performance } from "node:perf_hooks";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const require = createRequire(import.meta.url);
 
 // Resolve @xy/node from the monorepo package (no publish required).
 const xyNode = await import(path.join(ROOT, "packages/xy-node/src/index.js"));
@@ -189,8 +187,6 @@ function benchSize(n, { nodeBudget, edgeBudget, ticks }) {
 }
 
 function main() {
-  // Touch require so createRequire stays used if tree-shaken tooling inspects.
-  void require;
   const args = parseArgs(process.argv.slice(2));
   const results = args.sizes.map((n) =>
     benchSize(n, {

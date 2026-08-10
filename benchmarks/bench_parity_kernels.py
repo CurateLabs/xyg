@@ -132,7 +132,7 @@ def compare_to_baseline(row: dict, metrics: dict) -> list[dict]:
         if not ok:
             raise AssertionError(
                 f"{result_key}={measured:.6g} vs baseline {baseline:.6g} "
-                f"({base_key}) exceeds {REGRESSION_FACTOR}× soft gate"
+                f"({base_key}) exceeds {REGRESSION_FACTOR}x soft gate"
             )
     return comparisons
 
