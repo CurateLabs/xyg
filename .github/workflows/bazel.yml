@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 # Dual-host graph MVP CI: Rust cdylib + Python + Node bindings.
-# Runs entirely on Blacksmith runners (no ubuntu-latest). See
-# spec/design/bazel-ci.md.
+# Runs entirely on Blacksmith runners — never ubuntu-latest / GitHub-hosted.
+# See spec/design/bazel-ci.md.
 
 jobs:
   bazel:
@@ -26,10 +26,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Pin is .bazelversion (7.4.1). setup-bazel@v2 has no `version` input;
+      # bazelisk reads .bazelversion. Sticky-disk caches via Blacksmith.
       - name: Setup Bazel
         uses: useblacksmith/setup-bazel@v2
         with:
-          version: "7.4.1"
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
 
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
@@ -56,5 +60,4 @@ jobs:
         run: ./bazel build //:xy_core
 
       - name: Bazel test graph MVP
-        run: |
-          ./bazel test //:rust_test //:abi_smoke //:python_graph_test //:node_graph_test
+        run: ./bazel test //:graph_mvp_tests

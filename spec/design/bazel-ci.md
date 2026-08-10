@@ -14,6 +14,7 @@ not by converting every existing GitHub Actions workflow.
 | `//:abi_smoke` | `scripts/abi_smoke.py` with `XY_NATIVE_LIB` |
 | `//:python_graph_test` | pytest `tests/test_graph.py` (+ sankey when present) |
 | `//:node_graph_test` | `packages/xy-node` tests against the same `.so` |
+| `//:graph_mvp_tests` | suite of the four test targets above |
 
 Cargo.toml / Cargo.lock remain authoritative. Root Bazel targets wrap
 cargo / pytest / npm so crates.io does not need to be reachable through
@@ -21,11 +22,17 @@ Bazel's fetch graph.
 
 ## Runners
 
-All jobs use Blacksmith tags (for example
-`blacksmith-4vcpu-ubuntu-2404`). Bazel setup uses
-`useblacksmith/setup-bazel@v2` so repository and disk caches ride sticky
-disks. Do not add `ubuntu-latest` (or other non-Blacksmith) runners to
-this workflow.
+All jobs use Blacksmith tags only (for example
+`blacksmith-4vcpu-ubuntu-2404`). Never `ubuntu-latest` or other
+GitHub-hosted runners. Bazel setup uses `useblacksmith/setup-bazel@v2`
+(sticky disks for bazelisk / disk / repository caches). The Bazel
+version pin is `.bazelversion` (currently `7.4.1`) — `setup-bazel@v2`
+has no `version` input; bazelisk reads `.bazelversion`.
+
+Rust is pinned to **1.88.0** in the workflow (`dtolnay/rust-toolchain`)
+and `rust-toolchain.toml`. Node graph goldens default to ABI **51**;
+`tools/bazel/run_node_graph_tests.sh` exports `XY_EXPECTED_ABI` from
+`python/xy/_native.py` when unset.
 
 ## Local
 
