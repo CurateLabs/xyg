@@ -155,6 +155,42 @@ const MESH_MARK = {
   },
 };
 
+// Line geometry: also covers step / stairs / ecdf. Python's step/stairs/ecdf
+// APIs emit wire kind `"line"` with `style.step` (client expands corners in
+// `_stepArrays`); aliases below keep legend / defensive lookups from falling
+// through to the scatter default if a host ever labels the kind explicitly.
+const LINE_MARK = {
+  build: (view, g, t, buffer) => view._buildLineMark(g, t, buffer),
+  draw: (view, g) => {
+    const [x0, x1] = view._axisRange(g.xAxis);
+    const [y0, y1] = view._axisRange(g.yAxis);
+    view._drawLine(g, view._map(g.xMeta, x0, x1, g.xAxis), view._map(g.yMeta, y0, y1, g.yAxis));
+  },
+  refreshColor: (view, g) => {
+    g.color = parseColor(view.root, g.trace.style.color, g.color);
+  },
+};
+
+const SCATTER_MARK = {
+  build: (view, g, t, buffer) => view._buildScatterMark(g, t, buffer),
+  draw: (view, g) => {
+    const [x0, x1] = view._axisRange(g.xAxis);
+    const [y0, y1] = view._axisRange(g.yAxis);
+    view._drawPoints(g, view._map(g.xMeta, x0, x1, g.xAxis), view._map(g.yMeta, y0, y1, g.yAxis));
+  },
+  pointPick: true,
+  retainCpu: true,
+  refreshColor: (view, g) => {
+    if (g.colorMode === 0 && g.trace.color) {
+      g.color = parseColor(view.root, g.trace.color.color, g.color);
+    }
+    view._pointMarkStyle(g, g.trace);
+  },
+};
+
+// Wire kinds Python `_emit_<kind>` can place on a trace. Graph is *not* a wire
+// kind: `graph_chart` compiles to segments + scatter (+ `spec.graph` meta);
+// neighborhood hover is the optional `58_graph.ts` enhancement.
 export const MARK_KINDS = {
   histogram: RECT_MARK,
   box: RECT_MARK,
@@ -214,33 +250,11 @@ export const MARK_KINDS = {
     build: (view, g, t, buffer) => view._buildHeatmapMark(g, t, buffer),
     draw: (view, g) => view._drawHeatmap(g),
   },
-  scatter: {
-    build: (view, g, t, buffer) => view._buildScatterMark(g, t, buffer),
-    draw: (view, g) => {
-      const [x0, x1] = view._axisRange(g.xAxis);
-      const [y0, y1] = view._axisRange(g.yAxis);
-      view._drawPoints(g, view._map(g.xMeta, x0, x1, g.xAxis), view._map(g.yMeta, y0, y1, g.yAxis));
-    },
-    pointPick: true,
-    retainCpu: true,
-    refreshColor: (view, g) => {
-      if (g.colorMode === 0 && g.trace.color) {
-        g.color = parseColor(view.root, g.trace.color.color, g.color);
-      }
-      view._pointMarkStyle(g, g.trace);
-    },
-  },
-  line: {
-    build: (view, g, t, buffer) => view._buildLineMark(g, t, buffer),
-    draw: (view, g) => {
-      const [x0, x1] = view._axisRange(g.xAxis);
-      const [y0, y1] = view._axisRange(g.yAxis);
-      view._drawLine(g, view._map(g.xMeta, x0, x1, g.xAxis), view._map(g.yMeta, y0, y1, g.yAxis));
-    },
-    refreshColor: (view, g) => {
-      g.color = parseColor(view.root, g.trace.style.color, g.color);
-    },
-  },
+  scatter: SCATTER_MARK,
+  line: LINE_MARK,
+  // Aliases / defensive: Python emits `"line"` + `style.step` for these.
+  step: LINE_MARK,
+  stairs: LINE_MARK,
   area: AREA_MARK,
 };
 

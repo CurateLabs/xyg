@@ -122,7 +122,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   [graph-fork-requirements.md](graph-fork-requirements.md) REQ-API-3 remain
   available with the same semantics on Python and Node.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
-  in transport attachment. The client draws uploaded §29 buffers and MUST NOT
+  in transport attachment. The same `js/src` → `static/index.js` /
+  `standalone.js` client serves Python notebooks (anywidget), HTML export,
+  Node-served pages, and VS Code webviews. `58_graph.ts` is an optional
+  enhancement (neighborhood hover); all wire marks paint without it. The client draws uploaded §29 buffers and MUST NOT
   reimplement layout/LOD/encode for the product path.
 - **REQ-HOSTPARITY-4 (MUST).** Graph viz is the core dual-host feature surface
   ([graph-fork-requirements.md](graph-fork-requirements.md)); other marks are

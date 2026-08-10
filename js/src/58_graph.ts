@@ -1,11 +1,15 @@
 import { ChartView } from "./50_chartview";
 
-// Graph mark client (graph-mark.md §6): cache CSR meta from the figure
-// spec and dim non-neighbors on node hover via the existing point-shader
-// selection path (`g.selActive` / `g.selBuf`, see `_drawPoints` /
-// `POINT_VS`). Geometry is already uploaded as segments + scatter — this
-// module draws those buffers only (no client layout or edge tessellation;
-// `edge_curve` meta is recorded but MVP keeps straight segments).
+// Optional graph-mark client enhancement (graph-mark.md §6).
+//
+// Cache CSR meta from the figure spec and dim non-neighbors on node hover
+// via the existing point-shader selection path (`g.selActive` / `g.selBuf`,
+// see `_drawPoints` / `POINT_VS`). Geometry is already uploaded as segments
+// + scatter — this module never owns layout or edge tessellation
+// (`edge_curve` meta is recorded but MVP keeps straight segments).
+//
+// Safe to omit from the bundle: every wire mark (including graph's
+// segments/scatter) renders through MARK_KINDS without these hooks.
 
 Object.assign(ChartView.prototype, {
   _cacheGraphsFromSpec(spec = this.spec) {

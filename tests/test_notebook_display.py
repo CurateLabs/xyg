@@ -172,7 +172,43 @@ def test_ipython_display_keeps_widget_host_by_default(
     assert displayed == [chart.widget()]
 
 
-# -- parity across the renderable surfaces ------------------------------------
+# -- notebook HTML export (anywidget / to_html shared client) -----------------
+
+
+def test_scatter_to_html_includes_standalone_client() -> None:
+    """Notebook / HTML export path inlines standalone.js + renderStandalone."""
+    html = _chart().to_html()
+    assert "var xy=" in html
+    assert "renderStandalone" in html
+    assert "MARK_KINDS" in html or "scatter" in html
+
+
+def test_graph_to_html_includes_standalone_and_graph_meta() -> None:
+    """graph_chart → figure → to_html carries graph meta for the shared client."""
+    chart = xy.graph_chart(
+        xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="grid"),
+        width=400,
+        height=300,
+    )
+    fig = chart.figure()
+    assert fig._graph_meta is not None
+    assert len(fig._graph_meta) == 1
+    spec, blob = fig.build_payload()
+    assert "graph" in spec
+    assert isinstance(blob, (bytes, bytearray))
+    html = chart.to_html()
+    assert "var xy=" in html
+    assert "renderStandalone" in html
+    # Spec is JSON-inlined; graph meta must survive for CSR neighborhood hover.
+    assert '"graph"' in html
+    assert "csr_offsets" in html or "n_nodes" in html
+
+
+def test_composition_api_graph_and_scatter_still_public() -> None:
+    assert callable(xy.graph_chart)
+    assert callable(xy.scatter_chart)
+    assert callable(xy.graph)
+    assert callable(xy.scatter)
 
 
 def test_figure_show_honors_display_host() -> None:

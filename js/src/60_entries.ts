@@ -10,6 +10,9 @@ import "./53_interaction";
 import "./54_kernel";
 import "./56_animation";
 import "./57_viewstate";
+// Optional graph enhancement (CSR neighborhood dim on node hover). Geometry
+// for graph charts is ordinary segments + scatter via MARK_KINDS; omitting
+// this import still paints every mark including graph wire traces.
 import "./58_graph";
 
 // ---------------------------------------------------------------------------
