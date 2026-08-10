@@ -198,8 +198,9 @@ export class Figure {
 
   bar(x, y, opts = {}) {
     const composed = composeBar(x, y, opts);
-    const t = composed.traces[0];
-    this._pushRectTrace("bar", t, opts);
+    for (const t of composed.traces) {
+      this._pushRectTrace(t.kind ?? "bar", t, opts);
+    }
     return this;
   }
 

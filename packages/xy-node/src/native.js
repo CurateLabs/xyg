@@ -132,6 +132,12 @@ export const xyWindRoseBins = lib.func(
 export const xyContourfDensify = lib.func(
   "int32_t xy_contourf_densify(const double *z, size_t rows, size_t cols, const double *xpos, const double *ypos, double *out_z, double *out_x, double *out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t *out_rows, size_t *out_cols)",
 );
+export const xyBarStack = lib.func(
+  "int32_t xy_bar_stack(const double *pos, size_t n_items, const double *values, size_t n_series, const double *width, size_t width_len, const double *base, size_t base_len, uint32_t mode, uint32_t orientation, double *out_x0, double *out_x1, double *out_y0, double *out_y1)",
+);
+export const xyContourfBands = lib.func(
+  "size_t xy_contourf_bands(const double *z, size_t rows, size_t cols, const double *xpos, const double *ypos, const double *edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double *out_x0, double *out_y0, double *out_x1, double *out_y1, double *out_x2, double *out_y2, int64_t *out_slots, size_t capacity)",
+);
 
 // --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(

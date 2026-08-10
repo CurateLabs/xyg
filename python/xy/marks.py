@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
@@ -1099,17 +1098,11 @@ def _bar_like(
             raise ValueError(f"{kind} width values must be finite and non-negative")
     vals = self._bar_value_matrix(y, len(pos), kind)
     n_series, n_items = vals.shape
-    if mode == "normalized":
-        if np.any(vals < 0):
-            raise ValueError(
-                f"{kind} mode='normalized' requires non-negative values; "
-                "normalizing mixed-sign stacks is ambiguous"
-            )
-        # Per-category fractions of the finite total (NaN = missing segment).
-        # Zero-total categories stay empty instead of emitting NaN, which
-        # must never reach vertex buffers (§19).
-        totals = np.nansum(vals, axis=0)
-        vals = vals / np.where(totals > 0.0, totals, 1.0)
+    if mode == "normalized" and np.any(vals < 0):
+        raise ValueError(
+            f"{kind} mode='normalized' requires non-negative values; "
+            "normalizing mixed-sign stacks is ambiguous"
+        )
     base_vals = self._broadcast_base(base, len(pos), kind)
     series_names = self._series_names(name, series, n_series)
     direct_colors = _series_direct_paints(color, n_series, n_items, f"{kind} color")
@@ -1195,70 +1188,47 @@ def _bar_like(
     try:
         if category_labels is not None:
             self._commit_category_labels(category_labels, category_axis)
-        half = width_values / 2.0
-        if vals.shape[0] == 1:
-            self._append_bar_rect(
+        from . import kernels
+
+        # Width may be scalar or per-category; Rust broadcasts length-1.
+        width_for_native: float | np.ndarray = (
+            float(width_values)
+            if np.isscalar(width_values)
+            else np.asarray(width_values, dtype=np.float64)
+        )
+        # Offsets (grouped / stacked / normalized) live in xy_bar_stack so
+        # Python and Node share one layout decision (§28 / dual-host).
+        x0s, x1s, y0s, y1s = kernels.bar_stack(
+            pos,
+            vals,
+            width_for_native,
+            base_vals,
+            mode=mode,
+            orientation=orientation,
+        )
+        for i in range(n_series):
+            if n_series == 1:
+                role = f"{kind}-normalized" if mode == "normalized" else kind
+            elif mode == "grouped":
+                role = f"{kind}-grouped"
+            else:
+                role = f"{kind}-{mode}"
+            self._append_rect_trace(
                 kind,
-                orientation,
-                pos - half,
-                pos + half,
-                base_vals,
-                base_vals + vals[0],
-                name=name,
-                color=series_colors[0],
-                opacity=opacity_values[0],
-                # grouped/stacked are no-ops for one series, but normalized
-                # rescales even a single series — record it (§28).
-                role=f"{kind}-normalized" if mode == "normalized" else kind,
-                extra_style=series_styles[0],
-                color_ch=None if direct_colors is None else direct_colors[0],
-                stroke_ch=resolved_strokes[0],
-                style_channels=series_channels[0],
+                x0s[i],
+                x1s[i],
+                y0s[i],
+                y1s[i],
+                name=name if n_series == 1 else series_names[i],
+                color=series_colors[i],
+                opacity=opacity_values[i],
+                role=role,
+                orientation=orientation,
+                extra_style=series_styles[i],
+                color_ch=None if direct_colors is None else direct_colors[i],
+                stroke_ch=resolved_strokes[i],
+                style_channels=series_channels[i],
             )
-        elif mode == "grouped":
-            slot = width_values / vals.shape[0]
-            for i, row in enumerate(vals):
-                p0 = pos - half + i * slot
-                self._append_bar_rect(
-                    kind,
-                    orientation,
-                    p0,
-                    p0 + slot,
-                    base_vals,
-                    base_vals + row,
-                    name=series_names[i],
-                    color=series_colors[i],
-                    opacity=opacity_values[i],
-                    role=f"{kind}-grouped",
-                    extra_style=series_styles[i],
-                    color_ch=None if direct_colors is None else direct_colors[i],
-                    stroke_ch=resolved_strokes[i],
-                    style_channels=series_channels[i],
-                )
-        else:
-            pos_base = base_vals.astype(np.float64, copy=True)
-            neg_base = base_vals.astype(np.float64, copy=True)
-            for i, row in enumerate(vals):
-                y0 = np.where(row >= 0, pos_base, neg_base)
-                y1 = y0 + row
-                self._append_bar_rect(
-                    kind,
-                    orientation,
-                    pos - half,
-                    pos + half,
-                    y0,
-                    y1,
-                    name=series_names[i],
-                    color=series_colors[i],
-                    opacity=opacity_values[i],
-                    role=f"{kind}-{mode}",
-                    extra_style=series_styles[i],
-                    color_ch=None if direct_colors is None else direct_colors[i],
-                    stroke_ch=resolved_strokes[i],
-                    style_channels=series_channels[i],
-                )
-                pos_base = np.where(row >= 0, y1, pos_base)
-                neg_base = np.where(row < 0, y1, neg_base)
     except Exception:
         self._rollback(checkpoint)
         raise
@@ -2700,87 +2670,15 @@ def _contourf_corner_triangles(
     extend_max: bool,
 ) -> tuple[tuple[np.ndarray, ...], np.ndarray]:
     """Clip one-masked-corner cells into exact ContourPy-style band triangles."""
+    from . import kernels
 
-    def clip(
-        polygon: list[tuple[float, float, float]],
-        threshold: float,
-        *,
-        keep_above: bool,
-    ) -> list[tuple[float, float, float]]:
-        if not polygon:
-            return []
-        output: list[tuple[float, float, float]] = []
-        previous = polygon[-1]
-        previous_inside = previous[2] >= threshold if keep_above else previous[2] <= threshold
-        for current in polygon:
-            current_inside = current[2] >= threshold if keep_above else current[2] <= threshold
-            if current_inside != previous_inside:
-                fraction = (threshold - previous[2]) / (current[2] - previous[2])
-                output.append(
-                    (
-                        previous[0] + fraction * (current[0] - previous[0]),
-                        previous[1] + fraction * (current[1] - previous[1]),
-                        threshold,
-                    )
-                )
-            if current_inside:
-                output.append(current)
-            previous, previous_inside = current, current_inside
-        return output
-
-    bands: list[tuple[float, float, int]] = []
-    slot = 0
-    if extend_min:
-        bands.append((-np.inf, float(edges[0]), slot))
-        slot += 1
-    for index, (low, high) in enumerate(pairwise(edges)):
-        bands.append((float(low), float(high), slot + index))
-    slot += len(edges) - 1
-    if extend_max:
-        bands.append((float(edges[-1]), np.inf, slot))
-
-    coordinates = [[] for _ in range(6)]
-    slots: list[int] = []
-    rows, cols = arr.shape
-    for row in range(rows - 1):
-        for col in range(cols - 1):
-            corners = [
-                (float(xpos[col]), float(ypos[row]), float(arr[row, col])),
-                (float(xpos[col + 1]), float(ypos[row]), float(arr[row, col + 1])),
-                (
-                    float(xpos[col + 1]),
-                    float(ypos[row + 1]),
-                    float(arr[row + 1, col + 1]),
-                ),
-                (float(xpos[col]), float(ypos[row + 1]), float(arr[row + 1, col])),
-            ]
-            triangle = [corner for corner in corners if np.isfinite(corner[2])]
-            if len(triangle) != 3:
-                continue
-            for low, high, band_slot in bands:
-                polygon = triangle
-                if np.isfinite(low):
-                    polygon = clip(polygon, low, keep_above=True)
-                if np.isfinite(high):
-                    polygon = clip(polygon, high, keep_above=False)
-                for index in range(1, len(polygon) - 1):
-                    vertices = (polygon[0], polygon[index], polygon[index + 1])
-                    area = (vertices[1][0] - vertices[0][0]) * (vertices[2][1] - vertices[0][1]) - (
-                        vertices[1][1] - vertices[0][1]
-                    ) * (vertices[2][0] - vertices[0][0])
-                    if abs(area) <= np.finfo(np.float64).eps:
-                        continue
-                    for vertex, (x_column, y_column) in zip(
-                        vertices,
-                        ((0, 1), (2, 3), (4, 5)),
-                        strict=True,
-                    ):
-                        coordinates[x_column].append(vertex[0])
-                        coordinates[y_column].append(vertex[1])
-                    slots.append(band_slot)
-    return (
-        tuple(np.asarray(column, dtype=np.float64) for column in coordinates),
-        np.asarray(slots, dtype=np.intp),
+    return kernels.contourf_bands(
+        arr,
+        xpos,
+        ypos,
+        edges,
+        extend_min=extend_min,
+        extend_max=extend_max,
     )
 
 

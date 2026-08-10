@@ -180,6 +180,37 @@ sh_test(
     ],
 )
 
+filegroup(
+    name = "scale_all_charts_sources",
+    srcs = glob(
+        [
+            "benchmarks/bench_scale_all_charts.py",
+            "benchmarks/baseline.json",
+            "python/xy/**/*.py",
+        ],
+        allow_empty = True,
+    ),
+)
+
+sh_test(
+    name = "scale_all_charts_test",
+    size = "large",
+    srcs = ["//tools/bazel:run_scale_all_charts.sh"],
+    data = [
+        ":scale_all_charts_sources",
+        ":rust_sources",
+        ":xy_core",
+        "Cargo.toml",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+    ],
+)
+
 test_suite(
     name = "graph_mvp_tests",
     tests = [
@@ -188,5 +219,6 @@ test_suite(
         ":perf_parity_test",
         ":python_graph_test",
         ":rust_test",
+        ":scale_all_charts_test",
     ],
 )

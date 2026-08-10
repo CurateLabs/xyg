@@ -558,6 +558,43 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_size_t),
         ctypes.POINTER(ctypes.c_size_t),
     ]
+    lib.xy_bar_stack.restype = ctypes.c_int32
+    lib.xy_bar_stack.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+    ]
+    lib.xy_contourf_bands.restype = ctypes.c_size_t
+    lib.xy_contourf_bands.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.POINTER(ctypes.c_int64),
+        ctypes.c_size_t,
+    ]
     return lib
 
 
@@ -1864,6 +1901,65 @@ def main() -> None:
         and abs(cf_out_z[256 * 256 - 1] - 3.0) < 1e-12,
         "contourf_densify 2x2",
     )
+
+    # bar_stack: two series grouped over two categories, width 0.8.
+    bs_pos = array("d", [0.0, 1.0])
+    bs_vals = array("d", [1.0, 2.0, 3.0, 4.0])
+    bs_width = array("d", [0.8])
+    bs_base = array("d", [0.0])
+    bs_x0 = array("d", [0.0]) * 4
+    bs_x1 = array("d", [0.0]) * 4
+    bs_y0 = array("d", [0.0]) * 4
+    bs_y1 = array("d", [0.0]) * 4
+    ok(
+        lib.xy_bar_stack(
+            _ptr(bs_pos, ctypes.c_double),
+            2,
+            _ptr(bs_vals, ctypes.c_double),
+            2,
+            _ptr(bs_width, ctypes.c_double),
+            1,
+            _ptr(bs_base, ctypes.c_double),
+            1,
+            0,
+            0,
+            _ptr(bs_x0, ctypes.c_double),
+            _ptr(bs_x1, ctypes.c_double),
+            _ptr(bs_y0, ctypes.c_double),
+            _ptr(bs_y1, ctypes.c_double),
+        )
+        == 1
+        and abs(bs_x0[0] + 0.4) < 1e-12
+        and abs(bs_x1[0]) < 1e-12
+        and list(bs_y1) == [1.0, 2.0, 3.0, 4.0],
+        "bar_stack grouped",
+    )
+
+    # contourf_bands: one-masked-corner cell → 3 triangles.
+    cb_z = array("d", [float("nan"), 1.0, 0.0, 0.0])
+    cb_x = array("d", [0.0, 1.0])
+    cb_y = array("d", [0.0, 1.0])
+    cb_edges = array("d", [-1.0, 0.5, 2.0])
+    cb_need = lib.xy_contourf_bands(
+        _ptr(cb_z, ctypes.c_double),
+        2,
+        2,
+        _ptr(cb_x, ctypes.c_double),
+        _ptr(cb_y, ctypes.c_double),
+        _ptr(cb_edges, ctypes.c_double),
+        3,
+        0,
+        0,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        0,
+    )
+    ok(cb_need == 3, "contourf_bands count query")
 
     # normalize_f32: clamp finite values, route non-finite values by mode.
     nx = array("d", [-1.0, 0.0, 5.0, 10.0, 11.0, float("nan"), float("inf")])

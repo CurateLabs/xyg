@@ -15,6 +15,12 @@ import { attachSegments } from "./marks/segments.js";
 import { attachHeatmap } from "./marks/heatmap.js";
 import { attachHexbin } from "./marks/hexbin.js";
 import { attachViolin } from "./marks/violin.js";
+import {
+  pieChart,
+  windRoseChart,
+  polarChart,
+  facetChart,
+} from "./marks/polar.js";
 
 function chartWith(figOpts, attachFn, ...args) {
   const { width, height, title, ...markOpts } = figOpts;
@@ -135,3 +141,5 @@ export function graphChart(nodes, edges, opts = {}) {
   fig.graph(nodes, edges, graphOpts);
   return fig;
 }
+
+export { pieChart, windRoseChart, polarChart, facetChart };

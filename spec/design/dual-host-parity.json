@@ -181,16 +181,16 @@
     {
       "kind": "bar",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/bar simple non-stacked rects; stacked/grouped follow-up"
+      "notes": "xy_bar_stack (ABI 57) grouped/stacked/normalized; packages/xy-node marks/bar + tests"
     },
     {
       "kind": "column",
       "python": "ready",
-      "node": "partial",
+      "node": "ready",
       "rust": "ready",
-      "notes": "alias of bar via charts.columnChart"
+      "notes": "alias of bar via charts.columnChart; shares xy_bar_stack"
     },
     {
       "kind": "box",
@@ -237,30 +237,30 @@
     {
       "kind": "polar",
       "python": "ready",
-      "node": "missing",
-      "rust": "partial",
-      "notes": "Host surface gap, not kernel gap"
+      "node": "partial",
+      "rust": "ready",
+      "notes": "Node polarChart shell + pie/wind_rose composers; full polar payload still Python-first"
     },
     {
       "kind": "pie",
       "python": "ready",
-      "node": "missing",
-      "rust": "partial",
-      "notes": "Host surface gap, not kernel gap"
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composePie / pieChart over bar wedges; sector geometry via existing ABI"
     },
     {
       "kind": "wind_rose",
       "python": "ready",
-      "node": "missing",
-      "rust": "partial",
-      "notes": "Host surface gap, not kernel gap"
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeWindRose via xy_wind_rose_bins + stacked polar bars"
     },
     {
       "kind": "facet",
       "python": "ready",
-      "node": "missing",
+      "node": "partial",
       "rust": "partial",
-      "notes": "Host surface gap, not kernel gap"
+      "notes": "Node facetChart stub: compose N figures or composePanel(key); shared-axis FacetChart remains Python"
     }
   ],
   "references": [

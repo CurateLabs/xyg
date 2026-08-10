@@ -18,6 +18,8 @@ export {
   heatmapRgba,
   windRoseBins,
   contourfDensify,
+  contourfBands,
+  barStack,
   normalizeF32,
   Column,
   PROTOCOL_VERSION,
@@ -132,6 +134,12 @@ export { composeHexbin, attachHexbin } from "./marks/hexbin.js";
 export { composeViolin, attachViolin } from "./marks/violin.js";
 
 export {
+  composePie,
+  composeWindRose,
+  composeFacet,
+} from "./marks/polar.js";
+
+export {
   scatterChart,
   lineChart,
   histogramChart,
@@ -145,4 +153,8 @@ export {
   hexbinChart,
   violinChart,
   graphChart,
+  pieChart,
+  windRoseChart,
+  polarChart,
+  facetChart,
 } from "./charts.js";

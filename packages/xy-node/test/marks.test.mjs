@@ -199,6 +199,54 @@ test("bar rects match Python fixture when present", () => {
   assert.equal(fig.buildPayload().spec.traces[0].kind, "bar");
 });
 
+test("bar stacked/grouped offsets via xy_bar_stack", () => {
+  const x = ["A", "B"];
+  const y = [
+    [2.0, -1.0],
+    [3.0, -4.0],
+    [-1.0, 2.0],
+  ];
+  const stacked = composeBar(x, y, { mode: "stacked", series: ["one", "two", "three"] });
+  assert.equal(stacked.traces.length, 3);
+  assert.equal(stacked.traces[1].style.role, "bar-stacked");
+  assert.deepEqual(Array.from(stacked.traces[1].y0), [2.0, -1.0]);
+  assert.deepEqual(Array.from(stacked.traces[1].y1), [5.0, -5.0]);
+
+  const grouped = composeBar(x, [[1, 2], [3, 4]], { mode: "grouped", width: 0.8 });
+  assert.equal(grouped.traces.length, 2);
+  assert.equal(grouped.traces[0].style.role, "bar-grouped");
+  assert.ok(Math.abs(grouped.traces[0].x0[0] - -0.4) < 1e-12);
+});
+
+test("pie / wind_rose / facet composers", async () => {
+  const { pieChart, windRoseChart, facetChart, composePie } = await import("../src/index.js");
+  const pie = composePie(["a", "b", "c"], [1, 2, 3], { hole: 0.4 });
+  assert.ok(pie.traces.length >= 2);
+  assert.equal(pie.coords, "polar");
+  const pieFig = pieChart(["a", "b"], [10, 20], { width: 200, height: 200 });
+  assert.equal(pieFig.coords, "polar");
+  assert.ok(pieFig.traces.length >= 1);
+
+  const rose = windRoseChart(
+    new Float64Array([0, 0, 90]),
+    new Float64Array([1, 1, 1]),
+    { sectors: 4, speedBins: [2] },
+  );
+  assert.equal(rose.coords, "polar");
+  assert.ok(rose.traces.length >= 1);
+  assert.equal(rose._windRose.sectors, 4);
+
+  const stub = facetChart({ cols: 2 });
+  assert.equal(stub.kind, "facet");
+  assert.ok(String(stub.note).includes("compose N figures") || stub.panels.length === 0);
+  const panels = facetChart({
+    by: ["x", "y", "x"],
+    composePanel: (key) => ({ key, traces: [] }),
+  });
+  assert.deepEqual(panels.keys, ["x", "y"]);
+  assert.equal(panels.panels.length, 2);
+});
+
 test("box stats match Python fixture when present", () => {
   const fixture = loadFixture();
   const values =

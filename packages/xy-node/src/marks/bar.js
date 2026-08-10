@@ -1,8 +1,8 @@
 /**
- * Bar/column mark — simple non-stacked rects (numeric x or category indices).
+ * Bar/column mark — grouped / stacked / normalized rects via xy_bar_stack.
  */
 
-import { asF64Array } from "../encode.js";
+import { asF64Array, barStack } from "../encode.js";
 
 function categoryPositions(x) {
   const out = new Float64Array(x.length);
@@ -32,70 +32,108 @@ function resolvePositions(x) {
 }
 
 /**
+ * Resolve y into a row-major Float64Array of shape (nSeries, nItems).
+ * Accepts 1-D heights or an array-of-series / nested matrix.
+ */
+function resolveValueMatrix(y, nItems) {
+  if (y == null) {
+    throw new TypeError("bar y is required");
+  }
+  if (Array.isArray(y) && y.length > 0 && (Array.isArray(y[0]) || ArrayBuffer.isView(y[0]))) {
+    const nSeries = y.length;
+    const out = new Float64Array(nSeries * nItems);
+    for (let s = 0; s < nSeries; s += 1) {
+      const row = asF64Array(y[s], `y[${s}]`);
+      if (row.length === nItems) {
+        out.set(row, s * nItems);
+      } else if (nSeries === nItems && y.every((r) => asF64Array(r).length === y.length)) {
+        // category-major matrix: transpose into series-major
+        throw new RangeError("ambiguous bar y matrix; pass series-major rows");
+      } else {
+        throw new RangeError(`bar y[${s}] length ${row.length} != ${nItems}`);
+      }
+    }
+    return { values: out, nSeries };
+  }
+  // Flat TypedArray that is a matrix: treat as single series unless opts.nSeries set.
+  const flat = asF64Array(y, "y");
+  if (flat.length === nItems) {
+    return { values: flat, nSeries: 1 };
+  }
+  if (flat.length % nItems === 0) {
+    return { values: flat, nSeries: flat.length / nItems };
+  }
+  throw new RangeError(`bar y length ${flat.length} does not match x length ${nItems}`);
+}
+
+/**
  * @param {ArrayLike|TypedArray} x category positions or labels
- * @param {ArrayLike|TypedArray} y bar heights/lengths
+ * @param {ArrayLike|TypedArray|ArrayLike[]} y bar heights or series matrix
  * @param {{
- *   base?: number,
- *   width?: number,
+ *   base?: number|ArrayLike,
+ *   width?: number|ArrayLike,
  *   orientation?: "vertical"|"horizontal",
+ *   mode?: "grouped"|"stacked"|"normalized",
  *   name?: string|null,
+ *   series?: string[],
  *   style?: object,
- *   color?: string,
+ *   color?: string|string[],
+ *   kind?: string,
  * }} [opts]
  */
 export function composeBar(x, y, opts = {}) {
   const pos = resolvePositions(x);
-  const vals = asF64Array(y, "y");
-  if (pos.length !== vals.length) {
-    throw new RangeError("bar x/y length mismatch");
-  }
-  const width = Number(opts.width ?? 0.8);
-  const base = Number(opts.base ?? 0);
+  const { values, nSeries } = resolveValueMatrix(y, pos.length);
+  const mode = opts.mode ?? (nSeries > 1 ? "grouped" : "grouped");
   const orientation = opts.orientation ?? "vertical";
-  const half = width / 2.0;
-  const x0 = new Float64Array(pos.length);
-  const x1 = new Float64Array(pos.length);
-  const y0 = new Float64Array(pos.length);
-  const y1 = new Float64Array(pos.length);
-  if (orientation === "horizontal") {
-    for (let i = 0; i < pos.length; i += 1) {
-      x0[i] = base;
-      x1[i] = vals[i];
-      y0[i] = pos[i] - half;
-      y1[i] = pos[i] + half;
+  const width = opts.width ?? 0.8;
+  const base = opts.base ?? 0;
+  const { x0, x1, y0, y1 } = barStack(pos, values, nSeries, width, base, mode, orientation);
+  const nItems = pos.length;
+  const seriesNames =
+    opts.series ??
+    (nSeries === 1
+      ? [opts.name ?? null]
+      : Array.from({ length: nSeries }, (_, i) =>
+          opts.name ? `${opts.name} ${i + 1}` : `series ${i + 1}`,
+        ));
+  const colors = Array.isArray(opts.color)
+    ? opts.color
+    : Array.from({ length: nSeries }, () => opts.color ?? "#3987e5");
+  const kind = opts.kind ?? "bar";
+  const traces = [];
+  for (let s = 0; s < nSeries; s += 1) {
+    const off = s * nItems;
+    let role = kind;
+    if (nSeries === 1) {
+      role = mode === "normalized" ? `${kind}-normalized` : kind;
+    } else if (mode === "grouped") {
+      role = `${kind}-grouped`;
+    } else {
+      role = `${kind}-${mode}`;
     }
-  } else {
-    for (let i = 0; i < pos.length; i += 1) {
-      x0[i] = pos[i] - half;
-      x1[i] = pos[i] + half;
-      y0[i] = base;
-      y1[i] = vals[i];
-    }
+    const style = {
+      color: colors[s] ?? "#3987e5",
+      opacity: opts.opacity ?? 0.85,
+      role,
+      orientation,
+      ...(opts.style ?? {}),
+    };
+    traces.push({
+      kind,
+      name: seriesNames[s] ?? null,
+      x0: x0.subarray(off, off + nItems),
+      x1: x1.subarray(off, off + nItems),
+      y0: y0.subarray(off, off + nItems),
+      y1: y1.subarray(off, off + nItems),
+      style,
+      count: nItems,
+      x_axis: opts.xAxis ?? "x",
+      y_axis: opts.yAxis ?? "y",
+      ...(opts.id != null && s === 0 ? { id: opts.id } : {}),
+    });
   }
-  const style = {
-    color: opts.color ?? "#3987e5",
-    opacity: opts.opacity ?? 0.85,
-    role: opts.kind ?? "bar",
-    orientation,
-    ...(opts.style ?? {}),
-  };
-  return {
-    traces: [
-      {
-        kind: opts.kind ?? "bar",
-        name: opts.name ?? null,
-        x0,
-        x1,
-        y0,
-        y1,
-        style,
-        count: pos.length,
-        x_axis: opts.xAxis ?? "x",
-        y_axis: opts.yAxis ?? "y",
-        ...(opts.id != null ? { id: opts.id } : {}),
-      },
-    ],
-  };
+  return { traces };
 }
 
 /**

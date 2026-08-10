@@ -25,7 +25,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 56
+ABI_VERSION = 57
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -206,6 +206,23 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_size_t,
         ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_bar_stack.restype = ctypes.c_int32
+    lib.xy_bar_stack.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
@@ -960,6 +977,26 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
+    lib.xy_contourf_bands.restype = ctypes.c_size_t
+    lib.xy_contourf_bands.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
     lib.xy_local_log_density.restype = ctypes.c_int32
     lib.xy_local_log_density.argtypes = [
         ctypes.c_void_p,
@@ -1604,6 +1641,83 @@ def stacked_bounds(
     if ok != 1:
         raise RuntimeError("xy native stacked_bounds failed (output undefined)")
     return lower, upper
+
+
+_BAR_MODE = {"grouped": 0, "stacked": 1, "normalized": 2}
+_BAR_ORIENT = {"vertical": 0, "horizontal": 1}
+
+
+def bar_stack(
+    pos: npt.NDArray[np.float64],
+    values: npt.NDArray[np.float64],
+    width: npt.NDArray[np.float64] | float,
+    base: npt.NDArray[np.float64] | float,
+    mode: str = "grouped",
+    orientation: str = "vertical",
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+]:
+    """Grouped / stacked / normalized bar rect corners via ``xy_bar_stack``.
+
+    ``values`` is row-major ``(n_series, n_items)``. Returns ``(x0, x1, y0, y1)``
+    each shaped ``(n_series, n_items)`` in plot axes (orientation applied).
+    """
+    if mode not in _BAR_MODE:
+        raise ValueError(f"mode must be one of {tuple(_BAR_MODE)}, got {mode!r}")
+    if orientation not in _BAR_ORIENT:
+        raise ValueError(f"orientation must be one of {tuple(_BAR_ORIENT)}, got {orientation!r}")
+    pos = _as_f64(pos, "pos")
+    values = np.ascontiguousarray(values, dtype=np.float64)
+    if values.ndim != 2 or min(values.shape) == 0:
+        raise ValueError(f"values must be a non-empty 2-D array, got shape {values.shape}")
+    n_series, n_items = values.shape
+    if len(pos) != n_items:
+        raise ValueError(f"pos length {len(pos)} must match values columns {n_items}")
+    if np.isscalar(width):
+        width_arr = np.asarray([float(width)], dtype=np.float64)
+    else:
+        width_arr = _as_f64(width, "width")
+    if np.isscalar(base):
+        base_arr = np.asarray([float(base)], dtype=np.float64)
+    else:
+        base_arr = _as_f64(base, "base")
+    out_x0 = np.empty(n_series * n_items, dtype=np.float64)
+    out_x1 = np.empty_like(out_x0)
+    out_y0 = np.empty_like(out_x0)
+    out_y1 = np.empty_like(out_x0)
+    ok = _lib.xy_bar_stack(
+        _ptr_f64(pos),
+        n_items,
+        values.ctypes.data,
+        n_series,
+        _ptr_f64(width_arr),
+        len(width_arr),
+        _ptr_f64(base_arr),
+        len(base_arr),
+        _BAR_MODE[mode],
+        _BAR_ORIENT[orientation],
+        out_x0.ctypes.data,
+        out_x1.ctypes.data,
+        out_y0.ctypes.data,
+        out_y1.ctypes.data,
+    )
+    if ok != 1:
+        if mode == "normalized" and np.any(values[np.isfinite(values)] < 0):
+            raise ValueError(
+                "mode='normalized' requires non-negative values; "
+                "normalizing mixed-sign stacks is ambiguous"
+            )
+        raise ValueError("invalid bar_stack arguments")
+    shape = (n_series, n_items)
+    return (
+        out_x0.reshape(shape),
+        out_x1.reshape(shape),
+        out_y0.reshape(shape),
+        out_y1.reshape(shape),
+    )
 
 
 def histogram2d(
@@ -4593,6 +4707,82 @@ def contourf_densify(
         raise ValueError("invalid contourf densify arguments")
     r, c = int(got_rows.value), int(got_cols.value)
     return out_z[: r * c].reshape(r, c).copy(), out_x[:c].copy(), out_y[:r].copy()
+
+
+def contourf_bands(
+    z: npt.NDArray[np.float64],
+    xpos: npt.NDArray[np.float64],
+    ypos: npt.NDArray[np.float64],
+    edges: npt.NDArray[np.float64],
+    *,
+    extend_min: bool = False,
+    extend_max: bool = False,
+) -> tuple[tuple[npt.NDArray[np.float64], ...], npt.NDArray[np.int64]]:
+    """Corner-mask contourf band triangles via ``xy_contourf_bands``.
+
+    Returns ``((x0, y0, x1, y1, x2, y2), slots)`` matching
+    ``marks._contourf_corner_triangles``.
+    """
+    z = np.asarray(z, dtype=np.float64)
+    if z.ndim != 2 or min(z.shape) < 2:
+        raise ValueError("contourf bands z must be a 2-D matrix with ≥2 rows/columns")
+    rows, cols = z.shape
+    xpos = _as_f64(xpos, "xpos")
+    ypos = _as_f64(ypos, "ypos")
+    edges = _as_f64(edges, "edges")
+    if len(xpos) != cols or len(ypos) != rows:
+        raise ValueError("contourf bands xpos/ypos must match z columns/rows")
+    if len(edges) < 2:
+        raise ValueError("contourf bands needs at least two edges")
+    needed = _lib.xy_contourf_bands(
+        _ptr_f64(np.ascontiguousarray(z)),
+        rows,
+        cols,
+        _ptr_f64(xpos),
+        _ptr_f64(ypos),
+        _ptr_f64(edges),
+        len(edges),
+        1 if extend_min else 0,
+        1 if extend_max else 0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
+    if needed == _USIZE_MAX:
+        raise ValueError("invalid contourf bands arguments")
+    n = int(needed)
+    if n == 0:
+        empty = tuple(np.empty(0, dtype=np.float64) for _ in range(6))
+        return empty, np.empty(0, dtype=np.int64)
+    cols_out = [np.empty(n, dtype=np.float64) for _ in range(6)]
+    slots = np.empty(n, dtype=np.int64)
+    written = _lib.xy_contourf_bands(
+        _ptr_f64(np.ascontiguousarray(z)),
+        rows,
+        cols,
+        _ptr_f64(xpos),
+        _ptr_f64(ypos),
+        _ptr_f64(edges),
+        len(edges),
+        1 if extend_min else 0,
+        1 if extend_max else 0,
+        cols_out[0].ctypes.data,
+        cols_out[1].ctypes.data,
+        cols_out[2].ctypes.data,
+        cols_out[3].ctypes.data,
+        cols_out[4].ctypes.data,
+        cols_out[5].ctypes.data,
+        slots.ctypes.data,
+        n,
+    )
+    if written != n:
+        raise RuntimeError("native contourf_bands returned an inconsistent triangle count")
+    return tuple(cols_out), slots
 
 
 # xy_css_check kinds — keep in sync with `src/lib.rs`.

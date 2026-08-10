@@ -85,8 +85,8 @@ ABI and Node exports land; do not claim `ready` without a shared Rust path.
 | --- | --- | --- | --- | --- |
 | graph | ready | ready (`packages/xy-node` composition) | ready: layout, force, LOD, render-graph | `tests/test_graph_node_parity.py` circle goldens + dual-host force benches |
 | sankey | promote to Rust | thin `composeSankey` loader | layout in Rust | Layout ABI parity |
-| scatter / line / hist / … | ready (Python) | ready (thin marks + `charts.js`; figure MVP) | kernels ready | `tests/test_node_mark_parity.py` encode/M4/hist goldens |
-| polar / pie / wind_rose / facet | ready (Python) | missing | partial | Host surface gap, not kernel gap |
+| scatter / line / hist / bar / … | ready (Python) | ready (thin marks + `charts.js`; figure MVP) | kernels ready (`xy_bar_stack` ABI 57) | `tests/test_node_mark_parity.py` encode/M4/hist goldens |
+| polar / pie / wind_rose / facet | ready (Python) | pie/wind_rose ready; polar/facet partial stubs | ready bins + bar stack; facet host-only | Node `marks/polar.js` composers |
 
 Update this table in the same change that lands a Node export or Rust
 decision path. The machine-readable twin is

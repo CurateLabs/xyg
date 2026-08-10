@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xy/lod.encode_f32_values when calling xy_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyWeightedEcdf, xyHeatmapRgba } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -436,7 +436,7 @@ export function windRoseBins(directions, speeds, sectors, speedEdges = null) {
   };
 }
 
-/** Bilinear contourf densify (first slice; corner triangles stay host-side). */
+/** Bilinear contourf densify (paired with contourfBands for corner-mask). */
 export function contourfDensify(z, rows, cols, xpos, ypos) {
   const zz = asF64Array(z);
   const xx = asF64Array(xpos);
@@ -482,6 +482,126 @@ export function contourfDensify(z, rows, cols, xpos, ypos) {
     rows: r,
     cols: c,
   };
+}
+
+const BAR_MODES = { grouped: 0, stacked: 1, normalized: 2 };
+const BAR_ORIENT = { vertical: 0, horizontal: 1 };
+
+/** Grouped / stacked / normalized bar rect corners via xy_bar_stack. */
+export function barStack(pos, values, nSeries, width = 0.8, base = 0, mode = "grouped", orientation = "vertical") {
+  const p = asF64Array(pos);
+  const vals = asF64Array(values);
+  const nItems = p.length;
+  if (!Number.isInteger(nSeries) || nSeries < 1 || vals.length !== nSeries * nItems) {
+    throw new RangeError("barStack values must be row-major nSeries * nItems");
+  }
+  if (!(mode in BAR_MODES) || !(orientation in BAR_ORIENT)) {
+    throw new RangeError("barStack mode/orientation invalid");
+  }
+  const widthArr = typeof width === "number" ? new Float64Array([width]) : asF64Array(width);
+  const baseArr = typeof base === "number" ? new Float64Array([base]) : asF64Array(base);
+  const outX0 = new Float64Array(nSeries * nItems);
+  const outX1 = new Float64Array(nSeries * nItems);
+  const outY0 = new Float64Array(nSeries * nItems);
+  const outY1 = new Float64Array(nSeries * nItems);
+  const ok = xyBarStack(
+    f64Ptr(p),
+    BigInt(nItems),
+    f64Ptr(vals),
+    BigInt(nSeries),
+    f64Ptr(widthArr),
+    BigInt(widthArr.length),
+    f64Ptr(baseArr),
+    BigInt(baseArr.length),
+    BAR_MODES[mode],
+    BAR_ORIENT[orientation],
+    f64Ptr(outX0),
+    f64Ptr(outX1),
+    f64Ptr(outY0),
+    f64Ptr(outY1),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_bar_stack failed");
+  }
+  return { x0: outX0, x1: outX1, y0: outY0, y1: outY1, nSeries, nItems };
+}
+
+/** Corner-mask contourf band triangles via xy_contourf_bands. */
+export function contourfBands(z, rows, cols, xpos, ypos, edges, { extendMin = false, extendMax = false } = {}) {
+  const zz = asF64Array(z);
+  const xx = asF64Array(xpos);
+  const yy = asF64Array(ypos);
+  const ee = asF64Array(edges);
+  if (zz.length !== rows * cols || xx.length !== cols || yy.length !== rows || ee.length < 2) {
+    throw new RangeError("contourfBands shape mismatch");
+  }
+  const needed = Number(
+    xyContourfBands(
+      f64Ptr(zz),
+      BigInt(rows),
+      BigInt(cols),
+      f64Ptr(xx),
+      f64Ptr(yy),
+      f64Ptr(ee),
+      BigInt(ee.length),
+      extendMin ? 1 : 0,
+      extendMax ? 1 : 0,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      0n,
+    ),
+  );
+  if (!Number.isFinite(needed) || needed < 0) {
+    throw new Error("xy_contourf_bands failed");
+  }
+  if (needed === 0) {
+    return {
+      x0: new Float64Array(0),
+      y0: new Float64Array(0),
+      x1: new Float64Array(0),
+      y1: new Float64Array(0),
+      x2: new Float64Array(0),
+      y2: new Float64Array(0),
+      slots: new BigInt64Array(0),
+    };
+  }
+  const x0 = new Float64Array(needed);
+  const y0 = new Float64Array(needed);
+  const x1 = new Float64Array(needed);
+  const y1 = new Float64Array(needed);
+  const x2 = new Float64Array(needed);
+  const y2 = new Float64Array(needed);
+  const slots = new BigInt64Array(needed);
+  const written = Number(
+    xyContourfBands(
+      f64Ptr(zz),
+      BigInt(rows),
+      BigInt(cols),
+      f64Ptr(xx),
+      f64Ptr(yy),
+      f64Ptr(ee),
+      BigInt(ee.length),
+      extendMin ? 1 : 0,
+      extendMax ? 1 : 0,
+      f64Ptr(x0),
+      f64Ptr(y0),
+      f64Ptr(x1),
+      f64Ptr(y1),
+      f64Ptr(x2),
+      f64Ptr(y2),
+      pointer(slots, "int64_t *"),
+      BigInt(needed),
+    ),
+  );
+  if (written !== needed) {
+    throw new Error("xy_contourf_bands inconsistent count");
+  }
+  return { x0, y0, x1, y1, x2, y2, slots };
 }
 
 export function normalizeF32(data, lo, hi, { nanMode = "nan" } = {}) {

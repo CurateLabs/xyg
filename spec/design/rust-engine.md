@@ -65,8 +65,9 @@ only when it is entirely distinct) · histogram stats ✅ · quantiles (`xy_quan
 reducer (`xy_hexbin` ✅ count/mean/sum) · histogram edges (`xy_histogram_edges`
 ✅ NumPy `bins="auto"` / Sturges) · wind-rose bins (`xy_wind_rose_bins` ✅
 sector × speed-band counts; polar bar assembly stays host-side) · contourf
-densify (`xy_contourf_densify` ✅ bilinear upsample; corner-triangle band
-clipping still host-side) · multi-resolution tile
+densify (`xy_contourf_densify` ✅) + corner-mask bands (`xy_contourf_bands` ✅
+ContourPy-style one-masked-corner clip) · bar offsets (`xy_bar_stack` ✅
+grouped/stacked/normalized) · multi-resolution tile
 generation (`tiles.rs` ✅, including stable-domain incremental updates) ·
 Rust-owned streaming column buffers (plan: `stream.rs`, §5 below).
 
@@ -135,10 +136,10 @@ src/                                          # 15,423 lines shipped, 8 modules
   lod_plan.rs           # view LOD drill/grid decision math ✅ (`xy_lod_plan`).
 ```
 
-Contourf remainder (not yet in Rust): `_contourf_corner_triangles` in
-`python/xy/marks.py` still clips one-masked-corner cells into ContourPy-style
-band triangles on the host. Promote that path behind `xy_contourf_bands` once
-the densify + clip loop is measured on large masked grids.
+Contourf corner-mask bands land in Rust as `xy_contourf_bands` (ABI 57),
+matching `_contourf_corner_triangles` / ContourPy one-masked-corner clips.
+Python `marks._contourf_corner_triangles` is a thin loader over that entry
+point; densify remains `xy_contourf_densify`.
 
 Line counts are `wc -l` at this revision and drift with the code; the ordering
 (kernels > raster > lib > font > css > tiles > simd > svg) is the stable fact —

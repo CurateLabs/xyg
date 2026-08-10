@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 56;
+pub const ABI_VERSION: u32 = 57;
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -749,6 +749,78 @@ pub unsafe extern "C" fn xy_stacked_bounds(
     ffi_guard(0, || {
         i32::from(kernels::stacked_bounds_into(
             values, rows, cols, baseline, lower, upper,
+        ))
+    })
+}
+
+/// Grouped / stacked / normalized bar rectangle offsets (ABI 57).
+///
+/// `values` is row-major `n_series * n_items`. `width` / `base` are length 1
+/// or `n_items`. `mode`: 0=grouped, 1=stacked, 2=normalized. `orientation`:
+/// 0=vertical, 1=horizontal. Writes `n_series * n_items` rects into the four
+/// output buffers. Returns 1 on success, 0 on invalid args (including
+/// normalized mode with a negative value).
+///
+/// # Safety
+/// Pointers address the lengths described by their adjacent arguments; outs
+/// address at least `n_series * n_items` writable f64s.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xy_bar_stack(
+    pos: *const f64,
+    n_items: usize,
+    values: *const f64,
+    n_series: usize,
+    width: *const f64,
+    width_len: usize,
+    base: *const f64,
+    base_len: usize,
+    mode: u32,
+    orientation: u32,
+    out_x0: *mut f64,
+    out_x1: *mut f64,
+    out_y0: *mut f64,
+    out_y1: *mut f64,
+) -> i32 {
+    let Some(len) = n_series.checked_mul(n_items) else {
+        return 0;
+    };
+    if len == 0
+        || pos.is_null()
+        || values.is_null()
+        || width.is_null()
+        || base.is_null()
+        || width_len == 0
+        || base_len == 0
+        || out_x0.is_null()
+        || out_x1.is_null()
+        || out_y0.is_null()
+        || out_y1.is_null()
+    {
+        return 0;
+    }
+    let pos = std::slice::from_raw_parts(pos, n_items);
+    let values = std::slice::from_raw_parts(values, len);
+    let width = std::slice::from_raw_parts(width, width_len);
+    let base = std::slice::from_raw_parts(base, base_len);
+    let out_x0 = std::slice::from_raw_parts_mut(out_x0, len);
+    let out_x1 = std::slice::from_raw_parts_mut(out_x1, len);
+    let out_y0 = std::slice::from_raw_parts_mut(out_y0, len);
+    let out_y1 = std::slice::from_raw_parts_mut(out_y1, len);
+    ffi_guard(0, || {
+        i32::from(kernels::bar_stack_into(
+            pos,
+            values,
+            n_series,
+            n_items,
+            width,
+            base,
+            mode,
+            orientation,
+            out_x0,
+            out_x1,
+            out_y0,
+            out_y1,
         ))
     })
 }
@@ -4386,8 +4458,8 @@ pub unsafe extern "C" fn xy_wind_rose_bins(
     n_bands
 }
 
-/// Bilinear densify of a contourf scalar field (first slice of contourf band
-/// promotion — corner-triangle clipping remains host-side). Writes densified
+/// Bilinear densify of a contourf scalar field (paired with
+/// `xy_contourf_bands` for corner-mask triangles). Writes densified
 /// `out_z` (row-major), `out_x`, `out_y` and sets `*out_rows` / `*out_cols`.
 /// Returns 1 on success, 0 on invalid shape/capacity/null outs.
 ///
@@ -4446,6 +4518,116 @@ pub unsafe extern "C" fn xy_contourf_densify(
     *out_rows = orows;
     *out_cols = ocols;
     1
+}
+
+/// Contourf corner-mask band triangles (ABI 57). Clips one-masked-corner
+/// cells into ContourPy-style band triangles. Returns the triangle count
+/// (`usize::MAX` on invalid args). Empty outs (capacity 0) are a count
+/// query; undersized capacity still returns the full required count after
+/// writing the prefix that fits.
+///
+/// # Safety
+/// `z` is `rows * cols` row-major; `xpos`/`ypos` match `cols`/`rows`;
+/// `edges` is `n_edges` strictly increasing finite levels (≥2). Outs are
+/// either all null with capacity 0, or each address `capacity` writables.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xy_contourf_bands(
+    z: *const f64,
+    rows: usize,
+    cols: usize,
+    xpos: *const f64,
+    ypos: *const f64,
+    edges: *const f64,
+    n_edges: usize,
+    extend_min: u8,
+    extend_max: u8,
+    out_x0: *mut f64,
+    out_y0: *mut f64,
+    out_x1: *mut f64,
+    out_y1: *mut f64,
+    out_x2: *mut f64,
+    out_y2: *mut f64,
+    out_slots: *mut i64,
+    capacity: usize,
+) -> usize {
+    if z.is_null()
+        || xpos.is_null()
+        || ypos.is_null()
+        || edges.is_null()
+        || n_edges < 2
+        || rows < 2
+        || cols < 2
+    {
+        return usize::MAX;
+    }
+    let Some(z_len) = rows.checked_mul(cols) else {
+        return usize::MAX;
+    };
+    let z = std::slice::from_raw_parts(z, z_len);
+    let xpos = std::slice::from_raw_parts(xpos, cols);
+    let ypos = std::slice::from_raw_parts(ypos, rows);
+    let edges = std::slice::from_raw_parts(edges, n_edges);
+    let query = capacity == 0
+        && out_x0.is_null()
+        && out_y0.is_null()
+        && out_x1.is_null()
+        && out_y1.is_null()
+        && out_x2.is_null()
+        && out_y2.is_null()
+        && out_slots.is_null();
+    if !query
+        && (out_x0.is_null()
+            || out_y0.is_null()
+            || out_x1.is_null()
+            || out_y1.is_null()
+            || out_x2.is_null()
+            || out_y2.is_null()
+            || out_slots.is_null())
+    {
+        return usize::MAX;
+    }
+    let (ox0, oy0, ox1, oy1, ox2, oy2, slots) = if query {
+        (
+            &mut [][..],
+            &mut [][..],
+            &mut [][..],
+            &mut [][..],
+            &mut [][..],
+            &mut [][..],
+            &mut [][..],
+        )
+    } else {
+        (
+            std::slice::from_raw_parts_mut(out_x0, capacity),
+            std::slice::from_raw_parts_mut(out_y0, capacity),
+            std::slice::from_raw_parts_mut(out_x1, capacity),
+            std::slice::from_raw_parts_mut(out_y1, capacity),
+            std::slice::from_raw_parts_mut(out_x2, capacity),
+            std::slice::from_raw_parts_mut(out_y2, capacity),
+            std::slice::from_raw_parts_mut(out_slots, capacity),
+        )
+    };
+    ffi_guard(usize::MAX, || {
+        kernels::contourf_bands_into(
+            z,
+            rows,
+            cols,
+            xpos,
+            ypos,
+            edges,
+            extend_min != 0,
+            extend_max != 0,
+            ox0,
+            oy0,
+            ox1,
+            oy1,
+            ox2,
+            oy2,
+            slots,
+        )
+        .unwrap_or(usize::MAX)
+    })
 }
 
 #[cfg(test)]

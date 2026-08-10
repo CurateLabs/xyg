@@ -980,6 +980,203 @@ pub fn stacked_bounds_into(
     true
 }
 
+/// Bar/column layout modes shared by Python `_bar_like` and Node `composeBar`.
+///
+/// `0` = grouped, `1` = stacked, `2` = normalized (non-negative values only).
+pub const BAR_MODE_GROUPED: u32 = 0;
+pub const BAR_MODE_STACKED: u32 = 1;
+pub const BAR_MODE_NORMALIZED: u32 = 2;
+pub const BAR_ORIENT_VERTICAL: u32 = 0;
+pub const BAR_ORIENT_HORIZONTAL: u32 = 1;
+
+/// Compute bar rectangle corners for grouped / stacked / normalized layouts.
+///
+/// `values` is row-major `(n_series, n_items)`. `width` / `base` are length 1
+/// (broadcast) or `n_items`. Writes `n_series * n_items` rectangles into the
+/// four output buffers (series-major). Orientation maps category → x and value
+/// → y when vertical, swapped when horizontal — matching `_append_bar_rect`.
+pub fn bar_stack_into(
+    pos: &[f64],
+    values: &[f64],
+    n_series: usize,
+    n_items: usize,
+    width: &[f64],
+    base: &[f64],
+    mode: u32,
+    orientation: u32,
+    out_x0: &mut [f64],
+    out_x1: &mut [f64],
+    out_y0: &mut [f64],
+    out_y1: &mut [f64],
+) -> bool {
+    let Some(len) = n_series.checked_mul(n_items) else {
+        return false;
+    };
+    if n_series == 0
+        || n_items == 0
+        || pos.len() != n_items
+        || values.len() != len
+        || out_x0.len() < len
+        || out_x1.len() < len
+        || out_y0.len() < len
+        || out_y1.len() < len
+        || !(mode <= BAR_MODE_NORMALIZED)
+        || !(orientation <= BAR_ORIENT_HORIZONTAL)
+        || !(width.len() == 1 || width.len() == n_items)
+        || !(base.len() == 1 || base.len() == n_items)
+        || width.iter().any(|w| !w.is_finite() || *w < 0.0)
+        || base.iter().any(|b| !b.is_finite())
+        || pos.iter().any(|p| !p.is_finite())
+    {
+        return false;
+    }
+
+    let width_at = |i: usize| -> f64 {
+        if width.len() == 1 {
+            width[0]
+        } else {
+            width[i]
+        }
+    };
+    let base_at = |i: usize| -> f64 {
+        if base.len() == 1 {
+            base[0]
+        } else {
+            base[i]
+        }
+    };
+
+    // Working copy so normalized mode can rescale without mutating the caller.
+    let mut work = values.to_vec();
+    if mode == BAR_MODE_NORMALIZED {
+        for item in 0..n_items {
+            let mut total = 0.0;
+            for series in 0..n_series {
+                let v = work[series * n_items + item];
+                if v.is_finite() {
+                    if v < 0.0 {
+                        return false;
+                    }
+                    total += v;
+                }
+            }
+            let denom = if total > 0.0 { total } else { 1.0 };
+            for series in 0..n_series {
+                let idx = series * n_items + item;
+                if work[idx].is_finite() {
+                    work[idx] /= denom;
+                }
+            }
+        }
+    }
+
+    let write_rect = |dst: usize,
+                      pos0: f64,
+                      pos1: f64,
+                      v0: f64,
+                      v1: f64,
+                      out_x0: &mut [f64],
+                      out_x1: &mut [f64],
+                      out_y0: &mut [f64],
+                      out_y1: &mut [f64]| {
+        if orientation == BAR_ORIENT_VERTICAL {
+            out_x0[dst] = pos0;
+            out_x1[dst] = pos1;
+            out_y0[dst] = v0;
+            out_y1[dst] = v1;
+        } else {
+            out_x0[dst] = v0;
+            out_x1[dst] = v1;
+            out_y0[dst] = pos0;
+            out_y1[dst] = pos1;
+        }
+    };
+
+    if n_series == 1 {
+        for item in 0..n_items {
+            let half = width_at(item) * 0.5;
+            let p = pos[item];
+            let b = base_at(item);
+            write_rect(
+                item,
+                p - half,
+                p + half,
+                b,
+                b + work[item],
+                out_x0,
+                out_x1,
+                out_y0,
+                out_y1,
+            );
+        }
+        return true;
+    }
+
+    if mode == BAR_MODE_GROUPED {
+        for series in 0..n_series {
+            for item in 0..n_items {
+                let w = width_at(item);
+                let half = w * 0.5;
+                let slot = w / n_series as f64;
+                let p0 = pos[item] - half + series as f64 * slot;
+                let b = base_at(item);
+                let row = work[series * n_items + item];
+                write_rect(
+                    series * n_items + item,
+                    p0,
+                    p0 + slot,
+                    b,
+                    b + row,
+                    out_x0,
+                    out_x1,
+                    out_y0,
+                    out_y1,
+                );
+            }
+        }
+        return true;
+    }
+
+    // stacked + normalized share the signed dual-base walk.
+    let mut pos_base: Vec<f64> = (0..n_items).map(base_at).collect();
+    let mut neg_base = pos_base.clone();
+    for series in 0..n_series {
+        for item in 0..n_items {
+            let half = width_at(item) * 0.5;
+            let p = pos[item];
+            let row = work[series * n_items + item];
+            // Match NumPy where: NaN comparisons are false, so a missing
+            // segment still emits (base, base+NaN) without advancing either
+            // cumulative cursor (§19 keeps NaN out of GPU verts later).
+            let (y0, y1) = if row >= 0.0 {
+                let y0 = pos_base[item];
+                let y1 = y0 + row;
+                pos_base[item] = y1;
+                (y0, y1)
+            } else {
+                let y0 = neg_base[item];
+                let y1 = y0 + row;
+                if row < 0.0 {
+                    neg_base[item] = y1;
+                }
+                (y0, y1)
+            };
+            write_rect(
+                series * n_items + item,
+                p - half,
+                p + half,
+                y0,
+                y1,
+                out_x0,
+                out_x1,
+                out_y0,
+                out_y1,
+            );
+        }
+    }
+    true
+}
+
 fn histogram_edge_bin(value: f64, edges: &[f64]) -> Option<usize> {
     if !value.is_finite() || value < edges[0] || value > edges[edges.len() - 1] {
         return None;
@@ -2935,6 +3132,173 @@ pub fn contourf_densify(
         }
     }
     Some((out_rows, out_cols))
+}
+
+/// Contourf corner-mask band triangles (ContourPy-style one-masked-corner clip).
+///
+/// For each cell with exactly three finite corners, clip the triangle to every
+/// filled band between consecutive `edges` (plus optional extend min/max) and
+/// fan the retained polygon into triangles. Returns the triangle count; when
+/// `capacity` is too small only a count query is performed (no writes). Slots
+/// index the band paint table (extend-min, mid bands, extend-max).
+#[allow(clippy::too_many_arguments)]
+pub fn contourf_bands_into(
+    z: &[f64],
+    rows: usize,
+    cols: usize,
+    xpos: &[f64],
+    ypos: &[f64],
+    edges: &[f64],
+    extend_min: bool,
+    extend_max: bool,
+    out_x0: &mut [f64],
+    out_y0: &mut [f64],
+    out_x1: &mut [f64],
+    out_y1: &mut [f64],
+    out_x2: &mut [f64],
+    out_y2: &mut [f64],
+    out_slots: &mut [i64],
+) -> Option<usize> {
+    if rows < 2
+        || cols < 2
+        || z.len() != rows.checked_mul(cols)?
+        || xpos.len() != cols
+        || ypos.len() != rows
+        || edges.len() < 2
+        || !edges.windows(2).all(|w| w[0] < w[1])
+        || !edges.iter().all(|e| e.is_finite())
+    {
+        return None;
+    }
+    let query = out_x0.is_empty()
+        && out_y0.is_empty()
+        && out_x1.is_empty()
+        && out_y1.is_empty()
+        && out_x2.is_empty()
+        && out_y2.is_empty()
+        && out_slots.is_empty();
+    if !query {
+        let n = out_x0.len();
+        if [
+            out_y0.len(),
+            out_x1.len(),
+            out_y1.len(),
+            out_x2.len(),
+            out_y2.len(),
+            out_slots.len(),
+        ]
+        .iter()
+        .any(|len| *len != n)
+        {
+            return None;
+        }
+    }
+
+    type Pt = (f64, f64, f64);
+
+    fn clip(polygon: &[Pt], threshold: f64, keep_above: bool) -> Vec<Pt> {
+        if polygon.is_empty() {
+            return Vec::new();
+        }
+        let mut output = Vec::new();
+        let mut previous = polygon[polygon.len() - 1];
+        let mut previous_inside = if keep_above {
+            previous.2 >= threshold
+        } else {
+            previous.2 <= threshold
+        };
+        for &current in polygon {
+            let current_inside = if keep_above {
+                current.2 >= threshold
+            } else {
+                current.2 <= threshold
+            };
+            if current_inside != previous_inside {
+                let fraction = (threshold - previous.2) / (current.2 - previous.2);
+                output.push((
+                    previous.0 + fraction * (current.0 - previous.0),
+                    previous.1 + fraction * (current.1 - previous.1),
+                    threshold,
+                ));
+            }
+            if current_inside {
+                output.push(current);
+            }
+            previous = current;
+            previous_inside = current_inside;
+        }
+        output
+    }
+
+    let mut bands: Vec<(f64, f64, i64)> = Vec::new();
+    let mut slot: i64 = 0;
+    if extend_min {
+        bands.push((f64::NEG_INFINITY, edges[0], slot));
+        slot += 1;
+    }
+    for (index, window) in edges.windows(2).enumerate() {
+        bands.push((window[0], window[1], slot + index as i64));
+    }
+    slot += (edges.len() - 1) as i64;
+    if extend_max {
+        bands.push((edges[edges.len() - 1], f64::INFINITY, slot));
+    }
+
+    let eps = f64::EPSILON;
+    let mut count = 0usize;
+    let capacity = if query { 0 } else { out_x0.len() };
+
+    for row in 0..rows - 1 {
+        for col in 0..cols - 1 {
+            let corners: [Pt; 4] = [
+                (xpos[col], ypos[row], z[row * cols + col]),
+                (xpos[col + 1], ypos[row], z[row * cols + col + 1]),
+                (
+                    xpos[col + 1],
+                    ypos[row + 1],
+                    z[(row + 1) * cols + col + 1],
+                ),
+                (xpos[col], ypos[row + 1], z[(row + 1) * cols + col]),
+            ];
+            let triangle: Vec<Pt> = corners
+                .into_iter()
+                .filter(|c| c.2.is_finite())
+                .collect();
+            if triangle.len() != 3 {
+                continue;
+            }
+            for &(low, high, band_slot) in &bands {
+                let mut polygon = triangle.clone();
+                if low.is_finite() {
+                    polygon = clip(&polygon, low, true);
+                }
+                if high.is_finite() {
+                    polygon = clip(&polygon, high, false);
+                }
+                for index in 1..polygon.len().saturating_sub(1) {
+                    let v0 = polygon[0];
+                    let v1 = polygon[index];
+                    let v2 = polygon[index + 1];
+                    let area =
+                        (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
+                    if area.abs() <= eps {
+                        continue;
+                    }
+                    if !query && count < capacity {
+                        out_x0[count] = v0.0;
+                        out_y0[count] = v0.1;
+                        out_x1[count] = v1.0;
+                        out_y1[count] = v1.1;
+                        out_x2[count] = v2.0;
+                        out_y2[count] = v2.1;
+                        out_slots[count] = band_slot;
+                    }
+                    count = count.saturating_add(1);
+                }
+            }
+        }
+    }
+    Some(count)
 }
 
 /// Write marching-squares segments into caller-owned parallel output arrays.
@@ -5979,6 +6343,126 @@ mod tests {
         ));
         assert_eq!(lower, [-2.5, -6.0, -11.5, -1.5, -4.0, -8.5]);
         assert_eq!(upper, [-1.5, -4.0, -8.5, 2.5, 6.0, 11.5]);
+    }
+
+    #[test]
+    fn bar_stack_grouped_and_signed_stacked() {
+        let pos = [0.0, 1.0];
+        let values = [1.0, 2.0, 3.0, 4.0]; // 2 series × 2 items
+        let width = [0.8];
+        let base = [0.0];
+        let mut x0 = [0.0; 4];
+        let mut x1 = [0.0; 4];
+        let mut y0 = [0.0; 4];
+        let mut y1 = [0.0; 4];
+        assert!(bar_stack_into(
+            &pos,
+            &values,
+            2,
+            2,
+            &width,
+            &base,
+            BAR_MODE_GROUPED,
+            BAR_ORIENT_VERTICAL,
+            &mut x0,
+            &mut x1,
+            &mut y0,
+            &mut y1,
+        ));
+        assert!((x0[0] - (-0.4)).abs() < 1e-12);
+        assert!((x1[0] - 0.0).abs() < 1e-12);
+        assert!((x0[2] - 0.0).abs() < 1e-12);
+        assert!((x1[2] - 0.4).abs() < 1e-12);
+        assert_eq!(y1, [1.0, 2.0, 3.0, 4.0]);
+
+        let signed = [2.0, -1.0, 3.0, -4.0, -1.0, 2.0];
+        let mut sx0 = [0.0; 6];
+        let mut sx1 = [0.0; 6];
+        let mut sy0 = [0.0; 6];
+        let mut sy1 = [0.0; 6];
+        assert!(bar_stack_into(
+            &pos,
+            &signed,
+            3,
+            2,
+            &width,
+            &base,
+            BAR_MODE_STACKED,
+            BAR_ORIENT_VERTICAL,
+            &mut sx0,
+            &mut sx1,
+            &mut sy0,
+            &mut sy1,
+        ));
+        // series 1 bases/tops match Python test_stacked_bar_handles_positive_and_negative
+        assert_eq!(&[sy0[2], sy0[3]], &[2.0, -1.0]);
+        assert_eq!(&[sy1[2], sy1[3]], &[5.0, -5.0]);
+    }
+
+    #[test]
+    fn contourf_bands_one_masked_corner() {
+        // Matches tests/pyplot/test_p3_option_contracts.py contourf corner_mask case.
+        let z = [f64::NAN, 1.0, 0.0, 0.0];
+        let xpos = [0.0, 1.0];
+        let ypos = [0.0, 1.0];
+        let edges = [-1.0, 0.5, 2.0];
+        let needed = contourf_bands_into(
+            &z,
+            2,
+            2,
+            &xpos,
+            &ypos,
+            &edges,
+            false,
+            false,
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+        )
+        .unwrap();
+        assert_eq!(needed, 3);
+        let mut x0 = vec![0.0; needed];
+        let mut y0 = vec![0.0; needed];
+        let mut x1 = vec![0.0; needed];
+        let mut y1 = vec![0.0; needed];
+        let mut x2 = vec![0.0; needed];
+        let mut y2 = vec![0.0; needed];
+        let mut slots = vec![0i64; needed];
+        assert_eq!(
+            contourf_bands_into(
+                &z,
+                2,
+                2,
+                &xpos,
+                &ypos,
+                &edges,
+                false,
+                false,
+                &mut x0,
+                &mut y0,
+                &mut x1,
+                &mut y1,
+                &mut x2,
+                &mut y2,
+                &mut slots,
+            ),
+            Some(3)
+        );
+        let geometry: Vec<[f64; 6]> = (0..3)
+            .map(|i| [x0[i], y0[i], x1[i], y1[i], x2[i], y2[i]])
+            .collect();
+        assert_eq!(
+            geometry,
+            vec![
+                [0.5, 0.5, 1.0, 0.5, 1.0, 1.0],
+                [0.5, 0.5, 1.0, 1.0, 0.0, 1.0],
+                [0.5, 0.5, 1.0, 0.0, 1.0, 0.5],
+            ]
+        );
     }
 
     #[test]

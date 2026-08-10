@@ -26,7 +26,7 @@ cd packages/xy-node && npm ci && npm test
 
 ```bash
 XY_NATIVE_LIB=/path/to/libxy_core.so npm test
-XY_EXPECTED_ABI=56 npm test   # optional ABI golden override
+XY_EXPECTED_ABI=57 npm test   # optional ABI golden override
 ```
 
 ## Host composition (graph / marks / sankey)
