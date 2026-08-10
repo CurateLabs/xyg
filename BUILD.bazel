@@ -187,6 +187,8 @@ filegroup(
             "benchmarks/bench_scale_all_charts.py",
             "benchmarks/bench_scale_all_charts_node.mjs",
             "benchmarks/bench_graph_scale_classes_node.mjs",
+            "benchmarks/bench_tier3_pyramid.py",
+            "benchmarks/bench_tier3_pyramid_node.mjs",
             "benchmarks/baseline.json",
             "python/xy/**/*.py",
             "packages/xy-node/src/**",

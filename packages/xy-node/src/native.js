@@ -142,6 +142,27 @@ export const xyContourfBands = lib.func(
   "size_t xy_contourf_bands(const double *z, size_t rows, size_t cols, const double *xpos, const double *ypos, const double *edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double *out_x0, double *out_y0, double *out_x1, double *out_y1, double *out_x2, double *out_y2, int64_t *out_slots, size_t capacity)",
 );
 
+// --- Tier-3 tile pyramid (lod-architecture §4 / Phase 3) ---
+export const xyPyramidBuild = lib.func(
+  "uint64_t xy_pyramid_build(const double *x, const double *y, size_t len, double x0, double x1, double y0, double y1, uint32_t base_dim)",
+);
+export const xyPyramidBuildColor = lib.func(
+  "uint64_t xy_pyramid_build_color(const double *x, const double *y, size_t len, const uint8_t *idx, const uint8_t *rgba, const uint8_t *lut, size_t lut_len, double x0, double x1, double y0, double y1, uint32_t base_dim)",
+);
+export const xyPyramidAppend = lib.func(
+  "int32_t xy_pyramid_append(uint64_t handle, const double *x, const double *y, size_t len)",
+);
+export const xyPyramidCount = lib.func(
+  "int32_t xy_pyramid_count(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, double *out_count)",
+);
+export const xyPyramidCompose = lib.func(
+  "int32_t xy_pyramid_compose(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float *out)",
+);
+export const xyPyramidComposeColor = lib.func(
+  "int32_t xy_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float *out, uint8_t *out_rgba)",
+);
+export const xyPyramidFree = lib.func("int32_t xy_pyramid_free(uint64_t handle)");
+
 // --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(
   "int32_t xy_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, const uint64_t *roots, uint64_t n_roots, uint64_t seed, double *out_x, double *out_y)",

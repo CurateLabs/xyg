@@ -38,16 +38,18 @@ Machine-readable twin: [`dual-host-parity.json`](dual-host-parity.json)
 | --- | --- | --- | --- | --- |
 | 1 Direct | Exact marks under budget; line M4 when over threshold | ready | ready | paints direct |
 | 2 Density / aggregate | Scatter log-u8 density; hexbin; graph render-graph | ready | ready (`force_density` / auto ≥ 200k) | paints density / aggregates |
-| 3 Tile pyramid | Out-of-core tiles for 100M–1B | partial (design + memmap paths) | **design** (not productized) | receives composed grids only |
+| 3 Tile pyramid | Multi-res count pyramid; compose O(cells) | ready (first paint + density_view) | ready (`pyramid.js`) | receives composed grids |
 
 **Scale evidence (not raw 1B allocation in CI):**
 
 - `benchmarks/bench_scale_all_charts.py` — Python families + graph LOD classes
 - `benchmarks/bench_scale_all_charts_node.mjs` — Node twin for mark families + density
 - `benchmarks/bench_graph_scale_classes_node.mjs` — 10M / 100M / 1B LOD decisions
+- `benchmarks/bench_tier3_pyramid.{py,mjs}` — build-once / compose-many; see [tier3-testing.md](tier3-testing.md)
 
-Every profile records screen-bounded budgets; Tier-3 claims must not assert that
-CI allocated a billion points.
+Every profile records screen-bounded budgets; Tier-3 CI proves pyramid compose
+is O(grid) with modest N — it does not allocate a billion points. Phase-4
+disk-resident 256² tile spill remains a follow-on residency layer.
 
 ## Tests
 

@@ -193,7 +193,26 @@ export {
   drillDecision,
   shouldUseDensity,
   DENSITY_GRID,
+  PYRAMID_MIN_POINTS,
+  PYRAMID_BASE_DIM,
+  PYRAMID_NO_RESCAN_ROWS,
+  PYRAMID_MAX_DIM,
 } from "./encode.js";
+
+export {
+  pyramidBuild,
+  pyramidBuildColor,
+  pyramidAppend,
+  pyramidCount,
+  pyramidCompose,
+  pyramidComposeColor,
+  pyramidFree,
+  pyramidReportBytes,
+  pyramidBaseDimFor,
+  shouldUsePyramid,
+  densityViewFromPyramid,
+  PyramidCache,
+} from "./pyramid.js";
 
 export {
   scatterChart,

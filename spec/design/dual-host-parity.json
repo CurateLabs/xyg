@@ -344,9 +344,9 @@
     {
       "tier": 3,
       "name": "out-of-core tile pyramid",
-      "python": "partial",
-      "node": "design",
-      "notes": "Designed in lod-architecture.md §4; not a full product path on Node. Scale claims use LOD decisions + budgets (10M/100M/1B evidence), not raw 1B point allocation in CI."
+      "python": "ready",
+      "node": "ready",
+      "notes": "Phase-3 square pyramid productized on Python (first paint + density_view) and Node (pyramid.js + Figure density). §28 binning pyramid-L*. Phase-4 256² disk tile spill remains design (tier3-testing.md)."
     }
   ],
   "references": [
@@ -356,6 +356,7 @@
     "spec/design/rust-engine.md",
     "spec/design/xy-coverage.md",
     "spec/design/lod-architecture.md",
+    "spec/design/tier3-testing.md",
     "packages/xy-node/README.md"
   ]
 }

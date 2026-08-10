@@ -67,4 +67,9 @@ export {
   SCATTER_DENSITY_THRESHOLD,
   DENSITY_GRID,
   shouldUseDensity,
+  PYRAMID_MIN_POINTS,
+  pyramidBuild,
+  pyramidCompose,
+  pyramidFree,
+  shouldUsePyramid,
 } from "./index.js";

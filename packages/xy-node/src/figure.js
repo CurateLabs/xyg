@@ -10,6 +10,7 @@
  * - Polar charts emit `coords: "polar"` + theta/r axis descriptors.
  * - Ribbon / sankey ship flow-band geometry (`target_y0`/`target_y1`).
  * - Scatter uses density tier when n ≥ SCATTER_DENSITY_THRESHOLD (Rust bin_2d).
+ * - At/above PYRAMID_MIN_POINTS, density prefers Tier-3 pyramid compose (§28).
  * - Contour / errorbar / stem / mesh / step / stairs / error_band / radar covered.
  * - Enough for mark encode / M4 / hist + graph layout goldens across hosts.
  */
@@ -19,6 +20,7 @@ import {
   DECIMATION_THRESHOLD,
   DENSITY_GRID,
   PROTOCOL_VERSION,
+  PYRAMID_MIN_POINTS,
   bin2d,
   densityLogU8,
   encodeF32Values,
@@ -28,6 +30,11 @@ import {
   pinsOffsetToZero,
   shouldUseDensity,
 } from "./encode.js";
+import {
+  PyramidCache,
+  densityViewFromPyramid,
+  shouldUsePyramid,
+} from "./pyramid.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
 import { composeScatter } from "./marks/scatter.js";
@@ -167,6 +174,8 @@ export class Figure {
     this._graphMeta = null;
     this._axisRange = { x: null, y: null };
     this._polarMeta = null;
+    /** @type {Map<number|string, PyramidCache>} */
+    this._pyramids = new Map();
   }
 
   /**
@@ -203,6 +212,7 @@ export class Figure {
   scatter(x, y, opts = {}) {
     const forceDensity = opts.forceDensity ?? opts.force_density;
     const forceDirect = opts.forceDirect ?? opts.force_direct;
+    const forcePyramid = opts.forcePyramid ?? opts.force_pyramid;
     if (opts._composed) {
       this.traces.push({
         id: opts.id ?? nextTraceId++,
@@ -215,6 +225,7 @@ export class Figure {
         y_axis: opts.yAxis ?? "y",
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
+        ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
       });
       return this;
     }
@@ -222,6 +233,7 @@ export class Figure {
     const t = composed.traces[0];
     const fd = forceDensity ?? t.force_density;
     const fx = forceDirect ?? t.force_direct;
+    const fp = forcePyramid ?? t.force_pyramid;
     this.traces.push({
       id: opts.id ?? nextTraceId++,
       kind: "scatter",
@@ -233,6 +245,7 @@ export class Figure {
       y_axis: t.y_axis,
       ...(fd != null ? { force_density: Boolean(fd) } : {}),
       ...(fx != null ? { force_direct: Boolean(fx) } : {}),
+      ...(fp != null ? { force_pyramid: Boolean(fp) } : {}),
     });
     return this;
   }
@@ -672,9 +685,10 @@ export class Figure {
   _emitScatter(t, pw, xr, yr) {
     const forceDensity = Boolean(t.force_density ?? t.style?.force_density);
     const forceDirect = Boolean(t.force_direct ?? t.style?.force_direct);
+    const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
     if (
       shouldUseDensity(t.x.length, {
-        forceDensity,
+        forceDensity: forceDensity || forcePyramid,
         forceDirect,
         coords: this.coords,
       })
@@ -699,11 +713,41 @@ export class Figure {
   }
 
   /**
-   * Tier-2 density scatter — Rust `xy_bin_2d` + `xy_density_log_u8` (§28/§5).
+   * Tier-2/3 density scatter — `bin_2d` below pyramid floor; Tier-3 pyramid
+   * compose at/above `PYRAMID_MIN_POINTS` (§28 `binning: pyramid-L*`).
    */
   _emitScatterDensity(t, pw, xr, yr) {
     const [w, h] = DENSITY_GRID;
-    const grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+    let grid;
+    let binning = "exact";
+    let reduction = "bin2d";
+    const forceBin2d = Boolean(t.force_bin2d ?? t.style?.force_bin2d);
+    const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
+    const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
+    if (
+      this.coords !== "polar" &&
+      shouldUsePyramid(t.x.length, { forcePyramid, forceBin2d })
+    ) {
+      let cache = this._pyramids.get(t.id);
+      if (cache == null) {
+        cache = new PyramidCache();
+        this._pyramids.set(t.id, cache);
+      }
+      const served = densityViewFromPyramid(cache, t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, {
+        force: forcePyramid,
+        noRescan,
+      });
+      if (served != null) {
+        grid = served.grid;
+        binning = served.binning;
+        reduction = served.reduction;
+      }
+    }
+    if (grid == null) {
+      grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+      binning = "exact";
+      reduction = "bin2d";
+    }
     const { encoded, max } = densityLogU8(grid);
     const density = {
       buf: pw.shipU8(encoded),
@@ -714,6 +758,8 @@ export class Figure {
       colormap: t.style?.colormap ?? "viridis",
       x_range: [...xr],
       y_range: [...yr],
+      binning,
+      reduction,
       channels_dropped: false,
       dropped_channels: [],
       overlay_omitted: "node_host_mvp",
@@ -734,6 +780,14 @@ export class Figure {
       y_axis: t.y_axis ?? "y",
       density,
     };
+  }
+
+  /** Release all Tier-3 pyramid handles owned by this figure. */
+  dispose() {
+    for (const cache of this._pyramids.values()) {
+      cache.free();
+    }
+    this._pyramids.clear();
   }
 
   _emitLine(t, pw, xr, pxWidth) {

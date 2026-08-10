@@ -680,7 +680,8 @@ contract entry before it lands.
    stay: the first-payload overlay and any future resolvable-tier subset are
    built from them.
 
-**Phase 3 — pyramid (build + serve shipped; client cache and bench gate open)**
+**Phase 3 — pyramid (build + serve shipped on Python + Node; client tile
+cache and dedicated 100M latency gate still open)**
 6. **Done (count + mean-color planes):** `src/tiles.rs` builds a square count
    pyramid over the trace's full data bounds — finest level is
    `PYRAMID_BASE_DIM`² (2048², `python/xy/config.py`), each coarser level an
@@ -699,6 +700,12 @@ contract entry before it lands.
    and built lazily by `interaction._ensure_pyramid` on the first density
    view at ≥ `PYRAMID_MIN_POINTS` (2,000,000), released by a weakref
    finalizer; colored pyramids refuse appends and rebuild lazily (§4.1).
+   **Node:** `packages/xy-node/src/pyramid.js` binds the same ABI; `Figure`
+   density emit prefers pyramid compose at/above `PYRAMID_MIN_POINTS` (or
+   `forcePyramid`) and records `binning` / `reduction` on the wire.
+   **Python first paint:** `_payload._density_trace_spec` composes from the
+   pyramid when eligible so opening a large scatter does not throw away an
+   O(N) `bin_2d`. Testing contract: [tier3-testing.md](tier3-testing.md).
 7. **Done:** `density_view` estimates the window with `pyramid_count` and
    serves it with `pyramid_compose` when that estimate sits safely above the
    drill threshold; `compose` picks the coarsest level that still meets the
@@ -737,7 +744,9 @@ contract entry before it lands.
    eviction, same crossfades). Still pending — `js/src/45_lod.ts` keys the
    cache by density window, and no client code reads the served level.
 9. Bench gate: 100M pan p95 < 16ms kernel time, zoom step < 50ms, memory
-   within 1.5× finest level.
+   within 1.5× finest level. CI uses
+   `benchmarks/bench_tier3_pyramid.{py,mjs}` (build-once / compose-many at
+   ≤1M) as the structural gate; item 9 remains a dedicated perf job.
 
 **Phase 4 — Tier-3 residency (~2 wks, after Arrow ingest)**
 10. Tile spill/load under byte budget; zone-map-pruned tile index for

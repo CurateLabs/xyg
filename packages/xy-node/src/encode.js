@@ -12,6 +12,11 @@ export const DIRECT_SOFT_CEILING = 2_000_000;
 export const DENSITY_GRID = Object.freeze([512, 384]);
 export const DENSITY_TARGET_POINTS_PER_CELL = 16;
 export const DRILL_EXIT_FACTOR = 1.15;
+/** Tier-3 pyramid thresholds — lockstep with `python/xy/config.py`. */
+export const PYRAMID_MIN_POINTS = 2_000_000;
+export const PYRAMID_BASE_DIM = 2048;
+export const PYRAMID_NO_RESCAN_ROWS = 200_000_000;
+export const PYRAMID_MAX_DIM = 16384;
 export const F32_SAFE_MAG = 1e37;
 export const LOG_FAMILY_SCALES = Object.freeze(["log", "symlog"]);
 

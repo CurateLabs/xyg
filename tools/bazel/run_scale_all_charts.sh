@@ -45,3 +45,9 @@ if [[ -f "${ROOT}/packages/xy-node/src/index.js" ]]; then
   echo "scale_all_charts_node: --profile smoke"
   (cd "${ROOT}" && node benchmarks/bench_scale_all_charts_node.mjs --profile smoke)
 fi
+
+echo "tier3_pyramid: python + node"
+run_py benchmarks/bench_tier3_pyramid.py
+if [[ -f "${ROOT}/packages/xy-node/src/pyramid.js" ]]; then
+  (cd "${ROOT}" && node benchmarks/bench_tier3_pyramid_node.mjs)
+fi
