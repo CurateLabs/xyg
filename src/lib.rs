@@ -85,7 +85,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 51;
+pub const ABI_VERSION: u32 = 52;
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -3334,6 +3334,14 @@ pub unsafe extern "C" fn xy_graph_layout(
                 };
                 graph::layout_breadthfirst(n_nodes, sources, targets, roots_slice, out_x, out_y)
             }
+            graph::LAYOUT_HIERARCHICAL => {
+                let roots_slice = if n_roots == 0 || roots.is_null() {
+                    &[][..]
+                } else {
+                    std::slice::from_raw_parts(roots, n_roots as usize)
+                };
+                graph::layout_hierarchical(n_nodes, sources, targets, roots_slice, out_x, out_y)
+            }
             graph::LAYOUT_AUTO => graph::layout_auto(n_nodes, sources, targets, out_x, out_y, seed),
             graph::LAYOUT_RADIAL => {
                 let root = if n_roots == 0 || roots.is_null() {
@@ -3621,6 +3629,159 @@ pub unsafe extern "C" fn xy_graph_cluster_aggregate(
             out_y,
             &mut *out_count,
             out_member_of,
+        ) {
+            Some(d) => {
+                *out_tier = d.tier as u32;
+                *out_edges_kept = d.edges_kept;
+                0
+            }
+            None => -1,
+        }
+    })
+}
+
+/// Build a perceptually bounded render graph (§1 / graph-mark.md).
+///
+/// Writes reduced node centroids, per-source `out_member_of`, and edges in
+/// **cluster index space** (multi-edges collapsed), all within
+/// `node_budget` / `edge_budget`. Optional viewport when `viewport_enabled != 0`.
+/// Records §28 tier into `out_tier` / `out_edges_kept`. Returns 0 on success.
+///
+/// # Safety
+/// Non-empty buffers must match documented lengths; edge outputs need capacity
+/// `edge_budget`; node outputs need `min(n_nodes, node_budget)` (or active
+/// count under viewport — callers should size to `node_budget`).
+#[no_mangle]
+pub unsafe extern "C" fn xy_graph_build_render(
+    n_nodes: u64,
+    n_edges: u64,
+    x: *const f64,
+    y: *const f64,
+    sources: *const u64,
+    targets: *const u64,
+    node_budget: u64,
+    edge_budget: u64,
+    viewport_enabled: i32,
+    vp_x0: f64,
+    vp_y0: f64,
+    vp_x1: f64,
+    vp_y1: f64,
+    out_node_x: *mut f64,
+    out_node_y: *mut f64,
+    out_member_of: *mut u64,
+    out_edge_sources: *mut u64,
+    out_edge_targets: *mut u64,
+    out_n_nodes: *mut u64,
+    out_n_edges: *mut u64,
+    out_tier: *mut u32,
+    out_edges_kept: *mut u64,
+) -> i32 {
+    if n_nodes > (usize::MAX as u64)
+        || n_edges > (usize::MAX as u64)
+        || out_n_nodes.is_null()
+        || out_n_edges.is_null()
+        || out_tier.is_null()
+        || out_edges_kept.is_null()
+    {
+        return -1;
+    }
+    let n = n_nodes as usize;
+    let e = n_edges as usize;
+    if n > 0 && (x.is_null() || y.is_null() || out_member_of.is_null()) {
+        return -1;
+    }
+    let node_budget = node_budget.max(1);
+    let edge_budget = edge_budget.max(1);
+    let Ok(out_node_cap) = usize::try_from(node_budget.min(n_nodes.max(1))) else {
+        return -1;
+    };
+    let Ok(out_edge_cap) = usize::try_from(edge_budget) else {
+        return -1;
+    };
+    if out_node_cap > 0 && (out_node_x.is_null() || out_node_y.is_null()) {
+        return -1;
+    }
+    if out_edge_cap > 0 && (out_edge_sources.is_null() || out_edge_targets.is_null()) {
+        return -1;
+    }
+
+    let x = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(x, n)
+    };
+    let y = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(y, n)
+    };
+    let sources = if e == 0 {
+        &[][..]
+    } else if sources.is_null() {
+        return -1;
+    } else {
+        std::slice::from_raw_parts(sources, e)
+    };
+    let targets = if e == 0 {
+        &[][..]
+    } else if targets.is_null() {
+        return -1;
+    } else {
+        std::slice::from_raw_parts(targets, e)
+    };
+    let out_member_of = if n == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_member_of, n)
+    };
+    let out_node_x = if out_node_cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_node_x, out_node_cap)
+    };
+    let out_node_y = if out_node_cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_node_y, out_node_cap)
+    };
+    let out_edge_sources = if out_edge_cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_edge_sources, out_edge_cap)
+    };
+    let out_edge_targets = if out_edge_cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_edge_targets, out_edge_cap)
+    };
+    let viewport = if viewport_enabled != 0 {
+        Some(graph::Viewport {
+            x0: vp_x0,
+            y0: vp_y0,
+            x1: vp_x1,
+            y1: vp_y1,
+        })
+    } else {
+        None
+    };
+
+    ffi_guard(-1, || {
+        match graph::build_render(
+            n_nodes,
+            x,
+            y,
+            sources,
+            targets,
+            node_budget,
+            edge_budget,
+            viewport,
+            out_node_x,
+            out_node_y,
+            out_member_of,
+            out_edge_sources,
+            out_edge_targets,
+            &mut *out_n_nodes,
+            &mut *out_n_edges,
         ) {
             Some(d) => {
                 *out_tier = d.tier as u32;

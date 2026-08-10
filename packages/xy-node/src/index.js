@@ -3,6 +3,7 @@ import {
   pointer,
   xyAbiVersion,
   xyGraphBuildCsr,
+  xyGraphBuildRender,
   xyGraphClusterAggregate,
   xyGraphForceCreate,
   xyGraphForceDestroy,
@@ -25,6 +26,7 @@ export const GRAPH_LAYOUT_BREADTHFIRST = 4;
 export const GRAPH_LAYOUT_AUTO = 5;
 export const GRAPH_LAYOUT_RADIAL = 6;
 export const GRAPH_LAYOUT_CONCENTRIC = 7;
+export const GRAPH_LAYOUT_HIERARCHICAL = 8;
 
 export const GRAPH_LAYOUT_IDS = Object.freeze({
   preset: GRAPH_LAYOUT_PRESET,
@@ -32,8 +34,8 @@ export const GRAPH_LAYOUT_IDS = Object.freeze({
   circle: GRAPH_LAYOUT_CIRCLE,
   force: GRAPH_LAYOUT_FORCE,
   breadthfirst: GRAPH_LAYOUT_BREADTHFIRST,
-  dagre: GRAPH_LAYOUT_BREADTHFIRST,
-  hierarchical: GRAPH_LAYOUT_BREADTHFIRST,
+  dagre: GRAPH_LAYOUT_HIERARCHICAL,
+  hierarchical: GRAPH_LAYOUT_HIERARCHICAL,
   auto: GRAPH_LAYOUT_AUTO,
   radial: GRAPH_LAYOUT_RADIAL,
   concentric: GRAPH_LAYOUT_CONCENTRIC,
@@ -206,6 +208,73 @@ export function graphClusterAggregate(x, y, opts = {}) {
     x: outX.subarray(0, count),
     y: outY.subarray(0, count),
     memberOf,
+    tier: tier[0],
+    edgesKept: edgesKept[0],
+  };
+}
+
+
+export function graphBuildRender(x, y, sources, targets, opts = {}) {
+  const xArray = asF64Array(x, "x");
+  const yArray = asF64Array(y, "y");
+  requireEqualLength(xArray, yArray, "x", "y");
+  const sourceArray = asU64Array(sources, "sources");
+  const targetArray = asU64Array(targets, "targets");
+  requireEqualLength(sourceArray, targetArray, "sources", "targets");
+  const nNodes = xArray.length;
+  const nodeBudget = toLength(opts.nodeBudget ?? 200_000, "opts.nodeBudget");
+  const edgeBudget = toLength(opts.edgeBudget ?? 500_000, "opts.edgeBudget");
+  const outNodeCap = nNodes === 0 ? 0 : Math.min(nNodes, Math.max(nodeBudget, 1));
+  const outX = new Float64Array(outNodeCap);
+  const outY = new Float64Array(outNodeCap);
+  const memberOf = new BigUint64Array(nNodes);
+  const edgeS = new BigUint64Array(Math.max(edgeBudget, 1));
+  const edgeT = new BigUint64Array(Math.max(edgeBudget, 1));
+  const outNNodes = new BigUint64Array(1);
+  const outNEdges = new BigUint64Array(1);
+  const tier = new Uint32Array(1);
+  const edgesKept = new BigUint64Array(1);
+  const vp = opts.viewport;
+  const vpEnabled = vp == null ? 0 : 1;
+  const x0 = vp == null ? 0 : Number(vp.x0 ?? vp[0]);
+  const y0 = vp == null ? 0 : Number(vp.y0 ?? vp[1]);
+  const x1 = vp == null ? 0 : Number(vp.x1 ?? vp[2]);
+  const y1 = vp == null ? 0 : Number(vp.y1 ?? vp[3]);
+  const code = xyGraphBuildRender(
+    toU64(nNodes, "nNodes"),
+    toU64(sourceArray.length, "nEdges"),
+    f64Ptr(xArray),
+    f64Ptr(yArray),
+    u64Ptr(sourceArray),
+    u64Ptr(targetArray),
+    toU64(Math.max(nodeBudget, 1), "opts.nodeBudget"),
+    toU64(Math.max(edgeBudget, 1), "opts.edgeBudget"),
+    vpEnabled,
+    x0,
+    y0,
+    x1,
+    y1,
+    f64Ptr(outX),
+    f64Ptr(outY),
+    u64Ptr(memberOf),
+    u64Ptr(edgeS),
+    u64Ptr(edgeT),
+    u64Ptr(outNNodes),
+    u64Ptr(outNEdges),
+    u32Ptr(tier),
+    u64Ptr(edgesKept),
+  );
+  if (code !== 0) {
+    throw new Error(`xy_graph_build_render failed with code ${code}`);
+  }
+  const nOut = Number(outNNodes[0]);
+  const eOut = Number(outNEdges[0]);
+  return {
+    x: outX.subarray(0, nOut),
+    y: outY.subarray(0, nOut),
+    memberOf,
+    edgeSources: edgeS.subarray(0, eOut),
+    edgeTargets: edgeT.subarray(0, eOut),
     tier: tier[0],
     edgesKept: edgesKept[0],
   };

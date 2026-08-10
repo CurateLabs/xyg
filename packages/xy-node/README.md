@@ -30,7 +30,7 @@ XY_EXPECTED_ABI=51 npm test   # optional ABI golden override
 | `abiVersion()` | `xy_abi_version` |
 | `graphLayout(layout, nNodes, sources, targets, opts?)` | one-shot layout → `{x, y}` |
 | `graphForceCreate` / `graphForceTick` / `graphForceDestroy` | progressive force |
-| `graphLodDecision` / `graphClusterAggregate` / `graphSampleEdges` / `graphBuildCsr` | LOD + CSR |
+| `graphLodDecision` / `graphClusterAggregate` / `graphBuildRender` / `graphSampleEdges` / `graphBuildCsr` | LOD + render graph + CSR |
 | `sankeyLayout` | Sankey placement when `xy_sankey_layout` is present |
 
 Layout names match Python `_native.py`: `preset`, `grid`, `circle`, `force`,

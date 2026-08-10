@@ -707,14 +707,10 @@ def graph(
 
     data = _graph.normalize_graph_inputs(nodes, edges, x=x, y=y, directed=directed)
     px, py, meta = _graph.run_layout(data, layout=layout, seed=seed, iterations=iterations)
-    # Edge endpoints in laid-out coordinates (respect LOD-sampled edges).
-    tier, edges_kept = meta["lod_tier"], meta["edges_kept"]
-    sources = data.sources
-    targets = data.targets
-    if edges_kept < data.n_edges:
-        idx = _native.graph_sample_edges(data.n_edges, edges_kept)
-        sources = data.sources[idx]
-        targets = data.targets[idx]
+    # Emit ONLY the Rust render-graph buffers (no second edge sample).
+    tier = meta["lod_tier"]
+    sources = np.asarray(meta["render_sources"], dtype=np.uint64)
+    targets = np.asarray(meta["render_targets"], dtype=np.uint64)
     x0 = px[sources.astype(np.intp)]
     y0 = py[sources.astype(np.intp)]
     x1 = px[targets.astype(np.intp)]
@@ -743,16 +739,21 @@ def graph(
         symbol=symbol,
         style=style,
     )
+    # CSR matches the *render* node index space (scatter), not raw source V.
     offsets, neighbors = _native.graph_build_csr(
-        data.n_nodes, data.sources, data.targets, directed=bool(directed)
+        len(px), sources, targets, directed=bool(directed)
     )
     # §28 recorded layout/LOD decision for hosts/clients.
+    member_of = np.asarray(meta["member_of"], dtype=np.uint64)
     graph_meta = {
-        **meta,
+        **{k: v for k, v in meta.items() if k not in ("member_of", "render_sources", "render_targets")},
         "directed": bool(directed),
         "ids": [str(i) for i in data.ids],
         "sources": sources.astype(np.uint64).tolist(),
         "targets": targets.astype(np.uint64).tolist(),
+        "member_of": member_of.astype(np.uint64).tolist(),
+        "source_n_nodes": int(meta["source_n_nodes"]),
+        "source_n_edges": int(meta["source_n_edges"]),
         "csr_offsets": offsets.astype(np.uint64).tolist(),
         "csr_neighbors": neighbors.astype(np.uint64).tolist(),
         "node_symbol": symbol if isinstance(symbol, str) else "circle",

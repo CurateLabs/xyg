@@ -24,7 +24,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 51
+ABI_VERSION = 52
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -779,6 +779,31 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out_y
         ctypes.c_void_p,  # out_count
         ctypes.c_void_p,  # out_member_of
+        ctypes.c_void_p,  # out_tier
+        ctypes.c_void_p,  # out_edges_kept
+    ]
+    lib.xy_graph_build_render.restype = ctypes.c_int32
+    lib.xy_graph_build_render.argtypes = [
+        ctypes.c_uint64,  # n_nodes
+        ctypes.c_uint64,  # n_edges
+        ctypes.c_void_p,  # x
+        ctypes.c_void_p,  # y
+        ctypes.c_void_p,  # sources
+        ctypes.c_void_p,  # targets
+        ctypes.c_uint64,  # node_budget
+        ctypes.c_uint64,  # edge_budget
+        ctypes.c_int32,  # viewport_enabled
+        ctypes.c_double,  # vp_x0
+        ctypes.c_double,  # vp_y0
+        ctypes.c_double,  # vp_x1
+        ctypes.c_double,  # vp_y1
+        ctypes.c_void_p,  # out_node_x
+        ctypes.c_void_p,  # out_node_y
+        ctypes.c_void_p,  # out_member_of
+        ctypes.c_void_p,  # out_edge_sources
+        ctypes.c_void_p,  # out_edge_targets
+        ctypes.c_void_p,  # out_n_nodes
+        ctypes.c_void_p,  # out_n_edges
         ctypes.c_void_p,  # out_tier
         ctypes.c_void_p,  # out_edges_kept
     ]
@@ -3257,6 +3282,7 @@ GRAPH_LAYOUT_BREADTHFIRST = 4
 GRAPH_LAYOUT_AUTO = 5
 GRAPH_LAYOUT_RADIAL = 6
 GRAPH_LAYOUT_CONCENTRIC = 7
+GRAPH_LAYOUT_HIERARCHICAL = 8
 
 _GRAPH_LAYOUT_NAMES = {
     "preset": GRAPH_LAYOUT_PRESET,
@@ -3264,8 +3290,8 @@ _GRAPH_LAYOUT_NAMES = {
     "circle": GRAPH_LAYOUT_CIRCLE,
     "force": GRAPH_LAYOUT_FORCE,
     "breadthfirst": GRAPH_LAYOUT_BREADTHFIRST,
-    "dagre": GRAPH_LAYOUT_BREADTHFIRST,
-    "hierarchical": GRAPH_LAYOUT_BREADTHFIRST,
+    "dagre": GRAPH_LAYOUT_HIERARCHICAL,
+    "hierarchical": GRAPH_LAYOUT_HIERARCHICAL,
     "auto": GRAPH_LAYOUT_AUTO,
     "radial": GRAPH_LAYOUT_RADIAL,
     "concentric": GRAPH_LAYOUT_CONCENTRIC,
@@ -3484,6 +3510,91 @@ def graph_cluster_aggregate(
         out_x[: int(out_count.value)],
         out_y[: int(out_count.value)],
         member_of,
+        int(tier.value),
+        int(edges_kept.value),
+    )
+
+
+
+def graph_build_render(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    node_budget: int = 200_000,
+    edge_budget: int = 500_000,
+    viewport: tuple[float, float, float, float] | None = None,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    int,
+    int,
+]:
+    """Build a perceptually bounded render graph; returns nodes, member_of, edges, tier, edges_kept."""
+    x_arr = _as_f64(x, "x")
+    y_arr = _as_f64(y, "y")
+    if len(x_arr) != len(y_arr):
+        raise ValueError("x and y must have equal length")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
+    n_nodes = len(x_arr)
+    node_budget = max(1, int(node_budget))
+    edge_budget = max(1, int(edge_budget))
+    out_node_cap = min(n_nodes, node_budget) if n_nodes else 0
+    out_x = np.empty(out_node_cap, dtype=np.float64)
+    out_y = np.empty(out_node_cap, dtype=np.float64)
+    member_of = np.empty(n_nodes, dtype=np.uint64)
+    edge_s = np.empty(edge_budget, dtype=np.uint64)
+    edge_t = np.empty(edge_budget, dtype=np.uint64)
+    out_n_nodes = ctypes.c_uint64(0)
+    out_n_edges = ctypes.c_uint64(0)
+    tier = ctypes.c_uint32(0)
+    edges_kept = ctypes.c_uint64(0)
+    if viewport is None:
+        vp_en, x0, y0, x1, y1 = 0, 0.0, 0.0, 0.0, 0.0
+    else:
+        vp_en = 1
+        x0, y0, x1, y1 = (float(v) for v in viewport)
+    ok = _lib.xy_graph_build_render(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(len(sources)),
+        x_arr.ctypes.data if n_nodes else None,
+        y_arr.ctypes.data if n_nodes else None,
+        sources.ctypes.data if len(sources) else None,
+        targets.ctypes.data if len(targets) else None,
+        ctypes.c_uint64(node_budget),
+        ctypes.c_uint64(edge_budget),
+        ctypes.c_int32(vp_en),
+        ctypes.c_double(x0),
+        ctypes.c_double(y0),
+        ctypes.c_double(x1),
+        ctypes.c_double(y1),
+        out_x.ctypes.data if out_node_cap else None,
+        out_y.ctypes.data if out_node_cap else None,
+        member_of.ctypes.data if n_nodes else None,
+        edge_s.ctypes.data if edge_budget else None,
+        edge_t.ctypes.data if edge_budget else None,
+        ctypes.byref(out_n_nodes),
+        ctypes.byref(out_n_edges),
+        ctypes.byref(tier),
+        ctypes.byref(edges_kept),
+    )
+    if ok != 0:
+        raise ValueError("native graph_build_render failed")
+    n_out = int(out_n_nodes.value)
+    e_out = int(out_n_edges.value)
+    return (
+        out_x[:n_out],
+        out_y[:n_out],
+        member_of,
+        edge_s[:e_out],
+        edge_t[:e_out],
         int(tier.value),
         int(edges_kept.value),
     )

@@ -180,53 +180,67 @@ def run_layout(
     *,
     seed: int = 0,
     iterations: int = 300,
+    node_budget: int = 200_000,
+    edge_budget: int = 500_000,
+    viewport: tuple[float, float, float, float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
-    """Layout via Rust ABI; returns x, y, and recorded decision meta (§28)."""
+    """Layout via Rust ABI, then emit a perceptually bounded render graph.
+
+    Layout runs on the **full** source graph (Barnes–Hut repulsion when
+    ``n > 500``). LOD reduction happens once via ``graph_build_render`` —
+    hosts must not double-sample edges for draw.
+    """
     layout_name = str(layout or DEFAULT_LAYOUT).strip().lower()
     n = data.n_nodes
     e = data.n_edges
-    tier, edges_kept = _native.graph_lod_decision(n, e)
     sources = data.sources
     targets = data.targets
-    if tier >= 1 and edges_kept < e:
-        idx = _native.graph_sample_edges(e, edges_kept)
-        sources = data.sources[idx]
-        targets = data.targets[idx]
+    alpha = None
     if layout_name == "force" and iterations > 0:
-        # One-shot uses fixed 300 in ABI; for custom iterations use tick API.
         handle = _native.graph_force_create(n, sources, targets, x=data.x, y=data.y, seed=seed)
         try:
             x, y, alpha = _native.graph_force_tick(handle, n, max(1, int(iterations)))
         finally:
             _native.graph_force_destroy(handle)
-        meta = {
-            "layout": "force",
-            "seed": int(seed),
-            "iterations": int(iterations),
-            "alpha": float(alpha),
-            "lod_tier": int(tier),
-            "edges_kept": int(len(sources)),
-            "n_nodes": n,
-            "n_edges": e,
-        }
-        return x, y, meta
-    if layout_name == "preset" and (data.x is None or data.y is None):
-        raise ValueError("layout='preset' requires x and y")
-    x, y = _native.graph_layout(
-        layout_name,
-        n,
+    else:
+        if layout_name == "preset" and (data.x is None or data.y is None):
+            raise ValueError("layout='preset' requires x and y")
+        x, y = _native.graph_layout(
+            layout_name,
+            n,
+            sources,
+            targets,
+            x=data.x,
+            y=data.y,
+            seed=seed,
+        )
+
+    rx, ry, member_of, edge_s, edge_t, tier, edges_kept = _native.graph_build_render(
+        x,
+        y,
         sources,
         targets,
-        x=data.x,
-        y=data.y,
-        seed=seed,
+        node_budget=int(node_budget),
+        edge_budget=int(edge_budget),
+        viewport=viewport,
     )
-    meta = {
-        "layout": layout_name,
+    meta: dict[str, Any] = {
+        "layout": layout_name if not (layout_name == "force" and iterations > 0) else "force",
         "seed": int(seed),
         "lod_tier": int(tier),
-        "edges_kept": int(len(sources)),
-        "n_nodes": n,
-        "n_edges": e,
+        "edges_kept": int(edges_kept),
+        "nodes_kept": int(len(rx)),
+        "n_nodes": int(len(rx)),
+        "n_edges": int(len(edge_s)),
+        "source_n_nodes": int(n),
+        "source_n_edges": int(e),
+        "member_of": member_of,
+        "render_sources": edge_s,
+        "render_targets": edge_t,
+        "node_budget": int(node_budget),
+        "edge_budget": int(edge_budget),
     }
-    return x, y, meta
+    if layout_name == "force" and iterations > 0:
+        meta["iterations"] = int(iterations)
+        meta["alpha"] = float(alpha) if alpha is not None else None
+    return rx, ry, meta

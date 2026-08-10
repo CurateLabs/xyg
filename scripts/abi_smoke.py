@@ -422,6 +422,31 @@ def load() -> ctypes.CDLL:
         U32P,
         U64P,
     ]
+    lib.xy_graph_build_render.restype = ctypes.c_int32
+    lib.xy_graph_build_render.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+        U64P,
+        U64P,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        U64P,
+        U64P,
+        U64P,
+        U64P,
+        U64P,
+        U32P,
+        U64P,
+    ]
     lib.xy_graph_sample_edges.restype = ctypes.c_uint64
     lib.xy_graph_sample_edges.argtypes = [ctypes.c_uint64, ctypes.c_uint64, U64P]
     lib.xy_graph_build_csr.restype = ctypes.c_int32
@@ -565,6 +590,49 @@ def main() -> None:
         and cluster_tier.value == 2
         and list(cluster_member) == [0, 0, 0, 1, 1, 1],
         "graph_cluster_aggregate grid centroids + recorded tier",
+    )
+    render_sources = array("Q", [0, 1, 3, 4, 0])
+    render_targets = array("Q", [1, 2, 4, 5, 3])
+    render_out_x = array("d", [0.0]) * 2
+    render_out_y = array("d", [0.0]) * 2
+    render_member = array("Q", [99]) * 6
+    render_es = array("Q", [99]) * 4
+    render_et = array("Q", [99]) * 4
+    render_n = ctypes.c_uint64()
+    render_e = ctypes.c_uint64()
+    render_tier = ctypes.c_uint32()
+    render_kept = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_build_render(
+            6,
+            5,
+            _ptr(cluster_x, ctypes.c_double),
+            _ptr(cluster_y, ctypes.c_double),
+            _ptr(render_sources, ctypes.c_uint64),
+            _ptr(render_targets, ctypes.c_uint64),
+            2,
+            4,
+            0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            _ptr(render_out_x, ctypes.c_double),
+            _ptr(render_out_y, ctypes.c_double),
+            _ptr(render_member, ctypes.c_uint64),
+            _ptr(render_es, ctypes.c_uint64),
+            _ptr(render_et, ctypes.c_uint64),
+            ctypes.byref(render_n),
+            ctypes.byref(render_e),
+            ctypes.byref(render_tier),
+            ctypes.byref(render_kept),
+        )
+        == 0
+        and render_n.value <= 2
+        and render_e.value <= 4
+        and render_tier.value == 2
+        and list(render_member) == [0, 0, 0, 1, 1, 1],
+        "graph_build_render budgets + recorded tier",
     )
     graph_sample = array("Q", [99]) * 3
     ok(

@@ -38,41 +38,97 @@ const lib = koffi.load(libraryPath);
 
 export const nativeLibraryPath = libraryPath;
 
-// C ABI signatures from src/lib.rs. Keep these in lockstep with ABI_VERSION.
+// C ABI signatures from src/lib.rs / python/xy/_native.py. Keep in lockstep with ABI_VERSION.
 export const xyAbiVersion = lib.func("uint32_t xy_abi_version()");
 
+// --- Encode / LOD / stats (chart wire path) ---
+export const xyEncodeF32 = lib.func(
+  "int32_t xy_encode_f32(const double *data, size_t len, double offset, double scale, float *out)",
+);
+export const xyM4Indices = lib.func(
+  "size_t xy_m4_indices(const double *x, const double *y, size_t len, double x0, double x1, size_t n_buckets, uint32_t *out)",
+);
+export const xyM4Points = lib.func(
+  "size_t xy_m4_points(const double *x, const double *y, size_t len, double x0, double x1, size_t n_buckets, double *out_x, double *out_y)",
+);
+export const xyMinMax = lib.func(
+  "int32_t xy_min_max(const double *data, size_t len, double *out_min, double *out_max)",
+);
+export const xyIsSorted = lib.func("int32_t xy_is_sorted(const double *data, size_t len)");
+export const xyHistogramUniform = lib.func(
+  "size_t xy_histogram_uniform(const double *data, size_t len, double lo, double hi, size_t n_bins, int32_t density, double *out_counts)",
+);
+export const xyNormalizeF32 = lib.func(
+  "int32_t xy_normalize_f32(const double *data, size_t len, double lo, double hi, int32_t nan_mode, float *out)",
+);
+export const xyValidIndicesF64 = lib.func(
+  "size_t xy_valid_indices_f64(const double *const *columns, size_t n_columns, size_t len, uint64_t positive_mask, uint32_t *out, size_t capacity)",
+);
+export const xyBin2d = lib.func(
+  "int32_t xy_bin_2d(const double *x, const double *y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float *out)",
+);
+export const xyBin2dF32 = lib.func(
+  "int32_t xy_bin_2d_f32(const float *x, const float *y, size_t len, float x0, float x1, float y0, float y1, size_t w, size_t h, float *out)",
+);
+export const xyHeatmapRgba = lib.func(
+  "int32_t xy_heatmap_rgba(const double *raw, size_t w, size_t h, const uint8_t *stops, size_t stop_count, uint8_t alpha, uint8_t *out)",
+);
+export const xyLocalLogDensity = lib.func(
+  "int32_t xy_local_log_density(const double *x, const double *y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, float *out)",
+);
+export const xyWeightedEcdf = lib.func(
+  "size_t xy_weighted_ecdf(const double *values, const double *weights, size_t len, double *out_values, double *out_cumulative)",
+);
+export const xyStackedBounds = lib.func(
+  "int32_t xy_stacked_bounds(const double *values, size_t n_series, size_t n_points, uint32_t mode, double *lower, double *upper)",
+);
+export const xyMarchingSquares = lib.func(
+  "size_t xy_marching_squares(const double *z, size_t rows, size_t cols, const double *x_coords, const double *y_coords, const double *levels, size_t n_levels, uint8_t corner_mask, double *out_x0, double *out_x1, double *out_y0, double *out_y1, double *out_levels, size_t capacity)",
+);
+export const xyDelaunayTriangles = lib.func(
+  "size_t xy_delaunay_triangles(const double *x, const double *y, size_t len, int64_t *out, size_t capacity)",
+);
+export const xyPolygonTriangles = lib.func(
+  "size_t xy_polygon_triangles(const double *x, const double *y, size_t len, int64_t *out, size_t capacity)",
+);
+export const xyVectorSegments = lib.func(
+  "size_t xy_vector_segments(const double *x, const double *y, const double *u, const double *v, size_t len, double scale, uint32_t pivot, double head_ratio, double *out_x0, double *out_x1, double *out_y0, double *out_y1)",
+);
+export const xyQuadMeshTriangles = lib.func(
+  "size_t xy_quad_mesh_triangles(const double *x, size_t x_len, const double *y, size_t y_len, const double *values, size_t cell_rows, size_t cell_cols, uint32_t layout, double *out_x0, double *out_y0, double *out_x1, double *out_y1, double *out_x2, double *out_y2, double *out_values)",
+);
+export const xyHistogram2d = lib.func(
+  "int32_t xy_histogram2d(const double *x, const double *y, const double *weights, size_t len, const double *x_edges, size_t x_edge_len, const double *y_edges, size_t y_edge_len, double *out)",
+);
+
+// --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(
   "int32_t xy_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, const uint64_t *roots, uint64_t n_roots, uint64_t seed, double *out_x, double *out_y)",
 );
-
 export const xyGraphForceCreate = lib.func(
   "int32_t xy_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, uint64_t seed, uint64_t *out_handle)",
 );
-
 export const xyGraphForceTick = lib.func(
   "int32_t xy_graph_force_tick(uint64_t handle, uint64_t n_nodes, uint32_t steps, double *out_x, double *out_y, double *out_alpha)",
 );
-
 export const xyGraphForceDestroy = lib.func(
   "int32_t xy_graph_force_destroy(uint64_t handle)",
 );
-
 export const xyGraphBuildCsr = lib.func(
   "int32_t xy_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, int32_t directed, uint64_t *out_offsets, uint64_t *out_neighbors, uint64_t neighbors_cap, uint64_t *out_neighbor_len)",
 );
-
 export const xyGraphLodDecision = lib.func(
   "int32_t xy_graph_lod_decision(uint64_t n_nodes, uint64_t n_edges, uint64_t node_budget, uint64_t edge_budget, uint32_t *out_tier, uint64_t *out_edges_kept)",
 );
-
 export const xyGraphClusterAggregate = lib.func(
   "int32_t xy_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double *x, const double *y, uint64_t node_budget, uint64_t edge_budget, double *out_x, double *out_y, uint64_t *out_count, uint64_t *out_member_of, uint32_t *out_tier, uint64_t *out_edges_kept)",
 );
-
+export const xyGraphBuildRender = lib.func(
+  "int32_t xy_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double *x, const double *y, const uint64_t *sources, const uint64_t *targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double *out_node_x, double *out_node_y, uint64_t *out_member_of, uint64_t *out_edge_sources, uint64_t *out_edge_targets, uint64_t *out_n_nodes, uint64_t *out_n_edges, uint32_t *out_tier, uint64_t *out_edges_kept)",
+);
 export const xyGraphSampleEdges = lib.func(
   "uint64_t xy_graph_sample_edges(uint64_t n_edges, uint64_t budget, uint64_t *out_indices)",
 );
-
 export const xySankeyLayout = lib.func(
   "int32_t xy_sankey_layout(uint64_t n_nodes, uint64_t n_links, const uint64_t *sources, const uint64_t *targets, const double *values, double node_width, double node_padding, uint32_t align, uint32_t iterations, double *out_x0, double *out_y0, double *out_x1, double *out_y1, uint32_t *out_layer, double *out_value, double *out_source_y0, double *out_source_y1, double *out_target_y0, double *out_target_y1, uint32_t *out_layers, uint64_t *out_err_nodes, uint64_t *out_err_n)",
 );
@@ -89,4 +145,13 @@ export function pointer(view, cType) {
   }
   const buffer = Buffer.from(view.buffer, view.byteOffset, view.byteLength);
   return koffi.as(buffer, cType);
+}
+
+/** Optional symbol probe — returns null when the cdylib lacks the export. */
+export function tryFunc(signature) {
+  try {
+    return lib.func(signature);
+  } catch {
+    return null;
+  }
 }

@@ -58,9 +58,10 @@ def test_figure_graph_fluent():
     assert len(fig.traces) == 2
 
 
-def test_hierarchical_alias_is_breadthfirst():
-    assert _native.graph_layout_id("hierarchical") == _native.GRAPH_LAYOUT_BREADTHFIRST
-    assert _native.graph_layout_id("dagre") == _native.GRAPH_LAYOUT_BREADTHFIRST
+def test_hierarchical_alias_is_distinct_from_breadthfirst():
+    assert _native.graph_layout_id("hierarchical") == _native.GRAPH_LAYOUT_HIERARCHICAL
+    assert _native.graph_layout_id("dagre") == _native.GRAPH_LAYOUT_HIERARCHICAL
+    assert _native.GRAPH_LAYOUT_HIERARCHICAL != _native.GRAPH_LAYOUT_BREADTHFIRST
 
 
 def test_lod_decision_records_edge_sample():
@@ -97,3 +98,39 @@ def test_from_graphforge_tables():
     data = _graph.from_graphforge_tables(nodes, edges)
     assert data.n_nodes == 2
     assert data.n_edges == 1
+
+
+def test_build_render_respects_budgets():
+    x = np.array([0.0, 1.0, 0.0, 100.0, 101.0, 100.0], dtype=np.float64)
+    y = np.array([0.0, 0.0, 1.0, 100.0, 100.0, 101.0], dtype=np.float64)
+    sources = np.array([0, 1, 3, 4, 0], dtype=np.uint64)
+    targets = np.array([1, 2, 4, 5, 3], dtype=np.uint64)
+    rx, ry, member_of, es, et, tier, kept = _native.graph_build_render(
+        x, y, sources, targets, node_budget=2, edge_budget=4
+    )
+    assert tier == 2
+    assert len(rx) <= 2
+    assert len(es) <= 4
+    assert kept == len(es)
+    np.testing.assert_array_equal(member_of, [0, 0, 0, 1, 1, 1])
+
+
+def test_run_layout_emits_render_graph_meta():
+    data = _graph.normalize_graph_inputs(
+        [f"n{i}" for i in range(6)],
+        [("n0", "n1"), ("n1", "n2"), ("n3", "n4"), ("n4", "n5"), ("n0", "n3")],
+    )
+    # Preset positions so clustering is deterministic without force.
+    data.x = np.array([0.0, 1.0, 0.0, 100.0, 101.0, 100.0], dtype=np.float64)
+    data.y = np.array([0.0, 0.0, 1.0, 100.0, 100.0, 101.0], dtype=np.float64)
+    rx, ry, meta = _graph.run_layout(
+        data, layout="preset", node_budget=2, edge_budget=4
+    )
+    assert meta["source_n_nodes"] == 6
+    assert meta["source_n_edges"] == 5
+    assert meta["n_nodes"] <= 2
+    assert meta["n_edges"] <= 4
+    assert len(rx) == meta["n_nodes"]
+    assert "member_of" in meta
+    assert len(meta["member_of"]) == 6
+    assert meta["lod_tier"] == 2

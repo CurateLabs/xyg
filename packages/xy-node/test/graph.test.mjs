@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   abiVersion,
   graphBuildCsr,
+  graphBuildRender,
   graphClusterAggregate,
   graphForceCreate,
   graphForceDestroy,
@@ -123,3 +124,15 @@ function assertFloatArrayClose(actual, expected, epsilon = 1e-12) {
     assert.ok(Math.abs(actual[i] - expected[i]) <= epsilon, `index ${i}: ${actual[i]} != ${expected[i]}`);
   }
 }
+
+test("graphBuildRender respects node/edge budgets", () => {
+  const x = new Float64Array([0, 1, 0, 100, 101, 100]);
+  const y = new Float64Array([0, 0, 1, 100, 100, 101]);
+  const sources = [0n, 1n, 3n, 4n, 0n];
+  const targets = [1n, 2n, 4n, 5n, 3n];
+  const out = graphBuildRender(x, y, sources, targets, { nodeBudget: 2, edgeBudget: 4 });
+  assert.equal(out.tier, 2);
+  assert.ok(out.x.length <= 2);
+  assert.ok(out.edgeSources.length <= 4);
+  assert.deepEqual([...out.memberOf], [0n, 0n, 0n, 1n, 1n, 1n]);
+});

@@ -107,9 +107,12 @@ Node must not reimplement layouts or mark geometry in TypeScript.
 
 ## 6. Graph LOD / interaction parity notes (MVP)
 
-- **Cluster LOD ABI:** `xy_graph_cluster_aggregate` (grid/hash bin centroids +
-  recorded §28 tier) is shared; Python/Node loaders must not reimplement
-  clustering policy.
+- **Render-graph ABI:** `xy_graph_build_render` emits centroids/`member_of` +
+  cluster-space edges within node/edge budgets (optional viewport) and records
+  §28; `xy_graph_cluster_aggregate` remains the node-only helper. Hosts ship
+  only the reduced buffers — no second edge-sample for draw.
+- **Force at scale:** exact pairwise repulsion for `n ≤ 500`
+  (`FORCE_EXACT_REPULSION_MAX_N`); spatial-grid Barnes–Hut-style approx above.
 - **Box-select:** reuses the existing scatter/segments selection path — no
   graph-specific selection ABI for MVP.
 - **Node shapes:** via scatter `symbol=` (same mark as other scatter charts).
