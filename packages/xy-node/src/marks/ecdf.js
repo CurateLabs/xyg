@@ -88,7 +88,8 @@ export function composeEcdf(values, opts = {}) {
   return {
     traces: [
       {
-        kind: "ecdf",
+        // Browser MARK_KINDS: ecdf ships as line + style.step/role (not a wire kind).
+        kind: "line",
         name: opts.name ?? null,
         x,
         y,
@@ -110,10 +111,10 @@ export function composeEcdf(values, opts = {}) {
 export function attachEcdf(fig, values, opts = {}) {
   const { traces } = composeEcdf(values, opts);
   const t = traces[0];
-  fig.ecdf(t.x, t.y, {
+  // Wire kind is `line` + style.step/role (MARK_KINDS); keep mode on the style.
+  fig.line(t.x, t.y, {
     name: t.name,
-    style: t.style,
-    mode: t.mode,
+    style: { ...t.style, mode: t.mode },
     xAxis: t.x_axis,
     yAxis: t.y_axis,
     id: t.id,

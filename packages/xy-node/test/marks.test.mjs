@@ -368,10 +368,15 @@ test("ecdf weighted kernel matches Python fixture when present", () => {
     assert.equal(native.values.length, fixture.ecdf.n_points);
   }
   const composed = composeEcdf(values);
-  assert.equal(composed.traces[0].kind, "ecdf");
+  assert.equal(composed.traces[0].kind, "line");
+  assert.equal(composed.traces[0].style.step, "post");
+  assert.equal(composed.traces[0].style.role, "ecdf");
   assert.equal(composed.traces[0].x.length, step.x.length);
   const fig = ecdfChart(values);
-  assert.equal(fig.buildPayload().spec.traces[0].kind, "ecdf");
+  const trace = fig.buildPayload().spec.traces[0];
+  assert.equal(trace.kind, "line");
+  assert.equal(trace.style.step, "post");
+  assert.equal(trace.style.role, "ecdf");
 });
 
 test("segments compose matches Python fixture when present", () => {
