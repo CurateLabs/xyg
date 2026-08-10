@@ -1,8 +1,8 @@
 # Host parity — Python and Node
 
-**Status:** requirements locked with [graph-fork-requirements.md](graph-fork-requirements.md);
-implementation design in [graph-mark.md](graph-mark.md). Runtime taxonomy and
-machine-readable twin:
+**Status:** requirements locked and **ready for review** with
+[graph-fork-requirements.md](graph-fork-requirements.md); implementation design
+in [graph-mark.md](graph-mark.md). Runtime taxonomy and machine-readable twin:
 [dual-host-parity-matrix.md](dual-host-parity-matrix.md) /
 [`dual-host-parity.json`](dual-host-parity.json).
 

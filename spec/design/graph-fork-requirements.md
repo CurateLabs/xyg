@@ -1,6 +1,6 @@
 # Graph visualization — competitive research & fork requirements
 
-**Status:** requirements — product decisions locked; implementation design in
+**Status:** requirements locked and **ready for review**; implementation design in
 [graph-mark.md](graph-mark.md). Runtime lands with the graph ABI / mark.
 
 **Scope (hard):** core **data visualization** of graph data — node–link marks,
