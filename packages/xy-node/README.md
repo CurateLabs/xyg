@@ -34,12 +34,15 @@ XY_EXPECTED_ABI=57 npm test   # optional ABI golden override
 | Module | Role |
 |---|---|
 | `src/graph.js` | `normalizeGraphInputs` → dense u64; `runLayout` (ABI layout + `build_render`) → `nodePositions`, `edgeSegments`, meta (`lod_tier`, `member_of`, optional CSR, `source_n_*`) |
-| `src/marks/{scatter,line,histogram}.js` | Thin TypedArray builders: encode / M4 / `histogram_uniform` via Rust; attach to `Figure` |
-| `src/charts.js` | `scatterChart` / `lineChart` / `histogramChart` / `graphChart` convenience |
-| `src/figure.js` | Minimal `Figure` holding `scatter` / `line` / `histogram` / `segments` traces; `buildPayload()` → `{spec, buffers}` with `protocol: PROTOCOL_VERSION` (12) and §29 f32 columns via `xy_encode_f32`. Line M4 when over `DECIMATION_THRESHOLD`. Documented subset of Python `Figure.build_payload`. |
+| `src/marks/*.js` | Thin TypedArray builders for every chart family (scatter→radar); Rust kernels only |
+| `src/charts.js` | `*Chart` convenience constructors for all dual-host families |
+| `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`). Scatter **density tier** when `n ≥ SCATTER_DENSITY_THRESHOLD` (or `forceDensity`). Line M4 when over `DECIMATION_THRESHOLD`. Contour/errorbar/stem/mesh/ribbon/radar covered. |
 | `src/force_scheduler.js` | Progressive `force_tick` helper — default chunked `setImmediate` loop; `mode: "worker"` uses `worker_threads`. Node-host only (never browser main thread). |
 | `src/sankey.js` | Thin `composeSankey` over `xy_sankey_layout` → ribbon band polygons (link + node) |
 | `src/vscode.js` | VS Code extension-host re-export + webview/host split notes |
+
+Coverage matrix + LOD tiers: `spec/design/xy-coverage.md` and
+`spec/design/dual-host-parity.json`.
 
 ```js
 import { createEngine, runLayout, normalizeGraphInputs, abiVersion } from "@xy/node";
@@ -87,9 +90,19 @@ npm run golden:marks   # JSON for inspection
 ```
 
 ```js
-import { scatterChart, lineChart, histogramChart, graphChart } from "@xy/node";
+import {
+  scatterChart,
+  lineChart,
+  histogramChart,
+  contourChart,
+  errorbarChart,
+  radarChart,
+  sankeyChart,
+  graphChart,
+} from "@xy/node";
 
 const scatter = scatterChart(new Float64Array([0, 1]), new Float64Array([0, 1]));
+const dense = scatterChart(xs, ys, { forceDensity: true }); // Tier-2 density
 const line = lineChart(xs, ys);           // M4 when n > DECIMATION_THRESHOLD
 const hist = histogramChart(values, { bins: 10, range: [0, 1] });
 const graph = graphChart(nodes, edges, { layout: "circle", seed: 1 });
@@ -101,15 +114,13 @@ const graph = graphChart(nodes, edges, { layout: "circle", seed: 1 });
 |---|---|
 | `createEngine()` | stable engine entry (`figure` alias) |
 | `abiVersion()` | `xy_abi_version` |
-| `graphLayout(layout, nNodes, sources, targets, opts?)` | one-shot layout → `{x, y}` |
-| `graphForceCreate` / `graphForceTick` / `graphForceDestroy` | progressive force (`algorithm` / `layout` on create) |
-| `graphLodDecision` / `graphClusterAggregate` / `graphBuildRender` / `graphSampleEdges` / `graphBuildCsr` | LOD + render graph + CSR |
+| `graphLayout` / `graphForce*` / `graphLod*` / `graphBuildRender` | layout + LOD + render graph |
 | `normalizeGraphInputs` / `runLayout` / `composeGraph` | host composition |
-| `composeScatter` / `composeLine` / `composeHistogram` | mark builders (TypedArray → traces) |
-| `scatterChart` / `lineChart` / `histogramChart` / `graphChart` | convenience figures |
-| `figure` / `Figure` / `buildPayload` | minimal figure + §29 payload subset |
-| `runForceTicks` | progressive tick scheduler |
-| `sankeyLayout` / `composeSankey` | Sankey placement |
+| `composeScatter` … `composeRadar` / `composeSankey` | mark builders |
+| `scatterChart` … `radarChart` / `sankeyChart` / `graphChart` | convenience figures |
+| `bin2d` / `densityLogU8` / `lodPlan` / `shouldUseDensity` | Tier-2 LOD helpers |
+| `figure` / `Figure` / `buildPayload` | minimal figure + §29 payload |
+| `runForceAnimation` | progressive tick scheduler |
 
 Layout names match Python `_native.py`: `preset`, `grid`, `circle`,
 `force`/`fr`, `spring`, `forceatlas2`/`fa2`, `kamada_kawai`/`kk`,

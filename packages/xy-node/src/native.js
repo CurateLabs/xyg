@@ -76,6 +76,9 @@ export const xyHeatmapRgba = lib.func(
 export const xyLocalLogDensity = lib.func(
   "int32_t xy_local_log_density(const double *x, const double *y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, float *out)",
 );
+export const xyDensityLogU8 = lib.func(
+  "int32_t xy_density_log_u8(const float *grid, size_t len, uint8_t *out, double *out_max)",
+);
 export const xyWeightedEcdf = lib.func(
   "size_t xy_weighted_ecdf(const double *values, const double *weights, size_t len, double *out_values, double *out_cumulative)",
 );

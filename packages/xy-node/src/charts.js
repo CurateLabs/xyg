@@ -1,5 +1,5 @@
 /**
- * Chart convenience constructors — scatter / line / histogram / graph + batch-2 marks.
+ * Chart convenience constructors — all dual-host mark families.
  * Thin wrappers over mark composers + the minimal Node Figure.
  */
 
@@ -15,6 +15,13 @@ import { attachSegments } from "./marks/segments.js";
 import { attachHeatmap } from "./marks/heatmap.js";
 import { attachHexbin } from "./marks/hexbin.js";
 import { attachViolin } from "./marks/violin.js";
+import { attachContour } from "./marks/contour.js";
+import { attachErrorbar } from "./marks/errorbar.js";
+import { attachErrorBand } from "./marks/error_band.js";
+import { attachStem } from "./marks/stem.js";
+import { attachStep, attachStairs } from "./marks/step.js";
+import { attachTriangleMesh } from "./marks/triangle_mesh.js";
+import { attachRadar } from "./marks/radar.js";
 import {
   pieChart,
   windRoseChart,
@@ -131,6 +138,82 @@ export function violinChart(values, opts = {}) {
 }
 
 /**
+ * @param {ArrayLike|TypedArray|number[][]} z
+ * @param {object} [opts]
+ */
+export function contourChart(z, opts = {}) {
+  return chartWith(opts, attachContour, z);
+}
+
+/**
+ * @param {ArrayLike|TypedArray} x
+ * @param {ArrayLike|TypedArray} y
+ * @param {object} [opts]
+ */
+export function errorbarChart(x, y, opts = {}) {
+  return chartWith(opts, attachErrorbar, x, y);
+}
+
+/**
+ * @param {ArrayLike|TypedArray} x
+ * @param {ArrayLike|TypedArray} lower
+ * @param {ArrayLike|TypedArray} upper
+ * @param {object} [opts]
+ */
+export function errorBandChart(x, lower, upper, opts = {}) {
+  return chartWith(opts, attachErrorBand, x, lower, upper);
+}
+
+/**
+ * @param {ArrayLike|TypedArray} x
+ * @param {ArrayLike|TypedArray} y
+ * @param {object} [opts]
+ */
+export function stemChart(x, y, opts = {}) {
+  return chartWith(opts, attachStem, x, y);
+}
+
+/**
+ * @param {ArrayLike|TypedArray} x
+ * @param {ArrayLike|TypedArray} y
+ * @param {object} [opts]
+ */
+export function stepChart(x, y, opts = {}) {
+  return chartWith(opts, attachStep, x, y);
+}
+
+/**
+ * @param {ArrayLike|TypedArray} edges
+ * @param {ArrayLike|TypedArray} values
+ * @param {object} [opts]
+ */
+export function stairsChart(edges, values, opts = {}) {
+  return chartWith(opts, attachStairs, edges, values);
+}
+
+/**
+ * @param {ArrayLike|TypedArray} x0
+ * @param {ArrayLike|TypedArray} y0
+ * @param {ArrayLike|TypedArray} x1
+ * @param {ArrayLike|TypedArray} y1
+ * @param {ArrayLike|TypedArray} x2
+ * @param {ArrayLike|TypedArray} y2
+ * @param {object} [opts]
+ */
+export function triangleMeshChart(x0, y0, x1, y1, x2, y2, opts = {}) {
+  return chartWith(opts, attachTriangleMesh, x0, y0, x1, y1, x2, y2);
+}
+
+/**
+ * @param {ArrayLike|TypedArray} categoriesOrAngles
+ * @param {ArrayLike|TypedArray|ArrayLike[]} seriesValues
+ * @param {object} [opts]
+ */
+export function radarChart(categoriesOrAngles, seriesValues, opts = {}) {
+  return chartWith(opts, attachRadar, categoriesOrAngles, seriesValues);
+}
+
+/**
  * @param {Iterable|object} nodes
  * @param {Iterable|object} edges
  * @param {object} [opts]
@@ -139,6 +222,18 @@ export function graphChart(nodes, edges, opts = {}) {
   const { width, height, title, ...graphOpts } = opts;
   const fig = figure({ width, height, title });
   fig.graph(nodes, edges, graphOpts);
+  return fig;
+}
+
+/**
+ * @param {Iterable|object} nodes
+ * @param {Iterable|object} links
+ * @param {object} [opts]
+ */
+export function sankeyChart(nodes, links, opts = {}) {
+  const { width, height, title, ...sankeyOpts } = opts;
+  const fig = figure({ width, height, title });
+  fig.sankey(nodes, links, sankeyOpts);
   return fig;
 }
 

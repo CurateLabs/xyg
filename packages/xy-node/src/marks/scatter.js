@@ -17,6 +17,8 @@ export function composeScatter(x, y, opts = {}) {
   if (xa.length !== ya.length) {
     throw new RangeError("scatter x/y length mismatch");
   }
+  const forceDensity = opts.forceDensity ?? opts.force_density;
+  const forceDirect = opts.forceDirect ?? opts.force_direct;
   return {
     traces: [
       {
@@ -27,6 +29,8 @@ export function composeScatter(x, y, opts = {}) {
         style: { opacity: 0.8, ...(opts.style ?? {}) },
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
+        ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
+        ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(opts.id != null ? { id: opts.id } : {}),
       },
     ],
@@ -49,6 +53,9 @@ export function attachScatter(fig, x, y, opts = {}) {
     xAxis: t.x_axis,
     yAxis: t.y_axis,
     id: t.id,
+    forceDensity: t.force_density,
+    forceDirect: t.force_direct,
+    _composed: true,
   });
   return fig;
 }

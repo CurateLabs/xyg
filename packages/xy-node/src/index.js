@@ -148,11 +148,52 @@ export { composeHexbin, attachHexbin } from "./marks/hexbin.js";
 export { composeViolin, attachViolin } from "./marks/violin.js";
 
 export {
+  composeContour,
+  attachContour,
+} from "./marks/contour.js";
+
+export {
+  composeErrorbar,
+  attachErrorbar,
+} from "./marks/errorbar.js";
+
+export {
+  composeErrorBand,
+  attachErrorBand,
+} from "./marks/error_band.js";
+
+export { composeStem, attachStem } from "./marks/stem.js";
+
+export {
+  composeStep,
+  attachStep,
+  composeStairs,
+  attachStairs,
+} from "./marks/step.js";
+
+export {
+  composeTriangleMesh,
+  attachTriangleMesh,
+} from "./marks/triangle_mesh.js";
+
+export { composeRadar, attachRadar } from "./marks/radar.js";
+
+export {
   composePie,
   composeWindRose,
   composeFacet,
   shareFacetAxes,
 } from "./marks/polar.js";
+
+export {
+  bin2d,
+  densityLogU8,
+  marchingSquares,
+  lodPlan,
+  drillDecision,
+  shouldUseDensity,
+  DENSITY_GRID,
+} from "./encode.js";
 
 export {
   scatterChart,
@@ -167,7 +208,16 @@ export {
   heatmapChart,
   hexbinChart,
   violinChart,
+  contourChart,
+  errorbarChart,
+  errorBandChart,
+  stemChart,
+  stepChart,
+  stairsChart,
+  triangleMeshChart,
+  radarChart,
   graphChart,
+  sankeyChart,
   pieChart,
   windRoseChart,
   polarChart,

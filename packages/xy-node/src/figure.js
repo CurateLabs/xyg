@@ -9,19 +9,24 @@
  * - Histogram traces ship as rectangle columns from `xy_histogram_uniform`.
  * - Polar charts emit `coords: "polar"` + theta/r axis descriptors.
  * - Ribbon / sankey ship flow-band geometry (`target_y0`/`target_y1`).
- * - Omits density tiers, legend resolution, animation keys.
+ * - Scatter uses density tier when n ≥ SCATTER_DENSITY_THRESHOLD (Rust bin_2d).
+ * - Contour / errorbar / stem / mesh / step / stairs / error_band / radar covered.
  * - Enough for mark encode / M4 / hist + graph layout goldens across hosts.
  */
 
 import {
   Column,
   DECIMATION_THRESHOLD,
+  DENSITY_GRID,
   PROTOCOL_VERSION,
+  bin2d,
+  densityLogU8,
   encodeF32Values,
   geometryOffset,
   m4Points,
   minMax,
   pinsOffsetToZero,
+  shouldUseDensity,
 } from "./encode.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
@@ -37,6 +42,13 @@ import { composeHeatmap } from "./marks/heatmap.js";
 import { composeHexbin } from "./marks/hexbin.js";
 import { composeViolin } from "./marks/violin.js";
 import { composeRibbon } from "./marks/ribbon.js";
+import { composeContour } from "./marks/contour.js";
+import { composeErrorbar } from "./marks/errorbar.js";
+import { composeErrorBand } from "./marks/error_band.js";
+import { composeStem } from "./marks/stem.js";
+import { composeStep, composeStairs } from "./marks/step.js";
+import { composeTriangleMesh } from "./marks/triangle_mesh.js";
+import { composeRadar } from "./marks/radar.js";
 
 export { PROTOCOL_VERSION };
 
@@ -189,6 +201,8 @@ export class Figure {
   }
 
   scatter(x, y, opts = {}) {
+    const forceDensity = opts.forceDensity ?? opts.force_density;
+    const forceDirect = opts.forceDirect ?? opts.force_direct;
     if (opts._composed) {
       this.traces.push({
         id: opts.id ?? nextTraceId++,
@@ -199,11 +213,15 @@ export class Figure {
         style: { ...(opts.style ?? {}) },
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
+        ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
+        ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
       });
       return this;
     }
     const composed = composeScatter(x, y, opts);
     const t = composed.traces[0];
+    const fd = forceDensity ?? t.force_density;
+    const fx = forceDirect ?? t.force_direct;
     this.traces.push({
       id: opts.id ?? nextTraceId++,
       kind: "scatter",
@@ -213,6 +231,8 @@ export class Figure {
       style: { ...t.style },
       x_axis: t.x_axis,
       y_axis: t.y_axis,
+      ...(fd != null ? { force_density: Boolean(fd) } : {}),
+      ...(fx != null ? { force_direct: Boolean(fx) } : {}),
     });
     return this;
   }
@@ -309,33 +329,163 @@ export class Figure {
     return this;
   }
 
-  ecdf(x, y, opts = {}) {
-    if (opts._composed) {
-      this.traces.push({
-        id: opts.id ?? nextTraceId++,
-        kind: "ecdf",
-        name: opts.name ?? null,
-        x: asF64(x),
-        y: asF64(y),
-        style: { ...(opts.style ?? {}) },
-        mode: opts.mode ?? "exact",
-        x_axis: opts.xAxis ?? "x",
-        y_axis: opts.yAxis ?? "y",
-      });
-      return this;
-    }
-    const composed = composeEcdf(x, opts);
+  ecdf(values, opts = {}) {
+    const composed = composeEcdf(values, opts);
     const t = composed.traces[0];
-    this.ecdf(t.x, t.y, {
+    // Browser paints ecdf as line + style.step (Python parity).
+    this.traces.push({
+      id: opts.id ?? t.id ?? nextTraceId++,
+      kind: "line",
       name: t.name,
-      style: t.style,
+      x: t.x,
+      y: t.y,
+      style: { ...t.style },
       mode: t.mode,
-      xAxis: t.x_axis,
-      yAxis: t.y_axis,
-      id: t.id,
-      _composed: true,
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
     });
     return this;
+  }
+
+  contour(z, opts = {}) {
+    const composed = composeContour(z, opts);
+    for (const t of composed.traces) {
+      this._pushSegmentTrace(t);
+    }
+    return this;
+  }
+
+  errorbar(x, y, opts = {}) {
+    const composed = composeErrorbar(x, y, opts);
+    for (const t of composed.traces) {
+      this._pushSegmentTrace(t);
+    }
+    return this;
+  }
+
+  errorBand(x, lower, upper, opts = {}) {
+    const composed = composeErrorBand(x, lower, upper, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "error_band",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      base: t.base,
+      style: { ...t.style },
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  stem(x, y, opts = {}) {
+    const composed = composeStem(x, y, opts);
+    for (const t of composed.traces) {
+      if (t.kind === "scatter") {
+        this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
+      } else {
+        this._pushSegmentTrace(t);
+      }
+    }
+    return this;
+  }
+
+  step(x, y, opts = {}) {
+    const composed = composeStep(x, y, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "line",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      style: { ...t.style },
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  stairs(edges, values, opts = {}) {
+    const composed = composeStairs(edges, values, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "line",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      style: { ...t.style },
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  triangleMesh(x0, y0, x1, y1, x2, y2, opts = {}) {
+    const composed = composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      ...t,
+    });
+    return this;
+  }
+
+  radar(categoriesOrAngles, seriesValues, opts = {}) {
+    const composed = composeRadar(categoriesOrAngles, seriesValues, opts);
+    if (composed.coords === "polar") {
+      this.setPolarMeta({
+        thetaUnit: composed.thetaUnit ?? "degrees",
+        thetaZero: composed.thetaZero ?? "N",
+        thetaDirection: composed.thetaDirection ?? "clockwise",
+      });
+    }
+    for (const t of composed.traces) {
+      if (t.kind === "area") {
+        this.traces.push({
+          id: nextTraceId++,
+          kind: "area",
+          name: t.name,
+          x: t.x,
+          y: t.y,
+          base: t.base,
+          style: { ...t.style },
+          x_axis: t.x_axis ?? "x",
+          y_axis: t.y_axis ?? "y",
+        });
+      } else if (t.kind === "line") {
+        this.traces.push({
+          id: nextTraceId++,
+          kind: "line",
+          name: t.name,
+          x: t.x,
+          y: t.y,
+          style: { ...t.style },
+          x_axis: t.x_axis ?? "x",
+          y_axis: t.y_axis ?? "y",
+        });
+      }
+    }
+    return this;
+  }
+
+  _pushSegmentTrace(t, opts = {}) {
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: t.kind ?? "segments",
+      name: t.name ?? null,
+      x0: t.x0,
+      y0: t.y0,
+      x1: t.x1,
+      y1: t.y1,
+      style: { ...(t.style ?? {}) },
+      count: t.count,
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    });
   }
 
   heatmap(z, opts = {}) {
@@ -472,10 +622,25 @@ export class Figure {
           axisId === "x" || axisId === (t.x_axis ?? "x")
             ? [t.x0, t.x1]
             : [t.y0, t.y1, t.x, t.y];
-      } else if (t.kind === "segments" || t.kind === "histogram" || t.kind === "bar" || t.kind === "violin") {
+      } else if (t.kind === "triangle_mesh") {
+        cols =
+          axisId === "x" || axisId === (t.x_axis ?? "x")
+            ? [t.x0, t.x1, t.x]
+            : [t.y0, t.y1, t.y];
+      } else if (
+        t.kind === "segments" ||
+        t.kind === "histogram" ||
+        t.kind === "bar" ||
+        t.kind === "violin" ||
+        t.kind === "contour" ||
+        t.kind === "errorbar" ||
+        t.kind === "stem" ||
+        t.kind === "box_whisker" ||
+        t.kind === "box_median"
+      ) {
         cols =
           axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x0, t.x1] : [t.y0, t.y1];
-      } else if (t.kind === "area") {
+      } else if (t.kind === "area" || t.kind === "error_band") {
         cols =
           axisId === "x" || axisId === (t.x_axis ?? "x")
             ? [t.x]
@@ -504,7 +669,18 @@ export class Figure {
     return range;
   }
 
-  _emitScatter(t, pw) {
+  _emitScatter(t, pw, xr, yr) {
+    const forceDensity = Boolean(t.force_density ?? t.style?.force_density);
+    const forceDirect = Boolean(t.force_direct ?? t.style?.force_direct);
+    if (
+      shouldUseDensity(t.x.length, {
+        forceDensity,
+        forceDirect,
+        coords: this.coords,
+      })
+    ) {
+      return this._emitScatterDensity(t, pw, xr, yr);
+    }
     const xCol = new Column(t.x);
     const yCol = new Column(t.y);
     return {
@@ -519,6 +695,44 @@ export class Figure {
       y: pw.ship(t.y, yCol),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
+    };
+  }
+
+  /**
+   * Tier-2 density scatter — Rust `xy_bin_2d` + `xy_density_log_u8` (§28/§5).
+   */
+  _emitScatterDensity(t, pw, xr, yr) {
+    const [w, h] = DENSITY_GRID;
+    const grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+    const { encoded, max } = densityLogU8(grid);
+    const density = {
+      buf: pw.shipU8(encoded),
+      w,
+      h,
+      max,
+      enc: "log-u8",
+      colormap: t.style?.colormap ?? "viridis",
+      x_range: [...xr],
+      y_range: [...yr],
+      channels_dropped: false,
+      dropped_channels: [],
+      overlay_omitted: "node_host_mvp",
+    };
+    if (t.style?.color) {
+      density.color = t.style.color;
+    }
+    return {
+      id: t.id,
+      kind: "scatter",
+      name: t.name,
+      style: { ...t.style },
+      tier: "density",
+      n_points: t.x.length,
+      n_marks: w * h,
+      visible: t.x.length,
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+      density,
     };
   }
 
@@ -582,16 +796,42 @@ export class Figure {
     const y1 = new Column(t.y1);
     return {
       id: t.id,
-      kind: "segments",
+      kind: t.kind ?? "segments",
       name: t.name,
       style: { ...t.style },
       tier: "direct",
-      n_points: t.x0.length,
+      n_points: t.count ?? t.x0.length,
       n_marks: t.x0.length,
       x0: pw.ship(t.x0, x0),
       x1: pw.ship(t.x1, x1),
       y0: pw.ship(t.y0, y0),
       y1: pw.ship(t.y1, y1),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+  }
+
+  _emitTriangleMesh(t, pw) {
+    const x0 = new Column(t.x0);
+    const y0 = new Column(t.y0);
+    const x1 = new Column(t.x1);
+    const y1 = new Column(t.y1);
+    const x2 = new Column(t.x);
+    const y2 = new Column(t.y);
+    return {
+      id: t.id,
+      kind: "triangle_mesh",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.count ?? t.x0.length,
+      n_marks: t.x0.length,
+      x0: pw.ship(t.x0, x0),
+      y0: pw.ship(t.y0, y0),
+      x1: pw.ship(t.x1, x1),
+      y1: pw.ship(t.y1, y1),
+      x: pw.ship(t.x, x2),
+      y: pw.ship(t.y, y2),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
@@ -629,27 +869,8 @@ export class Figure {
     const baseCol = new Column(t.base);
     return {
       ...line,
-      kind: "area",
+      kind: t.kind === "error_band" ? "error_band" : "area",
       base: pw.ship(t.base, baseCol),
-    };
-  }
-
-  _emitEcdf(t, pw) {
-    const xCol = new Column(t.x);
-    const yCol = new Column(t.y);
-    return {
-      id: t.id,
-      kind: "ecdf",
-      name: t.name,
-      style: { ...t.style },
-      tier: "direct",
-      mode: t.mode ?? "exact",
-      n_points: t.x.length,
-      n_marks: t.x.length,
-      x: pw.ship(t.x, xCol),
-      y: pw.ship(t.y, yCol),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
     };
   }
 
@@ -787,25 +1008,32 @@ export class Figure {
     const specTraces = [];
     for (const t of this.traces) {
       if (t.kind === "scatter") {
-        specTraces.push(this._emitScatter(t, pw));
+        specTraces.push(this._emitScatter(t, pw, xr, yr));
       } else if (t.kind === "line") {
         specTraces.push(this._emitLine(t, pw, xr, widthPx));
       } else if (t.kind === "histogram") {
         specTraces.push(this._emitHistogram(t, pw));
-      } else if (t.kind === "segments") {
+      } else if (
+        t.kind === "segments" ||
+        t.kind === "contour" ||
+        t.kind === "errorbar" ||
+        t.kind === "stem" ||
+        t.kind === "box_whisker" ||
+        t.kind === "box_median"
+      ) {
         specTraces.push(this._emitSegments(t, pw));
-      } else if (t.kind === "area") {
+      } else if (t.kind === "area" || t.kind === "error_band") {
         specTraces.push(this._emitArea(t, pw, xr, widthPx));
       } else if (t.kind === "bar" || t.kind === "violin") {
         specTraces.push(this._emitRect(t, pw, t.kind));
-      } else if (t.kind === "ecdf") {
-        specTraces.push(this._emitEcdf(t, pw));
       } else if (t.kind === "heatmap") {
         specTraces.push(this._emitHeatmap(t, pw));
       } else if (t.kind === "hexbin") {
         specTraces.push(this._emitHexbin(t, pw));
       } else if (t.kind === "ribbon") {
         specTraces.push(this._emitRibbon(t, pw));
+      } else if (t.kind === "triangle_mesh") {
+        specTraces.push(this._emitTriangleMesh(t, pw));
       } else {
         throw new Error(`unsupported trace kind ${t.kind} in Node figure MVP`);
       }

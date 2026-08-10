@@ -40,3 +40,8 @@ run_py() {
 echo "XY_NATIVE_LIB=${XY_NATIVE_LIB}"
 echo "scale_all_charts: --profile smoke"
 run_py benchmarks/bench_scale_all_charts.py --profile smoke
+
+if [[ -f "${ROOT}/packages/xy-node/src/index.js" ]]; then
+  echo "scale_all_charts_node: --profile smoke"
+  (cd "${ROOT}" && node benchmarks/bench_scale_all_charts_node.mjs --profile smoke)
+fi

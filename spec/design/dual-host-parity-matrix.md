@@ -85,17 +85,26 @@ ABI and Node exports land; do not claim `ready` without a shared Rust path.
 | --- | --- | --- | --- | --- |
 | graph | ready | ready (`packages/xy-node` composition) | ready: layout, force, LOD, render-graph | `tests/test_graph_node_parity.py` circle goldens + dual-host force benches |
 | sankey | ready (ribbon bands) | ready (`composeSankey` → ribbon) | layout in Rust | Layout + ribbon geometry parity |
-| scatter / line / hist / bar / … | ready (Python) | ready (thin marks + `charts.js`; figure MVP) | kernels ready (`xy_bar_stack` ABI 57) | `tests/test_node_mark_parity.py` encode/M4/hist goldens |
-| polar / pie / wind_rose / facet | ready (Python) | ready (polar payload + shared-axis facet) | ready bins + bar stack; facet host-only | Node `marks/polar.js`; pie/wind_rose emit `coords`+theta/r |
-| box / violin | ready (Python) | ready (multi-group) | `xy_box_stats` / `xy_violin_density` | Node `marks/box.js` / `violin.js` group parity |
+| scatter | ready | ready (density tier + direct) | `xy_bin_2d` / `xy_density_log_u8` / encode | Node `coverage.test.mjs` density + encode goldens |
+| line / area / hist / bar / column | ready | ready | M4 / hist / `xy_bar_stack` | `tests/test_node_mark_parity.py` |
+| contour / errorbar / error_band / stem / step / stairs / triangle_mesh | ready | ready | marching squares + segment/mesh kernels | Node composers + `coverage.test.mjs` |
+| radar / polar / pie / wind_rose / facet | ready | ready | bins + bar stack; facet host-only | Node `marks/polar.js` / `radar.js`; coords+theta/r |
+| box / violin / ecdf / hexbin / heatmap / ribbon | ready | ready (heatmap categorical axes partial) | box/violin/hexbin/heatmap kernels | Node marks + goldens |
+
+**LOD utilization (all surfaces):** Tier-1 direct + Tier-2 density/aggregate/render-graph
+are ready on Python and Node for the applicable families. Tier-3 out-of-core tile
+pyramid remains **design / partial** (`lod-architecture.md` §4) — scale evidence
+uses screen-bounded LOD decisions (10M / 100M / 1B), not raw billion-point
+allocation in CI. See [`xy-coverage.md`](xy-coverage.md).
 
 Update this table in the same change that lands a Node export or Rust
 decision path. The machine-readable twin is
 [`dual-host-parity.json`](dual-host-parity.json) (mark kinds with
-python/node/rust status + `runtimes`). Soft dual-host force/render benches live
+python/node/rust status + `runtimes` + `lod_tiers`). Soft dual-host force/render benches live
 under `benchmarks/bench_dual_host_graph*.{py,mjs}` and `//:perf_parity_test`.
 Scale-class LOD evidence (10M / 100M / 1B) ships in
-`benchmarks/bench_scale_all_charts.py` (every profile) and
+`benchmarks/bench_scale_all_charts.py` (every profile),
+`benchmarks/bench_scale_all_charts_node.mjs`, and
 `benchmarks/bench_graph_scale_classes_node.mjs`.
 This markdown remains the authoritative architecture view; keep the JSON in
 lockstep.

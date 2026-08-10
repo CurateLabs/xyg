@@ -2,12 +2,16 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xy/lod.encode_f32_values when calling xy_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
 export const SCATTER_DENSITY_THRESHOLD = 200_000;
 export const DIRECT_SOFT_CEILING = 2_000_000;
+/** Default density grid (w, h) matching Python `config.DENSITY_GRID`. */
+export const DENSITY_GRID = Object.freeze([512, 384]);
+export const DENSITY_TARGET_POINTS_PER_CELL = 16;
+export const DRILL_EXIT_FACTOR = 1.15;
 export const F32_SAFE_MAG = 1e37;
 export const LOG_FAMILY_SCALES = Object.freeze(["log", "symlog"]);
 
@@ -602,6 +606,173 @@ export function contourfBands(z, rows, cols, xpos, ypos, edges, { extendMin = fa
     throw new Error("xy_contourf_bands inconsistent count");
   }
   return { x0, y0, x1, y1, x2, y2, slots };
+}
+
+/**
+ * Axis-aligned 2-D density counts via `xy_bin_2d` (row-major float grid).
+ * @returns {Float32Array} length w*h
+ */
+export function bin2d(x, y, x0, x1, y0, y1, w, h) {
+  const xa = asF64Array(x, "x");
+  const ya = asF64Array(y, "y");
+  if (xa.length !== ya.length) {
+    throw new RangeError("bin2d x/y length mismatch");
+  }
+  const ww = Math.max(1, Math.floor(Number(w)));
+  const hh = Math.max(1, Math.floor(Number(h)));
+  const out = new Float32Array(ww * hh);
+  const ok = xyBin2d(
+    f64Ptr(xa),
+    f64Ptr(ya),
+    BigInt(xa.length),
+    Number(x0),
+    Number(x1),
+    Number(y0),
+    Number(y1),
+    BigInt(ww),
+    BigInt(hh),
+    f32Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_bin_2d failed");
+  }
+  return out;
+}
+
+/**
+ * Encode a float density grid as log-u8 for the wire (§5 Tier 2).
+ * @returns {{encoded: Uint8Array, max: number}}
+ */
+export function densityLogU8(grid) {
+  const arr = grid instanceof Float32Array ? grid : Float32Array.from(grid, Number);
+  const out = new Uint8Array(arr.length);
+  const maxBuf = new Float64Array(1);
+  const ok = xyDensityLogU8(f32Ptr(arr), BigInt(arr.length), u8Ptr(out), f64Ptr(maxBuf));
+  if (ok !== 1) {
+    throw new Error("xy_density_log_u8 failed");
+  }
+  return { encoded: out, max: maxBuf[0] };
+}
+
+/**
+ * Regular-grid contour isolines via `xy_marching_squares`.
+ * @returns {{x0: Float64Array, x1: Float64Array, y0: Float64Array, y1: Float64Array, levels: Float64Array}}
+ */
+export function marchingSquares(z, rows, cols, xCoords, yCoords, levels, { cornerMask = false } = {}) {
+  const zz = asF64Array(z, "z");
+  const xc = asF64Array(xCoords, "x_coords");
+  const yc = asF64Array(yCoords, "y_coords");
+  const lv = asF64Array(levels, "levels");
+  const r = Math.floor(Number(rows));
+  const c = Math.floor(Number(cols));
+  if (zz.length !== r * c || r < 2 || c < 2) {
+    throw new RangeError("marchingSquares z must be rows*cols with rows,cols ≥ 2");
+  }
+  if (xc.length !== c || yc.length !== r) {
+    throw new RangeError("marchingSquares x/y coords must match cols/rows");
+  }
+  if (lv.length === 0 || lv.length > 256) {
+    throw new RangeError("marchingSquares levels must contain 1..256 values");
+  }
+  let capacity = Math.max(64, (r - 1) * (c - 1) * lv.length);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const x0 = new Float64Array(capacity);
+    const x1 = new Float64Array(capacity);
+    const y0 = new Float64Array(capacity);
+    const y1 = new Float64Array(capacity);
+    const outLevels = new Float64Array(capacity);
+    const written = Number(
+      xyMarchingSquares(
+        f64Ptr(zz),
+        BigInt(r),
+        BigInt(c),
+        f64Ptr(xc),
+        f64Ptr(yc),
+        f64Ptr(lv),
+        BigInt(lv.length),
+        cornerMask ? 1 : 0,
+        f64Ptr(x0),
+        f64Ptr(x1),
+        f64Ptr(y0),
+        f64Ptr(y1),
+        f64Ptr(outLevels),
+        BigInt(capacity),
+      ),
+    );
+    if (!Number.isFinite(written) || written < 0) {
+      throw new Error("xy_marching_squares failed");
+    }
+    if (written <= capacity) {
+      return {
+        x0: x0.subarray(0, written),
+        x1: x1.subarray(0, written),
+        y0: y0.subarray(0, written),
+        y1: y1.subarray(0, written),
+        levels: outLevels.subarray(0, written),
+      };
+    }
+    capacity = written;
+  }
+  throw new Error("xy_marching_squares inconsistent capacity");
+}
+
+/**
+ * View LOD plan — Rust owns exact vs density mode + grid shape (§28).
+ */
+export function lodPlan(visible, budget, { inDrill = false, exitFactor = DRILL_EXIT_FACTOR, pxW = 640, pxH = 360, targetPerCell = DENSITY_TARGET_POINTS_PER_CELL } = {}) {
+  const exact = new Int32Array(1);
+  const mode = new Uint32Array(1);
+  const gw = new Int32Array(1);
+  const gh = new Int32Array(1);
+  const ok = xyLodPlan(
+    BigInt(visible),
+    Number(budget),
+    inDrill ? 1 : 0,
+    Number(exitFactor),
+    Math.floor(Number(pxW)),
+    Math.floor(Number(pxH)),
+    Number(targetPerCell),
+    pointer(exact, "int32_t *"),
+    u32Ptr(mode),
+    pointer(gw, "int32_t *"),
+    pointer(gh, "int32_t *"),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_lod_plan failed");
+  }
+  return {
+    exact: exact[0] === 1,
+    mode: mode[0],
+    gridW: gw[0],
+    gridH: gh[0],
+  };
+}
+
+/**
+ * Drill hysteresis decision — Rust owns exact/density toggle (§28).
+ */
+export function drillDecision(visible, budget, { inDrill = false, exitFactor = DRILL_EXIT_FACTOR } = {}) {
+  const exact = new Int32Array(1);
+  const ok = xyDrillDecision(
+    BigInt(visible),
+    Number(budget),
+    inDrill ? 1 : 0,
+    Number(exitFactor),
+    pointer(exact, "int32_t *"),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_drill_decision failed");
+  }
+  return { exact: exact[0] === 1 };
+}
+
+/**
+ * Whether a scatter should use the density tier (Python Trace.use_density).
+ */
+export function shouldUseDensity(nPoints, { forceDensity = false, forceDirect = false, coords = "cartesian" } = {}) {
+  if (forceDirect || coords === "polar") return false;
+  if (forceDensity) return true;
+  return Number(nPoints) >= SCATTER_DENSITY_THRESHOLD;
 }
 
 export function normalizeF32(data, lo, hi, { nanMode = "nan" } = {}) {

@@ -155,7 +155,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/scatter + charts.scatterChart; tests/test_node_mark_parity.py encode f32 goldens"
+      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); packages/xy-node test/coverage.test.mjs + encode f32 goldens"
     },
     {
       "kind": "line",
@@ -261,6 +261,92 @@
       "node": "ready",
       "rust": "partial",
       "notes": "Node facetChart shares x/y domains across panels (shareX/shareY); composePanel or panels[]"
+    },
+    {
+      "kind": "contour",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeContour / contourChart via xy_marching_squares → contour segments; coverage.test.mjs"
+    },
+    {
+      "kind": "errorbar",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeErrorbar / errorbarChart → errorbar segment columns"
+    },
+    {
+      "kind": "error_band",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeErrorBand / errorBandChart → error_band area geometry (y/base)"
+    },
+    {
+      "kind": "stem",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeStem / stemChart → stem segments + optional scatter heads"
+    },
+    {
+      "kind": "step",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeStep / stepChart → line + style.step (browser line path)"
+    },
+    {
+      "kind": "stairs",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeStairs / stairsChart → line + style.step from edges/values"
+    },
+    {
+      "kind": "triangle_mesh",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeTriangleMesh / triangleMeshChart → six-column triangle_mesh wire"
+    },
+    {
+      "kind": "radar",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeRadar / radarChart → polar area/line; coords+theta/r on payload"
+    },
+    {
+      "kind": "ribbon",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Flow-band primitive; sankey emits ribbon; figure.ribbon + composeRibbon"
+    }
+  ],
+  "lod_tiers": [
+    {
+      "tier": 1,
+      "name": "direct",
+      "python": "ready",
+      "node": "ready",
+      "notes": "Exact marks under budget; M4 line decimation recorded"
+    },
+    {
+      "tier": 2,
+      "name": "density / aggregate",
+      "python": "ready",
+      "node": "ready",
+      "notes": "Scatter density grid; graph render-graph / cluster; hexbin aggregation; screen-bounded"
+    },
+    {
+      "tier": 3,
+      "name": "out-of-core tile pyramid",
+      "python": "partial",
+      "node": "design",
+      "notes": "Designed in lod-architecture.md §4; not a full product path on Node. Scale claims use LOD decisions + budgets (10M/100M/1B evidence), not raw 1B point allocation in CI."
     }
   ],
   "references": [
@@ -268,6 +354,8 @@
     "spec/design/host-parity.md",
     "spec/design/graph-mark.md",
     "spec/design/rust-engine.md",
+    "spec/design/xy-coverage.md",
+    "spec/design/lod-architecture.md",
     "packages/xy-node/README.md"
   ]
 }

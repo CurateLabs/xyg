@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Scale scaffold: major mark families + soft baseline / render-graph budgets.
 
-For each family (scatter, line, hist, bar, heatmap, hexbin, box, graph
+For each family (scatter, line, hist, bar, heatmap, hexbin, box, violin,
+area, contour, errorbar, stem, ecdf, + scatter density tier, graph
 render-graph) builds a chart (or kernel path), records wall ms + wire bytes,
 and — where ``benchmarks/baseline.json`` has matching keys — soft-compares
 scatter/line/hist kernel metrics with the same 3× advisory gate as
@@ -13,10 +14,13 @@ also records **10M / 100M / 1B-class** LOD decision evidence (screen-bounded
 budgets); the ``evidence`` profile additionally runs a real ``build_render``
 at 10M when memory allows.
 
+Node twin: ``benchmarks/bench_scale_all_charts_node.mjs``.
+
 Usage:
   PYTHONPATH=python python3 benchmarks/bench_scale_all_charts.py
   PYTHONPATH=python python3 benchmarks/bench_scale_all_charts.py --profile smoke
   PYTHONPATH=python python3 benchmarks/bench_scale_all_charts.py --profile evidence
+  node benchmarks/bench_scale_all_charts_node.mjs --profile smoke
 """
 
 from __future__ import annotations
@@ -283,6 +287,152 @@ def bench_box_chart(n: int) -> dict[str, Any]:
     }
 
 
+def bench_violin_chart(n: int) -> dict[str, Any]:
+    rng = np.random.default_rng(4)
+    values = rng.standard_normal(n)
+
+    def build():
+        return xy.violin_chart(xy.violin(values), width=640, height=360).figure()
+
+    t_build = _best(lambda: build())
+    fig = build()
+    t_payload = _best(lambda: fig.build_payload())
+    return {
+        "family": "violin",
+        "n": n,
+        "build_ms": t_build * 1e3,
+        "payload_ms": t_payload * 1e3,
+        "wire_bytes": _wire_bytes(fig),
+    }
+
+
+def bench_area_chart(n: int) -> dict[str, Any]:
+    x = np.arange(n, dtype=np.float64)
+    y = np.sin(x * 1e-3) + 1.0
+
+    def build():
+        return xy.area_chart(xy.area(x, y), width=640, height=360).figure()
+
+    t_build = _best(lambda: build())
+    fig = build()
+    t_payload = _best(lambda: fig.build_payload())
+    return {
+        "family": "area",
+        "n": n,
+        "build_ms": t_build * 1e3,
+        "payload_ms": t_payload * 1e3,
+        "wire_bytes": _wire_bytes(fig),
+    }
+
+
+def bench_contour_chart(n: int) -> dict[str, Any]:
+    side = max(8, int(math.sqrt(n)))
+    ys, xs = np.mgrid[0:side, 0:side]
+    z = np.sin(xs * 0.3) * np.cos(ys * 0.3)
+
+    def build():
+        return xy.contour_chart(xy.contour(z, levels=8), width=640, height=360).figure()
+
+    t_build = _best(lambda: build())
+    fig = build()
+    t_payload = _best(lambda: fig.build_payload())
+    return {
+        "family": "contour",
+        "n": side * side,
+        "build_ms": t_build * 1e3,
+        "payload_ms": t_payload * 1e3,
+        "wire_bytes": _wire_bytes(fig),
+    }
+
+
+def bench_errorbar_chart(n: int) -> dict[str, Any]:
+    k = min(n, 4_096)
+    x = np.arange(k, dtype=np.float64)
+    y = np.sin(x * 0.01)
+
+    def build():
+        return xy.errorbar_chart(xy.errorbar(x, y, yerr=0.1), width=640, height=360).figure()
+
+    t_build = _best(lambda: build())
+    fig = build()
+    t_payload = _best(lambda: fig.build_payload())
+    return {
+        "family": "errorbar",
+        "n": k,
+        "build_ms": t_build * 1e3,
+        "payload_ms": t_payload * 1e3,
+        "wire_bytes": _wire_bytes(fig),
+    }
+
+
+def bench_stem_chart(n: int) -> dict[str, Any]:
+    k = min(n, 4_096)
+    x = np.arange(k, dtype=np.float64)
+    y = np.cos(x * 0.02)
+
+    def build():
+        return xy.stem_chart(xy.stem(x, y), width=640, height=360).figure()
+
+    t_build = _best(lambda: build())
+    fig = build()
+    t_payload = _best(lambda: fig.build_payload())
+    return {
+        "family": "stem",
+        "n": k,
+        "build_ms": t_build * 1e3,
+        "payload_ms": t_payload * 1e3,
+        "wire_bytes": _wire_bytes(fig),
+    }
+
+
+def bench_ecdf_chart(n: int) -> dict[str, Any]:
+    rng = np.random.default_rng(5)
+    values = rng.standard_normal(n)
+
+    def build():
+        return xy.ecdf_chart(xy.ecdf(values), width=640, height=360).figure()
+
+    t_build = _best(lambda: build())
+    fig = build()
+    t_payload = _best(lambda: fig.build_payload())
+    return {
+        "family": "ecdf",
+        "n": n,
+        "build_ms": t_build * 1e3,
+        "payload_ms": t_payload * 1e3,
+        "wire_bytes": _wire_bytes(fig),
+    }
+
+
+def bench_scatter_density_tier(n: int) -> dict[str, Any]:
+    """Force density path (Tier-2) for scatter-class scale evidence."""
+    rng = np.random.default_rng(6)
+    x = rng.standard_normal(n)
+    y = rng.standard_normal(n)
+
+    def build():
+        return xy.scatter_chart(
+            xy.scatter(x, y, density=True),
+            width=640,
+            height=360,
+        ).figure()
+
+    t_build = _best(lambda: build())
+    fig = build()
+    t_payload = _best(lambda: fig.build_payload())
+    spec, blob = fig.build_payload()
+    tier = spec["traces"][0].get("tier")
+    return {
+        "family": "scatter_density",
+        "n": n,
+        "tier": tier,
+        "build_ms": t_build * 1e3,
+        "payload_ms": t_payload * 1e3,
+        "wire_bytes": len(blob),
+        "budget_ok": tier == "density",
+    }
+
+
 def _synthetic_graph(n_nodes: int, *, avg_degree: float = 4.0) -> _graph.GraphData:
     rng = np.random.default_rng(n_nodes)
     n_edges = max(n_nodes, int(n_nodes * avg_degree / 2))
@@ -532,6 +682,12 @@ def main() -> int:
         bench_heatmap_chart,
         bench_hexbin_chart,
         bench_box_chart,
+        bench_violin_chart,
+        bench_area_chart,
+        bench_contour_chart,
+        bench_errorbar_chart,
+        bench_stem_chart,
+        bench_ecdf_chart,
     )
     for n in profile["chart_sizes"]:
         for fn in chart_fns:
@@ -541,6 +697,8 @@ def main() -> int:
                 rec = soft_compare_scatter_wire(row, baseline)
                 if rec is not None:
                     comparisons.append(rec)
+        # Tier-2 density evidence (force density; n may be below auto threshold).
+        results.append(bench_scatter_density_tier(min(n, 50_000)))
 
     for n in profile["kernel_sizes"]:
         row, comps = bench_kernels(n, baseline)
