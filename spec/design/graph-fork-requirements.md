@@ -1,8 +1,11 @@
 # Graph visualization — competitive research & fork requirements
 
-**Status:** requirements. Authoritative input for the network/tree/org family
-([chart-roadmap.md](../api/chart-roadmap.md) rank 31 / P4 rank 24) and for the
-future `graph-mark.md` design. Does not yet change runtime behavior.
+**Status:** requirements for **graphforge-xy**, the visualization extension of
+[core GraphForge](https://github.com/CurateLabs/graphforge)
+([graphforge-extension.md](graphforge-extension.md)). Authoritative input for
+the network/tree/org family ([chart-roadmap.md](../api/chart-roadmap.md)
+rank 31 / P4 rank 24) and for the future `graph-mark.md` design. Does not yet
+change runtime behavior.
 
 **Scope (hard):** core **data visualization** of graph data — node–link marks,
 layouts that place them, visual encodings, interactive reading of the chart,
@@ -11,22 +14,22 @@ and scale. Nothing else.
 **Out of scope:** graph editing/manipulation UIs, investigation/enterprise
 chrome, search/filter product UI, I/O format zoos, and graph-theory / analysis
 toolkits (centrality, community detection, pathfinding as a product surface).
-Those appear below only to mark what competitors sell that XY deliberately
-ignores.
+**Those belong in core GraphForge** (Cypher, analyst verbs, algorithm catalog),
+not in this viz extension. Competitor sections below mark what Sigma/vis/Ogma
+sell that we deliberately leave to GraphForge or ignore.
 
-**North star:** beat Plotly’s network UX with a first-class graph mark; match
-Sigma/Ogma on WebGL node–link rendering and layout quality; keep NetworkX and
-igraph as optional *data* sources, not analysis peers XY must replicate.
+**North star:** give GraphForge users a first-class node–link chart (beat
+Plotly’s network UX; match Sigma/Ogma on WebGL + layout quality) without
+forking the GraphForge engine.
 
-**Host parity:** Python and Node parity is a **platform** goal for *all* chart
-types ([host-parity.md](host-parity.md)). Graph viz is the **lead feature**
-that must ship dual-host first; other marks follow the same ABI/client, not a
-graph-only binding.
+**Host parity:** Python and Node for *all* chart types, matching GraphForge’s
+dual-host matrix ([host-parity.md](host-parity.md)). Graph viz is the **lead
+feature** of this extension.
 
-**Architecture constraint:** graph store, layout kernels, and channel
-resolution over |V|/|E| live in the Rust C ABI so both hosts share
-bit-identical viz buffers. The JS client owns WebGL draw and gestures
-([rust-engine.md](rust-engine.md) §1; dossier §29).
+**Architecture constraint:** display layouts and channel resolution over
+|V|/|E| live in the **xy** Rust C ABI so both hosts share bit-identical viz
+buffers. GraphForge remains the source of graph truth. The JS client owns
+WebGL draw and gestures ([rust-engine.md](rust-engine.md) §1; dossier §29).
 
 ---
 
@@ -41,7 +44,7 @@ bit-identical viz buffers. The JS client owns WebGL draw and gestures
 | Pan, zoom, fit, hover, select, neighborhood highlight | Context menus, investigation workflows, fraud tooling |
 | Drag nodes to adjust a layout for reading | Collaborative editing, undo stacks |
 | LOD so large graphs remain readable | Guaranteeing “millions of elements” without aggregation |
-| `graph_chart(...)` / edge-list / `from_networkx` ingest for plotting | GraphML/GEXF ecosystems, Neo4j connectors as product |
+| `graph_chart(...)` / GraphForge Arrow·subgraph ingest for plotting | Replacing GraphForge storage/Cypher; GraphML/GEXF platforms |
 
 ---
 
@@ -90,15 +93,16 @@ the public API.
 **Takeaway:** Ogma’s **layout breadth and WebGL quality** matter; the rest of
 the commercial surface does not.
 
-### 2.5 NetworkX / igraph
+### 2.5 GraphForge (data source) vs NetworkX / igraph
 
-| Viz-relevant | Ignore for XY fork |
+| Viz-relevant | Leave to core GraphForge / peers |
 |---|---|
-| Graphs + attributes + optional precomputed `pos` as **inputs to a plot** | Replacing their analysis APIs |
-| Their layout functions as optional position sources | Shipping Matplotlib/Cairo as XY’s interactive path |
+| GraphForge Arrow results and node/edge exports as **primary plot inputs** | Cypher, persistence, analyst verbs, algorithms |
+| Optional NetworkX/`pos` only as a convenience adapter for plotting | Replacing NetworkX/igraph analysis APIs |
+| Same Python + Node host matrix as GraphForge | Building a second graph engine inside xy |
 
-**Takeaway:** ingest for visualization (`from_networkx`, edge lists). Analysis
-stays in those libraries.
+**Takeaway:** this extension **visualizes** GraphForge graphs. Analysis stays
+in GraphForge (or peer libs); xy owns display layout + render.
 
 ### 2.6 Plotly network UX (anti-pattern for viz API)
 
@@ -106,9 +110,10 @@ Plotly has no graph mark: users hand-build edge `Scatter` (`None`-separated
 segments) + node `Scatter`, hide axes, and encode degree manually. Real apps
 are pushed to **Dash + dash-cytoscape**.
 
-**XY must:** one `graph_chart` (or mark), named `layout=`, encodings, WebGL
-graph semantics (neighborhood on hover), axis-free canvas, notebook `show()` —
-without the boilerplate or the Cytoscape detour.
+**graphforge-xy must:** one `graph_chart` (or mark), named `layout=`,
+encodings, WebGL graph semantics (neighborhood on hover), axis-free canvas,
+notebook/`show()` — fed primarily from GraphForge — without the boilerplate or
+a Cytoscape detour.
 
 ---
 
@@ -134,8 +139,8 @@ Legend: **M** = must, **S** = should, **—** = out of scope for this fork.
 | Extra shapes / groups | packages | yes | DIY | yes | no | **S** |
 | Curved edges | package | yes | DIY | yes | no | **S** |
 | Box select | app | yes | DIY | yes | Dash | **S** |
-| `from_networkx` / edge-list ingest | n/a | via PyVis | n/a | n/a | recipe | **M** |
-| Python + Node same layout/render buffers | partial | wrap | no | ext | split | **M** |
+| `from_graphforge` / edge-list ingest | n/a | via PyVis | n/a | n/a | recipe | **M** (GraphForge primary) |
+| Python + Node same layout/render buffers | partial | wrap | no | ext | split | **M** (match GraphForge hosts) |
 | Native PNG/SVG/HTML export | no | no | no | limited | kaleido | **M** |
 | Editing / manipulation | app | **core** | DIY | yes | no | **—** |
 | Analysis algorithms | graphology | no | DIY | yes | DIY | **—** |
@@ -154,15 +159,18 @@ Legend: **M** = must, **S** = should, **—** = out of scope for this fork.
   `graph` mark — not a scatter+segments recipe.
 - **REQ-API-2 (MUST).** Nodes and edges with stable IDs, optional attributes for
   encodings, optional preset `x`/`y`.
-- **REQ-API-3 (MUST).** Convenient ingest for plotting: edge list / adjacency
-  and `from_networkx(..., pos=None)` preserving attributes used by channels.
+- **REQ-API-3 (MUST).** Primary ingest from **GraphForge** (Arrow tables /
+  subgraph or node–edge export) preserving attributes used by channels; also
+  accept plain edge lists. `from_networkx` is a **SHOULD** convenience only.
 - **REQ-API-4 (MUST).** Graph options follow [host-parity.md](host-parity.md):
   same names/defaults on Python and Node (idiomatic types may differ).
-
+- **REQ-API-5 (MUST).** GraphForge remains optional at import for non-graph
+  charts; graph ingest fails clearly if the adapter/engine is missing.
 ### 4.2 Engine placement
 
-- **REQ-CORE-1 (MUST).** Graph store + layout kernels + bulk channel resolution
-  in Rust (`xy_graph_*` C ABI) — same dual-host rule as every other mark.
+- **REQ-CORE-1 (MUST).** Display layout kernels + bulk channel resolution in
+  **xy** Rust (`xy_graph_*` C ABI). Do not reimplement GraphForge storage or
+  Cypher here; a viz-side adjacency/position buffer for layout is allowed.
 - **REQ-CORE-2 (MUST).** Positions and channels: canonical f64 in-core, §29 f32
   on the wire — no JSON numbers for geometry.
 - **REQ-CORE-3 (MUST).** JS does not run large-graph layout; it draws uploaded
@@ -237,12 +245,13 @@ filter UIs.
 
 ## 6. Explicit non-goals
 
+- Replacing or forking core GraphForge (engine, Cypher, storage, algorithms).
 - Graph editors, manipulation GUIs, collaborative editing.
-- Analysis product surface (paths, centrality, communities) — use NetworkX /
-  igraph and plot the results as attributes if needed.
+- Analysis product surface in xy — use GraphForge (or peers) and plot results
+  as attributes.
 - Search/filter chrome, compounds/nested nodes, node-image programs.
 - Cytoscape Desktop / CX, Neo4j connectors, GEXF-as-platform.
-- D3-level SVG DIY; shipping vis-network or Cytoscape.js inside XY.
+- D3-level SVG DIY; shipping vis-network or Cytoscape.js inside xy.
 - Unaggregated “millions of nodes” claims without measured LOD.
 
 ---
@@ -261,10 +270,12 @@ filter UIs.
 
 ## 8. Downstream
 
-1. [host-parity.md](host-parity.md) — platform Python↔Node contract (all chart
-   types); graph is the lead feature.
-2. `spec/design/graph-mark.md` — data model, wire buffers, layout catalog, LOD.
-3. [rust-engine.md](rust-engine.md) — `graph` module placement (store + layout +
-   channels only).
-4. [chart-roadmap.md](../api/chart-roadmap.md) status when implementation lands.
-5. Capability-matrix regeneration once the `graph` mark exists in code.
+1. [graphforge-extension.md](graphforge-extension.md) — product split vs core
+   GraphForge.
+2. [host-parity.md](host-parity.md) — Python↔Node for all chart types; graph is
+   the lead feature.
+3. `spec/design/graph-mark.md` — data model, wire buffers, layout catalog, LOD,
+   GraphForge ingest contract.
+4. [rust-engine.md](rust-engine.md) — `graph` viz module (layout + channels).
+5. [chart-roadmap.md](../api/chart-roadmap.md) status when implementation lands.
+6. Capability-matrix regeneration once the `graph` mark exists in code.
