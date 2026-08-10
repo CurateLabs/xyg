@@ -15,7 +15,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XY_EXPECTED_ABI ?? 55);
+const EXPECTED_ABI = Number(process.env.XY_EXPECTED_ABI ?? 56);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -55,6 +55,51 @@ test("seeded force is deterministic across two calls", () => {
     graphForceDestroy(first);
     graphForceDestroy(second);
   }
+});
+
+test("force layout catalog names are seeded deterministic", () => {
+  const sources = new BigUint64Array([0n, 1n, 2n]);
+  const targets = new BigUint64Array([1n, 2n, 0n]);
+  const names = [
+    "force",
+    "fr",
+    "spring",
+    "forceatlas2",
+    "fa2",
+    "linlog",
+    "yifanhu",
+    "kamada_kawai",
+    "kk",
+    "stress",
+  ];
+  for (const name of names) {
+    const a = graphLayout(name, 3, sources, targets, { seed: 5 });
+    const b = graphLayout(name, 3, sources, targets, { seed: 5 });
+    assert.deepEqual([...a.x], [...b.x], name);
+    assert.deepEqual([...a.y], [...b.y], name);
+    const h1 = graphForceCreate(3, sources, targets, { seed: 5, algorithm: name });
+    const h2 = graphForceCreate(3, sources, targets, { seed: 5, algorithm: name });
+    try {
+      const t1 = graphForceTick(h1, 3, 15);
+      const t2 = graphForceTick(h2, 3, 15);
+      assert.deepEqual([...t1.x], [...t2.x], `${name} tick`);
+      assert.deepEqual([...t1.y], [...t2.y], `${name} tick`);
+    } finally {
+      graphForceDestroy(h1);
+      graphForceDestroy(h2);
+    }
+  }
+});
+
+test("layout name aliases match Python map ids", async () => {
+  const { GRAPH_LAYOUT_IDS, graphLayoutId } = await import("../src/index.js");
+  assert.equal(graphLayoutId("fr"), GRAPH_LAYOUT_IDS.force);
+  assert.equal(graphLayoutId("fa2"), GRAPH_LAYOUT_IDS.forceatlas2);
+  assert.equal(graphLayoutId("kk"), GRAPH_LAYOUT_IDS.kamada_kawai);
+  assert.equal(graphLayoutId("spring"), GRAPH_LAYOUT_IDS.spring);
+  assert.equal(graphLayoutId("stress"), GRAPH_LAYOUT_IDS.stress);
+  assert.equal(graphLayoutId("yifanhu"), GRAPH_LAYOUT_IDS.yifanhu);
+  assert.equal(graphLayoutId("linlog"), GRAPH_LAYOUT_IDS.linlog);
 });
 
 test("hierarchical/dagre differ from undirected breadthfirst on a DAG", () => {

@@ -138,7 +138,7 @@ export const xyGraphLayout = lib.func(
   "int32_t xy_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, const uint64_t *roots, uint64_t n_roots, uint64_t seed, double *out_x, double *out_y)",
 );
 export const xyGraphForceCreate = lib.func(
-  "int32_t xy_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, uint64_t seed, uint64_t *out_handle)",
+  "int32_t xy_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, uint64_t seed, uint32_t algorithm, uint64_t *out_handle)",
 );
 export const xyGraphForceTick = lib.func(
   "int32_t xy_graph_force_tick(uint64_t handle, uint64_t n_nodes, uint32_t steps, double *out_x, double *out_y, double *out_alpha)",

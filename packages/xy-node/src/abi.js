@@ -44,19 +44,51 @@ export const GRAPH_LAYOUT_AUTO = 5;
 export const GRAPH_LAYOUT_RADIAL = 6;
 export const GRAPH_LAYOUT_CONCENTRIC = 7;
 export const GRAPH_LAYOUT_HIERARCHICAL = 8;
+export const GRAPH_LAYOUT_BARNES_HUT = 9;
+export const GRAPH_LAYOUT_SPRING = 10;
+export const GRAPH_LAYOUT_FORCEATLAS2 = 11;
+export const GRAPH_LAYOUT_KAMADA_KAWAI = 12;
+export const GRAPH_LAYOUT_YIFANHU = 13;
+export const GRAPH_LAYOUT_LINLOG = 14;
+export const GRAPH_LAYOUT_STRESS = 15;
 
 export const GRAPH_LAYOUT_IDS = Object.freeze({
   preset: GRAPH_LAYOUT_PRESET,
   grid: GRAPH_LAYOUT_GRID,
   circle: GRAPH_LAYOUT_CIRCLE,
   force: GRAPH_LAYOUT_FORCE,
+  fr: GRAPH_LAYOUT_FORCE,
+  fruchterman_reingold: GRAPH_LAYOUT_FORCE,
   breadthfirst: GRAPH_LAYOUT_BREADTHFIRST,
   dagre: GRAPH_LAYOUT_HIERARCHICAL,
   hierarchical: GRAPH_LAYOUT_HIERARCHICAL,
   auto: GRAPH_LAYOUT_AUTO,
   radial: GRAPH_LAYOUT_RADIAL,
   concentric: GRAPH_LAYOUT_CONCENTRIC,
+  barnes_hut: GRAPH_LAYOUT_BARNES_HUT,
+  spring: GRAPH_LAYOUT_SPRING,
+  forceatlas2: GRAPH_LAYOUT_FORCEATLAS2,
+  fa2: GRAPH_LAYOUT_FORCEATLAS2,
+  kamada_kawai: GRAPH_LAYOUT_KAMADA_KAWAI,
+  kk: GRAPH_LAYOUT_KAMADA_KAWAI,
+  yifanhu: GRAPH_LAYOUT_YIFANHU,
+  linlog: GRAPH_LAYOUT_LINLOG,
+  stress: GRAPH_LAYOUT_STRESS,
 });
+
+/** Progressive force families that share xy_graph_force_create/tick. */
+export const GRAPH_PROGRESSIVE_FORCE = Object.freeze(
+  new Set([
+    GRAPH_LAYOUT_FORCE,
+    GRAPH_LAYOUT_BARNES_HUT,
+    GRAPH_LAYOUT_SPRING,
+    GRAPH_LAYOUT_FORCEATLAS2,
+    GRAPH_LAYOUT_YIFANHU,
+    GRAPH_LAYOUT_LINLOG,
+    GRAPH_LAYOUT_KAMADA_KAWAI,
+    GRAPH_LAYOUT_STRESS,
+  ]),
+);
 
 export const SANKEY_ALIGN_IDS = Object.freeze({
   justify: 0,
@@ -128,6 +160,7 @@ export function graphForceCreate(nNodes, sources, targets, opts = {}) {
   if (inX != null && (inX.length !== nodeCount || inY.length !== nodeCount)) {
     throw new RangeError("opts.x and opts.y must have length nNodes");
   }
+  const algorithm = graphLayoutId(opts.algorithm ?? opts.layout ?? "force");
   const handle = new BigUint64Array(1);
   const code = xyGraphForceCreate(
     toU64(nodeCount, "nNodes"),
@@ -137,12 +170,17 @@ export function graphForceCreate(nNodes, sources, targets, opts = {}) {
     f64Ptr(inX),
     f64Ptr(inY),
     toU64(opts.seed ?? 0, "opts.seed"),
+    toU32(algorithm, "algorithm"),
     u64Ptr(handle),
   );
   if (code !== 0 || handle[0] === 0n) {
     throw new Error(`xy_graph_force_create failed with code ${code}`);
   }
   return handle[0];
+}
+
+export function graphIsProgressiveForce(layout) {
+  return GRAPH_PROGRESSIVE_FORCE.has(graphLayoutId(layout));
 }
 
 export function graphForceTick(handle, nNodes, steps = 1) {

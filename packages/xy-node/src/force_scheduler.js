@@ -59,6 +59,7 @@ async function runForceTicksImmediate(args) {
     x: args.x,
     y: args.y,
     seed: args.seed ?? 0,
+    algorithm: args.algorithm ?? args.layout ?? "force",
   });
   let step = 0;
   let last = { x: new Float64Array(nNodes), y: new Float64Array(nNodes), alpha: 1.0 };

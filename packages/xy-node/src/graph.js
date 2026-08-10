@@ -12,6 +12,7 @@ import {
   graphForceCreate,
   graphForceDestroy,
   graphForceTick,
+  graphIsProgressiveForce,
   graphLayout,
 } from "./abi.js";
 
@@ -169,11 +170,12 @@ export function runLayout(data, opts = {}) {
   let y;
   let alpha = null;
 
-  if (layoutName === "force" && iterations > 0) {
+  if (graphIsProgressiveForce(layoutName) && iterations > 0) {
     const handle = graphForceCreate(n, sources, targets, {
       x: data.x,
       y: data.y,
       seed,
+      algorithm: layoutName,
     });
     try {
       const tick = graphForceTick(handle, n, Math.max(1, iterations));
@@ -209,9 +211,8 @@ export function runLayout(data, opts = {}) {
   const edgeT = render.edgeTargets;
   const edgeSegments = edgeSegmentsFromPositions(rx, ry, edgeS, edgeT);
 
-  /** @type {Record<string, unknown>} */
   const meta = {
-    layout: layoutName === "force" && iterations > 0 ? "force" : layoutName,
+    layout: layoutName,
     seed: Number(seed),
     lod_tier: render.tier,
     edges_kept: Number(render.edgesKept),
@@ -229,7 +230,7 @@ export function runLayout(data, opts = {}) {
     ids: data.ids.map(String),
   };
 
-  if (layoutName === "force" && iterations > 0) {
+  if (graphIsProgressiveForce(layoutName) && iterations > 0) {
     meta.iterations = Number(iterations);
     meta.alpha = alpha == null ? null : Number(alpha);
   }

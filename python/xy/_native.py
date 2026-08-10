@@ -25,7 +25,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 55
+ABI_VERSION = 56
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -734,6 +734,7 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_uint64,
+        ctypes.c_uint32,  # algorithm
         ctypes.c_void_p,
     ]
     lib.xy_graph_force_tick.restype = ctypes.c_int32
@@ -3404,19 +3405,51 @@ GRAPH_LAYOUT_AUTO = 5
 GRAPH_LAYOUT_RADIAL = 6
 GRAPH_LAYOUT_CONCENTRIC = 7
 GRAPH_LAYOUT_HIERARCHICAL = 8
+GRAPH_LAYOUT_BARNES_HUT = 9
+GRAPH_LAYOUT_SPRING = 10
+GRAPH_LAYOUT_FORCEATLAS2 = 11
+GRAPH_LAYOUT_KAMADA_KAWAI = 12
+GRAPH_LAYOUT_YIFANHU = 13
+GRAPH_LAYOUT_LINLOG = 14
+GRAPH_LAYOUT_STRESS = 15
 
 _GRAPH_LAYOUT_NAMES = {
     "preset": GRAPH_LAYOUT_PRESET,
     "grid": GRAPH_LAYOUT_GRID,
     "circle": GRAPH_LAYOUT_CIRCLE,
     "force": GRAPH_LAYOUT_FORCE,
+    "fr": GRAPH_LAYOUT_FORCE,
+    "fruchterman_reingold": GRAPH_LAYOUT_FORCE,
     "breadthfirst": GRAPH_LAYOUT_BREADTHFIRST,
     "dagre": GRAPH_LAYOUT_HIERARCHICAL,
     "hierarchical": GRAPH_LAYOUT_HIERARCHICAL,
     "auto": GRAPH_LAYOUT_AUTO,
     "radial": GRAPH_LAYOUT_RADIAL,
     "concentric": GRAPH_LAYOUT_CONCENTRIC,
+    "barnes_hut": GRAPH_LAYOUT_BARNES_HUT,
+    "spring": GRAPH_LAYOUT_SPRING,
+    "forceatlas2": GRAPH_LAYOUT_FORCEATLAS2,
+    "fa2": GRAPH_LAYOUT_FORCEATLAS2,
+    "kamada_kawai": GRAPH_LAYOUT_KAMADA_KAWAI,
+    "kk": GRAPH_LAYOUT_KAMADA_KAWAI,
+    "yifanhu": GRAPH_LAYOUT_YIFANHU,
+    "linlog": GRAPH_LAYOUT_LINLOG,
+    "stress": GRAPH_LAYOUT_STRESS,
 }
+
+# Progressive force families (share xy_graph_force_create/tick).
+_GRAPH_PROGRESSIVE_FORCE = frozenset(
+    {
+        GRAPH_LAYOUT_FORCE,
+        GRAPH_LAYOUT_BARNES_HUT,
+        GRAPH_LAYOUT_SPRING,
+        GRAPH_LAYOUT_FORCEATLAS2,
+        GRAPH_LAYOUT_YIFANHU,
+        GRAPH_LAYOUT_LINLOG,
+        GRAPH_LAYOUT_KAMADA_KAWAI,
+        GRAPH_LAYOUT_STRESS,
+    }
+)
 
 
 def graph_layout_id(name: str) -> int:
@@ -3501,9 +3534,11 @@ def graph_force_create(
     x: npt.NDArray[np.float64] | None = None,
     y: npt.NDArray[np.float64] | None = None,
     seed: int = 0,
+    algorithm: int | str = GRAPH_LAYOUT_FORCE,
 ) -> int:
     sources = _as_u64(sources, "sources")
     targets = _as_u64(targets, "targets")
+    algo = graph_layout_id(algorithm) if isinstance(algorithm, str) else int(algorithm)
     handle = ctypes.c_uint64(0)
     in_x = _ptr_f64(_as_f64(x, "x")) if x is not None else None
     in_y = _ptr_f64(_as_f64(y, "y")) if y is not None else None
@@ -3517,11 +3552,17 @@ def graph_force_create(
         in_x,
         in_y,
         ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
+        ctypes.c_uint32(algo),
         ctypes.byref(handle),
     )
     if ok != 0:
         raise ValueError("native graph_force_create failed")
     return int(handle.value)
+
+
+def graph_is_progressive_force(layout: str | int) -> bool:
+    layout_id = graph_layout_id(layout) if isinstance(layout, str) else int(layout)
+    return layout_id in _GRAPH_PROGRESSIVE_FORCE
 
 
 def graph_force_tick(

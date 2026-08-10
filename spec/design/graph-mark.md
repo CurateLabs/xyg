@@ -183,7 +183,14 @@ Single parameter; default **`"force"`**.
 | `preset` | Use provided `x`/`y` (required) |
 | `grid` | Row-major grid |
 | `circle` | Even circle |
-| `force` | Seeded Fruchterman–Reingold (default algorithm for `"force"`); Barnes–Hut / grid approx at scale (§1.5) |
+| `force` / `fr` | Seeded Fruchterman–Reingold (default); exact pairwise ≤500, Barnes–Hut / grid approx above (§1.5) |
+| `barnes_hut` | FR attraction + always grid BH repulsion |
+| `spring` | Hooke spring–electrical (distinct `spring_k`; shares progressive tick handle) |
+| `forceatlas2` / `fa2` | ForceAtlas2-style attraction, hub repulsion, gravity (seeded) |
+| `linlog` | LinLog energy (FA2 with logarithmic attraction) |
+| `yifanhu` | Yifan Hu–style: grid BH repulsion + edge springs |
+| `kamada_kawai` / `kk` | Kamada–Kawai stress on all-pairs shortest paths; **n ≤ 500** (falls back to FR above) |
+| `stress` | Stress majorization on graph distances; **n ≤ 500** (falls back to FR above) |
 | `breadthfirst` | BFS layers from lowest-index root (or `roots=`) |
 | `radial` | Distance rings from root (SHOULD) |
 | `concentric` | Degree / attribute rings (SHOULD) |
@@ -194,6 +201,9 @@ All future algorithms register as new `layout=` string values (REQ-LAY-6).
 
 Force defaults: `seed=0`, `iterations=300`, `jitter` from seed. Golden tests
 pin seeded FR output across Python and Node for the exact small-N path.
+Progressive ticks (`force_create` + `algorithm` + `force_tick`) cover FR /
+FA2 / spring / linlog / yifanhu at minimum; KK / stress share the same
+handle for n ≤ 500.
 
 ---
 
@@ -283,7 +293,7 @@ draws uploaded buffers only (MVP keeps straight segments regardless of
 | Symbol | Role |
 |---|---|
 | `xy_graph_layout` | One-shot layout → `out_x`/`out_y` f64 |
-| `xy_graph_force_create` | Handle for progressive FR / approx force |
+| `xy_graph_force_create` | Handle for progressive force family; takes `algorithm: u32` (`LAYOUT_*`) |
 | `xy_graph_force_tick` | Advance k steps; write positions |
 | `xy_graph_force_destroy` | Free handle |
 | `xy_graph_build_csr` | `offsets`/`neighbors` u64 CSR |

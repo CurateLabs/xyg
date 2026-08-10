@@ -43,7 +43,15 @@ export {
   GRAPH_LAYOUT_RADIAL,
   GRAPH_LAYOUT_CONCENTRIC,
   GRAPH_LAYOUT_HIERARCHICAL,
+  GRAPH_LAYOUT_BARNES_HUT,
+  GRAPH_LAYOUT_SPRING,
+  GRAPH_LAYOUT_FORCEATLAS2,
+  GRAPH_LAYOUT_KAMADA_KAWAI,
+  GRAPH_LAYOUT_YIFANHU,
+  GRAPH_LAYOUT_LINLOG,
+  GRAPH_LAYOUT_STRESS,
   GRAPH_LAYOUT_IDS,
+  GRAPH_PROGRESSIVE_FORCE,
   SANKEY_ALIGN_IDS,
   SankeyLayoutError,
   abiVersion,
@@ -51,6 +59,7 @@ export {
   graphForceCreate,
   graphForceTick,
   graphForceDestroy,
+  graphIsProgressiveForce,
   graphLodDecision,
   graphClusterAggregate,
   graphBuildRender,
@@ -70,6 +79,11 @@ export {
 } from "./graph.js";
 
 export { Figure, PayloadWriter, figure } from "./figure.js";
+
+/** Stable engine entry — alias of {@link figure} for Node servers / VS Code hosts. */
+export function createEngine(opts = {}) {
+  return figure(opts);
+}
 
 export { runForceTicks } from "./force_scheduler.js";
 

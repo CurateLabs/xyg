@@ -31,6 +31,55 @@ def test_force_seeded_matches_across_calls():
     assert m1["alpha"] == pytest.approx(m2["alpha"])
 
 
+@pytest.mark.parametrize(
+    "layout",
+    [
+        "force",
+        "fr",
+        "spring",
+        "forceatlas2",
+        "fa2",
+        "linlog",
+        "yifanhu",
+        "kamada_kawai",
+        "kk",
+        "stress",
+        "barnes_hut",
+    ],
+)
+def test_force_layout_catalog_seeded(layout):
+    data = _graph.normalize_graph_inputs(["a", "b", "c"], [("a", "b"), ("b", "c"), ("c", "a")])
+    x1, y1, m1 = _graph.run_layout(data, layout=layout, seed=11, iterations=25)
+    x2, y2, m2 = _graph.run_layout(data, layout=layout, seed=11, iterations=25)
+    assert m1["layout"] == layout
+    np.testing.assert_allclose(x1, x2)
+    np.testing.assert_allclose(y1, y2)
+    assert m1["alpha"] == pytest.approx(m2["alpha"])
+
+
+def test_force_layout_aliases_match_ids():
+    assert _native.graph_layout_id("fr") == _native.GRAPH_LAYOUT_FORCE
+    assert _native.graph_layout_id("fa2") == _native.GRAPH_LAYOUT_FORCEATLAS2
+    assert _native.graph_layout_id("kk") == _native.GRAPH_LAYOUT_KAMADA_KAWAI
+    assert _native.graph_layout_id("spring") == _native.GRAPH_LAYOUT_SPRING
+    assert _native.graph_layout_id("stress") == _native.GRAPH_LAYOUT_STRESS
+    assert _native.graph_layout_id("yifanhu") == _native.GRAPH_LAYOUT_YIFANHU
+    assert _native.graph_layout_id("linlog") == _native.GRAPH_LAYOUT_LINLOG
+    assert _native.graph_is_progressive_force("spring")
+    assert _native.graph_is_progressive_force("forceatlas2")
+
+
+def test_tiny_force_golden_stable():
+    data = _graph.normalize_graph_inputs(["a", "b", "c"], [("a", "b"), ("b", "c"), ("c", "a")])
+    x, y, meta = _graph.run_layout(data, layout="force", seed=7, iterations=20)
+    assert meta["layout"] == "force"
+    assert np.isfinite(x).all() and np.isfinite(y).all()
+    # Bit-stable across hosts for the exact FR path.
+    x2, y2, _ = _graph.run_layout(data, layout="force", seed=7, iterations=20)
+    np.testing.assert_array_equal(x, x2)
+    np.testing.assert_array_equal(y, y2)
+
+
 def test_graph_chart_emits_segments_scatter_and_meta():
     chart = xy.graph_chart(
         xy.graph(["n0", "n1", "n2"], [("n0", "n1"), ("n1", "n2")], layout="grid"),

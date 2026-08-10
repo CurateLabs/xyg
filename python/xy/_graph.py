@@ -196,8 +196,18 @@ def run_layout(
     sources = data.sources
     targets = data.targets
     alpha = None
-    if layout_name == "force" and iterations > 0:
-        handle = _native.graph_force_create(n, sources, targets, x=data.x, y=data.y, seed=seed)
+    layout_id = _native.graph_layout_id(layout_name)
+    use_progressive = iterations > 0 and layout_id in _native._GRAPH_PROGRESSIVE_FORCE
+    if use_progressive:
+        handle = _native.graph_force_create(
+            n,
+            sources,
+            targets,
+            x=data.x,
+            y=data.y,
+            seed=seed,
+            algorithm=layout_id,
+        )
         try:
             x, y, alpha = _native.graph_force_tick(handle, n, max(1, int(iterations)))
         finally:
@@ -225,7 +235,7 @@ def run_layout(
         viewport=viewport,
     )
     meta: dict[str, Any] = {
-        "layout": layout_name if not (layout_name == "force" and iterations > 0) else "force",
+        "layout": layout_name,
         "seed": int(seed),
         "lod_tier": int(tier),
         "edges_kept": int(edges_kept),
@@ -240,7 +250,7 @@ def run_layout(
         "node_budget": int(node_budget),
         "edge_budget": int(edge_budget),
     }
-    if layout_name == "force" and iterations > 0:
+    if use_progressive:
         meta["iterations"] = int(iterations)
         meta["alpha"] = float(alpha) if alpha is not None else None
     return rx, ry, meta

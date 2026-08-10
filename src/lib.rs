@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 55;
+pub const ABI_VERSION: u32 = 56;
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -3318,16 +3318,15 @@ pub unsafe extern "C" fn xy_graph_layout(
                 graph::layout_circle(n, out_x, out_y);
                 true
             }
-            graph::LAYOUT_FORCE => {
-                let mut state =
-                    match graph::ForceState::new(n_nodes, sources, targets, None, None, seed) {
-                        Some(s) => s,
-                        None => return -1,
-                    };
-                state.tick(300);
-                out_x.copy_from_slice(&state.x);
-                out_y.copy_from_slice(&state.y);
-                true
+            graph::LAYOUT_FORCE
+            | graph::LAYOUT_BARNES_HUT
+            | graph::LAYOUT_SPRING
+            | graph::LAYOUT_FORCEATLAS2
+            | graph::LAYOUT_KAMADA_KAWAI
+            | graph::LAYOUT_YIFANHU
+            | graph::LAYOUT_LINLOG
+            | graph::LAYOUT_STRESS => {
+                graph::layout_force_family(layout, n_nodes, sources, targets, seed, 300, out_x, out_y)
             }
             graph::LAYOUT_BREADTHFIRST => {
                 let roots_slice = if n_roots == 0 || roots.is_null() {
@@ -3378,6 +3377,8 @@ pub unsafe extern "C" fn xy_graph_layout(
 
 /// Create a progressive force-layout handle. Returns 0 on failure; else a
 /// non-zero handle. Optional `in_x`/`in_y` seed positions.
+/// `algorithm` is a `graph::LAYOUT_*` force-family id (`LAYOUT_FORCE` default).
+/// Kamada–Kawai / stress with `n > STRESS_LAYOUT_MAX_N` fall back to FR.
 ///
 /// # Safety
 /// Edge arrays must be valid for `n_edges` when non-zero.
@@ -3390,6 +3391,7 @@ pub unsafe extern "C" fn xy_graph_force_create(
     in_x: *const f64,
     in_y: *const f64,
     seed: u64,
+    algorithm: u32,
     out_handle: *mut u64,
 ) -> i32 {
     if out_handle.is_null() || n_edges > (usize::MAX as u64) {
@@ -3421,10 +3423,16 @@ pub unsafe extern "C" fn xy_graph_force_create(
     };
     ffi_guard(-1, || {
         let handle = match init {
-            Some((ix, iy)) => {
-                graph::force_create(n_nodes, sources, targets, Some(ix), Some(iy), seed)
-            }
-            None => graph::force_create(n_nodes, sources, targets, None, None, seed),
+            Some((ix, iy)) => graph::force_create(
+                n_nodes,
+                sources,
+                targets,
+                Some(ix),
+                Some(iy),
+                seed,
+                algorithm,
+            ),
+            None => graph::force_create(n_nodes, sources, targets, None, None, seed, algorithm),
         };
         match handle {
             Some(h) => {
