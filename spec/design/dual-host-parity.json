@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "title": "Dual-host parity matrix (machine-readable twin)",
+  "source": "spec/design/dual-host-parity-matrix.md",
+  "status_values": ["ready", "partial", "missing", "design"],
+  "scope": "Entire product — all chart types, not graph-only.",
+  "architecture_principle": "GraphForge/canonical → Rust (layout, viewport, graph LOD, edge LOD, encode, render-graph emission, all mark decisions) → bounded §29 buffers → shared WebGL browser client (paint only). Hosts are thin; browser never reimplements layout/LOD/encode on the product path.",
+  "runtimes": [
+    {
+      "id": "python",
+      "name": "Python host",
+      "paths": ["python/xy/", "python/reflex_xy/"],
+      "abi_loader": "ctypes",
+      "consumers": [
+        "notebooks (anywidget / show())",
+        "HTML export (to_html() / standalone)",
+        "Reflex"
+      ],
+      "owns": [
+        "idiomatic Python ingest",
+        "transport attach (widget comm / Reflex routes)",
+        "public composition API ergonomics"
+      ],
+      "must_not": [
+        "parallel layout/LOD/encode decisions",
+        "regress show()/anywidget/to_html() notebook UX"
+      ],
+      "notes": "Primary notebook UX; first-class and must not regress."
+    },
+    {
+      "id": "node",
+      "name": "Node host",
+      "paths": ["packages/xy-node"],
+      "abi_loader": "koffi (same libxy_core C ABI)",
+      "consumers": [
+        "server-side Node",
+        "VS Code extensions (consumer of Node bindings — not a separate stack)"
+      ],
+      "owns": [
+        "TypedArray ingest",
+        "embed / webview transport attach",
+        "progressive force scheduling off the browser main thread"
+      ],
+      "must_not": [
+        "browser-only APIs (window, document, DOM, WebGL)",
+        "reimplement Rust layout/LOD/encode in TypeScript"
+      ],
+      "notes": "VS Code uses packages/xy-node; do not invent a fourth runtime stack."
+    },
+    {
+      "id": "browser",
+      "name": "Browser client",
+      "paths": ["js/src/", "python/xy/static/index.js", "python/xy/static/standalone.js"],
+      "abi_loader": null,
+      "consumers": [
+        "anywidget notebooks",
+        "HTML export / standalone",
+        "Reflex",
+        "Node / VS Code webview embeds"
+      ],
+      "owns": [
+        "WebGL2 paint",
+        "pick / hit-test",
+        "pan/zoom/select/drag gestures applying uploaded §29 buffers"
+      ],
+      "must_not": [
+        "reimplement layout/LOD/encode in JS for the product path",
+        "import koffi, node:fs, or other Node-only modules"
+      ],
+      "notes": "Shared renderer for every host; draws uploaded §29 buffers only."
+    }
+  ],
+  "invariants": [
+    "Rust owns decisions for all marks; hosts are thin",
+    "Same figure spec + §29 buffers across Python and Node for the same inputs",
+    "Browser is the shared renderer",
+    "Notebook show()/anywidget/to_html() remain first-class and must not regress",
+    "Node package must not use browser-only APIs; browser client must not import koffi/node:fs"
+  ],
+  "pipeline_layers": [
+    {
+      "layer": "GraphForge / canonical ingest helpers",
+      "python": "design",
+      "node": "design",
+      "shared_artifact": "Same mark buffers",
+      "notes": "Optional; never the only path (REQ-API-3)"
+    },
+    {
+      "layer": "Dense u64 indices + f64 columns",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "Host→Rust pointers",
+      "notes": "No u32 element identity"
+    },
+    {
+      "layer": "Layout (preset/grid/circle/force/…)",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "xy_graph_layout / force handle",
+      "notes": "Seeded FR goldens bit-identical"
+    },
+    {
+      "layer": "Force ticks (progressive)",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "xy_graph_force_*",
+      "notes": "Never browser main-thread decisions; Barnes–Hut/grid approx at scale"
+    },
+    {
+      "layer": "Viewport + graph LOD + edge LOD",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "xy_graph_lod_* / cluster / sample",
+      "notes": "Recorded §28; Rust emits render graph"
+    },
+    {
+      "layer": "Encode → §29 f32",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "Same binary payloads",
+      "notes": "Offset-encoded; no JSON numbers"
+    },
+    {
+      "layer": "Shared WebGL browser paint",
+      "python": "ready",
+      "node": "ready",
+      "shared_artifact": "GLHost (dossier §18); python/xy/static/{index,standalone}.js",
+      "notes": "Paint / pick / gestures only; no raw V/E past direct tier; no JS layout/LOD/encode product path"
+    }
+  ],
+  "complexity_budgets": {
+    "ingest": "O(V+E)",
+    "layout": "approx (exact only when small)",
+    "lod_plan": "O(V+E)",
+    "interactive": "≈ O(visible)",
+    "gpu": "≈ O(screen) past direct tier"
+  },
+  "mark_kinds": [
+    {
+      "kind": "graph",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "layout, force, LOD, render-graph; tests/test_graph_node_parity.py circle goldens + dual-host force benches"
+    },
+    {
+      "kind": "sankey",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "layout in Rust; Node composeSankey emits ribbon band polygons (link + node)"
+    },
+    {
+      "kind": "scatter",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); packages/xy-node test/coverage.test.mjs + encode f32 goldens"
+    },
+    {
+      "kind": "line",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/line M4 via xy_m4_*; tests/test_node_mark_parity.py index-count goldens"
+    },
+    {
+      "kind": "histogram",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/histogram via xy_histogram_uniform; tests/test_node_mark_parity.py fixed-edge counts"
+    },
+    {
+      "kind": "area",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/area reuses line M4 ingest + base; tests/test_node_mark_parity.py stable-sort goldens"
+    },
+    {
+      "kind": "bar",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "xy_bar_stack (ABI 57) grouped/stacked/normalized; packages/xy-node marks/bar + tests"
+    },
+    {
+      "kind": "column",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "alias of bar via charts.columnChart; shares xy_bar_stack"
+    },
+    {
+      "kind": "box",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/box multi-group via xy_box_stats + distributionGroups"
+    },
+    {
+      "kind": "ecdf",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/ecdf via xy_weighted_ecdf + histogram binned path; tests/test_node_mark_parity.py"
+    },
+    {
+      "kind": "segments",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/segments pass-through; graph/sankey already emit segments traces"
+    },
+    {
+      "kind": "heatmap",
+      "python": "ready",
+      "node": "partial",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/heatmap grid + xy_heatmap_rgba; categorical axes follow-up"
+    },
+    {
+      "kind": "hexbin",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/hexbin via xy_hexbin; tests/test_node_mark_parity.py lattice goldens"
+    },
+    {
+      "kind": "violin",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/violin multi-group via xy_violin_density + distributionGroups"
+    },
+    {
+      "kind": "polar",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready"
+    },
+    {
+      "kind": "pie",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composePie / pieChart over bar wedges; sector geometry via existing ABI"
+    },
+    {
+      "kind": "wind_rose",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeWindRose via xy_wind_rose_bins + stacked polar bars"
+    },
+    {
+      "kind": "facet",
+      "python": "ready",
+      "node": "ready",
+      "rust": "partial",
+      "notes": "Node facetChart shares x/y domains across panels (shareX/shareY); composePanel or panels[]"
+    },
+    {
+      "kind": "contour",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeContour / contourChart via xy_marching_squares → contour segments; coverage.test.mjs"
+    },
+    {
+      "kind": "errorbar",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeErrorbar / errorbarChart → errorbar segment columns"
+    },
+    {
+      "kind": "error_band",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeErrorBand / errorBandChart → error_band area geometry (y/base)"
+    },
+    {
+      "kind": "stem",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeStem / stemChart → stem segments + optional scatter heads"
+    },
+    {
+      "kind": "step",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeStep / stepChart → line + style.step (browser line path)"
+    },
+    {
+      "kind": "stairs",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeStairs / stairsChart → line + style.step from edges/values"
+    },
+    {
+      "kind": "triangle_mesh",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeTriangleMesh / triangleMeshChart → six-column triangle_mesh wire"
+    },
+    {
+      "kind": "radar",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Node composeRadar / radarChart → polar area/line; coords+theta/r on payload"
+    },
+    {
+      "kind": "ribbon",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "Flow-band primitive; sankey emits ribbon; figure.ribbon + composeRibbon"
+    }
+  ],
+  "lod_tiers": [
+    {
+      "tier": 1,
+      "name": "direct",
+      "python": "ready",
+      "node": "ready",
+      "notes": "Exact marks under budget; M4 line decimation recorded"
+    },
+    {
+      "tier": 2,
+      "name": "density / aggregate",
+      "python": "ready",
+      "node": "ready",
+      "notes": "Scatter density grid; graph render-graph / cluster; hexbin aggregation; screen-bounded"
+    },
+    {
+      "tier": 3,
+      "name": "out-of-core tile pyramid",
+      "python": "ready",
+      "node": "ready",
+      "notes": "Phase-3 square pyramid productized on Python (first paint + density_view) and Node (pyramid.js + Figure density). §28 binning pyramid-L*. Phase-4 256² disk tile spill: spec/design/tier3-phase4-roadmap.md (tracked by GitHub issue)."
+    }
+  ],
+  "references": [
+    "spec/design/dual-host-parity-matrix.md",
+    "spec/design/host-parity.md",
+    "spec/design/graph-mark.md",
+    "spec/design/rust-engine.md",
+    "spec/design/xy-coverage.md",
+    "spec/design/lod-architecture.md",
+    "spec/design/tier3-testing.md",
+    "spec/design/tier3-phase4-roadmap.md",
+    "packages/xy-node/README.md"
+  ]
+}

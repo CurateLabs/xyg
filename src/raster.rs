@@ -538,7 +538,11 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
 /// Per-row coverage in [0,1] over the polygon's x-span, with `color_at` giving
 /// the paint per pixel (flat or gradient). Non-zero winding, `SS` vertical
 /// samples, analytic horizontal endpoint coverage.
-fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], mut color_at: impl FnMut(f32, f32) -> [f32; 4]) {
+fn fill_poly(
+    cv: &mut Canvas<'_>,
+    pts: &[(f32, f32)],
+    mut color_at: impl FnMut(f32, f32) -> [f32; 4],
+) {
     if pts.len() < 3 {
         return;
     }
@@ -661,8 +665,12 @@ enum StrokePiece {
 impl StrokePiece {
     fn bounds(&self, hw: f32) -> ((f32, f32), (f32, f32)) {
         let pad = hw + 1.0;
-        let (mut x0, mut y0, mut x1, mut y1) =
-            (f32::INFINITY, f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
+        let (mut x0, mut y0, mut x1, mut y1) = (
+            f32::INFINITY,
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            f32::NEG_INFINITY,
+        );
         let mut extend = |p: (f32, f32)| {
             x0 = x0.min(p.0);
             y0 = y0.min(p.1);
@@ -869,8 +877,12 @@ fn paint_stroke_pieces(cv: &mut Canvas, pieces: &[StrokePiece], hw: f32, rgba: [
     if pieces.is_empty() {
         return;
     }
-    let (mut x0, mut y0, mut x1, mut y1) =
-        (f32::INFINITY, f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
+    let (mut x0, mut y0, mut x1, mut y1) = (
+        f32::INFINITY,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        f32::NEG_INFINITY,
+    );
     for piece in pieces {
         let ((px0, py0), (px1, py1)) = piece.bounds(hw);
         x0 = x0.min(px0);
@@ -1190,7 +1202,7 @@ fn pentagon_sdf(p: (f32, f32), r: f32) -> f32 {
 #[inline]
 fn symbol_sdf(px: f32, py: f32, r: f32, sym: u8) -> f32 {
     match sym {
-        1 => px.abs().max(py.abs()) - r, // square
+        1 => px.abs().max(py.abs()) - r,                           // square
         2 => (px.abs() + py.abs()) - r * std::f32::consts::SQRT_2, // diamond
         3 | 8 | 9 | 10 => {
             // Matplotlib's normalized triangle: apex at one edge and a
@@ -1215,7 +1227,7 @@ fn symbol_sdf(px: f32, py: f32, r: f32, sym: u8) -> f32 {
             let (ax, ay) = (qx.abs(), qy.abs());
             (ax - 0.34 * r).max(ay - r).min((ax - r).max(ay - 0.34 * r))
         }
-        13 => px.abs().max(py.abs()) - r,      // snapped pixel
+        13 => px.abs().max(py.abs()) - r, // snapped pixel
         14 => (px.abs() / 0.6 + py.abs()) - r * std::f32::consts::SQRT_2, // thin diamond
         15 => {
             // Unfilled plus: its width comes from markeredgewidth below.
@@ -1422,13 +1434,8 @@ fn paint_image_bands(
     }
     let threads = threads.min(y1 - y0).max(1);
     let band_rows = (y1 - y0).div_ceil(threads);
-    let (w, ch, opaque, clip, polar_clip) = (
-        cv.w,
-        cv.channels(),
-        cv.opaque,
-        cv.clip,
-        cv.polar_clip,
-    );
+    let (w, ch, opaque, clip, polar_clip) =
+        (cv.w, cv.channels(), cv.opaque, cv.clip, cv.polar_clip);
     let row_bytes = w * ch;
     let active = &mut cv.px[y0 * row_bytes..y1 * row_bytes];
     std::thread::scope(|scope| {
@@ -1732,7 +1739,10 @@ fn text(cv: &mut Canvas<'_>, x: f32, y: f32, anchor: u8, size: f32, rgba: [f32; 
                 let u = u.clamp(0.0, gw as f32 - 1.0);
                 let vv = vv.clamp(0.0, gh as f32 - 1.0);
                 let (x0, y0c) = (u.floor() as usize, vv.floor() as usize);
-                let (x1, y1c) = ((x0 + 1).min(gw as usize - 1), (y0c + 1).min(gh as usize - 1));
+                let (x1, y1c) = (
+                    (x0 + 1).min(gw as usize - 1),
+                    (y0c + 1).min(gh as usize - 1),
+                );
                 let (fx, fy) = (u - x0 as f32, vv - y0c as f32);
                 sample(x0, y0c) * (1.0 - fx) * (1.0 - fy)
                     + sample(x1, y0c) * fx * (1.0 - fy)
@@ -1839,15 +1849,12 @@ fn styled_text(
         let italic = flags & TEXT_ITALIC != 0
             || italic_ranges
                 .iter()
-                .any(|&(start, end)| {
-                    start <= char_index as u32 && (char_index as u32) < end
-                });
+                .any(|&(start, end)| start <= char_index as u32 && (char_index as u32) < end);
         let italic_shear = if italic { 0.22 } else { 0.0 };
         let (glyph_advance, gw, gh, left, top, offset, len) = font::GLYPHS[index];
         if gw > 0 && gh > 0 {
             let coverage = &font::COVERAGE[offset as usize..(offset + len) as usize];
-            let sample =
-                |sx: usize, sy: usize| coverage[sy * gw as usize + sx] as f32 / 255.0;
+            let sample = |sx: usize, sy: usize| coverage[sy * gw as usize + sx] as f32 / 255.0;
             let bilinear = |u: f32, v: f32| {
                 if u < -0.5 || v < -0.5 || u > gw as f32 - 0.5 || v > gh as f32 - 0.5 {
                     return 0.0;
@@ -1908,10 +1915,8 @@ fn styled_text(
                     let atlas_v = (local_v - v0) / scale - 0.5;
                     let mut alpha = bilinear(atlas_u, atlas_v);
                     if bold_shift > 0.0 {
-                        alpha = alpha.max(bilinear(
-                            (local_u - bold_shift - u0) / scale - 0.5,
-                            atlas_v,
-                        ));
+                        alpha =
+                            alpha.max(bilinear((local_u - bold_shift - u0) / scale - 0.5, atlas_v));
                     }
                     if alpha > 0.0 {
                         cv.blend(px, py, rgba, alpha);
@@ -2148,14 +2153,8 @@ fn paint_banded(
     y_extent: impl Fn(usize) -> Option<(f32, f32)>,
     paint: impl Fn(&mut Surface, &[u32]) + Sync,
 ) {
-    let (w, h, ch, opaque, clip, polar_clip) = (
-        cv.w,
-        cv.h,
-        cv.channels(),
-        cv.opaque,
-        cv.clip,
-        cv.polar_clip,
-    );
+    let (w, h, ch, opaque, clip, polar_clip) =
+        (cv.w, cv.h, cv.channels(), cv.opaque, cv.clip, cv.polar_clip);
     let n_bands = (threads * 4).min(h.div_ceil(8)).max(1);
     let band_rows = h.div_ceil(n_bands);
     let n_bands = h.div_ceil(band_rows);
@@ -2213,7 +2212,11 @@ fn paint_banded(
 fn resolved_point_stroke(fill: [u8; 4], stroke: [u8; 4]) -> [u8; 4] {
     // A transparent wire stroke is the internal edgecolors="face" marker.
     // Resolve it after channel colors so every point gets its own RGBA edge.
-    if stroke[3] == 0 { fill } else { stroke }
+    if stroke[3] == 0 {
+        fill
+    } else {
+        stroke
+    }
 }
 
 struct PointsBatch<'a> {
@@ -3367,23 +3370,18 @@ mod tests {
             .expect("valid counterclockwise sector");
         assert!(ccw.contains(15.0, 5.0));
         assert!(!ccw.contains(10.0, 10.0), "the hole must stay empty");
-        assert!(!ccw.contains(5.0, 5.0), "the missing sector must stay empty");
+        assert!(
+            !ccw.contains(5.0, 5.0),
+            "the missing sector must stay empty"
+        );
 
-        let clockwise =
-            PolarClip::new(10.0, 10.0, 0.0, 9.0, 0.0, -std::f32::consts::FRAC_PI_2)
-                .expect("valid clockwise sector");
+        let clockwise = PolarClip::new(10.0, 10.0, 0.0, 9.0, 0.0, -std::f32::consts::FRAC_PI_2)
+            .expect("valid clockwise sector");
         assert!(clockwise.contains(15.0, 15.0));
         assert!(!clockwise.contains(15.0, 5.0));
 
-        let wide = PolarClip::new(
-            10.0,
-            10.0,
-            0.0,
-            9.0,
-            0.0,
-            1.5 * std::f32::consts::PI,
-        )
-        .expect("valid wide sector");
+        let wide = PolarClip::new(10.0, 10.0, 0.0, 9.0, 0.0, 1.5 * std::f32::consts::PI)
+            .expect("valid wide sector");
         assert!(wide.contains(5.0, 10.0));
         assert!(!wide.contains(15.0, 15.0));
 
@@ -3399,14 +3397,7 @@ mod tests {
             cmd.extend(f32le(value));
         }
         cmd.push(OP_POLAR_CLIP);
-        for value in [
-            10.0f32,
-            10.0,
-            4.0,
-            9.0,
-            0.0,
-            std::f32::consts::FRAC_PI_2,
-        ] {
+        for value in [10.0f32, 10.0, 4.0, 9.0, 0.0, std::f32::consts::FRAC_PI_2] {
             cmd.extend(f32le(value));
         }
         cmd.push(OP_FILL_POLY);
@@ -3512,7 +3503,10 @@ mod tests {
     fn malformed_dash_patterns_fall_back_to_solid() {
         assert!(usable_dash(&[6.0, 4.0]));
         assert!(!usable_dash(&[]));
-        assert!(!usable_dash(&[6.0, -4.0]), "a negative entry would rewind the walker");
+        assert!(
+            !usable_dash(&[6.0, -4.0]),
+            "a negative entry would rewind the walker"
+        );
         assert!(!usable_dash(&[6.0, f32::NAN]));
         assert!(!usable_dash(&[f32::INFINITY, 4.0]));
         assert!(!usable_dash(&[0.0, 4.0]));
@@ -3631,7 +3625,10 @@ mod tests {
                 .sum()
         };
         assert_eq!(ink_at(0, 5), 0, "ink above the CW start point");
-        assert!(ink_at(5, 40) > 5, "CW glyphs produced no ink below the start");
+        assert!(
+            ink_at(5, 40) > 5,
+            "CW glyphs produced no ink below the start"
+        );
     }
 
     #[test]
@@ -3917,8 +3914,8 @@ mod tests {
         for opaque in [false, true] {
             let got = rasterize_to_vec(&compact, &[&encoded], 34, 24, opaque)
                 .expect("compact density command");
-            let want = rasterize_to_vec(&expanded, &[], 34, 24, opaque)
-                .expect("expanded image command");
+            let want =
+                rasterize_to_vec(&expanded, &[], 34, 24, opaque).expect("expanded image command");
             assert_eq!(got, want, "opaque={opaque}");
         }
 
@@ -3984,8 +3981,8 @@ mod tests {
         for opaque in [false, true] {
             let got = rasterize_to_vec(&direct, &[&arena], 18, 11, opaque)
                 .expect("direct heatmap command");
-            let want = rasterize_to_vec(&expanded, &[], 18, 11, opaque)
-                .expect("expanded image command");
+            let want =
+                rasterize_to_vec(&expanded, &[], 18, 11, opaque).expect("expanded image command");
             assert_eq!(got, want, "opaque={opaque}");
         }
 
@@ -4010,11 +4007,10 @@ mod tests {
             canonical_arena.extend(f64le(value));
         }
         for opaque in [false, true] {
-            let got =
-                rasterize_to_vec(&canonical, &[b"unused", &canonical_arena], 18, 11, opaque)
-                    .expect("canonical heatmap command");
-            let want = rasterize_to_vec(&expanded, &[], 18, 11, opaque)
-                .expect("expanded image command");
+            let got = rasterize_to_vec(&canonical, &[b"unused", &canonical_arena], 18, 11, opaque)
+                .expect("canonical heatmap command");
+            let want =
+                rasterize_to_vec(&expanded, &[], 18, 11, opaque).expect("expanded image command");
             assert_eq!(got, want, "canonical opaque={opaque}");
         }
 
@@ -4090,8 +4086,8 @@ mod tests {
         }
 
         for opaque in [false, true] {
-            let got = rasterize_to_vec(&batch, &[], 28, 30, opaque)
-                .expect("batched stroked triangles");
+            let got =
+                rasterize_to_vec(&batch, &[], 28, 30, opaque).expect("batched stroked triangles");
             let want = rasterize_to_vec(&expanded, &[], 28, 30, opaque)
                 .expect("expanded stroked triangles");
             assert_eq!(got, want, "opaque={opaque}");
@@ -4222,8 +4218,7 @@ mod tests {
         for opaque in [false, true] {
             let got = rasterize_to_vec(&direct, &[&x_arena, &y_arena], 72, 52, opaque)
                 .expect("borrowed affine points");
-            let want =
-                rasterize_to_vec(&expanded, &[], 72, 52, opaque).expect("expanded points");
+            let want = rasterize_to_vec(&expanded, &[], 72, 52, opaque).expect("expanded points");
             assert_eq!(got, want, "opaque={opaque}");
         }
 
@@ -4322,8 +4317,8 @@ mod tests {
         for opaque in [false, true] {
             let got = rasterize_to_vec(&direct, &[&arena], 48, 36, opaque)
                 .expect("borrowed affine channel points");
-            let want = rasterize_to_vec(&expanded, &[], 48, 36, opaque)
-                .expect("expanded styled points");
+            let want =
+                rasterize_to_vec(&expanded, &[], 48, 36, opaque).expect("expanded styled points");
             assert_eq!(got, want, "opaque={opaque}");
         }
 

@@ -70,6 +70,7 @@ sample_range_indices = _impl.sample_range_indices
 stratified_sample_range_u8 = _impl.stratified_sample_range_u8
 sector_triangles = _impl.sector_triangles
 stacked_bounds = _impl.stacked_bounds
+bar_stack = _impl.bar_stack
 streamlines = _impl.streamlines
 triangle_edges = _impl.triangle_edges
 local_log_density = _impl.local_log_density
@@ -90,6 +91,17 @@ stratified_sample_mask = _impl.stratified_sample_mask
 vector_segments = _impl.vector_segments
 welch_spectra = _impl.welch_spectra
 weighted_ecdf = _impl.weighted_ecdf
+drill_decision = _impl.drill_decision
+lod_grid_shape = _impl.lod_grid_shape
+lod_plan = _impl.lod_plan
+quantiles = _impl.quantiles
+box_stats = _impl.box_stats
+hexbin = _impl.hexbin
+violin_density = _impl.violin_density
+histogram_edges = _impl.histogram_edges
+wind_rose_bins = _impl.wind_rose_bins
+contourf_densify = _impl.contourf_densify
+contourf_bands = _impl.contourf_bands
 
 __all__ = [
     "BACKEND",
@@ -97,28 +109,37 @@ __all__ = [
     "CSS_DECLARATION",
     "CSS_LENGTH",
     "CSS_NUMBER",
+    "bar_stack",
     "bin_2d",
     "bin_2d_f32",
     "bin_2d_indices",
     "bin_2d_mean_color",
     "bin_2d_sample_range",
     "bin_2d_stratified_sample_range_u8_counted",
+    "box_stats",
+    "contourf_bands",
+    "contourf_densify",
     "correlation",
     "css_check",
     "delaunay_triangles",
     "density_log_u8",
     "density_rgba",
+    "drill_decision",
     "encode_f32",
     "factorize_fixed",
     "factorize_fixed_u8",
     "factorize_fixed_u8_counts",
     "factorize_unicode1_u8_counts",
     "heatmap_rgba",
+    "hexbin",
     "histogram2d",
+    "histogram_edges",
     "histogram_uniform",
     "indexed_triangles",
     "is_sorted",
     "local_log_density",
+    "lod_grid_shape",
+    "lod_plan",
     "m4_indices",
     "marching_squares",
     "marching_triangles",
@@ -134,6 +155,7 @@ __all__ = [
     "pyramid_count",
     "pyramid_free",
     "quad_mesh_triangles",
+    "quantiles",
     "range_indices",
     "range_indices_rows",
     "rasterize",
@@ -152,8 +174,10 @@ __all__ = [
     "triangle_edges",
     "valid_indices_f64",
     "vector_segments",
+    "violin_density",
     "weighted_ecdf",
     "welch_spectra",
+    "wind_rose_bins",
     "zone_maps",
     "zone_maps_pair",
 ]

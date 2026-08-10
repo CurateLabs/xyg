@@ -9,14 +9,23 @@ clear ImportError when it can't load, with no pure-Python fallback.
 
 ## 1. The placement rule
 
-**Rust owns row-scan loops; Python owns decisions.** Precisely:
+**Rust owns row-scan loops and parity-affecting decisions; hosts own
+ergonomics only.** For this product line (graphforge-xy / dual Python+Node
+hosts — see [host-parity.md](host-parity.md)), the upstream habit “Python owns
+decisions” is **superseded**: any decision that changes buffers, layout,
+encodings, or recorded §28 LOD/layout outcomes is implemented in Rust so both
+bindings stay thin and bit-identical.
 
-- If work is O(N) over data rows and sits on an interaction path (build,
-  zoom, pan, drill) → Rust kernel.
-- If work is O(traces), O(screen), or policy (tier choice, budget math, spec
-  assembly, validation, warnings) → Python. Moving policy into Rust buys
-  nothing (it's microseconds) and costs iteration speed — policy is what
-  changes weekly.
+Precisely:
+
+- If work is O(N) / O(|V|+|E|) over data, or sits on an interaction path
+  (build, zoom, pan, drill, layout ticks) → Rust kernel.
+- If work is deterministic policy that must match across Python and Node
+  (tier choice that changes geometry, layout parameter application, graph LOD
+  budgets) → Rust.
+- If work is host ergonomics only (API shapes, idiomatic ingest coercion,
+  error *message* text, transport attach) → host. Do **not** put a second
+  layout/encode path in Python or Node.
 - The client (JS) owns nothing O(N): it receives screen-bounded buffers only
   (§29). This boundary is what keeps the browser safe at 1B rows and it never
   moves.
@@ -34,8 +43,10 @@ clear ImportError when it can't load, with no pure-Python fallback.
 | statistics: `xy_correlation`, `xy_weighted_ecdf`, `xy_histogram2d`, `xy_stacked_bounds` | Rust (ABI v36) | correct — row-scan reductions; binning policy and labels stay in Python. Unweighted `xy_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
 | style/text helpers: `xy_css_check` (`css.rs`), `xy_svg_poly_path` (`svg.rs`) | Rust (ABI v36) | correct by a different rule — not O(rows) but O(points)/per-value on the export and validation paths, where per-item Python object churn dominates; error *messages* still assembled in Python |
 | ohlc_decimate (when finance returns) | was NumPy-in-kernels.py | acceptable stopgap **only** because candles decimate to ≤px buckets; promote to Rust with the pyramid work |
-| tier decisions, hysteresis, drill_seq, spec/emitters, channel resolution | Python | correct — keep |
-| visible-count mask for drill | NumPy expression in `lod.visible_mask` | promote: it's O(N) per zoom step at 100M — fold into `xy_range_indices` (already exists) so count+indices come from one pass |
+| tier decisions, hysteresis, drill_seq that change shipped buffers | Rust (dual-host) / thin host assembly | **promote** — hosts must not diverge; see host-parity.md |
+| spec emitters, validation messages, transport | Host | correct — keep |
+| graph display layouts, force ticks, graph LOD | Rust (`graph` module) | correct — [graph-mark.md](graph-mark.md) |
+| sankey layout | Rust (`sankey` module / `xy_sankey_layout`) | correct — dual-host; Python `_sankey` resolves names + error text only |
 
 ### Target Rust ownership (matches the priority list)
 
@@ -49,9 +60,14 @@ it holds: the native pass exists to keep N records out of Python, so it is
 declined only for a near-unique id/key column, where Python must materialize
 essentially the whole label set regardless. Wide records cross over sooner —
 above 32 B they are declined once the probe is 95% distinct, at or below 32 B
-only when it is entirely distinct) · histogram stats ✅ · quantiles (plan:
-`xy_quantiles`, needed by box/violin) · box/violin stats (thin composition
-over quantiles — stats in Rust, assembly in Python) · multi-resolution tile
+only when it is entirely distinct) · histogram stats ✅ · quantiles (`xy_quantiles` ✅, linear/NumPy-default) · box stats
+(`xy_box_stats` ✅ Tukey; `xy_violin_density` ✅ fixed smooth kernel) · hexbin
+reducer (`xy_hexbin` ✅ count/mean/sum) · histogram edges (`xy_histogram_edges`
+✅ NumPy `bins="auto"` / Sturges) · wind-rose bins (`xy_wind_rose_bins` ✅
+sector × speed-band counts; polar bar assembly stays host-side) · contourf
+densify (`xy_contourf_densify` ✅) + corner-mask bands (`xy_contourf_bands` ✅
+ContourPy-style one-masked-corner clip) · bar offsets (`xy_bar_stack` ✅
+grouped/stacked/normalized) · multi-resolution tile
 generation (`tiles.rs` ✅, including stable-domain incremental updates) ·
 Rust-owned streaming column buffers (plan: `stream.rs`, §5 below).
 
@@ -114,8 +130,16 @@ src/                                          # 15,423 lines shipped, 8 modules
                         #   pyramids refuse appends and rebuild lazily). Owns tile
                         #   memory; handles are opaque u64 ids over the ABI (§3.3).
   stream.rs             # (plan) Rust-owned canonical append buffers.
-  stats.rs              # (plan) quantiles/box/violin/factorize.
+  stats.rs              # quantiles + Tukey box_stats + violin_density +
+                        #   histogram_edges (NumPy auto) + wind_rose_bins ✅
+  hexbin.rs             # matplotlib-compatible hex lattice (`xy_hexbin`) ✅
+  lod_plan.rs           # view LOD drill/grid decision math ✅ (`xy_lod_plan`).
 ```
+
+Contourf corner-mask bands land in Rust as `xy_contourf_bands` (ABI 57),
+matching `_contourf_corner_triangles` / ContourPy one-masked-corner clips.
+Python `marks._contourf_corner_triangles` is a thin loader over that entry
+point; densify remains `xy_contourf_densify`.
 
 Line counts are `wc -l` at this revision and drift with the code; the ordering
 (kernels > raster > lib > font > css > tiles > simd > svg) is the stable fact —
@@ -367,6 +391,8 @@ landed; the remainder, in order:
    negative enum (with the next ABI bump, cheap insurance).
 2. `xy_bin_2d_channels` (LOD doc phase 1) — first FcOpts-style kernel.
 3. Fold drill visible-count into `xy_range_indices` (one pass, count+idx).
-4. `stats.rs`: `xy_quantiles` (+ box/violin composition) — unblocks rank-8
-   box plots with Rust-grade interaction.
+4. `stats.rs`: `xy_quantiles` + `xy_box_stats` + `xy_violin_density` ✅;
+   `hexbin.rs`: `xy_hexbin` (count/mean/sum) ✅; `xy_histogram_edges`
+   (NumPy `bins="auto"` = min of Sturges bandwidth and FD floored by
+   `sqrt/2`) ✅.
 5. `stream.rs` append (after Arrow ingest lands).

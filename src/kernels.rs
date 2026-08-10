@@ -980,6 +980,203 @@ pub fn stacked_bounds_into(
     true
 }
 
+/// Bar/column layout modes shared by Python `_bar_like` and Node `composeBar`.
+///
+/// `0` = grouped, `1` = stacked, `2` = normalized (non-negative values only).
+pub const BAR_MODE_GROUPED: u32 = 0;
+pub const BAR_MODE_STACKED: u32 = 1;
+pub const BAR_MODE_NORMALIZED: u32 = 2;
+pub const BAR_ORIENT_VERTICAL: u32 = 0;
+pub const BAR_ORIENT_HORIZONTAL: u32 = 1;
+
+/// Compute bar rectangle corners for grouped / stacked / normalized layouts.
+///
+/// `values` is row-major `(n_series, n_items)`. `width` / `base` are length 1
+/// (broadcast) or `n_items`. Writes `n_series * n_items` rectangles into the
+/// four output buffers (series-major). Orientation maps category → x and value
+/// → y when vertical, swapped when horizontal — matching `_append_bar_rect`.
+pub fn bar_stack_into(
+    pos: &[f64],
+    values: &[f64],
+    n_series: usize,
+    n_items: usize,
+    width: &[f64],
+    base: &[f64],
+    mode: u32,
+    orientation: u32,
+    out_x0: &mut [f64],
+    out_x1: &mut [f64],
+    out_y0: &mut [f64],
+    out_y1: &mut [f64],
+) -> bool {
+    let Some(len) = n_series.checked_mul(n_items) else {
+        return false;
+    };
+    if n_series == 0
+        || n_items == 0
+        || pos.len() != n_items
+        || values.len() != len
+        || out_x0.len() < len
+        || out_x1.len() < len
+        || out_y0.len() < len
+        || out_y1.len() < len
+        || !(mode <= BAR_MODE_NORMALIZED)
+        || !(orientation <= BAR_ORIENT_HORIZONTAL)
+        || !(width.len() == 1 || width.len() == n_items)
+        || !(base.len() == 1 || base.len() == n_items)
+        || width.iter().any(|w| !w.is_finite() || *w < 0.0)
+        || base.iter().any(|b| !b.is_finite())
+        || pos.iter().any(|p| !p.is_finite())
+    {
+        return false;
+    }
+
+    let width_at = |i: usize| -> f64 {
+        if width.len() == 1 {
+            width[0]
+        } else {
+            width[i]
+        }
+    };
+    let base_at = |i: usize| -> f64 {
+        if base.len() == 1 {
+            base[0]
+        } else {
+            base[i]
+        }
+    };
+
+    // Working copy so normalized mode can rescale without mutating the caller.
+    let mut work = values.to_vec();
+    if mode == BAR_MODE_NORMALIZED {
+        for item in 0..n_items {
+            let mut total = 0.0;
+            for series in 0..n_series {
+                let v = work[series * n_items + item];
+                if v.is_finite() {
+                    if v < 0.0 {
+                        return false;
+                    }
+                    total += v;
+                }
+            }
+            let denom = if total > 0.0 { total } else { 1.0 };
+            for series in 0..n_series {
+                let idx = series * n_items + item;
+                if work[idx].is_finite() {
+                    work[idx] /= denom;
+                }
+            }
+        }
+    }
+
+    let write_rect = |dst: usize,
+                      pos0: f64,
+                      pos1: f64,
+                      v0: f64,
+                      v1: f64,
+                      out_x0: &mut [f64],
+                      out_x1: &mut [f64],
+                      out_y0: &mut [f64],
+                      out_y1: &mut [f64]| {
+        if orientation == BAR_ORIENT_VERTICAL {
+            out_x0[dst] = pos0;
+            out_x1[dst] = pos1;
+            out_y0[dst] = v0;
+            out_y1[dst] = v1;
+        } else {
+            out_x0[dst] = v0;
+            out_x1[dst] = v1;
+            out_y0[dst] = pos0;
+            out_y1[dst] = pos1;
+        }
+    };
+
+    if n_series == 1 {
+        for item in 0..n_items {
+            let half = width_at(item) * 0.5;
+            let p = pos[item];
+            let b = base_at(item);
+            write_rect(
+                item,
+                p - half,
+                p + half,
+                b,
+                b + work[item],
+                out_x0,
+                out_x1,
+                out_y0,
+                out_y1,
+            );
+        }
+        return true;
+    }
+
+    if mode == BAR_MODE_GROUPED {
+        for series in 0..n_series {
+            for item in 0..n_items {
+                let w = width_at(item);
+                let half = w * 0.5;
+                let slot = w / n_series as f64;
+                let p0 = pos[item] - half + series as f64 * slot;
+                let b = base_at(item);
+                let row = work[series * n_items + item];
+                write_rect(
+                    series * n_items + item,
+                    p0,
+                    p0 + slot,
+                    b,
+                    b + row,
+                    out_x0,
+                    out_x1,
+                    out_y0,
+                    out_y1,
+                );
+            }
+        }
+        return true;
+    }
+
+    // stacked + normalized share the signed dual-base walk.
+    let mut pos_base: Vec<f64> = (0..n_items).map(base_at).collect();
+    let mut neg_base = pos_base.clone();
+    for series in 0..n_series {
+        for item in 0..n_items {
+            let half = width_at(item) * 0.5;
+            let p = pos[item];
+            let row = work[series * n_items + item];
+            // Match NumPy where: NaN comparisons are false, so a missing
+            // segment still emits (base, base+NaN) without advancing either
+            // cumulative cursor (§19 keeps NaN out of GPU verts later).
+            let (y0, y1) = if row >= 0.0 {
+                let y0 = pos_base[item];
+                let y1 = y0 + row;
+                pos_base[item] = y1;
+                (y0, y1)
+            } else {
+                let y0 = neg_base[item];
+                let y1 = y0 + row;
+                if row < 0.0 {
+                    neg_base[item] = y1;
+                }
+                (y0, y1)
+            };
+            write_rect(
+                series * n_items + item,
+                p - half,
+                p + half,
+                y0,
+                y1,
+                out_x0,
+                out_x1,
+                out_y0,
+                out_y1,
+            );
+        }
+    }
+    true
+}
+
 fn histogram_edge_bin(value: f64, edges: &[f64]) -> Option<usize> {
     if !value.is_finite() || value < edges[0] || value > edges[edges.len() - 1] {
         return None;
@@ -2715,53 +2912,46 @@ where
             let v01 = z[(row + 1) * cols + col];
             let all_finite =
                 v00.is_finite() && v10.is_finite() && v11.is_finite() && v01.is_finite();
-            let (local_min, local_max, triangle_edges): (
-                f64,
-                f64,
-                Option<&[(usize, usize); 3]>,
-            ) = if all_finite {
-                (
-                    v00.min(v10).min(v11).min(v01),
-                    v00.max(v10).max(v11).max(v01),
-                    None,
-                )
-            } else {
-                if !corner_mask {
-                    continue;
-                }
-                let finite = [
-                    v00.is_finite(),
-                    v10.is_finite(),
-                    v11.is_finite(),
-                    v01.is_finite(),
-                ];
-                if finite.iter().filter(|&&value| value).count() != 3 {
-                    continue;
-                }
-                let values = [v00, v10, v11, v01];
-                let local_min = values
-                    .iter()
-                    .copied()
-                    .filter(|value| value.is_finite())
-                    .fold(f64::INFINITY, f64::min);
-                let local_max = values
-                    .iter()
-                    .copied()
-                    .filter(|value| value.is_finite())
-                    .fold(f64::NEG_INFINITY, f64::max);
-                let edges = match finite.iter().position(|value| !value).unwrap() {
-                    0 => &[(1, 2), (2, 3), (3, 1)],
-                    1 => &[(0, 2), (2, 3), (3, 0)],
-                    2 => &[(0, 1), (1, 3), (3, 0)],
-                    3 => &[(0, 1), (1, 2), (2, 0)],
-                    _ => unreachable!(),
+            let (local_min, local_max, triangle_edges): (f64, f64, Option<&[(usize, usize); 3]>) =
+                if all_finite {
+                    (
+                        v00.min(v10).min(v11).min(v01),
+                        v00.max(v10).max(v11).max(v01),
+                        None,
+                    )
+                } else {
+                    if !corner_mask {
+                        continue;
+                    }
+                    let finite = [
+                        v00.is_finite(),
+                        v10.is_finite(),
+                        v11.is_finite(),
+                        v01.is_finite(),
+                    ];
+                    if finite.iter().filter(|&&value| value).count() != 3 {
+                        continue;
+                    }
+                    let values = [v00, v10, v11, v01];
+                    let local_min = values
+                        .iter()
+                        .copied()
+                        .filter(|value| value.is_finite())
+                        .fold(f64::INFINITY, f64::min);
+                    let local_max = values
+                        .iter()
+                        .copied()
+                        .filter(|value| value.is_finite())
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    let edges = match finite.iter().position(|value| !value).unwrap() {
+                        0 => &[(1, 2), (2, 3), (3, 1)],
+                        1 => &[(0, 2), (2, 3), (3, 0)],
+                        2 => &[(0, 1), (1, 3), (3, 0)],
+                        3 => &[(0, 1), (1, 2), (2, 0)],
+                        _ => unreachable!(),
+                    };
+                    (local_min, local_max, Some(edges))
                 };
-                (
-                    local_min,
-                    local_max,
-                    Some(edges),
-                )
-            };
             let corners = [
                 (x_coords[col], y_coords[row], v00),
                 (x_coords[col + 1], y_coords[row], v10),
@@ -2843,6 +3033,272 @@ where
         }
     }
     count
+}
+
+/// Contourf densify output shape for a `(rows, cols)` source field.
+///
+/// Matches `marks._interpolate_contourf_grid`: eight samples per source
+/// interval with a 256²–512² floor/cap; already-larger inputs are unchanged.
+pub fn contourf_densify_shape(rows: usize, cols: usize) -> Option<(usize, usize)> {
+    if rows < 2 || cols < 2 {
+        return None;
+    }
+    Some((contourf_sample_count(rows), contourf_sample_count(cols)))
+}
+
+fn contourf_sample_count(size: usize) -> usize {
+    if size > 512 {
+        return size;
+    }
+    let target = (size - 1).saturating_mul(8).saturating_add(1);
+    target.max(256).min(512)
+}
+
+/// Bilinear densify of a contour scalar field before discrete band assignment.
+///
+/// Writes row-major `out_z` (`out_rows * out_cols`), `out_x` (`out_cols`), and
+/// `out_y` (`out_rows`). Non-finite source corners yield NaN samples. Returns
+/// `(out_rows, out_cols)` or `None` on shape/capacity mismatch.
+pub fn contourf_densify(
+    z: &[f64],
+    rows: usize,
+    cols: usize,
+    xpos: &[f64],
+    ypos: &[f64],
+    out_z: &mut [f64],
+    out_x: &mut [f64],
+    out_y: &mut [f64],
+) -> Option<(usize, usize)> {
+    if z.len() != rows.checked_mul(cols)? || xpos.len() != cols || ypos.len() != rows {
+        return None;
+    }
+    let (out_rows, out_cols) = contourf_densify_shape(rows, cols)?;
+    if out_z.len() < out_rows * out_cols || out_x.len() < out_cols || out_y.len() < out_rows {
+        return None;
+    }
+    if out_rows == rows && out_cols == cols {
+        out_z[..rows * cols].copy_from_slice(z);
+        out_x[..cols].copy_from_slice(xpos);
+        out_y[..rows].copy_from_slice(ypos);
+        return Some((out_rows, out_cols));
+    }
+
+    let row_span = (rows - 1) as f64;
+    let col_span = (cols - 1) as f64;
+    for oc in 0..out_cols {
+        let col_at = if out_cols == 1 {
+            0.0
+        } else {
+            oc as f64 * col_span / (out_cols - 1) as f64
+        };
+        let col0 = col_at.floor() as usize;
+        let col1 = (col0 + 1).min(cols - 1);
+        let tw = col_at - col0 as f64;
+        out_x[oc] = xpos[col0] * (1.0 - tw) + xpos[col1] * tw;
+    }
+    for orow in 0..out_rows {
+        let row_at = if out_rows == 1 {
+            0.0
+        } else {
+            orow as f64 * row_span / (out_rows - 1) as f64
+        };
+        let row0 = row_at.floor() as usize;
+        let row1 = (row0 + 1).min(rows - 1);
+        let rw = row_at - row0 as f64;
+        out_y[orow] = ypos[row0] * (1.0 - rw) + ypos[row1] * rw;
+        for oc in 0..out_cols {
+            let col_at = if out_cols == 1 {
+                0.0
+            } else {
+                oc as f64 * col_span / (out_cols - 1) as f64
+            };
+            let col0 = col_at.floor() as usize;
+            let col1 = (col0 + 1).min(cols - 1);
+            let cw = col_at - col0 as f64;
+            let z00 = z[row0 * cols + col0];
+            let z10 = z[row0 * cols + col1];
+            let z01 = z[row1 * cols + col0];
+            let z11 = z[row1 * cols + col1];
+            let sample = if z00.is_finite() && z10.is_finite() && z01.is_finite() && z11.is_finite()
+            {
+                z00 * (1.0 - rw) * (1.0 - cw)
+                    + z10 * (1.0 - rw) * cw
+                    + z01 * rw * (1.0 - cw)
+                    + z11 * rw * cw
+            } else {
+                f64::NAN
+            };
+            out_z[orow * out_cols + oc] = sample;
+        }
+    }
+    Some((out_rows, out_cols))
+}
+
+/// Contourf corner-mask band triangles (ContourPy-style one-masked-corner clip).
+///
+/// For each cell with exactly three finite corners, clip the triangle to every
+/// filled band between consecutive `edges` (plus optional extend min/max) and
+/// fan the retained polygon into triangles. Returns the triangle count; when
+/// `capacity` is too small only a count query is performed (no writes). Slots
+/// index the band paint table (extend-min, mid bands, extend-max).
+#[allow(clippy::too_many_arguments)]
+pub fn contourf_bands_into(
+    z: &[f64],
+    rows: usize,
+    cols: usize,
+    xpos: &[f64],
+    ypos: &[f64],
+    edges: &[f64],
+    extend_min: bool,
+    extend_max: bool,
+    out_x0: &mut [f64],
+    out_y0: &mut [f64],
+    out_x1: &mut [f64],
+    out_y1: &mut [f64],
+    out_x2: &mut [f64],
+    out_y2: &mut [f64],
+    out_slots: &mut [i64],
+) -> Option<usize> {
+    if rows < 2
+        || cols < 2
+        || z.len() != rows.checked_mul(cols)?
+        || xpos.len() != cols
+        || ypos.len() != rows
+        || edges.len() < 2
+        || !edges.windows(2).all(|w| w[0] < w[1])
+        || !edges.iter().all(|e| e.is_finite())
+    {
+        return None;
+    }
+    let query = out_x0.is_empty()
+        && out_y0.is_empty()
+        && out_x1.is_empty()
+        && out_y1.is_empty()
+        && out_x2.is_empty()
+        && out_y2.is_empty()
+        && out_slots.is_empty();
+    if !query {
+        let n = out_x0.len();
+        if [
+            out_y0.len(),
+            out_x1.len(),
+            out_y1.len(),
+            out_x2.len(),
+            out_y2.len(),
+            out_slots.len(),
+        ]
+        .iter()
+        .any(|len| *len != n)
+        {
+            return None;
+        }
+    }
+
+    type Pt = (f64, f64, f64);
+
+    fn clip(polygon: &[Pt], threshold: f64, keep_above: bool) -> Vec<Pt> {
+        if polygon.is_empty() {
+            return Vec::new();
+        }
+        let mut output = Vec::new();
+        let mut previous = polygon[polygon.len() - 1];
+        let mut previous_inside = if keep_above {
+            previous.2 >= threshold
+        } else {
+            previous.2 <= threshold
+        };
+        for &current in polygon {
+            let current_inside = if keep_above {
+                current.2 >= threshold
+            } else {
+                current.2 <= threshold
+            };
+            if current_inside != previous_inside {
+                let fraction = (threshold - previous.2) / (current.2 - previous.2);
+                output.push((
+                    previous.0 + fraction * (current.0 - previous.0),
+                    previous.1 + fraction * (current.1 - previous.1),
+                    threshold,
+                ));
+            }
+            if current_inside {
+                output.push(current);
+            }
+            previous = current;
+            previous_inside = current_inside;
+        }
+        output
+    }
+
+    let mut bands: Vec<(f64, f64, i64)> = Vec::new();
+    let mut slot: i64 = 0;
+    if extend_min {
+        bands.push((f64::NEG_INFINITY, edges[0], slot));
+        slot += 1;
+    }
+    for (index, window) in edges.windows(2).enumerate() {
+        bands.push((window[0], window[1], slot + index as i64));
+    }
+    slot += (edges.len() - 1) as i64;
+    if extend_max {
+        bands.push((edges[edges.len() - 1], f64::INFINITY, slot));
+    }
+
+    let eps = f64::EPSILON;
+    let mut count = 0usize;
+    let capacity = if query { 0 } else { out_x0.len() };
+
+    for row in 0..rows - 1 {
+        for col in 0..cols - 1 {
+            let corners: [Pt; 4] = [
+                (xpos[col], ypos[row], z[row * cols + col]),
+                (xpos[col + 1], ypos[row], z[row * cols + col + 1]),
+                (
+                    xpos[col + 1],
+                    ypos[row + 1],
+                    z[(row + 1) * cols + col + 1],
+                ),
+                (xpos[col], ypos[row + 1], z[(row + 1) * cols + col]),
+            ];
+            let triangle: Vec<Pt> = corners
+                .into_iter()
+                .filter(|c| c.2.is_finite())
+                .collect();
+            if triangle.len() != 3 {
+                continue;
+            }
+            for &(low, high, band_slot) in &bands {
+                let mut polygon = triangle.clone();
+                if low.is_finite() {
+                    polygon = clip(&polygon, low, true);
+                }
+                if high.is_finite() {
+                    polygon = clip(&polygon, high, false);
+                }
+                for index in 1..polygon.len().saturating_sub(1) {
+                    let v0 = polygon[0];
+                    let v1 = polygon[index];
+                    let v2 = polygon[index + 1];
+                    let area =
+                        (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
+                    if area.abs() <= eps {
+                        continue;
+                    }
+                    if !query && count < capacity {
+                        out_x0[count] = v0.0;
+                        out_y0[count] = v0.1;
+                        out_x1[count] = v1.0;
+                        out_y1[count] = v1.1;
+                        out_x2[count] = v2.0;
+                        out_y2[count] = v2.1;
+                        out_slots[count] = band_slot;
+                    }
+                    count = count.saturating_add(1);
+                }
+            }
+        }
+    }
+    Some(count)
 }
 
 /// Write marching-squares segments into caller-owned parallel output arrays.
@@ -3401,38 +3857,24 @@ fn bin_2d_impl(
 /// is bitwise deterministic for any thread count and across platforms.
 /// Strictly increasing, so the inverse is an exact search.
 pub(crate) const SRGB_TO_LINEAR_U16: [u16; 256] = [
-    0, 20, 40, 60, 80, 99, 119, 139,
-    159, 179, 199, 219, 241, 264, 288, 313,
-    340, 367, 396, 427, 458, 491, 526, 562,
-    599, 637, 677, 718, 761, 805, 851, 898,
-    947, 997, 1048, 1101, 1156, 1212, 1270, 1330,
-    1391, 1453, 1517, 1583, 1651, 1720, 1790, 1863,
-    1937, 2013, 2090, 2170, 2250, 2333, 2418, 2504,
-    2592, 2681, 2773, 2866, 2961, 3058, 3157, 3258,
-    3360, 3464, 3570, 3678, 3788, 3900, 4014, 4129,
-    4247, 4366, 4488, 4611, 4736, 4864, 4993, 5124,
-    5257, 5392, 5530, 5669, 5810, 5953, 6099, 6246,
-    6395, 6547, 6700, 6856, 7014, 7174, 7335, 7500,
-    7666, 7834, 8004, 8177, 8352, 8528, 8708, 8889,
-    9072, 9258, 9445, 9635, 9828, 10022, 10219, 10417,
-    10619, 10822, 11028, 11235, 11446, 11658, 11873, 12090,
-    12309, 12530, 12754, 12980, 13209, 13440, 13673, 13909,
-    14146, 14387, 14629, 14874, 15122, 15371, 15623, 15878,
-    16135, 16394, 16656, 16920, 17187, 17456, 17727, 18001,
-    18277, 18556, 18837, 19121, 19407, 19696, 19987, 20281,
-    20577, 20876, 21177, 21481, 21787, 22096, 22407, 22721,
-    23038, 23357, 23678, 24002, 24329, 24658, 24990, 25325,
-    25662, 26001, 26344, 26688, 27036, 27386, 27739, 28094,
-    28452, 28813, 29176, 29542, 29911, 30282, 30656, 31033,
-    31412, 31794, 32179, 32567, 32957, 33350, 33745, 34143,
-    34544, 34948, 35355, 35764, 36176, 36591, 37008, 37429,
-    37852, 38278, 38706, 39138, 39572, 40009, 40449, 40891,
-    41337, 41785, 42236, 42690, 43147, 43606, 44069, 44534,
-    45002, 45473, 45947, 46423, 46903, 47385, 47871, 48359,
-    48850, 49344, 49841, 50341, 50844, 51349, 51858, 52369,
-    52884, 53401, 53921, 54445, 54971, 55500, 56032, 56567,
-    57105, 57646, 58190, 58737, 59287, 59840, 60396, 60955,
-    61517, 62082, 62650, 63221, 63795, 64372, 64952, 65535,
+    0, 20, 40, 60, 80, 99, 119, 139, 159, 179, 199, 219, 241, 264, 288, 313, 340, 367, 396, 427,
+    458, 491, 526, 562, 599, 637, 677, 718, 761, 805, 851, 898, 947, 997, 1048, 1101, 1156, 1212,
+    1270, 1330, 1391, 1453, 1517, 1583, 1651, 1720, 1790, 1863, 1937, 2013, 2090, 2170, 2250, 2333,
+    2418, 2504, 2592, 2681, 2773, 2866, 2961, 3058, 3157, 3258, 3360, 3464, 3570, 3678, 3788, 3900,
+    4014, 4129, 4247, 4366, 4488, 4611, 4736, 4864, 4993, 5124, 5257, 5392, 5530, 5669, 5810, 5953,
+    6099, 6246, 6395, 6547, 6700, 6856, 7014, 7174, 7335, 7500, 7666, 7834, 8004, 8177, 8352, 8528,
+    8708, 8889, 9072, 9258, 9445, 9635, 9828, 10022, 10219, 10417, 10619, 10822, 11028, 11235,
+    11446, 11658, 11873, 12090, 12309, 12530, 12754, 12980, 13209, 13440, 13673, 13909, 14146,
+    14387, 14629, 14874, 15122, 15371, 15623, 15878, 16135, 16394, 16656, 16920, 17187, 17456,
+    17727, 18001, 18277, 18556, 18837, 19121, 19407, 19696, 19987, 20281, 20577, 20876, 21177,
+    21481, 21787, 22096, 22407, 22721, 23038, 23357, 23678, 24002, 24329, 24658, 24990, 25325,
+    25662, 26001, 26344, 26688, 27036, 27386, 27739, 28094, 28452, 28813, 29176, 29542, 29911,
+    30282, 30656, 31033, 31412, 31794, 32179, 32567, 32957, 33350, 33745, 34143, 34544, 34948,
+    35355, 35764, 36176, 36591, 37008, 37429, 37852, 38278, 38706, 39138, 39572, 40009, 40449,
+    40891, 41337, 41785, 42236, 42690, 43147, 43606, 44069, 44534, 45002, 45473, 45947, 46423,
+    46903, 47385, 47871, 48359, 48850, 49344, 49841, 50341, 50844, 51349, 51858, 52369, 52884,
+    53401, 53921, 54445, 54971, 55500, 56032, 56567, 57105, 57646, 58190, 58737, 59287, 59840,
+    60396, 60955, 61517, 62082, 62650, 63221, 63795, 64372, 64952, 65535,
 ];
 
 /// Nearest sRGB byte for a linear-light u16 — the exact inverse of the table
@@ -3572,7 +4014,9 @@ pub(crate) fn bin_2d_mean_color_cells(
                 let (xs, ys) = (&x[lo..hi], &y[lo..hi]);
                 s.spawn(move || {
                     let mut grid = vec![MeanColorCell::default(); cells];
-                    bin_2d_mean_color_accumulate(xs, ys, colors, lo, x0, x1, y0, y1, w, h, &mut grid);
+                    bin_2d_mean_color_accumulate(
+                        xs, ys, colors, lo, x0, x1, y0, y1, w, h, &mut grid,
+                    );
                     grid
                 })
             })
@@ -5899,6 +6343,126 @@ mod tests {
         ));
         assert_eq!(lower, [-2.5, -6.0, -11.5, -1.5, -4.0, -8.5]);
         assert_eq!(upper, [-1.5, -4.0, -8.5, 2.5, 6.0, 11.5]);
+    }
+
+    #[test]
+    fn bar_stack_grouped_and_signed_stacked() {
+        let pos = [0.0, 1.0];
+        let values = [1.0, 2.0, 3.0, 4.0]; // 2 series × 2 items
+        let width = [0.8];
+        let base = [0.0];
+        let mut x0 = [0.0; 4];
+        let mut x1 = [0.0; 4];
+        let mut y0 = [0.0; 4];
+        let mut y1 = [0.0; 4];
+        assert!(bar_stack_into(
+            &pos,
+            &values,
+            2,
+            2,
+            &width,
+            &base,
+            BAR_MODE_GROUPED,
+            BAR_ORIENT_VERTICAL,
+            &mut x0,
+            &mut x1,
+            &mut y0,
+            &mut y1,
+        ));
+        assert!((x0[0] - (-0.4)).abs() < 1e-12);
+        assert!((x1[0] - 0.0).abs() < 1e-12);
+        assert!((x0[2] - 0.0).abs() < 1e-12);
+        assert!((x1[2] - 0.4).abs() < 1e-12);
+        assert_eq!(y1, [1.0, 2.0, 3.0, 4.0]);
+
+        let signed = [2.0, -1.0, 3.0, -4.0, -1.0, 2.0];
+        let mut sx0 = [0.0; 6];
+        let mut sx1 = [0.0; 6];
+        let mut sy0 = [0.0; 6];
+        let mut sy1 = [0.0; 6];
+        assert!(bar_stack_into(
+            &pos,
+            &signed,
+            3,
+            2,
+            &width,
+            &base,
+            BAR_MODE_STACKED,
+            BAR_ORIENT_VERTICAL,
+            &mut sx0,
+            &mut sx1,
+            &mut sy0,
+            &mut sy1,
+        ));
+        // series 1 bases/tops match Python test_stacked_bar_handles_positive_and_negative
+        assert_eq!(&[sy0[2], sy0[3]], &[2.0, -1.0]);
+        assert_eq!(&[sy1[2], sy1[3]], &[5.0, -5.0]);
+    }
+
+    #[test]
+    fn contourf_bands_one_masked_corner() {
+        // Matches tests/pyplot/test_p3_option_contracts.py contourf corner_mask case.
+        let z = [f64::NAN, 1.0, 0.0, 0.0];
+        let xpos = [0.0, 1.0];
+        let ypos = [0.0, 1.0];
+        let edges = [-1.0, 0.5, 2.0];
+        let needed = contourf_bands_into(
+            &z,
+            2,
+            2,
+            &xpos,
+            &ypos,
+            &edges,
+            false,
+            false,
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+            &mut [],
+        )
+        .unwrap();
+        assert_eq!(needed, 3);
+        let mut x0 = vec![0.0; needed];
+        let mut y0 = vec![0.0; needed];
+        let mut x1 = vec![0.0; needed];
+        let mut y1 = vec![0.0; needed];
+        let mut x2 = vec![0.0; needed];
+        let mut y2 = vec![0.0; needed];
+        let mut slots = vec![0i64; needed];
+        assert_eq!(
+            contourf_bands_into(
+                &z,
+                2,
+                2,
+                &xpos,
+                &ypos,
+                &edges,
+                false,
+                false,
+                &mut x0,
+                &mut y0,
+                &mut x1,
+                &mut y1,
+                &mut x2,
+                &mut y2,
+                &mut slots,
+            ),
+            Some(3)
+        );
+        let geometry: Vec<[f64; 6]> = (0..3)
+            .map(|i| [x0[i], y0[i], x1[i], y1[i], x2[i], y2[i]])
+            .collect();
+        assert_eq!(
+            geometry,
+            vec![
+                [0.5, 0.5, 1.0, 0.5, 1.0, 1.0],
+                [0.5, 0.5, 1.0, 1.0, 0.0, 1.0],
+                [0.5, 0.5, 1.0, 0.0, 1.0, 0.5],
+            ]
+        );
     }
 
     #[test]

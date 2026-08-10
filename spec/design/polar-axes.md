@@ -446,7 +446,9 @@ turn rather than by repeating its first angle, which would sweep the closing
 segment backwards through the circle. `bar` and `column` use annular sectors;
 `xy.polar_bar_chart(...)` makes that composition explicit, and
 `xy.wind_rose(...)` bins directional observations into stacked sector marks
-using compass convention `zero="N"` plus clockwise angles. The client subdivides
+using compass convention `zero="N"` plus clockwise angles — sector ×
+speed-band counts come from `xy_wind_rose_bins` in the native core; the host
+only assembles polar bars. The client subdivides
 each sector arc by the span-proportional formula in §5, SVG uses true arc
 commands, and raster flattens the same sector to a polygon.
 

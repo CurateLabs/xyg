@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from itertools import pairwise
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
@@ -568,10 +567,10 @@ def sankey(
     """Add a Sankey flow diagram: placed nodes, gradient ribbons, labels.
 
     The layout (layering, crossing minimisation, value-proportional heights,
-    endpoint stacking) is pure Python in `_sankey.compute_layout`, exactly as
-    `hist` owns its binning; the drawing is two `ribbon` traces — the links,
-    and the nodes themselves, since a band whose two spans are equal *is* a
-    rectangle. Each link takes its source node's colour at the source end and
+    endpoint stacking) runs in the Rust ABI via `_sankey.compute_layout`,
+    exactly as `hist` owns its binning; the drawing is two `ribbon` traces — the
+    links, and the nodes themselves, since a band whose two spans are equal *is*
+    a rectangle. Each link takes its source node's colour at the source end and
     its target node's at the target end, so the gradient reads as flow.
 
     Args:
@@ -674,6 +673,102 @@ def sankey(
     except Exception:
         self._rollback(checkpoint)
         raise
+
+
+def graph(
+    self: "Figure",
+    nodes: Any,
+    edges: Any,
+    *,
+    x: Any = None,
+    y: Any = None,
+    layout: str = "force",
+    directed: bool = True,
+    seed: int = 0,
+    iterations: int = 300,
+    color: Union[str, ArrayLike, None] = None,
+    size: Union[float, ArrayLike, None] = None,
+    edge_color: Union[str, ArrayLike, None] = None,
+    edge_width: Any = 1.2,
+    symbol: Any = "circle",
+    edge_curve: str = "straight",
+    name: Optional[str] = None,
+    opacity: Any = 1.0,
+    style: styles.StyleMapping | None = None,
+) -> "Figure":
+    """Add a node–link graph: Rust layout, then segments (edges) + scatter (nodes).
+
+    See ``spec/design/graph-mark.md``. Analysis stays in GraphForge; this mark
+    only positions and draws. ``layout=`` selects the algorithm (default
+    ``\"force\"``).
+    """
+    from . import _graph, _native
+
+    data = _graph.normalize_graph_inputs(nodes, edges, x=x, y=y, directed=directed)
+    px, py, meta = _graph.run_layout(data, layout=layout, seed=seed, iterations=iterations)
+    # Emit ONLY the Rust render-graph buffers (no second edge sample).
+    tier = meta["lod_tier"]
+    sources = np.asarray(meta["render_sources"], dtype=np.uint64)
+    targets = np.asarray(meta["render_targets"], dtype=np.uint64)
+    x0 = px[sources.astype(np.intp)]
+    y0 = py[sources.astype(np.intp)]
+    x1 = px[targets.astype(np.intp)]
+    y1 = py[targets.astype(np.intp)]
+    edge_name = None if name is None else f"{name}:edges"
+    node_name = None if name is None else f"{name}:nodes"
+    curve = str(edge_curve or "straight").strip().lower()
+    self.segments(
+        x0,
+        y0,
+        x1,
+        y1,
+        name=edge_name,
+        color=edge_color,
+        width=edge_width,
+        opacity=opacity,
+        style=style,
+    )
+    self.scatter(
+        px,
+        py,
+        name=node_name,
+        color=color,
+        size=size if size is not None else 8.0,
+        opacity=opacity,
+        symbol=symbol,
+        style=style,
+    )
+    # CSR matches the *render* node index space (scatter), not raw source V.
+    offsets, neighbors = _native.graph_build_csr(len(px), sources, targets, directed=bool(directed))
+    # §28 recorded layout/LOD decision for hosts/clients.
+    member_of = np.asarray(meta["member_of"], dtype=np.uint64)
+    graph_meta = {
+        **{
+            k: v
+            for k, v in meta.items()
+            if k not in ("member_of", "render_sources", "render_targets")
+        },
+        "directed": bool(directed),
+        "ids": [str(i) for i in data.ids],
+        "sources": sources.astype(np.uint64).tolist(),
+        "targets": targets.astype(np.uint64).tolist(),
+        "member_of": member_of.astype(np.uint64).tolist(),
+        "source_n_nodes": int(meta["source_n_nodes"]),
+        "source_n_edges": int(meta["source_n_edges"]),
+        "csr_offsets": offsets.astype(np.uint64).tolist(),
+        "csr_neighbors": neighbors.astype(np.uint64).tolist(),
+        "node_symbol": symbol if isinstance(symbol, str) else "circle",
+        "edge_curve": curve,
+        "tier_name": ("direct", "edge_sample", "aggregate")[min(int(tier), 2)],
+        "node_trace": len(self.traces) - 1,
+        "edge_trace": len(self.traces) - 2,
+    }
+    existing = getattr(self, "_graph_meta", None)
+    if existing is None:
+        self._graph_meta = [graph_meta]
+    else:
+        existing.append(graph_meta)
+    return self
 
 
 def triangle_mesh(
@@ -902,21 +997,9 @@ def _distribution_groups(
 
 
 def _distribution_stats(group: np.ndarray) -> tuple[float, float, float, float, float, np.ndarray]:
-    finite = group[np.isfinite(group)]
-    if len(finite) == 0:
-        empty = np.empty(0, dtype=np.float64)
-        return (np.nan, np.nan, np.nan, np.nan, np.nan, empty)
-    q1, median, q3 = np.percentile(finite, [25.0, 50.0, 75.0])
-    iqr = q3 - q1
-    lo_fence, hi_fence = q1 - 1.5 * iqr, q3 + 1.5 * iqr
-    # Whiskers end at the most extreme observation inside the Tukey fence
-    # at an observed point inside the fence, never at the bare fence value.
-    # Both selections are non-empty: min <= q1 <= hi_fence and
-    # lo_fence < q3 <= max.
-    low = float(np.min(finite[finite >= lo_fence]))
-    high = float(np.max(finite[finite <= hi_fence]))
-    outliers = finite[(finite < low) | (finite > high)]
-    return float(q1), float(median), float(q3), low, high, outliers
+    """Tukey box stats via Rust (`xy_box_stats`); geometry assembly stays here."""
+    arr = np.asarray(group, dtype=np.float64)
+    return kernels.box_stats(arr)
 
 
 def _contour_segments(
@@ -1015,17 +1098,11 @@ def _bar_like(
             raise ValueError(f"{kind} width values must be finite and non-negative")
     vals = self._bar_value_matrix(y, len(pos), kind)
     n_series, n_items = vals.shape
-    if mode == "normalized":
-        if np.any(vals < 0):
-            raise ValueError(
-                f"{kind} mode='normalized' requires non-negative values; "
-                "normalizing mixed-sign stacks is ambiguous"
-            )
-        # Per-category fractions of the finite total (NaN = missing segment).
-        # Zero-total categories stay empty instead of emitting NaN, which
-        # must never reach vertex buffers (§19).
-        totals = np.nansum(vals, axis=0)
-        vals = vals / np.where(totals > 0.0, totals, 1.0)
+    if mode == "normalized" and np.any(vals < 0):
+        raise ValueError(
+            f"{kind} mode='normalized' requires non-negative values; "
+            "normalizing mixed-sign stacks is ambiguous"
+        )
     base_vals = self._broadcast_base(base, len(pos), kind)
     series_names = self._series_names(name, series, n_series)
     direct_colors = _series_direct_paints(color, n_series, n_items, f"{kind} color")
@@ -1111,70 +1188,47 @@ def _bar_like(
     try:
         if category_labels is not None:
             self._commit_category_labels(category_labels, category_axis)
-        half = width_values / 2.0
-        if vals.shape[0] == 1:
-            self._append_bar_rect(
+        from . import kernels
+
+        # Width may be scalar or per-category; Rust broadcasts length-1.
+        width_for_native: float | np.ndarray = (
+            float(width_values)
+            if np.isscalar(width_values)
+            else np.asarray(width_values, dtype=np.float64)
+        )
+        # Offsets (grouped / stacked / normalized) live in xy_bar_stack so
+        # Python and Node share one layout decision (§28 / dual-host).
+        x0s, x1s, y0s, y1s = kernels.bar_stack(
+            pos,
+            vals,
+            width_for_native,
+            base_vals,
+            mode=mode,
+            orientation=orientation,
+        )
+        for i in range(n_series):
+            if n_series == 1:
+                role = f"{kind}-normalized" if mode == "normalized" else kind
+            elif mode == "grouped":
+                role = f"{kind}-grouped"
+            else:
+                role = f"{kind}-{mode}"
+            self._append_rect_trace(
                 kind,
-                orientation,
-                pos - half,
-                pos + half,
-                base_vals,
-                base_vals + vals[0],
-                name=name,
-                color=series_colors[0],
-                opacity=opacity_values[0],
-                # grouped/stacked are no-ops for one series, but normalized
-                # rescales even a single series — record it (§28).
-                role=f"{kind}-normalized" if mode == "normalized" else kind,
-                extra_style=series_styles[0],
-                color_ch=None if direct_colors is None else direct_colors[0],
-                stroke_ch=resolved_strokes[0],
-                style_channels=series_channels[0],
+                x0s[i],
+                x1s[i],
+                y0s[i],
+                y1s[i],
+                name=name if n_series == 1 else series_names[i],
+                color=series_colors[i],
+                opacity=opacity_values[i],
+                role=role,
+                orientation=orientation,
+                extra_style=series_styles[i],
+                color_ch=None if direct_colors is None else direct_colors[i],
+                stroke_ch=resolved_strokes[i],
+                style_channels=series_channels[i],
             )
-        elif mode == "grouped":
-            slot = width_values / vals.shape[0]
-            for i, row in enumerate(vals):
-                p0 = pos - half + i * slot
-                self._append_bar_rect(
-                    kind,
-                    orientation,
-                    p0,
-                    p0 + slot,
-                    base_vals,
-                    base_vals + row,
-                    name=series_names[i],
-                    color=series_colors[i],
-                    opacity=opacity_values[i],
-                    role=f"{kind}-grouped",
-                    extra_style=series_styles[i],
-                    color_ch=None if direct_colors is None else direct_colors[i],
-                    stroke_ch=resolved_strokes[i],
-                    style_channels=series_channels[i],
-                )
-        else:
-            pos_base = base_vals.astype(np.float64, copy=True)
-            neg_base = base_vals.astype(np.float64, copy=True)
-            for i, row in enumerate(vals):
-                y0 = np.where(row >= 0, pos_base, neg_base)
-                y1 = y0 + row
-                self._append_bar_rect(
-                    kind,
-                    orientation,
-                    pos - half,
-                    pos + half,
-                    y0,
-                    y1,
-                    name=series_names[i],
-                    color=series_colors[i],
-                    opacity=opacity_values[i],
-                    role=f"{kind}-{mode}",
-                    extra_style=series_styles[i],
-                    color_ch=None if direct_colors is None else direct_colors[i],
-                    stroke_ch=resolved_strokes[i],
-                    style_channels=series_channels[i],
-                )
-                pos_base = np.where(row >= 0, y1, pos_base)
-                neg_base = np.where(row < 0, y1, neg_base)
     except Exception:
         self._rollback(checkpoint)
         raise
@@ -2011,6 +2065,21 @@ def histogram(
         else:
             lo, hi = self._finite_increasing_pair(range, "histogram range")
         counts, edges = kernels.histogram_uniform(vals, lo, hi, n_bins, density=density)
+    elif isinstance(bins, str) and bins.lower() in {"auto", "sturges"}:
+        # Empty finite + estimator strings historically used 10 bins over the
+        # resolved range (or [0, 1]); keep that host policy. Non-empty data
+        # uses Rust edges matching NumPy `bins="auto"` / `"sturges"`.
+        finite = vals[np.isfinite(vals)]
+        hist_range = (
+            None if range is None else self._finite_increasing_pair(range, "histogram range")
+        )
+        if len(finite) == 0:
+            lo, hi = (0.0, 1.0) if hist_range is None else hist_range
+            counts, edges = kernels.histogram_uniform(vals, lo, hi, 10, density=density)
+        else:
+            edges = kernels.histogram_edges(vals, range=hist_range, method=bins.lower())
+            lo, hi = float(edges[0]), float(edges[-1])
+            counts, edges = kernels.histogram_uniform(vals, lo, hi, len(edges) - 1, density=density)
     else:
         finite = vals[np.isfinite(vals)]
         hist_bins = 10 if len(finite) == 0 and isinstance(bins, str) else bins
@@ -2314,10 +2383,11 @@ def violin(
 ) -> "Figure":
     """Add bounded-resolution violin distributions.
 
-    Density estimation is a smoothed histogram computed once in Python; each
-    group ships its fixed ``bins``-sized band set. The client draws the bands
-    through the shared instanced rectangle path, so input cardinality does not
-    become DOM/GPU object cardinality.
+    Density estimation is a smoothed histogram computed once in the native
+    core (`xy_violin_density`); each group ships its fixed ``bins``-sized
+    band set. The client draws the bands through the shared instanced
+    rectangle path, so input cardinality does not become DOM/GPU object
+    cardinality.
     """
     css = styles.compile_mark_style("violin", style)
     color = css.get("color", color)
@@ -2343,22 +2413,11 @@ def violin(
     rect_y0: list[np.ndarray] = []
     rect_y1: list[np.ndarray] = []
     n_bins = int(bins)
-    kernel = np.array([1.0, 2.0, 3.0, 2.0, 1.0])
-    # mode="same" truncates the kernel at the boundaries; dividing by the
-    # per-bin kernel coverage keeps edge bins at full weight instead of
-    # pinching violins whose data piles at the min/max.
-    coverage = np.convolve(np.ones(n_bins), kernel, mode="same")
     for center, group_values in zip(positions, groups, strict=True):
         finite = group_values[np.isfinite(group_values)]
         if len(finite) == 0:
             continue
-        lo, hi = float(np.min(finite)), float(np.max(finite))
-        if lo == hi:
-            lo -= 0.5
-            hi += 0.5
-        edges = np.linspace(lo, hi, n_bins + 1)
-        counts, _ = np.histogram(finite, bins=edges)
-        smooth = np.convolve(counts.astype(np.float64), kernel, mode="same") / coverage
+        edges, smooth = kernels.violin_density(finite, n_bins)
         peak = float(np.max(smooth)) or 1.0
         half_width = width * 0.5 * smooth / peak
         if orientation == "vertical":
@@ -2412,8 +2471,10 @@ def hexbin(
 ) -> "Figure":
     """Add a screen-bounded hexagonal density plot.
 
-    Binning is performed by the native 2-D kernel. Only occupied bins are
-    shipped as centers plus one scalar count/color channel.
+    Binning is performed by the native ``xy_hexbin`` kernel (count / mean /
+    sum). Custom ``reduce_C_function`` callables fall back to a host reduce
+    over the same lattice. Only threshold-passing bins are shipped as centers
+    plus one scalar count/color channel.
     """
     css = styles.compile_mark_style("hexbin", style)
     opacity = css.get("opacity", opacity)
@@ -2473,38 +2534,59 @@ def hexbin(
     threshold = (0 if cv is None else 1) if mincnt is None else int(mincnt)
     if threshold < 0:
         raise ValueError("hexbin mincnt must be nonnegative")
-    # Matplotlib's hex lattice is the union of an integer grid and a half-cell
-    # offset grid. Assign each point to the nearer center in the hex metric;
-    # rectangular binning plus staggered display centers leaves overlaps and
-    # gaps and, more importantly, puts values in the wrong cells.
-    fx = (xv - xr[0]) * w / (xr[1] - xr[0])
-    fy = (yv - yr[0]) * h / (yr[1] - yr[0])
-    ix1 = np.rint(fx).astype(np.int64)
-    iy1 = np.rint(fy).astype(np.int64)
-    ix2 = np.floor(fx).astype(np.int64)
-    iy2 = np.floor(fy).astype(np.int64)
-    use_first = (fx - ix1) ** 2 + 3.0 * (fy - iy1) ** 2 < (
-        (fx - ix2 - 0.5) ** 2 + 3.0 * (fy - iy2 - 0.5) ** 2
-    )
-    valid_first = use_first & (ix1 >= 0) & (ix1 <= w) & (iy1 >= 0) & (iy1 <= h)
-    valid_second = ~use_first & (ix2 >= 0) & (ix2 < w) & (iy2 >= 0) & (iy2 < h)
-    if not np.any(valid_first | valid_second):
-        raise ValueError("hexbin range contains no finite points")
-    flat1 = iy1 * (w + 1) + ix1
-    flat2 = iy2 * w + ix2
-    count1 = np.bincount(flat1[valid_first], minlength=(w + 1) * (h + 1)).astype(float)
-    count2 = np.bincount(flat2[valid_second], minlength=w * h).astype(float)
-    keep1 = np.flatnonzero(count1 >= threshold)
-    keep2 = np.flatnonzero(count2 >= threshold)
-    counts = np.concatenate((count1[keep1], count2[keep2]))
-    if len(counts) == 0:
-        raise ValueError("hexbin range contains no finite points")
-    dx, dy = (xr[1] - xr[0]) / w, (yr[1] - yr[0]) / h
-    centers_x = np.concatenate((xr[0] + (keep1 % (w + 1)) * dx, xr[0] + (keep2 % w + 0.5) * dx))
-    centers_y = np.concatenate((yr[0] + (keep1 // (w + 1)) * dy, yr[0] + (keep2 // w + 0.5) * dy))
+
+    native_reduce: str | None
     if cv is None:
-        metric = counts
+        native_reduce = "count"
+    elif reduce_C_function is np.mean or reduce_C_function is np.nanmean:
+        native_reduce = "mean"
+    elif reduce_C_function is np.sum or reduce_C_function is np.nansum:
+        native_reduce = "sum"
     else:
+        native_reduce = None
+
+    if native_reduce is not None:
+        centers_x, centers_y, metric, counts, dx, dy = kernels.hexbin(
+            xv,
+            yv,
+            gridsize=(w, h),
+            range=(xr, yr),
+            mincnt=threshold,
+            C=cv,
+            reduce=native_reduce,
+        )
+        if len(counts) == 0:
+            raise ValueError("hexbin range contains no finite points")
+    else:
+        # Custom reducers: same lattice assignment as ``xy_hexbin``, host reduce.
+        fx = (xv - xr[0]) * w / (xr[1] - xr[0])
+        fy = (yv - yr[0]) * h / (yr[1] - yr[0])
+        ix1 = np.rint(fx).astype(np.int64)
+        iy1 = np.rint(fy).astype(np.int64)
+        ix2 = np.floor(fx).astype(np.int64)
+        iy2 = np.floor(fy).astype(np.int64)
+        use_first = (fx - ix1) ** 2 + 3.0 * (fy - iy1) ** 2 < (
+            (fx - ix2 - 0.5) ** 2 + 3.0 * (fy - iy2 - 0.5) ** 2
+        )
+        valid_first = use_first & (ix1 >= 0) & (ix1 <= w) & (iy1 >= 0) & (iy1 <= h)
+        valid_second = ~use_first & (ix2 >= 0) & (ix2 < w) & (iy2 >= 0) & (iy2 < h)
+        if not np.any(valid_first | valid_second):
+            raise ValueError("hexbin range contains no finite points")
+        flat1 = iy1 * (w + 1) + ix1
+        flat2 = iy2 * w + ix2
+        count1 = np.bincount(flat1[valid_first], minlength=(w + 1) * (h + 1)).astype(float)
+        count2 = np.bincount(flat2[valid_second], minlength=w * h).astype(float)
+        keep1 = np.flatnonzero(count1 >= threshold)
+        keep2 = np.flatnonzero(count2 >= threshold)
+        counts = np.concatenate((count1[keep1], count2[keep2]))
+        if len(counts) == 0:
+            raise ValueError("hexbin range contains no finite points")
+        dx, dy = (xr[1] - xr[0]) / w, (yr[1] - yr[0]) / h
+        centers_x = np.concatenate((xr[0] + (keep1 % (w + 1)) * dx, xr[0] + (keep2 % w + 0.5) * dx))
+        centers_y = np.concatenate(
+            (yr[0] + (keep1 // (w + 1)) * dy, yr[0] + (keep2 // w + 0.5) * dy)
+        )
+        assert cv is not None
         reduced: list[float] = []
         memberships = [cv[valid_first & (flat1 == flat)] for flat in keep1] + [
             cv[valid_second & (flat2 == flat)] for flat in keep2
@@ -2515,6 +2597,7 @@ def hexbin(
                 raise ValueError("hexbin reduce_C_function must return one finite scalar per bin")
             reduced.append(float(made))
         metric = np.asarray(reduced, dtype=np.float64)
+
     if bins == "log":
         # Matplotlib's ``bins="log"`` is LogNorm over the original cell
         # values. Non-positive cells use the bad color (transparent by
@@ -2572,50 +2655,9 @@ def _interpolate_contourf_grid(
     ypos: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Bilinearly densify a contour field before assigning discrete bands."""
-    rows, cols = arr.shape
+    from . import kernels
 
-    def sample_count(size: int) -> int:
-        # Eight samples per source interval is sufficient for ordinary grids,
-        # but very small masked grids need a pixel-like floor or their diagonal
-        # corner-mask boundaries become visibly stair-stepped in static output.
-        # The floor/cap keeps that approximation bounded at 256²–512² samples;
-        # already-larger inputs are never downsampled.
-        if size > 512:
-            return size
-        return min(512, max(256, (size - 1) * 8 + 1))
-
-    out_rows, out_cols = sample_count(rows), sample_count(cols)
-    if (out_rows, out_cols) == (rows, cols):
-        return arr, xpos, ypos
-
-    row_at = np.linspace(0.0, rows - 1, out_rows)
-    col_at = np.linspace(0.0, cols - 1, out_cols)
-    row0 = np.floor(row_at).astype(np.intp)
-    col0 = np.floor(col_at).astype(np.intp)
-    row1 = np.minimum(row0 + 1, rows - 1)
-    col1 = np.minimum(col0 + 1, cols - 1)
-    row_weight = (row_at - row0)[:, None]
-    col_weight = (col_at - col0)[None, :]
-
-    z00 = arr[row0[:, None], col0[None, :]]
-    z10 = arr[row0[:, None], col1[None, :]]
-    z01 = arr[row1[:, None], col0[None, :]]
-    z11 = arr[row1[:, None], col1[None, :]]
-    finite00 = np.isfinite(z00)
-    finite10 = np.isfinite(z10)
-    finite01 = np.isfinite(z01)
-    finite11 = np.isfinite(z11)
-    valid = finite00 & finite10 & finite01 & finite11
-    interpolated = (
-        z00 * (1.0 - row_weight) * (1.0 - col_weight)
-        + z10 * (1.0 - row_weight) * col_weight
-        + z01 * row_weight * (1.0 - col_weight)
-        + z11 * row_weight * col_weight
-    )
-    interpolated[~valid] = np.nan
-    dense_x = np.interp(col_at, np.arange(cols), xpos)
-    dense_y = np.interp(row_at, np.arange(rows), ypos)
-    return interpolated, dense_x, dense_y
+    return kernels.contourf_densify(arr, xpos, ypos)
 
 
 def _contourf_corner_triangles(
@@ -2628,87 +2670,15 @@ def _contourf_corner_triangles(
     extend_max: bool,
 ) -> tuple[tuple[np.ndarray, ...], np.ndarray]:
     """Clip one-masked-corner cells into exact ContourPy-style band triangles."""
+    from . import kernels
 
-    def clip(
-        polygon: list[tuple[float, float, float]],
-        threshold: float,
-        *,
-        keep_above: bool,
-    ) -> list[tuple[float, float, float]]:
-        if not polygon:
-            return []
-        output: list[tuple[float, float, float]] = []
-        previous = polygon[-1]
-        previous_inside = previous[2] >= threshold if keep_above else previous[2] <= threshold
-        for current in polygon:
-            current_inside = current[2] >= threshold if keep_above else current[2] <= threshold
-            if current_inside != previous_inside:
-                fraction = (threshold - previous[2]) / (current[2] - previous[2])
-                output.append(
-                    (
-                        previous[0] + fraction * (current[0] - previous[0]),
-                        previous[1] + fraction * (current[1] - previous[1]),
-                        threshold,
-                    )
-                )
-            if current_inside:
-                output.append(current)
-            previous, previous_inside = current, current_inside
-        return output
-
-    bands: list[tuple[float, float, int]] = []
-    slot = 0
-    if extend_min:
-        bands.append((-np.inf, float(edges[0]), slot))
-        slot += 1
-    for index, (low, high) in enumerate(pairwise(edges)):
-        bands.append((float(low), float(high), slot + index))
-    slot += len(edges) - 1
-    if extend_max:
-        bands.append((float(edges[-1]), np.inf, slot))
-
-    coordinates = [[] for _ in range(6)]
-    slots: list[int] = []
-    rows, cols = arr.shape
-    for row in range(rows - 1):
-        for col in range(cols - 1):
-            corners = [
-                (float(xpos[col]), float(ypos[row]), float(arr[row, col])),
-                (float(xpos[col + 1]), float(ypos[row]), float(arr[row, col + 1])),
-                (
-                    float(xpos[col + 1]),
-                    float(ypos[row + 1]),
-                    float(arr[row + 1, col + 1]),
-                ),
-                (float(xpos[col]), float(ypos[row + 1]), float(arr[row + 1, col])),
-            ]
-            triangle = [corner for corner in corners if np.isfinite(corner[2])]
-            if len(triangle) != 3:
-                continue
-            for low, high, band_slot in bands:
-                polygon = triangle
-                if np.isfinite(low):
-                    polygon = clip(polygon, low, keep_above=True)
-                if np.isfinite(high):
-                    polygon = clip(polygon, high, keep_above=False)
-                for index in range(1, len(polygon) - 1):
-                    vertices = (polygon[0], polygon[index], polygon[index + 1])
-                    area = (vertices[1][0] - vertices[0][0]) * (vertices[2][1] - vertices[0][1]) - (
-                        vertices[1][1] - vertices[0][1]
-                    ) * (vertices[2][0] - vertices[0][0])
-                    if abs(area) <= np.finfo(np.float64).eps:
-                        continue
-                    for vertex, (x_column, y_column) in zip(
-                        vertices,
-                        ((0, 1), (2, 3), (4, 5)),
-                        strict=True,
-                    ):
-                        coordinates[x_column].append(vertex[0])
-                        coordinates[y_column].append(vertex[1])
-                    slots.append(band_slot)
-    return (
-        tuple(np.asarray(column, dtype=np.float64) for column in coordinates),
-        np.asarray(slots, dtype=np.intp),
+    return kernels.contourf_bands(
+        arr,
+        xpos,
+        ypos,
+        edges,
+        extend_min=extend_min,
+        extend_max=extend_max,
     )
 
 

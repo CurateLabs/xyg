@@ -1,0 +1,10 @@
+# Keep Bazel's package walk off bulky / generated trees. Source of truth
+# for the Rust crate remains Cargo.toml; these dirs are not Bazel inputs.
+target/
+node_modules/
+.venv/
+dist/
+.web/
+.ruff_cache/
+.pytest_cache/
+__pycache__/

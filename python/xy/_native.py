@@ -13,6 +13,7 @@ defined, and it is a loud failure, never a silent degrade).
 from __future__ import annotations
 
 import ctypes
+import numbers
 import operator
 import os
 import sys
@@ -24,7 +25,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 47
+ABI_VERSION = 57
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -205,6 +206,23 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_size_t,
         ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_bar_stack.restype = ctypes.c_int32
+    lib.xy_bar_stack.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
@@ -709,6 +727,276 @@ def _load() -> ctypes.CDLL:
     ]
     lib.xy_pyramid_free.restype = ctypes.c_int32
     lib.xy_pyramid_free.argtypes = [ctypes.c_uint64]
+    lib.xy_graph_layout.restype = ctypes.c_int32
+    lib.xy_graph_layout.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_force_create.restype = ctypes.c_int32
+    lib.xy_graph_force_create.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+        ctypes.c_uint32,  # algorithm
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_force_tick.restype = ctypes.c_int32
+    lib.xy_graph_force_tick.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_force_destroy.restype = ctypes.c_int32
+    lib.xy_graph_force_destroy.argtypes = [ctypes.c_uint64]
+    lib.xy_graph_build_csr.restype = ctypes.c_int32
+    lib.xy_graph_build_csr.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_lod_decision.restype = ctypes.c_int32
+    lib.xy_graph_lod_decision.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_cluster_aggregate.restype = ctypes.c_int32
+    lib.xy_graph_cluster_aggregate.argtypes = [
+        ctypes.c_uint64,  # n_nodes
+        ctypes.c_uint64,  # n_edges
+        ctypes.c_void_p,  # x
+        ctypes.c_void_p,  # y
+        ctypes.c_uint64,  # node_budget
+        ctypes.c_uint64,  # edge_budget
+        ctypes.c_void_p,  # out_x
+        ctypes.c_void_p,  # out_y
+        ctypes.c_void_p,  # out_count
+        ctypes.c_void_p,  # out_member_of
+        ctypes.c_void_p,  # out_tier
+        ctypes.c_void_p,  # out_edges_kept
+    ]
+    lib.xy_graph_build_render.restype = ctypes.c_int32
+    lib.xy_graph_build_render.argtypes = [
+        ctypes.c_uint64,  # n_nodes
+        ctypes.c_uint64,  # n_edges
+        ctypes.c_void_p,  # x
+        ctypes.c_void_p,  # y
+        ctypes.c_void_p,  # sources
+        ctypes.c_void_p,  # targets
+        ctypes.c_uint64,  # node_budget
+        ctypes.c_uint64,  # edge_budget
+        ctypes.c_int32,  # viewport_enabled
+        ctypes.c_double,  # vp_x0
+        ctypes.c_double,  # vp_y0
+        ctypes.c_double,  # vp_x1
+        ctypes.c_double,  # vp_y1
+        ctypes.c_void_p,  # out_node_x
+        ctypes.c_void_p,  # out_node_y
+        ctypes.c_void_p,  # out_member_of
+        ctypes.c_void_p,  # out_edge_sources
+        ctypes.c_void_p,  # out_edge_targets
+        ctypes.c_void_p,  # out_n_nodes
+        ctypes.c_void_p,  # out_n_edges
+        ctypes.c_void_p,  # out_tier
+        ctypes.c_void_p,  # out_edges_kept
+    ]
+    lib.xy_graph_sample_edges.restype = ctypes.c_uint64
+    lib.xy_graph_sample_edges.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+    ]
+    lib.xy_sankey_layout.restype = ctypes.c_int32
+    lib.xy_sankey_layout.argtypes = [
+        ctypes.c_uint64,  # n_nodes
+        ctypes.c_uint64,  # n_links
+        ctypes.c_void_p,  # sources u64
+        ctypes.c_void_p,  # targets u64
+        ctypes.c_void_p,  # values f64
+        ctypes.c_double,  # node_width
+        ctypes.c_double,  # node_padding
+        ctypes.c_uint32,  # align
+        ctypes.c_uint32,  # iterations
+        ctypes.c_void_p,  # out_x0
+        ctypes.c_void_p,  # out_y0
+        ctypes.c_void_p,  # out_x1
+        ctypes.c_void_p,  # out_y1
+        ctypes.c_void_p,  # out_layer u32
+        ctypes.c_void_p,  # out_value f64
+        ctypes.c_void_p,  # out_source_y0
+        ctypes.c_void_p,  # out_source_y1
+        ctypes.c_void_p,  # out_target_y0
+        ctypes.c_void_p,  # out_target_y1
+        ctypes.c_void_p,  # out_layers u32
+        ctypes.c_void_p,  # out_err_nodes u64
+        ctypes.c_void_p,  # out_err_n u64
+    ]
+    lib.xy_drill_decision.restype = ctypes.c_int32
+    lib.xy_drill_decision.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_void_p,
+    ]
+    lib.xy_lod_grid_shape.restype = ctypes.c_int32
+    lib.xy_lod_grid_shape.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_lod_plan.restype = ctypes.c_int32
+    lib.xy_lod_plan.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_quantiles.restype = ctypes.c_size_t
+    lib.xy_quantiles.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xy_box_stats.restype = ctypes.c_int32
+    lib.xy_box_stats.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xy_hexbin.restype = ctypes.c_size_t
+    lib.xy_hexbin.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_violin_density.restype = ctypes.c_int32
+    lib.xy_violin_density.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_histogram_edges.restype = ctypes.c_size_t
+    lib.xy_histogram_edges.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
+    lib.xy_wind_rose_bins.restype = ctypes.c_size_t
+    lib.xy_wind_rose_bins.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xy_contourf_densify.restype = ctypes.c_int32
+    lib.xy_contourf_densify.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_contourf_bands.restype = ctypes.c_size_t
+    lib.xy_contourf_bands.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
     lib.xy_local_log_density.restype = ctypes.c_int32
     lib.xy_local_log_density.argtypes = [
         ctypes.c_void_p,
@@ -1353,6 +1641,83 @@ def stacked_bounds(
     if ok != 1:
         raise RuntimeError("xy native stacked_bounds failed (output undefined)")
     return lower, upper
+
+
+_BAR_MODE = {"grouped": 0, "stacked": 1, "normalized": 2}
+_BAR_ORIENT = {"vertical": 0, "horizontal": 1}
+
+
+def bar_stack(
+    pos: npt.NDArray[np.float64],
+    values: npt.NDArray[np.float64],
+    width: npt.NDArray[np.float64] | float,
+    base: npt.NDArray[np.float64] | float,
+    mode: str = "grouped",
+    orientation: str = "vertical",
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+]:
+    """Grouped / stacked / normalized bar rect corners via ``xy_bar_stack``.
+
+    ``values`` is row-major ``(n_series, n_items)``. Returns ``(x0, x1, y0, y1)``
+    each shaped ``(n_series, n_items)`` in plot axes (orientation applied).
+    """
+    if mode not in _BAR_MODE:
+        raise ValueError(f"mode must be one of {tuple(_BAR_MODE)}, got {mode!r}")
+    if orientation not in _BAR_ORIENT:
+        raise ValueError(f"orientation must be one of {tuple(_BAR_ORIENT)}, got {orientation!r}")
+    pos = _as_f64(pos, "pos")
+    values = np.ascontiguousarray(values, dtype=np.float64)
+    if values.ndim != 2 or min(values.shape) == 0:
+        raise ValueError(f"values must be a non-empty 2-D array, got shape {values.shape}")
+    n_series, n_items = values.shape
+    if len(pos) != n_items:
+        raise ValueError(f"pos length {len(pos)} must match values columns {n_items}")
+    if np.isscalar(width):
+        width_arr = np.asarray([float(width)], dtype=np.float64)
+    else:
+        width_arr = _as_f64(width, "width")
+    if np.isscalar(base):
+        base_arr = np.asarray([float(base)], dtype=np.float64)
+    else:
+        base_arr = _as_f64(base, "base")
+    out_x0 = np.empty(n_series * n_items, dtype=np.float64)
+    out_x1 = np.empty_like(out_x0)
+    out_y0 = np.empty_like(out_x0)
+    out_y1 = np.empty_like(out_x0)
+    ok = _lib.xy_bar_stack(
+        _ptr_f64(pos),
+        n_items,
+        values.ctypes.data,
+        n_series,
+        _ptr_f64(width_arr),
+        len(width_arr),
+        _ptr_f64(base_arr),
+        len(base_arr),
+        _BAR_MODE[mode],
+        _BAR_ORIENT[orientation],
+        out_x0.ctypes.data,
+        out_x1.ctypes.data,
+        out_y0.ctypes.data,
+        out_y1.ctypes.data,
+    )
+    if ok != 1:
+        if mode == "normalized" and np.any(values[np.isfinite(values)] < 0):
+            raise ValueError(
+                "mode='normalized' requires non-negative values; "
+                "normalizing mixed-sign stacks is ambiguous"
+            )
+        raise ValueError("invalid bar_stack arguments")
+    shape = (n_series, n_items)
+    return (
+        out_x0.reshape(shape),
+        out_x1.reshape(shape),
+        out_y0.reshape(shape),
+        out_y1.reshape(shape),
+    )
 
 
 def histogram2d(
@@ -3144,6 +3509,538 @@ def pyramid_free(handle: int) -> bool:
     return _lib.xy_pyramid_free(ctypes.c_uint64(_pyramid_handle(handle))) == 1
 
 
+# Graph layout ids — keep in lockstep with src/graph.rs LAYOUT_*.
+GRAPH_LAYOUT_PRESET = 0
+GRAPH_LAYOUT_GRID = 1
+GRAPH_LAYOUT_CIRCLE = 2
+GRAPH_LAYOUT_FORCE = 3
+GRAPH_LAYOUT_BREADTHFIRST = 4
+GRAPH_LAYOUT_AUTO = 5
+GRAPH_LAYOUT_RADIAL = 6
+GRAPH_LAYOUT_CONCENTRIC = 7
+GRAPH_LAYOUT_HIERARCHICAL = 8
+GRAPH_LAYOUT_BARNES_HUT = 9
+GRAPH_LAYOUT_SPRING = 10
+GRAPH_LAYOUT_FORCEATLAS2 = 11
+GRAPH_LAYOUT_KAMADA_KAWAI = 12
+GRAPH_LAYOUT_YIFANHU = 13
+GRAPH_LAYOUT_LINLOG = 14
+GRAPH_LAYOUT_STRESS = 15
+
+_GRAPH_LAYOUT_NAMES = {
+    "preset": GRAPH_LAYOUT_PRESET,
+    "grid": GRAPH_LAYOUT_GRID,
+    "circle": GRAPH_LAYOUT_CIRCLE,
+    "force": GRAPH_LAYOUT_FORCE,
+    "fr": GRAPH_LAYOUT_FORCE,
+    "fruchterman_reingold": GRAPH_LAYOUT_FORCE,
+    "breadthfirst": GRAPH_LAYOUT_BREADTHFIRST,
+    "dagre": GRAPH_LAYOUT_HIERARCHICAL,
+    "hierarchical": GRAPH_LAYOUT_HIERARCHICAL,
+    "auto": GRAPH_LAYOUT_AUTO,
+    "radial": GRAPH_LAYOUT_RADIAL,
+    "concentric": GRAPH_LAYOUT_CONCENTRIC,
+    "barnes_hut": GRAPH_LAYOUT_BARNES_HUT,
+    "spring": GRAPH_LAYOUT_SPRING,
+    "forceatlas2": GRAPH_LAYOUT_FORCEATLAS2,
+    "fa2": GRAPH_LAYOUT_FORCEATLAS2,
+    "kamada_kawai": GRAPH_LAYOUT_KAMADA_KAWAI,
+    "kk": GRAPH_LAYOUT_KAMADA_KAWAI,
+    "yifanhu": GRAPH_LAYOUT_YIFANHU,
+    "linlog": GRAPH_LAYOUT_LINLOG,
+    "stress": GRAPH_LAYOUT_STRESS,
+}
+
+# Progressive force families (share xy_graph_force_create/tick).
+_GRAPH_PROGRESSIVE_FORCE = frozenset(
+    {
+        GRAPH_LAYOUT_FORCE,
+        GRAPH_LAYOUT_BARNES_HUT,
+        GRAPH_LAYOUT_SPRING,
+        GRAPH_LAYOUT_FORCEATLAS2,
+        GRAPH_LAYOUT_YIFANHU,
+        GRAPH_LAYOUT_LINLOG,
+        GRAPH_LAYOUT_KAMADA_KAWAI,
+        GRAPH_LAYOUT_STRESS,
+    }
+)
+
+
+def graph_layout_id(name: str) -> int:
+    key = str(name).strip().lower()
+    if key not in _GRAPH_LAYOUT_NAMES:
+        raise ValueError(
+            f"unknown graph layout {name!r}; expected one of {sorted(_GRAPH_LAYOUT_NAMES)}"
+        )
+    return _GRAPH_LAYOUT_NAMES[key]
+
+
+def _as_u64(
+    data: npt.NDArray[np.uint64] | npt.NDArray[np.integer], name: str
+) -> npt.NDArray[np.uint64]:
+    arr = np.asarray(data)
+    if arr.ndim != 1:
+        raise ValueError(f"{name} must be 1-D")
+    return np.ascontiguousarray(arr, dtype=np.uint64)
+
+
+def graph_layout(
+    layout: str | int,
+    n_nodes: int,
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    x: npt.NDArray[np.float64] | None = None,
+    y: npt.NDArray[np.float64] | None = None,
+    roots: npt.NDArray[np.uint64] | None = None,
+    seed: int = 0,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Run a one-shot graph layout; returns (x, y) f64 positions."""
+    layout_id = graph_layout_id(layout) if isinstance(layout, str) else int(layout)
+    n_nodes = int(n_nodes)
+    if n_nodes < 0:
+        raise ValueError("n_nodes must be non-negative")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
+    out_x = np.empty(n_nodes, dtype=np.float64)
+    out_y = np.empty(n_nodes, dtype=np.float64)
+    in_x_ptr = ctypes.c_void_p()
+    in_y_ptr = ctypes.c_void_p()
+    if x is not None or y is not None:
+        if x is None or y is None:
+            raise ValueError("preset layout requires both x and y")
+        x_arr = _as_f64(x, "x")
+        y_arr = _as_f64(y, "y")
+        if len(x_arr) != n_nodes or len(y_arr) != n_nodes:
+            raise ValueError("x/y must have length n_nodes")
+        in_x_ptr = _ptr_f64(x_arr)
+        in_y_ptr = _ptr_f64(y_arr)
+    roots_arr = np.empty(0, dtype=np.uint64) if roots is None else _as_u64(roots, "roots")
+    src_ptr = sources.ctypes.data if len(sources) else None
+    tgt_ptr = targets.ctypes.data if len(targets) else None
+    roots_ptr = roots_arr.ctypes.data if len(roots_arr) else None
+    ok = _lib.xy_graph_layout(
+        ctypes.c_uint32(layout_id),
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(len(sources)),
+        src_ptr,
+        tgt_ptr,
+        in_x_ptr,
+        in_y_ptr,
+        roots_ptr,
+        ctypes.c_uint64(len(roots_arr)),
+        ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
+        out_x.ctypes.data,
+        out_y.ctypes.data,
+    )
+    if ok != 0:
+        raise ValueError("native graph_layout failed (invalid arguments or layout)")
+    return out_x, out_y
+
+
+def graph_force_create(
+    n_nodes: int,
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    x: npt.NDArray[np.float64] | None = None,
+    y: npt.NDArray[np.float64] | None = None,
+    seed: int = 0,
+    algorithm: int | str = GRAPH_LAYOUT_FORCE,
+) -> int:
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    algo = graph_layout_id(algorithm) if isinstance(algorithm, str) else int(algorithm)
+    handle = ctypes.c_uint64(0)
+    in_x = _ptr_f64(_as_f64(x, "x")) if x is not None else None
+    in_y = _ptr_f64(_as_f64(y, "y")) if y is not None else None
+    if (x is None) ^ (y is None):
+        raise ValueError("force create requires both x and y or neither")
+    ok = _lib.xy_graph_force_create(
+        ctypes.c_uint64(int(n_nodes)),
+        ctypes.c_uint64(len(sources)),
+        sources.ctypes.data if len(sources) else None,
+        targets.ctypes.data if len(targets) else None,
+        in_x,
+        in_y,
+        ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
+        ctypes.c_uint32(algo),
+        ctypes.byref(handle),
+    )
+    if ok != 0:
+        raise ValueError("native graph_force_create failed")
+    return int(handle.value)
+
+
+def graph_is_progressive_force(layout: str | int) -> bool:
+    layout_id = graph_layout_id(layout) if isinstance(layout, str) else int(layout)
+    return layout_id in _GRAPH_PROGRESSIVE_FORCE
+
+
+def graph_force_tick(
+    handle: int, n_nodes: int, steps: int = 1
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], float]:
+    out_x = np.empty(int(n_nodes), dtype=np.float64)
+    out_y = np.empty(int(n_nodes), dtype=np.float64)
+    alpha = ctypes.c_double()
+    ok = _lib.xy_graph_force_tick(
+        ctypes.c_uint64(handle),
+        ctypes.c_uint64(int(n_nodes)),
+        ctypes.c_uint32(max(0, int(steps))),
+        out_x.ctypes.data,
+        out_y.ctypes.data,
+        ctypes.byref(alpha),
+    )
+    if ok != 0:
+        raise ValueError("native graph_force_tick failed")
+    return out_x, out_y, float(alpha.value)
+
+
+def graph_force_destroy(handle: int) -> bool:
+    return _lib.xy_graph_force_destroy(ctypes.c_uint64(handle)) == 1
+
+
+def graph_lod_decision(
+    n_nodes: int, n_edges: int, *, node_budget: int = 200_000, edge_budget: int = 500_000
+) -> tuple[int, int]:
+    tier = ctypes.c_uint32()
+    kept = ctypes.c_uint64()
+    ok = _lib.xy_graph_lod_decision(
+        ctypes.c_uint64(int(n_nodes)),
+        ctypes.c_uint64(int(n_edges)),
+        ctypes.c_uint64(int(node_budget)),
+        ctypes.c_uint64(int(edge_budget)),
+        ctypes.byref(tier),
+        ctypes.byref(kept),
+    )
+    if ok != 0:
+        raise ValueError("native graph_lod_decision failed")
+    return int(tier.value), int(kept.value)
+
+
+def graph_sample_edges(n_edges: int, budget: int) -> npt.NDArray[np.uint64]:
+    budget = max(0, int(budget))
+    out = np.empty(budget, dtype=np.uint64)
+    if budget == 0:
+        return out
+    kept = _lib.xy_graph_sample_edges(
+        ctypes.c_uint64(int(n_edges)),
+        ctypes.c_uint64(budget),
+        out.ctypes.data,
+    )
+    return out[: int(kept)]
+
+
+def graph_cluster_aggregate(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    n_edges: int = 0,
+    node_budget: int,
+    edge_budget: int = 500_000,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+    int,
+    int,
+]:
+    """Cluster graph node positions for LOD; returns centroids, membership, tier, edges_kept."""
+    x_arr = _as_f64(x, "x")
+    y_arr = _as_f64(y, "y")
+    if len(x_arr) != len(y_arr):
+        raise ValueError("x and y must have equal length")
+    n_nodes = len(x_arr)
+    node_budget = int(node_budget)
+    edge_budget = int(edge_budget)
+    if node_budget < 0:
+        raise ValueError("node_budget must be non-negative")
+    if n_nodes > node_budget and node_budget == 0:
+        raise ValueError("node_budget must be positive when clustering non-empty positions")
+    out_cap = n_nodes if n_nodes <= node_budget else node_budget
+    out_x = np.empty(out_cap, dtype=np.float64)
+    out_y = np.empty(out_cap, dtype=np.float64)
+    member_of = np.empty(n_nodes, dtype=np.uint64)
+    out_count = ctypes.c_uint64(0)
+    tier = ctypes.c_uint32(0)
+    edges_kept = ctypes.c_uint64(0)
+    ok = _lib.xy_graph_cluster_aggregate(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(int(n_edges)),
+        x_arr.ctypes.data if n_nodes else None,
+        y_arr.ctypes.data if n_nodes else None,
+        ctypes.c_uint64(node_budget),
+        ctypes.c_uint64(edge_budget),
+        out_x.ctypes.data if out_cap else None,
+        out_y.ctypes.data if out_cap else None,
+        ctypes.byref(out_count),
+        member_of.ctypes.data if n_nodes else None,
+        ctypes.byref(tier),
+        ctypes.byref(edges_kept),
+    )
+    if ok != 0:
+        raise ValueError("native graph_cluster_aggregate failed")
+    return (
+        out_x[: int(out_count.value)],
+        out_y[: int(out_count.value)],
+        member_of,
+        int(tier.value),
+        int(edges_kept.value),
+    )
+
+
+def graph_build_render(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    node_budget: int = 200_000,
+    edge_budget: int = 500_000,
+    viewport: tuple[float, float, float, float] | None = None,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    int,
+    int,
+]:
+    """Build a perceptually bounded render graph; returns nodes, member_of, edges, tier, edges_kept."""
+    x_arr = _as_f64(x, "x")
+    y_arr = _as_f64(y, "y")
+    if len(x_arr) != len(y_arr):
+        raise ValueError("x and y must have equal length")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
+    n_nodes = len(x_arr)
+    node_budget = max(1, int(node_budget))
+    edge_budget = max(1, int(edge_budget))
+    out_node_cap = min(n_nodes, node_budget) if n_nodes else 0
+    out_x = np.empty(out_node_cap, dtype=np.float64)
+    out_y = np.empty(out_node_cap, dtype=np.float64)
+    member_of = np.empty(n_nodes, dtype=np.uint64)
+    edge_s = np.empty(edge_budget, dtype=np.uint64)
+    edge_t = np.empty(edge_budget, dtype=np.uint64)
+    out_n_nodes = ctypes.c_uint64(0)
+    out_n_edges = ctypes.c_uint64(0)
+    tier = ctypes.c_uint32(0)
+    edges_kept = ctypes.c_uint64(0)
+    if viewport is None:
+        vp_en, x0, y0, x1, y1 = 0, 0.0, 0.0, 0.0, 0.0
+    else:
+        vp_en = 1
+        x0, y0, x1, y1 = (float(v) for v in viewport)
+    ok = _lib.xy_graph_build_render(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(len(sources)),
+        x_arr.ctypes.data if n_nodes else None,
+        y_arr.ctypes.data if n_nodes else None,
+        sources.ctypes.data if len(sources) else None,
+        targets.ctypes.data if len(targets) else None,
+        ctypes.c_uint64(node_budget),
+        ctypes.c_uint64(edge_budget),
+        ctypes.c_int32(vp_en),
+        ctypes.c_double(x0),
+        ctypes.c_double(y0),
+        ctypes.c_double(x1),
+        ctypes.c_double(y1),
+        out_x.ctypes.data if out_node_cap else None,
+        out_y.ctypes.data if out_node_cap else None,
+        member_of.ctypes.data if n_nodes else None,
+        edge_s.ctypes.data if edge_budget else None,
+        edge_t.ctypes.data if edge_budget else None,
+        ctypes.byref(out_n_nodes),
+        ctypes.byref(out_n_edges),
+        ctypes.byref(tier),
+        ctypes.byref(edges_kept),
+    )
+    if ok != 0:
+        raise ValueError("native graph_build_render failed")
+    n_out = int(out_n_nodes.value)
+    e_out = int(out_n_edges.value)
+    return (
+        out_x[:n_out],
+        out_y[:n_out],
+        member_of,
+        edge_s[:e_out],
+        edge_t[:e_out],
+        int(tier.value),
+        int(edges_kept.value),
+    )
+
+
+def graph_cluster_positions(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    budget: int,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.uint64]]:
+    """Compat wrapper around :func:`graph_cluster_aggregate` (centroids + membership only)."""
+    cx, cy, member_of, _tier, _kept = graph_cluster_aggregate(
+        x, y, n_edges=0, node_budget=budget, edge_budget=max(int(budget), 1)
+    )
+    return cx, cy, member_of
+
+
+def graph_build_csr(
+    n_nodes: int,
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    directed: bool = True,
+) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint64]]:
+    """Build CSR offsets (len n+1) and neighbors (u64) for neighborhood highlight."""
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    n_nodes = int(n_nodes)
+    if n_nodes < 0:
+        raise ValueError("n_nodes must be non-negative")
+    # Undirected doubles edges; directed uses |E|. Cap with 2*|E|.
+    cap = max(len(sources) * 2, 1)
+    offsets = np.empty(n_nodes + 1, dtype=np.uint64)
+    neighbors = np.empty(cap, dtype=np.uint64)
+    out_len = ctypes.c_uint64(0)
+    ok = _lib.xy_graph_build_csr(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(len(sources)),
+        sources.ctypes.data if len(sources) else None,
+        targets.ctypes.data if len(targets) else None,
+        ctypes.c_int32(1 if directed else 0),
+        offsets.ctypes.data,
+        neighbors.ctypes.data,
+        ctypes.c_uint64(cap),
+        ctypes.byref(out_len),
+    )
+    if ok != 0:
+        raise ValueError("native graph_build_csr failed")
+    return offsets, neighbors[: int(out_len.value)]
+
+
+# Sankey align ids — must match `sankey::ALIGN_*` in src/sankey.rs.
+SANKEY_ALIGN_JUSTIFY = 0
+SANKEY_ALIGN_LEFT = 1
+SANKEY_ALIGN_RIGHT = 2
+SANKEY_ALIGN_CENTER = 3
+
+_SANKEY_ALIGN_NAMES = {
+    "justify": SANKEY_ALIGN_JUSTIFY,
+    "left": SANKEY_ALIGN_LEFT,
+    "right": SANKEY_ALIGN_RIGHT,
+    "center": SANKEY_ALIGN_CENTER,
+}
+
+
+def sankey_align_id(name: str) -> int:
+    key = str(name).strip().lower()
+    if key not in _SANKEY_ALIGN_NAMES:
+        raise ValueError(f"sankey align must be one of {sorted(_SANKEY_ALIGN_NAMES)}; got {name!r}")
+    return _SANKEY_ALIGN_NAMES[key]
+
+
+class SankeyLayoutError(ValueError):
+    """Native sankey layout refusal with structured detail for host messages."""
+
+    __slots__ = ("code", "err_nodes")
+
+    def __init__(self, code: int, err_nodes: npt.NDArray[np.uint64], message: str) -> None:
+        super().__init__(message)
+        self.code = int(code)
+        self.err_nodes = err_nodes
+
+
+def sankey_layout(
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    values: npt.NDArray[np.float64],
+    *,
+    n_nodes: int,
+    node_width: float = 0.02,
+    node_padding: float = 0.02,
+    align: str | int = "justify",
+    iterations: int = 6,
+) -> dict[str, Any]:
+    """Run the native Sankey layout; returns dict of f64/u32 arrays + `layers`.
+
+    Raises `SankeyLayoutError` with `.code` `-2` (cycle) or `-3` (padding) and
+    `.err_nodes` carrying the detail indices the host maps to names/text.
+    Other failures raise `ValueError`.
+    """
+    n_nodes = int(n_nodes)
+    if n_nodes <= 0:
+        raise ValueError("n_nodes must be positive")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    values = _as_f64(values, "values")
+    if not (len(sources) == len(targets) == len(values)):
+        raise ValueError("sources, targets, and values must have equal length")
+    if len(sources) == 0:
+        raise ValueError("sankey needs at least one link")
+    align_id = sankey_align_id(align) if isinstance(align, str) else int(align)
+    out_x0 = np.empty(n_nodes, dtype=np.float64)
+    out_y0 = np.empty(n_nodes, dtype=np.float64)
+    out_x1 = np.empty(n_nodes, dtype=np.float64)
+    out_y1 = np.empty(n_nodes, dtype=np.float64)
+    out_layer = np.empty(n_nodes, dtype=np.uint32)
+    out_value = np.empty(n_nodes, dtype=np.float64)
+    n_links = len(sources)
+    out_sy0 = np.empty(n_links, dtype=np.float64)
+    out_sy1 = np.empty(n_links, dtype=np.float64)
+    out_ty0 = np.empty(n_links, dtype=np.float64)
+    out_ty1 = np.empty(n_links, dtype=np.float64)
+    out_layers = ctypes.c_uint32(0)
+    out_err_nodes = np.empty(n_nodes, dtype=np.uint64)
+    out_err_n = ctypes.c_uint64(0)
+    code = _lib.xy_sankey_layout(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(n_links),
+        sources.ctypes.data,
+        targets.ctypes.data,
+        values.ctypes.data,
+        ctypes.c_double(float(node_width)),
+        ctypes.c_double(float(node_padding)),
+        ctypes.c_uint32(align_id),
+        ctypes.c_uint32(max(0, int(iterations))),
+        out_x0.ctypes.data,
+        out_y0.ctypes.data,
+        out_x1.ctypes.data,
+        out_y1.ctypes.data,
+        out_layer.ctypes.data,
+        out_value.ctypes.data,
+        out_sy0.ctypes.data,
+        out_sy1.ctypes.data,
+        out_ty0.ctypes.data,
+        out_ty1.ctypes.data,
+        ctypes.byref(out_layers),
+        out_err_nodes.ctypes.data,
+        ctypes.byref(out_err_n),
+    )
+    err = out_err_nodes[: int(out_err_n.value)].copy()
+    if code == -2:
+        raise SankeyLayoutError(-2, err, "sankey links form a cycle")
+    if code == -3:
+        raise SankeyLayoutError(-3, err, "sankey node_padding leaves no room")
+    if code != 0:
+        raise ValueError("native sankey_layout failed (invalid arguments)")
+    return {
+        "x0": out_x0,
+        "y0": out_y0,
+        "x1": out_x1,
+        "y1": out_y1,
+        "layer": out_layer,
+        "value": out_value,
+        "source_y0": out_sy0,
+        "source_y1": out_sy1,
+        "target_y0": out_ty0,
+        "target_y1": out_ty1,
+        "layers": int(out_layers.value),
+    }
+
+
 def local_log_density(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],
@@ -3389,6 +4286,503 @@ def density_log_u8(grid: npt.NDArray[np.float32]) -> tuple[npt.NDArray[np.uint8]
     if ok != 1:
         raise RuntimeError("xy native density_log_u8 failed")
     return out, float(maximum.value)
+
+
+def drill_decision(visible: int, budget: float, in_drill: bool, exit_factor: float = 1.15) -> bool:
+    """Native hysteresis-guarded LOD drill decision (§5)."""
+    if isinstance(visible, (bool, np.bool_)) or not isinstance(visible, numbers.Integral):
+        raise ValueError("visible must be an integer >= 0")
+    visible_i = int(visible)
+    if visible_i < 0:
+        raise ValueError("visible must be an integer >= 0")
+    budget_f = _finite_float(budget, "budget")
+    exit_f = _finite_float(exit_factor, "exit_factor")
+    if budget_f <= 0.0 or exit_f <= 0.0:
+        raise ValueError("budget and exit_factor must be > 0")
+    if not isinstance(in_drill, (bool, np.bool_)):
+        raise ValueError("in_drill must be True or False")
+    out = ctypes.c_int32()
+    ok = _lib.xy_drill_decision(visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out))
+    if ok != 1:
+        raise ValueError("invalid drill_decision arguments")
+    return bool(out.value)
+
+
+def lod_grid_shape(
+    width: int, height: int, visible: int, target_per_cell: float = 16.0
+) -> tuple[int, int]:
+    """Native screen-bounded aggregation grid shape."""
+    if isinstance(width, (bool, np.bool_)) or isinstance(height, (bool, np.bool_)):
+        raise ValueError("screen dimensions must be integers")
+    if isinstance(visible, (bool, np.bool_)) or not isinstance(visible, numbers.Integral):
+        raise ValueError("visible must be an integer >= 0")
+    visible_i = int(visible)
+    if visible_i < 0:
+        raise ValueError("visible must be an integer >= 0")
+    target = _finite_float(target_per_cell, "target_per_cell")
+    if target <= 0.0:
+        raise ValueError("target_per_cell must be > 0")
+    out_w = ctypes.c_int32()
+    out_h = ctypes.c_int32()
+    ok = _lib.xy_lod_grid_shape(
+        int(width), int(height), visible_i, target, ctypes.byref(out_w), ctypes.byref(out_h)
+    )
+    if ok != 1:
+        raise ValueError("invalid lod_grid_shape arguments")
+    return int(out_w.value), int(out_h.value)
+
+
+def lod_plan(
+    visible: int,
+    budget: float,
+    in_drill: bool,
+    *,
+    exit_factor: float = 1.15,
+    width: int,
+    height: int,
+    target_per_cell: float = 16.0,
+) -> tuple[bool, int, int, int]:
+    """Native numeric LOD plan: ``(exact, mode, grid_w, grid_h)``.
+
+    ``mode`` is ``0`` (direct) or ``1`` (aggregate); hosts map to wire strings.
+    """
+    if isinstance(visible, (bool, np.bool_)) or not isinstance(visible, numbers.Integral):
+        raise ValueError("visible must be an integer >= 0")
+    visible_i = int(visible)
+    if visible_i < 0:
+        raise ValueError("visible must be an integer >= 0")
+    budget_f = _finite_float(budget, "budget")
+    exit_f = _finite_float(exit_factor, "exit_factor")
+    target = _finite_float(target_per_cell, "target_per_cell")
+    if budget_f <= 0.0 or exit_f <= 0.0 or target <= 0.0:
+        raise ValueError("budget, exit_factor, and target_per_cell must be > 0")
+    if not isinstance(in_drill, (bool, np.bool_)):
+        raise ValueError("in_drill must be True or False")
+    out_exact = ctypes.c_int32()
+    out_mode = ctypes.c_uint32()
+    out_gw = ctypes.c_int32()
+    out_gh = ctypes.c_int32()
+    ok = _lib.xy_lod_plan(
+        visible_i,
+        budget_f,
+        int(bool(in_drill)),
+        exit_f,
+        int(width),
+        int(height),
+        target,
+        ctypes.byref(out_exact),
+        ctypes.byref(out_mode),
+        ctypes.byref(out_gw),
+        ctypes.byref(out_gh),
+    )
+    if ok != 1:
+        raise ValueError("invalid lod_plan arguments")
+    return bool(out_exact.value), int(out_mode.value), int(out_gw.value), int(out_gh.value)
+
+
+def quantiles(
+    data: npt.NDArray[np.float64], probs: npt.NDArray[np.float64] | list[float]
+) -> npt.NDArray[np.float64]:
+    """Linear (NumPy-default) quantiles via the native core."""
+    data = _as_f64(data, "data")
+    probs_arr = np.ascontiguousarray(probs, dtype=np.float64)
+    if probs_arr.ndim != 1 or len(probs_arr) == 0:
+        raise ValueError("probs must be a non-empty 1-D array")
+    out = np.empty(len(probs_arr), dtype=np.float64)
+    written = _lib.xy_quantiles(
+        _ptr_f64(data),
+        len(data),
+        _ptr_f64(probs_arr),
+        len(probs_arr),
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("quantiles require finite probabilities in [0, 1]")
+    return out
+
+
+def box_stats(
+    data: npt.NDArray[np.float64],
+) -> tuple[float, float, float, float, float, npt.NDArray[np.float64]]:
+    """Tukey box-plot stats: q1, median, q3, whisker low/high, outliers."""
+    data = _as_f64(data, "data")
+    stats = np.empty(5, dtype=np.float64)
+    outliers = np.empty(len(data), dtype=np.float64)
+    n_out = ctypes.c_size_t()
+    ok = _lib.xy_box_stats(
+        _ptr_f64(data),
+        len(data),
+        _ptr_f64(stats),
+        _ptr_f64(outliers) if len(data) else 0,
+        len(data),
+        ctypes.byref(n_out),
+    )
+    if ok != 1:
+        raise RuntimeError("xy native box_stats failed (output undefined)")
+    return (
+        float(stats[0]),
+        float(stats[1]),
+        float(stats[2]),
+        float(stats[3]),
+        float(stats[4]),
+        outliers[: int(n_out.value)].copy(),
+    )
+
+
+HEX_REDUCE_COUNT = 0
+HEX_REDUCE_MEAN = 1
+HEX_REDUCE_SUM = 2
+
+
+def hexbin(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    gridsize: tuple[int, int],
+    range: tuple[tuple[float, float], tuple[float, float]],
+    mincnt: int = 0,
+    C: npt.NDArray[np.float64] | None = None,
+    reduce: str = "count",
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    float,
+    float,
+]:
+    """Hexagonal binning via ``xy_hexbin`` (count / mean / sum).
+
+    Returns ``(centers_x, centers_y, metrics, counts, dx, dy)``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("hexbin x and y must have equal length")
+    if len(gridsize) != 2:
+        raise ValueError("hexbin gridsize must be (width, height)")
+    w, h = int(gridsize[0]), int(gridsize[1])
+    if w < 2 or h < 2 or w > 2048 or h > 2048:
+        raise ValueError("hexbin gridsize dimensions must be in 2..=2048")
+    (x0, x1), (y0, y1) = range
+    x0, x1 = _finite_increasing(x0, x1, "hexbin x range")
+    y0, y1 = _finite_increasing(y0, y1, "hexbin y range")
+    if mincnt < 0:
+        raise ValueError("hexbin mincnt must be nonnegative")
+    reduce_key = str(reduce).strip().lower()
+    reduce_map = {
+        "count": HEX_REDUCE_COUNT,
+        "mean": HEX_REDUCE_MEAN,
+        "sum": HEX_REDUCE_SUM,
+    }
+    if reduce_key not in reduce_map:
+        raise ValueError("hexbin reduce must be 'count', 'mean', or 'sum'")
+    reduce_code = reduce_map[reduce_key]
+    c_arr = None if C is None else _as_f64(C, "C")
+    if c_arr is not None and len(c_arr) != len(x):
+        raise ValueError("hexbin C must have the same length as x and y")
+    if reduce_code != HEX_REDUCE_COUNT and c_arr is None:
+        raise ValueError("hexbin mean/sum reduce requires C")
+    capacity = (w + 1) * (h + 1) + w * h
+    out_cx = np.empty(capacity, dtype=np.float64)
+    out_cy = np.empty(capacity, dtype=np.float64)
+    out_metric = np.empty(capacity, dtype=np.float64)
+    out_counts = np.empty(capacity, dtype=np.float64)
+    dx = ctypes.c_double()
+    dy = ctypes.c_double()
+    written = _lib.xy_hexbin(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        0 if c_arr is None else _ptr_f64(c_arr),
+        len(x),
+        w,
+        h,
+        x0,
+        x1,
+        y0,
+        y1,
+        int(mincnt),
+        reduce_code,
+        _ptr_f64(out_cx),
+        _ptr_f64(out_cy),
+        _ptr_f64(out_metric),
+        _ptr_f64(out_counts),
+        capacity,
+        ctypes.byref(dx),
+        ctypes.byref(dy),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid hexbin arguments")
+    n = int(written)
+    return (
+        out_cx[:n].copy(),
+        out_cy[:n].copy(),
+        out_metric[:n].copy(),
+        out_counts[:n].copy(),
+        float(dx.value),
+        float(dy.value),
+    )
+
+
+def violin_density(
+    data: npt.NDArray[np.float64],
+    n_bins: int,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Histogram + fixed smooth kernel; returns ``(edges, density)``."""
+    data = _as_f64(data, "data")
+    n_bins = int(n_bins)
+    if n_bins < 4 or n_bins > 1024:
+        raise ValueError("violin bins must be an integer between 4 and 1024")
+    edges = np.empty(n_bins + 1, dtype=np.float64)
+    density = np.empty(n_bins, dtype=np.float64)
+    ok = _lib.xy_violin_density(
+        _ptr_f64(data),
+        len(data),
+        n_bins,
+        _ptr_f64(edges),
+        _ptr_f64(density),
+    )
+    if ok != 1:
+        raise ValueError("violin density requires at least one finite value")
+    return edges, density
+
+
+def histogram_edges(
+    data: npt.NDArray[np.float64],
+    *,
+    range: tuple[float, float] | None = None,
+    method: str = "auto",
+) -> npt.NDArray[np.float64]:
+    """Uniform histogram edges via Rust.
+
+    ``method="auto"`` matches NumPy ``bins="auto"`` (min of Sturges bandwidth
+    and Freedman–Diaconis bandwidth floored by ``sqrt/2``). ``method="sturges"``
+    is Sturges alone.
+    """
+    data = _as_f64(data, "data")
+    key = str(method).strip().lower()
+    method_map = {"auto": 0, "sturges": 1}
+    if key not in method_map:
+        raise ValueError("histogram_edges method must be 'auto' or 'sturges'")
+    if range is None:
+        use_range = 0
+        lo = hi = 0.0
+    else:
+        use_range = 1
+        lo, hi = _finite_increasing(range[0], range[1], "histogram range")
+    # NumPy auto floors FD by sqrt/2, so n_bins ≤ ceil(2√n); sturges is ~log2(n).
+    n = max(len(data), 1)
+    capacity = max(int(2 * (n**0.5) + 4), 16)
+    out = np.empty(capacity, dtype=np.float64)
+    written = _lib.xy_histogram_edges(
+        _ptr_f64(data),
+        len(data),
+        lo,
+        hi,
+        use_range,
+        method_map[key],
+        _ptr_f64(out),
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid histogram_edges arguments")
+    return out[: int(written)].copy()
+
+
+WIND_ROSE_MAX_SECTORS = 3600
+WIND_ROSE_MAX_EDGES = 256
+
+
+def wind_rose_bins(
+    directions: npt.NDArray[np.float64],
+    speeds: npt.NDArray[np.float64],
+    sectors: int,
+    speed_edges: npt.NDArray[np.float64] | None = None,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64], int]:
+    """Directional/speed binning via ``xy_wind_rose_bins``.
+
+    Returns ``(edges, centres, counts, n_obs)`` where ``counts`` is shaped
+    ``(n_bands, sectors)`` row-major. ``speed_edges=None`` derives quartile
+    upper edges (3-significant-figure rounding, top edge ceiled).
+    """
+    directions = _as_f64(directions, "directions")
+    speeds = _as_f64(speeds, "speeds")
+    if len(directions) != len(speeds):
+        raise ValueError("wind_rose directions and speeds must be the same length")
+    sectors = int(sectors)
+    if sectors < 3 or sectors > WIND_ROSE_MAX_SECTORS:
+        raise ValueError(f"wind_rose sectors must be in 3..={WIND_ROSE_MAX_SECTORS}")
+    if speed_edges is None:
+        edges_in = None
+        n_edges = 0
+        capacity_edges = 4
+    else:
+        edges_in = _as_f64(speed_edges, "speed_edges")
+        n_edges = len(edges_in)
+        if n_edges == 0 or n_edges > WIND_ROSE_MAX_EDGES:
+            raise ValueError("wind_rose speed_bins must contain at least one edge")
+        capacity_edges = n_edges
+    out_edges = np.empty(capacity_edges, dtype=np.float64)
+    out_centres = np.empty(sectors, dtype=np.float64)
+    capacity_counts = capacity_edges * sectors
+    out_counts = np.empty(capacity_counts, dtype=np.float64)
+    n_obs = ctypes.c_size_t()
+    written = _lib.xy_wind_rose_bins(
+        _ptr_f64(directions),
+        _ptr_f64(speeds),
+        len(directions),
+        sectors,
+        0 if edges_in is None else _ptr_f64(edges_in),
+        n_edges,
+        _ptr_f64(out_edges),
+        capacity_edges,
+        _ptr_f64(out_centres),
+        _ptr_f64(out_counts),
+        capacity_counts,
+        ctypes.byref(n_obs),
+    )
+    if written == _USIZE_MAX:
+        if edges_in is not None and n_edges > 0:
+            finite = np.isfinite(directions) & np.isfinite(speeds)
+            if np.any(finite):
+                fastest = float(np.max(speeds[finite]))
+                uniq = np.unique(edges_in[np.isfinite(edges_in)])
+                if uniq.size and float(uniq[-1]) < fastest:
+                    raise ValueError(
+                        f"wind_rose speed_bins top edge {float(uniq[-1]):g} is below the "
+                        f"fastest observation {fastest:g}, which would drop it from "
+                        "every band. Raise the last edge to cover the data."
+                    )
+            if not np.all(np.isfinite(edges_in)):
+                raise ValueError("wind_rose speed_bins edges must all be finite")
+        raise ValueError("wind_rose needs at least one finite observation")
+    n_bands = int(written)
+    counts = out_counts[: n_bands * sectors].reshape(n_bands, sectors).copy()
+    return out_edges[:n_bands].copy(), out_centres.copy(), counts, int(n_obs.value)
+
+
+def contourf_densify(
+    z: npt.NDArray[np.float64],
+    xpos: npt.NDArray[np.float64],
+    ypos: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Bilinear densify of a contour field via ``xy_contourf_densify``."""
+    z = np.asarray(z, dtype=np.float64)
+    if z.ndim != 2 or min(z.shape) < 2:
+        raise ValueError("contourf densify z must be a 2-D matrix with ≥2 rows/columns")
+    rows, cols = z.shape
+    xpos = _as_f64(xpos, "xpos")
+    ypos = _as_f64(ypos, "ypos")
+    if len(xpos) != cols or len(ypos) != rows:
+        raise ValueError("contourf densify xpos/ypos must match z columns/rows")
+
+    def _sample_count(size: int) -> int:
+        if size > 512:
+            return size
+        return min(512, max(256, (size - 1) * 8 + 1))
+
+    out_rows = _sample_count(rows)
+    out_cols = _sample_count(cols)
+    out_z = np.empty(out_rows * out_cols, dtype=np.float64)
+    out_x = np.empty(out_cols, dtype=np.float64)
+    out_y = np.empty(out_rows, dtype=np.float64)
+    got_rows = ctypes.c_size_t()
+    got_cols = ctypes.c_size_t()
+    ok = _lib.xy_contourf_densify(
+        _ptr_f64(np.ascontiguousarray(z)),
+        rows,
+        cols,
+        _ptr_f64(xpos),
+        _ptr_f64(ypos),
+        _ptr_f64(out_z),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        out_z.size,
+        out_x.size,
+        out_y.size,
+        ctypes.byref(got_rows),
+        ctypes.byref(got_cols),
+    )
+    if ok != 1:
+        raise ValueError("invalid contourf densify arguments")
+    r, c = int(got_rows.value), int(got_cols.value)
+    return out_z[: r * c].reshape(r, c).copy(), out_x[:c].copy(), out_y[:r].copy()
+
+
+def contourf_bands(
+    z: npt.NDArray[np.float64],
+    xpos: npt.NDArray[np.float64],
+    ypos: npt.NDArray[np.float64],
+    edges: npt.NDArray[np.float64],
+    *,
+    extend_min: bool = False,
+    extend_max: bool = False,
+) -> tuple[tuple[npt.NDArray[np.float64], ...], npt.NDArray[np.int64]]:
+    """Corner-mask contourf band triangles via ``xy_contourf_bands``.
+
+    Returns ``((x0, y0, x1, y1, x2, y2), slots)`` matching
+    ``marks._contourf_corner_triangles``.
+    """
+    z = np.asarray(z, dtype=np.float64)
+    if z.ndim != 2 or min(z.shape) < 2:
+        raise ValueError("contourf bands z must be a 2-D matrix with ≥2 rows/columns")
+    rows, cols = z.shape
+    xpos = _as_f64(xpos, "xpos")
+    ypos = _as_f64(ypos, "ypos")
+    edges = _as_f64(edges, "edges")
+    if len(xpos) != cols or len(ypos) != rows:
+        raise ValueError("contourf bands xpos/ypos must match z columns/rows")
+    if len(edges) < 2:
+        raise ValueError("contourf bands needs at least two edges")
+    needed = _lib.xy_contourf_bands(
+        _ptr_f64(np.ascontiguousarray(z)),
+        rows,
+        cols,
+        _ptr_f64(xpos),
+        _ptr_f64(ypos),
+        _ptr_f64(edges),
+        len(edges),
+        1 if extend_min else 0,
+        1 if extend_max else 0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
+    if needed == _USIZE_MAX:
+        raise ValueError("invalid contourf bands arguments")
+    n = int(needed)
+    if n == 0:
+        empty = tuple(np.empty(0, dtype=np.float64) for _ in range(6))
+        return empty, np.empty(0, dtype=np.int64)
+    cols_out = [np.empty(n, dtype=np.float64) for _ in range(6)]
+    slots = np.empty(n, dtype=np.int64)
+    written = _lib.xy_contourf_bands(
+        _ptr_f64(np.ascontiguousarray(z)),
+        rows,
+        cols,
+        _ptr_f64(xpos),
+        _ptr_f64(ypos),
+        _ptr_f64(edges),
+        len(edges),
+        1 if extend_min else 0,
+        1 if extend_max else 0,
+        cols_out[0].ctypes.data,
+        cols_out[1].ctypes.data,
+        cols_out[2].ctypes.data,
+        cols_out[3].ctypes.data,
+        cols_out[4].ctypes.data,
+        cols_out[5].ctypes.data,
+        slots.ctypes.data,
+        n,
+    )
+    if written != n:
+        raise RuntimeError("native contourf_bands returned an inconsistent triangle count")
+    return tuple(cols_out), slots
 
 
 # xy_css_check kinds — keep in sync with `src/lib.rs`.

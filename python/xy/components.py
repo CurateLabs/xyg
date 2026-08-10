@@ -101,6 +101,8 @@ __all__ = [
     "errorbar_chart",
     "export_config",
     "facet_chart",
+    "graph",
+    "graph_chart",
     "heatmap",
     "heatmap_chart",
     "hexbin",
@@ -1145,6 +1147,77 @@ def sankey(
     )
 
 
+def graph(
+    nodes: Any = None,
+    edges: Any = None,
+    *,
+    x: Union[str, ArrayLike, None] = None,
+    y: Union[str, ArrayLike, None] = None,
+    layout: str = "force",
+    directed: bool = True,
+    seed: int = 0,
+    iterations: int = 300,
+    color: Union[str, ColorLike, ArrayLike, None] = None,
+    size: Union[str, float, ArrayLike, None] = None,
+    edge_color: Union[str, ColorLike, ArrayLike, None] = None,
+    edge_width: Any = 1.2,
+    symbol: Any = "circle",
+    edge_curve: str = "straight",
+    name: Optional[str] = None,
+    opacity: Any = 1.0,
+    style: Optional[dict[str, StyleValue]] = None,
+    class_name: Optional[str] = None,
+) -> Mark:
+    """A node–link graph: Rust layout, edges as segments, nodes as scatter.
+
+    Prefer ``xy.graph_chart(...)``. See ``spec/design/graph-mark.md``.
+
+    Args:
+        nodes: Node ids, or a table/mapping with an ``id`` column.
+        edges: ``(source, target)`` pairs or a table with source/target columns.
+        x: Optional preset x positions (required with ``y`` for ``layout=\"preset\"``).
+        y: Optional preset y positions.
+        layout: Layout algorithm name (default ``\"force\"``).
+        directed: Whether edges are directed (affects CSR neighborhood).
+        seed: RNG seed for force layout.
+        iterations: Force-layout tick count.
+        color: Node colour encoding.
+        size: Node size encoding.
+        edge_color: Edge colour.
+        edge_width: Edge width in pixels.
+        symbol: Node marker symbol (scatter symbols).
+        edge_curve: ``\"straight\"`` (MVP draw) or ``\"curve\"`` (meta for clients).
+        name: Series label prefix for edge/node traces.
+        opacity: Shared opacity.
+        style: Mark style overrides.
+        class_name: Adapter-only trace metadata.
+    """
+    return Mark(
+        kind="graph",
+        x=x,
+        y=y,
+        data=None,
+        name=name,
+        class_name=class_name,
+        style=_mark_style_dict(style, "graph style"),
+        props={
+            "nodes": [] if nodes is None else nodes,
+            "edges": [] if edges is None else edges,
+            "layout": layout,
+            "directed": directed,
+            "seed": seed,
+            "iterations": iterations,
+            "color": color,
+            "size": size,
+            "edge_color": edge_color,
+            "edge_width": edge_width,
+            "symbol": symbol,
+            "edge_curve": edge_curve,
+            "opacity": opacity,
+        },
+    )
+
+
 def triangle_mesh(
     x0: Union[str, ArrayLike, None] = None,
     y0: Union[str, ArrayLike, None] = None,
@@ -1576,7 +1649,7 @@ def hexbin(
     x_axis: str = "x",
     y_axis: str = "y",
 ) -> Mark:
-    """A native-kernel binned hexagonal density plot.
+    """A hexagonal density plot binned by the shared native ``xy_hexbin`` kernel.
 
     Args:
         x: X values or a column name resolved from ``data``.
@@ -5829,6 +5902,29 @@ def _apply_sankey(fig: Figure, m: Mark, data: Any) -> None:
     )
 
 
+def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
+    del data
+    fig.graph(
+        m.props["nodes"],
+        m.props["edges"],
+        x=m.x,
+        y=m.y,
+        layout=m.props["layout"],
+        directed=m.props["directed"],
+        seed=m.props["seed"],
+        iterations=m.props["iterations"],
+        color=m.props["color"],
+        size=m.props["size"],
+        edge_color=m.props["edge_color"],
+        edge_width=m.props["edge_width"],
+        symbol=m.props["symbol"],
+        edge_curve=m.props["edge_curve"],
+        name=m.name,
+        opacity=m.props["opacity"],
+        style=m.style,
+    )
+
+
 def _apply_triangle_mesh(fig: Figure, m: Mark, data: Any) -> None:
     color = m.props["color"]
     fig.triangle_mesh(
@@ -6202,6 +6298,7 @@ _MARK_APPLIERS: dict[str, Callable[[Figure, Mark, Any], None]] = {
     "stem": _apply_stem,
     "ribbon": _apply_ribbon,
     "sankey": _apply_sankey,
+    "graph": _apply_graph,
     "triangle_mesh": _apply_triangle_mesh,
     "violin": _apply_violin,
 }
@@ -6726,9 +6823,10 @@ def wind_rose(
 ) -> Chart:
     """A wind rose: directional frequency, stacked by speed band.
 
-    Binning is done here in Python rather than by a renderer — the same
-    arrangement `hist` uses — so the chart is polar bars over counts and nothing
-    about the render path is wind-specific.
+    Directional/speed binning runs in the native core (`xy_wind_rose_bins`);
+    this factory only assembles stacked polar bars over the returned counts —
+    the same arrangement `hist` uses — so nothing about the render path is
+    wind-specific.
 
     Directions are compass bearings in degrees (0 = north, increasing
     clockwise), which is why the theta axis defaults to `zero="N"` with
@@ -6748,6 +6846,8 @@ def wind_rose(
     Returns:
         A polar `Chart` of stacked bars.
     """
+    from . import kernels
+
     bearings = np.asarray(directions, dtype=float).reshape(-1)
     magnitudes = np.asarray(speeds, dtype=float).reshape(-1)
     if bearings.size != magnitudes.size:
@@ -6759,56 +6859,21 @@ def wind_rose(
         raise ValueError(f"wind_rose sectors must be a whole number; got {sectors!r}")
     if sectors < 3:
         raise ValueError("wind_rose sectors must be at least 3")
-    finite = np.isfinite(bearings) & np.isfinite(magnitudes)
-    bearings, magnitudes = bearings[finite], magnitudes[finite]
-    if bearings.size == 0:
-        raise ValueError("wind_rose needs at least one finite observation")
-
-    if speed_bins is None:
-        # Quartile bands, rounded to three significant figures: the raw
-        # quantiles are readable as a legend only by accident ("<= 2.76651").
-        quartiles = np.quantile(magnitudes, [0.25, 0.5, 0.75, 1.0])
-        edges = np.unique([float(f"{value:.3g}") for value in quartiles])
-        # The top edge rounds *up*, never down: it has to cover the fastest
-        # observation, and restoring the raw maximum would put "27.2197" in the
-        # legend next to "2.77".
-        top = float(magnitudes.max())
-        if top > 0:
-            unit = 10.0 ** (math.floor(math.log10(top)) - 2)
-            edges[-1] = math.ceil(top / unit) * unit
-    else:
-        edges = np.unique(np.asarray(speed_bins, dtype=float).reshape(-1))
-        # The default path rounds its top edge UP precisely so it covers the
-        # fastest observation; authored edges are taken as given, so anything
-        # above the last one fell in no band at all — `speed_bins=[10, 20]`
-        # counted 2 of 3 observations when one blew at 25 and the rose
-        # under-reported its own input with no warning. Every observation must
-        # land in a band.
-        if edges.size and not np.all(np.isfinite(edges)):
-            raise ValueError("wind_rose speed_bins edges must all be finite")
-        if edges.size:
-            fastest = float(magnitudes.max())
-            if edges[-1] < fastest:
-                raise ValueError(
-                    f"wind_rose speed_bins top edge {edges[-1]:g} is below the "
-                    f"fastest observation {fastest:g}, which would drop it from "
-                    "every band. Raise the last edge to cover the data."
-                )
-    if edges.size == 0:
+    edges_arg = None if speed_bins is None else np.asarray(speed_bins, dtype=float).reshape(-1)
+    if edges_arg is not None and edges_arg.size == 0:
         raise ValueError("wind_rose speed_bins must contain at least one edge")
+    edges, centres, counts, _n_obs = kernels.wind_rose_bins(
+        bearings,
+        magnitudes,
+        int(sectors),
+        edges_arg,
+    )
 
-    width = 360.0 / sectors
-    # Bin centred on each sector: a bearing of 0 belongs to the sector centred
-    # on north, not to the one starting there.
-    index = np.floor(((bearings % 360.0) + width / 2.0) / width).astype(int) % sectors
-    centres = np.arange(sectors, dtype=float) * width
-
+    width = 360.0 / int(sectors)
     marks: list[Component] = []
-    base = np.zeros(sectors, dtype=float)
-    lower = -np.inf
-    for upper in edges:
-        in_band = (magnitudes > lower) & (magnitudes <= upper)
-        counts = np.bincount(index[in_band], minlength=sectors).astype(float)
+    base = np.zeros(int(sectors), dtype=float)
+    for band, upper in enumerate(edges):
+        band_counts = counts[band]
         marks.append(
             bar(
                 centres,
@@ -6818,14 +6883,13 @@ def wind_rose(
                 # three observations reached radius 5 and every band above the
                 # first was too thick. The height IS the band's count, which is
                 # also what makes the hover readout the band's own count.
-                counts,
+                band_counts,
                 base=base.copy(),
                 width=width,
                 name=f"\u2264 {upper:g}",
             )
         )
-        base = base + counts
-        lower = upper
+        base = base + band_counts
 
     _require_polar_coords(props)
     # A wind rose is the one polar composition where the ANGLE is data — it is
@@ -6988,6 +7052,49 @@ def sankey_chart(
         *children,
     )
     return Chart("sankey_chart", children, **props)
+
+
+def graph_chart(*children: Component, **props: Any) -> Chart:
+    """A node–link graph chart: Rust layout, pan/zoom, axes hidden by default.
+
+        xy.graph_chart(
+            xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force"),
+        )
+
+    Or pass ``nodes`` / ``edges`` (and other ``xy.graph`` kwargs) on the chart
+    itself. Remaining kwargs (``width``, ``height``, ``title``, …) style the chart.
+    """
+    mark_keys = (
+        "nodes",
+        "edges",
+        "x",
+        "y",
+        "layout",
+        "directed",
+        "seed",
+        "iterations",
+        "color",
+        "size",
+        "edge_color",
+        "edge_width",
+        "symbol",
+        "edge_curve",
+        "name",
+        "opacity",
+        "style",
+        "class_name",
+    )
+    mark_kwargs = {key: props.pop(key) for key in mark_keys if key in props}
+    if "nodes" in mark_kwargs or "edges" in mark_kwargs:
+        nodes = mark_kwargs.pop("nodes", [])
+        edges = mark_kwargs.pop("edges", [])
+        children = (graph(nodes, edges, **mark_kwargs), *children)
+    children = (
+        *children,
+        x_axis(show=False),
+        y_axis(show=False),
+    )
+    return Chart("graph_chart", children, **props)
 
 
 def triangle_mesh_chart(*children: Component, **props: Any) -> Chart:

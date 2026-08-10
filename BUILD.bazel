@@ -1,0 +1,230 @@
+# Cargo-wrapping Bazel targets for the dual-host graph MVP.
+#
+# Cargo.toml / Cargo.lock remain authoritative for the Rust crate; these
+# targets shell out to cargo / pytest / node so graph bindings share one
+# cdylib. See spec/design/bazel-ci.md.
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain.toml",
+])
+
+filegroup(
+    name = "rust_sources",
+    srcs = glob(
+        [
+            "src/**/*.rs",
+            "Cargo.toml",
+            "Cargo.lock",
+            "rust-toolchain.toml",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "python_graph_sources",
+    srcs = glob(
+        [
+            "python/xy/**/*.py",
+            "tests/test_graph.py",
+            "tests/test_sankey.py",
+            "scripts/abi_smoke.py",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "node_graph_sources",
+    srcs = glob(
+        [
+            "packages/xy-node/package.json",
+            "packages/xy-node/package-lock.json",
+            "packages/xy-node/src/**",
+            "packages/xy-node/test/**",
+            "packages/xy-node/README.md",
+        ],
+        allow_empty = True,
+    ),
+)
+
+# Release cdylib via cargo. Output is always named libxy_core.so in
+# bazel-bin (Linux CI); Darwin hosts still build .dylib then copy.
+genrule(
+    name = "xy_core",
+    srcs = [
+        ":rust_sources",
+        "Cargo.toml",
+    ],
+    outs = ["libxy_core.so"],
+    cmd = "$(execpath //tools/bazel:cargo_build.sh) $(execpath Cargo.toml) $@",
+    local = True,
+    tags = [
+        "no-remote",
+        "no-remote-cache",
+        "no-sandbox",
+        "requires-network",
+    ],
+    tools = ["//tools/bazel:cargo_build.sh"],
+)
+
+sh_test(
+    name = "rust_test",
+    size = "large",
+    srcs = ["//tools/bazel:run_cargo_test.sh"],
+    data = [
+        ":rust_sources",
+        "Cargo.toml",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+        "requires-network",
+    ],
+)
+
+sh_test(
+    name = "python_graph_test",
+    size = "large",
+    srcs = ["//tools/bazel:run_python_graph_tests.sh"],
+    data = [
+        ":python_graph_sources",
+        ":rust_sources",
+        ":xy_core",
+        "Cargo.toml",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+    ],
+)
+
+sh_test(
+    name = "node_graph_test",
+    size = "large",
+    srcs = ["//tools/bazel:run_node_graph_tests.sh"],
+    data = [
+        ":node_graph_sources",
+        ":rust_sources",
+        ":xy_core",
+        "Cargo.toml",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+        "requires-network",
+    ],
+)
+
+sh_test(
+    name = "abi_smoke",
+    size = "medium",
+    srcs = ["//tools/bazel:run_abi_smoke.sh"],
+    data = [
+        ":xy_core",
+        ":rust_sources",
+        "Cargo.toml",
+        "scripts/abi_smoke.py",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+    ],
+)
+
+filegroup(
+    name = "perf_parity_sources",
+    srcs = glob(
+        [
+            "benchmarks/bench_dual_host_graph.py",
+            "benchmarks/bench_parity_kernels.py",
+            "benchmarks/baseline.json",
+            "python/xy/**/*.py",
+        ],
+        allow_empty = True,
+    ),
+)
+
+sh_test(
+    name = "perf_parity_test",
+    size = "medium",
+    srcs = ["//tools/bazel:run_perf_parity.sh"],
+    data = [
+        ":perf_parity_sources",
+        ":rust_sources",
+        ":xy_core",
+        "Cargo.toml",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+    ],
+)
+
+filegroup(
+    name = "scale_all_charts_sources",
+    srcs = glob(
+        [
+            "benchmarks/bench_scale_all_charts.py",
+            "benchmarks/bench_scale_all_charts_node.mjs",
+            "benchmarks/bench_graph_scale_classes_node.mjs",
+            "benchmarks/bench_tier3_pyramid.py",
+            "benchmarks/bench_tier3_pyramid_node.mjs",
+            "benchmarks/baseline.json",
+            "python/xy/**/*.py",
+            "packages/xy-node/src/**",
+            "packages/xy-node/package.json",
+        ],
+        allow_empty = True,
+    ),
+)
+
+sh_test(
+    name = "scale_all_charts_test",
+    size = "large",
+    srcs = ["//tools/bazel:run_scale_all_charts.sh"],
+    data = [
+        ":scale_all_charts_sources",
+        ":rust_sources",
+        ":xy_core",
+        "Cargo.toml",
+        "//tools/bazel:common.sh",
+        "//tools/bazel:workspace_root.sh",
+    ],
+    tags = [
+        "local",
+        "no-remote",
+        "no-sandbox",
+    ],
+)
+
+test_suite(
+    name = "graph_mvp_tests",
+    tests = [
+        ":abi_smoke",
+        ":node_graph_test",
+        ":perf_parity_test",
+        ":python_graph_test",
+        ":rust_test",
+        ":scale_all_charts_test",
+    ],
+)

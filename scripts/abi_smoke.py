@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ctypes
 import math
+import os
 import sys
 from array import array
 from pathlib import Path
@@ -58,12 +59,20 @@ def _lib_name() -> str:
 
 def load() -> ctypes.CDLL:
     name = _lib_name()
-    for cand in (ROOT / "target" / "release" / name, ROOT / "target" / "debug" / name):
+    candidates = []
+    env = os.environ.get("XY_NATIVE_LIB")
+    if env:
+        candidates.append(Path(env))
+    candidates.extend((ROOT / "target" / "release" / name, ROOT / "target" / "debug" / name))
+    for cand in candidates:
         if cand.exists():
             lib = ctypes.CDLL(str(cand))
             break
     else:
-        raise SystemExit(f"{name} not built; run `cargo build --release`")
+        raise SystemExit(
+            f"{name} not built; run `cargo build --release` "
+            f"or set XY_NATIVE_LIB (looked in {[str(c) for c in candidates]})"
+        )
 
     F64P = ctypes.POINTER(ctypes.c_double)
     F32P = ctypes.POINTER(ctypes.c_float)
@@ -374,6 +383,218 @@ def load() -> ctypes.CDLL:
         Z,
         F32P,
     ]
+    lib.xy_graph_layout.restype = ctypes.c_int32
+    lib.xy_graph_layout.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U64P,
+        U64P,
+        F64P,
+        F64P,
+        U64P,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+    ]
+    lib.xy_graph_lod_decision.restype = ctypes.c_int32
+    lib.xy_graph_lod_decision.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U32P,
+        U64P,
+    ]
+    lib.xy_graph_cluster_aggregate.restype = ctypes.c_int32
+    lib.xy_graph_cluster_aggregate.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+        U64P,
+        U64P,
+        U32P,
+        U64P,
+    ]
+    lib.xy_graph_build_render.restype = ctypes.c_int32
+    lib.xy_graph_build_render.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+        U64P,
+        U64P,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        U64P,
+        U64P,
+        U64P,
+        U64P,
+        U64P,
+        U32P,
+        U64P,
+    ]
+    lib.xy_graph_sample_edges.restype = ctypes.c_uint64
+    lib.xy_graph_sample_edges.argtypes = [ctypes.c_uint64, ctypes.c_uint64, U64P]
+    lib.xy_graph_build_csr.restype = ctypes.c_int32
+    lib.xy_graph_build_csr.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U64P,
+        U64P,
+        ctypes.c_int32,
+        U64P,
+        U64P,
+        ctypes.c_uint64,
+        U64P,
+    ]
+    lib.xy_sankey_layout.restype = ctypes.c_int32
+    lib.xy_sankey_layout.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U64P,
+        U64P,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        U32P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        U32P,
+        U64P,
+        U64P,
+    ]
+    lib.xy_hexbin.restype = ctypes.c_size_t
+    lib.xy_hexbin.argtypes = [
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+    ]
+    lib.xy_violin_density.restype = ctypes.c_int32
+    lib.xy_violin_density.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+    ]
+    lib.xy_histogram_edges.restype = ctypes.c_size_t
+    lib.xy_histogram_edges.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xy_wind_rose_bins.restype = ctypes.c_size_t
+    lib.xy_wind_rose_bins.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    lib.xy_contourf_densify.restype = ctypes.c_int32
+    lib.xy_contourf_densify.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    lib.xy_bar_stack.restype = ctypes.c_int32
+    lib.xy_bar_stack.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+    ]
+    lib.xy_contourf_bands.restype = ctypes.c_size_t
+    lib.xy_contourf_bands.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.POINTER(ctypes.c_int64),
+        ctypes.c_size_t,
+    ]
     return lib
 
 
@@ -406,6 +627,198 @@ def main() -> None:
 
     ok(lib.xy_abi_version() == ABI_VERSION, "abi version")
     ok(ctypes.sizeof(CZoneMap) == 64, "ZoneMap repr(C) size")
+
+    graph_x = array("d", [0.0]) * 4
+    graph_y = array("d", [0.0]) * 4
+    ok(
+        lib.xy_graph_layout(
+            2,
+            4,
+            0,
+            null_u64,
+            null_u64,
+            null_f64,
+            null_f64,
+            null_u64,
+            0,
+            0,
+            _ptr(graph_x, ctypes.c_double),
+            _ptr(graph_y, ctypes.c_double),
+        )
+        == 0,
+        "graph_layout circle ok",
+    )
+    ok(
+        abs(graph_x[0] - 4.0) < 1e-12
+        and abs(graph_y[0]) < 1e-12
+        and abs(graph_x[1]) < 1e-12
+        and abs(graph_y[1] - 4.0) < 1e-12,
+        "graph_layout circle positions four nodes",
+    )
+    graph_tier = ctypes.c_uint32()
+    graph_kept = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_lod_decision(
+            100,
+            10_000,
+            50_000,
+            1_000,
+            ctypes.byref(graph_tier),
+            ctypes.byref(graph_kept),
+        )
+        == 0
+        and graph_tier.value == 1
+        and graph_kept.value == 1_000,
+        "graph_lod_decision edge sample",
+    )
+    cluster_x = array("d", [0.0, 1.0, 0.0, 100.0, 101.0, 100.0])
+    cluster_y = array("d", [0.0, 0.0, 1.0, 100.0, 100.0, 101.0])
+    cluster_out_x = array("d", [0.0]) * 2
+    cluster_out_y = array("d", [0.0]) * 2
+    cluster_member = array("Q", [99]) * 6
+    cluster_count = ctypes.c_uint64()
+    cluster_tier = ctypes.c_uint32()
+    cluster_kept = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_cluster_aggregate(
+            6,
+            3,
+            _ptr(cluster_x, ctypes.c_double),
+            _ptr(cluster_y, ctypes.c_double),
+            2,
+            500,
+            _ptr(cluster_out_x, ctypes.c_double),
+            _ptr(cluster_out_y, ctypes.c_double),
+            ctypes.byref(cluster_count),
+            _ptr(cluster_member, ctypes.c_uint64),
+            ctypes.byref(cluster_tier),
+            ctypes.byref(cluster_kept),
+        )
+        == 0
+        and cluster_count.value == 2
+        and cluster_tier.value == 2
+        and list(cluster_member) == [0, 0, 0, 1, 1, 1],
+        "graph_cluster_aggregate grid centroids + recorded tier",
+    )
+    render_sources = array("Q", [0, 1, 3, 4, 0])
+    render_targets = array("Q", [1, 2, 4, 5, 3])
+    render_out_x = array("d", [0.0]) * 2
+    render_out_y = array("d", [0.0]) * 2
+    render_member = array("Q", [99]) * 6
+    render_es = array("Q", [99]) * 4
+    render_et = array("Q", [99]) * 4
+    render_n = ctypes.c_uint64()
+    render_e = ctypes.c_uint64()
+    render_tier = ctypes.c_uint32()
+    render_kept = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_build_render(
+            6,
+            5,
+            _ptr(cluster_x, ctypes.c_double),
+            _ptr(cluster_y, ctypes.c_double),
+            _ptr(render_sources, ctypes.c_uint64),
+            _ptr(render_targets, ctypes.c_uint64),
+            2,
+            4,
+            0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            _ptr(render_out_x, ctypes.c_double),
+            _ptr(render_out_y, ctypes.c_double),
+            _ptr(render_member, ctypes.c_uint64),
+            _ptr(render_es, ctypes.c_uint64),
+            _ptr(render_et, ctypes.c_uint64),
+            ctypes.byref(render_n),
+            ctypes.byref(render_e),
+            ctypes.byref(render_tier),
+            ctypes.byref(render_kept),
+        )
+        == 0
+        and render_n.value <= 2
+        and render_e.value <= 4
+        and render_tier.value == 2
+        and list(render_member) == [0, 0, 0, 1, 1, 1],
+        "graph_build_render budgets + recorded tier",
+    )
+    graph_sample = array("Q", [99]) * 3
+    ok(
+        lib.xy_graph_sample_edges(10, 3, _ptr(graph_sample, ctypes.c_uint64)) == 3
+        and list(graph_sample) == [0, 3, 6],
+        "graph_sample_edges deterministic stride",
+    )
+    csr_sources = array("Q", [0, 1])
+    csr_targets = array("Q", [1, 2])
+    csr_offsets = array("Q", [99]) * 4
+    csr_neighbors = array("Q", [99]) * 4
+    csr_len = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_build_csr(
+            3,
+            2,
+            _ptr(csr_sources, ctypes.c_uint64),
+            _ptr(csr_targets, ctypes.c_uint64),
+            0,
+            _ptr(csr_offsets, ctypes.c_uint64),
+            _ptr(csr_neighbors, ctypes.c_uint64),
+            len(csr_neighbors),
+            ctypes.byref(csr_len),
+        )
+        == 0
+        and list(csr_offsets) == [0, 1, 3, 4]
+        and csr_len.value == 4
+        and sorted(csr_neighbors[: csr_len.value]) == [0, 1, 1, 2],
+        "graph_build_csr undirected",
+    )
+    sankey_sources = array("Q", [0])
+    sankey_targets = array("Q", [1])
+    sankey_values = array("d", [1.0])
+    sankey_x0 = array("d", [0.0]) * 2
+    sankey_y0 = array("d", [0.0]) * 2
+    sankey_x1 = array("d", [0.0]) * 2
+    sankey_y1 = array("d", [0.0]) * 2
+    sankey_layer = array("I", [99]) * 2
+    sankey_node_value = array("d", [0.0]) * 2
+    sankey_source_y0 = array("d", [0.0])
+    sankey_source_y1 = array("d", [0.0])
+    sankey_target_y0 = array("d", [0.0])
+    sankey_target_y1 = array("d", [0.0])
+    sankey_layers = array("I", [0])
+    sankey_err_nodes = array("Q", [99]) * 2
+    sankey_err_n = ctypes.c_uint64()
+    ok(
+        lib.xy_sankey_layout(
+            2,
+            1,
+            _ptr(sankey_sources, ctypes.c_uint64),
+            _ptr(sankey_targets, ctypes.c_uint64),
+            _ptr(sankey_values, ctypes.c_double),
+            0.05,
+            0.0,
+            0,
+            1,
+            _ptr(sankey_x0, ctypes.c_double),
+            _ptr(sankey_y0, ctypes.c_double),
+            _ptr(sankey_x1, ctypes.c_double),
+            _ptr(sankey_y1, ctypes.c_double),
+            _ptr(sankey_layer, ctypes.c_uint32),
+            _ptr(sankey_node_value, ctypes.c_double),
+            _ptr(sankey_source_y0, ctypes.c_double),
+            _ptr(sankey_source_y1, ctypes.c_double),
+            _ptr(sankey_target_y0, ctypes.c_double),
+            _ptr(sankey_target_y1, ctypes.c_double),
+            _ptr(sankey_layers, ctypes.c_uint32),
+            _ptr(sankey_err_nodes, ctypes.c_uint64),
+            ctypes.byref(sankey_err_n),
+        )
+        == 0
+        and list(sankey_layer) == [0, 1]
+        and list(sankey_node_value) == [1.0, 1.0]
+        and sankey_layers[0] == 2,
+        "sankey_layout simple A to B",
+    )
 
     ok(
         lib.xy_factorize_fixed(null_u8, 0, 0, null_u32, null_u32) == 0,
@@ -1350,6 +1763,203 @@ def main() -> None:
     )
     ok(total == 4, "histogram valid total")
     ok(list(hist) == [2.0, 0.0, 0.0, 2.0], "histogram counts")
+
+    # histogram_edges: NumPy auto on 1..10 → 5 bins / 6 edges.
+    he_data = array("d", [float(i) for i in range(1, 11)])
+    he_out = array("d", [0.0]) * 16
+    he_n = lib.xy_histogram_edges(
+        _ptr(he_data, ctypes.c_double),
+        len(he_data),
+        0.0,
+        0.0,
+        0,
+        0,
+        _ptr(he_out, ctypes.c_double),
+        len(he_out),
+    )
+    ok(
+        he_n == 6 and abs(he_out[0] - 1.0) < 1e-12 and abs(he_out[5] - 10.0) < 1e-12,
+        "histogram_edges auto",
+    )
+
+    # violin_density: constant sample expands ±0.5 and yields positive density.
+    vd = array("d", [3.0, 3.0, 3.0])
+    vd_edges = array("d", [0.0]) * 5
+    vd_dens = array("d", [0.0]) * 4
+    ok(
+        lib.xy_violin_density(
+            _ptr(vd, ctypes.c_double),
+            len(vd),
+            4,
+            _ptr(vd_edges, ctypes.c_double),
+            _ptr(vd_dens, ctypes.c_double),
+        )
+        == 1
+        and abs(vd_edges[0] - 2.5) < 1e-12
+        and abs(vd_edges[4] - 3.5) < 1e-12
+        and all(v > 0.0 for v in vd_dens),
+        "violin_density constant span",
+    )
+
+    # hexbin: four points, mincnt=1, count reduce.
+    hx_x = array("d", [0.1, 0.5, 0.9, 0.2])
+    hx_y = array("d", [0.1, 0.5, 0.9, 0.8])
+    hx_cap = (4 + 1) * (4 + 1) + 4 * 4
+    hx_cx = array("d", [0.0]) * hx_cap
+    hx_cy = array("d", [0.0]) * hx_cap
+    hx_m = array("d", [0.0]) * hx_cap
+    hx_c = array("d", [0.0]) * hx_cap
+    hx_dx = ctypes.c_double()
+    hx_dy = ctypes.c_double()
+    hx_n = lib.xy_hexbin(
+        _ptr(hx_x, ctypes.c_double),
+        _ptr(hx_y, ctypes.c_double),
+        null_f64,
+        len(hx_x),
+        4,
+        4,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        1,
+        0,
+        _ptr(hx_cx, ctypes.c_double),
+        _ptr(hx_cy, ctypes.c_double),
+        _ptr(hx_m, ctypes.c_double),
+        _ptr(hx_c, ctypes.c_double),
+        hx_cap,
+        ctypes.byref(hx_dx),
+        ctypes.byref(hx_dy),
+    )
+    ok(
+        hx_n == 4 and abs(hx_dx.value - 0.25) < 1e-12 and sum(hx_c[:hx_n]) == 4.0,
+        "hexbin count cells",
+    )
+
+    # wind_rose_bins: three bearings into a 4-sector rose, one speed band.
+    wr_dir = array("d", [0.0, 0.0, 90.0])
+    wr_spd = array("d", [1.0, 1.0, 1.0])
+    wr_edges_in = array("d", [2.0])
+    wr_edges = array("d", [0.0]) * 4
+    wr_centres = array("d", [0.0]) * 4
+    wr_counts = array("d", [0.0]) * 4
+    wr_n_obs = ctypes.c_size_t()
+    wr_n = lib.xy_wind_rose_bins(
+        _ptr(wr_dir, ctypes.c_double),
+        _ptr(wr_spd, ctypes.c_double),
+        len(wr_dir),
+        4,
+        _ptr(wr_edges_in, ctypes.c_double),
+        len(wr_edges_in),
+        _ptr(wr_edges, ctypes.c_double),
+        len(wr_edges),
+        _ptr(wr_centres, ctypes.c_double),
+        _ptr(wr_counts, ctypes.c_double),
+        len(wr_counts),
+        ctypes.byref(wr_n_obs),
+    )
+    ok(
+        wr_n == 1
+        and wr_n_obs.value == 3
+        and list(wr_centres) == [0.0, 90.0, 180.0, 270.0]
+        and list(wr_counts) == [2.0, 1.0, 0.0, 0.0],
+        "wind_rose_bins centred sectors",
+    )
+
+    # contourf_densify: 2×2 field densifies to at least 256 on each axis.
+    cf_z = array("d", [0.0, 1.0, 2.0, 3.0])
+    cf_x = array("d", [0.0, 1.0])
+    cf_y = array("d", [0.0, 1.0])
+    cf_out_rows = 256
+    cf_out_cols = 256
+    cf_out_z = array("d", [0.0]) * (cf_out_rows * cf_out_cols)
+    cf_out_x = array("d", [0.0]) * cf_out_cols
+    cf_out_y = array("d", [0.0]) * cf_out_rows
+    cf_rows = ctypes.c_size_t()
+    cf_cols = ctypes.c_size_t()
+    ok(
+        lib.xy_contourf_densify(
+            _ptr(cf_z, ctypes.c_double),
+            2,
+            2,
+            _ptr(cf_x, ctypes.c_double),
+            _ptr(cf_y, ctypes.c_double),
+            _ptr(cf_out_z, ctypes.c_double),
+            _ptr(cf_out_x, ctypes.c_double),
+            _ptr(cf_out_y, ctypes.c_double),
+            len(cf_out_z),
+            len(cf_out_x),
+            len(cf_out_y),
+            ctypes.byref(cf_rows),
+            ctypes.byref(cf_cols),
+        )
+        == 1
+        and cf_rows.value == 256
+        and cf_cols.value == 256
+        and abs(cf_out_z[0] - 0.0) < 1e-12
+        and abs(cf_out_z[256 * 256 - 1] - 3.0) < 1e-12,
+        "contourf_densify 2x2",
+    )
+
+    # bar_stack: two series grouped over two categories, width 0.8.
+    bs_pos = array("d", [0.0, 1.0])
+    bs_vals = array("d", [1.0, 2.0, 3.0, 4.0])
+    bs_width = array("d", [0.8])
+    bs_base = array("d", [0.0])
+    bs_x0 = array("d", [0.0]) * 4
+    bs_x1 = array("d", [0.0]) * 4
+    bs_y0 = array("d", [0.0]) * 4
+    bs_y1 = array("d", [0.0]) * 4
+    ok(
+        lib.xy_bar_stack(
+            _ptr(bs_pos, ctypes.c_double),
+            2,
+            _ptr(bs_vals, ctypes.c_double),
+            2,
+            _ptr(bs_width, ctypes.c_double),
+            1,
+            _ptr(bs_base, ctypes.c_double),
+            1,
+            0,
+            0,
+            _ptr(bs_x0, ctypes.c_double),
+            _ptr(bs_x1, ctypes.c_double),
+            _ptr(bs_y0, ctypes.c_double),
+            _ptr(bs_y1, ctypes.c_double),
+        )
+        == 1
+        and abs(bs_x0[0] + 0.4) < 1e-12
+        and abs(bs_x1[0]) < 1e-12
+        and list(bs_y1) == [1.0, 2.0, 3.0, 4.0],
+        "bar_stack grouped",
+    )
+
+    # contourf_bands: one-masked-corner cell → 3 triangles.
+    cb_z = array("d", [float("nan"), 1.0, 0.0, 0.0])
+    cb_x = array("d", [0.0, 1.0])
+    cb_y = array("d", [0.0, 1.0])
+    cb_edges = array("d", [-1.0, 0.5, 2.0])
+    cb_need = lib.xy_contourf_bands(
+        _ptr(cb_z, ctypes.c_double),
+        2,
+        2,
+        _ptr(cb_x, ctypes.c_double),
+        _ptr(cb_y, ctypes.c_double),
+        _ptr(cb_edges, ctypes.c_double),
+        3,
+        0,
+        0,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        0,
+    )
+    ok(cb_need == 3, "contourf_bands count query")
 
     # normalize_f32: clamp finite values, route non-finite values by mode.
     nx = array("d", [-1.0, 0.0, 5.0, 10.0, 11.0, float("nan"), float("inf")])

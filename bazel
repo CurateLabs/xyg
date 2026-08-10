@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Thin wrapper so `./bazel` works from a source checkout.
+# Prefer (1) committed tools/bazelisk when present, (2) bazel/bazelisk on
+# PATH (useblacksmith/setup-bazel@v2 installs these on Blacksmith CI), else
+# print setup instructions. Pin the version via .bazelversion /
+# USE_BAZEL_VERSION when launching through bazelisk.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BAZELISK_BIN="${ROOT}/tools/bazelisk"
+VERSION_FILE="${ROOT}/.bazelversion"
+
+if [[ -z "${USE_BAZEL_VERSION:-}" && -f "${VERSION_FILE}" ]]; then
+  export USE_BAZEL_VERSION
+  USE_BAZEL_VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"
+fi
+
+if [[ -x "${BAZELISK_BIN}" ]]; then
+  exec "${BAZELISK_BIN}" "$@"
+fi
+
+if command -v bazelisk >/dev/null 2>&1; then
+  exec bazelisk "$@"
+fi
+
+if command -v bazel >/dev/null 2>&1; then
+  exec bazel "$@"
+fi
+
+cat >&2 <<'EOF'
+No Bazel launcher found.
+  - Place a bazelisk binary at tools/bazelisk, or
+  - install bazelisk and export USE_BAZEL_VERSION from .bazelversion, or
+  - install bazel matching .bazelversion
+    (Blacksmith CI uses useblacksmith/setup-bazel@v2).
+See spec/design/bazel-ci.md.
+EOF
+exit 1

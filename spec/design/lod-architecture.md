@@ -17,9 +17,10 @@ Interactive means: pan/zoom stays inside the §17 frame budget at any N.
 
 A **tier is a property of a (trace, viewport) pair**, never of a dataset:
 what ships is count-only, `tier = f(visible_count)`, hysteresis-guarded (§5).
-`drill_decision(visible, budget, in_drill, exit_factor)` in `python/xy/lod.py`
-returns `visible <= budget * (exit_factor if in_drill else 1.0)`; `js/src/45_lod.ts`
-mirrors it. Implemented today for scatter (drill-in/out with hysteresis); this
+`drill_decision` / `plan_view_lod` in `python/xy/lod.py` call Rust
+(`xy_drill_decision` / `xy_lod_plan` in `lod_plan.rs`); hosts only validate and
+map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
+for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`
 into the decision is dossier F3 — *specified, pending, not implemented*; no
 pixel-area or overdraw term exists in `python/xy/` or `js/src/` today.
@@ -679,7 +680,8 @@ contract entry before it lands.
    stay: the first-payload overlay and any future resolvable-tier subset are
    built from them.
 
-**Phase 3 — pyramid (build + serve shipped; client cache and bench gate open)**
+**Phase 3 — pyramid (build + serve shipped on Python + Node; client tile
+cache and dedicated 100M latency gate still open)**
 6. **Done (count + mean-color planes):** `src/tiles.rs` builds a square count
    pyramid over the trace's full data bounds — finest level is
    `PYRAMID_BASE_DIM`² (2048², `python/xy/config.py`), each coarser level an
@@ -698,6 +700,12 @@ contract entry before it lands.
    and built lazily by `interaction._ensure_pyramid` on the first density
    view at ≥ `PYRAMID_MIN_POINTS` (2,000,000), released by a weakref
    finalizer; colored pyramids refuse appends and rebuild lazily (§4.1).
+   **Node:** `packages/xy-node/src/pyramid.js` binds the same ABI; `Figure`
+   density emit prefers pyramid compose at/above `PYRAMID_MIN_POINTS` (or
+   `forcePyramid`) and records `binning` / `reduction` on the wire.
+   **Python first paint:** `_payload._density_trace_spec` composes from the
+   pyramid when eligible so opening a large scatter does not throw away an
+   O(N) `bin_2d`. Testing contract: [tier3-testing.md](tier3-testing.md).
 7. **Done:** `density_view` estimates the window with `pyramid_count` and
    serves it with `pyramid_compose` when that estimate sits safely above the
    drill threshold; `compose` picks the coarsest level that still meets the
@@ -736,12 +744,25 @@ contract entry before it lands.
    eviction, same crossfades). Still pending — `js/src/45_lod.ts` keys the
    cache by density window, and no client code reads the served level.
 9. Bench gate: 100M pan p95 < 16ms kernel time, zoom step < 50ms, memory
-   within 1.5× finest level.
+   within 1.5× finest level. CI uses
+   `benchmarks/bench_tier3_pyramid.{py,mjs}` (build-once / compose-many at
+   ≤1M) as the structural gate; item 9 remains a dedicated perf job.
 
-**Phase 4 — Tier-3 residency (~2 wks, after Arrow ingest)**
+**Phase 4 — Tier-3 residency (disk-resident 256² tiles)**
+
+Roadmap: [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md). Tracked by a
+dedicated GitHub issue (file from that doc’s template if missing).
+
 10. Tile spill/load under byte budget; zone-map-pruned tile index for
-    unordered scatter (bucket at ingest, dossier §32b).
+    unordered scatter (bucket at ingest, dossier §32b). Rust owns
+    residency; Python/Node remain thin; §28 records tile hit/miss.
+11. Optional: client tile-keyed cache (`45_lod.ts`) consumes `(level, tx, ty)`.
+12. Evidence: extend [tier3-testing.md](tier3-testing.md) with spill fixtures;
+    dedicated 100M latency gate (CodSpeed / perf runner) — not CI allocation
+    of 1B points.
 
 Exit criteria for the headline claim: 100M-point colored scatter — pan/zoom
 never blanks, never shimmers, mean-color cells match a NumPy oracle, drill-in
 to exact points under 200k visible, all reductions visible in spec + badge.
+Phase-3 exit is the in-RAM pyramid path (shipped); Phase-4 exit adds
+budgeted disk residency for pyramids that no longer fit.

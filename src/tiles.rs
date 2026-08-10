@@ -868,18 +868,49 @@ mod tests {
         let p = build_color(&x, &y, &colors, 0.0, 100.0, 0.0, 100.0, dim).unwrap();
         let mut counts = vec![0.0f32; dim * dim];
         let mut rgba = vec![0u8; dim * dim * 4];
-        let level =
-            compose_color(&p, 0.0, 100.0, 0.0, 100.0, dim, dim, MAX_UPSAMPLE, &mut counts, &mut rgba)
-                .unwrap();
+        let level = compose_color(
+            &p,
+            0.0,
+            100.0,
+            0.0,
+            100.0,
+            dim,
+            dim,
+            MAX_UPSAMPLE,
+            &mut counts,
+            &mut rgba,
+        )
+        .unwrap();
         assert_eq!(level, 0);
         let mut plain = vec![0.0f32; dim * dim];
         assert_eq!(
-            compose(&p, 0.0, 100.0, 0.0, 100.0, dim, dim, MAX_UPSAMPLE, &mut plain),
+            compose(
+                &p,
+                0.0,
+                100.0,
+                0.0,
+                100.0,
+                dim,
+                dim,
+                MAX_UPSAMPLE,
+                &mut plain
+            ),
             Some(0)
         );
         assert_eq!(counts, plain, "count grid is bit-identical to compose");
         let mut direct = vec![0u8; dim * dim * 4];
-        kernels::bin_2d_mean_color(&x, &y, &colors, 0.0, 100.0, 0.0, 100.0, dim, dim, &mut direct);
+        kernels::bin_2d_mean_color(
+            &x,
+            &y,
+            &colors,
+            0.0,
+            100.0,
+            0.0,
+            100.0,
+            dim,
+            dim,
+            &mut direct,
+        );
         assert_eq!(
             rgba, direct,
             "full-window level-0 compose reproduces the direct mean-color grid"
@@ -900,9 +931,19 @@ mod tests {
         let (w, h) = (8, 8);
         let mut counts = vec![0.0f32; w * h];
         let mut rgba = vec![0u8; w * h * 4];
-        let level =
-            compose_color(&p, 0.0, 100.0, 0.0, 100.0, w, h, MAX_UPSAMPLE, &mut counts, &mut rgba)
-                .unwrap();
+        let level = compose_color(
+            &p,
+            0.0,
+            100.0,
+            0.0,
+            100.0,
+            w,
+            h,
+            MAX_UPSAMPLE,
+            &mut counts,
+            &mut rgba,
+        )
+        .unwrap();
         assert!(level > 0, "an 8x8 render must come from a coarser level");
         for cy in 0..h {
             for cx in 0..w {
@@ -927,7 +968,18 @@ mod tests {
         let mut counts = vec![0.0f32; 16];
         let mut rgba = vec![0u8; 64];
         assert_eq!(
-            compose_color(&p, 0.0, 100.0, 0.0, 100.0, 4, 4, MAX_UPSAMPLE, &mut counts, &mut rgba),
+            compose_color(
+                &p,
+                0.0,
+                100.0,
+                0.0,
+                100.0,
+                4,
+                4,
+                MAX_UPSAMPLE,
+                &mut counts,
+                &mut rgba
+            ),
             None,
             "count-only pyramids refuse color composition"
         );

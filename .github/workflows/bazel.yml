@@ -1,0 +1,63 @@
+name: Bazel (Blacksmith)
+
+on:
+  push:
+    branches: ["main", "claude/**", "cursor/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bazel-${{ github.ref }}
+  cancel-in-progress: true
+
+# Dual-host graph MVP CI: Rust cdylib + Python + Node bindings.
+# Runs entirely on Blacksmith runners — never ubuntu-latest / GitHub-hosted.
+# See spec/design/bazel-ci.md.
+
+jobs:
+  bazel:
+    name: Bazel graph MVP
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Pin is .bazelversion (7.4.1). setup-bazel@v2 has no `version` input;
+      # bazelisk reads .bazelversion. Sticky-disk caches via Blacksmith.
+      - name: Setup Bazel
+        uses: useblacksmith/setup-bazel@v2
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: "1.88.0"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          enable-cache: false
+
+      - name: Install Python test deps
+        run: |
+          uv venv .venv
+          uv pip install -p .venv/bin/python -e . --group dev
+
+      - name: Install Node graph binding deps
+        run: npm ci
+        working-directory: packages/xy-node
+
+      - name: Bazel build release cdylib
+        run: ./bazel build //:xy_core
+
+      - name: Bazel test graph MVP
+        run: ./bazel test //:graph_mvp_tests

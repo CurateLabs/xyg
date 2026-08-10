@@ -20,6 +20,8 @@ from .config import (
     DENSITY_SAMPLE_TARGET,
     MAX_ANIMATION_MATCH_ROWS,
     PROTOCOL_VERSION,
+    PYRAMID_MIN_POINTS,
+    PYRAMID_NO_RESCAN_ROWS,
 )
 
 if TYPE_CHECKING:
@@ -357,6 +359,11 @@ class PayloadMixin(_Host):
             spec["annotations"] = annotations
         if self.animation_options is not None:
             spec["animation"] = dict(self.animation_options)
+        graph_meta = getattr(self, "_graph_meta", None)
+        if graph_meta:
+            # JSON-safe graph meta for neighborhood highlight / LOD (§28).
+            # CSR offsets/neighbors stay u64 lists; geometry remains segments+scatter.
+            spec["graph"] = list(graph_meta)
         return spec
 
     @staticmethod
@@ -1163,19 +1170,59 @@ class PayloadMixin(_Host):
         # density grid itself is still exact (bin_2d counts in size_t), so we
         # ship grid-only and record the overlay omission (§28: no silent caps).
         oversized = int(t.n_points) > _U32_MAX
-        if oversized:
+        grid = None
+        visible = int(t.n_points)
+        sel = np.empty(0, dtype=np.uint32)
+        binning = "exact"
+        rgba_from_pyramid = None
+        # Tier-3 first paint: when the interactive path would already build a
+        # pyramid, compose the opening density surface from it instead of an
+        # O(N) `bin_2d` that the next pan throws away (§28 `pyramid-L*`).
+        linear_axes = (
+            self._axis_scale(t.x_axis) == "linear" and self._axis_scale(t.y_axis) == "linear"
+        )
+        if grid is None and linear_axes and int(t.n_points) >= PYRAMID_MIN_POINTS:
+            pyr = interaction._ensure_pyramid(t)
+            if pyr:
+                from . import _ooc as ooc
+
+                no_rescan = (
+                    ooc.is_memmapped(t.x.values)
+                    or ooc.is_memmapped(t.y.values)
+                    or int(t.n_points) > PYRAMID_NO_RESCAN_ROWS
+                )
+                max_upsample = 1_000_000 if no_rescan else 2
+                if getattr(t, "_pyr_colored", False):
+                    res_color = kernels.pyramid_compose_color(
+                        pyr, bx0, bx1, by0, by1, w, h, max_upsample
+                    )
+                    if res_color is not None:
+                        grid, rgba_from_pyramid, level = res_color
+                        binning = (
+                            f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
+                        )
+                else:
+                    res = kernels.pyramid_compose(pyr, bx0, bx1, by0, by1, w, h, max_upsample)
+                    if res is not None:
+                        grid, level = res
+                        binning = (
+                            f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
+                        )
+        if oversized and grid is None:
             visible = int(t.n_points)
             sel = np.empty(0, dtype=np.uint32)
             sample_sel = None
             grid = kernels.bin_2d(t.x.values, t.y.values, xr[0], xr[1], yr[0], yr[1], w, h)
-        elif full_identity and not pw.point_overlay:
+            binning = "exact"
+        elif grid is None and full_identity and not pw.point_overlay:
             # Raster export: no overlay is drawn, so take the plain grid kernel
             # instead of the fused grid+sample variants below. `bin_2d` is the
             # grid half of every one of them, so the counts are identical.
             visible = int(t.n_points)
             sel = np.empty(0, dtype=np.uint32)
             grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-        elif full_identity:
+            binning = "exact"
+        elif grid is None and full_identity:
             visible = int(t.n_points)
             sel = np.empty(0, dtype=np.uint32)
             if compact_categorical:
@@ -1220,11 +1267,13 @@ class PayloadMixin(_Host):
                     DENSITY_SAMPLE_TARGET,
                     seed=DENSITY_SAMPLE_SEED,
                 )
-        else:
+            binning = "exact"
+        elif grid is None:
             # Fused single pass: grid (bin_2d semantics) + visible rows
             # (range_indices semantics) without re-reading full columns twice.
             grid, sel = kernels.bin_2d_indices(bx, by, bx0, bx1, by0, by1, w, h)
             visible = int(len(sel))
+            binning = "exact"
         encoded_grid, gmax = kernels.density_log_u8(grid)
         # The density surface wears the data's own colors (LOD doc §2): count
         # is the alpha channel, and per-point color channels aggregate to a
@@ -1249,8 +1298,15 @@ class PayloadMixin(_Host):
             "colormap": cmap,
             "x_range": list(xr),
             "y_range": list(yr),
+            "binning": binning,
+            "reduction": "pyramid-count" if binning.startswith("pyramid-") else "bin2d",
         }
-        if bin_colors is not None:
+        if rgba_from_pyramid is not None:
+            density["rgba"] = pw.ship_u8(rgba_from_pyramid.reshape(-1))
+            density["color_agg"] = "mean"
+            if "color" in dropped_channels:
+                dropped_channels.remove("color")
+        elif bin_colors is not None:
             # Mean point color per cell, straight-alpha RGBA8: the color the
             # points themselves would downsample to (averaged in linear
             # light). The channel is aggregated, recorded via `color_agg`,

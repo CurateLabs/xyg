@@ -35,9 +35,25 @@ relative mass, not as a budget (see §3 on why a line count failed as a metric).
 | `52_tooltip.ts` | 321 | Hit → source row → tooltip DOM. Anchors the tooltip at the picked point's data coordinates and reprojects it every draw ([interaction.md](../api/interaction.md) §7). Renders the local f32-decoded row immediately, then replaces it with the kernel's exact f64 row when that reply arrives (sequence- and `drill_seq`-guarded); composes text nodes, never HTML. |
 | `53_interaction.ts` | 1820 | The entire user-facing interaction surface: pointer/drag/wheel wiring, crosshair, box select, box zoom, lasso, the modebar and its export menu, and the animated pan/zoom view state machine. The gesture→action mapping, the modebar tool inventory and the `interaction_config` switches are specified in [interaction.md](../api/interaction.md) §2 and §5. |
 | `54_kernel.ts` | 437 | The client half of the kernel channel: debounced density/decimated view-requests, streaming `append` handling, the inbound message dispatcher, and the deep-zoom drill lifecycle (§16). Degrades to `46_worker.ts` when there is no comm. The message catalog it consumes is specified in [wire-protocol.md](wire-protocol.md). |
-| `55_marks.ts` | 220 | The `MARK_KINDS` registry — `build`/`draw` per kind plus the `pointPick`/`retainCpu`/`refreshColor` capability flags — mirroring the kernel's `_emit_<kind>` dispatch so adding a 2D chart is an entry here, not a branch in `ChartView`. |
+| `55_marks.ts` | 220 | The `MARK_KINDS` registry — `build`/`draw` per kind plus the `pointPick`/`retainCpu`/`refreshColor` capability flags — mirroring the kernel's `_emit_<kind>` dispatch so adding a 2D chart is an entry here, not a branch in `ChartView`. Covers every wire kind Python emits (`scatter`, `line`, `area`, `bar`, `column`, `histogram`, `box`, `violin`, `heatmap`, `hexbin`, `contour`, `segments`, `ribbon`, `triangle_mesh`, `errorbar`, `error_band`, `stem`, …); `step`/`stairs`/`ecdf` ship as `line` + `style.step` (aliases kept for defensive lookup). Graph is not a wire kind — it compiles to `segments` + `scatter`. |
 | `56_animation.ts` | — | Declarative entrance/update/exit state machine, easing/spring evaluation, bounded identity matching, full-payload replacement, interruption, reduced-motion resolution, and lifecycle events. Its normative behavior is in [animation.md](animation.md). |
+| `57_viewstate.ts` | — | Live view-state sync (pan/zoom/selection) over the kernel channel. |
+| `58_graph.ts` | — | **Optional** graph enhancement: CSR neighborhood dim on node hover. Does not draw graph geometry (that is segments + scatter via `MARK_KINDS`); safe to omit without affecting other marks. |
 | `60_entries.ts` | 76 | Mount/unmount entry points for both hosts (`render` for anywidget, `renderStandalone` for exported HTML) and `payloadBuffers`, which materializes first-paint columns in whichever layout the spec declares. Keeps aligned views zero-copy; a spec/transport disagreement throws. |
+
+### Shared browser client surfaces
+
+The same minified client (`python/xy/static/index.js` ESM + `standalone.js`
+IIFE) is the shared renderer for:
+
+- Python notebooks via **anywidget** (`index.js` as `_esm`);
+- **HTML export** / notebook HTML fallback (`Figure.to_html` inlines
+  `standalone.js` + `xy.renderStandalone`);
+- Node-served pages and embed hosts that load `window.xy`;
+- VS Code webviews that host the same standalone or ESM bundle.
+
+Hosts differ only in transport attachment (anywidget comm, Reflex
+socket.io `/_xy`, or none for static HTML); mark paint stays identical.
 
 ## 1. What's structurally right (keep)
 

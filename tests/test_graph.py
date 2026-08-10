@@ -1,0 +1,195 @@
+"""Graph mark + Rust layout ABI (graph-mark.md)."""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+import xy
+from xy import _graph, _native
+from xy._figure import Figure
+
+
+def test_graph_layout_circle_deterministic():
+    nodes = ["a", "b", "c", "d"]
+    edges = [("a", "b"), ("b", "c"), ("c", "d"), ("d", "a")]
+    data = _graph.normalize_graph_inputs(nodes, edges)
+    x1, y1, meta1 = _graph.run_layout(data, layout="circle", seed=1)
+    x2, y2, meta2 = _graph.run_layout(data, layout="circle", seed=1)
+    assert meta1["layout"] == "circle"
+    np.testing.assert_allclose(x1, x2)
+    np.testing.assert_allclose(y1, y2)
+
+
+def test_force_seeded_matches_across_calls():
+    data = _graph.normalize_graph_inputs(["a", "b", "c"], [("a", "b"), ("b", "c"), ("c", "a")])
+    x1, y1, m1 = _graph.run_layout(data, layout="force", seed=7, iterations=40)
+    x2, y2, m2 = _graph.run_layout(data, layout="force", seed=7, iterations=40)
+    assert m1["layout"] == "force"
+    np.testing.assert_allclose(x1, x2)
+    np.testing.assert_allclose(y1, y2)
+    assert m1["alpha"] == pytest.approx(m2["alpha"])
+
+
+@pytest.mark.parametrize(
+    "layout",
+    [
+        "force",
+        "fr",
+        "spring",
+        "forceatlas2",
+        "fa2",
+        "linlog",
+        "yifanhu",
+        "kamada_kawai",
+        "kk",
+        "stress",
+        "barnes_hut",
+    ],
+)
+def test_force_layout_catalog_seeded(layout):
+    data = _graph.normalize_graph_inputs(["a", "b", "c"], [("a", "b"), ("b", "c"), ("c", "a")])
+    x1, y1, m1 = _graph.run_layout(data, layout=layout, seed=11, iterations=25)
+    x2, y2, m2 = _graph.run_layout(data, layout=layout, seed=11, iterations=25)
+    assert m1["layout"] == layout
+    np.testing.assert_allclose(x1, x2)
+    np.testing.assert_allclose(y1, y2)
+    assert m1["alpha"] == pytest.approx(m2["alpha"])
+
+
+def test_force_layout_aliases_match_ids():
+    assert _native.graph_layout_id("fr") == _native.GRAPH_LAYOUT_FORCE
+    assert _native.graph_layout_id("fa2") == _native.GRAPH_LAYOUT_FORCEATLAS2
+    assert _native.graph_layout_id("kk") == _native.GRAPH_LAYOUT_KAMADA_KAWAI
+    assert _native.graph_layout_id("spring") == _native.GRAPH_LAYOUT_SPRING
+    assert _native.graph_layout_id("stress") == _native.GRAPH_LAYOUT_STRESS
+    assert _native.graph_layout_id("yifanhu") == _native.GRAPH_LAYOUT_YIFANHU
+    assert _native.graph_layout_id("linlog") == _native.GRAPH_LAYOUT_LINLOG
+    assert _native.graph_is_progressive_force("spring")
+    assert _native.graph_is_progressive_force("forceatlas2")
+
+
+def test_tiny_force_golden_stable():
+    data = _graph.normalize_graph_inputs(["a", "b", "c"], [("a", "b"), ("b", "c"), ("c", "a")])
+    x, y, meta = _graph.run_layout(data, layout="force", seed=7, iterations=20)
+    assert meta["layout"] == "force"
+    assert np.isfinite(x).all() and np.isfinite(y).all()
+    # Bit-stable across hosts for the exact FR path.
+    x2, y2, _ = _graph.run_layout(data, layout="force", seed=7, iterations=20)
+    np.testing.assert_array_equal(x, x2)
+    np.testing.assert_array_equal(y, y2)
+
+
+def test_graph_chart_emits_segments_scatter_and_meta():
+    chart = xy.graph_chart(
+        xy.graph(["n0", "n1", "n2"], [("n0", "n1"), ("n1", "n2")], layout="grid"),
+        width=400,
+        height=300,
+    )
+    fig = chart.figure()
+    kinds = [t.kind for t in fig.traces]
+    assert "segments" in kinds
+    assert "scatter" in kinds
+    assert fig._graph_meta is not None
+    assert len(fig._graph_meta) == 1
+    meta = fig._graph_meta[0]
+    assert meta["n_nodes"] == 3
+    assert "csr_offsets" in meta
+    assert len(meta["csr_offsets"]) == 4
+    spec, _blob = fig.build_payload()
+    assert "graph" in spec
+    assert spec["graph"][0]["layout"] == "grid"
+
+
+def test_figure_graph_fluent():
+    fig = Figure().graph(["a", "b"], [("a", "b")], layout="breadthfirst", directed=False)
+    assert fig._graph_meta[0]["layout"] == "breadthfirst"
+    assert len(fig.traces) == 2
+
+
+def test_hierarchical_alias_is_distinct_from_breadthfirst():
+    assert _native.graph_layout_id("hierarchical") == _native.GRAPH_LAYOUT_HIERARCHICAL
+    assert _native.graph_layout_id("dagre") == _native.GRAPH_LAYOUT_HIERARCHICAL
+    assert _native.GRAPH_LAYOUT_HIERARCHICAL != _native.GRAPH_LAYOUT_BREADTHFIRST
+
+
+def test_lod_decision_records_edge_sample():
+    tier, kept = _native.graph_lod_decision(100, 10_000, node_budget=50_000, edge_budget=1_000)
+    assert tier == 1
+    assert kept == 1_000
+
+
+def test_lod_decision_scale_classes_10m_100m_1b():
+    """Scatter-class graph scale evidence: budgets stay screen-bounded."""
+    node_budget = 50_000
+    edge_budget = 100_000
+    for n in (10_000_000, 100_000_000, 1_000_000_000):
+        tier, kept = _native.graph_lod_decision(
+            n, n * 2, node_budget=node_budget, edge_budget=edge_budget
+        )
+        assert tier >= 1
+        assert kept <= edge_budget
+
+
+def test_cluster_aggregate_records_tier_and_centroids():
+    x = np.array([0.0, 1.0, 0.0, 100.0, 101.0, 100.0], dtype=np.float64)
+    y = np.array([0.0, 0.0, 1.0, 100.0, 100.0, 101.0], dtype=np.float64)
+    cx, cy, member_of, tier, kept = _native.graph_cluster_aggregate(
+        x, y, n_edges=3, node_budget=2, edge_budget=500
+    )
+    assert tier == 2  # LodTier::Aggregate
+    assert kept == 3
+    assert len(cx) == 2
+    assert len(cy) == 2
+    np.testing.assert_array_equal(member_of, [0, 0, 0, 1, 1, 1])
+    np.testing.assert_allclose(cx[0], 1.0 / 3.0)
+    np.testing.assert_allclose(cy[0], 1.0 / 3.0)
+
+
+def test_graph_exports_public():
+    assert hasattr(xy, "graph")
+    assert hasattr(xy, "graph_chart")
+    assert callable(xy.graph)
+    assert callable(xy.graph_chart)
+
+
+def test_from_graphforge_tables():
+    nodes = {"id": ["a", "b"]}
+    edges = {"source": ["a"], "target": ["b"]}
+    data = _graph.from_graphforge_tables(nodes, edges)
+    assert data.n_nodes == 2
+    assert data.n_edges == 1
+
+
+def test_build_render_respects_budgets():
+    x = np.array([0.0, 1.0, 0.0, 100.0, 101.0, 100.0], dtype=np.float64)
+    y = np.array([0.0, 0.0, 1.0, 100.0, 100.0, 101.0], dtype=np.float64)
+    sources = np.array([0, 1, 3, 4, 0], dtype=np.uint64)
+    targets = np.array([1, 2, 4, 5, 3], dtype=np.uint64)
+    rx, ry, member_of, es, et, tier, kept = _native.graph_build_render(
+        x, y, sources, targets, node_budget=2, edge_budget=4
+    )
+    assert tier == 2
+    assert len(rx) <= 2
+    assert len(es) <= 4
+    assert kept == len(es)
+    np.testing.assert_array_equal(member_of, [0, 0, 0, 1, 1, 1])
+
+
+def test_run_layout_emits_render_graph_meta():
+    data = _graph.normalize_graph_inputs(
+        [f"n{i}" for i in range(6)],
+        [("n0", "n1"), ("n1", "n2"), ("n3", "n4"), ("n4", "n5"), ("n0", "n3")],
+    )
+    # Preset positions so clustering is deterministic without force.
+    data.x = np.array([0.0, 1.0, 0.0, 100.0, 101.0, 100.0], dtype=np.float64)
+    data.y = np.array([0.0, 0.0, 1.0, 100.0, 100.0, 101.0], dtype=np.float64)
+    rx, ry, meta = _graph.run_layout(data, layout="preset", node_budget=2, edge_budget=4)
+    assert meta["source_n_nodes"] == 6
+    assert meta["source_n_edges"] == 5
+    assert meta["n_nodes"] <= 2
+    assert meta["n_edges"] <= 4
+    assert len(rx) == meta["n_nodes"]
+    assert "member_of" in meta
+    assert len(meta["member_of"]) == 6
+    assert meta["lod_tier"] == 2
