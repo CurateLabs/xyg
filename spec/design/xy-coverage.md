@@ -49,7 +49,8 @@ Machine-readable twin: [`dual-host-parity.json`](dual-host-parity.json)
 
 Every profile records screen-bounded budgets; Tier-3 CI proves pyramid compose
 is O(grid) with modest N — it does not allocate a billion points. Phase-4
-disk-resident 256² tile spill remains a follow-on residency layer.
+disk-resident 256² tile spill is the next residency milestone —
+[tier3-phase4-roadmap.md](tier3-phase4-roadmap.md).
 
 ## Tests
 

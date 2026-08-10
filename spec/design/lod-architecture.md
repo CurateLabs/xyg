@@ -748,10 +748,21 @@ cache and dedicated 100M latency gate still open)**
    `benchmarks/bench_tier3_pyramid.{py,mjs}` (build-once / compose-many at
    ≤1M) as the structural gate; item 9 remains a dedicated perf job.
 
-**Phase 4 — Tier-3 residency (~2 wks, after Arrow ingest)**
+**Phase 4 — Tier-3 residency (disk-resident 256² tiles)**
+
+Roadmap: [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md). Tracked by a
+dedicated GitHub issue (file from that doc’s template if missing).
+
 10. Tile spill/load under byte budget; zone-map-pruned tile index for
-    unordered scatter (bucket at ingest, dossier §32b).
+    unordered scatter (bucket at ingest, dossier §32b). Rust owns
+    residency; Python/Node remain thin; §28 records tile hit/miss.
+11. Optional: client tile-keyed cache (`45_lod.ts`) consumes `(level, tx, ty)`.
+12. Evidence: extend [tier3-testing.md](tier3-testing.md) with spill fixtures;
+    dedicated 100M latency gate (CodSpeed / perf runner) — not CI allocation
+    of 1B points.
 
 Exit criteria for the headline claim: 100M-point colored scatter — pan/zoom
 never blanks, never shimmers, mean-color cells match a NumPy oracle, drill-in
 to exact points under 200k visible, all reductions visible in spec + badge.
+Phase-3 exit is the in-RAM pyramid path (shipped); Phase-4 exit adds
+budgeted disk residency for pyramids that no longer fit.
