@@ -1,8 +1,8 @@
 # Graph visualization — competitive research & fork requirements
 
-**Status:** requirements. Authoritative input for the network/tree/org family
-([chart-roadmap.md](../api/chart-roadmap.md) rank 31 / P4 rank 24) and for the
-future `graph-mark.md` design. Does not yet change runtime behavior.
+**Status:** requirements — **ready for product/architecture review**. Not an
+implementation design: `graph-mark.md` (wire shape, ABI, ID model) is still
+downstream. Does not yet change runtime behavior.
 
 **Scope (hard):** core **data visualization** of graph data — node–link marks,
 layouts that place them, visual encodings, interactive reading of the chart,
@@ -256,7 +256,8 @@ filter UIs.
 | **A — Spec + ABI** | CORE-*; [host-parity.md](host-parity.md) | Dual-host foundation for all marks |
 | **B — MVP graph viz** | API-1..3/3b, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | Core feature: node–link charts; xy-native inputs retained |
 | **C — Layout & style depth** | LAY-3..5, REN-2 curve / REN-5, IX-3/4 | vis/Ogma/D3 viz quality |
-| **D — Dual-host graph parity** | API-4, CORE-5 | Graph proves Python↔Node; then other chart types |
+| **D — Dual-host graph parity** | API-4, CORE-5; HOSTPARITY-1..4 | Graph proves Python↔Node |
+| **E — Platform follow-on** | HOSTPARITY-6; remaining marks on Node | Promote host-only layouts as each mark gains Node — **not** a graph-MVP gate |
 
 ---
 
@@ -288,11 +289,43 @@ filter UIs.
 
 ---
 
-## 8. Downstream
+## 8. Known gaps (block implementation, not this requirements review)
 
-1. [host-parity.md](host-parity.md) — Python↔Node for all chart types; equal
-   feel/speed; algorithms stay in GraphForge.
-2. `spec/design/graph-mark.md` — data model, wire buffers, layout catalog, LOD.
-3. [rust-engine.md](rust-engine.md) — `graph` viz module (layout + channels).
+These must be resolved in `graph-mark.md` / rust-engine updates before coding
+the mark. Call them out so reviewers do not assume they are settled here.
+
+1. **Wire + ID model.** How string/int node IDs map to dense Rust indices;
+   what adjacency/CSR is retained for neighborhood highlight (REQ-IX-2) vs
+   recomputed; what ships on §29 vs stays host-side.
+2. **Force algorithm identity.** REQ-LAY-1 says “one force-directed” but does
+   not name FA2 vs FR vs CoSE — golden Python↔Node tests need a named, seeded
+   contract.
+3. **Progressive ticks + hosts.** Tick streaming across widget/Reflex/Node
+   transports is required (REQ-LAY-2) but not designed; must stay screen-bounded
+   and cancelable without blocking the UI thread.
+4. **Native export.** REQ-REN-6 assumes graph marks in `to_png`/`to_svg`; the
+   native display-list today has no graph primitives — export MVP may be
+   WebGL-capture or a minimal node/edge command set (pick in `graph-mark.md`).
+5. **Tension with upstream rust-engine §1.** Host-parity is intentionally
+   Rust-stricter than “Python owns decisions.” Dual-host work must amend
+   [rust-engine.md](rust-engine.md) (and dossier §32 when Node lands) so the
+   tree does not carry two conflicting placement rules.
+6. **Platform tax vs graph MVP.** REQ-HOSTPARITY-6 (promote Sankey etc. to
+   Rust) and “all chart types on Node” are **platform** follow-ons. Graph MVP
+   (slice B) must not be blocked on rewriting every host-only layout; slice D
+   and later promote marks as they gain Node coverage.
+7. **GraphForge helper shape.** REQ-API-3b allows a documented primary helper
+   without specifying Arrow column names or subgraph extract API — define at
+   adapter implementation time without narrowing REQ-API-3.
+
+## 9. Downstream
+
+1. [host-parity.md](host-parity.md) — Python↔Node; Rust-first; equal feel/speed.
+2. `spec/design/graph-mark.md` — data model, wire buffers, layout catalog, LOD,
+   answers to §8.
+3. [rust-engine.md](rust-engine.md) — reconcile Rust-first dual-host rule; add
+   `graph` viz module.
 4. [chart-roadmap.md](../api/chart-roadmap.md) status when implementation lands.
 5. Capability-matrix regeneration once the `graph` mark exists in code.
+6. Evidence: add graph rows to the benchmark/capability story when the mark
+   ships (scale tiers in REQ-LOD-1 are claims until measured).

@@ -1,8 +1,8 @@
 # Host parity — Python and Node
 
-**Status:** requirements / architecture intent. Python and Node hosts share one
-viz Rust C ABI and one WebGL client so **all chart types** have the same
-semantics on both languages.
+**Status:** requirements / architecture intent — **ready for review** with
+[graph-fork-requirements.md](graph-fork-requirements.md). Implementation
+design (`graph-mark.md`, rust-engine amendment) still follows.
 
 **Priority:** **graph visualization** is the core feature and the first surface
 that must prove dual-host end to end
@@ -83,9 +83,10 @@ Node must not reimplement layouts or mark geometry in TypeScript.
   ([graph-fork-requirements.md](graph-fork-requirements.md)).
 - **REQ-HOSTPARITY-5 (SHOULD).** Document §32 divergence from upstream xy when
   the Node package ships.
-- **REQ-HOSTPARITY-6 (MUST).** Dual-host work for a mark promotes any remaining
-  host-only layout/encode logic into Rust (e.g. Sankey) so Node does not grow
-  a parallel tree.
+- **REQ-HOSTPARITY-6 (MUST, platform follow-on).** When a mark gains Node
+  coverage, promote any remaining host-only layout/encode logic into Rust (e.g.
+  Sankey) in that mark’s dual-host slice. This MUST NOT gate the graph MVP
+  (slices A–D in [graph-fork-requirements.md](graph-fork-requirements.md)).
 
 ---
 
