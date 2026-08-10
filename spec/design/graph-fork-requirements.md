@@ -42,7 +42,7 @@ buffers. The JS client owns WebGL draw and gestures
 | Pan, zoom, fit, hover, select, neighborhood highlight | Context menus, investigation workflows |
 | Drag nodes to adjust a layout for reading | Collaborative editing, undo stacks |
 | LOD so large graphs remain readable | Guaranteeing “millions of elements” without aggregation |
-| `graph_chart(...)` / edge-list / table ingest for plotting | Replacing GraphForge (or peer) algorithm stacks |
+| `graph_chart(...)` with **xy-native** column/sequence inputs *and* GraphForge/NX helpers | Replacing GraphForge algorithm stacks; dropping list/NumPy/pandas paths |
 
 ---
 
@@ -95,11 +95,12 @@ the commercial surface does not.
 
 | Viz-relevant | Ignore |
 |---|---|
-| Graphs + attributes + optional precomputed `pos` / metrics as **plot inputs** | Replacing their analysis APIs |
-| Convenient ingest (edge list, tables, `from_networkx`, Arrow columns) | Shipping Matplotlib/Cairo as the interactive path |
+| Precomputed `pos` / metric columns as ordinary plot encodings | Replacing their analysis APIs |
+| Optional helpers (`from_networkx`, GraphForge Arrow/subgraph adapters) | Making those helpers the *only* ingest path |
 
-**Takeaway:** ingest for visualization. **Algorithms stay in GraphForge** (and
-peers); charts encode results users already computed.
+**Takeaway:** algorithms stay in GraphForge (and peers). Charts accept their
+outputs **and** keep xy’s existing array/sequence/DataFrame-style inputs
+first-class — GraphForge-as-primary must not erase those formats.
 
 ### 2.6 Plotly network UX (anti-pattern for viz API)
 
@@ -135,7 +136,8 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 | Extra shapes / groups | packages | yes | DIY | yes | no | **S** |
 | Curved edges | package | yes | DIY | yes | no | **S** |
 | Box select | app | yes | DIY | yes | Dash | **S** |
-| Edge-list / table / NX ingest | n/a | via PyVis | n/a | n/a | recipe | **M** |
+| xy-native sequence/array/column ingest | n/a | limited | DIY | n/a | recipe | **M** (never drop) |
+| Edge-list / table / NX / GraphForge helpers | n/a | via PyVis | n/a | n/a | recipe | **M** (GF primary OK) |
 | Python + Node same layout/render buffers | partial | wrap | no | ext | split | **M** |
 | Native PNG/SVG/HTML export | no | no | no | limited | kaleido | **M** |
 | Editing / manipulation | app | **core** | DIY | yes | no | **—** |
@@ -155,12 +157,27 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
   `graph` mark — not a scatter+segments recipe.
 - **REQ-API-2 (MUST).** Nodes and edges with stable IDs, optional attributes for
   encodings, optional preset `x`/`y`.
-- **REQ-API-3 (MUST).** Convenient ingest for plotting: edge list / adjacency /
-  columnar tables; `from_networkx(..., pos=None)` **SHOULD** preserve attributes
-  used by channels. Accept precomputed metric columns from GraphForge (or peers)
-  as ordinary encodings — do not call their engines from the mark hot path.
+- **REQ-API-3 (MUST).** Ingest for plotting keeps **xy-native input formats
+  first-class** — the same kinds of values existing marks already accept for
+  columns (Python sequences, NumPy arrays, pandas Series / DataFrame columns,
+  Arrow-backed columns where xy already does). Graph marks MUST accept at
+  least:
+  - parallel node id / `x` / `y` / attribute columns;
+  - edge `source` / `target` (/ weight) columns or edge-list pairs;
+  - adjacency structures that compile to the same internal buffers.
+- **REQ-API-3b (MUST).** Optional GraphForge-oriented helpers (Arrow table /
+  subgraph → `graph_chart`) MAY be the **documented primary** path for
+  GraphForge users, but MUST compile into the same mark/buffer path as
+  xy-native inputs. Shipping GraphForge helpers MUST NOT remove, gate, or
+  degrade the xy-native formats in REQ-API-3.
+- **REQ-API-3c (SHOULD).** `from_networkx(G, *, pos=None, ...)` preserves
+  attributes used by encodings. Precomputed metric columns from GraphForge
+  (or peers) are ordinary encoding channels — do not call their engines from
+  the mark hot path.
 - **REQ-API-4 (MUST).** Options follow [host-parity.md](host-parity.md): same
-  names/defaults on Python and Node (idiomatic types may differ).
+  names/defaults on Python and Node (idiomatic types may differ). Node hosts
+  mirror the same format families via TypedArrays / arrays of numbers /
+  Arrow where applicable — not GraphForge-only ingest.
 
 ### 4.2 Engine placement
 
@@ -233,7 +250,7 @@ filter UIs.
 | Slice | Requirements | Closes |
 |---|---|---|
 | **A — Spec + ABI** | CORE-*; [host-parity.md](host-parity.md) | Dual-host foundation for all marks |
-| **B — MVP graph viz** | API-1..3, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | Core feature: node–link charts |
+| **B — MVP graph viz** | API-1..3/3b, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | Core feature: node–link charts; xy-native inputs retained |
 | **C — Layout & style depth** | LAY-3..5, REN-2 curve / REN-5, IX-3/4 | vis/Ogma/D3 viz quality |
 | **D — Dual-host graph parity** | API-4, CORE-5 | Graph proves Python↔Node; then other chart types |
 
@@ -249,6 +266,9 @@ filter UIs.
 - D3-level SVG DIY; shipping vis-network or Cytoscape.js.
 - Unaggregated “millions of nodes” claims without measured LOD.
 - Demoting non-graph charts’ feel or speed to fund graph work.
+- Making GraphForge (or NetworkX) the sole ingest path, or dropping xy’s
+  sequence / NumPy / pandas / columnar input formats when GraphForge helpers
+  become the documented primary.
 
 ---
 
