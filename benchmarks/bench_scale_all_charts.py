@@ -101,7 +101,10 @@ def soft_compare(
     else:
         ok = measured <= baseline * REGRESSION_FACTOR
         limit = baseline * REGRESSION_FACTOR
-    rec = {
+    # Advisory only: never raise. CI smoke/shared runners are cold and
+    # variable; hard gates are render-graph budgets + structural checks.
+    # Upstream-style timing regressions stay visible in the JSON report.
+    return {
         "metric": result_key,
         "baseline_key": baseline_key,
         "measured": measured,
@@ -111,12 +114,6 @@ def soft_compare(
         "limit": limit,
         "advisory": True,
     }
-    if not ok:
-        raise AssertionError(
-            f"{result_key}={measured:.6g} vs baseline {baseline:.6g} "
-            f"({baseline_key}) exceeds {REGRESSION_FACTOR}x soft gate"
-        )
-    return rec
 
 
 def _wire_bytes(fig: Any) -> int:
@@ -466,6 +463,10 @@ def main() -> int:
             )
         )
 
+    advisory_ok = all(c.get("ok", True) for c in comparisons)
+    hard_ok = all(
+        r.get("budget_ok", True) for r in results if "budget_ok" in r
+    )
     summary = {
         "host": "python",
         "abi_version": int(_native.ABI_VERSION),
@@ -474,15 +475,21 @@ def main() -> int:
         "regression_factor": REGRESSION_FACTOR if baseline is not None else None,
         "results": results,
         "comparisons": comparisons,
-        "ok": True,
+        "advisory_ok": advisory_ok,
+        "ok": hard_ok,
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
+    if not hard_ok:
+        print(
+            json.dumps(
+                {"ok": False, "error": "render-graph or chart hard budget failed"},
+                indent=2,
+            ),
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
 if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except AssertionError as exc:
-        print(json.dumps({"ok": False, "error": str(exc)}, indent=2), file=sys.stderr)
-        raise SystemExit(1) from exc
+    raise SystemExit(main())
