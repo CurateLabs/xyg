@@ -2838,6 +2838,105 @@ where
     count
 }
 
+/// Contourf densify output shape for a `(rows, cols)` source field.
+///
+/// Matches `marks._interpolate_contourf_grid`: eight samples per source
+/// interval with a 256²–512² floor/cap; already-larger inputs are unchanged.
+pub fn contourf_densify_shape(rows: usize, cols: usize) -> Option<(usize, usize)> {
+    if rows < 2 || cols < 2 {
+        return None;
+    }
+    Some((contourf_sample_count(rows), contourf_sample_count(cols)))
+}
+
+fn contourf_sample_count(size: usize) -> usize {
+    if size > 512 {
+        return size;
+    }
+    let target = (size - 1).saturating_mul(8).saturating_add(1);
+    target.max(256).min(512)
+}
+
+/// Bilinear densify of a contour scalar field before discrete band assignment.
+///
+/// Writes row-major `out_z` (`out_rows * out_cols`), `out_x` (`out_cols`), and
+/// `out_y` (`out_rows`). Non-finite source corners yield NaN samples. Returns
+/// `(out_rows, out_cols)` or `None` on shape/capacity mismatch.
+pub fn contourf_densify(
+    z: &[f64],
+    rows: usize,
+    cols: usize,
+    xpos: &[f64],
+    ypos: &[f64],
+    out_z: &mut [f64],
+    out_x: &mut [f64],
+    out_y: &mut [f64],
+) -> Option<(usize, usize)> {
+    if z.len() != rows.checked_mul(cols)? || xpos.len() != cols || ypos.len() != rows {
+        return None;
+    }
+    let (out_rows, out_cols) = contourf_densify_shape(rows, cols)?;
+    if out_z.len() < out_rows * out_cols || out_x.len() < out_cols || out_y.len() < out_rows {
+        return None;
+    }
+    if out_rows == rows && out_cols == cols {
+        out_z[..rows * cols].copy_from_slice(z);
+        out_x[..cols].copy_from_slice(xpos);
+        out_y[..rows].copy_from_slice(ypos);
+        return Some((out_rows, out_cols));
+    }
+
+    let row_span = (rows - 1) as f64;
+    let col_span = (cols - 1) as f64;
+    for oc in 0..out_cols {
+        let col_at = if out_cols == 1 {
+            0.0
+        } else {
+            oc as f64 * col_span / (out_cols - 1) as f64
+        };
+        let col0 = col_at.floor() as usize;
+        let col1 = (col0 + 1).min(cols - 1);
+        let tw = col_at - col0 as f64;
+        out_x[oc] = xpos[col0] * (1.0 - tw) + xpos[col1] * tw;
+    }
+    for orow in 0..out_rows {
+        let row_at = if out_rows == 1 {
+            0.0
+        } else {
+            orow as f64 * row_span / (out_rows - 1) as f64
+        };
+        let row0 = row_at.floor() as usize;
+        let row1 = (row0 + 1).min(rows - 1);
+        let rw = row_at - row0 as f64;
+        out_y[orow] = ypos[row0] * (1.0 - rw) + ypos[row1] * rw;
+        for oc in 0..out_cols {
+            let col_at = if out_cols == 1 {
+                0.0
+            } else {
+                oc as f64 * col_span / (out_cols - 1) as f64
+            };
+            let col0 = col_at.floor() as usize;
+            let col1 = (col0 + 1).min(cols - 1);
+            let cw = col_at - col0 as f64;
+            let z00 = z[row0 * cols + col0];
+            let z10 = z[row0 * cols + col1];
+            let z01 = z[row1 * cols + col0];
+            let z11 = z[row1 * cols + col1];
+            let sample = if z00.is_finite() && z10.is_finite() && z01.is_finite() && z11.is_finite()
+            {
+                z00 * (1.0 - rw) * (1.0 - cw)
+                    + z10 * (1.0 - rw) * cw
+                    + z01 * rw * (1.0 - cw)
+                    + z11 * rw * cw
+            } else {
+                f64::NAN
+            };
+            out_z[orow * out_cols + oc] = sample;
+        }
+    }
+    Some((out_rows, out_cols))
+}
+
 /// Write marching-squares segments into caller-owned parallel output arrays.
 ///
 /// Returns the required segment count even when the output capacity is too

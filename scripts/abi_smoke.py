@@ -527,6 +527,37 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xy_wind_rose_bins.restype = ctypes.c_size_t
+    lib.xy_wind_rose_bins.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    lib.xy_contourf_densify.restype = ctypes.c_int32
+    lib.xy_contourf_densify.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
     return lib
 
 
@@ -1767,6 +1798,72 @@ def main() -> None:
     ok(
         hx_n == 4 and abs(hx_dx.value - 0.25) < 1e-12 and sum(hx_c[:hx_n]) == 4.0,
         "hexbin count cells",
+    )
+
+
+    # wind_rose_bins: three bearings into a 4-sector rose, one speed band.
+    wr_dir = array("d", [0.0, 0.0, 90.0])
+    wr_spd = array("d", [1.0, 1.0, 1.0])
+    wr_edges_in = array("d", [2.0])
+    wr_edges = array("d", [0.0]) * 4
+    wr_centres = array("d", [0.0]) * 4
+    wr_counts = array("d", [0.0]) * 4
+    wr_n_obs = ctypes.c_size_t()
+    wr_n = lib.xy_wind_rose_bins(
+        _ptr(wr_dir, ctypes.c_double),
+        _ptr(wr_spd, ctypes.c_double),
+        len(wr_dir),
+        4,
+        _ptr(wr_edges_in, ctypes.c_double),
+        len(wr_edges_in),
+        _ptr(wr_edges, ctypes.c_double),
+        len(wr_edges),
+        _ptr(wr_centres, ctypes.c_double),
+        _ptr(wr_counts, ctypes.c_double),
+        len(wr_counts),
+        ctypes.byref(wr_n_obs),
+    )
+    ok(
+        wr_n == 1
+        and wr_n_obs.value == 3
+        and list(wr_centres) == [0.0, 90.0, 180.0, 270.0]
+        and list(wr_counts) == [2.0, 1.0, 0.0, 0.0],
+        "wind_rose_bins centred sectors",
+    )
+
+    # contourf_densify: 2×2 field densifies to at least 256 on each axis.
+    cf_z = array("d", [0.0, 1.0, 2.0, 3.0])
+    cf_x = array("d", [0.0, 1.0])
+    cf_y = array("d", [0.0, 1.0])
+    cf_out_rows = 256
+    cf_out_cols = 256
+    cf_out_z = array("d", [0.0]) * (cf_out_rows * cf_out_cols)
+    cf_out_x = array("d", [0.0]) * cf_out_cols
+    cf_out_y = array("d", [0.0]) * cf_out_rows
+    cf_rows = ctypes.c_size_t()
+    cf_cols = ctypes.c_size_t()
+    ok(
+        lib.xy_contourf_densify(
+            _ptr(cf_z, ctypes.c_double),
+            2,
+            2,
+            _ptr(cf_x, ctypes.c_double),
+            _ptr(cf_y, ctypes.c_double),
+            _ptr(cf_out_z, ctypes.c_double),
+            _ptr(cf_out_x, ctypes.c_double),
+            _ptr(cf_out_y, ctypes.c_double),
+            len(cf_out_z),
+            len(cf_out_x),
+            len(cf_out_y),
+            ctypes.byref(cf_rows),
+            ctypes.byref(cf_cols),
+        )
+        == 1
+        and cf_rows.value == 256
+        and cf_cols.value == 256
+        and abs(cf_out_z[0] - 0.0) < 1e-12
+        and abs(cf_out_z[256 * 256 - 1] - 3.0) < 1e-12,
+        "contourf_densify 2x2",
     )
 
     # normalize_f32: clamp finite values, route non-finite values by mode.

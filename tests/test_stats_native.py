@@ -1,4 +1,4 @@
-"""Native quantiles / Tukey box / violin / hexbin / histogram-edges parity."""
+"""Native quantiles / Tukey box / violin / hexbin / histogram-edges / wind-rose parity."""
 
 from __future__ import annotations
 
@@ -154,3 +154,91 @@ def test_histogram_edges_match_numpy_auto() -> None:
     sturges = kernels.histogram_edges(sample, method="sturges")
     exp_s = np.histogram_bin_edges(sample, bins="sturges")
     np.testing.assert_allclose(sturges, exp_s, atol=1e-10)
+
+
+def _legacy_wind_rose_bins(directions, speeds, sectors, speed_bins=None):
+    import math
+
+    bearings = np.asarray(directions, dtype=float).reshape(-1)
+    magnitudes = np.asarray(speeds, dtype=float).reshape(-1)
+    finite = np.isfinite(bearings) & np.isfinite(magnitudes)
+    bearings, magnitudes = bearings[finite], magnitudes[finite]
+    if speed_bins is None:
+        quartiles = np.quantile(magnitudes, [0.25, 0.5, 0.75, 1.0])
+        edges = np.unique([float(f"{value:.3g}") for value in quartiles])
+        top = float(magnitudes.max())
+        if top > 0:
+            unit = 10.0 ** (math.floor(math.log10(top)) - 2)
+            edges[-1] = math.ceil(top / unit) * unit
+    else:
+        edges = np.unique(np.asarray(speed_bins, dtype=float).reshape(-1))
+    width = 360.0 / sectors
+    index = np.floor(((bearings % 360.0) + width / 2.0) / width).astype(int) % sectors
+    centres = np.arange(sectors, dtype=float) * width
+    counts = []
+    lower = -np.inf
+    for upper in edges:
+        in_band = (magnitudes > lower) & (magnitudes <= upper)
+        counts.append(np.bincount(index[in_band], minlength=sectors).astype(float))
+        lower = upper
+    return edges, centres, np.vstack(counts), len(bearings)
+
+
+@pytest.mark.parametrize(
+    "speed_bins",
+    [None, [2.0], [10.0, 20.0, 30.0]],
+)
+def test_wind_rose_bins_match_legacy(speed_bins) -> None:
+    rng = np.random.default_rng(4)
+    directions = rng.uniform(0, 360, 200)
+    speeds = rng.gamma(2.0, 2.0, 200)
+    if speed_bins is not None:
+        speeds = np.clip(speeds, None, speed_bins[-1])
+    got_e, got_c, got_counts, n_obs = kernels.wind_rose_bins(
+        directions, speeds, 8, None if speed_bins is None else np.asarray(speed_bins)
+    )
+    exp_e, exp_c, exp_counts, exp_n = _legacy_wind_rose_bins(
+        directions, speeds, 8, speed_bins
+    )
+    np.testing.assert_allclose(got_e, exp_e, atol=1e-12)
+    np.testing.assert_allclose(got_c, exp_c, atol=1e-12)
+    np.testing.assert_allclose(got_counts, exp_counts, atol=1e-12)
+    assert n_obs == exp_n
+
+
+def test_contourf_densify_matches_legacy_small_grid() -> None:
+    rows, cols = 3, 4
+    z = np.arange(rows * cols, dtype=np.float64).reshape(rows, cols)
+    xpos = np.linspace(0.0, 1.0, cols)
+    ypos = np.linspace(0.0, 2.0, rows)
+    got_z, got_x, got_y = kernels.contourf_densify(z, xpos, ypos)
+
+    def sample_count(size: int) -> int:
+        if size > 512:
+            return size
+        return min(512, max(256, (size - 1) * 8 + 1))
+
+    out_rows, out_cols = sample_count(rows), sample_count(cols)
+    row_at = np.linspace(0.0, rows - 1, out_rows)
+    col_at = np.linspace(0.0, cols - 1, out_cols)
+    row0 = np.floor(row_at).astype(np.intp)
+    col0 = np.floor(col_at).astype(np.intp)
+    row1 = np.minimum(row0 + 1, rows - 1)
+    col1 = np.minimum(col0 + 1, cols - 1)
+    row_weight = (row_at - row0)[:, None]
+    col_weight = (col_at - col0)[None, :]
+    z00 = z[row0[:, None], col0[None, :]]
+    z10 = z[row0[:, None], col1[None, :]]
+    z01 = z[row1[:, None], col0[None, :]]
+    z11 = z[row1[:, None], col1[None, :]]
+    exp = (
+        z00 * (1.0 - row_weight) * (1.0 - col_weight)
+        + z10 * (1.0 - row_weight) * col_weight
+        + z01 * row_weight * (1.0 - col_weight)
+        + z11 * row_weight * col_weight
+    )
+    exp_x = np.interp(col_at, np.arange(cols), xpos)
+    exp_y = np.interp(row_at, np.arange(rows), ypos)
+    np.testing.assert_allclose(got_z, exp, atol=1e-12)
+    np.testing.assert_allclose(got_x, exp_x, atol=1e-12)
+    np.testing.assert_allclose(got_y, exp_y, atol=1e-12)

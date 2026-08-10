@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xy/lod.encode_f32_values when calling xy_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -331,6 +331,101 @@ export function quantiles(data, probs) {
     throw new Error("xy_quantiles failed");
   }
   return out;
+}
+
+
+/** Wind-rose directional/speed binning; `speedEdges` omitted → auto quartiles. */
+export function windRoseBins(directions, speeds, sectors, speedEdges = null) {
+  const dirs = asF64Array(directions);
+  const mags = asF64Array(speeds);
+  if (dirs.length !== mags.length) {
+    throw new RangeError("windRoseBins directions/speeds length mismatch");
+  }
+  if (!Number.isInteger(sectors) || sectors < 3 || sectors > 3600) {
+    throw new RangeError("windRoseBins sectors must be in 3..=3600");
+  }
+  const edgesIn = speedEdges == null ? null : asF64Array(speedEdges);
+  const nEdges = edgesIn == null ? 0 : edgesIn.length;
+  const capacityEdges = edgesIn == null ? 4 : Math.max(nEdges, 1);
+  const outEdges = new Float64Array(capacityEdges);
+  const outCentres = new Float64Array(sectors);
+  const capacityCounts = capacityEdges * sectors;
+  const outCounts = new Float64Array(capacityCounts);
+  const nObs = new BigUint64Array(1);
+  const written = Number(
+    xyWindRoseBins(
+      f64Ptr(dirs),
+      f64Ptr(mags),
+      BigInt(dirs.length),
+      BigInt(sectors),
+      edgesIn == null ? null : f64Ptr(edgesIn),
+      BigInt(nEdges),
+      f64Ptr(outEdges),
+      BigInt(capacityEdges),
+      f64Ptr(outCentres),
+      f64Ptr(outCounts),
+      BigInt(capacityCounts),
+      pointer(nObs, "size_t *"),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacityEdges) {
+    throw new Error("xy_wind_rose_bins failed");
+  }
+  return {
+    edges: outEdges.subarray(0, written),
+    centres: outCentres,
+    counts: outCounts.subarray(0, written * sectors),
+    nObs: Number(nObs[0]),
+    sectors,
+  };
+}
+
+/** Bilinear contourf densify (first slice; corner triangles stay host-side). */
+export function contourfDensify(z, rows, cols, xpos, ypos) {
+  const zz = asF64Array(z);
+  const xx = asF64Array(xpos);
+  const yy = asF64Array(ypos);
+  if (zz.length !== rows * cols || xx.length !== cols || yy.length !== rows) {
+    throw new RangeError("contourfDensify shape mismatch");
+  }
+  const sampleCount = (size) => {
+    if (size > 512) return size;
+    return Math.min(512, Math.max(256, (size - 1) * 8 + 1));
+  };
+  const outRows = sampleCount(rows);
+  const outCols = sampleCount(cols);
+  const outZ = new Float64Array(outRows * outCols);
+  const outX = new Float64Array(outCols);
+  const outY = new Float64Array(outRows);
+  const gotRows = new BigUint64Array(1);
+  const gotCols = new BigUint64Array(1);
+  const ok = xyContourfDensify(
+    f64Ptr(zz),
+    BigInt(rows),
+    BigInt(cols),
+    f64Ptr(xx),
+    f64Ptr(yy),
+    f64Ptr(outZ),
+    f64Ptr(outX),
+    f64Ptr(outY),
+    BigInt(outZ.length),
+    BigInt(outX.length),
+    BigInt(outY.length),
+    pointer(gotRows, "size_t *"),
+    pointer(gotCols, "size_t *"),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_contourf_densify failed");
+  }
+  const r = Number(gotRows[0]);
+  const c = Number(gotCols[0]);
+  return {
+    z: outZ.subarray(0, r * c),
+    x: outX.subarray(0, c),
+    y: outY.subarray(0, r),
+    rows: r,
+    cols: c,
+  };
 }
 
 export function normalizeF32(data, lo, hi, { nanMode = "nan" } = {}) {

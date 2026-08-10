@@ -98,6 +98,8 @@ box_stats = _impl.box_stats
 hexbin = _impl.hexbin
 violin_density = _impl.violin_density
 histogram_edges = _impl.histogram_edges
+wind_rose_bins = _impl.wind_rose_bins
+contourf_densify = _impl.contourf_densify
 
 __all__ = [
     "BACKEND",
@@ -113,6 +115,7 @@ __all__ = [
     "bin_2d_stratified_sample_range_u8_counted",
     "box_stats",
     "correlation",
+    "contourf_densify",
     "css_check",
     "delaunay_triangles",
     "density_log_u8",
@@ -170,6 +173,7 @@ __all__ = [
     "violin_density",
     "weighted_ecdf",
     "welch_spectra",
+    "wind_rose_bins",
     "zone_maps",
     "zone_maps_pair",
 ]

@@ -2685,50 +2685,10 @@ def _interpolate_contourf_grid(
     ypos: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Bilinearly densify a contour field before assigning discrete bands."""
-    rows, cols = arr.shape
+    from . import kernels
 
-    def sample_count(size: int) -> int:
-        # Eight samples per source interval is sufficient for ordinary grids,
-        # but very small masked grids need a pixel-like floor or their diagonal
-        # corner-mask boundaries become visibly stair-stepped in static output.
-        # The floor/cap keeps that approximation bounded at 256²–512² samples;
-        # already-larger inputs are never downsampled.
-        if size > 512:
-            return size
-        return min(512, max(256, (size - 1) * 8 + 1))
+    return kernels.contourf_densify(arr, xpos, ypos)
 
-    out_rows, out_cols = sample_count(rows), sample_count(cols)
-    if (out_rows, out_cols) == (rows, cols):
-        return arr, xpos, ypos
-
-    row_at = np.linspace(0.0, rows - 1, out_rows)
-    col_at = np.linspace(0.0, cols - 1, out_cols)
-    row0 = np.floor(row_at).astype(np.intp)
-    col0 = np.floor(col_at).astype(np.intp)
-    row1 = np.minimum(row0 + 1, rows - 1)
-    col1 = np.minimum(col0 + 1, cols - 1)
-    row_weight = (row_at - row0)[:, None]
-    col_weight = (col_at - col0)[None, :]
-
-    z00 = arr[row0[:, None], col0[None, :]]
-    z10 = arr[row0[:, None], col1[None, :]]
-    z01 = arr[row1[:, None], col0[None, :]]
-    z11 = arr[row1[:, None], col1[None, :]]
-    finite00 = np.isfinite(z00)
-    finite10 = np.isfinite(z10)
-    finite01 = np.isfinite(z01)
-    finite11 = np.isfinite(z11)
-    valid = finite00 & finite10 & finite01 & finite11
-    interpolated = (
-        z00 * (1.0 - row_weight) * (1.0 - col_weight)
-        + z10 * (1.0 - row_weight) * col_weight
-        + z01 * row_weight * (1.0 - col_weight)
-        + z11 * row_weight * col_weight
-    )
-    interpolated[~valid] = np.nan
-    dense_x = np.interp(col_at, np.arange(cols), xpos)
-    dense_y = np.interp(row_at, np.arange(rows), ypos)
-    return interpolated, dense_x, dense_y
 
 
 def _contourf_corner_triangles(

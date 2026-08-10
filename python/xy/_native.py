@@ -25,7 +25,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 54
+ABI_VERSION = 55
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -927,6 +927,37 @@ def _load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
         ctypes.c_size_t,
+    ]
+    lib.xy_wind_rose_bins.restype = ctypes.c_size_t
+    lib.xy_wind_rose_bins.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xy_contourf_densify.restype = ctypes.c_int32
+    lib.xy_contourf_densify.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
     ]
     lib.xy_local_log_density.restype = ctypes.c_int32
     lib.xy_local_log_density.argtypes = [
@@ -4401,6 +4432,127 @@ def histogram_edges(
     if written == _USIZE_MAX:
         raise ValueError("invalid histogram_edges arguments")
     return out[: int(written)].copy()
+
+
+
+WIND_ROSE_MAX_SECTORS = 3600
+WIND_ROSE_MAX_EDGES = 256
+
+
+def wind_rose_bins(
+    directions: npt.NDArray[np.float64],
+    speeds: npt.NDArray[np.float64],
+    sectors: int,
+    speed_edges: npt.NDArray[np.float64] | None = None,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64], int]:
+    """Directional/speed binning via ``xy_wind_rose_bins``.
+
+    Returns ``(edges, centres, counts, n_obs)`` where ``counts`` is shaped
+    ``(n_bands, sectors)`` row-major. ``speed_edges=None`` derives quartile
+    upper edges (3-significant-figure rounding, top edge ceiled).
+    """
+    directions = _as_f64(directions, "directions")
+    speeds = _as_f64(speeds, "speeds")
+    if len(directions) != len(speeds):
+        raise ValueError("wind_rose directions and speeds must be the same length")
+    sectors = int(sectors)
+    if sectors < 3 or sectors > WIND_ROSE_MAX_SECTORS:
+        raise ValueError(f"wind_rose sectors must be in 3..={WIND_ROSE_MAX_SECTORS}")
+    if speed_edges is None:
+        edges_in = None
+        n_edges = 0
+        capacity_edges = 4
+    else:
+        edges_in = _as_f64(speed_edges, "speed_edges")
+        n_edges = len(edges_in)
+        if n_edges == 0 or n_edges > WIND_ROSE_MAX_EDGES:
+            raise ValueError("wind_rose speed_bins must contain at least one edge")
+        capacity_edges = n_edges
+    out_edges = np.empty(capacity_edges, dtype=np.float64)
+    out_centres = np.empty(sectors, dtype=np.float64)
+    capacity_counts = capacity_edges * sectors
+    out_counts = np.empty(capacity_counts, dtype=np.float64)
+    n_obs = ctypes.c_size_t()
+    written = _lib.xy_wind_rose_bins(
+        _ptr_f64(directions),
+        _ptr_f64(speeds),
+        len(directions),
+        sectors,
+        0 if edges_in is None else _ptr_f64(edges_in),
+        n_edges,
+        _ptr_f64(out_edges),
+        capacity_edges,
+        _ptr_f64(out_centres),
+        _ptr_f64(out_counts),
+        capacity_counts,
+        ctypes.byref(n_obs),
+    )
+    if written == _USIZE_MAX:
+        if edges_in is not None and n_edges > 0:
+            finite = np.isfinite(directions) & np.isfinite(speeds)
+            if np.any(finite):
+                fastest = float(np.max(speeds[finite]))
+                uniq = np.unique(edges_in[np.isfinite(edges_in)])
+                if uniq.size and float(uniq[-1]) < fastest:
+                    raise ValueError(
+                        f"wind_rose speed_bins top edge {float(uniq[-1]):g} is below the "
+                        f"fastest observation {fastest:g}, which would drop it from "
+                        "every band. Raise the last edge to cover the data."
+                    )
+            if not np.all(np.isfinite(edges_in)):
+                raise ValueError("wind_rose speed_bins edges must all be finite")
+        raise ValueError("wind_rose needs at least one finite observation")
+    n_bands = int(written)
+    counts = out_counts[: n_bands * sectors].reshape(n_bands, sectors).copy()
+    return out_edges[:n_bands].copy(), out_centres.copy(), counts, int(n_obs.value)
+
+
+def contourf_densify(
+    z: npt.NDArray[np.float64],
+    xpos: npt.NDArray[np.float64],
+    ypos: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Bilinear densify of a contour field via ``xy_contourf_densify``."""
+    z = np.asarray(z, dtype=np.float64)
+    if z.ndim != 2 or min(z.shape) < 2:
+        raise ValueError("contourf densify z must be a 2-D matrix with ≥2 rows/columns")
+    rows, cols = z.shape
+    xpos = _as_f64(xpos, "xpos")
+    ypos = _as_f64(ypos, "ypos")
+    if len(xpos) != cols or len(ypos) != rows:
+        raise ValueError("contourf densify xpos/ypos must match z columns/rows")
+
+    def _sample_count(size: int) -> int:
+        if size > 512:
+            return size
+        return min(512, max(256, (size - 1) * 8 + 1))
+
+    out_rows = _sample_count(rows)
+    out_cols = _sample_count(cols)
+    out_z = np.empty(out_rows * out_cols, dtype=np.float64)
+    out_x = np.empty(out_cols, dtype=np.float64)
+    out_y = np.empty(out_rows, dtype=np.float64)
+    got_rows = ctypes.c_size_t()
+    got_cols = ctypes.c_size_t()
+    ok = _lib.xy_contourf_densify(
+        _ptr_f64(np.ascontiguousarray(z)),
+        rows,
+        cols,
+        _ptr_f64(xpos),
+        _ptr_f64(ypos),
+        _ptr_f64(out_z),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        out_z.size,
+        out_x.size,
+        out_y.size,
+        ctypes.byref(got_rows),
+        ctypes.byref(got_cols),
+    )
+    if ok != 1:
+        raise ValueError("invalid contourf densify arguments")
+    r, c = int(got_rows.value), int(got_cols.value)
+    return out_z[: r * c].reshape(r, c).copy(), out_x[:c].copy(), out_y[:r].copy()
 
 
 # xy_css_check kinds — keep in sync with `src/lib.rs`.

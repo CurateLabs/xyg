@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 54;
+pub const ABI_VERSION: u32 = 55;
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -4301,6 +4301,143 @@ pub unsafe extern "C" fn xy_histogram_edges(
     }
     std::slice::from_raw_parts_mut(out_edges, capacity)[..edges.len()].copy_from_slice(&edges);
     edges.len()
+}
+
+
+/// Wind-rose directional/speed binning. When `n_speed_edges == 0`, quartile
+/// upper edges are derived from finite speeds; otherwise `speed_edges` is
+/// uniqued/sorted and must cover the fastest observation. Writes `n_bands`
+/// edges, `sectors` centres (degrees), and `n_bands * sectors` counts
+/// (row-major `[band][sector]`). Returns `n_bands`, or `usize::MAX` on
+/// invalid arguments / undersized capacity. Sets `*out_n_obs` to the finite
+/// observation count on success.
+///
+/// # Safety
+/// Non-empty inputs and all out pointers must be valid for the given lengths.
+#[no_mangle]
+pub unsafe extern "C" fn xy_wind_rose_bins(
+    directions: *const f64,
+    speeds: *const f64,
+    len: usize,
+    sectors: usize,
+    speed_edges: *const f64,
+    n_speed_edges: usize,
+    out_edges: *mut f64,
+    capacity_edges: usize,
+    out_centres: *mut f64,
+    out_counts: *mut f64,
+    capacity_counts: usize,
+    out_n_obs: *mut usize,
+) -> usize {
+    if out_edges.is_null()
+        || out_centres.is_null()
+        || out_counts.is_null()
+        || out_n_obs.is_null()
+        || capacity_edges == 0
+        || capacity_counts == 0
+    {
+        return usize::MAX;
+    }
+    let (dirs, mags) = if len == 0 {
+        (&[][..], &[][..])
+    } else {
+        if directions.is_null() || speeds.is_null() {
+            return usize::MAX;
+        }
+        (
+            std::slice::from_raw_parts(directions, len),
+            std::slice::from_raw_parts(speeds, len),
+        )
+    };
+    let authored = if n_speed_edges == 0 {
+        None
+    } else {
+        if speed_edges.is_null() {
+            return usize::MAX;
+        }
+        Some(std::slice::from_raw_parts(speed_edges, n_speed_edges))
+    };
+    let Some(result) = ffi_guard(None, || {
+        stats::wind_rose_bins(dirs, mags, sectors, authored)
+    }) else {
+        return usize::MAX;
+    };
+    let n_bands = result.edges.len();
+    if n_bands > capacity_edges
+        || result.counts.len() > capacity_counts
+        || result.centres.len() != sectors
+    {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out_edges, capacity_edges)[..n_bands]
+        .copy_from_slice(&result.edges);
+    std::slice::from_raw_parts_mut(out_centres, sectors).copy_from_slice(&result.centres);
+    std::slice::from_raw_parts_mut(out_counts, capacity_counts)[..result.counts.len()]
+        .copy_from_slice(&result.counts);
+    *out_n_obs = result.n_obs;
+    n_bands
+}
+
+/// Bilinear densify of a contourf scalar field (first slice of contourf band
+/// promotion — corner-triangle clipping remains host-side). Writes densified
+/// `out_z` (row-major), `out_x`, `out_y` and sets `*out_rows` / `*out_cols`.
+/// Returns 1 on success, 0 on invalid shape/capacity/null outs.
+///
+/// # Safety
+/// `z` is `rows * cols` row-major; `xpos`/`ypos` match `cols`/`rows`; outs hold
+/// at least the densified capacities.
+#[no_mangle]
+pub unsafe extern "C" fn xy_contourf_densify(
+    z: *const f64,
+    rows: usize,
+    cols: usize,
+    xpos: *const f64,
+    ypos: *const f64,
+    out_z: *mut f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    out_z_cap: usize,
+    out_x_cap: usize,
+    out_y_cap: usize,
+    out_rows: *mut usize,
+    out_cols: *mut usize,
+) -> i32 {
+    if z.is_null()
+        || xpos.is_null()
+        || ypos.is_null()
+        || out_z.is_null()
+        || out_x.is_null()
+        || out_y.is_null()
+        || out_rows.is_null()
+        || out_cols.is_null()
+        || rows < 2
+        || cols < 2
+    {
+        return 0;
+    }
+    let Some((want_rows, want_cols)) = kernels::contourf_densify_shape(rows, cols) else {
+        return 0;
+    };
+    if out_z_cap < want_rows.saturating_mul(want_cols)
+        || out_x_cap < want_cols
+        || out_y_cap < want_rows
+    {
+        return 0;
+    }
+    let z = std::slice::from_raw_parts(z, rows * cols);
+    let xpos = std::slice::from_raw_parts(xpos, cols);
+    let ypos = std::slice::from_raw_parts(ypos, rows);
+    let out_z = std::slice::from_raw_parts_mut(out_z, out_z_cap);
+    let out_x = std::slice::from_raw_parts_mut(out_x, out_x_cap);
+    let out_y = std::slice::from_raw_parts_mut(out_y, out_y_cap);
+    let Some((orows, ocols)) = ffi_guard(None, || {
+        kernels::contourf_densify(z, rows, cols, xpos, ypos, out_z, out_x, out_y)
+    }) else {
+        return 0;
+    };
+    *out_rows = orows;
+    *out_cols = ocols;
+    1
 }
 
 #[cfg(test)]

@@ -126,6 +126,12 @@ export const xyViolinDensity = lib.func(
 export const xyHistogramEdges = lib.func(
   "size_t xy_histogram_edges(const double *data, size_t len, double lo, double hi, int32_t use_range, int32_t method, double *out_edges, size_t capacity)",
 );
+export const xyWindRoseBins = lib.func(
+  "size_t xy_wind_rose_bins(const double *directions, const double *speeds, size_t len, size_t sectors, const double *speed_edges, size_t n_speed_edges, double *out_edges, size_t capacity_edges, double *out_centres, double *out_counts, size_t capacity_counts, size_t *out_n_obs)",
+);
+export const xyContourfDensify = lib.func(
+  "int32_t xy_contourf_densify(const double *z, size_t rows, size_t cols, const double *xpos, const double *ypos, double *out_z, double *out_x, double *out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t *out_rows, size_t *out_cols)",
+);
 
 // --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(

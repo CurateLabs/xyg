@@ -1,4 +1,5 @@
-//! Quantiles, Tukey box-plot statistics, violin density, and histogram edges.
+//! Quantiles, Tukey box-plot statistics, violin density, histogram edges, and
+//! wind-rose directional/speed binning.
 //!
 //! Hosts assemble geometry from these numbers; the rank math stays in Rust so
 //! Python and Node share one implementation
@@ -300,6 +301,148 @@ fn auto_width(data: &[f64]) -> f64 {
     fd_corrected.min(sturges)
 }
 
+
+/// Maximum angular sectors accepted by [`wind_rose_bins`] (0.1° bins).
+pub const WIND_ROSE_MAX_SECTORS: usize = 3600;
+/// Maximum speed-band upper edges accepted by [`wind_rose_bins`].
+pub const WIND_ROSE_MAX_EDGES: usize = 256;
+
+/// Sector centres + per-band counts for a wind rose.
+///
+/// `counts` is row-major `[band][sector]` with length `edges.len() * centres.len()`.
+/// Hosts assemble stacked polar bars; this kernel only bins
+/// ([polar-axes.md](../../spec/design/polar-axes.md)).
+#[derive(Clone, Debug, PartialEq)]
+pub struct WindRoseBins {
+    pub edges: Vec<f64>,
+    pub centres: Vec<f64>,
+    pub counts: Vec<f64>,
+    pub n_obs: usize,
+}
+
+/// Bin compass bearings (degrees) and speeds into sector × speed-band counts.
+///
+/// When `speed_edges` is `None`, quartile upper edges are derived from the
+/// finite speeds (3-significant-figure rounding, top edge ceiled to cover the
+/// fastest observation — matching the Python `xy.wind_rose` factory). When
+/// `Some`, edges are uniqued/sorted and must be finite with the top edge at
+/// least the fastest finite speed. Directions use north-zero, clockwise sector
+/// centres: a bearing of 0 belongs to the sector centred on north.
+///
+/// Returns `None` on length mismatch, `sectors` outside `3..=WIND_ROSE_MAX_SECTORS`,
+/// no finite observations, empty/invalid authored edges, or too many edges.
+pub fn wind_rose_bins(
+    directions: &[f64],
+    speeds: &[f64],
+    sectors: usize,
+    speed_edges: Option<&[f64]>,
+) -> Option<WindRoseBins> {
+    if directions.len() != speeds.len() {
+        return None;
+    }
+    if !(3..=WIND_ROSE_MAX_SECTORS).contains(&sectors) {
+        return None;
+    }
+    let mut bearings = Vec::with_capacity(directions.len());
+    let mut magnitudes = Vec::with_capacity(speeds.len());
+    for (&d, &s) in directions.iter().zip(speeds.iter()) {
+        if d.is_finite() && s.is_finite() {
+            bearings.push(d);
+            magnitudes.push(s);
+        }
+    }
+    if bearings.is_empty() {
+        return None;
+    }
+    let n_obs = bearings.len();
+    let fastest = magnitudes
+        .iter()
+        .copied()
+        .fold(f64::NEG_INFINITY, f64::max);
+
+    let edges = match speed_edges {
+        None => auto_speed_edges(&magnitudes, fastest)?,
+        Some(raw) => {
+            if raw.is_empty() || raw.len() > WIND_ROSE_MAX_EDGES {
+                return None;
+            }
+            if raw.iter().any(|v| !v.is_finite()) {
+                return None;
+            }
+            let mut edges = raw.to_vec();
+            unique_sorted_f64(&mut edges);
+            if edges.is_empty() {
+                return None;
+            }
+            if edges[edges.len() - 1] < fastest {
+                return None;
+            }
+            edges
+        }
+    };
+    if edges.is_empty() || edges.len() > WIND_ROSE_MAX_EDGES {
+        return None;
+    }
+
+    let width = 360.0 / sectors as f64;
+    let centres: Vec<f64> = (0..sectors).map(|i| i as f64 * width).collect();
+    let n_bands = edges.len();
+    let mut counts = vec![0.0f64; n_bands * sectors];
+    let half = width * 0.5;
+    for (&bearing, &speed) in bearings.iter().zip(magnitudes.iter()) {
+        let wrapped = bearing.rem_euclid(360.0);
+        let sector = ((wrapped + half) / width).floor() as isize;
+        let sector = sector.rem_euclid(sectors as isize) as usize;
+        let mut lower = f64::NEG_INFINITY;
+        for (band, &upper) in edges.iter().enumerate() {
+            if speed > lower && speed <= upper {
+                counts[band * sectors + sector] += 1.0;
+                break;
+            }
+            lower = upper;
+        }
+    }
+    Some(WindRoseBins {
+        edges,
+        centres,
+        counts,
+        n_obs,
+    })
+}
+
+/// Quartile upper edges with Python `float(f"{v:.3g}")` rounding and a ceiled top.
+fn auto_speed_edges(magnitudes: &[f64], fastest: f64) -> Option<Vec<f64>> {
+    let probs = [0.25, 0.5, 0.75, 1.0];
+    let quartiles = quantiles(magnitudes, &probs)?;
+    let mut edges: Vec<f64> = quartiles.into_iter().map(round_3g).collect();
+    unique_sorted_f64(&mut edges);
+    if edges.is_empty() {
+        return None;
+    }
+    if fastest > 0.0 {
+        let unit = 10f64.powf(fastest.log10().floor() - 2.0);
+        if unit.is_finite() && unit > 0.0 {
+            edges[edges.len() - 1] = (fastest / unit).ceil() * unit;
+        }
+    }
+    Some(edges)
+}
+
+/// Match Python `float(f"{value:.3g}")` via equivalent `{:.2e}` formatting.
+fn round_3g(value: f64) -> f64 {
+    if !value.is_finite() || value == 0.0 {
+        return value;
+    }
+    format!("{:.2e}", value)
+        .parse::<f64>()
+        .unwrap_or(value)
+}
+
+fn unique_sorted_f64(values: &mut Vec<f64>) {
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    values.dedup_by(|a, b| a == b);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -392,5 +535,56 @@ mod tests {
         // Empty without range → single bin over [0, 1] (NumPy auto).
         let empty = histogram_edges(&[], None, HistogramEdgesMethod::Auto).unwrap();
         assert_eq!(empty, vec![0.0, 1.0]);
+    }
+
+    #[test]
+    fn wind_rose_bins_centres_on_north_and_stacks_bands() {
+        let directions = [0.0, 0.0, 90.0];
+        let speeds = [1.0, 1.0, 1.0];
+        let r = wind_rose_bins(&directions, &speeds, 4, Some(&[2.0])).unwrap();
+        assert_eq!(r.centres, vec![0.0, 90.0, 180.0, 270.0]);
+        assert_eq!(r.edges, vec![2.0]);
+        assert_eq!(r.n_obs, 3);
+        assert_eq!(r.counts, vec![2.0, 1.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn wind_rose_bins_rejects_authored_edges_that_drop_observations() {
+        let directions = [10.0, 10.0, 10.0];
+        let speeds = [5.0, 15.0, 25.0];
+        assert!(wind_rose_bins(&directions, &speeds, 4, Some(&[10.0, 20.0])).is_none());
+        let ok = wind_rose_bins(&directions, &speeds, 4, Some(&[10.0, 20.0, 30.0])).unwrap();
+        assert_eq!(ok.edges, vec![10.0, 20.0, 30.0]);
+        assert_eq!(ok.counts.iter().sum::<f64>(), 3.0);
+    }
+
+    #[test]
+    fn wind_rose_auto_edges_cover_fastest_observation() {
+        let directions = [0.0, 90.0, 180.0, 270.0];
+        let speeds = [1.0, 2.0, 3.0, 17.01699109];
+        let r = wind_rose_bins(&directions, &speeds, 4, None).unwrap();
+        assert!(r.edges[r.edges.len() - 1] + 1e-12 >= 17.01699109);
+        assert_eq!(r.counts.iter().sum::<f64>(), 4.0);
+    }
+
+    #[test]
+    fn round_3g_matches_python_float_format() {
+        let cases = [
+            (1.92111796, 1.92),
+            (3.31646642, 3.32),
+            (5.07235186, 5.07),
+            (17.01699109, 17.0),
+            (0.001235, 0.00123),
+            (12345.6, 12300.0),
+            (9.995, 9.99),
+            (0.9995, 1.0),
+        ];
+        for (v, expected) in cases {
+            let got = round_3g(v);
+            assert!(
+                (got - expected).abs() <= 1e-12 * expected.abs().max(1.0),
+                "round_3g({v}) = {got}, expected {expected}"
+            );
+        }
     }
 }

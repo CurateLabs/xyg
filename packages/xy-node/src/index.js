@@ -14,6 +14,8 @@ export {
   violinDensity,
   boxStats,
   quantiles,
+  windRoseBins,
+  contourfDensify,
   normalizeF32,
   Column,
   PROTOCOL_VERSION,

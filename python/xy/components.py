@@ -6823,9 +6823,10 @@ def wind_rose(
 ) -> Chart:
     """A wind rose: directional frequency, stacked by speed band.
 
-    Binning is done here in Python rather than by a renderer — the same
-    arrangement `hist` uses — so the chart is polar bars over counts and nothing
-    about the render path is wind-specific.
+    Directional/speed binning runs in the native core (`xy_wind_rose_bins`);
+    this factory only assembles stacked polar bars over the returned counts —
+    the same arrangement `hist` uses — so nothing about the render path is
+    wind-specific.
 
     Directions are compass bearings in degrees (0 = north, increasing
     clockwise), which is why the theta axis defaults to `zero="N"` with
@@ -6845,6 +6846,8 @@ def wind_rose(
     Returns:
         A polar `Chart` of stacked bars.
     """
+    from . import kernels
+
     bearings = np.asarray(directions, dtype=float).reshape(-1)
     magnitudes = np.asarray(speeds, dtype=float).reshape(-1)
     if bearings.size != magnitudes.size:
@@ -6856,56 +6859,21 @@ def wind_rose(
         raise ValueError(f"wind_rose sectors must be a whole number; got {sectors!r}")
     if sectors < 3:
         raise ValueError("wind_rose sectors must be at least 3")
-    finite = np.isfinite(bearings) & np.isfinite(magnitudes)
-    bearings, magnitudes = bearings[finite], magnitudes[finite]
-    if bearings.size == 0:
-        raise ValueError("wind_rose needs at least one finite observation")
-
-    if speed_bins is None:
-        # Quartile bands, rounded to three significant figures: the raw
-        # quantiles are readable as a legend only by accident ("<= 2.76651").
-        quartiles = np.quantile(magnitudes, [0.25, 0.5, 0.75, 1.0])
-        edges = np.unique([float(f"{value:.3g}") for value in quartiles])
-        # The top edge rounds *up*, never down: it has to cover the fastest
-        # observation, and restoring the raw maximum would put "27.2197" in the
-        # legend next to "2.77".
-        top = float(magnitudes.max())
-        if top > 0:
-            unit = 10.0 ** (math.floor(math.log10(top)) - 2)
-            edges[-1] = math.ceil(top / unit) * unit
-    else:
-        edges = np.unique(np.asarray(speed_bins, dtype=float).reshape(-1))
-        # The default path rounds its top edge UP precisely so it covers the
-        # fastest observation; authored edges are taken as given, so anything
-        # above the last one fell in no band at all — `speed_bins=[10, 20]`
-        # counted 2 of 3 observations when one blew at 25 and the rose
-        # under-reported its own input with no warning. Every observation must
-        # land in a band.
-        if edges.size and not np.all(np.isfinite(edges)):
-            raise ValueError("wind_rose speed_bins edges must all be finite")
-        if edges.size:
-            fastest = float(magnitudes.max())
-            if edges[-1] < fastest:
-                raise ValueError(
-                    f"wind_rose speed_bins top edge {edges[-1]:g} is below the "
-                    f"fastest observation {fastest:g}, which would drop it from "
-                    "every band. Raise the last edge to cover the data."
-                )
-    if edges.size == 0:
+    edges_arg = None if speed_bins is None else np.asarray(speed_bins, dtype=float).reshape(-1)
+    if edges_arg is not None and edges_arg.size == 0:
         raise ValueError("wind_rose speed_bins must contain at least one edge")
+    edges, centres, counts, _n_obs = kernels.wind_rose_bins(
+        bearings,
+        magnitudes,
+        int(sectors),
+        edges_arg,
+    )
 
-    width = 360.0 / sectors
-    # Bin centred on each sector: a bearing of 0 belongs to the sector centred
-    # on north, not to the one starting there.
-    index = np.floor(((bearings % 360.0) + width / 2.0) / width).astype(int) % sectors
-    centres = np.arange(sectors, dtype=float) * width
-
+    width = 360.0 / int(sectors)
     marks: list[Component] = []
-    base = np.zeros(sectors, dtype=float)
-    lower = -np.inf
-    for upper in edges:
-        in_band = (magnitudes > lower) & (magnitudes <= upper)
-        counts = np.bincount(index[in_band], minlength=sectors).astype(float)
+    base = np.zeros(int(sectors), dtype=float)
+    for band, upper in enumerate(edges):
+        band_counts = counts[band]
         marks.append(
             bar(
                 centres,
@@ -6915,14 +6883,13 @@ def wind_rose(
                 # three observations reached radius 5 and every band above the
                 # first was too thick. The height IS the band's count, which is
                 # also what makes the hover readout the band's own count.
-                counts,
+                band_counts,
                 base=base.copy(),
                 width=width,
                 name=f"\u2264 {upper:g}",
             )
         )
-        base = base + counts
-        lower = upper
+        base = base + band_counts
 
     _require_polar_coords(props)
     # A wind rose is the one polar composition where the ANGLE is data — it is
@@ -6965,6 +6932,7 @@ def wind_rose(
     if props.get("zoom") is None:
         props["zoom"] = True
     return Chart("wind_rose", children, **props)
+
 
 
 def area_chart(*children: Component, **props: Any) -> Chart:
