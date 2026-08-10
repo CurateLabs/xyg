@@ -6934,7 +6934,6 @@ def wind_rose(
     return Chart("wind_rose", children, **props)
 
 
-
 def area_chart(*children: Component, **props: Any) -> Chart:
     """An area chart composing `area` marks and axis/legend children."""
     return Chart("area_chart", children, **props)

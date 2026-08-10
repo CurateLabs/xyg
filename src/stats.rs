@@ -422,7 +422,8 @@ fn auto_speed_edges(magnitudes: &[f64], fastest: f64) -> Option<Vec<f64>> {
     if fastest > 0.0 {
         let unit = 10f64.powf(fastest.log10().floor() - 2.0);
         if unit.is_finite() && unit > 0.0 {
-            edges[edges.len() - 1] = (fastest / unit).ceil() * unit;
+            let last = edges.len() - 1;
+            edges[last] = (fastest / unit).ceil() * unit;
         }
     }
     Some(edges)

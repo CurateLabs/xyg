@@ -1800,7 +1800,6 @@ def main() -> None:
         "hexbin count cells",
     )
 
-
     # wind_rose_bins: three bearings into a 4-sector rose, one speed band.
     wr_dir = array("d", [0.0, 0.0, 90.0])
     wr_spd = array("d", [1.0, 1.0, 1.0])

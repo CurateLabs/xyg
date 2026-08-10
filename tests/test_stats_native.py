@@ -197,9 +197,7 @@ def test_wind_rose_bins_match_legacy(speed_bins) -> None:
     got_e, got_c, got_counts, n_obs = kernels.wind_rose_bins(
         directions, speeds, 8, None if speed_bins is None else np.asarray(speed_bins)
     )
-    exp_e, exp_c, exp_counts, exp_n = _legacy_wind_rose_bins(
-        directions, speeds, 8, speed_bins
-    )
+    exp_e, exp_c, exp_counts, exp_n = _legacy_wind_rose_bins(directions, speeds, 8, speed_bins)
     np.testing.assert_allclose(got_e, exp_e, atol=1e-12)
     np.testing.assert_allclose(got_c, exp_c, atol=1e-12)
     np.testing.assert_allclose(got_counts, exp_counts, atol=1e-12)

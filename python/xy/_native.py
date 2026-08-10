@@ -4434,7 +4434,6 @@ def histogram_edges(
     return out[: int(written)].copy()
 
 
-
 WIND_ROSE_MAX_SECTORS = 3600
 WIND_ROSE_MAX_EDGES = 256
 

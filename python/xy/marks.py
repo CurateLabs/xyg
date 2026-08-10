@@ -2690,7 +2690,6 @@ def _interpolate_contourf_grid(
     return kernels.contourf_densify(arr, xpos, ypos)
 
 
-
 def _contourf_corner_triangles(
     arr: np.ndarray,
     xpos: np.ndarray,
