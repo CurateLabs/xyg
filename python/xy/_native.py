@@ -12,6 +12,8 @@ defined, and it is a loud failure, never a silent degrade).
 
 from __future__ import annotations
 
+import numbers
+
 import ctypes
 import operator
 import os
@@ -24,7 +26,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 51
+ABI_VERSION = 52
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -812,6 +814,54 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out_layers u32
         ctypes.c_void_p,  # out_err_nodes u64
         ctypes.c_void_p,  # out_err_n u64
+    ]
+    lib.xy_drill_decision.restype = ctypes.c_int32
+    lib.xy_drill_decision.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_void_p,
+    ]
+    lib.xy_lod_grid_shape.restype = ctypes.c_int32
+    lib.xy_lod_grid_shape.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_lod_plan.restype = ctypes.c_int32
+    lib.xy_lod_plan.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_quantiles.restype = ctypes.c_size_t
+    lib.xy_quantiles.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+    ]
+    lib.xy_box_stats.restype = ctypes.c_int32
+    lib.xy_box_stats.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
     ]
     lib.xy_local_log_density.restype = ctypes.c_int32
     lib.xy_local_log_density.argtypes = [
@@ -3900,6 +3950,151 @@ def density_log_u8(grid: npt.NDArray[np.float32]) -> tuple[npt.NDArray[np.uint8]
     if ok != 1:
         raise RuntimeError("xy native density_log_u8 failed")
     return out, float(maximum.value)
+
+
+def drill_decision(
+    visible: int, budget: float, in_drill: bool, exit_factor: float = 1.15
+) -> bool:
+    """Native hysteresis-guarded LOD drill decision (§5)."""
+    if isinstance(visible, (bool, np.bool_)) or not isinstance(visible, numbers.Integral):
+        raise ValueError("visible must be an integer >= 0")
+    visible_i = int(visible)
+    if visible_i < 0:
+        raise ValueError("visible must be an integer >= 0")
+    budget_f = _finite_float(budget, "budget")
+    exit_f = _finite_float(exit_factor, "exit_factor")
+    if budget_f <= 0.0 or exit_f <= 0.0:
+        raise ValueError("budget and exit_factor must be > 0")
+    if not isinstance(in_drill, (bool, np.bool_)):
+        raise ValueError("in_drill must be True or False")
+    out = ctypes.c_int32()
+    ok = _lib.xy_drill_decision(
+        visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out)
+    )
+    if ok != 1:
+        raise ValueError("invalid drill_decision arguments")
+    return bool(out.value)
+
+
+def lod_grid_shape(
+    width: int, height: int, visible: int, target_per_cell: float = 16.0
+) -> tuple[int, int]:
+    """Native screen-bounded aggregation grid shape."""
+    if isinstance(width, (bool, np.bool_)) or isinstance(height, (bool, np.bool_)):
+        raise ValueError("screen dimensions must be integers")
+    if isinstance(visible, (bool, np.bool_)) or not isinstance(visible, numbers.Integral):
+        raise ValueError("visible must be an integer >= 0")
+    visible_i = int(visible)
+    if visible_i < 0:
+        raise ValueError("visible must be an integer >= 0")
+    target = _finite_float(target_per_cell, "target_per_cell")
+    if target <= 0.0:
+        raise ValueError("target_per_cell must be > 0")
+    out_w = ctypes.c_int32()
+    out_h = ctypes.c_int32()
+    ok = _lib.xy_lod_grid_shape(
+        int(width), int(height), visible_i, target, ctypes.byref(out_w), ctypes.byref(out_h)
+    )
+    if ok != 1:
+        raise ValueError("invalid lod_grid_shape arguments")
+    return int(out_w.value), int(out_h.value)
+
+
+def lod_plan(
+    visible: int,
+    budget: float,
+    in_drill: bool,
+    *,
+    exit_factor: float = 1.15,
+    width: int,
+    height: int,
+    target_per_cell: float = 16.0,
+) -> tuple[bool, int, int, int]:
+    """Native numeric LOD plan: ``(exact, mode, grid_w, grid_h)``.
+
+    ``mode`` is ``0`` (direct) or ``1`` (aggregate); hosts map to wire strings.
+    """
+    if isinstance(visible, (bool, np.bool_)) or not isinstance(visible, numbers.Integral):
+        raise ValueError("visible must be an integer >= 0")
+    visible_i = int(visible)
+    if visible_i < 0:
+        raise ValueError("visible must be an integer >= 0")
+    budget_f = _finite_float(budget, "budget")
+    exit_f = _finite_float(exit_factor, "exit_factor")
+    target = _finite_float(target_per_cell, "target_per_cell")
+    if budget_f <= 0.0 or exit_f <= 0.0 or target <= 0.0:
+        raise ValueError("budget, exit_factor, and target_per_cell must be > 0")
+    if not isinstance(in_drill, (bool, np.bool_)):
+        raise ValueError("in_drill must be True or False")
+    out_exact = ctypes.c_int32()
+    out_mode = ctypes.c_uint32()
+    out_gw = ctypes.c_int32()
+    out_gh = ctypes.c_int32()
+    ok = _lib.xy_lod_plan(
+        visible_i,
+        budget_f,
+        int(bool(in_drill)),
+        exit_f,
+        int(width),
+        int(height),
+        target,
+        ctypes.byref(out_exact),
+        ctypes.byref(out_mode),
+        ctypes.byref(out_gw),
+        ctypes.byref(out_gh),
+    )
+    if ok != 1:
+        raise ValueError("invalid lod_plan arguments")
+    return bool(out_exact.value), int(out_mode.value), int(out_gw.value), int(out_gh.value)
+
+
+def quantiles(
+    data: npt.NDArray[np.float64], probs: npt.NDArray[np.float64] | list[float]
+) -> npt.NDArray[np.float64]:
+    """Linear (NumPy-default) quantiles via the native core."""
+    data = _as_f64(data, "data")
+    probs_arr = np.ascontiguousarray(probs, dtype=np.float64)
+    if probs_arr.ndim != 1 or len(probs_arr) == 0:
+        raise ValueError("probs must be a non-empty 1-D array")
+    out = np.empty(len(probs_arr), dtype=np.float64)
+    written = _lib.xy_quantiles(
+        _ptr_f64(data),
+        len(data),
+        _ptr_f64(probs_arr),
+        len(probs_arr),
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("quantiles require finite probabilities in [0, 1]")
+    return out
+
+
+def box_stats(
+    data: npt.NDArray[np.float64],
+) -> tuple[float, float, float, float, float, npt.NDArray[np.float64]]:
+    """Tukey box-plot stats: q1, median, q3, whisker low/high, outliers."""
+    data = _as_f64(data, "data")
+    stats = np.empty(5, dtype=np.float64)
+    outliers = np.empty(len(data), dtype=np.float64)
+    n_out = ctypes.c_size_t()
+    ok = _lib.xy_box_stats(
+        _ptr_f64(data),
+        len(data),
+        _ptr_f64(stats),
+        _ptr_f64(outliers) if len(data) else 0,
+        len(data),
+        ctypes.byref(n_out),
+    )
+    if ok != 1:
+        raise RuntimeError("xy native box_stats failed (output undefined)")
+    return (
+        float(stats[0]),
+        float(stats[1]),
+        float(stats[2]),
+        float(stats[3]),
+        float(stats[4]),
+        outliers[: int(n_out.value)].copy(),
+    )
 
 
 # xy_css_check kinds — keep in sync with `src/lib.rs`.

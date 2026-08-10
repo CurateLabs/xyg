@@ -90,6 +90,11 @@ stratified_sample_mask = _impl.stratified_sample_mask
 vector_segments = _impl.vector_segments
 welch_spectra = _impl.welch_spectra
 weighted_ecdf = _impl.weighted_ecdf
+drill_decision = _impl.drill_decision
+lod_grid_shape = _impl.lod_grid_shape
+lod_plan = _impl.lod_plan
+quantiles = _impl.quantiles
+box_stats = _impl.box_stats
 
 __all__ = [
     "BACKEND",
@@ -153,6 +158,11 @@ __all__ = [
     "valid_indices_f64",
     "vector_segments",
     "weighted_ecdf",
+    "drill_decision",
+    "lod_grid_shape",
+    "lod_plan",
+    "quantiles",
+    "box_stats",
     "welch_spectra",
     "zone_maps",
     "zone_maps_pair",

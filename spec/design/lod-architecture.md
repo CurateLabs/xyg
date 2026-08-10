@@ -17,9 +17,10 @@ Interactive means: pan/zoom stays inside the §17 frame budget at any N.
 
 A **tier is a property of a (trace, viewport) pair**, never of a dataset:
 what ships is count-only, `tier = f(visible_count)`, hysteresis-guarded (§5).
-`drill_decision(visible, budget, in_drill, exit_factor)` in `python/xy/lod.py`
-returns `visible <= budget * (exit_factor if in_drill else 1.0)`; `js/src/45_lod.ts`
-mirrors it. Implemented today for scatter (drill-in/out with hysteresis); this
+`drill_decision` / `plan_view_lod` in `python/xy/lod.py` call Rust
+(`xy_drill_decision` / `xy_lod_plan` in `lod_plan.rs`); hosts only validate and
+map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
+for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`
 into the decision is dossier F3 — *specified, pending, not implemented*; no
 pixel-area or overdraw term exists in `python/xy/` or `js/src/` today.

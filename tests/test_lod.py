@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import lod
+from xy import kernels, lod
 
 
 def test_viewport_request_normalizes_ranges_and_clamps_screen_shape() -> None:
@@ -627,3 +627,17 @@ def test_pins_offset_to_zero_agrees_with_geometry_offset() -> None:
     for scale in (None, "linear"):
         assert not lod.pins_offset_to_zero(scale)
         assert lod.geometry_offset(scale, 10.0, 20.0) == 15.0
+
+def test_plan_view_lod_uses_native_decision_math() -> None:
+    """Numeric half of LodPlan comes from xy_lod_plan (Rust), not a host reimplementation."""
+    request = lod.ViewportRequest.from_client(0.0, 1.0, 0.0, 1.0, 1200, 800)
+    plan = lod.plan_view_lod(request, 350_000, 200_000, False)
+    exact, mode, gw, gh = kernels.lod_plan(
+        350_000, 200_000.0, False, exit_factor=1.15, width=1200, height=800, target_per_cell=16.0
+    )
+    assert plan.exact is exact is False
+    assert mode == 1
+    assert plan.grid_w == gw and plan.grid_h == gh
+    assert lod.drill_decision(100_000, 200_000, False) is True
+    assert lod.drill_decision(350_000, 200_000, False) is False
+

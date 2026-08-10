@@ -1,3 +1,16 @@
+export {
+  encodeF32,
+  encodeF32Values,
+  m4Points,
+  m4Indices,
+  minMax,
+  isSorted,
+  histogramUniform,
+  normalizeF32,
+  Column,
+  PROTOCOL_VERSION,
+} from "./encode.js";
+
 import {
   nativeLibraryPath,
   pointer,
