@@ -740,13 +740,15 @@ def graph(
         style=style,
     )
     # CSR matches the *render* node index space (scatter), not raw source V.
-    offsets, neighbors = _native.graph_build_csr(
-        len(px), sources, targets, directed=bool(directed)
-    )
+    offsets, neighbors = _native.graph_build_csr(len(px), sources, targets, directed=bool(directed))
     # §28 recorded layout/LOD decision for hosts/clients.
     member_of = np.asarray(meta["member_of"], dtype=np.uint64)
     graph_meta = {
-        **{k: v for k, v in meta.items() if k not in ("member_of", "render_sources", "render_targets")},
+        **{
+            k: v
+            for k, v in meta.items()
+            if k not in ("member_of", "render_sources", "render_targets")
+        },
         "directed": bool(directed),
         "ids": [str(i) for i in data.ids],
         "sources": sources.astype(np.uint64).tolist(),

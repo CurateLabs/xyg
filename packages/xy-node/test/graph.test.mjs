@@ -15,7 +15,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XY_EXPECTED_ABI ?? 51);
+const EXPECTED_ABI = Number(process.env.XY_EXPECTED_ABI ?? 52);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -57,16 +57,18 @@ test("seeded force is deterministic across two calls", () => {
   }
 });
 
-test("breadthfirst aliases dagre/hierarchical", () => {
-  const sources = new BigUint64Array([0n, 0n, 1n]);
-  const targets = new BigUint64Array([1n, 2n, 3n]);
+test("hierarchical/dagre differ from undirected breadthfirst on a DAG", () => {
+  // Edges 0→1→2 and 3→2: BFS from 0 places 3 at layer 3; hierarchical roots 0,3 at layer 0.
+  const sources = new BigUint64Array([0n, 1n, 3n]);
+  const targets = new BigUint64Array([1n, 2n, 2n]);
   const breadthfirst = graphLayout("breadthfirst", 4, sources, targets);
   const hierarchical = graphLayout("hierarchical", 4, sources, targets);
   const dagre = graphLayout("dagre", 4, sources, targets);
-  assert.deepEqual([...hierarchical.x], [...breadthfirst.x]);
-  assert.deepEqual([...hierarchical.y], [...breadthfirst.y]);
-  assert.deepEqual([...dagre.x], [...breadthfirst.x]);
-  assert.deepEqual([...dagre.y], [...breadthfirst.y]);
+  assert.notDeepEqual([...hierarchical.y], [...breadthfirst.y]);
+  assert.deepEqual([...hierarchical.x], [...dagre.x]);
+  assert.deepEqual([...hierarchical.y], [...dagre.y]);
+  assert.ok(Math.abs(hierarchical.y[3]) < 1e-12);
+  assert.ok(Math.abs(breadthfirst.y[3] + 3.0) < 1e-12);
 });
 
 test("LOD edge sample tier and edge sampling", () => {

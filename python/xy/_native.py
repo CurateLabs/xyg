@@ -3515,7 +3515,6 @@ def graph_cluster_aggregate(
     )
 
 
-
 def graph_build_render(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],

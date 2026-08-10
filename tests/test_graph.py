@@ -123,9 +123,7 @@ def test_run_layout_emits_render_graph_meta():
     # Preset positions so clustering is deterministic without force.
     data.x = np.array([0.0, 1.0, 0.0, 100.0, 101.0, 100.0], dtype=np.float64)
     data.y = np.array([0.0, 0.0, 1.0, 100.0, 100.0, 101.0], dtype=np.float64)
-    rx, ry, meta = _graph.run_layout(
-        data, layout="preset", node_budget=2, edge_budget=4
-    )
+    rx, ry, meta = _graph.run_layout(data, layout="preset", node_budget=2, edge_budget=4)
     assert meta["source_n_nodes"] == 6
     assert meta["source_n_edges"] == 5
     assert meta["n_nodes"] <= 2

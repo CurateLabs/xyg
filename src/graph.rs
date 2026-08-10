@@ -908,12 +908,16 @@ pub fn build_render(
     let Ok(node_budget_usize) = usize::try_from(node_budget) else {
         return None;
     };
-    let Ok(edge_budget_usize) = usize::try_from(edge_budget) else {
-        return None;
-    };
-    if out_edge_sources.len() < edge_budget_usize || out_edge_targets.len() < edge_budget_usize {
+    // Effective edge budget is min(requested, caller buffer capacity).
+    let edge_out_cap = out_edge_sources.len().min(out_edge_targets.len()) as u64;
+    if n_edges > 0 && edge_out_cap == 0 {
         return None;
     }
+    let edge_budget = if edge_out_cap == 0 {
+        1
+    } else {
+        edge_budget.min(edge_out_cap)
+    };
 
     // Mark active (viewport) nodes; outside → member_of = MAX later.
     let mut active = vec![true; n];
