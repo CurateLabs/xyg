@@ -90,6 +90,11 @@ stratified_sample_mask = _impl.stratified_sample_mask
 vector_segments = _impl.vector_segments
 welch_spectra = _impl.welch_spectra
 weighted_ecdf = _impl.weighted_ecdf
+drill_decision = _impl.drill_decision
+lod_grid_shape = _impl.lod_grid_shape
+lod_plan = _impl.lod_plan
+quantiles = _impl.quantiles
+box_stats = _impl.box_stats
 
 __all__ = [
     "BACKEND",
@@ -103,11 +108,13 @@ __all__ = [
     "bin_2d_mean_color",
     "bin_2d_sample_range",
     "bin_2d_stratified_sample_range_u8_counted",
+    "box_stats",
     "correlation",
     "css_check",
     "delaunay_triangles",
     "density_log_u8",
     "density_rgba",
+    "drill_decision",
     "encode_f32",
     "factorize_fixed",
     "factorize_fixed_u8",
@@ -119,6 +126,8 @@ __all__ = [
     "indexed_triangles",
     "is_sorted",
     "local_log_density",
+    "lod_grid_shape",
+    "lod_plan",
     "m4_indices",
     "marching_squares",
     "marching_triangles",
@@ -134,6 +143,7 @@ __all__ = [
     "pyramid_count",
     "pyramid_free",
     "quad_mesh_triangles",
+    "quantiles",
     "range_indices",
     "range_indices_rows",
     "rasterize",

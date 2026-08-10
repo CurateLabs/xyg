@@ -998,21 +998,9 @@ def _distribution_groups(
 
 
 def _distribution_stats(group: np.ndarray) -> tuple[float, float, float, float, float, np.ndarray]:
-    finite = group[np.isfinite(group)]
-    if len(finite) == 0:
-        empty = np.empty(0, dtype=np.float64)
-        return (np.nan, np.nan, np.nan, np.nan, np.nan, empty)
-    q1, median, q3 = np.percentile(finite, [25.0, 50.0, 75.0])
-    iqr = q3 - q1
-    lo_fence, hi_fence = q1 - 1.5 * iqr, q3 + 1.5 * iqr
-    # Whiskers end at the most extreme observation inside the Tukey fence
-    # at an observed point inside the fence, never at the bare fence value.
-    # Both selections are non-empty: min <= q1 <= hi_fence and
-    # lo_fence < q3 <= max.
-    low = float(np.min(finite[finite >= lo_fence]))
-    high = float(np.max(finite[finite <= hi_fence]))
-    outliers = finite[(finite < low) | (finite > high)]
-    return float(q1), float(median), float(q3), low, high, outliers
+    """Tukey box stats via Rust (`xy_box_stats`); geometry assembly stays here."""
+    arr = np.asarray(group, dtype=np.float64)
+    return kernels.box_stats(arr)
 
 
 def _contour_segments(

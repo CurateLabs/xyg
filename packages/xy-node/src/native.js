@@ -101,6 +101,23 @@ export const xyHistogram2d = lib.func(
   "int32_t xy_histogram2d(const double *x, const double *y, const double *weights, size_t len, const double *x_edges, size_t x_edge_len, const double *y_edges, size_t y_edge_len, double *out)",
 );
 
+// --- View LOD plan + distribution stats ---
+export const xyDrillDecision = lib.func(
+  "int32_t xy_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t *out_exact)",
+);
+export const xyLodGridShape = lib.func(
+  "int32_t xy_lod_grid_shape(int32_t px_w, int32_t px_h, uint64_t visible, double target_per_cell, int32_t *out_w, int32_t *out_h)",
+);
+export const xyLodPlan = lib.func(
+  "int32_t xy_lod_plan(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t px_w, int32_t px_h, double target_per_cell, int32_t *out_exact, uint32_t *out_mode, int32_t *out_grid_w, int32_t *out_grid_h)",
+);
+export const xyQuantiles = lib.func(
+  "size_t xy_quantiles(const double *data, size_t len, const double *probs, size_t n_probs, double *out)",
+);
+export const xyBoxStats = lib.func(
+  "int32_t xy_box_stats(const double *data, size_t len, double *out_stats, double *out_outliers, size_t outliers_cap, size_t *out_n_outliers)",
+);
+
 // --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(
   "int32_t xy_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, const uint64_t *roots, uint64_t n_roots, uint64_t seed, double *out_x, double *out_y)",

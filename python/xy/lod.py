@@ -194,8 +194,12 @@ def drill_decision(
 ) -> bool:
     """The render tier is a function of the *visible* point count (design
     dossier §5), hysteresis-guarded — once drilled down to real points, stay
-    until the count clearly exceeds the budget again."""
-    return visible <= budget * (exit_factor if in_drill else 1.0)
+    until the count clearly exceeds the budget again.
+
+    Decision math lives in Rust (`xy_drill_decision`); this host only coerces
+    arguments.
+    """
+    return bool(kernels.drill_decision(visible, budget, in_drill, exit_factor))
 
 
 def plan_view_lod(
@@ -228,8 +232,18 @@ def plan_view_lod(
     ):
         if not isinstance(value, str) or not value:
             raise ValueError(f"{label} must be a non-empty string")
-    exact = drill_decision(visible_i, budget_f, bool(in_drill), exit_factor=exit_factor)
-    gw, gh = grid_shape(request.width, request.height, visible_i, target_per_cell)
+    exit_f = _float_param(exit_factor, "exit_factor", min_exclusive=0.0)
+    target_f = _float_param(target_per_cell, "target_per_cell", min_exclusive=0.0)
+    # Rust owns the numeric decision; host maps mode ids onto wire strings.
+    exact, _mode, gw, gh = kernels.lod_plan(
+        visible_i,
+        budget_f,
+        bool(in_drill),
+        exit_factor=exit_f,
+        width=request.width,
+        height=request.height,
+        target_per_cell=target_f,
+    )
     return LodPlan(
         mode=direct_mode if exact else aggregate_mode,
         tier="direct" if exact else aggregate_mode,
@@ -943,16 +957,15 @@ def grid_shape(
 ) -> tuple[int, int]:
     """Keep aggregation grids screen-bounded, but avoid one-pixel bins when
     the visible count is only barely over the direct budget. A few points per
-    cell gives smoother drill-out aggregates and smaller updates."""
+    cell gives smoother drill-out aggregates and smaller updates.
+
+    Host validates/clamps the screen shape; Rust owns the shrink math
+    (`xy_lod_grid_shape`).
+    """
     w, h = screen_shape(w, h)
-    requested = w * h
-    if visible <= 0:
-        return w, h
-    target = min(requested, max(16 * 16, int(np.ceil(visible / target_per_cell))))
-    if target >= requested:
-        return w, h
-    scale = float(np.sqrt(target / requested))
-    return max(16, int(round(w * scale))), max(16, int(round(h * scale)))
+    visible_i = _integer_param(visible, "visible")
+    target_f = _float_param(target_per_cell, "target_per_cell", min_exclusive=0.0)
+    return kernels.lod_grid_shape(w, h, visible_i, target_f)
 
 
 def local_log_density(

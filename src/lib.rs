@@ -23,9 +23,11 @@ pub mod css;
 mod font;
 pub mod graph;
 pub mod kernels;
+pub mod lod_plan;
 pub mod raster;
 pub mod sankey;
 mod simd;
+pub mod stats;
 pub mod svg;
 pub mod tiles;
 mod transition;
@@ -85,7 +87,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 52;
+pub const ABI_VERSION: u32 = 53;
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -3936,6 +3938,203 @@ pub unsafe extern "C" fn xy_sankey_layout(
             }
         }
     })
+}
+
+
+// ---------------------------------------------------------------------------
+// View LOD plan + distribution stats (lod_plan.rs / stats.rs).
+// Hosts validate inputs and assemble string mode names; Rust owns the math.
+// ---------------------------------------------------------------------------
+
+/// Hysteresis-guarded drill decision (§5). Writes `1`/`0` into `out_exact`.
+/// Returns 1 on success, 0 when budget/exit_factor are non-finite or ≤ 0.
+///
+/// # Safety
+/// `out_exact` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xy_drill_decision(
+    visible: u64,
+    budget: f64,
+    in_drill: i32,
+    exit_factor: f64,
+    out_exact: *mut i32,
+) -> i32 {
+    if out_exact.is_null() {
+        return 0;
+    }
+    match ffi_guard(None, || lod_plan::drill_decision(visible, budget, in_drill != 0, exit_factor)) {
+        Some(exact) => {
+            *out_exact = if exact { 1 } else { 0 };
+            1
+        }
+        None => 0,
+    }
+}
+
+/// Screen-bounded aggregation grid (§5/§28). Returns 1 on success, 0 on bad policy.
+///
+/// # Safety
+/// `out_w`/`out_h` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xy_lod_grid_shape(
+    px_w: i32,
+    px_h: i32,
+    visible: u64,
+    target_per_cell: f64,
+    out_w: *mut i32,
+    out_h: *mut i32,
+) -> i32 {
+    if out_w.is_null() || out_h.is_null() {
+        return 0;
+    }
+    match ffi_guard(None, || lod_plan::grid_shape(px_w, px_h, visible, target_per_cell)) {
+        Some((w, h)) => {
+            *out_w = w;
+            *out_h = h;
+            1
+        }
+        None => 0,
+    }
+}
+
+/// Chart-agnostic numeric LOD plan for a viewport. Mode is `MODE_DIRECT` (0)
+/// or `MODE_AGGREGATE` (1); hosts map those to wire strings.
+///
+/// Returns 1 on success, 0 on invalid policy / null outs.
+///
+/// # Safety
+/// All out pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xy_lod_plan(
+    visible: u64,
+    budget: f64,
+    in_drill: i32,
+    exit_factor: f64,
+    px_w: i32,
+    px_h: i32,
+    target_per_cell: f64,
+    out_exact: *mut i32,
+    out_mode: *mut u32,
+    out_grid_w: *mut i32,
+    out_grid_h: *mut i32,
+) -> i32 {
+    if out_exact.is_null() || out_mode.is_null() || out_grid_w.is_null() || out_grid_h.is_null() {
+        return 0;
+    }
+    match ffi_guard(None, || {
+        lod_plan::plan(
+            visible,
+            budget,
+            in_drill != 0,
+            exit_factor,
+            px_w,
+            px_h,
+            target_per_cell,
+        )
+    }) {
+        Some(plan) => {
+            *out_exact = if plan.exact { 1 } else { 0 };
+            *out_mode = plan.mode;
+            *out_grid_w = plan.grid_w;
+            *out_grid_h = plan.grid_h;
+            1
+        }
+        None => 0,
+    }
+}
+
+/// Linear (NumPy-default) quantiles for probabilities in `[0, 1]`.
+///
+/// Writes `n_probs` f64s into `out`. Returns the finite sample count used, or
+/// `usize::MAX` on invalid arguments (null outs, empty probs, bad probabilities).
+/// Empty finite input still succeeds: every out slot is NaN and the return is 0.
+///
+/// # Safety
+/// `data`/`probs`/`out` must be valid for the given lengths when non-empty.
+#[no_mangle]
+pub unsafe extern "C" fn xy_quantiles(
+    data: *const f64,
+    len: usize,
+    probs: *const f64,
+    n_probs: usize,
+    out: *mut f64,
+) -> usize {
+    if n_probs == 0 || out.is_null() || probs.is_null() {
+        return usize::MAX;
+    }
+    let data = if len == 0 {
+        &[][..]
+    } else {
+        if data.is_null() {
+            return usize::MAX;
+        }
+        std::slice::from_raw_parts(data, len)
+    };
+    let probs = std::slice::from_raw_parts(probs, n_probs);
+    let out = std::slice::from_raw_parts_mut(out, n_probs);
+    match ffi_guard(None, || stats::quantiles(data, probs)) {
+        Some(values) => {
+            out.copy_from_slice(&values);
+            data.iter().filter(|v| v.is_finite()).count()
+        }
+        None => usize::MAX,
+    }
+}
+
+/// Tukey box-plot stats: `[q1, median, q3, whisker_low, whisker_high]` plus
+/// outliers. Returns 1 on success (including empty → NaN stats / 0 outliers),
+/// 0 on null/undersized buffers.
+///
+/// # Safety
+/// `out_stats` must hold 5 f64s; `out_outliers` holds `outliers_cap` f64s when
+/// non-null; `out_n_outliers` is writable.
+#[no_mangle]
+pub unsafe extern "C" fn xy_box_stats(
+    data: *const f64,
+    len: usize,
+    out_stats: *mut f64,
+    out_outliers: *mut f64,
+    outliers_cap: usize,
+    out_n_outliers: *mut usize,
+) -> i32 {
+    if out_stats.is_null() || out_n_outliers.is_null() {
+        return 0;
+    }
+    if outliers_cap > 0 && out_outliers.is_null() {
+        return 0;
+    }
+    let data = if len == 0 {
+        &[][..]
+    } else {
+        if data.is_null() {
+            return 0;
+        }
+        std::slice::from_raw_parts(data, len)
+    };
+    let stats = ffi_guard(stats::BoxStats {
+        q1: f64::NAN,
+        median: f64::NAN,
+        q3: f64::NAN,
+        low: f64::NAN,
+        high: f64::NAN,
+        outliers: Vec::new(),
+    }, || stats::box_stats(data));
+    let out_stats = std::slice::from_raw_parts_mut(out_stats, 5);
+    out_stats[0] = stats.q1;
+    out_stats[1] = stats.median;
+    out_stats[2] = stats.q3;
+    out_stats[3] = stats.low;
+    out_stats[4] = stats.high;
+    let n = stats.outliers.len();
+    *out_n_outliers = n;
+    if n > outliers_cap {
+        return 0;
+    }
+    if n > 0 {
+        let out = std::slice::from_raw_parts_mut(out_outliers, outliers_cap);
+        out[..n].copy_from_slice(&stats.outliers);
+    }
+    1
 }
 
 #[cfg(test)]

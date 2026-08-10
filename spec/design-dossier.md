@@ -260,9 +260,9 @@ deck.gl in production):
   between 10M–100M items during buffer creation for exactly this reason.
 
 **What ships today is count-only:** `tier = f(visible_count)`, hysteresis-guarded.
-`drill_decision(visible, budget, in_drill, exit_factor)` in `python/xy/lod.py` returns
-`visible <= budget * (exit_factor if in_drill else 1.0)`, with
-`DRILL_EXIT_FACTOR = 1.15` (`python/xy/config.py`) so a trace that has drilled down to
+`drill_decision` / `plan_view_lod` in `python/xy/lod.py` call Rust
+(`xy_drill_decision` / `xy_lod_plan`); hosts assemble wire mode strings only.
+Hysteresis uses `DRILL_EXIT_FACTOR = 1.15` (`python/xy/config.py`) so a trace that has drilled down to
 real points stays drilled until the count clearly exceeds the budget again. The client
 mirrors the same rule (`LOD_DIRECT_POINT_BUDGET`, `LOD_DRILL_EXIT_FACTOR` in
 `js/src/45_lod.ts`). Mark pixel area and overdraw do **not** enter the decision.
