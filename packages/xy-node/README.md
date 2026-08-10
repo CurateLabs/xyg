@@ -20,7 +20,7 @@ cd packages/xy-node && npm ci && npm test
 
 ```bash
 XY_NATIVE_LIB=/path/to/libxy_core.so npm test
-XY_EXPECTED_ABI=50 npm test   # optional ABI golden override
+XY_EXPECTED_ABI=51 npm test   # optional ABI golden override
 ```
 
 ## Exports
@@ -30,7 +30,7 @@ XY_EXPECTED_ABI=50 npm test   # optional ABI golden override
 | `abiVersion()` | `xy_abi_version` |
 | `graphLayout(layout, nNodes, sources, targets, opts?)` | one-shot layout → `{x, y}` |
 | `graphForceCreate` / `graphForceTick` / `graphForceDestroy` | progressive force |
-| `graphLodDecision` / `graphSampleEdges` / `graphBuildCsr` | LOD + CSR |
+| `graphLodDecision` / `graphClusterAggregate` / `graphSampleEdges` / `graphBuildCsr` | LOD + CSR |
 | `sankeyLayout` | Sankey placement when `xy_sankey_layout` is present |
 
 Layout names match Python `_native.py`: `preset`, `grid`, `circle`, `force`,

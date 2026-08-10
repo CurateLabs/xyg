@@ -65,8 +65,8 @@ export const xyGraphLodDecision = lib.func(
   "int32_t xy_graph_lod_decision(uint64_t n_nodes, uint64_t n_edges, uint64_t node_budget, uint64_t edge_budget, uint32_t *out_tier, uint64_t *out_edges_kept)",
 );
 
-export const xyGraphClusterPositions = lib.func(
-  "int32_t xy_graph_cluster_positions(uint64_t n_nodes, const double *x, const double *y, uint64_t budget, double *out_x, double *out_y, uint64_t *out_count, uint64_t *out_member_of)",
+export const xyGraphClusterAggregate = lib.func(
+  "int32_t xy_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double *x, const double *y, uint64_t node_budget, uint64_t edge_budget, double *out_x, double *out_y, uint64_t *out_count, uint64_t *out_member_of, uint32_t *out_tier, uint64_t *out_edges_kept)",
 );
 
 export const xyGraphSampleEdges = lib.func(

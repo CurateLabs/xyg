@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   abiVersion,
   graphBuildCsr,
+  graphClusterAggregate,
   graphForceCreate,
   graphForceDestroy,
   graphForceTick,
@@ -13,7 +14,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XY_EXPECTED_ABI ?? 50);
+const EXPECTED_ABI = Number(process.env.XY_EXPECTED_ABI ?? 51);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -75,6 +76,18 @@ test("LOD edge sample tier and edge sampling", () => {
   assert.equal(decision.tier, 1); // EdgeSample
   assert.equal(decision.edgesKept, 1_000n);
   assert.deepEqual([...graphSampleEdges(10, 3)], [0n, 3n, 6n]);
+});
+
+test("cluster aggregate records Aggregate tier and centroids", () => {
+  const clustered = graphClusterAggregate(
+    new Float64Array([0, 1, 0, 100, 101, 100]),
+    new Float64Array([0, 0, 1, 100, 100, 101]),
+    { nEdges: 3, nodeBudget: 2, edgeBudget: 500 },
+  );
+  assert.equal(clustered.tier, 2); // Aggregate
+  assert.equal(clustered.edgesKept, 3n);
+  assert.equal(clustered.x.length, 2);
+  assert.deepEqual([...clustered.memberOf], [0n, 0n, 0n, 1n, 1n, 1n]);
 });
 
 test("CSR build returns u64 offsets and neighbors", () => {

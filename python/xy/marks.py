@@ -568,10 +568,10 @@ def sankey(
     """Add a Sankey flow diagram: placed nodes, gradient ribbons, labels.
 
     The layout (layering, crossing minimisation, value-proportional heights,
-    endpoint stacking) is pure Python in `_sankey.compute_layout`, exactly as
-    `hist` owns its binning; the drawing is two `ribbon` traces — the links,
-    and the nodes themselves, since a band whose two spans are equal *is* a
-    rectangle. Each link takes its source node's colour at the source end and
+    endpoint stacking) runs in the Rust ABI via `_sankey.compute_layout`,
+    exactly as `hist` owns its binning; the drawing is two `ribbon` traces — the
+    links, and the nodes themselves, since a band whose two spans are equal *is*
+    a rectangle. Each link takes its source node's colour at the source end and
     its target node's at the target end, so the gradient reads as flow.
 
     Args:
@@ -674,6 +674,99 @@ def sankey(
     except Exception:
         self._rollback(checkpoint)
         raise
+
+
+def graph(
+    self: "Figure",
+    nodes: Any,
+    edges: Any,
+    *,
+    x: Any = None,
+    y: Any = None,
+    layout: str = "force",
+    directed: bool = True,
+    seed: int = 0,
+    iterations: int = 300,
+    color: Union[str, ArrayLike, None] = None,
+    size: Union[float, ArrayLike, None] = None,
+    edge_color: Union[str, ArrayLike, None] = None,
+    edge_width: Any = 1.2,
+    symbol: Any = "circle",
+    edge_curve: str = "straight",
+    name: Optional[str] = None,
+    opacity: Any = 1.0,
+    style: styles.StyleMapping | None = None,
+) -> "Figure":
+    """Add a node–link graph: Rust layout, then segments (edges) + scatter (nodes).
+
+    See ``spec/design/graph-mark.md``. Analysis stays in GraphForge; this mark
+    only positions and draws. ``layout=`` selects the algorithm (default
+    ``\"force\"``).
+    """
+    from . import _graph, _native
+
+    data = _graph.normalize_graph_inputs(nodes, edges, x=x, y=y, directed=directed)
+    px, py, meta = _graph.run_layout(data, layout=layout, seed=seed, iterations=iterations)
+    # Edge endpoints in laid-out coordinates (respect LOD-sampled edges).
+    tier, edges_kept = meta["lod_tier"], meta["edges_kept"]
+    sources = data.sources
+    targets = data.targets
+    if edges_kept < data.n_edges:
+        idx = _native.graph_sample_edges(data.n_edges, edges_kept)
+        sources = data.sources[idx]
+        targets = data.targets[idx]
+    x0 = px[sources.astype(np.intp)]
+    y0 = py[sources.astype(np.intp)]
+    x1 = px[targets.astype(np.intp)]
+    y1 = py[targets.astype(np.intp)]
+    edge_name = None if name is None else f"{name}:edges"
+    node_name = None if name is None else f"{name}:nodes"
+    curve = str(edge_curve or "straight").strip().lower()
+    self.segments(
+        x0,
+        y0,
+        x1,
+        y1,
+        name=edge_name,
+        color=edge_color,
+        width=edge_width,
+        opacity=opacity,
+        style=style,
+    )
+    self.scatter(
+        px,
+        py,
+        name=node_name,
+        color=color,
+        size=size if size is not None else 8.0,
+        opacity=opacity,
+        symbol=symbol,
+        style=style,
+    )
+    offsets, neighbors = _native.graph_build_csr(
+        data.n_nodes, data.sources, data.targets, directed=bool(directed)
+    )
+    # §28 recorded layout/LOD decision for hosts/clients.
+    graph_meta = {
+        **meta,
+        "directed": bool(directed),
+        "ids": [str(i) for i in data.ids],
+        "sources": sources.astype(np.uint64).tolist(),
+        "targets": targets.astype(np.uint64).tolist(),
+        "csr_offsets": offsets.astype(np.uint64).tolist(),
+        "csr_neighbors": neighbors.astype(np.uint64).tolist(),
+        "node_symbol": symbol if isinstance(symbol, str) else "circle",
+        "edge_curve": curve,
+        "tier_name": ("direct", "edge_sample", "aggregate")[min(int(tier), 2)],
+        "node_trace": len(self.traces) - 1,
+        "edge_trace": len(self.traces) - 2,
+    }
+    existing = getattr(self, "_graph_meta", None)
+    if existing is None:
+        self._graph_meta = [graph_meta]
+    else:
+        existing.append(graph_meta)
+    return self
 
 
 def triangle_mesh(

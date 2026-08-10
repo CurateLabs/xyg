@@ -357,6 +357,11 @@ class PayloadMixin(_Host):
             spec["annotations"] = annotations
         if self.animation_options is not None:
             spec["animation"] = dict(self.animation_options)
+        graph_meta = getattr(self, "_graph_meta", None)
+        if graph_meta:
+            # JSON-safe graph meta for neighborhood highlight / LOD (§28).
+            # CSR offsets/neighbors stay u64 lists; geometry remains segments+scatter.
+            spec["graph"] = list(graph_meta)
         return spec
 
     @staticmethod

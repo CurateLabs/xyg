@@ -24,7 +24,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 47
+ABI_VERSION = 51
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -709,6 +709,110 @@ def _load() -> ctypes.CDLL:
     ]
     lib.xy_pyramid_free.restype = ctypes.c_int32
     lib.xy_pyramid_free.argtypes = [ctypes.c_uint64]
+    lib.xy_graph_layout.restype = ctypes.c_int32
+    lib.xy_graph_layout.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_force_create.restype = ctypes.c_int32
+    lib.xy_graph_force_create.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_force_tick.restype = ctypes.c_int32
+    lib.xy_graph_force_tick.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_force_destroy.restype = ctypes.c_int32
+    lib.xy_graph_force_destroy.argtypes = [ctypes.c_uint64]
+    lib.xy_graph_build_csr.restype = ctypes.c_int32
+    lib.xy_graph_build_csr.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_lod_decision.restype = ctypes.c_int32
+    lib.xy_graph_lod_decision.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
+    lib.xy_graph_cluster_aggregate.restype = ctypes.c_int32
+    lib.xy_graph_cluster_aggregate.argtypes = [
+        ctypes.c_uint64,  # n_nodes
+        ctypes.c_uint64,  # n_edges
+        ctypes.c_void_p,  # x
+        ctypes.c_void_p,  # y
+        ctypes.c_uint64,  # node_budget
+        ctypes.c_uint64,  # edge_budget
+        ctypes.c_void_p,  # out_x
+        ctypes.c_void_p,  # out_y
+        ctypes.c_void_p,  # out_count
+        ctypes.c_void_p,  # out_member_of
+        ctypes.c_void_p,  # out_tier
+        ctypes.c_void_p,  # out_edges_kept
+    ]
+    lib.xy_graph_sample_edges.restype = ctypes.c_uint64
+    lib.xy_graph_sample_edges.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+    ]
+    lib.xy_sankey_layout.restype = ctypes.c_int32
+    lib.xy_sankey_layout.argtypes = [
+        ctypes.c_uint64,  # n_nodes
+        ctypes.c_uint64,  # n_links
+        ctypes.c_void_p,  # sources u64
+        ctypes.c_void_p,  # targets u64
+        ctypes.c_void_p,  # values f64
+        ctypes.c_double,  # node_width
+        ctypes.c_double,  # node_padding
+        ctypes.c_uint32,  # align
+        ctypes.c_uint32,  # iterations
+        ctypes.c_void_p,  # out_x0
+        ctypes.c_void_p,  # out_y0
+        ctypes.c_void_p,  # out_x1
+        ctypes.c_void_p,  # out_y1
+        ctypes.c_void_p,  # out_layer u32
+        ctypes.c_void_p,  # out_value f64
+        ctypes.c_void_p,  # out_source_y0
+        ctypes.c_void_p,  # out_source_y1
+        ctypes.c_void_p,  # out_target_y0
+        ctypes.c_void_p,  # out_target_y1
+        ctypes.c_void_p,  # out_layers u32
+        ctypes.c_void_p,  # out_err_nodes u64
+        ctypes.c_void_p,  # out_err_n u64
+    ]
     lib.xy_local_log_density.restype = ctypes.c_int32
     lib.xy_local_log_density.argtypes = [
         ctypes.c_void_p,
@@ -3142,6 +3246,413 @@ def pyramid_compose_color(
 
 def pyramid_free(handle: int) -> bool:
     return _lib.xy_pyramid_free(ctypes.c_uint64(_pyramid_handle(handle))) == 1
+
+
+# Graph layout ids — keep in lockstep with src/graph.rs LAYOUT_*.
+GRAPH_LAYOUT_PRESET = 0
+GRAPH_LAYOUT_GRID = 1
+GRAPH_LAYOUT_CIRCLE = 2
+GRAPH_LAYOUT_FORCE = 3
+GRAPH_LAYOUT_BREADTHFIRST = 4
+GRAPH_LAYOUT_AUTO = 5
+GRAPH_LAYOUT_RADIAL = 6
+GRAPH_LAYOUT_CONCENTRIC = 7
+
+_GRAPH_LAYOUT_NAMES = {
+    "preset": GRAPH_LAYOUT_PRESET,
+    "grid": GRAPH_LAYOUT_GRID,
+    "circle": GRAPH_LAYOUT_CIRCLE,
+    "force": GRAPH_LAYOUT_FORCE,
+    "breadthfirst": GRAPH_LAYOUT_BREADTHFIRST,
+    "dagre": GRAPH_LAYOUT_BREADTHFIRST,
+    "hierarchical": GRAPH_LAYOUT_BREADTHFIRST,
+    "auto": GRAPH_LAYOUT_AUTO,
+    "radial": GRAPH_LAYOUT_RADIAL,
+    "concentric": GRAPH_LAYOUT_CONCENTRIC,
+}
+
+
+def graph_layout_id(name: str) -> int:
+    key = str(name).strip().lower()
+    if key not in _GRAPH_LAYOUT_NAMES:
+        raise ValueError(
+            f"unknown graph layout {name!r}; expected one of {sorted(_GRAPH_LAYOUT_NAMES)}"
+        )
+    return _GRAPH_LAYOUT_NAMES[key]
+
+
+def _as_u64(
+    data: npt.NDArray[np.uint64] | npt.NDArray[np.integer], name: str
+) -> npt.NDArray[np.uint64]:
+    arr = np.asarray(data)
+    if arr.ndim != 1:
+        raise ValueError(f"{name} must be 1-D")
+    return np.ascontiguousarray(arr, dtype=np.uint64)
+
+
+def graph_layout(
+    layout: str | int,
+    n_nodes: int,
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    x: npt.NDArray[np.float64] | None = None,
+    y: npt.NDArray[np.float64] | None = None,
+    roots: npt.NDArray[np.uint64] | None = None,
+    seed: int = 0,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Run a one-shot graph layout; returns (x, y) f64 positions."""
+    layout_id = graph_layout_id(layout) if isinstance(layout, str) else int(layout)
+    n_nodes = int(n_nodes)
+    if n_nodes < 0:
+        raise ValueError("n_nodes must be non-negative")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
+    out_x = np.empty(n_nodes, dtype=np.float64)
+    out_y = np.empty(n_nodes, dtype=np.float64)
+    in_x_ptr = ctypes.c_void_p()
+    in_y_ptr = ctypes.c_void_p()
+    if x is not None or y is not None:
+        if x is None or y is None:
+            raise ValueError("preset layout requires both x and y")
+        x_arr = _as_f64(x, "x")
+        y_arr = _as_f64(y, "y")
+        if len(x_arr) != n_nodes or len(y_arr) != n_nodes:
+            raise ValueError("x/y must have length n_nodes")
+        in_x_ptr = _ptr_f64(x_arr)
+        in_y_ptr = _ptr_f64(y_arr)
+    roots_arr = np.empty(0, dtype=np.uint64) if roots is None else _as_u64(roots, "roots")
+    src_ptr = sources.ctypes.data if len(sources) else None
+    tgt_ptr = targets.ctypes.data if len(targets) else None
+    roots_ptr = roots_arr.ctypes.data if len(roots_arr) else None
+    ok = _lib.xy_graph_layout(
+        ctypes.c_uint32(layout_id),
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(len(sources)),
+        src_ptr,
+        tgt_ptr,
+        in_x_ptr,
+        in_y_ptr,
+        roots_ptr,
+        ctypes.c_uint64(len(roots_arr)),
+        ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
+        out_x.ctypes.data,
+        out_y.ctypes.data,
+    )
+    if ok != 0:
+        raise ValueError("native graph_layout failed (invalid arguments or layout)")
+    return out_x, out_y
+
+
+def graph_force_create(
+    n_nodes: int,
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    x: npt.NDArray[np.float64] | None = None,
+    y: npt.NDArray[np.float64] | None = None,
+    seed: int = 0,
+) -> int:
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    handle = ctypes.c_uint64(0)
+    in_x = _ptr_f64(_as_f64(x, "x")) if x is not None else None
+    in_y = _ptr_f64(_as_f64(y, "y")) if y is not None else None
+    if (x is None) ^ (y is None):
+        raise ValueError("force create requires both x and y or neither")
+    ok = _lib.xy_graph_force_create(
+        ctypes.c_uint64(int(n_nodes)),
+        ctypes.c_uint64(len(sources)),
+        sources.ctypes.data if len(sources) else None,
+        targets.ctypes.data if len(targets) else None,
+        in_x,
+        in_y,
+        ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
+        ctypes.byref(handle),
+    )
+    if ok != 0:
+        raise ValueError("native graph_force_create failed")
+    return int(handle.value)
+
+
+def graph_force_tick(
+    handle: int, n_nodes: int, steps: int = 1
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], float]:
+    out_x = np.empty(int(n_nodes), dtype=np.float64)
+    out_y = np.empty(int(n_nodes), dtype=np.float64)
+    alpha = ctypes.c_double()
+    ok = _lib.xy_graph_force_tick(
+        ctypes.c_uint64(handle),
+        ctypes.c_uint64(int(n_nodes)),
+        ctypes.c_uint32(max(0, int(steps))),
+        out_x.ctypes.data,
+        out_y.ctypes.data,
+        ctypes.byref(alpha),
+    )
+    if ok != 0:
+        raise ValueError("native graph_force_tick failed")
+    return out_x, out_y, float(alpha.value)
+
+
+def graph_force_destroy(handle: int) -> bool:
+    return _lib.xy_graph_force_destroy(ctypes.c_uint64(handle)) == 1
+
+
+def graph_lod_decision(
+    n_nodes: int, n_edges: int, *, node_budget: int = 200_000, edge_budget: int = 500_000
+) -> tuple[int, int]:
+    tier = ctypes.c_uint32()
+    kept = ctypes.c_uint64()
+    ok = _lib.xy_graph_lod_decision(
+        ctypes.c_uint64(int(n_nodes)),
+        ctypes.c_uint64(int(n_edges)),
+        ctypes.c_uint64(int(node_budget)),
+        ctypes.c_uint64(int(edge_budget)),
+        ctypes.byref(tier),
+        ctypes.byref(kept),
+    )
+    if ok != 0:
+        raise ValueError("native graph_lod_decision failed")
+    return int(tier.value), int(kept.value)
+
+
+def graph_sample_edges(n_edges: int, budget: int) -> npt.NDArray[np.uint64]:
+    budget = max(0, int(budget))
+    out = np.empty(budget, dtype=np.uint64)
+    if budget == 0:
+        return out
+    kept = _lib.xy_graph_sample_edges(
+        ctypes.c_uint64(int(n_edges)),
+        ctypes.c_uint64(budget),
+        out.ctypes.data,
+    )
+    return out[: int(kept)]
+
+
+def graph_cluster_aggregate(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    n_edges: int = 0,
+    node_budget: int,
+    edge_budget: int = 500_000,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+    int,
+    int,
+]:
+    """Cluster graph node positions for LOD; returns centroids, membership, tier, edges_kept."""
+    x_arr = _as_f64(x, "x")
+    y_arr = _as_f64(y, "y")
+    if len(x_arr) != len(y_arr):
+        raise ValueError("x and y must have equal length")
+    n_nodes = len(x_arr)
+    node_budget = int(node_budget)
+    edge_budget = int(edge_budget)
+    if node_budget < 0:
+        raise ValueError("node_budget must be non-negative")
+    if n_nodes > node_budget and node_budget == 0:
+        raise ValueError("node_budget must be positive when clustering non-empty positions")
+    out_cap = n_nodes if n_nodes <= node_budget else node_budget
+    out_x = np.empty(out_cap, dtype=np.float64)
+    out_y = np.empty(out_cap, dtype=np.float64)
+    member_of = np.empty(n_nodes, dtype=np.uint64)
+    out_count = ctypes.c_uint64(0)
+    tier = ctypes.c_uint32(0)
+    edges_kept = ctypes.c_uint64(0)
+    ok = _lib.xy_graph_cluster_aggregate(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(int(n_edges)),
+        x_arr.ctypes.data if n_nodes else None,
+        y_arr.ctypes.data if n_nodes else None,
+        ctypes.c_uint64(node_budget),
+        ctypes.c_uint64(edge_budget),
+        out_x.ctypes.data if out_cap else None,
+        out_y.ctypes.data if out_cap else None,
+        ctypes.byref(out_count),
+        member_of.ctypes.data if n_nodes else None,
+        ctypes.byref(tier),
+        ctypes.byref(edges_kept),
+    )
+    if ok != 0:
+        raise ValueError("native graph_cluster_aggregate failed")
+    return (
+        out_x[: int(out_count.value)],
+        out_y[: int(out_count.value)],
+        member_of,
+        int(tier.value),
+        int(edges_kept.value),
+    )
+
+
+def graph_cluster_positions(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    budget: int,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.uint64]]:
+    """Compat wrapper around :func:`graph_cluster_aggregate` (centroids + membership only)."""
+    cx, cy, member_of, _tier, _kept = graph_cluster_aggregate(
+        x, y, n_edges=0, node_budget=budget, edge_budget=max(int(budget), 1)
+    )
+    return cx, cy, member_of
+
+
+def graph_build_csr(
+    n_nodes: int,
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    directed: bool = True,
+) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint64]]:
+    """Build CSR offsets (len n+1) and neighbors (u64) for neighborhood highlight."""
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    n_nodes = int(n_nodes)
+    if n_nodes < 0:
+        raise ValueError("n_nodes must be non-negative")
+    # Undirected doubles edges; directed uses |E|. Cap with 2*|E|.
+    cap = max(len(sources) * 2, 1)
+    offsets = np.empty(n_nodes + 1, dtype=np.uint64)
+    neighbors = np.empty(cap, dtype=np.uint64)
+    out_len = ctypes.c_uint64(0)
+    ok = _lib.xy_graph_build_csr(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(len(sources)),
+        sources.ctypes.data if len(sources) else None,
+        targets.ctypes.data if len(targets) else None,
+        ctypes.c_int32(1 if directed else 0),
+        offsets.ctypes.data,
+        neighbors.ctypes.data,
+        ctypes.c_uint64(cap),
+        ctypes.byref(out_len),
+    )
+    if ok != 0:
+        raise ValueError("native graph_build_csr failed")
+    return offsets, neighbors[: int(out_len.value)]
+
+
+# Sankey align ids — must match `sankey::ALIGN_*` in src/sankey.rs.
+SANKEY_ALIGN_JUSTIFY = 0
+SANKEY_ALIGN_LEFT = 1
+SANKEY_ALIGN_RIGHT = 2
+SANKEY_ALIGN_CENTER = 3
+
+_SANKEY_ALIGN_NAMES = {
+    "justify": SANKEY_ALIGN_JUSTIFY,
+    "left": SANKEY_ALIGN_LEFT,
+    "right": SANKEY_ALIGN_RIGHT,
+    "center": SANKEY_ALIGN_CENTER,
+}
+
+
+def sankey_align_id(name: str) -> int:
+    key = str(name).strip().lower()
+    if key not in _SANKEY_ALIGN_NAMES:
+        raise ValueError(f"sankey align must be one of {sorted(_SANKEY_ALIGN_NAMES)}; got {name!r}")
+    return _SANKEY_ALIGN_NAMES[key]
+
+
+class SankeyLayoutError(ValueError):
+    """Native sankey layout refusal with structured detail for host messages."""
+
+    __slots__ = ("code", "err_nodes")
+
+    def __init__(self, code: int, err_nodes: npt.NDArray[np.uint64], message: str) -> None:
+        super().__init__(message)
+        self.code = int(code)
+        self.err_nodes = err_nodes
+
+
+def sankey_layout(
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    values: npt.NDArray[np.float64],
+    *,
+    n_nodes: int,
+    node_width: float = 0.02,
+    node_padding: float = 0.02,
+    align: str | int = "justify",
+    iterations: int = 6,
+) -> dict[str, Any]:
+    """Run the native Sankey layout; returns dict of f64/u32 arrays + `layers`.
+
+    Raises `SankeyLayoutError` with `.code` `-2` (cycle) or `-3` (padding) and
+    `.err_nodes` carrying the detail indices the host maps to names/text.
+    Other failures raise `ValueError`.
+    """
+    n_nodes = int(n_nodes)
+    if n_nodes <= 0:
+        raise ValueError("n_nodes must be positive")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    values = _as_f64(values, "values")
+    if not (len(sources) == len(targets) == len(values)):
+        raise ValueError("sources, targets, and values must have equal length")
+    if len(sources) == 0:
+        raise ValueError("sankey needs at least one link")
+    align_id = sankey_align_id(align) if isinstance(align, str) else int(align)
+    out_x0 = np.empty(n_nodes, dtype=np.float64)
+    out_y0 = np.empty(n_nodes, dtype=np.float64)
+    out_x1 = np.empty(n_nodes, dtype=np.float64)
+    out_y1 = np.empty(n_nodes, dtype=np.float64)
+    out_layer = np.empty(n_nodes, dtype=np.uint32)
+    out_value = np.empty(n_nodes, dtype=np.float64)
+    n_links = len(sources)
+    out_sy0 = np.empty(n_links, dtype=np.float64)
+    out_sy1 = np.empty(n_links, dtype=np.float64)
+    out_ty0 = np.empty(n_links, dtype=np.float64)
+    out_ty1 = np.empty(n_links, dtype=np.float64)
+    out_layers = ctypes.c_uint32(0)
+    out_err_nodes = np.empty(n_nodes, dtype=np.uint64)
+    out_err_n = ctypes.c_uint64(0)
+    code = _lib.xy_sankey_layout(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(n_links),
+        sources.ctypes.data,
+        targets.ctypes.data,
+        values.ctypes.data,
+        ctypes.c_double(float(node_width)),
+        ctypes.c_double(float(node_padding)),
+        ctypes.c_uint32(align_id),
+        ctypes.c_uint32(max(0, int(iterations))),
+        out_x0.ctypes.data,
+        out_y0.ctypes.data,
+        out_x1.ctypes.data,
+        out_y1.ctypes.data,
+        out_layer.ctypes.data,
+        out_value.ctypes.data,
+        out_sy0.ctypes.data,
+        out_sy1.ctypes.data,
+        out_ty0.ctypes.data,
+        out_ty1.ctypes.data,
+        ctypes.byref(out_layers),
+        out_err_nodes.ctypes.data,
+        ctypes.byref(out_err_n),
+    )
+    err = out_err_nodes[: int(out_err_n.value)].copy()
+    if code == -2:
+        raise SankeyLayoutError(-2, err, "sankey links form a cycle")
+    if code == -3:
+        raise SankeyLayoutError(-3, err, "sankey node_padding leaves no room")
+    if code != 0:
+        raise ValueError("native sankey_layout failed (invalid arguments)")
+    return {
+        "x0": out_x0,
+        "y0": out_y0,
+        "x1": out_x1,
+        "y1": out_y1,
+        "layer": out_layer,
+        "value": out_value,
+        "source_y0": out_sy0,
+        "source_y1": out_sy1,
+        "target_y0": out_ty0,
+        "target_y1": out_ty1,
+        "layers": int(out_layers.value),
+    }
 
 
 def local_log_density(

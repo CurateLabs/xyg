@@ -9,14 +9,23 @@ clear ImportError when it can't load, with no pure-Python fallback.
 
 ## 1. The placement rule
 
-**Rust owns row-scan loops; Python owns decisions.** Precisely:
+**Rust owns row-scan loops and parity-affecting decisions; hosts own
+ergonomics only.** For this product line (graphforge-xy / dual Python+Node
+hosts — see [host-parity.md](host-parity.md)), the upstream habit “Python owns
+decisions” is **superseded**: any decision that changes buffers, layout,
+encodings, or recorded §28 LOD/layout outcomes is implemented in Rust so both
+bindings stay thin and bit-identical.
 
-- If work is O(N) over data rows and sits on an interaction path (build,
-  zoom, pan, drill) → Rust kernel.
-- If work is O(traces), O(screen), or policy (tier choice, budget math, spec
-  assembly, validation, warnings) → Python. Moving policy into Rust buys
-  nothing (it's microseconds) and costs iteration speed — policy is what
-  changes weekly.
+Precisely:
+
+- If work is O(N) / O(|V|+|E|) over data, or sits on an interaction path
+  (build, zoom, pan, drill, layout ticks) → Rust kernel.
+- If work is deterministic policy that must match across Python and Node
+  (tier choice that changes geometry, layout parameter application, graph LOD
+  budgets) → Rust.
+- If work is host ergonomics only (API shapes, idiomatic ingest coercion,
+  error *message* text, transport attach) → host. Do **not** put a second
+  layout/encode path in Python or Node.
 - The client (JS) owns nothing O(N): it receives screen-bounded buffers only
   (§29). This boundary is what keeps the browser safe at 1B rows and it never
   moves.
@@ -34,8 +43,10 @@ clear ImportError when it can't load, with no pure-Python fallback.
 | statistics: `xy_correlation`, `xy_weighted_ecdf`, `xy_histogram2d`, `xy_stacked_bounds` | Rust (ABI v36) | correct — row-scan reductions; binning policy and labels stay in Python. Unweighted `xy_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
 | style/text helpers: `xy_css_check` (`css.rs`), `xy_svg_poly_path` (`svg.rs`) | Rust (ABI v36) | correct by a different rule — not O(rows) but O(points)/per-value on the export and validation paths, where per-item Python object churn dominates; error *messages* still assembled in Python |
 | ohlc_decimate (when finance returns) | was NumPy-in-kernels.py | acceptable stopgap **only** because candles decimate to ≤px buckets; promote to Rust with the pyramid work |
-| tier decisions, hysteresis, drill_seq, spec/emitters, channel resolution | Python | correct — keep |
-| visible-count mask for drill | NumPy expression in `lod.visible_mask` | promote: it's O(N) per zoom step at 100M — fold into `xy_range_indices` (already exists) so count+indices come from one pass |
+| tier decisions, hysteresis, drill_seq that change shipped buffers | Rust (dual-host) / thin host assembly | **promote** — hosts must not diverge; see host-parity.md |
+| spec emitters, validation messages, transport | Host | correct — keep |
+| graph display layouts, force ticks, graph LOD | Rust (`graph` module) | correct — [graph-mark.md](graph-mark.md) |
+| sankey layout | Rust (`sankey` module / `xy_sankey_layout`) | correct — dual-host; Python `_sankey` resolves names + error text only |
 
 ### Target Rust ownership (matches the priority list)
 

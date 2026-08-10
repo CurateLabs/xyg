@@ -101,6 +101,8 @@ __all__ = [
     "errorbar_chart",
     "export_config",
     "facet_chart",
+    "graph",
+    "graph_chart",
     "heatmap",
     "heatmap_chart",
     "hexbin",
@@ -1141,6 +1143,77 @@ def sankey(
             "link_opacity": link_opacity,
             "labels": labels,
             "label_size": label_size,
+        },
+    )
+
+
+def graph(
+    nodes: Any = None,
+    edges: Any = None,
+    *,
+    x: Union[str, ArrayLike, None] = None,
+    y: Union[str, ArrayLike, None] = None,
+    layout: str = "force",
+    directed: bool = True,
+    seed: int = 0,
+    iterations: int = 300,
+    color: Union[str, ColorLike, ArrayLike, None] = None,
+    size: Union[str, float, ArrayLike, None] = None,
+    edge_color: Union[str, ColorLike, ArrayLike, None] = None,
+    edge_width: Any = 1.2,
+    symbol: Any = "circle",
+    edge_curve: str = "straight",
+    name: Optional[str] = None,
+    opacity: Any = 1.0,
+    style: Optional[dict[str, StyleValue]] = None,
+    class_name: Optional[str] = None,
+) -> Mark:
+    """A node–link graph: Rust layout, edges as segments, nodes as scatter.
+
+    Prefer ``xy.graph_chart(...)``. See ``spec/design/graph-mark.md``.
+
+    Args:
+        nodes: Node ids, or a table/mapping with an ``id`` column.
+        edges: ``(source, target)`` pairs or a table with source/target columns.
+        x: Optional preset x positions (required with ``y`` for ``layout=\"preset\"``).
+        y: Optional preset y positions.
+        layout: Layout algorithm name (default ``\"force\"``).
+        directed: Whether edges are directed (affects CSR neighborhood).
+        seed: RNG seed for force layout.
+        iterations: Force-layout tick count.
+        color: Node colour encoding.
+        size: Node size encoding.
+        edge_color: Edge colour.
+        edge_width: Edge width in pixels.
+        symbol: Node marker symbol (scatter symbols).
+        edge_curve: ``\"straight\"`` (MVP draw) or ``\"curve\"`` (meta for clients).
+        name: Series label prefix for edge/node traces.
+        opacity: Shared opacity.
+        style: Mark style overrides.
+        class_name: Adapter-only trace metadata.
+    """
+    return Mark(
+        kind="graph",
+        x=x,
+        y=y,
+        data=None,
+        name=name,
+        class_name=class_name,
+        style=_mark_style_dict(style, "graph style"),
+        props={
+            "nodes": [] if nodes is None else nodes,
+            "edges": [] if edges is None else edges,
+            "layout": layout,
+            "directed": directed,
+            "seed": seed,
+            "iterations": iterations,
+            "color": color,
+            "size": size,
+            "edge_color": edge_color,
+            "edge_width": edge_width,
+            "symbol": symbol,
+            "edge_curve": edge_curve,
+            "opacity": opacity,
         },
     )
 
@@ -5829,6 +5902,29 @@ def _apply_sankey(fig: Figure, m: Mark, data: Any) -> None:
     )
 
 
+def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
+    del data
+    fig.graph(
+        m.props["nodes"],
+        m.props["edges"],
+        x=m.x,
+        y=m.y,
+        layout=m.props["layout"],
+        directed=m.props["directed"],
+        seed=m.props["seed"],
+        iterations=m.props["iterations"],
+        color=m.props["color"],
+        size=m.props["size"],
+        edge_color=m.props["edge_color"],
+        edge_width=m.props["edge_width"],
+        symbol=m.props["symbol"],
+        edge_curve=m.props["edge_curve"],
+        name=m.name,
+        opacity=m.props["opacity"],
+        style=m.style,
+    )
+
+
 def _apply_triangle_mesh(fig: Figure, m: Mark, data: Any) -> None:
     color = m.props["color"]
     fig.triangle_mesh(
@@ -6202,6 +6298,7 @@ _MARK_APPLIERS: dict[str, Callable[[Figure, Mark, Any], None]] = {
     "stem": _apply_stem,
     "ribbon": _apply_ribbon,
     "sankey": _apply_sankey,
+    "graph": _apply_graph,
     "triangle_mesh": _apply_triangle_mesh,
     "violin": _apply_violin,
 }
@@ -6988,6 +7085,49 @@ def sankey_chart(
         *children,
     )
     return Chart("sankey_chart", children, **props)
+
+
+def graph_chart(*children: Component, **props: Any) -> Chart:
+    """A node–link graph chart: Rust layout, pan/zoom, axes hidden by default.
+
+        xy.graph_chart(
+            xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force"),
+        )
+
+    Or pass ``nodes`` / ``edges`` (and other ``xy.graph`` kwargs) on the chart
+    itself. Remaining kwargs (``width``, ``height``, ``title``, …) style the chart.
+    """
+    mark_keys = (
+        "nodes",
+        "edges",
+        "x",
+        "y",
+        "layout",
+        "directed",
+        "seed",
+        "iterations",
+        "color",
+        "size",
+        "edge_color",
+        "edge_width",
+        "symbol",
+        "edge_curve",
+        "name",
+        "opacity",
+        "style",
+        "class_name",
+    )
+    mark_kwargs = {key: props.pop(key) for key in mark_keys if key in props}
+    if "nodes" in mark_kwargs or "edges" in mark_kwargs:
+        nodes = mark_kwargs.pop("nodes", [])
+        edges = mark_kwargs.pop("edges", [])
+        children = (graph(nodes, edges, **mark_kwargs), *children)
+    children = (
+        *children,
+        x_axis(show=False),
+        y_axis(show=False),
+    )
+    return Chart("graph_chart", children, **props)
 
 
 def triangle_mesh_chart(*children: Component, **props: Any) -> Chart:

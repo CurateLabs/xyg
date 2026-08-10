@@ -1,0 +1,14 @@
+# Helper scripts for cargo-wrapping root targets. Exported as plain
+# files so //:BUILD.bazel can reference them as tools / sh_test srcs.
+exports_files(
+    [
+        "cargo_build.sh",
+        "common.sh",
+        "run_cargo_test.sh",
+        "run_python_graph_tests.sh",
+        "run_node_graph_tests.sh",
+        "run_abi_smoke.sh",
+        "workspace_root.sh",
+    ],
+    visibility = ["//visibility:public"],
+)

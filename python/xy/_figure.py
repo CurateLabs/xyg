@@ -133,6 +133,9 @@ class Figure(AnnotationsMixin, PayloadMixin):
         }
         self.store = ColumnStore()
         self.traces: list[Trace] = []
+        # Graph mark meta (CSR / LOD / layout decision) — shipped on the wire
+        # spec when present (graph-mark.md). Not a Trace; one entry per graph.
+        self._graph_meta: list[dict[str, Any]] | None = None
         self.show_legend = True
         self.legend_options: dict[str, Any] = {}
         # Additional legend boxes (each with its own explicit items + loc),
@@ -600,6 +603,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
     segments = _marks.segments
     ribbon = _marks.ribbon
     sankey = _marks.sankey
+    graph = _marks.graph
     triangle_mesh = _marks.triangle_mesh
     bar = _marks.bar
     column = _marks.column

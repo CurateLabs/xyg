@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Thin wrapper so `./bazel` works from a source checkout without a
+# system Bazel install. Prefers the committed tools/bazelisk binary;
+# falls back to a PATH bazelisk / bazel if the binary is missing.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BAZELISK="${ROOT}/tools/bazelisk"
+
+if [[ -x "${BAZELISK}" ]]; then
+  export USE_BAZEL_VERSION="${USE_BAZEL_VERSION:-$(cat "${ROOT}/.bazelversion" 2>/dev/null || true)}"
+  exec "${BAZELISK}" "$@"
+fi
+
+if command -v bazelisk >/dev/null 2>&1; then
+  exec bazelisk "$@"
+fi
+
+if command -v bazel >/dev/null 2>&1; then
+  exec bazel "$@"
+fi
+
+cat >&2 <<'EOF'
+No Bazel launcher found.
+  - Commit tools/bazelisk, or
+  - install bazelisk and set USE_BAZEL_VERSION from .bazelversion, or
+  - install bazel matching .bazelversion.
+EOF
+exit 1

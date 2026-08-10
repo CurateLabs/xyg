@@ -3,6 +3,7 @@ import {
   pointer,
   xyAbiVersion,
   xyGraphBuildCsr,
+  xyGraphClusterAggregate,
   xyGraphForceCreate,
   xyGraphForceDestroy,
   xyGraphForceTick,
@@ -163,6 +164,51 @@ export function graphLodDecision(nNodes, nEdges, opts = {}) {
     throw new Error(`xy_graph_lod_decision failed with code ${code}`);
   }
   return { tier: tier[0], edgesKept: edgesKept[0] };
+}
+
+export function graphClusterAggregate(x, y, opts = {}) {
+  const xArray = asF64Array(x, "x");
+  const yArray = asF64Array(y, "y");
+  requireEqualLength(xArray, yArray, "x", "y");
+  const nNodes = xArray.length;
+  const nodeBudget = toLength(opts.nodeBudget ?? nNodes, "opts.nodeBudget");
+  const edgeBudget = toLength(opts.edgeBudget ?? 500_000, "opts.edgeBudget");
+  const nEdges = toLength(opts.nEdges ?? 0, "opts.nEdges");
+  if (nNodes > nodeBudget && nodeBudget === 0) {
+    throw new Error("nodeBudget must be positive when clustering non-empty positions");
+  }
+  const outCap = nNodes <= nodeBudget ? nNodes : nodeBudget;
+  const outX = new Float64Array(outCap);
+  const outY = new Float64Array(outCap);
+  const memberOf = new BigUint64Array(nNodes);
+  const outCount = new BigUint64Array(1);
+  const tier = new Uint32Array(1);
+  const edgesKept = new BigUint64Array(1);
+  const code = xyGraphClusterAggregate(
+    toU64(nNodes, "nNodes"),
+    toU64(nEdges, "nEdges"),
+    f64Ptr(xArray),
+    f64Ptr(yArray),
+    toU64(nodeBudget, "opts.nodeBudget"),
+    toU64(edgeBudget, "opts.edgeBudget"),
+    f64Ptr(outX),
+    f64Ptr(outY),
+    u64Ptr(outCount),
+    u64Ptr(memberOf),
+    u32Ptr(tier),
+    u64Ptr(edgesKept),
+  );
+  if (code !== 0) {
+    throw new Error(`xy_graph_cluster_aggregate failed with code ${code}`);
+  }
+  const count = Number(outCount[0]);
+  return {
+    x: outX.subarray(0, count),
+    y: outY.subarray(0, count),
+    memberOf,
+    tier: tier[0],
+    edgesKept: edgesKept[0],
+  };
 }
 
 export function graphSampleEdges(nEdges, budget) {

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ctypes
 import math
+import os
 import sys
 from array import array
 from pathlib import Path
@@ -58,12 +59,20 @@ def _lib_name() -> str:
 
 def load() -> ctypes.CDLL:
     name = _lib_name()
-    for cand in (ROOT / "target" / "release" / name, ROOT / "target" / "debug" / name):
+    candidates = []
+    env = os.environ.get("XY_NATIVE_LIB")
+    if env:
+        candidates.append(Path(env))
+    candidates.extend((ROOT / "target" / "release" / name, ROOT / "target" / "debug" / name))
+    for cand in candidates:
         if cand.exists():
             lib = ctypes.CDLL(str(cand))
             break
     else:
-        raise SystemExit(f"{name} not built; run `cargo build --release`")
+        raise SystemExit(
+            f"{name} not built; run `cargo build --release` "
+            f"or set XY_NATIVE_LIB (looked in {[str(c) for c in candidates]})"
+        )
 
     F64P = ctypes.POINTER(ctypes.c_double)
     F32P = ctypes.POINTER(ctypes.c_float)
@@ -374,6 +383,84 @@ def load() -> ctypes.CDLL:
         Z,
         F32P,
     ]
+    lib.xy_graph_layout.restype = ctypes.c_int32
+    lib.xy_graph_layout.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U64P,
+        U64P,
+        F64P,
+        F64P,
+        U64P,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+    ]
+    lib.xy_graph_lod_decision.restype = ctypes.c_int32
+    lib.xy_graph_lod_decision.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U32P,
+        U64P,
+    ]
+    lib.xy_graph_cluster_aggregate.restype = ctypes.c_int32
+    lib.xy_graph_cluster_aggregate.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        F64P,
+        F64P,
+        U64P,
+        U64P,
+        U32P,
+        U64P,
+    ]
+    lib.xy_graph_sample_edges.restype = ctypes.c_uint64
+    lib.xy_graph_sample_edges.argtypes = [ctypes.c_uint64, ctypes.c_uint64, U64P]
+    lib.xy_graph_build_csr.restype = ctypes.c_int32
+    lib.xy_graph_build_csr.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U64P,
+        U64P,
+        ctypes.c_int32,
+        U64P,
+        U64P,
+        ctypes.c_uint64,
+        U64P,
+    ]
+    lib.xy_sankey_layout.restype = ctypes.c_int32
+    lib.xy_sankey_layout.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        U64P,
+        U64P,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        U32P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        U32P,
+        U64P,
+        U64P,
+    ]
     return lib
 
 
@@ -406,6 +493,155 @@ def main() -> None:
 
     ok(lib.xy_abi_version() == ABI_VERSION, "abi version")
     ok(ctypes.sizeof(CZoneMap) == 64, "ZoneMap repr(C) size")
+
+    graph_x = array("d", [0.0]) * 4
+    graph_y = array("d", [0.0]) * 4
+    ok(
+        lib.xy_graph_layout(
+            2,
+            4,
+            0,
+            null_u64,
+            null_u64,
+            null_f64,
+            null_f64,
+            null_u64,
+            0,
+            0,
+            _ptr(graph_x, ctypes.c_double),
+            _ptr(graph_y, ctypes.c_double),
+        )
+        == 0,
+        "graph_layout circle ok",
+    )
+    ok(
+        abs(graph_x[0] - 4.0) < 1e-12
+        and abs(graph_y[0]) < 1e-12
+        and abs(graph_x[1]) < 1e-12
+        and abs(graph_y[1] - 4.0) < 1e-12,
+        "graph_layout circle positions four nodes",
+    )
+    graph_tier = ctypes.c_uint32()
+    graph_kept = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_lod_decision(
+            100,
+            10_000,
+            50_000,
+            1_000,
+            ctypes.byref(graph_tier),
+            ctypes.byref(graph_kept),
+        )
+        == 0
+        and graph_tier.value == 1
+        and graph_kept.value == 1_000,
+        "graph_lod_decision edge sample",
+    )
+    cluster_x = array("d", [0.0, 1.0, 0.0, 100.0, 101.0, 100.0])
+    cluster_y = array("d", [0.0, 0.0, 1.0, 100.0, 100.0, 101.0])
+    cluster_out_x = array("d", [0.0]) * 2
+    cluster_out_y = array("d", [0.0]) * 2
+    cluster_member = array("Q", [99]) * 6
+    cluster_count = ctypes.c_uint64()
+    cluster_tier = ctypes.c_uint32()
+    cluster_kept = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_cluster_aggregate(
+            6,
+            3,
+            _ptr(cluster_x, ctypes.c_double),
+            _ptr(cluster_y, ctypes.c_double),
+            2,
+            500,
+            _ptr(cluster_out_x, ctypes.c_double),
+            _ptr(cluster_out_y, ctypes.c_double),
+            ctypes.byref(cluster_count),
+            _ptr(cluster_member, ctypes.c_uint64),
+            ctypes.byref(cluster_tier),
+            ctypes.byref(cluster_kept),
+        )
+        == 0
+        and cluster_count.value == 2
+        and cluster_tier.value == 2
+        and list(cluster_member) == [0, 0, 0, 1, 1, 1],
+        "graph_cluster_aggregate grid centroids + recorded tier",
+    )
+    graph_sample = array("Q", [99]) * 3
+    ok(
+        lib.xy_graph_sample_edges(10, 3, _ptr(graph_sample, ctypes.c_uint64)) == 3
+        and list(graph_sample) == [0, 3, 6],
+        "graph_sample_edges deterministic stride",
+    )
+    csr_sources = array("Q", [0, 1])
+    csr_targets = array("Q", [1, 2])
+    csr_offsets = array("Q", [99]) * 4
+    csr_neighbors = array("Q", [99]) * 4
+    csr_len = ctypes.c_uint64()
+    ok(
+        lib.xy_graph_build_csr(
+            3,
+            2,
+            _ptr(csr_sources, ctypes.c_uint64),
+            _ptr(csr_targets, ctypes.c_uint64),
+            0,
+            _ptr(csr_offsets, ctypes.c_uint64),
+            _ptr(csr_neighbors, ctypes.c_uint64),
+            len(csr_neighbors),
+            ctypes.byref(csr_len),
+        )
+        == 0
+        and list(csr_offsets) == [0, 1, 3, 4]
+        and csr_len.value == 4
+        and sorted(csr_neighbors[: csr_len.value]) == [0, 1, 1, 2],
+        "graph_build_csr undirected",
+    )
+    sankey_sources = array("Q", [0])
+    sankey_targets = array("Q", [1])
+    sankey_values = array("d", [1.0])
+    sankey_x0 = array("d", [0.0]) * 2
+    sankey_y0 = array("d", [0.0]) * 2
+    sankey_x1 = array("d", [0.0]) * 2
+    sankey_y1 = array("d", [0.0]) * 2
+    sankey_layer = array("I", [99]) * 2
+    sankey_node_value = array("d", [0.0]) * 2
+    sankey_source_y0 = array("d", [0.0])
+    sankey_source_y1 = array("d", [0.0])
+    sankey_target_y0 = array("d", [0.0])
+    sankey_target_y1 = array("d", [0.0])
+    sankey_layers = array("I", [0])
+    sankey_err_nodes = array("Q", [99]) * 2
+    sankey_err_n = ctypes.c_uint64()
+    ok(
+        lib.xy_sankey_layout(
+            2,
+            1,
+            _ptr(sankey_sources, ctypes.c_uint64),
+            _ptr(sankey_targets, ctypes.c_uint64),
+            _ptr(sankey_values, ctypes.c_double),
+            0.05,
+            0.0,
+            0,
+            1,
+            _ptr(sankey_x0, ctypes.c_double),
+            _ptr(sankey_y0, ctypes.c_double),
+            _ptr(sankey_x1, ctypes.c_double),
+            _ptr(sankey_y1, ctypes.c_double),
+            _ptr(sankey_layer, ctypes.c_uint32),
+            _ptr(sankey_node_value, ctypes.c_double),
+            _ptr(sankey_source_y0, ctypes.c_double),
+            _ptr(sankey_source_y1, ctypes.c_double),
+            _ptr(sankey_target_y0, ctypes.c_double),
+            _ptr(sankey_target_y1, ctypes.c_double),
+            _ptr(sankey_layers, ctypes.c_uint32),
+            _ptr(sankey_err_nodes, ctypes.c_uint64),
+            ctypes.byref(sankey_err_n),
+        )
+        == 0
+        and list(sankey_layer) == [0, 1]
+        and list(sankey_node_value) == [1.0, 1.0]
+        and sankey_layers[0] == 2,
+        "sankey_layout simple A to B",
+    )
 
     ok(
         lib.xy_factorize_fixed(null_u8, 0, 0, null_u32, null_u32) == 0,

@@ -1,0 +1,21 @@
+# Common flags for the cargo-wrapping graph MVP targets.
+# Sticky-disk / remote cache knobs are injected by
+# useblacksmith/setup-bazel@v2 on Blacksmith runners.
+
+common --enable_bzlmod
+common --noenable_workspace
+
+# Cargo wrappers write into the real checkout (target/, CARGO_HOME).
+# Keep those actions on the local machine and out of the sandbox.
+build --strategy=Genrule=local
+build --strategy=TestRunner=local
+test --test_strategy=standalone
+test --spawn_strategy=local
+
+# Surfacing: one-line test summaries, color when the terminal supports it.
+test --test_output=errors
+test --color=yes
+build --color=yes
+
+# User overrides (gitignored).
+try-import %workspace%/.bazelrc.user

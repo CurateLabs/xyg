@@ -18,3 +18,8 @@ node_modules/
 python/xy/static/index.js
 python/xy/static/standalone.js
 **/assets/external/
+# Bazel (cargo-wrapping graph MVP). Keep MODULE.bazel / BUILD.bazel /
+# .bazelrc / .bazelversion / .bazelignore tracked; ignore outputs and
+# local overrides.
+bazel-*
+.bazelrc.user

@@ -1,8 +1,7 @@
 # Host parity — Python and Node
 
-**Status:** requirements / architecture intent — **ready for review** with
-[graph-fork-requirements.md](graph-fork-requirements.md). Implementation
-design (`graph-mark.md`, rust-engine amendment) still follows.
+**Status:** requirements locked with [graph-fork-requirements.md](graph-fork-requirements.md);
+implementation design in [graph-mark.md](graph-mark.md).
 
 **Priority:** **graph visualization** is the core feature. **MVP includes all
 chart / visualization features** on Python and Node with equal feel and speed —
@@ -103,3 +102,16 @@ Node must not reimplement layouts or mark geometry in TypeScript.
 - Requiring Node for Python users or vice versa.
 - A heavy GraphForge extension framework in this pass (thin helper only;
   independent charting first).
+
+---
+
+## 6. Graph LOD / interaction parity notes (MVP)
+
+- **Cluster LOD ABI:** `xy_graph_cluster_aggregate` (grid/hash bin centroids +
+  recorded §28 tier) is shared; Python/Node loaders must not reimplement
+  clustering policy.
+- **Box-select:** reuses the existing scatter/segments selection path — no
+  graph-specific selection ABI for MVP.
+- **Node shapes:** via scatter `symbol=` (same mark as other scatter charts).
+- **`edge_curve`:** recorded in graph meta (`straight` default) for client
+  follow-up; curved edge rendering is not MVP-blocking.

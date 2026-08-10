@@ -1,8 +1,7 @@
 # Graph visualization — competitive research & fork requirements
 
-**Status:** requirements — **ready for product/architecture review**. Not an
-implementation design: `graph-mark.md` (wire shape, ABI, ID model) is still
-downstream. Does not yet change runtime behavior.
+**Status:** requirements — product decisions locked; implementation design in
+[graph-mark.md](graph-mark.md). Runtime lands with the graph ABI / mark.
 
 **Scope (hard):** core **data visualization** of graph data — node–link marks,
 layouts that place them, visual encodings, interactive reading of the chart,

@@ -137,6 +137,10 @@ Budgets live in Rust decision helpers; hosts do not fork tier policy.
 - Drag nodes (SHOULD): write positions back through ABI / host buffer.
 - Box select (SHOULD): reuse existing selection — graph node scatters
   participate as ordinary scatter traces (no separate path).
+- Node shapes: via scatter `symbol=` (circle / square / …); no separate graph
+  glyph ABI for MVP.
+- `edge_curve` meta (`straight` default): recorded on graph meta for client
+  follow-up; MVP geometry stays straight segments.
 
 Interactive path is primary; export must not reshape the hot path (§7).
 Geometry remains segments + scatter buffers; the client draws uploaded
