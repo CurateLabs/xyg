@@ -18,9 +18,14 @@ ignores.
 Sigma/Ogma on WebGL node–link rendering and layout quality; keep NetworkX and
 igraph as optional *data* sources, not analysis peers XY must replicate.
 
+**Host parity:** Python and Node parity is a **platform** goal for *all* chart
+types ([host-parity.md](host-parity.md)). Graph viz is the **lead feature**
+that must ship dual-host first; other marks follow the same ABI/client, not a
+graph-only binding.
+
 **Architecture constraint:** graph store, layout kernels, and channel
-resolution over |V|/|E| live in the Rust C ABI so Python and Node hosts share
-bit-identical viz buffers. The JS client owns WebGL draw and read gestures
+resolution over |V|/|E| live in the Rust C ABI so both hosts share
+bit-identical viz buffers. The JS client owns WebGL draw and gestures
 ([rust-engine.md](rust-engine.md) §1; dossier §29).
 
 ---
@@ -151,20 +156,20 @@ Legend: **M** = must, **S** = should, **—** = out of scope for this fork.
   encodings, optional preset `x`/`y`.
 - **REQ-API-3 (MUST).** Convenient ingest for plotting: edge list / adjacency
   and `from_networkx(..., pos=None)` preserving attributes used by channels.
-- **REQ-API-4 (MUST).** Python and Node share layout/encoding option names and
-  defaults (idiomatic types may differ).
+- **REQ-API-4 (MUST).** Graph options follow [host-parity.md](host-parity.md):
+  same names/defaults on Python and Node (idiomatic types may differ).
 
 ### 4.2 Engine placement
 
 - **REQ-CORE-1 (MUST).** Graph store + layout kernels + bulk channel resolution
-  in Rust (`xy_graph_*` C ABI).
+  in Rust (`xy_graph_*` C ABI) — same dual-host rule as every other mark.
 - **REQ-CORE-2 (MUST).** Positions and channels: canonical f64 in-core, §29 f32
   on the wire — no JSON numbers for geometry.
 - **REQ-CORE-3 (MUST).** JS does not run large-graph layout; it draws uploaded
   buffers and handles gestures.
 - **REQ-CORE-4 (MUST).** Layout/LOD choices are recorded in the spec (§28).
-- **REQ-CORE-5 (SHOULD).** Node loads the same cdylib exports as Python for
-  byte-identical layout golden tests.
+- **REQ-CORE-5 (MUST).** Graph is the first mark with enforced Python↔Node
+  golden-buffer tests (see REQ-HOSTPARITY-4).
 
 ### 4.3 Layout (display positioning)
 
@@ -213,7 +218,8 @@ filter UIs.
 ### 4.7 Hosts
 
 - **REQ-HOST-1 (MUST).** Jupyter/anywidget, Reflex, standalone HTML, and
-  Node-hosted apps use the shared graph mark + client.
+  Node-hosted apps use the shared graph mark + client
+  ([host-parity.md](host-parity.md)).
 - **REQ-HOST-2 (MUST).** No Cytoscape.js / vis-network runtime dependency.
 
 ---
@@ -222,10 +228,10 @@ filter UIs.
 
 | Slice | Requirements | Closes |
 |---|---|---|
-| **A — Spec + ABI** | CORE-* | Dual-host layout parity foundation |
-| **B — MVP graph viz** | API-1..3, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | Plotly gap; Sigma display+explore |
+| **A — Spec + ABI** | CORE-*; platform [host-parity.md](host-parity.md) | Dual-host foundation for all marks |
+| **B — MVP graph viz** | API-1..3, LAY-1/2, REN-1..4/6, IX-1/2, LOD-1/3, HOST-* | Plotly gap; Sigma display+explore (**main need**) |
 | **C — Layout & style depth** | LAY-3..5, REN-2 curve / REN-5, IX-3/4 | vis/Ogma/D3 viz quality |
-| **D — Node host parity** | API-4, CORE-5 | Same viz from Python and Node |
+| **D — Dual-host graph parity** | API-4, CORE-5, HOSTPARITY-* | Graph proves Python↔Node; then other chart types on Node |
 
 ---
 
@@ -255,8 +261,10 @@ filter UIs.
 
 ## 8. Downstream
 
-1. `spec/design/graph-mark.md` — data model, wire buffers, layout catalog, LOD.
-2. [rust-engine.md](rust-engine.md) — `graph` module placement (store + layout +
+1. [host-parity.md](host-parity.md) — platform Python↔Node contract (all chart
+   types); graph is the lead feature.
+2. `spec/design/graph-mark.md` — data model, wire buffers, layout catalog, LOD.
+3. [rust-engine.md](rust-engine.md) — `graph` module placement (store + layout +
    channels only).
-3. [chart-roadmap.md](../api/chart-roadmap.md) status when implementation lands.
-4. Capability-matrix regeneration once the `graph` mark exists in code.
+4. [chart-roadmap.md](../api/chart-roadmap.md) status when implementation lands.
+5. Capability-matrix regeneration once the `graph` mark exists in code.
