@@ -78,12 +78,14 @@ export {
   composeGraph,
 } from "./graph.js";
 
-export { Figure, PayloadWriter, figure } from "./figure.js";
+import { Figure, PayloadWriter, figure } from "./figure.js";
 
 /** Stable engine entry — alias of {@link figure} for Node servers / VS Code hosts. */
 export function createEngine(opts = {}) {
   return figure(opts);
 }
+
+export { Figure, PayloadWriter, figure };
 
 export { runForceTicks } from "./force_scheduler.js";
 
