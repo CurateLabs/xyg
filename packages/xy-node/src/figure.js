@@ -26,6 +26,14 @@ import { composeSankey } from "./sankey.js";
 import { composeScatter } from "./marks/scatter.js";
 import { composeLine, F64_EPS } from "./marks/line.js";
 import { composeHistogram } from "./marks/histogram.js";
+import { composeArea } from "./marks/area.js";
+import { composeBar } from "./marks/bar.js";
+import { composeBox } from "./marks/box.js";
+import { composeEcdf } from "./marks/ecdf.js";
+import { composeSegments } from "./marks/segments.js";
+import { composeHeatmap } from "./marks/heatmap.js";
+import { composeHexbin } from "./marks/hexbin.js";
+import { composeViolin } from "./marks/violin.js";
 
 export { PROTOCOL_VERSION };
 
@@ -171,6 +179,137 @@ export class Figure {
     return this;
   }
 
+  area(x, y, opts = {}) {
+    const composed = composeArea(x, y, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "area",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      base: t.base,
+      style: { ...t.style },
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  bar(x, y, opts = {}) {
+    const composed = composeBar(x, y, opts);
+    const t = composed.traces[0];
+    this._pushRectTrace("bar", t, opts);
+    return this;
+  }
+
+  _pushRectTrace(kind, t, opts = {}) {
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind,
+      name: t.name ?? opts.name ?? null,
+      x0: t.x0,
+      x1: t.x1,
+      y0: t.y0,
+      y1: t.y1,
+      style: { ...(t.style ?? opts.style ?? {}) },
+      count: t.count,
+      edges: t.edges,
+      density: t.density,
+      x_axis: t.x_axis ?? opts.xAxis ?? "x",
+      y_axis: t.y_axis ?? opts.yAxis ?? "y",
+    });
+  }
+
+  box(values, opts = {}) {
+    const composed = composeBox(values, opts);
+    for (const t of composed.traces) {
+      if (t.kind === "segments") {
+        this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
+      } else if (t.kind === "bar") {
+        this._pushRectTrace("bar", t, { name: t.name, style: t.style });
+      } else if (t.kind === "scatter") {
+        this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
+      }
+    }
+    return this;
+  }
+
+  ecdf(x, y, opts = {}) {
+    if (opts._composed) {
+      this.traces.push({
+        id: opts.id ?? nextTraceId++,
+        kind: "ecdf",
+        name: opts.name ?? null,
+        x: asF64(x),
+        y: asF64(y),
+        style: { ...(opts.style ?? {}) },
+        mode: opts.mode ?? "exact",
+        x_axis: opts.xAxis ?? "x",
+        y_axis: opts.yAxis ?? "y",
+      });
+      return this;
+    }
+    const composed = composeEcdf(x, opts);
+    const t = composed.traces[0];
+    this.ecdf(t.x, t.y, {
+      name: t.name,
+      style: t.style,
+      mode: t.mode,
+      xAxis: t.x_axis,
+      yAxis: t.y_axis,
+      id: t.id,
+      _composed: true,
+    });
+    return this;
+  }
+
+  heatmap(z, opts = {}) {
+    const composed = composeHeatmap(z, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "heatmap",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      grid: t.grid,
+      grid_shape: t.grid_shape,
+      rgba: t.rgba,
+      style: { ...t.style },
+      count: t.count,
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  hexbin(x, y, opts = {}) {
+    const composed = composeHexbin(x, y, opts);
+    const t = composed.traces[0];
+    this.traces.push({
+      id: opts.id ?? nextTraceId++,
+      kind: "hexbin",
+      name: t.name,
+      x: t.x,
+      y: t.y,
+      metric: t.metric,
+      counts: t.counts,
+      style: { ...t.style },
+      n_points: t.n_points,
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
+    });
+    return this;
+  }
+
+  violin(values, opts = {}) {
+    const composed = composeViolin(values, opts);
+    const t = composed.traces[0];
+    this._pushRectTrace("violin", t, opts);
+    return this;
+  }
+
   segments(x0, y0, x1, y1, opts = {}) {
     this.traces.push({
       id: opts.id ?? nextTraceId++,
@@ -235,9 +374,14 @@ export class Figure {
     let hi = Number.NEGATIVE_INFINITY;
     for (const t of this.traces) {
       let cols;
-      if (t.kind === "segments" || t.kind === "histogram") {
+      if (t.kind === "segments" || t.kind === "histogram" || t.kind === "bar" || t.kind === "violin") {
         cols =
           axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x0, t.x1] : [t.y0, t.y1];
+      } else if (t.kind === "area") {
+        cols =
+          axisId === "x" || axisId === (t.x_axis ?? "x")
+            ? [t.x]
+            : [t.y, t.base];
       } else {
         cols = axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x] : [t.y];
       }
@@ -355,6 +499,107 @@ export class Figure {
     };
   }
 
+  _emitRect(t, pw, kind) {
+    const x0 = new Column(t.x0);
+    const x1 = new Column(t.x1);
+    const y0 = new Column(t.y0);
+    const y1 = new Column(t.y1);
+    return {
+      id: t.id,
+      kind,
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.count ?? t.x0.length,
+      n_marks: t.x0.length,
+      x0: pw.ship(t.x0, x0),
+      x1: pw.ship(t.x1, x1),
+      y0: pw.ship(t.y0, y0),
+      y1: pw.ship(t.y1, y1),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+  }
+
+  _emitArea(t, pw, xr, pxWidth) {
+    const line = this._emitLine(
+      { ...t, kind: "line" },
+      pw,
+      xr,
+      pxWidth,
+    );
+    const baseCol = new Column(t.base);
+    return {
+      ...line,
+      kind: "area",
+      base: pw.ship(t.base, baseCol),
+    };
+  }
+
+  _emitEcdf(t, pw) {
+    const xCol = new Column(t.x);
+    const yCol = new Column(t.y);
+    return {
+      id: t.id,
+      kind: "ecdf",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      mode: t.mode ?? "exact",
+      n_points: t.x.length,
+      n_marks: t.x.length,
+      x: pw.ship(t.x, xCol),
+      y: pw.ship(t.y, yCol),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+  }
+
+  _emitHeatmap(t, pw) {
+    const xCol = new Column(t.x);
+    const yCol = new Column(t.y);
+    const gridCol = new Column(t.grid);
+    const entry = {
+      id: t.id,
+      kind: "heatmap",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.count ?? t.grid.length,
+      n_marks: t.grid.length,
+      x: pw.ship(t.x, xCol),
+      y: pw.ship(t.y, yCol),
+      grid: pw.ship(t.grid, gridCol),
+      grid_shape: t.grid_shape,
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+    if (t.rgba != null) {
+      entry.rgba_len = t.rgba.rgba.length;
+    }
+    return entry;
+  }
+
+  _emitHexbin(t, pw) {
+    const xCol = new Column(t.x);
+    const yCol = new Column(t.y);
+    const mCol = new Column(t.metric);
+    return {
+      id: t.id,
+      kind: "hexbin",
+      name: t.name,
+      style: { ...t.style },
+      tier: "direct",
+      n_points: t.n_points ?? t.x.length,
+      n_marks: t.x.length,
+      x: pw.ship(t.x, xCol),
+      y: pw.ship(t.y, yCol),
+      metric: pw.ship(t.metric, mCol),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
+    };
+  }
+
   /**
    * @returns {{spec: object, buffers: Buffer|Float32Array[]}}
    */
@@ -373,6 +618,16 @@ export class Figure {
         specTraces.push(this._emitHistogram(t, pw));
       } else if (t.kind === "segments") {
         specTraces.push(this._emitSegments(t, pw));
+      } else if (t.kind === "area") {
+        specTraces.push(this._emitArea(t, pw, xr, widthPx));
+      } else if (t.kind === "bar" || t.kind === "violin") {
+        specTraces.push(this._emitRect(t, pw, t.kind));
+      } else if (t.kind === "ecdf") {
+        specTraces.push(this._emitEcdf(t, pw));
+      } else if (t.kind === "heatmap") {
+        specTraces.push(this._emitHeatmap(t, pw));
+      } else if (t.kind === "hexbin") {
+        specTraces.push(this._emitHexbin(t, pw));
       } else {
         throw new Error(`unsupported trace kind ${t.kind} in Node figure MVP`);
       }

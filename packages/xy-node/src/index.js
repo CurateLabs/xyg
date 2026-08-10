@@ -14,6 +14,8 @@ export {
   violinDensity,
   boxStats,
   quantiles,
+  weightedEcdf,
+  heatmapRgba,
   windRoseBins,
   contourfDensify,
   normalizeF32,
@@ -92,9 +94,39 @@ export {
   attachHistogram,
 } from "./marks/histogram.js";
 
+export { composeArea, attachArea } from "./marks/area.js";
+
+export {
+  composeBar,
+  attachBar,
+  composeColumn,
+  attachColumn,
+} from "./marks/bar.js";
+
+export { composeBox, attachBox } from "./marks/box.js";
+
+export { composeEcdf, attachEcdf, computeEcdf } from "./marks/ecdf.js";
+
+export { composeSegments, attachSegments } from "./marks/segments.js";
+
+export { composeHeatmap, attachHeatmap } from "./marks/heatmap.js";
+
+export { composeHexbin, attachHexbin } from "./marks/hexbin.js";
+
+export { composeViolin, attachViolin } from "./marks/violin.js";
+
 export {
   scatterChart,
   lineChart,
   histogramChart,
+  areaChart,
+  barChart,
+  columnChart,
+  boxChart,
+  ecdfChart,
+  segmentsChart,
+  heatmapChart,
+  hexbinChart,
+  violinChart,
   graphChart,
 } from "./charts.js";

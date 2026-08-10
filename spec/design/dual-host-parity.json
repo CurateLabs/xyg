@@ -99,6 +99,69 @@
       "notes": "packages/xy-node marks/histogram via xy_histogram_uniform; tests/test_node_mark_parity.py fixed-edge counts"
     },
     {
+      "kind": "area",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/area reuses line M4 ingest + base; tests/test_node_mark_parity.py stable-sort goldens"
+    },
+    {
+      "kind": "bar",
+      "python": "ready",
+      "node": "partial",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/bar simple non-stacked rects; stacked/grouped follow-up"
+    },
+    {
+      "kind": "column",
+      "python": "ready",
+      "node": "partial",
+      "rust": "ready",
+      "notes": "alias of bar via charts.columnChart"
+    },
+    {
+      "kind": "box",
+      "python": "ready",
+      "node": "partial",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/box single-group via xy_box_stats; multi-group follow-up"
+    },
+    {
+      "kind": "ecdf",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/ecdf via xy_weighted_ecdf + histogram binned path; tests/test_node_mark_parity.py"
+    },
+    {
+      "kind": "segments",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/segments pass-through; graph/sankey already emit segments traces"
+    },
+    {
+      "kind": "heatmap",
+      "python": "ready",
+      "node": "partial",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/heatmap grid + xy_heatmap_rgba; categorical axes follow-up"
+    },
+    {
+      "kind": "hexbin",
+      "python": "ready",
+      "node": "ready",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/hexbin via xy_hexbin; tests/test_node_mark_parity.py lattice goldens"
+    },
+    {
+      "kind": "violin",
+      "python": "ready",
+      "node": "partial",
+      "rust": "ready",
+      "notes": "packages/xy-node marks/violin single-group via xy_violin_density; multi-group follow-up"
+    },
+    {
       "kind": "polar",
       "python": "ready",
       "node": "missing",

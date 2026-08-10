@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xy/lod.encode_f32_values when calling xy_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyWeightedEcdf, xyHeatmapRgba } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -294,6 +294,62 @@ export function violinDensity(data, nBins) {
     throw new Error("xy_violin_density failed");
   }
   return { edges, density };
+}
+
+/** Weighted ECDF: sorted unique values + cumulative mass in [0, 1]. */
+export function weightedEcdf(values, weights) {
+  const vals = asF64Array(values);
+  const wts = asF64Array(weights);
+  if (vals.length !== wts.length || vals.length === 0) {
+    throw new RangeError("weightedEcdf values/weights must have equal non-zero length");
+  }
+  const outValues = new Float64Array(vals.length);
+  const cumulative = new Float64Array(vals.length);
+  const written = Number(
+    xyWeightedEcdf(
+      f64Ptr(vals),
+      f64Ptr(wts),
+      BigInt(vals.length),
+      f64Ptr(outValues),
+      f64Ptr(cumulative),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > vals.length) {
+    throw new Error("xy_weighted_ecdf failed");
+  }
+  return {
+    values: outValues.subarray(0, written),
+    cumulative: cumulative.subarray(0, written),
+  };
+}
+
+/** Map scalar heatmap grid to vertically flipped RGBA bytes (h, w, 4). */
+export function heatmapRgba(raw, w, h, stops, alpha = 255) {
+  const ww = Number(w);
+  const hh = Number(h);
+  const values = asF64Array(raw);
+  if (values.length !== ww * hh) {
+    throw new RangeError("heatmapRgba scalar count must match width * height");
+  }
+  const stopArr = stops instanceof Uint8Array ? stops : Uint8Array.from(stops);
+  if (stopArr.length % 3 !== 0 || stopArr.length < 3) {
+    throw new RangeError("heatmapRgba stops must be a non-empty multiple of 3");
+  }
+  const stopCount = stopArr.length / 3;
+  const out = new Uint8Array(hh * ww * 4);
+  const ok = xyHeatmapRgba(
+    f64Ptr(values),
+    BigInt(ww),
+    BigInt(hh),
+    u8Ptr(stopArr),
+    BigInt(stopCount),
+    Number(alpha),
+    u8Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_heatmap_rgba failed");
+  }
+  return { rgba: out, width: ww, height: hh };
 }
 
 export function boxStats(data) {

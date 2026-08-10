@@ -7,15 +7,33 @@ import { fileURLToPath } from "node:url";
 import {
   DECIMATION_THRESHOLD,
   PROTOCOL_VERSION,
+  composeArea,
+  composeBar,
+  composeBox,
+  composeEcdf,
+  composeHeatmap,
+  composeHexbin,
   composeHistogram,
   composeLine,
+  composeSegments,
+  composeViolin,
+  computeEcdf,
   encodeScatterPositions,
   figure,
   graphChart,
   histogramChart,
+  areaChart,
+  barChart,
+  boxChart,
+  ecdfChart,
+  heatmapChart,
+  hexbinChart,
+  violinChart,
   lineChart,
   m4DecimateLine,
+  prepareLineSeries,
   scatterChart,
+  weightedEcdf,
 } from "../src/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -34,6 +52,10 @@ function fromF64Hex(hex) {
 }
 
 function f32Hex(arr) {
+  return Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength).toString("hex");
+}
+
+function u8Hex(arr) {
   return Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength).toString("hex");
 }
 
@@ -145,3 +167,152 @@ test("figure.line and figure.histogram attach traces", () => {
   assert.equal(fig.traces[0].kind, "line");
   assert.equal(fig.traces[1].kind, "histogram");
 });
+
+test("area stable sort matches Python fixture when present", () => {
+  const fixture = loadFixture();
+  const areaX = fixture == null ? new Float64Array([2, 0, 1]) : fromF64Hex(fixture.area.x_f64_hex);
+  const areaY = fixture == null ? new Float64Array([3, 1, 2]) : fromF64Hex(fixture.area.y_f64_hex);
+  const prepared = prepareLineSeries(areaX, areaY);
+  const composed = composeArea(areaX, areaY, { base: fixture?.area?.base ?? 0.5 });
+  if (fixture != null) {
+    assert.equal(f64Hex(prepared.x), fixture.area.x_sorted_f64_hex);
+    assert.equal(f64Hex(prepared.y), fixture.area.y_sorted_f64_hex);
+    assert.equal(composed.traces[0].base.length, areaX.length);
+  }
+  const fig = areaChart(areaX, areaY, { base: fixture?.area?.base ?? 0.5 });
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "area");
+});
+
+test("bar rects match Python fixture when present", () => {
+  const fixture = loadFixture();
+  const barX = fixture == null ? new Float64Array([0, 1, 2]) : fromF64Hex(fixture.bar.x_f64_hex);
+  const barY = fixture == null ? new Float64Array([1, 3, 2]) : fromF64Hex(fixture.bar.y_f64_hex);
+  const width = fixture?.bar?.width ?? 0.8;
+  const bar = composeBar(barX, barY, { width });
+  if (fixture != null) {
+    assert.equal(f64Hex(bar.traces[0].x0), fixture.bar.x0_f64_hex);
+    assert.equal(f64Hex(bar.traces[0].x1), fixture.bar.x1_f64_hex);
+    assert.equal(f64Hex(bar.traces[0].y0), fixture.bar.y0_f64_hex);
+    assert.equal(f64Hex(bar.traces[0].y1), fixture.bar.y1_f64_hex);
+  }
+  const fig = barChart(barX, barY, { width });
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "bar");
+});
+
+test("box stats match Python fixture when present", () => {
+  const fixture = loadFixture();
+  const values =
+    fixture == null
+      ? new Float64Array([1, 2, 2, 3, 4, 5, 6, 7, 8, 100])
+      : fromF64Hex(fixture.box.values_f64_hex);
+  const box = composeBox(values);
+  if (fixture != null) {
+    assert.equal(box.stats.q1, fixture.box.q1);
+    assert.equal(box.stats.median, fixture.box.median);
+    assert.equal(box.stats.q3, fixture.box.q3);
+    assert.equal(box.stats.low, fixture.box.low);
+    assert.equal(box.stats.high, fixture.box.high);
+    assert.equal(f64Hex(box.stats.outliers), fixture.box.outliers_f64_hex);
+  }
+  const fig = boxChart(values);
+  assert.ok(fig.traces.length >= 3);
+});
+
+test("ecdf weighted kernel matches Python fixture when present", () => {
+  const fixture = loadFixture();
+  const values =
+    fixture == null
+      ? new Float64Array([3, 1, 2, 1, 3])
+      : fromF64Hex(fixture.ecdf.values_f64_hex);
+  const weights = new Float64Array(values.length).fill(1.0);
+  const native = weightedEcdf(values, weights);
+  const step = computeEcdf(values);
+  if (fixture != null) {
+    assert.equal(f64Hex(native.values), fixture.ecdf.x_f64_hex);
+    assert.equal(f64Hex(native.cumulative), fixture.ecdf.y_f64_hex);
+    assert.equal(native.values.length, fixture.ecdf.n_points);
+  }
+  const composed = composeEcdf(values);
+  assert.equal(composed.traces[0].kind, "ecdf");
+  assert.equal(composed.traces[0].x.length, step.x.length);
+  const fig = ecdfChart(values);
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "ecdf");
+});
+
+test("segments compose matches Python fixture when present", () => {
+  const fixture = loadFixture();
+  const x0 = fixture == null ? new Float64Array([0, 1]) : fromF64Hex(fixture.segments.x0_f64_hex);
+  const y0 = fixture == null ? new Float64Array([0, 1]) : fromF64Hex(fixture.segments.y0_f64_hex);
+  const x1 = fixture == null ? new Float64Array([1, 2]) : fromF64Hex(fixture.segments.x1_f64_hex);
+  const y1 = fixture == null ? new Float64Array([1, 0]) : fromF64Hex(fixture.segments.y1_f64_hex);
+  const seg = composeSegments(x0, y0, x1, y1);
+  if (fixture != null) {
+    assert.equal(seg.traces[0].x0.length, fixture.segments.n);
+  }
+  const fig = figure();
+  fig.segments(x0, y0, x1, y1);
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "segments");
+});
+
+test("heatmap rgba matches Python fixture when present", () => {
+  const fixture = loadFixture();
+  const rows = fixture?.heatmap?.rows ?? 3;
+  const cols = fixture?.heatmap?.cols ?? 3;
+  const z =
+    fixture == null
+      ? new Float64Array([0, 0.5, 1, 0.25, 0.75, 0.5, 1, 0, 0.5])
+      : fromF64Hex(fixture.heatmap.z_f64_hex);
+  const stops =
+    fixture == null
+      ? Uint8Array.from([0, 0, 255, 255, 255, 255, 255, 0, 0])
+      : Buffer.from(fixture.heatmap.stops_u8_hex, "hex");
+  const hm = composeHeatmap(z, { rows, cols, colormapStops: stops });
+  if (fixture != null) {
+    assert.equal(u8Hex(hm.traces[0].rgba.rgba), fixture.heatmap.rgba_u8_hex);
+  }
+  const fig = heatmapChart(z, { rows, cols, colormapStops: stops });
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "heatmap");
+});
+
+test("hexbin kernel matches Python fixture when present", () => {
+  const fixture = loadFixture();
+  const x = fixture == null ? new Float64Array([0.5, 1.5, 2.5, 3.5, 1, 2, 3]) : fromF64Hex(fixture.hexbin.x_f64_hex);
+  const y = fixture == null ? new Float64Array([0.5, 0.5, 0.5, 0.5, 2, 2, 2]) : fromF64Hex(fixture.hexbin.y_f64_hex);
+  const range = fixture?.hexbin?.range ?? [
+    [0, 4],
+    [0, 3],
+  ];
+  const gridsize = fixture?.hexbin?.gridsize ?? [8, 6];
+  const hx = composeHexbin(x, y, { range, gridsize, mincnt: 0, reduce: "count" });
+  if (fixture != null) {
+    assert.equal(hx.centersX.length, fixture.hexbin.n_bins);
+    assert.equal(f64Hex(hx.centersX), fixture.hexbin.centers_x_f64_hex);
+    assert.equal(f64Hex(hx.centersY), fixture.hexbin.centers_y_f64_hex);
+    assert.equal(f64Hex(hx.metrics), fixture.hexbin.metrics_f64_hex);
+    assert.equal(f64Hex(hx.counts), fixture.hexbin.counts_f64_hex);
+    assert.equal(hx.dx, fixture.hexbin.dx);
+    assert.equal(hx.dy, fixture.hexbin.dy);
+  }
+  const fig = hexbinChart(x, y, { range, gridsize });
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "hexbin");
+});
+
+test("violin density matches Python fixture when present", () => {
+  const fixture = loadFixture();
+  const values =
+    fixture == null
+      ? new Float64Array([1, 1.5, 2, 2, 2.5, 3, 3, 3.5, 4, 4.5, 5])
+      : fromF64Hex(fixture.violin.values_f64_hex);
+  const bins = fixture?.violin?.bins ?? 16;
+  const v = composeViolin(values, { bins });
+  if (fixture != null) {
+    assert.equal(f64Hex(v.edges), fixture.violin.edges_f64_hex);
+    assert.equal(f64Hex(v.density), fixture.violin.density_f64_hex);
+  }
+  const fig = violinChart(values, { bins });
+  assert.equal(fig.buildPayload().spec.traces[0].kind, "violin");
+});
+
+function f64Hex(arr) {
+  return Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength).toString("hex");
+}
