@@ -195,13 +195,26 @@ def test_hexbin_native_lattice(node_mark_golden: dict) -> None:
     xr = tuple(hx["range"][0])
     yr = tuple(hx["range"][1])
     cx, cy, metric, counts, dx, dy = kernels.hexbin(
-        x, y, gridsize=(int(w), int(h)), range=(xr, yr), mincnt=int(hx["mincnt"]), reduce=hx["reduce"]
+        x,
+        y,
+        gridsize=(int(w), int(h)),
+        range=(xr, yr),
+        mincnt=int(hx["mincnt"]),
+        reduce=hx["reduce"],
     )
     assert len(cx) == int(hx["n_bins"])
-    np.testing.assert_array_equal(cx, np.frombuffer(bytes.fromhex(hx["centers_x_f64_hex"]), dtype="<f8"))
-    np.testing.assert_array_equal(cy, np.frombuffer(bytes.fromhex(hx["centers_y_f64_hex"]), dtype="<f8"))
-    np.testing.assert_array_equal(metric, np.frombuffer(bytes.fromhex(hx["metrics_f64_hex"]), dtype="<f8"))
-    np.testing.assert_array_equal(counts, np.frombuffer(bytes.fromhex(hx["counts_f64_hex"]), dtype="<f8"))
+    np.testing.assert_array_equal(
+        cx, np.frombuffer(bytes.fromhex(hx["centers_x_f64_hex"]), dtype="<f8")
+    )
+    np.testing.assert_array_equal(
+        cy, np.frombuffer(bytes.fromhex(hx["centers_y_f64_hex"]), dtype="<f8")
+    )
+    np.testing.assert_array_equal(
+        metric, np.frombuffer(bytes.fromhex(hx["metrics_f64_hex"]), dtype="<f8")
+    )
+    np.testing.assert_array_equal(
+        counts, np.frombuffer(bytes.fromhex(hx["counts_f64_hex"]), dtype="<f8")
+    )
     assert dx == pytest.approx(float(hx["dx"]))
     assert dy == pytest.approx(float(hx["dy"]))
 
