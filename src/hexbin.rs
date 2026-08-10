@@ -102,6 +102,7 @@ pub fn hexbin(
     } else {
         Vec::new()
     };
+    let mut assigned = 0u64;
 
     for i in 0..x.len() {
         let xv = x[i];
@@ -138,6 +139,7 @@ pub fn hexbin(
                 if let Some(v) = cv {
                     sum1[flat] += v;
                 }
+                assigned += 1;
             }
         } else if ix2 >= 0
             && iy2 >= 0
@@ -149,7 +151,22 @@ pub fn hexbin(
             if let Some(v) = cv {
                 sum2[flat] += v;
             }
+            assigned += 1;
         }
+    }
+
+    // Matplotlib-compatible: when every finite point falls outside the lattice,
+    // emit nothing (host raises) even if mincnt == 0 would otherwise ship the
+    // full zero honeycomb.
+    if assigned == 0 {
+        return Some(HexbinResult {
+            centers_x: Vec::new(),
+            centers_y: Vec::new(),
+            metrics: Vec::new(),
+            counts: Vec::new(),
+            dx,
+            dy,
+        });
     }
 
     let threshold = mincnt as u64;
@@ -344,9 +361,41 @@ mod tests {
     }
 
     #[test]
-    fn mincnt_zero_emits_full_honeycomb() {
-        let r = hexbin(&[], &[], None, 2, 2, 0.0, 1.0, 0.0, 1.0, 0, HexReduce::Count).unwrap();
+    fn mincnt_zero_emits_full_honeycomb_when_points_land() {
+        let r = hexbin(
+            &[0.5],
+            &[0.5],
+            None,
+            2,
+            2,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0,
+            HexReduce::Count,
+        )
+        .unwrap();
         assert_eq!(r.centers_x.len(), hexbin_capacity(2, 2));
-        assert!(r.counts.iter().all(|&c| c == 0.0));
+        assert_eq!(r.counts.iter().sum::<f64>(), 1.0);
+    }
+
+    #[test]
+    fn out_of_range_points_yield_empty_even_with_mincnt_zero() {
+        let r = hexbin(
+            &[0.0, 0.1],
+            &[0.0, 0.1],
+            None,
+            4,
+            4,
+            10.0,
+            11.0,
+            10.0,
+            11.0,
+            0,
+            HexReduce::Count,
+        )
+        .unwrap();
+        assert!(r.centers_x.is_empty());
     }
 }

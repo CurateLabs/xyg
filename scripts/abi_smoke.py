@@ -1709,14 +1709,23 @@ def main() -> None:
         _ptr(he_out, ctypes.c_double),
         len(he_out),
     )
-    ok(he_n == 6 and abs(he_out[0] - 1.0) < 1e-12 and abs(he_out[5] - 10.0) < 1e-12, "histogram_edges auto")
+    ok(
+        he_n == 6 and abs(he_out[0] - 1.0) < 1e-12 and abs(he_out[5] - 10.0) < 1e-12,
+        "histogram_edges auto",
+    )
 
     # violin_density: constant sample expands ±0.5 and yields positive density.
     vd = array("d", [3.0, 3.0, 3.0])
     vd_edges = array("d", [0.0]) * 5
     vd_dens = array("d", [0.0]) * 4
     ok(
-        lib.xy_violin_density(_ptr(vd, ctypes.c_double), len(vd), 4, _ptr(vd_edges, ctypes.c_double), _ptr(vd_dens, ctypes.c_double))
+        lib.xy_violin_density(
+            _ptr(vd, ctypes.c_double),
+            len(vd),
+            4,
+            _ptr(vd_edges, ctypes.c_double),
+            _ptr(vd_dens, ctypes.c_double),
+        )
         == 1
         and abs(vd_edges[0] - 2.5) < 1e-12
         and abs(vd_edges[4] - 3.5) < 1e-12
@@ -1755,7 +1764,10 @@ def main() -> None:
         ctypes.byref(hx_dx),
         ctypes.byref(hx_dy),
     )
-    ok(hx_n == 4 and abs(hx_dx.value - 0.25) < 1e-12 and sum(hx_c[:hx_n]) == 4.0, "hexbin count cells")
+    ok(
+        hx_n == 4 and abs(hx_dx.value - 0.25) < 1e-12 and sum(hx_c[:hx_n]) == 4.0,
+        "hexbin count cells",
+    )
 
     # normalize_f32: clamp finite values, route non-finite values by mode.
     nx = array("d", [-1.0, 0.0, 5.0, 10.0, 11.0, float("nan"), float("inf")])

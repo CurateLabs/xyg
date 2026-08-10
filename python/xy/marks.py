@@ -2109,9 +2109,7 @@ def histogram(
         else:
             edges = kernels.histogram_edges(vals, range=hist_range, method=bins.lower())
             lo, hi = float(edges[0]), float(edges[-1])
-            counts, edges = kernels.histogram_uniform(
-                vals, lo, hi, len(edges) - 1, density=density
-            )
+            counts, edges = kernels.histogram_uniform(vals, lo, hi, len(edges) - 1, density=density)
     else:
         finite = vals[np.isfinite(vals)]
         hist_bins = 10 if len(finite) == 0 and isinstance(bins, str) else bins
@@ -2615,7 +2613,9 @@ def hexbin(
             raise ValueError("hexbin range contains no finite points")
         dx, dy = (xr[1] - xr[0]) / w, (yr[1] - yr[0]) / h
         centers_x = np.concatenate((xr[0] + (keep1 % (w + 1)) * dx, xr[0] + (keep2 % w + 0.5) * dx))
-        centers_y = np.concatenate((yr[0] + (keep1 // (w + 1)) * dy, yr[0] + (keep2 // w + 0.5) * dy))
+        centers_y = np.concatenate(
+            (yr[0] + (keep1 // (w + 1)) * dy, yr[0] + (keep2 // w + 0.5) * dy)
+        )
         assert cv is not None
         reduced: list[float] = []
         memberships = [cv[valid_first & (flat1 == flat)] for flat in keep1] + [
