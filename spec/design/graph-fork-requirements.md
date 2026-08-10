@@ -24,10 +24,11 @@ Other chart types keep the **same first-class feel and speed**
 **Host parity:** Python and Node for *all* chart types. Graph viz leads
 dual-host delivery.
 
-**Architecture constraint:** display layouts and channel resolution over
-|V|/|E| live in the xy Rust C ABI so both hosts share bit-identical viz
-buffers. The JS client owns WebGL draw and gestures
-([rust-engine.md](rust-engine.md) §1; dossier §29).
+**Architecture principle:** do **as much as possible in Rust** so Python and
+Node bindings stay thin and bit-identical
+([host-parity.md](host-parity.md)). Display layouts, channel resolution, and
+LOD aggregates over |V|/|E| live in the xy C ABI; hosts coerce inputs;
+JS draws. Analysis algorithms stay in GraphForge (and peers).
 
 ---
 
@@ -181,14 +182,17 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 
 ### 4.2 Engine placement
 
-- **REQ-CORE-1 (MUST).** Display layout kernels + bulk channel resolution in xy
-  Rust (`xy_graph_*` C ABI). Viz-side adjacency/position buffers for layout are
-  allowed; do not reimplement GraphForge algorithm surfaces here.
+- **REQ-CORE-1 (MUST).** Display layout kernels, viz adjacency/position
+  buffers, and bulk channel resolution live in xy Rust (`xy_graph_*` C ABI) —
+  Rust-first per [host-parity.md](host-parity.md). Do not reimplement GraphForge
+  algorithm surfaces here; do not leave layout/encode logic in Python-only or
+  Node-only code.
 - **REQ-CORE-2 (MUST).** Positions and channels: canonical f64 in-core, §29 f32
   on the wire — no JSON numbers for geometry.
 - **REQ-CORE-3 (MUST).** JS does not run large-graph layout; it draws uploaded
   buffers and handles gestures.
-- **REQ-CORE-4 (MUST).** Layout/LOD choices are recorded in the spec (§28).
+- **REQ-CORE-4 (MUST).** Layout/LOD choices are recorded in the spec (§28), with
+  the decision computation in Rust whenever it affects buffers.
 - **REQ-CORE-5 (MUST).** Graph is the first mark with enforced Python↔Node
   golden-buffer tests ([host-parity.md](host-parity.md)).
 

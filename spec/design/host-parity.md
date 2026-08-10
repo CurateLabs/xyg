@@ -10,9 +10,12 @@ that must prove dual-host end to end
 keep the same first-class API feel and speed — sequencing graph first is fine;
 a degraded non-graph path is not.
 
-Does not change runtime behavior until a Node host package lands. Supersedes
-the upstream xy “Python-only forever” reading of dossier §32 for this product
-line.
+**Architecture principle — Rust-first for binding parity:** do **as much as
+possible in the shared Rust C ABI** so Python and Node stay thin loaders over
+identical behavior. Prefer moving logic into Rust whenever leaving it in a host
+would force a second implementation or risk semantic drift. Hosts own
+ergonomics and idiomatic I/O only; the JS client owns screen-bounded draw and
+gestures only.
 
 ---
 
@@ -30,15 +33,21 @@ notebook/Reflex vs Node embed). Names and defaults match.
 
 ---
 
-## 2. Placement rule
+## 2. Placement rule (Rust-first)
 
-From [rust-engine.md](rust-engine.md) §1:
+Default: **implement in Rust** unless the work is inherently host- or
+client-bound. This is stricter than upstream rust-engine §1’s “Python owns
+decisions” habit where that habit would duplicate policy across bindings.
 
-- **xy Rust** — O(N) / O(|V|+|E|) **viz** work that must be bit-identical
-  across hosts (display layouts, decimation, channel scans, screen LOD).
-- **Host (Python *or* Node)** — API ergonomics, validation, spec assembly,
-  policy; recorded decisions (§28) must not diverge.
-- **JS client** — screen-bounded draw and gestures only.
+| Lives in | Examples |
+|---|---|
+| **xy Rust (shared)** | Display layouts, graph adjacency/position buffers for viz, channel resolution, decimation, LOD aggregates, anything O(N)/O(|V|+|E|), and any deterministic policy whose result must match across hosts (thresholds that affect buffers, layout params application, recorded §28 decisions that change geometry) |
+| **Host (Python *or* Node)** | Public API shapes, idiomatic ingest coercion (list/NumPy/TypedArray → pointers), error message text, transport attach — **no** second layout/algorithm/encode path |
+| **JS client** | WebGL draw, hit-test, pan/zoom/select/drag gestures applying uploaded buffers |
+
+If a feature needs the same outcome in Python and Node, put it in Rust **before**
+writing it twice in hosts. When an existing mark still has host-only layout
+(e.g. Sankey in Python), promote it to Rust as part of dual-host work.
 
 Graph **analysis algorithms** (paths, centrality, communities, Cypher, …) are
 not owned here — they live in GraphForge (and similar peers). This charting
@@ -52,6 +61,10 @@ Node must not reimplement layouts or mark geometry in TypeScript.
 
 - **REQ-HOSTPARITY-1 (MUST).** One xy Rust C ABI serves Python (`ctypes` today)
   and Node (N-API). `ABI_VERSION` bumps apply to both loaders.
+- **REQ-HOSTPARITY-1b (MUST).** Rust-first: new chart/graph behavior that
+  affects buffers, layout, encodings, or recorded LOD/layout decisions is
+  implemented in Rust. Hosts MAY validate and coerce inputs but MUST NOT own a
+  parallel implementation of that behavior.
 - **REQ-HOSTPARITY-2 (MUST).** For every public chart type, Python and Node
   produce the same figure spec shape and §29 buffers for the same inputs.
   Graph is the core feature and first golden suite; other types MUST not ship
@@ -70,9 +83,9 @@ Node must not reimplement layouts or mark geometry in TypeScript.
   ([graph-fork-requirements.md](graph-fork-requirements.md)).
 - **REQ-HOSTPARITY-5 (SHOULD).** Document §32 divergence from upstream xy when
   the Node package ships.
-- **REQ-HOSTPARITY-6 (SHOULD).** When bringing a mark to Node, prefer Rust for
-  any remaining host-only layout (e.g. Sankey) so Node does not grow a parallel
-  layout tree.
+- **REQ-HOSTPARITY-6 (MUST).** Dual-host work for a mark promotes any remaining
+  host-only layout/encode logic into Rust (e.g. Sankey) so Node does not grow
+  a parallel tree.
 
 ---
 
@@ -87,8 +100,9 @@ Node must not reimplement layouts or mark geometry in TypeScript.
 
 ## 5. Non-goals
 
-- Separate Node-only renderers.
+- Separate Node-only renderers or host-side reimplementations of Rust kernels.
 - Reimplementing GraphForge (or peer) analysis algorithms inside xy.
+- Leaving new layout/encode/LOD logic in one host language “for now.”
 - Requiring Node for Python users or vice versa.
 - Bit-identical *policy source* across languages — only identical recorded
-  decisions and buffers.
+  decisions and buffers (achieved by putting that policy in Rust).
