@@ -635,13 +635,22 @@ def _step_is_conditioned(job_text: str, step_needle: str) -> bool:
     return block is not None and "if:" in block
 
 
-# The one condition that actually gates a PyPI upload behind the manual
-# dry-run switch. Requiring this exact predicate on the upload step itself —
-# not merely *an* `if:` — is the point: `if: always()` or any unrelated
-# condition would satisfy a mere presence check while gating nothing.
+# The one condition that actually gates a PyPI upload: the explicit
+# XY_ALLOW_PYPI_PUBLISH repository-variable opt-in (which does not exist by
+# default on this fork, see issue #13) AND the manual dry-run switch.
+# Requiring this exact predicate on the upload step itself — not merely *an*
+# `if:` — is the point: `if: always()` or any unrelated condition would
+# satisfy a mere presence check while gating nothing.
 PYPI_PUBLISH_GATE = (
-    "if: github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true'"
+    "if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && "
+    "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
 )
+
+# The fork repository guard on the publish job itself (issue #13): this
+# repository is a divergent fork of reflex-dev/xy whose artifacts still carry
+# upstream's `xy` distribution name, so only this exact slug may even reach
+# the publish job.
+PUBLISH_REPOSITORY_GUARD = "github.repository == 'CurateLabs/graphforge-xy'"
 
 
 def _step_carries_publish_gate(job_text: str, step_needle: str) -> bool:
@@ -1352,8 +1361,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         jobs,
         "publish",
         "release",
-        "trusted PyPI publishing from downloaded artifacts, gated by a dry-run switch "
-        "and a tag/version/CHANGELOG agreement gate",
+        "trusted PyPI publishing from downloaded artifacts, gated by a dry-run switch, "
+        "a tag/version/CHANGELOG agreement gate, and the fork publish guards (#13)",
         "needs: [wheels, sdist, wasm]",
         "environment: pypi",
         "id-token: write",
@@ -1362,6 +1371,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "pattern: dist-*",
         "merge-multiple: true",
         "dry_run",
+        "Fork publish guard (refuse upstream's PyPI package name)",
+        "Refusing to publish distribution 'xy'",
         "pypa/gh-action-pypi-publish@",
         "packages-dir: dist/",
         "skip-existing: true",
@@ -1372,6 +1383,14 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
             "defaulting to true, so a manual run never accidentally publishes"
         )
     publish = jobs.get("publish", "")
+    repo_guard_values, repo_guard_unsafe = _direct_yaml_key_values(publish, "if", indent=4)
+    if repo_guard_unsafe or repo_guard_values != [PUBLISH_REPOSITORY_GUARD]:
+        errors.append(
+            "release publish job must carry the fork repository guard "
+            f"(`if: {PUBLISH_REPOSITORY_GUARD}`) as its only job-level condition — "
+            "this fork's artifacts still use upstream's `xy` distribution name, so no "
+            "other repository slug may reach the PyPI upload (#13)"
+        )
     if "password:" in publish or "api-token" in publish:
         errors.append("release publish job should use trusted publishing, not a PyPI token")
     if "pypa/gh-action-pypi-publish@" in publish and not _step_carries_publish_gate(

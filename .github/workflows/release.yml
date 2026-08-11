@@ -1,8 +1,17 @@
 name: Release
 
-# Publish prebuilt wheels + sdist to PyPI on a version tag. This is what makes
-# `pip install xy` a no-toolchain install: each platform wheel carries
+# Build and verify prebuilt wheels + sdist on a version tag. This is what
+# makes `pip install xy` a no-toolchain install: each platform wheel carries
 # the compiled Rust core, so end users never see Rust or Node.
+#
+# Fork posture (#13): this repository is CurateLabs' divergent fork of
+# reflex-dev/xy, and the distribution is still named `xy` — upstream's PyPI
+# package. The publish job is therefore hard-guarded (repository slug check,
+# a fork publish guard that refuses upstream's distribution name, and an
+# XY_ALLOW_PYPI_PUBLISH opt-in variable that does not exist by default): a
+# version tag on this fork builds and verifies every artifact but cannot
+# reach PyPI's `xy` under any configuration. See
+# spec/process/production-readiness.md § Fork release posture.
 on:
   push:
     tags: ["v*"]
@@ -282,6 +291,11 @@ jobs:
     # PEP 783 wheel uses a standard PyPI platform tag and joins the same
     # trusted-publishing batch as the native wheels and sdist.
     needs: [wheels, sdist, wasm]
+    # Fork repository guard (#13): this repository is a permanently divergent
+    # fork of reflex-dev/xy, and the distribution is still named `xy` —
+    # upstream's PyPI package. Only this exact slug may even reach the publish
+    # job; forks/mirrors of this fork stop here.
+    if: github.repository == 'CurateLabs/graphforge-xy'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -309,14 +323,45 @@ jobs:
       # A manual workflow_dispatch defaults to dry_run=true: every wheel/sdist/
       # wasm artifact is built and verified above, but nothing is uploaded to
       # PyPI. Use this to validate the full cross-compile matrix before a real
-      # version-tag release. A tag push always publishes for real.
+      # version-tag release. A real publish additionally requires the fork
+      # guards below.
       - name: Dry run summary (no PyPI publish)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true'
         run: |
           echo "::notice::Dry run — built and verified $(ls dist/*.whl dist/*.tar.gz 2>/dev/null | wc -l | tr -d ' ') artifacts across the full release matrix. Skipping PyPI publish."
           echo "Re-run this workflow with dry_run=false, or push a v* tag, to publish for real."
+      # Fork publish guard (#13): every artifact this workflow builds is still
+      # named `xy`, which is upstream (reflex-dev)'s PyPI distribution. Any
+      # real publish attempt — tag push or non-dry-run dispatch — must fail
+      # here, before the upload step, regardless of tags, repository
+      # variables, or environment configuration. The guard clears itself the
+      # day the fork's artifacts carry their own distribution name (a deferred
+      # decision tracked in issue #13). Dry runs pass so the cross-compile
+      # matrix stays verifiable.
+      - name: Fork publish guard (refuse upstream's PyPI package name)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run — nothing will be uploaded, name guard not enforced."
+            exit 0
+          fi
+          for artifact in dist/*.whl dist/*.tar.gz; do
+            name="$(basename "$artifact")"
+            name="${name%%-*}"
+            if [ "$name" = "xy" ]; then
+              echo "::error::Refusing to publish distribution 'xy' — that is upstream reflex-dev's PyPI package. This fork must adopt its own distribution name before any PyPI upload (CurateLabs/graphforge-xy#13)."
+              exit 1
+            fi
+          done
+          echo "Fork publish guard OK: no artifact carries upstream's distribution name."
+      # The upload itself needs an explicit opt-in on top of everything above:
+      # the XY_ALLOW_PYPI_PUBLISH repository variable does not exist by
+      # default, so a fresh clone of this fork cannot publish no matter what
+      # it tags or dispatches.
       - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
-        if: github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true'
+        if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
         with:
           packages-dir: dist/
           # A failed upload can leave a partial release on immutable PyPI.

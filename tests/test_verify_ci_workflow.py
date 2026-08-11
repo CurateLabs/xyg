@@ -32,6 +32,14 @@ def _load_verify_module():
 
 verify_ci_workflow = _load_verify_module()
 
+# The exact source line carrying the PyPI upload gate in release.yml. Fixtures
+# mutate this line, so it must stay a verbatim copy of the workflow's own
+# spelling (the fork opt-in variable plus the manual dry-run switch, #13).
+RELEASE_PUBLISH_GATE_LINE = (
+    "        if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && "
+    "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')\n"
+)
+
 
 def test_ci_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_workflow() == []
@@ -1580,11 +1588,7 @@ def test_release_workflow_rejects_ungated_pypi_publish_step(tmp_path: Path) -> N
     workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
     path = tmp_path / "release.yml"
     path.write_text(
-        workflow.replace(
-            "        if: github.event_name != 'workflow_dispatch' "
-            "|| github.event.inputs.dry_run != 'true'\n",
-            "",
-        ),
+        workflow.replace(RELEASE_PUBLISH_GATE_LINE, ""),
         encoding="utf-8",
     )
 
@@ -1595,10 +1599,7 @@ def test_release_workflow_rejects_ungated_pypi_publish_step(tmp_path: Path) -> N
 
 def test_release_workflow_rejects_duplicate_pypi_publish_condition(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    gate = (
-        "        if: github.event_name != 'workflow_dispatch' "
-        "|| github.event.inputs.dry_run != 'true'\n"
-    )
+    gate = RELEASE_PUBLISH_GATE_LINE
     path = tmp_path / "release.yml"
     path.write_text(workflow.replace(gate, gate + '        "if": always()\n', 1), encoding="utf-8")
 
@@ -1609,13 +1610,56 @@ def test_release_workflow_rejects_duplicate_pypi_publish_condition(tmp_path: Pat
 
 def test_release_job_scalar_cannot_decoy_the_publish_step(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    gate = (
-        "        if: github.event_name != 'workflow_dispatch' "
-        "|| github.event.inputs.dry_run != 'true'\n"
-    )
+    gate = RELEASE_PUBLISH_GATE_LINE
     decoy = "\n    name: |2\n      - uses: pypa/gh-action-pypi-publish@decoy\n" + gate
     path = tmp_path / "release.yml"
     path.write_text(workflow.replace(gate, "", 1) + decoy, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("is not gated by the dry-run predicate" in error for error in errors)
+
+
+def test_release_workflow_rejects_missing_fork_repository_guard(tmp_path: Path) -> None:
+    """The publish job's own `if:` is what keeps any other repository slug —
+    including forks/mirrors of this fork — away from the PyPI upload while the
+    artifacts still carry upstream's `xy` distribution name (#13)."""
+    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    guard = "    if: github.repository == 'CurateLabs/graphforge-xy'\n"
+    assert guard in workflow
+    path = tmp_path / "release.yml"
+    path.write_text(workflow.replace(guard, ""), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("fork repository guard" in error for error in errors)
+
+
+def test_release_workflow_rejects_missing_fork_publish_guard_step(tmp_path: Path) -> None:
+    """The guard step is the configuration-independent stop: it must fail any
+    real publish attempt while the distribution is still named `xy` (#13)."""
+    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    step = "      - name: Fork publish guard (refuse upstream's PyPI package name)\n"
+    assert step in workflow
+    path = tmp_path / "release.yml"
+    path.write_text(
+        workflow.replace(step, "      - name: Renamed away from the guarded step\n"),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("release publish job" in error and "Fork publish guard" in error for error in errors)
+
+
+def test_release_workflow_rejects_missing_publish_opt_in_variable(tmp_path: Path) -> None:
+    """Dropping the XY_ALLOW_PYPI_PUBLISH opt-in from the upload condition
+    reverts to publish-on-tag, which this fork must never do (#13)."""
+    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    opt_in = "vars.XY_ALLOW_PYPI_PUBLISH == 'true' && "
+    assert opt_in in workflow
+    path = tmp_path / "release.yml"
+    path.write_text(workflow.replace(opt_in, ""), encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
 
@@ -1701,10 +1745,7 @@ def test_release_workflow_rejects_always_conditioned_pypi_publish(tmp_path: Path
     # check would accept it and let a manual dispatch publish unconditionally.
     workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
     path = tmp_path / "release.yml"
-    gate = (
-        "        if: github.event_name != 'workflow_dispatch' "
-        "|| github.event.inputs.dry_run != 'true'\n"
-    )
+    gate = RELEASE_PUBLISH_GATE_LINE
     assert gate in workflow
     path.write_text(workflow.replace(gate, "        if: always()\n"), encoding="utf-8")
 

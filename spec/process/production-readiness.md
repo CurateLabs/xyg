@@ -344,6 +344,56 @@ bundled `reflex_xy` integration, ships from `vX.Y.Z` tags through
 `release.yml`. The `xy[reflex]` extra is dependency metadata in those same
 artifacts, not another package or release.
 
+### Fork release posture (CurateLabs/graphforge-xy, issue #13)
+
+This repository is CurateLabs' permanently divergent fork of `reflex-dev/xy`.
+The distribution is still named `xy` — **upstream's PyPI package** — so this
+fork must not be able to publish, and `release.yml` enforces that in layers
+rather than relying on PyPI's trusted-publishing rejection:
+
+- **Repository guard.** The publish job carries
+  `if: github.repository == 'CurateLabs/graphforge-xy'`, so no other slug
+  (including forks or mirrors of this fork) reaches the publish job at all.
+- **Fork publish guard.** A step ahead of the upload fails any *real* publish
+  attempt — tag push or non-dry-run dispatch — whenever an artifact in
+  `dist/` carries the distribution name `xy`. This guard is independent of
+  tags, repository variables, and environments: while the fork keeps
+  upstream's distribution name, a version tag builds and verifies every
+  artifact and then fails loudly at this step. Dry-run dispatches pass it so
+  the cross-compile matrix stays verifiable.
+- **Publish opt-in.** The upload step itself additionally requires the
+  `XY_ALLOW_PYPI_PUBLISH` repository variable to equal `'true'`. The variable
+  does not exist by default, so even after a future distribution rename a
+  deliberate opt-in is needed before anything is uploaded.
+
+`scripts/verify_ci_workflow.py` (`make check-ci`) pins all three guards, and
+`tests/test_verify_ci_workflow.py` covers their removal.
+
+**Versioning decision.** The fork keeps dunamai's default `v*` tag pattern and
+*continues the inherited upstream version line*: the newest inherited library
+tag is `v0.0.6a2`, so untagged builds currently stamp `0.0.6.devN+<commit>`
+(dunamai bumps the inherited pre-release toward its `0.0.6` final).
+Inherited upstream tags (`v0.0.1`–`v0.0.6a2`, the docs CalVer tags, and
+`reflex-xy-v0.0.1`/`v0.0.2`) were **not** pruned from `origin` — tag deletion
+is destructive and needs an owner decision. Re-baselining the fork's own
+version line (first fork tag, or a fork-specific
+`tool.uv-dynamic-versioning.pattern`) is deferred until the distribution-name
+decision below is made, since a fork release under the `xy` name is blocked
+regardless.
+
+**Deferred owner decisions** (tracked in issue #13):
+
+- *Distribution rename.* Publishing anywhere requires a fork-specific
+  distribution name (e.g. `graphforge-xy`) or a private index. The rename is
+  not merely `pyproject.name`: `python/xy/_load_version`,
+  `python/reflex_xy/_load_version`, and the release/CI smoke checks resolve
+  the distribution `xy` via `importlib.metadata`, and the same question
+  applies to the `@xy/node` npm package and the `xy-core` crate.
+- *Tag pruning.* Whether the inherited upstream tags stay on `origin`
+  (harmless while the publish guards hold) or are deleted.
+- *Re-baseline tag.* The fork's first own version tag, once the name is
+  chosen.
+
 Before tagging a release:
 
 - Add a dated `## [X.Y.Z] — YYYY-MM-DD` heading to `CHANGELOG.md` for the
