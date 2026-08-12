@@ -23,10 +23,10 @@ reflex = [
 ]
 
 [project.urls]
-Repository = "https://github.com/reflex-dev/xy"
-Issues = "https://github.com/reflex-dev/xy/issues"
-Changelog = "https://github.com/reflex-dev/xy/blob/main/CHANGELOG.md"
-Security = "https://github.com/reflex-dev/xy/blob/main/SECURITY.md"
+Repository = "https://github.com/CurateLabs/graphforge-xy"
+Issues = "https://github.com/CurateLabs/graphforge-xy/issues"
+Changelog = "https://github.com/CurateLabs/graphforge-xy/blob/main/CHANGELOG.md"
+Security = "https://github.com/CurateLabs/graphforge-xy/blob/main/SECURITY.md"
 
 [dependency-groups]
 dev = [
