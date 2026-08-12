@@ -233,6 +233,16 @@ pyramid replaces per-view scans with per-view *tile composition*.
 
 ### 4.1 Structure
 
+> **Shipped vs target (don’t misread):** the Phase-3 kernel in `src/tiles.rs`
+> stores each level as **one contiguous grid** (`levels: Vec<Vec<u32>>` plus
+> optional `[u16; 4]` mean-color planes) — there is no `(level, tx, ty)`
+> addressing, tile fetch, or spill in the shipped ABI (57). The 256²-tile
+> decomposition described here is the **Phase-4 target layout**
+> ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) locked decision D1,
+> issue [#5](https://github.com/CurateLabs/graphforge-xy/issues/5)); the
+> level math, aggregates, and build costs below describe the shipped kernel
+> either way.
+
 - **Data-space tiles**, power-of-two levels, 256×256 cells/tile.
   Level 0 covers the full x/y extent with 1 tile; level l has 4^l tiles.
 - Each tile stores the channel aggregates per §2: `count` (u32), and for
@@ -246,8 +256,10 @@ pyramid replaces per-view scans with per-view *tile composition*.
   weighted means, weight = child count × child mean alpha — the same
   alpha-weighted average the flat kernel computes over raw points).
   Total cost ≈ 1.33 × one full pass; total size ≈ 1.33 × finest level.
-- **Rust owns this** (`tiles.rs`, see rust-engine doc): build_pyramid(),
-  tile fetch by (level, tx, ty), append-aware rebuild of dirty tiles.
+- **Rust owns this** (`tiles.rs`, see rust-engine doc): build_pyramid()
+  (shipped); tile fetch by (level, tx, ty) and append-aware rebuild of dirty
+  tiles are Phase-4 (roadmap D1/D4 — the shipped kernel composes whole
+  contiguous levels and appends level-wide).
   Colored pyramids refuse native appends — the batch's colors are unknown to
   the count-only append path and an append can move a continuous channel's
   domain, silently re-coloring every already-binned point — so the caller
@@ -304,11 +316,15 @@ ever extrapolates.
   (~20 GB at 1e9 rows before this), the only N-sized allocation the u8 idx
   itself. Both are recorded regressions-to-avoid: trading them back returns
   the 1B colored build to OOM territory.
-- 1B points: ~330-660 MB — still kernel-side RAM, but now Tier 3 applies:
-  tiles are chunked to disk (Arrow/Parquet row groups per tile, dossier §32),
-  LRU-resident under a byte budget, and *only* the ≤ ~12 visible tiles are
-  ever needed per frame. The client never holds more than screen-bounded
-  textures regardless.
+- 1B points: ~330-660 MB at 16 pts/cell — and the adaptive no-rescan bases
+  are worse (16 384² ≈ 1.4 GB counts + 2.9 GB color) — so Tier 3 residency
+  applies (Phase 4, roadmap locked decisions): tiles spill to disk as fixed
+  256² mmap slabs keyed `(level, tx, ty)` (D1; Arrow/Parquet deferred with a
+  migration note — the spill file is a rebuildable per-process cache, dossier
+  §32b), LRU-resident under `PYRAMID_RESIDENT_BYTES` (512 MiB default,
+  process-wide, D2–D3), and *only* the ≤ ~12 visible tiles are ever needed
+  per frame. The client never holds more than screen-bounded textures
+  regardless.
 - **Canonical out-of-core (landed).** Independently of the aggregate tiles,
   the *canonical* x/y columns can themselves exceed RAM. On native they are
   backed by a disk `np.memmap` (dossier §27 rule 5): the pyramid build,
@@ -754,12 +770,34 @@ Roadmap: [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md). Tracked by
 [#5](https://github.com/CurateLabs/graphforge-xy/issues/5).
 
 10. Tile spill/load under byte budget; zone-map-pruned tile index for
-    unordered scatter (bucket at ingest, dossier §32b). Rust owns
+    unordered scatter (chunk zone maps prune per tile rect; `SpatialIndex`
+    stays the finer companion — dossier §32b, roadmap D5). Rust owns
     residency; Python/Node remain thin; §28 records tile hit/miss.
+    **Acceptance:** RAM-resident tile bytes ≤ `PYRAMID_RESIDENT_BYTES`
+    (512 MiB default), floored only at the pinned working set with
+    `over_budget` recorded (roadmap D3); every frame served from
+    ≤ ceil(w/256+1) × ceil(h/256+1) tiles; tiled compose count grids
+    **bit-identical** to in-RAM compose and mean-color cells within the
+    recorded ≤ 0.5 u16-lsb-per-level bound (§4.3); every tile-served reply
+    records `binning: "pyramid-L<l>-tiles[-upsampled]"` +
+    `tiles: {hit, miss, resident_bytes, spilled_bytes, budget_bytes,
+    over_budget}`; `pyramid_report_bytes` covers resident tiles + index
+    metadata, spilled bytes reported separately (D2).
 11. Optional: client tile-keyed cache (`45_lod.ts`) consumes `(level, tx, ty)`.
+    **Acceptance:** a pan inside the cached tile set re-ships **zero** tiles;
+    a one-tile pan step ships only the newly exposed edge row/column
+    (≤ ceil(h/256+1) or ≤ ceil(w/256+1) tiles); eviction and crossfade
+    behavior unchanged from the window-keyed cache (T7 pins still hold).
 12. Evidence: extend [tier3-testing.md](tier3-testing.md) with spill fixtures;
     dedicated 100M latency gate (CodSpeed / perf runner) — not CI allocation
     of 1B points.
+    **Acceptance:** MB-scale synthetic tile fixtures (never 1B rows in CI);
+    dirty-tile append composes equal to a from-scratch rebuild (D4);
+    stale-filter negative path proven (predicate change ⇒ no tile-served
+    reply, D6); Python ↔ Node composed grids and residency stats identical;
+    dedicated-runner gate: 100M pan p95 < 16 ms kernel time, zoom step
+    < 50 ms, resident tile bytes ≤ budget throughout (item 9 numbers, now
+    against the spilled path).
 
 Exit criteria for the headline claim: 100M-point colored scatter — pan/zoom
 never blanks, never shimmers, mean-color cells match a NumPy oracle, drill-in

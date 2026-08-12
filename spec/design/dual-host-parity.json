@@ -346,7 +346,7 @@
       "name": "out-of-core tile pyramid",
       "python": "ready",
       "node": "ready",
-      "notes": "Phase-3 square pyramid productized on Python (first paint + density_view) and Node (pyramid.js + Figure density). §28 binning pyramid-L*. Phase-4 256² disk tile spill: #5 + spec/design/tier3-phase4-roadmap.md."
+      "notes": "ready covers the Phase-3 square pyramid only, productized on Python (first paint + density_view) and Node (pyramid.js + Figure density); §28 binning pyramid-L*. Phase-4 256² disk tile spill is design (spec locked, not implemented): #5 with sub-issues #7 (WP0 spec lock), #8 (WP1 Rust ABI), #9 (WP2 hosts), #10 (WP3 client cache), #11 (WP4 evidence) + spec/design/tier3-phase4-roadmap.md; flip to ready only when WP1-WP2 land."
     }
   ],
   "references": [
