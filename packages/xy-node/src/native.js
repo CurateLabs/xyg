@@ -163,6 +163,28 @@ export const xyPyramidComposeColor = lib.func(
 );
 export const xyPyramidFree = lib.func("int32_t xy_pyramid_free(uint64_t handle)");
 
+// --- Phase-4 tile store (lod-architecture §4 items 10-12, roadmap D1-D7).
+// Signature stubs only (ABI 58): host engagement — spill gating, §28
+// residency recording, PYRAMID_RESIDENT_BYTES plumbing — is WP2 (#9).
+export const xyPyramidSpill = lib.func("uint64_t xy_pyramid_spill(uint64_t handle)");
+export const xyTileStoreFetch = lib.func(
+  "int32_t xy_tile_store_fetch(uint64_t store, uint32_t level, uint32_t tx, uint32_t ty, uint32_t *out_counts, uint16_t *out_color)",
+);
+export const xyTileStoreCompose = lib.func(
+  "int32_t xy_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float *out)",
+);
+export const xyTileStoreComposeColor = lib.func(
+  "int32_t xy_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float *out, uint8_t *out_rgba)",
+);
+export const xyTileStoreAppend = lib.func(
+  "int32_t xy_tile_store_append(uint64_t store, const double *x, const double *y, size_t len)",
+);
+export const xyTileStoreStats = lib.func(
+  "int32_t xy_tile_store_stats(uint64_t store, uint64_t *out)",
+);
+export const xyTileBudgetSet = lib.func("int32_t xy_tile_budget_set(uint64_t bytes)");
+export const xyTileStoreFree = lib.func("int32_t xy_tile_store_free(uint64_t store)");
+
 // --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(
   "int32_t xy_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, const uint64_t *roots, uint64_t n_roots, uint64_t seed, double *out_x, double *out_y)",

@@ -206,12 +206,54 @@ inside this frame; changing any of it means editing this section first.
   §32b now exists), dossier §32 “Python-only” framing, lod-architecture
   §4.1 tiled-vs-shipped ambiguity, parity-JSON Phase-4 scoping.
 
-### WP1 — Rust tile store ABI ([#8](https://github.com/CurateLabs/graphforge-xy/issues/8))
+### WP1 — Rust tile store ABI ([#8](https://github.com/CurateLabs/graphforge-xy/issues/8)) — landed, ABI 58
 
-- `xy_pyramid_spill` / `xy_tile_fetch` / `xy_tiles_compose` (names TBD) —
-  bump `ABI_VERSION` in `src/lib.rs` **and** `python/xy/_native.py` together.
-- LRU under `PYRAMID_RESIDENT_BYTES` per locked decisions D2–D3.
-- Zone-map-pruned tile index for unordered scatter (D5, dossier §32b).
+- [x] `src/tile_store.rs`: `(level, tx, ty)` 256² tiles in one `XYTS` spill
+  file per pyramid (D1 layout: versioned header page, dense count region +
+  optional color region, coarsest first, closed-form slab offsets,
+  native-endian, process-scoped temp deleted on free).
+- [x] ABI entry points (final names): `xy_pyramid_spill` (pyramid handle →
+  store handle), `xy_tile_store_fetch`, `xy_tile_store_compose`,
+  `xy_tile_store_compose_color`, `xy_tile_store_append`,
+  `xy_tile_store_stats` (D3's six-field record), `xy_tile_budget_set`,
+  `xy_tile_store_free`. `ABI_VERSION` 57 → 58 in `src/lib.rs` and
+  `python/xy/_native.py`; signature stubs mirrored in
+  `packages/xy-node/src/native.js` (behavioral host engagement is WP2).
+- [x] LRU under the D2 budget (kernel default 512 MiB process-wide;
+  `xy_tile_budget_set` is the host plumbing point for
+  `PYRAMID_RESIDENT_BYTES`, wired in WP2) with per-compose frame pinning
+  and the D3 `over_budget` record.
+- [x] Compose-from-tiles golden: `tiles.rs` compose bodies were refactored
+  over a `LevelView` (full contiguous level vs gathered tile rect), so the
+  tiled compose runs the *identical* arithmetic — bit-for-bit equality with
+  the in-RAM compose is identity of code, unit-tested for count and colored
+  pyramids across downsample/unaligned/upsample/refusal windows.
+- [x] Count-only dirty-tile append; colored refuse; domain growth refused
+  atomically (caller invalidates the store, D4).
+- [x] `scripts/abi_smoke.py` covers spill → fetch → compose golden, append
+  parity, stats, and handle lifecycle (stdlib only, MB-scale).
+
+**WP1 realization notes (deviations recorded per §28 culture):**
+
+- *Slab I/O:* no mmap crate is vendored and crates.io is unreachable from
+  the dev sandbox, so the D1 mmap-slab **layout** is realized with
+  positioned `File` reads/writes (`pread`/`pwrite`-style, page-aligned).
+  Identical on-disk bytes and O(1) offset math; a literal `mmap(2)` read
+  path can be swapped in without a format change.
+- *Dirty-tile append:* rather than re-binning dirty tiles from canonical
+  rows via zone maps (the kernel does not retain host row memory), an
+  append faults the touched tiles in, increments them in RAM, marks them
+  dirty, and writes back on eviction. Composed results equal a
+  from-scratch rebuild bit-for-bit (unit-tested), which is the D4
+  requirement; the zone-map path (D5) remains the locator for host-driven
+  rebuilds in WP2, where canonical columns are reachable.
+- *Eviction victim selection:* the budget and resident accounting are
+  process-wide (D2), but a store over budget evicts from **its own** LRU;
+  an idle sibling store's bytes are reclaimed when that store next admits
+  or frees. Cross-store reclaim lands with WP2 host engagement.
+- *Stats scope:* `xy_tile_store_stats` reports hit/miss per store,
+  resident/budget bytes process-wide, spill-file bytes per store, and the
+  per-store last-frame `over_budget` flag — the D3 §28 record.
 
 ### WP2 — Hosts ([#9](https://github.com/CurateLabs/graphforge-xy/issues/9))
 

@@ -2121,6 +2121,135 @@ def main() -> None:
     ok(lib.xy_pyramid_free(ctypes.c_uint64(handle)) == 1, "pyramid free")
     ok(lib.xy_pyramid_free(ctypes.c_uint64(handle)) == 0, "double free is an error code")
 
+    # Phase-4 tile store (roadmap D1-D7, ABI 58): spill -> fetch -> compose
+    # golden vs the in-RAM pyramid, dirty-tile append, residency stats, and
+    # handle lifecycle — all through the real ABI, MB-scale fixtures only.
+    lib.xy_pyramid_spill.restype = ctypes.c_uint64
+    lib.xy_pyramid_spill.argtypes = [ctypes.c_uint64]
+    lib.xy_tile_store_fetch.restype = ctypes.c_int32
+    lib.xy_tile_store_fetch.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.POINTER(ctypes.c_uint16),
+    ]
+    lib.xy_tile_store_compose.restype = ctypes.c_int32
+    lib.xy_tile_store_compose.argtypes = list(lib.xy_pyramid_compose.argtypes)
+    lib.xy_tile_store_append.restype = ctypes.c_int32
+    lib.xy_tile_store_append.argtypes = list(lib.xy_pyramid_append.argtypes)
+    lib.xy_tile_store_stats.restype = ctypes.c_int32
+    lib.xy_tile_store_stats.argtypes = [ctypes.c_uint64, ctypes.POINTER(ctypes.c_uint64)]
+    lib.xy_tile_budget_set.restype = ctypes.c_int32
+    lib.xy_tile_budget_set.argtypes = [ctypes.c_uint64]
+    lib.xy_tile_store_free.restype = ctypes.c_int32
+    lib.xy_tile_store_free.argtypes = [ctypes.c_uint64]
+
+    ok(lib.xy_pyramid_spill(ctypes.c_uint64(handle)) == 0, "spill refuses a stale pyramid handle")
+    # base 512 puts 2x2 tiles on the finest level, so multi-tile gather and
+    # the zero-padded small-level slabs are both exercised (~3 MB spill file).
+    pyr = lib.xy_pyramid_build(
+        _ptr(px, ctypes.c_double), _ptr(py, ctypes.c_double), n_p, 0.0, 8.0, 0.0, 8.0, 512
+    )
+    ok(pyr != 0, "tile-store fixture pyramid builds")
+    ok(lib.xy_tile_budget_set(0) == 1, "tile budget set (0 restores the 512 MiB default)")
+    store = lib.xy_pyramid_spill(ctypes.c_uint64(pyr))
+    ok(store != 0, "pyramid spill returns a store handle")
+
+    tile_counts = (ctypes.c_uint32 * (256 * 256))()
+    spilled_total = 0
+    for ty in range(2):
+        for tx in range(2):
+            ok(
+                lib.xy_tile_store_fetch(ctypes.c_uint64(store), 0, tx, ty, tile_counts, None) == 1,
+                f"tile fetch (0, {tx}, {ty})",
+            )
+            spilled_total += sum(tile_counts)
+    ok(spilled_total == n_p, "finest-level tiles conserve the total count")
+    ok(
+        lib.xy_tile_store_fetch(ctypes.c_uint64(store), 0, 2, 0, tile_counts, None) == 0,
+        "tile fetch refuses an out-of-range key",
+    )
+    tile_color = (ctypes.c_uint16 * (256 * 256 * 4))()
+    ok(
+        lib.xy_tile_store_fetch(ctypes.c_uint64(store), 0, 0, 0, tile_counts, tile_color) == 0,
+        "count-only store refuses a color-plane fetch",
+    )
+
+    grid_ram = array("f", bytes(4 * 64 * 64))
+    grid_tiles = array("f", bytes(4 * 64 * 64))
+    lvl_ram = lib.xy_pyramid_compose(
+        ctypes.c_uint64(pyr), 0.0, 8.0, 0.0, 8.0, 64, 64, 2, _ptr(grid_ram, ctypes.c_float)
+    )
+    lvl_tiles = lib.xy_tile_store_compose(
+        ctypes.c_uint64(store), 0.0, 8.0, 0.0, 8.0, 64, 64, 2, _ptr(grid_tiles, ctypes.c_float)
+    )
+    ok(lvl_tiles == lvl_ram >= 0, "tile compose picks the in-RAM level")
+    ok(list(grid_tiles) == list(grid_ram), "tile compose is bit-identical to in-RAM compose")
+    ok(
+        lib.xy_tile_store_compose(
+            ctypes.c_uint64(store), 3.0, 3.001, 3.0, 3.001, 64, 64, 2, _ptr(tiny, ctypes.c_float)
+        )
+        == -2,
+        "outresolving window is refused by the tile store too",
+    )
+
+    # Count-only dirty-tile append (D4): mirror the batch into the pyramid
+    # and the store; composed grids must stay identical.
+    ok(
+        lib.xy_tile_store_append(
+            ctypes.c_uint64(store),
+            _ptr(append_x, ctypes.c_double),
+            _ptr(append_y, ctypes.c_double),
+            len(append_x),
+        )
+        == 1,
+        "tile store append updates a stable domain",
+    )
+    ok(
+        lib.xy_pyramid_append(
+            ctypes.c_uint64(pyr),
+            _ptr(append_x, ctypes.c_double),
+            _ptr(append_y, ctypes.c_double),
+            len(append_x),
+        )
+        == 1,
+        "fixture pyramid mirrors the appended batch",
+    )
+    ok(
+        lib.xy_tile_store_append(
+            ctypes.c_uint64(store),
+            _ptr(outside_x, ctypes.c_double),
+            _ptr(outside_y, ctypes.c_double),
+            1,
+        )
+        == 0,
+        "tile store append rejects domain growth (caller invalidates)",
+    )
+    lvl_ram = lib.xy_pyramid_compose(
+        ctypes.c_uint64(pyr), 0.0, 8.0, 0.0, 8.0, 64, 64, 2, _ptr(grid_ram, ctypes.c_float)
+    )
+    lvl_tiles = lib.xy_tile_store_compose(
+        ctypes.c_uint64(store), 0.0, 8.0, 0.0, 8.0, 64, 64, 2, _ptr(grid_tiles, ctypes.c_float)
+    )
+    ok(
+        lvl_tiles == lvl_ram and list(grid_tiles) == list(grid_ram),
+        "appended tile compose equals the appended in-RAM compose",
+    )
+    ok(sum(grid_tiles) == float(n_p + len(append_x)), "tile compose conserves the appended count")
+
+    stats = (ctypes.c_uint64 * 6)()
+    ok(lib.xy_tile_store_stats(ctypes.c_uint64(store), stats) == 1, "tile store stats ok")
+    ok(stats[1] > 0, "stats record tile misses (disk faults)")
+    ok(stats[3] > 0, "stats record spill-file bytes")
+    ok(stats[4] == 512 * 2**20, "stats report the default 512 MiB budget")
+    ok(stats[5] == 0, "a working set under budget records over_budget = 0")
+
+    ok(lib.xy_tile_store_free(ctypes.c_uint64(store)) == 1, "tile store free")
+    ok(lib.xy_tile_store_free(ctypes.c_uint64(store)) == 0, "tile store double free is an error")
+    ok(lib.xy_pyramid_free(ctypes.c_uint64(pyr)) == 1, "fixture pyramid free")
+
     # Mean-color density (LOD doc §2): per-cell mean point color + count-only
     # alpha. One red and one blue point per side of a 2x1 grid, then both in
     # one cell: pure cells keep exact colors, the mixed cell averages in

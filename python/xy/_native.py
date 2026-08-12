@@ -25,7 +25,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 57
+ABI_VERSION = 58
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -727,6 +727,34 @@ def _load() -> ctypes.CDLL:
     ]
     lib.xy_pyramid_free.restype = ctypes.c_int32
     lib.xy_pyramid_free.argtypes = [ctypes.c_uint64]
+    # Phase-4 tile store (roadmap D1-D7, dossier §32b): signature stubs only —
+    # host engagement (spill gating, §28 residency recording) is WP2 (#9).
+    lib.xy_pyramid_spill.restype = ctypes.c_uint64
+    lib.xy_pyramid_spill.argtypes = [ctypes.c_uint64]
+    lib.xy_tile_store_fetch.restype = ctypes.c_int32
+    lib.xy_tile_store_fetch.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint32,  # level (0 = finest)
+        ctypes.c_uint32,  # tx
+        ctypes.c_uint32,  # ty
+        ctypes.c_void_p,  # out counts u32[256*256]
+        ctypes.c_void_p,  # out color u16[256*256*4] (or NULL)
+    ]
+    lib.xy_tile_store_compose.restype = ctypes.c_int32
+    lib.xy_tile_store_compose.argtypes = list(lib.xy_pyramid_compose.argtypes)
+    lib.xy_tile_store_compose_color.restype = ctypes.c_int32
+    lib.xy_tile_store_compose_color.argtypes = list(lib.xy_pyramid_compose_color.argtypes)
+    lib.xy_tile_store_append.restype = ctypes.c_int32
+    lib.xy_tile_store_append.argtypes = list(lib.xy_pyramid_append.argtypes)
+    lib.xy_tile_store_stats.restype = ctypes.c_int32
+    lib.xy_tile_store_stats.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_void_p,  # out u64[6]: hit, miss, resident, spilled, budget, over
+    ]
+    lib.xy_tile_budget_set.restype = ctypes.c_int32
+    lib.xy_tile_budget_set.argtypes = [ctypes.c_uint64]
+    lib.xy_tile_store_free.restype = ctypes.c_int32
+    lib.xy_tile_store_free.argtypes = [ctypes.c_uint64]
     lib.xy_graph_layout.restype = ctypes.c_int32
     lib.xy_graph_layout.argtypes = [
         ctypes.c_uint32,

@@ -24,7 +24,14 @@ required to claim Phase-3 Tier-3 ready.
 ### 1. ABI / kernel goldens (always on)
 
 - Rust `src/tiles.rs` unit tests — level conservation, append atomicity, colored refuse-append, outresolve.
-- `scripts/abi_smoke.py` — ctypes boundary for every `xy_pyramid_*`.
+- Rust `src/tile_store.rs` unit tests (Phase-4 WP1, ABI 58) — spill → fetch →
+  compose bit-identical to the in-RAM compose (count and colored, all
+  regimes), LRU resident bytes ≤ budget under a synthetic sweep with
+  `over_budget` recorded when the pinned working set exceeds it, dirty-tile
+  append ≡ from-scratch rebuild, atomic refusals, spill-file lifecycle.
+  Fixtures are MB-scale (≤ 1024² bases) — CI never allocates 1B rows.
+- `scripts/abi_smoke.py` — ctypes boundary for every `xy_pyramid_*` and the
+  Phase-4 `xy_pyramid_spill` / `xy_tile_store_*` entry points.
 - Python `tests/test_kernels.py` — wrapper validation; compose mass ≡ `bin_2d`.
 - Node `packages/xy-node/test/pyramid.test.mjs` — same goldens via koffi.
 
@@ -64,7 +71,8 @@ required to claim Phase-3 Tier-3 ready.
 
 ```bash
 cargo test -p xy_core tiles
-python3 scripts/abi_smoke.py          # includes pyramid ABI block
+cargo test -p xy_core tile_store      # Phase-4 spill/LRU/append goldens
+python3 scripts/abi_smoke.py          # includes pyramid + tile-store ABI blocks
 XY_NATIVE_LIB=$PWD/target/release/libxy_core.so \\
   npm --prefix packages/xy-node test -- test/pyramid.test.mjs
 PYTHONPATH=python python3 benchmarks/bench_tier3_pyramid.py
@@ -75,7 +83,7 @@ node benchmarks/bench_tier3_pyramid_node.mjs
 
 | Surface | Phase-3 pyramid | Phase-4 tile spill |
 | --- | --- | --- |
-| Rust ABI | ready | design |
-| Python | ready (interactive + first paint) | design |
-| Node | ready (`pyramid.js` + figure density) | design |
+| Rust ABI | ready | ready (ABI 58 — `xy_pyramid_spill` + `xy_tile_store_*`, WP1 [#8](https://github.com/CurateLabs/graphforge-xy/issues/8)) |
+| Python | ready (interactive + first paint) | design (WP2 [#9](https://github.com/CurateLabs/graphforge-xy/issues/9) — binding stubs only) |
+| Node | ready (`pyramid.js` + figure density) | design (WP2 [#9](https://github.com/CurateLabs/graphforge-xy/issues/9) — binding stubs only) |
 | Browser paint | ready (consumes density grids) | design (tile-keyed cache pending) |

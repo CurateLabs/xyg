@@ -235,12 +235,17 @@ pyramid replaces per-view scans with per-view *tile composition*.
 
 > **Shipped vs target (don’t misread):** the Phase-3 kernel in `src/tiles.rs`
 > stores each level as **one contiguous grid** (`levels: Vec<Vec<u32>>` plus
-> optional `[u16; 4]` mean-color planes) — there is no `(level, tx, ty)`
-> addressing, tile fetch, or spill in the shipped ABI (57). The 256²-tile
-> decomposition described here is the **Phase-4 target layout**
-> ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) locked decision D1,
-> issue [#5](https://github.com/CurateLabs/graphforge-xy/issues/5)); the
-> level math, aggregates, and build costs below describe the shipped kernel
+> optional `[u16; 4]` mean-color planes) and remains the hot path for
+> everything that fits in RAM. As of ABI 58 the kernel **also** ships the
+> Phase-4 `(level, tx, ty)` tile store (`src/tile_store.rs`:
+> `xy_pyramid_spill` + `xy_tile_store_*`, WP1 of issue
+> [#5](https://github.com/CurateLabs/graphforge-xy/issues/5) — layout per
+> [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) locked decision D1 and
+> its WP1 realization notes), but **no host engages it yet**: Python/Node
+> spill gating, `PYRAMID_RESIDENT_BYTES` plumbing, and §28 residency
+> recording are WP2
+> ([#9](https://github.com/CurateLabs/graphforge-xy/issues/9)). The level
+> math, aggregates, and build costs below describe the shipped kernel
 > either way.
 
 - **Data-space tiles**, power-of-two levels, 256×256 cells/tile.

@@ -46,6 +46,111 @@ impl Pyramid {
     pub fn has_color(&self) -> bool {
         self.color_levels.is_some()
     }
+
+    // Read-only structure accessors for the Phase-4 tile store
+    // (tile_store.rs), which snapshots levels into 256² disk slabs
+    // (LOD doc §4.1 / roadmap D1). Crate-internal: hosts never see levels.
+    pub(crate) fn level_counts(&self, level: usize) -> &[u32] {
+        &self.levels[level]
+    }
+    pub(crate) fn level_color(&self, level: usize) -> Option<&[[u16; 4]]> {
+        self.color_levels.as_ref().map(|c| c[level].as_slice())
+    }
+    pub(crate) fn level_dims(&self) -> &[usize] {
+        &self.dims
+    }
+    pub(crate) fn domain(&self) -> (f64, f64, f64, f64) {
+        (self.x0, self.x1, self.y0, self.y1)
+    }
+}
+
+/// A rectangular window of one pyramid level's cells: either the whole
+/// contiguous level (`gx0 == gy0 == 0`, `stride == dim` — the Phase-3 in-RAM
+/// path, zero-copy) or a sub-rect gathered from 256² tiles by the Phase-4
+/// tile store. `compose_level` / `compose_color_level` run the identical
+/// arithmetic over either — parity between the in-RAM compose and
+/// compose-from-tiles is identity of code, not convention (roadmap WP1).
+pub(crate) struct LevelView<'a> {
+    counts: &'a [u32],
+    color: Option<&'a [[u16; 4]]>,
+    /// First cell (inclusive) the view covers on each axis, in level cells.
+    gx0: usize,
+    gy0: usize,
+    /// Cells per view row (== dim for a full-level view).
+    stride: usize,
+    /// Rows the view covers.
+    rows: usize,
+}
+
+impl<'a> LevelView<'a> {
+    pub(crate) fn full(counts: &'a [u32], color: Option<&'a [[u16; 4]]>, dim: usize) -> Self {
+        LevelView {
+            counts,
+            color,
+            gx0: 0,
+            gy0: 0,
+            stride: dim,
+            rows: dim,
+        }
+    }
+
+    pub(crate) fn window(
+        counts: &'a [u32],
+        color: Option<&'a [[u16; 4]]>,
+        gx0: usize,
+        gy0: usize,
+        stride: usize,
+        rows: usize,
+    ) -> Self {
+        debug_assert_eq!(counts.len(), stride * rows);
+        LevelView {
+            counts,
+            color,
+            gx0,
+            gy0,
+            stride,
+            rows,
+        }
+    }
+
+    /// True when absolute level column `cx` lies inside the view. For a
+    /// full-level view this is exactly the `0 <= cx < dim` guard the
+    /// pre-refactor compose applied, so results are unchanged bit-for-bit;
+    /// a tile-store view gathers every cell the window can touch, so the
+    /// narrower guard rejects the same out-of-domain pixels and no others.
+    #[inline]
+    fn contains_col(&self, cx: isize) -> bool {
+        cx >= self.gx0 as isize && (cx as usize) < self.gx0 + self.stride
+    }
+
+    /// Row counterpart of [`Self::contains_col`].
+    #[inline]
+    fn contains_row(&self, cy: isize) -> bool {
+        cy >= self.gy0 as isize && (cy as usize) < self.gy0 + self.rows
+    }
+
+    #[inline]
+    fn count_at(&self, cx: usize, cy: usize) -> u32 {
+        self.counts[(cy - self.gy0) * self.stride + (cx - self.gx0)]
+    }
+
+    #[inline]
+    fn color_at(&self, cx: usize, cy: usize) -> [u16; 4] {
+        self.color.expect("color plane required")[(cy - self.gy0) * self.stride + (cx - self.gx0)]
+    }
+
+    /// Cells `[cx0, cx1)` of absolute level row `cy` as one slice.
+    #[inline]
+    fn count_row(&self, cy: usize, cx0: usize, cx1: usize) -> &[u32] {
+        let base = (cy - self.gy0) * self.stride;
+        &self.counts[base + cx0 - self.gx0..base + cx1 - self.gx0]
+    }
+
+    #[inline]
+    fn color_row(&self, cy: usize, cx0: usize, cx1: usize) -> &[[u16; 4]] {
+        let base = (cy - self.gy0) * self.stride;
+        &self.color.expect("color plane required")[base + cx0 - self.gx0..base + cx1 - self.gx0]
+    }
 }
 
 /// The production default upsample bound (callers pass their own via the ABI;
@@ -284,7 +389,7 @@ fn reduce_color_level(prev_counts: &[u32], prev_color: &[[u16; 4]], dim: usize) 
 
 /// Cell-index range [lo, hi) of a level whose cell CENTERS fall inside the
 /// window along one axis.
-fn center_range(lo: f64, hi: f64, full_lo: f64, full_hi: f64, dim: usize) -> (usize, usize) {
+pub(crate) fn center_range(lo: f64, hi: f64, full_lo: f64, full_hi: f64, dim: usize) -> (usize, usize) {
     let cell = (full_hi - full_lo) / dim as f64;
     // center of cell i is full_lo + (i + 0.5) * cell; inside ⇔ lo <= c < hi
     let first = ((lo - full_lo) / cell - 0.5).ceil().max(0.0) as usize;
@@ -331,17 +436,45 @@ fn choose_level(
     h: usize,
     max_upsample: usize,
 ) -> Option<usize> {
-    for level in (0..p.levels.len()).rev() {
-        let dim = p.dims[level];
-        let (cx0, cx1) = center_range(lo_x, hi_x, p.x0, p.x1, dim);
-        let (cy0, cy1) = center_range(lo_y, hi_y, p.y0, p.y1, dim);
+    choose_level_dims(
+        &p.dims,
+        (p.x0, p.x1, p.y0, p.y1),
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        w,
+        h,
+        max_upsample,
+    )
+}
+
+/// `choose_level` over bare geometry, shared with the Phase-4 tile store
+/// (which holds dims + domain without a resident `Pyramid`). Same decision,
+/// one implementation.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn choose_level_dims(
+    dims: &[usize],
+    (x0, x1, y0, y1): (f64, f64, f64, f64),
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    w: usize,
+    h: usize,
+    max_upsample: usize,
+) -> Option<usize> {
+    for level in (0..dims.len()).rev() {
+        let dim = dims[level];
+        let (cx0, cx1) = center_range(lo_x, hi_x, x0, x1, dim);
+        let (cy0, cy1) = center_range(lo_y, hi_y, y0, y1, dim);
         if cx1 - cx0 >= w && cy1 - cy0 >= h {
             return Some(level);
         }
     }
-    let dim = p.dims[0];
-    let (cx0, cx1) = center_range(lo_x, hi_x, p.x0, p.x1, dim);
-    let (cy0, cy1) = center_range(lo_y, hi_y, p.y0, p.y1, dim);
+    let dim = dims[0];
+    let (cx0, cx1) = center_range(lo_x, hi_x, x0, x1, dim);
+    let (cy0, cy1) = center_range(lo_y, hi_y, y0, y1, dim);
     // Saturating multiply so a huge `max_upsample` can't overflow usize.
     if (cx1 - cx0).saturating_mul(max_upsample) >= w
         && (cy1 - cy0).saturating_mul(max_upsample) >= h
@@ -374,16 +507,49 @@ pub fn compose(
     }
     let level = choose_level(p, lo_x, hi_x, lo_y, hi_y, w, h, max_upsample)?;
     let dim = p.dims[level];
-    let lvl = &p.levels[level];
+    let view = LevelView::full(&p.levels[level], None, dim);
+    compose_level(
+        (p.x0, p.x1, p.y0, p.y1),
+        dim,
+        &view,
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        w,
+        h,
+        out,
+    );
+    Some(level)
+}
+
+/// The compose body for one already-chosen level, over a [`LevelView`]. The
+/// Phase-3 path passes the full contiguous level; the Phase-4 tile store
+/// passes a gathered sub-rect covering every cell the window touches. All
+/// arithmetic (area weights, f32 accumulation order, snap epsilon) is this
+/// one body, so tile-served grids are bit-identical to in-RAM grids.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn compose_level(
+    (x0, x1, y0, y1): (f64, f64, f64, f64),
+    dim: usize,
+    view: &LevelView<'_>,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    w: usize,
+    h: usize,
+    out: &mut [f32],
+) {
     for c in out.iter_mut() {
         *c = 0.0;
     }
-    let cell_x = (p.x1 - p.x0) / dim as f64;
-    let cell_y = (p.y1 - p.y0) / dim as f64;
+    let cell_x = (x1 - x0) / dim as f64;
+    let cell_y = (y1 - y0) / dim as f64;
     let sx = w as f64 / (hi_x - lo_x);
     let sy = h as f64 / (hi_y - lo_y);
-    let (cx0, cx1) = center_range(lo_x, hi_x, p.x0, p.x1, dim);
-    let (cy0, cy1) = center_range(lo_y, hi_y, p.y0, p.y1, dim);
+    let (cx0, cx1) = center_range(lo_x, hi_x, x0, x1, dim);
+    let (cy0, cy1) = center_range(lo_y, hi_y, y0, y1, dim);
     // Upsampling when the window spans fewer source cells than output pixels on
     // either axis: pushing each source cell to its center pixel would leave a
     // sparse lattice of lit dots on black (the "grid of points" artifact). Pull
@@ -395,16 +561,16 @@ pub fn compose(
         let inv_cell_y = 1.0 / cell_y;
         for (oy, out_row) in out.chunks_exact_mut(w).enumerate() {
             let ydata = lo_y + (oy as f64 + 0.5) / sy;
-            let cy = ((ydata - p.y0) * inv_cell_y) as isize;
-            if cy < 0 || cy as usize >= dim {
+            let cy = ((ydata - y0) * inv_cell_y) as isize;
+            if !view.contains_row(cy) {
                 continue;
             }
-            let base = cy as usize * dim;
+            let cy = cy as usize;
             for (ox, o) in out_row.iter_mut().enumerate() {
                 let xdata = lo_x + (ox as f64 + 0.5) / sx;
-                let cx = ((xdata - p.x0) * inv_cell_x) as isize;
-                if cx >= 0 && (cx as usize) < dim {
-                    *o = lvl[base + cx as usize] as f32;
+                let cx = ((xdata - x0) * inv_cell_x) as isize;
+                if view.contains_col(cx) {
+                    *o = view.count_at(cx as usize, cy) as f32;
                 }
             }
         }
@@ -436,12 +602,12 @@ pub fn compose(
         // instead of per cell; the aligned case (single tap, weight exactly
         // 1.0) remains bit-exact against bin_2d.
         let none = u32::MAX;
-        let xw = axis_weights(cx0, cx1, p.x0, cell_x, lo_x, sx, w);
-        let yw = axis_weights(cy0, cy1, p.y0, cell_y, lo_y, sy, h);
+        let xw = axis_weights(cx0, cx1, x0, cell_x, lo_x, sx, w);
+        let yw = axis_weights(cy0, cy1, y0, cell_y, lo_y, sy, h);
         let (xcounts, xtaps) = transpose_to_taps(&xw, w);
         let mut xrow = vec![0.0f32; w];
         for (cy, &(by, wpy, nby, wny)) in (cy0..cy1).zip(yw.iter()) {
-            let row = &lvl[cy * dim + cx0..cy * dim + cx1];
+            let row = view.count_row(cy, cx0, cx1);
             // Bins own consecutive runs of `xtaps`, so walk it with a cursor:
             // splitting off `n` taps per bin costs one compare, where indexing
             // a CSR prefix re-derives both ends and range-checks the slice on
@@ -474,7 +640,6 @@ pub fn compose(
             }
         }
     }
-    Some(level)
 }
 
 /// Edges within this output-space distance of a bin boundary collapse a source
@@ -608,16 +773,47 @@ pub fn compose_color(
         return None;
     }
     let level = compose(p, lo_x, hi_x, lo_y, hi_y, w, h, max_upsample, out)?;
-    out_rgba.fill(0);
     let dim = p.dims[level];
-    let lvl = &p.levels[level];
-    let clvl = &color_levels[level];
-    let cell_x = (p.x1 - p.x0) / dim as f64;
-    let cell_y = (p.y1 - p.y0) / dim as f64;
+    let view = LevelView::full(&p.levels[level], Some(&color_levels[level]), dim);
+    compose_color_level(
+        (p.x0, p.x1, p.y0, p.y1),
+        dim,
+        &view,
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        w,
+        h,
+        out_rgba,
+    );
+    Some(level)
+}
+
+/// The color-plane compose body for one already-chosen level over a
+/// [`LevelView`] carrying both planes — shared with the Phase-4 tile store
+/// exactly like [`compose_level`]. Callers fill the count grid first (the
+/// two grids of a colored compose always come from the same level).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn compose_color_level(
+    (x0, x1, y0, y1): (f64, f64, f64, f64),
+    dim: usize,
+    view: &LevelView<'_>,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    w: usize,
+    h: usize,
+    out_rgba: &mut [u8],
+) {
+    out_rgba.fill(0);
+    let cell_x = (x1 - x0) / dim as f64;
+    let cell_y = (y1 - y0) / dim as f64;
     let sx = w as f64 / (hi_x - lo_x);
     let sy = h as f64 / (hi_y - lo_y);
-    let (cx0, cx1) = center_range(lo_x, hi_x, p.x0, p.x1, dim);
-    let (cy0, cy1) = center_range(lo_y, hi_y, p.y0, p.y1, dim);
+    let (cx0, cx1) = center_range(lo_x, hi_x, x0, x1, dim);
+    let (cy0, cy1) = center_range(lo_y, hi_y, y0, y1, dim);
     let upsampling = (cx1 - cx0) < w || (cy1 - cy0) < h;
     if upsampling {
         // Pull, exactly like `compose`: each output pixel wears the mean
@@ -626,48 +822,48 @@ pub fn compose_color(
         let inv_cell_y = 1.0 / cell_y;
         for (oy, quad_row) in out_rgba.chunks_exact_mut(w * 4).enumerate() {
             let ydata = lo_y + (oy as f64 + 0.5) / sy;
-            let cy = ((ydata - p.y0) * inv_cell_y) as isize;
-            if cy < 0 || cy as usize >= dim {
+            let cy = ((ydata - y0) * inv_cell_y) as isize;
+            if !view.contains_row(cy) {
                 continue;
             }
-            let base = cy as usize * dim;
+            let cy = cy as usize;
             for (ox, quad) in quad_row.as_chunks_mut::<4>().0.iter_mut().enumerate() {
                 let xdata = lo_x + (ox as f64 + 0.5) / sx;
-                let cx = ((xdata - p.x0) * inv_cell_x) as isize;
-                if cx < 0 || cx as usize >= dim {
+                let cx = ((xdata - x0) * inv_cell_x) as isize;
+                if !view.contains_col(cx) {
                     continue;
                 }
-                let cell = base + cx as usize;
-                if lvl[cell] == 0 {
+                let cx = cx as usize;
+                if view.count_at(cx, cy) == 0 {
                     continue;
                 }
-                let [r, g, b, alpha] = clvl[cell];
+                let [r, g, b, alpha] = view.color_at(cx, cy);
                 quad[0] = kernels::linear_u16_to_srgb_u8(r);
                 quad[1] = kernels::linear_u16_to_srgb_u8(g);
                 quad[2] = kernels::linear_u16_to_srgb_u8(b);
                 quad[3] = ((u32::from(alpha) + 128) / 257).min(255) as u8;
             }
         }
-        return Some(level);
+        return;
     }
     if cx0 >= cx1 || cy0 >= cy1 {
-        return Some(level);
+        return;
     }
     // Downsample / 1:1 — the same area-weighted splits as the count pass
     // (`axis_weights`), accumulating per output bin: `weight_sum` carries
     // fraction × count × mean-alpha (the color weights), `count_sum` carries
     // fraction × count (the mean-alpha denominator).
     let none = u32::MAX;
-    let xw = axis_weights(cx0, cx1, p.x0, cell_x, lo_x, sx, w);
-    let yw = axis_weights(cy0, cy1, p.y0, cell_y, lo_y, sy, h);
+    let xw = axis_weights(cx0, cx1, x0, cell_x, lo_x, sx, w);
+    let yw = axis_weights(cy0, cy1, y0, cell_y, lo_y, sy, h);
     let mut count_sum = vec![0.0f64; w * h];
     let mut weight_sum = vec![0.0f64; w * h];
     let mut red = vec![0.0f64; w * h];
     let mut green = vec![0.0f64; w * h];
     let mut blue = vec![0.0f64; w * h];
     for (cy, &(by, wpy, nby, wny)) in (cy0..cy1).zip(yw.iter()) {
-        let row = &lvl[cy * dim + cx0..cy * dim + cx1];
-        let crow = &clvl[cy * dim + cx0..cy * dim + cx1];
+        let row = view.count_row(cy, cx0, cx1);
+        let crow = view.color_row(cy, cx0, cx1);
         let by = by as usize;
         for ((&c, &[r, g, b, alpha]), &(bx, wpx, nbx, wnx)) in
             row.iter().zip(crow.iter()).zip(xw.iter())
@@ -715,7 +911,6 @@ pub fn compose_color(
         quad[2] = kernels::linear_u16_to_srgb_u8(mean(blue[bin]));
         quad[3] = ((alpha_u16 as u32 + 128) / 257).min(255) as u8;
     }
-    Some(level)
 }
 
 // -- handle registry (engine doc §3.3) ---------------------------------------
