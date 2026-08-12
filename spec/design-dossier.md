@@ -1068,7 +1068,9 @@ means uniform in the axis's scale coordinates, not in raw data. Concretely:
 - **The raw-space tile pyramid** (Tier 3) cannot compose a scale-coordinate
   grid, so traces on a nonlinear axis skip pyramid build/compose and always
   take the exact scan (`binning: "exact"`). Cost: the O(visible) rescan the
-  pyramid would have skipped — accepted, recorded here.
+  pyramid would have skipped — accepted, recorded here. The exclusion covers
+  the Phase-4 disk tile store too (§32b): no pyramid is built, so nothing
+  spills — a nonlinear-axis trace never engages tile residency.
 - **M4 line decimation** buckets on transformed x (first paint and
   `decimate_view`) so each bucket is one screen column; the selected rows ship
   raw. Monotone y transforms preserve per-bucket argmin/argmax, so y never
@@ -1151,7 +1153,7 @@ distribution (F1) and filtering (F2). A third Major finding (F3 — real GPU cei
 is corrected in place in §5. This part adds the two sections and records the
 scope decision that reshapes them.*
 
-## 32. Python-only: the architecture consequence
+## 32. Kernel-owned compute: the architecture consequence (originally "Python-only")
 
 The binding surface is now **Python only** (R/Julia/JS bindings dropped). This is not
 just less code — it relocates the heavy tiers:
@@ -1171,6 +1173,77 @@ just less code — it relocates the heavy tiers:
   same shape the research validated in datashader/vaex, except pan/zoom stays local
   instead of round-tripping (this is exactly the VegaFusion DAG-partition idea: heavy
   nodes native, leaf render nodes in the browser).
+
+*Amendment (Phase 3, ABI 57):* "Python-only" was a decision about not
+**reimplementing the engine** per language; it was never a cap on thin loaders
+over the one cdylib. The Node host (`packages/xy-node`, koffi over the same
+`libxy_core` C ABI) has since shipped and productized the Phase-3 pyramid
+(`packages/xy-node/src/pyramid.js` binds every `xy_pyramid_*` entry point), so
+this section's consequences now read "host process" where they said "Python
+process": the kernel owns decimation/pyramids/paging/filtering in whichever
+host process holds the data, hosts stay thin, and the browser remains a render
+client. Host obligations and parity status are governed by
+`spec/design/host-parity.md` and `spec/design/dual-host-parity.json`.
+
+## 32b. Tier-3 out-of-core companions — spatial bucketing and budgeted tile residency
+
+The §28 scatter row promises two things past the in-RAM pyramid: a "spatial
+bucketing pass at ingest for Tiers 2–3" and "re-bin visible via tile index"
+below the pyramid floor. This section names the structures that keep those
+promises. Both are §27 derived, rebuildable caches over the canonical f64
+columns — droppable at any time, never a second source of truth.
+
+**Spatial bucketing (shipped — the deep-zoom companion).** Points are
+pre-sorted into a row-major data-space cell grid with a cumulative-offset
+header (built by `osmium-rs`'s `osm-sort`); `xy._spatial.SpatialIndex` reads
+only the cells a viewport overlaps — one contiguous memmap slice per grid row,
+O(points in window). It serves the zoomed-*in* regime where the pyramid's
+finest cell is blocky: crisp real points under the drill threshold, else an
+exact full-screen-resolution grid. Position-only (no row ids, no channels), so
+it is gated to constant-styled traces and picks resolve exact-or-nothing.
+Mechanics and tier gating: LOD architecture doc §4.4.
+
+**Budgeted tile residency (Phase 4 — decisions locked, WP0 of issue #7).**
+When a pyramid no longer fits in RAM (adaptive 16 384² bases cost ~1.4 GB of
+counts + ~2.9 GB of color; multi-trace apps multiply that), it spills to a
+disk tile store the kernel owns. The locked frame — full rationale in
+`spec/design/tier3-phase4-roadmap.md` "Locked decisions (WP0)":
+
+- **Tile key & format:** `(level, tx, ty)` addressing over fixed 256²-cell
+  mmap slabs in one spill file per pyramid (magic + version header; count
+  region then optional color region; arithmetic O(1) slab offsets; native
+  endianness). The file is a per-process cache, never an interchange format —
+  a version bump can swap in Arrow/Parquet later with zero migration burden,
+  because spill files are always discardable and rebuilt (§27).
+- **Budget knob:** `PYRAMID_RESIDENT_BYTES` (default 512 MiB, process-wide
+  across all pyramids) in `python/xy/config.py` and the Node constants.
+  Accounting follows §27 rule 5's precedent: `pyramid_report_bytes` (the
+  `memory_report()["pyramid_bytes"]` line) covers **all** RAM-resident tile
+  bytes plus tile-directory metadata; on-disk bytes report separately as
+  `pyramid_spilled_bytes` (disk-backed, reclaimable) — if a byte isn't in the
+  report, it isn't real.
+- **Eviction:** kernel-side LRU over whole tiles (count + color planes evict
+  together). The ≤ ceil(w/256+1) × ceil(h/256+1) tiles serving the current
+  compose are pinned for the call and left most-recently-used; a frame never
+  fails for budget reasons — if the pinned working set alone exceeds the
+  budget, the effective budget floors at the working set and the reply records
+  the over-budget condition (§28), then eviction returns residency to budget.
+- **Append:** count-only pyramids dirty-mark intersecting tiles per level and
+  rebuild them lazily (composed result equals a from-scratch rebuild); colored
+  pyramids keep refuse-and-rebuild; domain growth invalidates the whole store
+  (a grown domain re-keys every tile — partial reuse is impossible).
+- **Tile index:** dirty-tile rebuilds and below-floor re-bins locate rows via
+  the existing §22 chunk zone maps (`xy_zone_maps_pair` min/max prunes
+  candidate chunks per tile rect) — no new ingest sort. Where a
+  `SpatialIndex` exists it is the finer row locator; companion, not
+  replacement.
+- **Filters (§34):** the store holds **unfiltered** aggregates only; a trace
+  with any active predicate bypasses compose-from-tiles entirely (the exact
+  re-bin path serves, `-masked`), and filtered results are never written to
+  the store — staleness from disk is impossible by construction, not by
+  invalidation bookkeeping.
+- **Nonlinear axes:** log/symlog traces skip the pyramid (§28), so there is
+  nothing to spill — the exclusion extends to the tile store unchanged.
 
 ## 33. Distribution — shipping the bits is a first-class workstream (F1)
 
