@@ -27,7 +27,7 @@ Bazel's fetch graph.
 The shared WebGL client is exercised outside the Bazel suite:
 
 ```bash
-npm ci && node js/build.mjs          # regenerate python/xy/static/{index,standalone}.js
+npm ci && node js/build.mjs          # regenerate @curatelabs/xyg (packages/xy-client/dist) and copy into python/xy/static
 node scripts/browser_client_smoke.mjs
 ```
 

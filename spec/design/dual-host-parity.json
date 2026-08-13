@@ -50,7 +50,13 @@
     {
       "id": "browser",
       "name": "Browser client",
-      "paths": ["js/src/", "python/xy/static/index.js", "python/xy/static/standalone.js"],
+      "paths": [
+        "js/src/",
+        "packages/xy-client/dist/index.js",
+        "packages/xy-client/dist/standalone.js",
+        "python/xy/static/index.js",
+        "python/xy/static/standalone.js"
+      ],
       "abi_loader": null,
       "consumers": [
         "anywidget notebooks",
@@ -124,7 +130,7 @@
       "layer": "Shared WebGL browser paint",
       "python": "ready",
       "node": "ready",
-      "shared_artifact": "GLHost (dossier §18); python/xy/static/{index,standalone}.js",
+      "shared_artifact": "GLHost (dossier §18); @curatelabs/xyg packages/xy-client/dist/{index,standalone}.js (Python copies into python/xy/static)",
       "notes": "Paint / pick / gestures only; no raw V/E past direct tier; no JS layout/LOD/encode product path"
     }
   ],

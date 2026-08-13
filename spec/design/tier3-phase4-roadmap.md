@@ -8,14 +8,21 @@ Phase 3; [tier3-testing.md](tier3-testing.md);
 **not tiled** — `crates/xyg-engine/src/tiles.rs` stores one contiguous grid per level — so
 Phase 4 is a storage-layout change, not a residency wrapper.
 
-**Tracking issue:** [#5](https://github.com/CurateLabs/graphforge-xy/issues/5)
+**Tracking issue:** [#5](https://github.com/CurateLabs/xyg/issues/5)
 (“Phase 4: Tier-3 disk-resident 256² tile spill”); sub-issues
-[#7](https://github.com/CurateLabs/graphforge-xy/issues/7) (WP0) ·
-[#8](https://github.com/CurateLabs/graphforge-xy/issues/8) (WP1) ·
-[#9](https://github.com/CurateLabs/graphforge-xy/issues/9) (WP2) ·
-[#10](https://github.com/CurateLabs/graphforge-xy/issues/10) (WP3) ·
-[#11](https://github.com/CurateLabs/graphforge-xy/issues/11) (WP4). In-repo
+[#7](https://github.com/CurateLabs/xyg/issues/7) (WP0) ·
+[#8](https://github.com/CurateLabs/xyg/issues/8) (WP1) ·
+[#9](https://github.com/CurateLabs/xyg/issues/9) (WP2) ·
+[#10](https://github.com/CurateLabs/xyg/issues/10) (WP3) ·
+[#11](https://github.com/CurateLabs/xyg/issues/11) (WP4). In-repo
 pointer: [`issues/phase4-tile-spill.md`](issues/phase4-tile-spill.md).
+
+**Sequencing overlay:** WP1 (#8) implementation is paused on draft PR #19
+until the XYG crate split ([#18](https://github.com/CurateLabs/xyg/issues/18))
+lands; re-land inside `crates/xyg-engine`. Canonical f64 columns /
+`stream.rs` are [#22](https://github.com/CurateLabs/xyg/issues/22), not this
+spill store. Cross-cutting host/identity/client plan:
+[host-neutral-architecture.md](host-neutral-architecture.md) / #24.
 
 ## Why Phase 4
 

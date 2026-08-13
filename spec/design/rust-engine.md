@@ -439,7 +439,12 @@ Ingest normalization (pandas/arrow/dtype coercion — ecosystem glue),
 tier/budget policy, channel *resolution* (mode inference, palette, warnings),
 validation and error messages (the new bounds/bool hardening lives at this
 layer and belongs there), widget/comm transport. This layer is the product's
-personality; keeping it in Python is a feature.
+personality; keeping it in the *host* is a feature. Node owns the same
+ergonomics role for JS users
+([host-parity.md](host-parity.md); [host-neutral-architecture.md](host-neutral-architecture.md)).
+Python-only forever: composition API, pyplot, Reflex, and embedding a copy
+of the paint client in the wheel. Canonical f64 values move to Rust
+`stream.rs` (#22); they must not remain a NumPy-only store.
 
 ## 5. Streaming append (Rust `stream.rs`)
 
@@ -477,7 +482,7 @@ across appends (`Column.suggest_offset`). The client updates only the traces
 named in `affected`.
 
 Phase-4 disk-resident tile spill (#8) consumes this dirty-tile set; it does
-not own the canonical store.
+not own the canonical store. This is not npm packaging (#23).
 
 ## 6. Implementation order
 

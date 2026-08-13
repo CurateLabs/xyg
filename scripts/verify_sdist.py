@@ -2,11 +2,12 @@
 """Verify xy source distributions before upload/install smoke tests.
 
 An sdist is the escape hatch for users without a prebuilt wheel. It must carry
-the Rust source, the prebuilt render-client bundles (built into it by the hatch
-build hook so a from-sdist install needs no Node; §33), the package typing
-marker, and the build hook, while never carrying generated caches or
-platform-native binaries from a local checkout. Stdlib-only so CI can run it
-before installing anything.
+the Rust source, the prebuilt render-client bundles (host-neutral `@curatelabs/xyg`
+plus the Python copy in `python/xy/static`, built into it by the hatch build
+hook so a from-sdist install needs no Node; §33), the package typing marker,
+and the build hook, while never carrying generated caches or platform-native
+binaries from a local checkout. Stdlib-only so CI can run it before installing
+anything.
 """
 
 from __future__ import annotations
@@ -90,6 +91,9 @@ REQUIRED_FILES = {
     "python/xy/styling/capabilities.py",
     "python/xy/static/index.js",
     "python/xy/static/standalone.js",
+    "packages/xy-client/package.json",
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
     "python/xy/widget.py",
     "crates/xyg-core/Cargo.toml",
     "crates/xyg-core/src/lib.rs",
@@ -143,6 +147,7 @@ ALLOWED_TOP_LEVEL = {
     "js",
     "package-lock.json",
     "package.json",
+    "packages",
     "pyproject.toml",
     "python",
     "crates",
@@ -260,24 +265,38 @@ def _require_exact_file(path: str, root: str, member: str, expected: bytes) -> N
         raise AssertionError(f"{member} must be an empty full-package PEP 561 marker")
 
 
+HOST_NEUTRAL_BUNDLES = {
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+}
+
+
+def _forbidden_sdist_member(name: str) -> bool:
+    parts = PurePosixPath(name).parts
+    if parts[0] not in ALLOWED_TOP_LEVEL:
+        return True
+    if parts[0] == "python" and parts[:2] not in {("python", "reflex_xy"), ("python", "xy")}:
+        return True
+    if parts[0] == "packages" and parts[:2] != ("packages", "xy-client"):
+        return True
+    if name in HOST_NEUTRAL_BUNDLES:
+        return False
+    if any(part in FORBIDDEN_PARTS for part in parts):
+        return True
+    return any(name.endswith(suffix) for suffix in FORBIDDEN_SUFFIXES)
+
+
+_ESM_EXPORTS = {"render", "renderStandalone", "decodeFrame", "ChartView"}
+_IIFE_MARKERS = {"var xy=", ".renderStandalone=", ".decodeFrame=", ".ChartView="}
+
+
 def verify_sdist(path: str) -> None:
     root, files = _normalized_files(path)
     missing = sorted(REQUIRED_FILES - files)
     if missing:
         raise AssertionError(f"sdist missing required files: {missing}")
 
-    forbidden = sorted(
-        name
-        for name in files
-        if PurePosixPath(name).parts[0] not in ALLOWED_TOP_LEVEL
-        or (
-            PurePosixPath(name).parts[0] == "python"
-            and PurePosixPath(name).parts[:2] not in {("python", "reflex_xy"), ("python", "xy")}
-        )
-        or PurePosixPath(name).parts[:2] == ("packages", "xy-node")
-        or any(part in FORBIDDEN_PARTS for part in PurePosixPath(name).parts)
-        or any(name.endswith(suffix) for suffix in FORBIDDEN_SUFFIXES)
-    )
+    forbidden = sorted(name for name in files if _forbidden_sdist_member(name))
     if forbidden:
         raise AssertionError(
             f"sdist contains repository-only/generated/native artifacts: {forbidden}"
@@ -285,22 +304,14 @@ def verify_sdist(path: str) -> None:
     _require_pkg_info(path, root)
     _require_exact_file(path, root, "python/xy/py.typed", b"")
     _require_exact_file(path, root, "python/reflex_xy/py.typed", b"")
-    _require_esm_exports(
-        path,
-        root,
-        "python/xy/static/index.js",
-        # The bundle is minified (identifiers renamed), so the public surface is
-        # checked through the export block rather than by name spelling.
-        {"render", "renderStandalone", "decodeFrame", "ChartView"},
-    )
-    _require_file_contains(
-        path,
-        root,
-        "python/xy/static/standalone.js",
-        # Minified IIFE: a top-level `var xy` namespace (window.xy in the
-        # classic <script> that to_html emits) carrying the public surface.
-        {"var xy=", ".renderStandalone=", ".decodeFrame=", ".ChartView="},
-    )
+    # The bundle is minified (identifiers renamed), so the public surface is
+    # checked through the export block rather than by name spelling.
+    _require_esm_exports(path, root, "packages/xy-client/dist/index.js", _ESM_EXPORTS)
+    _require_esm_exports(path, root, "python/xy/static/index.js", _ESM_EXPORTS)
+    # Minified IIFE: a top-level `var xy` namespace (window.xy in the
+    # classic <script> that to_html / Node toHtml emit) carrying the public surface.
+    _require_file_contains(path, root, "packages/xy-client/dist/standalone.js", _IIFE_MARKERS)
+    _require_file_contains(path, root, "python/xy/static/standalone.js", _IIFE_MARKERS)
     _require_file_contains(
         path,
         root,
@@ -311,6 +322,15 @@ def verify_sdist(path: str) -> None:
             "export default { render, decodeFrame };",
         },
     )
+    with tarfile.open(path, "r:gz") as tf:
+        data = tf.extractfile(f"{root}/packages/xy-client/package.json")
+        if data is None:
+            raise AssertionError("packages/xy-client/package.json is missing")
+        manifest = data.read().decode("utf-8")
+    if '"name": "@curatelabs/xyg"' not in manifest:
+        raise AssertionError(
+            "packages/xy-client/package.json must name the paint client @curatelabs/xyg"
+        )
 
 
 def main(argv: Optional[list[str]] = None) -> int:

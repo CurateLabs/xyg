@@ -22,7 +22,20 @@ python -m pip install xy
 ~~~
 ~~~~
 
-Confirm the package imports from the environment where your code will run:
+JavaScript and browser users install the host-neutral paint client instead of
+the Python wheel. The in-repo package name is `@curatelabs/xyg`; registry
+publish waits on the `@curatelabs` npm org.
+
+~~~bash
+npm install @curatelabs/xyg
+~~~
+
+From a source checkout, build it once with `npm ci && node js/build.mjs`.
+Node host bindings (`packages/xy-node`, `@curatelabs/xyg-node`) compose
+charts and call `toHtml()` against that client — they do not read
+`python/xy/static`.
+
+Confirm the Python package imports from the environment where your code will run:
 
 ~~~bash
 python -c "import xy; print(xy.__version__)"
@@ -52,23 +65,28 @@ The runtime-verified WebAssembly wheel targets the standardized PEP 783
 alongside the native wheels. In-browser Python installs it by package name —
 `micropip.install("xy")`, or `%pip install xy` in a JupyterLite notebook.
 This target runs XY's Python and Rust core inside Pyodide; it is separate
-from the JavaScript/WebGL client included with every chart. See
+from the JavaScript/WebGL client (`@curatelabs/xyg`, copied into every Python
+wheel). See
 [Notebooks](/docs/xy/integrations/notebooks/) for how charts display on WASM
 kernels.
 
 ## What the package includes
 
 The regular `xy` dependency already includes NumPy and anywidget support.
-Published platform wheels bundle the Python package, browser client, and native
-Rust compute core. Notebook display and HTML, native PNG, and SVG export do not
-require separate `notebooks` or `export` extras, Node, npm, or a CDN.
+Published platform wheels bundle the Python package, a **copy** of the
+host-neutral browser client, and the native Rust compute core. Notebook
+display and HTML, native PNG, and SVG export do not require separate
+`notebooks` or `export` extras, Node, npm, or a CDN. JS/Node users install
+`@curatelabs/xyg` (and the Node host) instead of the Python wheel.
 
 ## Installing from Git or source
 
 Use the PyPI wheel when your platform is supported. A working source install
 must compile the native compute core, so it requires a Rust toolchain with
-`cargo` and `rustc`. The browser client is committed to the repository; Node
-and npm are not required just to install it.
+`cargo` and `rustc`. The browser client is generated (`node js/build.mjs` →
+`packages/xy-client/dist`, copied into `python/xy/static`); published wheels
+already carry the copy, so Node and npm are not required just to `pip install`
+a wheel.
 
 To reproduce the 0.0.1 release from Git with uv:
 

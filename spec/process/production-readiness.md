@@ -388,7 +388,11 @@ regardless.
   not merely `pyproject.name`: `python/xy/_load_version`,
   `python/reflex_xy/_load_version`, and the release/CI smoke checks resolve
   the distribution `xy` via `importlib.metadata`, and the same question
-  applies to the `@curatelabs/xyg-node` npm package and the `xyg-core` crate.
+  applies to the `@curatelabs/xyg-node` npm package (never publish
+  `@xy/node`) and the `xyg-core` crate. Paint client npm name is
+  `@curatelabs/xyg`. See
+  [host-neutral-architecture.md](../design/host-neutral-architecture.md)
+  and issues #13 / #18 / #23 / #24.
 - *Tag pruning.* Whether the inherited upstream tags stay on `origin`
   (harmless while the publish guards hold) or are deleted.
 - *Re-baseline tag.* The fork's first own version tag, once the name is
