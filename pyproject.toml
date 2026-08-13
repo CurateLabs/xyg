@@ -111,27 +111,32 @@ path = "hatch_build.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    # Both packages published by the xy distribution. The bundled adapter is
-    # selected by the `reflex` extra; the retired python/reflex-xy project and
-    # its independent lock/release material must not ride in this sdist.
-    "python/xy",
-    "python/reflex_xy",
-    "src",
+    # Root-anchored (`/…`) so unanchored names cannot leak siblings: hatchling
+    # pathspec treats `src` as any directory named src, which would pull
+    # `packages/xy-node/src/**`, and `package.json` would pull every nested
+    # manifest. Leading slash matches only from the project root.
+    # Both Python packages published by the xy distribution. The bundled adapter
+    # is selected by the `reflex` extra; the retired python/reflex-xy project
+    # and its independent lock/release material must not ride in this sdist.
+    "/python/xy/**",
+    "/python/reflex_xy/**",
+    "/src/**",
     # The whole js/ dir (TS sources + build.mjs + tsconfig) plus the npm
     # manifests, so the sdist can rebuild the client with `npm ci &&
     # node js/build.mjs` (verify_sdist.py checks the load-bearing files).
-    "js",
-    "packages/xy-client",
-    "package.json",
-    "package-lock.json",
-    "Cargo.toml",
-    "Cargo.lock",
-    "hatch_build.py",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
+    "/js/**",
+    # Paint client only — never the Node koffi host (`packages/xy-node`).
+    "/packages/xy-client/**",
+    "/package.json",
+    "/package-lock.json",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/hatch_build.py",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/SECURITY.md",
+    "/CONTRIBUTING.md",
 ]
 exclude = [
     # Repository-only development, CI, documentation, and evidence material.
@@ -156,6 +161,9 @@ exclude = [
     # Belt and braces for the include narrowing above: hatchling auto-admits
     # readme-named files, which could smuggle the retired adapter project back in.
     "/python/reflex-xy/**",
+    # Node host bindings (koffi) are not a Python-sdist artifact; JS/Node users
+    # consume packages/xy-node from the git checkout / npm, not pip.
+    "/packages/xy-node/**",
 ]
 
 [tool.ruff]
