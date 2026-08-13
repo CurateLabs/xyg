@@ -1694,11 +1694,14 @@ def bar_stack(
         raise ValueError(f"orientation must be one of {tuple(_BAR_ORIENT)}, got {orientation!r}")
     pos = _as_f64(pos, "pos")
     values = np.ascontiguousarray(values, dtype=np.float64)
-    if values.ndim != 2 or min(values.shape) == 0:
-        raise ValueError(f"values must be a non-empty 2-D array, got shape {values.shape}")
+    if values.ndim != 2:
+        raise ValueError(f"values must be a 2-D array, got shape {values.shape}")
     n_series, n_items = values.shape
     if len(pos) != n_items:
         raise ValueError(f"pos length {len(pos)} must match values columns {n_items}")
+    if n_series == 0 or n_items == 0:
+        empty = np.empty((n_series, n_items), dtype=np.float64)
+        return empty, empty.copy(), empty.copy(), empty.copy()
     width_arr = _scalar_or_f64(width, "width")
     base_arr = _scalar_or_f64(base, "base")
     out_x0 = np.empty(n_series * n_items, dtype=np.float64)

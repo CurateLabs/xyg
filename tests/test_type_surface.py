@@ -38,6 +38,7 @@ MARK_FACTORIES = (
     "stem",
     "segments",
     "triangle_mesh",
+    "graph",
 )
 ANNOTATION_FACTORIES = (
     "arrow",
