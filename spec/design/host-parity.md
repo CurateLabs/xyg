@@ -23,6 +23,12 @@ idiomatic I/O only; the browser client owns screen-bounded draw and gestures
 only. This **replaces** upstream rust-engine §1’s “Python owns decisions” for
 this product line (amend that doc when implementing).
 
+**Host-neutral packaging (plan):** Python exists only when the user is using
+Python. Public npm names are `@curatelabs/xyg` (paint client) and
+`@curatelabs/xyg-node` (Node host) — never `@xy/node`. Sequenced implementation:
+[host-neutral-architecture.md](host-neutral-architecture.md) / GitHub #24.
+The §0 location table still describes the *shipped* layout until #23 lands.
+
 ---
 
 ## 0. Three runtime surfaces (product-wide)

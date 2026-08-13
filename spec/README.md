@@ -60,6 +60,12 @@ Internal architecture: how the engine is built and why.
   shipped WebGL2 render path plus the architecture it converges to.
 - [`rust-engine.md`](design/rust-engine.md) — what lives in Rust vs Python and
   how the C-ABI/FFI seam evolves without rewrites.
+- [`host-parity.md`](design/host-parity.md) — three runtime surfaces; Rust owns
+  decisions; Python and Node stay thin loaders over one C ABI.
+- [`host-neutral-architecture.md`](design/host-neutral-architecture.md) —
+  sequenced plan so Python exists only when the user is using Python: crate
+  split (#18), `stream.rs` (#22), paint client `@curatelabs/xyg` (#23), Node
+  host `@curatelabs/xyg-node` replacing `@xy/node`. Tracking: GitHub #24.
 - [`view-state.md`](design/view-state.md) — the unified view-state layer:
   one serializable state object behind history, programmatic zoom/pan/select,
   axis-scoped gestures, and framework-owned tooltips.
