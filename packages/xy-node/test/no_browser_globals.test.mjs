@@ -19,7 +19,7 @@ function collectJsFiles(dir) {
   return out;
 }
 
-test("@xy/node modules do not reference browser globals", () => {
+test("@curatelabs/xyg-node modules do not reference browser globals", () => {
   const files = collectJsFiles(root);
   assert.ok(files.length > 0);
   const banned = /\b(?:window|document|HTMLElement|localStorage)\b/;

@@ -1,5 +1,5 @@
 /**
- * VS Code extension surface for `@xy/node`.
+ * VS Code extension surface for `@curatelabs/xyg-node`.
  *
  * Architecture note:
  * - The **extension host** is a Node process — import this package
@@ -8,7 +8,7 @@
  *   (`python/xy/static` / `window.xy`), not this Node binding.
  * - Typical flow: extension host runs Rust layouts via the C ABI, encodes
  *   §29 f32 buffers, and posts them into the webview for paint. Do not expect
- *   `window` / `document` in this module (or anywhere under `@xy/node`).
+ *   `window` / `document` in this module (or anywhere under `@curatelabs/xyg-node`).
  *
  * This file is a thin re-export of the stable public API.
  */

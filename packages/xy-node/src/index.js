@@ -1,5 +1,5 @@
 /**
- * @xy/node public surface — ABI bindings + host composition helpers.
+ * @curatelabs/xyg-node public surface — ABI bindings + host composition helpers.
  */
 export {
   encodeF32,

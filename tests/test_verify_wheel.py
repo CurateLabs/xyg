@@ -178,7 +178,7 @@ def _write_wheel(
                 data = REFLEX_COMPONENT_JS
             write(zf, name, data)
         if native:
-            write(zf, "xy/_native_lib/libxy_core.dylib", b"native")
+            write(zf, "xy/_native_lib/libxyg_core.dylib", b"native")
         for name, data in extra.items():
             write(zf, name, data)
         wheel_name = "xy-0.0.1.dist-info/WHEEL"

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Dual-host graph force + render-graph microbench (Node / @xy/node host).
+ * Dual-host graph force + render-graph microbench (Node / @curatelabs/xyg-node host).
  *
  * Same force + buildRender timings and node/edge budget assertions as
- * benchmarks/bench_dual_host_graph.py. Loads libxy_core via XY_NATIVE_LIB
+ * benchmarks/bench_dual_host_graph.py. Loads libxyg_core via XYG_NATIVE_LIB
  * (or packages/xy-node resolution). Prints a JSON summary to stdout.
  *
  * Soft ceilings (ms) — catastrophic regression only (~10–20× warm CI):
@@ -12,7 +12,7 @@
  *   n=50000: force 15000 / build_render 2000
  *
  * Usage:
- *   XY_NATIVE_LIB=target/release/libxy_core.so node benchmarks/bench_dual_host_graph_node.mjs
+ *   XYG_NATIVE_LIB=target/release/libxyg_core.dylib node benchmarks/bench_dual_host_graph_node.mjs
  *   node benchmarks/bench_dual_host_graph_node.mjs --sizes 1000
  */
 
@@ -23,7 +23,7 @@ import { performance } from "node:perf_hooks";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
-// Resolve @xy/node from the monorepo package (no publish required).
+// Resolve @curatelabs/xyg-node from the monorepo package (no publish required).
 const xyNode = await import(path.join(ROOT, "packages/xy-node/src/index.js"));
 const {
   abiVersion,

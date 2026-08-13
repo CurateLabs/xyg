@@ -1,5 +1,5 @@
 /**
- * Low-level Node bindings over the shared `xy_core` C ABI.
+ * Low-level Node bindings over the shared `xyg_core` C ABI.
  * Composition helpers live in graph.js / figure.js / sankey.js.
  */
 export {
@@ -76,7 +76,7 @@ export const GRAPH_LAYOUT_IDS = Object.freeze({
   stress: GRAPH_LAYOUT_STRESS,
 });
 
-/** Progressive force families that share xy_graph_force_create/tick. */
+/** Progressive force families that share xyg_graph_force_create/tick. */
 export const GRAPH_PROGRESSIVE_FORCE = Object.freeze(
   new Set([
     GRAPH_LAYOUT_FORCE,
@@ -174,7 +174,7 @@ export function graphForceCreate(nNodes, sources, targets, opts = {}) {
     u64Ptr(handle),
   );
   if (code !== 0 || handle[0] === 0n) {
-    throw new Error(`xy_graph_force_create failed with code ${code}`);
+    throw new Error(`xyg_graph_force_create failed with code ${code}`);
   }
   return handle[0];
 }
@@ -197,7 +197,7 @@ export function graphForceTick(handle, nNodes, steps = 1) {
     f64Ptr(alpha),
   );
   if (code !== 0) {
-    throw new Error(`xy_graph_force_tick failed with code ${code}`);
+    throw new Error(`xyg_graph_force_tick failed with code ${code}`);
   }
   return { x: outX, y: outY, alpha: alpha[0] };
 }
