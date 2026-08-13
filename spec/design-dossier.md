@@ -250,8 +250,9 @@ The two requirements live primarily in the **data pipeline (§4–§6)**. The re
   copy "can be dropped after GPU upload" — but Tiers 1–3 *recompute* decimations and
   bins from raw columns on zoom, and picking/export/drill also read them. Data that
   exists only in VRAM can't serve any of that (readback is slow, and WebGL2 readback
-  paths are worse). So the default is: **the canonical store is CPU-side (JS
-  ArrayBuffers / mmap / server tier), and every GPU buffer is a cache** — droppable,
+  paths are worse). So the default is: **the canonical store is CPU-side (Rust
+  `xyg_stream_*` handles for in-RAM columns; mmap / host arrays for out-of-core;
+  GPU buffers are a cache)** — droppable,
   rebuildable, byte-budgeted (§6). Dropping the CPU copy is a narrow, *explicit*
   opt-in for static Tier-0 traces, and it visibly downgrades the trace (no re-tier on
   zoom, bin-level hover only, no export from source). Full accounting in the Memory

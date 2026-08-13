@@ -8,6 +8,14 @@ in the README).
 
 ## [Unreleased]
 
+### Added
+- ABI 59: Rust-owned canonical f64 stream store (`xyg_stream_new` /
+  `xyg_stream_append` / `xyg_stream_seal` / `xyg_stream_free`) in
+  `crates/xyg-engine/src/stream.rs`. Pyramid build/append can read through
+  stream handles; in-domain appends dirty intersecting in-RAM tiles instead of
+  rebuilding the whole pyramid. Python `Column.append` and Node `Column.append`
+  / `Figure.append` no longer own the growable f64 backing store (#22).
+
 ### Changed
 - Release safety for the CurateLabs fork (#13): the `release.yml` publish job
   is now gated on `github.repository == 'CurateLabs/graphforge-xy'`, a fork

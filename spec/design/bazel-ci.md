@@ -47,7 +47,7 @@ has no `version` input; bazelisk reads `.bazelversion`.
 
 Rust is pinned to **1.88.0** in the workflow (`dtolnay/rust-toolchain`)
 and `rust-toolchain.toml`. Node graph goldens default to the current
-`ABI_VERSION` in `python/xy/_native.py` (58 as of this revision);
+`ABI_VERSION` in `python/xy/_native.py` (59 as of this revision);
 `tools/bazel/run_node_graph_tests.sh` exports `XYG_EXPECTED_ABI` from
 `python/xy/_native.py` when unset.
 
