@@ -1,9 +1,18 @@
 # Specification
 
-The root-level `spec/` directory is XY's engineering source of truth: intended
-behavior, architecture, compatibility, benchmarks, release readiness, and
-contributor contracts. The public documentation lives directly under `docs/`,
-while the Reflex application that renders it lives in `docs/app/`.
+The root-level `spec/` directory is XYG's engineering source of truth:
+intended behavior, architecture, compatibility, benchmarks, release readiness,
+and contributor contracts. The public documentation lives directly under
+`docs/`, while the Reflex application that renders it lives in `docs/app/`.
+
+**XYG** is an independent, GraphForge-oriented graph and data-visualization
+engine: Rust owns every decision that changes shipped buffers or recorded
+outcomes, Python and Node are thin host bindings over one native C ABI
+(`libxyg_core`), and the browser client is paint/pick/gesture/transport only.
+The project began as a fork of `reflex-dev/xy`; **XY** appears in this tree
+only as historical provenance, upstream comparison, inherited compatibility
+evidence, or license attribution. The canonical naming matrix and the staged
+identity migration live in [`design/xyg-naming.md`](design/xyg-naming.md).
 
 Keep this tree current with every relevant code, configuration, build, and
 release change. A change is incomplete while its affected specification is
@@ -58,8 +67,11 @@ Internal architecture: how the engine is built and why.
   feels Reflex-shaped while keeping no Reflex dependency.
 - [`renderer-architecture.md`](design/renderer-architecture.md) — audit of the
   shipped WebGL2 render path plus the architecture it converges to.
-- [`rust-engine.md`](design/rust-engine.md) — what lives in Rust vs Python and
-  how the C-ABI/FFI seam evolves without rewrites.
+- [`rust-engine.md`](design/rust-engine.md) — the Rust workspace
+  (`crates/xyg-engine` + `crates/xyg-core`), what lives in Rust vs the hosts,
+  and how the C-ABI/FFI seam evolves without rewrites.
+- [`xyg-naming.md`](design/xyg-naming.md) — the locked XYG naming matrix, the
+  XY-vs-XYG usage policy, and the identity-migration order.
 - [`view-state.md`](design/view-state.md) — the unified view-state layer:
   one serializable state object behind history, programmatic zoom/pan/select,
   axis-scoped gestures, and framework-owned tooltips.
