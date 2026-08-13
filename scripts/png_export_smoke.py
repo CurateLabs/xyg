@@ -2,7 +2,7 @@
 
 Two engines, both without installing numpy:
 
-- **native** (always runs): drives the Rust rasterizer `xy_rasterize` directly
+- **native** (always runs): drives the Rust rasterizer `xyg_rasterize` directly
   via ctypes with a hand-built display-list command buffer, encodes the returned
   framebuffer to PNG, and asserts a real, correctly-sized, non-blank image — the
   end-to-end browser-free `Chart.to_png(engine=Engine.default)` mechanism.
@@ -119,7 +119,7 @@ def _encode_truecolor(w: int, h: int, rgba: bytes) -> bytes:
 
 def native_smoke() -> None:
     """Rasterize a hand-built command buffer (bg + rect + text) through
-    `xy_rasterize` and validate the encoded PNG — no browser, no numpy."""
+    `xyg_rasterize` and validate the encoded PNG — no browser, no numpy."""
     lib = load()
     w, h = 160, 100
 
@@ -149,9 +149,9 @@ def native_smoke() -> None:
 
     out = (ctypes.c_uint8 * (w * h * 4))()
     cbuf = (ctypes.c_uint8 * len(cmd)).from_buffer_copy(bytes(cmd))
-    ok = lib.xy_rasterize(cbuf, len(cmd), out, w, h)
+    ok = lib.xyg_rasterize(cbuf, len(cmd), out, w, h)
     if ok != 1:
-        raise SystemExit("xy_rasterize rejected a valid command buffer")
+        raise SystemExit("xyg_rasterize rejected a valid command buffer")
     png = _encode_truecolor(w, h, bytes(out))
     if png[:8] != b"\x89PNG\r\n\x1a\n":
         raise SystemExit("native: not a PNG")

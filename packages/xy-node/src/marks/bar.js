@@ -1,5 +1,5 @@
 /**
- * Bar/column mark — grouped / stacked / normalized rects via xy_bar_stack.
+ * Bar/column mark — grouped / stacked / normalized rects via xyg_bar_stack.
  */
 
 import { asF64Array, barStack } from "../encode.js";

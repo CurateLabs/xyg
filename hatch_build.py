@@ -72,9 +72,16 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 def _lib_filename(target: Optional[str] = None) -> str:
     # Cargo emits an Emscripten cdylib as `.wasm`, but Pyodide's dynamic loader
     # follows the Unix extension-module convention and ctypes looks for `.so`.
-    # Choose that wheel-internal destination from the *target*, not the build
-    # host (cibuildwheel supports both Linux and macOS hosts).
-    if target == "wasm32-unknown-emscripten":
+    # Prefer the *target triple* so a macOS/Linux cibuildwheel host packing a
+    # Windows or Darwin cross-build writes the filename that host will load.
+    if target:
+        parts = set(target.split("-"))
+        if "emscripten" in parts:
+            return "libxyg_core.so"
+        if "windows" in parts:
+            return "xyg_core.dll"
+        if "apple" in parts:
+            return "libxyg_core.dylib"
         return "libxyg_core.so"
     if sys.platform == "win32":
         return "xyg_core.dll"

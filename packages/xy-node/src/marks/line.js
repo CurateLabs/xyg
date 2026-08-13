@@ -1,6 +1,6 @@
 /**
  * Thin line mark builder — TypedArray ingest, optional sort, M4 at emit.
- * Decimation decisions stay in Rust (`xy_m4_indices` / `xy_m4_points`).
+ * Decimation decisions stay in Rust (`xyg_m4_indices` / `xyg_m4_points`).
  */
 
 import {

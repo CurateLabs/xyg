@@ -1,6 +1,6 @@
 /**
  * Thin scatter mark builder — TypedArray ingest → figure scatter trace.
- * Encode stays in Rust (`xy_encode_f32`); host only coerces and attaches.
+ * Encode stays in Rust (`xyg_encode_f32`); host only coerces and attaches.
  */
 
 import { asF64Array, encodeF32Values, minMax } from "../encode.js";

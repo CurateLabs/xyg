@@ -199,7 +199,7 @@ test("bar rects match Python fixture when present", () => {
   assert.equal(fig.buildPayload().spec.traces[0].kind, "bar");
 });
 
-test("bar stacked/grouped offsets via xy_bar_stack", () => {
+test("bar stacked/grouped offsets via xyg_bar_stack", () => {
   const x = ["A", "B"];
   const y = [
     [2.0, -1.0],

@@ -995,6 +995,7 @@ pub const BAR_ORIENT_HORIZONTAL: u32 = 1;
 /// (broadcast) or `n_items`. Writes `n_series * n_items` rectangles into the
 /// four output buffers (series-major). Orientation maps category → x and value
 /// → y when vertical, swapped when horizontal — matching `_append_bar_rect`.
+#[allow(clippy::too_many_arguments)]
 pub fn bar_stack_into(
     pos: &[f64],
     values: &[f64],
@@ -1020,8 +1021,8 @@ pub fn bar_stack_into(
         || out_x1.len() < len
         || out_y0.len() < len
         || out_y1.len() < len
-        || !(mode <= BAR_MODE_NORMALIZED)
-        || !(orientation <= BAR_ORIENT_HORIZONTAL)
+        || mode > BAR_MODE_NORMALIZED
+        || orientation > BAR_ORIENT_HORIZONTAL
         || !(width.len() == 1 || width.len() == n_items)
         || !(base.len() == 1 || base.len() == n_items)
         || width.iter().any(|w| !w.is_finite() || *w < 0.0)
@@ -3051,7 +3052,7 @@ fn contourf_sample_count(size: usize) -> usize {
         return size;
     }
     let target = (size - 1).saturating_mul(8).saturating_add(1);
-    target.max(256).min(512)
+    target.clamp(256, 512)
 }
 
 /// Bilinear densify of a contour scalar field before discrete band assignment.
@@ -3059,6 +3060,7 @@ fn contourf_sample_count(size: usize) -> usize {
 /// Writes row-major `out_z` (`out_rows * out_cols`), `out_x` (`out_cols`), and
 /// `out_y` (`out_rows`). Non-finite source corners yield NaN samples. Returns
 /// `(out_rows, out_cols)` or `None` on shape/capacity mismatch.
+#[allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 pub fn contourf_densify(
     z: &[f64],
     rows: usize,
@@ -3253,17 +3255,10 @@ pub fn contourf_bands_into(
             let corners: [Pt; 4] = [
                 (xpos[col], ypos[row], z[row * cols + col]),
                 (xpos[col + 1], ypos[row], z[row * cols + col + 1]),
-                (
-                    xpos[col + 1],
-                    ypos[row + 1],
-                    z[(row + 1) * cols + col + 1],
-                ),
+                (xpos[col + 1], ypos[row + 1], z[(row + 1) * cols + col + 1]),
                 (xpos[col], ypos[row + 1], z[(row + 1) * cols + col]),
             ];
-            let triangle: Vec<Pt> = corners
-                .into_iter()
-                .filter(|c| c.2.is_finite())
-                .collect();
+            let triangle: Vec<Pt> = corners.into_iter().filter(|c| c.2.is_finite()).collect();
             if triangle.len() != 3 {
                 continue;
             }
@@ -3279,8 +3274,7 @@ pub fn contourf_bands_into(
                     let v0 = polygon[0];
                     let v1 = polygon[index];
                     let v2 = polygon[index + 1];
-                    let area =
-                        (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
+                    let area = (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
                     if area.abs() <= eps {
                         continue;
                     }
@@ -3398,6 +3392,7 @@ pub(crate) fn heatmap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4]
 /// Evenly spaced color-stop interpolation for a normalized scalar. Shared by
 /// heatmaps and borrowed per-mark color channels so ties-to-even byte rounding
 /// cannot drift between static chart families.
+#[allow(clippy::needless_range_loop)] // channel indexes stops and color together
 pub(crate) fn colormap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4] {
     debug_assert!(!stops.is_empty());
     let last = stops.len() - 1;
@@ -3453,6 +3448,7 @@ pub fn density_rgba_into(
 /// Precompute the exact log-u8 density colors once. The display-list
 /// rasterizer uses this table to sample compact density bytes directly,
 /// without expanding the full grid to a temporary RGBA image.
+#[allow(clippy::needless_range_loop)] // channel indexes stops and lut color together
 pub(crate) fn density_rgba_lut(
     maximum: f64,
     stops: &[[u8; 3]],
@@ -6434,21 +6430,8 @@ mod tests {
         let mut slots = vec![0i64; needed];
         assert_eq!(
             contourf_bands_into(
-                &z,
-                2,
-                2,
-                &xpos,
-                &ypos,
-                &edges,
-                false,
-                false,
-                &mut x0,
-                &mut y0,
-                &mut x1,
-                &mut y1,
-                &mut x2,
-                &mut y2,
-                &mut slots,
+                &z, 2, 2, &xpos, &ypos, &edges, false, false, &mut x0, &mut y0, &mut x1, &mut y1,
+                &mut x2, &mut y2, &mut slots,
             ),
             Some(3)
         );

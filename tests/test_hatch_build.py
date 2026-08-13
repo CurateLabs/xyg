@@ -50,6 +50,8 @@ def test_emscripten_destination_uses_pyodide_loader_suffix(monkeypatch) -> None:
     # Pyodide's ctypes loader does not look for the build host's `.dylib`.
     monkeypatch.setattr(hb.sys, "platform", "darwin")
     assert hb._lib_filename("wasm32-unknown-emscripten") == "libxyg_core.so"
+    assert hb._lib_filename("aarch64-pc-windows-msvc") == "xyg_core.dll"
+    assert hb._lib_filename("aarch64-apple-darwin") == "libxyg_core.dylib"
     assert hb._lib_filename() == "libxyg_core.dylib"
 
 

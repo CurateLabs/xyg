@@ -83,6 +83,8 @@ NEEDLES = (
     ("XY_EXPECTED_ABI", re.compile(_ENV + r"XY_EXPECTED_ABI\b")),
     ("@xy/node", re.compile(r"['\"]@xy/node['\"]")),
     ("xy_abi_version", re.compile(r"(?<![A-Za-z0-9_])xy_abi_version\b")),
+    ("lib.xy_ FFI", re.compile(r"(?<![A-Za-z0-9_])lib\.xy_[a-z]")),
+    ("_lib.xy_ FFI", re.compile(r"_lib\.xy_[a-z]")),
     ("src/lib.rs ABI", re.compile(r"src/lib\.rs")),
 )
 

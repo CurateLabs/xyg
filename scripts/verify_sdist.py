@@ -274,6 +274,7 @@ def verify_sdist(path: str) -> None:
             PurePosixPath(name).parts[0] == "python"
             and PurePosixPath(name).parts[:2] not in {("python", "reflex_xy"), ("python", "xy")}
         )
+        or PurePosixPath(name).parts[:2] == ("packages", "xy-node")
         or any(part in FORBIDDEN_PARTS for part in PurePosixPath(name).parts)
         or any(name.endswith(suffix) for suffix in FORBIDDEN_SUFFIXES)
     )

@@ -40,7 +40,7 @@ export function candidateNativeLibraries({
   const repoRoot = path.resolve(packageDir, "..", "..");
   const candidates = [];
   if (env.XYG_NATIVE_LIB) {
-    candidates.push(env.XYG_NATIVE_LIB);
+    candidates.push(path.resolve(cwd, env.XYG_NATIVE_LIB));
   }
   candidates.push(path.resolve(packageDir, "_native_lib", name));
   candidates.push(path.resolve(repoRoot, "target", "release", name));
