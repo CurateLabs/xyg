@@ -3,9 +3,12 @@
  *
  * Architecture note:
  * - The **extension host** is a Node process — import this package
- *   (`createEngine`, chart builders, `abiVersion`, graph layout) there.
- * - A **webview** is a browser context; it must use the browser/WebGL client
- *   (`python/xy/static` / `window.xy`), not this Node binding.
+ *   (`createEngine`, chart builders, `abiVersion`, graph layout, `toHtml`)
+ *   there.
+ * - A **webview** is a browser context; it must load the host-neutral paint
+ *   client (`@curatelabs/xyg` ESM `render`, or `./standalone` IIFE
+ *   `window.xy` from `packages/xy-client/dist`), not this Node binding.
+ *   Do not ship webviews from the Python wheel copy.
  * - Typical flow: extension host runs Rust layouts via the C ABI, encodes
  *   §29 f32 buffers, and posts them into the webview for paint. Do not expect
  *   `window` / `document` in this module (or anywhere under `@xy/node`).
@@ -18,6 +21,7 @@ export {
   abiVersion,
   figure,
   Figure,
+  toHtml,
   PROTOCOL_VERSION,
   scatterChart,
   lineChart,

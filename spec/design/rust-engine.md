@@ -347,7 +347,12 @@ Ingest normalization (pandas/arrow/dtype coercion — ecosystem glue),
 tier/budget policy, channel *resolution* (mode inference, palette, warnings),
 validation and error messages (the new bounds/bool hardening lives at this
 layer and belongs there), widget/comm transport. This layer is the product's
-personality; keeping it in Python is a feature.
+personality; keeping it in the *host* is a feature. Node owns the same
+ergonomics role for JS users
+([host-parity.md](host-parity.md); [host-neutral-architecture.md](host-neutral-architecture.md)).
+Python-only forever: composition API, pyplot, Reflex, and embedding a copy
+of the paint client in the wheel. Canonical f64 values move to Rust
+`stream.rs` (#22); they must not remain a NumPy-only store.
 
 ## 5. Streaming append (Phase-0 landed Python-side; Rust `stream.rs` later)
 
@@ -380,7 +385,11 @@ stream touching one region rebuilds ~1 tile/level). Phase-0 instead frees
 the whole pyramid on append, so a >2M-point stream pays a full pyramid
 rebuild on its next far-out view — recorded, not hidden. ABI:
 `xy_stream_new/append/seal/free` + the pyramid fetch reading through the
-stream handle.
+stream handle. Tracked by
+[#22](https://github.com/CurateLabs/xyg/issues/22); sequenced in
+[host-neutral-architecture.md](host-neutral-architecture.md). This is the
+canonical f64 store, not Phase-4 disk spill (#8) and not npm packaging
+(#23).
 
 ## 6. Implementation order
 
@@ -395,4 +404,5 @@ landed; the remainder, in order:
    `hexbin.rs`: `xy_hexbin` (count/mean/sum) ✅; `xy_histogram_edges`
    (NumPy `bins="auto"` = min of Sturges bandwidth and FD floored by
    `sqrt/2`) ✅.
-5. `stream.rs` append (after Arrow ingest lands).
+5. `stream.rs` append (after Arrow ingest lands) —
+   [#22](https://github.com/CurateLabs/xyg/issues/22).

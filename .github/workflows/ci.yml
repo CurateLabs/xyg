@@ -91,6 +91,8 @@ jobs:
 
       - name: JS parses (ESM + IIFE)
         run: |
+          node -e "import('./packages/xy-client/dist/index.js').then(m => { if (!m.default.render) throw new Error('no render export'); })"
+          node --check packages/xy-client/dist/standalone.js
           node -e "import('./python/xy/static/index.js').then(m => { if (!m.default.render) throw new Error('no render export'); })"
           node --check python/xy/static/standalone.js
 
@@ -296,8 +298,9 @@ jobs:
       - name: Build native core
         run: cargo build --release
 
-      # The render client is a generated artifact (§33): build it so the full
-      # test suite (which reads python/xy/static/*.js) has it on disk.
+      # The render client is a generated artifact (§33): build the host-neutral
+      # `@curatelabs/xyg` dist (and the Python wheel copy) so the full test
+      # suite has both on disk.
       - name: Build render client
         run: |
           npm ci

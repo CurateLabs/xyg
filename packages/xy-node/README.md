@@ -8,8 +8,11 @@ Thin Node.js bindings for the shared `xy_core` C ABI cdylib. Uses
 **Use from Node servers and VS Code extensions.** The package is
 runtime-dependency-light (koffi + the shared cdylib), exports a stable
 `createEngine()` / chart-builder API, and never touches `window` /
-`document`. VS Code webviews should use the browser client with §29
-buffers produced by the extension host — see `src/vscode.js`.
+`document`. VS Code webviews should load the host-neutral paint client
+(`@curatelabs/xyg` / `packages/xy-client/dist` standalone IIFE) with §29
+buffers produced by the extension host — see `src/vscode.js`. Do not point
+webviews at `python/xy/static`. HTML export is `figure.toHtml()` /
+`toHtml(payload)`, which inlines that same standalone client.
 
 ## Setup
 
@@ -29,6 +32,18 @@ XY_NATIVE_LIB=/path/to/libxy_core.so npm test
 XY_EXPECTED_ABI=57 npm test   # optional ABI golden override
 ```
 
+## Paint client (HTML / webviews)
+
+Native `.so` lookup (above) is the Rust engine. The WebGL paint client is a
+separate host-neutral artifact:
+
+1. `@curatelabs/xyg` / `packages/xy-client/dist/standalone.js` (IIFE `window.xy`)
+2. `@curatelabs/xyg` / `packages/xy-client/dist/index.js` (ESM `render`)
+
+`toHtml()` and VS Code webviews use that path. They must not read
+`python/xy/static` (that directory is the Python wheel **copy** of the same
+files). From a source checkout: `npm ci && node js/build.mjs` at the repo root.
+
 ## Host composition (graph / marks / sankey)
 
 | Module | Role |
@@ -36,10 +51,11 @@ XY_EXPECTED_ABI=57 npm test   # optional ABI golden override
 | `src/graph.js` | `normalizeGraphInputs` → dense u64; `runLayout` (ABI layout + `build_render`) → `nodePositions`, `edgeSegments`, meta (`lod_tier`, `member_of`, optional CSR, `source_n_*`) |
 | `src/marks/*.js` | Thin TypedArray builders for every chart family (scatter→radar); Rust kernels only |
 | `src/charts.js` | `*Chart` convenience constructors for all dual-host families |
-| `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`). Scatter **density tier** when `n ≥ SCATTER_DENSITY_THRESHOLD` (or `forceDensity`). Line M4 when over `DECIMATION_THRESHOLD`. Contour/errorbar/stem/mesh/ribbon/radar covered. |
+| `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`); `toHtml()` inlines `@curatelabs/xyg` standalone. Scatter **density tier** when `n ≥ SCATTER_DENSITY_THRESHOLD` (or `forceDensity`). Line M4 when over `DECIMATION_THRESHOLD`. Contour/errorbar/stem/mesh/ribbon/radar covered. |
 | `src/force_scheduler.js` | Progressive `force_tick` helper — default chunked `setImmediate` loop; `mode: "worker"` uses `worker_threads`. Node-host only (never browser main thread). |
 | `src/sankey.js` | Thin `composeSankey` over `xy_sankey_layout` → ribbon band polygons (link + node) |
-| `src/vscode.js` | VS Code extension-host re-export + webview/host split notes |
+| `src/vscode.js` | VS Code extension-host re-export + webview notes (`@curatelabs/xyg`, not the Python tree) |
+| `src/html.js` | `toHtml()` — self-contained HTML inlining host-neutral `standalone.js` |
 
 Coverage matrix + LOD tiers: `spec/design/xy-coverage.md` and
 `spec/design/dual-host-parity.json`.
@@ -113,6 +129,7 @@ const graph = graphChart(nodes, edges, { layout: "circle", seed: 1 });
 | Function | Role |
 |---|---|
 | `createEngine()` | stable engine entry (`figure` alias) |
+| `toHtml()` / `Figure.toHtml()` | standalone HTML inlining `@curatelabs/xyg` (not `python/xy/static`) |
 | `abiVersion()` | `xy_abi_version` |
 | `graphLayout` / `graphForce*` / `graphLod*` / `graphBuildRender` | layout + LOD + render graph |
 | `normalizeGraphInputs` / `runLayout` / `composeGraph` | host composition |

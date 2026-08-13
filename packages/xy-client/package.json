@@ -1,0 +1,19 @@
+{
+  "name": "@curatelabs/xyg",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "XYG WebGL2 paint client: paint, pick, and gestures on §29 buffers.",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./dist/index.js",
+    "./standalone": "./dist/standalone.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

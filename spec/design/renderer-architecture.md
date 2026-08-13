@@ -43,14 +43,16 @@ relative mass, not as a budget (see §3 on why a line count failed as a metric).
 
 ### Shared browser client surfaces
 
-The same minified client (`python/xy/static/index.js` ESM + `standalone.js`
-IIFE) is the shared renderer for:
+The same minified client (`@curatelabs/xyg`: `dist/index.js` ESM +
+`dist/standalone.js` IIFE; Python copies both into `python/xy/static/` for the
+wheel) is the shared renderer for:
 
-- Python notebooks via **anywidget** (`index.js` as `_esm`);
-- **HTML export** / notebook HTML fallback (`Figure.to_html` inlines
-  `standalone.js` + `xy.renderStandalone`);
+- Python notebooks via **anywidget** (`index.js` as `_esm` from the wheel copy);
+- **HTML export** / notebook HTML fallback (`Figure.to_html` / Node `toHtml`
+  inline `standalone.js` + `xy.renderStandalone`);
 - Node-served pages and embed hosts that load `window.xy`;
-- VS Code webviews that host the same standalone or ESM bundle.
+- VS Code webviews that host the same standalone or ESM bundle from
+  `@curatelabs/xyg`, not from the Python package tree.
 
 Hosts differ only in transport attachment (anywidget comm, Reflex
 socket.io `/_xy`, or none for static HTML); mark paint stays identical.

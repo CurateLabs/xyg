@@ -23,8 +23,8 @@ runtime may still be landing).
 | Id | Surface | Path / artifact | Consumers | Owns | Must not |
 | --- | --- | --- | --- | --- | --- |
 | `python` | Python host | `python/xy/` (+ `reflex_xy`) | Notebooks (**anywidget** / `show()`), **HTML export** (`to_html()`), **Reflex** | ctypes → Rust ABI; idiomatic Python ingest; transport attach | Parallel layout/LOD/encode decisions |
-| `node` | Node host | `packages/xy-node` | **Server-side Node** and **VS Code extensions** (VS Code consumes Node bindings — not a separate stack) | koffi → same Rust ABI; TypedArray ingest; embed/webview attach | Browser-only APIs (`window` / DOM / WebGL) |
-| `browser` | Browser client | `js/src` → `python/xy/static/{index,standalone}.js` | Shared renderer for every host | WebGL2 **paint / pick / gestures** on uploaded §29 buffers | Layout / LOD / encode product path; `koffi` / `node:fs` |
+| `node` | Node host | `packages/xy-node` | **Server-side Node** and **VS Code extensions** (VS Code consumes Node bindings — not a separate stack). HTML export via `toHtml()` inlines `@curatelabs/xyg`, not the Python tree. | koffi → same Rust ABI; TypedArray ingest; embed/webview attach | Browser-only APIs (`window` / DOM / WebGL) |
+| `browser` | Browser client | `js/src` → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`); Python copies into `python/xy/static/` | Shared renderer for every host | WebGL2 **paint / pick / gestures** on uploaded §29 buffers | Layout / LOD / encode product path; `koffi` / `node:fs` |
 
 **Invariants**
 

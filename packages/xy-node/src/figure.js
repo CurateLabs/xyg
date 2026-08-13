@@ -56,6 +56,7 @@ import { composeStem } from "./marks/stem.js";
 import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
+import { toHtml } from "./html.js";
 
 export { PROTOCOL_VERSION };
 
@@ -1123,6 +1124,14 @@ export class Figure {
       spec,
       buffers: split ? pw.buffers() : pw.blob(),
     };
+  }
+
+  /**
+   * Self-contained HTML document inlining the host-neutral `@curatelabs/xyg`
+   * standalone client. See {@link toHtml}.
+   */
+  toHtml(path = null, opts = {}) {
+    return toHtml(this, path, opts);
   }
 }
 

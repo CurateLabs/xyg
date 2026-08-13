@@ -23,6 +23,13 @@ idiomatic I/O only; the browser client owns screen-bounded draw and gestures
 only. This **replaces** upstream rust-engine §1’s “Python owns decisions” for
 this product line (amend that doc when implementing).
 
+**Host-neutral packaging:** Python exists only when the user is using
+Python. Public npm names are `@curatelabs/xyg` (paint client) and
+`@curatelabs/xyg-node` (Node host) — never `@xy/node`. Plan:
+[host-neutral-architecture.md](host-neutral-architecture.md) / GitHub #24.
+The paint-client artifact is in-repo as `@curatelabs/xyg` (#23); registry
+publish waits on the `@curatelabs` npm org (#13).
+
 ---
 
 ## 0. Three runtime surfaces (product-wide)
@@ -32,9 +39,9 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 
 | Surface | Location | Role |
 |---|---|---|
-| **1. Python host** | `python/xy/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. |
-| **2. Node host** | `packages/xy-node` | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. |
-| **3. Browser client** | `js/src/*.ts` → `python/xy/static/{index,standalone}.js` | Shared WebGL2 renderer: **paint / pick / gestures only**. Draws §29 buffers uploaded by any host. Never owns layout, LOD, or encode on the product path. |
+| **1. Python host** | `python/xy/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. Embeds a **copy** of the paint client in the wheel (`python/xy/static/`) so Python users need no Node. |
+| **2. Node host** | `packages/xy-node` | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. `toHtml()` inlines the host-neutral standalone client, not the Python tree. |
+| **3. Browser client** | `js/src/*.ts` → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 renderer: **paint / pick / gestures only**. Host-neutral npm artifact; Python **copies** the same files into the wheel. Draws §29 buffers uploaded by any host. Never owns layout, LOD, or encode on the product path. |
 
 ### Contracts (MUST)
 
@@ -66,7 +73,7 @@ See [dual-host-parity-matrix.md](dual-host-parity-matrix.md) §0 and the
 |---|---|
 | Rust viz `cdylib` C ABI | All kernels (existing marks + `xy_graph_*`); **u64** graph element indices |
 | Wire / §29 buffers | Identical binary payloads for the same figure spec |
-| JS render client | One bundled WebGL client (`index.js` / `standalone.js`) |
+| JS render client | One bundled WebGL client (`@curatelabs/xyg`: `index.js` / `standalone.js`); Python copies into the wheel |
 | Public chart semantics | Same mark kinds, options, defaults, layout/LOD decisions |
 
 Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
@@ -122,8 +129,9 @@ client must not grow a parallel “JS layout/LOD” product path.
   [graph-fork-requirements.md](graph-fork-requirements.md) REQ-API-3 remain
   available with the same semantics on Python and Node.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
-  in transport attachment. The same `js/src` → `static/index.js` /
-  `standalone.js` client serves Python notebooks (anywidget), HTML export,
+  in transport attachment. The same `js/src` → `@curatelabs/xyg`
+  (`packages/xy-client/dist/{index,standalone}.js`) client serves Python
+  notebooks (anywidget, via the wheel **copy**), HTML export on either host,
   Node-served pages, and VS Code webviews. `58_graph.ts` is an optional
   enhancement (neighborhood hover); all wire marks paint without it. The client draws uploaded §29 buffers and MUST NOT
   reimplement layout/LOD/encode for the product path.
