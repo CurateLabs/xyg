@@ -187,7 +187,7 @@ simd > svg) is the stable fact — rasterization is the second-largest thing in
 the workspace, and it is not a helper.
 
 Rules: `crates/xyg-core` is the only crate with `unsafe` (except
-`xyg-engine/src/simd.rs`, §3.4 rule 3); engine modules are pure functions over
+`crates/xyg-engine/src/simd.rs`, §3.4 rule 3); engine modules are pure functions over
 slices (fuzzable, testable without crossing FFI); the engine's public API is
 the deliberate re-export list in its `lib.rs`, never an accident of module
 visibility; **dependencies are minimized, not prohibited** (policy
@@ -270,7 +270,7 @@ formats only; the SVG and PDF export paths have their own text contracts.
   array data, no callbacks into hosts, no unwinding across FFI.
 - **f64 in, f32 out** for geometry (offset-encoded, §16); u32 for indices.
 - **Lockstep `ABI_VERSION`** in `crates/xyg-core/src/lib.rs`,
-  `python/xy/_native.py`, `packages/xy-node/src/native.js`, and
+  `python/xy/_native.py`, `packages/xy-node/src/native-path.js`, and
   `scripts/abi_smoke.py`. Both hosts call `xyg_abi_version()` immediately
   after loading the library, **before binding or calling any other symbol**,
   and fail with expected-vs-observed versions plus a reinstall/build
@@ -403,11 +403,13 @@ machine-checkable source of truth:
   and writes `spec/abi/xyg-abi.json`.
 - `scripts/check_abi_parity.py` regenerates the manifest and validates every
   declaration site against it: the checked-in manifest itself (stale-manifest
-  detection), Python ctypes argtypes/restype in `python/xy/_native.py`, Node
-  koffi prototype strings in `packages/xy-node/src/native.js`, the stdlib
-  redeclarations in `scripts/abi_smoke.py`, and the `ABI_VERSION` constants in
-  all four places. Any mismatch — missing symbol, extra symbol, arity or type
-  disagreement, version skew — fails the gate.
+  detection), Python ctypes bindings in `python/xy/_native.py`, Node koffi
+  prototype strings in `packages/xy-node/src/native.js`, the stdlib
+  redeclarations in `scripts/abi_smoke.py`, and the `ABI_VERSION` constants.
+  Python ctypes must match the Rust symbol set exactly. `abi_smoke` and Node
+  koffi may bind a subset (the stdlib smoke is a focused probe; hosts that do
+  not need every kernel omit unused symbols). Extra symbols or Node arity
+  disagreement against Rust fail the gate. Version skew anywhere fails the gate.
 - The gate runs in the test suite and CI; regenerating the manifest is part of
   any ABI change, and a bump of `ABI_VERSION` must land in lock-step
   everywhere it is declared.

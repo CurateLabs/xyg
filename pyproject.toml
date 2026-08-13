@@ -113,7 +113,7 @@ include = [
     # its independent lock/release material must not ride in this sdist.
     "python/xy",
     "python/reflex_xy",
-    "src",
+    "crates",
     # The whole js/ dir (TS sources + build.mjs + tsconfig) plus the npm
     # manifests, so the sdist can rebuild the client with `npm ci &&
     # node js/build.mjs` (verify_sdist.py checks the load-bearing files).

@@ -333,7 +333,7 @@ describe that target, not current behavior; see the shipped subset after them:
 - Colormapping (including perceptual/log scaling and dynamic-range normalization)
   happens at *composite* time on the aggregate values, so restyling never re-bins.
 
-*Shipped today (`src/tiles.rs`, `python/xy/interaction.py`):* a **single square count
+*Shipped today (`crates/xyg-engine/src/tiles.rs`, `python/xy/interaction.py`):* a **single square count
 pyramid**, not tiles. One trace-wide grid over the full data bounds whose finest level
 is `PYRAMID_BASE_DIM`² (2048², `python/xy/config.py`), each coarser level an exact 4→1
 u64 sum saturating to u32 down to 1². Built lazily on the first density view at
@@ -1330,7 +1330,7 @@ hits a source build requiring a Rust toolchain — an instant adoption cliff.
   rather than provisioned through conda: keeping ~200 packages out of the
   mamba solve makes the image build faster and sidesteps observed extraction
   flakes on mybinder builder nodes.
-  `.binder/postBuild` installs the checkout with `XY_REQUIRE_CARGO=1`, making a
+  `.binder/postBuild` installs the checkout with `XYG_REQUIRE_CARGO=1`, making a
   missing native core fail during image construction rather than later at
   notebook import; if the source build breaks, the fallback is
   `pip install xy` (the published linux-64 wheel), losing only

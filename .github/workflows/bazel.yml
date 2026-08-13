@@ -57,7 +57,7 @@ jobs:
         working-directory: packages/xy-node
 
       - name: Bazel build release cdylib
-        run: ./bazel build //:xy_core
+        run: ./bazel build //:xyg_core
 
       - name: Bazel test graph MVP
         run: ./bazel test //:graph_mvp_tests

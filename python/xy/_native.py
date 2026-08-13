@@ -1028,6 +1028,17 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
     ]
+    lib.xyg_rasterize_png_data.restype = ctypes.c_size_t
+    lib.xyg_rasterize_png_data.argtypes = [
+        ctypes.c_void_p,  # cmd
+        ctypes.c_size_t,  # cmd_len
+        ctypes.c_void_p,  # external data arena
+        ctypes.c_size_t,  # data_len
+        ctypes.c_void_p,  # out PNG bytes
+        ctypes.c_size_t,  # out_capacity
+        ctypes.c_size_t,  # w
+        ctypes.c_size_t,  # h
+    ]
     lib.xyg_rasterize_data.restype = ctypes.c_int32
     lib.xyg_rasterize_data.argtypes = [
         ctypes.c_void_p,  # cmd
@@ -4110,6 +4121,32 @@ def rasterize_png(cmds: bytes, w: int, h: int) -> bytes:
     return out[:written].tobytes()
 
 
+def rasterize_png_data(cmds: bytes, data: bytes, w: int, h: int) -> bytes:
+    """Paint a display list with an external arena and encode PNG in Rust."""
+    w = _positive_int(w, "raster width")
+    h = _positive_int(h, "raster height")
+    buf = np.frombuffer(cmds, dtype=np.uint8)
+    arena = np.frombuffer(data, dtype=np.uint8)
+    raw_len = operator.mul(operator.mul(w, h), 4)
+    capacity = raw_len + raw_len // 8 + 65_536
+    out = np.empty(capacity, dtype=np.uint8)
+    written = _lib.xyg_rasterize_png_data(
+        _ptr_u8(buf) if buf.size else None,
+        buf.size,
+        _ptr_u8(arena) if arena.size else None,
+        arena.size,
+        _ptr_u8(out),
+        out.size,
+        w,
+        h,
+    )
+    if written == _USIZE_MAX or written > out.size:
+        raise ValueError(
+            "native raster-to-PNG encoder rejected the command buffer or external data"
+        )
+    return out[:written].tobytes()
+
+
 def rasterize_data(cmds: bytes, data: bytes, w: int, h: int) -> npt.NDArray[np.uint8]:
     """Paint a display list that may reference a synchronous external arena."""
     w = _positive_int(w, "raster width")
@@ -4303,7 +4340,9 @@ def drill_decision(visible: int, budget: float, in_drill: bool, exit_factor: flo
     if not isinstance(in_drill, (bool, np.bool_)):
         raise ValueError("in_drill must be True or False")
     out = ctypes.c_int32()
-    ok = _lib.xyg_drill_decision(visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out))
+    ok = _lib.xyg_drill_decision(
+        visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out)
+    )
     if ok != 1:
         raise ValueError("invalid drill_decision arguments")
     return bool(out.value)
@@ -4786,7 +4825,7 @@ def contourf_bands(
     return tuple(cols_out), slots
 
 
-# xy_css_check kinds — keep in sync with `src/lib.rs`.
+# xyg_css_check kinds — keep in sync with `crates/xyg-core/src/lib.rs`.
 CSS_DECLARATION = 0
 CSS_COLOR = 1
 CSS_LENGTH = 2
@@ -4796,7 +4835,7 @@ CSS_NUMBER = 3
 def css_check(
     kind: int, value: str, prop: str = ""
 ) -> tuple[int, Optional[tuple[float, float, float, float]]]:
-    """Validate a CSS value against the native grammar (`src/css.rs`).
+    """Validate a CSS value against the native grammar (`crates/xyg-engine/src/css.rs`).
 
     Returns ``(status, rgba)``: status 1 = parsed statically, 2 = valid but
     browser-resolved (`var()`/`oklch()`/`calc()`/unknown-property

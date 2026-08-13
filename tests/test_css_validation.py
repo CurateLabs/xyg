@@ -1,6 +1,6 @@
 """CSS value validation: the native grammar gates every styling surface.
 
-One parser (src/css.rs, over `kernels.css_check`) serves the Python argument
+One parser (crates/xyg-engine/src/css.rs, over `kernels.css_check`) serves the Python argument
 validators, the color-vs-column disambiguation, and the native raster — so a
 malformed color/length/declaration errors loudly at build time (§28: no
 silent decisions) instead of rendering a silently-wrong mark, and the raster

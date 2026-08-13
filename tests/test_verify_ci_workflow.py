@@ -36,7 +36,7 @@ verify_ci_workflow = _load_verify_module()
 # mutate this line, so it must stay a verbatim copy of the workflow's own
 # spelling (the fork opt-in variable plus the manual dry-run switch, #13).
 RELEASE_PUBLISH_GATE_LINE = (
-    "        if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && "
+    "        if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')\n"
 )
 
@@ -1009,7 +1009,7 @@ def test_ci_workflow_rejects_benchmark_job_without_required_native_install(
     path = tmp_path / "ci.yml"
     path.write_text(
         workflow.replace(
-            '        env:\n          XY_REQUIRE_CARGO: "1"\n'
+            '        env:\n          XYG_REQUIRE_CARGO: "1"\n'
             "        run: |\n          uv venv .venv\n"
             "          uv pip install -p .venv/bin/python \\\n"
             "            --constraint benchmarks/requirements-ci.lock -e .\n",
@@ -1022,7 +1022,7 @@ def test_ci_workflow_rejects_benchmark_job_without_required_native_install(
 
     errors = verify_ci_workflow.validate_workflow(path)
 
-    assert any("benchmark" in error and "XY_REQUIRE_CARGO" in error for error in errors)
+    assert any("benchmark" in error and "XYG_REQUIRE_CARGO" in error for error in errors)
 
 
 def test_codspeed_workflow_rejects_missing_native_backend_assertion(tmp_path: Path) -> None:
@@ -1048,7 +1048,7 @@ def test_codspeed_workflow_rejects_non_strict_native_install(tmp_path: Path) -> 
     path = tmp_path / "codspeed.yml"
     path.write_text(
         workflow.replace(
-            '        env:\n          XY_REQUIRE_CARGO: "1"\n'
+            '        env:\n          XYG_REQUIRE_CARGO: "1"\n'
             "        run: |\n          uv venv .venv\n"
             "          uv pip install -p .venv/bin/python -e . --group dev --group codspeed\n",
             "        run: |\n          uv venv .venv\n"
@@ -1060,7 +1060,7 @@ def test_codspeed_workflow_rejects_non_strict_native_install(tmp_path: Path) -> 
     errors = verify_ci_workflow.validate_codspeed_workflow(path)
 
     assert any(
-        "CodSpeed benchmarks job" in error and "XY_REQUIRE_CARGO" in error for error in errors
+        "CodSpeed benchmarks job" in error and "XYG_REQUIRE_CARGO" in error for error in errors
     )
 
 
@@ -1427,13 +1427,13 @@ def test_ci_workflow_rejects_missing_sdist_rust_smoke(tmp_path: Path) -> None:
     path = tmp_path / "ci.yml"
     moved = workflow.replace(
         "      - name: Build sdist\n",
-        '      - name: Build sdist\n        env:\n          XY_REQUIRE_CARGO: "1"\n',
+        '      - name: Build sdist\n        env:\n          XYG_REQUIRE_CARGO: "1"\n',
         1,
     ).replace(
         "      - name: Build and load native core from sdist\n"
         "        shell: bash\n"
         "        env:\n"
-        '          XY_REQUIRE_CARGO: "1"\n',
+        '          XYG_REQUIRE_CARGO: "1"\n',
         "      - name: Build and load native core from sdist\n        shell: bash\n",
     )
     path.write_text(moved, encoding="utf-8")
@@ -1441,7 +1441,7 @@ def test_ci_workflow_rejects_missing_sdist_rust_smoke(tmp_path: Path) -> None:
     errors = verify_ci_workflow.validate_ci_workflow(path)
 
     assert any(
-        "Build and load native core from sdist" in error and "XY_REQUIRE_CARGO" in error
+        "Build and load native core from sdist" in error and "XYG_REQUIRE_CARGO" in error
         for error in errors
     )
 
@@ -1451,13 +1451,13 @@ def test_release_workflow_rejects_missing_sdist_rust_smoke(tmp_path: Path) -> No
     path = tmp_path / "release.yml"
     moved = workflow.replace(
         "      - name: Build sdist\n",
-        '      - name: Build sdist\n        env:\n          XY_REQUIRE_CARGO: "1"\n',
+        '      - name: Build sdist\n        env:\n          XYG_REQUIRE_CARGO: "1"\n',
         1,
     ).replace(
         "      - name: Build and load native core from sdist\n"
         "        shell: bash\n"
         "        env:\n"
-        '          XY_REQUIRE_CARGO: "1"\n',
+        '          XYG_REQUIRE_CARGO: "1"\n',
         "      - name: Build and load native core from sdist\n        shell: bash\n",
     )
     path.write_text(moved, encoding="utf-8")
@@ -1465,7 +1465,7 @@ def test_release_workflow_rejects_missing_sdist_rust_smoke(tmp_path: Path) -> No
     errors = verify_ci_workflow.validate_release_workflow(path)
 
     assert any(
-        "Build and load native core from sdist" in error and "XY_REQUIRE_CARGO" in error
+        "Build and load native core from sdist" in error and "XYG_REQUIRE_CARGO" in error
         for error in errors
     )
 
@@ -1653,10 +1653,10 @@ def test_release_workflow_rejects_missing_fork_publish_guard_step(tmp_path: Path
 
 
 def test_release_workflow_rejects_missing_publish_opt_in_variable(tmp_path: Path) -> None:
-    """Dropping the XY_ALLOW_PYPI_PUBLISH opt-in from the upload condition
+    """Dropping the XYG_ALLOW_PYPI_PUBLISH opt-in from the upload condition
     reverts to publish-on-tag, which this fork must never do (#13)."""
     workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    opt_in = "vars.XY_ALLOW_PYPI_PUBLISH == 'true' && "
+    opt_in = "vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
     assert opt_in in workflow
     path = tmp_path / "release.yml"
     path.write_text(workflow.replace(opt_in, ""), encoding="utf-8")

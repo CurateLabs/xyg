@@ -233,7 +233,7 @@ pyramid replaces per-view scans with per-view *tile composition*.
 
 ### 4.1 Structure
 
-> **Shipped vs target (don’t misread):** the Phase-3 kernel in `src/tiles.rs`
+> **Shipped vs target (don’t misread):** the Phase-3 kernel in `crates/xyg-engine/src/tiles.rs`
 > stores each level as **one contiguous grid** (`levels: Vec<Vec<u32>>` plus
 > optional `[u16; 4]` mean-color planes) — there is no `(level, tx, ty)`
 > addressing, tile fetch, or spill in the shipped ABI (57). The 256²-tile
@@ -698,20 +698,20 @@ contract entry before it lands.
 
 **Phase 3 — pyramid (build + serve shipped on Python + Node; client tile
 cache and dedicated 100M latency gate still open)**
-6. **Done (count + mean-color planes):** `src/tiles.rs` builds a square count
+6. **Done (count + mean-color planes):** `crates/xyg-engine/src/tiles.rs` builds a square count
    pyramid over the trace's full data bounds — finest level is
    `PYRAMID_BASE_DIM`² (2048², `python/xy/config.py`), each coarser level an
    exact 4→1 u64 sum saturating to u32, so every level conserves total count.
    Channel-bearing traces build the §4.1 mean-color planes alongside
-   (`xy_pyramid_build_color`, one fused scan — fan-out gated by the
+   (`xyg_pyramid_build_color`, one fused scan — fan-out gated by the
    points-per-cell ratio and capped at 4 workers, ~170 MB transient
    accumulator each; +8 B/cell stored, ~45 MB/colored trace at the default
    base, reported by `pyramid_report_bytes`) and serve them with
-   `xy_pyramid_compose_color`,
-   whose count grid is bit-identical to `xy_pyramid_compose`. C ABI is
-   `xy_pyramid_build` / `xy_pyramid_build_color` / `xy_pyramid_append` /
-   `xy_pyramid_count` / `xy_pyramid_compose` / `xy_pyramid_compose_color` /
-   `xy_pyramid_free` (no per-tile fetch entry point; composition happens
+   `xyg_pyramid_compose_color`,
+   whose count grid is bit-identical to `xyg_pyramid_compose`. C ABI is
+   `xyg_pyramid_build` / `xyg_pyramid_build_color` / `xyg_pyramid_append` /
+   `xyg_pyramid_count` / `xyg_pyramid_compose` / `xyg_pyramid_compose_color` /
+   `xyg_pyramid_free` (no per-tile fetch entry point; composition happens
    kernel-side). Handles are slab indices behind a mutex, cached per trace
    and built lazily by `interaction._ensure_pyramid` on the first density
    view at ≥ `PYRAMID_MIN_POINTS` (2,000,000), released by a weakref

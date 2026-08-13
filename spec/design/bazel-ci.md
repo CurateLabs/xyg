@@ -9,9 +9,9 @@ not by converting every existing GitHub Actions workflow.
 
 | Target | Role |
 | --- | --- |
-| `//:xy_core` | `cargo build --release` → `libxy_core.so` |
-| `//:rust_test` | `cargo test` |
-| `//:abi_smoke` | `scripts/abi_smoke.py` with `XY_NATIVE_LIB` |
+| `//:xyg_core` | `cargo build --release` → `libxyg_core.so` |
+| `//:rust_test` | `cargo test --workspace` |
+| `//:abi_smoke` | `scripts/abi_smoke.py` with `XYG_NATIVE_LIB` |
 | `//:python_graph_test` | pytest `tests/test_graph.py` (+ sankey when present) |
 | `//:node_graph_test` | `packages/xy-node` tests against the same `.so` |
 | `//:perf_parity_test` | dual-host graph + kernel soft ceilings (small N) |
@@ -47,14 +47,14 @@ has no `version` input; bazelisk reads `.bazelversion`.
 
 Rust is pinned to **1.88.0** in the workflow (`dtolnay/rust-toolchain`)
 and `rust-toolchain.toml`. Node graph goldens default to the current
-`ABI_VERSION` in `python/xy/_native.py` (57 as of this revision);
-`tools/bazel/run_node_graph_tests.sh` exports `XY_EXPECTED_ABI` from
+`ABI_VERSION` in `python/xy/_native.py` (58 as of this revision);
+`tools/bazel/run_node_graph_tests.sh` exports `XYG_EXPECTED_ABI` from
 `python/xy/_native.py` when unset.
 
 ## Local
 
 ```bash
-./bazel build //:xy_core
+./bazel build //:xyg_core
 ./bazel test //:graph_mvp_tests
 # or individually:
 ./bazel test //:rust_test //:abi_smoke //:python_graph_test //:node_graph_test

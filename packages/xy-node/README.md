@@ -42,7 +42,7 @@ XYG_EXPECTED_ABI=58 npm test   # optional ABI golden override
 | `src/charts.js` | `*Chart` convenience constructors for all dual-host families |
 | `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`). Scatter **density tier** when `n ≥ SCATTER_DENSITY_THRESHOLD` (or `forceDensity`). Line M4 when over `DECIMATION_THRESHOLD`. Contour/errorbar/stem/mesh/ribbon/radar covered. |
 | `src/force_scheduler.js` | Progressive `force_tick` helper — default chunked `setImmediate` loop; `mode: "worker"` uses `worker_threads`. Node-host only (never browser main thread). |
-| `src/sankey.js` | Thin `composeSankey` over `xy_sankey_layout` → ribbon band polygons (link + node) |
+| `src/sankey.js` | Thin `composeSankey` over `xyg_sankey_layout` → ribbon band polygons (link + node) |
 | `src/vscode.js` | VS Code extension-host re-export + webview/host split notes |
 
 Coverage matrix + LOD tiers: `spec/design/xy-coverage.md` and

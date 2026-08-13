@@ -245,7 +245,7 @@ def string_mapping(value: dict[str, Any], label: str) -> dict[str, str]:
 
 
 # xy_css_check error codes -> human reasons (the negated CssErr
-# discriminants; keep in sync with src/css.rs).
+# discriminants; keep in sync with crates/xyg-engine/src/css.rs).
 _CSS_ERROR_REASONS = {
     -1: "is empty",
     -2: "contains an unsafe character (';', '{', '}', '</', or a control character)",
@@ -280,7 +280,7 @@ def _css_reason(status: int) -> str:
 def css_color(value: Any, label: str) -> str:
     """A CSS `<color>` literal. Closed grammars (hex, `rgb()`/`hsl()`, the
     full named-color table, `transparent`, `currentColor`) parse strictly in
-    the native core (src/css.rs); browser-resolved forms (`var()`,
+    the native core (crates/xyg-engine/src/css.rs); browser-resolved forms (`var()`,
     `oklch()`, `color-mix()`, ...) are shape-checked and passed through. A
     malformed color errors loudly here instead of rendering as a silently
     wrong mark color (§28: no silent decisions)."""
@@ -360,7 +360,7 @@ def _validate_style_mapping(value: dict[str, Any], label: str) -> dict[str, str 
             # A string value is one CSS declaration: closed grammars
             # (color/length/number properties) parse strictly, unknown
             # properties pass through with declaration-context safety intact
-            # (src/css.rs; numeric values follow the px convention instead).
+            # (crates/xyg-engine/src/css.rs; numeric values follow the px convention instead).
             status = _css_check(kernels.CSS_DECLARATION, item, _css_property_name(key))
             if status <= 0:
                 raise ValueError(f"{label}[{key!r}] {item!r} {_css_reason(status)}")
@@ -667,7 +667,7 @@ def _resolved_rgb(color: Any, label: str) -> tuple[int, int, int]:
     A colormap becomes a LUT in three renderers — the WebGL client, the SVG
     writer, and the native rasterizer — and only the first of those has a DOM.
     So a stop must parse to concrete channels *here* (hex, `rgb()`, `hsl()`,
-    named colors: the closed grammars in src/css.rs). Browser-resolved forms
+    named colors: the closed grammars in crates/xyg-engine/src/css.rs). Browser-resolved forms
     (`var()`, `oklch()`, `color-mix()`) are legal everywhere XY takes a single
     paint color, but they cannot produce the same ramp in a headless export, so
     they are refused with the reason rather than silently baked to a fallback

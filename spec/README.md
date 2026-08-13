@@ -72,6 +72,14 @@ Internal architecture: how the engine is built and why.
   and how the C-ABI/FFI seam evolves without rewrites.
 - [`xyg-naming.md`](design/xyg-naming.md) — the locked XYG naming matrix, the
   XY-vs-XYG usage policy, and the identity-migration order.
+
+## abi/
+
+Machine-checkable C ABI contract for `libxyg_core`.
+
+- [`xyg-abi.json`](abi/xyg-abi.json) — **generated** from
+  `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`. Hosts are
+  checked against it by `scripts/check_abi_parity.py`; do not hand-edit.
 - [`view-state.md`](design/view-state.md) — the unified view-state layer:
   one serializable state object behind history, programmatic zoom/pan/select,
   axis-scoped gestures, and framework-owned tooltips.

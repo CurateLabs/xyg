@@ -105,7 +105,7 @@ def test_line_marker_codes_stay_aligned_across_renderers() -> None:
     root = Path(__file__).resolve().parents[2]
     chartview = (root / "js/src/50_chartview.ts").read_text(encoding="utf-8")
     shader = (root / "js/src/40_gl.ts").read_text(encoding="utf-8")
-    raster = (root / "src/raster.rs").read_text(encoding="utf-8")
+    raster = (root / "crates/xyg-engine/src/raster.rs").read_text(encoding="utf-8")
 
     assert marks._SYMBOL_CODES["horizontal_line"] == _raster._SYMBOLS["horizontal_line"] == 17
     assert marks._SYMBOL_CODES["vertical_line"] == _raster._SYMBOLS["vertical_line"] == 18

@@ -1710,7 +1710,9 @@ def main() -> None:
     # min_max sentinel path.
     lo = ctypes.c_double()
     hi = ctypes.c_double()
-    got = lib.xyg_min_max(_ptr(data, ctypes.c_double), len(data), ctypes.byref(lo), ctypes.byref(hi))
+    got = lib.xyg_min_max(
+        _ptr(data, ctypes.c_double), len(data), ctypes.byref(lo), ctypes.byref(hi)
+    )
     ok(got == 1 and lo.value == 0.0 and hi.value == 9.0, "min_max ok")
     allnan = array("d", [float("nan")])
     ok(

@@ -5,7 +5,7 @@ implementation not started. Phase-3 square pyramid is **productized**
 on Python and Node ([lod-architecture.md](lod-architecture.md) §4 /
 Phase 3; [tier3-testing.md](tier3-testing.md);
 [xy-coverage.md](xy-coverage.md)). Note the shipped Phase-3 pyramid is
-**not tiled** — `src/tiles.rs` stores one contiguous grid per level — so
+**not tiled** — `crates/xyg-engine/src/tiles.rs` stores one contiguous grid per level — so
 Phase 4 is a storage-layout change, not a residency wrapper.
 
 **Tracking issue:** [#5](https://github.com/CurateLabs/graphforge-xy/issues/5)
@@ -31,12 +31,12 @@ must spill:
 | Pan | Re-compose from resident levels | Fetch only newly exposed tiles; reuse LRU |
 | Zoom | Level pick + compose | Adjacent-level tile set + optional crossfade |
 | Deep zoom | Spatial index / exact re-bin | Unchanged companion (`_spatial`) |
-| Hosts | Python + Node bind `xy_pyramid_*` | Same hosts; new spill/fetch ABI |
+| Hosts | Python + Node bind `xyg_pyramid_*` | Same hosts; new spill/fetch ABI |
 
 ## Goals (MUST)
 
 1. **Rust owns spill/load** — tile residency, LRU, and compose-from-tiles live
-   in `libxy_core` (extend `tiles.rs` / new `tile_store.rs`). Hosts stay thin.
+   in `libxyg_core` (extend `tiles.rs` / new `tile_store.rs`). Hosts stay thin.
 2. **Screen-bounded replies** — at most ~ceil(w/256+1)×ceil(h/256+1) tiles
    contribute to a frame; client never holds more than screen-bounded textures.
 3. **§28 recording** — every reply records `binning: "pyramid-L<l>-tiles"`
@@ -208,8 +208,8 @@ inside this frame; changing any of it means editing this section first.
 
 ### WP1 — Rust tile store ABI ([#8](https://github.com/CurateLabs/graphforge-xy/issues/8))
 
-- `xy_pyramid_spill` / `xy_tile_fetch` / `xy_tiles_compose` (names TBD) —
-  bump `ABI_VERSION` in `src/lib.rs` **and** `python/xy/_native.py` together.
+- `xyg_pyramid_spill` / `xyg_tile_fetch` / `xyg_tiles_compose` (names TBD) —
+  bump `ABI_VERSION` in `crates/xyg-core/src/lib.rs` **and** `python/xy/_native.py` together.
 - LRU under `PYRAMID_RESIDENT_BYTES` per locked decisions D2–D3.
 - Zone-map-pruned tile index for unordered scatter (D5, dossier §32b).
 

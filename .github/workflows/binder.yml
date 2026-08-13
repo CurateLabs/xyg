@@ -8,7 +8,7 @@ name: Binder
 # pyproject.toml and hatch_build.py are included because the image build
 # consumes their contracts directly: requires-python must stay satisfiable by
 # environment.yml's interpreter pin, and the hatch hook is what honors
-# XY_REQUIRE_CARGO. Wider source changes (src/, js/) are already gated by the
+# XYG_REQUIRE_CARGO. Wider source changes (crates/, js/) are already gated by the
 # wheel-building CI jobs and don't warrant this build's cost per PR.
 on:
   push:

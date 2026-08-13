@@ -8,7 +8,7 @@ name: Release
 # reflex-dev/xy, and the distribution is still named `xy` — upstream's PyPI
 # package. The publish job is therefore hard-guarded (repository slug check,
 # a fork publish guard that refuses upstream's distribution name, and an
-# XY_ALLOW_PYPI_PUBLISH opt-in variable that does not exist by default): a
+# XYG_ALLOW_PYPI_PUBLISH opt-in variable that does not exist by default): a
 # version tag on this fork builds and verifies every artifact but cannot
 # reach PyPI's `xy` under any configuration. See
 # spec/process/production-readiness.md § Fork release posture.
@@ -39,7 +39,7 @@ jobs:
   # armv7, macOS x86-64/arm64, and Windows x86/x64/arm64. Linux targets are
   # cross-compiled with cargo-zigbuild (musl support + a low manylinux_2_17
   # glibc floor without QEMU); the hook then packs the prebuilt core and stamps
-  # the platform tag (XY_CARGO_TARGET / XY_WHEEL_PLATFORM).
+  # the platform tag (XYG_CARGO_TARGET / XYG_WHEEL_PLATFORM).
   wheels:
     name: Wheel ${{ matrix.plat }}
     runs-on: ${{ matrix.os }}
@@ -109,10 +109,10 @@ jobs:
           # platform tag, and builds the render client (node) into the wheel.
           # The client is required by default; REQUIRE_CARGO also forbids the
           # core from silently going missing.
-          XY_REQUIRE_CARGO: "1"
-          XY_SKIP_CARGO: "1"
-          XY_CARGO_TARGET: ${{ matrix.target }}
-          XY_WHEEL_PLATFORM: ${{ matrix.plat }}
+          XYG_REQUIRE_CARGO: "1"
+          XYG_SKIP_CARGO: "1"
+          XYG_CARGO_TARGET: ${{ matrix.target }}
+          XYG_WHEEL_PLATFORM: ${{ matrix.plat }}
         run: uv build --wheel
       - name: Verify wheel contents
         shell: bash
@@ -178,10 +178,10 @@ jobs:
           CIBW_BEFORE_BUILD_PYODIDE: >-
             cargo build --release --target wasm32-unknown-emscripten
           CIBW_ENVIRONMENT_PYODIDE: >-
-            XY_REQUIRE_CARGO=1
-            XY_SKIP_CARGO=1
-            XY_CARGO_TARGET=wasm32-unknown-emscripten
-            XY_WHEEL_PLATFORM=pyemscripten_2026_0_wasm32
+            XYG_REQUIRE_CARGO=1
+            XYG_SKIP_CARGO=1
+            XYG_CARGO_TARGET=wasm32-unknown-emscripten
+            XYG_WHEEL_PLATFORM=pyemscripten_2026_0_wasm32
             RUSTFLAGS="-C panic=abort"
       - name: Verify wheel contents
         shell: bash
@@ -237,7 +237,7 @@ jobs:
       - name: Build and load native core from sdist
         shell: bash
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv smoke-native
           uv pip install --no-cache -p smoke-native dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
@@ -257,7 +257,7 @@ jobs:
       - name: Verify coreless sdist imports reflex_xy
         shell: bash
         env:
-          XY_SKIP_CARGO: "1"
+          XYG_SKIP_CARGO: "1"
         run: |
           uv venv smoke-no-rust
           uv pip install --no-cache -p smoke-no-rust dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
@@ -357,11 +357,11 @@ jobs:
           done
           echo "Fork publish guard OK: no artifact carries upstream's distribution name."
       # The upload itself needs an explicit opt-in on top of everything above:
-      # the XY_ALLOW_PYPI_PUBLISH repository variable does not exist by
+      # the XYG_ALLOW_PYPI_PUBLISH repository variable does not exist by
       # default, so a fresh clone of this fork cannot publish no matter what
       # it tags or dispatches.
       - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
-        if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
+        if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
         with:
           packages-dir: dist/
           # A failed upload can leave a partial release on immutable PyPI.

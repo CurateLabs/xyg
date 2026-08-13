@@ -32,7 +32,7 @@ screen-bounded performance core, but the stable commitments today are narrower:
   the compute layer then raises a clear, actionable error naming the supported
   platforms — there is no NumPy fallback), whereas the render client is **required
   by default** — a from-source build that can neither find nor build the bundle
-  fails loudly rather than producing a client-less distribution. `XY_SKIP_NODE=1`
+  fails loudly rather than producing a client-less distribution. `XYG_SKIP_NODE=1`
   opts out for a deliberately client-less build (the widget and HTML export then
   raise a clear error on first use).
 - Standalone HTML exports embed the same render client and data payloads used
@@ -81,7 +81,7 @@ These must pass before publishing.
 | Python tests | Native backend passes | `pytest -q` |
 | Python style | Library, tests, scripts, and benchmarks lint clean | `ruff check .` and `ruff format --check .` |
 | Matplotlib reference | The reviewed compatibility snapshot matches the pinned released matplotlib reference, and the `xy.pyplot` shim passes its interoperability and dual-engine corpus suites | `python scripts/sync_matplotlib_compat.py --check` and `pytest tests/pyplot` |
-| Rust core | Native kernels pass and lint clean | `cargo test` and `cargo clippy --all-targets -- -D warnings` |
+| Rust core | Native kernels pass and lint clean | `cargo test --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` |
 | Native ABI | C ABI can be loaded from the built core | `python scripts/abi_smoke.py` |
 | JavaScript | Render client builds cleanly from source | `node js/build.mjs` |
 | Browser render | WebGL smoke reaches real pixels | `python scripts/render_smoke_nonumpy.py <chromium>` |
@@ -362,7 +362,7 @@ rather than relying on PyPI's trusted-publishing rejection:
   artifact and then fails loudly at this step. Dry-run dispatches pass it so
   the cross-compile matrix stays verifiable.
 - **Publish opt-in.** The upload step itself additionally requires the
-  `XY_ALLOW_PYPI_PUBLISH` repository variable to equal `'true'`. The variable
+  `XYG_ALLOW_PYPI_PUBLISH` repository variable to equal `'true'`. The variable
   does not exist by default, so even after a future distribution rename a
   deliberate opt-in is needed before anything is uploaded.
 
@@ -388,7 +388,7 @@ regardless.
   not merely `pyproject.name`: `python/xy/_load_version`,
   `python/reflex_xy/_load_version`, and the release/CI smoke checks resolve
   the distribution `xy` via `importlib.metadata`, and the same question
-  applies to the `@xy/node` npm package and the `xy-core` crate.
+  applies to the `@curatelabs/xyg-node` npm package and the `xyg-core` crate.
 - *Tag pruning.* Whether the inherited upstream tags stay on `origin`
   (harmless while the publish guards hold) or are deleted.
 - *Re-baseline tag.* The fork's first own version tag, once the name is
@@ -422,7 +422,7 @@ Before tagging a release:
   `pyemscripten_2026_0` wheel ABI, and Pyodide 314.0.0. The abort strategy keeps
   Rust panics from unwinding across the Python/`ctypes` C ABI boundary.
   `scripts/pyodide_load_smoke.py` installs the exact built artifact with
-  micropip, loads the C ABI through `ctypes`, verifies `xy_abi_version`, and
+  micropip, loads the C ABI through `ctypes`, verifies `xyg_abi_version`, and
   calls the native `min_max` kernel. PEP 783 platform tags are accepted by
   PyPI, so the runtime-verified wheel joins the same trusted-publishing batch
   as the native wheels and sdist; Pyodide 314 users can install it with
@@ -467,7 +467,7 @@ Keep pushing these in low-conflict increments:
 - Keep weird-string export tests covering every text surface added to the
   public API, including titles, labels, legends, categories, and series names.
 - Styling arguments (colors, gradient stops, `style=` declarations) are gated
-  by the native CSS grammar (`src/css.rs`; `tests/test_css_validation.py`) —
+  by the native CSS grammar (`crates/xyg-engine/src/css.rs`; `tests/test_css_validation.py`) —
   route any new mark/chrome styling prop through `_validate.css_color` or
   `style_mapping` so no styling surface bypasses it.
 - Keep benchmark environment metadata and category IDs on every new generated report.

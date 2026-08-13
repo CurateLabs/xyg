@@ -636,13 +636,13 @@ def _step_is_conditioned(job_text: str, step_needle: str) -> bool:
 
 
 # The one condition that actually gates a PyPI upload: the explicit
-# XY_ALLOW_PYPI_PUBLISH repository-variable opt-in (which does not exist by
+# XYG_ALLOW_PYPI_PUBLISH repository-variable opt-in (which does not exist by
 # default on this fork, see issue #13) AND the manual dry-run switch.
 # Requiring this exact predicate on the upload step itself — not merely *an*
 # `if:` — is the point: `if: always()` or any unrelated condition would
 # satisfy a mere presence check while gating nothing.
 PYPI_PUBLISH_GATE = (
-    "if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && "
+    "if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
 )
 
@@ -837,6 +837,10 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "hard production gates",
         "scripts/verify_ci_workflow.py",
         "scripts/check_public_api.py",
+        "scripts/abi_smoke.py",
+        "scripts/check_abi_parity.py",
+        "scripts/check_stale_names.py",
+        "cargo test --workspace",
         "Verify bundled Reflex integration import",
         "importlib.metadata as m, reflex_xy",
         "assert reflex_xy.__version__ == m.version('xy')",
@@ -1020,7 +1024,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "Install xy",
         "xy-only constrained install",
         "if: matrix.xy",
-        'XY_REQUIRE_CARGO: "1"',
+        'XYG_REQUIRE_CARGO: "1"',
         "--constraint benchmarks/requirements-ci.lock",
     )
     _require_step_contains(
@@ -1061,7 +1065,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "continue-on-error: true",
         "benchmarks/requirements-ci.lock",
         "Verify native benchmark backend",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         'k.BACKEND == "native"',
         "benchmark job requires native backend",
         "scripts/verify_benchmark_report.py",
@@ -1127,7 +1131,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ci_sdist,
         "Build and load native core from sdist",
         "Rust-backed sdist install contract",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "uv pip install --no-cache",
         '"reflex>=0.9.6"',
         "import reflex_xy",
@@ -1139,7 +1143,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ci_sdist,
         "Verify coreless sdist imports reflex_xy",
         "coreless sdist import contract",
-        "XY_SKIP_CARGO",
+        "XYG_SKIP_CARGO",
         "uv pip install --no-cache",
         "import reflex_xy",
         "assert reflex_xy.__version__ == version",
@@ -1151,7 +1155,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "wheels",
         "CI",
         "native wheel verification and upload",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "scripts/verify_wheel.py",
         "--expect-native",
         "actions/upload-artifact@",
@@ -1219,7 +1223,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         'python-version: "3.11"',
         "astral-sh/setup-uv@",
         "cargo build --release",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "--group dev --group codspeed",
         "Verify native benchmark backend",
         'k.BACKEND == "native"',
@@ -1268,8 +1272,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "npm ci",
         "cargo-zigbuild",
         "uv build --wheel",
-        "XY_REQUIRE_CARGO",
-        "XY_WHEEL_PLATFORM",
+        "XYG_REQUIRE_CARGO",
+        "XYG_WHEEL_PLATFORM",
         "musllinux_1_2_x86_64",
         "win_arm64",
         "scripts/verify_wheel.py",
@@ -1338,7 +1342,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         release_sdist,
         "Build and load native core from sdist",
         "Rust-backed release sdist install contract",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "uv pip install --no-cache",
         '"reflex>=0.9.6"',
         "import reflex_xy",
@@ -1350,7 +1354,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         release_sdist,
         "Verify coreless sdist imports reflex_xy",
         "coreless release sdist import contract",
-        "XY_SKIP_CARGO",
+        "XYG_SKIP_CARGO",
         "uv pip install --no-cache",
         "import reflex_xy",
         "assert reflex_xy.__version__ == version",
