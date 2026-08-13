@@ -244,7 +244,7 @@ def string_mapping(value: dict[str, Any], label: str) -> dict[str, str]:
     return out
 
 
-# xy_css_check error codes -> human reasons (the negated CssErr
+# xyg_css_check error codes -> human reasons (the negated CssErr
 # discriminants; keep in sync with crates/xyg-engine/src/css.rs).
 _CSS_ERROR_REASONS = {
     -1: "is empty",

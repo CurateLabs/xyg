@@ -1,7 +1,7 @@
 /**
  * Progressive force-layout tick helper (graph-mark.md §5).
  *
- * Hosts schedule Rust `xy_graph_force_tick` off the interactive paint path.
+ * Hosts schedule Rust `xyg_graph_force_tick` off the interactive paint path.
  * MVP default: chunked ticks via `setImmediate` on the Node event loop
  * (cooperative yielding). Prefer `worker_threads` for production so force
  * never stalls the event loop that serves uploads — set

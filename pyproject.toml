@@ -111,23 +111,25 @@ include = [
     # Both packages published by the xy distribution. The bundled adapter is
     # selected by the `reflex` extra; the retired python/reflex-xy project and
     # its independent lock/release material must not ride in this sdist.
-    "python/xy",
-    "python/reflex_xy",
-    "crates",
-    # The whole js/ dir (TS sources + build.mjs + tsconfig) plus the npm
+    # Leading `/` root-anchors so unanchored names cannot pull nested hosts
+    # (`packages/xy-node/package.json`, `packages/xy-node/src`, …).
+    "/python/xy",
+    "/python/reflex_xy",
+    "/crates",
+    # The whole js/ dir (TS sources + build.mjs + tsconfig) plus the root npm
     # manifests, so the sdist can rebuild the client with `npm ci &&
     # node js/build.mjs` (verify_sdist.py checks the load-bearing files).
-    "js",
-    "package.json",
-    "package-lock.json",
-    "Cargo.toml",
-    "Cargo.lock",
-    "hatch_build.py",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
+    "/js",
+    "/package.json",
+    "/package-lock.json",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/hatch_build.py",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/SECURITY.md",
+    "/CONTRIBUTING.md",
 ]
 exclude = [
     # Repository-only development, CI, documentation, and evidence material.
@@ -149,6 +151,7 @@ exclude = [
     "/node_modules/**",
     "/target/**",
     "/dist/**",
+    "/packages/xy-node/**",
     # Belt and braces for the include narrowing above: hatchling auto-admits
     # readme-named files, which could smuggle the retired adapter project back in.
     "/python/reflex-xy/**",

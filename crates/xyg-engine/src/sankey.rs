@@ -75,6 +75,7 @@ struct Link {
 ///
 /// `sources`, `targets`, and `values` must share length `n_links`. Node indices
 /// must be in `0..n_nodes`. `align` is one of [`ALIGN_JUSTIFY`]…[`ALIGN_CENTER`].
+#[allow(clippy::too_many_arguments)]
 pub fn compute_layout(
     n_nodes: usize,
     sources: &[u64],
@@ -92,13 +93,13 @@ pub fn compute_layout(
     if n_links == 0 || n_nodes == 0 {
         return Err(LayoutError::Invalid);
     }
-    if !(align <= ALIGN_CENTER) {
+    if align > ALIGN_CENTER {
         return Err(LayoutError::Invalid);
     }
     if !(node_width > 0.0 && node_width < 1.0 && node_width.is_finite()) {
         return Err(LayoutError::Invalid);
     }
-    if !(node_padding >= 0.0 && node_padding < 1.0 && node_padding.is_finite()) {
+    if !(node_padding.is_finite() && (0.0..1.0).contains(&node_padding)) {
         return Err(LayoutError::Invalid);
     }
 

@@ -1,6 +1,6 @@
 /**
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
- * Bit-identical to python/xy/lod.encode_f32_values when calling xy_encode_f32.
+ * Bit-identical to python/xy/lod.encode_f32_values when calling xyg_encode_f32.
  */
 import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
@@ -99,7 +99,7 @@ export function encodeF32(data, offset, scale = 1.0) {
   const out = new Float32Array(arr.length);
   const ok = xyEncodeF32(f64Ptr(arr), BigInt(arr.length), Number(offset), Number(scale), f32Ptr(out));
   if (ok !== 1) {
-    throw new Error("xy_encode_f32 failed");
+    throw new Error("xyg_encode_f32 failed");
   }
   return out;
 }
@@ -139,7 +139,7 @@ export function m4Points(x, y, x0, x1, nBuckets) {
   );
   if (written === Number.MAX_SAFE_INTEGER || !Number.isFinite(written) || written < 0) {
     // usize::MAX from Rust — invalid args
-    throw new Error("xy_m4_points failed");
+    throw new Error("xyg_m4_points failed");
   }
   return [outX.subarray(0, written), outY.subarray(0, written)];
 }
@@ -161,7 +161,7 @@ export function m4Indices(x, y, x0, x1, nBuckets) {
     ),
   );
   if (!Number.isFinite(written) || written < 0) {
-    throw new Error("xy_m4_indices failed");
+    throw new Error("xyg_m4_indices failed");
   }
   return out.subarray(0, written);
 }
@@ -181,7 +181,7 @@ export function histogramUniform(data, lo, hi, nBins, { density = false } = {}) 
     ),
   );
   if (!Number.isFinite(total) || total < 0) {
-    throw new Error("xy_histogram_uniform failed");
+    throw new Error("xyg_histogram_uniform failed");
   }
   const edges = new Float64Array(nBins + 1);
   const width = (hi - lo) / nBins;
@@ -217,7 +217,7 @@ export function histogramEdges(data, { range = null, method = "auto" } = {}) {
     ),
   );
   if (!Number.isFinite(written) || written < 0 || written > capacity) {
-    throw new Error("xy_histogram_edges failed");
+    throw new Error("xyg_histogram_edges failed");
   }
   return out.subarray(0, written);
 }
@@ -496,7 +496,7 @@ export function contourfDensify(z, rows, cols, xpos, ypos) {
 const BAR_MODES = { grouped: 0, stacked: 1, normalized: 2 };
 const BAR_ORIENT = { vertical: 0, horizontal: 1 };
 
-/** Grouped / stacked / normalized bar rect corners via xy_bar_stack. */
+/** Grouped / stacked / normalized bar rect corners via xyg_bar_stack. */
 export function barStack(pos, values, nSeries, width = 0.8, base = 0, mode = "grouped", orientation = "vertical") {
   const p = asF64Array(pos);
   const vals = asF64Array(values);
@@ -530,7 +530,7 @@ export function barStack(pos, values, nSeries, width = 0.8, base = 0, mode = "gr
     f64Ptr(outY1),
   );
   if (ok !== 1) {
-    throw new Error("xy_bar_stack failed");
+    throw new Error("xyg_bar_stack failed");
   }
   return { x0: outX0, x1: outX1, y0: outY0, y1: outY1, nSeries, nItems };
 }
@@ -614,7 +614,7 @@ export function contourfBands(z, rows, cols, xpos, ypos, edges, { extendMin = fa
 }
 
 /**
- * Axis-aligned 2-D density counts via `xy_bin_2d` (row-major float grid).
+ * Axis-aligned 2-D density counts via `xyg_bin_2d` (row-major float grid).
  * @returns {Float32Array} length w*h
  */
 export function bin2d(x, y, x0, x1, y0, y1, w, h) {
@@ -639,7 +639,7 @@ export function bin2d(x, y, x0, x1, y0, y1, w, h) {
     f32Ptr(out),
   );
   if (ok !== 1) {
-    throw new Error("xy_bin_2d failed");
+    throw new Error("xyg_bin_2d failed");
   }
   return out;
 }
@@ -795,7 +795,7 @@ export function normalizeF32(data, lo, hi, { nanMode = "nan" } = {}) {
     f32Ptr(out),
   );
   if (ok !== 1) {
-    throw new Error("xy_normalize_f32 failed");
+    throw new Error("xyg_normalize_f32 failed");
   }
   return out;
 }

@@ -184,6 +184,7 @@ pub fn violin_density(data: &[f64], n_bins: usize) -> Option<ViolinDensity> {
 }
 
 /// NumPy-style `mode="same"` convolution into `out` (len = signal len).
+#[allow(clippy::needless_range_loop)] // i indexes signal and out with a signed kernel offset
 fn convolve_same(signal: &[f64], kernel: &[f64], out: &mut [f64]) {
     debug_assert_eq!(signal.len(), out.len());
     let k = kernel.len();
@@ -425,7 +426,7 @@ fn round_3g(value: f64) -> f64 {
     if !value.is_finite() || value == 0.0 {
         return value;
     }
-    format!("{:.2e}", value).parse::<f64>().unwrap_or(value)
+    format!("{value:.2e}").parse::<f64>().unwrap_or(value)
 }
 
 fn unique_sorted_f64(values: &mut Vec<f64>) {

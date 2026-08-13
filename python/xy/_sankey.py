@@ -4,7 +4,7 @@ A Sankey is not a new primitive so much as a *placement*: given nodes, weighted
 links and a box, decide where every node rectangle and every ribbon endpoint
 goes. That decision is what the roadmap means by "requires layout work"
 (spec/api/chart-roadmap.md item 30). Placement math lives in the native core
-(`xy_sankey_layout` / `_native.sankey_layout`) so both hosts stay bit-identical;
+(`xyg_sankey_layout` / `_native.sankey_layout`) so both hosts stay bit-identical;
 this module only resolves names to dense indices and maps return codes to
 error *text*.
 

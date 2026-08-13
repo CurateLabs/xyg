@@ -296,6 +296,8 @@ def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None
         "spec/design-dossier.md",
         "tests/test_import.py",
         "uv.lock",
+        "packages/xy-node/package.json",
+        "packages/xy-node/README.md",
     ],
 )
 def test_verify_sdist_rejects_repository_only_content(tmp_path: Path, name: str) -> None:

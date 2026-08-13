@@ -1721,7 +1721,7 @@ def bar_stack(
     npt.NDArray[np.float64],
     npt.NDArray[np.float64],
 ]:
-    """Grouped / stacked / normalized bar rect corners via ``xy_bar_stack``.
+    """Grouped / stacked / normalized bar rect corners via ``xyg_bar_stack``.
 
     ``values`` is row-major ``(n_series, n_items)``. Returns ``(x0, x1, y0, y1)``
     each shaped ``(n_series, n_items)`` in plot axes (orientation applied).
@@ -3809,7 +3809,7 @@ _GRAPH_LAYOUT_NAMES = {
     "stress": GRAPH_LAYOUT_STRESS,
 }
 
-# Progressive force families (share xy_graph_force_create/tick).
+# Progressive force families (share xyg_graph_force_create/tick).
 _GRAPH_PROGRESSIVE_FORCE = frozenset(
     {
         GRAPH_LAYOUT_FORCE,
@@ -5085,7 +5085,7 @@ def css_check(
 
     Returns ``(status, rgba)``: status 1 = parsed statically, 2 = valid but
     browser-resolved (`var()`/`oklch()`/`calc()`/unknown-property
-    passthrough), negative = error code (see `xy_css_check` docs). ``rgba``
+    passthrough), negative = error code (see `xyg_css_check` docs). ``rgba``
     is the 0..1 channel tuple for statically-resolved colors, else None
     (`currentColor` parses with no static channels). The error-message
     mapping lives in `_validate.py`; this wrapper stays mechanical.

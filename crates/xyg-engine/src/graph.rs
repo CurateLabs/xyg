@@ -364,8 +364,8 @@ pub fn layout_hierarchical(
         for &u in &order {
             seen[u] = true;
         }
-        for i in 0..n {
-            if !seen[i] {
+        for (i, was_seen) in seen.iter().enumerate() {
+            if !was_seen {
                 order.push(i);
             }
         }
@@ -834,6 +834,7 @@ impl ForceState {
         }
     }
 
+    #[allow(clippy::needless_range_loop)] // indexes x/y/cell_of together; force math stays scalar
     fn apply_repulsion_grid_bh(&self, fx: &mut [f64], fy: &mut [f64], mass_scale: f64) {
         let n = self.n;
         let k2 = self.k * self.k * mass_scale;
@@ -1021,6 +1022,7 @@ pub fn force_create(
 }
 
 /// One-shot progressive force family → positions.
+#[allow(clippy::too_many_arguments)]
 pub fn layout_force_family(
     algo: u32,
     n_nodes: u64,
@@ -1089,6 +1091,7 @@ pub fn sample_edges(n_edges: u64, budget: u64, out_indices: &mut [u64]) -> u64 {
 ///
 /// When `n_nodes <= budget`, copies positions through (identity membership).
 /// When over budget, bins into a near-square grid and emits cell centroids.
+#[allow(clippy::too_many_arguments)]
 pub fn cluster_positions(
     n_nodes: u64,
     x: &[f64],
@@ -1192,6 +1195,7 @@ pub fn cluster_positions(
 ///
 /// Under budget this is identity (direct or edge-sample tier from `lod_decide`);
 /// over budget it writes at most `node_budget` centroids and Aggregate tier.
+#[allow(clippy::too_many_arguments)]
 pub fn cluster_aggregate(
     n_nodes: u64,
     n_edges: u64,
@@ -1233,6 +1237,7 @@ pub fn cluster_aggregate(
 ///
 /// Guarantees `|V'| ≤ node_budget` and `|E'| ≤ edge_budget` so hosts never
 /// upload raw V/E when over budget (scatter-density → exact drill-down spirit).
+#[allow(clippy::too_many_arguments)]
 pub fn build_render(
     n_nodes: u64,
     x: &[f64],
@@ -1775,10 +1780,13 @@ mod tests {
 
     #[test]
     fn force_exact_path_for_tiny_n() {
-        assert!(
-            3 <= FORCE_EXACT_REPULSION_MAX_N,
-            "tiny graphs must use exact pairwise repulsion"
-        );
+        #[allow(clippy::assertions_on_constants)]
+        {
+            assert!(
+                3 <= FORCE_EXACT_REPULSION_MAX_N,
+                "tiny graphs must use exact pairwise repulsion"
+            );
+        }
         let sources = [0u64, 1, 2];
         let targets = [1u64, 2, 0];
         let mut a = ForceState::new(3, &sources, &targets, None, None, 11, LAYOUT_FORCE).unwrap();

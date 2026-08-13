@@ -145,7 +145,7 @@ def bench_prep(lib, n: int, x: array, y: array) -> dict:
         grid = array("f", bytes(4 * GRID_W * GRID_H))
         for _ in range(reps):
             t0 = time.perf_counter()
-            lib.xy_bin_2d(
+            lib.xyg_bin_2d(
                 _ptr(x, D), _ptr(y, D), n, -2.0, 2.0, -2.0, 2.0, GRID_W, GRID_H, _ptr(grid, F)
             )
             best = min(best, time.perf_counter() - t0)
@@ -156,8 +156,8 @@ def bench_prep(lib, n: int, x: array, y: array) -> dict:
         ey = array("f", bytes(4 * n))
         for _ in range(reps):
             t0 = time.perf_counter()
-            lib.xy_encode_f32(_ptr(x, D), n, 0.0, 1.0, _ptr(ex, F))
-            lib.xy_encode_f32(_ptr(y, D), n, 0.0, 1.0, _ptr(ey, F))
+            lib.xyg_encode_f32(_ptr(x, D), n, 0.0, 1.0, _ptr(ex, F))
+            lib.xyg_encode_f32(_ptr(y, D), n, 0.0, 1.0, _ptr(ey, F))
             best = min(best, time.perf_counter() - t0)
         wire = 8 * n
         tier = "direct"

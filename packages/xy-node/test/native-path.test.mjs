@@ -30,6 +30,13 @@ test("lookup uses packaged and cargo paths, not system directories", () => {
     cwd,
   });
   assert.equal(candidates[0], "/explicit/libxyg_core.so");
+  const relative = candidateNativeLibraries({
+    platform: "linux",
+    env: { XYG_NATIVE_LIB: "rel/libxyg_core.so" },
+    packageDir,
+    cwd,
+  });
+  assert.equal(relative[0], "/tmp/project/rel/libxyg_core.so");
   assert.ok(candidates.some((c) => c.endsWith("/packages/xy-node/_native_lib/libxyg_core.so")));
   assert.ok(candidates.some((c) => c.endsWith("/target/release/libxyg_core.so")));
   assert.ok(candidates.some((c) => c.endsWith("/target/debug/libxyg_core.so")));

@@ -142,7 +142,7 @@ export function graphLayout(layout, nNodes, sources, targets, opts = {}) {
     f64Ptr(outY),
   );
   if (code !== 0) {
-    throw new Error(`xy_graph_layout failed with code ${code}`);
+    throw new Error(`xyg_graph_layout failed with code ${code}`);
   }
   return { x: outX, y: outY };
 }
@@ -218,7 +218,7 @@ export function graphLodDecision(nNodes, nEdges, opts = {}) {
     u64Ptr(edgesKept),
   );
   if (code !== 0) {
-    throw new Error(`xy_graph_lod_decision failed with code ${code}`);
+    throw new Error(`xyg_graph_lod_decision failed with code ${code}`);
   }
   return { tier: tier[0], edgesKept: edgesKept[0] };
 }
@@ -256,7 +256,7 @@ export function graphClusterAggregate(x, y, opts = {}) {
     u64Ptr(edgesKept),
   );
   if (code !== 0) {
-    throw new Error(`xy_graph_cluster_aggregate failed with code ${code}`);
+    throw new Error(`xyg_graph_cluster_aggregate failed with code ${code}`);
   }
   const count = Number(outCount[0]);
   return {
@@ -319,7 +319,7 @@ export function graphBuildRender(x, y, sources, targets, opts = {}) {
     u64Ptr(edgesKept),
   );
   if (code !== 0) {
-    throw new Error(`xy_graph_build_render failed with code ${code}`);
+    throw new Error(`xyg_graph_build_render failed with code ${code}`);
   }
   const nOut = Number(outNNodes[0]);
   const eOut = Number(outNEdges[0]);
@@ -366,7 +366,7 @@ export function graphBuildCsr(nNodes, sources, targets, opts = {}) {
     u64Ptr(neighborLen),
   );
   if (code !== 0) {
-    throw new Error(`xy_graph_build_csr failed with code ${code}`);
+    throw new Error(`xyg_graph_build_csr failed with code ${code}`);
   }
   return { offsets, neighbors: neighbors.subarray(0, Number(neighborLen[0])) };
 }
@@ -424,7 +424,7 @@ export function sankeyLayout(nNodes, sources, targets, values, opts = {}) {
     throw new SankeyLayoutError(code, detail, "sankey nodePadding leaves no room");
   }
   if (code !== 0) {
-    throw new Error(`xy_sankey_layout failed with code ${code}`);
+    throw new Error(`xyg_sankey_layout failed with code ${code}`);
   }
   return {
     x0,

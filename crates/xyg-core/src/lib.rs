@@ -18,6 +18,8 @@
 //! across the C boundary. Hosts bind and check `xyg_abi_version` before any
 //! other symbol.
 
+#![allow(clippy::too_many_arguments)] // C ABI entry points; arity is the contract
+
 use xyg_engine::css;
 use xyg_engine::graph;
 use xyg_engine::hexbin;
@@ -3762,6 +3764,10 @@ pub unsafe extern "C" fn xyg_graph_force_tick(
 }
 
 /// Destroy a force handle. Returns 1 if it existed, 0 otherwise.
+///
+/// # Safety
+/// `handle` is an opaque registry id; this entry point does not dereference
+/// caller pointers.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_force_destroy(handle: u64) -> i32 {
     ffi_guard(0, || if graph::force_destroy(handle) { 1 } else { 0 })
@@ -3822,6 +3828,9 @@ pub unsafe extern "C" fn xyg_graph_build_csr(
 
 /// LOD decision helper. Writes tier (0 direct / 1 edge sample / 2 aggregate)
 /// and edges_kept. Returns 0.
+///
+/// # Safety
+/// `out_tier` and `out_edges_kept` must each address one writable word.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_lod_decision(
     n_nodes: u64,
@@ -4091,6 +4100,9 @@ pub unsafe extern "C" fn xyg_graph_build_render(
 }
 
 /// Sample edge indices into `out_indices` (capacity `budget`). Returns count.
+///
+/// # Safety
+/// `out_indices` must address `budget` writable u64s when `budget > 0`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_sample_edges(
     n_edges: u64,

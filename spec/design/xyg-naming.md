@@ -71,7 +71,7 @@ stage lands. Proposed targets are recorded so the later rename is mechanical.
 | Browser standalone global | `window.xy` (IIFE bundle name in `js/build.mjs`) | `window.xyg` | browser/branding stage (#14) — changes every embedding example and smoke |
 | Root DOM class / CSS namespace | `class="xy"` (`js/src/50_chartview.ts`) | `class="xyg"` | browser/branding stage (#14) — public styling surface, coordinate with docs |
 | Wire-protocol constants | `XY_FRAME_MAGIC`, `XY_FRAME_VERSION`, `XY_PAYLOAD_MAGIC`, … (Python + TS) | `XYG_*` with a protocol-version bump | wire-protocol stage — byte-level magic changes need migration evidence (`spec/design/wire-protocol.md`) |
-| Widget/anywidget module + static bundle names | `python/xyg/static/{index,standalone}.js` internals | unchanged paths; internal names follow browser stage | browser/branding stage (#14) |
+| Widget/anywidget module + static bundle names | `python/xy/static/{index,standalone}.js` internals | unchanged paths until `import xyg`; internal names follow browser stage | browser/branding stage (#14) |
 | Dev/test/bench env knobs | `XY_BROWSER`, `XY_CHROMIUM`, `XY_LIVE_POINTS`, `XY_CONTEXT_GOVERNOR`, `XY_NOTEBOOK_DISPLAY`, `XY_SHARED_WEBGL`, `XY_POLAR_AA`, and other dev-only `XY_*` knobs | `XYG_*` sweep | branding stage (#14) — dev-only, no product artifact depends on them |
 | Python-internal constant prefixes | `XY_OK`, `XY_ERROR`, `XY_VERSION`, … (module-level constants) | `XYG_*` | with the wire/branding stages that own each constant |
 | README, user docs, branding sweep | README branding, docs-app copy | — | #14 (explicitly out of scope here) |
