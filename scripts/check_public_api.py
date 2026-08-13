@@ -290,7 +290,7 @@ def validate_declarative_api_contract(
     return errors
 
 
-def validate_version_consistency(pkg: ModuleType, distribution: str = "xy") -> list[str]:
+def validate_version_consistency(pkg: ModuleType, distribution: str = "xyg") -> list[str]:
     """Ensure import-time ``__version__`` matches installed package metadata.
 
     pyproject holds no version to compare against — it is derived from the git
