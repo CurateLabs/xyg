@@ -85,10 +85,13 @@ fallback-version = "0.0.0"
 
 [tool.hatch.build]
 # The render-client bundles are a generated artifact — built by hatch_build.py
-# (`node js/build.mjs`) and git-ignored (§33), never committed. `artifacts`
-# re-includes them in both the wheel and the sdist even though the VCS ignores
-# them; the build hook guarantees they exist on disk before file collection.
+# (`node js/build.mjs`) and git-ignored (§33), never committed. Canonical
+# output is the host-neutral `@curatelabs/xyg` dist; Python copies into
+# `python/xy/static` for the wheel. `artifacts` re-includes them even though
+# the VCS ignores them; the build hook guarantees they exist on disk first.
 artifacts = [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
     "python/xy/static/index.js",
     "python/xy/static/standalone.js",
 ]
@@ -118,6 +121,7 @@ include = [
     # manifests, so the sdist can rebuild the client with `npm ci &&
     # node js/build.mjs` (verify_sdist.py checks the load-bearing files).
     "js",
+    "packages/xy-client",
     "package.json",
     "package-lock.json",
     "Cargo.toml",

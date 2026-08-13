@@ -1,24 +1,28 @@
 #!/usr/bin/env node
 // Build the render client. The source is TypeScript ES modules under src/
 // (one module per former concat part; import order replaces concat order).
-// Vite (rolldown + oxc) bundles and minifies them into the two generated
-// artifacts in python/xy/static/ — the minified bundles are what ships to the
-// client (§33: vite/typescript are the only, dev-time-only, npm deps). The
-// bundles are NOT committed to git; hatch_build.py runs this script at
-// packaging time and force-includes the output into the wheel/sdist, and a
-// source checkout runs it once (`npm ci && node js/build.mjs`) before use:
+// Vite (rolldown + oxc) bundles and minifies them into the host-neutral
+// artifact `@curatelabs/xyg` (`packages/xy-client/dist/`) — the minified
+// bundles are what ships to the client (§33: vite/typescript are the only,
+// dev-time-only, npm deps). Python then *copies* those bundles into
+// `python/xy/static/` so notebooks / to_html() / Reflex stay Node-free.
+// The bundles are NOT committed to git; hatch_build.py runs this script at
+// packaging time and force-includes both locations into the wheel/sdist, and
+// a source checkout runs it once (`npm ci && node js/build.mjs`) before use:
 //   index.js      — ESM bundle (anywidget `_esm`; named exports + default)
 //   standalone.js — IIFE bundle exposing `window.xy`, inlined by
-//                   `Figure.to_html()` into static HTML exports
+//                   `Figure.to_html()` / Node `toHtml()` into static HTML
 // Steps: tsc typecheck → shader-convention lint → vite build (×2 formats).
-import { readFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
+const clientDir = join(root, "packages", "xy-client", "dist");
 const staticDir = join(root, "python", "xy", "static");
+const BUNDLES = ["index.js", "standalone.js"];
 
 // Typecheck first: a bundle must never be built from source tsc rejects
 // (esbuild strips types without checking them, so this is the only gate).
@@ -83,7 +87,7 @@ const { build } = await import("vite");
 /** Build both bundles into outDir. One entry, two formats: the ESM build keeps
  * 60_entries' export shape verbatim; the IIFE build assigns the same namespace
  * to a top-level `var xy`, which is `window.xy` when the bundle runs as the
- * classic inline <script> that `Figure.to_html()` emits. */
+ * classic inline <script> that `Figure.to_html()` / Node `toHtml()` emit. */
 async function buildBundles(outDir) {
   const formats = [
     { format: "es", fileName: "index.js" },
@@ -122,6 +126,12 @@ async function buildBundles(outDir) {
   }
 }
 
+mkdirSync(clientDir, { recursive: true });
+await buildBundles(clientDir);
 mkdirSync(staticDir, { recursive: true });
-await buildBundles(staticDir);
-console.log("built minified static/index.js and static/standalone.js with vite");
+for (const name of BUNDLES) {
+  copyFileSync(join(clientDir, name), join(staticDir, name));
+}
+console.log(
+  "built minified @curatelabs/xyg (packages/xy-client/dist) and copied into python/xy/static",
+);

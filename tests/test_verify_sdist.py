@@ -83,12 +83,20 @@ def _write_sdist(
             elif name in replacements:
                 raw = replacements[name]
                 data = raw.encode("utf-8") if isinstance(raw, str) else raw
-            elif name == "python/xy/static/index.js":
+            elif name in {
+                "python/xy/static/index.js",
+                "packages/xy-client/dist/index.js",
+            }:
                 data = INDEX_JS.encode("utf-8")
-            elif name == "python/xy/static/standalone.js":
+            elif name in {
+                "python/xy/static/standalone.js",
+                "packages/xy-client/dist/standalone.js",
+            }:
                 data = STANDALONE_JS.encode("utf-8")
             elif name == "js/src/60_entries.ts":
                 data = ENTRIES_JS.encode("utf-8")
+            elif name == "packages/xy-client/package.json":
+                data = b'{"name": "@curatelabs/xyg","private":true}\n'
             _add_file(tf, f"{root}/{name}", data)
         for name, data in extra.items():
             _add_file(tf, f"{root}/{name}", data)
@@ -270,6 +278,14 @@ def test_verify_sdist_rejects_missing_static_bundle(tmp_path: Path) -> None:
         verify_sdist.verify_sdist(str(sdist))
 
 
+def test_verify_sdist_rejects_missing_host_neutral_bundle(tmp_path: Path) -> None:
+    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    _write_sdist(sdist, omit={"packages/xy-client/dist/standalone.js"})
+
+    with pytest.raises(AssertionError, match="missing required files"):
+        verify_sdist.verify_sdist(str(sdist))
+
+
 def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None:
     sdist = tmp_path / "xy-0.0.1.tar.gz"
     _write_sdist(sdist, omit={"python/reflex_xy/assets/XYChart.jsx"})
@@ -296,6 +312,7 @@ def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None
         "spec/design-dossier.md",
         "tests/test_import.py",
         "uv.lock",
+        "packages/xy-node/src/native.js",
     ],
 )
 def test_verify_sdist_rejects_repository_only_content(tmp_path: Path, name: str) -> None:
@@ -333,6 +350,14 @@ def test_verify_sdist_rejects_partial_reflex_type_marker(tmp_path: Path) -> None
 def test_verify_sdist_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
     sdist = tmp_path / "xy-0.0.1.tar.gz"
     _write_sdist(sdist, replacements={"python/xy/static/index.js": "not the client"})
+
+    with pytest.raises(AssertionError, match=r"index\.js"):
+        verify_sdist.verify_sdist(str(sdist))
+
+
+def test_verify_sdist_rejects_corrupt_host_neutral_bundle(tmp_path: Path) -> None:
+    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    _write_sdist(sdist, replacements={"packages/xy-client/dist/index.js": "not the client"})
 
     with pytest.raises(AssertionError, match=r"index\.js"):
         verify_sdist.verify_sdist(str(sdist))
