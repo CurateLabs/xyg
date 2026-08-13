@@ -8,6 +8,7 @@ from xy.components import CHART_DOM_SLOTS
 
 ROOT = Path(__file__).resolve().parents[1]
 _STATIC = ROOT / "python" / "xy" / "static"
+_HOST_NEUTRAL = ROOT / "packages" / "xy-client" / "dist"
 
 
 def _read(path: Path) -> str:
@@ -20,9 +21,10 @@ def _read(path: Path) -> str:
 # the whole concatenation so a further split never silently drops a check.
 # (label, text) pairs: the label only names the source in failure messages.
 #
-# The built bundles under python/xy/static are MINIFIED by vite (identifiers
-# renamed, whitespace collapsed), so exact source lines cannot be asserted
-# against them. Only string-literal / property-name invariants are (see
+# The built bundles under packages/xy-client/dist (canonical `@curatelabs/xyg`)
+# and the Python wheel copy under python/xy/static are MINIFIED by vite
+# (identifiers renamed, whitespace collapsed), so exact source lines cannot be
+# asserted against them. Only string-literal / property-name invariants are (see
 # test_built_bundles_keep_minification_safe_invariants); every source-level
 # check still transfers to the shipped bundles because `node js/build.mjs`
 # (which builds them for the wheel/sdist, §33) compiles them from exactly this
@@ -32,11 +34,13 @@ _CLIENT_SRC = (
     "js/src/*.ts",
     "\n".join(_read(p) for p in sorted((ROOT / "js" / "src").glob("*.ts"))),
 )
-_INDEX = ("static/index.js", _read(_STATIC / "index.js"))
-_STANDALONE = ("static/standalone.js", _read(_STATIC / "standalone.js"))
+_INDEX = ("packages/xy-client/dist/index.js", _read(_HOST_NEUTRAL / "index.js"))
+_STANDALONE = ("packages/xy-client/dist/standalone.js", _read(_HOST_NEUTRAL / "standalone.js"))
+_PY_INDEX = ("python/xy/static/index.js", _read(_STATIC / "index.js"))
+_PY_STANDALONE = ("python/xy/static/standalone.js", _read(_STATIC / "standalone.js"))
 
 CLIENT_FILES = (_CLIENT_SRC,)
-BUNDLES = (_INDEX, _STANDALONE)
+BUNDLES = (_INDEX, _STANDALONE, _PY_INDEX, _PY_STANDALONE)
 FORMATTER_FILES = (("js/src/30_ticks.ts", _read(ROOT / "js/src/30_ticks.ts")),)
 # The chrome default stylesheet lives in the theme part; its rules are string
 # literals, so the bundle-level test re-asserts them in both built bundles.
@@ -796,38 +800,49 @@ def test_widget_bundle_is_valid_esm_and_standalone_is_a_window_global() -> None:
     """index.js is anywidget's `_esm` (widget.py): the minified module must
     still export the full public namespace by name. standalone.js is inlined
     as a classic <script> by `Figure.to_html()`: it must be export-free and
-    define a top-level `var xy` namespace (window.xy) with the same surface."""
-    index_text = _read(_STATIC / "index.js")
-    missing = missing_esm_exports(
-        index_text,
-        (
-            "render",
-            "renderStandalone",
-            "decodeFrame",
-            "ChartView",
-            "MARK_KINDS",
-            "markOf",
-            "default",
-        ),
-    )
-    assert not missing, f"index.js no longer exports {missing}"
+    define a top-level `var xy` namespace (window.xy) with the same surface.
+    Assert both the host-neutral artifact and the Python wheel copy."""
+    for index_path in (_HOST_NEUTRAL / "index.js", _STATIC / "index.js"):
+        index_text = _read(index_path)
+        missing = missing_esm_exports(
+            index_text,
+            (
+                "render",
+                "renderStandalone",
+                "decodeFrame",
+                "ChartView",
+                "MARK_KINDS",
+                "markOf",
+                "default",
+            ),
+        )
+        assert not missing, f"{index_path} no longer exports {missing}"
 
-    standalone_text = _read(_STATIC / "standalone.js")
-    assert "export {" not in standalone_text and "export{" not in standalone_text, (
-        "standalone.js must be a classic script (no ES exports)"
-    )
-    assert standalone_text.startswith("var xy="), (
-        "standalone.js must define the window.xy namespace via a top-level var"
-    )
-    for prop in (
-        ".render=",
-        ".renderStandalone=",
-        ".decodeFrame=",
-        ".ChartView=",
-        ".MARK_KINDS=",
-        ".markOf=",
-    ):
-        assert prop in standalone_text, f"standalone.js namespace lost {prop!r}"
+    for standalone_path in (_HOST_NEUTRAL / "standalone.js", _STATIC / "standalone.js"):
+        standalone_text = _read(standalone_path)
+        assert "export {" not in standalone_text and "export{" not in standalone_text, (
+            f"{standalone_path} must be a classic script (no ES exports)"
+        )
+        assert standalone_text.startswith("var xy="), (
+            f"{standalone_path} must define the window.xy namespace via a top-level var"
+        )
+        for prop in (
+            ".render=",
+            ".renderStandalone=",
+            ".decodeFrame=",
+            ".ChartView=",
+            ".MARK_KINDS=",
+            ".markOf=",
+        ):
+            assert prop in standalone_text, f"{standalone_path} namespace lost {prop!r}"
+
+
+def test_python_static_copy_matches_host_neutral_artifact() -> None:
+    """The wheel copy is a copy — Python notebooks must not drift from @curatelabs/xyg."""
+    for name in ("index.js", "standalone.js"):
+        host = (_HOST_NEUTRAL / name).read_bytes()
+        py = (_STATIC / name).read_bytes()
+        assert host == py, f"python/xy/static/{name} drifted from packages/xy-client/dist/{name}"
 
 
 def test_annotation_labels_and_cursor_stay_css_defeatable() -> None:

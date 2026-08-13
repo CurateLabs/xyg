@@ -5,7 +5,7 @@
  *
  * Prefers Playwright + Chromium when available; otherwise falls back to
  * `node --check` on the bundles plus a static parse of `MARK_KINDS` from
- * `js/src/55_marks.ts` and an ESM import of `static/index.js`.
+ * `js/src/55_marks.ts` and an ESM import of the host-neutral `index.js`.
  *
  * Usage:
  *   node scripts/browser_client_smoke.mjs
@@ -19,9 +19,12 @@ import { createServer } from "node:http";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
+const clientDir = join(root, "packages", "xy-client", "dist");
 const staticDir = join(root, "python", "xy", "static");
-const standalonePath = join(staticDir, "standalone.js");
-const indexPath = join(staticDir, "index.js");
+const standalonePath = join(clientDir, "standalone.js");
+const indexPath = join(clientDir, "index.js");
+const pyStandalonePath = join(staticDir, "standalone.js");
+const pyIndexPath = join(staticDir, "index.js");
 const marksSrcPath = join(root, "js", "src", "55_marks.ts");
 
 /** Wire kinds Python `_emit_<kind>` can place on a trace (+ step/stairs aliases). */
@@ -61,10 +64,27 @@ function ok(msg) {
 function assertBundlesExist() {
   if (!existsSync(standalonePath) || !existsSync(indexPath)) {
     fail(
-      `missing static bundles (run \`npm ci && node js/build.mjs\`)\n` +
+      `missing host-neutral bundles (run \`npm ci && node js/build.mjs\`)\n` +
         `  standalone: ${existsSync(standalonePath)}\n` +
         `  index: ${existsSync(indexPath)}`
     );
+  }
+  if (!existsSync(pyStandalonePath) || !existsSync(pyIndexPath)) {
+    fail(
+      `missing Python wheel copy of the client (js/build.mjs copies into python/xy/static)\n` +
+        `  standalone: ${existsSync(pyStandalonePath)}\n` +
+        `  index: ${existsSync(pyIndexPath)}`
+    );
+  }
+  for (const [label, a, b] of [
+    ["index.js", indexPath, pyIndexPath],
+    ["standalone.js", standalonePath, pyStandalonePath],
+  ]) {
+    const host = readFileSync(a);
+    const py = readFileSync(b);
+    if (Buffer.compare(host, py) !== 0) {
+      fail(`python/xy/static/${label} drifted from packages/xy-client/dist/${label}`);
+    }
   }
   const nodeCheck = spawnSync(process.execPath, ["--check", standalonePath], {
     encoding: "utf8",
@@ -73,6 +93,7 @@ function assertBundlesExist() {
     fail(`node --check standalone.js failed:\n${nodeCheck.stderr || nodeCheck.stdout}`);
   }
   ok("standalone.js parses (node --check)");
+  ok("Python wheel copy matches host-neutral @curatelabs/xyg");
 }
 
 function parseMarkKindsFromSource() {

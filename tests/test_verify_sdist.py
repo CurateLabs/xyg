@@ -4,6 +4,7 @@ import importlib.util
 import io
 import sys
 import tarfile
+import tomllib
 from pathlib import Path
 from typing import Optional, Union
 
@@ -83,12 +84,20 @@ def _write_sdist(
             elif name in replacements:
                 raw = replacements[name]
                 data = raw.encode("utf-8") if isinstance(raw, str) else raw
-            elif name == "python/xy/static/index.js":
+            elif name in {
+                "python/xy/static/index.js",
+                "packages/xy-client/dist/index.js",
+            }:
                 data = INDEX_JS.encode("utf-8")
-            elif name == "python/xy/static/standalone.js":
+            elif name in {
+                "python/xy/static/standalone.js",
+                "packages/xy-client/dist/standalone.js",
+            }:
                 data = STANDALONE_JS.encode("utf-8")
             elif name == "js/src/60_entries.ts":
                 data = ENTRIES_JS.encode("utf-8")
+            elif name == "packages/xy-client/package.json":
+                data = b'{"name": "@curatelabs/xyg","private":true}\n'
             _add_file(tf, f"{root}/{name}", data)
         for name, data in extra.items():
             _add_file(tf, f"{root}/{name}", data)
@@ -270,6 +279,14 @@ def test_verify_sdist_rejects_missing_static_bundle(tmp_path: Path) -> None:
         verify_sdist.verify_sdist(str(sdist))
 
 
+def test_verify_sdist_rejects_missing_host_neutral_bundle(tmp_path: Path) -> None:
+    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    _write_sdist(sdist, omit={"packages/xy-client/dist/standalone.js"})
+
+    with pytest.raises(AssertionError, match="missing required files"):
+        verify_sdist.verify_sdist(str(sdist))
+
+
 def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None:
     sdist = tmp_path / "xy-0.0.1.tar.gz"
     _write_sdist(sdist, omit={"python/reflex_xy/assets/XYChart.jsx"})
@@ -298,6 +315,8 @@ def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None
         "uv.lock",
         "packages/xy-node/package.json",
         "packages/xy-node/README.md",
+        "packages/xy-node/src/native.js",
+        "packages/xy-node/src/index.js",
     ],
 )
 def test_verify_sdist_rejects_repository_only_content(tmp_path: Path, name: str) -> None:
@@ -335,6 +354,14 @@ def test_verify_sdist_rejects_partial_reflex_type_marker(tmp_path: Path) -> None
 def test_verify_sdist_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
     sdist = tmp_path / "xy-0.0.1.tar.gz"
     _write_sdist(sdist, replacements={"python/xy/static/index.js": "not the client"})
+
+    with pytest.raises(AssertionError, match=r"index\.js"):
+        verify_sdist.verify_sdist(str(sdist))
+
+
+def test_verify_sdist_rejects_corrupt_host_neutral_bundle(tmp_path: Path) -> None:
+    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    _write_sdist(sdist, replacements={"packages/xy-client/dist/index.js": "not the client"})
 
     with pytest.raises(AssertionError, match=r"index\.js"):
         verify_sdist.verify_sdist(str(sdist))
@@ -397,3 +424,25 @@ def test_verify_sdist_rejects_unsafe_member_paths(tmp_path: Path) -> None:
 
     with pytest.raises(AssertionError, match="unsafe tar member path"):
         verify_sdist.verify_sdist(str(sdist))
+
+
+def test_hatch_sdist_include_is_root_anchored_paint_client_only() -> None:
+    """The Python sdist must ship `@curatelabs/xyg`, never the Node koffi host.
+
+    Unanchored hatchling patterns like `src` or `package.json` match
+    `packages/xy-node/src/**` and nested manifests. Include paths are therefore
+    root-anchored, and xy-node is explicitly excluded.
+    """
+    data = tomllib.loads(
+        (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    sdist = data["tool"]["hatch"]["build"]["targets"]["sdist"]
+    include = sdist["include"]
+    exclude = sdist["exclude"]
+    assert any(item.startswith("/packages/xy-client") for item in include)
+    assert any(item.startswith("/crates") for item in include)
+    assert not any(item.startswith("/src") for item in include)
+    assert not any("xy-node" in item for item in include)
+    assert "/packages/xy-node/**" in exclude
+    for item in include:
+        assert item.startswith("/"), f"sdist include must be root-anchored, got {item!r}"

@@ -8,6 +8,15 @@ in the README).
 
 ## [Unreleased]
 
+### Added
+- Host-neutral paint client as in-repo npm package `@curatelabs/xyg`
+  (`packages/xy-client`; #23, parent #24). `js/build.mjs` writes
+  `packages/xy-client/dist/{index,standalone}.js`; the Python wheel **copies**
+  those files into `python/xy/static/` so notebooks / `to_html()` / Reflex
+  still need no Node. Node `toHtml()` inlines the host-neutral standalone
+  client, not the Python tree. Registry publish waits on the `@curatelabs`
+  npm org (#13).
+
 ### Changed
 - Release safety for the CurateLabs fork (#13): the `release.yml` publish job
   is now gated on `github.repository == 'CurateLabs/graphforge-xy'`, a fork

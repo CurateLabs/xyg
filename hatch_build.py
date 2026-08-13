@@ -11,19 +11,23 @@ Install ergonomics, by audience (design dossier §33):
   NumPy fallback, importing the compute layer then raises a clear, actionable
   error (see `xy.kernels`). Install a Rust toolchain, or use a published
   wheel, for a working compute backend.
-- The JS client (`python/xy/static/*.js`) is a **generated artifact, not
-  committed to git** (§33): this hook builds it with `node js/build.mjs` when
-  it's missing (running `npm ci` first if needed), and the `artifacts` config in
-  pyproject.toml carries the git-ignored bundles into both the wheel and sdist —
-  the JS analogue of compiling the Rust core from source. So a *published* wheel
-  or sdist carries the client already built (end users need no Node), while
-  building from a raw clone builds it, needing Node just as the core needs Rust.
-  An unpacked sdist already carries the bundle, so `pip install <sdist>` stays
-  Node-free — this hook sees the bundle present and returns without touching it.
+- The JS client is a **generated artifact, not committed to git** (§33). The
+  canonical ship vehicle is the host-neutral `@curatelabs/xyg` package
+  (`packages/xy-client/dist/{index,standalone}.js`); this hook *copies* those
+  bundles into `python/xy/static/` so the Python wheel still embeds the client
+  for notebooks / `to_html()` / Reflex. `node js/build.mjs` writes the
+  host-neutral dist first, then copies into the Python tree. The `artifacts`
+  config in pyproject.toml carries the git-ignored bundles into both the wheel
+  (Python copy) and sdist (host-neutral + Python copy) — the JS analogue of
+  compiling the Rust core from source. So a *published* wheel or sdist carries
+  the client already built (Python end users need no Node), while building from
+  a raw clone builds it, needing Node just as the core needs Rust. An unpacked
+  sdist already carries the bundle, so `pip install <sdist>` stays Node-free —
+  this hook sees the Python copy present and returns without touching Node.
   Unlike the native core, the client is **required by default**: every wheel and
-  sdist must ship it (`verify_wheel.py` enforces it even in pure wheels), so a
-  build that can neither find nor produce it is a hard error, never a silent
-  clientless distribution.
+  sdist must ship the Python copy (`verify_wheel.py` enforces it even in pure
+  wheels), so a build that can neither find nor produce it is a hard error,
+  never a silent clientless distribution.
 
 Env switches:
 - `XYG_SKIP_CARGO=1` — don't invoke cargo; use an already-built lib if
@@ -135,7 +139,8 @@ def _cargo_target() -> Optional[str]:
     return target or None
 
 
-# The two render-client bundles `node js/build.mjs` emits into python/xy/static.
+# The two render-client bundles `node js/build.mjs` emits into the host-neutral
+# `@curatelabs/xyg` dist, then copies into python/xy/static for the Python wheel.
 _JS_BUNDLES = ("index.js", "standalone.js")
 
 
@@ -143,8 +148,18 @@ def _static_dir(root: Path) -> Path:
     return root / "python" / "xy" / "static"
 
 
-def _bundles_present(static_dir: Path) -> bool:
-    return all((static_dir / name).exists() for name in _JS_BUNDLES)
+def _client_dir(root: Path) -> Path:
+    return root / "packages" / "xy-client" / "dist"
+
+
+def _bundles_present(directory: Path) -> bool:
+    return all((directory / name).exists() for name in _JS_BUNDLES)
+
+
+def _copy_bundles(src: Path, dest: Path) -> None:
+    dest.mkdir(parents=True, exist_ok=True)
+    for name in _JS_BUNDLES:
+        shutil.copy2(src / name, dest / name)
 
 
 class CustomBuildHook(BuildHookInterface):
@@ -204,26 +219,30 @@ class CustomBuildHook(BuildHookInterface):
             build_data["tag"] = "py3-none-any"
 
     def _provision_js(self, root: Path, require: bool) -> Optional[Path]:
-        """Return the directory holding the render-client bundles, if available.
+        """Return the Python-copy directory holding the render-client bundles.
 
-        The bundles (`static/index.js`, `static/standalone.js`) are generated,
-        not committed (§33). The rule is: **if they're already on disk, use them
-        as-is; otherwise build them from the `js/` source.**
+        Canonical output is `@curatelabs/xyg` (`packages/xy-client/dist`).
+        The Python wheel *copies* those files into `python/xy/static` so
+        notebooks / `to_html()` / Reflex need no Node. The rule is: **if either
+        copy is already on disk, sync the other; otherwise build from `js/`.**
 
-        - A published wheel/sdist carries them, so `pip install xy` and
-          `pip install <sdist>` are completely Node-free — this method returns
-          immediately without touching Node or npm.
+        - A published wheel/sdist carries the Python copy, so `pip install xy`
+          and `pip install <sdist>` are completely Node-free — this method
+          returns immediately without touching Node or npm.
         - Building from a source checkout (a clone, an editable install, an
           `sdist`/`wheel` built in CI) has no bundle yet, so we build it — the
           JS analogue of compiling the Rust core from source. `npm ci` first
           provisions the dev-only toolchain (vite/tsc) when it isn't installed.
 
-        A missing bundle that cannot be built is a hard error by default (the
-        client is required in every distribution); only XYG_SKIP_NODE=1 downgrades
-        that to a loud skip, in which case the widget/export path raises a clear
-        runtime error on first use (see `xy.widget`, `xy.export`).
+        A missing Python copy that cannot be built is a hard error by default
+        (the client is required in every distribution); only XYG_SKIP_NODE=1
+        downgrades that to a loud skip, in which case the widget/export path
+        raises a clear runtime error on first use (see `xy.widget`, `xy.export`).
         """
         static_dir = _static_dir(root)
+        client_dir = _client_dir(root)
+
+        self._sync_js_copies(client_dir, static_dir)
 
         # Present already (published dist, or a prior dev/CI build): use as-is.
         # This is the branch every end-user install takes — never runs Node.
@@ -245,6 +264,7 @@ class CustomBuildHook(BuildHookInterface):
             if (root / "node_modules").is_dir():
                 self._run_build_step(["node", "js/build.mjs"], root, require)
 
+        self._sync_js_copies(client_dir, static_dir)
         if _bundles_present(static_dir):
             return static_dir
         if require:
@@ -264,6 +284,22 @@ class CustomBuildHook(BuildHookInterface):
             file=sys.stderr,
         )
         return None
+
+    @staticmethod
+    def _sync_js_copies(client_dir: Path, static_dir: Path) -> None:
+        """Keep host-neutral dist and the Python wheel copy in lockstep.
+
+        Canonical is `packages/xy-client/dist`. A published wheel may only have
+        the Python copy — seed the host-neutral dist from it so sdist artifacts
+        and Node `toHtml` still resolve. Never overwrite a present copy with
+        the other (a prior `node js/build.mjs` already wrote both).
+        """
+        client_ok = _bundles_present(client_dir)
+        static_ok = _bundles_present(static_dir)
+        if client_ok and not static_ok:
+            _copy_bundles(client_dir, static_dir)
+        elif static_ok and not client_ok:
+            _copy_bundles(static_dir, client_dir)
 
     @staticmethod
     def _run_build_step(cmd: list[str], root: Path, require: bool) -> None:
