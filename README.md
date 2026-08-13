@@ -37,10 +37,10 @@ SVG, or PDF.
 ## Installation
 
 ```bash
-pip install xy
+pip install xyg
 
 # or, with uv
-uv add xy
+uv add xyg
 ```
 
 JavaScript / browser (paint client; in-repo as `@curatelabs/xyg` until the
@@ -217,7 +217,7 @@ Reflex component, with no JavaScript, iframe, or separate chart service.
 Install the `reflex` extra to select a compatible framework version:
 
 ```bash
-pip install "xy[reflex]"
+pip install "xyg[reflex]"
 
 # or, with uv
 uv add "xy[reflex]"

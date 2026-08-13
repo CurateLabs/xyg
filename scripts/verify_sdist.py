@@ -152,7 +152,7 @@ ALLOWED_TOP_LEVEL = {
     "python",
     "crates",
 }
-ROOT_RE = re.compile(r"^xy-\d+\.\d+\.\d+(?:[A-Za-z0-9_.+-]*)?$")
+ROOT_RE = re.compile(r"^xyg-\d+\.\d+\.\d+(?:[A-Za-z0-9_.+-]*)?$")
 
 
 def _member_path(name: str) -> PurePosixPath:
@@ -214,11 +214,11 @@ def _require_pkg_info(path: str, root: str) -> None:
         text = data.read().decode("utf-8")
     metadata = Parser().parsestr(text)
     missing: list[str] = []
-    if metadata.get("Name", "").strip() != "xy":
-        missing.append("Name: xy")
+    if metadata.get("Name", "").strip() != "xyg":
+        missing.append("Name: xyg")
     # pyproject no longer carries a version to compare against — it is derived
     # from the git tag at build time — so what stays checkable is the sdist's
-    # internal consistency: the `xy-<version>` root directory and the PKG-INFO
+    # internal consistency: the `xyg-<version>` root directory and the PKG-INFO
     # that a wheel build reads back out of it must name the same version.
     expected_version = root.split("-", 1)[1]
     if metadata.get("Version", "").strip() != expected_version:

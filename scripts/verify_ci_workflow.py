@@ -4,7 +4,7 @@
 The workflows are YAML, but this checker intentionally stays stdlib-only so it
 can run before the dev environment is installed. It does not try to be a full
 YAML parser; it checks stable, high-value invariants that are easy to lose when
-editing `.github/workflows/ci.yml` or `.github/workflows/release.yml`.
+editing `.github/workflows/ci.yml` or `.github/workflows/publish.yaml`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
-DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
+DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 REQUIRED_CI_JOBS = {
     "browser_conformance",
@@ -646,11 +646,10 @@ PYPI_PUBLISH_GATE = (
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
 )
 
-# The fork repository guard on the publish job itself (issue #13): this
-# repository is a divergent fork of reflex-dev/xy whose artifacts still carry
-# upstream's `xy` distribution name, so only this exact slug may even reach
-# the publish job.
-PUBLISH_REPOSITORY_GUARD = "github.repository == 'CurateLabs/graphforge-xy'"
+# The fork repository guard on the publish job itself (issue #13): only
+# CurateLabs/xyg may reach the OIDC upload. PyPI trusted publishing is bound
+# to this slug, workflow filename publish.yaml, and environment `pypi`.
+PUBLISH_REPOSITORY_GUARD = "github.repository == 'CurateLabs/xyg'"
 
 
 def _step_carries_publish_gate(job_text: str, step_needle: str) -> bool:
@@ -843,7 +842,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "cargo test --workspace",
         "Verify bundled Reflex integration import",
         "importlib.metadata as m, reflex_xy",
-        "assert reflex_xy.__version__ == m.version('xy')",
+        "assert reflex_xy.__version__ == m.version('xyg')",
         "ruff check .",
         "scripts/smoke_render.py",
         "Polar phase 6/7 live examples",
@@ -1243,6 +1242,17 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
 
     jobs = _job_blocks(text)
     errors: list[str] = []
+    if DEFAULT_RELEASE_WORKFLOW.name != "publish.yaml":
+        errors.append(
+            "release workflow filename must be publish.yaml to match the PyPI "
+            "trusted publisher for project xyg (CurateLabs/xyg#13)"
+        )
+    stale_release = ROOT / ".github" / "workflows" / "release.yml"
+    if stale_release.exists():
+        errors.append(
+            "stale .github/workflows/release.yml is present; PyPI trusted "
+            "publishing is bound to publish.yaml and a second workflow would drift"
+        )
     _require_unique_workflow_structure(errors, text, "release", REQUIRED_RELEASE_JOBS)
     _require_trigger_with_direct_option(
         errors,
@@ -1281,7 +1291,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "Install-size budget (<= 15 MB)",
         '"reflex>=0.9.6"',
         "import importlib.metadata as m, reflex_xy",
-        "assert reflex_xy.__version__ == m.version('xy')",
+        "assert reflex_xy.__version__ == m.version('xyg')",
         "assert k.BACKEND=='native'",
         "actions/upload-artifact@",
         "dist/*.whl",
@@ -1392,7 +1402,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         errors.append(
             "release publish job must carry the fork repository guard "
             f"(`if: {PUBLISH_REPOSITORY_GUARD}`) as its only job-level condition — "
-            "this fork's artifacts still use upstream's `xy` distribution name, so no "
+            "this fork publishes PyPI project `xyg` from CurateLabs/xyg only, so no "
             "other repository slug may reach the PyPI upload (#13)"
         )
     if "password:" in publish or "api-token" in publish:

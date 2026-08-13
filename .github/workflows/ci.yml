@@ -149,7 +149,7 @@ jobs:
 
       - name: Verify bundled Reflex integration import
         run: |
-          .venv/bin/python -c "import importlib.metadata as m, reflex_xy; assert reflex_xy.__version__ == m.version('xy')"
+          .venv/bin/python -c "import importlib.metadata as m, reflex_xy; assert reflex_xy.__version__ == m.version('xyg')"
 
       - name: Regression gate (deterministic payloads = hard fail; timing = advisory)
         run: |
@@ -662,7 +662,7 @@ jobs:
           import xy
           import xy.kernels as kernels
 
-          version = metadata.version("xy")
+          version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           assert kernels.BACKEND == "native", kernels.BACKEND
@@ -682,7 +682,7 @@ jobs:
           import reflex_xy
           import xy
 
-          version = metadata.version("xy")
+          version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           try:
@@ -697,7 +697,7 @@ jobs:
           PY
 
   # Linux and Windows wheel smoke matrix (§33). macOS wheels are built only by
-  # release.yml so pull requests do not consume macOS runners; release coverage
+  # publish.yaml so pull requests do not consume macOS runners; release coverage
   # still includes both Intel and Apple Silicon macOS wheels.
   wheels:
     name: Wheel ${{ matrix.os }}

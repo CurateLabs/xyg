@@ -32,7 +32,7 @@ def _load_verify_module():
 
 verify_ci_workflow = _load_verify_module()
 
-# The exact source line carrying the PyPI upload gate in release.yml. Fixtures
+# The exact source line carrying the PyPI upload gate in publish.yaml. Fixtures
 # mutate this line, so it must stay a verbatim copy of the workflow's own
 # spelling (the fork opt-in variable plus the manual dry-run switch, #13).
 RELEASE_PUBLISH_GATE_LINE = (
@@ -712,7 +712,7 @@ def test_workflows_reject_normalized_top_level_overrides(tmp_path: Path) -> None
         ),
         (
             "release",
-            Path(".github/workflows/release.yml"),
+            Path(".github/workflows/publish.yaml"),
             verify_ci_workflow.validate_release_workflow,
         ),
     )
@@ -1309,8 +1309,8 @@ def test_release_workflow_accepts_current_gates() -> None:
 
 
 def test_release_workflow_rejects_missing_native_wheel_verifier(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace('          python scripts/verify_wheel.py "$whl" --expect-native\n', ""),
         encoding="utf-8",
@@ -1322,8 +1322,8 @@ def test_release_workflow_rejects_missing_native_wheel_verifier(tmp_path: Path) 
 
 
 def test_release_workflow_rejects_nonblocking_native_wheel_matrix(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(
             "    runs-on: ${{ matrix.os }}\n",
@@ -1341,8 +1341,8 @@ def test_release_workflow_rejects_nonblocking_native_wheel_matrix(tmp_path: Path
 def test_release_workflow_rejects_unpinned_pyodide_runtime_contract(
     tmp_path: Path,
 ) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace('            RUSTFLAGS="-C panic=abort"\n', "")
         .replace("          CIBW_BUILD: cp314-pyodide_wasm32\n", "")
@@ -1372,8 +1372,8 @@ def test_release_workflow_rejects_unpinned_pyodide_runtime_contract(
 
 
 def test_release_workflow_rejects_nonblocking_pyodide_probe(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(
             "    runs-on: ubuntu-latest\n",
@@ -1389,8 +1389,8 @@ def test_release_workflow_rejects_nonblocking_pyodide_probe(tmp_path: Path) -> N
 
 
 def test_release_workflow_rejects_broad_wasm_permissions(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(
             "    permissions:\n      contents: read\n    steps:\n",
@@ -1408,8 +1408,8 @@ def test_release_workflow_rejects_broad_wasm_permissions(tmp_path: Path) -> None
 def test_release_workflow_rejects_pyemscripten_artifact_outside_pypi_batch(
     tmp_path: Path,
 ) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(
             "          name: dist-pyemscripten\n", "          name: pyemscripten-wheel\n"
@@ -1447,8 +1447,8 @@ def test_ci_workflow_rejects_missing_sdist_rust_smoke(tmp_path: Path) -> None:
 
 
 def test_release_workflow_rejects_missing_sdist_rust_smoke(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     moved = workflow.replace(
         "      - name: Build sdist\n",
         '      - name: Build sdist\n        env:\n          XYG_REQUIRE_CARGO: "1"\n',
@@ -1492,9 +1492,9 @@ def test_ci_workflow_rejects_missing_coreless_sdist_reflex_import(tmp_path: Path
 def test_release_workflow_rejects_missing_coreless_sdist_reflex_import(
     tmp_path: Path,
 ) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     prefix, smoke = workflow.split("      - name: Verify coreless sdist imports reflex_xy\n", 1)
-    path = tmp_path / "release.yml"
+    path = tmp_path / "publish.yaml"
     path.write_text(
         prefix
         + "      - name: Verify coreless sdist imports reflex_xy\n"
@@ -1511,8 +1511,8 @@ def test_release_workflow_rejects_missing_coreless_sdist_reflex_import(
 
 
 def test_release_workflow_rejects_missing_trusted_publishing(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace("      id-token: write", "      id-token-removed: write"),
         encoding="utf-8",
@@ -1524,8 +1524,8 @@ def test_release_workflow_rejects_missing_trusted_publishing(tmp_path: Path) -> 
 
 
 def test_release_workflow_rejects_pypi_token_publish(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(
             "      id-token: write",
@@ -1540,8 +1540,8 @@ def test_release_workflow_rejects_pypi_token_publish(tmp_path: Path) -> None:
 
 
 def test_release_workflow_rejects_missing_dry_run_input(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(workflow.replace("      dry_run:\n", "      dry_ran:\n"), encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
@@ -1550,7 +1550,7 @@ def test_release_workflow_rejects_missing_dry_run_input(tmp_path: Path) -> None:
 
 
 def test_release_dry_run_rejects_inline_or_unsafe_duplicate_trigger(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     marker = "\n# Limit build jobs to repository reads."
     assert marker in workflow
     duplicates = (
@@ -1569,8 +1569,8 @@ def test_release_dry_run_rejects_inline_or_unsafe_duplicate_trigger(tmp_path: Pa
 def test_release_workflow_rejects_false_dry_run_default_hidden_by_comment(
     tmp_path: Path,
 ) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace("        default: true\n", "        default: false # default: true\n", 1),
         encoding="utf-8",
@@ -1585,8 +1585,8 @@ def test_release_workflow_rejects_ungated_pypi_publish_step(tmp_path: Path) -> N
     """A sibling step's `if:` (the dry-run summary) must not mask a missing
     gate on the actual PyPI upload step — regression for a bug where the
     checker's own regex matched across step boundaries under re.DOTALL."""
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(RELEASE_PUBLISH_GATE_LINE, ""),
         encoding="utf-8",
@@ -1598,9 +1598,9 @@ def test_release_workflow_rejects_ungated_pypi_publish_step(tmp_path: Path) -> N
 
 
 def test_release_workflow_rejects_duplicate_pypi_publish_condition(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     gate = RELEASE_PUBLISH_GATE_LINE
-    path = tmp_path / "release.yml"
+    path = tmp_path / "publish.yaml"
     path.write_text(workflow.replace(gate, gate + '        "if": always()\n', 1), encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
@@ -1609,10 +1609,10 @@ def test_release_workflow_rejects_duplicate_pypi_publish_condition(tmp_path: Pat
 
 
 def test_release_job_scalar_cannot_decoy_the_publish_step(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     gate = RELEASE_PUBLISH_GATE_LINE
     decoy = "\n    name: |2\n      - uses: pypa/gh-action-pypi-publish@decoy\n" + gate
-    path = tmp_path / "release.yml"
+    path = tmp_path / "publish.yaml"
     path.write_text(workflow.replace(gate, "", 1) + decoy, encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
@@ -1622,12 +1622,11 @@ def test_release_job_scalar_cannot_decoy_the_publish_step(tmp_path: Path) -> Non
 
 def test_release_workflow_rejects_missing_fork_repository_guard(tmp_path: Path) -> None:
     """The publish job's own `if:` is what keeps any other repository slug —
-    including forks/mirrors of this fork — away from the PyPI upload while the
-    artifacts still carry upstream's `xy` distribution name (#13)."""
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    guard = "    if: github.repository == 'CurateLabs/graphforge-xy'\n"
+    including forks/mirrors of this fork — away from the PyPI upload (#13)."""
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    guard = "    if: github.repository == 'CurateLabs/xyg'\n"
     assert guard in workflow
-    path = tmp_path / "release.yml"
+    path = tmp_path / "publish.yaml"
     path.write_text(workflow.replace(guard, ""), encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
@@ -1637,11 +1636,11 @@ def test_release_workflow_rejects_missing_fork_repository_guard(tmp_path: Path) 
 
 def test_release_workflow_rejects_missing_fork_publish_guard_step(tmp_path: Path) -> None:
     """The guard step is the configuration-independent stop: it must fail any
-    real publish attempt while the distribution is still named `xy` (#13)."""
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    real publish attempt while still refusing upstream's `xy` name (#13)."""
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     step = "      - name: Fork publish guard (refuse upstream's PyPI package name)\n"
     assert step in workflow
-    path = tmp_path / "release.yml"
+    path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(step, "      - name: Renamed away from the guarded step\n"),
         encoding="utf-8",
@@ -1655,10 +1654,10 @@ def test_release_workflow_rejects_missing_fork_publish_guard_step(tmp_path: Path
 def test_release_workflow_rejects_missing_publish_opt_in_variable(tmp_path: Path) -> None:
     """Dropping the XYG_ALLOW_PYPI_PUBLISH opt-in from the upload condition
     reverts to publish-on-tag, which this fork must never do (#13)."""
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     opt_in = "vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
     assert opt_in in workflow
-    path = tmp_path / "release.yml"
+    path = tmp_path / "publish.yaml"
     path.write_text(workflow.replace(opt_in, ""), encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
@@ -1667,8 +1666,8 @@ def test_release_workflow_rejects_missing_publish_opt_in_variable(tmp_path: Path
 
 
 def test_release_workflow_rejects_non_retryable_pypi_publish(tmp_path: Path) -> None:
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(workflow.replace("          skip-existing: true\n", ""), encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
@@ -1682,8 +1681,8 @@ def test_release_workflow_rejects_shallow_checkout(tmp_path: Path) -> None:
     That failure is silent — the build succeeds at the 0.0.0 fallback and
     publishes it — so the checker has to catch it instead of the release.
     """
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     path.write_text(workflow.replace("          fetch-depth: 0\n", ""), encoding="utf-8")
 
     errors = verify_ci_workflow.validate_release_workflow(path)
@@ -1722,7 +1721,7 @@ def test_workflows_reject_fetch_depth_hidden_in_scalar_input(tmp_path: Path) -> 
     cases = (
         (Path(".github/workflows/ci.yml"), verify_ci_workflow.validate_ci_workflow),
         (Path(".github/workflows/codspeed.yml"), verify_ci_workflow.validate_codspeed_workflow),
-        (Path(".github/workflows/release.yml"), verify_ci_workflow.validate_release_workflow),
+        (Path(".github/workflows/publish.yaml"), verify_ci_workflow.validate_release_workflow),
     )
     for index, (source, validate) in enumerate(cases):
         workflow = source.read_text(encoding="utf-8")
@@ -1743,8 +1742,8 @@ def test_workflows_reject_fetch_depth_hidden_in_scalar_input(tmp_path: Path) -> 
 def test_release_workflow_rejects_always_conditioned_pypi_publish(tmp_path: Path) -> None:
     # `if: always()` is *a* condition but gates nothing: a mere has-an-if
     # check would accept it and let a manual dispatch publish unconditionally.
-    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    path = tmp_path / "release.yml"
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
     gate = RELEASE_PUBLISH_GATE_LINE
     assert gate in workflow
     path.write_text(workflow.replace(gate, "        if: always()\n"), encoding="utf-8")

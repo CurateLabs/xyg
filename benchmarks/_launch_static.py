@@ -230,7 +230,7 @@ def run(sizes: list[int], *, timeout_s: float, memory_gib: float) -> dict[str, A
             "platform": platform.platform(),
             "python": platform.python_version(),
             "numpy": np.__version__,
-            "xy": importlib.metadata.version("xy"),
+            "xy": importlib.metadata.version("xyg"),
             "plotly": importlib.metadata.version("plotly"),
             "kaleido": importlib.metadata.version("kaleido"),
             "matplotlib": importlib.metadata.version("matplotlib"),

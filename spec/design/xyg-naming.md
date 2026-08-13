@@ -40,7 +40,7 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | Shipped cdylib artifact | `libxy_core.so` / `libxy_core.dylib` / `xy_core.dll` | **`libxyg_core.so` / `libxyg_core.dylib` / `xyg_core.dll`** (one artifact per platform; wasm target packs as `libxyg_core.so`) | decided |
 | C ABI symbol prefix | `xy_*` (e.g. `xy_abi_version`) | **`xyg_*`** (e.g. `xyg_abi_version`); prefix change ships with the ABI 58 bump, so an old wrapper can never half-bind a new library | decided |
 | ABI manifest | — (declarations duplicated by hand) | **`spec/abi/xyg-abi.json`**, generated from `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`; parity-checked against Python/Node/smoke declarations by `scripts/check_abi_parity.py` | decided |
-| Python distribution | `xy` | **`xyg`** | decided (owner, 2026-08-11; clean break, no alias) |
+| Python distribution | `xy` | **`xyg`** | landed (`pyproject.toml` / wheels / `pip install xyg`; import still `xy`) |
 | Python import namespace | `import xy` (`python/xy/`) | **`import xyg`** (`python/xyg/`) | decided (owner, 2026-08-11) |
 | Bundled Reflex adapter | `reflex_xy` (`python/reflex_xy/`) | **`reflex_xyg`** (`python/reflex_xyg/`); extra spelled `xyg[reflex]` | decided (owner, 2026-08-11) |
 | Paint client (npm) | (Python `python/xy/static` only) | **`@curatelabs/xyg`** (owned by #23; listed so the matrix is complete) | decided |
@@ -102,8 +102,10 @@ one reviewed PR on `main` before any release tag:
    with this crate split (directory stays `packages/xy-node`). Python
    `import xyg` / `python/xyg/` / `reflex_xyg` is decided (§1) but **staged
    after** the crate split, native artifact, and Node lookup so Python package
-   churn cannot block `libxyg_core`. Until that commit, hosts still import
-   `xy` from `python/xy/`.
+   churn cannot block `libxyg_core`. The **distribution** name `xyg` (wheels,
+   sdists, `pip install xyg`, `importlib.metadata.version("xyg")`) lands with
+   the crate-split PR so PyPI trusted publishing can claim project `xyg`.
+   Until the import cutover, hosts still `import xy` from `python/xy/`.
 6. **Stale-name gate** — `scripts/check_stale_names.py` turns the policy in
    §0/§2 into a repository-wide check.
 

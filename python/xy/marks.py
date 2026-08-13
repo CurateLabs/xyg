@@ -1191,10 +1191,9 @@ def _bar_like(
         from . import kernels
 
         # Width may be scalar or per-category; Rust broadcasts length-1.
+        # ``np.isscalar`` does not narrow ``float | ndarray`` for ty.
         width_for_native: float | np.ndarray = (
-            float(width_values)
-            if np.isscalar(width_values)
-            else np.asarray(width_values, dtype=np.float64)
+            width_values if isinstance(width_values, np.ndarray) else float(width_values)
         )
         # Offsets (grouped / stacked / normalized) live in xyg_bar_stack so
         # Python and Node share one layout decision (§28 / dual-host).
@@ -2613,7 +2612,7 @@ def hexbin(
         )
         if not len(metric):
             raise ValueError("hexbin logarithmic colors require at least one positive cell value")
-        colorbar_domain = (float(metric.min()), float(metric.max()))
+        colorbar_domain = (float(np.min(metric)), float(np.max(metric)))
         metric = np.log(metric)
     else:
         colorbar_domain = None

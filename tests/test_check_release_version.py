@@ -81,7 +81,7 @@ def test_main_requires_a_tag(tmp_path: Path, monkeypatch) -> None:
 
 def test_release_workflow_wires_the_gate() -> None:
     workflow = (
-        Path(__file__).resolve().parents[1] / ".github" / "workflows" / "release.yml"
+        Path(__file__).resolve().parents[1] / ".github" / "workflows" / "publish.yaml"
     ).read_text(encoding="utf-8")
 
     assert "scripts/check_release_version.py" in workflow

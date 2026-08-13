@@ -19,6 +19,10 @@ release change. A change is incomplete while its affected specification is
 missing, stale, or inconsistent with the implementation; resolve discrepancies
 instead of treating the implementation alone as authoritative.
 
+**Install doors.** Python: `pip install xyg` (import remains `xy` until the
+staged `python/xyg/` cutover). JavaScript / browser: `npm install @curatelabs/xyg`.
+Node host: `npm install @curatelabs/xyg-node` (registry publish still #13).
+
 [`design-dossier.md`](design-dossier.md) is the entry point — the single
 compiled record of the design, the competitive research behind it, the
 performance estimates, and the audit trail. Code comments cite its sections by

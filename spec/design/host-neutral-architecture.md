@@ -65,7 +65,7 @@ chose: **Curate Labs** and **XYG**.
 | Node host (npm) | **`@curatelabs/xyg-node`** | #13 / #18 (identity + native packaging); #23 (toHtml consumes `@curatelabs/xyg`, does not own native `.so` lookup) | Replaces in-tree `"name": "@xy/node"`; never publish `@xy/node`. Thin koffi host; must not import browser APIs. |
 | Safe Rust crate | `xyg-engine` | #18 | Algorithms and deterministic policy. |
 | C ABI crate / artifact | `xyg-core` / `libxyg_core` | #18 | One cdylib for Python and Node. |
-| Python distribution | **`xyg`** (preferred) | #13 / #18 | Not upstream `xy`. Not a second brand (`graphforge-xy`). Import-alias (`import xy`) is a compatibility decision inside #13/#18, not a second product. |
+| Python distribution | **`xyg`** | #13 / #18 | `pip install xyg`. Not upstream `xy`. Import remains `xy` until the staged `python/xyg/` cutover. |
 | Python import | `xy` or `xyg` | #13 / #18 open question | Time-bounded alias vs clean break; does not change the product name XYG. |
 
 **Why two npm packages.** Isolation in host-parity §0: the Node package must
