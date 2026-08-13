@@ -18,9 +18,11 @@ silently fall back to a slower Python implementation. A source checkout or
 unsupported platform needs a Rust build toolchain.
 
 **The JavaScript client is missing.** Reinstall the XY wheel so its bundled
-`python/xy/static` assets are present. In a development checkout, build the JS
-client with the repository's documented Node command before using widgets or
-HTML export.
+`python/xy/static` copy of `@curatelabs/xyg` is present. In a development
+checkout, build the JS client with `npm ci && node js/build.mjs` (writes
+`packages/xy-client/dist` and copies into the Python tree) before using
+widgets or HTML export. JS/Node users should resolve `@curatelabs/xyg`, not
+the Python package path.
 
 ## Blank or Collapsed Charts
 

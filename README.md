@@ -43,6 +43,17 @@ pip install xy
 uv add xy
 ```
 
+JavaScript / browser (paint client; in-repo as `@curatelabs/xyg` until the
+npm org publishes — [#13](https://github.com/CurateLabs/xyg/issues/13)):
+
+```bash
+npm install @curatelabs/xyg
+```
+
+From a source checkout, build the client once with `npm ci && node js/build.mjs`.
+Node host bindings live in `packages/xy-node` (published later as
+`@curatelabs/xyg-node`).
+
 ## Getting started
 
 A chart is a container plus the marks inside it. Any sequence works; NumPy is
