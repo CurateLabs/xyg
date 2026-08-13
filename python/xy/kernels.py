@@ -76,11 +76,22 @@ triangle_edges = _impl.triangle_edges
 local_log_density = _impl.local_log_density
 pyramid_build = _impl.pyramid_build
 pyramid_build_color = _impl.pyramid_build_color
+pyramid_build_from_stream = _impl.pyramid_build_from_stream
 pyramid_append = _impl.pyramid_append
+pyramid_append_from_stream = _impl.pyramid_append_from_stream
 pyramid_count = _impl.pyramid_count
 pyramid_compose = _impl.pyramid_compose
 pyramid_compose_color = _impl.pyramid_compose_color
 pyramid_free = _impl.pyramid_free
+stream_new = _impl.stream_new
+stream_append = _impl.stream_append
+stream_seal = _impl.stream_seal
+stream_free = _impl.stream_free
+stream_len = _impl.stream_len
+stream_capacity = _impl.stream_capacity
+stream_view = _impl.stream_view
+stream_copy = _impl.stream_copy
+stream_zone_maps = _impl.stream_zone_maps
 polygon_triangles = _impl.polygon_triangles
 quad_mesh_triangles = _impl.quad_mesh_triangles
 rasterize = _impl.rasterize
@@ -148,8 +159,10 @@ __all__ = [
     "polygon_select",
     "polygon_triangles",
     "pyramid_append",
+    "pyramid_append_from_stream",
     "pyramid_build",
     "pyramid_build_color",
+    "pyramid_build_from_stream",
     "pyramid_compose",
     "pyramid_compose_color",
     "pyramid_count",
@@ -169,6 +182,15 @@ __all__ = [
     "stacked_bounds",
     "stratified_sample_mask",
     "stratified_sample_range_u8",
+    "stream_append",
+    "stream_capacity",
+    "stream_copy",
+    "stream_free",
+    "stream_len",
+    "stream_new",
+    "stream_seal",
+    "stream_view",
+    "stream_zone_maps",
     "streamlines",
     "transition_keys_fixed",
     "triangle_edges",

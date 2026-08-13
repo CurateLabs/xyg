@@ -12,6 +12,7 @@ defined, and it is a loud failure, never a silent degrade).
 
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import numbers
 import operator
@@ -25,7 +26,7 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 58
+ABI_VERSION = 59
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -728,6 +729,54 @@ def _load() -> ctypes.CDLL:
     ]
     lib.xyg_pyramid_free.restype = ctypes.c_int32
     lib.xyg_pyramid_free.argtypes = [ctypes.c_uint64]
+    lib.xyg_pyramid_build_from_stream.restype = ctypes.c_uint64
+    lib.xyg_pyramid_build_from_stream.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+    ]
+    lib.xyg_pyramid_append_from_stream.restype = ctypes.c_int32
+    lib.xyg_pyramid_append_from_stream.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_stream_new.restype = ctypes.c_uint64
+    lib.xyg_stream_new.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    lib.xyg_stream_append.restype = ctypes.c_int32
+    lib.xyg_stream_append.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_size_t]
+    lib.xyg_stream_seal.restype = ctypes.c_int32
+    lib.xyg_stream_seal.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_free.restype = ctypes.c_int32
+    lib.xyg_stream_free.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_len.restype = ctypes.c_size_t
+    lib.xyg_stream_len.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_capacity.restype = ctypes.c_size_t
+    lib.xyg_stream_capacity.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_copy.restype = ctypes.c_int32
+    lib.xyg_stream_copy.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_size_t]
+    lib.xyg_stream_data.restype = ctypes.c_int32
+    lib.xyg_stream_data.argtypes = [
+        ctypes.c_uint64,
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    lib.xyg_stream_zone_maps.restype = ctypes.c_size_t
+    lib.xyg_stream_zone_maps.argtypes = [ctypes.c_uint64] + [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
     lib.xyg_graph_layout.restype = ctypes.c_int32
     lib.xyg_graph_layout.argtypes = [
         ctypes.c_uint32,
@@ -3315,6 +3364,203 @@ def stratified_sample_mask(
                 "invalid stratified_sample_mask arguments (group codes must be < n_groups)"
             )
     return out.view(np.bool_)
+
+
+def _stream_handle(value: int) -> int:
+    if isinstance(value, (bool, np.bool_)):
+        raise ValueError("stream handle must be an integer handle")
+    try:
+        out = operator.index(value)
+    except TypeError as e:
+        raise ValueError("stream handle must be an integer handle") from e
+    if out < 0:
+        raise ValueError("stream handle must be non-negative")
+    return int(out)
+
+
+def stream_new(data: "npt.NDArray[np.float64] | None" = None) -> int:
+    """Create a Rust-owned canonical f64 stream. Empty when `data` is omitted."""
+    arr = np.empty(0, dtype=np.float64) if data is None else _as_f64(data, "data")
+    handle = int(_lib.xyg_stream_new(_ptr_f64(arr) if len(arr) else None, len(arr)))
+    if handle == 0:
+        raise ValueError("xyg_stream_new failed")
+    return handle
+
+
+def stream_append(handle: int, data: "npt.NDArray[np.float64]") -> None:
+    handle = _stream_handle(handle)
+    arr = _as_f64(data, "data")
+    ok = _lib.xyg_stream_append(
+        ctypes.c_uint64(handle),
+        _ptr_f64(arr) if len(arr) else None,
+        len(arr),
+    )
+    if ok != 1:
+        raise ValueError("stale or busy stream handle")
+
+
+def stream_seal(handle: int) -> None:
+    handle = _stream_handle(handle)
+    if _lib.xyg_stream_seal(ctypes.c_uint64(handle)) != 1:
+        raise ValueError("stale or busy stream handle")
+
+
+def stream_free(handle: int) -> bool:
+    handle = _stream_handle(handle)
+    return _lib.xyg_stream_free(ctypes.c_uint64(handle)) == 1
+
+
+def stream_len(handle: int) -> int:
+    handle = _stream_handle(handle)
+    n = int(_lib.xyg_stream_len(ctypes.c_uint64(handle)))
+    if n == _USIZE_MAX:
+        raise ValueError("stale stream handle")
+    return n
+
+
+def stream_capacity(handle: int) -> int:
+    handle = _stream_handle(handle)
+    n = int(_lib.xyg_stream_capacity(ctypes.c_uint64(handle)))
+    if n == _USIZE_MAX:
+        raise ValueError("stale stream handle")
+    return n
+
+
+def stream_view(handle: int) -> npt.NDArray[np.float64]:
+    """Zero-copy NumPy view of the Rust-owned buffer. Invalid after realloc."""
+    handle = _stream_handle(handle)
+    ptr = ctypes.c_void_p()
+    n = ctypes.c_size_t()
+    ok = _lib.xyg_stream_data(ctypes.c_uint64(handle), ctypes.byref(ptr), ctypes.byref(n))
+    if ok != 1:
+        raise ValueError("stale stream handle")
+    if n.value == 0:
+        return np.empty(0, dtype=np.float64)
+    buf = (ctypes.c_double * n.value).from_address(ptr.value)
+    arr = np.frombuffer(buf, dtype=np.float64)
+    with contextlib.suppress(ValueError):
+        arr.flags.writeable = True
+    return arr
+
+
+def stream_copy(handle: int) -> npt.NDArray[np.float64]:
+    handle = _stream_handle(handle)
+    n = stream_len(handle)
+    out = np.empty(n, dtype=np.float64)
+    ok = _lib.xyg_stream_copy(
+        ctypes.c_uint64(handle),
+        _ptr_f64(out) if n else None,
+        n,
+    )
+    if ok != 1:
+        raise ValueError("stale stream handle")
+    return out
+
+
+def stream_zone_maps(
+    handle: int,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+]:
+    """Sealed zone maps, same 8-tuple as `zone_maps`."""
+    handle = _stream_handle(handle)
+    n = stream_len(handle)
+    n_chunks = 0 if n == 0 else -(-n // 65_536)
+    if n_chunks == 0:
+        empty_f = np.empty(0, dtype=np.float64)
+        empty_u = np.empty(0, dtype=np.uint64)
+        return (
+            empty_f,
+            empty_f,
+            empty_u,
+            empty_u,
+            empty_f.copy(),
+            empty_f.copy(),
+            empty_f.copy(),
+            empty_f.copy(),
+        )
+    f64_rows = np.empty((6, n_chunks), dtype=np.float64)
+    u64_rows = np.empty((2, n_chunks), dtype=np.uint64)
+    f64_ptr = f64_rows.ctypes.data
+    u64_ptr = u64_rows.ctypes.data
+    row_bytes = n_chunks * 8
+    written = _lib.xyg_stream_zone_maps(
+        ctypes.c_uint64(handle),
+        f64_ptr,
+        f64_ptr + row_bytes,
+        u64_ptr,
+        u64_ptr + row_bytes,
+        f64_ptr + 2 * row_bytes,
+        f64_ptr + 3 * row_bytes,
+        f64_ptr + 4 * row_bytes,
+        f64_ptr + 5 * row_bytes,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("stale stream handle or stream is not sealed")
+    if written != n_chunks:
+        raise RuntimeError(f"xyg_stream_zone_maps wrote {written} chunks, expected {n_chunks}")
+    mins, maxs, sums, sum_sqs, positive_mins, positive_maxs = f64_rows
+    counts, nulls = u64_rows
+    return mins, maxs, counts, nulls, sums, sum_sqs, positive_mins, positive_maxs
+
+
+def pyramid_build_from_stream(
+    x_handle: int,
+    y_handle: int,
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    base_dim: int,
+) -> int:
+    """Build a count pyramid from two stream handles (no host-passed arrays)."""
+    x_handle = _stream_handle(x_handle)
+    y_handle = _stream_handle(y_handle)
+    base_dim = _pyramid_base_dim(base_dim)
+    x0, x1 = _finite_increasing(x0, x1, "x range")
+    y0, y1 = _finite_increasing(y0, y1, "y range")
+    return int(
+        _lib.xyg_pyramid_build_from_stream(
+            ctypes.c_uint64(x_handle),
+            ctypes.c_uint64(y_handle),
+            x0,
+            x1,
+            y0,
+            y1,
+            base_dim,
+        )
+    )
+
+
+def pyramid_append_from_stream(handle: int, x_handle: int, y_handle: int, tail_len: int) -> bool:
+    """Increment a pyramid from the tail of two streams. False → invalidate."""
+    handle = _pyramid_handle(handle)
+    x_handle = _stream_handle(x_handle)
+    y_handle = _stream_handle(y_handle)
+    if isinstance(tail_len, (bool, np.bool_)):
+        raise ValueError("tail_len must be a non-negative integer")
+    try:
+        n = operator.index(tail_len)
+    except TypeError as e:
+        raise ValueError("tail_len must be a non-negative integer") from e
+    if n < 0:
+        raise ValueError("tail_len must be a non-negative integer")
+    return (
+        _lib.xyg_pyramid_append_from_stream(
+            ctypes.c_uint64(handle),
+            ctypes.c_uint64(x_handle),
+            ctypes.c_uint64(y_handle),
+            n,
+        )
+        == 1
+    )
 
 
 def pyramid_build(

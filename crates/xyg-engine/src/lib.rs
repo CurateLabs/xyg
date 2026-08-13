@@ -18,6 +18,7 @@ pub mod lod_plan;
 pub mod raster;
 pub mod sankey;
 pub mod stats;
+pub mod stream;
 pub mod svg;
 pub mod tiles;
 pub mod transition;

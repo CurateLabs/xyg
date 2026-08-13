@@ -3253,17 +3253,10 @@ pub fn contourf_bands_into(
             let corners: [Pt; 4] = [
                 (xpos[col], ypos[row], z[row * cols + col]),
                 (xpos[col + 1], ypos[row], z[row * cols + col + 1]),
-                (
-                    xpos[col + 1],
-                    ypos[row + 1],
-                    z[(row + 1) * cols + col + 1],
-                ),
+                (xpos[col + 1], ypos[row + 1], z[(row + 1) * cols + col + 1]),
                 (xpos[col], ypos[row + 1], z[(row + 1) * cols + col]),
             ];
-            let triangle: Vec<Pt> = corners
-                .into_iter()
-                .filter(|c| c.2.is_finite())
-                .collect();
+            let triangle: Vec<Pt> = corners.into_iter().filter(|c| c.2.is_finite()).collect();
             if triangle.len() != 3 {
                 continue;
             }
@@ -3279,8 +3272,7 @@ pub fn contourf_bands_into(
                     let v0 = polygon[0];
                     let v1 = polygon[index];
                     let v2 = polygon[index + 1];
-                    let area =
-                        (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
+                    let area = (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
                     if area.abs() <= eps {
                         continue;
                     }
@@ -6434,21 +6426,8 @@ mod tests {
         let mut slots = vec![0i64; needed];
         assert_eq!(
             contourf_bands_into(
-                &z,
-                2,
-                2,
-                &xpos,
-                &ypos,
-                &edges,
-                false,
-                false,
-                &mut x0,
-                &mut y0,
-                &mut x1,
-                &mut y1,
-                &mut x2,
-                &mut y2,
-                &mut slots,
+                &z, 2, 2, &xpos, &ypos, &edges, false, false, &mut x0, &mut y0, &mut x1, &mut y1,
+                &mut x2, &mut y2, &mut slots,
             ),
             Some(3)
         );

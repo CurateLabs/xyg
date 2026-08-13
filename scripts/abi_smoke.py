@@ -601,6 +601,54 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int64),
         ctypes.c_size_t,
     ]
+    lib.xyg_stream_new.restype = ctypes.c_uint64
+    lib.xyg_stream_new.argtypes = [F64P, ctypes.c_size_t]
+    lib.xyg_stream_append.restype = ctypes.c_int32
+    lib.xyg_stream_append.argtypes = [ctypes.c_uint64, F64P, ctypes.c_size_t]
+    lib.xyg_stream_seal.restype = ctypes.c_int32
+    lib.xyg_stream_seal.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_free.restype = ctypes.c_int32
+    lib.xyg_stream_free.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_len.restype = ctypes.c_size_t
+    lib.xyg_stream_len.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_capacity.restype = ctypes.c_size_t
+    lib.xyg_stream_capacity.argtypes = [ctypes.c_uint64]
+    lib.xyg_stream_copy.restype = ctypes.c_int32
+    lib.xyg_stream_copy.argtypes = [ctypes.c_uint64, F64P, ctypes.c_size_t]
+    lib.xyg_stream_data.restype = ctypes.c_int32
+    lib.xyg_stream_data.argtypes = [
+        ctypes.c_uint64,
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    lib.xyg_stream_zone_maps.restype = ctypes.c_size_t
+    lib.xyg_stream_zone_maps.argtypes = [ctypes.c_uint64] + [
+        F64P,
+        F64P,
+        U64P,
+        U64P,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_pyramid_build_from_stream.restype = ctypes.c_uint64
+    lib.xyg_pyramid_build_from_stream.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+    ]
+    lib.xyg_pyramid_append_from_stream.restype = ctypes.c_int32
+    lib.xyg_pyramid_append_from_stream.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_uint64,
+        ctypes.c_size_t,
+    ]
     return lib
 
 
@@ -2128,6 +2176,73 @@ def main() -> None:
     )
     ok(lib.xyg_pyramid_free(ctypes.c_uint64(handle)) == 1, "pyramid free")
     ok(lib.xyg_pyramid_free(ctypes.c_uint64(handle)) == 0, "double free is an error code")
+
+    # Canonical stream store (engine doc §5): new → append → seal → copy →
+    # zone maps match xyg_zone_maps over the concatenated column; pyramid
+    # build/append can read through the handles; stale free is an error.
+    seed = array("d", [1.0, 2.0, 3.0])
+    tail = array("d", [4.0, float("nan"), 6.0])
+    sh = lib.xyg_stream_new(_ptr(seed, ctypes.c_double), len(seed))
+    ok(sh != 0, "stream_new returns a handle")
+    ok(
+        lib.xyg_stream_append(ctypes.c_uint64(sh), _ptr(tail, ctypes.c_double), len(tail)) == 1,
+        "stream_append",
+    )
+    ok(lib.xyg_stream_seal(ctypes.c_uint64(sh)) == 1, "stream_seal")
+    ok(int(lib.xyg_stream_len(ctypes.c_uint64(sh))) == 6, "stream_len after append")
+    ok(int(lib.xyg_stream_capacity(ctypes.c_uint64(sh))) >= 6, "stream_capacity has slack")
+    copied = array("d", [0.0] * 6)
+    ok(
+        lib.xyg_stream_copy(ctypes.c_uint64(sh), _ptr(copied, ctypes.c_double), 6) == 1,
+        "stream_copy",
+    )
+    ok(list(copied)[:4] == [1.0, 2.0, 3.0, 4.0] and list(copied)[5:] == [6.0], "copied prefix")
+    ok(copied[4] != copied[4], "copied NaN")
+    n_chunks = lib.xyg_stream_zone_maps(
+        ctypes.c_uint64(sh),
+        (ctypes.c_double * 1)(),
+        (ctypes.c_double * 1)(),
+        (ctypes.c_uint64 * 1)(),
+        (ctypes.c_uint64 * 1)(),
+        (ctypes.c_double * 1)(),
+        (ctypes.c_double * 1)(),
+        (ctypes.c_double * 1)(),
+        (ctypes.c_double * 1)(),
+    )
+    ok(n_chunks == 1, "sealed stream has one zone-map chunk")
+    sy = lib.xyg_stream_new(_ptr(seed, ctypes.c_double), len(seed))
+    ok(
+        lib.xyg_stream_append(ctypes.c_uint64(sy), _ptr(tail, ctypes.c_double), len(tail)) == 1,
+        "y stream_append",
+    )
+    ok(lib.xyg_stream_seal(ctypes.c_uint64(sy)) == 1, "y stream_seal")
+    ph = lib.xyg_pyramid_build_from_stream(
+        ctypes.c_uint64(sh), ctypes.c_uint64(sy), 0.0, 10.0, 0.0, 10.0, 8
+    )
+    ok(ph != 0, "pyramid_build_from_stream")
+    extra = array("d", [5.0])
+    ok(
+        lib.xyg_stream_append(ctypes.c_uint64(sh), _ptr(extra, ctypes.c_double), 1) == 1,
+        "stream append extra x",
+    )
+    ok(
+        lib.xyg_stream_append(ctypes.c_uint64(sy), _ptr(extra, ctypes.c_double), 1) == 1,
+        "stream append extra y",
+    )
+    ok(
+        lib.xyg_pyramid_append_from_stream(
+            ctypes.c_uint64(ph), ctypes.c_uint64(sh), ctypes.c_uint64(sy), 1
+        )
+        == 1,
+        "pyramid_append_from_stream in-domain",
+    )
+    ok(lib.xyg_pyramid_free(ctypes.c_uint64(ph)) == 1, "free stream-backed pyramid")
+    ok(lib.xyg_stream_free(ctypes.c_uint64(sh)) == 1, "stream_free")
+    ok(lib.xyg_stream_free(ctypes.c_uint64(sh)) == 0, "stale stream free")
+    ok(lib.xyg_stream_free(ctypes.c_uint64(sy)) == 1, "free y stream")
+    empty = lib.xyg_stream_new(None, 0)
+    ok(empty != 0, "empty stream_new")
+    ok(lib.xyg_stream_free(ctypes.c_uint64(empty)) == 1, "free empty stream")
 
     # Mean-color density (LOD doc §2): per-cell mean point color + count-only
     # alpha. One red and one blue point per side of a 2x1 grid, then both in

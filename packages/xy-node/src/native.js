@@ -150,6 +150,25 @@ export const xyPyramidComposeColor = lib.func(
   "int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float *out, uint8_t *out_rgba)",
 );
 export const xyPyramidFree = lib.func("int32_t xyg_pyramid_free(uint64_t handle)");
+export const xyPyramidBuildFromStream = lib.func(
+  "uint64_t xyg_pyramid_build_from_stream(uint64_t x_handle, uint64_t y_handle, double x0, double x1, double y0, double y1, uint32_t base_dim)",
+);
+export const xyPyramidAppendFromStream = lib.func(
+  "int32_t xyg_pyramid_append_from_stream(uint64_t handle, uint64_t x_handle, uint64_t y_handle, size_t tail_len)",
+);
+
+// --- Canonical stream store (engine doc §5) ---
+export const xyStreamNew = lib.func("uint64_t xyg_stream_new(const double *data, size_t len)");
+export const xyStreamAppend = lib.func(
+  "int32_t xyg_stream_append(uint64_t handle, const double *data, size_t len)",
+);
+export const xyStreamSeal = lib.func("int32_t xyg_stream_seal(uint64_t handle)");
+export const xyStreamFree = lib.func("int32_t xyg_stream_free(uint64_t handle)");
+export const xyStreamLen = lib.func("size_t xyg_stream_len(uint64_t handle)");
+export const xyStreamCapacity = lib.func("size_t xyg_stream_capacity(uint64_t handle)");
+export const xyStreamCopy = lib.func(
+  "int32_t xyg_stream_copy(uint64_t handle, double *out, size_t len)",
+);
 
 // --- Graph / Sankey ---
 export const xyGraphLayout = lib.func(

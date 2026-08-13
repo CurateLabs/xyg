@@ -1,5 +1,5 @@
 {
-  "abi_version": 58,
+  "abi_version": 59,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
@@ -255,6 +255,11 @@
       "returns": "i32"
     },
     {
+      "name": "xyg_pyramid_append_from_stream",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
       "name": "xyg_pyramid_build",
       "nargs": 9,
       "returns": "u64"
@@ -262,6 +267,11 @@
     {
       "name": "xyg_pyramid_build_color",
       "nargs": 13,
+      "returns": "u64"
+    },
+    {
+      "name": "xyg_pyramid_build_from_stream",
+      "nargs": 8,
       "returns": "u64"
     },
     {
@@ -396,6 +406,51 @@
     },
     {
       "name": "xyg_stratified_sample_range_u8_counted",
+      "nargs": 10,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_stream_append",
+      "nargs": 3,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stream_capacity",
+      "nargs": 1,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_stream_copy",
+      "nargs": 3,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stream_data",
+      "nargs": 4,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stream_free",
+      "nargs": 1,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stream_len",
+      "nargs": 1,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_stream_new",
+      "nargs": 2,
+      "returns": "u64"
+    },
+    {
+      "name": "xyg_stream_seal",
+      "nargs": 1,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stream_zone_maps",
       "nargs": 10,
       "returns": "usize"
     },

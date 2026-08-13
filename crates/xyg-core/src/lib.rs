@@ -5,6 +5,11 @@
 //! product policy live in `xyg-engine`. One cdylib per platform
 //! (`libxyg_core`) serves Python ctypes and Node koffi.
 //!
+//! Canonical f64 columns live in `xyg-engine::stream` behind `xyg_stream_*`
+//! handles (ABI 59). Hosts coerce ingest and hold the opaque handle; they
+//! do not own the growable backing store. Out-of-core memmap columns remain
+//! host-owned (they cannot sit behind this first in-RAM handle).
+//!
 //! Safety contract (enforced by `python/xy/_native.py` and
 //! `packages/xy-node/src/native.js`): non-empty inputs use non-null, properly
 //! aligned pointers sized as documented per function. Empty inputs are
@@ -17,14 +22,15 @@ use xyg_engine::css;
 use xyg_engine::graph;
 use xyg_engine::hexbin;
 use xyg_engine::kernels;
+use xyg_engine::kernels::ZoneMap;
 use xyg_engine::lod_plan;
 use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::stats;
+use xyg_engine::stream;
 use xyg_engine::svg;
 use xyg_engine::tiles;
 use xyg_engine::transition;
-use xyg_engine::kernels::ZoneMap;
 
 fn finite_gt(lo: f64, hi: f64) -> bool {
     lo.is_finite() && hi.is_finite() && hi > lo
@@ -79,7 +85,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 58;
+pub const ABI_VERSION: u32 = 59;
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -3314,6 +3320,223 @@ pub unsafe extern "C" fn xyg_pyramid_free(handle: u64) -> i32 {
     ffi_guard(0, || if tiles::reg_remove(handle) { 1 } else { 0 })
 }
 
+/// Build a count pyramid by reading canonical x/y through stream handles
+/// rather than host-passed arrays. Returns a nonzero handle, or 0 on a
+/// stale stream, length mismatch, or invalid bounds/`base_dim`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_pyramid_build_from_stream(
+    x_handle: u64,
+    y_handle: u64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    base_dim: u32,
+) -> u64 {
+    ffi_guard(0, || {
+        match tiles::build_from_stream(x_handle, y_handle, x0, x1, y0, y1, base_dim as usize) {
+            Some(p) => tiles::reg_insert(p),
+            None => 0,
+        }
+    })
+}
+
+/// Increment a live pyramid from the tail of two stream handles. `tail_len`
+/// is the number of rows just appended. Returns 1 when applied, or 0 on a
+/// stale/busy handle, stream mismatch, domain growth, or a colored pyramid.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_pyramid_append_from_stream(
+    handle: u64,
+    x_handle: u64,
+    y_handle: u64,
+    tail_len: usize,
+) -> i32 {
+    ffi_guard(0, || {
+        tiles::reg_append_from_stream(handle, x_handle, y_handle, tail_len).unwrap_or(false) as i32
+    })
+}
+
+// -- canonical stream store (engine doc §5): opaque u64 handles --------------
+
+/// Create a stream, optionally seeded with `len` f64s. Empty input may pass
+/// a null pointer. Returns a nonzero handle, or 0 on invalid pointers.
+///
+/// # Safety
+/// For `len > 0`, `data` must address `len` readable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_new(data: *const f64, len: usize) -> u64 {
+    if len > 0 && data.is_null() {
+        return 0;
+    }
+    let data = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(data, len)
+    };
+    ffi_guard(0, || stream::reg_insert(stream::StreamColumn::new(data)))
+}
+
+/// Append `len` f64s. Returns 1 on success, 0 on a stale/busy handle or
+/// invalid pointers. Empty appends are a successful no-op.
+///
+/// # Safety
+/// For `len > 0`, `data` must address `len` readable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_append(handle: u64, data: *const f64, len: usize) -> i32 {
+    if len > 0 && data.is_null() {
+        return 0;
+    }
+    let data = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(data, len)
+    };
+    ffi_guard(0, || {
+        stream::reg_with_mut(handle, |c| c.append(data)).is_some() as i32
+    })
+}
+
+/// Compute (or refresh) zone maps. Returns 1 on success, 0 on a stale/busy
+/// handle. Idempotent when the stream is already sealed at the live length.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_seal(handle: u64) -> i32 {
+    ffi_guard(0, || {
+        stream::reg_with_mut(handle, |c| c.seal()).is_some() as i32
+    })
+}
+
+/// Free a stream handle. Returns 1 if it existed, 0 for stale/unknown.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_free(handle: u64) -> i32 {
+    ffi_guard(0, || if stream::reg_remove(handle) { 1 } else { 0 })
+}
+
+/// Live length. `usize::MAX` on a stale handle.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_len(handle: u64) -> usize {
+    ffi_guard(usize::MAX, || {
+        stream::reg_with(handle, |c| c.len()).unwrap_or(usize::MAX)
+    })
+}
+
+/// Allocation capacity in values (growth slack included, §27). `usize::MAX`
+/// on a stale handle.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_capacity(handle: u64) -> usize {
+    ffi_guard(usize::MAX, || {
+        stream::reg_with(handle, |c| c.capacity()).unwrap_or(usize::MAX)
+    })
+}
+
+/// Copy `len` values into caller-owned `out`. `len` must equal the live
+/// length (0 is a successful no-op). Returns 1 on success, 0 otherwise.
+///
+/// # Safety
+/// For `len > 0`, `out` must address `len` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_copy(handle: u64, out: *mut f64, len: usize) -> i32 {
+    if len > 0 && out.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        stream::reg_with(handle, |c| {
+            if c.len() != len {
+                return 0;
+            }
+            if len > 0 {
+                std::slice::from_raw_parts_mut(out, len).copy_from_slice(c.values());
+            }
+            1
+        })
+        .unwrap_or(0)
+    })
+}
+
+/// Borrow the live contiguous buffer. The pointer is valid until the next
+/// append that reallocates, or `xyg_stream_free`. Empty streams write a
+/// null pointer and length 0. Returns 1 on success, 0 on a stale handle.
+///
+/// # Safety
+/// `out_ptr` and `out_len` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_data(
+    handle: u64,
+    out_ptr: *mut *const f64,
+    out_len: *mut usize,
+) -> i32 {
+    if out_ptr.is_null() || out_len.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        stream::reg_with(handle, |c| {
+            let s = c.values();
+            *out_ptr = if s.is_empty() {
+                std::ptr::null()
+            } else {
+                s.as_ptr()
+            };
+            *out_len = s.len();
+            1
+        })
+        .unwrap_or(0)
+    })
+}
+
+/// Copy sealed zone maps into caller-owned planes (same layout as
+/// `xyg_zone_maps`). Returns the chunk count, 0 for an empty sealed stream,
+/// or `usize::MAX` on a stale handle, unsealed stream, or null outputs.
+///
+/// # Safety
+/// Each `out_*` must address `ceil(len / ZONE_CHUNK)` writable elements when
+/// `len > 0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_stream_zone_maps(
+    handle: u64,
+    out_min: *mut f64,
+    out_max: *mut f64,
+    out_count: *mut u64,
+    out_null_count: *mut u64,
+    out_sum: *mut f64,
+    out_sum_sq: *mut f64,
+    out_positive_min: *mut f64,
+    out_positive_max: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        stream::reg_with(handle, |c| {
+            if !c.is_sealed() {
+                return usize::MAX;
+            }
+            let zms = c.zones();
+            if zms.is_empty() {
+                return 0;
+            }
+            if out_min.is_null()
+                || out_max.is_null()
+                || out_count.is_null()
+                || out_null_count.is_null()
+                || out_sum.is_null()
+                || out_sum_sq.is_null()
+                || out_positive_min.is_null()
+                || out_positive_max.is_null()
+            {
+                return usize::MAX;
+            }
+            for (i, zm) in zms.iter().enumerate() {
+                *out_min.add(i) = zm.min;
+                *out_max.add(i) = zm.max;
+                *out_count.add(i) = zm.count;
+                *out_null_count.add(i) = zm.null_count;
+                *out_sum.add(i) = zm.sum;
+                *out_sum_sq.add(i) = zm.sum_sq;
+                *out_positive_min.add(i) = zm.positive_min;
+                *out_positive_max.add(i) = zm.positive_max;
+            }
+            zms.len()
+        })
+        .unwrap_or(usize::MAX)
+    })
+}
+
 // ---------------------------------------------------------------------------
 // Graph display layouts / force ticks / CSR / LOD (graph-mark.md). Indices u64.
 // ---------------------------------------------------------------------------
@@ -3388,9 +3611,9 @@ pub unsafe extern "C" fn xyg_graph_layout(
             | graph::LAYOUT_KAMADA_KAWAI
             | graph::LAYOUT_YIFANHU
             | graph::LAYOUT_LINLOG
-            | graph::LAYOUT_STRESS => {
-                graph::layout_force_family(layout, n_nodes, sources, targets, seed, 300, out_x, out_y)
-            }
+            | graph::LAYOUT_STRESS => graph::layout_force_family(
+                layout, n_nodes, sources, targets, seed, 300, out_x, out_y,
+            ),
             graph::LAYOUT_BREADTHFIRST => {
                 let roots_slice = if n_roots == 0 || roots.is_null() {
                     &[][..]
@@ -4012,7 +4235,6 @@ pub unsafe extern "C" fn xyg_sankey_layout(
     })
 }
 
-
 // ---------------------------------------------------------------------------
 // View LOD plan + distribution stats (lod_plan.rs / stats.rs).
 // Hosts validate inputs and assemble string mode names; Rust owns the math.
@@ -4034,7 +4256,9 @@ pub unsafe extern "C" fn xyg_drill_decision(
     if out_exact.is_null() {
         return 0;
     }
-    match ffi_guard(None, || lod_plan::drill_decision(visible, budget, in_drill != 0, exit_factor)) {
+    match ffi_guard(None, || {
+        lod_plan::drill_decision(visible, budget, in_drill != 0, exit_factor)
+    }) {
         Some(exact) => {
             *out_exact = if exact { 1 } else { 0 };
             1
@@ -4059,7 +4283,9 @@ pub unsafe extern "C" fn xyg_lod_grid_shape(
     if out_w.is_null() || out_h.is_null() {
         return 0;
     }
-    match ffi_guard(None, || lod_plan::grid_shape(px_w, px_h, visible, target_per_cell)) {
+    match ffi_guard(None, || {
+        lod_plan::grid_shape(px_w, px_h, visible, target_per_cell)
+    }) {
         Some((w, h)) => {
             *out_w = w;
             *out_h = h;
@@ -4183,14 +4409,17 @@ pub unsafe extern "C" fn xyg_box_stats(
         }
         std::slice::from_raw_parts(data, len)
     };
-    let stats = ffi_guard(stats::BoxStats {
-        q1: f64::NAN,
-        median: f64::NAN,
-        q3: f64::NAN,
-        low: f64::NAN,
-        high: f64::NAN,
-        outliers: Vec::new(),
-    }, || stats::box_stats(data));
+    let stats = ffi_guard(
+        stats::BoxStats {
+            q1: f64::NAN,
+            median: f64::NAN,
+            q3: f64::NAN,
+            low: f64::NAN,
+            high: f64::NAN,
+            outliers: Vec::new(),
+        },
+        || stats::box_stats(data),
+    );
     let out_stats = std::slice::from_raw_parts_mut(out_stats, 5);
     out_stats[0] = stats.q1;
     out_stats[1] = stats.median;
@@ -4270,9 +4499,7 @@ pub unsafe extern "C" fn xyg_hexbin(
         Some(std::slice::from_raw_parts(c, len))
     };
     let result = match ffi_guard(None, || {
-        hexbin::hexbin(
-            xs, ys, cs, grid_w, grid_h, x0, x1, y0, y1, mincnt, reduce,
-        )
+        hexbin::hexbin(xs, ys, cs, grid_w, grid_h, x0, x1, y0, y1, mincnt, reduce)
     }) {
         Some(r) => r,
         None => return usize::MAX,
@@ -4359,11 +4586,7 @@ pub unsafe extern "C" fn xyg_histogram_edges(
         }
         std::slice::from_raw_parts(data, len)
     };
-    let range = if use_range != 0 {
-        Some((lo, hi))
-    } else {
-        None
-    };
+    let range = if use_range != 0 { Some((lo, hi)) } else { None };
     let Some(edges) = ffi_guard(None, || stats::histogram_edges(data, range, method)) else {
         return usize::MAX;
     };
@@ -4373,7 +4596,6 @@ pub unsafe extern "C" fn xyg_histogram_edges(
     std::slice::from_raw_parts_mut(out_edges, capacity)[..edges.len()].copy_from_slice(&edges);
     edges.len()
 }
-
 
 /// Wind-rose directional/speed binning. When `n_speed_edges == 0`, quartile
 /// upper edges are derived from finite speeds; otherwise `speed_edges` is

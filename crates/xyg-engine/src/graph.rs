@@ -654,11 +654,7 @@ impl ForceState {
                 let dx = self.x[i] - self.x[j];
                 let dy = self.y[i] - self.y[j];
                 let dist = (dx * dx + dy * dy).sqrt().max(1e-8);
-                let force = if linlog {
-                    (1.0 + dist).ln()
-                } else {
-                    dist
-                };
+                let force = if linlog { (1.0 + dist).ln() } else { dist };
                 let fx_i = force * dx / dist;
                 let fy_i = force * dy / dist;
                 fx[i] -= fx_i;
@@ -1437,7 +1433,9 @@ pub fn layout_auto(
     if !sources.is_empty() && sources.len() as u64 <= n_nodes.saturating_mul(2) {
         return layout_breadthfirst(n_nodes, sources, targets, &[], out_x, out_y);
     }
-    let Some(mut state) = ForceState::new(n_nodes, sources, targets, None, None, seed, LAYOUT_FORCE) else {
+    let Some(mut state) =
+        ForceState::new(n_nodes, sources, targets, None, None, seed, LAYOUT_FORCE)
+    else {
         return false;
     };
     state.tick(80);
@@ -1634,8 +1632,22 @@ mod tests {
         let mut by = [0.0; 4];
         let mut hx = [0.0; 4];
         let mut hy = [0.0; 4];
-        assert!(layout_breadthfirst(4, &sources, &targets, &[], &mut bx, &mut by));
-        assert!(layout_hierarchical(4, &sources, &targets, &[], &mut hx, &mut hy));
+        assert!(layout_breadthfirst(
+            4,
+            &sources,
+            &targets,
+            &[],
+            &mut bx,
+            &mut by
+        ));
+        assert!(layout_hierarchical(
+            4,
+            &sources,
+            &targets,
+            &[],
+            &mut hx,
+            &mut hy
+        ));
         assert_ne!(by, hy, "hierarchical must not alias undirected BFS");
         // Hierarchical: roots 0 and 3 at layer 0 → y=0; node 2 at layer 2 → y=-2.
         assert!((hy[0]).abs() < 1e-12);
@@ -1792,17 +1804,18 @@ mod tests {
             sources.push(i);
             targets.push(i + 1);
         }
-        let mut a = ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
-        let mut b = ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
+        let mut a =
+            ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
+        let mut b =
+            ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
         a.tick(5);
         b.tick(5);
         assert_eq!(a.x, b.x);
         assert_eq!(a.y, b.y);
-        let moved = a
-            .x
-            .iter()
-            .zip(a.y.iter())
-            .any(|(&x, &y)| x.is_finite() && y.is_finite() && (x * x + y * y).sqrt() > 0.0);
+        let moved =
+            a.x.iter()
+                .zip(a.y.iter())
+                .any(|(&x, &y)| x.is_finite() && y.is_finite() && (x * x + y * y).sqrt() > 0.0);
         assert!(moved);
     }
 
@@ -1953,10 +1966,8 @@ mod tests {
             LAYOUT_BARNES_HUT,
         ];
         for &algo in &algos {
-            let mut a =
-                ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("a");
-            let mut b =
-                ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("b");
+            let mut a = ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("a");
+            let mut b = ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("b");
             a.tick(30);
             b.tick(30);
             assert_eq!(a.x, b.x, "algo {algo} x");
