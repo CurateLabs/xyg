@@ -1,0 +1,16 @@
+[package]
+name = "xyg-core"
+version = "0.1.0"
+edition = "2021"
+description = "XYG C ABI shell: marshaling, errors, handles, and the ABI contract"
+license = "Apache-2.0"
+publish = false
+
+# One shipped cdylib per platform serves every host (Python ctypes, Node koffi).
+# rlib exists so the FFI unit tests compile in-tree; it is not a runtime artifact.
+[lib]
+name = "xyg_core"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+xyg-engine = { path = "../xyg-engine" }
