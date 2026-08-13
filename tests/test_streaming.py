@@ -23,6 +23,7 @@ def test_column_append_extends_values_and_zone_maps():
     np.testing.assert_array_equal(col.values, np.arange(25.0))
     assert col.zone.count == 25
     assert col.min == 0.0 and col.max == 24.0
+    assert col._stream is not None  # growable store is the native handle, not NumPy
 
 
 def test_column_append_zone_maps_match_full_recompute():
@@ -412,11 +413,14 @@ def test_decimated_entries_record_their_px_width():
 
 def test_memory_report_itemizes_pyramid_bytes():
     from xy.config import PYRAMID_MIN_POINTS
-    from xy.interaction import _ensure_pyramid, _pyramid_resident_bytes
+    from xy.interaction import _ensure_pyramid, _pyramid_resident_bytes, pyramid_report_bytes
 
     n = max(PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD + 1)
     rng = np.random.default_rng(47)
     fig = Figure().scatter(rng.uniform(0, 100, n), rng.uniform(0, 100, n))
-    assert fig.memory_report()["pyramid_bytes"] == 0  # not built yet
+    # Scatter itself does not build the pyramid. Probe via pyramid_report_bytes
+    # rather than memory_report(): that helper compiles a first-paint payload,
+    # which (Tier-3) constructs the pyramid as a side effect.
+    assert pyramid_report_bytes(fig) == 0  # not built yet
     assert _ensure_pyramid(fig.traces[0]) is not None
     assert fig.memory_report()["pyramid_bytes"] == _pyramid_resident_bytes()

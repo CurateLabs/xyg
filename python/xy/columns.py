@@ -1,8 +1,14 @@
 """The column store: canonical, typed, single-copy (§4).
 
-Phase 0 contract:
-- Canonical data lives CPU-side as contiguous NumPy float64; every encoded /
-  decimated buffer is a *derived cache*, recomputable from here (§27 rule 1).
+Canonical f64 values for in-RAM streamed columns live in Rust
+(`xyg_stream_*`, engine doc §5). Hosts coerce ingest, hold opaque handles,
+and keep thin bookkeeping (ids, kinds, sticky encode offsets). A NumPy
+`values` view is borrowed from the native buffer after the first append.
+
+Never-appended columns and out-of-core memmap columns stay host-backed:
+Arrow/NumPy ingest remains zero-copy until a growable store is needed,
+and mmap cannot sit behind the first in-RAM stream handle (follow-up).
+
 - Time columns (datetime64 / pandas datetime) are canonicalized to **ms since
   epoch as f64** — exact for |t| < 2^53, i.e. every real-world ms timestamp.
 - pyarrow Arrays / ChunkedArrays ingest **zero-copy** when null-free and
@@ -21,6 +27,7 @@ from __future__ import annotations
 import datetime as dt
 import os as _os
 import struct as _struct
+import weakref
 from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Any
@@ -205,6 +212,10 @@ class Column:
     # consecutive append payloads keep byte-identical prefixes — the client's
     # tail-only GPU upload depends on it (wire-protocol §4).
     _ship_offset: float | None = field(default=None, init=False, repr=False, compare=False)
+    # Rust-owned growable f64 store (engine doc §5). None until the first
+    # append migrates an in-RAM column; memmap columns never take this path.
+    _stream: int | None = field(default=None, init=False, repr=False, compare=False)
+    _stream_finalizer: Any = field(default=None, init=False, repr=False, compare=False)
 
     def __len__(self) -> int:
         return len(self.values)
@@ -213,10 +224,12 @@ class Column:
     def capacity_bytes(self) -> int:
         """Bytes this column actually holds, slack included.
 
-        `append` keeps values as a prefix view of a capacity-doubling buffer, so
-        after a stream of appends the allocation can be up to twice
-        `values.nbytes`. The memory report needs the real number (§27).
+        Streamed columns grow a capacity-doubling native buffer, so after a
+        stream of appends the allocation can be up to twice `values.nbytes`.
+        The memory report needs the real number (§27).
         """
+        if self._stream is not None:
+            return int(kernels.stream_capacity(self._stream)) * 8
         grow = getattr(self, "_grow", None)
         return int(grow.nbytes if grow is not None else self.values.nbytes)
 
@@ -261,28 +274,17 @@ class Column:
         self._ship_offset = mid
         return mid
 
-    def append(self, data: Any) -> None:
-        """Streaming append (design dossier §5, Phase-0 Python-side).
+    def _refresh_from_stream(self) -> None:
+        assert self._stream is not None
+        self.values = kernels.stream_view(self._stream)
+        self._zone = ZoneMaps(*kernels.stream_zone_maps(self._stream))
 
-        Canonicalizes `data` like ingest and extends this column in place:
+    def _bind_stream(self, handle: int) -> None:
+        self._stream = handle
+        self._stream_finalizer = weakref.finalize(self, kernels.stream_free, handle)
 
-        - **Amortized growth buffer**: values live in a capacity-doubling
-          backing array, so a long append stream pays O(N) total copies, not
-          O(N) per append. Migrations are counted in `ingest_copies`;
-          the tail write itself is inherent to appending, not a copy on the
-          books. (Zero-copy Arrow views migrate on first append — the read-only
-          Arrow buffer cannot be grown in place.)
-        - **Incremental zone maps**: only chunks at or after the old
-          length are recomputed; the splice is bitwise identical to a
-          from-scratch recompute because chunks fold serially either way.
-        - Kind is sticky: appending floats to a `time_ms` column (or vice
-          versa) raises rather than silently mixing units.
-        """
-        arr, kind, _copies = _canonicalize(data)
-        if kind != self.kind:
-            raise ValueError(f"appended values are {kind!r}, column is {self.kind!r}")
-        if len(arr) == 0:
-            return
+    def _append_host(self, arr: npt.NDArray[np.float64]) -> None:
+        """Grow a host-owned buffer (memmap / never-migrated fallback)."""
         n_old = len(self.values)
         n_new = n_old + len(arr)
         grow = getattr(self, "_grow", None)
@@ -294,9 +296,6 @@ class Column:
             self.ingest_copies += 1  # the migration is the O(N) event
         self._grow[n_old:n_new] = arr
         self.values = self._grow[:n_new]
-        # Recompute only the tail: the last (possibly partial) old chunk plus
-        # everything new. Slicing at a chunk boundary keeps alignment with a
-        # full recompute, so autorange/pruning consumers see identical maps.
         k = n_old // ZONE_CHUNK
         tail = ZoneMaps(*kernels.zone_maps(self.values[k * ZONE_CHUNK :]))
         z = self.zone
@@ -310,6 +309,40 @@ class Column:
             positive_mins=np.concatenate([z.positive_mins[:k], tail.positive_mins]),
             positive_maxs=np.concatenate([z.positive_maxs[:k], tail.positive_maxs]),
         )
+
+    def append(self, data: Any) -> None:
+        """Streaming append (design dossier §5).
+
+        Canonicalizes `data` like ingest and extends this column in place:
+
+        - **Rust-owned growth buffer**: in-RAM columns migrate onto an
+          `xyg_stream_*` handle on first append so the host no longer owns
+          the growable f64 store. Capacity doubles natively; migrations are
+          counted in `ingest_copies`. Memmap columns stay host-backed.
+        - **Zone maps on seal**: only chunks at or after the old length are
+          recomputed; the splice is bitwise identical to a from-scratch
+          recompute because chunks fold serially either way.
+        - Kind is sticky: appending floats to a `time_ms` column (or vice
+          versa) raises rather than silently mixing units.
+        """
+        arr, kind, _copies = _canonicalize(data)
+        if kind != self.kind:
+            raise ValueError(f"appended values are {kind!r}, column is {self.kind!r}")
+        if len(arr) == 0:
+            return
+        if _ooc.is_memmapped(self.values) and self._stream is None:
+            self._append_host(arr)
+            return
+        if self._stream is None:
+            handle = kernels.stream_new(self.values)
+            self._bind_stream(handle)
+            self.ingest_copies += 1  # migration into the native store
+        cap_before = kernels.stream_capacity(self._stream)
+        kernels.stream_append(self._stream, arr)
+        if kernels.stream_capacity(self._stream) > cap_before:
+            self.ingest_copies += 1
+        kernels.stream_seal(self._stream)
+        self._refresh_from_stream()
 
 
 class ColumnStore:
@@ -470,7 +503,7 @@ class ColumnStore:
         figures, where ``canonical_mapped_bytes`` is 0).
 
         A streamed column's values are a prefix *view* of its capacity-doubling
-        growth buffer (`Column.append`), so up to half of what it holds is slack
+        native buffer (`xyg_stream_*`), so up to half of what it holds is slack
         that `values.nbytes` cannot see. That slack is resident RAM like any
         other allocation, so each column also reports ``capacity_bytes`` and the
         report totals them as ``canonical_capacity_bytes`` — equal to

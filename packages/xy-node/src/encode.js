@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xy/lod.encode_f32_values when calling xy_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -807,6 +807,7 @@ export class Column {
     this._bounds = undefined;
     this._nullCount = undefined;
     this._shipOffset = null;
+    this._stream = 0n;
   }
 
   get length() {
@@ -858,7 +859,60 @@ export class Column {
     this._shipOffset = mid;
     return mid;
   }
+
+  /** Grow this column through `xyg_stream_*`. The TypedArray is a snapshot. */
+  append(data) {
+    const tail = asF64Array(data);
+    if (tail.length === 0) {
+      return;
+    }
+    if (this._stream === 0n) {
+      this._stream = xyStreamNew(f64Ptr(this.values), BigInt(this.values.length));
+      if (this._stream === 0n) {
+        throw new Error("xyg_stream_new failed");
+      }
+    }
+    const ok = xyStreamAppend(this._stream, f64Ptr(tail), BigInt(tail.length));
+    if (ok !== 1) {
+      throw new Error("stale or busy stream handle");
+    }
+    if (xyStreamSeal(this._stream) !== 1) {
+      throw new Error("stale or busy stream handle");
+    }
+    const n = Number(xyStreamLen(this._stream));
+    const out = new Float64Array(n);
+    if (xyStreamCopy(this._stream, f64Ptr(out), BigInt(n)) !== 1) {
+      throw new Error("stale stream handle");
+    }
+    this.values = out;
+    this._bounds = undefined;
+    this._nullCount = undefined;
+  }
+
+  get capacityValues() {
+    if (this._stream === 0n) {
+      return this.values.length;
+    }
+    return Number(xyStreamCapacity(this._stream));
+  }
+
+  freeStream() {
+    if (this._stream !== 0n) {
+      xyStreamFree(this._stream);
+      this._stream = 0n;
+    }
+  }
 }
+
+export {
+  xyStreamNew,
+  xyStreamAppend,
+  xyStreamSeal,
+  xyStreamFree,
+  xyStreamLen,
+  xyStreamCapacity,
+  xyStreamCopy,
+};
 
 export function f64Ptr(view) {
   return pointer(view, "double *");

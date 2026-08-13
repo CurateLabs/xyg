@@ -617,6 +617,11 @@ def _ensure_pyramid(t: Trace) -> int | None:
     handle = getattr(t, "_pyr_handle", None)
     if handle is not None:
         return handle or None
+    # Domain-growth / colored-pyramid invalidation must survive the append
+    # payload's first-paint path: `_density_trace_spec` would otherwise call
+    # us immediately and hide a full rebuild behind the refresh (§28).
+    if getattr(t, "_pyr_defer_rebuild", False):
+        return None
     if len(t.x) < PYRAMID_MIN_POINTS:
         t._pyr_handle = 0
         return None
@@ -632,10 +637,14 @@ def _ensure_pyramid(t: Trace) -> int | None:
     y1 += (y1 - y0) * 1e-9
     base_dim = _pyramid_base_dim_for(t)
     bin_colors = trace_bin_colors(t)
+    x_stream = getattr(t.x, "_stream", None)
+    y_stream = getattr(t.y, "_stream", None)
     if bin_colors is not None:
         handle = kernels.pyramid_build_color(
             t.x.values, t.y.values, x0, x1, y0, y1, base_dim, **bin_colors
         )
+    elif x_stream and y_stream:
+        handle = kernels.pyramid_build_from_stream(x_stream, y_stream, x0, x1, y0, y1, base_dim)
     else:
         handle = kernels.pyramid_build(t.x.values, t.y.values, x0, x1, y0, y1, base_dim)
     t._pyr_handle = handle
@@ -1427,9 +1436,19 @@ def append_data(
             channel.values = np.concatenate((channel.values, tail), axis=0)
 
     pyramid = getattr(t, "_pyr_handle", None)
+    pyramid_update = "none"
     if t.kind == "scatter" and pyramid:
-        if not kernels.pyramid_append(pyramid, ax, ay):
+        x_stream = getattr(t.x, "_stream", None)
+        y_stream = getattr(t.y, "_stream", None)
+        if x_stream and y_stream:
+            applied = kernels.pyramid_append_from_stream(pyramid, x_stream, y_stream, len(ax))
+        else:
+            applied = kernels.pyramid_append(pyramid, ax, ay)
+        if applied:
+            pyramid_update = "dirty-tiles"
+        else:
             _free_pyramid(t)
+            pyramid_update = "invalidate"
     elif pyramid == 0 and len(t.x) >= PYRAMID_MIN_POINTS:
         # The trace crossed the lazy-index threshold after an earlier
         # "not applicable" result; let the next wide view build it.
@@ -1450,6 +1469,12 @@ def append_data(
     # The socket.io host wraps the same spec in an `append` message push.
     fig._append_seq += 1
     seq = fig._append_seq
-    spec, buffers = fig.build_payload_split()
-    spec["append"] = {"seq": seq, "affected": [t.id]}
+    # Keep an invalidated pyramid unbuilt across this refresh so the next
+    # density view / `_ensure_pyramid` is the lazy rebuild (not this payload).
+    t._pyr_defer_rebuild = pyramid_update == "invalidate"
+    try:
+        spec, buffers = fig.build_payload_split()
+    finally:
+        t._pyr_defer_rebuild = False
+    spec["append"] = {"seq": seq, "affected": [t.id], "pyramid": pyramid_update}
     return {"type": "append", "affected": [t.id], "spec": spec}, buffers

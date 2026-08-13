@@ -33,6 +33,7 @@ import {
 import {
   PyramidCache,
   densityViewFromPyramid,
+  pyramidAppendFromStream,
   shouldUsePyramid,
 } from "./pyramid.js";
 import { composeGraph } from "./graph.js";
@@ -176,6 +177,7 @@ export class Figure {
     this._polarMeta = null;
     /** @type {Map<number|string, PyramidCache>} */
     this._pyramids = new Map();
+    this._appendSeq = 0;
   }
 
   /**
@@ -695,8 +697,10 @@ export class Figure {
     ) {
       return this._emitScatterDensity(t, pw, xr, yr);
     }
-    const xCol = new Column(t.x);
-    const yCol = new Column(t.y);
+    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
+    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
+    t._xCol = xCol;
+    t._yCol = yCol;
     return {
       id: t.id,
       kind: "scatter",
@@ -726,6 +730,7 @@ export class Figure {
     const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
     if (
       this.coords !== "polar" &&
+      !this._deferPyramidRebuild?.has(t.id) &&
       shouldUsePyramid(t.x.length, { forcePyramid, forceBin2d })
     ) {
       let cache = this._pyramids.get(t.id);
@@ -794,14 +799,19 @@ export class Figure {
     let xv = t.x;
     let yv = t.y;
     let tier = "direct";
-    if (xv.length > DECIMATION_THRESHOLD) {
+    const decimated = xv.length > DECIMATION_THRESHOLD;
+    if (decimated) {
       const [outX, outY] = m4Points(xv, yv, xr[0], xr[1] + F64_EPS, pxWidth);
       xv = outX;
       yv = outY;
       tier = "decimated";
     }
-    const xCol = new Column(xv);
-    const yCol = new Column(yv);
+    const xCol = !decimated && t._xCol instanceof Column ? t._xCol : new Column(xv);
+    const yCol = !decimated && t._yCol instanceof Column ? t._yCol : new Column(yv);
+    if (!decimated) {
+      t._xCol = xCol;
+      t._yCol = yCol;
+    }
     const entry = {
       id: t.id,
       kind: "line",
@@ -1049,6 +1059,82 @@ export class Figure {
         hole: meta.hole ?? 0.0,
       },
     };
+  }
+
+  /**
+   * Streaming append for scatter/line traces. Canonical growth lives in
+   * `xyg_stream_*`; the trace TypedArrays are snapshots for encode.
+   */
+  append(traceId, x, y) {
+    const t = this.traces.find((tr) => tr.id === traceId);
+    if (t == null) {
+      throw new RangeError(`unknown trace id ${traceId}`);
+    }
+    if (t.kind !== "scatter" && t.kind !== "line") {
+      throw new RangeError(`append supports scatter/line traces, not ${t.kind}`);
+    }
+    const ax = asF64(x);
+    const ay = asF64(y);
+    if (ax.length !== ay.length) {
+      throw new RangeError(`appended x and y must have equal length, got ${ax.length} and ${ay.length}`);
+    }
+    if (ax.length === 0) {
+      throw new RangeError("append needs at least one row");
+    }
+    if (t.kind === "line") {
+      for (let i = 0; i < ax.length; i += 1) {
+        if (!Number.isFinite(ax[i])) {
+          throw new RangeError("line append requires finite x values");
+        }
+        if (i > 0 && ax[i] < ax[i - 1]) {
+          throw new RangeError("line append requires ascending x");
+        }
+      }
+      const prev = t.x.length === 0 ? Number.NaN : t.x[t.x.length - 1];
+      if (Number.isFinite(prev) && ax[0] < prev) {
+        throw new RangeError(
+          `line append must continue the series: new x starts at ${ax[0]}, before the current last x ${prev}`,
+        );
+      }
+    }
+    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
+    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
+    xCol.append(ax);
+    yCol.append(ay);
+    t._xCol = xCol;
+    t._yCol = yCol;
+    t.x = xCol.values;
+    t.y = yCol.values;
+
+    let pyramidUpdate = "none";
+    const cache = this._pyramids.get(t.id);
+    if (t.kind === "scatter" && cache?.handle) {
+      const applied = pyramidAppendFromStream(
+        cache.handle,
+        xCol._stream,
+        yCol._stream,
+        ax.length,
+      );
+      if (applied) {
+        pyramidUpdate = "dirty-tiles";
+      } else {
+        cache.free();
+        this._pyramids.delete(t.id);
+        pyramidUpdate = "invalidate";
+      }
+    }
+
+    this._appendSeq += 1;
+    if (pyramidUpdate === "invalidate") {
+      this._deferPyramidRebuild = new Set([t.id]);
+    }
+    try {
+      const { spec, buffers } = this.buildPayload({ split: true });
+      spec.append = { seq: this._appendSeq, affected: [t.id], pyramid: pyramidUpdate };
+      return { spec, buffers, type: "append", affected: [t.id] };
+    } finally {
+      this._deferPyramidRebuild = null;
+    }
   }
 
   /**
