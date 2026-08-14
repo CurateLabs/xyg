@@ -1208,6 +1208,25 @@ class PayloadMixin(_Host):
                         binning = (
                             f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
                         )
+        # Pyramid compose yields the grid without a fused overlay sample.
+        # Fill the public sample without re-binning so first paint still
+        # ships `density["sample"]` (raster `point_overlay=False` stays empty).
+        if grid is not None and pw.point_overlay and not oversized and sample_sel is None:
+            if compact_categorical:
+                assert t.color_ch is not None and t.color_ch.codes is not None
+                sample_sel = lod.stratified_sample_row_range_for_target(
+                    t.color_ch.codes,
+                    len(t.color_ch.categories or ()),
+                    DENSITY_SAMPLE_TARGET,
+                    counts=t.color_ch.counts,
+                    seed=DENSITY_SAMPLE_SEED,
+                )
+            else:
+                sample_sel = lod.sample_row_range_for_target(
+                    t.n_points,
+                    DENSITY_SAMPLE_TARGET,
+                    seed=DENSITY_SAMPLE_SEED,
+                )
         if oversized and grid is None:
             visible = int(t.n_points)
             sel = np.empty(0, dtype=np.uint32)

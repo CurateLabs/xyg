@@ -721,7 +721,8 @@ cache and dedicated 100M latency gate still open)**
    `forcePyramid`) and records `binning` / `reduction` on the wire.
    **Python first paint:** `_payload._density_trace_spec` composes from the
    pyramid when eligible so opening a large scatter does not throw away an
-   O(N) `bin_2d`. Testing contract: [tier3-testing.md](tier3-testing.md).
+   O(N) `bin_2d`; a successful compose still fills the public overlay sample
+   without re-binning. Testing contract: [tier3-testing.md](tier3-testing.md).
 7. **Done:** `density_view` estimates the window with `pyramid_count` and
    serves it with `pyramid_compose` when that estimate sits safely above the
    drill threshold; `compose` picks the coarsest level that still meets the
