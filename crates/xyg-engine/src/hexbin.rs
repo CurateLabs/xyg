@@ -49,7 +49,7 @@ pub const MAX_GRID: usize = 2048;
 /// [`HexReduce::Sum`]. Non-finite coordinates (and non-finite `C` when provided)
 /// are skipped. Returns `None` on invalid arguments (bad grid, non-increasing
 /// range, mean/sum without `C`).
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI kernel entry point
 pub fn hexbin(
     x: &[f64],
     y: &[f64],
@@ -74,12 +74,7 @@ pub fn hexbin(
     if grid_w < 2 || grid_h < 2 || grid_w > MAX_GRID || grid_h > MAX_GRID {
         return None;
     }
-    if !x0.is_finite()
-        || !x1.is_finite()
-        || !y0.is_finite()
-        || !y1.is_finite()
-        || x1 <= x0
-        || y1 <= y0
+    if !(x0.is_finite() && x1.is_finite() && y0.is_finite() && y1.is_finite() && x1 > x0 && y1 > y0)
     {
         return None;
     }

@@ -189,7 +189,7 @@ fn convolve_same(signal: &[f64], kernel: &[f64], out: &mut [f64]) {
     debug_assert_eq!(signal.len(), out.len());
     let k = kernel.len();
     let mid = k / 2;
-    for i in 0..signal.len() {
+    for (i, dest) in out.iter_mut().enumerate() {
         let mut acc = 0.0;
         for (j, &kv) in kernel.iter().enumerate() {
             let s = i as isize + j as isize - mid as isize;
@@ -197,7 +197,7 @@ fn convolve_same(signal: &[f64], kernel: &[f64], out: &mut [f64]) {
                 acc += signal[s as usize] * kv;
             }
         }
-        out[i] = acc;
+        *dest = acc;
     }
 }
 

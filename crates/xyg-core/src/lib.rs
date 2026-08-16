@@ -3543,8 +3543,8 @@ pub unsafe extern "C" fn xyg_graph_force_tick(
 /// Destroy a force handle. Returns 1 if it existed, 0 otherwise.
 ///
 /// # Safety
-/// `handle` is an opaque registry id; this entry point does not dereference
-/// caller pointers.
+/// `handle` is an opaque id from `xyg_graph_force_create`; any other value is a
+/// no-op. The function is `unsafe` to match the rest of the C ABI surface.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_force_destroy(handle: u64) -> i32 {
     ffi_guard(0, || if graph::force_destroy(handle) { 1 } else { 0 })
@@ -3607,7 +3607,7 @@ pub unsafe extern "C" fn xyg_graph_build_csr(
 /// and edges_kept. Returns 0.
 ///
 /// # Safety
-/// `out_tier` and `out_edges_kept` must each address one writable word.
+/// `out_tier` and `out_edges_kept` must be non-null writable u32/u64 slots.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_lod_decision(
     n_nodes: u64,
@@ -3879,7 +3879,8 @@ pub unsafe extern "C" fn xyg_graph_build_render(
 /// Sample edge indices into `out_indices` (capacity `budget`). Returns count.
 ///
 /// # Safety
-/// `out_indices` must address `budget` writable u64s when `budget > 0`.
+/// `out_indices` must be non-null and writable for `budget` `u64`s when
+/// `budget > 0`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_sample_edges(
     n_edges: u64,

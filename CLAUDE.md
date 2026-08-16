@@ -106,6 +106,7 @@ control.
 ```bash
 cargo test --workspace && cargo build --release   # core (`libxyg_core`)
 npm ci                                # once per checkout: vite + tsc toolchain
+npm ci --prefix packages/xy-node      # koffi Node host (root npm ci does not install it)
 node js/build.mjs                     # typecheck + regenerate minified static/ after JS edits
 python3 scripts/abi_smoke.py          # C-ABI seam, stdlib only (no PyPI needed)
 python3 scripts/render_smoke_nonumpy.py  # WebGL2 render path in headless Chromium
