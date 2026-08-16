@@ -257,9 +257,8 @@ def test_append_invalidates_pyramid_when_domain_grows():
     assert old_handle is not None
 
     fig.append(0, [200.0], [50.0])
-    assert t._pyr_handle is None
     assert kernels.pyramid_count(old_handle, 0.0, 100.0, 0.0, 100.0) is None
-    assert _ensure_pyramid(t) not in (None, 0, old_handle)
+    assert t._pyr_handle not in (None, 0, old_handle)
 
 
 def test_pyramid_handle_freed_when_trace_is_garbage_collected():
@@ -413,14 +412,10 @@ def test_decimated_entries_record_their_px_width():
 
 def test_memory_report_itemizes_pyramid_bytes():
     from xy.config import PYRAMID_MIN_POINTS
-    from xy.interaction import _ensure_pyramid, _pyramid_resident_bytes, pyramid_report_bytes
+    from xy.interaction import _pyramid_resident_bytes
 
     n = max(PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD + 1)
     rng = np.random.default_rng(47)
     fig = Figure().scatter(rng.uniform(0, 100, n), rng.uniform(0, 100, n))
-    # Scatter itself does not build the pyramid. Probe via pyramid_report_bytes
-    # rather than memory_report(): that helper compiles a first-paint payload,
-    # which (Tier-3) constructs the pyramid as a side effect.
-    assert pyramid_report_bytes(fig) == 0  # not built yet
-    assert _ensure_pyramid(fig.traces[0]) is not None
+    assert fig.traces[0]._pyr_handle is None
     assert fig.memory_report()["pyramid_bytes"] == _pyramid_resident_bytes()

@@ -19,7 +19,7 @@ import operator
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -1171,6 +1171,17 @@ def _as_f64(arr: npt.NDArray[np.float64], label: str = "data") -> npt.NDArray[np
     return out
 
 
+def _scalar_or_f64(value: npt.NDArray[np.float64] | float, label: str) -> npt.NDArray[np.float64]:
+    """Broadcast a Python float or keep a 1-D f64 array.
+
+    ``np.isscalar`` does not narrow ``ndarray | float`` for ty, so the scalar
+    vs array split has to be an ``isinstance`` check.
+    """
+    if isinstance(value, np.ndarray):
+        return _as_f64(cast(npt.NDArray[np.float64], value), label)
+    return np.asarray([float(value)], dtype=np.float64)
+
+
 def _as_row_ids(rows: npt.NDArray[np.uint32], label: str = "rows") -> npt.NDArray[np.uint32]:
     """Canonical row ids as contiguous u32, rejecting anything that would wrap.
 
@@ -1732,19 +1743,16 @@ def bar_stack(
         raise ValueError(f"orientation must be one of {tuple(_BAR_ORIENT)}, got {orientation!r}")
     pos = _as_f64(pos, "pos")
     values = np.ascontiguousarray(values, dtype=np.float64)
-    if values.ndim != 2 or min(values.shape) == 0:
-        raise ValueError(f"values must be a non-empty 2-D array, got shape {values.shape}")
+    if values.ndim != 2:
+        raise ValueError(f"values must be a 2-D array, got shape {values.shape}")
     n_series, n_items = values.shape
     if len(pos) != n_items:
         raise ValueError(f"pos length {len(pos)} must match values columns {n_items}")
-    if np.isscalar(width):
-        width_arr = np.asarray([float(width)], dtype=np.float64)
-    else:
-        width_arr = _as_f64(width, "width")
-    if np.isscalar(base):
-        base_arr = np.asarray([float(base)], dtype=np.float64)
-    else:
-        base_arr = _as_f64(base, "base")
+    if n_series == 0 or n_items == 0:
+        empty = np.empty((n_series, n_items), dtype=np.float64)
+        return empty, empty.copy(), empty.copy(), empty.copy()
+    width_arr = _scalar_or_f64(width, "width")
+    base_arr = _scalar_or_f64(base, "base")
     out_x0 = np.empty(n_series * n_items, dtype=np.float64)
     out_x1 = np.empty_like(out_x0)
     out_y0 = np.empty_like(out_x0)

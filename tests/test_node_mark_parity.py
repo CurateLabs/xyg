@@ -290,6 +290,7 @@ const hx = hexbinChart(new Float64Array([0.5,1.5]), new Float64Array([0.5,1.5]),
   gridsize: 4, range: [[0,2],[0,2]],
 });
 const v = violinChart(new Float64Array([1,2,2,3,4]), { bins: 8 });
+const eTrace = e.buildPayload().spec.traces[0];
 const out = {
   protocol: PROTOCOL_VERSION,
   kinds: [
@@ -299,11 +300,13 @@ const out = {
     a.buildPayload().spec.traces[0].kind,
     b.buildPayload().spec.traces[0].kind,
     bx.buildPayload().spec.traces.find(t => t.kind === 'bar')?.kind,
-    e.buildPayload().spec.traces[0].kind,
+    eTrace.kind,
     hm.buildPayload().spec.traces[0].kind,
     hx.buildPayload().spec.traces[0].kind,
     v.buildPayload().spec.traces[0].kind,
   ],
+  ecdfRole: eTrace.style.role,
+  ecdfStep: eTrace.style.step,
 };
 process.stdout.write(JSON.stringify(out));
 """
@@ -328,11 +331,13 @@ process.stdout.write(JSON.stringify(out));
         "area",
         "bar",
         "bar",
-        "ecdf",
+        "line",
         "heatmap",
         "hexbin",
         "violin",
     ]
+    assert payload["ecdfRole"] == "ecdf"
+    assert payload["ecdfStep"] == "post"
 
 
 if __name__ == "__main__":

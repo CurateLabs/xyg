@@ -503,7 +503,7 @@ def run_sweep(
             "platform": platform.platform(),
             "python": platform.python_version(),
             "numpy": np.__version__,
-            "xy": importlib.metadata.version("xy"),
+            "xy": importlib.metadata.version("xyg"),
             "xy_commit": subprocess.check_output(
                 ["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True
             ).strip(),

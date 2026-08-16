@@ -128,7 +128,7 @@ def _load_version() -> str:
     """Resolve ``__version__`` lazily from the installed distribution.
 
     The version is not written down in the source tree — it is derived from
-    the latest ``xy`` release tag at build time and baked into the wheel's
+    the latest ``xyg`` release tag at build time and baked into the wheel's
     METADATA, so package metadata is the only place that can answer this at
     runtime. An uninstalled source tree reports the same unreal ``0.0.0`` the
     build-time fallback uses.
@@ -137,7 +137,7 @@ def _load_version() -> str:
     from importlib.metadata import version as _distribution_version
 
     try:
-        return _distribution_version("xy")
+        return _distribution_version("xyg")
     except PackageNotFoundError:
         return "0.0.0"
 

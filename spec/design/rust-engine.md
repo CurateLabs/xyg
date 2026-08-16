@@ -215,7 +215,7 @@ nothing at runtime (whole-program optimization sees through it). strip removes
 survives. `panic` must stay `unwind`: the C-ABI backstop in xyg-core converts
 engine panics into sentinel returns via `catch_unwind`, and `panic = "abort"`
 would turn them into aborts of the embedding CPython process (the wasm target
-alone builds with `-C panic=abort` in `release.yml`, where unwinding is
+alone builds with `-C panic=abort` in `publish.yaml`, where unwinding is
 unsupported anyway). PGO is a known open lever, not adopted: it needs a
 per-target training workload and profdata plumbing in the release matrix;
 revisit when a benchmark shows a branch-bound kernel on the hot path.

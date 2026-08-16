@@ -89,7 +89,7 @@ def _dist_info_name(names: set[str], filename: str) -> str:
 def _require_dist_info_version(names: set[str], expected_version: str) -> None:
     """The `.dist-info` directory must be named for the same version as the file."""
     directory = _dist_info_name(names, "METADATA").split("/", 1)[0]
-    if directory != f"xy-{expected_version}.dist-info":
+    if directory != f"xyg-{expected_version}.dist-info":
         raise AssertionError(
             f"wheel has {directory!r} but its filename says version {expected_version!r}"
         )
@@ -165,8 +165,8 @@ def _require_metadata(names: set[str], data: bytes, expected_version: str) -> No
     text = data.decode("utf-8")
     metadata = Parser().parsestr(text)
     missing: list[str] = []
-    if metadata.get("Name", "").strip() != "xy":
-        missing.append("Name: xy")
+    if metadata.get("Name", "").strip() != "xyg":
+        missing.append("Name: xyg")
     if metadata.get("Version", "").strip() != expected_version:
         missing.append(f"Version: {expected_version}")
     if metadata.get("Requires-Python", "").strip() != ">=3.11":
@@ -314,7 +314,7 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
         _require_text_markers(
             "reflex_xy/__init__.py",
             zf.read("reflex_xy/__init__.py"),
-            {"XYPlugin", "chart", "figure", "__version__", '_distribution_version("xy")'},
+            {"XYPlugin", "chart", "figure", "__version__", '_distribution_version("xyg")'},
         )
         _require_text_markers(
             "reflex_xy/assets/XYChart.jsx",
