@@ -19,7 +19,7 @@ the example copyable; replace `StringIO(SAMPLE)` with
 Install pandas beside the released core package first:
 
 ~~~bash
-python -m pip install xy pandas
+python -m pip install xyg pandas
 ~~~
 
 ## End-to-end example

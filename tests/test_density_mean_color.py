@@ -223,12 +223,15 @@ def test_colored_pyramid_append_invalidates_for_lazy_rebuild():
     fig = Figure().scatter(x, y, color=x.copy())
     fig.density_view(0, 0.0, 10.0, 0.0, 1.0, 128, 96)  # builds the colored pyramid
     t = fig.traces[0]
-    assert getattr(t, "_pyr_handle", 0)
+    old = t._pyr_handle
+    assert old not in (None, 0)
     assert getattr(t, "_pyr_colored", False) is True
     fig.append(0, [5.0], [0.5], color=[5.0])
-    # The colored pyramid refuses native increments; the append must have
-    # invalidated it for a lazy rebuild rather than leaving stale colors.
-    assert getattr(t, "_pyr_handle", 0) in (None, 0)
+    # The colored pyramid refuses native increments; append frees the stale
+    # handle and the payload refresh rebuilds a live colored pyramid.
+    assert kernels.pyramid_count(old, 0.0, 10.0, 0.0, 1.0) is None
+    assert t._pyr_handle not in (None, 0, old)
+    assert t._pyr_colored is True
 
 
 def test_svg_export_density_uses_mean_colors():

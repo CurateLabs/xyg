@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the release cdylib via cargo and copy it to the Bazel outs path.
-# Usage: cargo_build.sh <path-to-Cargo.toml> <output-libxy_core.so>
+# Usage: cargo_build.sh <path-to-Cargo.toml> <output-libxyg_core.so>
 set -euo pipefail
 
 CARGO_TOML="${1:?Cargo.toml path required}"
@@ -25,9 +25,9 @@ echo "cargo build --release (cwd=${ROOT})"
 cargo build --release
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  SRC="${ROOT}/target/release/libxy_core.dylib"
+  SRC="${ROOT}/target/release/libxyg_core.dylib"
 else
-  SRC="${ROOT}/target/release/libxy_core.so"
+  SRC="${ROOT}/target/release/libxyg_core.so"
 fi
 
 if [[ ! -f "${SRC}" ]]; then

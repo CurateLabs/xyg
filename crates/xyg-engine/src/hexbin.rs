@@ -49,6 +49,7 @@ pub const MAX_GRID: usize = 2048;
 /// [`HexReduce::Sum`]. Non-finite coordinates (and non-finite `C` when provided)
 /// are skipped. Returns `None` on invalid arguments (bad grid, non-increasing
 /// range, mean/sum without `C`).
+#[allow(clippy::too_many_arguments)]
 pub fn hexbin(
     x: &[f64],
     y: &[f64],
@@ -73,16 +74,19 @@ pub fn hexbin(
     if grid_w < 2 || grid_h < 2 || grid_w > MAX_GRID || grid_h > MAX_GRID {
         return None;
     }
-    if !(x0.is_finite() && x1.is_finite() && y0.is_finite() && y1.is_finite()) || !(x1 > x0 && y1 > y0)
+    if !x0.is_finite()
+        || !x1.is_finite()
+        || !y0.is_finite()
+        || !y1.is_finite()
+        || x1 <= x0
+        || y1 <= y0
     {
         return None;
     }
     match reduce {
         HexReduce::Count => {}
         HexReduce::Mean | HexReduce::Sum => {
-            if c.is_none() {
-                return None;
-            }
+            c?;
         }
     }
 
@@ -129,11 +133,7 @@ pub fn hexbin(
         let d2 = (fx - ix2 as f64 - 0.5).powi(2) + 3.0 * (fy - iy2 as f64 - 0.5).powi(2);
         let use_first = d1 < d2;
         if use_first {
-            if ix1 >= 0
-                && iy1 >= 0
-                && (ix1 as usize) <= grid_w
-                && (iy1 as usize) <= grid_h
-            {
+            if ix1 >= 0 && iy1 >= 0 && (ix1 as usize) <= grid_w && (iy1 as usize) <= grid_h {
                 let flat = (iy1 as usize) * (grid_w + 1) + (ix1 as usize);
                 count1[flat] += 1;
                 if let Some(v) = cv {
@@ -141,11 +141,7 @@ pub fn hexbin(
                 }
                 assigned += 1;
             }
-        } else if ix2 >= 0
-            && iy2 >= 0
-            && (ix2 as usize) < grid_w
-            && (iy2 as usize) < grid_h
-        {
+        } else if ix2 >= 0 && iy2 >= 0 && (ix2 as usize) < grid_w && (iy2 as usize) < grid_h {
             let flat = (iy2 as usize) * grid_w + (ix2 as usize);
             count2[flat] += 1;
             if let Some(v) = cv {
@@ -276,20 +272,7 @@ mod tests {
     fn count_bins_match_matplotlib_style_fixture() {
         let x = [0.1, 0.5, 0.9, 0.2];
         let y = [0.1, 0.5, 0.9, 0.8];
-        let r = hexbin(
-            &x,
-            &y,
-            None,
-            4,
-            4,
-            0.0,
-            1.0,
-            0.0,
-            1.0,
-            1,
-            HexReduce::Count,
-        )
-        .unwrap();
+        let r = hexbin(&x, &y, None, 4, 4, 0.0, 1.0, 0.0, 1.0, 1, HexReduce::Count).unwrap();
         assert_eq!(r.counts.len(), 4);
         assert!((r.dx - 0.25).abs() < 1e-12);
         assert!((r.dy - 0.25).abs() < 1e-12);
@@ -356,8 +339,34 @@ mod tests {
 
     #[test]
     fn rejects_mean_without_c_and_bad_grid() {
-        assert!(hexbin(&[0.0], &[0.0], None, 4, 4, 0.0, 1.0, 0.0, 1.0, 0, HexReduce::Mean).is_none());
-        assert!(hexbin(&[0.0], &[0.0], None, 1, 4, 0.0, 1.0, 0.0, 1.0, 0, HexReduce::Count).is_none());
+        assert!(hexbin(
+            &[0.0],
+            &[0.0],
+            None,
+            4,
+            4,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0,
+            HexReduce::Mean
+        )
+        .is_none());
+        assert!(hexbin(
+            &[0.0],
+            &[0.0],
+            None,
+            1,
+            4,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0,
+            HexReduce::Count
+        )
+        .is_none());
     }
 
     #[test]

@@ -31,7 +31,7 @@
       "id": "node",
       "name": "Node host",
       "paths": ["packages/xy-node"],
-      "abi_loader": "koffi (same libxy_core C ABI)",
+      "abi_loader": "koffi (same libxyg_core C ABI)",
       "consumers": [
         "server-side Node",
         "VS Code extensions (consumer of Node bindings — not a separate stack)"
@@ -102,21 +102,21 @@
       "layer": "Layout (preset/grid/circle/force/…)",
       "python": "ready",
       "node": "ready",
-      "shared_artifact": "xy_graph_layout / force handle",
+      "shared_artifact": "xyg_graph_layout / force handle",
       "notes": "Seeded FR goldens bit-identical"
     },
     {
       "layer": "Force ticks (progressive)",
       "python": "ready",
       "node": "ready",
-      "shared_artifact": "xy_graph_force_*",
+      "shared_artifact": "xyg_graph_force_*",
       "notes": "Never browser main-thread decisions; Barnes–Hut/grid approx at scale"
     },
     {
       "layer": "Viewport + graph LOD + edge LOD",
       "python": "ready",
       "node": "ready",
-      "shared_artifact": "xy_graph_lod_* / cluster / sample",
+      "shared_artifact": "xyg_graph_lod_* / cluster / sample",
       "notes": "Recorded §28; Rust emits render graph"
     },
     {

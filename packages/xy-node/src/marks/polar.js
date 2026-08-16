@@ -1,8 +1,8 @@
 /**
  * Polar / pie / wind_rose / facet composers for the Node host.
  *
- * Polar geometry and wind-rose binning live in Rust (`xy_wind_rose_bins`,
- * `xy_bar_stack`, `xy_sector_triangles`). These helpers assemble marks the same
+ * Polar geometry and wind-rose binning live in Rust (`xyg_wind_rose_bins`,
+ * `xyg_bar_stack`, `xyg_sector_triangles`). These helpers assemble marks the same
  * way Python `components.pie_chart` / `wind_rose` / `facet_chart` do, and the
  * Node figure emits a real `coords: "polar"` payload with theta/r axis meta.
  */
@@ -141,7 +141,7 @@ export function pieChart(labels, values, opts = {}) {
 }
 
 /**
- * Wind rose: `xy_wind_rose_bins` + stacked polar bars.
+ * Wind rose: `xyg_wind_rose_bins` + stacked polar bars.
  *
  * @param {ArrayLike|TypedArray} directions degrees (0 = N, clockwise)
  * @param {ArrayLike|TypedArray} speeds

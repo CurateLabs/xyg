@@ -3,7 +3,7 @@ requires = ["hatchling", "uv-dynamic-versioning>=0.11"]
 build-backend = "hatchling.build"
 
 [project]
-name = "xy"
+name = "xyg"
 dynamic = ["version"]
 description = "Experimental Python charting engine with a native Rust core, binary columnar transport, and a GPU render client"
 readme = "README.md"
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# The adapter source ships in every xy wheel so the framework integration and
+# The adapter source ships in every xyg wheel so the framework integration and
 # render client can never drift. The extra only selects the supported Reflex
 # floor; importing plain `xy` remains framework-free.
 reflex = [
@@ -23,10 +23,10 @@ reflex = [
 ]
 
 [project.urls]
-Repository = "https://github.com/CurateLabs/graphforge-xy"
-Issues = "https://github.com/CurateLabs/graphforge-xy/issues"
-Changelog = "https://github.com/CurateLabs/graphforge-xy/blob/main/CHANGELOG.md"
-Security = "https://github.com/CurateLabs/graphforge-xy/blob/main/SECURITY.md"
+Repository = "https://github.com/CurateLabs/xyg"
+Issues = "https://github.com/CurateLabs/xyg/issues"
+Changelog = "https://github.com/CurateLabs/xyg/blob/main/CHANGELOG.md"
+Security = "https://github.com/CurateLabs/xyg/blob/main/SECURITY.md"
 
 [dependency-groups]
 dev = [
@@ -80,7 +80,7 @@ bump = true
 # `git archive` tarball, say): such a build still succeeds, at an obviously
 # unreal version rather than a plausible-but-wrong one. It does *not* cover
 # unpacked sdists — those resolve from their own PKG-INFO, so `pip install
-# xy-X.Y.Z.tar.gz` keeps the published version without needing a repo.
+# xyg-X.Y.Z.tar.gz` keeps the published version without needing a repo.
 fallback-version = "0.0.0"
 
 [tool.hatch.build]
@@ -115,12 +115,12 @@ include = [
     # pathspec treats `src` as any directory named src, which would pull
     # `packages/xy-node/src/**`, and `package.json` would pull every nested
     # manifest. Leading slash matches only from the project root.
-    # Both Python packages published by the xy distribution. The bundled adapter
+    # Both Python packages published by the xyg distribution. The bundled adapter
     # is selected by the `reflex` extra; the retired python/reflex-xy project
     # and its independent lock/release material must not ride in this sdist.
     "/python/xy/**",
     "/python/reflex_xy/**",
-    "/src/**",
+    "/crates/**",
     # The whole js/ dir (TS sources + build.mjs + tsconfig) plus the npm
     # manifests, so the sdist can rebuild the client with `npm ci &&
     # node js/build.mjs` (verify_sdist.py checks the load-bearing files).

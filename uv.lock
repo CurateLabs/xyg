@@ -2187,7 +2187,7 @@ wheels = [
 ]
 
 [[package]]
-name = "xy"
+name = "xyg"
 source = { editable = "." }
 dependencies = [
     { name = "anywidget" },

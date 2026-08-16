@@ -58,7 +58,7 @@ from .component import chart
 from .vars import figure
 def __getattr__(name):
     if name == "__version__":
-        return _distribution_version("xy")
+        return _distribution_version("xyg")
 """
 REFLEX_COMPONENT_JS = """
 // XYChart imports the render client bundled in xy.
@@ -80,7 +80,7 @@ STANDALONE_JS = (
 DEFAULT_METADATA = "\n".join(
     [
         "Metadata-Version: 2.4",
-        "Name: xy",
+        "Name: xyg",
         "Version: 0.0.1",
         "Requires-Python: >=3.11",
         "Requires-Dist: anywidget>=0.9",
@@ -178,18 +178,18 @@ def _write_wheel(
                 data = REFLEX_COMPONENT_JS
             write(zf, name, data)
         if native:
-            write(zf, "xy/_native_lib/libxy_core.dylib", b"native")
+            write(zf, "xy/_native_lib/libxyg_core.dylib", b"native")
         for name, data in extra.items():
             write(zf, name, data)
-        wheel_name = "xy-0.0.1.dist-info/WHEEL"
+        wheel_name = "xyg-0.0.1.dist-info/WHEEL"
         write(
             zf,
             wheel_name,
             (f"Wheel-Version: 1.0\nRoot-Is-Purelib: {str(root_is_purelib).lower()}\nTag: {tag}\n"),
         )
         if metadata is not None:
-            write(zf, "xy-0.0.1.dist-info/METADATA", metadata)
-        record_name = "xy-0.0.1.dist-info/RECORD"
+            write(zf, "xyg-0.0.1.dist-info/METADATA", metadata)
+        record_name = "xyg-0.0.1.dist-info/RECORD"
         record_data = (
             record_override
             if record_override is not None
@@ -204,21 +204,21 @@ def _write_wheel(
 
 
 def test_verify_native_wheel_accepts_required_artifact_shape(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl)
 
     verify_wheel.verify_wheel(whl, expect_native=True)
 
 
 def test_verify_pure_wheel_accepts_required_artifact_shape(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-any.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-any.whl"
     _write_wheel(whl, tag="py3-none-any", root_is_purelib=True, native=False)
 
     verify_wheel.verify_wheel(whl, expect_native=False)
 
 
 def test_verify_wheel_accepts_normalized_metadata_spacing(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     metadata = DEFAULT_METADATA.replace(
         "Requires-Dist: anywidget>=0.9", "Requires-Dist: anywidget >= 0.9"
     ).replace("Requires-Dist: numpy>=1.24", "Requires-Dist: numpy >= 1.24")
@@ -228,7 +228,7 @@ def test_verify_wheel_accepts_normalized_metadata_spacing(tmp_path: Path) -> Non
 
 
 def test_verify_wheel_accepts_zero_padded_dependency_floors(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     metadata = DEFAULT_METADATA.replace("anywidget>=0.9", "anywidget>=0.9.0").replace(
         "numpy>=1.24", "numpy>=1.24.0"
     )
@@ -238,7 +238,7 @@ def test_verify_wheel_accepts_zero_padded_dependency_floors(tmp_path: Path) -> N
 
 
 def test_verify_native_wheel_rejects_filename_tag_mismatch(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-any.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-any.whl"
     _write_wheel(whl, tag="py3-none-macosx_11_0_arm64")
 
     with pytest.raises(AssertionError, match="filename tag"):
@@ -246,7 +246,7 @@ def test_verify_native_wheel_rejects_filename_tag_mismatch(tmp_path: Path) -> No
 
 
 def test_verify_pure_wheel_rejects_filename_tag_mismatch(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, tag="py3-none-any", root_is_purelib=True, native=False)
 
     with pytest.raises(AssertionError, match="filename tag"):
@@ -254,7 +254,7 @@ def test_verify_pure_wheel_rejects_filename_tag_mismatch(tmp_path: Path) -> None
 
 
 def test_verify_wheel_rejects_missing_metadata_file(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, metadata=None)
 
     with pytest.raises(AssertionError, match="METADATA"):
@@ -265,8 +265,8 @@ def test_verify_wheel_rejects_missing_metadata_file(tmp_path: Path) -> None:
     ("metadata", "match"),
     [
         (
-            DEFAULT_METADATA.replace("Name: xy", "Name: othercharts"),
-            "Name: xy",
+            DEFAULT_METADATA.replace("Name: xyg", "Name: othercharts"),
+            "Name: xyg",
         ),
         (
             DEFAULT_METADATA.replace("Version: 0.0.1", "Version: 0.2.0"),
@@ -372,7 +372,7 @@ def test_verify_wheel_rejects_missing_metadata_file(tmp_path: Path) -> None:
     ],
 )
 def test_verify_wheel_rejects_invalid_metadata(tmp_path: Path, metadata: str, match: str) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, metadata=metadata)
 
     with pytest.raises(AssertionError, match=match):
@@ -380,7 +380,7 @@ def test_verify_wheel_rejects_invalid_metadata(tmp_path: Path, metadata: str, ma
 
 
 def test_verify_wheel_rejects_missing_type_marker(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, omit={"xy/py.typed"})
 
     with pytest.raises(AssertionError, match="py\\.typed"):
@@ -388,7 +388,7 @@ def test_verify_wheel_rejects_missing_type_marker(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_missing_reflex_integration(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, omit={"reflex_xy/assets/XYChart.jsx"})
 
     with pytest.raises(AssertionError, match="reflex_xy"):
@@ -396,7 +396,7 @@ def test_verify_wheel_rejects_missing_reflex_integration(tmp_path: Path) -> None
 
 
 def test_verify_wheel_rejects_missing_reflex_type_marker(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, omit={"reflex_xy/py.typed"})
 
     with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
@@ -404,7 +404,7 @@ def test_verify_wheel_rejects_missing_reflex_type_marker(tmp_path: Path) -> None
 
 
 def test_verify_wheel_rejects_partial_type_marker(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, replacements={"xy/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="full-package PEP 561 marker"):
@@ -412,7 +412,7 @@ def test_verify_wheel_rejects_partial_type_marker(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_partial_reflex_type_marker(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, replacements={"reflex_xy/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
@@ -420,7 +420,7 @@ def test_verify_wheel_rejects_partial_reflex_type_marker(tmp_path: Path) -> None
 
 
 def test_verify_wheel_rejects_corrupt_python_module(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, replacements={"xy/__init__.py": ""})
 
     with pytest.raises(AssertionError, match=r"__init__\.py"):
@@ -428,7 +428,7 @@ def test_verify_wheel_rejects_corrupt_python_module(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_stale_figure_export_surface(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(
         whl,
         replacements={
@@ -447,7 +447,7 @@ class Figure:
 
 
 def test_verify_wheel_rejects_stale_marks_export_surface(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(
         whl,
         replacements={
@@ -462,7 +462,7 @@ def line(self, x, y): ...
 
 
 def test_verify_wheel_rejects_stale_component_export_surface(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(
         whl,
         replacements={
@@ -480,7 +480,7 @@ class Chart:
 
 
 def test_verify_wheel_rejects_stale_html_export_safety_surface(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(
         whl,
         replacements={
@@ -498,7 +498,7 @@ def to_png(fig): ...
 
 
 def test_verify_wheel_rejects_missing_static_bundle(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, omit={"xy/static/standalone.js"})
 
     with pytest.raises(AssertionError, match="required package files"):
@@ -506,7 +506,7 @@ def test_verify_wheel_rejects_missing_static_bundle(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, replacements={"xy/static/standalone.js": "not the client"})
 
     with pytest.raises(AssertionError, match=r"standalone\.js"):
@@ -514,7 +514,7 @@ def test_verify_wheel_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_unexpected_native_artifact(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, extra={"xy/bad_extension.so": b"native"})
 
     with pytest.raises(AssertionError, match="unexpected native artifacts"):
@@ -531,7 +531,7 @@ def test_verify_wheel_rejects_unexpected_native_artifact(tmp_path: Path) -> None
     ],
 )
 def test_verify_wheel_rejects_sdist_only_files(tmp_path: Path, extra_name: str) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, extra={extra_name: b"sdist only"})
 
     with pytest.raises(AssertionError, match="sdist only"):
@@ -539,7 +539,7 @@ def test_verify_wheel_rejects_sdist_only_files(tmp_path: Path, extra_name: str) 
 
 
 def test_verify_pure_wheel_rejects_native_library(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-any.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-any.whl"
     _write_wheel(whl, tag="py3-none-any", root_is_purelib=True, native=True)
 
     with pytest.raises(AssertionError, match="must not contain native libs"):
@@ -547,7 +547,7 @@ def test_verify_pure_wheel_rejects_native_library(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_missing_record(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl)
     with zipfile.ZipFile(whl) as zf:
         entries = [
@@ -564,7 +564,7 @@ def test_verify_wheel_rejects_missing_record(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_empty_record(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, record_override="")
 
     with pytest.raises(AssertionError, match="does not list archive files"):
@@ -572,7 +572,7 @@ def test_verify_wheel_rejects_empty_record(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_incomplete_record(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, record_omit={"xy/widget.py"})
 
     with pytest.raises(AssertionError, match="does not match archive files"):
@@ -580,7 +580,7 @@ def test_verify_wheel_rejects_incomplete_record(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_record_hash_mismatch(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     _write_wheel(whl, record_overrides={"xy/widget.py": ("sha256=bad", "6559")})
 
     with pytest.raises(AssertionError, match="hash mismatch"):
@@ -588,7 +588,7 @@ def test_verify_wheel_rejects_record_hash_mismatch(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_record_size_mismatch(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     init_hash = f"sha256={_record_hash(INIT_PY.encode('utf-8'))}"
     _write_wheel(whl, record_overrides={"xy/__init__.py": (init_hash, "1")})
 
@@ -597,7 +597,7 @@ def test_verify_wheel_rejects_record_size_mismatch(tmp_path: Path) -> None:
 
 
 def test_verify_wheel_rejects_duplicate_archive_entries(tmp_path: Path) -> None:
-    whl = tmp_path / "xy-0.0.1-py3-none-macosx_11_0_arm64.whl"
+    whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     with pytest.warns(UserWarning, match="Duplicate name"):
         _write_wheel(whl, extra={"xy/widget.py": b"duplicate"})
 

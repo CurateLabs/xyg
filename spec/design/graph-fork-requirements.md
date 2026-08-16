@@ -195,7 +195,7 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 
 - **REQ-CORE-1 (MUST).** Display layout kernels, viz adjacency/position
   buffers, bulk channel resolution, and **layout/LOD decisions that change
-  buffers** live in xy Rust (`xy_graph_*` C ABI) with **`u64` element
+  buffers** live in xy Rust (`xyg_graph_*` C ABI) with **`u64` element
   indices**. Rust owns these decisions for binding parity
   ([host-parity.md](host-parity.md)). Do not reimplement GraphForge algorithm
   surfaces here; do not leave layout/encode/decision logic in Python-only or

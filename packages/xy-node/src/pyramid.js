@@ -1,5 +1,5 @@
 /**
- * Tier-3 count pyramid — thin Node bindings over `xy_pyramid_*` (ABI 57).
+ * Tier-3 count pyramid — thin Node bindings over `xyg_pyramid_*` (ABI 58).
  *
  * Productized Phase-3 contract (lod-architecture.md §4 / Phase 3 items 6–7):
  * build once over the full data bounds, then compose any viewport in

@@ -12,13 +12,13 @@ from PyPI with your preferred package manager:
 ## uv
 
 ~~~bash
-uv add xy
+uv add xyg
 ~~~
 
 ## pip
 
 ~~~bash
-python -m pip install xy
+python -m pip install xyg
 ~~~
 ~~~~
 
@@ -31,7 +31,7 @@ npm install @curatelabs/xyg
 ~~~
 
 From a source checkout, build it once with `npm ci && node js/build.mjs`.
-Node host bindings (`packages/xy-node`, later `@curatelabs/xyg-node`) compose
+Node host bindings (`packages/xy-node`, `@curatelabs/xyg-node`) compose
 charts and call `toHtml()` against that client — they do not read
 `python/xy/static`.
 
@@ -56,14 +56,14 @@ the current 0.0.1 upload, not whether XY supports the platform.
 
 Windows is supported by XY's native core and release pipeline. The current
 0.0.1 PyPI upload does not include Windows wheels or a source distribution, so
-`uv add xy` and `python -m pip install xy` cannot install it directly on
+`uv add xyg` and `python -m pip install xyg` cannot install it directly on
 Windows yet. Until a Windows wheel is published, install the tagged source
 with a Rust MSVC toolchain as described below.
 
 The runtime-verified WebAssembly wheel targets the standardized PEP 783
 `pyemscripten_2026_0_wasm32` platform and, as of 0.0.3, is published to PyPI
 alongside the native wheels. In-browser Python installs it by package name —
-`micropip.install("xy")`, or `%pip install xy` in a JupyterLite notebook.
+`micropip.install("xyg")`, or `%pip install xyg` in a JupyterLite notebook.
 This target runs XY's Python and Rust core inside Pyodide; it is separate
 from the JavaScript/WebGL client (`@curatelabs/xyg`, copied into every Python
 wheel). See
@@ -72,7 +72,7 @@ kernels.
 
 ## What the package includes
 
-The regular `xy` dependency already includes NumPy and anywidget support.
+The regular `xyg` dependency already includes NumPy and anywidget support.
 Published platform wheels bundle the Python package, a **copy** of the
 host-neutral browser client, and the native Rust compute core. Notebook
 display and HTML, native PNG, and SVG export do not require separate
@@ -119,16 +119,16 @@ Rust tooling beyond the commands above.
   version. With uv:
 
   ~~~bash
-  uv add "xy[reflex]"
+  uv add "xyg[reflex]"
   ~~~
 
   Or with pip:
 
   ~~~bash
-  python -m pip install "xy[reflex]"
+  python -m pip install "xyg[reflex]"
   ~~~
 
-  The `xy` wheel already carries the `reflex_xy` integration; the extra adds
+  The `xyg` wheel already carries the `reflex_xy` integration; the extra adds
   only the supported Reflex dependency floor. Pin resolved versions for
   production deployments. Continue with the
   [Reflex integration guide](/docs/xy/integrations/reflex/) for its current

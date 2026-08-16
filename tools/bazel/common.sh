@@ -24,25 +24,25 @@ _bazel_tools_dir() {
 
 find_native_lib() {
   local cand root="${1:-}"
-  if [[ -n "${XY_NATIVE_LIB:-}" && -f "${XY_NATIVE_LIB}" ]]; then
-    printf '%s\n' "${XY_NATIVE_LIB}"
+  if [[ -n "${XYG_NATIVE_LIB:-}" && -f "${XYG_NATIVE_LIB}" ]]; then
+    printf '%s\n' "${XYG_NATIVE_LIB}"
     return 0
   fi
   for cand in \
-    "${TEST_SRCDIR:-}/_main/libxy_core.so" \
-    "${TEST_SRCDIR:-}/xy/libxy_core.so" \
-    "${TEST_SRCDIR:-}/${TEST_WORKSPACE:-_main}/libxy_core.so" \
-    "${BUILD_WORKSPACE_DIRECTORY:-}/bazel-bin/libxy_core.so" \
-    "${root}/bazel-bin/libxy_core.so" \
-    "${root}/target/release/libxy_core.so" \
-    "${root}/target/debug/libxy_core.so"; do
+    "${TEST_SRCDIR:-}/_main/libxyg_core.so" \
+    "${TEST_SRCDIR:-}/xy/libxyg_core.so" \
+    "${TEST_SRCDIR:-}/${TEST_WORKSPACE:-_main}/libxyg_core.so" \
+    "${BUILD_WORKSPACE_DIRECTORY:-}/bazel-bin/libxyg_core.so" \
+    "${root}/bazel-bin/libxyg_core.so" \
+    "${root}/target/release/libxyg_core.so" \
+    "${root}/target/debug/libxyg_core.so"; do
     if [[ -n "${cand}" && -f "${cand}" ]]; then
       printf '%s\n' "${cand}"
       return 0
     fi
   done
   if [[ -n "${TEST_SRCDIR:-}" ]]; then
-    cand="$(find "${TEST_SRCDIR}" -name 'libxy_core.so' -type f 2>/dev/null | head -n 1 || true)"
+    cand="$(find "${TEST_SRCDIR}" -name 'libxyg_core.so' -type f 2>/dev/null | head -n 1 || true)"
     if [[ -n "${cand}" ]]; then
       printf '%s\n' "${cand}"
       return 0
@@ -94,7 +94,7 @@ expected_abi_from_source() {
     sed -n 's/^ABI_VERSION = //p' "${native_py}" | head -n 1
     return 0
   fi
-  local lib_rs="${root}/src/lib.rs"
+  local lib_rs="${root}/crates/xyg-core/src/lib.rs"
   if [[ -f "${lib_rs}" ]]; then
     sed -n 's/^pub const ABI_VERSION: u32 = \([0-9]*\);/\1/p' "${lib_rs}" | head -n 1
     return 0

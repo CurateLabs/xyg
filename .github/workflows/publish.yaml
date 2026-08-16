@@ -1,17 +1,18 @@
 name: Release
 
+# Filename MUST stay publish.yaml: PyPI trusted publishing for project `xyg`
+# is bound to CurateLabs/xyg, this exact workflow filename, and environment
+# `pypi`. A rename would desync the pending publisher.
+#
 # Build and verify prebuilt wheels + sdist on a version tag. This is what
-# makes `pip install xy` a no-toolchain install: each platform wheel carries
+# makes `pip install xyg` a no-toolchain install: each platform wheel carries
 # the compiled Rust core, so end users never see Rust or Node.
 #
-# Fork posture (#13): this repository is CurateLabs' divergent fork of
-# reflex-dev/xy, and the distribution is still named `xy` — upstream's PyPI
-# package. The publish job is therefore hard-guarded (repository slug check,
-# a fork publish guard that refuses upstream's distribution name, and an
-# XY_ALLOW_PYPI_PUBLISH opt-in variable that does not exist by default): a
-# version tag on this fork builds and verifies every artifact but cannot
-# reach PyPI's `xy` under any configuration. See
-# spec/process/production-readiness.md § Fork release posture.
+# Publish is tag/release-gated plus an explicit opt-in: a version tag builds
+# and verifies every artifact; the upload step runs only when
+# XYG_ALLOW_PYPI_PUBLISH is `true` and the dispatch is not a dry run.
+# workflow_dispatch defaults to dry_run=true so a manual run never publishes.
+# See spec/process/production-readiness.md § Fork release posture.
 on:
   push:
     tags: ["v*"]
@@ -39,7 +40,7 @@ jobs:
   # armv7, macOS x86-64/arm64, and Windows x86/x64/arm64. Linux targets are
   # cross-compiled with cargo-zigbuild (musl support + a low manylinux_2_17
   # glibc floor without QEMU); the hook then packs the prebuilt core and stamps
-  # the platform tag (XY_CARGO_TARGET / XY_WHEEL_PLATFORM).
+  # the platform tag (XYG_CARGO_TARGET / XYG_WHEEL_PLATFORM).
   wheels:
     name: Wheel ${{ matrix.plat }}
     runs-on: ${{ matrix.os }}
@@ -109,10 +110,10 @@ jobs:
           # platform tag, and builds the render client (node) into the wheel.
           # The client is required by default; REQUIRE_CARGO also forbids the
           # core from silently going missing.
-          XY_REQUIRE_CARGO: "1"
-          XY_SKIP_CARGO: "1"
-          XY_CARGO_TARGET: ${{ matrix.target }}
-          XY_WHEEL_PLATFORM: ${{ matrix.plat }}
+          XYG_REQUIRE_CARGO: "1"
+          XYG_SKIP_CARGO: "1"
+          XYG_CARGO_TARGET: ${{ matrix.target }}
+          XYG_WHEEL_PLATFORM: ${{ matrix.plat }}
         run: uv build --wheel
       - name: Verify wheel contents
         shell: bash
@@ -134,8 +135,8 @@ jobs:
         run: |
           uv venv smoke
           uv pip install -p smoke dist/*.whl numpy anywidget "reflex>=0.9.6"
-          ./smoke/bin/python -c "import importlib.metadata as m, reflex_xy, xy.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xy'); print('native', k.__file__)" \
-            || ./smoke/Scripts/python.exe -c "import importlib.metadata as m, reflex_xy, xy.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xy'); print('native')"
+          ./smoke/bin/python -c "import importlib.metadata as m, reflex_xy, xy.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native', k.__file__)" \
+            || ./smoke/Scripts/python.exe -c "import importlib.metadata as m, reflex_xy, xy.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native')"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ matrix.plat }}
@@ -178,10 +179,10 @@ jobs:
           CIBW_BEFORE_BUILD_PYODIDE: >-
             cargo build --release --target wasm32-unknown-emscripten
           CIBW_ENVIRONMENT_PYODIDE: >-
-            XY_REQUIRE_CARGO=1
-            XY_SKIP_CARGO=1
-            XY_CARGO_TARGET=wasm32-unknown-emscripten
-            XY_WHEEL_PLATFORM=pyemscripten_2026_0_wasm32
+            XYG_REQUIRE_CARGO=1
+            XYG_SKIP_CARGO=1
+            XYG_CARGO_TARGET=wasm32-unknown-emscripten
+            XYG_WHEEL_PLATFORM=pyemscripten_2026_0_wasm32
             RUSTFLAGS="-C panic=abort"
       - name: Verify wheel contents
         shell: bash
@@ -237,7 +238,7 @@ jobs:
       - name: Build and load native core from sdist
         shell: bash
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv smoke-native
           uv pip install --no-cache -p smoke-native dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
@@ -248,7 +249,7 @@ jobs:
           import xy
           import xy.kernels as kernels
 
-          version = metadata.version("xy")
+          version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           assert kernels.BACKEND == "native", kernels.BACKEND
@@ -257,7 +258,7 @@ jobs:
       - name: Verify coreless sdist imports reflex_xy
         shell: bash
         env:
-          XY_SKIP_CARGO: "1"
+          XYG_SKIP_CARGO: "1"
         run: |
           uv venv smoke-no-rust
           uv pip install --no-cache -p smoke-no-rust dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
@@ -267,7 +268,7 @@ jobs:
           import reflex_xy
           import xy
 
-          version = metadata.version("xy")
+          version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           try:
@@ -291,11 +292,10 @@ jobs:
     # PEP 783 wheel uses a standard PyPI platform tag and joins the same
     # trusted-publishing batch as the native wheels and sdist.
     needs: [wheels, sdist, wasm]
-    # Fork repository guard (#13): this repository is a permanently divergent
-    # fork of reflex-dev/xy, and the distribution is still named `xy` —
-    # upstream's PyPI package. Only this exact slug may even reach the publish
-    # job; forks/mirrors of this fork stop here.
-    if: github.repository == 'CurateLabs/graphforge-xy'
+    # Repository guard (#13): only CurateLabs/xyg may reach the OIDC publish
+    # job. Forks and mirrors stop here. PyPI trusted publishing is bound to
+    # this slug, workflow filename publish.yaml, and environment `pypi`.
+    if: github.repository == 'CurateLabs/xyg'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -330,14 +330,9 @@ jobs:
         run: |
           echo "::notice::Dry run — built and verified $(ls dist/*.whl dist/*.tar.gz 2>/dev/null | wc -l | tr -d ' ') artifacts across the full release matrix. Skipping PyPI publish."
           echo "Re-run this workflow with dry_run=false, or push a v* tag, to publish for real."
-      # Fork publish guard (#13): every artifact this workflow builds is still
-      # named `xy`, which is upstream (reflex-dev)'s PyPI distribution. Any
-      # real publish attempt — tag push or non-dry-run dispatch — must fail
-      # here, before the upload step, regardless of tags, repository
-      # variables, or environment configuration. The guard clears itself the
-      # day the fork's artifacts carry their own distribution name (a deferred
-      # decision tracked in issue #13). Dry runs pass so the cross-compile
-      # matrix stays verifiable.
+      # Publish-name guard (#13): real uploads must be distribution `xyg`
+      # (the pending PyPI project) and must never be upstream's `xy`. Dry
+      # runs skip the check so the cross-compile matrix stays verifiable.
       - name: Fork publish guard (refuse upstream's PyPI package name)
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -351,17 +346,21 @@ jobs:
             name="$(basename "$artifact")"
             name="${name%%-*}"
             if [ "$name" = "xy" ]; then
-              echo "::error::Refusing to publish distribution 'xy' — that is upstream reflex-dev's PyPI package. This fork must adopt its own distribution name before any PyPI upload (CurateLabs/graphforge-xy#13)."
+              echo "::error::Refusing to publish distribution 'xy' — that is upstream reflex-dev's PyPI package (CurateLabs/xyg#13)."
+              exit 1
+            fi
+            if [ "$name" != "xyg" ]; then
+              echo "::error::Refusing to publish distribution '$name' — this repository publishes PyPI project 'xyg' only (CurateLabs/xyg#13)."
               exit 1
             fi
           done
-          echo "Fork publish guard OK: no artifact carries upstream's distribution name."
+          echo "Fork publish guard OK: artifacts are named xyg."
       # The upload itself needs an explicit opt-in on top of everything above:
-      # the XY_ALLOW_PYPI_PUBLISH repository variable does not exist by
+      # the XYG_ALLOW_PYPI_PUBLISH repository variable does not exist by
       # default, so a fresh clone of this fork cannot publish no matter what
       # it tags or dispatches.
       - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
-        if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
+        if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
         with:
           packages-dir: dist/
           # A failed upload can leave a partial release on immutable PyPI.

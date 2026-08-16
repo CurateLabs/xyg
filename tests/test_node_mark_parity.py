@@ -1,4 +1,4 @@
-"""Bit-identical mark parity: Python host vs @xy/node (scatter encode, M4, hist, batch-2).
+"""Bit-identical mark parity: Python host vs @curatelabs/xyg-node (scatter encode, M4, hist, batch-2).
 
 Shells ``node packages/xy-node/scripts/mark_parity_golden.mjs`` and compares
 against Python ``encode_f32_values`` / ``m4_indices`` / ``histogram_uniform`` /
@@ -11,7 +11,7 @@ Run::
 
     cargo build --release
     cd packages/xy-node && npm ci   # once
-    XY_NATIVE_LIB=$PWD/target/release/libxy_core.so \\
+    XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.dylib \\
       uv run pytest tests/test_node_mark_parity.py -q
 """
 
@@ -35,7 +35,19 @@ ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "mark_parity_golden.mjs"
 FIXTURE_WRITER = ROOT / "packages" / "xy-node" / "test" / "fixtures" / "write_mark_fixtures.py"
 FIXTURE_JSON = ROOT / "packages" / "xy-node" / "test" / "fixtures" / "mark_parity.json"
-LIB = ROOT / "target" / "release" / "libxy_core.so"
+
+
+def _native_lib() -> Path:
+    if sys.platform == "win32":
+        name = "xyg_core.dll"
+    elif sys.platform == "darwin":
+        name = "libxyg_core.dylib"
+    else:
+        name = "libxyg_core.so"
+    return ROOT / "target" / "release" / name
+
+
+LIB = _native_lib()
 
 
 def _node_bin() -> str:
@@ -49,10 +61,10 @@ def node_mark_golden() -> dict:
     if not NODE_SCRIPT.is_file():
         pytest.skip(f"missing {NODE_SCRIPT}")
     if not LIB.is_file():
-        pytest.skip("libxy_core.so missing; run `cargo build --release`")
+        pytest.skip(f"{LIB.name} missing; run `cargo build --release`")
 
     env = os.environ.copy()
-    env.setdefault("XY_NATIVE_LIB", str(LIB))
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
     proc = subprocess.run(
         [_node_bin(), str(NODE_SCRIPT)],
         check=False,
@@ -278,6 +290,7 @@ const hx = hexbinChart(new Float64Array([0.5,1.5]), new Float64Array([0.5,1.5]),
   gridsize: 4, range: [[0,2],[0,2]],
 });
 const v = violinChart(new Float64Array([1,2,2,3,4]), { bins: 8 });
+const eTrace = e.buildPayload().spec.traces[0];
 const out = {
   protocol: PROTOCOL_VERSION,
   kinds: [
@@ -287,16 +300,18 @@ const out = {
     a.buildPayload().spec.traces[0].kind,
     b.buildPayload().spec.traces[0].kind,
     bx.buildPayload().spec.traces.find(t => t.kind === 'bar')?.kind,
-    e.buildPayload().spec.traces[0].kind,
+    eTrace.kind,
     hm.buildPayload().spec.traces[0].kind,
     hx.buildPayload().spec.traces[0].kind,
     v.buildPayload().spec.traces[0].kind,
   ],
+  ecdfRole: eTrace.style.role,
+  ecdfStep: eTrace.style.step,
 };
 process.stdout.write(JSON.stringify(out));
 """
     env = os.environ.copy()
-    env.setdefault("XY_NATIVE_LIB", str(LIB))
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
     proc = subprocess.run(
         [_node_bin(), "--input-type=module", "-e", script],
         check=False,
@@ -316,11 +331,13 @@ process.stdout.write(JSON.stringify(out));
         "area",
         "bar",
         "bar",
-        "ecdf",
+        "line",
         "heatmap",
         "hexbin",
         "violin",
     ]
+    assert payload["ecdfRole"] == "ecdf"
+    assert payload["ecdfStep"] == "post"
 
 
 if __name__ == "__main__":

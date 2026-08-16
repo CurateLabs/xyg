@@ -72,7 +72,7 @@ make check-sdist
 make check-wheel
 ```
 
-When you edit `.github/workflows/ci.yml`, `.github/workflows/release.yml`, or
+When you edit `.github/workflows/ci.yml`, `.github/workflows/publish.yaml`, or
 release/benchmark artifact wiring, run:
 
 ```bash

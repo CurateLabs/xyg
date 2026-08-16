@@ -1,5 +1,5 @@
 /**
- * Thin histogram mark builder — TypedArray values → Rust `xy_histogram_uniform`
+ * Thin histogram mark builder — TypedArray values → Rust `xyg_histogram_uniform`
  * → rectangle columns attached as a histogram trace (Python common path).
  */
 

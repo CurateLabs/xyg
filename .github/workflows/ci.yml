@@ -77,11 +77,14 @@ jobs:
       - name: Install JS build toolchain
         run: npm ci
 
+      - name: Install Node host bindings
+        run: npm ci --prefix packages/xy-node
+
       - name: Rust unit tests
-        run: cargo test
+        run: cargo test --workspace
 
       - name: Rust lint
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Build native core
         run: cargo build --release
@@ -106,6 +109,12 @@ jobs:
       # the WebGL2 render path) and run even if PyPI is unreachable.
       - name: Native ABI smoke (stdlib only)
         run: python3 scripts/abi_smoke.py
+
+      - name: ABI parity gate (stdlib only)
+        run: python3 scripts/check_abi_parity.py
+
+      - name: Stale XY identity names
+        run: python3 scripts/check_stale_names.py
 
       # Playwright's Chromium, not the apt/snap one: Ubuntu's chromium-browser is
       # a confined snap that can't read the temp HTML under /tmp and whose GPU
@@ -143,7 +152,7 @@ jobs:
 
       - name: Verify bundled Reflex integration import
         run: |
-          .venv/bin/python -c "import importlib.metadata as m, reflex_xy; assert reflex_xy.__version__ == m.version('xy')"
+          .venv/bin/python -c "import importlib.metadata as m, reflex_xy; assert reflex_xy.__version__ == m.version('xyg')"
 
       - name: Regression gate (deterministic payloads = hard fail; timing = advisory)
         run: |
@@ -304,6 +313,7 @@ jobs:
       - name: Build render client
         run: |
           npm ci
+          npm ci --prefix packages/xy-node
           node js/build.mjs
 
       - name: Install package for Python 3.11
@@ -409,7 +419,7 @@ jobs:
       - name: Install xy
         if: matrix.xy
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: |
           uv pip install -p .venv/bin/python \
             --constraint benchmarks/requirements-ci.lock -e .
@@ -478,7 +488,7 @@ jobs:
           cargo build --release
       - name: Install xy + competitors
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv .venv
           uv pip install -p .venv/bin/python \
@@ -645,7 +655,7 @@ jobs:
       - name: Build and load native core from sdist
         shell: bash
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv smoke-native
           uv pip install --no-cache -p smoke-native dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
@@ -656,7 +666,7 @@ jobs:
           import xy
           import xy.kernels as kernels
 
-          version = metadata.version("xy")
+          version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           assert kernels.BACKEND == "native", kernels.BACKEND
@@ -666,7 +676,7 @@ jobs:
       - name: Verify coreless sdist imports reflex_xy
         shell: bash
         env:
-          XY_SKIP_CARGO: "1"
+          XYG_SKIP_CARGO: "1"
         run: |
           uv venv smoke-no-rust
           uv pip install --no-cache -p smoke-no-rust dist/*.tar.gz numpy anywidget "reflex>=0.9.6"
@@ -676,7 +686,7 @@ jobs:
           import reflex_xy
           import xy
 
-          version = metadata.version("xy")
+          version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           try:
@@ -691,7 +701,7 @@ jobs:
           PY
 
   # Linux and Windows wheel smoke matrix (§33). macOS wheels are built only by
-  # release.yml so pull requests do not consume macOS runners; release coverage
+  # publish.yaml so pull requests do not consume macOS runners; release coverage
   # still includes both Intel and Apple Silicon macOS wheels.
   wheels:
     name: Wheel ${{ matrix.os }}
@@ -723,7 +733,7 @@ jobs:
         # required by default; REQUIRE_CARGO additionally forbids the native core
         # from silently falling back to a pure-Python wheel here.
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: uv build --wheel
 
       # A raw linux_x86_64 tag is not installable off this machine and PyPI

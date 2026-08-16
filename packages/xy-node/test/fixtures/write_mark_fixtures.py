@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write Python-side golden fixtures for @xy/node mark parity tests.
+"""Write Python-side golden fixtures for @curatelabs/xyg-node mark parity tests.
 
 Produces JSON under packages/xy-node/test/fixtures/ consumed by
 ``test/marks.test.mjs`` and cross-checked by ``tests/test_node_mark_parity.py``.

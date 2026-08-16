@@ -13,7 +13,7 @@ ENV CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:${PATH} \
     UV_LINK_MODE=copy \
     UV_DYNAMIC_VERSIONING_BYPASS=${XY_VERSION} \
-    XY_REQUIRE_CARGO=1
+    XYG_REQUIRE_CARGO=1
 
 COPY --from=rust-toolchain /usr/local/cargo /usr/local/cargo
 COPY --from=rust-toolchain /usr/local/rustup /usr/local/rustup
@@ -29,13 +29,13 @@ WORKDIR /app
 RUN uv sync --project docs/app --frozen --no-dev && \
     docs/app/.venv/bin/python -c \
       "import xy.kernels as kernels; assert kernels.BACKEND == 'native', kernels.BACKEND" && \
-    find target/release -mindepth 1 -maxdepth 1 ! -name 'libxy_core.so' -exec rm -rf {} +
+    find target/release -mindepth 1 -maxdepth 1 ! -name 'libxyg_core.so' -exec rm -rf {} +
 
 FROM python:3.13-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1 \
     REFLEX_TELEMETRY_ENABLED=false \
-    XY_NATIVE_LIB=/app/target/release/libxy_core.so
+    XYG_NATIVE_LIB=/app/target/release/libxyg_core.so
 
 RUN apt-get update && \
     apt-get install --yes --no-install-recommends ca-certificates && \

@@ -16,19 +16,17 @@ in the README).
   still need no Node. Node `toHtml()` inlines the host-neutral standalone
   client, not the Python tree. Registry publish waits on the `@curatelabs`
   npm org (#13).
+- Python distribution name is `xyg` (`pip install xyg`, wheel/sdist `Name:
+  xyg`). Import remains `import xy` until the staged `python/xyg/` cutover
+  (#13 / #18). GitHub Actions environment `pypi` plus workflow
+  `publish.yaml` match the pending PyPI trusted publisher.
 
 ### Changed
-- Release safety for the CurateLabs fork (#13): the `release.yml` publish job
-  is now gated on `github.repository == 'CurateLabs/graphforge-xy'`, a fork
-  publish guard step that refuses to upload any artifact still carrying
-  upstream's `xy` distribution name, and an `XY_ALLOW_PYPI_PUBLISH`
-  repository-variable opt-in that does not exist by default — a version tag
-  on this fork can no longer reach upstream's PyPI package under any
-  configuration. `pyproject.toml` project URLs now point at
-  `CurateLabs/graphforge-xy`. The fork's versioning posture (inherited
-  `v0.0.6a2` baseline kept, no remote tags deleted, distribution rename and
-  re-baseline tag deferred) is recorded in
-  `spec/process/production-readiness.md` § Fork release posture.
+- Release publishing (#13): workflow filename is `publish.yaml` (PyPI trusted
+  publisher binding), repository guard is `CurateLabs/xyg`, artifacts are
+  named `xyg`, and the upload still requires `XYG_ALLOW_PYPI_PUBLISH=true`
+  plus a non-dry-run tag/dispatch. The first successful upload claims pending
+  PyPI project `xyg`. `pyproject.toml` project URLs point at `CurateLabs/xyg`.
 
 ## [0.0.5] - 2026-07-31
 

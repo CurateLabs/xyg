@@ -83,7 +83,7 @@ def test_post_build_requires_the_native_core() -> None:
 
     # The point of the source install: a missing cargo must fail the image
     # build, never ship a coreless wheel (the hatch hook honors this flag).
-    assert lines.index("export XY_REQUIRE_CARGO=1") < install_index
+    assert lines.index("export XYG_REQUIRE_CARGO=1") < install_index
 
     # npm ci during the hatch build must not pull Playwright's browsers
     # (several hundred MB, devDependencies-only) into the image.

@@ -1,0 +1,463 @@
+{
+  "abi_version": 58,
+  "artifact": "xyg_core",
+  "prefix": "xyg_",
+  "source": "crates/xyg-core/src/lib.rs",
+  "symbols": [
+    {
+      "name": "xyg_abi_version",
+      "nargs": 0,
+      "returns": "u32"
+    },
+    {
+      "name": "xyg_bar_stack",
+      "nargs": 15,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_bin_2d",
+      "nargs": 11,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_bin_2d_f32",
+      "nargs": 11,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_bin_2d_indices",
+      "nargs": 12,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_bin_2d_mean_color",
+      "nargs": 15,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_bin_2d_sample_range",
+      "nargs": 15,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_bin_2d_stratified_sample_range_u8_counted",
+      "nargs": 19,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_box_stats",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_contourf_bands",
+      "nargs": 18,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_contourf_densify",
+      "nargs": 14,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_correlation",
+      "nargs": 8,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_css_check",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_delaunay_triangles",
+      "nargs": 6,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_density_log_u8",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_density_rgba",
+      "nargs": 9,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_drill_decision",
+      "nargs": 6,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_encode_f32",
+      "nargs": 6,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_factorize_fixed",
+      "nargs": 6,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_factorize_fixed_u8",
+      "nargs": 7,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_factorize_fixed_u8_counts",
+      "nargs": 8,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_factorize_unicode1_u8_counts",
+      "nargs": 8,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_graph_build_csr",
+      "nargs": 10,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_build_render",
+      "nargs": 23,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_cluster_aggregate",
+      "nargs": 13,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_force_create",
+      "nargs": 10,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_force_destroy",
+      "nargs": 1,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_force_tick",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_layout",
+      "nargs": 13,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_lod_decision",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_sample_edges",
+      "nargs": 4,
+      "returns": "u64"
+    },
+    {
+      "name": "xyg_heatmap_rgba",
+      "nargs": 8,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_hexbin",
+      "nargs": 20,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_histogram2d",
+      "nargs": 10,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_histogram_edges",
+      "nargs": 9,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_histogram_uniform",
+      "nargs": 8,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_indexed_triangles",
+      "nargs": 16,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_is_sorted",
+      "nargs": 2,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_local_log_density",
+      "nargs": 11,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_lod_grid_shape",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_lod_plan",
+      "nargs": 12,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_m4_indices",
+      "nargs": 8,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_m4_points",
+      "nargs": 9,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_marching_squares",
+      "nargs": 15,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_marching_triangles",
+      "nargs": 15,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_min_max",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_normalize_f32",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_polygon_select",
+      "nargs": 10,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_polygon_triangles",
+      "nargs": 6,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_pyramid_append",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_pyramid_build",
+      "nargs": 9,
+      "returns": "u64"
+    },
+    {
+      "name": "xyg_pyramid_build_color",
+      "nargs": 13,
+      "returns": "u64"
+    },
+    {
+      "name": "xyg_pyramid_compose",
+      "nargs": 10,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_pyramid_compose_color",
+      "nargs": 11,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_pyramid_count",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_pyramid_free",
+      "nargs": 1,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_quad_mesh_triangles",
+      "nargs": 16,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_quantiles",
+      "nargs": 6,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_range_indices",
+      "nargs": 9,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_range_indices_rows",
+      "nargs": 11,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_rasterize",
+      "nargs": 6,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_rasterize_data",
+      "nargs": 8,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_rasterize_png",
+      "nargs": 7,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_rasterize_png_data",
+      "nargs": 9,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_rasterize_png_spans",
+      "nargs": 10,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_rasterize_spans",
+      "nargs": 9,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_remap_u8",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_rfft",
+      "nargs": 8,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_sample_mask",
+      "nargs": 6,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_sample_mask_u32",
+      "nargs": 6,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_sample_range_indices",
+      "nargs": 6,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_sankey_layout",
+      "nargs": 23,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_sector_triangles",
+      "nargs": 19,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_spectrogram",
+      "nargs": 9,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stacked_bounds",
+      "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stratified_sample_mask",
+      "nargs": 9,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stratified_sample_mask_u32",
+      "nargs": 9,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_stratified_sample_range_u8",
+      "nargs": 9,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_stratified_sample_range_u8_counted",
+      "nargs": 10,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_streamlines",
+      "nargs": 14,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_svg_poly_path",
+      "nargs": 6,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_transition_keys_fixed",
+      "nargs": 10,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_triangle_edges",
+      "nargs": 10,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_valid_indices_f64",
+      "nargs": 7,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_vector_segments",
+      "nargs": 13,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_violin_density",
+      "nargs": 6,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_weighted_ecdf",
+      "nargs": 6,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_welch_spectra",
+      "nargs": 12,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_wind_rose_bins",
+      "nargs": 13,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_zone_maps",
+      "nargs": 12,
+      "returns": "usize"
+    },
+    {
+      "name": "xyg_zone_maps_pair",
+      "nargs": 7,
+      "returns": "usize"
+    }
+  ]
+}

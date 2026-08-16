@@ -4,7 +4,7 @@
 ([lod-architecture.md](lod-architecture.md) §4 / Phase 3 items 6–7).
 
 The shippable product is the **square multi-resolution count pyramid**
-(`xy_pyramid_build` → `compose` / `count` / `append` / `free`), available on
+(`xyg_pyramid_build` → `compose` / `count` / `append` / `free`), available on
 Python and Node, with §28 `binning: "pyramid-L<l>[-upsampled]"`. Phase-4
 disk-resident 256² tile spill is a separate residency milestone and is **not**
 required to claim Phase-3 Tier-3 ready.
@@ -23,8 +23,8 @@ required to claim Phase-3 Tier-3 ready.
 
 ### 1. ABI / kernel goldens (always on)
 
-- Rust `src/tiles.rs` unit tests — level conservation, append atomicity, colored refuse-append, outresolve.
-- `scripts/abi_smoke.py` — ctypes boundary for every `xy_pyramid_*`.
+- Rust `crates/xyg-engine/src/tiles.rs` unit tests — level conservation, append atomicity, colored refuse-append, outresolve.
+- `scripts/abi_smoke.py` — ctypes boundary for every `xyg_pyramid_*`.
 - Python `tests/test_kernels.py` — wrapper validation; compose mass ≡ `bin_2d`.
 - Node `packages/xy-node/test/pyramid.test.mjs` — same goldens via koffi.
 
@@ -63,9 +63,10 @@ required to claim Phase-3 Tier-3 ready.
 ## Reproduction
 
 ```bash
-cargo test -p xy_core tiles
+cargo test -p xyg-engine tiles
 python3 scripts/abi_smoke.py          # includes pyramid ABI block
-XY_NATIVE_LIB=$PWD/target/release/libxy_core.so \\
+# Linux: libxyg_core.so; macOS: libxyg_core.dylib; Windows: xyg_core.dll
+XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so \\
   npm --prefix packages/xy-node test -- test/pyramid.test.mjs
 PYTHONPATH=python python3 benchmarks/bench_tier3_pyramid.py
 node benchmarks/bench_tier3_pyramid_node.mjs

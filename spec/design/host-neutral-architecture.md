@@ -62,10 +62,10 @@ chose: **Curate Labs** and **XYG**.
 | Surface | Public name | Owner issue | Notes |
 | --- | --- | --- | --- |
 | Paint client (npm) | **`@curatelabs/xyg`** | #23 (publish the artifact); #13 (npm org / registry) | JS/browser front door: `npm install @curatelabs/xyg`. ESM `render` + IIFE `standalone.js` / `window.xy` (global rename is #18 if the product global becomes `xyg`). |
-| Node host (npm) | **`@curatelabs/xyg-node`** | #13 / #18 (identity + native packaging); #23 (toHtml consumes `@curatelabs/xyg`, does not own native `.so` lookup) | Replaces in-tree `"name": "@xy/node"`. Thin koffi host; must not import browser APIs. |
+| Node host (npm) | **`@curatelabs/xyg-node`** | #13 / #18 (identity + native packaging); #23 (toHtml consumes `@curatelabs/xyg`, does not own native `.so` lookup) | Replaces in-tree `"name": "@xy/node"`; never publish `@xy/node`. Thin koffi host; must not import browser APIs. |
 | Safe Rust crate | `xyg-engine` | #18 | Algorithms and deterministic policy. |
 | C ABI crate / artifact | `xyg-core` / `libxyg_core` | #18 | One cdylib for Python and Node. |
-| Python distribution | **`xyg`** (preferred) | #13 / #18 | Not upstream `xy`. Not a second brand (`graphforge-xy`). Import-alias (`import xy`) is a compatibility decision inside #13/#18, not a second product. |
+| Python distribution | **`xyg`** | #13 / #18 | `pip install xyg`. Not upstream `xy`. Import remains `xy` until the staged `python/xyg/` cutover. |
 | Python import | `xy` or `xyg` | #13 / #18 open question | Time-bounded alias vs clean break; does not change the product name XYG. |
 
 **Why two npm packages.** Isolation in host-parity §0: the Node package must
@@ -99,7 +99,7 @@ related, not the same acceptance criteria.
 | Identity / crate split | **#18** | XYG name, `xyg-engine` / `xyg-core`, one ABI, Node `.so`/`.dylib`/`.dll` lookup |
 | Publish identity | **#13** (parent #12) | PyPI/npm names, tag line, publish guards (guards already in #20). **Names** here; **shipping packages** in #18/#23 |
 | Docs / branding links | **#14** (parent #12) | Retarget `reflex-dev/xy` URLs. Overlaps README with #23’s npm door — different job |
-| Canonical store | **#22** | Rust `stream.rs` + `xy_stream_*`. Not npm, not crate split, not tile spill |
+| Canonical store | **#22** | Rust `stream.rs` + `xyg_stream_*`. Not npm, not crate split, not tile spill |
 | Host-neutral client | **#23** | Paint-client artifact + npm `@curatelabs/xyg` + Node `toHtml` + spec/README doors |
 | Phase-4 tile spill | **#5** → #7 (done), **#8**, **#9**, #10, #11 | Derived cache spill. Append = dirty *tiles*, not owning the f64 store |
 | Fork CI hygiene | #12, #15, #16, #21 | Not on this architecture critical path |
@@ -183,8 +183,8 @@ execute **#18** first.
 
 ### Phase 2 — Canonical store
 
-**#22** — `src/stream.rs` / `xy_stream_*`, thin hosts, in-RAM dirty tiles.
-After #18 if #18 has landed; otherwise in current `src/`.
+**#22** — `crates/xyg-engine/src/stream.rs` / `xyg_stream_*`, thin hosts,
+in-RAM dirty tiles. After #18 (this branch); still future — do not land here.
 
 ### Phase 3 — Phase-4 spill (existing epic #5)
 

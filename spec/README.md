@@ -1,14 +1,27 @@
 # Specification
 
-The root-level `spec/` directory is XY's engineering source of truth: intended
-behavior, architecture, compatibility, benchmarks, release readiness, and
-contributor contracts. The public documentation lives directly under `docs/`,
-while the Reflex application that renders it lives in `docs/app/`.
+The root-level `spec/` directory is XYG's engineering source of truth:
+intended behavior, architecture, compatibility, benchmarks, release readiness,
+and contributor contracts. The public documentation lives directly under
+`docs/`, while the Reflex application that renders it lives in `docs/app/`.
+
+**XYG** is an independent, GraphForge-oriented graph and data-visualization
+engine: Rust owns every decision that changes shipped buffers or recorded
+outcomes, Python and Node are thin host bindings over one native C ABI
+(`libxyg_core`), and the browser client is paint/pick/gesture/transport only.
+The project began as a fork of `reflex-dev/xy`; **XY** appears in this tree
+only as historical provenance, upstream comparison, inherited compatibility
+evidence, or license attribution. The canonical naming matrix and the staged
+identity migration live in [`design/xyg-naming.md`](design/xyg-naming.md).
 
 Keep this tree current with every relevant code, configuration, build, and
 release change. A change is incomplete while its affected specification is
 missing, stale, or inconsistent with the implementation; resolve discrepancies
 instead of treating the implementation alone as authoritative.
+
+**Install doors.** Python: `pip install xyg` (import remains `xy` until the
+staged `python/xyg/` cutover). JavaScript / browser: `npm install @curatelabs/xyg`.
+Node host: `npm install @curatelabs/xyg-node` (registry publish still #13).
 
 [`design-dossier.md`](design-dossier.md) is the entry point — the single
 compiled record of the design, the competitive research behind it, the
@@ -58,19 +71,30 @@ Internal architecture: how the engine is built and why.
   feels Reflex-shaped while keeping no Reflex dependency.
 - [`renderer-architecture.md`](design/renderer-architecture.md) — audit of the
   shipped WebGL2 render path plus the architecture it converges to.
-- [`rust-engine.md`](design/rust-engine.md) — what lives in Rust vs Python and
-  how the C-ABI/FFI seam evolves without rewrites.
+- [`rust-engine.md`](design/rust-engine.md) — the Rust workspace
+  (`crates/xyg-engine` + `crates/xyg-core`), what lives in Rust vs the hosts,
+  and how the C-ABI/FFI seam evolves without rewrites.
+- [`xyg-naming.md`](design/xyg-naming.md) — the locked XYG naming matrix, the
+  XY-vs-XYG usage policy, and the identity-migration order.
 - [`host-parity.md`](design/host-parity.md) — three runtime surfaces; Rust owns
   decisions; Python and Node stay thin loaders over one C ABI.
 - [`host-neutral-architecture.md`](design/host-neutral-architecture.md) —
   sequenced plan so Python exists only when the user is using Python: crate
   split (#18), `stream.rs` (#22), paint client `@curatelabs/xyg` (#23), Node
-  host `@curatelabs/xyg-node` replacing `@xy/node`. Tracking: GitHub #24.
+  host `@curatelabs/xyg-node` (never publish `@xy/node`). Tracking: GitHub #24.
 - [`view-state.md`](design/view-state.md) — the unified view-state layer:
   one serializable state object behind history, programmatic zoom/pan/select,
   axis-scoped gestures, and framework-owned tooltips.
 - [`wire-protocol.md`](design/wire-protocol.md) — the client↔Python message
   catalog, first-paint buffer layouts, and the version handshake.
+
+## abi/
+
+Machine-checkable C ABI contract for `libxyg_core`.
+
+- [`xyg-abi.json`](abi/xyg-abi.json) — **generated** from
+  `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`. Hosts are
+  checked against it by `scripts/check_abi_parity.py`; do not hand-edit.
 
 ## matplotlib/
 

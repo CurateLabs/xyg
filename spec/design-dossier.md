@@ -1,7 +1,27 @@
 # Building a Faster Charting Engine — Complete Design Dossier
 
 *A single compiled record of the design, the competitive research that validates it,
-the performance estimates, and the full audit trail. Python-only binding.*
+the performance estimates, and the full audit trail.*
+
+---
+
+## Product identity — XYG (read first)
+
+This dossier is the historical and technical core of **XYG**, an independent,
+GraphForge-oriented graph and data-visualization engine. The architecture has
+evolved past the original "Python-only binding" framing recorded below: today
+**Rust owns every decision** that changes shipped buffers, layouts, encodings,
+LOD/aggregation choices, or recorded §28 outcomes; **Python and Node are thin
+host bindings** over one native C ABI (`libxyg_core`, `crates/xyg-engine` +
+`crates/xyg-core` — see [design/rust-engine.md](design/rust-engine.md) and
+[design/host-parity.md](design/host-parity.md)); and the **browser client is
+paint/pick/gesture/transport only**. Where a section below says "Python owns"
+a buffer-affecting decision, the host-parity placement rule supersedes it.
+
+The project began as a fork of `reflex-dev/xy`; XY names in this document are
+provenance and remain valid as the historical record. The canonical naming
+matrix and migration order live in
+[design/xyg-naming.md](design/xyg-naming.md).
 
 ---
 
@@ -313,7 +333,7 @@ describe that target, not current behavior; see the shipped subset after them:
 - Colormapping (including perceptual/log scaling and dynamic-range normalization)
   happens at *composite* time on the aggregate values, so restyling never re-bins.
 
-*Shipped today (`src/tiles.rs`, `python/xy/interaction.py`):* a **single square count
+*Shipped today (`crates/xyg-engine/src/tiles.rs`, `python/xy/interaction.py`):* a **single square count
 pyramid**, not tiles. One trace-wide grid over the full data bounds whose finest level
 is `PYRAMID_BASE_DIM`² (2048², `python/xy/config.py`), each coarser level an exact 4→1
 u64 sum saturating to u32 down to 1². Built lazily on the first density view at
@@ -1175,11 +1195,12 @@ just less code — it relocates the heavy tiers:
   instead of round-tripping (this is exactly the VegaFusion DAG-partition idea: heavy
   nodes native, leaf render nodes in the browser).
 
-*Amendment (Phase 3, ABI 57):* "Python-only" was a decision about not
+*Amendment (Phase 3, ABI 58):* "Python-only" was a decision about not
 **reimplementing the engine** per language; it was never a cap on thin loaders
-over the one cdylib. The Node host (`packages/xy-node`, koffi over the same
-`libxy_core` C ABI) has since shipped and productized the Phase-3 pyramid
-(`packages/xy-node/src/pyramid.js` binds every `xy_pyramid_*` entry point), so
+over the one cdylib. The Node host (`packages/xy-node` / `@curatelabs/xyg-node`,
+koffi over the same `libxyg_core` C ABI) has since shipped and productized the
+Phase-3 pyramid (`packages/xy-node/src/pyramid.js` binds every `xyg_pyramid_*`
+entry point), so
 this section's consequences now read "host process" where they said "Python
 process": the kernel owns decimation/pyramids/paging/filtering in whichever
 host process holds the data, hosts stay thin, and the browser remains a render
@@ -1320,7 +1341,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   rather than provisioned through conda: keeping ~200 packages out of the
   mamba solve makes the image build faster and sidesteps observed extraction
   flakes on mybinder builder nodes.
-  `.binder/postBuild` installs the checkout with `XY_REQUIRE_CARGO=1`, making a
+  `.binder/postBuild` installs the checkout with `XYG_REQUIRE_CARGO=1`, making a
   missing native core fail during image construction rather than later at
   notebook import; if the source build breaks, the fallback is
   `pip install xy` (the published linux-64 wheel), losing only

@@ -10,14 +10,14 @@ dependencies = [
     "reflex-components-internal @ git+https://github.com/reflex-dev/reflex@main#subdirectory=packages/reflex-components-internal",
     "reflex-docgen @ git+https://github.com/reflex-dev/reflex@main#subdirectory=packages/reflex-docgen",
     "reflex-site-shared @ git+https://github.com/reflex-dev/reflex@main#subdirectory=packages/reflex-site-shared",
-    "xy[reflex]",
+    "xyg[reflex]",
 ]
 
 [dependency-groups]
 dev = ["codespell", "playwright==1.61.0", "pre-commit", "pytest", "ruff"]
 
 [tool.uv.sources]
-xy = { path = "../..", editable = true }
+xyg = { path = "../..", editable = true }
 
 [build-system]
 requires = ["hatchling"]

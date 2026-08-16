@@ -1,9 +1,10 @@
-# @xy/node
+# @curatelabs/xyg-node
 
-Thin Node.js bindings for the shared `xy_core` C ABI cdylib. Uses
-[`koffi`](https://koffi.dev/) to load the same `libxy_core.so` as Python
+Thin Node.js bindings for the shared `xyg_core` C ABI cdylib. Uses
+[`koffi`](https://koffi.dev/) to load the same `libxyg_core` artifact as Python
 `ctypes` — graph/Sankey layout and LOD decisions stay in Rust
-(`spec/design/host-parity.md`).
+(`spec/design/host-parity.md`). The in-tree directory stays `packages/xy-node`;
+never publish `@xy/node`.
 
 **Use from Node servers and VS Code extensions.** The package is
 runtime-dependency-light (koffi + the shared cdylib), exports a stable
@@ -23,13 +24,16 @@ cd packages/xy-node && npm ci && npm test
 
 ## Native library search order
 
-1. `XY_NATIVE_LIB` (absolute path to `libxy_core.so`)
-2. `../../target/release/libxy_core.so` (relative to this package)
-3. `process.cwd()/target/release/libxy_core.so`
+1. `XYG_NATIVE_LIB` (absolute path to `libxyg_core.so` / `.dylib` / `xyg_core.dll`)
+2. `packages/xy-node/_native_lib/<platform-lib>` (packaged)
+3. repo `target/{release,debug}/<platform-lib>`
+4. `process.cwd()/target/{release,debug}/<platform-lib>`
+
+Lookup never searches system library directories.
 
 ```bash
-XY_NATIVE_LIB=/path/to/libxy_core.so npm test
-XY_EXPECTED_ABI=57 npm test   # optional ABI golden override
+XYG_NATIVE_LIB=/path/to/libxyg_core.dylib npm test
+XYG_EXPECTED_ABI=58 npm test   # optional ABI golden override
 ```
 
 ## Paint client (HTML / webviews)
@@ -53,7 +57,7 @@ files). From a source checkout: `npm ci && node js/build.mjs` at the repo root.
 | `src/charts.js` | `*Chart` convenience constructors for all dual-host families |
 | `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`); `toHtml()` inlines `@curatelabs/xyg` standalone. Scatter **density tier** when `n ≥ SCATTER_DENSITY_THRESHOLD` (or `forceDensity`). Line M4 when over `DECIMATION_THRESHOLD`. Contour/errorbar/stem/mesh/ribbon/radar covered. |
 | `src/force_scheduler.js` | Progressive `force_tick` helper — default chunked `setImmediate` loop; `mode: "worker"` uses `worker_threads`. Node-host only (never browser main thread). |
-| `src/sankey.js` | Thin `composeSankey` over `xy_sankey_layout` → ribbon band polygons (link + node) |
+| `src/sankey.js` | Thin `composeSankey` over `xyg_sankey_layout` → ribbon band polygons (link + node) |
 | `src/vscode.js` | VS Code extension-host re-export + webview notes (`@curatelabs/xyg`, not the Python tree) |
 | `src/html.js` | `toHtml()` — self-contained HTML inlining host-neutral `standalone.js` |
 
@@ -61,10 +65,10 @@ Coverage matrix + LOD tiers: `spec/design/xy-coverage.md` and
 `spec/design/dual-host-parity.json`.
 
 ```js
-import { createEngine, runLayout, normalizeGraphInputs, abiVersion } from "@xy/node";
-// or: import { scatterChart, graphChart } from "@xy/node/charts";
-// or: import { runLayout } from "@xy/node/graph";
-// or: import { createEngine } from "@xy/node/vscode";
+import { createEngine, runLayout, normalizeGraphInputs, abiVersion } from "@curatelabs/xyg-node";
+// or: import { scatterChart, graphChart } from "@curatelabs/xyg-node/charts";
+// or: import { runLayout } from "@curatelabs/xyg-node/graph";
+// or: import { createEngine } from "@curatelabs/xyg-node/vscode";
 
 const data = normalizeGraphInputs(["a", "b", "c", "d"], [
   ["a", "b"], ["b", "c"], ["c", "d"], ["d", "a"],
@@ -85,7 +89,7 @@ console.log(abiVersion());
 ```bash
 cargo build --release
 cd packages/xy-node && npm ci
-XY_NATIVE_LIB=$PWD/../../target/release/libxy_core.so \\
+XYG_NATIVE_LIB=$PWD/../../target/release/libxyg_core.so \\
   uv run pytest tests/test_graph_node_parity.py -q
 # or from packages/xy-node:
 npm run golden:circle   # JSON positions + f32 hex for inspection
@@ -98,9 +102,9 @@ cargo build --release
 cd packages/xy-node && npm ci
 # optional: write fixtures for node unit tests
 uv run python packages/xy-node/test/fixtures/write_mark_fixtures.py
-XY_NATIVE_LIB=$PWD/../../target/release/libxy_core.so npm test
+XYG_NATIVE_LIB=$PWD/../../target/release/libxyg_core.so npm test
 # live Python↔Node goldens:
-XY_NATIVE_LIB=$PWD/target/release/libxy_core.so \\
+XYG_NATIVE_LIB=$PWD/../../target/release/libxyg_core.so \\
   uv run pytest tests/test_node_mark_parity.py -q
 npm run golden:marks   # JSON for inspection
 ```
@@ -115,7 +119,7 @@ import {
   radarChart,
   sankeyChart,
   graphChart,
-} from "@xy/node";
+} from "@curatelabs/xyg-node";
 
 const scatter = scatterChart(new Float64Array([0, 1]), new Float64Array([0, 1]));
 const dense = scatterChart(xs, ys, { forceDensity: true }); // Tier-2 density
@@ -130,7 +134,7 @@ const graph = graphChart(nodes, edges, { layout: "circle", seed: 1 });
 |---|---|
 | `createEngine()` | stable engine entry (`figure` alias) |
 | `toHtml()` / `Figure.toHtml()` | standalone HTML inlining `@curatelabs/xyg` (not `python/xy/static`) |
-| `abiVersion()` | `xy_abi_version` |
+| `abiVersion()` | `xyg_abi_version` |
 | `graphLayout` / `graphForce*` / `graphLod*` / `graphBuildRender` | layout + LOD + render graph |
 | `normalizeGraphInputs` / `runLayout` / `composeGraph` | host composition |
 | `composeScatter` … `composeRadar` / `composeSankey` | mark builders |

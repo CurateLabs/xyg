@@ -238,7 +238,9 @@ and tier discipline applies to them rather than a threshold.
 
 `.github/workflows/codspeed.yml` runs `pytest benchmarks/test_codspeed_*.py
 --codspeed` under `CodSpeedHQ/action` in `simulation` mode, after asserting
-`xy.kernels.BACKEND == "native"`. Simulation counts instructions rather than
+`xy.kernels.BACKEND == "native"`. The job authenticates to CodSpeed over
+OIDC (`id-token: write`); it does not read a `CODSPEED_TOKEN` repository
+secret. Simulation counts instructions rather than
 wall time, so browser, install, and cross-library process benchmarks stay out of
 it — those live in `benchmark-refresh.yml`, and the workflow says so inline.
 

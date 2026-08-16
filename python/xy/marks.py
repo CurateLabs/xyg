@@ -997,7 +997,7 @@ def _distribution_groups(
 
 
 def _distribution_stats(group: np.ndarray) -> tuple[float, float, float, float, float, np.ndarray]:
-    """Tukey box stats via Rust (`xy_box_stats`); geometry assembly stays here."""
+    """Tukey box stats via Rust (`xyg_box_stats`); geometry assembly stays here."""
     arr = np.asarray(group, dtype=np.float64)
     return kernels.box_stats(arr)
 
@@ -1191,12 +1191,11 @@ def _bar_like(
         from . import kernels
 
         # Width may be scalar or per-category; Rust broadcasts length-1.
+        # ``np.isscalar`` does not narrow ``float | ndarray`` for ty.
         width_for_native: float | np.ndarray = (
-            float(width_values)
-            if np.isscalar(width_values)
-            else np.asarray(width_values, dtype=np.float64)
+            width_values if isinstance(width_values, np.ndarray) else float(width_values)
         )
-        # Offsets (grouped / stacked / normalized) live in xy_bar_stack so
+        # Offsets (grouped / stacked / normalized) live in xyg_bar_stack so
         # Python and Node share one layout decision (§28 / dual-host).
         x0s, x1s, y0s, y1s = kernels.bar_stack(
             pos,
@@ -2384,7 +2383,7 @@ def violin(
     """Add bounded-resolution violin distributions.
 
     Density estimation is a smoothed histogram computed once in the native
-    core (`xy_violin_density`); each group ships its fixed ``bins``-sized
+        core (`xyg_violin_density`); each group ships its fixed ``bins``-sized
     band set. The client draws the bands through the shared instanced
     rectangle path, so input cardinality does not become DOM/GPU object
     cardinality.
@@ -2471,7 +2470,7 @@ def hexbin(
 ) -> "Figure":
     """Add a screen-bounded hexagonal density plot.
 
-    Binning is performed by the native ``xy_hexbin`` kernel (count / mean /
+    Binning is performed by the native ``xyg_hexbin`` kernel (count / mean /
     sum). Custom ``reduce_C_function`` callables fall back to a host reduce
     over the same lattice. Only threshold-passing bins are shipped as centers
     plus one scalar count/color channel.
@@ -2558,7 +2557,7 @@ def hexbin(
         if len(counts) == 0:
             raise ValueError("hexbin range contains no finite points")
     else:
-        # Custom reducers: same lattice assignment as ``xy_hexbin``, host reduce.
+        # Custom reducers: same lattice assignment as ``xyg_hexbin``, host reduce.
         fx = (xv - xr[0]) * w / (xr[1] - xr[0])
         fy = (yv - yr[0]) * h / (yr[1] - yr[0])
         ix1 = np.rint(fx).astype(np.int64)
@@ -2613,7 +2612,7 @@ def hexbin(
         )
         if not len(metric):
             raise ValueError("hexbin logarithmic colors require at least one positive cell value")
-        colorbar_domain = (float(metric.min()), float(metric.max()))
+        colorbar_domain = (float(np.min(metric)), float(np.max(metric)))
         metric = np.log(metric)
     else:
         colorbar_domain = None

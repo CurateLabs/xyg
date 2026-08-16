@@ -30,24 +30,24 @@ Install ergonomics, by audience (design dossier §33):
   never a silent clientless distribution.
 
 Env switches:
-- `XY_SKIP_CARGO=1` — don't invoke cargo; use an already-built lib if
+- `XYG_SKIP_CARGO=1` — don't invoke cargo; use an already-built lib if
   present, else build pure-Python. (Used when an earlier CI step prebuilt it.)
-- `XY_REQUIRE_CARGO=1` — the native core MUST end up in the wheel; a
+- `XYG_REQUIRE_CARGO=1` — the native core MUST end up in the wheel; a
   missing toolchain or failed build is an error. CI wheel builds set this so a
   published wheel never silently ships without the core.
-- `XY_SKIP_NODE=1` — don't invoke node and don't require the client; use an
+- `XYG_SKIP_NODE=1` — don't invoke node and don't require the client; use an
   already-built JS bundle if present, else ship without it. The opt-out from the
   default "client is required" rule, for a step that prebuilt the bundle (or a
-  deliberately client-less build). Symmetric with XY_SKIP_CARGO.
-- `XY_CARGO_TARGET=<triple>` — cross-compile the core for a Rust target
+  deliberately client-less build). Symmetric with XYG_SKIP_CARGO.
+- `XYG_CARGO_TARGET=<triple>` — cross-compile the core for a Rust target
   triple (e.g. `aarch64-unknown-linux-musl`, `aarch64-pc-windows-msvc`). The
   built lib is looked for under `target/<triple>/release/` instead of
   `target/release/`; if the crate's cdylib doesn't land under the host's usual
   suffix there (e.g. `wasm32-unknown-emscripten` isn't a `.so`), the target's
-  release dir is scanned for whatever `xy_core.*` artifact cargo
+  release dir is scanned for whatever `xyg_core.*` artifact cargo
   actually produced, rather than assuming one fixed filename. The release
   matrix sets this to reach every platform in one CI run.
-- `XY_WHEEL_PLATFORM=<tag>` — override the wheel's platform tag (e.g.
+- `XYG_WHEEL_PLATFORM=<tag>` — override the wheel's platform tag (e.g.
   `musllinux_1_2_aarch64`, `win_arm64`). Cross-compiled builds need this because
   the build host's `sysconfig.get_platform()` describes the host, not the target.
 
@@ -76,15 +76,22 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 def _lib_filename(target: Optional[str] = None) -> str:
     # Cargo emits an Emscripten cdylib as `.wasm`, but Pyodide's dynamic loader
     # follows the Unix extension-module convention and ctypes looks for `.so`.
-    # Choose that wheel-internal destination from the *target*, not the build
-    # host (cibuildwheel supports both Linux and macOS hosts).
-    if target == "wasm32-unknown-emscripten":
-        return "libxy_core.so"
+    # Prefer the *target triple* so a macOS/Linux cibuildwheel host packing a
+    # Windows or Darwin cross-build writes the filename that host will load.
+    if target:
+        parts = set(target.split("-"))
+        if "emscripten" in parts:
+            return "libxyg_core.so"
+        if "windows" in parts:
+            return "xyg_core.dll"
+        if "apple" in parts:
+            return "libxyg_core.dylib"
+        return "libxyg_core.so"
     if sys.platform == "win32":
-        return "xy_core.dll"
+        return "xyg_core.dll"
     if sys.platform == "darwin":
-        return "libxy_core.dylib"
-    return "libxy_core.so"
+        return "libxyg_core.dylib"
+    return "libxyg_core.so"
 
 
 _CDYLIB_SUFFIXES = (".so", ".dylib", ".dll", ".wasm")
@@ -102,7 +109,7 @@ def _find_cross_compiled_lib(release_dir: Path) -> Optional[Path]:
     candidates = sorted(
         p
         for p in release_dir.iterdir()
-        if p.is_file() and "xy_core" in p.stem and p.suffix in _CDYLIB_SUFFIXES
+        if p.is_file() and "xyg_core" in p.stem and p.suffix in _CDYLIB_SUFFIXES
     )
     return candidates[0] if candidates else None
 
@@ -121,14 +128,14 @@ def _platform_tag() -> str:
     # e.g. linux_x86_64, macosx_11_0_arm64, win_amd64. CI repairs linux wheels
     # to manylinux/musllinux after the build. Cross-compiled builds can't infer
     # the target from the host, so an explicit override wins when set.
-    override = os.environ.get("XY_WHEEL_PLATFORM")
+    override = os.environ.get("XYG_WHEEL_PLATFORM")
     if override:
         return override.replace("-", "_").replace(".", "_")
     return sysconfig.get_platform().replace("-", "_").replace(".", "_")
 
 
 def _cargo_target() -> Optional[str]:
-    target = os.environ.get("XY_CARGO_TARGET", "").strip()
+    target = os.environ.get("XYG_CARGO_TARGET", "").strip()
     return target or None
 
 
@@ -173,8 +180,8 @@ class CustomBuildHook(BuildHookInterface):
         # by default — every wheel/sdist must ship it (unlike the optional
         # native core; `verify_wheel.py` enforces the client in pure wheels too)
         # — so a build that can't produce it fails loudly instead of shipping a
-        # broken distribution. XY_SKIP_NODE=1 opts out (prebuilt-bundle steps).
-        self._provision_js(root, require=os.environ.get("XY_SKIP_NODE") != "1")
+        # broken distribution. XYG_SKIP_NODE=1 opts out (prebuilt-bundle steps).
+        self._provision_js(root, require=os.environ.get("XYG_SKIP_NODE") != "1")
 
         # The native core is a wheel-only, per-platform artifact.
         if self.target_name != "wheel":
@@ -183,7 +190,7 @@ class CustomBuildHook(BuildHookInterface):
         lib_name = _lib_filename(_cargo_target())
         dest_dir = root / "python" / "xy" / "_native_lib"
         dest = dest_dir / lib_name
-        require = os.environ.get("XY_REQUIRE_CARGO") == "1"
+        require = os.environ.get("XYG_REQUIRE_CARGO") == "1"
 
         native_src = self._provision_native(root, lib_name, dest, require)
 
@@ -228,7 +235,7 @@ class CustomBuildHook(BuildHookInterface):
           provisions the dev-only toolchain (vite/tsc) when it isn't installed.
 
         A missing Python copy that cannot be built is a hard error by default
-        (the client is required in every distribution); only XY_SKIP_NODE=1
+        (the client is required in every distribution); only XYG_SKIP_NODE=1
         downgrades that to a loud skip, in which case the widget/export path
         raises a clear runtime error on first use (see `xy.widget`, `xy.export`).
         """
@@ -248,7 +255,7 @@ class CustomBuildHook(BuildHookInterface):
         # bundle-stripped tree with no sources).
         build_script = root / "js" / "build.mjs"
         if (
-            os.environ.get("XY_SKIP_NODE") != "1"
+            os.environ.get("XYG_SKIP_NODE") != "1"
             and build_script.is_file()
             and shutil.which("node")
         ):
@@ -266,7 +273,7 @@ class CustomBuildHook(BuildHookInterface):
                 "bundles are missing and could not be built. Install Node "
                 "(https://nodejs.org) so the hook can run `npm ci && "
                 "node js/build.mjs`, install from a published wheel/sdist that "
-                "already carries them, or set XY_SKIP_NODE=1 to build without the "
+                "already carries them, or set XYG_SKIP_NODE=1 to build without the "
                 "client (the widget and HTML export will then be unavailable)."
             )
         print(
@@ -324,7 +331,7 @@ class CustomBuildHook(BuildHookInterface):
             if target
             else root / "target" / "release" / lib_name
         )
-        if os.environ.get("XY_SKIP_CARGO") == "1":
+        if os.environ.get("XYG_SKIP_CARGO") == "1":
             if dest.exists():
                 return dest
             resolved = _resolve_built(built, target)
@@ -332,8 +339,8 @@ class CustomBuildHook(BuildHookInterface):
                 return resolved
             if require:
                 raise RuntimeError(
-                    f"XY_REQUIRE_CARGO=1 and XY_SKIP_CARGO=1 but "
-                    f"neither {dest} nor {built} exists, and no xy_core.* "
+                    f"XYG_REQUIRE_CARGO=1 and XYG_SKIP_CARGO=1 but "
+                    f"neither {dest} nor {built} exists, and no xyg_core.* "
                     f"artifact was found in {built.parent} — prebuild the core "
                     "before this step."
                 )
@@ -342,7 +349,7 @@ class CustomBuildHook(BuildHookInterface):
         if shutil.which("cargo") is None:
             if require:
                 raise RuntimeError(
-                    "XY_REQUIRE_CARGO=1 but cargo is not on PATH — a "
+                    "XYG_REQUIRE_CARGO=1 but cargo is not on PATH — a "
                     "published wheel must contain the native core."
                 )
             return None  # graceful: pure-Python wheel
@@ -362,7 +369,7 @@ class CustomBuildHook(BuildHookInterface):
             if require:
                 raise RuntimeError(
                     f"cargo build succeeded but {built} is missing, and no "
-                    f"xy_core.* artifact was found in {built.parent}"
+                    f"xyg_core.* artifact was found in {built.parent}"
                 )
             return None
         return resolved

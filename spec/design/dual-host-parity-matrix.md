@@ -9,7 +9,7 @@ mental model in [graph-mark.md](graph-mark.md) §1, and the placement rule in
 **Architecture principle:** GraphForge/canonical → Rust (layout, viewport,
 graph LOD, edge LOD, encode, **render-graph emission**, and all other mark
 decisions) → bounded §29 buffers → shared WebGL browser client (**paint only**).
-Both hosts are thin loaders over the same `libxy_core` C ABI; neither
+Both hosts are thin loaders over the same `libxyg_core` C ABI; neither
 reimplements LOD, force, or encode. The browser client never reimplements
 layout/LOD/encode for the product path.
 
@@ -43,9 +43,9 @@ runtime may still be landing).
 | --- | --- | --- | --- | --- |
 | GraphForge / canonical ingest helpers | design / partial | design / partial | Same mark buffers | Optional; never the only path ([graph-fork-requirements.md](graph-fork-requirements.md) REQ-API-3) |
 | Dense `u64` indices + f64 columns | required | required | Host→Rust pointers | No `u32` element identity |
-| Layout (preset/grid/circle/force/…) | Rust ABI | Rust ABI | `xy_graph_layout` / force handle | Seeded FR goldens bit-identical |
-| Force ticks (progressive) | Host schedules | Host schedules | `xy_graph_force_*` | **Never browser main-thread decisions**; Barnes–Hut/grid approx at scale |
-| Viewport + graph LOD + edge LOD | Rust | Rust | `xy_graph_lod_*` / cluster / sample | Recorded §28; Rust emits render graph |
+| Layout (preset/grid/circle/force/…) | Rust ABI | Rust ABI | `xyg_graph_layout` / force handle | Seeded FR goldens bit-identical |
+| Force ticks (progressive) | Host schedules | Host schedules | `xyg_graph_force_*` | **Never browser main-thread decisions**; Barnes–Hut/grid approx at scale |
+| Viewport + graph LOD + edge LOD | Rust | Rust | `xyg_graph_lod_*` / cluster / sample | Recorded §28; Rust emits render graph |
 | Encode → §29 f32 | Rust | Rust | Same binary payloads | Offset-encoded; no JSON numbers |
 | Shared WebGL browser paint | shared client | shared client | `GLHost` (dossier §18) | Paint / pick / gestures only; no raw V/E past direct tier |
 

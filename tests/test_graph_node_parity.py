@@ -1,4 +1,4 @@
-"""Bit-identical 4-node circle layout parity: Python host vs @xy/node.
+"""Bit-identical 4-node circle layout parity: Python host vs @curatelabs/xyg-node.
 
 Shells ``node packages/xy-node/scripts/circle_layout_golden.mjs`` and compares
 f64 positions (and §29 f32 encodings) against ``xy._graph.run_layout``.
@@ -7,7 +7,7 @@ Run::
 
     cargo build --release
     cd packages/xy-node && npm ci   # once
-    XY_NATIVE_LIB=$PWD/target/release/libxy_core.so \\
+    XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.dylib \\
       uv run pytest tests/test_graph_node_parity.py -q
 """
 
@@ -29,7 +29,19 @@ from xy.lod import encode_f32_values
 
 ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "circle_layout_golden.mjs"
-LIB = ROOT / "target" / "release" / "libxy_core.so"
+
+
+def _native_lib() -> Path:
+    if sys.platform == "win32":
+        name = "xyg_core.dll"
+    elif sys.platform == "darwin":
+        name = "libxyg_core.dylib"
+    else:
+        name = "libxyg_core.so"
+    return ROOT / "target" / "release" / name
+
+
+LIB = _native_lib()
 
 
 def _node_bin() -> str:
@@ -43,10 +55,10 @@ def node_circle_golden() -> dict:
     if not NODE_SCRIPT.is_file():
         pytest.skip(f"missing {NODE_SCRIPT}")
     if not LIB.is_file():
-        pytest.skip("libxy_core.so missing; run `cargo build --release`")
+        pytest.skip(f"{LIB.name} missing; run `cargo build --release`")
 
     env = os.environ.copy()
-    env.setdefault("XY_NATIVE_LIB", str(LIB))
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
     proc = subprocess.run(
         [_node_bin(), str(NODE_SCRIPT)],
         check=False,
@@ -126,7 +138,7 @@ const out = {
 process.stdout.write(JSON.stringify(out));
 """
     env = os.environ.copy()
-    env.setdefault("XY_NATIVE_LIB", str(LIB))
+    env.setdefault("XYG_NATIVE_LIB", str(LIB))
     proc = subprocess.run(
         [_node_bin(), "--input-type=module", "-e", script],
         check=False,

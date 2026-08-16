@@ -39,7 +39,7 @@ runtime once the Python packages are installed.
 
 ## JupyterLite and Pyodide (WASM Kernels)
 
-XY publishes a Pyodide/Emscripten wheel, so `%pip install xy` works in a
+XY publishes a Pyodide/Emscripten wheel, so `%pip install xyg` works in a
 JupyterLite notebook. Hosted deployments with a prebuilt frontend — for
 example [try Jupyter](https://jupyter.org/try-jupyter/lab/) — cannot load the
 `anywidget` frontend extension at runtime, because `%pip` installs only the

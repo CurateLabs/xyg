@@ -21,6 +21,10 @@ jobs:
   bazel:
     name: Bazel graph MVP
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    env:
+      # Blacksmith sticky disks own ~/.cache (bazelisk/disk/repo). uv must
+      # not try to create ~/.cache/uv there — that path is not writable.
+      UV_CACHE_DIR: ${{ runner.temp }}/uv-cache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,7 +61,7 @@ jobs:
         working-directory: packages/xy-node
 
       - name: Bazel build release cdylib
-        run: ./bazel build //:xy_core
+        run: ./bazel build //:xyg_core
 
       - name: Bazel test graph MVP
         run: ./bazel test //:graph_mvp_tests

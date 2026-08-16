@@ -32,7 +32,7 @@ screen-bounded performance core, but the stable commitments today are narrower:
   the compute layer then raises a clear, actionable error naming the supported
   platforms — there is no NumPy fallback), whereas the render client is **required
   by default** — a from-source build that can neither find nor build the bundle
-  fails loudly rather than producing a client-less distribution. `XY_SKIP_NODE=1`
+  fails loudly rather than producing a client-less distribution. `XYG_SKIP_NODE=1`
   opts out for a deliberately client-less build (the widget and HTML export then
   raise a clear error on first use).
 - Standalone HTML exports embed the same render client and data payloads used
@@ -81,7 +81,7 @@ These must pass before publishing.
 | Python tests | Native backend passes | `pytest -q` |
 | Python style | Library, tests, scripts, and benchmarks lint clean | `ruff check .` and `ruff format --check .` |
 | Matplotlib reference | The reviewed compatibility snapshot matches the pinned released matplotlib reference, and the `xy.pyplot` shim passes its interoperability and dual-engine corpus suites | `python scripts/sync_matplotlib_compat.py --check` and `pytest tests/pyplot` |
-| Rust core | Native kernels pass and lint clean | `cargo test` and `cargo clippy --all-targets -- -D warnings` |
+| Rust core | Native kernels pass and lint clean | `cargo test --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` |
 | Native ABI | C ABI can be loaded from the built core | `python scripts/abi_smoke.py` |
 | JavaScript | Render client builds cleanly from source | `node js/build.mjs` |
 | Browser render | WebGL smoke reaches real pixels | `python scripts/render_smoke_nonumpy.py <chromium>` |
@@ -339,34 +339,36 @@ normalized by the version derivation and could never match their own built
 artifacts. A pre-release needs its own dated changelog entry, exactly like a
 final release.
 
-The repository has one release line: the `xy` distribution, including its
+The repository has one release line: the `xyg` distribution, including its
 bundled `reflex_xy` integration, ships from `vX.Y.Z` tags through
-`release.yml`. The `xy[reflex]` extra is dependency metadata in those same
-artifacts, not another package or release.
+`publish.yaml`. The `xyg[reflex]` extra is dependency metadata in those same
+artifacts, not another package or release. Python import remains `import xy`
+until the staged `python/xyg/` cutover in [xyg-naming.md](../design/xyg-naming.md).
 
-### Fork release posture (CurateLabs/graphforge-xy, issue #13)
+### Fork release posture (CurateLabs/xyg, issue #13)
 
 This repository is CurateLabs' permanently divergent fork of `reflex-dev/xy`.
-The distribution is still named `xy` — **upstream's PyPI package** — so this
-fork must not be able to publish, and `release.yml` enforces that in layers
-rather than relying on PyPI's trusted-publishing rejection:
+The Python distribution is **`xyg`** — not upstream's PyPI package `xy`.
+`.github/workflows/publish.yaml` (filename required by the PyPI trusted
+publisher) publishes only from tagged releases, with layered guards:
 
 - **Repository guard.** The publish job carries
-  `if: github.repository == 'CurateLabs/graphforge-xy'`, so no other slug
-  (including forks or mirrors of this fork) reaches the publish job at all.
-- **Fork publish guard.** A step ahead of the upload fails any *real* publish
-  attempt — tag push or non-dry-run dispatch — whenever an artifact in
-  `dist/` carries the distribution name `xy`. This guard is independent of
-  tags, repository variables, and environments: while the fork keeps
-  upstream's distribution name, a version tag builds and verifies every
-  artifact and then fails loudly at this step. Dry-run dispatches pass it so
-  the cross-compile matrix stays verifiable.
+  `if: github.repository == 'CurateLabs/xyg'`, so no other slug
+  (including forks or mirrors) reaches the publish job at all.
+- **Publish-name guard.** A step ahead of the upload fails any *real* publish
+  attempt — tag push or non-dry-run dispatch — unless every artifact in
+  `dist/` is named `xyg`, and it still refuses upstream's `xy`. Dry-run
+  dispatches skip the check so the cross-compile matrix stays verifiable.
+- **GitHub environment.** The publish job uses environment `pypi` (no
+  required reviewers) so OIDC trusted publishing can mint a token bound to
+  that environment name.
 - **Publish opt-in.** The upload step itself additionally requires the
-  `XY_ALLOW_PYPI_PUBLISH` repository variable to equal `'true'`. The variable
-  does not exist by default, so even after a future distribution rename a
-  deliberate opt-in is needed before anything is uploaded.
+  `XYG_ALLOW_PYPI_PUBLISH` repository variable to equal `'true'`. The variable
+  does not exist by default, so a version tag builds and verifies artifacts
+  but does not upload until that opt-in is set. The first successful upload
+  claims the pending PyPI project `xyg`.
 
-`scripts/verify_ci_workflow.py` (`make check-ci`) pins all three guards, and
+`scripts/verify_ci_workflow.py` (`make check-ci`) pins these guards, and
 `tests/test_verify_ci_workflow.py` covers their removal.
 
 **Versioning decision.** The fork keeps dunamai's default `v*` tag pattern and
@@ -377,26 +379,25 @@ Inherited upstream tags (`v0.0.1`–`v0.0.6a2`, the docs CalVer tags, and
 `reflex-xy-v0.0.1`/`v0.0.2`) were **not** pruned from `origin` — tag deletion
 is destructive and needs an owner decision. Re-baselining the fork's own
 version line (first fork tag, or a fork-specific
-`tool.uv-dynamic-versioning.pattern`) is deferred until the distribution-name
-decision below is made, since a fork release under the `xy` name is blocked
-regardless.
+`tool.uv-dynamic-versioning.pattern`) remains an owner decision before the
+first `xyg` upload.
 
-**Deferred owner decisions** (tracked in issue #13):
+**Remaining owner decisions** (tracked in issue #13):
 
-- *Distribution rename.* Publishing anywhere requires a fork-specific
-  distribution name (e.g. `graphforge-xy`) or a private index. The rename is
-  not merely `pyproject.name`: `python/xy/_load_version`,
-  `python/reflex_xy/_load_version`, and the release/CI smoke checks resolve
-  the distribution `xy` via `importlib.metadata`, and the same question
-  applies to the `@curatelabs/xyg-node` npm package (replacing in-tree
-  `@xy/node`; do not publish `@xy/node`) and the `xyg-core` crate. Paint
-  client npm name is `@curatelabs/xyg`. See
-  [host-neutral-architecture.md](../design/host-neutral-architecture.md)
-  and issues #13 / #18 / #23 / #24.
 - *Tag pruning.* Whether the inherited upstream tags stay on `origin`
-  (harmless while the publish guards hold) or are deleted.
-- *Re-baseline tag.* The fork's first own version tag, once the name is
-  chosen.
+  or are deleted.
+- *Re-baseline tag.* The fork's first own version tag (`v0.1.0` or similar)
+  before claiming the pending PyPI project. Set `XYG_ALLOW_PYPI_PUBLISH=true`
+  only when ready to upload; do not fire a production publish from an
+  untagged CI run.
+- *npm registry publish* of `@curatelabs/xyg` and `@curatelabs/xyg-node`
+  (packages remain `"private": true` until that ships). Never publish
+  `@xy/node`.
+
+Python import `xy` / `python/xy/` is still the in-tree namespace; the
+distribution name and `importlib.metadata` lookups are `xyg`. The clean-break
+`import xyg` / `python/xyg/` / `reflex_xyg` cutover stays staged after this
+crate split per [xyg-naming.md](../design/xyg-naming.md).
 
 Before tagging a release:
 
@@ -426,11 +427,11 @@ Before tagging a release:
   `pyemscripten_2026_0` wheel ABI, and Pyodide 314.0.0. The abort strategy keeps
   Rust panics from unwinding across the Python/`ctypes` C ABI boundary.
   `scripts/pyodide_load_smoke.py` installs the exact built artifact with
-  micropip, loads the C ABI through `ctypes`, verifies `xy_abi_version`, and
+  micropip, loads the C ABI through `ctypes`, verifies `xyg_abi_version`, and
   calls the native `min_max` kernel. PEP 783 platform tags are accepted by
   PyPI, so the runtime-verified wheel joins the same trusted-publishing batch
   as the native wheels and sdist; Pyodide 314 users can install it with
-  `await micropip.install("xy")`. The wasm job is release-blocking so an ABI or
+  `await micropip.install("xyg")`. The wasm job is release-blocking so an ABI or
   toolchain drift cannot silently ship a build-only, unloadable artifact.
 - Confirm the no-Rust install job passed (it must build, install, and then
   raise a clear ImportError on first compute — never a silent fallback).
@@ -444,7 +445,7 @@ Before tagging a release:
   and its install smoke loads `xy.kernels.BACKEND == "native"`. Confirm the
   fallback `py3-none-any` wheel passes `--expect-pure` and fails compute with
   the documented native-core error. Wheel
-  `METADATA` must keep `Name: xy`, `Requires-Python: >=3.11`,
+  `METADATA` must keep `Name: xyg`, `Requires-Python: >=3.11`,
   `anywidget>=0.9`, and `numpy>=1.24` as base requirements, plus
   `Provides-Extra: reflex` and `reflex>=0.9.6` guarded by that extra. The wheel
   must contain `reflex_xy` and `XYChart.jsx`, and `RECORD` must list every
@@ -471,7 +472,7 @@ Keep pushing these in low-conflict increments:
 - Keep weird-string export tests covering every text surface added to the
   public API, including titles, labels, legends, categories, and series names.
 - Styling arguments (colors, gradient stops, `style=` declarations) are gated
-  by the native CSS grammar (`src/css.rs`; `tests/test_css_validation.py`) —
+  by the native CSS grammar (`crates/xyg-engine/src/css.rs`; `tests/test_css_validation.py`) —
   route any new mark/chrome styling prop through `_validate.css_color` or
   `style_mapping` so no styling surface bypasses it.
 - Keep benchmark environment metadata and category IDs on every new generated report.

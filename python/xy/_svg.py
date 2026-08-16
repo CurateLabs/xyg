@@ -2206,7 +2206,7 @@ def _y_tick_label_room(axis: dict[str, Any], plot_h: float) -> tuple[float, floa
     """(offset from the spine, widest tick-label extent) for a y axis, in px.
 
     Measured from the advance widths of the strings that will actually be drawn,
-    using the same DejaVu metrics the Rust rasterizer blits (`src/font.rs`) —
+    using the same DejaVu metrics the Rust rasterizer blits (`crates/xyg-engine/src/font.rs`) —
     which is also Matplotlib's default face, so an advance measured here is the
     advance Matplotlib lays out.
     """
@@ -6261,7 +6261,7 @@ def _legend_text_width(value: Any, char_width: float = _LEGEND_CHAR_WIDTH) -> fl
     three times the width of its ``l`` — so ``"gamma"`` really sets 42.6 px at
     11 px against a 31.0 px estimate, and a frame sized from the estimate was
     narrower than its own labels. Advances come from the same face the native
-    rasterizer blits (``_fontmetrics``, generated beside ``src/font.rs`` by
+    rasterizer blits (``_fontmetrics``, generated beside ``crates/xyg-engine/src/font.rs`` by
     ``scripts/gen_font.py``), which is what makes a frame sized from this
     actually contain the text the SVG and raster emitters draw. It is also what
     the browser does natively, sizing each legend column to ``max-content``.
