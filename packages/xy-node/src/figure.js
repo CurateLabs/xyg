@@ -27,6 +27,7 @@ import {
   geometryOffset,
   m4Points,
   minMax,
+  normalizeF32,
   pinsOffsetToZero,
   shouldUseDensity,
 } from "./encode.js";
@@ -102,6 +103,18 @@ export class PayloadWriter {
       kind: col.kind,
     });
     return this._append(encoded, meta);
+  }
+
+  /**
+   * Raw f32 column already in final units (no offset) — size/color channels.
+   * @param {Float32Array|ArrayLike<number>} values
+   */
+  shipScalar(values) {
+    const enc =
+      values instanceof Float32Array
+        ? values
+        : Float32Array.from(values, (v) => Number(v));
+    return this._append(enc, {});
   }
 
   /**
@@ -703,7 +716,7 @@ export class Figure {
     const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
     t._xCol = xCol;
     t._yCol = yCol;
-    return {
+    const entry = {
       id: t.id,
       kind: "scatter",
       name: t.name,
@@ -716,6 +729,25 @@ export class Figure {
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
+    const color = this._shipColor(t.color, pw);
+    if (color != null) entry.color = color;
+    if (t.sizeValues != null) {
+      const values = t.sizeValues instanceof Float64Array
+        ? t.sizeValues
+        : Float64Array.from(t.sizeValues, Number);
+      const mm = minMax(values) ?? [0, 1];
+      const lo = mm[0];
+      const hi = mm[0] === mm[1] ? mm[0] + 1 : mm[1];
+      const norm = normalizeF32(values, lo, hi);
+      entry.size = {
+        mode: "continuous",
+        range_px: t.sizeRange ?? [8, 22],
+        domain: [lo, hi],
+        buf: pw.shipScalar(norm),
+      };
+    }
+    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    return entry;
   }
 
   /**
@@ -860,7 +892,7 @@ export class Figure {
     const x1 = new Column(t.x1);
     const y0 = new Column(t.y0);
     const y1 = new Column(t.y1);
-    return {
+    const entry = {
       id: t.id,
       kind: t.kind ?? "segments",
       name: t.name,
@@ -875,6 +907,10 @@ export class Figure {
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
+    const color = this._shipColor(t.color, pw);
+    if (color != null) entry.color = color;
+    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    return entry;
   }
 
   _emitTriangleMesh(t, pw) {

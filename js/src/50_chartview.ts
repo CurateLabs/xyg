@@ -3929,6 +3929,10 @@ export class ChartView {
       color: [0.3, 0.47, 0.66, 1],
       xAxis: typeof t.x_axis === "string" ? t.x_axis : "x",
       yAxis: typeof t.y_axis === "string" ? t.y_axis : "y",
+      // Semantic hover rows (graph node/edge props, Sankey bands, …). Set once
+      // for every mark so standalone `_localRow` can merge them; ribbons also
+      // assign this in `_buildRibbonMark` (same value).
+      tooltipRows: Array.isArray(t.tooltip_rows) ? t.tooltip_rows : null,
     };
 
     if (t.tier === "density") {
@@ -7822,7 +7826,9 @@ export class ChartView {
   }
 
   _hoverAt(cssX, cssY) {
-    const maxPx = 12;
+    // Graphs need a wider segment pick radius — edges are thin strokes and
+    // otherwise lose every near-tie to empty space (graph-mark.md §7).
+    const maxPx = Array.isArray(this._graphs) && this._graphs.length ? 22 : 12;
     let best = null;
     const polarGeom = this._polarGeometry();
     for (const g of this.gpuTraces) {
