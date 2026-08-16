@@ -1,0 +1,16 @@
+[package]
+name = "xyg-engine"
+version = "0.1.0"
+edition = "2021"
+description = "Safe XYG engine: algorithms and deterministic product policy"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "xyg_engine"
+
+# Static chart export uses the focused `png` crate's fdeflate fast path;
+# compression belongs beside rasterization so the hot path never round-trips
+# a full framebuffer through a host language.
+[dependencies]
+png = "0.18.1"

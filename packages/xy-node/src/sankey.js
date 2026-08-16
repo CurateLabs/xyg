@@ -1,5 +1,5 @@
 /**
- * Thin Sankey composition over `xy_sankey_layout` (host-parity.md).
+ * Thin Sankey composition over `xyg_sankey_layout` (host-parity.md).
  * Emits link + node ribbons (Python parity): gradient flow bands, not midlines.
  */
 

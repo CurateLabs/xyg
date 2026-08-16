@@ -60,7 +60,7 @@ test("composeGraph + figure.buildPayload protocol subset", () => {
   assert.equal(spec.graph[0].layout, "circle");
   assert.ok(Buffer.isBuffer(buffers));
   assert.ok(buffers.length > 0);
-  // columns carry offset/scale from xy_encode_f32
+  // columns carry offset/scale from xyg_encode_f32
   assert.ok(spec.columns.every((c) => typeof c.offset === "number"));
 });
 

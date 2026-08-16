@@ -834,6 +834,7 @@ impl ForceState {
         }
     }
 
+    #[allow(clippy::needless_range_loop)] // indexes x/y/cell_of together; force math stays scalar
     fn apply_repulsion_grid_bh(&self, fx: &mut [f64], fy: &mut [f64], mass_scale: f64) {
         let n = self.n;
         let k2 = self.k * self.k * mass_scale;

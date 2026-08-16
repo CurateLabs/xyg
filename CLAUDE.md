@@ -39,14 +39,15 @@ control.
 
 ## Layout
 
-- `src/` — Rust core, **minimal external crates** (C ABI; one cdylib per
-  platform serves every CPython version). Dependencies are allowed when they
-  pay for themselves (measured win, small tree, well-maintained) — minimize,
-  don't prohibit. Caveat: crates.io is unreachable from the dev sandbox, so a
-  required crate must be vendored (`cargo vendor`) or the sandbox loses the
-  ability to build/test the core; prefer feature-gated optional deps. Bump
-  `ABI_VERSION` in `src/lib.rs` *and* `python/xy/_native.py` together
-  on any signature change.
+- `crates/xyg-engine/` — safe Rust algorithms and deterministic product policy
+  (column/LOD/geometry/graph/raster). **Minimal external crates**; `png` lives
+  beside rasterization. `crates/xyg-core/` is the C ABI cdylib (`libxyg_core`).
+  One cdylib per platform serves every CPython version. Caveat: crates.io is
+  unreachable from the dev sandbox, so a required crate must be vendored
+  (`cargo vendor`) or the sandbox loses the ability to build/test the core;
+  prefer feature-gated optional deps. Bump `ABI_VERSION` in
+  `crates/xyg-core/src/lib.rs` *and* `python/xy/_native.py` together on any
+  signature change.
 - `python/xy/` — package. `_native.py` (ctypes) binds the required
   Rust core; there is no NumPy fallback — `kernels.py` raises a clear
   ImportError if the native core can't load. `components.py`
@@ -74,7 +75,7 @@ control.
   The core `python/xy` package must never import Reflex. The render client is
   linked out of that package at app compile (no second copy to drift).
   Tests: `tests/reflex_adapter/` (skip unless Reflex is installed).
-- `packages/xy-node/` — Node host bindings (koffi → same Rust C ABI). Covers
+- `packages/xy-node/` — Node host bindings (`@curatelabs/xyg-node`; koffi → same Rust C ABI). Covers
   server-side Node and VS Code extensions (VS Code is a consumer of these
   bindings, not a separate stack). Thin TypedArray loaders only; no
   browser-only APIs. `toHtml()` inlines the host-neutral paint client, not
@@ -103,7 +104,7 @@ control.
 ## Commands
 
 ```bash
-cargo test && cargo build --release   # core
+cargo test --workspace && cargo build --release   # core (`libxyg_core`)
 npm ci                                # once per checkout: vite + tsc toolchain
 npm ci --prefix packages/xy-node      # koffi Node host (root npm ci does not install it)
 node js/build.mjs                     # typecheck + regenerate minified static/ after JS edits

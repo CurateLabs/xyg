@@ -2,7 +2,7 @@
 /**
  * Node twin of benchmarks/bench_scale_all_charts.py (chart families + density).
  *
- * Exercises every major mark family through `@xy/node` buildPayload and records
+ * Exercises every major mark family through `@curatelabs/xyg-node` buildPayload and records
  * wall ms + wire bytes. Scatter density (Tier-2) is forced for LOD evidence.
  * Graph 10M/100M/1B LOD decisions live in bench_graph_scale_classes_node.mjs.
  *
@@ -14,10 +14,12 @@ import { performance } from "node:perf_hooks";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { nativeLibraryFileName } from "../packages/xy-node/src/native-path.js";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 process.chdir(root);
-if (!process.env.XY_NATIVE_LIB) {
-  process.env.XY_NATIVE_LIB = path.join(root, "target/release/libxy_core.so");
+if (!process.env.XYG_NATIVE_LIB) {
+  process.env.XYG_NATIVE_LIB = path.join(root, "target/release", nativeLibraryFileName());
 }
 
 const {

@@ -271,7 +271,7 @@ def _load_version() -> str:
     from importlib.metadata import version as _distribution_version
 
     try:
-        return _distribution_version("xy")
+        return _distribution_version("xyg")
     except PackageNotFoundError:
         return "0.0.0"
 

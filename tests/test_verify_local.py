@@ -109,8 +109,8 @@ def test_browser_selection_requires_browser_checks_to_exist() -> None:
 
 
 def test_packaging_selection_runs_artifact_checks_only(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.1.0.tar.gz"
-    wheel = tmp_path / "xy-0.1.0-py3-none-any.whl"
+    sdist = tmp_path / "xyg-0.1.0.tar.gz"
+    wheel = tmp_path / "xyg-0.1.0-py3-none-any.whl"
     checks = verify_local._base_checks(sdist=sdist, wheel=wheel)
     selected = verify_local.select_checks(checks, packaging=True)
 
@@ -552,8 +552,8 @@ def test_packaging_dry_run_prints_artifact_verifiers(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    sdist = tmp_path / "xy-0.1.0.tar.gz"
-    wheel = tmp_path / "xy-0.1.0-py3-none-any.whl"
+    sdist = tmp_path / "xyg-0.1.0.tar.gz"
+    wheel = tmp_path / "xyg-0.1.0-py3-none-any.whl"
 
     rc = verify_local.main(
         [

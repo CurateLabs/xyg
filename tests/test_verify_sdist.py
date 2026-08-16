@@ -30,7 +30,7 @@ ENTRIES_JS = (
 )
 DEFAULT_PKG_INFO = (
     "Metadata-Version: 2.4\n"
-    "Name: xy\n"
+    "Name: xyg\n"
     "Version: 0.0.1\n"
     "Requires-Python: >=3.11\n"
     "Requires-Dist: anywidget>=0.9\n"
@@ -68,7 +68,7 @@ def _write_sdist(
     replacements: Optional[dict[str, Union[bytes, str]]] = None,
     root_file: bool = False,
 ) -> None:
-    root = "xy-0.0.1"
+    root = "xyg-0.0.1"
     omit = omit or set()
     extra = extra or {}
     replacements = replacements or {}
@@ -104,7 +104,7 @@ def _write_sdist(
 
 
 def test_verify_sdist_accepts_required_source_shape(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist)
 
     verify_sdist.verify_sdist(str(sdist))
@@ -126,7 +126,7 @@ def test_readme_does_not_reference_excluded_sdist_content(root: str) -> None:
 
 
 def test_verify_sdist_accepts_normalized_metadata_spacing(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     pkg_info = DEFAULT_PKG_INFO.replace(
         "Requires-Dist: anywidget>=0.9", "Requires-Dist: anywidget >= 0.9"
     ).replace("Requires-Dist: numpy>=1.24", "Requires-Dist: numpy >= 1.24")
@@ -136,7 +136,7 @@ def test_verify_sdist_accepts_normalized_metadata_spacing(tmp_path: Path) -> Non
 
 
 def test_verify_sdist_accepts_zero_padded_dependency_floors(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     pkg_info = DEFAULT_PKG_INFO.replace("anywidget>=0.9", "anywidget>=0.9.0").replace(
         "numpy>=1.24", "numpy>=1.24.0"
     )
@@ -146,7 +146,7 @@ def test_verify_sdist_accepts_zero_padded_dependency_floors(tmp_path: Path) -> N
 
 
 def test_verify_sdist_rejects_missing_pkg_info(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, pkg_info=None)
 
     with pytest.raises(AssertionError, match="PKG-INFO"):
@@ -157,8 +157,8 @@ def test_verify_sdist_rejects_missing_pkg_info(tmp_path: Path) -> None:
     ("pkg_info", "match"),
     [
         (
-            DEFAULT_PKG_INFO.replace("Name: xy", "Name: othercharts"),
-            "Name: xy",
+            DEFAULT_PKG_INFO.replace("Name: xyg", "Name: othercharts"),
+            "Name: xyg",
         ),
         (
             DEFAULT_PKG_INFO.replace("Version: 0.0.1", "Version: 0.2.0"),
@@ -264,7 +264,7 @@ def test_verify_sdist_rejects_missing_pkg_info(tmp_path: Path) -> None:
     ],
 )
 def test_verify_sdist_rejects_invalid_pkg_info(tmp_path: Path, pkg_info: str, match: str) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, pkg_info=pkg_info)
 
     with pytest.raises(AssertionError, match=match):
@@ -272,7 +272,7 @@ def test_verify_sdist_rejects_invalid_pkg_info(tmp_path: Path, pkg_info: str, ma
 
 
 def test_verify_sdist_rejects_missing_static_bundle(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, omit={"python/xy/static/standalone.js"})
 
     with pytest.raises(AssertionError, match="missing required files"):
@@ -280,7 +280,7 @@ def test_verify_sdist_rejects_missing_static_bundle(tmp_path: Path) -> None:
 
 
 def test_verify_sdist_rejects_missing_host_neutral_bundle(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, omit={"packages/xy-client/dist/standalone.js"})
 
     with pytest.raises(AssertionError, match="missing required files"):
@@ -288,7 +288,7 @@ def test_verify_sdist_rejects_missing_host_neutral_bundle(tmp_path: Path) -> Non
 
 
 def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, omit={"python/reflex_xy/assets/XYChart.jsx"})
 
     with pytest.raises(AssertionError, match="reflex_xy"):
@@ -313,13 +313,14 @@ def test_verify_sdist_rejects_missing_reflex_integration(tmp_path: Path) -> None
         "spec/design-dossier.md",
         "tests/test_import.py",
         "uv.lock",
-        "packages/xy-node/src/native.js",
         "packages/xy-node/package.json",
+        "packages/xy-node/README.md",
+        "packages/xy-node/src/native.js",
         "packages/xy-node/src/index.js",
     ],
 )
 def test_verify_sdist_rejects_repository_only_content(tmp_path: Path, name: str) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, extra={name: b"repository-only content"})
 
     with pytest.raises(AssertionError, match="generated/native artifacts"):
@@ -327,7 +328,7 @@ def test_verify_sdist_rejects_repository_only_content(tmp_path: Path, name: str)
 
 
 def test_verify_sdist_rejects_partial_type_marker(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, replacements={"python/xy/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="full-package PEP 561 marker"):
@@ -335,7 +336,7 @@ def test_verify_sdist_rejects_partial_type_marker(tmp_path: Path) -> None:
 
 
 def test_verify_sdist_rejects_missing_reflex_type_marker(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, omit={"python/reflex_xy/py.typed"})
 
     with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
@@ -343,7 +344,7 @@ def test_verify_sdist_rejects_missing_reflex_type_marker(tmp_path: Path) -> None
 
 
 def test_verify_sdist_rejects_partial_reflex_type_marker(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, replacements={"python/reflex_xy/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="reflex_xy/py\\.typed"):
@@ -351,7 +352,7 @@ def test_verify_sdist_rejects_partial_reflex_type_marker(tmp_path: Path) -> None
 
 
 def test_verify_sdist_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, replacements={"python/xy/static/index.js": "not the client"})
 
     with pytest.raises(AssertionError, match=r"index\.js"):
@@ -359,7 +360,7 @@ def test_verify_sdist_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
 
 
 def test_verify_sdist_rejects_corrupt_host_neutral_bundle(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, replacements={"packages/xy-client/dist/index.js": "not the client"})
 
     with pytest.raises(AssertionError, match=r"index\.js"):
@@ -367,7 +368,7 @@ def test_verify_sdist_rejects_corrupt_host_neutral_bundle(tmp_path: Path) -> Non
 
 
 def test_verify_sdist_rejects_corrupt_source_entry_bundle(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, replacements={"js/src/60_entries.ts": "not the source client"})
 
     with pytest.raises(AssertionError, match=r"60_entries\.ts"):
@@ -384,7 +385,7 @@ def test_verify_sdist_rejects_corrupt_source_entry_bundle(tmp_path: Path) -> Non
     ],
 )
 def test_verify_sdist_rejects_generated_artifacts(tmp_path: Path, artifact: str) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, extra={artifact: b"cache"})
 
     with pytest.raises(AssertionError, match="generated/native artifacts"):
@@ -392,7 +393,7 @@ def test_verify_sdist_rejects_generated_artifacts(tmp_path: Path, artifact: str)
 
 
 def test_verify_sdist_rejects_duplicate_file_member(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, extra={"LICENSE": b"duplicate"})
 
     with pytest.raises(AssertionError, match="duplicate file member"):
@@ -400,7 +401,7 @@ def test_verify_sdist_rejects_duplicate_file_member(tmp_path: Path) -> None:
 
 
 def test_verify_sdist_rejects_regular_file_at_distribution_root(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, root_file=True)
 
     with pytest.raises(AssertionError, match="top-level entry must be a directory"):
@@ -408,7 +409,7 @@ def test_verify_sdist_rejects_regular_file_at_distribution_root(tmp_path: Path) 
 
 
 def test_verify_sdist_rejects_file_directory_path_collisions(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     _write_sdist(sdist, extra={"README.md/repository-only.txt": b"not extractable"})
 
     with pytest.raises(AssertionError, match="file/directory path collisions"):
@@ -416,10 +417,10 @@ def test_verify_sdist_rejects_file_directory_path_collisions(tmp_path: Path) -> 
 
 
 def test_verify_sdist_rejects_unsafe_member_paths(tmp_path: Path) -> None:
-    sdist = tmp_path / "xy-0.0.1.tar.gz"
+    sdist = tmp_path / "xyg-0.0.1.tar.gz"
     with tarfile.open(sdist, "w:gz") as tf:
-        _add_file(tf, "xy-0.0.1/PKG-INFO", b"Name: xy\n")
-        _add_file(tf, "xy-0.0.1/../evil.py", b"")
+        _add_file(tf, "xyg-0.0.1/PKG-INFO", b"Name: xy\n")
+        _add_file(tf, "xyg-0.0.1/../evil.py", b"")
 
     with pytest.raises(AssertionError, match="unsafe tar member path"):
         verify_sdist.verify_sdist(str(sdist))
@@ -439,6 +440,8 @@ def test_hatch_sdist_include_is_root_anchored_paint_client_only() -> None:
     include = sdist["include"]
     exclude = sdist["exclude"]
     assert any(item.startswith("/packages/xy-client") for item in include)
+    assert any(item.startswith("/crates") for item in include)
+    assert not any(item.startswith("/src") for item in include)
     assert not any("xy-node" in item for item in include)
     assert "/packages/xy-node/**" in exclude
     for item in include:

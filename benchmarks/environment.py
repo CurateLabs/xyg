@@ -20,6 +20,7 @@ from typing import Any
 SCHEMA_VERSION = 2
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PACKAGE_NAMES = (
+    "xyg",
     "xy",
     "numpy",
     "plotly",

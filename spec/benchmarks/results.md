@@ -746,7 +746,7 @@ comparison—not a same-render-target speedup claim.
 > across cores above 512k rows. Zone maps have no merge traffic and use an
 > earlier, chunk-aware crossover: two complete 65,536-row chunks, with workers
 > capped by the number of chunks. All paths are bitwise-deterministic; see
-> `src/kernels.rs`.
+> `crates/xyg-engine/src/kernels.rs`.
 > On a 4-core runner the 10M `bin_2d`/`histogram`/`m4` costs drop ~3–4× vs the
 > single-threaded figures here; CI regenerates the live numbers into
 > `benchmark_ci.md` each run. These committed rows stay as the conservative

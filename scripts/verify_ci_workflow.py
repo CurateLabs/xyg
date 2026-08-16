@@ -4,7 +4,7 @@
 The workflows are YAML, but this checker intentionally stays stdlib-only so it
 can run before the dev environment is installed. It does not try to be a full
 YAML parser; it checks stable, high-value invariants that are easy to lose when
-editing `.github/workflows/ci.yml` or `.github/workflows/release.yml`.
+editing `.github/workflows/ci.yml` or `.github/workflows/publish.yaml`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
-DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
+DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 REQUIRED_CI_JOBS = {
     "browser_conformance",
@@ -636,21 +636,20 @@ def _step_is_conditioned(job_text: str, step_needle: str) -> bool:
 
 
 # The one condition that actually gates a PyPI upload: the explicit
-# XY_ALLOW_PYPI_PUBLISH repository-variable opt-in (which does not exist by
+# XYG_ALLOW_PYPI_PUBLISH repository-variable opt-in (which does not exist by
 # default on this fork, see issue #13) AND the manual dry-run switch.
 # Requiring this exact predicate on the upload step itself — not merely *an*
 # `if:` — is the point: `if: always()` or any unrelated condition would
 # satisfy a mere presence check while gating nothing.
 PYPI_PUBLISH_GATE = (
-    "if: vars.XY_ALLOW_PYPI_PUBLISH == 'true' && "
+    "if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
 )
 
-# The fork repository guard on the publish job itself (issue #13): this
-# repository is a divergent fork of reflex-dev/xy whose artifacts still carry
-# upstream's `xy` distribution name, so only this exact slug may even reach
-# the publish job.
-PUBLISH_REPOSITORY_GUARD = "github.repository == 'CurateLabs/graphforge-xy'"
+# The fork repository guard on the publish job itself (issue #13): only
+# CurateLabs/xyg may reach the OIDC upload. PyPI trusted publishing is bound
+# to this slug, workflow filename publish.yaml, and environment `pypi`.
+PUBLISH_REPOSITORY_GUARD = "github.repository == 'CurateLabs/xyg'"
 
 
 def _step_carries_publish_gate(job_text: str, step_needle: str) -> bool:
@@ -839,9 +838,13 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "scripts/check_public_api.py",
         "Install Node host bindings",
         "npm ci --prefix packages/xy-node",
+        "scripts/abi_smoke.py",
+        "scripts/check_abi_parity.py",
+        "scripts/check_stale_names.py",
+        "cargo test --workspace",
         "Verify bundled Reflex integration import",
         "importlib.metadata as m, reflex_xy",
-        "assert reflex_xy.__version__ == m.version('xy')",
+        "assert reflex_xy.__version__ == m.version('xyg')",
         "ruff check .",
         "scripts/smoke_render.py",
         "Polar phase 6/7 live examples",
@@ -1023,7 +1026,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "Install xy",
         "xy-only constrained install",
         "if: matrix.xy",
-        'XY_REQUIRE_CARGO: "1"',
+        'XYG_REQUIRE_CARGO: "1"',
         "--constraint benchmarks/requirements-ci.lock",
     )
     _require_step_contains(
@@ -1064,7 +1067,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "continue-on-error: true",
         "benchmarks/requirements-ci.lock",
         "Verify native benchmark backend",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         'k.BACKEND == "native"',
         "benchmark job requires native backend",
         "scripts/verify_benchmark_report.py",
@@ -1130,7 +1133,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ci_sdist,
         "Build and load native core from sdist",
         "Rust-backed sdist install contract",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "uv pip install --no-cache",
         '"reflex>=0.9.6"',
         "import reflex_xy",
@@ -1142,7 +1145,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         ci_sdist,
         "Verify coreless sdist imports reflex_xy",
         "coreless sdist import contract",
-        "XY_SKIP_CARGO",
+        "XYG_SKIP_CARGO",
         "uv pip install --no-cache",
         "import reflex_xy",
         "assert reflex_xy.__version__ == version",
@@ -1154,7 +1157,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "wheels",
         "CI",
         "native wheel verification and upload",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "scripts/verify_wheel.py",
         "--expect-native",
         "actions/upload-artifact@",
@@ -1222,7 +1225,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         'python-version: "3.11"',
         "astral-sh/setup-uv@",
         "cargo build --release",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "--group dev --group codspeed",
         "Verify native benchmark backend",
         'k.BACKEND == "native"',
@@ -1242,6 +1245,17 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
 
     jobs = _job_blocks(text)
     errors: list[str] = []
+    if DEFAULT_RELEASE_WORKFLOW.name != "publish.yaml":
+        errors.append(
+            "release workflow filename must be publish.yaml to match the PyPI "
+            "trusted publisher for project xyg (CurateLabs/xyg#13)"
+        )
+    stale_release = ROOT / ".github" / "workflows" / "release.yml"
+    if stale_release.exists():
+        errors.append(
+            "stale .github/workflows/release.yml is present; PyPI trusted "
+            "publishing is bound to publish.yaml and a second workflow would drift"
+        )
     _require_unique_workflow_structure(errors, text, "release", REQUIRED_RELEASE_JOBS)
     _require_trigger_with_direct_option(
         errors,
@@ -1271,8 +1285,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "npm ci",
         "cargo-zigbuild",
         "uv build --wheel",
-        "XY_REQUIRE_CARGO",
-        "XY_WHEEL_PLATFORM",
+        "XYG_REQUIRE_CARGO",
+        "XYG_WHEEL_PLATFORM",
         "musllinux_1_2_x86_64",
         "win_arm64",
         "scripts/verify_wheel.py",
@@ -1280,7 +1294,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "Install-size budget (<= 15 MB)",
         '"reflex>=0.9.6"',
         "import importlib.metadata as m, reflex_xy",
-        "assert reflex_xy.__version__ == m.version('xy')",
+        "assert reflex_xy.__version__ == m.version('xyg')",
         "assert k.BACKEND=='native'",
         "actions/upload-artifact@",
         "dist/*.whl",
@@ -1341,7 +1355,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         release_sdist,
         "Build and load native core from sdist",
         "Rust-backed release sdist install contract",
-        "XY_REQUIRE_CARGO",
+        "XYG_REQUIRE_CARGO",
         "uv pip install --no-cache",
         '"reflex>=0.9.6"',
         "import reflex_xy",
@@ -1353,7 +1367,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         release_sdist,
         "Verify coreless sdist imports reflex_xy",
         "coreless release sdist import contract",
-        "XY_SKIP_CARGO",
+        "XYG_SKIP_CARGO",
         "uv pip install --no-cache",
         "import reflex_xy",
         "assert reflex_xy.__version__ == version",
@@ -1391,7 +1405,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         errors.append(
             "release publish job must carry the fork repository guard "
             f"(`if: {PUBLISH_REPOSITORY_GUARD}`) as its only job-level condition — "
-            "this fork's artifacts still use upstream's `xy` distribution name, so no "
+            "this fork publishes PyPI project `xyg` from CurateLabs/xyg only, so no "
             "other repository slug may reach the PyPI upload (#13)"
         )
     if "password:" in publish or "api-token" in publish:

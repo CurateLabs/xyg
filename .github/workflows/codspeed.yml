@@ -49,7 +49,7 @@ jobs:
 
       - name: Install package + benchmark deps
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: |
           uv venv .venv
           uv pip install -p .venv/bin/python -e . --group dev --group codspeed
@@ -65,7 +65,9 @@ jobs:
         uses: CodSpeedHQ/action@4bee4eada46987d4607fc208971a36367352b83d # v4
         with:
           mode: simulation
-          token: ${{ secrets.CODSPEED_TOKEN }}
+          # Authenticate with the job's OIDC token (id-token: write above).
+          # A CODSPEED_TOKEN secret is not configured for CurateLabs/xyg and
+          # is not required when the GitHub App is installed on the repo.
           # Run every CodSpeed-native pytest module. Keep browser/install and
           # cross-library process benchmarks in benchmark-refresh.yml: they
           # require wall-clock/browser measurements and are not meaningful in

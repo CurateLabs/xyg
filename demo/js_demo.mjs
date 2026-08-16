@@ -4,7 +4,7 @@
 //
 // Run from the repo root:
 //
-//   XY_NATIVE_LIB=$PWD/target/release/libxy_core.dylib node demo/js_demo.mjs
+//   XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.dylib node demo/js_demo.mjs
 //
 // Writes demo/js_demo.html.
 

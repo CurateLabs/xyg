@@ -452,13 +452,13 @@ def test_native_transition_key_argument_errors_are_loud() -> None:
     # raises rather than returning the None that means "use the oracle".
     from xy import _native
 
-    original = _native._lib.xy_transition_keys_fixed
+    original = _native._lib.xyg_transition_keys_fixed
     try:
-        _native._lib.xy_transition_keys_fixed = lambda *_args: 4
+        _native._lib.xyg_transition_keys_fixed = lambda *_args: 4
         with pytest.raises(RuntimeError, match=r"rejected the .* layout it was handed"):
             _native.transition_keys_fixed(np.array([b"ab"], dtype="S2"), "bad key")
     finally:
-        _native._lib.xy_transition_keys_fixed = original
+        _native._lib.xyg_transition_keys_fixed = original
 
 
 def _keyed_scatter(animation, n: int = 8):

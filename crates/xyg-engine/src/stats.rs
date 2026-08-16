@@ -184,6 +184,7 @@ pub fn violin_density(data: &[f64], n_bins: usize) -> Option<ViolinDensity> {
 }
 
 /// NumPy-style `mode="same"` convolution into `out` (len = signal len).
+#[allow(clippy::needless_range_loop)] // i indexes signal and out with a signed kernel offset
 fn convolve_same(signal: &[f64], kernel: &[f64], out: &mut [f64]) {
     debug_assert_eq!(signal.len(), out.len());
     let k = kernel.len();

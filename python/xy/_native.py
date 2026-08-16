@@ -18,14 +18,14 @@ import operator
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import numpy as np
 import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 57
+ABI_VERSION = 58
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -41,16 +41,16 @@ _U32_MAX = 2**32 - 1
 
 def _lib_filename() -> str:
     if sys.platform == "win32":
-        return "xy_core.dll"
+        return "xyg_core.dll"
     if sys.platform == "darwin":
-        return "libxy_core.dylib"
-    return "libxy_core.so"
+        return "libxyg_core.dylib"
+    return "libxyg_core.so"
 
 
 def _find_library() -> Path:
     name = _lib_filename()
     candidates = []
-    env = os.environ.get("XY_NATIVE_LIB")
+    env = os.environ.get("XYG_NATIVE_LIB")
     if env:
         candidates.append(Path(env))
     here = Path(__file__).resolve().parent
@@ -63,7 +63,7 @@ def _find_library() -> Path:
         if c.exists():
             return c
     raise ImportError(
-        f"xy native core not found (looked for {name} in "
+        f"xyg native core not found (looked for {name} in "
         f"{[str(c) for c in candidates]}). No prebuilt wheel exists for this "
         "platform — see the xy README for supported platforms, or build "
         "from source with `cargo build --release`."
@@ -73,26 +73,27 @@ def _find_library() -> Path:
 def _load() -> ctypes.CDLL:
     lib = ctypes.CDLL(str(_find_library()))
 
-    lib.xy_abi_version.restype = ctypes.c_uint32
-    lib.xy_abi_version.argtypes = []
-    got = lib.xy_abi_version()
+    lib.xyg_abi_version.restype = ctypes.c_uint32
+    lib.xyg_abi_version.argtypes = []
+    got = lib.xyg_abi_version()
     if got != ABI_VERSION:
         raise ImportError(
-            f"xy native core ABI mismatch: python wrapper expects "
-            f"{ABI_VERSION}, library reports {got}. Reinstall xy so the "
-            "wheel and package versions match."
+            f"xyg native core ABI mismatch: python wrapper expects "
+            f"{ABI_VERSION}, library reports {got}. Rebuild with "
+            "`cargo build --release` or reinstall xy so the wheel and "
+            "package versions match."
         )
 
-    lib.xy_factorize_fixed.restype = ctypes.c_size_t
-    lib.xy_factorize_fixed.argtypes = [
+    lib.xyg_factorize_fixed.restype = ctypes.c_size_t
+    lib.xyg_factorize_fixed.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_factorize_fixed_u8.restype = ctypes.c_size_t
-    lib.xy_factorize_fixed_u8.argtypes = [
+    lib.xyg_factorize_fixed_u8.restype = ctypes.c_size_t
+    lib.xyg_factorize_fixed_u8.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -100,8 +101,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_factorize_fixed_u8_counts.restype = ctypes.c_size_t
-    lib.xy_factorize_fixed_u8_counts.argtypes = [
+    lib.xyg_factorize_fixed_u8_counts.restype = ctypes.c_size_t
+    lib.xyg_factorize_fixed_u8_counts.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -110,8 +111,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_factorize_unicode1_u8_counts.restype = ctypes.c_size_t
-    lib.xy_factorize_unicode1_u8_counts.argtypes = [
+    lib.xyg_factorize_unicode1_u8_counts.restype = ctypes.c_size_t
+    lib.xyg_factorize_unicode1_u8_counts.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_int32,
@@ -120,8 +121,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_transition_keys_fixed.restype = ctypes.c_int32
-    lib.xy_transition_keys_fixed.argtypes = [
+    lib.xyg_transition_keys_fixed.restype = ctypes.c_int32
+    lib.xyg_transition_keys_fixed.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -132,16 +133,16 @@ def _load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_size_t),
         ctypes.POINTER(ctypes.c_size_t),
     ]
-    lib.xy_remap_u8.restype = ctypes.c_int32
-    lib.xy_remap_u8.argtypes = [
+    lib.xyg_remap_u8.restype = ctypes.c_int32
+    lib.xyg_remap_u8.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
 
-    lib.xy_zone_maps.restype = ctypes.c_size_t
-    lib.xy_zone_maps.argtypes = [
+    lib.xyg_zone_maps.restype = ctypes.c_size_t
+    lib.xyg_zone_maps.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -154,8 +155,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_zone_maps_pair.restype = ctypes.c_size_t
-    lib.xy_zone_maps_pair.argtypes = [
+    lib.xyg_zone_maps_pair.restype = ctypes.c_size_t
+    lib.xyg_zone_maps_pair.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -163,16 +164,16 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_encode_f32.restype = ctypes.c_int32
-    lib.xy_encode_f32.argtypes = [
+    lib.xyg_encode_f32.restype = ctypes.c_int32
+    lib.xyg_encode_f32.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_double,
         ctypes.c_double,
         ctypes.c_void_p,
     ]
-    lib.xy_m4_indices.restype = ctypes.c_size_t
-    lib.xy_m4_indices.argtypes = [
+    lib.xyg_m4_indices.restype = ctypes.c_size_t
+    lib.xyg_m4_indices.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -181,16 +182,16 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_svg_poly_path.restype = ctypes.c_size_t
-    lib.xy_svg_poly_path.argtypes = [
+    lib.xyg_svg_poly_path.restype = ctypes.c_size_t
+    lib.xyg_svg_poly_path.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_m4_points.restype = ctypes.c_size_t
-    lib.xy_m4_points.argtypes = [
+    lib.xyg_m4_points.restype = ctypes.c_size_t
+    lib.xyg_m4_points.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -200,8 +201,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_stacked_bounds.restype = ctypes.c_int32
-    lib.xy_stacked_bounds.argtypes = [
+    lib.xyg_stacked_bounds.restype = ctypes.c_int32
+    lib.xyg_stacked_bounds.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -209,8 +210,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_bar_stack.restype = ctypes.c_int32
-    lib.xy_bar_stack.argtypes = [
+    lib.xyg_bar_stack.restype = ctypes.c_int32
+    lib.xyg_bar_stack.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
@@ -226,8 +227,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_histogram2d.restype = ctypes.c_int32
-    lib.xy_histogram2d.argtypes = [
+    lib.xyg_histogram2d.restype = ctypes.c_int32
+    lib.xyg_histogram2d.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_void_p,
@@ -238,8 +239,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_quad_mesh_triangles.restype = ctypes.c_size_t
-    lib.xy_quad_mesh_triangles.argtypes = [
+    lib.xyg_quad_mesh_triangles.restype = ctypes.c_size_t
+    lib.xyg_quad_mesh_triangles.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
@@ -256,8 +257,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_sector_triangles.restype = ctypes.c_size_t
-    lib.xy_sector_triangles.argtypes = [
+    lib.xyg_sector_triangles.restype = ctypes.c_size_t
+    lib.xyg_sector_triangles.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
@@ -277,8 +278,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_rfft.restype = ctypes.c_int32
-    lib.xy_rfft.argtypes = [
+    lib.xyg_rfft.restype = ctypes.c_int32
+    lib.xyg_rfft.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -287,8 +288,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_welch_spectra.restype = ctypes.c_int32
-    lib.xy_welch_spectra.argtypes = [
+    lib.xyg_welch_spectra.restype = ctypes.c_int32
+    lib.xyg_welch_spectra.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -301,8 +302,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_spectrogram.restype = ctypes.c_int32
-    lib.xy_spectrogram.argtypes = [
+    lib.xyg_spectrogram.restype = ctypes.c_int32
+    lib.xyg_spectrogram.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -312,8 +313,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_correlation.restype = ctypes.c_int32
-    lib.xy_correlation.argtypes = [
+    lib.xyg_correlation.restype = ctypes.c_int32
+    lib.xyg_correlation.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -322,16 +323,16 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_weighted_ecdf.restype = ctypes.c_size_t
-    lib.xy_weighted_ecdf.argtypes = [
+    lib.xyg_weighted_ecdf.restype = ctypes.c_size_t
+    lib.xyg_weighted_ecdf.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_indexed_triangles.restype = ctypes.c_size_t
-    lib.xy_indexed_triangles.argtypes = [
+    lib.xyg_indexed_triangles.restype = ctypes.c_size_t
+    lib.xyg_indexed_triangles.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -348,8 +349,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_triangle_edges.restype = ctypes.c_size_t
-    lib.xy_triangle_edges.argtypes = [
+    lib.xyg_triangle_edges.restype = ctypes.c_size_t
+    lib.xyg_triangle_edges.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -360,24 +361,24 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_delaunay_triangles.restype = ctypes.c_size_t
-    lib.xy_delaunay_triangles.argtypes = [
+    lib.xyg_delaunay_triangles.restype = ctypes.c_size_t
+    lib.xyg_delaunay_triangles.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_polygon_triangles.restype = ctypes.c_size_t
-    lib.xy_polygon_triangles.argtypes = [
+    lib.xyg_polygon_triangles.restype = ctypes.c_size_t
+    lib.xyg_polygon_triangles.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_marching_triangles.restype = ctypes.c_size_t
-    lib.xy_marching_triangles.argtypes = [
+    lib.xyg_marching_triangles.restype = ctypes.c_size_t
+    lib.xyg_marching_triangles.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_void_p,
@@ -393,8 +394,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_vector_segments.restype = ctypes.c_size_t
-    lib.xy_vector_segments.argtypes = [
+    lib.xyg_vector_segments.restype = ctypes.c_size_t
+    lib.xyg_vector_segments.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_void_p,
@@ -408,8 +409,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_streamlines.restype = ctypes.c_size_t
-    lib.xy_streamlines.argtypes = [
+    lib.xyg_streamlines.restype = ctypes.c_size_t
+    lib.xyg_streamlines.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
@@ -424,8 +425,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_marching_squares.restype = ctypes.c_size_t
-    lib.xy_marching_squares.argtypes = [
+    lib.xyg_marching_squares.restype = ctypes.c_size_t
+    lib.xyg_marching_squares.argtypes = [
         ctypes.c_void_p,  # z (rows * cols f64s)
         ctypes.c_size_t,  # rows
         ctypes.c_size_t,  # cols
@@ -441,12 +442,12 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # level output
         ctypes.c_size_t,  # output capacity in segments
     ]
-    lib.xy_min_max.restype = ctypes.c_int32
-    lib.xy_min_max.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
-    lib.xy_is_sorted.restype = ctypes.c_int32
-    lib.xy_is_sorted.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
-    lib.xy_bin_2d.restype = ctypes.c_int32
-    lib.xy_bin_2d.argtypes = [
+    lib.xyg_min_max.restype = ctypes.c_int32
+    lib.xyg_min_max.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    lib.xyg_is_sorted.restype = ctypes.c_int32
+    lib.xyg_is_sorted.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    lib.xyg_bin_2d.restype = ctypes.c_int32
+    lib.xyg_bin_2d.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -458,8 +459,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_bin_2d_f32.restype = ctypes.c_int32
-    lib.xy_bin_2d_f32.argtypes = [
+    lib.xyg_bin_2d_f32.restype = ctypes.c_int32
+    lib.xyg_bin_2d_f32.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -471,8 +472,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_bin_2d_indices.restype = ctypes.c_size_t
-    lib.xy_bin_2d_indices.argtypes = [
+    lib.xyg_bin_2d_indices.restype = ctypes.c_size_t
+    lib.xyg_bin_2d_indices.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -485,8 +486,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_bin_2d_mean_color.restype = ctypes.c_int32
-    lib.xy_bin_2d_mean_color.argtypes = [
+    lib.xyg_bin_2d_mean_color.restype = ctypes.c_int32
+    lib.xyg_bin_2d_mean_color.argtypes = [
         ctypes.c_void_p,  # x
         ctypes.c_void_p,  # y
         ctypes.c_size_t,  # len
@@ -502,8 +503,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # h
         ctypes.c_void_p,  # out rgba8
     ]
-    lib.xy_bin_2d_sample_range.restype = ctypes.c_size_t
-    lib.xy_bin_2d_sample_range.argtypes = [
+    lib.xyg_bin_2d_sample_range.restype = ctypes.c_size_t
+    lib.xyg_bin_2d_sample_range.argtypes = [
         ctypes.c_void_p,  # x
         ctypes.c_void_p,  # y
         ctypes.c_size_t,  # len
@@ -519,8 +520,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # sampled rows
         ctypes.c_size_t,  # sampled-row capacity
     ]
-    lib.xy_bin_2d_stratified_sample_range_u8_counted.restype = ctypes.c_size_t
-    lib.xy_bin_2d_stratified_sample_range_u8_counted.argtypes = [
+    lib.xyg_bin_2d_stratified_sample_range_u8_counted.restype = ctypes.c_size_t
+    lib.xyg_bin_2d_stratified_sample_range_u8_counted.argtypes = [
         ctypes.c_void_p,  # x
         ctypes.c_void_p,  # y
         ctypes.c_void_p,  # groups
@@ -540,8 +541,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # sampled rows
         ctypes.c_size_t,  # sampled-row capacity
     ]
-    lib.xy_histogram_uniform.restype = ctypes.c_size_t
-    lib.xy_histogram_uniform.argtypes = [
+    lib.xyg_histogram_uniform.restype = ctypes.c_size_t
+    lib.xyg_histogram_uniform.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_double,
@@ -550,8 +551,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
-    lib.xy_normalize_f32.restype = ctypes.c_int32
-    lib.xy_normalize_f32.argtypes = [
+    lib.xyg_normalize_f32.restype = ctypes.c_int32
+    lib.xyg_normalize_f32.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_double,
@@ -559,8 +560,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
-    lib.xy_valid_indices_f64.restype = ctypes.c_size_t
-    lib.xy_valid_indices_f64.argtypes = [
+    lib.xyg_valid_indices_f64.restype = ctypes.c_size_t
+    lib.xyg_valid_indices_f64.argtypes = [
         ctypes.c_void_p,  # array of f64 pointers
         ctypes.c_size_t,  # number of columns
         ctypes.c_size_t,  # row count
@@ -568,8 +569,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # output row IDs
         ctypes.c_size_t,  # output capacity
     ]
-    lib.xy_range_indices.restype = ctypes.c_size_t
-    lib.xy_range_indices.argtypes = [
+    lib.xyg_range_indices.restype = ctypes.c_size_t
+    lib.xyg_range_indices.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -579,8 +580,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_void_p,
     ]
-    lib.xy_range_indices_rows.restype = ctypes.c_size_t
-    lib.xy_range_indices_rows.argtypes = [
+    lib.xyg_range_indices_rows.restype = ctypes.c_size_t
+    lib.xyg_range_indices_rows.argtypes = [
         ctypes.c_void_p,  # x
         ctypes.c_void_p,  # y
         ctypes.c_size_t,  # len
@@ -592,8 +593,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_double,  # hi_y
         ctypes.c_void_p,  # output row IDs
     ]
-    lib.xy_polygon_select.restype = ctypes.c_size_t
-    lib.xy_polygon_select.argtypes = [
+    lib.xyg_polygon_select.restype = ctypes.c_size_t
+    lib.xyg_polygon_select.argtypes = [
         ctypes.c_void_p,  # x
         ctypes.c_void_p,  # y
         ctypes.c_size_t,  # len
@@ -604,26 +605,26 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # polygon vertices
         ctypes.c_void_p,  # output row IDs
     ]
-    lib.xy_sample_mask.restype = ctypes.c_int32
-    lib.xy_sample_mask.argtypes = [
+    lib.xyg_sample_mask.restype = ctypes.c_int32
+    lib.xyg_sample_mask.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.c_void_p,
     ]
-    lib.xy_sample_mask_u32.restype = ctypes.c_int32
-    lib.xy_sample_mask_u32.argtypes = list(lib.xy_sample_mask.argtypes)
-    lib.xy_sample_range_indices.restype = ctypes.c_size_t
-    lib.xy_sample_range_indices.argtypes = [
+    lib.xyg_sample_mask_u32.restype = ctypes.c_int32
+    lib.xyg_sample_mask_u32.argtypes = list(lib.xyg_sample_mask.argtypes)
+    lib.xyg_sample_range_indices.restype = ctypes.c_size_t
+    lib.xyg_sample_range_indices.argtypes = [
         ctypes.c_size_t,
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_stratified_sample_range_u8.restype = ctypes.c_size_t
-    lib.xy_stratified_sample_range_u8.argtypes = [
+    lib.xyg_stratified_sample_range_u8.restype = ctypes.c_size_t
+    lib.xyg_stratified_sample_range_u8.argtypes = [
         ctypes.c_void_p,  # groups
         ctypes.c_size_t,  # len
         ctypes.c_size_t,  # n_groups
@@ -633,8 +634,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out
         ctypes.c_size_t,  # capacity
     ]
-    lib.xy_stratified_sample_range_u8_counted.restype = ctypes.c_size_t
-    lib.xy_stratified_sample_range_u8_counted.argtypes = [
+    lib.xyg_stratified_sample_range_u8_counted.restype = ctypes.c_size_t
+    lib.xyg_stratified_sample_range_u8_counted.argtypes = [
         ctypes.c_void_p,  # groups
         ctypes.c_size_t,  # len
         ctypes.c_void_p,  # counts
@@ -645,8 +646,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out
         ctypes.c_size_t,  # capacity
     ]
-    lib.xy_stratified_sample_mask.restype = ctypes.c_int32
-    lib.xy_stratified_sample_mask.argtypes = [
+    lib.xyg_stratified_sample_mask.restype = ctypes.c_int32
+    lib.xyg_stratified_sample_mask.argtypes = [
         ctypes.c_void_p,  # ids
         ctypes.c_void_p,  # groups
         ctypes.c_size_t,  # len
@@ -656,10 +657,10 @@ def _load() -> ctypes.CDLL:
         ctypes.c_uint64,  # min_count
         ctypes.c_void_p,  # out
     ]
-    lib.xy_stratified_sample_mask_u32.restype = ctypes.c_int32
-    lib.xy_stratified_sample_mask_u32.argtypes = list(lib.xy_stratified_sample_mask.argtypes)
-    lib.xy_pyramid_build.restype = ctypes.c_uint64
-    lib.xy_pyramid_build.argtypes = [
+    lib.xyg_stratified_sample_mask_u32.restype = ctypes.c_int32
+    lib.xyg_stratified_sample_mask_u32.argtypes = list(lib.xyg_stratified_sample_mask.argtypes)
+    lib.xyg_pyramid_build.restype = ctypes.c_uint64
+    lib.xyg_pyramid_build.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -669,15 +670,15 @@ def _load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_uint32,
     ]
-    lib.xy_pyramid_append.restype = ctypes.c_int32
-    lib.xy_pyramid_append.argtypes = [
+    lib.xyg_pyramid_append.restype = ctypes.c_int32
+    lib.xyg_pyramid_append.argtypes = [
         ctypes.c_uint64,
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_pyramid_count.restype = ctypes.c_int32
-    lib.xy_pyramid_count.argtypes = [
+    lib.xyg_pyramid_count.restype = ctypes.c_int32
+    lib.xyg_pyramid_count.argtypes = [
         ctypes.c_uint64,
         ctypes.c_double,
         ctypes.c_double,
@@ -685,8 +686,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_void_p,
     ]
-    lib.xy_pyramid_compose.restype = ctypes.c_int32
-    lib.xy_pyramid_compose.argtypes = [
+    lib.xyg_pyramid_compose.restype = ctypes.c_int32
+    lib.xyg_pyramid_compose.argtypes = [
         ctypes.c_uint64,
         ctypes.c_double,
         ctypes.c_double,
@@ -697,8 +698,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # max_upsample
         ctypes.c_void_p,
     ]
-    lib.xy_pyramid_build_color.restype = ctypes.c_uint64
-    lib.xy_pyramid_build_color.argtypes = [
+    lib.xyg_pyramid_build_color.restype = ctypes.c_uint64
+    lib.xyg_pyramid_build_color.argtypes = [
         ctypes.c_void_p,  # x
         ctypes.c_void_p,  # y
         ctypes.c_size_t,  # len
@@ -712,8 +713,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_uint32,
     ]
-    lib.xy_pyramid_compose_color.restype = ctypes.c_int32
-    lib.xy_pyramid_compose_color.argtypes = [
+    lib.xyg_pyramid_compose_color.restype = ctypes.c_int32
+    lib.xyg_pyramid_compose_color.argtypes = [
         ctypes.c_uint64,
         ctypes.c_double,
         ctypes.c_double,
@@ -725,10 +726,10 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out counts f32
         ctypes.c_void_p,  # out rgba8
     ]
-    lib.xy_pyramid_free.restype = ctypes.c_int32
-    lib.xy_pyramid_free.argtypes = [ctypes.c_uint64]
-    lib.xy_graph_layout.restype = ctypes.c_int32
-    lib.xy_graph_layout.argtypes = [
+    lib.xyg_pyramid_free.restype = ctypes.c_int32
+    lib.xyg_pyramid_free.argtypes = [ctypes.c_uint64]
+    lib.xyg_graph_layout.restype = ctypes.c_int32
+    lib.xyg_graph_layout.argtypes = [
         ctypes.c_uint32,
         ctypes.c_uint64,
         ctypes.c_uint64,
@@ -742,8 +743,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_graph_force_create.restype = ctypes.c_int32
-    lib.xy_graph_force_create.argtypes = [
+    lib.xyg_graph_force_create.restype = ctypes.c_int32
+    lib.xyg_graph_force_create.argtypes = [
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.c_void_p,
@@ -754,8 +755,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_uint32,  # algorithm
         ctypes.c_void_p,
     ]
-    lib.xy_graph_force_tick.restype = ctypes.c_int32
-    lib.xy_graph_force_tick.argtypes = [
+    lib.xyg_graph_force_tick.restype = ctypes.c_int32
+    lib.xyg_graph_force_tick.argtypes = [
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.c_uint32,
@@ -763,10 +764,10 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_graph_force_destroy.restype = ctypes.c_int32
-    lib.xy_graph_force_destroy.argtypes = [ctypes.c_uint64]
-    lib.xy_graph_build_csr.restype = ctypes.c_int32
-    lib.xy_graph_build_csr.argtypes = [
+    lib.xyg_graph_force_destroy.restype = ctypes.c_int32
+    lib.xyg_graph_force_destroy.argtypes = [ctypes.c_uint64]
+    lib.xyg_graph_build_csr.restype = ctypes.c_int32
+    lib.xyg_graph_build_csr.argtypes = [
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.c_void_p,
@@ -777,8 +778,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_uint64,
         ctypes.c_void_p,
     ]
-    lib.xy_graph_lod_decision.restype = ctypes.c_int32
-    lib.xy_graph_lod_decision.argtypes = [
+    lib.xyg_graph_lod_decision.restype = ctypes.c_int32
+    lib.xyg_graph_lod_decision.argtypes = [
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.c_uint64,
@@ -786,8 +787,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_graph_cluster_aggregate.restype = ctypes.c_int32
-    lib.xy_graph_cluster_aggregate.argtypes = [
+    lib.xyg_graph_cluster_aggregate.restype = ctypes.c_int32
+    lib.xyg_graph_cluster_aggregate.argtypes = [
         ctypes.c_uint64,  # n_nodes
         ctypes.c_uint64,  # n_edges
         ctypes.c_void_p,  # x
@@ -801,8 +802,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out_tier
         ctypes.c_void_p,  # out_edges_kept
     ]
-    lib.xy_graph_build_render.restype = ctypes.c_int32
-    lib.xy_graph_build_render.argtypes = [
+    lib.xyg_graph_build_render.restype = ctypes.c_int32
+    lib.xyg_graph_build_render.argtypes = [
         ctypes.c_uint64,  # n_nodes
         ctypes.c_uint64,  # n_edges
         ctypes.c_void_p,  # x
@@ -826,14 +827,14 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out_tier
         ctypes.c_void_p,  # out_edges_kept
     ]
-    lib.xy_graph_sample_edges.restype = ctypes.c_uint64
-    lib.xy_graph_sample_edges.argtypes = [
+    lib.xyg_graph_sample_edges.restype = ctypes.c_uint64
+    lib.xyg_graph_sample_edges.argtypes = [
         ctypes.c_uint64,
         ctypes.c_uint64,
         ctypes.c_void_p,
     ]
-    lib.xy_sankey_layout.restype = ctypes.c_int32
-    lib.xy_sankey_layout.argtypes = [
+    lib.xyg_sankey_layout.restype = ctypes.c_int32
+    lib.xyg_sankey_layout.argtypes = [
         ctypes.c_uint64,  # n_nodes
         ctypes.c_uint64,  # n_links
         ctypes.c_void_p,  # sources u64
@@ -857,16 +858,16 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,  # out_err_nodes u64
         ctypes.c_void_p,  # out_err_n u64
     ]
-    lib.xy_drill_decision.restype = ctypes.c_int32
-    lib.xy_drill_decision.argtypes = [
+    lib.xyg_drill_decision.restype = ctypes.c_int32
+    lib.xyg_drill_decision.argtypes = [
         ctypes.c_uint64,
         ctypes.c_double,
         ctypes.c_int32,
         ctypes.c_double,
         ctypes.c_void_p,
     ]
-    lib.xy_lod_grid_shape.restype = ctypes.c_int32
-    lib.xy_lod_grid_shape.argtypes = [
+    lib.xyg_lod_grid_shape.restype = ctypes.c_int32
+    lib.xyg_lod_grid_shape.argtypes = [
         ctypes.c_int32,
         ctypes.c_int32,
         ctypes.c_uint64,
@@ -874,8 +875,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_lod_plan.restype = ctypes.c_int32
-    lib.xy_lod_plan.argtypes = [
+    lib.xyg_lod_plan.restype = ctypes.c_int32
+    lib.xyg_lod_plan.argtypes = [
         ctypes.c_uint64,
         ctypes.c_double,
         ctypes.c_int32,
@@ -888,16 +889,16 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_quantiles.restype = ctypes.c_size_t
-    lib.xy_quantiles.argtypes = [
+    lib.xyg_quantiles.restype = ctypes.c_size_t
+    lib.xyg_quantiles.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_box_stats.restype = ctypes.c_int32
-    lib.xy_box_stats.argtypes = [
+    lib.xyg_box_stats.restype = ctypes.c_int32
+    lib.xyg_box_stats.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_void_p,
@@ -905,8 +906,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_hexbin.restype = ctypes.c_size_t
-    lib.xy_hexbin.argtypes = [
+    lib.xyg_hexbin.restype = ctypes.c_size_t
+    lib.xyg_hexbin.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_void_p,
@@ -927,16 +928,16 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_violin_density.restype = ctypes.c_int32
-    lib.xy_violin_density.argtypes = [
+    lib.xyg_violin_density.restype = ctypes.c_int32
+    lib.xyg_violin_density.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_histogram_edges.restype = ctypes.c_size_t
-    lib.xy_histogram_edges.argtypes = [
+    lib.xyg_histogram_edges.restype = ctypes.c_size_t
+    lib.xyg_histogram_edges.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_double,
@@ -946,8 +947,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_wind_rose_bins.restype = ctypes.c_size_t
-    lib.xy_wind_rose_bins.argtypes = [
+    lib.xyg_wind_rose_bins.restype = ctypes.c_size_t
+    lib.xyg_wind_rose_bins.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -961,8 +962,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_contourf_densify.restype = ctypes.c_int32
-    lib.xy_contourf_densify.argtypes = [
+    lib.xyg_contourf_densify.restype = ctypes.c_int32
+    lib.xyg_contourf_densify.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -977,8 +978,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
-    lib.xy_contourf_bands.restype = ctypes.c_size_t
-    lib.xy_contourf_bands.argtypes = [
+    lib.xyg_contourf_bands.restype = ctypes.c_size_t
+    lib.xyg_contourf_bands.argtypes = [
         ctypes.c_void_p,
         ctypes.c_size_t,
         ctypes.c_size_t,
@@ -997,8 +998,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
-    lib.xy_local_log_density.restype = ctypes.c_int32
-    lib.xy_local_log_density.argtypes = [
+    lib.xyg_local_log_density.restype = ctypes.c_int32
+    lib.xyg_local_log_density.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p,
         ctypes.c_size_t,
@@ -1010,16 +1011,16 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_void_p,
     ]
-    lib.xy_rasterize.restype = ctypes.c_int32
-    lib.xy_rasterize.argtypes = [
+    lib.xyg_rasterize.restype = ctypes.c_int32
+    lib.xyg_rasterize.argtypes = [
         ctypes.c_void_p,  # cmd
         ctypes.c_size_t,  # cmd_len
         ctypes.c_void_p,  # out (w*h*4 RGBA8)
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
     ]
-    lib.xy_rasterize_png.restype = ctypes.c_size_t
-    lib.xy_rasterize_png.argtypes = [
+    lib.xyg_rasterize_png.restype = ctypes.c_size_t
+    lib.xyg_rasterize_png.argtypes = [
         ctypes.c_void_p,  # cmd
         ctypes.c_size_t,  # cmd_len
         ctypes.c_void_p,  # out PNG bytes
@@ -1027,8 +1028,19 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
     ]
-    lib.xy_rasterize_data.restype = ctypes.c_int32
-    lib.xy_rasterize_data.argtypes = [
+    lib.xyg_rasterize_png_data.restype = ctypes.c_size_t
+    lib.xyg_rasterize_png_data.argtypes = [
+        ctypes.c_void_p,  # cmd
+        ctypes.c_size_t,  # cmd_len
+        ctypes.c_void_p,  # external data arena
+        ctypes.c_size_t,  # data_len
+        ctypes.c_void_p,  # out PNG bytes
+        ctypes.c_size_t,  # out_capacity
+        ctypes.c_size_t,  # w
+        ctypes.c_size_t,  # h
+    ]
+    lib.xyg_rasterize_data.restype = ctypes.c_int32
+    lib.xyg_rasterize_data.argtypes = [
         ctypes.c_void_p,  # cmd
         ctypes.c_size_t,  # cmd_len
         ctypes.c_void_p,  # external data arena
@@ -1037,8 +1049,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
     ]
-    lib.xy_rasterize_spans.restype = ctypes.c_int32
-    lib.xy_rasterize_spans.argtypes = [
+    lib.xyg_rasterize_spans.restype = ctypes.c_int32
+    lib.xyg_rasterize_spans.argtypes = [
         ctypes.c_void_p,  # cmd
         ctypes.c_size_t,  # cmd_len
         ctypes.POINTER(ctypes.c_void_p),  # span pointers
@@ -1048,8 +1060,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
     ]
-    lib.xy_rasterize_png_spans.restype = ctypes.c_size_t
-    lib.xy_rasterize_png_spans.argtypes = [
+    lib.xyg_rasterize_png_spans.restype = ctypes.c_size_t
+    lib.xyg_rasterize_png_spans.argtypes = [
         ctypes.c_void_p,  # cmd
         ctypes.c_size_t,  # cmd_len
         ctypes.POINTER(ctypes.c_void_p),  # span pointers
@@ -1060,8 +1072,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
     ]
-    lib.xy_heatmap_rgba.restype = ctypes.c_int32
-    lib.xy_heatmap_rgba.argtypes = [
+    lib.xyg_heatmap_rgba.restype = ctypes.c_int32
+    lib.xyg_heatmap_rgba.argtypes = [
         ctypes.c_void_p,  # raw f64
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
@@ -1070,8 +1082,8 @@ def _load() -> ctypes.CDLL:
         ctypes.c_uint8,  # alpha
         ctypes.c_void_p,  # out RGBA8
     ]
-    lib.xy_density_rgba.restype = ctypes.c_int32
-    lib.xy_density_rgba.argtypes = [
+    lib.xyg_density_rgba.restype = ctypes.c_int32
+    lib.xyg_density_rgba.argtypes = [
         ctypes.c_void_p,  # encoded log-u8
         ctypes.c_size_t,  # w
         ctypes.c_size_t,  # h
@@ -1081,15 +1093,15 @@ def _load() -> ctypes.CDLL:
         ctypes.c_double,  # opacity
         ctypes.c_void_p,  # out RGBA8
     ]
-    lib.xy_density_log_u8.restype = ctypes.c_int32
-    lib.xy_density_log_u8.argtypes = [
+    lib.xyg_density_log_u8.restype = ctypes.c_int32
+    lib.xyg_density_log_u8.argtypes = [
         ctypes.c_void_p,  # grid f32
         ctypes.c_size_t,  # len
         ctypes.c_void_p,  # out u8
         ctypes.c_void_p,  # out max f64
     ]
-    lib.xy_css_check.restype = ctypes.c_int32
-    lib.xy_css_check.argtypes = [
+    lib.xyg_css_check.restype = ctypes.c_int32
+    lib.xyg_css_check.argtypes = [
         ctypes.c_uint32,  # kind (0 decl, 1 color, 2 length list, 3 number)
         ctypes.c_char_p,  # prop (UTF-8; null only at len 0)
         ctypes.c_size_t,  # prop_len
@@ -1108,6 +1120,17 @@ def _as_f64(arr: npt.NDArray[np.float64], label: str = "data") -> npt.NDArray[np
     if out.ndim != 1:
         raise ValueError(f"{label} must be 1-D, got shape {out.shape}")
     return out
+
+
+def _scalar_or_f64(value: npt.NDArray[np.float64] | float, label: str) -> npt.NDArray[np.float64]:
+    """Broadcast a Python float or keep a 1-D f64 array.
+
+    ``np.isscalar`` does not narrow ``ndarray | float`` for ty, so the scalar
+    vs array split has to be an ``isinstance`` check.
+    """
+    if isinstance(value, np.ndarray):
+        return _as_f64(cast(npt.NDArray[np.float64], value), label)
+    return np.asarray([float(value)], dtype=np.float64)
 
 
 def _as_row_ids(rows: npt.NDArray[np.uint32], label: str = "rows") -> npt.NDArray[np.uint32]:
@@ -1178,7 +1201,7 @@ def factorize_fixed(
     unique_indices = np.empty(n, dtype=np.uint32)
     if n == 0:
         return codes, unique_indices
-    written = _lib.xy_factorize_fixed(
+    written = _lib.xyg_factorize_fixed(
         records.ctypes.data,
         n,
         width,
@@ -1201,7 +1224,7 @@ def factorize_fixed_u8(
     unique_indices = np.empty(min(n, max_unique), dtype=np.uint32)
     if n == 0:
         return codes, unique_indices
-    written = _lib.xy_factorize_fixed_u8(
+    written = _lib.xyg_factorize_fixed_u8(
         records.ctypes.data,
         n,
         width,
@@ -1235,7 +1258,7 @@ def factorize_fixed_u8_counts(
     counts = np.empty(capacity, dtype=np.uint64)
     if n == 0:
         return codes, unique_indices, counts
-    written = _lib.xy_factorize_fixed_u8_counts(
+    written = _lib.xyg_factorize_fixed_u8_counts(
         records.ctypes.data,
         n,
         width,
@@ -1274,7 +1297,7 @@ def factorize_unicode1_u8_counts(
         return codes, unique_indices, counts
     native_order = "<" if sys.byteorder == "little" else ">"
     swap_endian = records.dtype.byteorder not in ("=", "|", native_order)
-    written = _lib.xy_factorize_unicode1_u8_counts(
+    written = _lib.xyg_factorize_unicode1_u8_counts(
         records.ctypes.data,
         n,
         int(swap_endian),
@@ -1347,7 +1370,7 @@ def transition_keys_fixed(
     error_first = ctypes.c_size_t(_USIZE_MAX)
     error_index = ctypes.c_size_t(_USIZE_MAX)
     status = int(
-        _lib.xy_transition_keys_fixed(
+        _lib.xyg_transition_keys_fixed(
             records.ctypes.data,
             n,
             width,
@@ -1391,7 +1414,7 @@ def remap_u8(values: npt.NDArray[np.uint8], mapping: npt.NDArray[np.uint8]) -> N
         return
     if len(mapping) == 0:
         raise ValueError("remap_u8 mapping must be non-empty")
-    ok = _lib.xy_remap_u8(
+    ok = _lib.xyg_remap_u8(
         values.ctypes.data,
         len(values),
         mapping.ctypes.data,
@@ -1518,7 +1541,7 @@ def zone_maps(
     f64_ptr = f64_rows.ctypes.data
     u64_ptr = u64_rows.ctypes.data
     row_bytes = n_chunks * 8
-    written = _lib.xy_zone_maps(
+    written = _lib.xyg_zone_maps(
         _ptr_f64(data),
         n,
         chunk_size,
@@ -1534,7 +1557,7 @@ def zone_maps(
     if written == _USIZE_MAX:
         raise ValueError("invalid zone_maps arguments")
     if written != n_chunks:
-        raise RuntimeError(f"xy native zone_maps wrote {written} chunks, expected {n_chunks}")
+        raise RuntimeError(f"xyg native zone_maps wrote {written} chunks, expected {n_chunks}")
     mins, maxs, sums, sum_sqs, positive_mins, positive_maxs = f64_rows
     counts, nulls = u64_rows
     return mins, maxs, counts, nulls, sums, sum_sqs, positive_mins, positive_maxs
@@ -1554,7 +1577,7 @@ _ZONE_MAP_DTYPE = np.dtype(
     align=True,
 )
 if _ZONE_MAP_DTYPE.itemsize != 64:  # pragma: no cover - platform ABI invariant
-    raise ImportError("xy native ZoneMap layout is not 64 bytes on this platform")
+    raise ImportError("xyg native ZoneMap layout is not 64 bytes on this platform")
 
 
 def zone_maps_pair(
@@ -1572,7 +1595,7 @@ def zone_maps_pair(
     x_records = np.empty(n_chunks, dtype=_ZONE_MAP_DTYPE)
     y_records = np.empty(n_chunks, dtype=_ZONE_MAP_DTYPE)
     if len(x):
-        written = _lib.xy_zone_maps_pair(
+        written = _lib.xyg_zone_maps_pair(
             x.ctypes.data,
             y.ctypes.data,
             len(x),
@@ -1584,7 +1607,7 @@ def zone_maps_pair(
             raise ValueError("invalid zone_maps_pair arguments")
         if written != n_chunks:
             raise RuntimeError(
-                f"xy native zone_maps_pair wrote {written} chunks, expected {n_chunks}"
+                f"xyg native zone_maps_pair wrote {written} chunks, expected {n_chunks}"
             )
 
     def unpack(records: np.ndarray) -> tuple[np.ndarray, ...]:
@@ -1612,9 +1635,9 @@ def encode_f32(
     if len(data) == 0:  # empty NumPy arrays may carry a null pointer
         return np.empty(0, dtype=np.float32)
     out = np.empty(len(data), dtype=np.float32)
-    ok = _lib.xy_encode_f32(_ptr_f64(data), len(data), offset, scale, out.ctypes.data)
+    ok = _lib.xyg_encode_f32(_ptr_f64(data), len(data), offset, scale, out.ctypes.data)
     if ok != 1:
-        raise RuntimeError("xy native encode_f32 failed (output undefined)")
+        raise RuntimeError("xyg native encode_f32 failed (output undefined)")
     return out
 
 
@@ -1630,7 +1653,7 @@ def stacked_bounds(
         raise ValueError(f"values must be a non-empty 2-D array, got shape {values.shape}")
     lower = np.empty_like(values)
     upper = np.empty_like(values)
-    ok = _lib.xy_stacked_bounds(
+    ok = _lib.xyg_stacked_bounds(
         values.ctypes.data,
         values.shape[0],
         values.shape[1],
@@ -1639,7 +1662,7 @@ def stacked_bounds(
         upper.ctypes.data,
     )
     if ok != 1:
-        raise RuntimeError("xy native stacked_bounds failed (output undefined)")
+        raise RuntimeError("xyg native stacked_bounds failed (output undefined)")
     return lower, upper
 
 
@@ -1660,7 +1683,7 @@ def bar_stack(
     npt.NDArray[np.float64],
     npt.NDArray[np.float64],
 ]:
-    """Grouped / stacked / normalized bar rect corners via ``xy_bar_stack``.
+    """Grouped / stacked / normalized bar rect corners via ``xyg_bar_stack``.
 
     ``values`` is row-major ``(n_series, n_items)``. Returns ``(x0, x1, y0, y1)``
     each shaped ``(n_series, n_items)`` in plot axes (orientation applied).
@@ -1671,24 +1694,21 @@ def bar_stack(
         raise ValueError(f"orientation must be one of {tuple(_BAR_ORIENT)}, got {orientation!r}")
     pos = _as_f64(pos, "pos")
     values = np.ascontiguousarray(values, dtype=np.float64)
-    if values.ndim != 2 or min(values.shape) == 0:
-        raise ValueError(f"values must be a non-empty 2-D array, got shape {values.shape}")
+    if values.ndim != 2:
+        raise ValueError(f"values must be a 2-D array, got shape {values.shape}")
     n_series, n_items = values.shape
     if len(pos) != n_items:
         raise ValueError(f"pos length {len(pos)} must match values columns {n_items}")
-    if np.isscalar(width):
-        width_arr = np.asarray([float(width)], dtype=np.float64)
-    else:
-        width_arr = _as_f64(width, "width")
-    if np.isscalar(base):
-        base_arr = np.asarray([float(base)], dtype=np.float64)
-    else:
-        base_arr = _as_f64(base, "base")
+    if n_series == 0 or n_items == 0:
+        empty = np.empty((n_series, n_items), dtype=np.float64)
+        return empty, empty.copy(), empty.copy(), empty.copy()
+    width_arr = _scalar_or_f64(width, "width")
+    base_arr = _scalar_or_f64(base, "base")
     out_x0 = np.empty(n_series * n_items, dtype=np.float64)
     out_x1 = np.empty_like(out_x0)
     out_y0 = np.empty_like(out_x0)
     out_y1 = np.empty_like(out_x0)
-    ok = _lib.xy_bar_stack(
+    ok = _lib.xyg_bar_stack(
         _ptr_f64(pos),
         n_items,
         values.ctypes.data,
@@ -1744,7 +1764,7 @@ def histogram2d(
     else:
         weights_ptr = 0
     out = np.empty((len(x_edges) - 1, len(y_edges) - 1), dtype=np.float64)
-    ok = _lib.xy_histogram2d(
+    ok = _lib.xyg_histogram2d(
         x.ctypes.data if len(x) else 0,
         y.ctypes.data if len(y) else 0,
         weights_ptr,
@@ -1804,7 +1824,7 @@ def quad_mesh_triangles(
     y_flat = y_values.reshape(-1)
     capacity = rows * cols * 2
     outputs = [np.empty(capacity, dtype=np.float64) for _ in range(7)]
-    written = _lib.xy_quad_mesh_triangles(
+    written = _lib.xyg_quad_mesh_triangles(
         x_flat.ctypes.data,
         len(x_flat),
         y_flat.ctypes.data,
@@ -1871,11 +1891,11 @@ def sector_triangles(
         int(bool(counterclockwise)),
         int(bool(normalize)),
     )
-    query = _lib.xy_sector_triangles(*common, 0, 0, 0, 0, 0, 0, 0, 0)
+    query = _lib.xyg_sector_triangles(*common, 0, 0, 0, 0, 0, 0, 0, 0)
     if query == _USIZE_MAX:
         raise ValueError("invalid sector geometry")
     outputs = [np.empty(query, dtype=np.float64) for _ in range(7)]
-    written = _lib.xy_sector_triangles(
+    written = _lib.xyg_sector_triangles(
         *common,
         *(output.ctypes.data for output in outputs),
         query,
@@ -1893,7 +1913,7 @@ def rfft(
     nfft = _bounded_positive_int(nfft, "nfft", max_value=65_536)
     sample_rate = _finite_float(sample_rate, "sample_rate")
     outputs = [np.empty(nfft // 2 + 1, dtype=np.float64) for _ in range(3)]
-    ok = _lib.xy_rfft(
+    ok = _lib.xyg_rfft(
         values.ctypes.data if len(values) else 0,
         len(values),
         nfft,
@@ -1930,7 +1950,7 @@ def welch_spectra(
         raise ValueError("noverlap must be non-negative and less than nfft")
     sample_rate = _finite_float(sample_rate, "sample_rate")
     outputs = [np.empty(nfft // 2 + 1, dtype=np.float64) for _ in range(5)]
-    ok = _lib.xy_welch_spectra(
+    ok = _lib.xyg_welch_spectra(
         x_values.ctypes.data if len(x_values) else 0,
         y_values.ctypes.data if y_values is not None else 0,
         len(x_values),
@@ -1962,7 +1982,7 @@ def spectrogram(
     frequency = np.empty(nfft // 2 + 1, dtype=np.float64)
     time = np.empty(segments, dtype=np.float64)
     power = np.empty((segments, len(frequency)), dtype=np.float64)
-    ok = _lib.xy_spectrogram(
+    ok = _lib.xyg_spectrogram(
         values.ctypes.data if len(values) else 0,
         len(values),
         nfft,
@@ -1994,7 +2014,7 @@ def correlation(
         raise ValueError("max_lags must be between 0 and len(x)-1")
     lag = np.empty(2 * lag_count + 1, dtype=np.float64)
     result = np.empty_like(lag)
-    ok = _lib.xy_correlation(
+    ok = _lib.xyg_correlation(
         x_values.ctypes.data,
         y_values.ctypes.data,
         len(x_values),
@@ -2018,7 +2038,7 @@ def weighted_ecdf(
         raise ValueError("values and weights must have equal non-zero length")
     output_values = np.empty(len(value_array), dtype=np.float64)
     cumulative = np.empty(len(value_array), dtype=np.float64)
-    written = _lib.xy_weighted_ecdf(
+    written = _lib.xyg_weighted_ecdf(
         value_array.ctypes.data,
         weight_array.ctypes.data,
         len(value_array),
@@ -2081,7 +2101,7 @@ def indexed_triangles(
         if len(scalar) != expected:
             raise ValueError(f"{values_at} values must have length {expected}, got {len(scalar)}")
     outputs = [np.empty(len(topology), dtype=np.float64) for _ in range(7)]
-    written = _lib.xy_indexed_triangles(
+    written = _lib.xyg_indexed_triangles(
         x_values.ctypes.data,
         y_values.ctypes.data,
         len(x_values),
@@ -2119,7 +2139,7 @@ def triangle_edges(
     x_values, y_values, topology = _triangle_inputs(x, y, triangles)
     capacity = len(topology) * 3
     outputs = [np.empty(capacity, dtype=np.float64) for _ in range(4)]
-    written = _lib.xy_triangle_edges(
+    written = _lib.xyg_triangle_edges(
         x_values.ctypes.data,
         y_values.ctypes.data,
         len(x_values),
@@ -2149,7 +2169,7 @@ def delaunay_triangles(
     # A planar triangulation has at most 2n-5 faces for n>=3.
     capacity = max(1, 2 * len(x_values))
     output = np.empty((capacity, 3), dtype=np.int64)
-    written = _lib.xy_delaunay_triangles(
+    written = _lib.xyg_delaunay_triangles(
         x_values.ctypes.data,
         y_values.ctypes.data,
         len(x_values),
@@ -2174,7 +2194,7 @@ def polygon_triangles(
     closed = x_values[0] == x_values[-1] and y_values[0] == y_values[-1]
     capacity = len(x_values) - (3 if closed else 2)
     output = np.empty((capacity, 3), dtype=np.int64)
-    written = _lib.xy_polygon_triangles(
+    written = _lib.xyg_polygon_triangles(
         x_values.ctypes.data,
         y_values.ctypes.data,
         len(x_values),
@@ -2222,13 +2242,13 @@ def marching_triangles(
         level_values.ctypes.data if len(level_values) else 0,
         len(level_values),
     )
-    query = _lib.xy_marching_triangles(*common, 0, 0, 0, 0, 0, 0)
+    query = _lib.xyg_marching_triangles(*common, 0, 0, 0, 0, 0, 0)
     if query == _USIZE_MAX:
         raise ValueError("invalid marching triangle geometry")
     outputs = [np.empty(query, dtype=np.float64) for _ in range(5)]
     if query == 0:
         return outputs[0], outputs[1], outputs[2], outputs[3], outputs[4]
-    written = _lib.xy_marching_triangles(
+    written = _lib.xyg_marching_triangles(
         *common,
         *(output.ctypes.data for output in outputs),
         query,
@@ -2268,7 +2288,7 @@ def vector_segments(
     outputs = [np.empty(capacity, dtype=np.float64) for _ in range(4)]
     if capacity == 0:
         return outputs[0], outputs[1], outputs[2], outputs[3]
-    written = _lib.xy_vector_segments(
+    written = _lib.xyg_vector_segments(
         *(values.ctypes.data for values in arrays),
         len(arrays[0]),
         scale,
@@ -2306,7 +2326,7 @@ def streamlines(
         raise ValueError(f"u and v must both have shape {expected}")
     density = _finite_float(density, "density")
     max_steps = _bounded_positive_int(max_steps, "max_steps", max_value=100_000)
-    query = _lib.xy_streamlines(
+    query = _lib.xyg_streamlines(
         x_coords.ctypes.data,
         len(x_coords),
         y_coords.ctypes.data,
@@ -2326,7 +2346,7 @@ def streamlines(
     outputs = [np.empty(query, dtype=np.float64) for _ in range(4)]
     if query == 0:
         return outputs[0], outputs[1], outputs[2], outputs[3]
-    written = _lib.xy_streamlines(
+    written = _lib.xyg_streamlines(
         x_coords.ctypes.data,
         len(x_coords),
         y_coords.ctypes.data,
@@ -2360,7 +2380,7 @@ def m4_indices(
     if len(x) == 0:
         return np.empty(0, dtype=np.uint32)
     out = np.empty(n_buckets * 4, dtype=np.uint32)
-    written = _lib.xy_m4_indices(
+    written = _lib.xyg_m4_indices(
         _ptr_f64(x),
         _ptr_f64(y),
         len(x),
@@ -2393,7 +2413,7 @@ def m4_points(
         return empty, empty.copy()
     out_x = np.empty(n_buckets * 4, dtype=np.float64)
     out_y = np.empty(n_buckets * 4, dtype=np.float64)
-    written = _lib.xy_m4_points(
+    written = _lib.xyg_m4_points(
         _ptr_f64(x),
         _ptr_f64(y),
         len(x),
@@ -2420,7 +2440,7 @@ def svg_poly_path(x: npt.ArrayLike, y: npt.ArrayLike) -> str:
     capacity = max(64, len(xa) * 32)
     while True:
         out = ctypes.create_string_buffer(capacity)
-        written = _lib.xy_svg_poly_path(_ptr_f64(xa), _ptr_f64(ya), len(xa), out, capacity)
+        written = _lib.xyg_svg_poly_path(_ptr_f64(xa), _ptr_f64(ya), len(xa), out, capacity)
         if written == _USIZE_MAX:
             raise ValueError("invalid SVG polyline coordinates")
         if written <= capacity:
@@ -2494,7 +2514,7 @@ def marching_squares(
 
     def extract(outputs: tuple[npt.NDArray[np.float64], ...]) -> int:
         return int(
-            _lib.xy_marching_squares(
+            _lib.xyg_marching_squares(
                 _ptr_f64(z),
                 rows,
                 cols,
@@ -2547,7 +2567,7 @@ def bin_2d(
         raise ValueError("x and y must have equal length")
     out = np.zeros((h, w), dtype=np.float32)
     if len(x):
-        ok = _lib.xy_bin_2d(
+        ok = _lib.xyg_bin_2d(
             _ptr_f64(x),
             _ptr_f64(y),
             len(x),
@@ -2591,7 +2611,7 @@ def bin_2d_f32(
         raise ValueError("x and y must have equal length")
     out = np.zeros((h, w), dtype=np.float32)
     if len(x):
-        ok = _lib.xy_bin_2d_f32(
+        ok = _lib.xyg_bin_2d_f32(
             x.ctypes.data,
             y.ctypes.data,
             len(x),
@@ -2666,7 +2686,7 @@ def bin_2d_mean_color(
     idx_ptr, rgba_ptr, lut_ptr, lut_len, _keepalive = _color_source_args(len(x), idx, rgba, lut)
     out = np.zeros((h, w, 4), dtype=np.uint8)
     if len(x):
-        ok = _lib.xy_bin_2d_mean_color(
+        ok = _lib.xyg_bin_2d_mean_color(
             _ptr_f64(x),
             _ptr_f64(y),
             len(x),
@@ -2715,7 +2735,7 @@ def bin_2d_indices(
     idx = np.empty(len(x), dtype=np.uint32)
     if len(x) == 0:
         return grid, idx
-    written = _lib.xy_bin_2d_indices(
+    written = _lib.xyg_bin_2d_indices(
         _ptr_f64(x),
         _ptr_f64(y),
         len(x),
@@ -2766,7 +2786,7 @@ def bin_2d_sample_range(
 
     def extract(output: npt.NDArray[np.uint32]) -> int:
         return int(
-            _lib.xy_bin_2d_sample_range(
+            _lib.xyg_bin_2d_sample_range(
                 _ptr_f64(x),
                 _ptr_f64(y),
                 len(x),
@@ -2839,7 +2859,7 @@ def bin_2d_stratified_sample_range_u8_counted(
 
     def extract(output: npt.NDArray[np.uint32]) -> int:
         return int(
-            _lib.xy_bin_2d_stratified_sample_range_u8_counted(
+            _lib.xyg_bin_2d_stratified_sample_range_u8_counted(
                 _ptr_f64(x),
                 _ptr_f64(y),
                 groups.ctypes.data if len(groups) else None,
@@ -2878,7 +2898,7 @@ def is_sorted(data: npt.NDArray[np.float64]) -> bool:
     data = _as_f64(data, "data")
     if len(data) < 2:
         return True
-    return bool(_lib.xy_is_sorted(_ptr_f64(data), len(data)))
+    return bool(_lib.xyg_is_sorted(_ptr_f64(data), len(data)))
 
 
 def min_max(data: npt.NDArray[np.float64]) -> Optional[tuple[float, float]]:
@@ -2888,7 +2908,7 @@ def min_max(data: npt.NDArray[np.float64]) -> Optional[tuple[float, float]]:
         return None
     lo = ctypes.c_double()
     hi = ctypes.c_double()
-    ok = _lib.xy_min_max(_ptr_f64(data), len(data), ctypes.byref(lo), ctypes.byref(hi))
+    ok = _lib.xyg_min_max(_ptr_f64(data), len(data), ctypes.byref(lo), ctypes.byref(hi))
     return (lo.value, hi.value) if ok else None
 
 
@@ -2905,7 +2925,7 @@ def histogram_uniform(
     lo, hi = _finite_increasing(lo, hi, "histogram range")
     data = _as_f64(data, "data")
     counts = np.empty(n_bins, dtype=np.float64)
-    written = _lib.xy_histogram_uniform(
+    written = _lib.xyg_histogram_uniform(
         _ptr_f64(data),
         len(data),
         lo,
@@ -2938,9 +2958,9 @@ def normalize_f32(
     out = np.empty(len(data), dtype=np.float32)
     nan_mode = 1 if nonfinite == "nan" else 0
     if len(data):
-        ok = _lib.xy_normalize_f32(_ptr_f64(data), len(data), lo, hi, nan_mode, out.ctypes.data)
+        ok = _lib.xyg_normalize_f32(_ptr_f64(data), len(data), lo, hi, nan_mode, out.ctypes.data)
         if ok != 1:
-            raise RuntimeError("xy native normalize_f32 failed (output undefined)")
+            raise RuntimeError("xyg native normalize_f32 failed (output undefined)")
     return out
 
 
@@ -2970,7 +2990,7 @@ def valid_indices_f64(
 
     def invoke(output: npt.NDArray[np.uint32] | None) -> int:
         return int(
-            _lib.xy_valid_indices_f64(
+            _lib.xyg_valid_indices_f64(
                 pointers,
                 len(arrays),
                 size,
@@ -3013,7 +3033,7 @@ def range_indices(
     out = np.empty(len(x), dtype=np.uint32)
     if len(x) == 0:
         return out
-    written = _lib.xy_range_indices(
+    written = _lib.xyg_range_indices(
         _ptr_f64(x),
         _ptr_f64(y),
         len(x),
@@ -3054,7 +3074,7 @@ def range_indices_rows(
     out = np.empty(len(rows), dtype=np.uint32)
     if len(rows) == 0:
         return out
-    written = _lib.xy_range_indices_rows(
+    written = _lib.xyg_range_indices_rows(
         _ptr_f64(x),
         _ptr_f64(y),
         len(x),
@@ -3094,7 +3114,7 @@ def polygon_select(
     out = np.empty(len(rows), dtype=np.uint32)
     if len(rows) == 0:
         return out
-    written = _lib.xy_polygon_select(
+    written = _lib.xyg_polygon_select(
         _ptr_f64(x),
         _ptr_f64(y),
         len(x),
@@ -3125,10 +3145,10 @@ def sample_mask(
     ids = np.asarray(ids)
     if ids.dtype == np.uint32:
         ids = np.ascontiguousarray(ids)
-        fn = _lib.xy_sample_mask_u32
+        fn = _lib.xyg_sample_mask_u32
     else:
         ids = np.ascontiguousarray(ids, dtype=np.uint64)
-        fn = _lib.xy_sample_mask
+        fn = _lib.xyg_sample_mask
     if ids.ndim != 1:
         raise ValueError("ids must be a one-dimensional uint64 array")
     out = np.empty(len(ids), dtype=np.uint8)
@@ -3141,7 +3161,7 @@ def sample_mask(
             out.ctypes.data,
         )
         if ok != 1:
-            raise RuntimeError("xy native sample_mask failed (output undefined)")
+            raise RuntimeError("xyg native sample_mask failed (output undefined)")
     return out.view(np.bool_)
 
 
@@ -3155,7 +3175,7 @@ def sample_range_indices(
     size = _bounded_nonnegative_int(size, "size", max_value=np.iinfo(np.uint32).max)
     capacity = _bounded_nonnegative_int(capacity_hint, "capacity_hint", max_value=size)
     out = np.empty(capacity, dtype=np.uint32)
-    written = _lib.xy_sample_range_indices(
+    written = _lib.xyg_sample_range_indices(
         size,
         ctypes.c_uint64(int(seed)),
         ctypes.c_uint64(int(threshold)),
@@ -3166,7 +3186,7 @@ def sample_range_indices(
         raise ValueError("invalid sample_range_indices arguments")
     if written > capacity:
         out = np.empty(written, dtype=np.uint32)
-        repeated = _lib.xy_sample_range_indices(
+        repeated = _lib.xyg_sample_range_indices(
             size,
             ctypes.c_uint64(int(seed)),
             ctypes.c_uint64(int(threshold)),
@@ -3211,7 +3231,7 @@ def stratified_sample_range_u8(
     def invoke(out_pointer: int | None, out_capacity: int) -> int:
         if counts is None:
             return int(
-                _lib.xy_stratified_sample_range_u8(
+                _lib.xyg_stratified_sample_range_u8(
                     groups.ctypes.data if len(groups) else None,
                     len(groups),
                     n_groups,
@@ -3223,7 +3243,7 @@ def stratified_sample_range_u8(
                 )
             )
         return int(
-            _lib.xy_stratified_sample_range_u8_counted(
+            _lib.xyg_stratified_sample_range_u8_counted(
                 groups.ctypes.data if len(groups) else None,
                 len(groups),
                 counts.ctypes.data,
@@ -3268,10 +3288,10 @@ def stratified_sample_mask(
     ids = np.asarray(ids)
     if ids.dtype == np.uint32:
         ids = np.ascontiguousarray(ids)
-        fn = _lib.xy_stratified_sample_mask_u32
+        fn = _lib.xyg_stratified_sample_mask_u32
     else:
         ids = np.ascontiguousarray(ids, dtype=np.uint64)
-        fn = _lib.xy_stratified_sample_mask
+        fn = _lib.xyg_stratified_sample_mask
     groups = np.ascontiguousarray(groups, dtype=np.uint32)
     if ids.ndim != 1 or groups.ndim != 1:
         raise ValueError("ids and groups must be one-dimensional arrays")
@@ -3325,7 +3345,7 @@ def pyramid_build(
     if len(x) == 0:
         return 0
     return int(
-        _lib.xy_pyramid_build(
+        _lib.xyg_pyramid_build(
             x.ctypes.data,
             y.ctypes.data,
             len(x),
@@ -3367,7 +3387,7 @@ def pyramid_build_color(
         return 0
     idx_ptr, rgba_ptr, lut_ptr, lut_len, _keepalive = _color_source_args(len(x), idx, rgba, lut)
     return int(
-        _lib.xy_pyramid_build_color(
+        _lib.xyg_pyramid_build_color(
             x.ctypes.data,
             y.ctypes.data,
             len(x),
@@ -3401,7 +3421,7 @@ def pyramid_append(
     if len(x) != len(y):
         raise ValueError("x and y must have equal length")
     return (
-        _lib.xy_pyramid_append(
+        _lib.xyg_pyramid_append(
             ctypes.c_uint64(handle),
             _ptr_f64(x) if len(x) else None,
             _ptr_f64(y) if len(y) else None,
@@ -3416,7 +3436,7 @@ def pyramid_count(handle: int, lo_x: float, hi_x: float, lo_y: float, hi_y: floa
     lo_x, hi_x = _finite_increasing(lo_x, hi_x, "x range")
     lo_y, hi_y = _finite_increasing(lo_y, hi_y, "y range")
     out = ctypes.c_double(0.0)
-    ok = _lib.xy_pyramid_count(
+    ok = _lib.xyg_pyramid_count(
         ctypes.c_uint64(handle),
         lo_x,
         hi_x,
@@ -3449,7 +3469,7 @@ def pyramid_compose(
     h = _bounded_positive_int(h, "h")
     max_upsample = _positive_int(max_upsample, "max_upsample")
     out = np.zeros(w * h, dtype=np.float32)
-    level = _lib.xy_pyramid_compose(
+    level = _lib.xyg_pyramid_compose(
         ctypes.c_uint64(handle),
         lo_x,
         hi_x,
@@ -3488,7 +3508,7 @@ def pyramid_compose_color(
     max_upsample = _positive_int(max_upsample, "max_upsample")
     out = np.zeros(w * h, dtype=np.float32)
     out_rgba = np.zeros((h, w, 4), dtype=np.uint8)
-    level = _lib.xy_pyramid_compose_color(
+    level = _lib.xyg_pyramid_compose_color(
         ctypes.c_uint64(handle),
         lo_x,
         hi_x,
@@ -3506,7 +3526,7 @@ def pyramid_compose_color(
 
 
 def pyramid_free(handle: int) -> bool:
-    return _lib.xy_pyramid_free(ctypes.c_uint64(_pyramid_handle(handle))) == 1
+    return _lib.xyg_pyramid_free(ctypes.c_uint64(_pyramid_handle(handle))) == 1
 
 
 # Graph layout ids — keep in lockstep with src/graph.rs LAYOUT_*.
@@ -3551,7 +3571,7 @@ _GRAPH_LAYOUT_NAMES = {
     "stress": GRAPH_LAYOUT_STRESS,
 }
 
-# Progressive force families (share xy_graph_force_create/tick).
+# Progressive force families (share xyg_graph_force_create/tick).
 _GRAPH_PROGRESSIVE_FORCE = frozenset(
     {
         GRAPH_LAYOUT_FORCE,
@@ -3621,7 +3641,7 @@ def graph_layout(
     src_ptr = sources.ctypes.data if len(sources) else None
     tgt_ptr = targets.ctypes.data if len(targets) else None
     roots_ptr = roots_arr.ctypes.data if len(roots_arr) else None
-    ok = _lib.xy_graph_layout(
+    ok = _lib.xyg_graph_layout(
         ctypes.c_uint32(layout_id),
         ctypes.c_uint64(n_nodes),
         ctypes.c_uint64(len(sources)),
@@ -3658,7 +3678,7 @@ def graph_force_create(
     in_y = _ptr_f64(_as_f64(y, "y")) if y is not None else None
     if (x is None) ^ (y is None):
         raise ValueError("force create requires both x and y or neither")
-    ok = _lib.xy_graph_force_create(
+    ok = _lib.xyg_graph_force_create(
         ctypes.c_uint64(int(n_nodes)),
         ctypes.c_uint64(len(sources)),
         sources.ctypes.data if len(sources) else None,
@@ -3685,7 +3705,7 @@ def graph_force_tick(
     out_x = np.empty(int(n_nodes), dtype=np.float64)
     out_y = np.empty(int(n_nodes), dtype=np.float64)
     alpha = ctypes.c_double()
-    ok = _lib.xy_graph_force_tick(
+    ok = _lib.xyg_graph_force_tick(
         ctypes.c_uint64(handle),
         ctypes.c_uint64(int(n_nodes)),
         ctypes.c_uint32(max(0, int(steps))),
@@ -3699,7 +3719,7 @@ def graph_force_tick(
 
 
 def graph_force_destroy(handle: int) -> bool:
-    return _lib.xy_graph_force_destroy(ctypes.c_uint64(handle)) == 1
+    return _lib.xyg_graph_force_destroy(ctypes.c_uint64(handle)) == 1
 
 
 def graph_lod_decision(
@@ -3707,7 +3727,7 @@ def graph_lod_decision(
 ) -> tuple[int, int]:
     tier = ctypes.c_uint32()
     kept = ctypes.c_uint64()
-    ok = _lib.xy_graph_lod_decision(
+    ok = _lib.xyg_graph_lod_decision(
         ctypes.c_uint64(int(n_nodes)),
         ctypes.c_uint64(int(n_edges)),
         ctypes.c_uint64(int(node_budget)),
@@ -3725,7 +3745,7 @@ def graph_sample_edges(n_edges: int, budget: int) -> npt.NDArray[np.uint64]:
     out = np.empty(budget, dtype=np.uint64)
     if budget == 0:
         return out
-    kept = _lib.xy_graph_sample_edges(
+    kept = _lib.xyg_graph_sample_edges(
         ctypes.c_uint64(int(n_edges)),
         ctypes.c_uint64(budget),
         out.ctypes.data,
@@ -3766,7 +3786,7 @@ def graph_cluster_aggregate(
     out_count = ctypes.c_uint64(0)
     tier = ctypes.c_uint32(0)
     edges_kept = ctypes.c_uint64(0)
-    ok = _lib.xy_graph_cluster_aggregate(
+    ok = _lib.xyg_graph_cluster_aggregate(
         ctypes.c_uint64(n_nodes),
         ctypes.c_uint64(int(n_edges)),
         x_arr.ctypes.data if n_nodes else None,
@@ -3836,7 +3856,7 @@ def graph_build_render(
     else:
         vp_en = 1
         x0, y0, x1, y1 = (float(v) for v in viewport)
-    ok = _lib.xy_graph_build_render(
+    ok = _lib.xyg_graph_build_render(
         ctypes.c_uint64(n_nodes),
         ctypes.c_uint64(len(sources)),
         x_arr.ctypes.data if n_nodes else None,
@@ -3905,7 +3925,7 @@ def graph_build_csr(
     offsets = np.empty(n_nodes + 1, dtype=np.uint64)
     neighbors = np.empty(cap, dtype=np.uint64)
     out_len = ctypes.c_uint64(0)
-    ok = _lib.xy_graph_build_csr(
+    ok = _lib.xyg_graph_build_csr(
         ctypes.c_uint64(n_nodes),
         ctypes.c_uint64(len(sources)),
         sources.ctypes.data if len(sources) else None,
@@ -3995,7 +4015,7 @@ def sankey_layout(
     out_layers = ctypes.c_uint32(0)
     out_err_nodes = np.empty(n_nodes, dtype=np.uint64)
     out_err_n = ctypes.c_uint64(0)
-    code = _lib.xy_sankey_layout(
+    code = _lib.xyg_sankey_layout(
         ctypes.c_uint64(n_nodes),
         ctypes.c_uint64(n_links),
         sources.ctypes.data,
@@ -4062,7 +4082,7 @@ def local_log_density(
         raise ValueError("x and y must have equal length")
     out = np.empty(len(x), dtype=np.float32)
     if len(x):
-        ok = _lib.xy_local_log_density(
+        ok = _lib.xyg_local_log_density(
             _ptr_f64(x),
             _ptr_f64(y),
             len(x),
@@ -4088,7 +4108,7 @@ def rasterize(cmds: bytes, w: int, h: int) -> npt.NDArray[np.uint8]:
     buf = np.frombuffer(cmds, dtype=np.uint8)
     out = np.zeros((h, w, 4), dtype=np.uint8)
     cmd_ptr = _ptr_u8(buf) if buf.size else None
-    ok = _lib.xy_rasterize(cmd_ptr, buf.size, _ptr_u8(out), w, h)
+    ok = _lib.xyg_rasterize(cmd_ptr, buf.size, _ptr_u8(out), w, h)
     if not ok:
         raise ValueError("native rasterizer rejected the command buffer")
     return out
@@ -4103,9 +4123,35 @@ def rasterize_png(cmds: bytes, w: int, h: int) -> bytes:
     capacity = raw_len + raw_len // 8 + 65_536
     out = np.empty(capacity, dtype=np.uint8)
     cmd_ptr = _ptr_u8(buf) if buf.size else None
-    written = _lib.xy_rasterize_png(cmd_ptr, buf.size, _ptr_u8(out), out.size, w, h)
+    written = _lib.xyg_rasterize_png(cmd_ptr, buf.size, _ptr_u8(out), out.size, w, h)
     if written == _USIZE_MAX or written > out.size:
         raise ValueError("native raster-to-PNG encoder rejected the command buffer")
+    return out[:written].tobytes()
+
+
+def rasterize_png_data(cmds: bytes, data: bytes, w: int, h: int) -> bytes:
+    """Paint a display list with an external arena and encode PNG in Rust."""
+    w = _positive_int(w, "raster width")
+    h = _positive_int(h, "raster height")
+    buf = np.frombuffer(cmds, dtype=np.uint8)
+    arena = np.frombuffer(data, dtype=np.uint8)
+    raw_len = operator.mul(operator.mul(w, h), 4)
+    capacity = raw_len + raw_len // 8 + 65_536
+    out = np.empty(capacity, dtype=np.uint8)
+    written = _lib.xyg_rasterize_png_data(
+        _ptr_u8(buf) if buf.size else None,
+        buf.size,
+        _ptr_u8(arena) if arena.size else None,
+        arena.size,
+        _ptr_u8(out),
+        out.size,
+        w,
+        h,
+    )
+    if written == _USIZE_MAX or written > out.size:
+        raise ValueError(
+            "native raster-to-PNG encoder rejected the command buffer or external data"
+        )
     return out[:written].tobytes()
 
 
@@ -4116,7 +4162,7 @@ def rasterize_data(cmds: bytes, data: bytes, w: int, h: int) -> npt.NDArray[np.u
     buf = np.frombuffer(cmds, dtype=np.uint8)
     arena = np.frombuffer(data, dtype=np.uint8)
     out = np.zeros((h, w, 4), dtype=np.uint8)
-    ok = _lib.xy_rasterize_data(
+    ok = _lib.xyg_rasterize_data(
         _ptr_u8(buf) if buf.size else None,
         buf.size,
         _ptr_u8(arena) if arena.size else None,
@@ -4156,7 +4202,7 @@ def rasterize_spans(cmds: Any, spans, w: int, h: int) -> npt.NDArray[np.uint8]: 
     buf = np.frombuffer(cmds, dtype=np.uint8)
     arenas, pointers, lengths = _byte_span_arrays(spans)
     out = np.zeros((h, w, 4), dtype=np.uint8)
-    ok = _lib.xy_rasterize_spans(
+    ok = _lib.xyg_rasterize_spans(
         _ptr_u8(buf) if buf.size else None,
         buf.size,
         pointers if arenas else None,
@@ -4181,7 +4227,7 @@ def rasterize_png_spans(cmds: Any, spans, w: int, h: int) -> bytes:  # noqa: ANN
     raw_len = operator.mul(operator.mul(w, h), 4)
     capacity = raw_len + raw_len // 8 + 65_536
     out = np.empty(capacity, dtype=np.uint8)
-    written = _lib.xy_rasterize_png_spans(
+    written = _lib.xyg_rasterize_png_spans(
         _ptr_u8(buf) if buf.size else None,
         buf.size,
         pointers if arenas else None,
@@ -4217,7 +4263,7 @@ def heatmap_rgba(
     if not 0 <= alpha <= 255:
         raise ValueError("heatmap alpha must be in [0, 255]")
     out = np.empty((h, w, 4), dtype=np.uint8)
-    ok = _lib.xy_heatmap_rgba(
+    ok = _lib.xyg_heatmap_rgba(
         _ptr_f64(values),
         w,
         h,
@@ -4255,7 +4301,7 @@ def density_rgba(
     if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
         raise ValueError("density stops must be a non-empty (n, 3) array")
     out = np.empty((h, w, 4), dtype=np.uint8)
-    ok = _lib.xy_density_rgba(
+    ok = _lib.xyg_density_rgba(
         _ptr_u8(values),
         w,
         h,
@@ -4277,14 +4323,14 @@ def density_log_u8(grid: npt.NDArray[np.float32]) -> tuple[npt.NDArray[np.uint8]
         raise ValueError("density grid must be one- or two-dimensional")
     out = np.empty(values.shape, dtype=np.uint8)
     maximum = ctypes.c_double()
-    ok = _lib.xy_density_log_u8(
+    ok = _lib.xyg_density_log_u8(
         values.ctypes.data if values.size else None,
         values.size,
         out.ctypes.data if out.size else None,
         ctypes.byref(maximum),
     )
     if ok != 1:
-        raise RuntimeError("xy native density_log_u8 failed")
+        raise RuntimeError("xyg native density_log_u8 failed")
     return out, float(maximum.value)
 
 
@@ -4302,7 +4348,9 @@ def drill_decision(visible: int, budget: float, in_drill: bool, exit_factor: flo
     if not isinstance(in_drill, (bool, np.bool_)):
         raise ValueError("in_drill must be True or False")
     out = ctypes.c_int32()
-    ok = _lib.xy_drill_decision(visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out))
+    ok = _lib.xyg_drill_decision(
+        visible_i, budget_f, int(bool(in_drill)), exit_f, ctypes.byref(out)
+    )
     if ok != 1:
         raise ValueError("invalid drill_decision arguments")
     return bool(out.value)
@@ -4324,7 +4372,7 @@ def lod_grid_shape(
         raise ValueError("target_per_cell must be > 0")
     out_w = ctypes.c_int32()
     out_h = ctypes.c_int32()
-    ok = _lib.xy_lod_grid_shape(
+    ok = _lib.xyg_lod_grid_shape(
         int(width), int(height), visible_i, target, ctypes.byref(out_w), ctypes.byref(out_h)
     )
     if ok != 1:
@@ -4362,7 +4410,7 @@ def lod_plan(
     out_mode = ctypes.c_uint32()
     out_gw = ctypes.c_int32()
     out_gh = ctypes.c_int32()
-    ok = _lib.xy_lod_plan(
+    ok = _lib.xyg_lod_plan(
         visible_i,
         budget_f,
         int(bool(in_drill)),
@@ -4389,7 +4437,7 @@ def quantiles(
     if probs_arr.ndim != 1 or len(probs_arr) == 0:
         raise ValueError("probs must be a non-empty 1-D array")
     out = np.empty(len(probs_arr), dtype=np.float64)
-    written = _lib.xy_quantiles(
+    written = _lib.xyg_quantiles(
         _ptr_f64(data),
         len(data),
         _ptr_f64(probs_arr),
@@ -4409,7 +4457,7 @@ def box_stats(
     stats = np.empty(5, dtype=np.float64)
     outliers = np.empty(len(data), dtype=np.float64)
     n_out = ctypes.c_size_t()
-    ok = _lib.xy_box_stats(
+    ok = _lib.xyg_box_stats(
         _ptr_f64(data),
         len(data),
         _ptr_f64(stats),
@@ -4418,7 +4466,7 @@ def box_stats(
         ctypes.byref(n_out),
     )
     if ok != 1:
-        raise RuntimeError("xy native box_stats failed (output undefined)")
+        raise RuntimeError("xyg native box_stats failed (output undefined)")
     return (
         float(stats[0]),
         float(stats[1]),
@@ -4490,7 +4538,7 @@ def hexbin(
     out_counts = np.empty(capacity, dtype=np.float64)
     dx = ctypes.c_double()
     dy = ctypes.c_double()
-    written = _lib.xy_hexbin(
+    written = _lib.xyg_hexbin(
         _ptr_f64(x),
         _ptr_f64(y),
         0 if c_arr is None else _ptr_f64(c_arr),
@@ -4535,7 +4583,7 @@ def violin_density(
         raise ValueError("violin bins must be an integer between 4 and 1024")
     edges = np.empty(n_bins + 1, dtype=np.float64)
     density = np.empty(n_bins, dtype=np.float64)
-    ok = _lib.xy_violin_density(
+    ok = _lib.xyg_violin_density(
         _ptr_f64(data),
         len(data),
         n_bins,
@@ -4574,7 +4622,7 @@ def histogram_edges(
     n = max(len(data), 1)
     capacity = max(int(2 * (n**0.5) + 4), 16)
     out = np.empty(capacity, dtype=np.float64)
-    written = _lib.xy_histogram_edges(
+    written = _lib.xyg_histogram_edges(
         _ptr_f64(data),
         len(data),
         lo,
@@ -4627,7 +4675,7 @@ def wind_rose_bins(
     capacity_counts = capacity_edges * sectors
     out_counts = np.empty(capacity_counts, dtype=np.float64)
     n_obs = ctypes.c_size_t()
-    written = _lib.xy_wind_rose_bins(
+    written = _lib.xyg_wind_rose_bins(
         _ptr_f64(directions),
         _ptr_f64(speeds),
         len(directions),
@@ -4688,7 +4736,7 @@ def contourf_densify(
     out_y = np.empty(out_rows, dtype=np.float64)
     got_rows = ctypes.c_size_t()
     got_cols = ctypes.c_size_t()
-    ok = _lib.xy_contourf_densify(
+    ok = _lib.xyg_contourf_densify(
         _ptr_f64(np.ascontiguousarray(z)),
         rows,
         cols,
@@ -4734,7 +4782,7 @@ def contourf_bands(
         raise ValueError("contourf bands xpos/ypos must match z columns/rows")
     if len(edges) < 2:
         raise ValueError("contourf bands needs at least two edges")
-    needed = _lib.xy_contourf_bands(
+    needed = _lib.xyg_contourf_bands(
         _ptr_f64(np.ascontiguousarray(z)),
         rows,
         cols,
@@ -4761,7 +4809,7 @@ def contourf_bands(
         return empty, np.empty(0, dtype=np.int64)
     cols_out = [np.empty(n, dtype=np.float64) for _ in range(6)]
     slots = np.empty(n, dtype=np.int64)
-    written = _lib.xy_contourf_bands(
+    written = _lib.xyg_contourf_bands(
         _ptr_f64(np.ascontiguousarray(z)),
         rows,
         cols,
@@ -4785,7 +4833,7 @@ def contourf_bands(
     return tuple(cols_out), slots
 
 
-# xy_css_check kinds — keep in sync with `src/lib.rs`.
+# xyg_css_check kinds — keep in sync with `crates/xyg-core/src/lib.rs`.
 CSS_DECLARATION = 0
 CSS_COLOR = 1
 CSS_LENGTH = 2
@@ -4795,11 +4843,11 @@ CSS_NUMBER = 3
 def css_check(
     kind: int, value: str, prop: str = ""
 ) -> tuple[int, Optional[tuple[float, float, float, float]]]:
-    """Validate a CSS value against the native grammar (`src/css.rs`).
+    """Validate a CSS value against the native grammar (`crates/xyg-engine/src/css.rs`).
 
     Returns ``(status, rgba)``: status 1 = parsed statically, 2 = valid but
     browser-resolved (`var()`/`oklch()`/`calc()`/unknown-property
-    passthrough), negative = error code (see `xy_css_check` docs). ``rgba``
+    passthrough), negative = error code (see `xyg_css_check` docs). ``rgba``
     is the 0..1 channel tuple for statically-resolved colors, else None
     (`currentColor` parses with no static channels). The error-message
     mapping lives in `_validate.py`; this wrapper stays mechanical.
@@ -4807,6 +4855,6 @@ def css_check(
     vb = value.encode("utf-8")
     pb = prop.encode("utf-8")
     out = (ctypes.c_float * 4)(float("nan"), 0.0, 0.0, 0.0)
-    status = int(_lib.xy_css_check(kind, pb or None, len(pb), vb or None, len(vb), out))
+    status = int(_lib.xyg_css_check(kind, pb or None, len(pb), vb or None, len(vb), out))
     wrote = status == 1 and out[0] == out[0]  # NaN sentinel: untouched = no static color
     return status, (out[0], out[1], out[2], out[3]) if wrote else None

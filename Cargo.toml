@@ -1,23 +1,11 @@
-[package]
-name = "xy-core"
-version = "0.1.0"
-edition = "2021"
-description = "Native compute core for the xy engine: zone maps, offset-encoded f32, M4 decimation"
-license = "Apache-2.0"
-
-# The compute core remains exposed through a plain C ABI, so one cdylib per
-# platform covers every CPython version. Static chart export uses the focused
-# `png` crate's fdeflate fast path; compression belongs beside rasterization so
-# the hot path never round-trips a full framebuffer through Python.
-[lib]
-name = "xy_core"
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-png = "0.18.1"
+[workspace]
+resolver = "2"
+members = ["crates/xyg-engine", "crates/xyg-core"]
 
 # Whole-program optimization; `strip` keeps .dynsym, which ctypes binds
-# against. `panic` must stay unwinding — lib.rs catches panics at the C ABI.
+# against. `panic` must stay unwinding — xyg-core catches panics at the C ABI.
+# LTO stays on the workspace release profile so the single shipped cdylib
+# (`libxyg_core`) folds in xyg-engine with no extra runtime artifact.
 [profile.release]
 lto = "fat"
 codegen-units = 1

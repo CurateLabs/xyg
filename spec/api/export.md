@@ -60,7 +60,7 @@ raster-only option that was passed non-default.
 
 | Format | Native backend | Chromium backend |
 |---|---|---|
-| PNG | `_raster.to_png` → Rust rasterizer (`src/raster.rs`), encoded by the fused Rust path or `_png.encode` | `Page.captureScreenshot` |
+| PNG | `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode` | `Page.captureScreenshot` |
 | JPEG | `_raster.to_rgba` → `_jpeg.encode` (pure numpy/stdlib baseline JFIF, 4:4:4) | `Page.captureScreenshot` |
 | WebP | `_raster.to_rgba` → `_webp.encode` (pure numpy/stdlib VP8L, **lossless only**) | `Page.captureScreenshot` (lossy) |
 | SVG | `_svg.to_svg` (pure Python renderer over the wire payload) | none — SVG is native-only |

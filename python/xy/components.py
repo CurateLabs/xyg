@@ -5725,7 +5725,7 @@ def _annotation_axis_name(value: Any, label: str) -> str:
 
 def _looks_like_css(s: str) -> bool:
     """A string `color=` is a constant when it parses under the native CSS
-    color grammar (src/css.rs: hex, rgb()/hsl(), the full named-color table,
+    color grammar (crates/xyg-engine/src/css.rs: hex, rgb()/hsl(), the full named-color table,
     and browser-resolved forms like var()/oklch()); anything else is a column
     name. The old prefix heuristic accepted any '#…' string, so a typo'd hex
     like '#3b82zz' classified as a "valid" color and rendered silently wrong —

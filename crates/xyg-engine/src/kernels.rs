@@ -3060,7 +3060,7 @@ fn contourf_sample_count(size: usize) -> usize {
 /// Writes row-major `out_z` (`out_rows * out_cols`), `out_x` (`out_cols`), and
 /// `out_y` (`out_rows`). Non-finite source corners yield NaN samples. Returns
 /// `(out_rows, out_cols)` or `None` on shape/capacity mismatch.
-#[allow(clippy::too_many_arguments)] // mirrors the C ABI kernel entry point
+#[allow(clippy::too_many_arguments, clippy::needless_range_loop)] // mirrors the C ABI kernel entry point
 pub fn contourf_densify(
     z: &[f64],
     rows: usize,
@@ -3392,6 +3392,7 @@ pub(crate) fn heatmap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4]
 /// Evenly spaced color-stop interpolation for a normalized scalar. Shared by
 /// heatmaps and borrowed per-mark color channels so ties-to-even byte rounding
 /// cannot drift between static chart families.
+#[allow(clippy::needless_range_loop)] // channel indexes stops and color together
 pub(crate) fn colormap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4] {
     debug_assert!(!stops.is_empty());
     let last = stops.len() - 1;
@@ -3447,6 +3448,7 @@ pub fn density_rgba_into(
 /// Precompute the exact log-u8 density colors once. The display-list
 /// rasterizer uses this table to sample compact density bytes directly,
 /// without expanding the full grid to a temporary RGBA image.
+#[allow(clippy::needless_range_loop)] // channel indexes stops and lut color together
 pub(crate) fn density_rgba_lut(
     maximum: f64,
     stops: &[[u8; 3]],

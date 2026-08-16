@@ -1,5 +1,5 @@
 """Native PNG export: build a display-list command buffer from a chart spec and
-paint it with the Rust rasterizer (`kernels.rasterize`, `src/raster.rs`), then
+paint it with the Rust rasterizer (`kernels.rasterize`, `crates/xyg-engine/src/raster.rs`), then
 encode PNG. Browser-free and screen-bounded — the same decimated payload the SVG
 exporter consumes.
 
@@ -82,7 +82,7 @@ from ._svg import (
     warp_grid_rgba,
 )
 
-# Opcodes — must match src/raster.rs.
+# Opcodes — must match crates/xyg-engine/src/raster.rs.
 (
     _CLIP,
     _FILL,
@@ -105,13 +105,13 @@ from ._svg import (
     _POLAR_CLIP,
 ) = range(19)
 # Anchor-byte rotation flags — must match TEXT_ROTATED/TEXT_ROTATED_CW in
-# src/raster.rs. CCW reads bottom-to-top (y-axis titles), CW top-to-bottom
+# crates/xyg-engine/src/raster.rs. CCW reads bottom-to-top (y-axis titles), CW top-to-bottom
 # (right-margin titles, matplotlib rotation=270).
 _TEXT_ROT_CCW = 0x80
 _TEXT_ROT_CW = 0x40
 _TEXT_ITALIC = 0x01
 _TEXT_BOLD = 0x02
-# stroke-linecap — must match CAP_* in src/raster.rs. XY's default is round,
+# stroke-linecap — must match CAP_* in crates/xyg-engine/src/raster.rs. XY's default is round,
 # which is the geometry the rasterizer's capsule distance field has always
 # drawn. Joins are always round and carry no wire field.
 _CAP_CODES = {"butt": 0, "round": 1, "square": 2}
@@ -140,7 +140,7 @@ _SYMBOLS = {
 
 def _parse_color(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
     """Resolve a CSS color string to RGBA8 via the native grammar
-    (src/css.rs) — the same parser that validates figure input, so raster
+    (crates/xyg-engine/src/css.rs) — the same parser that validates figure input, so raster
     colors can never drift from the API contract. `none` renders transparent
     (the SVG idiom); browser-only forms that survive `_css`'s fallback (an
     `oklch()` a DOM would resolve) and — defensively — anything unparseable
@@ -175,7 +175,7 @@ def _solid_color(css: Any) -> Optional[tuple[int, int, int, int]]:
     return None if s is None else _parse_color(s)
 
 
-# cmd.text anchor codes (must match src/raster.rs): start/center/end of string.
+# cmd.text anchor codes (must match crates/xyg-engine/src/raster.rs): start/center/end of string.
 _TEXT_ANCHOR_CODES = {"start": 0, "center": 1, "end": 2}
 
 

@@ -3,7 +3,7 @@
 **Status:** implementation design. Implements
 [graph-fork-requirements.md](graph-fork-requirements.md) and
 [host-parity.md](host-parity.md). Authoritative for the `graph` /
-`graph_chart` surface, `xy_graph_*` ABI, wire shape, layout ticks, and the
+`graph_chart` surface, `xyg_graph_*` ABI, wire shape, layout ticks, and the
 **render-graph** mental model below. Dual-host expectations:
 [dual-host-parity-matrix.md](dual-host-parity-matrix.md).
 
@@ -25,7 +25,7 @@ GraphForge / canonical graph
         ▼
 Host ingest (Python or Node)  →  dense u64 indices + f64 columns
         ▼
-Rust C ABI (`xy_graph_*`)
+Rust C ABI (`xyg_graph_*`)
   · layout (preset / grid / circle / force / …)
   · viewport windowing
   · graph LOD (clusters / reps / exact)
@@ -212,7 +212,7 @@ handle for n ≤ 500.
 ```mermaid
 sequenceDiagram
   participant Host as Python_or_Node
-  participant Rust as xy_graph_force
+  participant Rust as xyg_graph_force
   participant Client as WebGL_client
   Host->>Rust: force_create(nodes,edges,seed)
   loop until alpha_low or cancel
@@ -243,8 +243,8 @@ the zoom story in §1.4:
 | Regime | Behavior |
 |---|---|
 | Direct | Draw all nodes/edges under budget — sole tier that may expose per-element V/E to WebGL |
-| Edge sample | Rust samples edges when `|E|` over budget; record §28 |
-| Cluster / aggregate | Rust `xy_graph_build_render` (and `xy_graph_cluster_aggregate`) write centroids / reps when `|V|` exceeds `node_budget`, collapse multi-edges into cluster index space, and record §28; hosts keep `member_of` for drill / hover |
+| Edge sample | Rust samples edges when edge count E is over budget; record §28 |
+| Cluster / aggregate | Rust `xyg_graph_build_render` (and `xyg_graph_cluster_aggregate`) write centroids / reps when node count V exceeds `node_budget`, collapse multi-edges into cluster index space, and record §28; hosts keep `member_of` for drill / hover |
 | Labels | Hide below zoom / over label budget |
 
 Budgets and tier choice live in Rust decision helpers (render-graph emission);
@@ -264,7 +264,7 @@ aggregates (§1.3).
   (hovered node + CSR neighbors) and dims the rest through the existing
   point-shader `u_selActive` path; leave clears the mask. Durable
   box/lasso/rows selection still owns `selBuf` when active. On-demand
-  `xy_graph_neighbors` remains available for hosts that do not ship CSR.
+  `xyg_graph_neighbors` remains available for hosts that do not ship CSR.
 - Drag nodes (SHOULD): write positions back through ABI / host buffer.
 - Box select (SHOULD): reuse existing selection — graph node scatters
   participate as ordinary scatter traces (no separate path).
@@ -292,15 +292,15 @@ draws uploaded buffers only (MVP keeps straight segments regardless of
 
 | Symbol | Role |
 |---|---|
-| `xy_graph_layout` | One-shot layout → `out_x`/`out_y` f64 |
-| `xy_graph_force_create` | Handle for progressive force family; takes `algorithm: u32` (`LAYOUT_*`) |
-| `xy_graph_force_tick` | Advance k steps; write positions |
-| `xy_graph_force_destroy` | Free handle |
-| `xy_graph_build_csr` | `offsets`/`neighbors` u64 CSR |
-| `xy_graph_sample_edges` | LOD edge index sample |
-| `xy_graph_lod_decision` | Recorded tier decision (§28) / render-graph inputs |
-| `xy_graph_cluster_aggregate` | LOD node centroid clusters + node→cluster membership + recorded tier |
-| `xy_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28 |
+| `xyg_graph_layout` | One-shot layout → `out_x`/`out_y` f64 |
+| `xyg_graph_force_create` | Handle for progressive force family; takes `algorithm: u32` (`LAYOUT_*`) |
+| `xyg_graph_force_tick` | Advance k steps; write positions |
+| `xyg_graph_force_destroy` | Free handle |
+| `xyg_graph_build_csr` | `offsets`/`neighbors` u64 CSR |
+| `xyg_graph_sample_edges` | LOD edge index sample |
+| `xyg_graph_lod_decision` | Recorded tier decision (§28) / render-graph inputs |
+| `xyg_graph_cluster_aggregate` | LOD node centroid clusters + node→cluster membership + recorded tier |
+| `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28 |
 
 Element counts and indices are `u64` / `uint64_t`.
 

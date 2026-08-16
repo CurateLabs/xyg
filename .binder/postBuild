@@ -5,7 +5,7 @@ set -euxo pipefail
 # source build to compile the native core so a missing toolchain fails the image
 # build instead of leaving an install that only fails when a notebook imports it.
 export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-export XY_REQUIRE_CARGO=1
+export XYG_REQUIRE_CARGO=1
 
 # The trailing packages are the scientific stack imported across
 # examples/**/*.ipynb (the checkout brings only numpy + anywidget); they ride

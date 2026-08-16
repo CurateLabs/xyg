@@ -16,7 +16,8 @@ filegroup(
     name = "rust_sources",
     srcs = glob(
         [
-            "src/**/*.rs",
+            "crates/**/*.rs",
+            "crates/**/Cargo.toml",
             "Cargo.toml",
             "Cargo.lock",
             "rust-toolchain.toml",
@@ -52,15 +53,15 @@ filegroup(
     ),
 )
 
-# Release cdylib via cargo. Output is always named libxy_core.so in
+# Release cdylib via cargo. Output is always named libxyg_core.so in
 # bazel-bin (Linux CI); Darwin hosts still build .dylib then copy.
 genrule(
-    name = "xy_core",
+    name = "xyg_core",
     srcs = [
         ":rust_sources",
         "Cargo.toml",
     ],
-    outs = ["libxy_core.so"],
+    outs = ["libxyg_core.so"],
     cmd = "$(execpath //tools/bazel:cargo_build.sh) $(execpath Cargo.toml) $@",
     local = True,
     tags = [
@@ -97,7 +98,7 @@ sh_test(
     data = [
         ":python_graph_sources",
         ":rust_sources",
-        ":xy_core",
+        ":xyg_core",
         "Cargo.toml",
         "//tools/bazel:common.sh",
         "//tools/bazel:workspace_root.sh",
@@ -116,7 +117,7 @@ sh_test(
     data = [
         ":node_graph_sources",
         ":rust_sources",
-        ":xy_core",
+        ":xyg_core",
         "Cargo.toml",
         "//tools/bazel:common.sh",
         "//tools/bazel:workspace_root.sh",
@@ -134,7 +135,7 @@ sh_test(
     size = "medium",
     srcs = ["//tools/bazel:run_abi_smoke.sh"],
     data = [
-        ":xy_core",
+        ":xyg_core",
         ":rust_sources",
         "Cargo.toml",
         "scripts/abi_smoke.py",
@@ -168,7 +169,7 @@ sh_test(
     data = [
         ":perf_parity_sources",
         ":rust_sources",
-        ":xy_core",
+        ":xyg_core",
         "Cargo.toml",
         "//tools/bazel:common.sh",
         "//tools/bazel:workspace_root.sh",
@@ -205,7 +206,7 @@ sh_test(
     data = [
         ":scale_all_charts_sources",
         ":rust_sources",
-        ":xy_core",
+        ":xyg_core",
         "Cargo.toml",
         "//tools/bazel:common.sh",
         "//tools/bazel:workspace_root.sh",

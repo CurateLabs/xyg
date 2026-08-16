@@ -39,7 +39,7 @@ from environment import SCHEMA_VERSION, collect_environment_metadata  # noqa: E4
 # The import name is what `import X` costs; the distribution name is what
 # `importlib.metadata` sizes.
 DEFAULT_TARGETS: list[tuple[str, str]] = [
-    ("xy", "xy"),
+    ("xy", "xyg"),
     ("plotly", "plotly"),
     ("matplotlib", "matplotlib"),
     ("seaborn", "seaborn"),
@@ -130,7 +130,7 @@ def fresh_venv_footprint(module: str, dist: str) -> dict[str, int | float | str 
         if created.returncode != 0:
             return {"fresh_note": (created.stderr or created.stdout).strip()[-160:]}
         python = env_dir / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
-        target = str(ROOT) if dist == "xy" else dist
+        target = str(ROOT) if dist == "xyg" or module == "xy" else dist
         t0 = time.perf_counter()
         installed = subprocess.run(
             ["uv", "pip", "install", "--python", str(python), target],
@@ -276,7 +276,16 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.packages:
-        targets = [(m.strip(), m.strip()) for m in args.packages.split(",") if m.strip()]
+        dist_by_module = {module: dist for module, dist in DEFAULT_TARGETS}
+        targets = []
+        for name in args.packages.split(","):
+            name = name.strip()
+            if not name:
+                continue
+            if name == "xyg":
+                targets.append(("xy", "xyg"))
+            else:
+                targets.append((name, dist_by_module.get(name, name)))
     else:
         targets = DEFAULT_TARGETS
 

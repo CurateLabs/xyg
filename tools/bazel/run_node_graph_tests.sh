@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Node host golden tests against the shared libxy_core.so.
+# Node host golden tests against the shared libxyg_core.so.
 set -euo pipefail
 
 _TOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -27,15 +27,15 @@ if [[ ! -f "${PKG}/package.json" ]]; then
 fi
 
 LIB="$(find_native_lib "${ROOT}")" || {
-  echo "libxy_core.so not found; build //:xy_core first" >&2
+  echo "libxyg_core.so not found; build //:xyg_core first" >&2
   exit 1
 }
-export XY_NATIVE_LIB="${LIB}"
+export XYG_NATIVE_LIB="${LIB}"
 
-if [[ -z "${XY_EXPECTED_ABI:-}" ]]; then
-  XY_EXPECTED_ABI="$(expected_abi_from_source "${ROOT}" || true)"
-  if [[ -n "${XY_EXPECTED_ABI}" ]]; then
-    export XY_EXPECTED_ABI
+if [[ -z "${XYG_EXPECTED_ABI:-}" ]]; then
+  XYG_EXPECTED_ABI="$(expected_abi_from_source "${ROOT}" || true)"
+  if [[ -n "${XYG_EXPECTED_ABI}" ]]; then
+    export XYG_EXPECTED_ABI
   fi
 fi
 
@@ -44,8 +44,8 @@ if [[ ! -d "${PKG}/node_modules" ]]; then
   (cd "${PKG}" && npm ci)
 fi
 
-echo "XY_NATIVE_LIB=${XY_NATIVE_LIB}"
-echo "XY_EXPECTED_ABI=${XY_EXPECTED_ABI:-<unset>}"
+echo "XYG_NATIVE_LIB=${XYG_NATIVE_LIB}"
+echo "XYG_EXPECTED_ABI=${XYG_EXPECTED_ABI:-<unset>}"
 echo "running: npm test (cwd=${PKG})"
 cd "${PKG}"
 exec npm test

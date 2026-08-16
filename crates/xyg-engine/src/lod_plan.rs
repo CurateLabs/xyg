@@ -103,11 +103,7 @@ pub fn plan(
     let (grid_w, grid_h) = grid_shape(px_w, px_h, visible, target_per_cell)?;
     Some(LodPlan {
         exact,
-        mode: if exact {
-            MODE_DIRECT
-        } else {
-            MODE_AGGREGATE
-        },
+        mode: if exact { MODE_DIRECT } else { MODE_AGGREGATE },
         grid_w,
         grid_h,
     })

@@ -21,10 +21,10 @@ ROOT="$(workspace_root)"
 cd "${ROOT}"
 
 LIB="$(find_native_lib "${ROOT}")" || {
-  echo "libxy_core.so not found; build //:xy_core first" >&2
+  echo "libxyg_core.so not found; build //:xyg_core first" >&2
   exit 1
 }
-export XY_NATIVE_LIB="${LIB}"
+export XYG_NATIVE_LIB="${LIB}"
 export PYTHONPATH="${ROOT}/python${PYTHONPATH:+:${PYTHONPATH}}"
 
 PYTHON="$(resolve_python "${ROOT}")"
@@ -37,7 +37,7 @@ run_py() {
   fi
 }
 
-echo "XY_NATIVE_LIB=${XY_NATIVE_LIB}"
+echo "XYG_NATIVE_LIB=${XYG_NATIVE_LIB}"
 echo "perf_parity: dual-host graph (n=1000) + parity kernels (n=100000)"
 run_py benchmarks/bench_dual_host_graph.py --sizes 1000
 # Small fixed size for CI speed; baseline soft-compare skipped when keys absent.

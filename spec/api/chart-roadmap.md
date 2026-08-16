@@ -47,7 +47,7 @@ Beyond the mark set, four capability layers now ship on `main`:
   line/area dashes, smooth (monotone-cubic) curves, scatter symbols + strokes,
   and mark colors — all resolved from CSS so the marks obey
   the same theme tokens as the chrome. Every styling input is validated at
-  build time by the native CSS grammar (`src/css.rs`, ABI v9): closed grammars
+  build time by the native CSS grammar (`crates/xyg-engine/src/css.rs`, ABI v9): closed grammars
   (hex/`rgb()`/`hsl()`/named colors, lengths, numbers) parse strictly,
   browser-resolved forms (`var()`/`oklch()`/`calc()`) pass through, and a
   malformed value raises instead of rendering a silently wrong chart (see

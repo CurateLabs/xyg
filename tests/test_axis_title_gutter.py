@@ -6,7 +6,7 @@
 inset. The two together drew the title one full ascent further left than the
 browser does, off the canvas, on top of the tick labels whenever the gutter was
 also short. Both are now measured from the DejaVu advances the rasterizer blits
-(`python/xy/_fontmetrics.py`, generated from `src/font.rs`).
+(`python/xy/_fontmetrics.py`, generated from `crates/xyg-engine/src/font.rs`).
 
 Every assertion below reads the boxes back out of real emitted output — SVG text
 coordinates, plus a pixel-ink scan of the native rasterizer's canvas — never out
@@ -217,16 +217,18 @@ def test_titleless_axis_reserves_only_its_tick_labels() -> None:
 def test_python_font_metrics_match_the_rust_atlas() -> None:
     """A gutter measured from advances the rasterizer does not use is a guess.
 
-    `scripts/gen_font.py` emits `src/font.rs` and `python/xy/_fontmetrics.py`
+    `scripts/gen_font.py` emits `crates/xyg-engine/src/font.rs` and `python/xy/_fontmetrics.py`
     from one face in one run. This pins them together so a regenerated atlas
     cannot silently leave the reservation measuring a different font than the
     one being drawn.
     """
-    source = (Path(__file__).resolve().parents[1] / "src" / "font.rs").read_text()
+    source = (
+        Path(__file__).resolve().parents[1] / "crates" / "xyg-engine" / "src" / "font.rs"
+    ).read_text()
 
     def constant(name: str) -> int:
         match = re.search(rf"pub const {name}: (?:u8|i32) = (\d+);", source)
-        assert match, f"src/font.rs lost its {name}"
+        assert match, f"crates/xyg-engine/src/font.rs lost its {name}"
         return int(match.group(1))
 
     assert constant("BASE_PX") == _fontmetrics.BASE_PX

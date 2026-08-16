@@ -24,7 +24,7 @@ renderer cannot silently ignore a declaration that another honors.
 | `triangle_mesh` | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 | `heatmap`, `hexbin` | `fill-opacity`, `opacity` |
 | `ribbon`, `sankey` | `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity`; Sankey styles apply to link ribbons |
-| `graph` | Forwards the same `style=` mapping to compiled `segments` (edges) and `scatter` (nodes). Shared properties valid on both: `stroke`, `stroke-width`, `stroke-opacity`, `opacity`. Node fill/shape stay on `color=`/`symbol=` — scatter-only CSS such as `fill` or `marker-shape` is rejected on the edge path |
+| `graph` | Forwards the same `style=` mapping to `segments` (edges) and `scatter` (nodes). There is no separate graph CSS vocabulary. Both primitives compile the mapping, so only the intersection is valid: `stroke`, `stroke-width`, `stroke-opacity`, `opacity`. Node-only properties such as `fill` or `marker-shape` raise on the edge compile; use `color=` / `size=` / `symbol=` for nodes and `edge_color=` / `edge_width=` for edges |
 
 Use canonical CSS kebab-case when sharing styles with web code; Python
 snake_case aliases remain accepted.
@@ -221,6 +221,9 @@ declarations:
   intentionally line-only glyphs.
 - Box plots expose `whisker_style`, `median_style`, and `outlier_style` for
   their compound parts; the main `style` mapping controls the box body.
+- `graph(style=...)` does not compile a graph vocabulary. It forwards `style=`
+  to `segments` for edges and `scatter` for nodes, so the mapping must be
+  legal for both. Part-specific paint stays on the typed node and edge props.
 
 All CSS gradients accept two to eight color stops and the four axis-aligned
 directions. `currentColor` resolves to the mark's color; `transparent` retains

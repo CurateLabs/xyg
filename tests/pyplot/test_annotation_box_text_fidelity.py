@@ -68,7 +68,7 @@ def _clip_rect(root: ElementTree.Element) -> dict[str, str]:
 def _first_fill(cmd: _raster._Cmd) -> tuple[int, list[tuple[float, float]], tuple[int, ...]]:
     """Decode the first FILL command out of a raw native display list.
 
-    Layout (little-endian, must match ``src/raster.rs``): opcode byte,
+    Layout (little-endian, must match ``crates/xyg-engine/src/raster.rs``): opcode byte,
     u32 vertex count, 2 f32 per vertex, then 4 bytes of RGBA.
     """
     buf = bytes(cmd.buf)

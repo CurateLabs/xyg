@@ -6,10 +6,12 @@ import { performance } from "node:perf_hooks";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { nativeLibraryFileName } from "../packages/xy-node/src/native-path.js";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 process.chdir(root);
-if (!process.env.XY_NATIVE_LIB) {
-  process.env.XY_NATIVE_LIB = path.join(root, "target/release/libxy_core.so");
+if (!process.env.XYG_NATIVE_LIB) {
+  process.env.XYG_NATIVE_LIB = path.join(root, "target/release", nativeLibraryFileName());
 }
 
 const {

@@ -25,5 +25,5 @@ if ! command -v cargo >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "cargo test (cwd=${ROOT})"
-exec cargo test
+echo "cargo test --workspace (cwd=${ROOT})"
+exec cargo test --workspace

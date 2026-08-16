@@ -95,7 +95,7 @@ jobs:
 
       - name: Install docs dependencies
         env:
-          XY_REQUIRE_CARGO: "1"
+          XYG_REQUIRE_CARGO: "1"
         run: uv sync --project docs/app --frozen --no-dev
 
       - name: Verify the native core

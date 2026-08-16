@@ -49,7 +49,7 @@ impl Pyramid {
 }
 
 /// The production default upsample bound (callers pass their own via the ABI;
-/// see `xy_pyramid_compose`). Rendering source cells into an output grid finer
+/// see `xyg_pyramid_compose`). Rendering source cells into an output grid finer
 /// than 2x reads as blur/blocks, so normal traces refuse past it and re-bin
 /// exactly; huge/out-of-core traces pass a large bound to avoid the O(N) scan.
 /// Only the Rust tests reference it directly.
