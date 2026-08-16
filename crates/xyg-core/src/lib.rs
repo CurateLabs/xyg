@@ -3325,6 +3325,9 @@ pub unsafe extern "C" fn xyg_pyramid_free(handle: u64) -> i32 {
 /// Build a count pyramid by reading canonical x/y through stream handles
 /// rather than host-passed arrays. Returns a nonzero handle, or 0 on a
 /// stale stream, length mismatch, or invalid bounds/`base_dim`.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_pyramid_build_from_stream(
     x_handle: u64,
@@ -3346,6 +3349,9 @@ pub unsafe extern "C" fn xyg_pyramid_build_from_stream(
 /// Increment a live pyramid from the tail of two stream handles. `tail_len`
 /// is the number of rows just appended. Returns 1 when applied, or 0 on a
 /// stale/busy handle, stream mismatch, domain growth, or a colored pyramid.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_pyramid_append_from_stream(
     handle: u64,
@@ -3400,6 +3406,9 @@ pub unsafe extern "C" fn xyg_stream_append(handle: u64, data: *const f64, len: u
 
 /// Compute (or refresh) zone maps. Returns 1 on success, 0 on a stale/busy
 /// handle. Idempotent when the stream is already sealed at the live length.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_stream_seal(handle: u64) -> i32 {
     ffi_guard(0, || {
@@ -3408,12 +3417,18 @@ pub unsafe extern "C" fn xyg_stream_seal(handle: u64) -> i32 {
 }
 
 /// Free a stream handle. Returns 1 if it existed, 0 for stale/unknown.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_stream_free(handle: u64) -> i32 {
     ffi_guard(0, || if stream::reg_remove(handle) { 1 } else { 0 })
 }
 
 /// Live length. `usize::MAX` on a stale handle.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_stream_len(handle: u64) -> usize {
     ffi_guard(usize::MAX, || {
@@ -3423,6 +3438,9 @@ pub unsafe extern "C" fn xyg_stream_len(handle: u64) -> usize {
 
 /// Allocation capacity in values (growth slack included, §27). `usize::MAX`
 /// on a stale handle.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_stream_capacity(handle: u64) -> usize {
     ffi_guard(usize::MAX, || {
