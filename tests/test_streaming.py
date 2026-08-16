@@ -257,8 +257,12 @@ def test_append_invalidates_pyramid_when_domain_grows():
     assert old_handle is not None
 
     fig.append(0, [200.0], [50.0])
+    # Domain growth invalidates the store; rebuild is deferred across the
+    # refresh payload (rust-engine.md §5, LOD D4).
     assert kernels.pyramid_count(old_handle, 0.0, 100.0, 0.0, 100.0) is None
-    assert t._pyr_handle not in (None, 0, old_handle)
+    assert t._pyr_handle is None
+    rebuilt = _ensure_pyramid(t)
+    assert rebuilt not in (None, 0, old_handle)
 
 
 def test_pyramid_handle_freed_when_trace_is_garbage_collected():

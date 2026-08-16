@@ -14,7 +14,7 @@ import numpy as np
 from xy import channels, kernels
 from xy._figure import Figure
 from xy.config import DEFAULT_PALETTE, PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD
-from xy.interaction import _decode_log_u8
+from xy.interaction import _decode_log_u8, _ensure_pyramid
 
 # sRGB <-> linear-light, float oracle (IEC 61966-2-1) — independent of the
 # kernel's integer tables so the test checks the law, not the implementation.
@@ -228,9 +228,12 @@ def test_colored_pyramid_append_invalidates_for_lazy_rebuild():
     assert getattr(t, "_pyr_colored", False) is True
     fig.append(0, [5.0], [0.5], color=[5.0])
     # The colored pyramid refuses native increments; append frees the stale
-    # handle and the payload refresh rebuilds a live colored pyramid.
+    # handle and defers rebuild across this refresh so the next
+    # `_ensure_pyramid` / density view is the lazy rebuild (rust-engine.md §5).
     assert kernels.pyramid_count(old, 0.0, 10.0, 0.0, 1.0) is None
-    assert t._pyr_handle not in (None, 0, old)
+    assert t._pyr_handle is None
+    rebuilt = _ensure_pyramid(t)
+    assert rebuilt not in (None, 0, old)
     assert t._pyr_colored is True
 
 

@@ -52,6 +52,7 @@ test("Figure.append uses the stream ABI and keeps payload prefixes", () => {
   assert.equal(second.type, "append");
   assert.equal(second.spec.append.seq, 1);
   assert.deepEqual(second.spec.append.affected, [fig.traces[0].id]);
+  assert.equal(second.spec.append.pyramid, "none");
   assert.equal(fig.traces[0].x.length, 6);
   const x0 = first.spec.traces[0].x;
   const x1 = second.spec.traces[0].x;
