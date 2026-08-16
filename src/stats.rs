@@ -62,12 +62,7 @@ pub fn quantiles(data: &[f64], probs: &[f64]) -> Option<Vec<f64>> {
         return Some(vec![f64::NAN; probs.len()]);
     }
     finite.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    Some(
-        probs
-            .iter()
-            .map(|&p| quantile_sorted(&finite, p))
-            .collect(),
-    )
+    Some(probs.iter().map(|&p| quantile_sorted(&finite, p)).collect())
 }
 
 /// Linear interpolation on a non-empty ascending finite slice.
@@ -193,7 +188,7 @@ fn convolve_same(signal: &[f64], kernel: &[f64], out: &mut [f64]) {
     debug_assert_eq!(signal.len(), out.len());
     let k = kernel.len();
     let mid = k / 2;
-    for i in 0..signal.len() {
+    for (i, dest) in out.iter_mut().enumerate() {
         let mut acc = 0.0;
         for (j, &kv) in kernel.iter().enumerate() {
             let s = i as isize + j as isize - mid as isize;
@@ -201,7 +196,7 @@ fn convolve_same(signal: &[f64], kernel: &[f64], out: &mut [f64]) {
                 acc += signal[s as usize] * kv;
             }
         }
-        out[i] = acc;
+        *dest = acc;
     }
 }
 
@@ -301,7 +296,6 @@ fn auto_width(data: &[f64]) -> f64 {
     fd_corrected.min(sturges)
 }
 
-
 /// Maximum angular sectors accepted by [`wind_rose_bins`] (0.1° bins).
 pub const WIND_ROSE_MAX_SECTORS: usize = 3600;
 /// Maximum speed-band upper edges accepted by [`wind_rose_bins`].
@@ -355,10 +349,7 @@ pub fn wind_rose_bins(
         return None;
     }
     let n_obs = bearings.len();
-    let fastest = magnitudes
-        .iter()
-        .copied()
-        .fold(f64::NEG_INFINITY, f64::max);
+    let fastest = magnitudes.iter().copied().fold(f64::NEG_INFINITY, f64::max);
 
     let edges = match speed_edges {
         None => auto_speed_edges(&magnitudes, fastest)?,
@@ -434,9 +425,7 @@ fn round_3g(value: f64) -> f64 {
     if !value.is_finite() || value == 0.0 {
         return value;
     }
-    format!("{:.2e}", value)
-        .parse::<f64>()
-        .unwrap_or(value)
+    format!("{value:.2e}").parse::<f64>().unwrap_or(value)
 }
 
 fn unique_sorted_f64(values: &mut Vec<f64>) {

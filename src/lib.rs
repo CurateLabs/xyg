@@ -3397,9 +3397,9 @@ pub unsafe extern "C" fn xy_graph_layout(
             | graph::LAYOUT_KAMADA_KAWAI
             | graph::LAYOUT_YIFANHU
             | graph::LAYOUT_LINLOG
-            | graph::LAYOUT_STRESS => {
-                graph::layout_force_family(layout, n_nodes, sources, targets, seed, 300, out_x, out_y)
-            }
+            | graph::LAYOUT_STRESS => graph::layout_force_family(
+                layout, n_nodes, sources, targets, seed, 300, out_x, out_y,
+            ),
             graph::LAYOUT_BREADTHFIRST => {
                 let roots_slice = if n_roots == 0 || roots.is_null() {
                     &[][..]
@@ -3548,6 +3548,10 @@ pub unsafe extern "C" fn xy_graph_force_tick(
 }
 
 /// Destroy a force handle. Returns 1 if it existed, 0 otherwise.
+///
+/// # Safety
+/// `handle` is an opaque id from `xy_graph_force_create`; any other value is a
+/// no-op. The function is `unsafe` to match the rest of the C ABI surface.
 #[no_mangle]
 pub unsafe extern "C" fn xy_graph_force_destroy(handle: u64) -> i32 {
     ffi_guard(0, || if graph::force_destroy(handle) { 1 } else { 0 })
@@ -3608,6 +3612,9 @@ pub unsafe extern "C" fn xy_graph_build_csr(
 
 /// LOD decision helper. Writes tier (0 direct / 1 edge sample / 2 aggregate)
 /// and edges_kept. Returns 0.
+///
+/// # Safety
+/// `out_tier` and `out_edges_kept` must be non-null writable u32/u64 slots.
 #[no_mangle]
 pub unsafe extern "C" fn xy_graph_lod_decision(
     n_nodes: u64,
@@ -3877,6 +3884,10 @@ pub unsafe extern "C" fn xy_graph_build_render(
 }
 
 /// Sample edge indices into `out_indices` (capacity `budget`). Returns count.
+///
+/// # Safety
+/// `out_indices` must be non-null and writable for `budget` `u64`s when
+/// `budget > 0`.
 #[no_mangle]
 pub unsafe extern "C" fn xy_graph_sample_edges(
     n_edges: u64,
@@ -4021,7 +4032,6 @@ pub unsafe extern "C" fn xy_sankey_layout(
     })
 }
 
-
 // ---------------------------------------------------------------------------
 // View LOD plan + distribution stats (lod_plan.rs / stats.rs).
 // Hosts validate inputs and assemble string mode names; Rust owns the math.
@@ -4043,7 +4053,9 @@ pub unsafe extern "C" fn xy_drill_decision(
     if out_exact.is_null() {
         return 0;
     }
-    match ffi_guard(None, || lod_plan::drill_decision(visible, budget, in_drill != 0, exit_factor)) {
+    match ffi_guard(None, || {
+        lod_plan::drill_decision(visible, budget, in_drill != 0, exit_factor)
+    }) {
         Some(exact) => {
             *out_exact = if exact { 1 } else { 0 };
             1
@@ -4068,7 +4080,9 @@ pub unsafe extern "C" fn xy_lod_grid_shape(
     if out_w.is_null() || out_h.is_null() {
         return 0;
     }
-    match ffi_guard(None, || lod_plan::grid_shape(px_w, px_h, visible, target_per_cell)) {
+    match ffi_guard(None, || {
+        lod_plan::grid_shape(px_w, px_h, visible, target_per_cell)
+    }) {
         Some((w, h)) => {
             *out_w = w;
             *out_h = h;
@@ -4192,14 +4206,17 @@ pub unsafe extern "C" fn xy_box_stats(
         }
         std::slice::from_raw_parts(data, len)
     };
-    let stats = ffi_guard(stats::BoxStats {
-        q1: f64::NAN,
-        median: f64::NAN,
-        q3: f64::NAN,
-        low: f64::NAN,
-        high: f64::NAN,
-        outliers: Vec::new(),
-    }, || stats::box_stats(data));
+    let stats = ffi_guard(
+        stats::BoxStats {
+            q1: f64::NAN,
+            median: f64::NAN,
+            q3: f64::NAN,
+            low: f64::NAN,
+            high: f64::NAN,
+            outliers: Vec::new(),
+        },
+        || stats::box_stats(data),
+    );
     let out_stats = std::slice::from_raw_parts_mut(out_stats, 5);
     out_stats[0] = stats.q1;
     out_stats[1] = stats.median;
@@ -4279,9 +4296,7 @@ pub unsafe extern "C" fn xy_hexbin(
         Some(std::slice::from_raw_parts(c, len))
     };
     let result = match ffi_guard(None, || {
-        hexbin::hexbin(
-            xs, ys, cs, grid_w, grid_h, x0, x1, y0, y1, mincnt, reduce,
-        )
+        hexbin::hexbin(xs, ys, cs, grid_w, grid_h, x0, x1, y0, y1, mincnt, reduce)
     }) {
         Some(r) => r,
         None => return usize::MAX,
@@ -4368,11 +4383,7 @@ pub unsafe extern "C" fn xy_histogram_edges(
         }
         std::slice::from_raw_parts(data, len)
     };
-    let range = if use_range != 0 {
-        Some((lo, hi))
-    } else {
-        None
-    };
+    let range = if use_range != 0 { Some((lo, hi)) } else { None };
     let Some(edges) = ffi_guard(None, || stats::histogram_edges(data, range, method)) else {
         return usize::MAX;
     };
@@ -4382,7 +4393,6 @@ pub unsafe extern "C" fn xy_histogram_edges(
     std::slice::from_raw_parts_mut(out_edges, capacity)[..edges.len()].copy_from_slice(&edges);
     edges.len()
 }
-
 
 /// Wind-rose directional/speed binning. When `n_speed_edges == 0`, quartile
 /// upper edges are derived from finite speeds; otherwise `speed_edges` is

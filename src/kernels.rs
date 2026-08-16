@@ -995,6 +995,7 @@ pub const BAR_ORIENT_HORIZONTAL: u32 = 1;
 /// (broadcast) or `n_items`. Writes `n_series * n_items` rectangles into the
 /// four output buffers (series-major). Orientation maps category → x and value
 /// → y when vertical, swapped when horizontal — matching `_append_bar_rect`.
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI kernel entry point
 pub fn bar_stack_into(
     pos: &[f64],
     values: &[f64],
@@ -1020,8 +1021,8 @@ pub fn bar_stack_into(
         || out_x1.len() < len
         || out_y0.len() < len
         || out_y1.len() < len
-        || !(mode <= BAR_MODE_NORMALIZED)
-        || !(orientation <= BAR_ORIENT_HORIZONTAL)
+        || mode > BAR_MODE_NORMALIZED
+        || orientation > BAR_ORIENT_HORIZONTAL
         || !(width.len() == 1 || width.len() == n_items)
         || !(base.len() == 1 || base.len() == n_items)
         || width.iter().any(|w| !w.is_finite() || *w < 0.0)
@@ -3051,7 +3052,7 @@ fn contourf_sample_count(size: usize) -> usize {
         return size;
     }
     let target = (size - 1).saturating_mul(8).saturating_add(1);
-    target.max(256).min(512)
+    target.clamp(256, 512)
 }
 
 /// Bilinear densify of a contour scalar field before discrete band assignment.
@@ -3059,6 +3060,7 @@ fn contourf_sample_count(size: usize) -> usize {
 /// Writes row-major `out_z` (`out_rows * out_cols`), `out_x` (`out_cols`), and
 /// `out_y` (`out_rows`). Non-finite source corners yield NaN samples. Returns
 /// `(out_rows, out_cols)` or `None` on shape/capacity mismatch.
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI kernel entry point
 pub fn contourf_densify(
     z: &[f64],
     rows: usize,
@@ -3085,7 +3087,7 @@ pub fn contourf_densify(
 
     let row_span = (rows - 1) as f64;
     let col_span = (cols - 1) as f64;
-    for oc in 0..out_cols {
+    for (oc, dest) in out_x.iter_mut().take(out_cols).enumerate() {
         let col_at = if out_cols == 1 {
             0.0
         } else {
@@ -3094,7 +3096,7 @@ pub fn contourf_densify(
         let col0 = col_at.floor() as usize;
         let col1 = (col0 + 1).min(cols - 1);
         let tw = col_at - col0 as f64;
-        out_x[oc] = xpos[col0] * (1.0 - tw) + xpos[col1] * tw;
+        *dest = xpos[col0] * (1.0 - tw) + xpos[col1] * tw;
     }
     for orow in 0..out_rows {
         let row_at = if out_rows == 1 {
@@ -3253,17 +3255,10 @@ pub fn contourf_bands_into(
             let corners: [Pt; 4] = [
                 (xpos[col], ypos[row], z[row * cols + col]),
                 (xpos[col + 1], ypos[row], z[row * cols + col + 1]),
-                (
-                    xpos[col + 1],
-                    ypos[row + 1],
-                    z[(row + 1) * cols + col + 1],
-                ),
+                (xpos[col + 1], ypos[row + 1], z[(row + 1) * cols + col + 1]),
                 (xpos[col], ypos[row + 1], z[(row + 1) * cols + col]),
             ];
-            let triangle: Vec<Pt> = corners
-                .into_iter()
-                .filter(|c| c.2.is_finite())
-                .collect();
+            let triangle: Vec<Pt> = corners.into_iter().filter(|c| c.2.is_finite()).collect();
             if triangle.len() != 3 {
                 continue;
             }
@@ -3279,8 +3274,7 @@ pub fn contourf_bands_into(
                     let v0 = polygon[0];
                     let v1 = polygon[index];
                     let v2 = polygon[index + 1];
-                    let area =
-                        (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
+                    let area = (v1.0 - v0.0) * (v2.1 - v0.1) - (v1.1 - v0.1) * (v2.0 - v0.0);
                     if area.abs() <= eps {
                         continue;
                     }
@@ -3407,10 +3401,10 @@ pub(crate) fn colormap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4
     let hi = (lo + 1).min(last);
     let fraction = position - lo as f64;
     let mut color = [0u8; 4];
-    for channel in 0..3 {
+    for (channel, dest) in color.iter_mut().take(3).enumerate() {
         let start = stops[lo][channel] as f64;
         let value = start + (stops[hi][channel] as f64 - start) * fraction;
-        color[channel] = value.round_ties_even().clamp(0.0, 255.0) as u8;
+        *dest = value.round_ties_even().clamp(0.0, 255.0) as u8;
     }
     color[3] = alpha;
     color
@@ -3479,10 +3473,10 @@ pub(crate) fn density_rgba_lut(
         let lo = position.floor() as usize;
         let hi = (lo + 1).min(last);
         let fraction = position - lo as f64;
-        for channel in 0..3 {
+        for (channel, dest) in color.iter_mut().take(3).enumerate() {
             let start = f64::from(stops[lo][channel]);
             let value = start + (f64::from(stops[hi][channel]) - start) * fraction;
-            color[channel] = value.round_ties_even().clamp(0.0, 255.0) as u8;
+            *dest = value.round_ties_even().clamp(0.0, 255.0) as u8;
         }
         color[3] = if code == 0 {
             0
@@ -6434,21 +6428,8 @@ mod tests {
         let mut slots = vec![0i64; needed];
         assert_eq!(
             contourf_bands_into(
-                &z,
-                2,
-                2,
-                &xpos,
-                &ypos,
-                &edges,
-                false,
-                false,
-                &mut x0,
-                &mut y0,
-                &mut x1,
-                &mut y1,
-                &mut x2,
-                &mut y2,
-                &mut slots,
+                &z, 2, 2, &xpos, &ypos, &edges, false, false, &mut x0, &mut y0, &mut x1, &mut y1,
+                &mut x2, &mut y2, &mut slots,
             ),
             Some(3)
         );

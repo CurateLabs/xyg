@@ -40,7 +40,7 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 | Surface | Location | Role |
 |---|---|---|
 | **1. Python host** | `python/xy/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. Embeds a **copy** of the paint client in the wheel (`python/xy/static/`) so Python users need no Node. |
-| **2. Node host** | `packages/xy-node` | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. `toHtml()` inlines the host-neutral standalone client, not the Python tree. |
+| **2. Node host** | `packages/xy-node` | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. `toHtml()` inlines the host-neutral standalone client, not the Python tree. Root `npm ci` does **not** install this package; CI Test and Python 3.11 jobs run `npm ci --prefix packages/xy-node` so koffi is present for Node host tests. |
 | **3. Browser client** | `js/src/*.ts` → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 renderer: **paint / pick / gestures only**. Host-neutral npm artifact; Python **copies** the same files into the wheel. Draws §29 buffers uploaded by any host. Never owns layout, LOD, or encode on the product path. |
 
 ### Contracts (MUST)

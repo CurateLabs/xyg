@@ -24,6 +24,7 @@ renderer cannot silently ignore a declaration that another honors.
 | `triangle_mesh` | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 | `heatmap`, `hexbin` | `fill-opacity`, `opacity` |
 | `ribbon`, `sankey` | `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity`; Sankey styles apply to link ribbons |
+| `graph` | Forwards the same `style=` mapping to compiled `segments` (edges) and `scatter` (nodes). Shared properties valid on both: `stroke`, `stroke-width`, `stroke-opacity`, `opacity`. Node fill/shape stay on `color=`/`symbol=` — scatter-only CSS such as `fill` or `marker-shape` is rejected on the edge path |
 
 Use canonical CSS kebab-case when sharing styles with web code; Python
 snake_case aliases remain accepted.

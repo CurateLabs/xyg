@@ -28,6 +28,7 @@ The shared WebGL client is exercised outside the Bazel suite:
 
 ```bash
 npm ci && node js/build.mjs          # regenerate @curatelabs/xyg (packages/xy-client/dist) and copy into python/xy/static
+npm ci --prefix packages/xy-node     # koffi / Node host deps (root npm ci does not install them)
 node scripts/browser_client_smoke.mjs
 ```
 

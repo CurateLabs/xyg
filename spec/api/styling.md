@@ -121,6 +121,7 @@ xy.bar(
 | violin | `fill`, `fill-opacity`, `opacity` |
 | triangle mesh | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 | heatmap, hexbin | `fill-opacity`, `opacity` |
+| graph | Forwards the same `style=` mapping to compiled `segments` (edges) and `scatter` (nodes). Shared properties valid on both: `stroke`, `stroke-width`, `stroke-opacity`, `opacity`. Node fill/shape stay on `color=`/`symbol=` — scatter-only CSS such as `fill` or `marker-shape` is rejected on the edge path |
 
 Legacy appearance arguments such as `color=`, `width=`, and `opacity=` remain
 supported; a CSS `style` declaration is the final override when both are set.

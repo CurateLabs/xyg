@@ -364,8 +364,8 @@ pub fn layout_hierarchical(
         for &u in &order {
             seen[u] = true;
         }
-        for i in 0..n {
-            if !seen[i] {
+        for (i, was_seen) in seen.iter().enumerate() {
+            if !was_seen {
                 order.push(i);
             }
         }
@@ -654,11 +654,7 @@ impl ForceState {
                 let dx = self.x[i] - self.x[j];
                 let dy = self.y[i] - self.y[j];
                 let dist = (dx * dx + dy * dy).sqrt().max(1e-8);
-                let force = if linlog {
-                    (1.0 + dist).ln()
-                } else {
-                    dist
-                };
+                let force = if linlog { (1.0 + dist).ln() } else { dist };
                 let fx_i = force * dx / dist;
                 let fy_i = force * dy / dist;
                 fx[i] -= fx_i;
@@ -863,7 +859,7 @@ impl ForceState {
         let mut mass = vec![0u64; cells];
         let mut com_x = vec![0.0f64; cells];
         let mut com_y = vec![0.0f64; cells];
-        for i in 0..n {
+        for (i, cell_slot) in cell_of.iter_mut().enumerate() {
             let col = (((self.x[i] - min_x) / span_x) * (side as f64))
                 .floor()
                 .clamp(0.0, (side - 1) as f64) as usize;
@@ -871,7 +867,7 @@ impl ForceState {
                 .floor()
                 .clamp(0.0, (side - 1) as f64) as usize;
             let cell = row * side + col;
-            cell_of[i] = cell;
+            *cell_slot = cell;
             members[cell].push(i);
             mass[cell] += 1;
             com_x[cell] += self.x[i];
@@ -884,8 +880,7 @@ impl ForceState {
                 com_y[c] /= m;
             }
         }
-        for c in 0..cells {
-            let m = &members[c];
+        for m in &members {
             for a in 0..m.len() {
                 for b in (a + 1)..m.len() {
                     let i = m[a];
@@ -1025,6 +1020,7 @@ pub fn force_create(
 }
 
 /// One-shot progressive force family → positions.
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn layout_force_family(
     algo: u32,
     n_nodes: u64,
@@ -1093,6 +1089,7 @@ pub fn sample_edges(n_edges: u64, budget: u64, out_indices: &mut [u64]) -> u64 {
 ///
 /// When `n_nodes <= budget`, copies positions through (identity membership).
 /// When over budget, bins into a near-square grid and emits cell centroids.
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn cluster_positions(
     n_nodes: u64,
     x: &[f64],
@@ -1196,6 +1193,7 @@ pub fn cluster_positions(
 ///
 /// Under budget this is identity (direct or edge-sample tier from `lod_decide`);
 /// over budget it writes at most `node_budget` centroids and Aggregate tier.
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn cluster_aggregate(
     n_nodes: u64,
     n_edges: u64,
@@ -1237,6 +1235,7 @@ pub fn cluster_aggregate(
 ///
 /// Guarantees `|V'| ≤ node_budget` and `|E'| ≤ edge_budget` so hosts never
 /// upload raw V/E when over budget (scatter-density → exact drill-down spirit).
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn build_render(
     n_nodes: u64,
     x: &[f64],
@@ -1437,7 +1436,9 @@ pub fn layout_auto(
     if !sources.is_empty() && sources.len() as u64 <= n_nodes.saturating_mul(2) {
         return layout_breadthfirst(n_nodes, sources, targets, &[], out_x, out_y);
     }
-    let Some(mut state) = ForceState::new(n_nodes, sources, targets, None, None, seed, LAYOUT_FORCE) else {
+    let Some(mut state) =
+        ForceState::new(n_nodes, sources, targets, None, None, seed, LAYOUT_FORCE)
+    else {
         return false;
     };
     state.tick(80);
@@ -1634,8 +1635,22 @@ mod tests {
         let mut by = [0.0; 4];
         let mut hx = [0.0; 4];
         let mut hy = [0.0; 4];
-        assert!(layout_breadthfirst(4, &sources, &targets, &[], &mut bx, &mut by));
-        assert!(layout_hierarchical(4, &sources, &targets, &[], &mut hx, &mut hy));
+        assert!(layout_breadthfirst(
+            4,
+            &sources,
+            &targets,
+            &[],
+            &mut bx,
+            &mut by
+        ));
+        assert!(layout_hierarchical(
+            4,
+            &sources,
+            &targets,
+            &[],
+            &mut hx,
+            &mut hy
+        ));
         assert_ne!(by, hy, "hierarchical must not alias undirected BFS");
         // Hierarchical: roots 0 and 3 at layer 0 → y=0; node 2 at layer 2 → y=-2.
         assert!((hy[0]).abs() < 1e-12);
@@ -1763,7 +1778,7 @@ mod tests {
 
     #[test]
     fn force_exact_path_for_tiny_n() {
-        assert!(
+        const _: () = assert!(
             3 <= FORCE_EXACT_REPULSION_MAX_N,
             "tiny graphs must use exact pairwise repulsion"
         );
@@ -1792,17 +1807,18 @@ mod tests {
             sources.push(i);
             targets.push(i + 1);
         }
-        let mut a = ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
-        let mut b = ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
+        let mut a =
+            ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
+        let mut b =
+            ForceState::new(n as u64, &sources, &targets, None, None, 42, LAYOUT_FORCE).unwrap();
         a.tick(5);
         b.tick(5);
         assert_eq!(a.x, b.x);
         assert_eq!(a.y, b.y);
-        let moved = a
-            .x
-            .iter()
-            .zip(a.y.iter())
-            .any(|(&x, &y)| x.is_finite() && y.is_finite() && (x * x + y * y).sqrt() > 0.0);
+        let moved =
+            a.x.iter()
+                .zip(a.y.iter())
+                .any(|(&x, &y)| x.is_finite() && y.is_finite() && (x * x + y * y).sqrt() > 0.0);
         assert!(moved);
     }
 
@@ -1953,10 +1969,8 @@ mod tests {
             LAYOUT_BARNES_HUT,
         ];
         for &algo in &algos {
-            let mut a =
-                ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("a");
-            let mut b =
-                ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("b");
+            let mut a = ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("a");
+            let mut b = ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("b");
             a.tick(30);
             b.tick(30);
             assert_eq!(a.x, b.x, "algo {algo} x");

@@ -837,6 +837,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "hard production gates",
         "scripts/verify_ci_workflow.py",
         "scripts/check_public_api.py",
+        "Install Node host bindings",
+        "npm ci --prefix packages/xy-node",
         "Verify bundled Reflex integration import",
         "importlib.metadata as m, reflex_xy",
         "assert reflex_xy.__version__ == m.version('xy')",
@@ -903,6 +905,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'python-version: "3.11"',
         "scripts/check_python_floor.py",
         "scripts/check_public_api.py",
+        "npm ci --prefix packages/xy-node",
     )
     _require_job_contains(
         errors,
