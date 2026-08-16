@@ -86,7 +86,7 @@ benchmark publishes both paths so the effect of aggregation stays visible.
 Install it and see for yourself:
 
 ```bash
-uv add xy
+uv add xyg
 ```
 
 [Browse the chart gallery](/docs/xy/overview/gallery/) or jump straight to

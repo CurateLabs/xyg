@@ -1245,8 +1245,8 @@ def test_installation_uses_uv_first_package_manager_tabs() -> None:
     assert 'defaultValue:"tab1"' in rendered
     assert rendered.count('className:"pill-tab"') == 2
     assert rendered.index('value:"tab1"},"uv"') < rendered.index('value:"tab2"},"pip"')
-    assert 'code:"uv add xy"' in rendered
-    assert 'code:"python -m pip install xy"' in rendered
+    assert 'code:"uv add xyg"' in rendered
+    assert 'code:"python -m pip install xyg"' in rendered
 
 
 def test_installation_distinguishes_supported_targets_from_pypi_artifacts() -> None:
@@ -1263,7 +1263,7 @@ def test_installation_distinguishes_supported_targets_from_pypi_artifacts() -> N
     assert "0.0.1 PyPI upload does not include Windows wheels" in content
     assert "runtime-verified WebAssembly wheel" in content
     assert "`pyemscripten_2026_0_wasm32` platform" in content
-    assert "%pip install xy" in content
+    assert "%pip install xyg" in content
 
 
 def test_chart_gallery_grid_renders_every_type_as_inline_svg(
