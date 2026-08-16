@@ -243,8 +243,8 @@ the zoom story in §1.4:
 | Regime | Behavior |
 |---|---|
 | Direct | Draw all nodes/edges under budget — sole tier that may expose per-element V/E to WebGL |
-| Edge sample | Rust samples edges when `|E|` over budget; record §28 |
-| Cluster / aggregate | Rust `xyg_graph_build_render` (and `xyg_graph_cluster_aggregate`) write centroids / reps when `|V|` exceeds `node_budget`, collapse multi-edges into cluster index space, and record §28; hosts keep `member_of` for drill / hover |
+| Edge sample | Rust samples edges when edge count E is over budget; record §28 |
+| Cluster / aggregate | Rust `xyg_graph_build_render` (and `xyg_graph_cluster_aggregate`) write centroids / reps when node count V exceeds `node_budget`, collapse multi-edges into cluster index space, and record §28; hosts keep `member_of` for drill / hover |
 | Labels | Hide below zoom / over label budget |
 
 Budgets and tier choice live in Rust decision helpers (render-graph emission);

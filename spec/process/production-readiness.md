@@ -431,7 +431,7 @@ Before tagging a release:
   calls the native `min_max` kernel. PEP 783 platform tags are accepted by
   PyPI, so the runtime-verified wheel joins the same trusted-publishing batch
   as the native wheels and sdist; Pyodide 314 users can install it with
-  `await micropip.install("xy")`. The wasm job is release-blocking so an ABI or
+  `await micropip.install("xyg")`. The wasm job is release-blocking so an ABI or
   toolchain drift cannot silently ship a build-only, unloadable artifact.
 - Confirm the no-Rust install job passed (it must build, install, and then
   raise a clear ImportError on first compute — never a silent fallback).

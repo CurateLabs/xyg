@@ -65,6 +65,7 @@ required to claim Phase-3 Tier-3 ready.
 ```bash
 cargo test -p xyg-engine tiles
 python3 scripts/abi_smoke.py          # includes pyramid ABI block
+# Linux: libxyg_core.so; macOS: libxyg_core.dylib; Windows: xyg_core.dll
 XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so \\
   npm --prefix packages/xy-node test -- test/pyramid.test.mjs
 PYTHONPATH=python python3 benchmarks/bench_tier3_pyramid.py

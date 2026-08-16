@@ -104,7 +104,7 @@ cd packages/xy-node && npm ci
 uv run python packages/xy-node/test/fixtures/write_mark_fixtures.py
 XYG_NATIVE_LIB=$PWD/../../target/release/libxyg_core.so npm test
 # live Python↔Node goldens:
-XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so \\
+XYG_NATIVE_LIB=$PWD/../../target/release/libxyg_core.so \\
   uv run pytest tests/test_node_mark_parity.py -q
 npm run golden:marks   # JSON for inspection
 ```
