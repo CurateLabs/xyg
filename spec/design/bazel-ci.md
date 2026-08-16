@@ -43,7 +43,9 @@ All jobs use Blacksmith tags only (for example
 GitHub-hosted runners. Bazel setup uses `useblacksmith/setup-bazel@v2`
 (sticky disks for bazelisk / disk / repository caches). The Bazel
 version pin is `.bazelversion` (currently `7.4.1`) — `setup-bazel@v2`
-has no `version` input; bazelisk reads `.bazelversion`.
+has no `version` input; bazelisk reads `.bazelversion`. The job sets
+`UV_CACHE_DIR` to `${{ runner.temp }}/uv-cache` because those sticky
+disks own `~/.cache` and uv cannot create `~/.cache/uv` there.
 
 Rust is pinned to **1.88.0** in the workflow (`dtolnay/rust-toolchain`)
 and `rust-toolchain.toml`. Node graph goldens default to the current
