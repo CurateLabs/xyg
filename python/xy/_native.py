@@ -3444,7 +3444,10 @@ def stream_view(handle: int) -> npt.NDArray[np.float64]:
         raise ValueError("stale stream handle")
     if n.value == 0:
         return np.empty(0, dtype=np.float64)
-    buf = (ctypes.c_double * n.value).from_address(ptr.value)
+    addr = ptr.value
+    if addr is None:
+        raise ValueError("stale stream handle")
+    buf = (ctypes.c_double * n.value).from_address(addr)
     arr = np.frombuffer(buf, dtype=np.float64)
     with contextlib.suppress(ValueError):
         arr.flags.writeable = True

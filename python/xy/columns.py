@@ -333,15 +333,16 @@ class Column:
         if _ooc.is_memmapped(self.values) and self._stream is None:
             self._append_host(arr)
             return
-        if self._stream is None:
-            handle = kernels.stream_new(self.values)
-            self._bind_stream(handle)
+        stream = self._stream
+        if stream is None:
+            stream = kernels.stream_new(self.values)
+            self._bind_stream(stream)
             self.ingest_copies += 1  # migration into the native store
-        cap_before = kernels.stream_capacity(self._stream)
-        kernels.stream_append(self._stream, arr)
-        if kernels.stream_capacity(self._stream) > cap_before:
+        cap_before = kernels.stream_capacity(stream)
+        kernels.stream_append(stream, arr)
+        if kernels.stream_capacity(stream) > cap_before:
             self.ingest_copies += 1
-        kernels.stream_seal(self._stream)
+        kernels.stream_seal(stream)
         self._refresh_from_stream()
 
 
