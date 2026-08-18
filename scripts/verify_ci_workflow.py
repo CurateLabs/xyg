@@ -1232,6 +1232,9 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "CodSpeed requires native backend",
         "CodSpeedHQ/action@",
         "mode: simulation",
+        "cargo install cargo-codspeed",
+        "cargo codspeed build --bench kernels",
+        "cargo codspeed run --bench kernels",
         "benchmarks/test_codspeed_kernels.py --codspeed",
     )
     return errors

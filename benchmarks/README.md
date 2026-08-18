@@ -344,9 +344,25 @@ uv run --group dev --group codspeed python -m pytest \
   benchmarks/test_codspeed_*.py --codspeed
 ```
 
+`crates/xyg-engine/benches/kernels.rs` is the same gate one level down: divan
+benchmarks sitting directly on the Rust entry points (zone maps, offset-encoded
+f32, M4, viewport binning, density log-encode, histogram, box selection,
+sorted ingest) at the same 10k/100k/1M sizes the pytest suite uses. A
+`kernels.rs` regression is attributed to the kernel there instead of arriving
+mixed with FFI and NumPy work, and each row carries its own flame graph. They
+run in the same CodSpeed job:
+
+```bash
+cargo codspeed build --bench kernels
+codspeed run --mode simulation -- cargo codspeed run --bench kernels
+```
+
+Plain `cargo bench --bench kernels` still works outside CodSpeed: the compat
+layer falls back to divan's wall-clock harness when no runner is present.
+
 The kernel/payload module requires the native Rust backend; the transport codec
 module is dependency-free Python but runs in the same job. The GitHub Actions
-workflow runs the suite in CodSpeed simulation mode. The browser interaction, dashboard,
+workflow runs both suites in CodSpeed simulation mode. The browser interaction, dashboard,
 cross-library, and fresh-install workloads remain in the benchmark-refresh
 workflow because they need a real browser, separate processes/virtual
 environments, or wall-clock timing. They are still measured in CI, but are not

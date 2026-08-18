@@ -14,3 +14,14 @@ name = "xyg_engine"
 # a full framebuffer through a host language.
 [dependencies]
 png = "0.18.1"
+
+[dev-dependencies]
+# CodSpeed's divan compatibility layer: the same `divan` API, instrumented when
+# it runs under the CodSpeed runner and a plain wall-clock harness otherwise.
+divan = { version = "5.0.1", package = "codspeed-divan-compat" }
+
+# Kernel-level benchmarks (`cargo codspeed run --bench kernels`). `harness =
+# false` because divan supplies its own `main`.
+[[bench]]
+name = "kernels"
+harness = false
