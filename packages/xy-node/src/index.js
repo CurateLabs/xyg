@@ -81,6 +81,7 @@ export {
 
 export {
   DEFAULT_LAYOUT,
+  fromGraphForgeTables,
   normalizeGraphInputs,
   runLayout,
   edgeSegmentsFromPositions,

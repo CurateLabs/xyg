@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   abiVersion,
+  fromGraphForgeTables,
   graphBuildCsr,
   graphBuildRender,
   graphClusterAggregate,
@@ -15,10 +16,30 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 59);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 60);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
+});
+
+test("GraphForge tables preserve UUID identity, parents, and provenance through Rust", () => {
+  const a = "00000000-0000-0000-0000-000000000001";
+  const b = "00000000-0000-0000-0000-000000000002";
+  const edge = "00000000-0000-0000-0000-000000000003";
+  const graph = fromGraphForgeTables(
+    { node_uuid: [a, b], parent_uuid: [null, a], label: ["root", "child"], provenance_row: [7n, 8n] },
+    { edge_uuid: [edge], source_uuid: [a], target_uuid: [b], relationship_type: ["contains"], provenance_row: [9n] },
+  );
+  assert.deepEqual(graph.ids, [a, b]);
+  assert.deepEqual(graph.edgeIds, [edge]);
+  assert.deepEqual([...graph.sources], [0n]);
+  assert.deepEqual([...graph.targets], [1n]);
+  assert.deepEqual([...graph.parentIndices], [0n, 0n]);
+  assert.deepEqual([...graph.parentValidity], [0, 1]);
+  assert.deepEqual([...graph.nodeProvenanceRows], [7n, 8n]);
+  assert.deepEqual([...graph.edgeProvenanceRows], [9n]);
+  assert.deepEqual(graph.nodeAttrs.label, ["root", "child"]);
+  assert.deepEqual(graph.edgeAttrs.relationship_type, ["contains"]);
 });
 
 test("circle layout length and values", () => {

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from typing import Any
+from uuid import UUID
 
 import numpy as np
 
@@ -17,6 +18,8 @@ from . import _native
 __all__ = [
     "DEFAULT_LAYOUT",
     "GraphData",
+    "GraphProjectionError",
+    "from_graphforge_tables",
     "from_networkx",
     "normalize_graph_inputs",
 ]
@@ -29,8 +32,16 @@ class GraphData:
 
     __slots__ = (
         "directed",
+        "edge_attrs",
+        "edge_ids",
+        "edge_provenance_rows",
+        "edge_uuid_bytes",
         "ids",
         "node_attrs",
+        "node_provenance_rows",
+        "node_uuid_bytes",
+        "parent_indices",
+        "parent_validity",
         "sources",
         "targets",
         "x",
@@ -46,6 +57,14 @@ class GraphData:
         x: np.ndarray | None = None,
         y: np.ndarray | None = None,
         node_attrs: Mapping[str, np.ndarray] | None = None,
+        edge_ids: list[Any] | None = None,
+        edge_attrs: Mapping[str, np.ndarray] | None = None,
+        node_uuid_bytes: np.ndarray | None = None,
+        edge_uuid_bytes: np.ndarray | None = None,
+        node_provenance_rows: np.ndarray | None = None,
+        edge_provenance_rows: np.ndarray | None = None,
+        parent_indices: np.ndarray | None = None,
+        parent_validity: np.ndarray | None = None,
         directed: bool = True,
     ) -> None:
         self.ids = list(ids)
@@ -54,6 +73,14 @@ class GraphData:
         self.x = None if x is None else np.ascontiguousarray(x, dtype=np.float64)
         self.y = None if y is None else np.ascontiguousarray(y, dtype=np.float64)
         self.node_attrs = dict(node_attrs or {})
+        self.edge_ids = list(edge_ids or [])
+        self.edge_attrs = dict(edge_attrs or {})
+        self.node_uuid_bytes = node_uuid_bytes
+        self.edge_uuid_bytes = edge_uuid_bytes
+        self.node_provenance_rows = node_provenance_rows
+        self.edge_provenance_rows = edge_provenance_rows
+        self.parent_indices = parent_indices
+        self.parent_validity = parent_validity
         self.directed = bool(directed)
 
     @property
@@ -65,11 +92,147 @@ class GraphData:
         return int(len(self.sources))
 
 
+class GraphProjectionError(ValueError):
+    """Stable GraphForge projection validation failure."""
+
+    def __init__(
+        self, code: str, message: str, *, field: str | None = None, row: int | None = None
+    ):
+        self.code = code
+        self.field = field
+        self.row = row
+        context = "".join(
+            part
+            for part in (
+                f" field={field}" if field is not None else "",
+                f" row={row}" if row is not None else "",
+            )
+        )
+        super().__init__(f"{code}:{context} {message}".strip())
+
+
 def _as_1d(values: Any, name: str) -> np.ndarray:
     arr = np.asarray(values)
     if arr.ndim != 1:
         raise ValueError(f"{name} must be 1-D")
     return arr
+
+
+def _table_column_names(table: Any) -> list[str]:
+    if isinstance(table, Mapping):
+        return [str(name) for name in table]
+    names = getattr(table, "column_names", None)
+    if names is not None:
+        return [str(name) for name in names]
+    columns = getattr(table, "columns", None)
+    if columns is not None and all(isinstance(name, str) for name in columns):
+        return list(columns)
+    schema = getattr(table, "schema", None)
+    if schema is not None and getattr(schema, "names", None) is not None:
+        return [str(name) for name in schema.names]
+    raise GraphProjectionError(
+        "GF_GRAPH_TABLE",
+        "expected a mapping or Arrow/table-like object with named columns",
+    )
+
+
+def _table_column(table: Any, name: str) -> Any:
+    try:
+        column = table[name]
+    except (KeyError, IndexError, TypeError):
+        getter = getattr(table, "column", None)
+        if not callable(getter):
+            raise GraphProjectionError(
+                "GF_GRAPH_FIELD_MISSING", f"required column {name!r} is absent", field=name
+            ) from None
+        column = getter(name)
+    combine_chunks = getattr(column, "combine_chunks", None)
+    if callable(combine_chunks):
+        column = combine_chunks()
+    to_numpy = getattr(column, "to_numpy", None)
+    if callable(to_numpy):
+        try:
+            return to_numpy(zero_copy_only=False)
+        except TypeError:
+            return to_numpy()
+    to_pylist = getattr(column, "to_pylist", None)
+    if callable(to_pylist):
+        return to_pylist()
+    return column
+
+
+def _uuid_bytes(values: Any, field: str) -> tuple[list[str], np.ndarray]:
+    raw = list(values)
+    out = np.empty((len(raw), 16), dtype=np.uint8)
+    text: list[str] = []
+    for row, value in enumerate(raw):
+        if value is None:
+            raise GraphProjectionError(
+                "GF_GRAPH_UUID_NULL", "UUID values cannot be null", field=field, row=row
+            )
+        try:
+            if isinstance(value, UUID):
+                parsed = value
+            elif isinstance(value, (bytes, bytearray, memoryview)):
+                data = bytes(value)
+                if len(data) != 16:
+                    raise ValueError("binary UUID must contain exactly 16 bytes")
+                parsed = UUID(bytes=data)
+            else:
+                parsed = UUID(str(value))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise GraphProjectionError(
+                "GF_GRAPH_UUID_INVALID", str(exc), field=field, row=row
+            ) from exc
+        text.append(str(parsed))
+        out[row] = np.frombuffer(parsed.bytes, dtype=np.uint8)
+    return text, np.ascontiguousarray(out)
+
+
+def _resolve_column(
+    names: list[str],
+    explicit: str | None,
+    candidates: tuple[str, ...],
+    semantic: str,
+) -> str:
+    if explicit is not None:
+        if explicit not in names:
+            raise GraphProjectionError(
+                "GF_GRAPH_FIELD_MISSING",
+                f"configured {semantic} column {explicit!r} is absent",
+                field=explicit,
+            )
+        return explicit
+    matches = [name for name in candidates if name in names]
+    if len(matches) == 1:
+        return matches[0]
+    if not matches:
+        raise GraphProjectionError(
+            "GF_GRAPH_FIELD_MISSING",
+            f"no {semantic} column found; expected one of {candidates!r}",
+        )
+    raise GraphProjectionError(
+        "GF_GRAPH_FIELD_AMBIGUOUS",
+        f"multiple {semantic} columns are present: {matches!r}; provide mapping=",
+    )
+
+
+def _attrs(
+    table: Any, names: list[str], excluded: set[str], expected: int
+) -> dict[str, np.ndarray]:
+    attrs: dict[str, np.ndarray] = {}
+    for name in names:
+        if name in excluded:
+            continue
+        values = np.asarray(_table_column(table, name))
+        if values.ndim != 1 or len(values) != expected:
+            raise GraphProjectionError(
+                "GF_GRAPH_COLUMN_SHAPE",
+                f"attribute columns must be one-dimensional with {expected} rows",
+                field=name,
+            )
+        attrs[name] = values
+    return attrs
 
 
 def normalize_graph_inputs(
@@ -168,10 +331,145 @@ def from_graphforge_tables(
     nodes: Any,
     edges: Any,
     *,
+    mapping: Mapping[str, str] | None = None,
     directed: bool = True,
 ) -> GraphData:
-    """Thin GraphForge/Arrow-table helper: expects id/source/target columns."""
-    return normalize_graph_inputs(nodes, edges, directed=directed)
+    """Build identity-preserving graph data from canonical GraphForge tables.
+
+    The canonical fields are ``node_uuid``, ``edge_uuid``, ``src_uuid`` and
+    ``dst_uuid``. ``source_uuid``/``target_uuid`` are accepted for canonical
+    algorithm-result projections. An explicit ``mapping`` resolves tables that
+    contain more than one candidate; inference never guesses between matches.
+    """
+    mapping = dict(mapping or {})
+    node_names = _table_column_names(nodes)
+    edge_names = _table_column_names(edges)
+    node_id_field = _resolve_column(
+        node_names, mapping.get("node_uuid"), ("node_uuid",), "node UUID"
+    )
+    edge_id_field = _resolve_column(
+        edge_names, mapping.get("edge_uuid"), ("edge_uuid",), "edge UUID"
+    )
+    source_field = _resolve_column(
+        edge_names,
+        mapping.get("source_uuid"),
+        ("src_uuid", "source_uuid"),
+        "edge source UUID",
+    )
+    target_field = _resolve_column(
+        edge_names,
+        mapping.get("target_uuid"),
+        ("dst_uuid", "target_uuid"),
+        "edge target UUID",
+    )
+
+    ids, node_uuid_bytes = _uuid_bytes(_table_column(nodes, node_id_field), node_id_field)
+    edge_ids, edge_uuid_bytes = _uuid_bytes(_table_column(edges, edge_id_field), edge_id_field)
+    source_ids, source_uuid_bytes = _uuid_bytes(_table_column(edges, source_field), source_field)
+    target_ids, target_uuid_bytes = _uuid_bytes(_table_column(edges, target_field), target_field)
+
+    parent_field = mapping.get("parent_uuid", "parent_uuid")
+    parent_uuid_bytes: np.ndarray | None = None
+    parent_validity: np.ndarray | None = None
+    if parent_field in node_names:
+        raw_parents = list(_table_column(nodes, parent_field))
+        parent_uuid_bytes = np.zeros((len(raw_parents), 16), dtype=np.uint8)
+        parent_validity = np.zeros(len(raw_parents), dtype=np.uint8)
+        for row, value in enumerate(raw_parents):
+            if value is None:
+                continue
+            _, encoded = _uuid_bytes([value], parent_field)
+            parent_uuid_bytes[row] = encoded[0]
+            parent_validity[row] = 1
+
+    try:
+        handle = _native.graph_projection_create(
+            node_uuid_bytes,
+            edge_uuid_bytes,
+            source_uuid_bytes,
+            target_uuid_bytes,
+            parent_ids=parent_uuid_bytes,
+            parent_validity=parent_validity,
+            directed=directed,
+        )
+    except _native.GraphProjectionNativeError as exc:
+        code = {
+            -1: "GF_GRAPH_ARGUMENT",
+            -2: "GF_GRAPH_CAPACITY",
+            -3: "GF_GRAPH_UUID_INVALID",
+            -4: "GF_GRAPH_NODE_DUPLICATE",
+            -5: "GF_GRAPH_EDGE_DUPLICATE",
+            -6: "GF_GRAPH_ENDPOINT_MISSING",
+            -7: "GF_GRAPH_HANDLE_STALE",
+            -8: "GF_GRAPH_OUTPUT_CAPACITY",
+        }.get(exc.status, "GF_GRAPH_NATIVE")
+        field = None
+        row = None
+        if exc.status == -6:
+            known = set(ids)
+            for candidate_field, candidate_values in (
+                (source_field, source_ids),
+                (target_field, target_ids),
+            ):
+                missing = next(
+                    (i for i, value in enumerate(candidate_values) if value not in known), None
+                )
+                if missing is not None:
+                    field, row = candidate_field, missing
+                    break
+        raise GraphProjectionError(code, str(exc), field=field, row=row) from exc
+    try:
+        (
+            node_uuid_bytes,
+            edge_uuid_bytes,
+            sources,
+            targets,
+            parent_indices,
+            parent_validity_out,
+            native_directed,
+        ) = _native.graph_projection_copy(handle)
+    finally:
+        _native.graph_projection_destroy(handle)
+
+    node_provenance_field = mapping.get("node_provenance_row", "provenance_row")
+    edge_provenance_field = mapping.get("edge_provenance_row", "provenance_row")
+    node_provenance = (
+        np.ascontiguousarray(_table_column(nodes, node_provenance_field), dtype=np.uint64)
+        if node_provenance_field in node_names
+        else np.arange(len(ids), dtype=np.uint64)
+    )
+    edge_provenance = (
+        np.ascontiguousarray(_table_column(edges, edge_provenance_field), dtype=np.uint64)
+        if edge_provenance_field in edge_names
+        else np.arange(len(edge_ids), dtype=np.uint64)
+    )
+    if len(node_provenance) != len(ids) or len(edge_provenance) != len(edge_ids):
+        raise GraphProjectionError(
+            "GF_GRAPH_PROVENANCE_LENGTH", "provenance columns must match their table row counts"
+        )
+
+    node_excluded = {node_id_field, node_provenance_field, parent_field}
+    edge_excluded = {
+        edge_id_field,
+        source_field,
+        target_field,
+        edge_provenance_field,
+    }
+    return GraphData(
+        ids,
+        sources,
+        targets,
+        node_attrs=_attrs(nodes, node_names, node_excluded, len(ids)),
+        edge_ids=edge_ids,
+        edge_attrs=_attrs(edges, edge_names, edge_excluded, len(edge_ids)),
+        node_uuid_bytes=node_uuid_bytes,
+        edge_uuid_bytes=edge_uuid_bytes,
+        node_provenance_rows=node_provenance,
+        edge_provenance_rows=edge_provenance,
+        parent_indices=parent_indices,
+        parent_validity=parent_validity_out,
+        directed=native_directed,
+    )
 
 
 def run_layout(

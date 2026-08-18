@@ -15,6 +15,7 @@ pub mod graph;
 pub mod hexbin;
 pub mod kernels;
 pub mod lod_plan;
+pub mod projection;
 pub mod raster;
 pub mod sankey;
 pub mod stats;

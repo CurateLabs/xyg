@@ -9,6 +9,8 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- ABI 60: Rust-owned canonical GraphForge identity/topology projection handles,
+  including opaque node/edge UUIDs, dense endpoints, and optional parents.
 - ABI 59: Rust-owned canonical f64 stream store (`xyg_stream_new` /
   `xyg_stream_append` / `xyg_stream_seal` / `xyg_stream_free`) in
   `crates/xyg-engine/src/stream.rs`. Pyramid build/append can read through

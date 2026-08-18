@@ -26,7 +26,31 @@ import numpy.typing as npt
 
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
-ABI_VERSION = 59
+ABI_VERSION = 60
+
+
+class _GraphProjectionDescriptor(ctypes.Structure):
+    _fields_ = [
+        ("node_ids", ctypes.c_void_p),
+        ("node_count", ctypes.c_uint64),
+        ("edge_ids", ctypes.c_void_p),
+        ("edge_count", ctypes.c_uint64),
+        ("source_ids", ctypes.c_void_p),
+        ("target_ids", ctypes.c_void_p),
+        ("parent_ids", ctypes.c_void_p),
+        ("parent_validity", ctypes.c_void_p),
+        ("directed", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32),
+    ]
+
+
+class GraphProjectionNativeError(ValueError):
+    """Stable error returned by the Rust-owned graph projection seam."""
+
+    def __init__(self, status: int):
+        self.status = int(status)
+        super().__init__(f"native graph projection failed with status {self.status}")
+
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
@@ -792,6 +816,46 @@ def _load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_void_p,
     ]
+    lib.xyg_graph_projection_create.restype = ctypes.c_int32
+    lib.xyg_graph_projection_create.argtypes = [
+        ctypes.POINTER(_GraphProjectionDescriptor),
+        ctypes.POINTER(ctypes.c_uint64),
+    ]
+    lib.xyg_graph_projection_counts.restype = ctypes.c_int32
+    lib.xyg_graph_projection_counts.argtypes = [
+        ctypes.c_uint64,
+        ctypes.POINTER(ctypes.c_uint64),
+        ctypes.POINTER(ctypes.c_uint64),
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
+    lib.xyg_graph_projection_copy_node_ids.restype = ctypes.c_int32
+    lib.xyg_graph_projection_copy_node_ids.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+    ]
+    lib.xyg_graph_projection_copy_edge_ids.restype = ctypes.c_int32
+    lib.xyg_graph_projection_copy_edge_ids.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+    ]
+    lib.xyg_graph_projection_copy_endpoints.restype = ctypes.c_int32
+    lib.xyg_graph_projection_copy_endpoints.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+    ]
+    lib.xyg_graph_projection_copy_parents.restype = ctypes.c_int32
+    lib.xyg_graph_projection_copy_parents.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_uint64,
+    ]
+    lib.xyg_graph_projection_destroy.restype = ctypes.c_int32
+    lib.xyg_graph_projection_destroy.argtypes = [ctypes.c_uint64]
     lib.xyg_graph_force_create.restype = ctypes.c_int32
     lib.xyg_graph_force_create.argtypes = [
         ctypes.c_uint64,
@@ -3907,6 +3971,118 @@ def graph_layout(
     if ok != 0:
         raise ValueError("native graph_layout failed (invalid arguments or layout)")
     return out_x, out_y
+
+
+def _projection_uuid_buffer(values: Any, name: str) -> npt.NDArray[np.uint8]:
+    array = np.ascontiguousarray(values, dtype=np.uint8)
+    if array.ndim != 2 or array.shape[1:] != (16,):
+        raise ValueError(f"{name} must have shape (n, 16) and dtype uint8")
+    return array
+
+
+def graph_projection_create(
+    node_ids: Any,
+    edge_ids: Any,
+    source_ids: Any,
+    target_ids: Any,
+    *,
+    parent_ids: Any | None = None,
+    parent_validity: Any | None = None,
+    directed: bool = True,
+) -> int:
+    """Create a Rust-owned canonical graph identity/topology projection."""
+    nodes = _projection_uuid_buffer(node_ids, "node_ids")
+    edges = _projection_uuid_buffer(edge_ids, "edge_ids")
+    sources = _projection_uuid_buffer(source_ids, "source_ids")
+    targets = _projection_uuid_buffer(target_ids, "target_ids")
+    if len(edges) != len(sources) or len(edges) != len(targets):
+        raise ValueError("edge_ids, source_ids, and target_ids must have equal lengths")
+    parents: npt.NDArray[np.uint8] | None = None
+    validity: npt.NDArray[np.uint8] | None = None
+    if parent_ids is not None or parent_validity is not None:
+        if parent_ids is None or parent_validity is None:
+            raise ValueError("parent_ids and parent_validity must be provided together")
+        parents = _projection_uuid_buffer(parent_ids, "parent_ids")
+        validity = np.ascontiguousarray(parent_validity, dtype=np.uint8)
+        if len(parents) != len(nodes) or validity.ndim != 1 or len(validity) != len(nodes):
+            raise ValueError("parent buffers must match node count")
+    descriptor = _GraphProjectionDescriptor(
+        nodes.ctypes.data if len(nodes) else None,
+        len(nodes),
+        edges.ctypes.data if len(edges) else None,
+        len(edges),
+        sources.ctypes.data if len(sources) else None,
+        targets.ctypes.data if len(targets) else None,
+        parents.ctypes.data if parents is not None and len(parents) else None,
+        validity.ctypes.data if validity is not None and len(validity) else None,
+        int(bool(directed)),
+        0,
+    )
+    handle = ctypes.c_uint64()
+    status = _lib.xyg_graph_projection_create(ctypes.byref(descriptor), ctypes.byref(handle))
+    if status != 0:
+        raise GraphProjectionNativeError(status)
+    return int(handle.value)
+
+
+def graph_projection_counts(handle: int) -> tuple[int, int, bool]:
+    nodes, edges, directed = ctypes.c_uint64(), ctypes.c_uint64(), ctypes.c_uint32()
+    status = _lib.xyg_graph_projection_counts(
+        ctypes.c_uint64(handle), ctypes.byref(nodes), ctypes.byref(edges), ctypes.byref(directed)
+    )
+    if status != 0:
+        raise GraphProjectionNativeError(status)
+    return int(nodes.value), int(edges.value), bool(directed.value)
+
+
+def graph_projection_copy(
+    handle: int,
+) -> tuple[
+    npt.NDArray[np.uint8],
+    npt.NDArray[np.uint8],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint64],
+    npt.NDArray[np.uint8],
+    bool,
+]:
+    n_nodes, n_edges, directed = graph_projection_counts(handle)
+    node_ids = np.empty((n_nodes, 16), dtype=np.uint8)
+    edge_ids = np.empty((n_edges, 16), dtype=np.uint8)
+    sources = np.empty(n_edges, dtype=np.uint64)
+    targets = np.empty(n_edges, dtype=np.uint64)
+    parents = np.empty(n_nodes, dtype=np.uint64)
+    validity = np.empty(n_nodes, dtype=np.uint8)
+    calls = (
+        _lib.xyg_graph_projection_copy_node_ids(
+            handle, node_ids.ctypes.data if n_nodes else None, n_nodes
+        ),
+        _lib.xyg_graph_projection_copy_edge_ids(
+            handle, edge_ids.ctypes.data if n_edges else None, n_edges
+        ),
+        _lib.xyg_graph_projection_copy_endpoints(
+            handle,
+            sources.ctypes.data if n_edges else None,
+            targets.ctypes.data if n_edges else None,
+            n_edges,
+        ),
+        _lib.xyg_graph_projection_copy_parents(
+            handle,
+            parents.ctypes.data if n_nodes else None,
+            validity.ctypes.data if n_nodes else None,
+            n_nodes,
+        ),
+    )
+    for status in calls:
+        if status != 0:
+            raise GraphProjectionNativeError(status)
+    return node_ids, edge_ids, sources, targets, parents, validity, directed
+
+
+def graph_projection_destroy(handle: int) -> None:
+    status = _lib.xyg_graph_projection_destroy(ctypes.c_uint64(handle))
+    if status != 0:
+        raise GraphProjectionNativeError(status)
 
 
 def graph_force_create(

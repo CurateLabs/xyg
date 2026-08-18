@@ -1,5 +1,5 @@
 {
-  "abi_version": 59,
+  "abi_version": 60,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
@@ -152,6 +152,41 @@
     {
       "name": "xyg_graph_lod_decision",
       "nargs": 7,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_copy_edge_ids",
+      "nargs": 4,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_copy_endpoints",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_copy_node_ids",
+      "nargs": 4,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_copy_parents",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_counts",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_create",
+      "nargs": 3,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_destroy",
+      "nargs": 1,
       "returns": "i32"
     },
     {

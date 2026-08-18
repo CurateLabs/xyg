@@ -171,6 +171,41 @@ export const xyStreamCopy = lib.func(
 );
 
 // --- Graph / Sankey ---
+export const XygGraphProjectionDescriptor = koffi.struct("XygGraphProjectionDescriptor", {
+  node_ids: "const uint8_t *",
+  node_count: "uint64_t",
+  edge_ids: "const uint8_t *",
+  edge_count: "uint64_t",
+  source_ids: "const uint8_t *",
+  target_ids: "const uint8_t *",
+  parent_ids: "const uint8_t *",
+  parent_validity: "const uint8_t *",
+  directed: "uint32_t",
+  reserved: "uint32_t",
+});
+export const xyGraphProjectionCreate = lib.func(
+  "xyg_graph_projection_create",
+  "int32_t",
+  [koffi.pointer(XygGraphProjectionDescriptor), "uint64_t *"],
+);
+export const xyGraphProjectionCounts = lib.func(
+  "int32_t xyg_graph_projection_counts(uint64_t handle, uint64_t *out_nodes, uint64_t *out_edges, uint32_t *out_directed)",
+);
+export const xyGraphProjectionCopyNodeIds = lib.func(
+  "int32_t xyg_graph_projection_copy_node_ids(uint64_t handle, uint8_t *out, uint64_t capacity)",
+);
+export const xyGraphProjectionCopyEdgeIds = lib.func(
+  "int32_t xyg_graph_projection_copy_edge_ids(uint64_t handle, uint8_t *out, uint64_t capacity)",
+);
+export const xyGraphProjectionCopyEndpoints = lib.func(
+  "int32_t xyg_graph_projection_copy_endpoints(uint64_t handle, uint64_t *out_sources, uint64_t *out_targets, uint64_t capacity)",
+);
+export const xyGraphProjectionCopyParents = lib.func(
+  "int32_t xyg_graph_projection_copy_parents(uint64_t handle, uint64_t *out_parents, uint8_t *out_validity, uint64_t capacity)",
+);
+export const xyGraphProjectionDestroy = lib.func(
+  "int32_t xyg_graph_projection_destroy(uint64_t handle)",
+);
 export const xyGraphLayout = lib.func(
   "int32_t xyg_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t *sources, const uint64_t *targets, const double *in_x, const double *in_y, const uint64_t *roots, uint64_t n_roots, uint64_t seed, double *out_x, double *out_y)",
 );
