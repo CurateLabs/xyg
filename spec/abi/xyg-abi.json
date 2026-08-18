@@ -4773,6 +4773,41 @@
       "c_signature": "int32_t xyg_graph_lod_decision(uint64_t n_nodes, uint64_t n_edges, uint64_t node_budget, uint64_t edge_budget, uint32_t * out_tier, uint64_t * out_edges_kept)"
     },
     {
+      "name": "xyg_graph_projection_copy_edge_ids",
+      "nargs": 4,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_copy_endpoints",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_copy_node_ids",
+      "nargs": 4,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_copy_parents",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_counts",
+      "nargs": 5,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_create",
+      "nargs": 3,
+      "returns": "i32"
+    },
+    {
+      "name": "xyg_graph_projection_destroy",
+      "nargs": 1,
+      "returns": "i32"
+    },
+    {
       "name": "xyg_graph_sample_edges",
       "node_name": "xyGraphSampleEdges",
       "nargs": 3,

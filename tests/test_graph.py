@@ -154,11 +154,106 @@ def test_graph_exports_public():
 
 
 def test_from_graphforge_tables():
-    nodes = {"id": ["a", "b"]}
-    edges = {"source": ["a"], "target": ["b"]}
+    nodes = {
+        "node_uuid": [
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+        ],
+        "labels": ["Airport", "Airport"],
+        "provenance_row": [4, 8],
+    }
+    edges = {
+        "edge_uuid": ["10000000-0000-0000-0000-000000000001"],
+        "src_uuid": ["00000000-0000-0000-0000-000000000001"],
+        "dst_uuid": ["00000000-0000-0000-0000-000000000002"],
+        "relationship_type": ["ROUTE"],
+        "provenance_row": [12],
+    }
     data = _graph.from_graphforge_tables(nodes, edges)
     assert data.n_nodes == 2
     assert data.n_edges == 1
+    assert data.node_uuid_bytes.shape == (2, 16)
+    assert data.edge_uuid_bytes.shape == (1, 16)
+    assert data.edge_ids == ["10000000-0000-0000-0000-000000000001"]
+    assert data.node_attrs["labels"].tolist() == ["Airport", "Airport"]
+    assert data.edge_attrs["relationship_type"].tolist() == ["ROUTE"]
+    np.testing.assert_array_equal(data.node_provenance_rows, [4, 8])
+    np.testing.assert_array_equal(data.edge_provenance_rows, [12])
+
+
+def test_from_graphforge_tables_uses_native_dense_mapping_and_parents():
+    nodes = {
+        "node_uuid": [
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000001",
+        ],
+        "parent_uuid": [None, "00000000-0000-0000-0000-000000000002"],
+    }
+    edges = {
+        "edge_uuid": ["10000000-0000-0000-0000-000000000001"],
+        "src_uuid": ["00000000-0000-0000-0000-000000000001"],
+        "dst_uuid": ["00000000-0000-0000-0000-000000000002"],
+    }
+    data = xy.from_graphforge_tables(nodes, edges, directed=False)
+    np.testing.assert_array_equal(data.sources, [1])
+    np.testing.assert_array_equal(data.targets, [0])
+    np.testing.assert_array_equal(data.parent_indices, [0, 0])
+    np.testing.assert_array_equal(data.parent_validity, [0, 1])
+    assert data.directed is False
+
+
+def test_from_graphforge_tables_rejects_nil_uuid_in_native_core():
+    nodes = {"node_uuid": ["00000000-0000-0000-0000-000000000000"]}
+    edges = {"edge_uuid": [], "src_uuid": [], "dst_uuid": []}
+    with pytest.raises(_graph.GraphProjectionError) as exc:
+        _graph.from_graphforge_tables(nodes, edges)
+    assert exc.value.code == "GF_GRAPH_UUID_INVALID"
+
+
+def test_from_graphforge_tables_reports_native_duplicate_identity_code():
+    duplicate = "00000000-0000-0000-0000-000000000001"
+    nodes = {"node_uuid": [duplicate, duplicate]}
+    edges = {"edge_uuid": [], "src_uuid": [], "dst_uuid": []}
+    with pytest.raises(_graph.GraphProjectionError) as exc:
+        _graph.from_graphforge_tables(nodes, edges)
+    assert exc.value.code == "GF_GRAPH_NODE_DUPLICATE"
+
+
+def test_native_projection_destroy_rejects_stale_handle():
+    node_ids = np.array([[1] * 16], dtype=np.uint8)
+    empty = np.empty((0, 16), dtype=np.uint8)
+    handle = _native.graph_projection_create(node_ids, empty, empty, empty)
+    _native.graph_projection_destroy(handle)
+    with pytest.raises(_native.GraphProjectionNativeError) as exc:
+        _native.graph_projection_destroy(handle)
+    assert exc.value.status == -7
+
+
+def test_from_graphforge_tables_rejects_missing_endpoint_with_stable_code():
+    nodes = {"node_uuid": ["00000000-0000-0000-0000-000000000001"]}
+    edges = {
+        "edge_uuid": ["10000000-0000-0000-0000-000000000001"],
+        "source_uuid": ["00000000-0000-0000-0000-000000000001"],
+        "target_uuid": ["00000000-0000-0000-0000-000000000002"],
+    }
+    with pytest.raises(_graph.GraphProjectionError) as exc:
+        _graph.from_graphforge_tables(nodes, edges)
+    assert exc.value.code == "GF_GRAPH_ENDPOINT_MISSING"
+    assert exc.value.field == "target_uuid"
+    assert exc.value.row == 0
+
+
+def test_from_graphforge_tables_rejects_ambiguous_endpoint_columns():
+    nodes = {"node_uuid": ["00000000-0000-0000-0000-000000000001"]}
+    edges = {
+        "edge_uuid": ["10000000-0000-0000-0000-000000000001"],
+        "src_uuid": ["00000000-0000-0000-0000-000000000001"],
+        "source_uuid": ["00000000-0000-0000-0000-000000000001"],
+        "dst_uuid": ["00000000-0000-0000-0000-000000000001"],
+    }
+    with pytest.raises(_graph.GraphProjectionError) as exc:
+        _graph.from_graphforge_tables(nodes, edges)
+    assert exc.value.code == "GF_GRAPH_FIELD_AMBIGUOUS"
 
 
 def test_build_render_respects_budgets():

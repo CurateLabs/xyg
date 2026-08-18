@@ -43,6 +43,8 @@ _EXPORTS = {
     "Engine": ".export",
     "ExportConfig": ".components",
     "FacetChart": ".components",
+    "GraphData": "._graph",
+    "GraphProjectionError": "._graph",
     "Interaction": ".components",
     "Legend": ".components",
     "Mark": ".components",
@@ -105,6 +107,7 @@ _EXPORTS = {
     "sankey_chart": ".components",
     "graph": ".components",
     "graph_chart": ".components",
+    "from_graphforge_tables": "._graph",
     "scatter": ".components",
     "scatter_chart": ".components",
     "segments": ".components",
@@ -149,6 +152,8 @@ __all__ = [
     "Engine",
     "ExportConfig",
     "FacetChart",
+    "GraphData",
+    "GraphProjectionError",
     "Interaction",
     "Legend",
     "Mark",
@@ -184,6 +189,7 @@ __all__ = [
     "errorbar_chart",
     "export_config",
     "facet_chart",
+    "from_graphforge_tables",
     "graph",
     "graph_chart",
     "heatmap",
@@ -290,6 +296,7 @@ def __dir__() -> list[str]:
 
 if TYPE_CHECKING:
     from ._figure import Selection
+    from ._graph import GraphData, GraphProjectionError, from_graphforge_tables
     from .columns import Column, ColumnStore, ZoneMaps
     from .components import (
         Animation,

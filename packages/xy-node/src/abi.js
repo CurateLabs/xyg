@@ -27,6 +27,13 @@ import {
   xyGraphForceTick,
   xyGraphLayout,
   xyGraphLodDecision,
+  xyGraphProjectionCopyEdgeIds,
+  xyGraphProjectionCopyEndpoints,
+  xyGraphProjectionCopyNodeIds,
+  xyGraphProjectionCopyParents,
+  xyGraphProjectionCounts,
+  xyGraphProjectionCreate,
+  xyGraphProjectionDestroy,
   xyGraphSampleEdges,
   xySankeyLayout,
 } from "./native.js";
@@ -108,6 +115,67 @@ export class SankeyLayoutError extends Error {
 
 export function abiVersion() {
   return xyAbiVersion();
+}
+
+/** Validate and materialize canonical GraphForge identity through Rust. */
+export function graphProjectionCreate({
+  nodeIds,
+  edgeIds,
+  sourceIds,
+  targetIds,
+  parentIds = null,
+  parentValidity = null,
+  directed = true,
+}) {
+  const nodeCount = nodeIds.byteLength / 16;
+  const edgeCount = edgeIds.byteLength / 16;
+  const outHandle = new BigUint64Array(1);
+  const code = xyGraphProjectionCreate({
+    node_ids: pointer(nodeIds, "uint8_t *"),
+    node_count: BigInt(nodeCount),
+    edge_ids: pointer(edgeIds, "uint8_t *"),
+    edge_count: BigInt(edgeCount),
+    source_ids: pointer(sourceIds, "uint8_t *"),
+    target_ids: pointer(targetIds, "uint8_t *"),
+    parent_ids: pointer(parentIds, "uint8_t *"),
+    parent_validity: pointer(parentValidity, "uint8_t *"),
+    directed: directed ? 1 : 0,
+    reserved: 0,
+  }, u64Ptr(outHandle));
+  if (code !== 0 || outHandle[0] === 0n) {
+    const error = new Error(`xyg_graph_projection_create failed with code ${code}`);
+    error.nativeCode = code;
+    throw error;
+  }
+  return outHandle[0];
+}
+
+export function graphProjectionRead(handle) {
+  const nodeCount = new BigUint64Array(1);
+  const edgeCount = new BigUint64Array(1);
+  const directed = new Uint32Array(1);
+  let code = xyGraphProjectionCounts(
+    toU64(handle, "handle"), u64Ptr(nodeCount), u64Ptr(edgeCount), u32Ptr(directed),
+  );
+  if (code !== 0) throw new Error(`xyg_graph_projection_counts failed with code ${code}`);
+  const nodes = toLength(nodeCount[0], "nodeCount");
+  const edges = toLength(edgeCount[0], "edgeCount");
+  const nodeIds = new Uint8Array(nodes * 16);
+  const edgeIds = new Uint8Array(edges * 16);
+  const sources = new BigUint64Array(edges);
+  const targets = new BigUint64Array(edges);
+  const parents = new BigUint64Array(nodes);
+  const parentValidity = new Uint8Array(nodes);
+  code = xyGraphProjectionCopyNodeIds(toU64(handle, "handle"), pointer(nodeIds, "uint8_t *"), BigInt(nodes));
+  if (code === 0) code = xyGraphProjectionCopyEdgeIds(toU64(handle, "handle"), pointer(edgeIds, "uint8_t *"), BigInt(edges));
+  if (code === 0) code = xyGraphProjectionCopyEndpoints(toU64(handle, "handle"), u64Ptr(sources), u64Ptr(targets), BigInt(edges));
+  if (code === 0) code = xyGraphProjectionCopyParents(toU64(handle, "handle"), u64Ptr(parents), pointer(parentValidity, "uint8_t *"), BigInt(nodes));
+  if (code !== 0) throw new Error(`xyg_graph_projection_copy failed with code ${code}`);
+  return { nodeIds, edgeIds, sources, targets, parents, parentValidity, directed: directed[0] !== 0 };
+}
+
+export function graphProjectionDestroy(handle) {
+  return xyGraphProjectionDestroy(toU64(handle, "handle")) === 0;
 }
 
 export function graphLayout(layout, nNodes, sources, targets, opts = {}) {

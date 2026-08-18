@@ -16,6 +16,7 @@ pub mod graph;
 pub mod hexbin;
 pub mod kernels;
 pub mod lod_plan;
+pub mod projection;
 #[cfg(feature = "raster")]
 pub mod raster;
 pub mod sankey;
