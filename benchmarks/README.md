@@ -432,6 +432,14 @@ canonical-to-shipped translation is the path measured. `bench_interaction.py`
 stays authoritative for client input-to-pixel latency; these rows attribute a
 selection regression to the Python/kernel handler that caused it.
 
+`test_codspeed_graph_render.py` attributes canonical GraphForge UUID ingest,
+seeded layout ticks, direct and bounded aggregate render-graph construction,
+massive-scale LOD decisions, graph payload construction, and inherited
+SVG/native-PNG export. These are deterministic simulation-mode CPU/native
+rows. The browser interaction harness includes a 2k-node/2k-edge direct graph
+and records mount-to-first-stable-pixels, steady-state interaction/picking, and
+teardown; those clocks are not reported as simulated rendering speed.
+
 ## Reference Hardware
 
 Set `XY_BENCH_HARDWARE_GL=1` to disable the benchmark helpers' SwiftShader
