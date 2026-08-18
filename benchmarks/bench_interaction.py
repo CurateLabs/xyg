@@ -39,6 +39,7 @@ except ImportError:  # pragma: no cover
     np = None  # type: ignore
 
 INTERACTION_CATEGORY_IDS = (
+    "graph_render_pipeline",
     "medium_direct_scatter",
     "huge_scatter_overview",
     "huge_line_time_series",
@@ -170,7 +171,34 @@ def _core_interaction_figures() -> list[dict[str, Any]]:
         **all_interactions,
     ).figure()
 
+    graph_n = 2_000
+    graph_nodes = list(range(graph_n))
+    graph_edges = list(zip(graph_nodes, graph_nodes[1:] + graph_nodes[:1], strict=True))
+    graph_x = np.arange(graph_n, dtype=np.float64) % 50
+    graph_y = np.arange(graph_n, dtype=np.float64) // 50
+    graph = xy.graph_chart(
+        xy.graph(
+            graph_nodes,
+            graph_edges,
+            x=graph_x,
+            y=graph_y,
+            layout="preset",
+            name="ring",
+        ),
+        width=RENDER_W,
+        height=RENDER_H,
+        title="2k node/edge graph interaction probe",
+        **all_interactions,
+    ).figure()
+
     return [
+        {
+            "scenario": "graph_2000_interaction",
+            "family": "graph",
+            "n": graph_n,
+            "category_ids": ("graph_render_pipeline", "interaction_smoothness"),
+            "figure": graph,
+        },
         {
             "scenario": "line_120k_interaction",
             "family": "line",
@@ -209,6 +237,7 @@ def _probe_js(reps: int) -> str:
     const payload = XY_CHARTS[0];
     const el = document.createElement("div");
     document.getElementById("root").appendChild(el);
+    const mountT0 = performance.now();
     const view = xy.renderStandalone(el, payload.spec, xyBytesFromPayload(payload));
     // Under --virtual-time-budget an outstanding Web Worker round-trip pauses
     // virtual time forever: the first density zoom schedules the standalone
@@ -220,6 +249,8 @@ def _probe_js(reps: int) -> str:
     // the worker path itself needs a non-virtual-time harness (see PR notes).
     view._sampleRebinDisabled = true;
     view._drawNow();
+    settlePixels();
+    const firstPaintMs = performance.now() - mountT0;
     const before = {{...view.view}};
     const canvasRect = () => view.canvas.getBoundingClientRect();
     view.canvas.setPointerCapture = () => {{}};
@@ -579,10 +610,15 @@ def _probe_js(reps: int) -> str:
     const tooltip = tooltipProbe();
     const boxZoomInvariant = boxZoomInvariantProbe();
     const brushSelectionInvariant = brushSelectionInvariantProbe();
+    const teardownT0 = performance.now();
+    view.destroy();
+    const teardownMs = performance.now() - teardownT0;
     xyReport("XY_INTERACTION", {{
       status: "ok",
       tier: payload.spec.traces[0].tier,
       nonblank_pixels: nonblank,
+      first_paint_ms: firstPaintMs,
+      teardown_ms: teardownMs,
       view_changed: viewChanged,
       crosshair_visible: crosshairVisible,
       ...blankFrames,
@@ -611,6 +647,8 @@ def _flatten_probe_metrics(row: dict[str, Any], result: dict[str, Any]) -> None:
         return
     row["tier"] = result.get("tier")
     row["nonblank_pixels"] = result.get("nonblank_pixels")
+    row["first_paint_ms"] = result.get("first_paint_ms")
+    row["teardown_ms"] = result.get("teardown_ms")
     row["view_changed"] = bool(result.get("view_changed"))
     row["crosshair_visible"] = bool(result.get("crosshair_visible"))
     row["blank_frame_count"] = result.get("blank_frame_count")
@@ -959,16 +997,18 @@ def to_markdown(report: dict[str, Any]) -> str:
         "",
         "## Results",
         "",
-        "| scenario | points | tier | payload | wheel p95 | pan p95 | hover p95 | crosshair p95 | box p95 | brush p95 | box zoom | brush select | blank frames | tick overlaps | color delta | tooltip | status |",
-        "|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|---|",
+        "| scenario | points | tier | payload | first paint | teardown | wheel p95 | pan p95 | hover p95 | crosshair p95 | box p95 | brush p95 | box zoom | brush select | blank frames | tick overlaps | color delta | tooltip | status |",
+        "|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|---|",
     ]
     for row in report["rows"]:
         lines.append(
-            "| {scenario} | {n:,} | {tier} | {payload} | {wheel} | {pan} | {hover} | {crosshair} | {box} | {brush} | {box_state} | {brush_count} | {blank} | {overlaps} | {color_delta} | {tooltip} | {status} |".format(
+            "| {scenario} | {n:,} | {tier} | {payload} | {first_paint} | {teardown} | {wheel} | {pan} | {hover} | {crosshair} | {box} | {brush} | {box_state} | {brush_count} | {blank} | {overlaps} | {color_delta} | {tooltip} | {status} |".format(
                 scenario=row["scenario"],
                 n=row["n"],
                 tier=row.get("tier", "—"),
                 payload=_fmt_bytes(row.get("payload_bytes")),
+                first_paint=_fmt_ms(row.get("first_paint_ms")),
+                teardown=_fmt_ms(row.get("teardown_ms")),
                 wheel=_fmt_ms(row.get("wheel_zoom_p95_ms")),
                 pan=_fmt_ms(row.get("pan_p95_ms")),
                 hover=_fmt_ms(row.get("hover_p95_ms")),
@@ -1006,7 +1046,7 @@ def to_markdown(report: dict[str, Any]) -> str:
         "- Scope is standalone client input-to-GPU-finish; widget/backend LOD work is measured by native and workflow rows.",
         "- `nonblank` is a WebGL readback sanity check over the rendered chart canvas.",
         "- Budget verification rejects blank canvases, blank interaction frames, missing view changes, missing crosshair chrome, box zoom that does not narrow/restore the viewport, brush selection that does not select/clear eligible marks, overlapping tick labels, unstable tooltips, oversized frame color jumps, and p95 values over the listed limits.",
-        "- Scatter rows sweep the requested sizes; line, histogram, bar, and heatmap rows are fixed core-family probes so interaction regressions are not scatter-only.",
+        "- Scatter rows sweep the requested sizes; graph, line, histogram, bar, and heatmap rows are fixed core-family probes so interaction regressions are not scatter-only.",
         "- The density rows measure client interaction over the current density surface; backend drilldown switching is tracked separately in CodSpeed.",
     ]
     return "\n".join(lines)

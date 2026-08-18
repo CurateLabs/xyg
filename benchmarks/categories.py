@@ -10,6 +10,15 @@ from collections.abc import Iterable
 
 BENCHMARK_CATEGORIES: tuple[dict[str, str], ...] = (
     {
+        "id": "graph_render_pipeline",
+        "name": "Graph render pipeline",
+        "why": "GraphForge views need attributed ingest, layout, bounded geometry, payload, and export costs before browser paint.",
+        "metrics": "UUID ingest, layout ticks, render-graph build, payload/export bytes, first paint and frame pacing",
+        "harness": "benchmarks/test_codspeed_graph_render.py; benchmarks/bench_dual_host_graph.py; benchmarks/bench_interaction.py",
+        "status": "tracked",
+        "goal": "Keep native graph work attributable and browser-visible geometry bounded at every scale tier.",
+    },
+    {
         "id": "small_data_startup",
         "name": "Small-data startup",
         "why": "Everyday charts should feel instant; a performance library cannot only win at 10M rows.",
