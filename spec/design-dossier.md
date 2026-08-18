@@ -14,9 +14,12 @@ evolved past the original "Python-only binding" framing recorded below: today
 LOD/aggregation choices, or recorded §28 outcomes; **Python and Node are thin
 host bindings** over one native C ABI (`libxyg_core`, `crates/xyg-engine` +
 `crates/xyg-core` — see [design/rust-engine.md](design/rust-engine.md) and
-[design/host-parity.md](design/host-parity.md)); and the **browser client is
-paint/pick/gesture/transport only**. Where a section below says "Python owns"
+[design/host-parity.md](design/host-parity.md)); and browser TypeScript owns
+paint/pick/gesture/accessibility/lifecycle while direct browser compute is the
+same Rust engine compiled to WASM under #59. Where a section below says "Python owns"
 a buffer-affecting decision, the host-parity placement rule supersedes it.
+The exhaustive current file ownership and migration destinations are enforced
+by [design/ownership-audit.md](design/ownership-audit.md).
 
 The project began as a fork of `reflex-dev/xy`; XY names in this document are
 provenance and remain valid as the historical record. The canonical naming
@@ -35,7 +38,7 @@ Rust core in the Python process** (not main-thread compute), and — the real un
 **multi-tier level-of-detail system** that never draws or ships more primitives than the
 screen can show. One Rust core runs natively inside the Python kernel doing all heavy
 work; a thin JS/WebGL2 client in the browser composes screen-bounded tiles on the GPU
-today, with a WASM client remaining a future pure-browser path. The result targets
+today, with #59 tracking the same Rust engine as a direct-browser WASM path. The result targets
 **100M–1B+ points interactively** at **12–24 bytes/point** (direct) or screen-bounded
 memory (aggregated) — versus Plotly's practical ~1M ceiling.
 
@@ -183,9 +186,10 @@ If a milestone doesn't move one of these numbers, it's not in scope for that mil
 └───────────────────────────────────────────────────────────────┘
 ```
 
-An in-browser WASM core running in a Web Worker with SharedArrayBuffer transport was
-the original design and was dropped in favor of the native-in-kernel core (§32); a WASM
-client remains a possible future pure-browser path.
+An in-browser WASM core running in a Web Worker was deferred in favor of the
+native-in-kernel core (§32). Issue #59 now reactivates it as an additional
+direct-browser host using transferables by default and SharedArrayBuffer only
+where isolation permits; it does not replace native Python/Node execution.
 
 The two requirements live primarily in the **data pipeline (§4–§6)**. The renderer
 (§7) matters, but memory and scale are won or lost in how we store and reduce data.
@@ -512,10 +516,12 @@ F3, still pending (above).
 
 ## 8. Compute & threading
 
-- The Rust core runs **natively inside the Python process**, loaded as a C-ABI cdylib
+- The Rust core runs **natively inside the Python or Node host process**, loaded as a C-ABI cdylib
   through `ctypes` (`python/xy/_native.py`; `Cargo.toml` `crate-type = ["cdylib",
-  "rlib"]`). It is not compiled to WASM and does not run in a browser thread. Heavy
-  work happens off the browser entirely, so the UI thread is never the bottleneck for
+  "rlib"]`) or Koffi. The shipped core is not yet compiled to WASM. Issue #59
+  compiles the same safe engine for a Worker so direct-browser users need no
+  Python/Node runtime; it does not run heavy compute on the browser main thread. Heavy
+  work stays off the browser main thread, so the UI thread is never the bottleneck for
   big data.
 - Heavy stages (decimation, binning, autorange, KDE, stacking) run in the kernel on the
   columnar buffers; NumPy arrays are passed to the core by pointer, without copying.
@@ -525,14 +531,17 @@ F3, still pending (above).
   neither SharedArrayBuffer nor cross-origin isolation (COOP/COEP) is required —
   which is what lets the client run in Jupyter, embedded iframes, and third-party
   contexts that cannot set those headers.
-- One Web Worker exists client-side, and it is not the core: `js/src/46_worker.ts`
+- One Web Worker exists client-side today, and it is not the core: `js/src/46_worker.ts`
   re-bins the retained density sample for kernel-less standalone exports (`to_html`),
   off the main thread, booted from a Blob URL. Environments without workers fall back
   to the stretched overview texture.
-- *Dropped path, kept for history:* the original design put the Rust core in a Web
-  Worker as WASM, with SharedArrayBuffer transport and transferable ArrayBuffers as the
-  universal fallback. §32 supersedes it. A WASM client remains a future pure-browser
-  option.
+- Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM,
+  with transferable ArrayBuffers as the universal path and SharedArrayBuffer as
+  an optional isolated-context optimization.
+- *Historical decision, now narrowed:* the original design made Worker/WASM the
+  universal engine. §32 correctly made native host compute primary. #59 restores
+  Worker/WASM only for direct-browser execution; it does not force Python/Node hosts
+  or notebooks through WASM.
 - The *same Rust* compiled **native** does headless static export (PNG/SVG/PDF) with no
   browser — faster than Kaleido. **Consistency claim, stated honestly:** *logically*
   identical (same scales, same layout, same LOD decisions — guaranteed by sharing the
@@ -1177,8 +1186,10 @@ scope decision that reshapes them.*
 
 ## 32. Kernel-owned compute: the architecture consequence (originally "Python-only")
 
-The binding surface is now **Python only** (R/Julia/JS bindings dropped). This is not
-just less code — it relocates the heavy tiers:
+The original binding decision was **Python only** (R/Julia/JS bindings dropped).
+The current product has thin Python and Node hosts over one C ABI, and #59 adds
+direct browser execution by compiling the same engine rather than reimplementing
+it in JavaScript. This is not just less code — it relocates the heavy tiers:
 
 - **The native Rust core runs inside the Python process**, ingesting zero-copy from
   Polars/Arrow-backed pandas. Decimation (Tier 1), pyramid builds (Tier 2), Tier-3
@@ -1188,9 +1199,9 @@ just less code — it relocates the heavy tiers:
   screen-bounded aggregates/decimations/tiles over the comm channel, composes them on
   the GPU, and handles local pan/zoom against its resident tile cache. It re-requests
   from the kernel only when navigation crosses the pyramid floor or a filter changes.
-- The **in-browser WASM core** (full pipeline client-side) remains the path for pure
-  static-HTML export and server-app deployments where the data already lives
-  client-side — but it is no longer the primary path. The primary path is
+- The **in-browser WASM core** (full pipeline client-side) is the tracked #59 path for
+  direct-browser applications where the data already lives client-side; it is not
+  the current shipped paint-only artifact and is not the primary path. The primary path is
   **native-compute-where-the-data-lives → ship pixels-worth → thin GPU client**, the
   same shape the research validated in datashader/vaex, except pan/zoom stays local
   instead of round-tripping (this is exactly the VegaFusion DAG-partition idea: heavy
@@ -1204,8 +1215,9 @@ Phase-3 pyramid (`packages/xy-node/src/pyramid.js` binds every `xyg_pyramid_*`
 entry point), so
 this section's consequences now read "host process" where they said "Python
 process": the kernel owns decimation/pyramids/paging/filtering in whichever
-host process holds the data, hosts stay thin, and the browser remains a render
-client. Host obligations and parity status are governed by
+host process holds the data and hosts stay thin. Native-host browser sessions
+remain render-client-only; direct-browser sessions under #59 execute the same
+engine in a Worker and feed the same painter. Host obligations and parity status are governed by
 `spec/design/host-parity.md` and `spec/design/dual-host-parity.json`.
 
 ## 32b. Tier-3 out-of-core companions — spatial bucketing and budgeted tile residency
@@ -1298,8 +1310,9 @@ requiring a Rust toolchain — an instant adoption cliff.
    `python/xy/static/` so the wheel and sdist embed the client — Python end
    users of a published wheel need no Node, npm, or CDN. JS/Node users consume
    `@curatelabs/xyg` (in-repo until the `@curatelabs` npm org exists; #13)
-   without a Python install. A WASM client is a future pure-browser/export
-   path, not the current shipped client.
+   without a Python install. Direct browser engine execution is tracked by #59;
+   it compiles the same Rust engine to WASM and is not part of the current
+   shipped paint-only artifact.
 3. **The notebook integration via `anywidget`** — the current standard: one widget
    implementation works across Jupyter, JupyterLab, VS Code, Colab, and Marimo, and
    gives us the binary comm channel (§29's Jupyter row) without maintaining N

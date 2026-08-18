@@ -101,6 +101,10 @@ related, not the same acceptance criteria.
 | Docs / branding links | **#14** (parent #12) | Retarget `reflex-dev/xy` URLs. Overlaps README with #23’s npm door — different job |
 | Canonical store | **#22** | Rust `stream.rs` + `xyg_stream_*`. Not npm, not crate split, not tile spill |
 | Host-neutral client | **#23** | Paint-client artifact + npm `@curatelabs/xyg` + Node `toHtml` + spec/README doors |
+| Ownership enforcement | **#56** | Exhaustive file ledger + stdlib-only CI gate; no language-ratio target |
+| Generated host bindings | **#57** | Typed ABI contract generates ctypes and Koffi declarations; retains one cdylib rather than PyO3/napi-rs artifacts |
+| Canonical scene/export | **#58** | Move shared scene, layout, tick, geometry, and static-export construction into Rust; keep host API shells |
+| Direct browser engine | **#59** | Compile the same Rust engine to WASM in a Worker; keep TypeScript paint/pick/gesture/lifecycle |
 | Phase-4 tile spill | **#5** → #7 (done), **#8**, **#9**, #10, #11 | Derived cache spill. Append = dirty *tiles*, not owning the f64 store |
 | Fork CI hygiene | #12, #15, #16, #21 | Not on this architecture critical path |
 
@@ -157,6 +161,21 @@ let #18 absorb the module.
 
 ## 5. Execution phases (issue = unit of work)
 
+### Architecture conformance and completion
+
+1. **#56** — classify every production source and enforce the ownership
+   ledger. This is the gate for new architecture work, not a line-count quota.
+2. **#57** — make the ABI manifest typed and generate the low-level ctypes and
+   Koffi declarations while preserving one shared C ABI artifact.
+3. **#58** — move canonical scene/layout/export behavior into Rust in bounded
+   slices; Python/Node retain ergonomic wrappers.
+4. **#59** — add direct browser execution using the same Rust engine compiled
+   to WebAssembly; the existing TypeScript client remains the painter and
+   interaction layer.
+
+These issues are native children of #24. They supersede the old assumption
+that completing the crate split and paint artifact alone proved thin hosts.
+
 ### Phase 0 — Names (documentation + #13)
 
 Lock the table in §2 on #13 / #18 / #23 (this document). Create or verify
@@ -207,6 +226,7 @@ A change is incomplete while its spec is stale.
 | Names / #23 | This file; [host-parity.md](host-parity.md) §0 location table + §5; dossier §33; [wire-protocol.md](wire-protocol.md); [dual-host-parity-matrix.md](dual-host-parity-matrix.md); README + `docs/overview/installation.md` |
 | #18 | [rust-engine.md](rust-engine.md); dossier identity; [bazel-ci.md](bazel-ci.md); [production-readiness.md](../process/production-readiness.md) |
 | #22 | [rust-engine.md](rust-engine.md) §2 / §5 / §6 (drop “still future”) |
+| #56–#59 | [ownership-audit.md](ownership-audit.md); [rust-engine.md](rust-engine.md); [host-parity.md](host-parity.md); dossier browser/scene sections as each vertical slice lands |
 | #8–#11 | [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md); [lod-architecture.md](lod-architecture.md) |
 
 ---

@@ -239,6 +239,10 @@ the `<CHROMIUM>` placeholder, name it explicitly, for example
 
 ## Pull Request Checklist
 
+- New, removed, or renamed production Rust/Python/Node/browser files are
+  reflected in `spec/design/ownership-audit.{json,md}`; run
+  `make check-ownership`. Do not weaken a host boundary merely to classify a
+  new algorithm.
 - Public errors are actionable and name the bad parameter.
 - Failed public builder calls leave the internal `_figure.Figure` traces,
   `ColumnStore`, and category axes unchanged.

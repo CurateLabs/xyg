@@ -41,7 +41,7 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 |---|---|---|
 | **1. Python host** | `python/xy/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. Embeds a **copy** of the paint client in the wheel (`python/xy/static/`) so Python users need no Node. The naming matrix decides `import xyg` / `python/xyg/`; that directory rename is staged after the crate split. |
 | **2. Node host** | `packages/xy-node` (`@curatelabs/xyg-node`) | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. Never publish `@xy/node`. `toHtml()` inlines the host-neutral standalone client, not the Python tree. Root `npm ci` does **not** install this package; CI Test and Python 3.11 jobs run `npm ci --prefix packages/xy-node` so koffi is present for Node host tests. |
-| **3. Browser client** | `js/src/*.ts` → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 renderer: **paint / pick / gestures only**. Host-neutral npm artifact; Python **copies** the same files into the wheel. Draws §29 buffers uploaded by any host. Never owns layout, LOD, or encode on the product path. |
+| **3. Browser surface** | `js/src/*.ts` + Rust/WASM → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 painter and browser lifecycle. Today it draws §29 buffers uploaded by Python/Node and has a bounded kernel-less fallback; #59 adds direct browser execution by compiling the same Rust engine to WebAssembly in a Worker. TypeScript keeps paint, pick, gestures, accessibility, DOM chrome, transitions, caches, and request scheduling; Rust owns canonical layout/LOD/encode decisions. |
 
 ### Contracts (MUST)
 
@@ -49,10 +49,10 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
   progressive work, attach transport, and assemble figure specs. They MUST NOT
   reimplement layout, LOD tiering, channel encode, or other buffer-affecting
   decisions in Python or TypeScript.
-- **Browser never reimplements layout / LOD / encode in JS** for the product
-  path. The client applies uploaded §29 buffers and runs screen-bounded
+- **Browser TypeScript never reimplements layout / LOD / encode** for the
+  product path. The client applies Rust-produced §29 buffers and runs screen-bounded
   interaction; force ticks and LOD plans stay off the browser main thread’s
-  decision path (hosts + Rust).
+  decision path (native Rust today, the same Rust compiled to WASM under #59).
 - **Isolation:** the Node package MUST NOT use browser-only APIs (`window`,
   `document`, WebGL, DOM). The browser client MUST NOT import `koffi`,
   `node:fs`, or other Node-only modules.
@@ -64,6 +64,8 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 
 See [dual-host-parity-matrix.md](dual-host-parity-matrix.md) §0 and the
 `runtimes` section of [`dual-host-parity.json`](dual-host-parity.json).
+The exhaustive per-file application of these rules is
+[ownership-audit.md](ownership-audit.md).
 
 ---
 

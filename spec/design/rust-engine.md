@@ -18,6 +18,8 @@ it is staged after this crate split so Python package churn cannot block
 The exported ABI surface is machine-checked: see §3.5 (ABI manifest and parity
 gate). Naming for every surface is locked in
 [xyg-naming.md](xyg-naming.md).
+The exhaustive file-level placement contract is
+[ownership-audit.md](ownership-audit.md); its JSON twin is enforced in CI.
 
 ## 1. The placement rule
 
@@ -414,8 +416,11 @@ Rules, in priority order:
 
 ### 3.5 ABI manifest and parity gate (machine-checkable contract)
 
-Hand-maintained ctypes/koffi declarations drift. The contract is now one
-machine-checkable source of truth:
+Hand-maintained ctypes/koffi declarations drift. The current manifest checks
+symbol presence and arity; [#57](https://github.com/CurateLabs/xyg/issues/57)
+extends it to typed arguments and generates the low-level declarations. Until
+that issue lands, the declarations remain audited migration debt rather than a
+fully generated source of truth:
 
 - `scripts/gen_abi_manifest.py` parses the `extern "C"` surface of
   `crates/xyg-core/src/lib.rs` (symbols, argument/return types, `ABI_VERSION`)
@@ -435,12 +440,14 @@ machine-checkable source of truth:
 
 ## 4. What Python keeps forever
 
-Ingest normalization (pandas/arrow/dtype coercion — ecosystem glue),
-`ColumnStore`/zone-map bookkeeping (thin, O(chunks)), all spec emission,
-tier/budget policy, channel *resolution* (mode inference, palette, warnings),
-validation and error messages (the new bounds/bool hardening lives at this
-layer and belongs there), widget/comm transport. This layer is the product's
-personality; keeping it in the *host* is a feature. Node owns the same
+Composition and pyplot APIs, Reflex integration, ingest normalization
+(pandas/Arrow/dtype coercion), validation and error-message text, notebook
+lifecycle, and widget/comm transport. Thin wrappers may assemble Rust-produced
+scene records into idiomatic Python objects, but canonical spec/scene emission,
+tier/budget decisions, channel encoding, layout, and static-export construction
+must not remain Python-only; [#58](https://github.com/CurateLabs/xyg/issues/58)
+moves those decisions into Rust in vertical slices. This host layer is the
+product's Python personality; keeping it is a feature. Node owns the same
 ergonomics role for JS users
 ([host-parity.md](host-parity.md); [host-neutral-architecture.md](host-neutral-architecture.md)).
 Python-only forever: composition API, pyplot, Reflex, and embedding a copy
