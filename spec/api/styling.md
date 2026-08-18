@@ -115,6 +115,7 @@ xy.bar(
 | line, step, stairs, ECDF | `stroke`, `stroke-width`, `stroke-opacity`, `stroke-dasharray`, `stroke-linecap`, `opacity` |
 | area, error band | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity`; area also supports `stroke-dasharray` |
 | scatter | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `marker-shape`, `opacity` |
+| graph | no independent CSS vocabulary; `style=` is forwarded to `segments` (edges) and `scatter` (nodes). The shared mapping must be valid for both (`stroke`, `stroke-width`, `stroke-opacity`, `opacity`). Node fill/`marker-shape` raise on the edge compile; use `color=`/`size=`/`symbol=` and `edge_color=`/`edge_width=` for part-specific paint |
 | histogram, bar, column | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `border-radius`, `opacity` |
 | segments, error bars, contour, stem | `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 | box | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |

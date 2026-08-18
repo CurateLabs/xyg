@@ -860,7 +860,7 @@ impl ForceState {
         let mut mass = vec![0u64; cells];
         let mut com_x = vec![0.0f64; cells];
         let mut com_y = vec![0.0f64; cells];
-        for i in 0..n {
+        for (i, cell_slot) in cell_of.iter_mut().enumerate() {
             let col = (((self.x[i] - min_x) / span_x) * (side as f64))
                 .floor()
                 .clamp(0.0, (side - 1) as f64) as usize;
@@ -868,7 +868,7 @@ impl ForceState {
                 .floor()
                 .clamp(0.0, (side - 1) as f64) as usize;
             let cell = row * side + col;
-            cell_of[i] = cell;
+            *cell_slot = cell;
             members[cell].push(i);
             mass[cell] += 1;
             com_x[cell] += self.x[i];
@@ -881,8 +881,7 @@ impl ForceState {
                 com_y[c] /= m;
             }
         }
-        for c in 0..cells {
-            let m = &members[c];
+        for m in &members {
             for a in 0..m.len() {
                 for b in (a + 1)..m.len() {
                     let i = m[a];
@@ -1022,7 +1021,7 @@ pub fn force_create(
 }
 
 /// One-shot progressive force family → positions.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn layout_force_family(
     algo: u32,
     n_nodes: u64,
@@ -1091,7 +1090,7 @@ pub fn sample_edges(n_edges: u64, budget: u64, out_indices: &mut [u64]) -> u64 {
 ///
 /// When `n_nodes <= budget`, copies positions through (identity membership).
 /// When over budget, bins into a near-square grid and emits cell centroids.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn cluster_positions(
     n_nodes: u64,
     x: &[f64],
@@ -1195,7 +1194,7 @@ pub fn cluster_positions(
 ///
 /// Under budget this is identity (direct or edge-sample tier from `lod_decide`);
 /// over budget it writes at most `node_budget` centroids and Aggregate tier.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn cluster_aggregate(
     n_nodes: u64,
     n_edges: u64,
@@ -1237,7 +1236,7 @@ pub fn cluster_aggregate(
 ///
 /// Guarantees `|V'| ≤ node_budget` and `|E'| ≤ edge_budget` so hosts never
 /// upload raw V/E when over budget (scatter-density → exact drill-down spirit).
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn build_render(
     n_nodes: u64,
     x: &[f64],
@@ -1780,13 +1779,10 @@ mod tests {
 
     #[test]
     fn force_exact_path_for_tiny_n() {
-        #[allow(clippy::assertions_on_constants)]
-        {
-            assert!(
-                3 <= FORCE_EXACT_REPULSION_MAX_N,
-                "tiny graphs must use exact pairwise repulsion"
-            );
-        }
+        const _: () = assert!(
+            3 <= FORCE_EXACT_REPULSION_MAX_N,
+            "tiny graphs must use exact pairwise repulsion"
+        );
         let sources = [0u64, 1, 2];
         let targets = [1u64, 2, 0];
         let mut a = ForceState::new(3, &sources, &targets, None, None, 11, LAYOUT_FORCE).unwrap();

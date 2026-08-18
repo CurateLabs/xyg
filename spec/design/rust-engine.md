@@ -95,7 +95,7 @@ never crates.io. `examples/osm/osmium-rs` stays outside the workspace: it is
 an example ingestion CLI with its own dependencies and release profile, not
 part of the product runtime.
 
-```
+```text
 crates/
   xyg-core/src/
     lib.rs              # C ABI shell ONLY: extern "C" fns, pointer/len
@@ -260,7 +260,7 @@ ordinary tick labels, where a box would be plainly wrong.
 
 A warning surfaced at the Python export boundary (where messages belong, §4)
 remains the complete fix and is not yet implemented. The documented escape for
-real coverage is `engine=xyg.Engine.chromium`, and the user-facing statement of
+real coverage is `engine=xy.Engine.chromium` until `python/xyg/` ships (`xyg.Engine.chromium` is the future path), and the user-facing statement of
 the same limitation lives in `spec/api/styling.md` §"Native text coverage" —
 these two must be amended together. The bound applies to the native raster
 formats only; the SVG and PDF export paths have their own text contracts.
@@ -275,7 +275,8 @@ formats only; the SVG and PDF export paths have their own text contracts.
 - **Caller-allocated buffers**: hosts (NumPy / TypedArrays) allocate outputs;
   Rust writes into them and returns counts. No cross-language ownership for
   array data, no callbacks into hosts, no unwinding across FFI.
-- **f64 in, f32 out** for geometry (offset-encoded, §16); u32 for indices.
+- **f64 in, f32 out** for geometry (offset-encoded, §16); **u64 for graph
+  element indices**; u32 only for explicitly versioned non-graph contracts.
 - **Lockstep `ABI_VERSION`** in `crates/xyg-core/src/lib.rs`,
   `python/xy/_native.py`, `packages/xy-node/src/native-path.js`, and
   `scripts/abi_smoke.py`. Both hosts call `xyg_abi_version()` immediately
