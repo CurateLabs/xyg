@@ -175,10 +175,15 @@ def test_codspeed_animation_module_guards_backend_and_split_transport() -> None:
 def test_codspeed_dependency_is_declared_and_used_by_ci() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     workflow = (ROOT / ".github" / "workflows" / "codspeed.yml").read_text(encoding="utf-8")
+    engine_manifest = (ROOT / "crates" / "xyg-engine" / "Cargo.toml").read_text(encoding="utf-8")
 
     assert "codspeed = [" in pyproject
     assert '"pytest-codspeed>=5,<6"' in pyproject
     assert "-e . --group dev --group codspeed" in workflow
+    assert "cargo install cargo-codspeed" in workflow
+    assert "cargo codspeed run --bench kernels" in workflow
+    assert 'package = "codspeed-divan-compat"' in engine_manifest
+    assert (ROOT / "crates" / "xyg-engine" / "benches" / "kernels.rs").is_file()
 
 
 def test_native_benchmark_reports_can_resolve_source_backend_metadata() -> None:

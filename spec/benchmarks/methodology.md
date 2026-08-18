@@ -236,13 +236,25 @@ and tier discipline applies to them rather than a threshold.
 
 ## 8. CodSpeed simulation modules
 
-`.github/workflows/codspeed.yml` runs `pytest benchmarks/test_codspeed_*.py
---codspeed` under `CodSpeedHQ/action` in `simulation` mode, after asserting
-`xy.kernels.BACKEND == "native"`. The job authenticates to CodSpeed over
-OIDC (`id-token: write`); it does not read a `CODSPEED_TOKEN` repository
-secret. Simulation counts instructions rather than
+`.github/workflows/codspeed.yml` runs `cargo codspeed run --bench kernels` and
+`pytest benchmarks/test_codspeed_*.py --codspeed` under `CodSpeedHQ/action` in
+`simulation` mode, after asserting `xy.kernels.BACKEND == "native"`. The job
+authenticates to CodSpeed over OIDC (`id-token: write`); it does not read a
+`CODSPEED_TOKEN` repository secret. Simulation counts instructions rather than
 wall time, so browser, install, and cross-library process benchmarks stay out of
 it — those live in `benchmark-refresh.yml`, and the workflow says so inline.
+
+`crates/xyg-engine/benches/kernels.rs` — **18 rows** — is the Rust half of the
+same gate: divan benchmarks on the kernel entry points themselves (zone maps,
+`min_max`, offset-encoded f32, M4, viewport binning, density log-encode,
+uniform histogram, box selection, sorted-ingest predicate), parametrized over
+the same 10k/100k/1M sizes the pytest modules use, with a deterministic
+SplitMix64 input so the rows are byte-identical run to run. They exist because
+the pytest rows measure kernels through ctypes and NumPy: a regression inside
+`kernels.rs` lands there mixed with host work, and the native rows say which
+kernel moved. `zone_map_threads` already forces the serial path under
+`CODSPEED_ENV`, so the instruction count these report is the representative
+single-thread one (§22).
 
 The glob collects six modules — `test_codspeed_animation.py`,
 `test_codspeed_kernels.py`, `test_codspeed_polar.py`,

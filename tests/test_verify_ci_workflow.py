@@ -1064,6 +1064,21 @@ def test_codspeed_workflow_rejects_non_strict_native_install(tmp_path: Path) -> 
     )
 
 
+def test_codspeed_workflow_rejects_missing_native_kernel_benches(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace("cargo install cargo-codspeed --locked --version 4.6.0\n", "")
+        .replace("        run: cargo codspeed build --bench kernels\n", "")
+        .replace("            cargo codspeed run --bench kernels\n", ""),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("CodSpeed benchmarks job" in error and "cargo-codspeed" in error for error in errors)
+
+
 def test_ci_workflow_rejects_missing_interaction_stress_smoke(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"

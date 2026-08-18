@@ -121,6 +121,9 @@ include = [
     "/python/xy/**",
     "/python/reflex_xy/**",
     "/crates/**",
+    # Engine `[[bench]]` sources live under crates/xyg-engine/benches/; they
+    # ride this glob so `cargo clippy --all-targets` and `cargo bench` from an
+    # unpacked sdist still see the bench targets.
     # The whole js/ dir (TS sources + build.mjs + tsconfig) plus the npm
     # manifests, so the sdist can rebuild the client with `npm ci &&
     # node js/build.mjs` (verify_sdist.py checks the load-bearing files).

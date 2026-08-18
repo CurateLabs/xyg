@@ -104,6 +104,7 @@ REQUIRED_FILES = {
     "crates/xyg-engine/src/graph.rs",
     "crates/xyg-engine/src/hexbin.rs",
     "crates/xyg-engine/src/kernels.rs",
+    "crates/xyg-engine/benches/kernels.rs",
     "crates/xyg-engine/src/lod_plan.rs",
     "crates/xyg-engine/src/raster.rs",
     "crates/xyg-engine/src/sankey.rs",

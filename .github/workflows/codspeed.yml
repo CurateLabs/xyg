@@ -61,18 +61,32 @@ jobs:
           assert k.BACKEND == "native", f"CodSpeed requires native backend, got {k.BACKEND!r}"
           PY
 
+      # The Rust benches (crates/xyg-engine/benches/kernels.rs) measure the
+      # compute kernels directly, so a regression inside kernels.rs is
+      # attributed to the kernel instead of surfacing mixed with FFI and NumPy
+      # work in the pytest suite. `cargo codspeed build` is the instrumented
+      # replacement for `cargo bench --no-run`; the plain build above stays
+      # because Python loads the cdylib.
+      - name: Install cargo-codspeed
+        run: cargo install cargo-codspeed --locked --version 4.6.0
+
+      - name: Build Rust kernel benchmarks
+        run: cargo codspeed build --bench kernels
+
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@4bee4eada46987d4607fc208971a36367352b83d # v4
+        uses: CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8 # v5.0.3
         with:
           mode: simulation
           # Authenticate with the job's OIDC token (id-token: write above).
           # A CODSPEED_TOKEN secret is not configured for CurateLabs/xyg and
           # is not required when the GitHub App is installed on the repo.
-          # Run every CodSpeed-native pytest module. Keep browser/install and
-          # cross-library process benchmarks in benchmark-refresh.yml: they
-          # require wall-clock/browser measurements and are not meaningful in
-          # CodSpeed simulation mode.
+          # Run the native kernel benches and every CodSpeed-native pytest
+          # module. Keep browser/install and cross-library process benchmarks in
+          # benchmark-refresh.yml: they require wall-clock/browser measurements
+          # and are not meaningful in CodSpeed simulation mode.
           # The explicit native path is kept for scripts/verify_ci_workflow.py.
           # Required invocation: benchmarks/test_codspeed_kernels.py --codspeed
           # The codspeed dependency group installs pytest-codspeed for this run.
-          run: .venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed
+          run: |
+            cargo codspeed run --bench kernels
+            .venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed
