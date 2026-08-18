@@ -32,6 +32,13 @@ export {
   geometryOffset,
   pinsOffsetToZero,
   f32SafeScale,
+  xyStreamNew,
+  xyStreamAppend,
+  xyStreamSeal,
+  xyStreamFree,
+  xyStreamLen,
+  xyStreamCapacity,
+  xyStreamCopy,
 } from "./encode.js";
 
 export {
@@ -203,7 +210,9 @@ export {
 export {
   pyramidBuild,
   pyramidBuildColor,
+  pyramidBuildFromStream,
   pyramidAppend,
+  pyramidAppendFromStream,
   pyramidCount,
   pyramidCompose,
   pyramidComposeColor,

@@ -139,10 +139,12 @@ categorical values use a discrete palette.
 
 ## The canonical column store
 
-XY converts numeric coordinates to contiguous float64 canonical columns in the
-Python process. Derived float32, index, density, and decimated buffers are
-rendering representations—not replacements for the source values. Reusing the
-same NumPy array within a figure reuses the canonical column by array identity.
+XY converts numeric coordinates to contiguous float64 canonical columns owned
+by the native engine (`xyg_stream_*` after a column grows). Hosts coerce ingest
+and hold opaque handles; Python may expose a NumPy view of that buffer.
+Derived float32, index, density, and decimated buffers are rendering
+representations—not replacements for the source values. Reusing the same
+NumPy array within a figure reuses the canonical column by array identity.
 
 This separation lets `pick()`, hover, and selections map rendered geometry back
 to exact source rows even when the visible result is decimated or aggregated.

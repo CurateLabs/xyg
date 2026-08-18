@@ -242,9 +242,12 @@ assembled and `on_select` after — that order is the invariant. An empty
 
 **`append`** — `{type: "append", affected: [trace_id], spec}` with
 split-layout buffers, one per column, exactly like first paint (§5). The spec
-additionally carries `append: {seq, affected}` — a monotonic apply signal, so
-a host whose transport is the payload itself can detect the refresh without a
-message envelope. The kernel re-emits a complete fresh payload rather
+additionally carries `append: {seq, affected, pyramid}` — a monotonic apply
+signal, so a host whose transport is the payload itself can detect the refresh
+without a message envelope. `pyramid` records the native LOD decision
+(`"none"` / `"dirty-tiles"` / `"invalidate"`); `"invalidate"` means the
+stale pyramid was freed and rebuild is deferred to the next density view
+(rust-engine.md §5, §28). The kernel re-emits a complete fresh payload rather
 than a delta, because every tier's payload is screen-bounded by construction.
 Without animation, the client swaps `spec` and the retained payload together
 and updates only the GPU traces named in `affected` — in place when it can,

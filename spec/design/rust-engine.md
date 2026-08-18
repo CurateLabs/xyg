@@ -4,8 +4,8 @@
 vs the hosts and how the C-ABI seam evolves without rewrites. The Rust source
 is a Cargo **workspace** (~27K lines at this revision) with two crates: the
 safe engine `crates/xyg-engine` (algorithms + deterministic product policy;
-fourteen domain modules) and the C ABI shell `crates/xyg-core` (extern "C"
-marshaling, panic shielding, opaque-handle runtime; ABI v58, one shipped
+fifteen domain modules) and the C ABI shell `crates/xyg-core` (extern "C"
+marshaling, panic shielding, opaque-handle runtime; ABI v59, one shipped
 cdylib `libxyg_core`; `png` is the one third-party crate, for static export).
 Two host bindings consume the same artifact: Python ctypes
 (`python/xy/_native.py`, dispatch in `kernels.py`) and Node koffi
@@ -81,7 +81,7 @@ densify (`xyg_contourf_densify` ✅) + corner-mask bands (`xyg_contourf_bands` �
 ContourPy-style one-masked-corner clip) · bar offsets (`xyg_bar_stack` ✅
 grouped/stacked/normalized) · multi-resolution tile
 generation (`tiles.rs` ✅, including stable-domain incremental updates) ·
-Rust-owned streaming column buffers (plan: `stream.rs`, §5 below).
+Rust-owned streaming column buffers (`stream.rs` ✅, §5).
 
 ## 2. Module boundaries (workspace layout)
 
@@ -173,7 +173,14 @@ crates/
                         #   histogram_edges (NumPy auto) + wind_rose_bins ✅
     hexbin.rs           # matplotlib-compatible hex lattice (`xyg_hexbin`) ✅
     lod_plan.rs         # view LOD drill/grid decision math ✅ (`xyg_lod_plan`).
-    stream.rs           # (plan) Rust-owned canonical append buffers.
+    stream.rs           # Rust-owned canonical append buffers (`xyg_stream_*`).
+                        # Capacity-doubling f64 store; zone maps on seal
+                        # (ZONE_CHUNK splice, bitwise-identical to
+                        # kernels::zone_maps). Pyramid build/compose reads
+                        # through the handle; in-domain appends mark
+                        # intersecting in-RAM tiles dirty (~1 tile/level)
+                        # without a full-pyramid rebuild. Not Phase-4 disk
+                        # spill. Out-of-core memmap stays host-owned.
 ```
 
 Contourf corner-mask bands land in Rust as `xyg_contourf_bands` (ABI 57,
@@ -356,6 +363,17 @@ int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x,
                                  float* out, uint8_t* out_rgba);
 /* free: 1 if it existed, 0 for stale/unknown */
 int32_t xyg_pyramid_free(uint64_t handle);
+/* stream store (ABI 59): Rust-owned canonical f64. 0 handle / 0 status on
+   stale/busy/bad args. Pyramid fetch may read through these handles. */
+uint64_t xyg_stream_new(const double* data, size_t len);
+int32_t  xyg_stream_append(uint64_t handle, const double* data, size_t len);
+int32_t  xyg_stream_seal(uint64_t handle);
+int32_t  xyg_stream_free(uint64_t handle);
+uint64_t xyg_pyramid_build_from_stream(uint64_t x, uint64_t y,
+                                      double x0, double x1, double y0, double y1,
+                                      uint32_t base_dim);
+int32_t  xyg_pyramid_append_from_stream(uint64_t pyramid, uint64_t x, uint64_t y,
+                                       size_t tail_len);
 ```
 
 Note this API took explicit bounds plus `base_dim` rather than the E2
@@ -429,42 +447,43 @@ Python-only forever: composition API, pyplot, Reflex, and embedding a copy
 of the paint client in the wheel. Canonical f64 values move to Rust
 `stream.rs` (#22); they must not remain a NumPy-only store.
 
-## 5. Streaming append (Phase-0 landed Python-side; Rust `stream.rs` later)
+## 5. Streaming append (Rust `stream.rs`)
 
-**Landed (Phase-0, Python-side canonical):** `Column.append` grows an
-amortized capacity buffer and extends zone maps incrementally (only chunks
-at/after the old length recompute — the splice is bitwise identical to a
-from-scratch ingest). `Figure.append(trace_id, x, y, color=, size=)`
-validates atomically (line appends must continue the sorted series;
-categorical channels and shared columns are rejected for now), frees the
-trace's pyramid for lazy rebuild, exits any drill, and returns an `append`
+**Landed:** `crates/xyg-engine/src/stream.rs` owns chunked (capacity-doubling)
+canonical f64 append buffers behind opaque `xyg_stream_*` handles. Zone maps
+are computed on `xyg_stream_seal` with a ZONE_CHUNK splice bitwise-identical
+to `xyg_zone_maps` over the concatenated column. `xyg_pyramid_build_from_stream`
+/ `xyg_pyramid_append_from_stream` read x/y through those handles, so pyramid
+fetch/compose does not require the host to pass full canonical arrays on every
+call. In-domain appends increment the in-RAM count grid **and** mark
+intersecting `TILE_DIM`² tiles dirty (~1 tile/level for a one-region stream);
+domain growth still refuses the increment and the host invalidates for a lazy
+full rebuild, recorded as `append.pyramid: "invalidate"` vs `"dirty-tiles"`
+(§28 — a full-pyramid rebuild is never dressed as incremental). The append
+refresh payload does not call `_ensure_pyramid` after invalidate: the next
+density view is the rebuild. Colored pyramids still refuse native append and
+invalidate (`tests/test_density_mean_color.py`).
+
+Hosts stay thin: Python `Column.append` / `Figure.append` coerce ingest and
+hold the handle (plus sticky encode offsets); they do not own the growable
+f64 backing store. `ColumnStore` remains bookkeeping (ids, kinds, offsets,
+Arrow/NumPy coercion). Node binds the same symbols. Out-of-core memmap
+columns (`python/xy/_ooc.py`) cannot sit behind this first in-RAM handle and
+stay host-owned — a follow-up, not Phase-4 disk spill (#8).
+
+**Historical (Phase-0, Python-side canonical):** `Column.append` grew an
+amortized NumPy buffer and extended zone maps incrementally. `Figure.append`
+validated atomically (line appends must continue the sorted series;
+categorical channels and shared columns are rejected for now), updated or
+freed the trace's pyramid, exited any drill, and returned an `append`
 message carrying a complete fresh payload in the split layout — screen-bounded
-by construction (§29), so the wire never needs deltas, and shipped exactly
-once per tick (wire-protocol §4: the widget host rides the spec/buffers trait
-update; the socket host pushes a `msg`). Encode offsets stay sticky across
-appends (`Column.suggest_offset` retains the last shipped offset while every
-value remains within one span of it), making consecutive payloads retain
-byte-identical prefixes. The client updates only the traces named in
-`affected`: a direct scatter/line with unchanged encoding extends existing
-GPU buffers with tail-only `bufferSubData` uploads into capacity-doubling data
-stores; anything else rebuilds. It applies the follow policy (refit when at
-home, slide when pinned to the live right edge, hold when inspecting history),
-then refines tiered traces through the normal stale-while-revalidate path
-(§17), coalesced to at most one round-trip per 300 ms burst; at home,
-re-decimation is skipped when recorded `decimation_px` covers the plot.
+by construction (§29). Those user-visible contracts are unchanged; only
+ownership of the growable f64 store moved into Rust. Encode offsets stay sticky
+across appends (`Column.suggest_offset`). The client updates only the traces
+named in `affected`.
 
-**Still future (`stream.rs`):** Rust-owned chunked append buffers with
-zone maps computed on seal, and — the important one — appends marking
-intersecting pyramid tiles dirty with lazy per-tile rebuild (bounded: a
-stream touching one region rebuilds ~1 tile/level). Phase-0 instead frees
-the whole pyramid on append, so a >2M-point stream pays a full pyramid
-rebuild on its next far-out view — recorded, not hidden. ABI:
-`xyg_stream_new/append/seal/free` + the pyramid fetch reading through the
-stream handle. Tracked by
-[#22](https://github.com/CurateLabs/xyg/issues/22); sequenced in
-[host-neutral-architecture.md](host-neutral-architecture.md). This is the
-canonical f64 store, not Phase-4 disk spill (#8) and not npm packaging
-(#23).
+Phase-4 disk-resident tile spill (#8) consumes this dirty-tile set; it does
+not own the canonical store. This is not npm packaging (#23).
 
 ## 6. Implementation order
 
@@ -479,5 +498,4 @@ landed; the remainder, in order:
    `hexbin.rs`: `xyg_hexbin` (count/mean/sum) ✅; `xyg_histogram_edges`
    (NumPy `bins="auto"` = min of Sturges bandwidth and FD floored by
    `sqrt/2`) ✅.
-5. `stream.rs` append (after Arrow ingest lands) —
-   [#22](https://github.com/CurateLabs/xyg/issues/22).
+5. `stream.rs` append ✅ (Arrow ingest already landed).

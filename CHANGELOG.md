@@ -9,6 +9,12 @@ in the README).
 ## [Unreleased]
 
 ### Added
+- ABI 59: Rust-owned canonical f64 stream store (`xyg_stream_new` /
+  `xyg_stream_append` / `xyg_stream_seal` / `xyg_stream_free`) in
+  `crates/xyg-engine/src/stream.rs`. Pyramid build/append can read through
+  stream handles; in-domain appends dirty intersecting in-RAM tiles instead of
+  rebuilding the whole pyramid. Python `Column.append` and Node `Column.append`
+  / `Figure.append` no longer own the growable f64 backing store (#22).
 - Host-neutral paint client as in-repo npm package `@curatelabs/xyg`
   (`packages/xy-client`; #23, parent #24). `js/build.mjs` writes
   `packages/xy-client/dist/{index,standalone}.js`; the Python wheel **copies**

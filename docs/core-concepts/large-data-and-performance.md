@@ -5,7 +5,7 @@ description: Understand direct rendering, M4 decimation, density aggregation, dr
 
 # Large Data and Performance
 
-XY keeps exact canonical columns in Python and chooses a rendered
+XY keeps exact canonical columns in the native engine and chooses a rendered
 representation for each trace. The goal is to keep transport and draw work
 bounded by what the viewport can distinguish while retaining exact rows for
 readout and refinement.

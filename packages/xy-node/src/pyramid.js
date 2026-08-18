@@ -1,5 +1,5 @@
 /**
- * Tier-3 count pyramid — thin Node bindings over `xyg_pyramid_*` (ABI 58).
+ * Tier-3 count pyramid — thin Node bindings over `xyg_pyramid_*`.
  *
  * Productized Phase-3 contract (lod-architecture.md §4 / Phase 3 items 6–7):
  * build once over the full data bounds, then compose any viewport in
@@ -22,8 +22,10 @@ import {
 } from "./encode.js";
 import {
   xyPyramidAppend,
+  xyPyramidAppendFromStream,
   xyPyramidBuild,
   xyPyramidBuildColor,
+  xyPyramidBuildFromStream,
   xyPyramidCompose,
   xyPyramidComposeColor,
   xyPyramidCount,
@@ -119,6 +121,25 @@ export function pyramidAppend(handle, x, y) {
   const ya = asF64Array(y, "y");
   if (xa.length !== ya.length) throw new RangeError("pyramid append x/y length mismatch");
   return xyPyramidAppend(BigInt(handle), f64Ptr(xa), f64Ptr(ya), BigInt(xa.length)) === 1;
+}
+
+export function pyramidBuildFromStream(xHandle, yHandle, x0, x1, y0, y1, baseDim) {
+  const [a0, a1] = finiteIncreasing(x0, x1, "x range");
+  const [b0, b1] = finiteIncreasing(y0, y1, "y range");
+  const dim = pyramidBaseDim(baseDim);
+  return BigInt(
+    xyPyramidBuildFromStream(BigInt(xHandle), BigInt(yHandle), a0, a1, b0, b1, dim),
+  );
+}
+
+export function pyramidAppendFromStream(handle, xHandle, yHandle, tailLen) {
+  const n = Number(tailLen);
+  if (!Number.isInteger(n) || n < 0) {
+    throw new RangeError("pyramid append-from-stream tail_len must be a non-negative integer");
+  }
+  return (
+    xyPyramidAppendFromStream(BigInt(handle), BigInt(xHandle), BigInt(yHandle), BigInt(n)) === 1
+  );
 }
 
 export function pyramidCount(handle, loX, hiX, loY, hiY) {

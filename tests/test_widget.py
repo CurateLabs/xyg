@@ -50,7 +50,11 @@ def test_widget_append_is_one_split_trait_update_with_no_custom_send():
 
     assert sent == []  # the trait update IS the push
     assert widget.spec["buffer_layout"] == "split"
-    assert widget.spec["append"] == {"seq": 1, "affected": [tid]}
+    assert widget.spec["append"] == {
+        "seq": 1,
+        "affected": [tid],
+        "pyramid": "none",
+    }
     assert isinstance(widget.buffers, list)
     assert len(widget.buffers) == len(widget.spec["columns"])
     for view in widget.buffers:

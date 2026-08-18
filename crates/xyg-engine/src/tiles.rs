@@ -20,10 +20,11 @@
 //! slab indices behind a Mutex (engine doc §3.3): stale/double-freed handles
 //! are error codes, never UB.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::kernels;
+use crate::stream;
 
 pub struct Pyramid {
     /// levels[0] = finest (dim²), levels[k] has dim >> k per side; last is 1².
@@ -40,13 +41,49 @@ pub struct Pyramid {
     x1: f64,
     y0: f64,
     y1: f64,
+    /// Stream handles this pyramid can rebuild from without the host
+    /// re-passing canonical arrays. `None` for host-array builds.
+    stream_x: Option<u64>,
+    stream_y: Option<u64>,
+    /// In-RAM tiles dirtied by an in-domain append. A one-region stream
+    /// touches ~1 tile per level (`TILE_DIM`² blocks). Phase-4 disk spill
+    /// consumes this set; it does not own the canonical store.
+    dirty: HashSet<(u16, u16, u16)>,
+    /// Distinguishes a full O(levels · base_dim²) build from a tile-local
+    /// append so §28 metadata cannot look incremental while paying a rebuild.
+    last_update_full_rebuild: bool,
 }
 
 impl Pyramid {
     pub fn has_color(&self) -> bool {
         self.color_levels.is_some()
     }
+
+    pub fn last_update_full_rebuild(&self) -> bool {
+        self.last_update_full_rebuild
+    }
+
+    pub fn dirty_tiles(&self) -> &HashSet<(u16, u16, u16)> {
+        &self.dirty
+    }
+
+    /// Dirty-tile count per level (finest = 0). A localized stream should
+    /// mark ~1 tile at each level, not `dims[level]² / TILE_DIM²`.
+    pub fn dirty_per_level(&self) -> Vec<u32> {
+        let mut counts = vec![0u32; self.dims.len()];
+        for &(level, _, _) in &self.dirty {
+            if (level as usize) < counts.len() {
+                counts[level as usize] += 1;
+            }
+        }
+        counts
+    }
 }
+
+/// In-RAM tile side in finest-level cells. Matches the Phase-4 256² spill
+/// addressing so a later spill store can consume this dirty set. Levels
+/// coarser than `TILE_DIM` are a single tile.
+pub const TILE_DIM: usize = 256;
 
 /// The production default upsample bound (callers pass their own via the ABI;
 /// see `xyg_pyramid_compose`). Rendering source cells into an output grid finer
@@ -93,6 +130,10 @@ pub fn build(
         x1,
         y0,
         y1,
+        stream_x: None,
+        stream_y: None,
+        dirty: HashSet::new(),
+        last_update_full_rebuild: true,
     })
 }
 
@@ -169,6 +210,10 @@ pub fn build_color(
         x1,
         y0,
         y1,
+        stream_x: None,
+        stream_y: None,
+        dirty: HashSet::new(),
+        last_update_full_rebuild: true,
     })
 }
 
@@ -213,7 +258,150 @@ pub fn append(p: &mut Pyramid, x: &[f64], y: &[f64]) -> bool {
             cy >>= 1;
         }
     }
+    mark_dirty(p, x, y);
+    p.last_update_full_rebuild = false;
     true
+}
+
+/// Record the in-RAM tiles that `x`/`y` intersect. One finite point marks
+/// exactly one tile per level (~1 tile/level for a one-region stream).
+fn mark_dirty(p: &mut Pyramid, x: &[f64], y: &[f64]) {
+    let base_dim = p.dims[0];
+    let sx = base_dim as f64 / (p.x1 - p.x0);
+    let sy = base_dim as f64 / (p.y1 - p.y0);
+    for (&xv, &yv) in x.iter().zip(y) {
+        if !xv.is_finite() || !yv.is_finite() {
+            continue;
+        }
+        let mut cx = (((xv - p.x0) * sx) as usize).min(base_dim - 1);
+        let mut cy = (((yv - p.y0) * sy) as usize).min(base_dim - 1);
+        for level in 0..p.dims.len() {
+            let tx = (cx / TILE_DIM) as u16;
+            let ty = (cy / TILE_DIM) as u16;
+            p.dirty.insert((level as u16, tx, ty));
+            cx >>= 1;
+            cy >>= 1;
+        }
+    }
+}
+
+/// Build a count pyramid by reading canonical x/y through stream handles.
+pub fn build_from_stream(
+    x_handle: u64,
+    y_handle: u64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    base_dim: usize,
+) -> Option<Pyramid> {
+    let (xs, ys) = stream::reg_pair(x_handle, y_handle)?;
+    if xs.len() != ys.len() || xs.is_empty() {
+        return None;
+    }
+    let mut p = build(xs.values(), ys.values(), x0, x1, y0, y1, base_dim)?;
+    p.stream_x = Some(x_handle);
+    p.stream_y = Some(y_handle);
+    Some(p)
+}
+
+/// Increment from the tail of two sealed streams. `tail_len` is the number
+/// of rows just appended (the host already wrote them into the streams).
+/// Refuses colored pyramids and domain growth, same as [`append`].
+pub fn append_from_stream(p: &mut Pyramid, x_handle: u64, y_handle: u64, tail_len: usize) -> bool {
+    let Some((xs, ys)) = stream::reg_pair(x_handle, y_handle) else {
+        return false;
+    };
+    if xs.len() != ys.len() || tail_len > xs.len() {
+        return false;
+    }
+    let start = xs.len() - tail_len;
+    let ok = append(p, &xs.values()[start..], &ys.values()[start..]);
+    if ok {
+        p.stream_x = Some(x_handle);
+        p.stream_y = Some(y_handle);
+    }
+    ok
+}
+
+/// Rebuild dirty finest-level tiles from the attached streams, then reduce
+/// coarser levels from the finest. Used as the bounded rebuild path (a
+/// one-region stream rescans only those tiles' points, not a full O(N)
+/// pyramid). Returns false when streams are missing or lengths disagree.
+///
+/// This is the lazy path: appends mark tiles dirty; compose/tests flush.
+/// Production in-RAM appends also increment counts immediately so
+/// `pyramid_count` after append stays current; flushing a already-incremented
+/// dirty set would double-count, so callers zero-and-rebuild only when
+/// testing the rebuild-from-canonical path.
+pub fn rebuild_dirty_from_stream(p: &mut Pyramid) -> bool {
+    let (Some(xh), Some(yh)) = (p.stream_x, p.stream_y) else {
+        return false;
+    };
+    if p.color_levels.is_some() {
+        return false;
+    }
+    let Some((xs, ys)) = stream::reg_pair(xh, yh) else {
+        return false;
+    };
+    if xs.len() != ys.len() {
+        return false;
+    }
+    rebuild_dirty_tiles(p, xs.values(), ys.values());
+    p.dirty.clear();
+    p.last_update_full_rebuild = false;
+    true
+}
+
+fn rebuild_dirty_tiles(p: &mut Pyramid, x: &[f64], y: &[f64]) {
+    if p.dirty.is_empty() {
+        return;
+    }
+    let base_dim = p.dims[0];
+    let finest = &mut p.levels[0];
+    // Zero only the dirty finest tiles — not the whole grid.
+    for &(level, tx, ty) in &p.dirty {
+        if level != 0 {
+            continue;
+        }
+        let x0 = (tx as usize) * TILE_DIM;
+        let y0 = (ty as usize) * TILE_DIM;
+        let x1 = (x0 + TILE_DIM).min(base_dim);
+        let y1 = (y0 + TILE_DIM).min(base_dim);
+        for cy in y0..y1 {
+            let row = cy * base_dim;
+            for cx in x0..x1 {
+                finest[row + cx] = 0;
+            }
+        }
+    }
+    let sx = base_dim as f64 / (p.x1 - p.x0);
+    let sy = base_dim as f64 / (p.y1 - p.y0);
+    for (&xv, &yv) in x.iter().zip(y) {
+        if !xv.is_finite() || !yv.is_finite() {
+            continue;
+        }
+        if xv < p.x0 || xv >= p.x1 || yv < p.y0 || yv >= p.y1 {
+            continue;
+        }
+        let cx = (((xv - p.x0) * sx) as usize).min(base_dim - 1);
+        let cy = (((yv - p.y0) * sy) as usize).min(base_dim - 1);
+        let tx = (cx / TILE_DIM) as u16;
+        let ty = (cy / TILE_DIM) as u16;
+        if !p.dirty.contains(&(0, tx, ty)) {
+            continue;
+        }
+        let cell = &mut p.levels[0][cy * base_dim + cx];
+        *cell = cell.saturating_add(1);
+    }
+    // Coarser levels are a 4→1 of the finest; rebuilding them from the
+    // updated finest is O(grid), not O(N), and keeps every level conservative.
+    let mut dim = base_dim;
+    for level in 1..p.levels.len() {
+        let prev = p.levels[level - 1].clone();
+        p.levels[level] = reduce_level(&prev, dim);
+        dim /= 2;
+    }
 }
 
 /// 4→1 exact reduction of one square level: each output cell is the u64 sum
@@ -760,6 +948,36 @@ pub fn reg_append(h: u64, x: &[f64], y: &[f64]) -> Option<bool> {
     Some(append(p, x, y))
 }
 
+pub fn reg_append_from_stream(
+    h: u64,
+    x_handle: u64,
+    y_handle: u64,
+    tail_len: usize,
+) -> Option<bool> {
+    // Read streams first so we never hold both registry locks.
+    let Some((xs, ys)) = stream::reg_pair(x_handle, y_handle) else {
+        return Some(false);
+    };
+    if xs.len() != ys.len() || tail_len > xs.len() {
+        return Some(false);
+    }
+    let start = xs.len() - tail_len;
+    let mut g = registry().lock().expect("pyramid registry poisoned");
+    let p = Arc::get_mut(g.1.get_mut(&h)?)?;
+    let ok = append(p, &xs.values()[start..], &ys.values()[start..]);
+    if ok {
+        p.stream_x = Some(x_handle);
+        p.stream_y = Some(y_handle);
+    }
+    Some(ok)
+}
+
+pub fn reg_rebuild_dirty(h: u64) -> Option<bool> {
+    let mut g = registry().lock().expect("pyramid registry poisoned");
+    let p = Arc::get_mut(g.1.get_mut(&h)?)?;
+    Some(rebuild_dirty_from_stream(p))
+}
+
 pub fn reg_remove(h: u64) -> bool {
     let mut g = registry().lock().expect("pyramid registry poisoned");
     g.1.remove(&h).is_some()
@@ -1208,5 +1426,55 @@ mod tests {
         assert!(reg_remove(h));
         assert!(!reg_remove(h), "double free is an error, not UB");
         assert!(reg_with(h, |_| ()).is_none(), "stale handle is refused");
+    }
+
+    #[test]
+    fn stream_backed_one_region_append_dirties_one_tile_per_level() {
+        // Finest 512² → 2×2 tiles of TILE_DIM=256. A cluster in the low
+        // corner intersects one tile at every level, not the whole pyramid.
+        let (x, y) = cross(4000);
+        let xh = stream::reg_insert(stream::StreamColumn::new(&x));
+        let yh = stream::reg_insert(stream::StreamColumn::new(&y));
+        let mut incremental = build_from_stream(xh, yh, 0.0, 100.0, 0.0, 100.0, 512).unwrap();
+        let mut lazy = build_from_stream(xh, yh, 0.0, 100.0, 0.0, 100.0, 512).unwrap();
+        assert!(incremental.last_update_full_rebuild());
+        assert!(incremental.dirty_tiles().is_empty());
+
+        let tail_x = vec![8.0, 9.0, 10.0, 11.0];
+        let tail_y = vec![8.0, 9.0, 10.0, 11.0];
+        assert!(stream::reg_with_mut(xh, |c| c.append(&tail_x)).is_some());
+        assert!(stream::reg_with_mut(yh, |c| c.append(&tail_y)).is_some());
+        assert!(append_from_stream(&mut incremental, xh, yh, tail_x.len()));
+        assert!(
+            !incremental.last_update_full_rebuild(),
+            "in-domain append is tile-local"
+        );
+
+        let per_level = incremental.dirty_per_level();
+        assert_eq!(per_level.len(), incremental.dims.len());
+        for (level, &n) in per_level.iter().enumerate() {
+            assert_eq!(n, 1, "level {level} should dirty ~1 tile, got {n}");
+        }
+
+        let mut all_x = x.clone();
+        let mut all_y = y.clone();
+        all_x.extend_from_slice(&tail_x);
+        all_y.extend_from_slice(&tail_y);
+        let rebuilt = build(&all_x, &all_y, 0.0, 100.0, 0.0, 100.0, 512).unwrap();
+        assert_eq!(
+            incremental.levels, rebuilt.levels,
+            "increment + dirty tiles must match a from-scratch rebuild"
+        );
+
+        // Lazy path: mark intersecting tiles dirty without incrementing, then
+        // rebuild those tiles from the stream (canonical), not the whole grid.
+        mark_dirty(&mut lazy, &tail_x, &tail_y);
+        assert!(rebuild_dirty_from_stream(&mut lazy));
+        assert_eq!(lazy.levels, rebuilt.levels);
+        assert!(lazy.dirty_tiles().is_empty());
+        assert!(!lazy.last_update_full_rebuild());
+
+        assert!(stream::reg_remove(xh));
+        assert!(stream::reg_remove(yh));
     }
 }
