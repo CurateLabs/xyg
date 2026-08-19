@@ -40,7 +40,7 @@ concurrency:
 jobs:
   quality:
     name: Docs tests and lint
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -75,7 +75,7 @@ jobs:
   production:
     name: Production docs (Python ${{ matrix.python-version }})
     needs: [quality]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -102,10 +102,17 @@ jobs:
         env:
           REFLEX_TELEMETRY_ENABLED: "false"
         run: uv run --no-sync reflex init
+      - name: Cache Playwright Chromium
+        if: matrix.python-version == '3.12'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-docs-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('docs/app/uv.lock') }}
       - name: Install Chromium for the production-DOM accessibility check
         if: matrix.python-version == '3.12'
         working-directory: docs/app
-        run: uv run --no-sync playwright install --with-deps chromium
+        timeout-minutes: 10
+        run: uv run --no-sync playwright install chromium
       - name: Run production docs and check the public route
         working-directory: docs/app
         shell: bash

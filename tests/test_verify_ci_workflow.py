@@ -999,7 +999,16 @@ def test_ci_workflow_rejects_missing_cross_library_job_timeout(tmp_path: Path) -
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
     path.write_text(
-        workflow.replace("    timeout-minutes: 10\n", "", 1),
+        workflow.replace(
+            "  benchmark_vs:\n"
+            "    name: Cross-library benchmark (${{ matrix.name }})\n"
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n"
+            "    timeout-minutes: 10\n",
+            "  benchmark_vs:\n"
+            "    name: Cross-library benchmark (${{ matrix.name }})\n"
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n",
+            1,
+        ),
         encoding="utf-8",
     )
 
@@ -1195,6 +1204,170 @@ def test_ci_workflow_rejects_missing_interaction_stress_smoke(tmp_path: Path) ->
     errors = verify_ci_workflow.validate_workflow(path)
 
     assert any("test job" in error and "interaction_stress_smoke" in error for error in errors)
+
+
+def test_workflow_policy_rejects_github_hosted_runner_and_playwright_apt(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "bad.yml").write_text(
+        "jobs:\n"
+        "  browser:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: npx playwright install --with-deps chromium\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("Blacksmith runners" in error and "ubuntu-latest" in error for error in errors)
+    assert any("must not use --with-deps" in error for error in errors)
+
+
+def test_workflow_policy_accepts_blacksmith_and_matrix_runners(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "good.yml").write_text(
+        "jobs:\n"
+        "  browser:\n"
+        "    runs-on: blacksmith-4vcpu-ubuntu-2404\n"
+        "    steps:\n"
+        "      - run: npx playwright install chromium\n"
+        "  wheels:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os:\n"
+        "          - blacksmith-4vcpu-ubuntu-2404\n"
+        "    runs-on: ${{ matrix.os }}\n",
+        encoding="utf-8",
+    )
+
+    assert verify_ci_workflow.validate_workflow_hosting_policy(workflows) == []
+
+
+def test_workflow_policy_rejects_quoted_matrix_alias_and_continued_with_deps(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "bypasses.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        '        os: ["blacksmith-4vcpu-ubuntu-2404", "ubuntu-latest"]\n'
+        "    runs-on: ${{ matrix.os }}\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          npx playwright install \\\n"
+        "            --with-deps chromium\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("GitHub-hosted runner alias" in error for error in errors)
+    assert any("must not use --with-deps" in error for error in errors)
+
+
+def test_workflow_policy_rejects_arbitrary_matrix_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "matrix.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        '        os: ["blacksmith-4vcpu-ubuntu-2404", "arbitrary-runner"]\n'
+        "    runs-on: ${{ matrix.os }}\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("approved Blacksmith label" in error for error in errors)
+
+
+def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "invented.yml").write_text(
+        "jobs:\n  test:\n    runs-on: blacksmith-arbitrary-runner\n    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("approved Blacksmith runners" in error for error in errors)
+
+
+def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "dynamic.yml").write_text(
+        "jobs:\n"
+        "  test:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os: ${{ fromJSON(vars.RUNNERS) }}\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    steps:\n"
+        "      - run: true\n"
+        "        env: { os: blacksmith-4vcpu-ubuntu-2404 }\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_dynamic_axis_even_with_approved_include(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "mixed.yml").write_text(
+        "jobs:\n"
+        "  test:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os: ${{ fromJSON(vars.RUNNERS) }}\n"
+        "        include:\n"
+        "          - os: blacksmith-4vcpu-ubuntu-2404\n"
+        "            feature: x\n"
+        "    runs-on: ${{ matrix.os }}\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_ci_workflow_rejects_unbounded_or_missing_webkit_dependencies(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Install WebKit runtime libraries\n"
+            "        timeout-minutes: 10\n"
+            "        run: npx playwright install-deps webkit\n",
+            "      - name: Install WebKit runtime libraries\n        run: true\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("WebKit dependency install" in error for error in errors)
 
 
 def test_ci_workflow_rejects_missing_dashboard_reliability_smoke(tmp_path: Path) -> None:
@@ -1580,8 +1753,8 @@ def test_release_workflow_rejects_nonblocking_pyodide_probe(tmp_path: Path) -> N
     path = tmp_path / "publish.yaml"
     path.write_text(
         workflow.replace(
-            "    runs-on: ubuntu-latest\n",
-            "    runs-on: ubuntu-latest\n    continue-on-error: true\n",
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n",
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n    continue-on-error: true\n",
             1,
         ),
         encoding="utf-8",

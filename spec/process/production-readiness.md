@@ -49,15 +49,27 @@ CurateLabs/xyg is a permanently divergent product repository, not a deployment
 branch of `reflex-dev/xy`. CI therefore retains only workflows whose external
 integrations are owned or explicitly controlled by CurateLabs:
 
-- `ci.yml`, `docs.yml`, `binder.yml`, and `bazel.yml` are hard verification
-  paths. Binder builds locally with repo2docker; Bazel runs on the configured
-  Blacksmith fleet and keeps uv's cache inside the writable workspace.
+- Every Actions job runs on a pinned Blacksmith Linux, ARM, Windows, or macOS
+  runner; the canonical Linux CI image is
+  `blacksmith-4vcpu-ubuntu-2404`, and no workflow may use a GitHub-hosted
+  runner alias. `ci.yml`,
+  `docs.yml`, `binder.yml`, and `bazel.yml` are hard verification paths.
+  Binder builds locally with repo2docker; Bazel keeps uv's cache inside the
+  writable workspace.
 - `codspeed.yml` is the repository's native performance trend path and uses
-  GitHub OIDC through the CurateLabs CodSpeed project.
+  a Blacksmith execution runner plus GitHub OIDC to the CurateLabs CodSpeed
+  project; CodSpeed remains the hosted performance authority.
 - `benchmark-refresh.yml` and `ceiling-benchmark.yml` are manual evidence
-  workflows. The ceiling sweep requires the CurateLabs organization to enable
-  the billed macOS larger runner before dispatch.
+  workflows. The ceiling sweep uses the billed
+  `blacksmith-12vcpu-macos-15` Apple Silicon M4 runner (48 GB RAM).
 - `publish.yaml` is the guarded `xyg` release workflow described below.
+
+Playwright browser artifacts are cached on Blacksmith. Chromium-only install
+steps have a ten-minute bound and the three-engine install has a fifteen-minute
+bound; none invokes Playwright's coupled `--with-deps` path. Blacksmith images
+carry the Chromium and Firefox runner libraries. The three-engine job installs
+only WebKit's additional runtime libraries in a separate ten-minute-bounded
+step. Real browser launches remain the dependency proof.
 
 The inherited reflex.dev deployment workflows were removed. They built images
 for upstream AWS, Harbor, and Azure registries, changed

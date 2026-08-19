@@ -21,6 +21,7 @@ DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
 DEFAULT_BAZEL_WORKFLOW = ROOT / ".github" / "workflows" / "bazel.yml"
 DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
+DEFAULT_WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 REQUIRED_CI_JOBS = {
     "browser_conformance",
@@ -36,6 +37,13 @@ REQUIRED_CI_JOBS = {
 }
 REQUIRED_CODSPEED_JOBS = {"benchmarks"}
 REQUIRED_RELEASE_JOBS = {"wheels", "sdist", "publish", "wasm", "github-release"}
+ALLOWED_BLACKSMITH_RUNNERS = {
+    "blacksmith-4vcpu-ubuntu-2404",
+    "blacksmith-4vcpu-ubuntu-2404-arm",
+    "blacksmith-4vcpu-windows-2025",
+    "blacksmith-6vcpu-macos-15",
+    "blacksmith-12vcpu-macos-15",
+}
 
 
 def _job_blocks(text: str) -> dict[str, str]:
@@ -88,6 +96,48 @@ def _matrix_include_entries(job_text: str) -> list[dict[str, str]]:
     if current is not None:
         entries.append(current)
     return entries
+
+
+def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
+    """Return static ``strategy.matrix.os`` values and whether an axis is dynamic."""
+    lines = job_text.splitlines()
+    try:
+        start = next(i for i, line in enumerate(lines) if line == "      matrix:")
+    except StopIteration:
+        return [], False
+    matrix_lines: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.strip() and len(line) - len(line.lstrip()) <= 6:
+            break
+        matrix_lines.append(line.split("#", 1)[0])
+
+    values: list[str] = []
+    dynamic_axis = False
+    for index, line in enumerate(matrix_lines):
+        inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
+        if inline_list:
+            values.extend(
+                value.strip().strip("\"'")
+                for value in inline_list.group(1).split(",")
+                if value.strip()
+            )
+            continue
+        direct_scalar = re.fullmatch(r"\s{8}os:\s*(\S.*?)\s*", line)
+        if direct_scalar:
+            dynamic_axis = True
+            continue
+        if re.fullmatch(r"\s{8}os:\s*", line):
+            for value_line in matrix_lines[index + 1 :]:
+                value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
+                if value_match:
+                    values.append(value_match.group(1).strip("\"'"))
+                    continue
+                if value_line.strip():
+                    break
+            continue
+        for match in re.finditer(r"(?:^\s*-\s*\{\s*|^\s*-\s+|,\s*)os:\s*([^,}\]\s]+)", line):
+            values.append(match.group(1).strip("\"'"))
+    return values, dynamic_axis
 
 
 def _missing_needles(block: str, needles: tuple[str, ...]) -> list[str]:
@@ -898,6 +948,14 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "locked Reflex development environment",
         "uv sync --locked --extra reflex --group dev",
     )
+    _require_step_contains(
+        errors,
+        test_job,
+        "Install Chromium (Playwright)",
+        "bounded browser-only Playwright install without apt",
+        "timeout-minutes: 10",
+        "npx playwright install chromium",
+    )
     _require_job_contains(
         errors,
         jobs,
@@ -909,9 +967,25 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
         "~/.cache/ms-playwright",
         "playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}",
-        "npx playwright install --with-deps chromium firefox webkit",
+        "npx playwright install chromium firefox webkit",
         "node js/build.mjs",
         "node scripts/browser_conformance.mjs",
+    )
+    _require_step_contains(
+        errors,
+        jobs.get("browser_conformance", ""),
+        "Install Playwright browser engines",
+        "bounded browser-only three-engine install without apt",
+        "timeout-minutes: 15",
+        "npx playwright install chromium firefox webkit",
+    )
+    _require_step_contains(
+        errors,
+        jobs.get("browser_conformance", ""),
+        "Install WebKit runtime libraries",
+        "bounded Blacksmith-only WebKit dependency install",
+        "timeout-minutes: 10",
+        "npx playwright install-deps webkit",
     )
     _require_job_contains(
         errors,
@@ -1043,6 +1117,12 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'XYG_REQUIRE_CARGO: "1"',
         "--constraint benchmarks/requirements-ci.lock",
     )
+    benchmark_vs = jobs.get("benchmark_vs", "")
+    timeout_values, timeout_unsafe = _direct_yaml_key_values(
+        benchmark_vs, "timeout-minutes", indent=4
+    )
+    if timeout_unsafe or timeout_values != ["10"]:
+        errors.append("CI benchmark_vs job must define exactly one direct timeout-minutes: 10")
     _require_step_contains(
         errors,
         cross_library,
@@ -1525,11 +1605,75 @@ def validate_all_workflows(
     release_path: Path = DEFAULT_RELEASE_WORKFLOW,
 ) -> list[str]:
     return [
+        *validate_workflow_hosting_policy(),
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
         *validate_bazel_workflow(bazel_path),
         *validate_release_workflow(release_path),
     ]
+
+
+def validate_workflow_hosting_policy(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+) -> list[str]:
+    """Keep workflows on Blacksmith and browser installs off apt mirrors."""
+    errors: list[str] = []
+    for path in sorted((*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml"))):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"cannot read workflow {path}: {exc}")
+            continue
+        normalized_shell = re.sub(r"\\\s*\n\s*", " ", text)
+        if re.search(
+            r"playwright\s+install(?:\s+[^\n]*?)?\s+--with-deps(?:\s|$)",
+            normalized_shell,
+        ):
+            errors.append(
+                f"{path} Playwright install must not use --with-deps; "
+                "install bounded browser-specific runtime dependencies separately"
+            )
+        job_blocks = _job_blocks(text)
+        for job_name, block in job_blocks.items():
+            if "runs-on: ${{ matrix.os }}" not in block:
+                continue
+            matrix_runners, dynamic_axis = _matrix_os_values(block)
+            if dynamic_axis:
+                errors.append(
+                    f"{path} job {job_name} matrix.os must be a static list, not an expression"
+                )
+            if not matrix_runners and not dynamic_axis:
+                errors.append(
+                    f"{path} job {job_name} uses matrix.os without statically "
+                    "enumerated runner values"
+                )
+            for runner in matrix_runners:
+                if runner not in ALLOWED_BLACKSMITH_RUNNERS:
+                    errors.append(
+                        f"{path} job {job_name} matrix runner must use an approved "
+                        f"Blacksmith label, got {runner}"
+                    )
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            code = line.split("#", 1)[0]
+            stripped = code.strip()
+            if re.search(
+                r"(?:^|[\s,{\[\"'])"
+                r"(?:ubuntu-latest|ubuntu-24\.04-arm|windows-latest|macos-latest|macos-\d+(?:-large)?)"
+                r"(?=$|[\s,}\]\"'])",
+                code,
+            ):
+                errors.append(
+                    f"{path}:{lineno} workflow contains a GitHub-hosted runner alias; "
+                    "use an explicit Blacksmith label"
+                )
+            if stripped.startswith("runs-on:"):
+                runner = stripped.partition(":")[2].strip()
+                if runner != "${{ matrix.os }}" and runner not in ALLOWED_BLACKSMITH_RUNNERS:
+                    errors.append(
+                        f"{path}:{lineno} jobs must use approved Blacksmith runners "
+                        f"(CodSpeed remains the hosted performance authority), got {runner}"
+                    )
+    return errors
 
 
 def main(argv: Optional[list[str]] = None) -> int:

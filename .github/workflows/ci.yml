@@ -23,7 +23,7 @@ concurrency:
 jobs:
   matplotlib_reference:
     name: Matplotlib 3.11 reference compatibility
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -59,7 +59,7 @@ jobs:
 
   test:
     name: Test (Rust + Python + JS)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,6 +73,11 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install JS build toolchain
         run: npm ci
@@ -127,9 +132,13 @@ jobs:
       # process crashes headless — it fails the render probe for environment
       # reasons, not code. Playwright ships an unconfined build.
       - name: Install Chromium (Playwright)
+        timeout-minutes: 10
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          # Blacksmith's Ubuntu image carries the supported runner-image browser libraries.
+          # Do not invoke Playwright's apt-based --with-deps path: a stalled
+          # Azure Ubuntu mirror can otherwise hang this job indefinitely.
+          npx playwright install chromium
       - name: Headless render smoke (stdlib + Chromium)
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
@@ -257,7 +266,7 @@ jobs:
 
   browser_conformance:
     name: Accessibility + cross-browser conformance
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -273,9 +282,13 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright browser engines
+        timeout-minutes: 15
         run: |
           npm ci
-          npx playwright install --with-deps chromium firefox webkit
+          npx playwright install chromium firefox webkit
+      - name: Install WebKit runtime libraries
+        timeout-minutes: 10
+        run: npx playwright install-deps webkit
       - name: Build render client
         run: node js/build.mjs
       - name: Run accessibility and cross-browser conformance
@@ -289,7 +302,7 @@ jobs:
 
   python_floor:
     name: Python 3.11 floor
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -341,7 +354,7 @@ jobs:
   # parallel. The report job below merges the partial results.
   benchmark_vs:
     name: Cross-library benchmark (${{ matrix.name }})
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     continue-on-error: true
     strategy:
@@ -411,6 +424,12 @@ jobs:
         if: matrix.browser || matrix.build_js
         with:
           node-version: "22"
+      - name: Cache Playwright Chromium
+        if: matrix.browser
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Install JS build toolchain
         if: matrix.build_js
         run: npm ci
@@ -442,9 +461,10 @@ jobs:
           PY
       - name: Install Chromium (Playwright)
         if: matrix.browser
+        timeout-minutes: 10
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Run cross-library benchmark group
         run: |
           CHROMIUM_ARGS=()
@@ -471,7 +491,7 @@ jobs:
   # Other benchmark suites run concurrently with the cross-library matrix.
   benchmark_methodology:
     name: Benchmark methodology suites
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -486,6 +506,11 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Install JS build toolchain
         run: npm ci
       - name: Build core + JS client
@@ -511,9 +536,10 @@ jobs:
           PY
       # Playwright Chromium for the time-to-first-render (browser paint) pass.
       - name: Install Chromium (Playwright)
+        timeout-minutes: 10
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Line decimation vs plotly-resampler (methodology line_10M)
         run: |
           CHROME=$(node -e "console.log(require('playwright').chromium.executablePath())")
@@ -570,7 +596,7 @@ jobs:
 
   benchmark:
     name: Merge and verify benchmark reports
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [benchmark_vs, benchmark_methodology]
     if: always()
     continue-on-error: true
@@ -628,7 +654,7 @@ jobs:
 
   sdist:
     name: Source distribution
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -716,7 +742,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        os:
+          - blacksmith-4vcpu-ubuntu-2404
+          - blacksmith-4vcpu-ubuntu-2404-arm
+          - blacksmith-4vcpu-windows-2025
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -804,7 +833,7 @@ jobs:
   # fallback and never an opaque crash.
   install_without_rust:
     name: Install without Rust (clear error)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
