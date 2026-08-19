@@ -676,7 +676,7 @@ def _require_workflow_contains(
 def _require_unshallow_checkouts(errors: list[str], text: str, workflow_label: str) -> None:
     """Every checkout must fetch full history, tags included.
 
-    The distribution version is derived from the latest `v*` tag
+    The distribution version is derived from the latest `xyg-v*` tag
     (uv-dynamic-versioning in pyproject), and `actions/checkout` defaults to a
     depth-1 clone carrying no tags at all. Under that default the version
     resolves to the `0.0.0` fallback *silently* — a build succeeds and ships the
@@ -1275,7 +1275,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "release",
         "push",
         "tags",
-        '["v*"]',
+        '["xyg-v*"]',
     )
     if _workflow_trigger_block(text, "workflow_dispatch") is None:
         errors.append("release workflow missing workflow_dispatch trigger")

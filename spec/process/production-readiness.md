@@ -320,9 +320,10 @@ Node, Chrome, `ruff`, `ty`, or `pytest` produce direct install/skip guidance.
 ## Release Checklist
 
 The tag *is* the version. `pyproject.toml` declares `dynamic = ["version"]` and
-uv-dynamic-versioning derives the distribution version from the latest `v*` git
-tag, so cutting a release is `git tag vX.Y.Z && git push --tags` — there is no
-number to bump in a file, and no file that can drift from the tag. Two
+uv-dynamic-versioning derives the distribution version only from the latest
+`xyg-v*` git tag. Cutting a release is `git tag xyg-vX.Y.Z && git push origin
+xyg-vX.Y.Z` — there is no number to bump in a file, and no file that can drift
+from the tag. Two
 consequences worth knowing:
 
 - Builds between tags are versioned `<next>.devN+<commit>`, which PyPI rejects
@@ -332,7 +333,7 @@ consequences worth knowing:
   `make check-ci` enforces this.
 
 Pre-releases are tagged the same way with a canonical PEP 440 suffix —
-`vX.Y.ZaN` / `bN` / `rcN` (e.g. `v1.0.0rc1`) — and publish through the same
+`xyg-vX.Y.ZaN` / `bN` / `rcN` (e.g. `xyg-v1.0.0rc1`) — and publish through the same
 pipeline; pip ignores them unless a pre-release is requested explicitly. Only
 the canonical spelling passes the release gate: `-alpha1`-style tags would be
 normalized by the version derivation and could never match their own built
@@ -340,7 +341,7 @@ artifacts. A pre-release needs its own dated changelog entry, exactly like a
 final release.
 
 The repository has one release line: the `xyg` distribution, including its
-bundled `reflex_xy` integration, ships from `vX.Y.Z` tags through
+bundled `reflex_xy` integration, ships from `xyg-vX.Y.Z` tags through
 `publish.yaml`. The `xyg[reflex]` extra is dependency metadata in those same
 artifacts, not another package or release. Python import remains `import xy`
 until the staged `python/xyg/` cutover in [xyg-naming.md](../design/xyg-naming.md).
@@ -371,35 +372,26 @@ publisher) publishes only from tagged releases, with layered guards:
 `scripts/verify_ci_workflow.py` (`make check-ci`) pins these guards, and
 `tests/test_verify_ci_workflow.py` covers their removal.
 
-**Versioning decision.** The fork keeps dunamai's default `v*` tag pattern and
-*continues the inherited upstream version line*: the newest inherited library
-tag is `v0.0.6a2`, so untagged builds currently stamp `0.0.6.devN+<commit>`
-(dunamai bumps the inherited pre-release toward its `0.0.6` final).
-Inherited upstream tags (`v0.0.1`–`v0.0.6a2`, the docs CalVer tags, and
-`reflex-xy-v0.0.1`/`v0.0.2`) were **not** pruned from `origin` — tag deletion
-is destructive and needs an owner decision. Re-baselining the fork's own
-version line (first fork tag, or a fork-specific
-`tool.uv-dynamic-versioning.pattern`) remains an owner decision before the
-first `xyg` upload.
+**Versioning decision.** The fork has its own `xyg-v*` tag line. Dunamai's
+default `v` pattern is narrowed with `pattern-prefix = "xyg-"`; the release and
+docs workflows trigger on the same prefix, and the release gate rejects bare
+`vX.Y.Z`. Inherited upstream tags (`v0.0.1`–`v0.0.6a2`), docs CalVer tags, and
+`reflex-xy-v0.0.1`/`v0.0.2` remain on `origin` as historical provenance, but
+cannot determine an XYG version or trigger an XYG release. No destructive tag
+pruning is required. The first production tag starts the fork line at
+`xyg-v0.1.0`; set `XYG_ALLOW_PYPI_PUBLISH=true` only when that release is ready
+to claim the pending PyPI project.
 
-**Remaining owner decisions** (tracked in issue #13):
-
-- *Tag pruning.* Whether the inherited upstream tags stay on `origin`
-  or are deleted.
-- *Re-baseline tag.* The fork's first own version tag (`v0.1.0` or similar)
-  before claiming the pending PyPI project. Set `XYG_ALLOW_PYPI_PUBLISH=true`
-  only when ready to upload; do not fire a production publish from an
-  untagged CI run.
-- *npm registry publish* of `@curatelabs/xyg` and `@curatelabs/xyg-node`
-  (packages remain `"private": true` until that ships). Never publish
-  `@xy/node`.
+npm registry publication of `@curatelabs/xyg` and `@curatelabs/xyg-node`
+remains tracked by the packaging milestone; packages remain `"private": true`
+until that ships. Never publish `@xy/node`.
 
 Python import `xy` / `python/xy/` is still the in-tree namespace; the
 distribution name and `importlib.metadata` lookups are `xyg`. The clean-break
 `import xyg` / `python/xyg/` / `reflex_xyg` cutover stays staged after this
 crate split per [xyg-naming.md](../design/xyg-naming.md).
 
-Before tagging a release:
+Before tagging an `xyg-v*` release:
 
 - Add a dated `## [X.Y.Z] — YYYY-MM-DD` heading to `CHANGELOG.md` for the
   version being tagged. This is the one thing the tag cannot vouch for, and the

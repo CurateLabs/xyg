@@ -1341,6 +1341,16 @@ def test_release_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_release_workflow() == []
 
 
+def test_release_workflow_rejects_inherited_upstream_tag_trigger(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    path.write_text(workflow.replace('["xyg-v*"]', '["v*"]', 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("xyg-v*" in error for error in errors)
+
+
 def test_release_workflow_rejects_missing_native_wheel_verifier(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"

@@ -32,7 +32,10 @@ in the README).
   publisher binding), repository guard is `CurateLabs/xyg`, artifacts are
   named `xyg`, and the upload still requires `XYG_ALLOW_PYPI_PUBLISH=true`
   plus a non-dry-run tag/dispatch. The first successful upload claims pending
-  PyPI project `xyg`. `pyproject.toml` project URLs point at `CurateLabs/xyg`.
+  PyPI project `xyg`. The dedicated `xyg-v*` tag line now drives versions and
+  releases, so inherited upstream `v*` tags remain as provenance but cannot
+  influence a build or trigger publication. `pyproject.toml` project URLs
+  point at `CurateLabs/xyg`.
 
 ## [0.0.5] - 2026-07-31
 
