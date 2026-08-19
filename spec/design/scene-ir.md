@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 2 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 3 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -125,19 +125,22 @@ coordinates are zero and the consumer emits no primitive. Every record's
 invalid.
 
 - **Scatter (kind 0):** `x0,y0` is the mapped center; `x1,y1` is reserved and
-  always zero. `symbol` is the stable built-in symbol code and `diameter` is the
+  always zero. The encoder neither finite-checks nor scale-maps the reserved
+  input slots, so a log-mask policy applies only to `x0,y0`. `symbol` is the stable built-in symbol code and `diameter` is the
   authored outer diameter interpreted by the canonical marker policy above.
   Each record is an independent marker; stable ID supplies animation/picking
   identity, not grouping.
 - **Polyline vertex (kind 1):** `x0,y0` is one mapped vertex; `x1,y1`, symbol,
-  and diameter are zero. Consecutive visible kind-1 records with the same stable
+  and diameter are zero. Reserved `x1,y1` inputs are neither finite-checked nor
+  scale-mapped. Consecutive visible kind-1 records with the same stable
   ID form one polyline in record order. A stable-ID change, a non-polyline
-  record, or an invisible vertex terminates the run; a later repeated stable ID
+  record, or an invisible vertex (including a log-masked `x0` or `y0`) terminates the run; a later repeated stable ID
   starts a new run and never reconnects across the break. A one-vertex run is
   valid but draws no segment.
 - **Rectangle (kind 2):** coordinates are normalized screen-space
   `left,top,right,bottom` in `x0,y0,x1,y1`, independent of data order or reversed
-  axes. Symbol and diameter are zero. Each record is one closed axis-aligned
+  axes. All four input coordinates are finite-checked and scale-mapped; a
+  log-masked corner hides the whole rectangle. Symbol and diameter are zero. Each record is one closed axis-aligned
   rectangle; stable ID is independent animation/picking identity.
 
 Decoders must require the exact header/record widths for the declared version,

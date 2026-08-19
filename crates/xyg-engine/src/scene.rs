@@ -445,16 +445,15 @@ impl<'a> SceneBatch<'a> {
                 return Err(SceneError::Length);
             }
         }
-        if x0
+        if kinds.iter().enumerate().any(|(index, kind)| {
+            !x0[index].is_finite()
+                || !y0[index].is_finite()
+                || (SceneRecordKind::from_code(*kind) == Ok(SceneRecordKind::Rect)
+                    && (!x1[index].is_finite() || !y1[index].is_finite()))
+        }) || diameter
             .iter()
-            .chain(y0)
-            .chain(x1)
-            .chain(y1)
-            .any(|value| !value.is_finite())
-            || diameter
-                .iter()
-                .chain(stroke_width)
-                .any(|value| !value.is_finite() || *value < 0.0)
+            .chain(stroke_width)
+            .any(|value| !value.is_finite() || *value < 0.0)
         {
             return Err(SceneError::NonFinite);
         }
@@ -526,12 +525,20 @@ impl<'a> SceneBatch<'a> {
 
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
-            let mapped = [
-                self.x_scale.pixel(self.x0[index]),
-                self.y_scale.pixel(self.y0[index]),
-                self.x_scale.pixel(self.x1[index]),
-                self.y_scale.pixel(self.y1[index]),
-            ];
+            let mapped = match kind {
+                SceneRecordKind::Scatter | SceneRecordKind::Polyline => [
+                    self.x_scale.pixel(self.x0[index]),
+                    self.y_scale.pixel(self.y0[index]),
+                    0.0,
+                    0.0,
+                ],
+                SceneRecordKind::Rect => [
+                    self.x_scale.pixel(self.x0[index]),
+                    self.y_scale.pixel(self.y0[index]),
+                    self.x_scale.pixel(self.x1[index]),
+                    self.y_scale.pixel(self.y1[index]),
+                ],
+            };
             let visible = mapped.iter().all(|value| value.is_finite())
                 && match kind {
                     SceneRecordKind::Polyline => true,
@@ -1068,6 +1075,49 @@ mod tests {
         assert_eq!(line.stroke_width, 1.0);
         assert_eq!(line.extent_x, 0.5);
         assert_eq!(line.extent_y, 0.5);
+    }
+
+    #[test]
+    fn log_mask_maps_only_coordinates_used_by_each_record_kind() {
+        let layout = PlotLayout::new(100.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let scale = AxisScale::new(ScaleKind::Log, 1.0, 10.0, 10.0, 90.0, 1.0, true).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            1,
+            2,
+            scale,
+            scale,
+            &[0, 1, 1, 1, 2, 2],
+            &[1, 20, 20, 20, 30, 31],
+            &[0; 6],
+            &[0; 4],
+            &[0; 4],
+            &[0.0],
+            &[6.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            &[0; 6],
+            &[2.0, 2.0, 0.0, 4.0, 2.0, 2.0],
+            &[2.0; 6],
+            &[0.0, 0.0, 0.0, 0.0, 8.0, 0.0],
+            &[0.0, 0.0, 0.0, 0.0, 8.0, 8.0],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        let records = SCENE_BATCH_HEADER_BYTES + SCENE_STYLE_RECORD_BYTES;
+        let flags: Vec<u8> = (0..6)
+            .map(|index| encoded[records + index * SCENE_BATCH_RECORD_BYTES + 1])
+            .collect();
+        assert_eq!(flags, vec![1, 1, 0, 1, 1, 0]);
+        // Reserved zeros never enter log-mask mapping and are always emitted
+        // as zero. The masked middle vertex breaks the stable-id 20 run.
+        for index in [0, 1, 3] {
+            let record = records + index * SCENE_BATCH_RECORD_BYTES;
+            assert_eq!(&encoded[record + 32..record + 48], &[0; 16]);
+        }
+        assert_eq!(
+            &encoded[records + 2 * SCENE_BATCH_RECORD_BYTES + 16
+                ..records + 2 * SCENE_BATCH_RECORD_BYTES + 48],
+            &[0; 32]
+        );
     }
 
     #[test]

@@ -5529,6 +5529,62 @@ mod tests {
         );
         let invalid_kind = [9u8];
         assert_eq!(call(0, 0, 1, invalid_kind.as_ptr()), usize::MAX);
+
+        let log_kinds = [0u8, 1, 1, 2];
+        let log_ids = [1u64, 20, 20, 30];
+        let log_style_refs = [0u32; 4];
+        let log_x0 = [2.0f64, 2.0, 0.0, 2.0];
+        let log_y0 = [2.0f64; 4];
+        let reserved_or_corner = [0.0f64; 4];
+        let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
+        let log_symbols = [0u8; 4];
+        let mut log_output = [0u8; 400];
+        assert_eq!(
+            unsafe {
+                xyg_scene_batch_encode(
+                    100.0,
+                    100.0,
+                    10.0,
+                    10.0,
+                    10.0,
+                    10.0,
+                    1,
+                    1,
+                    1.0,
+                    10.0,
+                    1.0,
+                    1,
+                    2,
+                    1,
+                    1.0,
+                    10.0,
+                    1.0,
+                    1,
+                    log_kinds.as_ptr(),
+                    log_ids.as_ptr(),
+                    log_style_refs.as_ptr(),
+                    rgba.as_ptr(),
+                    rgba.as_ptr(),
+                    widths.as_ptr(),
+                    1,
+                    log_diameter.as_ptr(),
+                    log_symbols.as_ptr(),
+                    log_x0.as_ptr(),
+                    log_y0.as_ptr(),
+                    reserved_or_corner.as_ptr(),
+                    reserved_or_corner.as_ptr(),
+                    4,
+                    log_output.as_mut_ptr(),
+                    log_output.len(),
+                )
+            },
+            log_output.len()
+        );
+        let records = scene::SCENE_BATCH_HEADER_BYTES + scene::SCENE_STYLE_RECORD_BYTES;
+        let flags: Vec<u8> = (0..4)
+            .map(|index| log_output[records + index * scene::SCENE_BATCH_RECORD_BYTES + 1])
+            .collect();
+        assert_eq!(flags, vec![1, 1, 0, 0]);
     }
 
     #[test]

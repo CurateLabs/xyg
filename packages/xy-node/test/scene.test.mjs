@@ -45,6 +45,23 @@ test("Node Scene v3 rejects malformed batches", () => {
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
 });
 
+test("Node Scene v3 log mask ignores reserved coordinates and breaks line runs", () => {
+  const encoded = sceneBatchEncode({
+    viewport: [100, 100], margins: [10, 10, 10, 10],
+    xAxis: { id: 1, kind: "log", domain: [1, 10], nonpositive: "mask" },
+    yAxis: { id: 2, kind: "log", domain: [1, 10], nonpositive: "mask" },
+    kinds: [0, 1, 1, 1, 2, 2], stableIds: [1, 20, 20, 20, 30, 31], styleRefs: [0, 0, 0, 0, 0, 0],
+    styles: [{ fillRgba: [0, 0, 0, 255], strokeRgba: [0, 0, 0, 255], strokeWidth: 0 }],
+    diameter: [6, 0, 0, 0, 0, 0], symbols: [0, 0, 0, 0, 0, 0],
+    x0: [2, 2, 0, 4, 2, 2], y0: [2, 2, 2, 2, 2, 2],
+    x1: [0, 0, 0, 0, 8, 0], y1: [0, 0, 0, 0, 8, 8],
+  });
+  const records = 176;
+  assert.deepEqual(Array.from({ length: 6 }, (_, index) => encoded[records + index * 56 + 1]), [1, 1, 0, 1, 1, 0]);
+  assert.deepEqual(Array.from(encoded.slice(records + 32, records + 48)), Array(16).fill(0));
+  assert.deepEqual(Array.from(encoded.slice(records + 88, records + 104)), Array(16).fill(0));
+});
+
 test("Node consumes canonical linear, log, and symlog scale records", () => {
   assert.deepEqual(Array.from(scaleMap({ values: [0, 5, 10], domain: [0, 10], range: [20, 120] })), [20, 70, 120]);
   assert.deepEqual(Array.from(scaleMap({ values: [0.1, 1, 100], kind: "log", domain: [0.1, 100], range: [0, 300] })), [0, 100, 300]);

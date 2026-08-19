@@ -86,6 +86,31 @@ def test_python_scene_v3_rejects_malformed_batches() -> None:
         _native.scene_batch_encode(**(options | {"margins": (60.0, 40.0, 10.0, 10.0)}))
 
 
+def test_python_scene_v3_log_mask_ignores_reserved_coordinates_and_breaks_lines() -> None:
+    encoded = _native.scene_batch_encode(
+        viewport=(100.0, 100.0),
+        margins=(10.0, 10.0, 10.0, 10.0),
+        x_axis=(1, 1, 1.0, 10.0, 1.0, True),
+        y_axis=(2, 1, 1.0, 10.0, 1.0, True),
+        kinds=[0, 1, 1, 1, 2, 2],
+        stable_ids=[1, 20, 20, 20, 30, 31],
+        style_refs=[0] * 6,
+        fill_rgba=[0, 0, 0, 255],
+        stroke_rgba=[0, 0, 0, 255],
+        stroke_width=[0.0],
+        diameter=[6.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        symbols=[0] * 6,
+        x0=[2.0, 2.0, 0.0, 4.0, 2.0, 2.0],
+        y0=[2.0] * 6,
+        x1=[0.0, 0.0, 0.0, 0.0, 8.0, 0.0],
+        y1=[0.0, 0.0, 0.0, 0.0, 8.0, 8.0],
+    )
+    records = 176
+    assert [encoded[records + index * 56 + 1] for index in range(6)] == [1, 1, 0, 1, 1, 0]
+    assert encoded[records + 32 : records + 48] == bytes(16)
+    assert encoded[records + 88 : records + 104] == bytes(16)
+
+
 def test_linear_and_log_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
     calls: list[tuple[int, float, float, int]] = []
     original = _native.scene_axis_ticks
