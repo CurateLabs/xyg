@@ -91,8 +91,12 @@ expected_abi_from_source() {
   local root="${1}"
   local generated_py="${root}/python/xy/_abi_generated.py"
   if [[ -f "${generated_py}" ]]; then
-    sed -n 's/^ABI_VERSION = //p' "${generated_py}" | head -n 1
-    return 0
+    local generated_abi
+    generated_abi="$(sed -n 's/^ABI_VERSION = \([0-9]*\)$/\1/p' "${generated_py}" | head -n 1)"
+    if [[ -n "${generated_abi}" ]]; then
+      printf '%s\n' "${generated_abi}"
+      return 0
+    fi
   fi
   local lib_rs="${root}/crates/xyg-core/src/lib.rs"
   if [[ -f "${lib_rs}" ]]; then

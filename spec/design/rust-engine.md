@@ -432,10 +432,14 @@ ctypes/Koffi prototypes with deterministic generated artifacts:
   ergonomic wrappers, but contain no function signatures.
 - `scripts/check_abi_parity.py` regenerates all four artifacts byte-for-byte,
   validates both complete host symbol sets and the focused stdlib smoke, and
-  rejects signature-hash changes without an `ABI_VERSION` bump.
+  rejects signature-hash changes without an `ABI_VERSION` bump. The drift
+  comparison scans all available manifest history rather than a bounded
+  revision window; missing generated consumers fail with the regeneration
+  command instead of an incidental file-read traceback.
 - Run `python3 scripts/gen_abi_manifest.py --write` for every ABI change. The
   generated files are never edited directly; staleness and version skew fail
-  in tests and CI before either host can load another symbol.
+  in tests and CI before either host can load another symbol. CI structurally
+  verifies that this freshness command executes in its named hard-gate step.
 
 ## 4. What Python keeps forever
 

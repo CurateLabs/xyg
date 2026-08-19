@@ -882,6 +882,13 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         test_job,
+        "Generated ABI artifacts (stdlib only)",
+        "ABI artifact freshness check",
+        "python3 scripts/gen_abi_manifest.py --check",
+    )
+    _require_step_runs_exactly(
+        errors,
+        test_job,
         "Install package + dev deps",
         "locked Reflex development environment",
         "uv sync --locked --extra reflex --group dev",

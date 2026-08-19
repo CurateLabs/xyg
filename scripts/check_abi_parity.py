@@ -12,6 +12,7 @@ import argparse
 import json
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Optional
 
@@ -47,6 +48,39 @@ except ModuleNotFoundError:  # imported by tests from the repository root
     )
 
 
+def iter_prior_abi_contracts(root: Path) -> Iterator[dict[str, object]]:
+    """Yield every readable historical ABI contract, newest first."""
+    history = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "log",
+            "--format=%H",
+            "--",
+            "spec/abi/xyg-abi.json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    for revision in history.stdout.splitlines() if history.returncode == 0 else []:
+        previous = subprocess.run(
+            ["git", "-C", str(root), "show", f"{revision}:spec/abi/xyg-abi.json"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if previous.returncode:
+            continue
+        try:
+            contract = json.loads(previous.stdout)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(contract, dict):
+            yield contract
+
+
 def check_abi_parity(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     rust_path = root / CORE_LIB.relative_to(ROOT)
@@ -72,6 +106,11 @@ def check_abi_parity(root: Path = ROOT) -> list[str]:
                 "spec/abi/xyg-abi.json is stale; run `python3 scripts/gen_abi_manifest.py --write`"
             )
 
+    if not smoke_path.exists():
+        errors.append("scripts/abi_smoke.py is missing; restore the stdlib ABI smoke gate")
+    if not generated_py.exists() or not generated_js.exists() or not smoke_path.exists():
+        return errors
+
     rust_names = {item["name"]: item for item in generated["symbols"]}
     rust_set = set(rust_names)
     rust_version = generated["abi_version"]
@@ -79,35 +118,7 @@ def check_abi_parity(root: Path = ROOT) -> list[str]:
     # A signature change is a versioned product event. Compare the working
     # contract with the nearest prior typed contract in history so a multi-
     # commit branch cannot conceal a missing ABI_VERSION bump.
-    history = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(root),
-            "log",
-            "--format=%H",
-            "-n",
-            "50",
-            "--",
-            "spec/abi/xyg-abi.json",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    for revision in history.stdout.splitlines() if history.returncode == 0 else []:
-        previous = subprocess.run(
-            ["git", "-C", str(root), "show", f"{revision}:spec/abi/xyg-abi.json"],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if previous.returncode:
-            continue
-        try:
-            old = json.loads(previous.stdout)
-        except json.JSONDecodeError:
-            continue
+    for old in iter_prior_abi_contracts(root):
         old_hash = old.get("signature_sha256")
         if old_hash and old_hash != generated["signature_sha256"]:
             if old.get("abi_version") == rust_version:

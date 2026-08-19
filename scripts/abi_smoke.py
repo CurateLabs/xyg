@@ -24,7 +24,13 @@ ROOT = Path(__file__).resolve().parent.parent
 def _expected_abi_version() -> int:
     """Read ABI_VERSION from the generated ctypes declarations, stdlib-only."""
     path = ROOT / "python" / "xy" / "_abi_generated.py"
-    source = path.read_text(encoding="utf-8")
+    try:
+        source = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise SystemExit(
+            f"{path.relative_to(ROOT)} is missing; run "
+            "`python3 scripts/gen_abi_manifest.py --write`"
+        ) from None
     for line in source.splitlines():
         if line.startswith("ABI_VERSION = "):
             return int(line.split("=", 1)[1].strip())
