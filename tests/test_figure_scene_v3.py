@@ -24,6 +24,19 @@ def representative_figure() -> Figure:
     return figure
 
 
+def default_style_figure(kind: str) -> Figure:
+    figure = Figure(width=200, height=120)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    if kind == "scatter":
+        figure.scatter([0.25], [0.5])
+        figure.traces[-1].id = 10
+    else:
+        figure.line([0.0, 1.0], [0.0, 1.0])
+        figure.traces[-1].id = 11
+    return figure
+
+
 def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     scene = representative_figure().to_scene()
     assert hashlib.sha256(scene).hexdigest() == FIXTURE["expected_sha256"]
@@ -33,6 +46,16 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     assert svg.count("<polyline ") == 1
     assert svg.count("<rect ") == 3  # plot clip plus two bars
     assert 'clip-path="url(#xy-scene-plot)"' in svg
+
+
+def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
+    scatter = default_style_figure("scatter").to_scene()
+    line = default_style_figure("line").to_scene()
+    assert hashlib.sha256(scatter).hexdigest() == FIXTURE["default_scatter_sha256"]
+    assert hashlib.sha256(line).hexdigest() == FIXTURE["default_line_sha256"]
+    assert np.frombuffer(memoryview(scatter)[168:176], dtype="<f8")[0] == 0.0
+    assert np.frombuffer(memoryview(scatter)[224:232], dtype="<f8")[0] == 4.0
+    assert np.frombuffer(memoryview(line)[168:176], dtype="<f8")[0] == 1.5
 
 
 def test_python_explicit_scene_raster_is_nonblank() -> None:

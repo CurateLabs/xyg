@@ -267,7 +267,7 @@ def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
             np.array([[37, 99, 235, 255], [239, 68, 68, 128]], dtype=np.uint8),
             np.array([[0, 0, 0, 255], [17, 24, 39, 64]], dtype=np.uint8),
             [2.0, 0.0],
-            [0, 14],
+            [0, 15],
         )
         == EXPECTED_SCATTER
     )

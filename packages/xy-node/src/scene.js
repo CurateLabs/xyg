@@ -238,7 +238,7 @@ export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
     const fillCss = style.fill ?? style.color ?? "#3987e5";
     const strokeCss = style.stroke ?? (trace.kind === "line" ? style.color ?? "#3987e5" : "#00000000");
-    const width = Number(style.stroke_width ?? style.line_width ?? (trace.kind === "line" ? 2 : 0));
+    const width = Number(style.stroke_width ?? style.width ?? style.line_width ?? (trace.kind === "line" ? 1.5 : 0));
     styles.push({ fillRgba: rgba8(fillCss, opacity, "fill"), strokeRgba: rgba8(strokeCss, opacity, "stroke"), strokeWidth: width });
     const styleRef = styles.length - 1;
     const id = trace.id;
@@ -250,7 +250,7 @@ export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
     for (let index = 0; index < count; index += 1) {
       kinds.push(trace.kind === "scatter" ? 0 : trace.kind === "line" ? 1 : 2);
       stableIds.push(id); styleRefs.push(styleRef);
-      diameter.push(trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 6) : 0);
+      diameter.push(trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 4) : 0);
       symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
       if (trace.kind === "bar") { x0.push(trace.x0[index]); y0.push(trace.y0[index]); x1.push(trace.x1[index]); y1.push(trace.y1[index]); }
       else { x0.push(trace.x[index]); y0.push(trace.y[index]); x1.push(0); y1.push(0); }

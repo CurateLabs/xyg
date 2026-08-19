@@ -81,6 +81,7 @@ impl AxisScale {
         Ok(scale)
     }
 
+    #[inline(always)]
     pub fn coord(self, value: f64) -> f64 {
         if value.is_nan() {
             return f64::NAN;
@@ -102,6 +103,7 @@ impl AxisScale {
         }
     }
 
+    #[inline(always)]
     pub fn pixel(self, value: f64) -> f64 {
         self.px0 + (self.coord(value) - self.coord_lo) / self.coord_span * self.px_delta
     }
@@ -203,14 +205,14 @@ pub enum ScatterSymbol {
     TriangleDown = 8,
     TriangleLeft = 9,
     TriangleRight = 10,
-    Point = 11,
-    Pixel = 12,
-    ThinDiamond = 13,
-    PlusLine = 14,
-    XLine = 15,
-    HorizontalLine = 16,
-    VerticalLine = 17,
-    X = 18,
+    X = 11,
+    Point = 12,
+    Pixel = 13,
+    ThinDiamond = 14,
+    PlusLine = 15,
+    XLine = 16,
+    HorizontalLine = 17,
+    VerticalLine = 18,
 }
 
 impl ScatterSymbol {
@@ -226,14 +228,14 @@ impl ScatterSymbol {
             8 => Self::TriangleDown,
             9 => Self::TriangleLeft,
             10 => Self::TriangleRight,
-            11 => Self::Point,
-            12 => Self::Pixel,
-            13 => Self::ThinDiamond,
-            14 => Self::PlusLine,
-            15 => Self::XLine,
-            16 => Self::HorizontalLine,
-            17 => Self::VerticalLine,
-            18 => Self::X,
+            11 => Self::X,
+            12 => Self::Point,
+            13 => Self::Pixel,
+            14 => Self::ThinDiamond,
+            15 => Self::PlusLine,
+            16 => Self::XLine,
+            17 => Self::HorizontalLine,
+            18 => Self::VerticalLine,
             _ => Self::Circle,
         }
     }
@@ -258,6 +260,7 @@ impl MarkerGeometry {
     /// Canonical built-in marker geometry shared by Scene v1 SVG and v3
     /// clipping. `diameter` is the authored outer size. Line-only symbols get
     /// the historical implicit 1px stroke when the authored stroke is zero.
+    #[inline(always)]
     fn new(symbol: ScatterSymbol, diameter: f64, authored_stroke: f64) -> Self {
         let stroke_width = if symbol.is_line() && authored_stroke <= 0.0 {
             1.0
@@ -438,7 +441,8 @@ impl<'a> SceneBatch<'a> {
         for (index, kind) in kinds.iter().enumerate() {
             let kind = SceneRecordKind::from_code(*kind)?;
             if style_refs[index] as usize >= style_count
-                || (kind == SceneRecordKind::Scatter && symbols[index] > ScatterSymbol::X as u8)
+                || (kind == SceneRecordKind::Scatter
+                    && symbols[index] > ScatterSymbol::VerticalLine as u8)
                 || (kind != SceneRecordKind::Scatter
                     && (diameter[index] != 0.0 || symbols[index] != 0))
             {
@@ -725,7 +729,7 @@ impl SceneDocument {
             };
             let symbol = bytes[offset + 2];
             if bytes[offset + 3] != 0
-                || (kind == SceneRecordKind::Scatter && symbol > ScatterSymbol::X as u8)
+                || (kind == SceneRecordKind::Scatter && symbol > ScatterSymbol::VerticalLine as u8)
                 || (kind != SceneRecordKind::Scatter && symbol != 0)
             {
                 return Err(SceneError::Length);
@@ -2004,6 +2008,60 @@ mod tests {
             "<path d=\"M 10 18 L 11.9 19.38 L 11.18 21.62 L 8.82 21.62 L 8.1 19.38 Z\"",
             "<path d=\"M 10 18 L 10.53 19.27 L 11.9 19.38 L 10.86 20.28 L 11.18 21.62 L 10 20.9 L 8.82 21.62 L 9.14 20.28 L 8.1 19.38 L 9.47 19.27 Z\"",
         ]));
+    }
+
+    #[test]
+    fn all_nineteen_symbol_codes_match_svg_and_raster_contract() {
+        let mut svg_shapes = Vec::new();
+        for code in 0..=18 {
+            let symbol = ScatterSymbol::from_code(code);
+            assert_eq!(symbol as u8, code);
+            let mut shape = String::new();
+            push_symbol(&mut shape, symbol, 10.0, 20.0, 2.0);
+            svg_shapes.push(shape);
+        }
+        assert!(svg_shapes[11].contains(" L ")); // x
+        assert!(svg_shapes[12].starts_with("<circle")); // point
+        assert!(svg_shapes[13].starts_with("<rect")); // pixel
+        assert!(svg_shapes[14].contains(" Z\"")); // thin diamond
+        assert!(svg_shapes[15].contains(" H ") && svg_shapes[15].contains(" V "));
+        assert!(svg_shapes[16].matches(" L ").count() == 2);
+        assert!(svg_shapes[17].contains(" H "));
+        assert!(svg_shapes[18].contains(" V "));
+
+        let codes: Vec<u8> = (0..=18).collect();
+        let x: Vec<f64> = (0..=18).map(f64::from).collect();
+        let encoded = SceneBatch::new(
+            PlotLayout::new(220.0, 80.0, 10.0, 10.0, 10.0, 10.0).unwrap(),
+            1,
+            2,
+            AxisScale::new(ScaleKind::Linear, 0.0, 18.0, 10.0, 210.0, 1.0, false).unwrap(),
+            AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 70.0, 10.0, 1.0, false).unwrap(),
+            &[0; 19],
+            &(0..19).collect::<Vec<_>>(),
+            &[0; 19],
+            &[57, 135, 229, 255],
+            &[0, 0, 0, 255],
+            &[1.0],
+            &[8.0; 19],
+            &codes,
+            &x,
+            &[0.5; 19],
+            &[0.0; 19],
+            &[0.0; 19],
+        )
+        .unwrap()
+        .encode();
+        let commands = SceneDocument::decode(&encoded)
+            .unwrap()
+            .to_raster_commands(1.0)
+            .unwrap();
+        let mut offset = 17; // initial plot clip command
+        for code in 0..=18 {
+            assert_eq!(commands[offset], 4);
+            assert_eq!(commands[offset + 13], code);
+            offset += 26;
+        }
     }
 
     #[test]

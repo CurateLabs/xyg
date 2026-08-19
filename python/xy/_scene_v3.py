@@ -93,7 +93,7 @@ def figure_scene(
         stroke_default = color if trace.kind == "line" else "transparent"
         stroke = _rgba(str(style.get("stroke", stroke_default)), opacity)
         width_value = style.get(
-            "stroke_width", style.get("width", 2.0 if trace.kind == "line" else 0.0)
+            "stroke_width", style.get("width", 1.5 if trace.kind == "line" else 0.0)
         )
         stroke_width = float(width_value)
         styles.append((fill, stroke, stroke_width))

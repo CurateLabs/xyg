@@ -100,6 +100,10 @@ Both host compilers accept the exact canonical string names `circle`, `square`,
 `triangle_down`, `triangle_left`, `triangle_right`, `x`, `point`, `pixel`,
 `thin_diamond`, `plus_line`, `x_line`, `horizontal_line`, and `vertical_line`;
 Node numeric codes remain strictly bounded to the corresponding 0–18 values.
+The thin figure compilers preserve the public defaults in those records:
+scatter diameter is 4px and line stroke width is 1.5px. Checked-in Python and
+Node byte fixtures pin both defaults independently rather than relying on a
+coincidental non-default example.
 
 Masked/non-finite results and fully clipped
 scatter or rectangle records are invisible with zeroed coordinates, enforcing

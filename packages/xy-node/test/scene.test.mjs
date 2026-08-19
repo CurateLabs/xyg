@@ -22,6 +22,22 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v3 fixture"
   assert.ok(sceneRasterCommands(encoded).length > 100);
 });
 
+test("Node figure defaults match Python Scene bytes and canonical values", () => {
+  const scene = (kind) => {
+    const figure = new Figure({ width: 200, height: 120 });
+    figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+    if (kind === "scatter") figure.scatter([0.25], [0.5], { id: 10 });
+    else figure.line([0, 1], [0, 1], { id: 11 });
+    return figure.toScene();
+  };
+  const scatter = scene("scatter"); const line = scene("line");
+  assert.equal(crypto.createHash("sha256").update(scatter).digest("hex"), figureSceneFixture.default_scatter_sha256);
+  assert.equal(crypto.createHash("sha256").update(line).digest("hex"), figureSceneFixture.default_line_sha256);
+  assert.equal(new DataView(scatter.buffer, scatter.byteOffset).getFloat64(168, true), 0);
+  assert.equal(new DataView(scatter.buffer, scatter.byteOffset).getFloat64(224, true), 4);
+  assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
+});
+
 test("Node Scene v3 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
   const figure = new Figure().area([0, 1], [1, 2]);
@@ -194,7 +210,7 @@ test("Node consumes the versioned Rust scatter scene", () => {
       fillRgba: [37, 99, 235, 255, 239, 68, 68, 128],
       strokeRgba: [0, 0, 0, 255, 17, 24, 39, 64],
       strokeWidth: [2, 0],
-      symbols: [0, 14],
+      symbols: [0, 15],
     }),
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" stroke="rgb(0,0,0)" stroke-width="2"/><path d="M 15.5 21 H 24.5 M 20 16.5 V 25.5" fill="none" stroke="rgb(17,24,39)" stroke-opacity="0.25" stroke-width="1"/></g>',
   );
