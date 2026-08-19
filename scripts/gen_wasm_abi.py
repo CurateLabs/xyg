@@ -38,7 +38,15 @@ def render(manifest: dict[str, object]) -> str:
         if not isinstance(item, dict):
             raise ValueError("export entries must be objects")
         name = str(item["name"])
-        arity = int(item["arity"])
+        params_spec = item.get("params")
+        result_spec = item.get("result")
+        if not isinstance(params_spec, list) or not all(
+            isinstance(value, str) for value in params_spec
+        ):
+            raise ValueError(f"{name} params must be a string list")
+        if not isinstance(result_spec, str):
+            raise ValueError(f"{name} result must be a string")
+        arity = len(params_spec)
         params = ", ".join(f"arg{index}: number" for index in range(arity))
         lines.append(f"  {name}({params}): number;")
     lines.extend(
@@ -54,7 +62,7 @@ def render(manifest: dict[str, object]) -> str:
     )
     for item in exports:
         name = str(item["name"])
-        arity = int(item["arity"])
+        arity = len(item["params"])
         lines.extend(
             [
                 f'  if (typeof raw.{name} !== "function" || (raw.{name} as Function).length !== {arity}) {{',
@@ -109,8 +117,29 @@ def verify_rust(manifest: dict[str, object]) -> None:
             raise SystemExit(f"xyg-wasm STATUS_{name} differs from spec/wasm/abi.json")
     for item in manifest["exports"]:
         name = str(item["name"])
-        if not re.search(rf'pub extern "C" fn {re.escape(name)}\s*\(', source):
+        signature = re.search(
+            rf'pub extern "C" fn {re.escape(name)}\s*\((.*?)\)\s*->\s*([A-Za-z0-9_:]+)\s*\{{',
+            source,
+            re.DOTALL,
+        )
+        if not signature:
             raise SystemExit(f"manifest export missing from xyg-wasm: {name}")
+        params = []
+        for parameter in signature.group(1).split(","):
+            parameter = parameter.strip()
+            if not parameter:
+                continue
+            if ":" not in parameter:
+                raise SystemExit(f"cannot parse Rust parameter for {name}: {parameter}")
+            params.append(parameter.split(":", 1)[1].strip())
+        expected_params = [str(value) for value in item["params"]]
+        expected_result = str(item["result"])
+        if params != expected_params or signature.group(2) != expected_result:
+            raise SystemExit(
+                f"xyg-wasm signature differs for {name}: "
+                f"Rust ({params}) -> {signature.group(2)}, "
+                f"manifest ({expected_params}) -> {expected_result}"
+            )
 
 
 def main() -> int:

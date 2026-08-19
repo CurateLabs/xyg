@@ -33,6 +33,98 @@ function canonicalSceneV3() {
   return bytes;
 }
 
+function u32(value) {
+  const bytes = [];
+  do {
+    let byte = value & 0x7f;
+    value >>>= 7;
+    if (value) byte |= 0x80;
+    bytes.push(byte);
+  } while (value);
+  return bytes;
+}
+
+function i32(value) {
+  const bytes = [];
+  let remaining = value | 0;
+  while (true) {
+    let byte = remaining & 0x7f;
+    remaining >>= 7;
+    const done = (remaining === 0 && (byte & 0x40) === 0)
+      || (remaining === -1 && (byte & 0x40) !== 0);
+    if (!done) byte |= 0x80;
+    bytes.push(byte);
+    if (done) return bytes;
+  }
+}
+
+function section(id, payload) {
+  return [id, ...u32(payload.length), ...payload];
+}
+
+function utf8(value) {
+  const bytes = [...new TextEncoder().encode(value)];
+  return [...u32(bytes.length), ...bytes];
+}
+
+async function trappingModule() {
+  const names = [
+    "xyg_wasm_abi_version",
+    "xyg_wasm_scene_version",
+    "xyg_wasm_max_arena_bytes",
+    "xyg_wasm_instance_new",
+    "xyg_wasm_instance_dispose",
+    "xyg_wasm_arena_resize",
+    "xyg_wasm_arena_ptr",
+    "xyg_wasm_arena_len",
+    "xyg_wasm_cancel",
+    "xyg_wasm_scene_validate",
+    "xyg_wasm_last_error_ptr",
+    "xyg_wasm_last_error_len",
+    "xyg_wasm_copy_count",
+    "xyg_wasm_copy_bytes_lo",
+    "xyg_wasm_copy_bytes_hi",
+    "xyg_wasm_last_scene_records",
+    "xyg_wasm_last_scene_styles",
+  ];
+  const arities = [0, 1, 2, 4];
+  const types = [
+    ...u32(arities.length),
+    ...arities.flatMap((arity) => [
+      0x60,
+      ...u32(arity),
+      ...Array(arity).fill(0x7f),
+      1,
+      0x7f,
+    ]),
+  ];
+  const functionTypes = [0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 1];
+  const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
+  const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
+  const exports = [
+    ...u32(names.length + 1),
+    ...utf8("memory"), 2, 0,
+    ...names.flatMap((name, index) => [...utf8(name), 0, ...u32(index)]),
+  ];
+  const values = [1, 3, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0];
+  const bodies = names.map((_, index) => {
+    const instructions = index === 9
+      ? [0x00, 0x0b] // unreachable; end
+      : [0x41, ...i32(values[index] ?? 0), 0x0b];
+    const body = [0, ...instructions]; // no local declarations
+    return [...u32(body.length), ...body];
+  });
+  const code = [...u32(bodies.length), ...bodies.flat()];
+  return WebAssembly.compile(new Uint8Array([
+    0, 97, 115, 109, 1, 0, 0, 0,
+    ...section(1, types),
+    ...section(3, functions),
+    ...section(5, memory),
+    ...section(7, exports),
+    ...section(10, code),
+  ]));
+}
+
 async function rejected(promise, code, status = null) {
   try {
     await promise;
@@ -109,6 +201,14 @@ async function run() {
   );
   await bounded.dispose();
 
+  const byBytes = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmBytes.slice(0),
+    maxArenaBytes: 1024,
+  });
+  await byBytes.ready;
+  await byBytes.dispose();
+
   // Explicit user URL is supported and is the only branch allowed to fetch
   // WASM. It is local here; the server rejects every unrecognized path.
   const byUrl = createXygWasmWorker({
@@ -119,6 +219,27 @@ async function run() {
   await byUrl.ready;
   await byUrl.dispose();
 
+  // Redirects are rejected rather than following a caller's local URL to a
+  // different (possibly remote) asset.
+  const redirected = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: "/redirect.wasm",
+  });
+  await rejected(redirected.ready, "XYG_WASM_INIT_FAILED");
+  await redirected.dispose();
+
+  const trapped = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: await trappingModule(),
+    maxArenaBytes: 1024,
+  });
+  await trapped.ready;
+  await rejected(
+    trapped.validateScene(canonicalSceneV3(), { sequence: 1 }).result,
+    "XYG_WASM_TRAP",
+  );
+  await trapped.dispose();
+
   const malformedModule = await WebAssembly.compile(
     new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]),
   );
@@ -128,6 +249,17 @@ async function run() {
   });
   await rejected(failed.ready, "XYG_WASM_INIT_FAILED");
   await failed.dispose();
+
+  // Invalid source types fail before any Worker is allocated.
+  try {
+    createXygWasmWorker({
+      workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+      wasm: /** @type {any} */ ({}),
+    });
+    throw new Error("invalid source was accepted");
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+  }
   return { ok: true };
 }
 

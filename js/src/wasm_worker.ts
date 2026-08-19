@@ -45,7 +45,10 @@ async function loadModule(source: any): Promise<WebAssembly.Module> {
   if (source?.kind === "url" && typeof source.value === "string") {
     // This is the only network-capable branch and the URL is supplied by the
     // caller. There is no default CDN, fallback URL, or path probing.
-    const response = await fetch(source.value, { credentials: "same-origin" });
+    const response = await fetch(source.value, {
+      credentials: "same-origin",
+      redirect: "error",
+    });
     if (!response.ok) throw new Error(`WASM URL returned HTTP ${response.status}`);
     return WebAssembly.compile(await response.arrayBuffer());
   }

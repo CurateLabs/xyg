@@ -125,6 +125,9 @@ export class XygWasmWorker {
     if (!options || !options.workerUrl) {
       throw new TypeError("workerUrl is required; XYG does not guess worker asset paths");
     }
+    // Validate and normalize the source before allocating a Worker so a bad
+    // source cannot leak an otherwise unreachable worker process.
+    const loaded = sourceMessage(options.wasm);
     this.worker = new Worker(String(options.workerUrl), {
       type: "module",
       name: "xyg-wasm",
@@ -135,20 +138,37 @@ export class XygWasmWorker {
       this.worker.terminate();
       this.disposed = true;
     };
+    this.worker.onmessageerror = () => {
+      this.failAll(new XygWasmError(
+        "XYG_WASM_MESSAGE_ERROR",
+        "worker returned an unreadable message",
+      ));
+      this.worker.terminate();
+      this.disposed = true;
+    };
     const requestId = this.allocateRequest();
-    const loaded = sourceMessage(options.wasm);
     this.ready = this.promiseFor<XygWasmDiagnostics>(requestId);
-    this.worker.postMessage(
-      {
-        type: "init",
-        requestId,
-        source: loaded.source,
-        maxArenaBytes: options.maxArenaBytes ?? 16 * 1024 * 1024,
-        expectedAbiVersion: XYG_WASM_ABI_VERSION,
-        expectedSceneVersion: XYG_WASM_SCENE_VERSION,
-      },
-      loaded.transfer,
-    );
+    try {
+      this.worker.postMessage(
+        {
+          type: "init",
+          requestId,
+          source: loaded.source,
+          maxArenaBytes: options.maxArenaBytes ?? 16 * 1024 * 1024,
+          expectedAbiVersion: XYG_WASM_ABI_VERSION,
+          expectedSceneVersion: XYG_WASM_SCENE_VERSION,
+        },
+        loaded.transfer,
+      );
+    } catch (cause) {
+      this.pending.delete(requestId);
+      this.worker.terminate();
+      this.disposed = true;
+      throw new XygWasmError(
+        "XYG_WASM_INIT_FAILED",
+        cause instanceof Error ? cause.message : "could not initialize the WASM worker",
+      );
+    }
   }
 
   validateScene(
@@ -189,10 +209,20 @@ export class XygWasmWorker {
     this.disposed = true;
     const requestId = this.allocateRequest();
     const complete = this.promiseFor<void>(requestId);
-    this.worker.postMessage({ type: "dispose", requestId });
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      await complete;
+      this.worker.postMessage({ type: "dispose", requestId });
+      // A trapped or wedged worker must not make application teardown hang.
+      await Promise.race([
+        complete,
+        new Promise<void>((resolve) => {
+          timeout = setTimeout(resolve, 1_000);
+        }),
+      ]);
+    } catch {
+      // Termination below is the bounded fallback when messaging is broken.
     } finally {
+      if (timeout !== undefined) clearTimeout(timeout);
       this.worker.terminate();
       this.failAll(new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed"));
     }

@@ -63,8 +63,10 @@ They never log user values.
 ## Version and scene contract
 
 `WASM_ABI_VERSION` starts at 1. `SCENE_VERSION` remains independently versioned
-at 3. `scripts/gen_wasm_abi.py --check` rejects drift among the manifest, raw
-Rust exports, generated TypeScript declarations, and the Rust scene constant.
+at 3. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
+the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
+scene constant. `js/package-wasm.mjs` parses the compiled module's type,
+function, and export sections and rejects artifact-level signature drift.
 
 The only scene operation in this slice is allocation-free validation of an
 already canonical Scene v3 batch. That establishes exact integration without
@@ -83,6 +85,9 @@ chart specification or satisfy #59's scatter/line/bar acceptance criteria.
   Rust operations must add cooperative checkpoints.
 - Traps invalidate and dispose the Worker-side Rust instance. Callers must
   create a fresh Worker rather than continue with uncertain engine state.
+- Invalid sources fail before Worker allocation. Initialization-send failures
+  and unreadable Worker messages terminate immediately; disposal waits at most
+  one second for cooperative cleanup before terminating the Worker.
 - Unsupported operations, incompatible versions, malformed scenes, invalid
   ranges, and resource bounds return stable error codes. There is no silent
   JavaScript algorithm or remote-service fallback.
@@ -99,8 +104,9 @@ const engine = createXygWasmWorker({
 ```
 
 The library never uses `Blob`, `eval`, a CDN, default URL, or path probing.
-URL-based WASM loading performs one fetch of the exact caller-provided URL;
-`Module`/bytes loading performs no WASM fetch. A strict policy needs
+URL-based WASM loading performs one non-redirecting fetch of the exact
+caller-provided URL; redirects fail initialization rather than changing the
+asset authority. `Module`/bytes loading performs no WASM fetch. A strict policy needs
 `script-src 'self' 'wasm-unsafe-eval'`, `worker-src 'self'`, and
 `connect-src 'self'` when a local WASM URL is used. `wasm-unsafe-eval` permits
 WebAssembly compilation; it does not permit JavaScript `eval`.
@@ -108,7 +114,8 @@ WebAssembly compilation; it does not permit JavaScript `eval`.
 `scripts/wasm_foundation_smoke.mjs` serves an allowlisted local-only asset set
 under that CSP and tests explicit Module/bytes/URL loading, transfer and copy
 diagnostics, lifecycle, cancellation, stale sequence, malformed module/scene,
-resource bounds, and disposal.
+resource bounds, redirect rejection, a real runtime trap, and disposal. It
+also verifies that an invalid source is rejected before a Worker is allocated.
 
 ## Build and evidence
 
