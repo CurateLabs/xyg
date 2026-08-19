@@ -840,39 +840,36 @@ class _Scale:
         self.nonpositive = axis.get("nonpositive", "clip")
         self.symlog = axis.get("scale") == "symlog"
         self.constant = float(axis.get("constant", 1.0))
-        if self.log:
-            lo, hi = np.log10(max(lo, 1e-300)), np.log10(max(hi, 1e-300))
-        elif self.symlog:
-            lo, hi = self._symlog(lo), self._symlog(hi)
-        self.lo, self.hi = float(lo), float(hi)
+        self.data_lo, self.data_hi = float(lo), float(hi)
         self.px0, self.px1 = px0, px1
+        self.lo, self.hi = (float(value) for value in self.coord([lo, hi]))
+
+    @property
+    def _kind_code(self) -> int:
+        return 1 if self.log else 2 if self.symlog else 0
+
+    def _map(self, value: Any, operation: int) -> Any:
+        return _native.scene_scale_map(
+            value,
+            self._kind_code,
+            operation,
+            self.data_lo,
+            self.data_hi,
+            self.px0,
+            self.px1,
+            self.constant,
+            self.nonpositive == "mask",
+        )
 
     def coord(self, v: Any) -> Any:
-        if self.log:
-            values = np.asarray(v)
-            if self.nonpositive == "mask":
-                with np.errstate(divide="ignore", invalid="ignore"):
-                    return np.where(values > 0, np.log10(values), np.nan)
-            return np.log10(np.maximum(values, 1e-300))
-        return self._symlog(v) if self.symlog else v
-
-    def _symlog(self, v: Any) -> Any:
-        value = np.asarray(v)
-        return np.sign(value) * np.log1p(np.abs(value) / self.constant)
+        return self._map(v, 0)
 
     def __call__(self, v: Any) -> Any:
-        c = self.coord(v)
-        span = (self.hi - self.lo) or 1.0
-        return self.px0 + (c - self.lo) / span * (self.px1 - self.px0)
+        return self._map(v, 1)
 
     def value(self, c: Any) -> Any:
         """Inverse of `coord`: scale coordinate back to a data value."""
-        if self.log:
-            return np.power(10.0, c)
-        if self.symlog:
-            c = np.asarray(c)
-            return np.sign(c) * self.constant * np.expm1(np.abs(c))
-        return c
+        return self._map(c, 2)
 
     @property
     def affine(self) -> bool:

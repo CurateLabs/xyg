@@ -2,6 +2,7 @@
 import {
   pointer,
   xySceneAxisTicks,
+  xySceneScaleMap,
   xySceneScatterSvg,
   xySceneVersion,
 } from "./native.js";
@@ -49,6 +50,25 @@ export function axisTicks({ kind = "linear", lo, hi, target = 6 }) {
     throw new RangeError("canonical axis ticks exceeded host output limits");
   }
   return { ticks: Array.from(ticks.subarray(0, written)), labeled: Array.from(labeled.subarray(0, labels)), step: step[0] };
+}
+
+export function scaleMap({ values, kind = "linear", operation = "pixel", domain, range = [0, 1], constant = 1, nonpositive = "clip" }) {
+  const kindCode = kind === "linear" ? 0 : kind === "log" ? 1 : kind === "symlog" ? 2 : -1;
+  const operationCode = operation === "coord" ? 0 : operation === "pixel" ? 1 : operation === "value" ? 2 : -1;
+  if (kindCode < 0) throw new RangeError("kind must be linear, log, or symlog");
+  if (operationCode < 0) throw new RangeError("operation must be coord, pixel, or value");
+  if (!Array.isArray(domain) || domain.length !== 2 || !Array.isArray(range) || range.length !== 2) {
+    throw new RangeError("domain and range must each contain two values");
+  }
+  const source = asF64Array(values, "values");
+  const output = new Float64Array(source.length);
+  const status = xySceneScaleMap(
+    f64Ptr(source), BigInt(source.length), kindCode, operationCode,
+    Number(domain[0]), Number(domain[1]), Number(range[0]), Number(range[1]),
+    Number(constant), nonpositive === "mask" ? 1 : 0, f64Ptr(output),
+  );
+  if (status !== 0) throw new RangeError("invalid canonical scene scale");
+  return output;
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

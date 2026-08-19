@@ -19,6 +19,81 @@ pub struct AxisTicks {
     pub step: f64,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ScaleKind {
+    Linear,
+    Log,
+    SymLog,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AxisScale {
+    kind: ScaleKind,
+    lo: f64,
+    hi: f64,
+    px0: f64,
+    px1: f64,
+    constant: f64,
+    mask_nonpositive: bool,
+}
+
+impl AxisScale {
+    pub fn new(
+        kind: ScaleKind,
+        lo: f64,
+        hi: f64,
+        px0: f64,
+        px1: f64,
+        constant: f64,
+        mask_nonpositive: bool,
+    ) -> Result<Self, SceneError> {
+        if [lo, hi, px0, px1, constant]
+            .iter()
+            .any(|value| !value.is_finite())
+            || constant <= 0.0
+        {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(Self {
+            kind,
+            lo,
+            hi,
+            px0,
+            px1,
+            constant,
+            mask_nonpositive,
+        })
+    }
+
+    pub fn coord(self, value: f64) -> f64 {
+        if value.is_nan() {
+            return f64::NAN;
+        }
+        match self.kind {
+            ScaleKind::Linear => value,
+            ScaleKind::Log if value > 0.0 => value.log10(),
+            ScaleKind::Log if self.mask_nonpositive => f64::NAN,
+            ScaleKind::Log => 1e-300_f64.log10(),
+            ScaleKind::SymLog => value.signum() * (value.abs() / self.constant).ln_1p(),
+        }
+    }
+
+    pub fn value(self, coord: f64) -> f64 {
+        match self.kind {
+            ScaleKind::Linear => coord,
+            ScaleKind::Log => 10_f64.powf(coord),
+            ScaleKind::SymLog => coord.signum() * self.constant * coord.abs().exp_m1(),
+        }
+    }
+
+    pub fn pixel(self, value: f64) -> f64 {
+        let low = self.coord(self.lo);
+        let high = self.coord(self.hi);
+        let span = if high == low { 1.0 } else { high - low };
+        self.px0 + (self.coord(value) - low) / span * (self.px1 - self.px0)
+    }
+}
+
 pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneError> {
     if !lo.is_finite() || !hi.is_finite() || target == 0 || target > MAX_AXIS_TICKS {
         return Err(SceneError::NonFinite);
@@ -681,5 +756,21 @@ mod tests {
         );
         assert_eq!(log.labeled, vec![0.1, 1.0, 10.0, 100.0]);
         assert_eq!(log.step, 1.0);
+    }
+
+    #[test]
+    fn canonical_axis_scales_map_and_invert_all_numeric_kinds() {
+        let linear = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 20.0, 120.0, 1.0, false).unwrap();
+        assert_eq!(linear.pixel(5.0), 70.0);
+        let log = AxisScale::new(ScaleKind::Log, 0.1, 100.0, 0.0, 300.0, 1.0, false).unwrap();
+        assert_eq!(log.pixel(1.0), 100.0);
+        assert_eq!(log.coord(-1.0), -300.0);
+        let masked = AxisScale::new(ScaleKind::Log, 0.1, 100.0, 0.0, 300.0, 1.0, true).unwrap();
+        assert!(masked.coord(0.0).is_nan());
+        let symlog =
+            AxisScale::new(ScaleKind::SymLog, -10.0, 10.0, 0.0, 100.0, 2.0, false).unwrap();
+        let coordinate = symlog.coord(-4.0);
+        assert!((symlog.value(coordinate) + 4.0).abs() < 1e-12);
+        assert!((symlog.pixel(0.0) - 50.0).abs() < 1e-12);
     }
 }

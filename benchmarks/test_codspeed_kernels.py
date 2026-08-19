@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 import xy
+from xy import _native
 from xy import channels as ch
 from xy import kernels as k
 from xy._figure import Figure  # harness type annotations only
@@ -33,6 +34,15 @@ DRILL_N = PYRAMID_N
 HIST_N = 100_000
 AREA_N = 100_000
 BAR_N = 1_000
+
+
+def test_scene_scale_map_100k(benchmark):
+    """Canonical Rust scene transform for a representative direct mark tier."""
+    values = np.linspace(-1000.0, 1000.0, 100_000, dtype=np.float64)
+    mapped = benchmark(_native.scene_scale_map, values, 2, 1, -1000.0, 1000.0, 0.0, 800.0, 1.0)
+    assert mapped.shape == values.shape
+
+
 HEATMAP_W, HEATMAP_H = 160, 120
 HEXBIN_GRIDSIZE = 128
 EXPORT_N = 100_000
