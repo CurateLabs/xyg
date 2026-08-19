@@ -59,7 +59,7 @@ permissions:
 jobs:
   ceiling:
     name: Ceiling sweep (macOS large, 30 GB)
-    runs-on: macos-15-large
+    runs-on: blacksmith-6vcpu-macos-15
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,6 +76,11 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
 
       - name: Record runner capacity
         # The ladder is only meaningful against the machine it ran on: a cell
@@ -115,7 +120,8 @@ jobs:
           node js/build.mjs
 
       - name: Install Chromium (Playwright)
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 10
+        run: npx playwright install chromium
 
       - name: Free disk before the sweep
         # A 100M exact-marker page is ~1.07 GB on its own. The harness now
@@ -160,8 +166,8 @@ jobs:
             | tee ceiling-summary.md
           {
             echo "### Ceiling results"
-            echo "Runner: macos-15-large (x64 Intel). Not comparable to the"
-            echo "Apple-silicon reference run; check \`Browser renderer\` below."
+            echo "Runner: blacksmith-6vcpu-macos-15 (Apple Silicon)."
+            echo "Compare only with reference runs that record the same hardware."
             cat ceiling-summary.md
           } >> "$GITHUB_STEP_SUMMARY"
 

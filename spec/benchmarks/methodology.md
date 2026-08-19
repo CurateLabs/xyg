@@ -86,8 +86,8 @@ reported).
 
 ## 4. Environment & disclosure protocol
 
-- **Two tiers of numbers:** (a) CI numbers — GitHub Actions ubuntu runner,
-  SwiftShader software GL; reproducible by anyone from the repo, labeled
+- **Two tiers of numbers:** (a) CI numbers — pinned Blacksmith Ubuntu runner,
+  SwiftShader software GL; reproducible from the repo workflow, labeled
   "CI (software GL)"; (b) reference-hardware numbers — one pinned desktop
   spec (documented CPU/GPU/driver/browser build), labeled as such. Never mix
   tiers in one table. HN's first attack is "benchmarked on a potato/cherry

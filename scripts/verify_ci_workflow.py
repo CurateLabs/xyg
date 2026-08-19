@@ -21,6 +21,7 @@ DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
 DEFAULT_BAZEL_WORKFLOW = ROOT / ".github" / "workflows" / "bazel.yml"
 DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
+DEFAULT_WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 REQUIRED_CI_JOBS = {
     "browser_conformance",
@@ -898,6 +899,14 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "locked Reflex development environment",
         "uv sync --locked --extra reflex --group dev",
     )
+    _require_step_contains(
+        errors,
+        test_job,
+        "Install Chromium (Playwright)",
+        "bounded browser-only Playwright install without apt",
+        "timeout-minutes: 10",
+        "npx playwright install chromium",
+    )
     _require_job_contains(
         errors,
         jobs,
@@ -909,9 +918,17 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
         "~/.cache/ms-playwright",
         "playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}",
-        "npx playwright install --with-deps chromium firefox webkit",
+        "npx playwright install chromium firefox webkit",
         "node js/build.mjs",
         "node scripts/browser_conformance.mjs",
+    )
+    _require_step_contains(
+        errors,
+        jobs.get("browser_conformance", ""),
+        "Install Playwright browser engines",
+        "bounded browser-only three-engine install without apt",
+        "timeout-minutes: 15",
+        "npx playwright install chromium firefox webkit",
     )
     _require_job_contains(
         errors,
@@ -1043,6 +1060,12 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'XYG_REQUIRE_CARGO: "1"',
         "--constraint benchmarks/requirements-ci.lock",
     )
+    benchmark_vs = jobs.get("benchmark_vs", "")
+    timeout_values, timeout_unsafe = _direct_yaml_key_values(
+        benchmark_vs, "timeout-minutes", indent=4
+    )
+    if timeout_unsafe or timeout_values != ["10"]:
+        errors.append("CI benchmark_vs job must define exactly one direct timeout-minutes: 10")
     _require_step_contains(
         errors,
         cross_library,
@@ -1525,11 +1548,51 @@ def validate_all_workflows(
     release_path: Path = DEFAULT_RELEASE_WORKFLOW,
 ) -> list[str]:
     return [
+        *validate_workflow_hosting_policy(),
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
         *validate_bazel_workflow(bazel_path),
         *validate_release_workflow(release_path),
     ]
+
+
+def validate_workflow_hosting_policy(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+) -> list[str]:
+    """Keep workflows on Blacksmith and browser installs off apt mirrors."""
+    errors: list[str] = []
+    for path in sorted((*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml"))):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"cannot read workflow {path}: {exc}")
+            continue
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            code = line.split("#", 1)[0]
+            stripped = code.strip()
+            if re.search(
+                r"(?:^|[\s,{\[])"
+                r"(?:ubuntu-latest|ubuntu-24\.04-arm|windows-latest|macos-latest|macos-\d+(?:-large)?)"
+                r"(?=$|[\s,}\]])",
+                code,
+            ):
+                errors.append(
+                    f"{path}:{lineno} workflow contains a GitHub-hosted runner alias; "
+                    "use an explicit Blacksmith label"
+                )
+            if stripped.startswith("runs-on:"):
+                runner = stripped.partition(":")[2].strip()
+                if not (runner.startswith("blacksmith-") or runner == "${{ matrix.os }}"):
+                    errors.append(
+                        f"{path}:{lineno} jobs must use Blacksmith runners "
+                        f"(CodSpeed remains the hosted performance authority), got {runner}"
+                    )
+            if "playwright install" in code and "--with-deps" in code:
+                errors.append(
+                    f"{path}:{lineno} Playwright install must not use --with-deps; "
+                    "Blacksmith images carry the runner libraries and apt mirrors can hang"
+                )
+    return errors
 
 
 def main(argv: Optional[list[str]] = None) -> int:
