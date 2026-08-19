@@ -263,7 +263,7 @@ app.add_page(index)
 
 Hover, pan, and zoom keep working. For charts driven by Reflex state, events, or
 live streams, see the
-[Reflex integration guide](docs/integrations/reflex.md) and
+[Reflex integration guide](https://github.com/CurateLabs/xyg/blob/main/docs/integrations/reflex.md) and
 the [runnable example app](https://github.com/CurateLabs/xyg/tree/main/examples/reflex/).
 
 ## Examples

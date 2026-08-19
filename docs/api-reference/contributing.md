@@ -15,7 +15,7 @@ contains the complete release and browser checklists.
 
 ~~~bash
 git clone https://github.com/CurateLabs/xyg.git
-cd xy
+cd xyg
 make setup
 make check
 ~~~

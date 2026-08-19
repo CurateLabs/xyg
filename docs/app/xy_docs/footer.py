@@ -58,7 +58,7 @@ def _page_action(text: str, href: str) -> rx.Component:
 def xy_docs_footer(page: DocsPage) -> rx.Component:
     """Render project links and source-aware actions for an XY docs page."""
     public_path = f"/docs/xy{page.route}"
-    issue_title = quote(f"Issue with reflex.dev{public_path}")
+    issue_title = quote(f"Issue with XYG docs: {public_path}")
     issue_body = quote("Path: " + public_path + "\n\n")
     issue_href = (
         f"{REPOSITORY_URL}/issues/new"

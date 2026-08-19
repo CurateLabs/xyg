@@ -14,7 +14,7 @@ on:
         required: true
         type: string
       source_ref:
-        description: "Exact reflex-dev/xy commit or tag to build"
+        description: "Exact CurateLabs/xyg commit or tag to build"
         required: true
         type: string
 

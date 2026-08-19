@@ -2,10 +2,13 @@
 
 import os
 
-PUBLIC_DOCS_URL = "https://reflex.dev/docs/xy"
+PUBLIC_DOCS_URL = os.getenv("XY_DOCS_PUBLIC_URL", "https://github.com/CurateLabs/xyg").rstrip("/")
 PUBLIC_XY_VERSION = os.getenv("XY_DOCS_PUBLIC_VERSION", "0.0.1").strip()
 DOCS_CHANNEL = os.getenv("XY_DOCS_CHANNEL", "preview").strip().lower()
-SOCIAL_IMAGE_URL = f"{PUBLIC_DOCS_URL}/xy-social-card.png"
+SOCIAL_IMAGE_URL = os.getenv(
+    "XY_DOCS_SOCIAL_IMAGE_URL",
+    "https://raw.githubusercontent.com/CurateLabs/xyg/main/docs/app/assets/xy-social-card.png",
+).strip()
 LLMS_TXT_PATH = "/llms.txt"
 LLMS_FULL_TXT_PATH = "/llms-full.txt"
 

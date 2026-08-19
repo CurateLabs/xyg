@@ -1762,7 +1762,7 @@ def test_annotations_have_one_canonical_guide_and_a_legacy_redirect() -> None:
     redirect = app._unevaluated_pages["charts/annotations"]
     rendered_meta = "\n".join(str(component) for component in redirect.meta)
     assert redirect.context == {"sitemap": None}
-    assert "https://reflex.dev/docs/xy/components/annotations/" in rendered_meta
+    assert f"{PUBLIC_DOCS_URL}/components/annotations/" in rendered_meta
     assert "0; url=/docs/xy/components/annotations/" in rendered_meta
     assert "Open the combined Annotations guide" in str(redirect.component())
 
@@ -1882,9 +1882,11 @@ def test_xy_markdown_docs_links_match_exported_sitemap() -> None:
 
 def test_xy_sitemap_path_normalization_requires_the_exact_frontend_path() -> None:
     """Normalize canonical locations without accepting sibling docs sites."""
-    assert _normalize_xy_docs_path("https://reflex.dev/docs/xy/") == "/"
+    assert _normalize_xy_docs_path("https://example.invalid/docs/xy/") == "/"
     assert (
-        _normalize_xy_docs_path("https://reflex.dev/docs/xy/charts/scatter/?source=test#example")
+        _normalize_xy_docs_path(
+            "https://example.invalid/docs/xy/charts/scatter/?source=test#example"
+        )
         == "/charts/scatter"
     )
     assert _normalize_xy_docs_path("https://reflex.dev/docs/charts/") is None
@@ -2219,7 +2221,7 @@ def test_xy_footer_is_project_specific_and_keeps_source_aware_links() -> None:
     rendered = str(xy_docs_footer(page))
 
     assert "https://github.com/CurateLabs/xyg/issues/new" in rendered
-    assert "Issue%20with%20reflex.dev/docs/xy/overview/gallery/" in rendered
+    assert "Issue%20with%20XYG%20docs%3A%20/docs/xy/overview/gallery/" in rendered
     assert "Path%3A%20/docs/xy/overview/gallery/%0A%0A" in rendered
     assert "https://github.com/CurateLabs/xyg/blob/main/docs/overview/gallery.md" in rendered
     assert 'to:"/guides/getting-help/"' in rendered
@@ -2232,6 +2234,8 @@ def test_xy_footer_is_project_specific_and_keeps_source_aware_links() -> None:
 
 def test_every_docs_route_has_canonical_and_social_metadata() -> None:
     """Publish branded canonical and social metadata for every route."""
+    assert PUBLIC_DOCS_URL.startswith("https://github.com/CurateLabs/xyg")
+    assert SOCIAL_IMAGE_URL.startswith("https://raw.githubusercontent.com/CurateLabs/xyg/")
     assert len(_DOCS_ROUTES) + len(DOCS_REDIRECTS) == len(app._unevaluated_pages)
     assert PUBLIC_XY_VERSION == "0.0.1"
     assert (
