@@ -305,6 +305,7 @@ jobs:
           node js/build.mjs
           node js/package-wasm.mjs target/${{ matrix.target }}/release/xyg_wasm.wasm
       - name: Install Chromium
+        timeout-minutes: 10
         run: |
           # Blacksmith's Ubuntu image carries the supported runner-image browser libraries.
           # Keep Chromium artifact installation cached and browser-specific.

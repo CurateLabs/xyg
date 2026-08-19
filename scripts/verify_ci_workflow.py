@@ -953,6 +953,14 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "packages/xy-client/dist/xyg-wasm.wasm",
         "packages/xy-client/dist/wasm-worker.js",
     )
+    _require_step_contains(
+        errors,
+        jobs.get("wasm_foundation", ""),
+        "Install Chromium",
+        "bounded browser-only Playwright install without apt",
+        "timeout-minutes: 10",
+        "npx playwright install chromium",
+    )
     test_job = jobs.get("test", "")
     _require_step_runs_exactly(
         errors,

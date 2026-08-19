@@ -1226,6 +1226,23 @@ def test_workflow_policy_rejects_github_hosted_runner_and_playwright_apt(
     assert any("must not use --with-deps" in error for error in errors)
 
 
+def test_ci_workflow_rejects_unbounded_wasm_chromium_install(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Install Chromium\n        timeout-minutes: 10\n        run: |\n",
+            "      - name: Install Chromium\n        run: |\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("Install Chromium" in error and "timeout-minutes: 10" in error for error in errors)
+
+
 def test_workflow_policy_accepts_blacksmith_and_matrix_runners(tmp_path: Path) -> None:
     workflows = tmp_path / "workflows"
     workflows.mkdir()
