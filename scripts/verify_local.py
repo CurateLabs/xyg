@@ -119,6 +119,11 @@ def _base_checks(
             (py, "scripts/verify_ci_workflow.py"),
         ),
         Check(
+            "ownership",
+            "production-source ownership ledger",
+            (py, "scripts/verify_ownership.py"),
+        ),
+        Check(
             "examples",
             "example-app checks",
             (
@@ -286,6 +291,7 @@ QUICK_CHECKS = (
     "public_api",
     "capability_matrix",
     "ci_workflow",
+    "ownership",
     "ruff_check",
     "ruff_format",
     "ty",

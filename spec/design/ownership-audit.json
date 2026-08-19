@@ -1,0 +1,1395 @@
+{
+  "schema_version": 1,
+  "human_audit": "spec/design/ownership-audit.md",
+  "scope": {
+    "tracked_only": true,
+    "roots": [
+      {
+        "prefix": "crates/xyg-engine/src/",
+        "extensions": [
+          ".rs"
+        ]
+      },
+      {
+        "prefix": "crates/xyg-core/src/",
+        "extensions": [
+          ".rs"
+        ]
+      },
+      {
+        "prefix": "python/xy/",
+        "extensions": [
+          ".py"
+        ]
+      },
+      {
+        "prefix": "python/reflex_xy/",
+        "extensions": [
+          ".py"
+        ]
+      },
+      {
+        "prefix": "packages/xy-node/src/",
+        "extensions": [
+          ".js",
+          ".mjs",
+          ".ts"
+        ]
+      },
+      {
+        "prefix": "js/src/",
+        "extensions": [
+          ".ts",
+          ".js",
+          ".mjs"
+        ]
+      }
+    ],
+    "excluded_categories": [
+      "tests",
+      "examples and demos",
+      "benchmarks",
+      "generated bundles",
+      "dependencies and vendored code",
+      "untracked local files"
+    ]
+  },
+  "policies": {
+    "rust-engine": {
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "allowed_responsibilities": [
+        "Row scans, geometry, aggregation, layout, LOD, encoding, and deterministic product policy.",
+        "Canonical scene and static-export construction shared by every host."
+      ],
+      "forbidden_responsibilities": [
+        "Python, Node, browser DOM, or transport-specific API behavior.",
+        "Host-specific error wording or package discovery."
+      ],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bpyo3\\b",
+          "instruction": "Keep the safe engine independent of Python; expose behavior through xyg-core."
+        },
+        {
+          "pattern": "\\bnapi\\b",
+          "instruction": "Keep the safe engine independent of Node; expose behavior through xyg-core."
+        }
+      ],
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    "rust-c-abi": {
+      "current_owner": "Rust C ABI shell",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "allowed_responsibilities": [
+        "C-compatible marshaling, panic containment, ABI versioning, and opaque-handle lifecycle."
+      ],
+      "forbidden_responsibilities": [
+        "A second implementation of algorithms or deterministic product policy that belongs in xyg-engine.",
+        "Python- or Node-specific extension-module APIs."
+      ],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bpyo3\\b",
+          "instruction": "The shared artifact is a C ABI cdylib, not a Python extension module."
+        },
+        {
+          "pattern": "\\bnapi(?:_rs)?\\b",
+          "instruction": "The shared artifact is a C ABI cdylib, not a Node addon."
+        }
+      ],
+      "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
+    },
+    "python-host": {
+      "current_owner": "Python host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "allowed_responsibilities": [
+        "Composition and pyplot APIs, Reflex integration, ingest coercion, validation messages, transport, and notebook lifecycle."
+      ],
+      "forbidden_responsibilities": [
+        "A parallel implementation of canonical layout, LOD, encoding, aggregation, scene, or export policy.",
+        "Hand-maintained low-level C signatures."
+      ],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bctypes\\.CDLL\\b",
+          "instruction": "Low-level native loading belongs in the generated ABI binding classified under issue #57."
+        }
+      ],
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    "python-scene-migration": {
+      "current_owner": "Python host with canonical-policy debt",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "allowed_responsibilities": [
+        "Compatibility wrappers, Python object coercion, public error text, and temporary orchestration during migration."
+      ],
+      "forbidden_responsibilities": [
+        "New canonical scene, layout, tick, geometry, colormap, or static-export behavior.",
+        "Expanding an implementation that must match Node and direct-browser hosts."
+      ],
+      "forbidden_patterns": [],
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    "python-abi-generated": {
+      "current_owner": "Python low-level ABI binding",
+      "disposition": "generate",
+      "follow_up_issue": 57,
+      "allowed_responsibilities": [
+        "Generated ctypes declarations plus a narrow handwritten ergonomic wrapper layer."
+      ],
+      "forbidden_responsibilities": [
+        "Hand-maintained symbol signatures, argument order, pointer mutability, or return types.",
+        "Canonical engine algorithms."
+      ],
+      "forbidden_patterns": [],
+      "rationale": "The low-level declarations must be generated from the typed shared ABI contract."
+    },
+    "node-host": {
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "allowed_responsibilities": [
+        "Idiomatic JS APIs, TypedArray coercion, errors, native-library discovery, HTML embedding, and VS Code transport."
+      ],
+      "forbidden_responsibilities": [
+        "A parallel implementation of canonical layout, LOD, encoding, aggregation, scene, or export policy.",
+        "Hand-maintained Koffi C signatures."
+      ],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bfrom\\s+[\"']koffi[\"']",
+          "instruction": "Only the generated low-level binding classified under issue #57 may import Koffi."
+        }
+      ],
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    "node-scene-migration": {
+      "current_owner": "Node host with canonical-policy debt",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "allowed_responsibilities": [
+        "TypedArray coercion, idiomatic composition methods, and temporary scene orchestration during migration."
+      ],
+      "forbidden_responsibilities": [
+        "New canonical scene, layout, LOD, encoding, aggregation, or static-export policy.",
+        "Behavior that can diverge from Python or direct-browser hosts."
+      ],
+      "forbidden_patterns": [],
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    "node-abi-generated": {
+      "current_owner": "Node low-level ABI binding",
+      "disposition": "generate",
+      "follow_up_issue": 57,
+      "allowed_responsibilities": [
+        "Generated Koffi declarations plus minimal loading and ABI-version validation."
+      ],
+      "forbidden_responsibilities": [
+        "Hand-maintained C signatures or canonical engine behavior."
+      ],
+      "forbidden_patterns": [],
+      "rationale": "The Koffi declarations must be generated from the same typed contract as ctypes."
+    },
+    "browser-client": {
+      "current_owner": "Shared TypeScript browser client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "allowed_responsibilities": [
+        "WebGL painting, picking, gestures, DOM chrome, accessibility, animation, client cache, and browser lifecycle.",
+        "Screen-bounded presentation and transport attachment over engine-produced buffers."
+      ],
+      "forbidden_responsibilities": [
+        "Canonical layout, tick generation, data aggregation, encoding, or full-data row scans.",
+        "Node-only modules, Koffi, filesystem access, or a second renderer."
+      ],
+      "forbidden_patterns": [
+        {
+          "pattern": "\\bkoffi\\b",
+          "instruction": "The host-neutral browser client must not load the Node C ABI binding."
+        },
+        {
+          "pattern": "\\bnode:(?:fs|path|url)\\b",
+          "instruction": "The host-neutral browser client must not import Node-only modules."
+        }
+      ],
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    "browser-scene-migration": {
+      "current_owner": "Shared TypeScript client with canonical-policy debt",
+      "disposition": "move-rust",
+      "follow_up_issue": 58,
+      "allowed_responsibilities": [
+        "Temporary tick consumption and browser-specific label presentation during scene migration."
+      ],
+      "forbidden_responsibilities": [
+        "Expanding canonical tick generation or layout policy in TypeScript."
+      ],
+      "forbidden_patterns": [],
+      "rationale": "Issue #58 makes tick and layout decisions part of the Rust-produced canonical scene."
+    },
+    "browser-wasm-migration": {
+      "current_owner": "Shared TypeScript fallback compute",
+      "disposition": "replace-with-rust-wasm",
+      "follow_up_issue": 59,
+      "allowed_responsibilities": [
+        "A bounded compatibility fallback and the future thin Worker adapter around Rust/WASM."
+      ],
+      "forbidden_responsibilities": [
+        "Expanding JavaScript row scans, binning, encoding, aggregation, layout, or other engine algorithms."
+      ],
+      "forbidden_patterns": [],
+      "rationale": "Issue #59 replaces kernel-less JavaScript compute with the same Rust engine compiled to WebAssembly."
+    }
+  },
+  "files": [
+    {
+      "path": "crates/xyg-core/src/lib.rs",
+      "current_owner": "Rust C ABI shell",
+      "policy": "rust-c-abi",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
+    },
+    {
+      "path": "crates/xyg-engine/src/css.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/font.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graph.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/hexbin.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/kernels.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/lib.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/lod_plan.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/raster.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/sankey.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/simd.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/stats.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/stream.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/svg.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/tiles.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/transition.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "js/src/00_header.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/10_colormaps.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/20_theme.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/30_ticks.ts",
+      "current_owner": "Shared TypeScript client with canonical-policy debt",
+      "policy": "browser-scene-migration",
+      "disposition": "move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 makes tick and layout decisions part of the Rust-produced canonical scene."
+    },
+    {
+      "path": "js/src/40_gl.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/42_glhost.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/45_lod.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/46_worker.ts",
+      "current_owner": "Shared TypeScript fallback compute",
+      "policy": "browser-wasm-migration",
+      "disposition": "replace-with-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 replaces kernel-less JavaScript compute with the same Rust engine compiled to WebAssembly."
+    },
+    {
+      "path": "js/src/50_chartview.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/51_annotations.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/52_tooltip.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/53_interaction.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/54_kernel.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/55_marks.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/56_animation.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/57_viewstate.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/58_graph.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/60_entries.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "packages/xy-node/src/abi.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/charts.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/color.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/encode.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/figure.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/force_scheduler.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/graph.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/html.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/index.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/marks/area.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/bar.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/box.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/contour.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/distribution.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/ecdf.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/error_band.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/errorbar.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/heatmap.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/hexbin.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/histogram.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/line.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/polar.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/radar.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/ribbon.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/scatter.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/segments.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/stem.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/step.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/triangle_mesh.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/marks/violin.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/native-path.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/native.js",
+      "current_owner": "Node low-level ABI binding",
+      "policy": "node-abi-generated",
+      "disposition": "generate",
+      "follow_up_issue": 57,
+      "rationale": "The Koffi declarations must be generated from the same typed contract as ctypes."
+    },
+    {
+      "path": "packages/xy-node/src/pyramid.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/sankey.js",
+      "current_owner": "Node host with canonical-policy debt",
+      "policy": "node-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
+    },
+    {
+      "path": "packages/xy-node/src/vscode.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "python/reflex_xy/__init__.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/app.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/assets/__init__.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/component.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/events.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/namespace.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/payload_asset.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/registry.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/selections.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/state_bridge.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/tokens.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/reflex_xy/vars.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/__init__.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_annotations.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_arrowgeom.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_benchmark_theme.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_chromium.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_figure.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_fontmetrics.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_framing.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_graph.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_hosts.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_jpeg.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_legendfit.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_native.py",
+      "current_owner": "Python low-level ABI binding",
+      "policy": "python-abi-generated",
+      "disposition": "generate",
+      "follow_up_issue": 57,
+      "rationale": "The low-level declarations must be generated from the typed shared ABI contract."
+    },
+    {
+      "path": "python/xy/_ooc.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_paint.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_payload.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_pdf.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_png.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_raster.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_sankey.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_scene.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_spatial.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_svg.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_textblock.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/_trace.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_typing.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_validate.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/_webp.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/channel.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/channels.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/columns.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/components.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/config.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/dom.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/export.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/facets.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/interaction.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/kernels.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/lod.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/marks.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
+      "path": "python/xy/plugins.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/__init__.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_artists.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_axes.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_axisgrid.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_colors.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_fmt.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_grid.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_markers.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_mathtext.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_mplfig.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_plot_types.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_rc.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_state.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_ticker.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_transforms.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/_translate.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/pyplot/dates.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/styles.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/styling/__init__.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/styling/capabilities.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xy/widget.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    }
+  ]
+}
