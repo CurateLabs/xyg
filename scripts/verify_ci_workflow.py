@@ -165,10 +165,11 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
                 _indent, key, unsafe, value = include_mapping
                 include_unsafe = include_unsafe or unsafe
                 if key == "os":
-                    if not value.strip() or value.lstrip().startswith(("{", "[", "${{")):
+                    raw_value = value.strip()
+                    if not raw_value or raw_value.startswith(("{", "[", "${{", '"', "'")):
                         include_unsafe = True
                     else:
-                        values.append(value.strip().strip("\"'"))
+                        values.append(raw_value)
                 continue
             if line.strip() and len(line) - len(line.lstrip()) >= 10:
                 include_unsafe = True
@@ -189,10 +190,10 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
                     value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
                     if value_match:
                         scalar = value_match.group(1).strip()
-                        if scalar.startswith(("{", "[", "|", ">", "${{")):
+                        if scalar.startswith(("{", "[", "|", ">", "${{", '"', "'")):
                             axis_unsafe = True
                         else:
-                            values.append(scalar.strip("\"'"))
+                            values.append(scalar)
                         continue
                     axis_unsafe = True
             continue
