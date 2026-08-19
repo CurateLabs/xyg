@@ -64,8 +64,11 @@ need separate bounded path/text records.
 Version 3 establishes the renderer-independent contract required before whole
 static exporters or the browser Worker consume canonical scenes. One generated
 `xyg_scene_batch_encode` ABI accepts bounded typed arrays and emits a stable
-little-endian byte batch; it does not emit SVG and never places numeric data in
-JSON. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
+little-endian byte batch; it never places numeric data in JSON. The same exact
+batch is accepted by `xyg_scene_svg` for a complete SVG and by
+`xyg_scene_raster_commands` for the existing native raster display list. Both
+consumers fail closed on malformed version, widths, length, reserved fields,
+kinds, styles, coordinates, or bounds. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
 two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64
 domain, and symlog constant). A bounded embedded style table (maximum 65,536
 entries) makes every style reference batch-local and independently resolvable:
@@ -148,9 +151,16 @@ reject unknown kinds, and enforce the reserved-zero fields above. They must not
 infer a different grouping or corner convention.
 
 The existing `xyg_scene_scatter_svg` entry point remains a compatibility
-wrapper during migration. Version 3 intentionally does not add mark-specific
-SVG ABIs: native SVG/raster consumers and the Rust/WASM browser Worker attach
-to this single scene batch in subsequent slices.
+wrapper during migration. Version 3 intentionally has no mark-specific new SVG
+ABIs: whole-scene SVG/raster consumers attach to the single scene batch.
+Python `Figure.to_scene()` and Node `Figure.toScene()` compile the migrated
+constant-style cartesian scatter/line/bar subset plus two axes. Python native
+SVG/PNG routes select it for the representative mixed scatter/line/bar figure;
+other combinations remain on the compatibility path while migration proceeds. PDF
+converts the Rust-generated SVG. Unsupported marks or customization raise from
+the explicit scene API and retain the established exporter as the compatibility
+fallback from public static export. This is a migration boundary, not a silent
+approximation.
 
 ## Evidence and extension order
 
@@ -159,7 +169,6 @@ prove the public scatter exporter consumes the Rust scene and preserves its
 custom-marker fallback. Node tests consume the same scene fixture and expected
 fragment. ABI generation, parity, and version-first loading cover both hosts.
 
-Next slices add time/category/angular ticks, remaining mark families,
-chrome/legend/annotation records, and native whole-scene SVG, PNG, and PDF
-consumption. Browser DOM measurement and WebGL paint remain
+Next slices add time/category/angular ticks, tick text, remaining mark families,
+chrome/legend/annotation records, and browser consumption. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

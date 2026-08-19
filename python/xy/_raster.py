@@ -3568,6 +3568,27 @@ def to_png(
     background: Optional[str] = None,
 ) -> bytes:
     """Render `fig` to PNG bytes with the native rasterizer (no browser)."""
+    if background is None and {trace.kind for trace in fig.traces} == {"scatter", "line", "bar"}:
+        from . import _scene_v3, kernels
+
+        try:
+            logical_width = int(width if width is not None else fig.width)
+            logical_height = int(height if height is not None else fig.height)
+            commands = _scene_v3.figure_raster_commands(
+                fig, width=logical_width, height=logical_height, scale=scale
+            )
+            pixel_width = round(logical_width * scale)
+            pixel_height = round(logical_height * scale)
+            if fast:
+                data = kernels.rasterize_png(commands, pixel_width, pixel_height)
+            else:
+                data = _png.encode(kernels.rasterize(commands, pixel_width, pixel_height))
+            if path is not None:
+                with open(path, "wb") as destination:
+                    destination.write(data)
+            return data
+        except _scene_v3.UnsupportedSceneV3:
+            pass
     # The fused Rust PNG path initializes an opaque white canvas, so any
     # non-default background must take the raw-RGBA encode branch.
     fast = fast and background is None

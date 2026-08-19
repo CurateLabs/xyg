@@ -2234,9 +2234,29 @@ class Figure(AnnotationsMixin, PayloadMixin):
         payload the browser client consumes — resolution-independent, tiny
         (screen-bounded regardless of source size), and dependency-free.
         `width`/`height` override the figure's pixel size."""
-        from . import _svg
+        from . import _scene_v3, _svg
 
-        return _svg.to_svg(self, path, width=width, height=height)
+        if {trace.kind for trace in self.traces} != {"scatter", "line", "bar"}:
+            return _svg.to_svg(self, path, width=width, height=height)
+        try:
+            rendered = _scene_v3.figure_svg(self, width=width, height=height)
+        except _scene_v3.UnsupportedSceneV3:
+            return _svg.to_svg(self, path, width=width, height=height)
+        if path is not None:
+            with open(path, "w", encoding="utf-8") as destination:
+                destination.write(rendered)
+        return rendered
+
+    def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:
+        """Compile the migrated scatter/line/bar subset to canonical Scene v3.
+
+        Unsupported marks or customization raise explicitly; ordinary SVG and
+        raster exports retain their established renderer as the compatibility
+        fallback until those records migrate.
+        """
+        from . import _scene_v3
+
+        return _scene_v3.figure_scene(self, width=width, height=height)
 
     def to_png(
         self,

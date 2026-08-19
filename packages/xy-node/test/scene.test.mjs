@@ -1,10 +1,31 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
 import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneVersion } from "../src/index.js";
+import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
+const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
+
+test("Node figure compiles the exact shared scatter, line, bar Scene v3 fixture", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+  figure.scatter([1, 2], [2, 3], { id: 0, style: { color: "#3987e5", size: 6, opacity: 0.8 } });
+  figure.line([1, 2, 3], [1, 4, 2], { id: 1, color: "#ef4444", width: 2 });
+  figure.bar([1, 2], [3, 2], { id: 2, color: "#22c55e", opacity: 0.85 });
+  const encoded = figure.toScene();
+  assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), figureSceneFixture.expected_sha256);
+  assert.match(sceneSvg(encoded), /^<svg xmlns=/);
+  assert.ok(sceneRasterCommands(encoded).length > 100);
+});
+
+test("Node Scene v3 whole-scene consumers reject malformed and unsupported input", () => {
+  assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
+  const figure = new Figure().area([0, 1], [1, 2]);
+  assert.throws(() => figure.toScene(), /does not yet support area/);
+});
 
 test("Node Scene v3 matches shared scatter, line, bar, and axis bytes", () => {
   const encoded = sceneBatchEncode({

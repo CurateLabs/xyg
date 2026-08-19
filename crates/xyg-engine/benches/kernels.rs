@@ -17,7 +17,7 @@
 use divan::{black_box, Bencher};
 
 use xyg_engine::kernels::{self, DEFAULT_CHUNK};
-use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch};
+use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneDocument};
 
 fn main() {
     divan::main();
@@ -161,7 +161,7 @@ fn is_sorted_f64(bencher: Bencher, n: usize) {
 }
 
 /// Scene v3's shared scale/layout/record encoding path for mixed core marks.
-#[divan::bench(args = [SMALL_N, MEDIUM_N])]
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
 fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
     let mut x = uniform(n, 0x0055_AA11);
     let mut y = uniform(n, 0x0066_BB22);
@@ -211,4 +211,53 @@ fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
     )
     .unwrap();
     bencher.bench(|| black_box(batch.encode()));
+}
+
+fn scene_v3_document(n: usize) -> SceneDocument {
+    let x = uniform(n, 0x0055_AA11);
+    let y = uniform(n, 0x0066_BB22);
+    let kinds: Vec<u8> = (0..n).map(|index| (index % 3) as u8).collect();
+    let ids: Vec<u64> = (0..n as u64).collect();
+    let style_refs: Vec<u32> = (0..n).map(|index| (index % 8) as u32).collect();
+    let diameter: Vec<f64> = kinds
+        .iter()
+        .map(|kind| if *kind == 0 { 6.0 } else { 0.0 })
+        .collect();
+    let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
+    let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
+    let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
+    let encoded = SceneBatch::new(
+        layout,
+        1,
+        2,
+        sx,
+        sy,
+        &kinds,
+        &ids,
+        &style_refs,
+        &vec![0x88; 32],
+        &vec![0x22; 32],
+        &vec![1.0; 8],
+        &diameter,
+        &vec![0; n],
+        &x,
+        &y,
+        &x,
+        &y,
+    )
+    .unwrap()
+    .encode();
+    SceneDocument::decode(&encoded).unwrap()
+}
+
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_v3_svg(bencher: Bencher, n: usize) {
+    let document = scene_v3_document(n);
+    bencher.bench(|| black_box(document.to_svg()));
+}
+
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_v3_raster_commands(bencher: Bencher, n: usize) {
+    let document = scene_v3_document(n);
+    bencher.bench(|| black_box(document.to_raster_commands(1.0).unwrap()));
 }

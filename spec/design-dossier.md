@@ -515,9 +515,12 @@ F3, still pending (above).
   and independently renderable scatter (symbol + diameter), polyline, and
   rectangle records with stable IDs and extent-aware clipping. Numeric records
   are fixed little-endian bytes, never JSON. The legacy version-1 scatter SVG
-  wrapper remains only as a migration consumer; #58 next connects public figure
-  compilation and whole-scene native export without moving browser paint or
-  interaction lifecycle out of TypeScript.
+  wrapper remains only as a migration consumer. The first #58 whole-scene slice
+  compiles constant-style cartesian scatter/line/bar figures in Python and Node,
+  then feeds the exact same Scene v3 bytes to Rust SVG and native-raster command
+  consumers. Unsupported marks/customization use an explicit compatibility
+  boundary while records migrate; browser paint and interaction lifecycle stay
+  in TypeScript.
 - **GPU picking** for hover/select — render IDs to an offscreen target, read back the
   pixel under the cursor. O(1) regardless of point count.
 

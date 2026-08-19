@@ -1077,13 +1077,20 @@ def _native_image(
     if fmt == "svg":
         from . import _svg
 
-        return _svg.to_svg(fig, None, width=width, height=height, background=background).encode(
-            "utf-8"
+        svg = (
+            fig.to_svg(width=width, height=height)
+            if background is None
+            else _svg.to_svg(fig, None, width=width, height=height, background=background)
         )
+        return svg.encode("utf-8")
     if fmt == "pdf":
         from . import _pdf, _svg
 
-        svg = _svg.to_svg(fig, None, width=width, height=height, background=background)
+        svg = (
+            fig.to_svg(width=width, height=height)
+            if background is None
+            else _svg.to_svg(fig, None, width=width, height=height, background=background)
+        )
         return _pdf.svg_to_pdf(svg)
     rgba = _raster.to_rgba(fig, width=width, height=height, scale=scale, background=background)
     if fmt == "jpeg":

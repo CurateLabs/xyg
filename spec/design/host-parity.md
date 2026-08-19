@@ -46,9 +46,13 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 The #58 scene migration is active: scene schema version 3 provides one
 backend-neutral Rust-owned typed batch for canonical plot layout, axes,
 scatter, polyline, and rectangle records through both host bindings. The v1
-scatter SVG wrapper remains temporarily for static-export compatibility. See
-[scene-ir.md](scene-ir.md). Python custom glyph/path markers remain an explicit
-compatibility exception until bounded path and text records land.
+scatter SVG wrapper remains temporarily for scatter-only compatibility. Python
+and Node now compile the same representative constant-style scatter/line/bar
+figure fixture to identical Scene bytes; Rust consumes those bytes for complete
+SVG and native-raster commands. Python PDF consumes the Rust SVG. See
+[scene-ir.md](scene-ir.md). Python custom glyph/path markers and other
+not-yet-migrated customization remain explicit compatibility exceptions until
+bounded path, text, and chrome records land.
 
 ### Contracts (MUST)
 

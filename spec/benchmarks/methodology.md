@@ -245,7 +245,7 @@ authenticates to CodSpeed over OIDC (`id-token: write`); it does not read a
 wall time, so browser, install, and cross-library process benchmarks stay out of
 it — those live in `benchmark-refresh.yml`, and the workflow says so inline.
 
-`crates/xyg-engine/benches/kernels.rs` — **20 rows** — is the Rust half of the
+`crates/xyg-engine/benches/kernels.rs` — **27 rows** — is the Rust half of the
 same gate: divan benchmarks on the kernel entry points themselves (zone maps,
 `min_max`, offset-encoded f32, M4, viewport binning, density log-encode,
 uniform histogram, box selection, sorted-ingest predicate), parametrized over

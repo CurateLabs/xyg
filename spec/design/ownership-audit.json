@@ -1086,6 +1086,14 @@
       "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
     },
     {
+      "path": "python/xy/_scene_v3.py",
+      "current_owner": "Python host with canonical-policy debt",
+      "policy": "python-scene-migration",
+      "disposition": "split-and-move-rust",
+      "follow_up_issue": 58,
+      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+    },
+    {
       "path": "python/xy/_spatial.py",
       "current_owner": "Python host",
       "policy": "python-host",

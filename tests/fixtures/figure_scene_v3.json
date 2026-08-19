@@ -1,0 +1,6 @@
+{
+  "viewport": [320, 240],
+  "x_domain": [0, 4],
+  "y_domain": [0, 5],
+  "expected_sha256": "443c14fd412cc93269e3a29744461a9d4fc47f5e77c0fed42865e958111da3ca"
+}

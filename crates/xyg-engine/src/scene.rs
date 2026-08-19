@@ -591,6 +591,454 @@ impl<'a> SceneBatch<'a> {
     }
 }
 
+#[derive(Clone, Copy)]
+struct EncodedStyle {
+    fill: [u8; 4],
+    stroke: [u8; 4],
+    stroke_width: f64,
+}
+
+#[derive(Clone, Copy)]
+struct EncodedRecord {
+    kind: SceneRecordKind,
+    visible: bool,
+    symbol: u8,
+    style_ref: usize,
+    stable_id: u64,
+    coordinates: [f64; 4],
+    diameter: f64,
+}
+
+/// Validated, owned Scene v3 document consumed identically by vector and
+/// raster export. Hosts never reinterpret record geometry after encoding.
+pub struct SceneDocument {
+    layout: PlotLayout,
+    styles: Vec<EncodedStyle>,
+    records: Vec<EncodedRecord>,
+}
+
+impl SceneDocument {
+    pub fn decode(bytes: &[u8]) -> Result<Self, SceneError> {
+        if bytes.len() < SCENE_BATCH_HEADER_BYTES || &bytes[..4] != b"XYGS" {
+            return Err(SceneError::Length);
+        }
+        let u32_at = |offset| {
+            u32::from_le_bytes(
+                bytes[offset..offset + 4]
+                    .try_into()
+                    .expect("bounded header"),
+            )
+        };
+        let u64_at = |offset| {
+            u64::from_le_bytes(
+                bytes[offset..offset + 8]
+                    .try_into()
+                    .expect("bounded header"),
+            )
+        };
+        let f64_at = |offset| {
+            f64::from_le_bytes(
+                bytes[offset..offset + 8]
+                    .try_into()
+                    .expect("bounded header"),
+            )
+        };
+        if u32_at(4) != SCENE_VERSION
+            || u32_at(8) as usize != SCENE_BATCH_HEADER_BYTES
+            || u32_at(12) as usize != SCENE_BATCH_RECORD_BYTES
+        {
+            return Err(SceneError::Length);
+        }
+        let record_count = usize::try_from(u64_at(16)).map_err(|_| SceneError::Limit)?;
+        let style_count = usize::try_from(u64_at(24)).map_err(|_| SceneError::Limit)?;
+        if record_count > MAX_SCENE_MARKS || style_count > MAX_SCENE_STYLES {
+            return Err(SceneError::Limit);
+        }
+        let required = SCENE_BATCH_HEADER_BYTES
+            .checked_add(
+                style_count
+                    .checked_mul(SCENE_STYLE_RECORD_BYTES)
+                    .ok_or(SceneError::Limit)?,
+            )
+            .and_then(|value| {
+                value.checked_add(record_count.checked_mul(SCENE_BATCH_RECORD_BYTES)?)
+            })
+            .ok_or(SceneError::Limit)?;
+        if bytes.len() != required {
+            return Err(SceneError::Length);
+        }
+        let viewport_width = f64_at(32);
+        let viewport_height = f64_at(40);
+        let left = f64_at(48);
+        let top = f64_at(56);
+        let right = f64_at(64);
+        let bottom = f64_at(72);
+        let layout = PlotLayout::new(
+            viewport_width,
+            viewport_height,
+            left,
+            viewport_width - right,
+            top,
+            viewport_height - bottom,
+        )?;
+        if bytes[96] > ScaleKind::SymLog as u8
+            || bytes[104] > ScaleKind::SymLog as u8
+            || !matches!(bytes[97], 0 | 1)
+            || !matches!(bytes[105], 0 | 1)
+            || bytes[98..104] != [0; 6]
+            || bytes[106..112] != [0; 6]
+            || (112..160)
+                .step_by(8)
+                .any(|offset| !f64_at(offset).is_finite())
+            || f64_at(144) <= 0.0
+            || f64_at(152) <= 0.0
+        {
+            return Err(SceneError::NonFinite);
+        }
+        let mut styles = Vec::with_capacity(style_count);
+        let mut offset = SCENE_BATCH_HEADER_BYTES;
+        for _ in 0..style_count {
+            let stroke_width = f64::from_le_bytes(
+                bytes[offset + 8..offset + 16]
+                    .try_into()
+                    .expect("bounded style"),
+            );
+            if !stroke_width.is_finite() || stroke_width < 0.0 {
+                return Err(SceneError::NonFinite);
+            }
+            styles.push(EncodedStyle {
+                fill: bytes[offset..offset + 4].try_into().expect("bounded style"),
+                stroke: bytes[offset + 4..offset + 8]
+                    .try_into()
+                    .expect("bounded style"),
+                stroke_width,
+            });
+            offset += SCENE_STYLE_RECORD_BYTES;
+        }
+        let mut records = Vec::with_capacity(record_count);
+        for _ in 0..record_count {
+            let kind = SceneRecordKind::from_code(bytes[offset])?;
+            let visible = match bytes[offset + 1] {
+                0 => false,
+                1 => true,
+                _ => return Err(SceneError::Length),
+            };
+            let symbol = bytes[offset + 2];
+            if bytes[offset + 3] != 0
+                || (kind == SceneRecordKind::Scatter && symbol > ScatterSymbol::X as u8)
+                || (kind != SceneRecordKind::Scatter && symbol != 0)
+            {
+                return Err(SceneError::Length);
+            }
+            let style_ref = u32::from_le_bytes(
+                bytes[offset + 4..offset + 8]
+                    .try_into()
+                    .expect("bounded record"),
+            ) as usize;
+            if style_ref >= styles.len() {
+                return Err(SceneError::Length);
+            }
+            let stable_id = u64::from_le_bytes(
+                bytes[offset + 8..offset + 16]
+                    .try_into()
+                    .expect("bounded record"),
+            );
+            let mut coordinates = [0.0; 4];
+            for (index, value) in coordinates.iter_mut().enumerate() {
+                *value = f64::from_le_bytes(
+                    bytes[offset + 16 + index * 8..offset + 24 + index * 8]
+                        .try_into()
+                        .expect("bounded record"),
+                );
+            }
+            let diameter = f64::from_le_bytes(
+                bytes[offset + 48..offset + 56]
+                    .try_into()
+                    .expect("bounded record"),
+            );
+            if coordinates.iter().any(|value| !value.is_finite())
+                || !diameter.is_finite()
+                || diameter < 0.0
+                || (kind != SceneRecordKind::Scatter && diameter != 0.0)
+                || (kind != SceneRecordKind::Rect && coordinates[2..] != [0.0, 0.0])
+                || (visible
+                    && kind == SceneRecordKind::Rect
+                    && (coordinates[0] > coordinates[2] || coordinates[1] > coordinates[3]))
+                || (!visible && coordinates != [0.0; 4])
+            {
+                return Err(SceneError::NonFinite);
+            }
+            records.push(EncodedRecord {
+                kind,
+                visible,
+                symbol,
+                style_ref,
+                stable_id,
+                coordinates,
+                diameter,
+            });
+            offset += SCENE_BATCH_RECORD_BYTES;
+        }
+        Ok(Self {
+            layout,
+            styles,
+            records,
+        })
+    }
+
+    pub fn to_svg(&self) -> String {
+        let mut out = String::with_capacity(self.records.len().saturating_mul(96));
+        out.push_str("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"");
+        push_num(&mut out, self.layout.viewport_width);
+        out.push_str("\" height=\"");
+        push_num(&mut out, self.layout.viewport_height);
+        out.push_str("\" viewBox=\"0 0 ");
+        push_num(&mut out, self.layout.viewport_width);
+        out.push(' ');
+        push_num(&mut out, self.layout.viewport_height);
+        out.push_str("\"><defs><clipPath id=\"xy-scene-plot\"><rect x=\"");
+        push_num(&mut out, self.layout.left);
+        out.push_str("\" y=\"");
+        push_num(&mut out, self.layout.top);
+        out.push_str("\" width=\"");
+        push_num(&mut out, self.layout.right - self.layout.left);
+        out.push_str("\" height=\"");
+        push_num(&mut out, self.layout.bottom - self.layout.top);
+        out.push_str("\"/></clipPath></defs><g clip-path=\"url(#xy-scene-plot)\">");
+        let mut index = 0;
+        while index < self.records.len() {
+            let record = self.records[index];
+            if !record.visible {
+                index += 1;
+                continue;
+            }
+            let style = self.styles[record.style_ref];
+            match record.kind {
+                SceneRecordKind::Scatter => {
+                    let symbol = ScatterSymbol::from_code(record.symbol);
+                    let geometry = MarkerGeometry::new(symbol, record.diameter, style.stroke_width);
+                    push_symbol(
+                        &mut out,
+                        symbol,
+                        record.coordinates[0],
+                        record.coordinates[1],
+                        geometry.radius,
+                    );
+                    if symbol.is_line() {
+                        out.push_str(" fill=\"none\"");
+                    } else {
+                        push_paint(&mut out, "fill", style.fill, None);
+                    }
+                    if geometry.stroke_width > 0.0 || symbol.is_line() {
+                        push_paint(&mut out, "stroke", style.stroke, None);
+                        out.push_str(" stroke-width=\"");
+                        push_num(&mut out, geometry.stroke_width);
+                        out.push('"');
+                    }
+                    out.push_str("/>");
+                    index += 1;
+                }
+                SceneRecordKind::Rect => {
+                    out.push_str("<rect x=\"");
+                    push_num(&mut out, record.coordinates[0]);
+                    out.push_str("\" y=\"");
+                    push_num(&mut out, record.coordinates[1]);
+                    out.push_str("\" width=\"");
+                    push_num(&mut out, record.coordinates[2] - record.coordinates[0]);
+                    out.push_str("\" height=\"");
+                    push_num(&mut out, record.coordinates[3] - record.coordinates[1]);
+                    out.push('"');
+                    push_paint(&mut out, "fill", style.fill, None);
+                    if style.stroke_width > 0.0 {
+                        push_paint(&mut out, "stroke", style.stroke, None);
+                        out.push_str(" stroke-width=\"");
+                        push_num(&mut out, style.stroke_width);
+                        out.push('"');
+                    }
+                    out.push_str("/>");
+                    index += 1;
+                }
+                SceneRecordKind::Polyline => {
+                    out.push_str("<polyline points=\"");
+                    let id = record.stable_id;
+                    let style_ref = record.style_ref;
+                    while index < self.records.len() {
+                        let point = self.records[index];
+                        if point.kind != SceneRecordKind::Polyline
+                            || point.stable_id != id
+                            || point.style_ref != style_ref
+                            || !point.visible
+                        {
+                            break;
+                        }
+                        if index > 0 {
+                            out.push(' ');
+                        }
+                        push_num(&mut out, point.coordinates[0]);
+                        out.push(',');
+                        push_num(&mut out, point.coordinates[1]);
+                        index += 1;
+                    }
+                    out.push_str("\" fill=\"none\"");
+                    push_paint(&mut out, "stroke", style.stroke, None);
+                    out.push_str(" stroke-width=\"");
+                    push_num(&mut out, style.stroke_width);
+                    out.push_str("\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>");
+                }
+            }
+        }
+        out.push_str("</g><g><path fill=\"none\" stroke=\"rgb(0,0,0)\" stroke-width=\"1\" d=\"M ");
+        push_num(&mut out, self.layout.left);
+        out.push(' ');
+        push_num(&mut out, self.layout.bottom);
+        out.push_str(" H ");
+        push_num(&mut out, self.layout.right);
+        out.push_str("\"/><path fill=\"none\" stroke=\"rgb(0,0,0)\" stroke-width=\"1\" d=\"M ");
+        push_num(&mut out, self.layout.left);
+        out.push(' ');
+        push_num(&mut out, self.layout.top);
+        out.push_str(" V ");
+        push_num(&mut out, self.layout.bottom);
+        out.push_str("\"/></g></svg>");
+        out
+    }
+
+    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
+        if !scale.is_finite() || scale <= 0.0 {
+            return Err(SceneError::NonFinite);
+        }
+        let mut out = Vec::with_capacity(self.records.len().saturating_mul(40));
+        let f32_push = |out: &mut Vec<u8>, value: f64| {
+            out.extend_from_slice(&((value * scale) as f32).to_le_bytes())
+        };
+        out.push(0);
+        f32_push(&mut out, self.layout.left);
+        f32_push(&mut out, self.layout.top);
+        f32_push(&mut out, self.layout.right - self.layout.left);
+        f32_push(&mut out, self.layout.bottom - self.layout.top);
+        let mut index = 0;
+        while index < self.records.len() {
+            let record = self.records[index];
+            if !record.visible {
+                index += 1;
+                continue;
+            }
+            let style = self.styles[record.style_ref];
+            match record.kind {
+                SceneRecordKind::Scatter => {
+                    let geometry = MarkerGeometry::new(
+                        ScatterSymbol::from_code(record.symbol),
+                        record.diameter,
+                        style.stroke_width,
+                    );
+                    out.push(4);
+                    f32_push(&mut out, record.coordinates[0]);
+                    f32_push(&mut out, record.coordinates[1]);
+                    f32_push(&mut out, geometry.radius);
+                    out.push(record.symbol);
+                    out.extend_from_slice(&style.fill);
+                    f32_push(&mut out, geometry.stroke_width);
+                    out.extend_from_slice(&style.stroke);
+                    index += 1;
+                }
+                SceneRecordKind::Rect => {
+                    let points = [
+                        (record.coordinates[0], record.coordinates[1]),
+                        (record.coordinates[2], record.coordinates[1]),
+                        (record.coordinates[2], record.coordinates[3]),
+                        (record.coordinates[0], record.coordinates[3]),
+                    ];
+                    out.push(1);
+                    out.extend_from_slice(&4u32.to_le_bytes());
+                    for (x, y) in points {
+                        f32_push(&mut out, x);
+                        f32_push(&mut out, y);
+                    }
+                    out.extend_from_slice(&style.fill);
+                    if style.stroke_width > 0.0 {
+                        out.push(3);
+                        out.extend_from_slice(&4u32.to_le_bytes());
+                        for (x, y) in points {
+                            f32_push(&mut out, x);
+                            f32_push(&mut out, y);
+                        }
+                        f32_push(&mut out, style.stroke_width);
+                        out.extend_from_slice(&style.stroke);
+                        out.push(1);
+                        out.extend_from_slice(&0u32.to_le_bytes());
+                        out.push(1);
+                    }
+                    index += 1;
+                }
+                SceneRecordKind::Polyline => {
+                    let start = index;
+                    let id = record.stable_id;
+                    let style_ref = record.style_ref;
+                    while index < self.records.len() {
+                        let point = self.records[index];
+                        if point.kind != SceneRecordKind::Polyline
+                            || point.stable_id != id
+                            || point.style_ref != style_ref
+                            || !point.visible
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                    let count = index - start;
+                    if count >= 2 && style.stroke_width > 0.0 {
+                        out.push(3);
+                        out.extend_from_slice(&(count as u32).to_le_bytes());
+                        for point in &self.records[start..index] {
+                            f32_push(&mut out, point.coordinates[0]);
+                            f32_push(&mut out, point.coordinates[1]);
+                        }
+                        f32_push(&mut out, style.stroke_width);
+                        out.extend_from_slice(&style.stroke);
+                        out.push(0);
+                        out.extend_from_slice(&0u32.to_le_bytes());
+                        out.push(1);
+                    }
+                }
+            }
+        }
+        // Reset the plot clip before chrome, then draw the canonical bottom
+        // and left axes through the same display-list primitive as line marks.
+        out.push(0);
+        for value in [
+            0.0,
+            0.0,
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+        ] {
+            f32_push(&mut out, value);
+        }
+        for points in [
+            [
+                (self.layout.left, self.layout.bottom),
+                (self.layout.right, self.layout.bottom),
+            ],
+            [
+                (self.layout.left, self.layout.top),
+                (self.layout.left, self.layout.bottom),
+            ],
+        ] {
+            out.push(3);
+            out.extend_from_slice(&2u32.to_le_bytes());
+            for (x, y) in points {
+                f32_push(&mut out, x);
+                f32_push(&mut out, y);
+            }
+            f32_push(&mut out, 1.0);
+            out.extend_from_slice(&[0, 0, 0, 255]);
+            out.push(0);
+            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push(1);
+        }
+        Ok(out)
+    }
+}
+
 pub struct ScatterScene<'a> {
     x: &'a [f64],
     y: &'a [f64],
@@ -1032,6 +1480,65 @@ mod tests {
             })
             .collect();
         assert_eq!(rect_coords, vec![156.0, 142.0, 272.0, 318.0]);
+    }
+
+    #[test]
+    fn scene_v3_document_drives_svg_and_raster_from_same_records() {
+        let layout = PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let sx = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 10.0, 110.0, 1.0, false).unwrap();
+        let sy = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 90.0, 10.0, 1.0, false).unwrap();
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            sx,
+            sy,
+            &[0, 1, 1, 2],
+            &[10, 20, 20, 30],
+            &[0, 1, 1, 2],
+            &[57, 135, 229, 255, 0, 0, 0, 0, 57, 135, 229, 180],
+            &[0, 0, 0, 255, 239, 68, 68, 255, 0, 0, 0, 255],
+            &[1.0, 2.0, 1.0],
+            &[8.0, 0.0, 0.0, 0.0],
+            &[2, 0, 0, 0],
+            &[2.0, 1.0, 8.0, 4.0],
+            &[3.0, 2.0, 7.0, 1.0],
+            &[0.0, 0.0, 0.0, 6.0],
+            &[0.0, 0.0, 0.0, 5.0],
+        )
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(svg.starts_with("<svg "));
+        assert!(
+            svg.contains("<path d=\"M ")
+                && svg.contains("<polyline points=\"")
+                && svg.contains("<rect x=\"")
+        );
+        let commands = document.to_raster_commands(2.0).unwrap();
+        assert!(commands.contains(&4)); // point
+        assert!(commands.contains(&3)); // polyline + axes
+        assert!(commands.contains(&1)); // rectangle fill
+        assert!(crate::raster::rasterize_into(
+            &commands,
+            240,
+            200,
+            &mut vec![0; 240 * 200 * 4]
+        ));
+
+        let mut malformed = encoded;
+        malformed[4] = 99;
+        assert!(SceneDocument::decode(&malformed).is_err());
+        let mut bad_reserved = malformed.clone();
+        bad_reserved[4..8].copy_from_slice(&SCENE_VERSION.to_le_bytes());
+        bad_reserved[98] = 1;
+        assert!(SceneDocument::decode(&bad_reserved).is_err());
+        let mut bad_kind = bad_reserved.clone();
+        bad_kind[98] = 0;
+        bad_kind[SCENE_BATCH_HEADER_BYTES + 3 * SCENE_STYLE_RECORD_BYTES] = 9;
+        assert!(SceneDocument::decode(&bad_kind).is_err());
+        assert!(SceneDocument::decode(&bad_kind[..bad_kind.len() - 1]).is_err());
     }
 
     #[test]
