@@ -86,7 +86,8 @@ reported).
 
 ## 4. Environment & disclosure protocol
 
-- **Two tiers of numbers:** (a) CI numbers — pinned Blacksmith Ubuntu runner,
+- **Two tiers of numbers:** (a) CI numbers — pinned Blacksmith
+  `blacksmith-4vcpu-ubuntu-2404` runner image,
   SwiftShader software GL; reproducible from the repo workflow, labeled
   "CI (software GL)"; (b) reference-hardware numbers — one pinned desktop
   spec (documented CPU/GPU/driver/browser build), labeled as such. Never mix

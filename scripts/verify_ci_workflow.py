@@ -1575,13 +1575,22 @@ def validate_workflow_hosting_policy(
         except OSError as exc:
             errors.append(f"cannot read workflow {path}: {exc}")
             continue
+        normalized_shell = re.sub(r"\\\s*\n\s*", " ", text)
+        if re.search(
+            r"playwright\s+install(?:\s+[^\n]*?)?\s+--with-deps(?:\s|$)",
+            normalized_shell,
+        ):
+            errors.append(
+                f"{path} Playwright install must not use --with-deps; "
+                "install bounded browser-specific runtime dependencies separately"
+            )
         for lineno, line in enumerate(text.splitlines(), start=1):
             code = line.split("#", 1)[0]
             stripped = code.strip()
             if re.search(
-                r"(?:^|[\s,{\[])"
+                r"(?:^|[\s,{\[\"'])"
                 r"(?:ubuntu-latest|ubuntu-24\.04-arm|windows-latest|macos-latest|macos-\d+(?:-large)?)"
-                r"(?=$|[\s,}\]])",
+                r"(?=$|[\s,}\]\"'])",
                 code,
             ):
                 errors.append(
@@ -1595,11 +1604,6 @@ def validate_workflow_hosting_policy(
                         f"{path}:{lineno} jobs must use Blacksmith runners "
                         f"(CodSpeed remains the hosted performance authority), got {runner}"
                     )
-            if "playwright install" in code and "--with-deps" in code:
-                errors.append(
-                    f"{path}:{lineno} Playwright install must not use --with-deps; "
-                    "Blacksmith images carry the runner libraries and apt mirrors can hang"
-                )
     return errors
 
 

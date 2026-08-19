@@ -50,7 +50,9 @@ branch of `reflex-dev/xy`. CI therefore retains only workflows whose external
 integrations are owned or explicitly controlled by CurateLabs:
 
 - Every Actions job runs on a pinned Blacksmith Linux, ARM, Windows, or macOS
-  runner; no workflow may use a GitHub-hosted runner alias. `ci.yml`,
+  runner; the canonical Linux CI image is
+  `blacksmith-4vcpu-ubuntu-2404`, and no workflow may use a GitHub-hosted
+  runner alias. `ci.yml`,
   `docs.yml`, `binder.yml`, and `bazel.yml` are hard verification paths.
   Binder builds locally with repo2docker; Bazel keeps uv's cache inside the
   writable workspace.
@@ -61,12 +63,12 @@ integrations are owned or explicitly controlled by CurateLabs:
   workflows. The ceiling sweep uses a billed Blacksmith macOS 15 runner.
 - `publish.yaml` is the guarded `xyg` release workflow described below.
 
-Playwright browser artifacts are cached on Blacksmith. Install steps download
-only the pinned browsers and are time-bounded; they never invoke Playwright's
-coupled `--with-deps` path. Blacksmith images carry the Chromium and Firefox
-runner libraries. The three-engine job installs only WebKit's additional
-runtime libraries in a separate ten-minute-bounded step. Real browser launches
-remain the dependency proof.
+Playwright browser artifacts are cached on Blacksmith. Chromium-only install
+steps have a ten-minute bound and the three-engine install has a fifteen-minute
+bound; none invokes Playwright's coupled `--with-deps` path. Blacksmith images
+carry the Chromium and Firefox runner libraries. The three-engine job installs
+only WebKit's additional runtime libraries in a separate ten-minute-bounded
+step. Real browser launches remain the dependency proof.
 
 The inherited reflex.dev deployment workflows were removed. They built images
 for upstream AWS, Harbor, and Azure registries, changed

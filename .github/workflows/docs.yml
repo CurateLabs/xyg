@@ -60,12 +60,6 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
-      - name: Cache Playwright Chromium
-        if: matrix.python-version == '3.12'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-docs-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('docs/app/uv.lock') }}
       - name: Install docs dependencies
         run: uv sync --project docs/app --frozen --group dev
       - name: Run docs tests
@@ -108,6 +102,12 @@ jobs:
         env:
           REFLEX_TELEMETRY_ENABLED: "false"
         run: uv run --no-sync reflex init
+      - name: Cache Playwright Chromium
+        if: matrix.python-version == '3.12'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-docs-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('docs/app/uv.lock') }}
       - name: Install Chromium for the production-DOM accessibility check
         if: matrix.python-version == '3.12'
         working-directory: docs/app
