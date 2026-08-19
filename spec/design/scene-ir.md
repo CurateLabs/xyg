@@ -16,7 +16,7 @@ The IR is an in-process typed contract, not a JSON data path. Numeric arrays
 cross the C ABI as bounded typed buffers and remain subject to the dossier's
 §29 prohibition on JSON numbers on the browser wire.
 
-## Version 1: built-in scatter scene
+## Version 1: built-in scatter scene and common numeric ticks
 
 Version 1 contains a screen-space scatter scene with one record per mark:
 
@@ -35,6 +35,13 @@ visibility, deterministic numeric formatting, and SVG fragment construction.
 Unknown symbol codes fail closed to the circle shape, matching the existing
 compatibility fallback.
 
+The same schema owns bounded f64 tick records for linear and base-10 log axes.
+Each record carries all tick positions, the labeled subset, and the canonical
+step. Rust applies the existing 1/2/2.5/5/10 linear ladder and 1/2/5 log
+ladder, with a hard 200-tick ceiling. Python's SVG and raster exporters call
+this record through `_svg._linear_ticks` and `_svg._log_ticks`; Node exposes it
+as `axisTicks`. Invalid domains and target counts fail closed at the ABI.
+
 Python calls this path from `_svg._scatter_marks`; Node exposes the same record
 through `scatterSceneSvg`. Python remains responsible for ingest coercion,
 public validation text, channel-to-RGBA resolution, scales, and polar projection
@@ -49,7 +56,8 @@ prove the public scatter exporter consumes the Rust scene and preserves its
 custom-marker fallback. Node tests consume the same scene fixture and expected
 fragment. ABI generation, parity, and version-first loading cover both hosts.
 
-Next slices add scales/layout/ticks, line and area records, remaining mark
+Next slices add time/category/angular/symlog ticks and scale/layout records,
+line and area records, remaining mark
 families, chrome/legend/annotation records, and finally native whole-scene SVG,
 PNG, and PDF consumption. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).
