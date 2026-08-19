@@ -163,8 +163,12 @@ fn is_sorted_f64(bencher: Bencher, n: usize) {
 /// Scene v3's shared scale/layout/record encoding path for mixed core marks.
 #[divan::bench(args = [SMALL_N, MEDIUM_N])]
 fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
-    let x = uniform(n, 0x0055_AA11);
-    let y = uniform(n, 0x0066_BB22);
+    let mut x = uniform(n, 0x0055_AA11);
+    let mut y = uniform(n, 0x0066_BB22);
+    for index in (0..n).step_by(97) {
+        x[index] = if index % 2 == 0 { -0.25 } else { 1.25 };
+        y[index] = if index % 4 < 2 { 1.25 } else { -0.25 };
+    }
     let kinds: Vec<u8> = (0..n).map(|index| (index % 3) as u8).collect();
     let ids: Vec<u64> = (0..n as u64).collect();
     let styles: Vec<u32> = (0..n).map(|index| (index % 8) as u32).collect();
@@ -176,6 +180,13 @@ fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
         .map(|kind| if *kind == 0 { 6.0 } else { 0.0 })
         .collect();
     let symbols = vec![0u8; n];
+    let mut x1 = x.clone();
+    let mut y1 = y.clone();
+    for index in (2..n).step_by(3) {
+        let direction = if index % 2 == 0 { -1.0 } else { 1.0 };
+        x1[index] = x[index] + direction * 0.15;
+        y1[index] = y[index] - direction * 0.1;
+    }
     let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
     let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
     let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
@@ -195,8 +206,8 @@ fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
         &symbols,
         &x,
         &y,
-        &x,
-        &y,
+        &x1,
+        &y1,
     )
     .unwrap();
     bencher.bench(|| black_box(batch.encode()));

@@ -1525,14 +1525,37 @@ def scene_batch_encode(
     y1: npt.ArrayLike,
 ) -> bytes:
     """Encode the bounded backend-neutral Scene v3 typed batch."""
-    kind_array = np.ascontiguousarray(kinds, dtype=np.uint8).reshape(-1)
-    ids = np.ascontiguousarray(stable_ids, dtype=np.uint64).reshape(-1)
-    styles = np.ascontiguousarray(style_refs, dtype=np.uint32).reshape(-1)
-    fills = np.ascontiguousarray(fill_rgba, dtype=np.uint8).reshape(-1)
-    strokes = np.ascontiguousarray(stroke_rgba, dtype=np.uint8).reshape(-1)
+
+    def scene_uint(
+        value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
+    ) -> np.ndarray:
+        raw = np.asarray(value)
+        if raw.ndim != 1:
+            raise ValueError(f"{name} must be 1-D, got shape {raw.shape}")
+        if (
+            raw.size
+            and not np.issubdtype(raw.dtype, np.integer)
+            and (
+                raw.dtype != np.dtype(object)
+                or any(
+                    isinstance(item, (bool, np.bool_)) or not isinstance(item, (int, np.integer))
+                    for item in raw
+                )
+            )
+        ):
+            raise ValueError(f"{name} must contain unsigned integers")
+        if any(int(item) < 0 or int(item) > maximum for item in raw):
+            raise ValueError(f"{name} values exceed their unsigned integer range")
+        return np.ascontiguousarray(raw, dtype=dtype)
+
+    kind_array = scene_uint(kinds, np.uint8, np.iinfo(np.uint8).max, "scene kinds")
+    ids = scene_uint(stable_ids, np.uint64, np.iinfo(np.uint64).max, "scene stable_ids")
+    styles = scene_uint(style_refs, np.uint32, np.iinfo(np.uint32).max, "scene style_refs")
+    fills = scene_uint(fill_rgba, np.uint8, np.iinfo(np.uint8).max, "scene fill_rgba")
+    strokes = scene_uint(stroke_rgba, np.uint8, np.iinfo(np.uint8).max, "scene stroke_rgba")
     widths = _as_f64(np.asarray(stroke_width), "scene style stroke_width")
     diameters = _as_f64(np.asarray(diameter), "scene diameter")
-    symbol_codes = np.ascontiguousarray(symbols, dtype=np.uint8).reshape(-1)
+    symbol_codes = scene_uint(symbols, np.uint8, np.iinfo(np.uint8).max, "scene symbols")
     coordinates = [
         _as_f64(np.asarray(value), name)
         for value, name in ((x0, "scene x0"), (y0, "scene y0"), (x1, "scene x1"), (y1, "scene y1"))

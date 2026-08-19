@@ -21,6 +21,43 @@ function asU8Array(value, name) {
   }
 }
 
+function asUnsignedArray(value, name, max, TypedArray) {
+  if (value instanceof TypedArray) return value;
+  let items;
+  try {
+    items = Array.from(value);
+  } catch (error) {
+    throw new TypeError(`${name} must be an array-like unsigned integer sequence`, { cause: error });
+  }
+  for (const item of items) {
+    if (typeof item !== "number" || !Number.isInteger(item) || item < 0 || item > max) {
+      throw new RangeError(`${name} values must be integers from 0 through ${max}`);
+    }
+  }
+  return TypedArray.from(items);
+}
+
+function asStableIds(value) {
+  if (value instanceof BigUint64Array) return value;
+  let items;
+  try {
+    items = Array.from(value);
+  } catch (error) {
+    throw new TypeError("stableIds must be an array-like unsigned 64-bit integer sequence", { cause: error });
+  }
+  const converted = items.map((item) => {
+    if (typeof item === "bigint") {
+      if (item < 0n || item > USIZE_MAX_64) throw new RangeError("stableIds values must be unsigned 64-bit integers");
+      return item;
+    }
+    if (typeof item !== "number" || !Number.isSafeInteger(item) || item < 0) {
+      throw new RangeError("stableIds number values must be non-negative safe integers; use BigInt above 2^53 - 1");
+    }
+    return BigInt(item);
+  });
+  return BigUint64Array.from(converted);
+}
+
 function requireLength(value, length, name) {
   if (value.length !== length) {
     throw new RangeError(`${name} must have length ${length}, got ${value.length}`);
@@ -89,17 +126,17 @@ export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stabl
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
   }
-  const kindArray = kinds instanceof Uint8Array ? kinds : Uint8Array.from(kinds);
-  const ids = stableIds instanceof BigUint64Array ? stableIds : BigUint64Array.from(stableIds, BigInt);
-  const styleRefArray = styleRefs instanceof Uint32Array ? styleRefs : Uint32Array.from(styleRefs, Number);
+  const kindArray = asUnsignedArray(kinds, "kinds", 255, Uint8Array);
+  const ids = asStableIds(stableIds);
+  const styleRefArray = asUnsignedArray(styleRefs, "styleRefs", 0xffff_ffff, Uint32Array);
   const diameters = asF64Array(diameter, "diameter");
-  const symbolCodes = symbols instanceof Uint8Array ? symbols : Uint8Array.from(symbols);
+  const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
   for (const [index, style] of styles.entries()) {
-    const fill = asU8Array(style.fillRgba, `styles[${index}].fillRgba`);
-    const stroke = asU8Array(style.strokeRgba, `styles[${index}].strokeRgba`);
+    const fill = asUnsignedArray(style.fillRgba, `styles[${index}].fillRgba`, 255, Uint8Array);
+    const stroke = asUnsignedArray(style.strokeRgba, `styles[${index}].strokeRgba`, 255, Uint8Array);
     requireLength(fill, 4, `styles[${index}].fillRgba`);
     requireLength(stroke, 4, `styles[${index}].strokeRgba`);
     fills.set(fill, index * 4);

@@ -86,6 +86,45 @@ def test_python_scene_v3_rejects_malformed_batches() -> None:
         _native.scene_batch_encode(**(options | {"margins": (60.0, 40.0, 10.0, 10.0)}))
 
 
+def test_python_scene_v3_rejects_unsigned_values_before_coercion() -> None:
+    options = dict(
+        viewport=(100.0, 80.0),
+        margins=(10.0, 10.0, 10.0, 10.0),
+        x_axis=(1, 0, 0.0, 1.0, 1.0, False),
+        y_axis=(2, 0, 0.0, 1.0, 1.0, False),
+        kinds=[0],
+        stable_ids=[1],
+        style_refs=[0],
+        fill_rgba=[0, 0, 0, 255],
+        stroke_rgba=[0, 0, 0, 255],
+        stroke_width=[0.0],
+        diameter=[8.0],
+        symbols=[0],
+        x0=[0.5],
+        y0=[0.5],
+        x1=[0.0],
+        y1=[0.0],
+    )
+    assert _native.scene_batch_encode(
+        **(options | {"stable_ids": [2**64 - 1], "fill_rgba": [0, 255, 0, 255]})
+    )
+    for field, values in (
+        ("kinds", [-1]),
+        ("kinds", [256]),
+        ("kinds", [1.5]),
+        ("symbols", [-1]),
+        ("symbols", [256]),
+        ("style_refs", [-1]),
+        ("style_refs", [2**32]),
+        ("stable_ids", [-1]),
+        ("stable_ids", [2**64]),
+        ("fill_rgba", [-1, 0, 0, 255]),
+        ("stroke_rgba", [0, 0, 0, 256]),
+    ):
+        with np.testing.assert_raises_regex(ValueError, "unsigned"):
+            _native.scene_batch_encode(**(options | {field: values}))
+
+
 def test_python_scene_v3_log_mask_ignores_reserved_coordinates_and_breaks_lines() -> None:
     encoded = _native.scene_batch_encode(
         viewport=(100.0, 100.0),
