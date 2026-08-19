@@ -1243,6 +1243,26 @@ def test_ci_workflow_rejects_unbounded_wasm_chromium_install(tmp_path: Path) -> 
     assert any("Install Chromium" in error and "timeout-minutes: 10" in error for error in errors)
 
 
+def test_ci_workflow_rejects_duplicate_wasm_foundation_job(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "  wasm_foundation:\n",
+            '  "wasm_foundation":\n'
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n"
+            "    steps: []\n\n"
+            "  wasm_foundation:\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("exactly one unambiguous 'wasm_foundation' job" in error for error in errors)
+
+
 def test_workflow_policy_accepts_blacksmith_and_matrix_runners(tmp_path: Path) -> None:
     workflows = tmp_path / "workflows"
     workflows.mkdir()

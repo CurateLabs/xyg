@@ -34,6 +34,7 @@ REQUIRED_CI_JOBS = {
     "sdist",
     "wheels",
     "install_without_rust",
+    "wasm_foundation",
 }
 REQUIRED_CODSPEED_JOBS = {"benchmarks"}
 REQUIRED_RELEASE_JOBS = {"wheels", "sdist", "publish", "wasm", "github-release"}

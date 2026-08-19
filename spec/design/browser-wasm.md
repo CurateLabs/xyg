@@ -79,6 +79,11 @@ chart specification or satisfy #59's scatter/line/bar acceptance criteria.
 
 - Instance handles carry a generation and fail closed after disposal; stale
   handles cannot access a reused slot.
+- Worker initialization enters an exclusive `initializing` state before its
+  first asynchronous module-loading boundary. Concurrent or repeated init
+  messages fail closed. Disposal may win while module loading or instantiation
+  is pending; every post-await continuation rechecks disposal, cleans up any
+  attempt-local Rust handle, and never publishes a late ready response.
 - At most 64 instances exist per module. Each instance has an explicit arena
   budget no greater than 64 MiB.
 - Sequence zero is reserved. Lower/repeated sequences fail as stale. Cancelled

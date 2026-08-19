@@ -146,10 +146,67 @@ async function rejected(promise, code, status = null) {
   throw new Error(`expected ${code} rejection`);
 }
 
+function rawWorkerHarness() {
+  const worker = new Worker("/packages/xy-client/dist/wasm-worker.js", { type: "module" });
+  const pending = new Map();
+  const messages = [];
+  worker.onmessage = (event) => {
+    messages.push(event.data);
+    pending.get(event.data?.requestId)?.(event.data);
+    pending.delete(event.data?.requestId);
+  };
+  return {
+    worker,
+    messages,
+    request(message) {
+      const response = new Promise((resolve) => pending.set(message.requestId, resolve));
+      worker.postMessage(message);
+      return response;
+    },
+  };
+}
+
+function rawInit(requestId, source) {
+  return {
+    type: "init",
+    requestId,
+    source,
+    maxArenaBytes: 1024,
+    expectedAbiVersion: 1,
+    expectedSceneVersion: 3,
+  };
+}
+
 async function run() {
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
   const wasmBytes = await wasmResponse.arrayBuffer();
   const wasmModule = await WebAssembly.compile(wasmBytes);
+
+  const duplicate = rawWorkerHarness();
+  const firstInit = duplicate.request(rawInit(100, { kind: "url", value: "/delayed.wasm" }));
+  const secondInit = await duplicate.request(rawInit(101, { kind: "module", value: wasmModule }));
+  if (secondInit.ok || secondInit.error?.code !== "XYG_WASM_ALREADY_INITIALIZED") {
+    throw new Error(`concurrent duplicate init was not rejected: ${JSON.stringify(secondInit)}`);
+  }
+  const firstReady = await firstInit;
+  if (!firstReady.ok) throw new Error(`first concurrent init failed: ${JSON.stringify(firstReady)}`);
+  await duplicate.request({ type: "dispose", requestId: 102 });
+  duplicate.worker.terminate();
+
+  const disposedDuringInit = rawWorkerHarness();
+  disposedDuringInit.worker.postMessage(
+    rawInit(110, { kind: "url", value: "/delayed.wasm" }),
+  );
+  const disposedResponse = await disposedDuringInit.request({ type: "dispose", requestId: 111 });
+  if (!disposedResponse.ok) {
+    throw new Error(`dispose during init failed: ${JSON.stringify(disposedResponse)}`);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  if (disposedDuringInit.messages.some((message) => message.requestId === 110)) {
+    throw new Error("disposed initialization published a late ready or error response");
+  }
+  disposedDuringInit.worker.terminate();
+
   const worker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,

@@ -43,6 +43,12 @@ const server = createServer(async (request, response) => {
     response.end();
     return;
   }
+  if (url.pathname === "/delayed.wasm") {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    response.setHeader("Content-Type", "application/wasm");
+    response.end(await readFile(join(root, "packages/xy-client/dist/xyg-wasm.wasm")));
+    return;
+  }
   if (!allowed.has(url.pathname)) {
     response.statusCode = 404;
     response.end("not found");
@@ -72,7 +78,7 @@ try {
   const result = await page.evaluate(async () => globalThis.__xygWasmFoundation);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);
-  const known = new Set(["/", "/redirect.wasm", ...allowed]);
+  const known = new Set(["/", "/redirect.wasm", "/delayed.wasm", ...allowed]);
   const unknown = requests.filter((path) => !known.has(path));
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);
   console.log("strict-CSP local-only WASM worker lifecycle smoke passed");

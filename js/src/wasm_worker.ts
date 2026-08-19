@@ -12,9 +12,13 @@ const scope = self as unknown as WorkerScope;
 
 let exports: XygWasmExports | null = null;
 let handle = 0;
-let failed = false;
-let disposed = false;
+type Lifecycle = "idle" | "initializing" | "initialized" | "failed" | "disposed";
+let lifecycle: Lifecycle = "idle";
 const queued = new Map<number, number>();
+
+function isDisposed(): boolean {
+  return lifecycle === "disposed";
+}
 
 function reply(requestId: number, value: unknown) {
   scope.postMessage({ requestId, ok: true, value });
@@ -33,6 +37,10 @@ function disposeRust() {
   if (exports && handle) exports.xyg_wasm_instance_dispose(handle);
   handle = 0;
   exports = null;
+}
+
+function disposeAttempt(bound: XygWasmExports | null, created: number) {
+  if (bound && created) bound.xyg_wasm_instance_dispose(created);
 }
 
 async function loadModule(source: any): Promise<WebAssembly.Module> {
@@ -56,18 +64,22 @@ async function loadModule(source: any): Promise<WebAssembly.Module> {
 }
 
 async function initialize(message: any) {
-  if (exports || failed) {
+  if (lifecycle !== "idle") {
     error(message.requestId, "XYG_WASM_ALREADY_INITIALIZED", "worker cannot be reinitialized");
     return;
   }
+  lifecycle = "initializing";
+  let bound: XygWasmExports | null = null;
+  let created = 0;
   try {
     const module = await loadModule(message.source);
-    if (disposed) return;
+    if (isDisposed()) return;
     if (WebAssembly.Module.imports(module).length !== 0) {
       throw new Error("XYG WASM module must not request ambient imports");
     }
     const instance = await WebAssembly.instantiate(module, {});
-    const bound = bindXygWasmExports(instance);
+    if (isDisposed()) return;
+    bound = bindXygWasmExports(instance);
     if (bound.xyg_wasm_abi_version() !== message.expectedAbiVersion
         || bound.xyg_wasm_scene_version() !== message.expectedSceneVersion) {
       throw new Error("XYG WASM or canonical scene version is incompatible");
@@ -76,13 +88,21 @@ async function initialize(message: any) {
     if (!Number.isInteger(max) || max <= 0 || max > bound.xyg_wasm_max_arena_bytes()) {
       throw new Error("maxArenaBytes exceeds the Rust adapter bound");
     }
-    const created = bound.xyg_wasm_instance_new(max) >>> 0;
+    created = bound.xyg_wasm_instance_new(max) >>> 0;
     if (!created) throw new Error("XYG WASM instance budget is exhausted");
+    if (isDisposed()) {
+      disposeAttempt(bound, created);
+      return;
+    }
     exports = bound;
     handle = created;
+    created = 0;
+    lifecycle = "initialized";
     reply(message.requestId, diagnostics());
   } catch (cause) {
-    failed = true;
+    disposeAttempt(bound, created);
+    if (isDisposed()) return;
+    lifecycle = "failed";
     disposeRust();
     error(
       message.requestId,
@@ -108,7 +128,7 @@ function diagnostics() {
 
 function validateScene(message: any) {
   queued.delete(message.requestId);
-  if (!exports || !handle || failed) {
+  if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
     return;
   }
@@ -150,7 +170,7 @@ function validateScene(message: any) {
   } catch (cause) {
     // A Rust trap invalidates the instance. Fail closed and require a fresh
     // worker; never continue with partially mutated engine state.
-    failed = true;
+    lifecycle = "failed";
     disposeRust();
     error(
       message.requestId,
@@ -183,7 +203,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     return;
   }
   if (message?.type === "dispose") {
-    disposed = true;
+    lifecycle = "disposed";
     for (const timer of queued.values()) clearTimeout(timer);
     queued.clear();
     disposeRust();
