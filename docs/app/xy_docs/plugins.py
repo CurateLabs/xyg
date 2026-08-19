@@ -13,7 +13,7 @@ from reflex_base.plugins import Plugin
 from reflex_site_shared.docs import DocsPage, DocsSiteConfig, discover_docs
 
 from xy_docs.api_reference import append_component_api_markdown
-from xy_docs.constants import LLMS_FULL_TXT_PATH, LLMS_TXT_PATH, PUBLIC_DOCS_URL
+from xy_docs.constants import LLMS_FULL_TXT_PATH, LLMS_TXT_PATH, PUBLIC_DOCS_URL, public_docs_url
 
 MARKDOWN_DIRECTIVE = (
     "> For AI agents: the complete XY documentation index is at "
@@ -35,9 +35,9 @@ _SECTION_TITLES = {
 _SECTION_ORDER = tuple(_SECTION_TITLES.values())
 
 
-def _public_url(path: str) -> str:
-    """Return an absolute URL for an XY docs asset path."""
-    return f"{PUBLIC_DOCS_URL}{path}"
+def _public_url(path: str) -> str | None:
+    """Return an absolute URL only for an explicitly configured deployment."""
+    return public_docs_url(path)
 
 
 def markdown_asset_path(page: DocsPage) -> str:
@@ -49,15 +49,15 @@ def markdown_asset_path(page: DocsPage) -> str:
 
 
 def _page_markdown_url(page: DocsPage) -> str:
-    """Return the direct public Markdown asset URL for a discovered page."""
-    return f"{PUBLIC_DOCS_URL}/{markdown_asset_path(page)}"
+    """Return a public Markdown URL, or a truthful relative preview link."""
+    asset = markdown_asset_path(page)
+    return _public_url(asset) or asset
 
 
 def _markdown_directive() -> str:
     """Return the standard agent discovery directive for published Markdown."""
-    return MARKDOWN_DIRECTIVE.format(
-        llms_txt_url=_public_url(LLMS_TXT_PATH),
-    )
+    llms_url = _public_url(LLMS_TXT_PATH)
+    return MARKDOWN_DIRECTIVE.format(llms_txt_url=llms_url) if llms_url else ""
 
 
 def _strip_markdown_directive(content: str) -> str:
@@ -104,7 +104,8 @@ def page_markdown_with_api_reference(
     """
     content = page.source_path.read_text(encoding="utf-8") if include_frontmatter else page.content
     body = append_component_api_markdown(content, page.metadata).lstrip()
-    return f"{_markdown_directive()}\n\n{body}"
+    directive = _markdown_directive()
+    return f"{directive}\n\n{body}" if directive else body
 
 
 def build_llms_txt(config: DocsSiteConfig) -> str:
@@ -112,16 +113,14 @@ def build_llms_txt(config: DocsSiteConfig) -> str:
     lines = [
         "# XY Documentation",
         "",
-        (
-            "> XY is a high-performance plotting library for Python and Reflex. "
-            "Use this index to find agent-readable Markdown docs, or see "
-            f"[llms-full.txt]({_public_url(LLMS_FULL_TXT_PATH)}) for the "
-            "complete docs in one file."
-        ),
+        "> XY is a high-performance plotting library for Python and Reflex. "
+        "Use this index to find agent-readable Markdown docs.",
         "",
         "## Docs",
         "",
     ]
+    if full_url := _public_url(LLMS_FULL_TXT_PATH):
+        lines[2] += f" See [llms-full.txt]({full_url}) for the complete docs in one file."
 
     sections: dict[str, list[DocsPage]] = defaultdict(list)
     for page in discover_docs(config):
@@ -145,26 +144,26 @@ def build_llms_full_txt(config: DocsSiteConfig) -> str:
     """Combine all public XY pages into one agent-readable Markdown file."""
     lines = [
         "# XY Documentation",
-        f"Source: {PUBLIC_DOCS_URL}/",
-        "",
         (
             "This file stitches together the full XY documentation as Markdown "
             "for AI agents and LLM indexing."
         ),
         "",
-        (
-            "For a navigable index with links to individual docs pages, see "
-            f"[llms.txt]({_public_url(LLMS_TXT_PATH)})."
-        ),
+        "For a navigable index with links to individual docs pages, see llms.txt.",
         "",
     ]
+    if PUBLIC_DOCS_URL:
+        lines[1:1] = [f"Source: {PUBLIC_DOCS_URL}/", ""]
+        lines[-2] = (
+            "For a navigable index with links to individual docs pages, see "
+            f"[llms.txt]({_public_url(LLMS_TXT_PATH)})."
+        )
     for page in discover_docs(config):
         lines.extend(
             (
                 f"## {page.title}",
                 "",
-                f"Source: {_page_markdown_url(page)}",
-                "",
+                *((f"Source: {_page_markdown_url(page)}", "") if PUBLIC_DOCS_URL else ()),
                 _page_body(
                     _strip_markdown_directive(
                         page_markdown_with_api_reference(page),

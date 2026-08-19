@@ -54,7 +54,7 @@ from xy_docs.api_reference import (
 )
 from xy_docs.breadcrumb import _breadcrumb_parts, xy_docs_breadcrumb
 from xy_docs.config import DOCS_CONFIG, DOCS_NAVIGATION, DOCS_REDIRECTS, DOCS_SECTIONS
-from xy_docs.constants import PUBLIC_DOCS_URL, PUBLIC_XY_VERSION, SOCIAL_IMAGE_URL
+from xy_docs.constants import PUBLIC_DOCS_URL, PUBLIC_XY_VERSION, SOCIAL_IMAGE_URL, public_docs_url
 from xy_docs.footer import xy_docs_footer
 from xy_docs.gallery import (
     _GALLERY_GROUPS,
@@ -1762,7 +1762,7 @@ def test_annotations_have_one_canonical_guide_and_a_legacy_redirect() -> None:
     redirect = app._unevaluated_pages["charts/annotations"]
     rendered_meta = "\n".join(str(component) for component in redirect.meta)
     assert redirect.context == {"sitemap": None}
-    assert f"{PUBLIC_DOCS_URL}/components/annotations/" in rendered_meta
+    assert 'rel:"canonical"' not in rendered_meta
     assert "0; url=/docs/xy/components/annotations/" in rendered_meta
     assert "Open the combined Annotations guide" in str(redirect.component())
 
@@ -2232,10 +2232,10 @@ def test_xy_footer_is_project_specific_and_keeps_source_aware_links() -> None:
     assert "reflex.dev/docs/getting-started" not in rendered
 
 
-def test_every_docs_route_has_canonical_and_social_metadata() -> None:
-    """Publish branded canonical and social metadata for every route."""
-    assert PUBLIC_DOCS_URL.startswith("https://github.com/CurateLabs/xyg")
-    assert SOCIAL_IMAGE_URL.startswith("https://raw.githubusercontent.com/CurateLabs/xyg/")
+def test_preview_routes_omit_unconfigured_public_metadata() -> None:
+    """Do not invent canonical, sitemap, social, or agent URLs in preview."""
+    assert PUBLIC_DOCS_URL == ""
+    assert SOCIAL_IMAGE_URL == ""
     assert len(_DOCS_ROUTES) + len(DOCS_REDIRECTS) == len(app._unevaluated_pages)
     assert PUBLIC_XY_VERSION == "0.0.1"
     assert (
@@ -2245,16 +2245,31 @@ def test_every_docs_route_has_canonical_and_social_metadata() -> None:
     for route in _DOCS_ROUTES:
         route_key = route.path.strip("/") or "index"
         page = app._unevaluated_pages[route_key]
-        canonical = f"{PUBLIC_DOCS_URL}{route.path}"
         rendered_meta = "\n".join(str(component) for component in page.meta)
 
-        assert page.context == {"sitemap": {"loc": canonical}}
-        assert page.image == SOCIAL_IMAGE_URL
-        assert f'href:"{canonical}",rel:"canonical"' in rendered_meta
+        assert page.context == {"sitemap": None}
+        assert page.image is None
+        assert 'rel:"canonical"' not in rendered_meta
         assert 'property:"og:title"' in rendered_meta
-        assert f'content:"{canonical}",property:"og:url"' in rendered_meta
+        assert 'property:"og:url"' not in rendered_meta
         assert 'content:"summary_large_image",name:"twitter:card"' in rendered_meta
-        assert f'content:"{SOCIAL_IMAGE_URL}",name:"twitter:image"' in rendered_meta
+        assert 'name:"twitter:image"' not in rendered_meta
+
+
+def test_explicit_production_origin_builds_owned_route_urls() -> None:
+    """Construct public routes only from an explicitly configured HTTPS base."""
+    origin = "https://docs.curatelabs.com/xyg"
+
+    assert public_docs_url("/charts/scatter/", origin=origin) == (
+        "https://docs.curatelabs.com/xyg/charts/scatter/"
+    )
+    assert public_docs_url("/llms.txt", origin=origin) == (
+        "https://docs.curatelabs.com/xyg/llms.txt"
+    )
+    assert public_docs_url("/charts/scatter/") is None
+
+    with pytest.raises(ValueError, match="HTTPS origin"):
+        public_docs_url("/charts/scatter/", origin="http://docs.curatelabs.com")
 
 
 def test_component_api_uses_generated_shared_tables() -> None:

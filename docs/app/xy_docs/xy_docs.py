@@ -13,7 +13,7 @@ from reflex_site_shared.utils.docpage import right_sidebar_item_highlight
 from xy_docs.breadcrumb import xy_docs_breadcrumb
 from xy_docs.code import CODE_COPY_STYLE, code_copy_feedback_script
 from xy_docs.config import DOCS_CONFIG, DOCS_REDIRECTS
-from xy_docs.constants import LLMS_TXT_PATH, PUBLIC_DOCS_URL, SOCIAL_IMAGE_URL
+from xy_docs.constants import LLMS_TXT_PATH, SOCIAL_IMAGE_URL, public_docs_url
 from xy_docs.footer import xy_docs_footer
 from xy_docs.markdown import page_with_api_reference_toc, render_xy_markdown_page
 from xy_docs.navbar import xy_docs_navbar
@@ -30,13 +30,16 @@ _CHART_STYLE = {
 }
 
 
-def _llms_txt_directive() -> rx.Component:
+def _llms_txt_directive() -> rx.Component | None:
     """Return the hidden agent-facing documentation index directive."""
+    llms_url = public_docs_url(LLMS_TXT_PATH)
+    if llms_url is None:
+        return None
     return rx.el.blockquote(
         rx.el.span("For AI agents: the complete XY documentation index is at "),
         rx.el.a(
             "llms.txt",
-            href=f"{PUBLIC_DOCS_URL}{LLMS_TXT_PATH}",
+            href=llms_url,
         ),
         rx.el.span(
             ". Markdown versions are available by appending .md or sending Accept: text/markdown."
@@ -112,28 +115,34 @@ _DOCS_ROUTES = build_docs_routes(
 )
 
 for _route in _DOCS_ROUTES:
-    _canonical_url = f"{PUBLIC_DOCS_URL}{_route.path}"
+    _canonical_url = public_docs_url(_route.path)
     _seo_title = f"{_route.title or 'Documentation'} · XY"
     _description = _route.description or "Build responsive interactive Python charts with XY."
+    _meta = [
+        rx.el.meta(property="og:type", content="website"),
+        rx.el.meta(property="og:site_name", content="XY"),
+        rx.el.meta(property="og:title", content=_seo_title),
+        rx.el.meta(property="og:description", content=_description),
+        rx.el.meta(name="twitter:card", content="summary_large_image"),
+        rx.el.meta(name="twitter:title", content=_seo_title),
+        rx.el.meta(name="twitter:description", content=_description),
+    ]
+    if _canonical_url is not None:
+        _meta.extend(
+            (
+                rx.el.link(rel="canonical", href=_canonical_url),
+                rx.el.meta(property="og:url", content=_canonical_url),
+                rx.el.meta(name="twitter:image", content=SOCIAL_IMAGE_URL),
+            )
+        )
     app.add_page(
         component=_route.component,
         route=_route.path,
         title=_seo_title,
         description=_description,
-        image=SOCIAL_IMAGE_URL,
-        meta=(
-            rx.el.link(rel="canonical", href=_canonical_url),
-            rx.el.meta(property="og:type", content="website"),
-            rx.el.meta(property="og:site_name", content="XY"),
-            rx.el.meta(property="og:title", content=_seo_title),
-            rx.el.meta(property="og:description", content=_description),
-            rx.el.meta(property="og:url", content=_canonical_url),
-            rx.el.meta(name="twitter:card", content="summary_large_image"),
-            rx.el.meta(name="twitter:title", content=_seo_title),
-            rx.el.meta(name="twitter:description", content=_description),
-            rx.el.meta(name="twitter:image", content=SOCIAL_IMAGE_URL),
-        ),
-        context={"sitemap": {"loc": _canonical_url}},
+        image=SOCIAL_IMAGE_URL or None,
+        meta=tuple(_meta),
+        context={"sitemap": {"loc": _canonical_url} if _canonical_url else None},
     )
 
 
@@ -179,7 +188,7 @@ def _redirect_page(destination: str):
 
 for _legacy_route, _destination in DOCS_REDIRECTS.items():
     _public_destination = f"/docs/xy{_destination}"
-    _canonical_destination = f"{PUBLIC_DOCS_URL}{_destination}"
+    _canonical_destination = public_docs_url(_destination)
     _is_annotations_redirect = _destination == "/components/annotations/"
     _is_recipe_redirect = _destination == "/styling/examples/#responsive-combo-chart"
     _is_customize_redirect = _destination.startswith("/styling/customize/")
@@ -206,7 +215,11 @@ for _legacy_route, _destination in DOCS_REDIRECTS.items():
         ),
         on_load=rx.redirect(_destination, replace=True),
         meta=(
-            rx.el.link(rel="canonical", href=_canonical_destination),
+            *(
+                (rx.el.link(rel="canonical", href=_canonical_destination),)
+                if _canonical_destination
+                else ()
+            ),
             rx.el.meta(
                 http_equiv="refresh",
                 content=f"0; url={_public_destination}",

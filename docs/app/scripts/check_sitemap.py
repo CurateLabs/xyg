@@ -17,6 +17,8 @@ def expected_locations() -> list[str]:
     Returns:
         Canonical sitemap locations in documentation discovery order.
     """
+    if not PUBLIC_DOCS_URL:
+        return []
     pages = discover_docs(DOCS_CONFIG)
     return [f"{PUBLIC_DOCS_URL}{page.route}" for page in pages]
 

@@ -76,6 +76,7 @@ stage lands. Proposed targets are recorded so the later rename is mechanical.
 | Python-internal constant prefixes | `XY_OK`, `XY_ERROR`, `XY_VERSION`, … (module-level constants) | `XYG_*` | with the wire/branding stages that own each constant |
 | README, user docs, branding sweep | README branding, docs-app copy | — | #14 (explicitly out of scope here) |
 | Historical repository slugs | `graphforge-xy`, `reflex-dev/xy` | permitted only in provenance/evidence contexts (old URLs redirect); current-product references use `CurateLabs/xyg` | policy (gate-enforced) |
+| Public documentation origin | inherited `https://reflex.dev/docs/xy` | explicit CurateLabs-owned `XY_DOCS_PUBLIC_URL` deployment configuration | unset in preview/source builds; canonical, sitemap, social, and public agent URLs are omitted rather than invented |
 | Upstream-inherited corpus/fixtures | `scripts/rename_fc_to_xy.py`, matplotlib compat corpus labels | permitted historical evidence | never (provenance) |
 
 ## 3. Migration order (no mixed intermediate artifact)

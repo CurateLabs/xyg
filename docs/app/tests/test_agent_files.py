@@ -46,10 +46,11 @@ def test_markdown_asset_paths_match_published_assets() -> None:
         assert any(path.endswith(asset) for path in published), page.route
 
 
-def test_llms_txt_indexes_every_page_under_the_public_url() -> None:
-    """The index links llms-full.txt and each page's public Markdown URL."""
+def test_preview_llms_txt_indexes_pages_without_inventing_public_urls() -> None:
+    """The preview index uses relative assets until a deployment is configured."""
     content = build_llms_txt(DOCS_CONFIG)
-    assert f"({PUBLIC_DOCS_URL}{LLMS_FULL_TXT_PATH})" in content
+    assert PUBLIC_DOCS_URL == ""
+    assert "https://" not in content
     assert len(content) < 50_000
     assert content.startswith(
         "# XY Documentation\n\n> XY is a high-performance plotting library for Python and Reflex."
@@ -71,10 +72,11 @@ def test_llms_txt_indexes_every_page_under_the_public_url() -> None:
     chart_gallery = content.split("### Chart Gallery\n", maxsplit=1)[1].split(
         "### Components\n", maxsplit=1
     )[0]
-    assert f"({PUBLIC_DOCS_URL}/overview/gallery.md)" in chart_gallery
+    assert "(overview/gallery.md)" in chart_gallery
     for page in discover_docs(DOCS_CONFIG):
-        assert f"({PUBLIC_DOCS_URL}/{markdown_asset_path(page)})" in content
-        assert content.count(f"({PUBLIC_DOCS_URL}/{markdown_asset_path(page)})") == 1
+        asset_link = f"({markdown_asset_path(page)})"
+        assert asset_link in content
+        assert content.count(asset_link) == 1
 
 
 def test_llms_full_txt_keeps_section_headers_above_page_content() -> None:
@@ -108,24 +110,22 @@ def test_component_api_is_present_in_every_agent_markdown_export() -> None:
         assert "### xy.y_axis" in content
         assert "| Prop | Type | Description |" in content
 
-    assert published_markdown.startswith(f"{_markdown_directive()}\n\n---\n")
+    assert _markdown_directive() == ""
+    assert published_markdown.startswith("---\n")
 
 
-def test_every_page_markdown_has_the_agent_discovery_directive() -> None:
-    """Every direct and trailing-slash Markdown asset advertises llms.txt."""
+def test_preview_page_markdown_omits_public_agent_discovery_url() -> None:
+    """Preview Markdown does not advertise an unconfigured public llms URL."""
     directive = _markdown_directive()
     assets = XyDocsMarkdownPlugin(docs=DOCS_CONFIG).get_static_assets()
     assert assets
-    assert all(content.startswith(f"{directive}\n\n") for _path, content in assets)
+    assert directive == ""
+    assert all("https://" not in content.split("\n\n", maxsplit=1)[0] for _path, content in assets)
 
 
-def test_html_shell_has_the_agent_discovery_directive() -> None:
-    """The hidden HTML directive uses the canonical XY llms.txt URL."""
-    rendered = str(_llms_txt_directive())
-    assert "For AI agents: the complete XY documentation index is at" in rendered
-    assert f"{PUBLIC_DOCS_URL}/llms.txt" in rendered
-    assert "Markdown versions are available" in rendered
-    assert "sr-only" in rendered
+def test_preview_html_shell_omits_agent_discovery_directive() -> None:
+    """The preview shell has no public llms URL until an origin is configured."""
+    assert _llms_txt_directive() is None
 
 
 def test_agent_files_publish_under_the_frontend_path(
@@ -139,14 +139,11 @@ def test_agent_files_publish_under_the_frontend_path(
     assert paths == {root / "llms.txt", root / "llms-full.txt"}
 
 
-def test_breadcrumb_actions_use_public_and_local_urls() -> None:
-    """Page actions point at this site's Markdown, not root-relative paths."""
+def test_preview_breadcrumb_omits_public_page_actions() -> None:
+    """Preview breadcrumbs do not emit dead public Markdown or llms links."""
     for page in discover_docs(DOCS_CONFIG):
         if page.route.strip("/"):
             break
     rendered = str(xy_docs_breadcrumb(page, xy_docs_sidebar(page.route)))
-    asset = markdown_asset_path(page)
-    public_host_and_path = PUBLIC_DOCS_URL.removeprefix("https://")
-    assert f"{public_host_and_path}/{asset}" in rendered
-    assert f"{PUBLIC_DOCS_URL}{LLMS_FULL_TXT_PATH}" in rendered
-    assert f"{config.frontend_path}/{asset}" in rendered
+    assert LLMS_FULL_TXT_PATH not in rendered
+    assert "https://" not in rendered

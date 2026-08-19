@@ -7,7 +7,7 @@ from reflex_site_shared.docs import docs_page_actions
 from reflex_site_shared.docs.models import DocsPage
 from reflex_site_shared.views.sidebar import docs_sidebar_drawer
 
-from xy_docs.constants import LLMS_FULL_TXT_PATH, PUBLIC_DOCS_URL
+from xy_docs.constants import LLMS_FULL_TXT_PATH, public_docs_url
 from xy_docs.plugins import markdown_asset_path
 
 _BREADCRUMB_LABELS = {
@@ -119,10 +119,16 @@ def xy_docs_breadcrumb(page: DocsPage, sidebar: rx.Component) -> rx.Component:
             class_name="flex flex-row items-center gap-[5px] overflow-hidden lg:gap-4",
         ),
         rx.box(
-            docs_page_actions(
-                markdown_url=f"{PUBLIC_DOCS_URL}/{markdown_asset_path(page)}",
-                llms_full_txt_url=f"{PUBLIC_DOCS_URL}{LLMS_FULL_TXT_PATH}",
-                copy_url=f"{get_config().frontend_path}/{markdown_asset_path(page)}",
+            *(
+                (
+                    docs_page_actions(
+                        markdown_url=public_docs_url(markdown_asset_path(page)) or "",
+                        llms_full_txt_url=public_docs_url(LLMS_FULL_TXT_PATH) or "",
+                        copy_url=f"{get_config().frontend_path}/{markdown_asset_path(page)}",
+                    ),
+                )
+                if public_docs_url(LLMS_FULL_TXT_PATH)
+                else ()
             ),
             ui.icon(
                 "ArrowDown01Icon",

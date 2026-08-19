@@ -223,7 +223,7 @@ DOCS_CONFIG = DocsSiteConfig(
         "styling/recipes.md",
     ),
     navigation_order=DOCS_NAVIGATION,
-    sitemap_base_url=PUBLIC_DOCS_URL,
+    sitemap_base_url=PUBLIC_DOCS_URL or None,
 )
 
 __all__ = [

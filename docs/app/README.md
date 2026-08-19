@@ -72,8 +72,7 @@ uv run --no-sync python scripts/check_html_routes.py
 The frontend is mounted at `/docs/xy`; preserve that prefix in canonical URLs,
 the sitemap, Markdown aliases, and internal documentation links.
 
-Set `XY_DOCS_PUBLIC_URL` to the CurateLabs-owned production origin when
-building a deployment. Without that deployment configuration, canonical,
-sitemap, and agent-facing URLs deliberately fall back to the owned
-`https://github.com/CurateLabs/xyg` repository instead of advertising the
-upstream Reflex documentation site.
+Set `XY_DOCS_PUBLIC_URL` to the CurateLabs-owned HTTPS production origin when
+building a deployment. Without that deployment configuration, preview builds
+deliberately omit canonical, sitemap, social-image, and public agent URLs; a
+repository page is not treated as a deployable documentation origin.
