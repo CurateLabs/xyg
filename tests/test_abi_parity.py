@@ -86,6 +86,21 @@ def test_signature_order_changes_contract_hash() -> None:
     assert first["symbols"][0]["arguments"] != second["symbols"][0]["arguments"]
 
 
+def test_signature_drift_names_symbol_and_old_new_signatures() -> None:
+    prefix = "pub const ABI_VERSION: u32 = 1;\n#[no_mangle]\n"
+    previous = gen_abi_manifest.parse_rust_abi(
+        prefix + 'pub extern "C" fn xyg_order(a: u32, b: u64) -> i32 { 0 }'
+    )
+    current = gen_abi_manifest.parse_rust_abi(
+        prefix + 'pub extern "C" fn xyg_order(b: u64, a: u32) -> i32 { 0 }'
+    )
+
+    assert check_abi_parity.describe_signature_changes(previous, current) == [
+        "xyg_order: `int32_t xyg_order(uint32_t a, uint64_t b)` -> "
+        "`int32_t xyg_order(uint64_t b, uint32_t a)`"
+    ]
+
+
 def test_low_level_signatures_exist_only_in_generated_modules() -> None:
     python_host = (ROOT / "python/xy/_native.py").read_text(encoding="utf-8")
     node_host = (ROOT / "packages/xy-node/src/native.js").read_text(encoding="utf-8")

@@ -111,10 +111,13 @@ def check_abi_parity(root: Path = ROOT) -> list[str]:
         old_hash = old.get("signature_sha256")
         if old_hash and old_hash != generated["signature_sha256"]:
             if old.get("abi_version") == rust_version:
-                errors.append(
-                    "ABI signature changed without an ABI_VERSION bump: "
-                    f"{old_hash} -> {generated['signature_sha256']}"
+                changes = describe_signature_changes(old, generated)
+                detail = (
+                    "; ".join(changes)
+                    if changes
+                    else (f"contract hash {old_hash} -> {generated['signature_sha256']}")
                 )
+                errors.append(f"ABI signature changed without an ABI_VERSION bump: {detail}")
             break
 
     py_version, py_names = parse_python_symbols(generated_py.read_text(encoding="utf-8"))
@@ -168,6 +171,38 @@ def check_abi_parity(root: Path = ROOT) -> list[str]:
     if not rust_set:
         errors.append(f"{rust_path}: parsed zero xyg_* exports")
     return errors
+
+
+def describe_signature_changes(
+    previous: dict[str, object], current: dict[str, object]
+) -> list[str]:
+    """Name every added, removed, or re-typed symbol in an ABI contract."""
+
+    def signatures(manifest: dict[str, object]) -> dict[str, str]:
+        symbols = manifest.get("symbols")
+        if not isinstance(symbols, list):
+            return {}
+        result: dict[str, str] = {}
+        for item in symbols:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name")
+            signature = item.get("c_signature")
+            if isinstance(name, str) and isinstance(signature, str):
+                result[name] = signature
+        return result
+
+    old = signatures(previous)
+    new = signatures(current)
+    changes: list[str] = []
+    for name in sorted(old.keys() | new.keys()):
+        if name not in old:
+            changes.append(f"{name}: added `{new[name]}`")
+        elif name not in new:
+            changes.append(f"{name}: removed `{old[name]}`")
+        elif old[name] != new[name]:
+            changes.append(f"{name}: `{old[name]}` -> `{new[name]}`")
+    return changes
 
 
 def main(argv: Optional[list[str]] = None) -> int:
