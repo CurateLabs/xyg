@@ -1,10 +1,10 @@
 import { createXygWasmWorker, XygWasmError } from "/packages/xy-client/dist/index.js";
 
-function canonicalSceneV3() {
+function canonicalSceneV4() {
   const bytes = new Uint8Array(160 + 16 + 56);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 3, true);
+  view.setUint32(4, 4, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -108,7 +108,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
   ];
   const highBit = 0x80000000;
   const values = [
-    1, 3, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0,
+    1, 4, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
@@ -192,7 +192,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 1,
-    expectedSceneVersion: 3,
+    expectedSceneVersion: 4,
   };
 }
 
@@ -239,7 +239,7 @@ async function run() {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
 
-  const canonical = canonicalSceneV3();
+  const canonical = canonicalSceneV4();
   const transferred = canonical.buffer;
   const valid = await worker.validateScene(transferred, { sequence: 10 }).result;
   if (transferred.byteLength !== 0) throw new Error("scene buffer was not transferred");
@@ -250,7 +250,7 @@ async function run() {
     throw new Error(`unexpected copy or arena diagnostics ${JSON.stringify(valid)}`);
   }
 
-  const malformed = canonicalSceneV3();
+  const malformed = canonicalSceneV4();
   malformed[0] = 0;
   await rejected(
     worker.validateScene(malformed, { sequence: 11 }).result,
@@ -258,21 +258,21 @@ async function run() {
     5,
   );
   await rejected(
-    worker.validateScene(canonicalSceneV3(), { sequence: 9 }).result,
+    worker.validateScene(canonicalSceneV4(), { sequence: 9 }).result,
     "XYG_WASM_STALE_SEQUENCE",
     7,
   );
 
-  const cancelled = worker.validateScene(canonicalSceneV3(), { sequence: 12 });
+  const cancelled = worker.validateScene(canonicalSceneV4(), { sequence: 12 });
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
-  const afterRejected = await worker.validateScene(canonicalSceneV3(), { sequence: 13 }).result;
+  const afterRejected = await worker.validateScene(canonicalSceneV4(), { sequence: 13 }).result;
   if (afterRejected.copyCount !== 5 || afterRejected.copyBytesLo !== 232 * 5) {
     throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
   await worker.dispose();
   try {
-    worker.validateScene(canonicalSceneV3());
+    worker.validateScene(canonicalSceneV4());
     throw new Error("disposed worker accepted work");
   } catch (error) {
     if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_DISPOSED") throw error;
@@ -297,7 +297,7 @@ async function run() {
     maxArenaBytes: 1024,
   });
   await byBytes.ready;
-  const detached = canonicalSceneV3().buffer;
+  const detached = canonicalSceneV4().buffer;
   await byBytes.validateScene(detached, { sequence: 1 }).result;
   try {
     byBytes.validateScene(detached, { sequence: 2 });
@@ -305,7 +305,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_INVALID_ARGUMENT") throw error;
   }
-  await byBytes.validateScene(canonicalSceneV3(), { sequence: 3 }).result;
+  await byBytes.validateScene(canonicalSceneV4(), { sequence: 3 }).result;
   await byBytes.dispose();
 
   // Explicit user URL is supported and is the only branch allowed to fetch
@@ -334,7 +334,7 @@ async function run() {
   });
   await trapped.ready;
   await rejected(
-    trapped.validateScene(canonicalSceneV3(), { sequence: 1 }).result,
+    trapped.validateScene(canonicalSceneV4(), { sequence: 1 }).result,
     "XYG_WASM_TRAP",
   );
   await trapped.dispose();
@@ -346,7 +346,7 @@ async function run() {
   });
   await doubleTrapped.ready;
   await rejected(
-    doubleTrapped.validateScene(canonicalSceneV3(), { sequence: 1 }).result,
+    doubleTrapped.validateScene(canonicalSceneV4(), { sequence: 1 }).result,
     "XYG_WASM_TRAP",
   );
   await doubleTrapped.dispose();
