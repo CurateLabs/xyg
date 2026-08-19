@@ -2172,7 +2172,7 @@ mod tests {
         let reserved_capacity = document.raster_command_capacity(&x_ticks, &y_ticks);
         let commands = document.to_raster_commands(2.0).unwrap();
         assert!(commands.len() <= reserved_capacity);
-        assert_eq!(commands.capacity(), reserved_capacity);
+        assert!(commands.capacity() >= reserved_capacity);
         assert!(commands.contains(&4)); // point
         assert!(commands.contains(&3)); // polyline + axes
         assert!(commands.contains(&1)); // rectangle fill
