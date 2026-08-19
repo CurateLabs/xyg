@@ -37,6 +37,7 @@ verify_ci_workflow = _load_verify_module()
 # spelling (the fork opt-in variable plus the manual dry-run switch, #13).
 RELEASE_PUBLISH_GATE_LINE = (
     "        if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
+    "startsWith(github.ref, 'refs/tags/xyg-v') && "
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')\n"
 )
 
@@ -1341,6 +1342,93 @@ def test_release_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_release_workflow() == []
 
 
+def test_release_workflow_rejects_inherited_upstream_tag_trigger(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    path.write_text(workflow.replace('["xyg-v*"]', '["v*"]', 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("xyg-v*" in error for error in errors)
+
+
+def test_release_workflow_rejects_branch_dispatch_real_publish(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        workflow.replace(
+            "            refs/tags/xyg-v*) ;;\n",
+            "            refs/heads/*) ;;\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("real-publish tag guard" in error for error in errors)
+
+
+def test_release_workflow_requires_changelog_gate_on_real_dispatch(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    gate = "        if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'\n"
+    # Mutate the second occurrence, which belongs to check_release_version.
+    first, separator, rest = workflow.partition(gate)
+    assert separator and gate in rest
+    path.write_text(
+        first + separator + rest.replace(gate, "        if: github.event_name == 'push'\n", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("real-publish changelog gate" in error for error in errors)
+
+
+def test_release_workflow_requires_post_publish_github_release(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        workflow.replace("        run: gh release create ", "        run: echo ", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("GitHub Release" in error and "gh release create" in error for error in errors)
+
+
+def test_github_release_flattens_downloaded_wheel_for_attachment(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    prefix, separator, release_block = workflow.partition("  github-release:\n")
+    assert separator and "          merge-multiple: true\n" in release_block
+    release_block = release_block.replace("          merge-multiple: true\n", "", 1)
+    path = tmp_path / "publish.yaml"
+    path.write_text(prefix + separator + release_block, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("GitHub Release" in error and "merge-multiple" in error for error in errors)
+
+
+def test_github_release_cannot_run_for_dry_or_untagged_build(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    job_gate = "    if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && startsWith(github.ref, 'refs/tags/xyg-v') && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')\n"
+    release_header = "  github-release:\n    name: Create GitHub Release\n    needs: [publish]\n"
+    target = release_header + job_gate
+    assert target in workflow
+    path.write_text(
+        workflow.replace(target, release_header + "    if: always()\n", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("GitHub Release job must use" in error for error in errors)
+
+
 def test_release_workflow_rejects_missing_native_wheel_verifier(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
@@ -1696,6 +1784,19 @@ def test_release_workflow_rejects_missing_publish_opt_in_variable(tmp_path: Path
     errors = verify_ci_workflow.validate_release_workflow(path)
 
     assert any("is not gated by the dry-run predicate" in error for error in errors)
+
+
+def test_release_publish_job_keeps_checkout_read_permission(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    prefix, separator, publish_and_after = workflow.partition("  publish:\n")
+    assert separator and "      contents: read\n" in publish_and_after
+    publish_and_after = publish_and_after.replace("      contents: read\n", "", 1)
+    path = tmp_path / "publish.yaml"
+    path.write_text(prefix + separator + publish_and_after, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("publish job" in error and "contents: read" in error for error in errors)
 
 
 def test_release_workflow_rejects_non_retryable_pypi_publish(tmp_path: Path) -> None:

@@ -9,7 +9,7 @@ pushes: the package's changelog must carry a dated entry for the tagged
 version (an "unreleased" heading fails — date it as part of cutting the
 release).
 
-The ``xy`` distribution uses bare `vX.Y.Z` tags and `CHANGELOG.md`. Its bundled
+The ``xyg`` distribution uses `xyg-vX.Y.Z` tags and `CHANGELOG.md`. Its bundled
 Reflex integration and `reflex` extra ship on the same version line.
 
 Tags accept an optional PEP 440 pre-release suffix in its canonical spelling
@@ -47,11 +47,11 @@ class _Package(NamedTuple):
 # Canonical PEP 440 spellings only: the derivation would normalize `alpha1`
 # to `a1`, so a non-canonical tag can never equal its own built version.
 _RELEASE = r"\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?"
-_SHAPE = "vX.Y.Z with an optional aN/bN/rcN pre-release suffix"
+_SHAPE = "xyg-vX.Y.Z with an optional aN/bN/rcN pre-release suffix"
 
 PACKAGES = {
     "xy": _Package(
-        tag_re=re.compile(rf"^v(?P<version>{_RELEASE})$"),
+        tag_re=re.compile(rf"^xyg-v(?P<version>{_RELEASE})$"),
         tag_shape=_SHAPE,
         changelog=ROOT / "CHANGELOG.md",
     ),

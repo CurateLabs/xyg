@@ -61,11 +61,11 @@ codspeed = [
 ]
 
 # The distribution version is derived from git tags, never written down here:
-# `git tag vX.Y.Z && git push --tags` is the whole release action, so a tag can
+# `git tag xyg-vX.Y.Z && git push origin xyg-vX.Y.Z` is the whole release
+# action, so a tag can
 # no longer disagree with a checked-in number (they did drift — pyproject sat at
-# 0.0.1 while v0.0.2 was live). Dunamai's default tag pattern requires the `v`
-# prefix, which is exactly what keeps the docs-deploy CalVer tags (2026.WW.N,
-# disjoint from library versions by design) from being read as library releases.
+# 0.0.1 while v0.0.2 was live). The product prefix makes this fork's release
+# line disjoint from inherited upstream `v*`, Reflex, and docs CalVer tags.
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 
@@ -76,6 +76,10 @@ style = "pep440"
 # `<next>.devN+<commit>`, which is legible locally and unpublishable to PyPI on
 # purpose — only a tag can produce an uploadable version.
 bump = true
+# Inserted before dunamai's default `v` prefix, producing `xyg-vX.Y.Z`.
+# Historical upstream `vX.Y.Z` tags remain for traceability but can never
+# determine this distribution's version.
+pattern-prefix = "xyg-"
 # Only reached by a source tree with neither git metadata nor PKG-INFO (a
 # `git archive` tarball, say): such a build still succeeds, at an obviously
 # unreal version rather than a plausible-but-wrong one. It does *not* cover

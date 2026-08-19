@@ -34,7 +34,7 @@ REQUIRED_CI_JOBS = {
     "install_without_rust",
 }
 REQUIRED_CODSPEED_JOBS = {"benchmarks"}
-REQUIRED_RELEASE_JOBS = {"wheels", "sdist", "publish", "wasm"}
+REQUIRED_RELEASE_JOBS = {"wheels", "sdist", "publish", "wasm", "github-release"}
 
 
 def _job_blocks(text: str) -> dict[str, str]:
@@ -637,14 +637,18 @@ def _step_is_conditioned(job_text: str, step_needle: str) -> bool:
 
 # The one condition that actually gates a PyPI upload: the explicit
 # XYG_ALLOW_PYPI_PUBLISH repository-variable opt-in (which does not exist by
-# default on this fork, see issue #13) AND the manual dry-run switch.
+# default on this fork, see issue #13), an XYG-owned tag, AND the manual
+# dry-run switch.
 # Requiring this exact predicate on the upload step itself — not merely *an*
 # `if:` — is the point: `if: always()` or any unrelated condition would
 # satisfy a mere presence check while gating nothing.
 PYPI_PUBLISH_GATE = (
     "if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
+    "startsWith(github.ref, 'refs/tags/xyg-v') && "
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
 )
+REAL_PUBLISH_STEP_GATE = "if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'"
+GITHUB_RELEASE_GATE = PYPI_PUBLISH_GATE.partition(":")[2].strip()
 
 # The fork repository guard on the publish job itself (issue #13): only
 # CurateLabs/xyg may reach the OIDC upload. PyPI trusted publishing is bound
@@ -676,7 +680,7 @@ def _require_workflow_contains(
 def _require_unshallow_checkouts(errors: list[str], text: str, workflow_label: str) -> None:
     """Every checkout must fetch full history, tags included.
 
-    The distribution version is derived from the latest `v*` tag
+    The distribution version is derived from the latest `xyg-v*` tag
     (uv-dynamic-versioning in pyproject), and `actions/checkout` defaults to a
     depth-1 clone carrying no tags at all. Under that default the version
     resolves to the `0.0.0` fallback *silently* — a build succeeds and ships the
@@ -1275,7 +1279,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "release",
         "push",
         "tags",
-        '["v*"]',
+        '["xyg-v*"]',
     )
     if _workflow_trigger_block(text, "workflow_dispatch") is None:
         errors.append("release workflow missing workflow_dispatch trigger")
@@ -1394,6 +1398,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "a tag/version/CHANGELOG agreement gate, and the fork publish guards (#13)",
         "needs: [wheels, sdist, wasm]",
         "environment: pypi",
+        "contents: read",
         "id-token: write",
         "scripts/check_release_version.py",
         "actions/download-artifact@",
@@ -1412,6 +1417,23 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
             "defaulting to true, so a manual run never accidentally publishes"
         )
     publish = jobs.get("publish", "")
+    _require_step_contains(
+        errors,
+        publish,
+        "Real publish must run from an XYG release tag",
+        "real-publish tag guard",
+        REAL_PUBLISH_STEP_GATE,
+        "refs/tags/xyg-v*) ;;",
+        "exit 1",
+    )
+    _require_step_contains(
+        errors,
+        publish,
+        "Release version gate (tag == CHANGELOG)",
+        "real-publish changelog gate",
+        REAL_PUBLISH_STEP_GATE,
+        "scripts/check_release_version.py",
+    )
     repo_guard_values, repo_guard_unsafe = _direct_yaml_key_values(publish, "if", indent=4)
     if repo_guard_unsafe or repo_guard_values != [PUBLISH_REPOSITORY_GUARD]:
         errors.append(
@@ -1430,6 +1452,30 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
             f"predicate on the step itself (`{PYPI_PUBLISH_GATE}`) — a missing or "
             "unrelated condition (e.g. `if: always()`) would let a manual "
             "dispatch publish unintentionally"
+        )
+    github_release = jobs.get("github-release", "")
+    _require_job_contains(
+        errors,
+        jobs,
+        "github-release",
+        "post-PyPI GitHub Release with the browser wheel",
+        "needs: [publish]",
+        "contents: write",
+        "actions/download-artifact@",
+        "pattern: dist-pyemscripten",
+        "merge-multiple: true",
+        "gh release create",
+        "release-dist/*.whl",
+        "--verify-tag",
+        "--generate-notes",
+    )
+    release_gate_values, release_gate_unsafe = _direct_yaml_key_values(
+        github_release, "if", indent=4
+    )
+    if release_gate_unsafe or release_gate_values != [GITHUB_RELEASE_GATE]:
+        errors.append(
+            "release GitHub Release job must use the same opt-in, XYG tag, and "
+            f"non-dry-run gate as PyPI (`if: {GITHUB_RELEASE_GATE}`)"
         )
     return errors
 
