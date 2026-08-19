@@ -240,15 +240,16 @@ The two requirements live primarily in the **data pipeline (§4–§6)**. The re
   codes + one dictionary, not repeated strings.
 - **GPU residency = the CPU copy can be dropped — but WASM makes "dropped" subtle.**
   wasm32 linear memory is capped at **4 GB** and, once grown, **does not shrink back
-  to the browser** — `free()` returns pages to the allocator, not the OS. So the rule
-  is stronger than "free after upload": **large columns never enter WASM linear memory
-  at all.** They live in JS-side `ArrayBuffer`s (which the browser *can* reclaim) or
-  in GPU buffers; the WASM core operates on them via views and keeps only metadata,
-  derived LOD buffers, and bounded scratch arenas inside linear memory. Linear memory
-  is budgeted (fixed arena for scratch, sized by *screen*, not data) so it never
-  ratchets up with dataset size. wasm64/memory64 lifts the 4 GB cap where supported
-  but doesn't change the strategy — datasets beyond a threshold go through Tier 3
-  tiling regardless. On native, columns stay `mmap`'d and the OS pages them.
+  to the browser** — `free()` returns pages to the allocator, not the OS. Ordinary
+  JS `ArrayBuffer`s cannot alias wasm32 linear memory, so a WASM core cannot operate
+  on them through zero-copy Rust slices. Canonical browser columns remain in
+  JS-owned buffers; the Worker transfers them without a main-thread clone and copies
+  only bounded operation chunks into a fixed-budget WASM staging arena. Full-data
+  scans stream chunks rather than making the whole dataset resident in linear memory.
+  Rust keeps only bounded derived/scene outputs and scratch inside the arena. The
+  arena is explicitly budgeted so wasm32 growth cannot ratchet up with dataset size.
+  wasm64/memory64 lifts the address cap where supported but does not remove the
+  JS→WASM copy boundary. On native, columns stay `mmap`'d and the OS pages them.
 
   **Ownership model (resolving a real contradiction):** an earlier draft said the CPU
   copy "can be dropped after GPU upload" — but Tiers 1–3 *recompute* decimations and
@@ -484,8 +485,10 @@ F3, still pending (above).
   WASM core (§8).
 - ✅ Retained scene graph + buffer diffs — updating a color is a uniform write, not a
   data re-upload.
-- ✅ Large columns live *outside* WASM linear memory (JS ArrayBuffers / GPU); linear
-  memory holds only metadata + screen-sized scratch arenas (see §4).
+- ✅ Large canonical columns live outside WASM linear memory in JS-owned ArrayBuffers.
+  Direct-browser Rust scans them through bounded copied chunks; linear memory holds
+  only the current staging slice, metadata, and screen-sized derived buffers (§4).
+  GPU buffers are derived, rebuildable caches rather than canonical storage.
 - ✅ Arrow **validity bitmaps** carried through the pipeline — nulls cost 1 bit, not a
   sentinel column (see §19).
 - ✅ **Explicit memory budgets with eviction.** VRAM is finite and not queryable in
@@ -549,9 +552,12 @@ F3, still pending (above).
   re-bins the retained density sample for kernel-less standalone exports (`to_html`),
   off the main thread, booted from a Blob URL. Environments without workers fall back
   to the stretched overview texture.
-- Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM,
-  with transferable ArrayBuffers as the universal path and SharedArrayBuffer as
-  an optional isolated-context optimization.
+- Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM.
+  The first foundation now builds a static strict-CSP Worker plus a raw adapter over
+  `xyg-engine`; it validates exact Scene v3 and lifecycle/bounds but does not yet
+  compile public charts or replace the density fallback. Transferable ArrayBuffers
+  avoid a main↔Worker clone, followed by an explicit bounded copy into WASM linear
+  memory. SharedArrayBuffer remains an optional isolated-context optimization.
 - *Historical decision, now narrowed:* the original design made Worker/WASM the
   universal engine. §32 correctly made native host compute primary. #59 restores
   Worker/WASM only for direct-browser execution; it does not force Python/Node hosts
@@ -1039,7 +1045,7 @@ The five classes of memory, per chart:
 
 | Class | Lives in | Sized by | Freed when |
 |---|---|---|---|
-| **Canonical columns** | JS ArrayBuffers / mmap (native) / server (Tier 3) — *never* WASM linear memory | data | trace removed (or explicitly demoted, below) |
+| **Canonical columns** | JS ArrayBuffers / mmap (native) / server (Tier 3); browser WASM reads bounded copied chunks, never whole-column residency | data | trace removed (or explicitly demoted, below) |
 | **Derived buffers** (decimations, pyramid tiles, bin-color resolutions, segment indices) | worker-side buffers + LodCache | screen (per entry) × cache budget | LRU-evicted under byte budget; always recomputable |
 | **Staging** (encode/upload scratch) | WASM arena + mapped GPU staging rings | screen, fixed | reused every frame — never grows with data |
 | **GPU buffers/textures** | VRAM | visible working set | evicted under VRAM budget; rebuilt from canonical + derived on demand or device-loss |
@@ -1144,7 +1150,7 @@ user's data structure**, and whether any step re-encodes.
 
 | Path | Transport | Copies (min/typical) | Re-encode? | Fallback / notes |
 |---|---|---|---|---|
-| **Pure JS app, same page** | typed arrays → transferable to worker | **0** / 0 (transfer = move) | none | SAB where isolated (§8) |
+| **Pure JS app, same page** | typed arrays → transferable to worker → bounded WASM arena chunks | **1** / 1 per processed chunk (transfer = move; JS→WASM is one `memcpy`) | none | ordinary JS buffers cannot alias wasm32 memory; SAB is optional where isolated (§8) |
 | **Python (Polars / Arrow-pandas), native render** | in-process Arrow | **0** / 0 | none | — |
 | **Python (NumPy-pandas), native render** | NumPy → Arrow | **0–1** / 1 (numeric can alias; strings copy) | dictionary-encode strings once | conversion cost reported at ingest |
 | **Jupyter kernel → browser** | xy's GPU-ready column blob over **binary** anywidget comm frames | **2** / 3 (payload assembly; socket transit; JS ArrayBuffer landing) | **never** — the compact f32/u8 blob lands as typed views; base64/JSON is forbidden on the live path | old frontends without binary comms: explicit unsupported/error rather than silently changing the performance contract |

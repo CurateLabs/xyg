@@ -37,6 +37,7 @@ def test_flags_retired_artifact_and_env_names(tmp_path: Path) -> None:
 def test_allows_never_publish_warning_and_crate_abi_path(tmp_path: Path) -> None:
     (tmp_path / "ok.md").write_text(
         "Bump ABI_VERSION in `crates/xyg-core/src/lib.rs`.\n"
+        "The browser shell is `crates/xyg-wasm/src/lib.rs`.\n"
         "The in-tree directory stays packages/xy-node; never publish `@xy/node`.\n",
         encoding="utf-8",
     )

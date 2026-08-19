@@ -804,6 +804,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "xyg-wasm"
+version = "0.1.0"
+dependencies = [
+ "xyg-engine",
+]
+
+[[package]]
 name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"

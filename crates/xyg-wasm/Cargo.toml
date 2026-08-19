@@ -1,0 +1,16 @@
+[package]
+name = "xyg-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "Thin direct-browser WebAssembly lifecycle adapter over xyg-engine"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "xyg_wasm"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The browser adapter deliberately excludes native raster/PNG export. Browser
+# painting stays in the existing TypeScript/WebGL client.
+xyg-engine = { path = "../xyg-engine", default-features = false }

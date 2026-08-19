@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/xyg-engine", "crates/xyg-core"]
+members = ["crates/xyg-engine", "crates/xyg-core", "crates/xyg-wasm"]
 
 # Whole-program optimization; `strip` keeps .dynsym, which ctypes binds
 # against. `panic` must stay unwinding — xyg-core catches panics at the C ABI.

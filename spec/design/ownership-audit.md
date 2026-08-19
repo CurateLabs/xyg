@@ -25,6 +25,7 @@ XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ct
 | --- | ---: | --- | --- |
 | `rust-engine` | 16 | `keep-rust` | current owner |
 | `rust-c-abi` | 1 | `keep-rust` | current owner |
+| `rust-wasm-abi` | 1 | `implement-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
 | `python-host` | 52 | `keep-host` | current owner |
 | `python-scene-migration` | 23 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `python-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
@@ -34,6 +35,8 @@ XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ct
 | `browser-client` | 16 | `keep-shared-client` | current owner |
 | `browser-scene-migration` | 1 | `move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `browser-wasm-migration` | 1 | `replace-with-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
+| `browser-wasm-adapter` | 2 | `implement-rust-wasm` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
+| `browser-wasm-generated` | 1 | `generate` | [#59](https://github.com/CurateLabs/xyg/issues/59) |
 
 ## Boundary policies
 
@@ -63,6 +66,21 @@ Forbidden:
 
 - A second implementation of algorithms or deterministic product policy that belongs in xyg-engine.
 - Python- or Node-specific extension-module APIs.
+
+### `rust-wasm-abi`
+
+Owner: Rust WASM lifecycle adapter. Disposition: `implement-rust-wasm` under
+[#59](https://github.com/CurateLabs/xyg/issues/59).
+
+Allowed:
+
+- Raw WebAssembly exports, bounded staging memory, instance handles, stable
+  status codes, lifecycle diagnostics, and thin calls into `xyg-engine`.
+
+Forbidden:
+
+- A second implementation of engine policy, browser DOM/WebGL behavior,
+  package asset discovery, or host-specific chart APIs.
 
 ### `python-host`
 
@@ -179,11 +197,41 @@ Forbidden:
 
 - Expanding JavaScript row scans, binning, encoding, aggregation, layout, or other engine algorithms.
 
+### `browser-wasm-adapter`
+
+Owner: Shared TypeScript WASM lifecycle adapter. Disposition:
+`implement-rust-wasm` under [#59](https://github.com/CurateLabs/xyg/issues/59).
+
+Allowed:
+
+- Explicit static Worker/WASM asset loading, bounded memory copies, stable
+  status transport, cancellation, trap handling, and disposal.
+
+Forbidden:
+
+- Canonical engine algorithms, implicit CDN/path lookup, eval, Blob workers,
+  or silent JavaScript fallbacks.
+
+### `browser-wasm-generated`
+
+Owner: Generated TypeScript WASM binding. Disposition: `generate` under
+[#59](https://github.com/CurateLabs/xyg/issues/59).
+
+Allowed:
+
+- Generated export declarations, version checks, and status constants from
+  `spec/wasm/abi.json`.
+
+Forbidden:
+
+- Hand-maintained raw signatures or canonical engine behavior.
+
 ## File ledger
 
 | Path | Current owner | Policy | Disposition | Follow-up |
 | --- | --- | --- | --- | ---: |
 | `crates/xyg-core/src/lib.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
+| `crates/xyg-wasm/src/lib.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-engine/src/css.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/font.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -208,6 +256,7 @@ Forbidden:
 | `js/src/42_glhost.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/45_lod.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/46_worker.ts` | Shared TypeScript fallback compute | `browser-wasm-migration` | `replace-with-rust-wasm` | #59 |
+| `js/src/47_wasm.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/50_chartview.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/52_tooltip.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
@@ -218,6 +267,8 @@ Forbidden:
 | `js/src/57_viewstate.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/58_graph.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/60_entries.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `js/src/wasm_abi_generated.ts` | Generated TypeScript WASM binding | `browser-wasm-generated` | `generate` | #59 |
+| `js/src/wasm_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/_abi_generated.js` | Node low-level ABI binding | `node-abi-generated` | `generate` | #57 |
 | `packages/xy-node/src/abi.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/charts.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |

@@ -106,9 +106,11 @@ def _allowed_src_lib_rs(line: str, start: int) -> bool:
     return (
         prefix.endswith("crates/xyg-core/")
         or prefix.endswith("crates/xyg-engine/")
+        or prefix.endswith("crates/xyg-wasm/")
         or prefix.endswith("js/")
         or "/crates/xyg-core/" in prefix[-40:]
         or "/crates/xyg-engine/" in prefix[-40:]
+        or "/crates/xyg-wasm/" in prefix[-40:]
     )
 
 
