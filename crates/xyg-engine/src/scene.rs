@@ -528,65 +528,58 @@ impl<'a> SceneBatch<'a> {
         }
 
         for index in 0..self.kinds.len() {
-            let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
-            let mapped = match kind {
-                SceneRecordKind::Scatter | SceneRecordKind::Polyline => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
-                    0.0,
-                    0.0,
-                ],
-                SceneRecordKind::Rect => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
-                    self.x_scale.pixel(self.x1[index]),
-                    self.y_scale.pixel(self.y1[index]),
-                ],
-            };
-            let visible = mapped.iter().all(|value| value.is_finite())
+            let kind = self.kinds[index];
+            let mapped_x0 = self.x_scale.pixel(self.x0[index]);
+            let mapped_y0 = self.y_scale.pixel(self.y0[index]);
+            let mut mapped_x1 = 0.0;
+            let mut mapped_y1 = 0.0;
+            let visible = mapped_x0.is_finite()
+                && mapped_y0.is_finite()
                 && match kind {
-                    SceneRecordKind::Polyline => true,
-                    SceneRecordKind::Scatter => {
+                    1 => true,
+                    0 => {
                         let style = self.style_refs[index] as usize;
                         let geometry = MarkerGeometry::new(
                             ScatterSymbol::from_code(self.symbols[index]),
                             self.diameter[index],
                             self.stroke_width[style],
                         );
-                        mapped[0] + geometry.extent_x >= self.layout.left
-                            && mapped[0] - geometry.extent_x <= self.layout.right
-                            && mapped[1] + geometry.extent_y >= self.layout.top
-                            && mapped[1] - geometry.extent_y <= self.layout.bottom
+                        mapped_x0 + geometry.extent_x >= self.layout.left
+                            && mapped_x0 - geometry.extent_x <= self.layout.right
+                            && mapped_y0 + geometry.extent_y >= self.layout.top
+                            && mapped_y0 - geometry.extent_y <= self.layout.bottom
                     }
-                    SceneRecordKind::Rect => {
-                        mapped[0].min(mapped[2]) <= self.layout.right
-                            && mapped[0].max(mapped[2]) >= self.layout.left
-                            && mapped[1].min(mapped[3]) <= self.layout.bottom
-                            && mapped[1].max(mapped[3]) >= self.layout.top
+                    _ => {
+                        mapped_x1 = self.x_scale.pixel(self.x1[index]);
+                        mapped_y1 = self.y_scale.pixel(self.y1[index]);
+                        mapped_x1.is_finite()
+                            && mapped_y1.is_finite()
+                            && mapped_x0.min(mapped_x1) <= self.layout.right
+                            && mapped_x0.max(mapped_x1) >= self.layout.left
+                            && mapped_y0.min(mapped_y1) <= self.layout.bottom
+                            && mapped_y0.max(mapped_y1) >= self.layout.top
                     }
                 };
-            out.push(kind as u8);
+            out.push(kind);
             out.push(u8::from(visible));
             out.push(self.symbols[index]);
             out.push(0);
             out.extend_from_slice(&self.style_refs[index].to_le_bytes());
             out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
-            let record_coordinates = if !visible {
-                [0.0; 4]
+            let (x0, y0, x1, y1) = if !visible {
+                (0.0, 0.0, 0.0, 0.0)
             } else {
                 match kind {
-                    SceneRecordKind::Scatter | SceneRecordKind::Polyline => {
-                        [mapped[0], mapped[1], 0.0, 0.0]
-                    }
-                    SceneRecordKind::Rect => [
-                        mapped[0].min(mapped[2]),
-                        mapped[1].min(mapped[3]),
-                        mapped[0].max(mapped[2]),
-                        mapped[1].max(mapped[3]),
-                    ],
+                    0 | 1 => (mapped_x0, mapped_y0, 0.0, 0.0),
+                    _ => (
+                        mapped_x0.min(mapped_x1),
+                        mapped_y0.min(mapped_y1),
+                        mapped_x0.max(mapped_x1),
+                        mapped_y0.max(mapped_y1),
+                    ),
                 }
             };
-            for value in record_coordinates {
+            for value in [x0, y0, x1, y1] {
                 out.extend_from_slice(&value.to_le_bytes());
             }
             out.extend_from_slice(&self.diameter[index].to_le_bytes());
