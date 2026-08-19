@@ -63,7 +63,7 @@ app = rx.App(
 
 _LAYOUT_CONFIG = DocsLayoutConfig(
     site_title="XY",
-    github_url="https://github.com/reflex-dev/xy",
+    github_url="https://github.com/CurateLabs/xyg",
     show_github_navbar=False,
     navbar=xy_docs_navbar,
     sidebar=xy_docs_sidebar,

@@ -9,7 +9,7 @@ from reflex_site_shared.constants import REFLEX_ASSETS_CDN
 from reflex_site_shared.views.hosting_banner import HostingBannerState
 from reflex_site_shared.views.sidebar import navbar_sidebar_button
 
-XY_REPOSITORY_URL = "https://github.com/reflex-dev/xy"
+XY_REPOSITORY_URL = "https://github.com/CurateLabs/xyg"
 
 _XY_NAV_LINKS = (
     ("Overview", "/docs/xy/"),

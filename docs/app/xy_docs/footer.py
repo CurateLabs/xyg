@@ -13,7 +13,7 @@ from reflex_site_shared.views.footer import dark_mode_toggle
 
 from xy_docs.constants import DOCS_CHANNEL, PUBLIC_XY_VERSION
 
-REPOSITORY_URL = "https://github.com/reflex-dev/xy"
+REPOSITORY_URL = "https://github.com/CurateLabs/xyg"
 
 
 def _footer_link(text: str, href: str) -> rx.Component:

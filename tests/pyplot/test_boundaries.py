@@ -16,7 +16,7 @@ import pytest
 from xy.pyplot._translate import check_unsupported, not_implemented
 
 PACKAGE = Path(__file__).resolve().parents[2] / "python" / "xy"
-SUPPORT_REQUEST_URL = "https://github.com/reflex-dev/xy/issues"
+SUPPORT_REQUEST_URL = "https://github.com/CurateLabs/xyg/issues"
 
 
 def _run_fresh(code: str) -> None:
@@ -92,7 +92,7 @@ def test_shim_never_imports_real_matplotlib_statically() -> None:
 def test_unsupported_errors_link_to_support_requests() -> None:
     assert str(not_implemented("3-D charts")) == (
         "xy.pyplot does not implement 3-D charts. See the compatibility table: "
-        "https://github.com/reflex-dev/xy/blob/main/spec/matplotlib/compat.md. "
+        "https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat.md. "
         f"Request support: {SUPPORT_REQUEST_URL}"
     )
     with pytest.raises(TypeError) as exc_info:
@@ -100,7 +100,7 @@ def test_unsupported_errors_link_to_support_requests() -> None:
     assert str(exc_info.value) == (
         "xy.pyplot subplot() got unsupported keyword(s): projection. "
         "See the compatibility table: "
-        "https://github.com/reflex-dev/xy/blob/main/spec/matplotlib/compat.md. "
+        "https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat.md. "
         f"Request support: {SUPPORT_REQUEST_URL}"
     )
 

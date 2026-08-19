@@ -7,14 +7,14 @@ description: Set up XY development, run the right gates, and prepare a focused c
 
 XY welcomes focused bug fixes, documentation improvements, tests, and chart
 surface work. The canonical contributor guide is
-[CONTRIBUTING.md](https://github.com/reflex-dev/xy/blob/main/CONTRIBUTING.md);
-the internal [contributor specification](https://github.com/reflex-dev/xy/blob/main/spec/process/contributing.md)
+[CONTRIBUTING.md](https://github.com/CurateLabs/xyg/blob/main/CONTRIBUTING.md);
+the internal [contributor specification](https://github.com/CurateLabs/xyg/blob/main/spec/process/contributing.md)
 contains the complete release and browser checklists.
 
 ## Local Setup
 
 ~~~bash
-git clone https://github.com/reflex-dev/xy.git
+git clone https://github.com/CurateLabs/xyg.git
 cd xy
 make setup
 make check
@@ -65,5 +65,5 @@ surface tests.
 
 Before opening a pull request, read the relevant architecture material in the
 repository and open a focused
-[GitHub issue](https://github.com/reflex-dev/xy/issues/new) when the desired
+[GitHub issue](https://github.com/CurateLabs/xyg/issues/new) when the desired
 behavior changes a public contract.

@@ -2218,10 +2218,10 @@ def test_xy_footer_is_project_specific_and_keeps_source_aware_links() -> None:
 
     rendered = str(xy_docs_footer(page))
 
-    assert "https://github.com/reflex-dev/xy/issues/new" in rendered
+    assert "https://github.com/CurateLabs/xyg/issues/new" in rendered
     assert "Issue%20with%20reflex.dev/docs/xy/overview/gallery/" in rendered
     assert "Path%3A%20/docs/xy/overview/gallery/%0A%0A" in rendered
-    assert "https://github.com/reflex-dev/xy/blob/main/docs/overview/gallery.md" in rendered
+    assert "https://github.com/CurateLabs/xyg/blob/main/docs/overview/gallery.md" in rendered
     assert 'to:"/guides/getting-help/"' in rendered
     assert 'to:"/guides/deployment-recipes/"' in rendered
     assert 'to:"/docs/xy/' not in rendered

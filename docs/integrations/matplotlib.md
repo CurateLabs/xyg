@@ -103,7 +103,7 @@ instead of being silently ignored. Polar is the supported non-Cartesian
 projection, with the limits above.
 
 Consult the repository's
-[generated compatibility matrix](https://github.com/reflex-dev/xy/blob/main/spec/matplotlib/compat-matrix.md)
+[generated compatibility matrix](https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat-matrix.md)
 when a workflow depends on a specific option. Compatibility shims remain
 experimental and can change before XY 1.0.
 

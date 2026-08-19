@@ -6,7 +6,7 @@ description: Review migration notes and notable changes in the XY alpha series.
 # Changelog
 
 The canonical, complete history lives in the repository's
-[CHANGELOG.md](https://github.com/reflex-dev/xy/blob/main/CHANGELOG.md). It
+[CHANGELOG.md](https://github.com/CurateLabs/xyg/blob/main/CHANGELOG.md). It
 follows Keep a Changelog; semantic-versioning compatibility becomes the firm
 contract at 1.0. Before 1.0, a minor release can contain breaking changes.
 

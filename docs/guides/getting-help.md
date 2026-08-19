@@ -14,11 +14,11 @@ than a promise of a fix or delivery date.
 
 | Need | Route |
 | --- | --- |
-| Installation, blank chart, validation, or export failure | Check [Troubleshooting](/docs/xy/guides/troubleshooting/) first, then open an [XY issue](https://github.com/reflex-dev/xy/issues/new) with a reproduction |
-| Incorrect or missing documentation | Open an [XY issue](https://github.com/reflex-dev/xy/issues/new) and link the exact docs URL or source page |
-| Feature or chart-family request | Search [existing XY issues](https://github.com/reflex-dev/xy/issues), then open one that explains the user outcome and required data/output contract |
-| Reproducible regression | Open an [XY issue](https://github.com/reflex-dev/xy/issues/new) with the last working and first failing versions |
-| Suspected vulnerability | Use [GitHub private vulnerability reporting](https://github.com/reflex-dev/xy/security/advisories/new); do not open a public issue |
+| Installation, blank chart, validation, or export failure | Check [Troubleshooting](/docs/xy/guides/troubleshooting/) first, then open an [XYG issue](https://github.com/CurateLabs/xyg/issues/new) with a reproduction |
+| Incorrect or missing documentation | Open an [XYG issue](https://github.com/CurateLabs/xyg/issues/new) and link the exact docs URL or source page |
+| Feature or chart-family request | Search [existing XYG issues](https://github.com/CurateLabs/xyg/issues), then open one that explains the user outcome and required data/output contract |
+| Reproducible regression | Open an [XYG issue](https://github.com/CurateLabs/xyg/issues/new) with the last working and first failing versions |
+| Suspected vulnerability | Use [GitHub private vulnerability reporting](https://github.com/CurateLabs/xyg/security/advisories/new); do not open a public issue |
 
 The issue tracker is the repository's public, XY-specific project channel. Do
 not send secrets, credentials, private datasets, or embargoed vulnerability
@@ -109,7 +109,7 @@ Git commit and treat it as a source-based test environment.
 
 ## Security reports
 
-The repository's [security policy](https://github.com/reflex-dev/xy/blob/main/SECURITY.md)
+The repository's [security policy](https://github.com/CurateLabs/xyg/blob/main/SECURITY.md)
 is authoritative for supported versions, scope, and response expectations.
 Use its private reporting link for injection, unsafe exported HTML, native-core
 memory safety, dependency, or other vulnerability concerns. A crash or bad
