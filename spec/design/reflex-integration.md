@@ -726,7 +726,7 @@ The core `python/xy` package itself stays Reflex-free (CLAUDE.md rule).
 components/vars but not yet App/state-manager access; revisit when a smaller
 supported surface exists.
 
-**Versioning & releases.** The integration ships in every `xy` wheel and sdist,
+**Versioning & releases.** The integration ships in every `xyg` wheel and sdist,
 so it shares the core's version and `xyg-vX.Y.Z` release tags. The published
 extra is dependency metadata only: it adds the supported Reflex floor without
 creating another distribution or release pipeline.

@@ -1399,6 +1399,19 @@ def test_release_workflow_requires_post_publish_github_release(tmp_path: Path) -
     assert any("GitHub Release" in error and "gh release create" in error for error in errors)
 
 
+def test_github_release_flattens_downloaded_wheel_for_attachment(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    prefix, separator, release_block = workflow.partition("  github-release:\n")
+    assert separator and "          merge-multiple: true\n" in release_block
+    release_block = release_block.replace("          merge-multiple: true\n", "", 1)
+    path = tmp_path / "publish.yaml"
+    path.write_text(prefix + separator + release_block, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("GitHub Release" in error and "merge-multiple" in error for error in errors)
+
+
 def test_github_release_cannot_run_for_dry_or_untagged_build(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"

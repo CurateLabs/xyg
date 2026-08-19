@@ -1462,6 +1462,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "contents: write",
         "actions/download-artifact@",
         "pattern: dist-pyemscripten",
+        "merge-multiple: true",
         "gh release create",
         "release-dist/*.whl",
         "--verify-tag",

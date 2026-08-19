@@ -319,18 +319,17 @@ Node, Chrome, `ruff`, `ty`, or `pytest` produce direct install/skip guidance.
 
 ## Release Checklist
 
-The tag *is* the version. `pyproject.toml` declares `dynamic = ["version"]` and
-uv-dynamic-versioning derives the distribution version only from the latest
-`xyg-v*` git tag. Cutting a release is `git tag xyg-vX.Y.Z && git push origin
-xyg-vX.Y.Z` — there is no number to bump in a file, and no file that can drift
-from the tag. Two
-consequences worth knowing:
+For a tagged release, the tag *is* the version. `pyproject.toml` declares
+`dynamic = ["version"]`, and uv-dynamic-versioning reads an exact `xyg-v*` tag.
+Cutting a release is `git tag xyg-vX.Y.Z && git push origin xyg-vX.Y.Z` — there
+is no number to bump in a file, and no file that can drift from the tag.
+Untagged commits after a release use `<next>.devN+<commit>`; before the first
+XYG tag, the `0.0.0` seed produces the `0.0.1.devN+<commit>` fork baseline.
+A metadata-free source tree uses the explicit `0.0.0` fallback. Consequences:
 
-- Builds between tags are versioned `<next>.devN+<commit>`, which PyPI rejects
-  by design: only a tag can produce an uploadable version.
 - Every checkout that builds must be unshallow (`fetch-depth: 0`). A depth-1
-  clone fetches no tags and would *silently* build at the `0.0.0` fallback;
-  `make check-ci` enforces this.
+  clone may omit the authoritative release tag and silently derive a different
+  development baseline; `make check-ci` enforces full history.
 
 Pre-releases are tagged the same way with a canonical PEP 440 suffix —
 `xyg-vX.Y.ZaN` / `bN` / `rcN` (e.g. `xyg-v1.0.0rc1`) — and publish through the same
