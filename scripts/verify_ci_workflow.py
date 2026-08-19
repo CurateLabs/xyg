@@ -117,7 +117,7 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
     for line in lines[start + 1 :]:
         if line.strip() and len(line) - len(line.lstrip()) <= 6:
             break
-        matrix_lines.append(line.split("#", 1)[0])
+        matrix_lines.append(_strip_yaml_comment(line))
 
     values: list[str] = []
     direct_axes = []

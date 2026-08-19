@@ -1569,6 +1569,31 @@ def test_workflow_policy_rejects_quoted_include_runner_override(tmp_path: Path) 
     assert any("arbitrary-third-party-runner" in error for error in errors)
 
 
+def test_workflow_policy_preserves_hash_in_quoted_matrix_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    cases = [
+        '        os:\n          - "blacksmith-4vcpu-ubuntu-2404#arbitrary-third-party-runner"\n',
+        "        include:\n"
+        '          - "os": "blacksmith-4vcpu-ubuntu-2404#arbitrary-third-party-runner"\n',
+    ]
+    for index, matrix in enumerate(cases):
+        path = workflows / f"quoted-hash-{index}.yml"
+        path.write_text(
+            "jobs:\n"
+            "  wheels:\n"
+            "    runs-on: ${{ matrix.os }}\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            f"{matrix}"
+            "    steps: []\n",
+            encoding="utf-8",
+        )
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert any("#arbitrary-third-party-runner" in error for error in errors)
+        path.unlink()
+
+
 def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
     tmp_path: Path,
 ) -> None:
