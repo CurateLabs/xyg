@@ -555,7 +555,7 @@ F3, still pending (above).
   to the stretched overview texture.
 - Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM.
   The first foundation now builds a static strict-CSP Worker plus a raw adapter over
-  `xyg-engine`; it validates exact Scene v3 and lifecycle/bounds but does not yet
+  `xyg-engine`; it validates exact Scene v4 and lifecycle/bounds but does not yet
   compile public charts or replace the density fallback. Transferable ArrayBuffers
   avoid a main↔Worker clone, followed by an explicit bounded copy into WASM linear
   memory. SharedArrayBuffer remains an optional isolated-context optimization.

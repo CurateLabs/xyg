@@ -415,7 +415,7 @@ fn batch_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
     Ok(f64::from_le_bytes(raw))
 }
 
-/// Validate a serialized canonical Scene v3 batch without allocating.
+/// Validate a serialized canonical Scene v4 batch without allocating.
 ///
 /// The direct-browser adapter uses this decoder as its first exact scene seam:
 /// TypeScript does not guess record offsets or accept a provisional browser
