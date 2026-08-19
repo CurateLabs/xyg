@@ -1287,7 +1287,20 @@ def test_workflow_policy_rejects_arbitrary_matrix_runner(tmp_path: Path) -> None
 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
-    assert any("matrix runner must use Blacksmith" in error for error in errors)
+    assert any("approved Blacksmith label" in error for error in errors)
+
+
+def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "invented.yml").write_text(
+        "jobs:\n  test:\n    runs-on: blacksmith-arbitrary-runner\n    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("approved Blacksmith runners" in error for error in errors)
 
 
 def test_ci_workflow_rejects_unbounded_or_missing_webkit_dependencies(

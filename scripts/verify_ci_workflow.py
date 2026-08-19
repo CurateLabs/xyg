@@ -37,6 +37,13 @@ REQUIRED_CI_JOBS = {
 }
 REQUIRED_CODSPEED_JOBS = {"benchmarks"}
 REQUIRED_RELEASE_JOBS = {"wheels", "sdist", "publish", "wasm", "github-release"}
+ALLOWED_BLACKSMITH_RUNNERS = {
+    "blacksmith-4vcpu-ubuntu-2404",
+    "blacksmith-4vcpu-ubuntu-2404-arm",
+    "blacksmith-4vcpu-windows-2025",
+    "blacksmith-6vcpu-macos-15",
+    "blacksmith-12vcpu-macos-15",
+}
 
 
 def _job_blocks(text: str) -> dict[str, str]:
@@ -1616,9 +1623,10 @@ def validate_workflow_hosting_policy(
                     "enumerated runner values"
                 )
             for runner in matrix_runners:
-                if not runner.startswith("blacksmith-"):
+                if runner not in ALLOWED_BLACKSMITH_RUNNERS:
                     errors.append(
-                        f"{path} job {job_name} matrix runner must use Blacksmith, got {runner}"
+                        f"{path} job {job_name} matrix runner must use an approved "
+                        f"Blacksmith label, got {runner}"
                     )
         for lineno, line in enumerate(text.splitlines(), start=1):
             code = line.split("#", 1)[0]
@@ -1635,9 +1643,9 @@ def validate_workflow_hosting_policy(
                 )
             if stripped.startswith("runs-on:"):
                 runner = stripped.partition(":")[2].strip()
-                if not (runner.startswith("blacksmith-") or runner == "${{ matrix.os }}"):
+                if runner != "${{ matrix.os }}" and runner not in ALLOWED_BLACKSMITH_RUNNERS:
                     errors.append(
-                        f"{path}:{lineno} jobs must use Blacksmith runners "
+                        f"{path}:{lineno} jobs must use approved Blacksmith runners "
                         f"(CodSpeed remains the hosted performance authority), got {runner}"
                     )
     return errors
