@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
+import math
 import numbers
 import operator
 import os
@@ -1603,6 +1604,34 @@ def scene_batch_encode(
         if written <= capacity:
             return out.raw[:written]
         capacity = written
+
+
+def _scene_bytes_output(encoded: bytes, function: Any, label: str, *extra: Any) -> bytes:
+    source = np.frombuffer(encoded, dtype=np.uint8)
+    if not len(source):
+        raise ValueError("encoded scene must not be empty")
+    capacity = max(256, len(source) * 3)
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = function(_ptr_u8(source), len(source), *extra, out, capacity)
+        if written == _USIZE_MAX:
+            raise ValueError(f"invalid canonical scene for {label}")
+        if written <= capacity:
+            return out.raw[:written]
+        capacity = written
+
+
+def scene_svg(encoded: bytes) -> str:
+    """Render one validated Scene v3 document as a complete SVG."""
+    return _scene_bytes_output(encoded, _lib.xyg_scene_svg, "SVG").decode("utf-8")
+
+
+def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
+    """Compile Scene v3 into the existing native raster display list."""
+    factor = float(scale)
+    if not math.isfinite(factor) or factor <= 0.0:
+        raise ValueError("scene raster scale must be positive and finite")
+    return _scene_bytes_output(encoded, _lib.xyg_scene_raster_commands, "raster commands", factor)
 
 
 def scene_scatter_svg(

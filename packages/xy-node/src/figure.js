@@ -58,6 +58,7 @@ import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
 import { toHtml } from "./html.js";
+import { figureSceneV3, sceneRasterCommands, sceneSvg } from "./scene.js";
 
 export { PROTOCOL_VERSION };
 
@@ -1218,6 +1219,21 @@ export class Figure {
    */
   toHtml(path = null, opts = {}) {
     return toHtml(this, path, opts);
+  }
+
+  /** Canonical Rust-owned Scene v3 for the supported scatter/line/bar subset. */
+  toScene(opts = {}) {
+    return figureSceneV3(this, opts);
+  }
+
+  /** Whole-scene SVG rendered from the canonical Scene v3 document. */
+  toSceneSvg(opts = {}) {
+    return sceneSvg(this.toScene(opts));
+  }
+
+  /** Existing native-raster display list compiled from Scene v3. */
+  toSceneRasterCommands(opts = {}) {
+    return sceneRasterCommands(this.toScene(opts), opts.scale ?? 1);
   }
 }
 

@@ -17,7 +17,7 @@
 use divan::{black_box, Bencher};
 
 use xyg_engine::kernels::{self, DEFAULT_CHUNK};
-use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch};
+use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneDocument};
 
 fn main() {
     divan::main();
@@ -161,7 +161,7 @@ fn is_sorted_f64(bencher: Bencher, n: usize) {
 }
 
 /// Scene v3's shared scale/layout/record encoding path for mixed core marks.
-#[divan::bench(args = [SMALL_N, MEDIUM_N])]
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
 fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
     let mut x = uniform(n, 0x0055_AA11);
     let mut y = uniform(n, 0x0066_BB22);
@@ -211,4 +211,134 @@ fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
     )
     .unwrap();
     bencher.bench(|| black_box(batch.encode()));
+}
+
+fn scene_v3_document(n: usize) -> SceneDocument {
+    let mut x = uniform(n, 0x0055_AA11);
+    let mut y = uniform(n, 0x0066_BB22);
+    let kinds: Vec<u8> = (0..n).map(|index| [1, 1, 0, 2, 2, 0][index % 6]).collect();
+    let ids: Vec<u64> = (0..n)
+        .map(|index| {
+            if index % 6 < 2 {
+                (index / 6) as u64
+            } else {
+                index as u64
+            }
+        })
+        .collect();
+    let style_refs: Vec<u32> = kinds.iter().map(|kind| u32::from(*kind)).collect();
+    let diameter: Vec<f64> = kinds
+        .iter()
+        .map(|kind| if *kind == 0 { 6.0 } else { 0.0 })
+        .collect();
+    let mut x1 = x.clone();
+    let mut y1 = y.clone();
+    for index in 0..n {
+        match index % 6 {
+            3 => {
+                x1[index] = x[index] + 0.2;
+                y1[index] = y[index] + 0.15;
+            }
+            4 => {
+                x[index] = 1.15;
+                y[index] = 0.85;
+                x1[index] = 0.55;
+                y1[index] = -0.15;
+            }
+            _ => {}
+        }
+    }
+    let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
+    let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
+    let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
+    let encoded = SceneBatch::new(
+        layout,
+        1,
+        2,
+        sx,
+        sy,
+        &kinds,
+        &ids,
+        &style_refs,
+        &[0x88; 32],
+        &[0x22; 32],
+        &[1.0; 8],
+        &diameter,
+        &vec![0; n],
+        &x,
+        &y,
+        &x1,
+        &y1,
+    )
+    .unwrap()
+    .encode();
+    let document = SceneDocument::decode(&encoded).unwrap();
+    let svg = document.to_svg();
+    let commands = document.to_raster_commands(1.0).unwrap();
+    assert!(svg.matches("<polyline points=\"").count() >= 1);
+    assert!(svg.matches("<rect x=\"").count() >= 2); // plot clip + data rectangle
+    let (fills, strokes) = scene_raster_primitive_counts(&commands).expect("valid scene commands");
+    assert!(fills >= 1 && strokes >= 3); // data rectangle + data line + two axes
+    document
+}
+
+fn scene_raster_primitive_counts(commands: &[u8]) -> Option<(usize, usize)> {
+    fn advance(offset: &mut usize, count: usize, len: usize) -> Option<()> {
+        *offset = offset.checked_add(count)?;
+        (*offset <= len).then_some(())
+    }
+    fn read_u32(commands: &[u8], offset: &mut usize) -> Option<usize> {
+        let end = offset.checked_add(4)?;
+        let value = u32::from_le_bytes(commands.get(*offset..end)?.try_into().ok()?) as usize;
+        *offset = end;
+        Some(value)
+    }
+
+    let (mut fills, mut strokes, mut offset) = (0, 0, 0);
+    while offset < commands.len() {
+        let operation = *commands.get(offset)?;
+        offset += 1;
+        match operation {
+            0 => advance(&mut offset, 16, commands.len())?,
+            1 => {
+                let points = read_u32(commands, &mut offset)?;
+                advance(
+                    &mut offset,
+                    points.checked_mul(8)?.checked_add(4)?,
+                    commands.len(),
+                )?;
+                fills += 1;
+            }
+            3 => {
+                let points = read_u32(commands, &mut offset)?;
+                advance(
+                    &mut offset,
+                    points.checked_mul(8)?.checked_add(9)?,
+                    commands.len(),
+                )?;
+                let dash_count = read_u32(commands, &mut offset)?;
+                advance(
+                    &mut offset,
+                    dash_count.checked_mul(4)?.checked_add(1)?,
+                    commands.len(),
+                )?;
+                strokes += 1;
+            }
+            4 => advance(&mut offset, 25, commands.len())?,
+            _ => return None,
+        }
+    }
+    Some((fills, strokes))
+}
+
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_v3_svg(bencher: Bencher, n: usize) {
+    let document = scene_v3_document(n);
+    bencher.bench(|| black_box(document.to_svg()));
+}
+
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_v3_raster_commands(bencher: Bencher, n: usize) {
+    let document = scene_v3_document(n);
+    bencher.bench(|| black_box(document.to_raster_commands(1.0).unwrap()));
 }

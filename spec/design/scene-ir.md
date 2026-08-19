@@ -64,8 +64,11 @@ need separate bounded path/text records.
 Version 3 establishes the renderer-independent contract required before whole
 static exporters or the browser Worker consume canonical scenes. One generated
 `xyg_scene_batch_encode` ABI accepts bounded typed arrays and emits a stable
-little-endian byte batch; it does not emit SVG and never places numeric data in
-JSON. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
+little-endian byte batch; it never places numeric data in JSON. The same exact
+batch is accepted by `xyg_scene_svg` for a complete SVG and by
+`xyg_scene_raster_commands` for the existing native raster display list. Both
+consumers fail closed on malformed version, widths, length, reserved fields,
+kinds, styles, coordinates, or bounds. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
 two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64
 domain, and symlog constant). A bounded embedded style table (maximum 65,536
 entries) makes every style reference batch-local and independently resolvable:
@@ -82,7 +85,7 @@ scatter symbols use the stable built-in symbol table and authored outer
 diameters/stroke widths must be finite and non-negative. The canonical marker
 policy shared with the version-1 SVG wrapper is:
 
-- line-only symbols (`plus-line`, `x-line`, `horizontal-line`, `vertical-line`)
+- line-only symbols (`plus_line`, `x_line`, `horizontal_line`, `vertical_line`)
   use an implicit 1px stroke only when authored stroke width is zero;
 - path radius is `max(diameter / 2 - effective_stroke_width / 2, 0)`, with no
   hidden minimum-radius clamp;
@@ -92,6 +95,16 @@ policy shared with the version-1 SVG wrapper is:
   line path extent is zero on its perpendicular axis; and
 - clipping adds half the effective stroke width to each path-axis extent.
 
+Both host compilers accept the exact canonical string names `circle`, `square`,
+`diamond`, `triangle`, `cross`, `hexagon`, `pentagon`, `star`,
+`triangle_down`, `triangle_left`, `triangle_right`, `x`, `point`, `pixel`,
+`thin_diamond`, `plus_line`, `x_line`, `horizontal_line`, and `vertical_line`;
+Node numeric codes remain strictly bounded to the corresponding 0–18 values.
+The thin figure compilers preserve the public defaults in those records:
+scatter diameter is 4px and line stroke width is 1.5px. Checked-in Python and
+Node byte fixtures pin both defaults independently rather than relying on a
+coincidental non-default example.
+
 Masked/non-finite results and fully clipped
 scatter or rectangle records are invisible with zeroed coordinates, enforcing
 §19 before a renderer sees vertex data. Scatter clipping uses the complete
@@ -99,6 +112,10 @@ symbol-specific path extent plus half the stroke width, so a center outside the 
 visible when the marker overlaps it. Polyline vertices remain available outside the
 plot so a backend can clip segments correctly at the canonical bounds. Python
 and Node consume the same checked-in scatter/line/bar/axis byte fixture.
+Raster lowering multiplies every coordinate, radius, and width by the requested
+scale in f64, then requires both that product and its f32 representation to be
+finite. Failure rejects the whole command stream, so NaN/Inf never reaches a
+vertex buffer even for extreme finite Scene values or scales (§19).
 
 The byte layout is fixed for scene version 3:
 
@@ -133,8 +150,9 @@ invalid.
 - **Polyline vertex (kind 1):** `x0,y0` is one mapped vertex; `x1,y1`, symbol,
   and diameter are zero. Reserved `x1,y1` inputs are neither finite-checked nor
   scale-mapped. Consecutive visible kind-1 records with the same stable
-  ID form one polyline in record order. A stable-ID change, a non-polyline
-  record, or an invisible vertex (including a log-masked `x0` or `y0`) terminates the run; a later repeated stable ID
+  ID and the same `style_ref` form one polyline in record order. A stable-ID
+  change, style change, non-polyline record, or invisible vertex (including a
+  log-masked `x0` or `y0`) terminates the run; a later repeated stable ID
   starts a new run and never reconnects across the break. A one-vertex run is
   valid but draws no segment.
 - **Rectangle (kind 2):** coordinates are normalized screen-space
@@ -148,18 +166,25 @@ reject unknown kinds, and enforce the reserved-zero fields above. They must not
 infer a different grouping or corner convention.
 
 The existing `xyg_scene_scatter_svg` entry point remains a compatibility
-wrapper during migration. Version 3 intentionally does not add mark-specific
-SVG ABIs: native SVG/raster consumers and the Rust/WASM browser Worker attach
-to this single scene batch in subsequent slices.
+wrapper during migration. Version 3 intentionally has no mark-specific new SVG
+ABIs: whole-scene SVG/raster consumers attach to the single scene batch.
+Python `Figure.to_scene()` and Node `Figure.toScene()` compile the migrated
+constant-style cartesian scatter/line/bar subset plus two axes. Their explicit
+Scene SVG/raster APIs exercise the Rust consumers. Public Python SVG/PNG/PDF
+remain on the established compatibility renderers until Scene records encode
+ticks, tick text, grids, and chrome; they must not silently select a
+semantically incomplete scene. Missing/nonfinite coordinates and unsupported
+customization fail closed from the explicit scene API. This is a migration
+boundary, not a silent approximation.
 
 ## Evidence and extension order
 
 Rust unit tests pin schema validation and byte-deterministic SVG. Python tests
-prove the public scatter exporter consumes the Rust scene and preserves its
-custom-marker fallback. Node tests consume the same scene fixture and expected
-fragment. ABI generation, parity, and version-first loading cover both hosts.
+prove explicit Scene consumption while public exports preserve ticks, grids,
+text, and customization through the compatibility path. Node tests consume the
+same scene fixture and reject the same unsupported subset. ABI generation,
+parity, and version-first loading cover both hosts.
 
-Next slices add time/category/angular ticks, remaining mark families,
-chrome/legend/annotation records, and native whole-scene SVG, PNG, and PDF
-consumption. Browser DOM measurement and WebGL paint remain
+Next slices add time/category/angular ticks, tick text, remaining mark families,
+chrome/legend/annotation records, and browser consumption. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

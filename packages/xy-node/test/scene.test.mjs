@@ -1,10 +1,94 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
 import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneVersion } from "../src/index.js";
+import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
+const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
+
+test("Node figure compiles the exact shared scatter, line, bar Scene v3 fixture", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+  figure.scatter([1, 2], [2, 3], { id: 0, style: { color: "#3987e5", size: 6, opacity: 0.8, symbol: "diamond" } });
+  figure.line([1, 2, 3], [1, 4, 2], { id: 1, color: "#ef4444", width: 2 });
+  figure.bar([1, 2], [3, 2], { id: 2, color: "#22c55e", opacity: 0.85 });
+  const encoded = figure.toScene();
+  assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), figureSceneFixture.expected_sha256);
+  assert.equal(encoded[160 + 3 * 16 + 2], 2); // canonical diamond symbol code
+  assert.match(sceneSvg(encoded), /^<svg xmlns=/);
+  assert.ok(sceneRasterCommands(encoded).length > 100);
+});
+
+test("Node figure defaults match Python Scene bytes and canonical values", () => {
+  const scene = (kind) => {
+    const figure = new Figure({ width: 200, height: 120 });
+    figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+    if (kind === "scatter") figure.scatter([0.25], [0.5], { id: 10 });
+    else figure.line([0, 1], [0, 1], { id: 11 });
+    return figure.toScene();
+  };
+  const scatter = scene("scatter"); const line = scene("line");
+  assert.equal(crypto.createHash("sha256").update(scatter).digest("hex"), figureSceneFixture.default_scatter_sha256);
+  assert.equal(crypto.createHash("sha256").update(line).digest("hex"), figureSceneFixture.default_line_sha256);
+  assert.equal(new DataView(scatter.buffer, scatter.byteOffset).getFloat64(168, true), 0);
+  assert.equal(new DataView(scatter.buffer, scatter.byteOffset).getFloat64(224, true), 4);
+  assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
+});
+
+test("Node Scene v3 whole-scene consumers reject malformed and unsupported input", () => {
+  assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
+  const figure = new Figure().area([0, 1], [1, 2]);
+  assert.throws(() => figure.toScene(), /does not yet support area/);
+});
+
+test("Node Scene v3 raster rejects nonrepresentable f32 commands", () => {
+  const figure = new Figure().line([0, 1], [0, 1]);
+  assert.throws(() => sceneRasterCommands(figure.toScene(), Number.MAX_VALUE), /invalid canonical scene/);
+  const huge = sceneBatchEncode({
+    viewport: [1e100, 1e100], margins: [0, 0, 0, 0],
+    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    kinds: [], stableIds: [], styleRefs: [], styles: [], diameter: [], symbols: [],
+    x0: [], y0: [], x1: [], y1: [],
+  });
+  assert.throws(() => sceneRasterCommands(huge), /invalid canonical scene/);
+  const hugeWidth = sceneBatchEncode({
+    viewport: [100, 80], margins: [10, 10, 10, 10],
+    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    kinds: [1, 1], stableIds: [1, 1], styleRefs: [0, 0],
+    styles: [{ fillRgba: [0, 0, 0, 0], strokeRgba: [0, 0, 0, 255], strokeWidth: 1e100 }],
+    diameter: [0, 0], symbols: [0, 0], x0: [0, 1], y0: [0, 1], x1: [0, 0], y1: [0, 0],
+  });
+  assert.throws(() => sceneRasterCommands(hugeWidth), /invalid canonical scene/);
+});
+
+test("Node figure Scene v3 rejects the same incomplete customization as Python", () => {
+  assert.throws(() => new Figure({ title: "Not encoded" }).scatter([1], [1]).toScene(), /titles/);
+  for (const key of ["marker_path", "marker_glyph"]) {
+    const figure = new Figure();
+    figure.scatter([1], [1], { _composed: true, style: { [key]: "M0 0" } });
+    assert.throws(() => figure.toScene(), new RegExp(key));
+  }
+  const named = new Figure();
+  named.scatter([1], [1], { _composed: true, name: "series" });
+  assert.throws(() => named.toScene(), /legends/);
+  const unsafeId = new Figure();
+  unsafeId.scatter([1], [1], { _composed: true, id: 2 ** 53 });
+  assert.throws(() => unsafeId.toScene(), /stableIds/);
+  const badSymbol = new Figure();
+  badSymbol.scatter([1], [1], { _composed: true, style: { symbol: "kite" } });
+  assert.throws(() => badSymbol.toScene(), /does not support scatter symbol "kite"/);
+});
+
+test("Node figure Scene v3 rejects missing coordinates until break records exist", () => {
+  for (const kind of ["line", "scatter"]) {
+    const figure = new Figure();
+    figure[kind]([0, 1, 2], [1, Number.NaN, 2]);
+    assert.throws(() => figure.toScene(), /missing-data breaks/);
+  }
+});
 
 test("Node Scene v3 matches shared scatter, line, bar, and axis bytes", () => {
   const encoded = sceneBatchEncode({
@@ -126,7 +210,7 @@ test("Node consumes the versioned Rust scatter scene", () => {
       fillRgba: [37, 99, 235, 255, 239, 68, 68, 128],
       strokeRgba: [0, 0, 0, 255, 17, 24, 39, 64],
       strokeWidth: [2, 0],
-      symbols: [0, 14],
+      symbols: [0, 15],
     }),
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" stroke="rgb(0,0,0)" stroke-width="2"/><path d="M 15.5 21 H 24.5 M 20 16.5 V 25.5" fill="none" stroke="rgb(17,24,39)" stroke-opacity="0.25" stroke-width="1"/></g>',
   );

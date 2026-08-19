@@ -3,13 +3,33 @@ import {
   pointer,
   xySceneAxisTicks,
   xySceneBatchEncode,
+  xySceneRasterCommands,
   xySceneScaleMap,
   xySceneScatterSvg,
+  xySceneSvg,
   xySceneVersion,
 } from "./native.js";
 import { asF64Array, f64Ptr, u32Ptr, u8Ptr } from "./encode.js";
+import { parseCssColor } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
+const SYMBOL_CODES = new Map([
+  "circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star",
+  "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel",
+  "thin_diamond", "plus_line", "x_line", "horizontal_line", "vertical_line",
+].map((name, code) => [name, code]));
+
+function sceneSymbolCode(value) {
+  if (typeof value === "string") {
+    const code = SYMBOL_CODES.get(value);
+    if (code == null) throw new RangeError(`Scene v3 does not support scatter symbol ${JSON.stringify(value)}`);
+    return code;
+  }
+  if (!Number.isInteger(value) || value < 0 || value >= SYMBOL_CODES.size) {
+    throw new RangeError("Scene v3 scatter symbol code must be an integer from 0 through 18");
+  }
+  return value;
+}
 
 function asU8Array(value, name) {
   if (value instanceof Uint8Array) return value;
@@ -166,6 +186,79 @@ export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stabl
     if (written <= capacity) return output.slice(0, written);
     capacity = written;
   }
+}
+
+function sceneOutput(encoded, call, name, extra = []) {
+  const source = asU8Array(encoded, "encoded scene");
+  if (source.length === 0) throw new RangeError("encoded scene must not be empty");
+  let capacity = Math.max(256, source.length * 3);
+  for (;;) {
+    const output = new Uint8Array(capacity);
+    const rawWritten = call(u8Ptr(source), BigInt(source.length), ...extra, u8Ptr(output), BigInt(capacity));
+    if (rawWritten === USIZE_MAX_64) throw new RangeError(`invalid canonical scene for ${name}`);
+    const written = Number(rawWritten);
+    if (!Number.isSafeInteger(written) || written < 0) throw new RangeError(`${name} output exceeded host limits`);
+    if (written <= capacity) return output.slice(0, written);
+    capacity = written;
+  }
+}
+
+export function sceneSvg(encoded) {
+  return new TextDecoder().decode(sceneOutput(encoded, xySceneSvg, "SVG"));
+}
+
+export function sceneRasterCommands(encoded, scale = 1) {
+  const factor = Number(scale);
+  if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("scene raster scale must be positive and finite");
+  return sceneOutput(encoded, xySceneRasterCommands, "raster commands", [factor]);
+}
+
+function rgba8(css, opacity, name) {
+  const parsed = parseCssColor(css);
+  if (parsed == null) throw new RangeError(`${name} must be a supported constant CSS color`);
+  return parsed.map((value, index) => Math.round(value * (index === 3 ? opacity : 1) * 255));
+}
+
+/** Compile the representative cartesian scatter/line/bar subset to Scene v3. */
+export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
+  if (figure.coords !== "cartesian") throw new RangeError("Scene v3 figure compilation currently supports cartesian coordinates only");
+  if (figure.title != null) throw new RangeError("Scene v3 does not yet encode titles");
+  const supported = new Set(["scatter", "line", "bar"]);
+  const unsupported = figure.traces.find((trace) => !supported.has(trace.kind));
+  if (unsupported) throw new RangeError(`Scene v3 figure compilation does not yet support ${unsupported.kind}`);
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [];
+  for (const trace of figure.traces) {
+    if (trace.name != null) throw new RangeError("Scene v3 does not yet encode legends");
+    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v3 currently supports only the primary x/y axes");
+    const style = trace.style ?? {};
+    for (const key of ["color_channel", "size_channel", "stroke_channel", "dash", "curve", "smooth", "linecap", "marker_path", "marker_glyph"]) {
+      if (style[key] != null) throw new RangeError(`Scene v3 figure compilation does not yet support ${key}`);
+    }
+    const opacity = Number(style.opacity ?? 1);
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
+    const fillCss = style.fill ?? style.color ?? "#3987e5";
+    const strokeCss = style.stroke ?? (trace.kind === "line" ? style.color ?? "#3987e5" : "#00000000");
+    const width = Number(style.stroke_width ?? style.width ?? style.line_width ?? (trace.kind === "line" ? 1.5 : 0));
+    styles.push({ fillRgba: rgba8(fillCss, opacity, "fill"), strokeRgba: rgba8(strokeCss, opacity, "stroke"), strokeWidth: width });
+    const styleRef = styles.length - 1;
+    const id = trace.id;
+    const count = trace.kind === "bar" ? trace.x0.length : trace.x.length;
+    const coordinateColumns = trace.kind === "bar" ? [trace.x0, trace.y0, trace.x1, trace.y1] : [trace.x, trace.y];
+    if (coordinateColumns.some((column) => column == null || column.length !== count || Array.from(column).some((value) => !Number.isFinite(value)))) {
+      throw new RangeError("Scene v3 does not yet encode missing-data breaks or nonfinite coordinates");
+    }
+    for (let index = 0; index < count; index += 1) {
+      kinds.push(trace.kind === "scatter" ? 0 : trace.kind === "line" ? 1 : 2);
+      stableIds.push(id); styleRefs.push(styleRef);
+      diameter.push(trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 4) : 0);
+      symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
+      if (trace.kind === "bar") { x0.push(trace.x0[index]); y0.push(trace.y0[index]); x1.push(trace.x1[index]); y1.push(trace.y1[index]); }
+      else { x0.push(trace.x[index]); y0.push(trace.y[index]); x1.push(0); y1.push(0); }
+    }
+  }
+  return sceneBatchEncode({ viewport: [figure.width, figure.height], margins,
+    xAxis: { id: 1, domain: figure._range("x") }, yAxis: { id: 2, domain: figure._range("y") },
+    kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1 });
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

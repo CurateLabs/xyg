@@ -1077,9 +1077,8 @@ def _native_image(
     if fmt == "svg":
         from . import _svg
 
-        return _svg.to_svg(fig, None, width=width, height=height, background=background).encode(
-            "utf-8"
-        )
+        svg = _svg.to_svg(fig, None, width=width, height=height, background=background)
+        return svg.encode("utf-8")
     if fmt == "pdf":
         from . import _pdf, _svg
 

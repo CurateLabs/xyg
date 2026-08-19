@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 64
-SIGNATURE_SHA256 = "888b598ac477a004d4a2e1d7172e718e8bcf710e2d506c14120d43df814dfbb4"
+ABI_VERSION = 65
+SIGNATURE_SHA256 = "09a06cc3eb5f9727dbb2d8ffa1f074af6ca715cfb6255368637e6f6c1d3baaf1"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -318,6 +318,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_batch_encode
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_scene_raster_commands(const uint8_t * encoded, size_t encoded_len, double scale, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_raster_commands
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)
     function = lib.xyg_scene_scale_map
     function.restype = ctypes.c_int32
@@ -326,6 +330,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_scatter_svg
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_scene_svg(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_svg
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # uint32_t xyg_scene_version()
     function = lib.xyg_scene_version
     function.restype = ctypes.c_uint32

@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 64;
+pub const ABI_VERSION: u32 = 65;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -381,6 +381,75 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         return usize::MAX;
     }
     std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&encoded);
+    required
+}
+
+/// Serialize one validated Scene v3 document as a complete SVG image.
+/// Returns required bytes or `usize::MAX` for malformed input.
+///
+/// # Safety
+/// `encoded` addresses `encoded_len` readable bytes. When capacity suffices,
+/// `out` addresses `out_cap` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_svg(
+    encoded: *const u8,
+    encoded_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(svg) = ffi_guard(None, || {
+        scene::SceneDocument::decode(std::slice::from_raw_parts(encoded, encoded_len))
+            .ok()
+            .map(|document| document.to_svg().into_bytes())
+    }) else {
+        return usize::MAX;
+    };
+    let required = svg.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&svg);
+    required
+}
+
+/// Compile one validated Scene v3 document to the existing raster display-list
+/// command stream. Returns required bytes or `usize::MAX` on error.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_raster_commands(
+    encoded: *const u8,
+    encoded_len: usize,
+    scale: f64,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(commands) = ffi_guard(None, || {
+        scene::SceneDocument::decode(std::slice::from_raw_parts(encoded, encoded_len))
+            .ok()?
+            .to_raster_commands(scale)
+            .ok()
+    }) else {
+        return usize::MAX;
+    };
+    let required = commands.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&commands);
     required
 }
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;

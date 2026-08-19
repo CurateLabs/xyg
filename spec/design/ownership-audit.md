@@ -26,7 +26,7 @@ XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ct
 | `rust-engine` | 16 | `keep-rust` | current owner |
 | `rust-c-abi` | 1 | `keep-rust` | current owner |
 | `python-host` | 52 | `keep-host` | current owner |
-| `python-scene-migration` | 22 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
+| `python-scene-migration` | 23 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `python-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
 | `node-host` | 7 | `keep-host` | current owner |
 | `node-scene-migration` | 29 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
@@ -289,6 +289,7 @@ Forbidden:
 | `python/xy/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_sankey.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_scene.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xy/_scene_v3.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_spatial.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xy/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_textblock.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
