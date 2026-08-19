@@ -1505,6 +1505,106 @@ def scene_scale_map(
     return out.reshape(source.shape)
 
 
+def scene_batch_encode(
+    *,
+    viewport: tuple[float, float],
+    margins: tuple[float, float, float, float],
+    x_axis: tuple[int, int, float, float, float, bool],
+    y_axis: tuple[int, int, float, float, float, bool],
+    kinds: npt.ArrayLike,
+    stable_ids: npt.ArrayLike,
+    style_refs: npt.ArrayLike,
+    fill_rgba: npt.ArrayLike,
+    stroke_rgba: npt.ArrayLike,
+    stroke_width: npt.ArrayLike,
+    diameter: npt.ArrayLike,
+    symbols: npt.ArrayLike,
+    x0: npt.ArrayLike,
+    y0: npt.ArrayLike,
+    x1: npt.ArrayLike,
+    y1: npt.ArrayLike,
+) -> bytes:
+    """Encode the bounded backend-neutral Scene v3 typed batch."""
+
+    def scene_uint(
+        value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
+    ) -> np.ndarray:
+        raw = np.asarray(value)
+        if raw.ndim != 1:
+            raise ValueError(f"{name} must be 1-D, got shape {raw.shape}")
+        if (
+            raw.size
+            and not np.issubdtype(raw.dtype, np.integer)
+            and (
+                raw.dtype != np.dtype(object)
+                or any(
+                    isinstance(item, (bool, np.bool_)) or not isinstance(item, (int, np.integer))
+                    for item in raw
+                )
+            )
+        ):
+            raise ValueError(f"{name} must contain unsigned integers")
+        if any(int(item) < 0 or int(item) > maximum for item in raw):
+            raise ValueError(f"{name} values exceed their unsigned integer range")
+        return np.ascontiguousarray(raw, dtype=dtype)
+
+    def scene_u64_scalar(value: object, name: str) -> int:
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
+            raise ValueError(f"{name} must be an unsigned 64-bit integer")
+        converted = int(value)
+        if converted < 0 or converted > np.iinfo(np.uint64).max:
+            raise ValueError(f"{name} must be an unsigned 64-bit integer")
+        return converted
+
+    kind_array = scene_uint(kinds, np.uint8, np.iinfo(np.uint8).max, "scene kinds")
+    ids = scene_uint(stable_ids, np.uint64, np.iinfo(np.uint64).max, "scene stable_ids")
+    styles = scene_uint(style_refs, np.uint32, np.iinfo(np.uint32).max, "scene style_refs")
+    fills = scene_uint(fill_rgba, np.uint8, np.iinfo(np.uint8).max, "scene fill_rgba")
+    strokes = scene_uint(stroke_rgba, np.uint8, np.iinfo(np.uint8).max, "scene stroke_rgba")
+    widths = _as_f64(np.asarray(stroke_width), "scene style stroke_width")
+    diameters = _as_f64(np.asarray(diameter), "scene diameter")
+    symbol_codes = scene_uint(symbols, np.uint8, np.iinfo(np.uint8).max, "scene symbols")
+    coordinates = [
+        _as_f64(np.asarray(value), name)
+        for value, name in ((x0, "scene x0"), (y0, "scene y0"), (x1, "scene x1"), (y1, "scene y1"))
+    ]
+    x_axis = (scene_u64_scalar(x_axis[0], "scene x_axis id"), *x_axis[1:])
+    y_axis = (scene_u64_scalar(y_axis[0], "scene y_axis id"), *y_axis[1:])
+    n = len(kind_array)
+    if any(len(value) != n for value in [ids, styles, diameters, symbol_codes, *coordinates]):
+        raise ValueError("scene batch arrays must have equal length")
+    if len(fills) != len(widths) * 4 or len(strokes) != len(widths) * 4:
+        raise ValueError("scene style table must have one fill and stroke RGBA per style")
+    capacity = 160 + len(widths) * 16 + n * 56
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = _lib.xyg_scene_batch_encode(
+            viewport[0],
+            viewport[1],
+            *margins,
+            *x_axis,
+            *y_axis,
+            kind_array.ctypes.data if n else 0,
+            ids.ctypes.data if n else 0,
+            styles.ctypes.data if n else 0,
+            _ptr_u8(fills) if len(widths) else 0,
+            _ptr_u8(strokes) if len(widths) else 0,
+            _ptr_f64(widths) if len(widths) else 0,
+            len(widths),
+            _ptr_f64(diameters) if n else 0,
+            _ptr_u8(symbol_codes) if n else 0,
+            *(_ptr_f64(value) if n else 0 for value in coordinates),
+            n,
+            out,
+            capacity,
+        )
+        if written == _USIZE_MAX:
+            raise ValueError("invalid canonical scene batch")
+        if written <= capacity:
+            return out.raw[:written]
+        capacity = written
+
+
 def scene_scatter_svg(
     x: npt.ArrayLike,
     y: npt.ArrayLike,

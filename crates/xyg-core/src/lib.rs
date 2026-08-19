@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 62;
+pub const ABI_VERSION: u32 = 64;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -197,6 +197,191 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
         }
         0
     })
+}
+
+/// Encode a bounded backend-neutral Scene v3 batch. Record kinds are scatter
+/// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
+/// typed binary, never JSON. Returns required bytes or `usize::MAX` on error.
+///
+/// # Safety
+/// Every input array must address `len` readable elements. If capacity is
+/// sufficient, `out` must address `out_cap` writable bytes.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_scene_batch_encode(
+    viewport_width: f64,
+    viewport_height: f64,
+    margin_left: f64,
+    margin_right: f64,
+    margin_top: f64,
+    margin_bottom: f64,
+    x_axis_id: u64,
+    x_kind: u32,
+    x_lo: f64,
+    x_hi: f64,
+    x_constant: f64,
+    x_mask_nonpositive: i32,
+    y_axis_id: u64,
+    y_kind: u32,
+    y_lo: f64,
+    y_hi: f64,
+    y_constant: f64,
+    y_mask_nonpositive: i32,
+    kinds: *const u8,
+    stable_ids: *const u64,
+    style_refs: *const u32,
+    fill_rgba: *const u8,
+    stroke_rgba: *const u8,
+    stroke_width: *const f64,
+    style_count: usize,
+    diameter: *const f64,
+    symbols: *const u8,
+    x0: *const f64,
+    y0: *const f64,
+    x1: *const f64,
+    y1: *const f64,
+    len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if len > scene::MAX_SCENE_MARKS
+        || style_count > scene::MAX_SCENE_STYLES
+        || !matches!(x_mask_nonpositive, 0 | 1)
+        || !matches!(y_mask_nonpositive, 0 | 1)
+        || (len > 0
+            && (kinds.is_null()
+                || stable_ids.is_null()
+                || style_refs.is_null()
+                || diameter.is_null()
+                || symbols.is_null()
+                || x0.is_null()
+                || y0.is_null()
+                || x1.is_null()
+                || y1.is_null()))
+        || (style_count > 0
+            && (fill_rgba.is_null() || stroke_rgba.is_null() || stroke_width.is_null()))
+    {
+        return usize::MAX;
+    }
+    let scale_kind = |value| match value {
+        0 => Some(scene::ScaleKind::Linear),
+        1 => Some(scene::ScaleKind::Log),
+        2 => Some(scene::ScaleKind::SymLog),
+        _ => None,
+    };
+    let (Some(x_kind), Some(y_kind)) = (scale_kind(x_kind), scale_kind(y_kind)) else {
+        return usize::MAX;
+    };
+    let Some(encoded) = ffi_guard(None, || {
+        let layout = scene::PlotLayout::new(
+            viewport_width,
+            viewport_height,
+            margin_left,
+            margin_right,
+            margin_top,
+            margin_bottom,
+        )
+        .ok()?;
+        let x_scale = scene::AxisScale::new(
+            x_kind,
+            x_lo,
+            x_hi,
+            layout.left,
+            layout.right,
+            x_constant,
+            x_mask_nonpositive != 0,
+        )
+        .ok()?;
+        let y_scale = scene::AxisScale::new(
+            y_kind,
+            y_lo,
+            y_hi,
+            layout.bottom,
+            layout.top,
+            y_constant,
+            y_mask_nonpositive != 0,
+        )
+        .ok()?;
+        let kinds = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(kinds, len)
+        };
+        let stable_ids = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(stable_ids, len)
+        };
+        let style_refs = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(style_refs, len)
+        };
+        let fill_rgba = if style_count == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(fill_rgba, style_count * 4)
+        };
+        let stroke_rgba = if style_count == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(stroke_rgba, style_count * 4)
+        };
+        let stroke_width = if style_count == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(stroke_width, style_count)
+        };
+        let diameter = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(diameter, len)
+        };
+        let symbols = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(symbols, len)
+        };
+        let f64s = |pointer| {
+            if len == 0 {
+                &[]
+            } else {
+                std::slice::from_raw_parts(pointer, len)
+            }
+        };
+        scene::SceneBatch::new(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            f64s(x0),
+            f64s(y0),
+            f64s(x1),
+            f64s(y1),
+        )
+        .ok()
+        .map(|batch| batch.encode())
+    }) else {
+        return usize::MAX;
+    };
+    let required = encoded.len();
+    if out_cap < required {
+        return required;
+    }
+    if required > 0 && out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&encoded);
+    required
 }
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
@@ -5283,6 +5468,123 @@ mod tests {
                 1
             );
         }
+    }
+
+    #[test]
+    fn scene_batch_abi_is_bounded_and_rejects_malformed_records() {
+        let kinds = [0u8];
+        let ids = [1u64];
+        let styles = [0u32];
+        let rgba = [0u8; 4];
+        let widths = [1.0f64];
+        let diameter = [8.0f64];
+        let symbols = [2u8];
+        let values = [0.5f64];
+        let mut output = [0u8; 232];
+        let mut call = |kind, mask, len, kinds_ptr| unsafe {
+            xyg_scene_batch_encode(
+                100.0,
+                80.0,
+                10.0,
+                10.0,
+                10.0,
+                10.0,
+                11,
+                kind,
+                0.0,
+                1.0,
+                1.0,
+                mask,
+                12,
+                0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                kinds_ptr,
+                ids.as_ptr(),
+                styles.as_ptr(),
+                rgba.as_ptr(),
+                rgba.as_ptr(),
+                widths.as_ptr(),
+                1,
+                diameter.as_ptr(),
+                symbols.as_ptr(),
+                values.as_ptr(),
+                values.as_ptr(),
+                values.as_ptr(),
+                values.as_ptr(),
+                len,
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        };
+        assert_eq!(call(0, 0, 1, kinds.as_ptr()), 232);
+        assert_eq!(call(99, 0, 1, kinds.as_ptr()), usize::MAX);
+        assert_eq!(call(0, 2, 1, kinds.as_ptr()), usize::MAX);
+        assert_eq!(call(0, 0, 1, std::ptr::null()), usize::MAX);
+        assert_eq!(
+            call(0, 0, scene::MAX_SCENE_MARKS + 1, kinds.as_ptr()),
+            usize::MAX
+        );
+        let invalid_kind = [9u8];
+        assert_eq!(call(0, 0, 1, invalid_kind.as_ptr()), usize::MAX);
+
+        let log_kinds = [0u8, 1, 1, 2];
+        let log_ids = [1u64, 20, 20, 30];
+        let log_style_refs = [0u32; 4];
+        let log_x0 = [2.0f64, 2.0, 0.0, 2.0];
+        let log_y0 = [2.0f64; 4];
+        let reserved_or_corner = [0.0f64; 4];
+        let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
+        let log_symbols = [0u8; 4];
+        let mut log_output = [0u8; 400];
+        assert_eq!(
+            unsafe {
+                xyg_scene_batch_encode(
+                    100.0,
+                    100.0,
+                    10.0,
+                    10.0,
+                    10.0,
+                    10.0,
+                    1,
+                    1,
+                    1.0,
+                    10.0,
+                    1.0,
+                    1,
+                    2,
+                    1,
+                    1.0,
+                    10.0,
+                    1.0,
+                    1,
+                    log_kinds.as_ptr(),
+                    log_ids.as_ptr(),
+                    log_style_refs.as_ptr(),
+                    rgba.as_ptr(),
+                    rgba.as_ptr(),
+                    widths.as_ptr(),
+                    1,
+                    log_diameter.as_ptr(),
+                    log_symbols.as_ptr(),
+                    log_x0.as_ptr(),
+                    log_y0.as_ptr(),
+                    reserved_or_corner.as_ptr(),
+                    reserved_or_corner.as_ptr(),
+                    4,
+                    log_output.as_mut_ptr(),
+                    log_output.len(),
+                )
+            },
+            log_output.len()
+        );
+        let records = scene::SCENE_BATCH_HEADER_BYTES + scene::SCENE_STYLE_RECORD_BYTES;
+        let flags: Vec<u8> = (0..4)
+            .map(|index| log_output[records + index * scene::SCENE_BATCH_RECORD_BYTES + 1])
+            .collect();
+        assert_eq!(flags, vec![1, 1, 0, 0]);
     }
 
     #[test]

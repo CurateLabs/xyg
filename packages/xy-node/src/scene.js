@@ -2,11 +2,12 @@
 import {
   pointer,
   xySceneAxisTicks,
+  xySceneBatchEncode,
   xySceneScaleMap,
   xySceneScatterSvg,
   xySceneVersion,
 } from "./native.js";
-import { asF64Array, f64Ptr, u8Ptr } from "./encode.js";
+import { asF64Array, f64Ptr, u32Ptr, u8Ptr } from "./encode.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 
@@ -18,6 +19,45 @@ function asU8Array(value, name) {
   } catch (error) {
     throw new TypeError(`${name} must be an array-like byte sequence`, { cause: error });
   }
+}
+
+function asUnsignedArray(value, name, max, TypedArray) {
+  if (value instanceof TypedArray) return value;
+  let items;
+  try {
+    items = Array.from(value);
+  } catch (error) {
+    throw new TypeError(`${name} must be an array-like unsigned integer sequence`, { cause: error });
+  }
+  for (const item of items) {
+    if (typeof item !== "number" || !Number.isInteger(item) || item < 0 || item > max) {
+      throw new RangeError(`${name} values must be integers from 0 through ${max}`);
+    }
+  }
+  return TypedArray.from(items);
+}
+
+function asU64(value, name) {
+  if (typeof value === "bigint") {
+    if (value < 0n || value > USIZE_MAX_64) throw new RangeError(`${name} must be an unsigned 64-bit integer`);
+    return value;
+  }
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(`${name} number must be a non-negative safe integer; use BigInt above 2^53 - 1`);
+  }
+  return BigInt(value);
+}
+
+function asStableIds(value) {
+  if (value instanceof BigUint64Array) return value;
+  let items;
+  try {
+    items = Array.from(value);
+  } catch (error) {
+    throw new TypeError("stableIds must be an array-like unsigned 64-bit integer sequence", { cause: error });
+  }
+  const converted = items.map((item) => asU64(item, "stableIds value"));
+  return BigUint64Array.from(converted);
 }
 
 function requireLength(value, length, name) {
@@ -72,6 +112,60 @@ export function scaleMap({ values, kind = "linear", operation = "pixel", domain,
   );
   if (status !== 0) throw new RangeError("invalid canonical scene scale");
   return output;
+}
+
+function axisDescriptor(axis, name) {
+  const { id, kind = "linear", domain, constant = 1, nonpositive = "clip" } = axis;
+  const kindCode = kind === "linear" ? 0 : kind === "log" ? 1 : kind === "symlog" ? 2 : -1;
+  if (kindCode < 0) throw new RangeError(`${name}.kind must be linear, log, or symlog`);
+  if (nonpositive !== "clip" && nonpositive !== "mask") throw new RangeError(`${name}.nonpositive must be clip or mask`);
+  if (!Array.isArray(domain) || domain.length !== 2) throw new RangeError(`${name}.domain must contain two values`);
+  return [asU64(id, `${name}.id`), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
+}
+
+/** Encode the shared backend-neutral Scene v3 typed batch. */
+export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1 }) {
+  if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
+    throw new RangeError("viewport and margins must contain two and four values");
+  }
+  const kindArray = asUnsignedArray(kinds, "kinds", 255, Uint8Array);
+  const ids = asStableIds(stableIds);
+  const styleRefArray = asUnsignedArray(styleRefs, "styleRefs", 0xffff_ffff, Uint32Array);
+  const diameters = asF64Array(diameter, "diameter");
+  const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
+  const fills = new Uint8Array(styles.length * 4);
+  const strokes = new Uint8Array(styles.length * 4);
+  const widths = new Float64Array(styles.length);
+  for (const [index, style] of styles.entries()) {
+    const fill = asUnsignedArray(style.fillRgba, `styles[${index}].fillRgba`, 255, Uint8Array);
+    const stroke = asUnsignedArray(style.strokeRgba, `styles[${index}].strokeRgba`, 255, Uint8Array);
+    requireLength(fill, 4, `styles[${index}].fillRgba`);
+    requireLength(stroke, 4, `styles[${index}].strokeRgba`);
+    fills.set(fill, index * 4);
+    strokes.set(stroke, index * 4);
+    widths[index] = Number(style.strokeWidth ?? 0);
+  }
+  const coordinates = [x0, y0, x1, y1].map((value, index) => asF64Array(value, ["x0", "y0", "x1", "y1"][index]));
+  const length = kindArray.length;
+  for (const [value, name] of [[ids, "stableIds"], [styleRefArray, "styleRefs"], [diameters, "diameter"], [symbolCodes, "symbols"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
+  const xd = axisDescriptor(xAxis, "xAxis");
+  const yd = axisDescriptor(yAxis, "yAxis");
+  let capacity = 160 + widths.length * 16 + length * 56;
+  for (;;) {
+    const output = new Uint8Array(capacity);
+    const rawWritten = xySceneBatchEncode(
+      Number(viewport[0]), Number(viewport[1]), ...margins.map(Number), ...xd, ...yd,
+      u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
+      u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
+      f64Ptr(diameters), u8Ptr(symbolCodes),
+      ...coordinates.map(f64Ptr), BigInt(length), u8Ptr(output), BigInt(capacity),
+    );
+    if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical scene batch");
+    const written = Number(rawWritten);
+    if (!Number.isSafeInteger(written) || written < 0) throw new RangeError("canonical scene batch exceeded host output limits");
+    if (written <= capacity) return output.slice(0, written);
+    capacity = written;
+  }
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

@@ -244,7 +244,7 @@ authenticates to CodSpeed over OIDC (`id-token: write`); it does not read a
 wall time, so browser, install, and cross-library process benchmarks stay out of
 it — those live in `benchmark-refresh.yml`, and the workflow says so inline.
 
-`crates/xyg-engine/benches/kernels.rs` — **18 rows** — is the Rust half of the
+`crates/xyg-engine/benches/kernels.rs` — **20 rows** — is the Rust half of the
 same gate: divan benchmarks on the kernel entry points themselves (zone maps,
 `min_max`, offset-encoded f32, M4, viewport binning, density log-encode,
 uniform histogram, box selection, sorted-ingest predicate), parametrized over
@@ -381,6 +381,10 @@ versioned canonical-scene slice (#58), including host paint resolution, the
 typed Rust scene call, built-in marker geometry, and SVG fragment assembly.
 The 100k `test_scene_scale_map_100k` row isolates the vectorized Rust-owned
 symlog domain-to-pixel record used before scatter/line/bar scene construction.
+The Rust `scene_v3_batch_encode` rows at 10k and 100k records isolate the shared
+layout, scale, clipping, stable-record, and little-endian encoding path for a
+deterministic mixed scatter/polyline/rectangle workload. Run it through the
+repository CodSpeed harness; hosted CodSpeed remains the performance authority.
 
 ## 9. Shim gates and CI coverage
 

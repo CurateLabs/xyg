@@ -8,6 +8,13 @@ This ledger answers ownership file by file without treating language percentages
 
 The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
 
+Migration status: Scene v3 now moves canonical viewport/plot bounds, numeric
+axis transforms, clipping visibility, and scatter/polyline/rectangle record
+encoding into `crates/xyg-engine/src/scene.rs`. `python/xy/_native.py` and
+`packages/xy-node/src/scene.js` only coerce typed arrays and call the generated
+batch ABI. Their remaining migration classification covers figure-to-record
+assembly, additional mark families, and legacy static-export consumers.
+
 ## Binding seam decision
 
 XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ctypes and Node uses Koffi; Koffi itself is built on Node-API, but XYG is not an N-API addon. PyO3/abi3 and napi-rs would create separate host-specific native artifacts, packaging paths, and version seams. They are not the default while the product requires one core artifact usable by CPython versions, Node, VS Code, and future adapters. Issue #57 generated both low-level bindings and the C header from one typed ABI contract; measured evidence may revisit the seam later.

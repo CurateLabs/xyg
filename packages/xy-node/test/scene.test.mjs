@@ -1,7 +1,97 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, scaleMap, scatterSceneSvg, sceneVersion } from "../src/index.js";
+import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneVersion } from "../src/index.js";
+
+const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
+
+test("Node Scene v3 matches shared scatter, line, bar, and axis bytes", () => {
+  const encoded = sceneBatchEncode({
+    viewport: sceneFixture.viewport, margins: sceneFixture.margins,
+    xAxis: { id: sceneFixture.x_axis[0], kind: "linear", domain: sceneFixture.x_axis.slice(2, 4), constant: sceneFixture.x_axis[4], nonpositive: "clip" },
+    yAxis: { id: sceneFixture.y_axis[0], kind: "linear", domain: sceneFixture.y_axis.slice(2, 4), constant: sceneFixture.y_axis[4], nonpositive: "clip" },
+    kinds: sceneFixture.kinds, stableIds: sceneFixture.stable_ids, styleRefs: sceneFixture.style_refs,
+    styles: sceneFixture.styles.map((style) => ({ fillRgba: style.fill_rgba, strokeRgba: style.stroke_rgba, strokeWidth: style.stroke_width })),
+    diameter: sceneFixture.diameter, symbols: sceneFixture.symbols,
+    x0: sceneFixture.x0, y0: sceneFixture.y0, x1: sceneFixture.x1, y1: sceneFixture.y1,
+  });
+  assert.equal(Buffer.from(encoded).toString("hex"), sceneFixture.expected_hex);
+  const records = 160 + sceneFixture.styles.length * 16;
+  assert.equal(encoded[records + 1], 1); // center outside, full marker overlaps
+  assert.equal(encoded[records + 2], 2); // diamond
+  const view = new DataView(encoded.buffer, encoded.byteOffset);
+  assert.equal(view.getFloat64(records + 48, true), 16);
+  const line0 = records + 56;
+  const line1 = line0 + 56;
+  const rect = line1 + 56;
+  assert.equal(view.getBigUint64(line0 + 8, true), 201n);
+  assert.equal(view.getBigUint64(line1 + 8, true), 201n);
+  assert.deepEqual([view.getFloat64(line0 + 32, true), view.getFloat64(line0 + 40, true)], [0, 0]);
+  assert.deepEqual(Array.from({ length: 4 }, (_, index) => view.getFloat64(rect + 16 + index * 8, true)), [156, 142, 272, 318]);
+});
+
+test("Node Scene v3 rejects malformed batches", () => {
+  const base = {
+    viewport: [100, 80], margins: [10, 10, 10, 10],
+    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    kinds: [0], stableIds: [1], styleRefs: [0], x0: [0.5], y0: [0.5], x1: [0.5], y1: [0.5],
+    styles: [{ fillRgba: [0, 0, 0, 255], strokeRgba: [0, 0, 0, 255], strokeWidth: 1 }],
+    diameter: [8], symbols: [0],
+  };
+  assert.throws(() => sceneBatchEncode({ ...base, stableIds: [] }), /stableIds must have length 1/);
+  assert.throws(() => sceneBatchEncode({ ...base, kinds: [9] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...base, styleRefs: [1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
+});
+
+test("Node Scene v3 validates unsigned fields before typed-array coercion", () => {
+  const base = {
+    viewport: [100, 80], margins: [10, 10, 10, 10],
+    xAxis: { id: (1n << 64n) - 1n, domain: [0, 1] }, yAxis: { id: (1n << 64n) - 1n, domain: [0, 1] },
+    kinds: [0], stableIds: [(1n << 64n) - 1n], styleRefs: [0],
+    styles: [{ fillRgba: [0, 255, 0, 255], strokeRgba: [255, 0, 255, 0], strokeWidth: 0 }],
+    diameter: [8], symbols: [0], x0: [0.5], y0: [0.5], x1: [0], y1: [0],
+  };
+  assert.ok(sceneBatchEncode(base).length > 0);
+  for (const kinds of [[-1], [256], [1.5]]) {
+    assert.throws(() => sceneBatchEncode({ ...base, kinds }), /kinds values must be integers from 0 through 255/);
+  }
+  for (const symbols of [[-1], [256], [1.5]]) {
+    assert.throws(() => sceneBatchEncode({ ...base, symbols }), /symbols values must be integers from 0 through 255/);
+  }
+  for (const styleRefs of [[-1], [2 ** 32], [0.5]]) {
+    assert.throws(() => sceneBatchEncode({ ...base, styleRefs }), /styleRefs values must be integers/);
+  }
+  for (const stableIds of [[-1], [-1n], [2 ** 53], [2n ** 64n], [1.5]]) {
+    assert.throws(() => sceneBatchEncode({ ...base, stableIds }), /stableIds/);
+  }
+  for (const id of [-1, -1n, 2 ** 53, 2n ** 64n, 1.5]) {
+    assert.throws(() => sceneBatchEncode({ ...base, xAxis: { ...base.xAxis, id } }), /xAxis.id/);
+    assert.throws(() => sceneBatchEncode({ ...base, yAxis: { ...base.yAxis, id } }), /yAxis.id/);
+  }
+  for (const channel of [-1, 256, 1.5]) {
+    const styles = [{ ...base.styles[0], fillRgba: [channel, 0, 0, 255] }];
+    assert.throws(() => sceneBatchEncode({ ...base, styles }), /fillRgba values must be integers from 0 through 255/);
+  }
+});
+
+test("Node Scene v3 log mask ignores reserved coordinates and breaks line runs", () => {
+  const encoded = sceneBatchEncode({
+    viewport: [100, 100], margins: [10, 10, 10, 10],
+    xAxis: { id: 1, kind: "log", domain: [1, 10], nonpositive: "mask" },
+    yAxis: { id: 2, kind: "log", domain: [1, 10], nonpositive: "mask" },
+    kinds: [0, 1, 1, 1, 2, 2], stableIds: [1, 20, 20, 20, 30, 31], styleRefs: [0, 0, 0, 0, 0, 0],
+    styles: [{ fillRgba: [0, 0, 0, 255], strokeRgba: [0, 0, 0, 255], strokeWidth: 0 }],
+    diameter: [6, 0, 0, 0, 0, 0], symbols: [0, 0, 0, 0, 0, 0],
+    x0: [2, 2, 0, 4, 2, 2], y0: [2, 2, 2, 2, 2, 2],
+    x1: [0, 0, 0, 0, 8, 0], y1: [0, 0, 0, 0, 8, 8],
+  });
+  const records = 176;
+  assert.deepEqual(Array.from({ length: 6 }, (_, index) => encoded[records + index * 56 + 1]), [1, 1, 0, 1, 1, 0]);
+  assert.deepEqual(Array.from(encoded.slice(records + 32, records + 48)), Array(16).fill(0));
+  assert.deepEqual(Array.from(encoded.slice(records + 88, records + 104)), Array(16).fill(0));
+});
 
 test("Node consumes canonical linear, log, and symlog scale records", () => {
   assert.deepEqual(Array.from(scaleMap({ values: [0, 5, 10], domain: [0, 10], range: [20, 120] })), [20, 70, 120]);
@@ -27,7 +117,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 1);
+  assert.equal(sceneVersion(), 3);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],

@@ -8,9 +8,13 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 1;
+pub const SCENE_VERSION: u32 = 3;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
+pub const MAX_SCENE_STYLES: usize = 65_536;
+pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
+pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
+pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AxisTicks {
@@ -65,6 +69,9 @@ impl AxisScale {
         };
         let coord_lo = scale.coord(lo);
         let coord_hi = scale.coord(hi);
+        if !coord_lo.is_finite() || !coord_hi.is_finite() {
+            return Err(SceneError::NonFinite);
+        }
         scale.coord_lo = coord_lo;
         scale.coord_span = if coord_hi == coord_lo {
             1.0
@@ -239,6 +246,52 @@ impl ScatterSymbol {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct MarkerGeometry {
+    radius: f64,
+    stroke_width: f64,
+    extent_x: f64,
+    extent_y: f64,
+}
+
+impl MarkerGeometry {
+    /// Canonical built-in marker geometry shared by Scene v1 SVG and v3
+    /// clipping. `diameter` is the authored outer size. Line-only symbols get
+    /// the historical implicit 1px stroke when the authored stroke is zero.
+    fn new(symbol: ScatterSymbol, diameter: f64, authored_stroke: f64) -> Self {
+        let stroke_width = if symbol.is_line() && authored_stroke <= 0.0 {
+            1.0
+        } else {
+            authored_stroke
+        };
+        let radius = (diameter / 2.0 - stroke_width / 2.0).max(0.0);
+        let (path_x, path_y) = match symbol {
+            ScatterSymbol::Diamond => {
+                let extent = std::f64::consts::SQRT_2 * radius;
+                (extent, extent)
+            }
+            ScatterSymbol::ThinDiamond => (
+                std::f64::consts::SQRT_2 * radius * 0.6,
+                std::f64::consts::SQRT_2 * radius,
+            ),
+            ScatterSymbol::XLine => {
+                let extent = 0.707 * radius;
+                (extent, extent)
+            }
+            ScatterSymbol::HorizontalLine => (radius, 0.0),
+            ScatterSymbol::VerticalLine => (0.0, radius),
+            _ => (radius, radius),
+        };
+        let stroke_extent = stroke_width / 2.0;
+        Self {
+            radius,
+            stroke_width,
+            extent_x: path_x + stroke_extent,
+            extent_y: path_y + stroke_extent,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SceneError {
     Length,
@@ -246,6 +299,296 @@ pub enum SceneError {
     NonFinite,
     NegativeSize,
     InvalidPaint,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PlotLayout {
+    pub viewport_width: f64,
+    pub viewport_height: f64,
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+}
+
+impl PlotLayout {
+    pub fn new(
+        viewport_width: f64,
+        viewport_height: f64,
+        margin_left: f64,
+        margin_right: f64,
+        margin_top: f64,
+        margin_bottom: f64,
+    ) -> Result<Self, SceneError> {
+        if [
+            viewport_width,
+            viewport_height,
+            margin_left,
+            margin_right,
+            margin_top,
+            margin_bottom,
+        ]
+        .iter()
+        .any(|value| !value.is_finite() || *value < 0.0)
+            || viewport_width <= margin_left + margin_right
+            || viewport_height <= margin_top + margin_bottom
+        {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(Self {
+            viewport_width,
+            viewport_height,
+            left: margin_left,
+            top: margin_top,
+            right: viewport_width - margin_right,
+            bottom: viewport_height - margin_bottom,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum SceneRecordKind {
+    Scatter = 0,
+    Polyline = 1,
+    Rect = 2,
+}
+
+impl SceneRecordKind {
+    fn from_code(value: u8) -> Result<Self, SceneError> {
+        match value {
+            0 => Ok(Self::Scatter),
+            1 => Ok(Self::Polyline),
+            2 => Ok(Self::Rect),
+            _ => Err(SceneError::Length),
+        }
+    }
+}
+
+pub struct SceneBatch<'a> {
+    layout: PlotLayout,
+    x_axis_id: u64,
+    y_axis_id: u64,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    kinds: &'a [u8],
+    stable_ids: &'a [u64],
+    style_refs: &'a [u32],
+    fill_rgba: &'a [u8],
+    stroke_rgba: &'a [u8],
+    stroke_width: &'a [f64],
+    diameter: &'a [f64],
+    symbols: &'a [u8],
+    x0: &'a [f64],
+    y0: &'a [f64],
+    x1: &'a [f64],
+    y1: &'a [f64],
+}
+
+impl<'a> SceneBatch<'a> {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        let len = kinds.len();
+        if len > MAX_SCENE_MARKS {
+            return Err(SceneError::Limit);
+        }
+        let style_count = stroke_width.len();
+        if style_count > MAX_SCENE_STYLES
+            || fill_rgba.len() != style_count.saturating_mul(4)
+            || stroke_rgba.len() != style_count.saturating_mul(4)
+        {
+            return Err(SceneError::Limit);
+        }
+        if [
+            stable_ids.len(),
+            style_refs.len(),
+            diameter.len(),
+            symbols.len(),
+            x0.len(),
+            y0.len(),
+            x1.len(),
+            y1.len(),
+        ]
+        .into_iter()
+        .any(|value| value != len)
+            || kinds
+                .iter()
+                .any(|kind| SceneRecordKind::from_code(*kind).is_err())
+        {
+            return Err(SceneError::Length);
+        }
+        for (index, kind) in kinds.iter().enumerate() {
+            let kind = SceneRecordKind::from_code(*kind)?;
+            if style_refs[index] as usize >= style_count
+                || (kind == SceneRecordKind::Scatter && symbols[index] > ScatterSymbol::X as u8)
+                || (kind != SceneRecordKind::Scatter
+                    && (diameter[index] != 0.0 || symbols[index] != 0))
+            {
+                return Err(SceneError::Length);
+            }
+        }
+        if kinds.iter().enumerate().any(|(index, kind)| {
+            !x0[index].is_finite()
+                || !y0[index].is_finite()
+                || (SceneRecordKind::from_code(*kind) == Ok(SceneRecordKind::Rect)
+                    && (!x1[index].is_finite() || !y1[index].is_finite()))
+        }) || diameter
+            .iter()
+            .chain(stroke_width)
+            .any(|value| !value.is_finite() || *value < 0.0)
+        {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(Self {
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+        })
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(
+            SCENE_BATCH_HEADER_BYTES
+                + self.stroke_width.len() * SCENE_STYLE_RECORD_BYTES
+                + self.kinds.len() * SCENE_BATCH_RECORD_BYTES,
+        );
+        out.extend_from_slice(b"XYGS");
+        out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
+        out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
+        out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
+        out.extend_from_slice(&(self.kinds.len() as u64).to_le_bytes());
+        out.extend_from_slice(&(self.stroke_width.len() as u64).to_le_bytes());
+        for value in [
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+            self.layout.left,
+            self.layout.top,
+            self.layout.right,
+            self.layout.bottom,
+        ] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&self.x_axis_id.to_le_bytes());
+        out.extend_from_slice(&self.y_axis_id.to_le_bytes());
+        // AxisScene records: kind/mask, transformed domain, and symlog constant.
+        out.push(self.x_scale.kind as u8);
+        out.push(u8::from(self.x_scale.mask_nonpositive));
+        out.extend_from_slice(&[0; 6]);
+        out.push(self.y_scale.kind as u8);
+        out.push(u8::from(self.y_scale.mask_nonpositive));
+        out.extend_from_slice(&[0; 6]);
+        out.extend_from_slice(&self.x_scale.coord_lo.to_le_bytes());
+        out.extend_from_slice(&(self.x_scale.coord_lo + self.x_scale.coord_span).to_le_bytes());
+        out.extend_from_slice(&self.y_scale.coord_lo.to_le_bytes());
+        out.extend_from_slice(&(self.y_scale.coord_lo + self.y_scale.coord_span).to_le_bytes());
+        out.extend_from_slice(&self.x_scale.constant.to_le_bytes());
+        out.extend_from_slice(&self.y_scale.constant.to_le_bytes());
+        debug_assert_eq!(out.len(), SCENE_BATCH_HEADER_BYTES);
+
+        for index in 0..self.stroke_width.len() {
+            out.extend_from_slice(&self.fill_rgba[index * 4..index * 4 + 4]);
+            out.extend_from_slice(&self.stroke_rgba[index * 4..index * 4 + 4]);
+            out.extend_from_slice(&self.stroke_width[index].to_le_bytes());
+        }
+
+        for index in 0..self.kinds.len() {
+            let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
+            let mapped = match kind {
+                SceneRecordKind::Scatter | SceneRecordKind::Polyline => [
+                    self.x_scale.pixel(self.x0[index]),
+                    self.y_scale.pixel(self.y0[index]),
+                    0.0,
+                    0.0,
+                ],
+                SceneRecordKind::Rect => [
+                    self.x_scale.pixel(self.x0[index]),
+                    self.y_scale.pixel(self.y0[index]),
+                    self.x_scale.pixel(self.x1[index]),
+                    self.y_scale.pixel(self.y1[index]),
+                ],
+            };
+            let visible = mapped.iter().all(|value| value.is_finite())
+                && match kind {
+                    SceneRecordKind::Polyline => true,
+                    SceneRecordKind::Scatter => {
+                        let style = self.style_refs[index] as usize;
+                        let geometry = MarkerGeometry::new(
+                            ScatterSymbol::from_code(self.symbols[index]),
+                            self.diameter[index],
+                            self.stroke_width[style],
+                        );
+                        mapped[0] + geometry.extent_x >= self.layout.left
+                            && mapped[0] - geometry.extent_x <= self.layout.right
+                            && mapped[1] + geometry.extent_y >= self.layout.top
+                            && mapped[1] - geometry.extent_y <= self.layout.bottom
+                    }
+                    SceneRecordKind::Rect => {
+                        mapped[0].min(mapped[2]) <= self.layout.right
+                            && mapped[0].max(mapped[2]) >= self.layout.left
+                            && mapped[1].min(mapped[3]) <= self.layout.bottom
+                            && mapped[1].max(mapped[3]) >= self.layout.top
+                    }
+                };
+            out.push(kind as u8);
+            out.push(u8::from(visible));
+            out.push(self.symbols[index]);
+            out.push(0);
+            out.extend_from_slice(&self.style_refs[index].to_le_bytes());
+            out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
+            let record_coordinates = if !visible {
+                [0.0; 4]
+            } else {
+                match kind {
+                    SceneRecordKind::Scatter | SceneRecordKind::Polyline => {
+                        [mapped[0], mapped[1], 0.0, 0.0]
+                    }
+                    SceneRecordKind::Rect => [
+                        mapped[0].min(mapped[2]),
+                        mapped[1].min(mapped[3]),
+                        mapped[0].max(mapped[2]),
+                        mapped[1].max(mapped[3]),
+                    ],
+                }
+            };
+            for value in record_coordinates {
+                out.extend_from_slice(&value.to_le_bytes());
+            }
+            out.extend_from_slice(&self.diameter[index].to_le_bytes());
+        }
+        out
+    }
 }
 
 pub struct ScatterScene<'a> {
@@ -330,13 +673,15 @@ impl<'a> ScatterScene<'a> {
                 continue;
             }
             let symbol = ScatterSymbol::from_code(self.symbols[index]);
-            let stroke_width = if symbol.is_line() && self.stroke_width[index] <= 0.0 {
-                1.0
-            } else {
-                self.stroke_width[index]
-            };
-            let radius = (self.diameter[index] / 2.0 - stroke_width / 2.0).max(0.0);
-            push_symbol(&mut out, symbol, self.x[index], self.y[index], radius);
+            let geometry =
+                MarkerGeometry::new(symbol, self.diameter[index], self.stroke_width[index]);
+            push_symbol(
+                &mut out,
+                symbol,
+                self.x[index],
+                self.y[index],
+                geometry.radius,
+            );
             let fill = rgba_at(self.fill_rgba, index);
             let stroke = rgba_at(self.stroke_rgba, index);
             if symbol.is_line() {
@@ -344,10 +689,10 @@ impl<'a> ScatterScene<'a> {
             } else {
                 push_paint(&mut out, "fill", fill, self.fill_css);
             }
-            if stroke_width > 0.0 || symbol.is_line() {
+            if geometry.stroke_width > 0.0 || symbol.is_line() {
                 push_paint(&mut out, "stroke", stroke, self.stroke_css);
                 out.push_str(" stroke-width=\"");
-                push_num(&mut out, stroke_width);
+                push_num(&mut out, geometry.stroke_width);
                 out.push('"');
             }
             out.push_str("/>");
@@ -609,10 +954,296 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 1);
+        assert_eq!(SCENE_VERSION, 3);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
+        );
+    }
+
+    #[test]
+    fn scene_v3_batch_encodes_layout_axes_and_all_core_record_kinds() {
+        let layout = PlotLayout::new(640.0, 480.0, 40.0, 20.0, 10.0, 30.0).unwrap();
+        let x_scale =
+            AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 40.0, 620.0, 1.0, false).unwrap();
+        let y_scale =
+            AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 450.0, 10.0, 1.0, false).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            11,
+            12,
+            x_scale,
+            y_scale,
+            &[0, 1, 1, 2],
+            &[101, 201, 201, 301],
+            &[1, 2, 2, 3],
+            &[0; 16],
+            &[0; 16],
+            &[0.0, 2.0, 1.0, 0.0],
+            &[16.0, 0.0, 0.0, 0.0],
+            &[ScatterSymbol::Diamond as u8, 0, 0, 0],
+            &[-0.1, -1.0, 10.0, 2.0],
+            &[5.0, 1.0, 9.0, 3.0],
+            &[-0.1, -1.0, 10.0, 4.0],
+            &[5.0, 1.0, 9.0, 7.0],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        assert_eq!(&encoded[..4], b"XYGS");
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 3);
+        assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
+        assert_eq!(
+            encoded.len(),
+            SCENE_BATCH_HEADER_BYTES + 4 * SCENE_STYLE_RECORD_BYTES + 4 * SCENE_BATCH_RECORD_BYTES
+        );
+        assert_eq!(u64::from_le_bytes(encoded[24..32].try_into().unwrap()), 4);
+        assert_eq!(u64::from_le_bytes(encoded[80..88].try_into().unwrap()), 11);
+        assert_eq!(u64::from_le_bytes(encoded[88..96].try_into().unwrap()), 12);
+        let records = SCENE_BATCH_HEADER_BYTES + 4 * SCENE_STYLE_RECORD_BYTES;
+        // The diamond center maps left of the plot, but its canonical
+        // symbol-specific extent overlaps and must remain renderable.
+        assert_eq!(encoded[records + 1], 1);
+        assert_eq!(encoded[records + 2], ScatterSymbol::Diamond as u8);
+        assert_eq!(
+            f64::from_le_bytes(encoded[records + 48..records + 56].try_into().unwrap()),
+            16.0
+        );
+        assert_eq!(encoded[records + SCENE_BATCH_RECORD_BYTES + 1], 1);
+        assert_eq!(&encoded[records + 32..records + 48], &[0; 16]);
+        let line0 = records + SCENE_BATCH_RECORD_BYTES;
+        let line1 = line0 + SCENE_BATCH_RECORD_BYTES;
+        assert_eq!(
+            u64::from_le_bytes(encoded[line0 + 8..line0 + 16].try_into().unwrap()),
+            201
+        );
+        assert_eq!(
+            u64::from_le_bytes(encoded[line1 + 8..line1 + 16].try_into().unwrap()),
+            201
+        );
+        assert_eq!(&encoded[line0 + 32..line0 + 48], &[0; 16]);
+        let rect = line1 + SCENE_BATCH_RECORD_BYTES;
+        let rect_coords: Vec<f64> = (0..4)
+            .map(|slot| {
+                f64::from_le_bytes(
+                    encoded[rect + 16 + slot * 8..rect + 24 + slot * 8]
+                        .try_into()
+                        .unwrap(),
+                )
+            })
+            .collect();
+        assert_eq!(rect_coords, vec![156.0, 142.0, 272.0, 318.0]);
+    }
+
+    #[test]
+    fn canonical_symbol_extents_drive_scene_clipping() {
+        let layout = PlotLayout::new(100.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let scale = AxisScale::new(ScaleKind::Linear, 0.0, 80.0, 10.0, 90.0, 1.0, false).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            1,
+            2,
+            scale,
+            scale,
+            &[0, 0, 0, 0],
+            &[1, 2, 3, 4],
+            &[0; 4],
+            &[0; 4],
+            &[0; 4],
+            &[0.0],
+            &[20.0; 4],
+            &[
+                ScatterSymbol::Diamond as u8,
+                ScatterSymbol::Diamond as u8,
+                ScatterSymbol::ThinDiamond as u8,
+                ScatterSymbol::ThinDiamond as u8,
+            ],
+            &[-12.0, -14.2, 40.0, 40.0],
+            &[40.0, 40.0, -12.0, -14.2],
+            &[0.0; 4],
+            &[0.0; 4],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        let records = SCENE_BATCH_HEADER_BYTES + SCENE_STYLE_RECORD_BYTES;
+        assert_eq!(encoded[records + 1], 1);
+        assert_eq!(encoded[records + SCENE_BATCH_RECORD_BYTES + 1], 0);
+        assert_eq!(encoded[records + 2 * SCENE_BATCH_RECORD_BYTES + 1], 1);
+        assert_eq!(encoded[records + 3 * SCENE_BATCH_RECORD_BYTES + 1], 0);
+
+        let line = MarkerGeometry::new(ScatterSymbol::PlusLine, 0.0, 0.0);
+        assert_eq!(line.radius, 0.0);
+        assert_eq!(line.stroke_width, 1.0);
+        assert_eq!(line.extent_x, 0.5);
+        assert_eq!(line.extent_y, 0.5);
+    }
+
+    #[test]
+    fn log_mask_maps_only_coordinates_used_by_each_record_kind() {
+        let layout = PlotLayout::new(100.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let scale = AxisScale::new(ScaleKind::Log, 1.0, 10.0, 10.0, 90.0, 1.0, true).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            1,
+            2,
+            scale,
+            scale,
+            &[0, 1, 1, 1, 2, 2],
+            &[1, 20, 20, 20, 30, 31],
+            &[0; 6],
+            &[0; 4],
+            &[0; 4],
+            &[0.0],
+            &[6.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            &[0; 6],
+            &[2.0, 2.0, 0.0, 4.0, 2.0, 2.0],
+            &[2.0; 6],
+            &[0.0, 0.0, 0.0, 0.0, 8.0, 0.0],
+            &[0.0, 0.0, 0.0, 0.0, 8.0, 8.0],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        let records = SCENE_BATCH_HEADER_BYTES + SCENE_STYLE_RECORD_BYTES;
+        let flags: Vec<u8> = (0..6)
+            .map(|index| encoded[records + index * SCENE_BATCH_RECORD_BYTES + 1])
+            .collect();
+        assert_eq!(flags, vec![1, 1, 0, 1, 1, 0]);
+        // Reserved zeros never enter log-mask mapping and are always emitted
+        // as zero. The masked middle vertex breaks the stable-id 20 run.
+        for index in [0, 1, 3] {
+            let record = records + index * SCENE_BATCH_RECORD_BYTES;
+            assert_eq!(&encoded[record + 32..record + 48], &[0; 16]);
+        }
+        assert_eq!(
+            &encoded[records + 2 * SCENE_BATCH_RECORD_BYTES + 16
+                ..records + 2 * SCENE_BATCH_RECORD_BYTES + 48],
+            &[0; 32]
+        );
+    }
+
+    #[test]
+    fn scene_v3_batch_rejects_bad_bounds_lengths_kinds_and_nonfinite_input() {
+        assert_eq!(
+            PlotLayout::new(10.0, 10.0, 6.0, 4.0, 0.0, 0.0),
+            Err(SceneError::NonFinite)
+        );
+        let layout = PlotLayout::new(10.0, 10.0, 1.0, 1.0, 1.0, 1.0).unwrap();
+        let scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 1.0, 9.0, 1.0, false).unwrap();
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[9],
+                &[1],
+                &[0],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[1.0],
+                &[0],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+                &[0.0]
+            )
+            .err(),
+            Some(SceneError::Length)
+        );
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[0],
+                &[],
+                &[0],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[1.0],
+                &[0],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+                &[0.0]
+            )
+            .err(),
+            Some(SceneError::Length)
+        );
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[0],
+                &[1],
+                &[0],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[1.0],
+                &[0],
+                &[f64::NAN],
+                &[0.0],
+                &[0.0],
+                &[0.0]
+            )
+            .err(),
+            Some(SceneError::NonFinite)
+        );
+        let invalid_record = |style_ref, diameter, symbol| {
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[0],
+                &[1],
+                &[style_ref],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[diameter],
+                &[symbol],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+            )
+            .err()
+        };
+        assert_eq!(invalid_record(1, 1.0, 0), Some(SceneError::Length));
+        assert_eq!(invalid_record(0, 1.0, 19), Some(SceneError::Length));
+        assert_eq!(invalid_record(0, -1.0, 0), Some(SceneError::NonFinite));
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &vec![0.0; MAX_SCENE_STYLES + 1],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+            )
+            .err(),
+            Some(SceneError::Limit)
         );
     }
 
