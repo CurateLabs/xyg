@@ -940,6 +940,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "CI",
         "direct-browser Rust/WASM foundation",
         "wasm32-unknown-unknown",
+        "toolchain: 1.88.0",
         "python3 scripts/gen_wasm_abi.py --check",
         "cargo test -p xyg-wasm",
         "cargo build -p xyg-wasm --release --target",
