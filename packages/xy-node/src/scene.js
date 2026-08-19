@@ -57,6 +57,9 @@ export function scaleMap({ values, kind = "linear", operation = "pixel", domain,
   const operationCode = operation === "coord" ? 0 : operation === "pixel" ? 1 : operation === "value" ? 2 : -1;
   if (kindCode < 0) throw new RangeError("kind must be linear, log, or symlog");
   if (operationCode < 0) throw new RangeError("operation must be coord, pixel, or value");
+  if (nonpositive !== "clip" && nonpositive !== "mask") {
+    throw new RangeError("nonpositive must be clip or mask");
+  }
   if (!Array.isArray(domain) || domain.length !== 2 || !Array.isArray(range) || range.length !== 2) {
     throw new RangeError("domain and range must each contain two values");
   }

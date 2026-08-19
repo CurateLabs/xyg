@@ -12,6 +12,13 @@ test("Node consumes canonical linear, log, and symlog scale records", () => {
   assert.ok(Number.isNaN(scaleMap({ values: [0], kind: "log", operation: "coord", domain: [0.1, 10], nonpositive: "mask" })[0]));
 });
 
+test("Node rejects malformed canonical scale options before the ABI call", () => {
+  assert.throws(
+    () => scaleMap({ values: [1], kind: "log", domain: [0.1, 10], nonpositive: "drop" }),
+    /nonpositive must be clip or mask/,
+  );
+});
+
 test("Node consumes Rust-owned canonical axis ticks", () => {
   assert.deepEqual(axisTicks({ kind: "linear", lo: -0.9, hi: 5.1, target: 6 }), {
     ticks: [0, 1, 2, 3, 4, 5], labeled: [0, 1, 2, 3, 4, 5], step: 1,

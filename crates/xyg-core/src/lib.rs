@@ -5126,6 +5126,166 @@ mod tests {
     use super::*;
 
     #[test]
+    fn scene_scale_abi_rejects_malformed_boundaries() {
+        let input = [1.0f64];
+        let mut output = [0.0f64];
+        let call = |kind,
+                    operation,
+                    lo,
+                    hi,
+                    px0,
+                    px1,
+                    constant,
+                    mask,
+                    len,
+                    input_ptr,
+                    output_ptr| unsafe {
+            xyg_scene_scale_map(
+                input_ptr, len, kind, operation, lo, hi, px0, px1, constant, mask, output_ptr,
+            )
+        };
+
+        assert_eq!(
+            call(
+                99,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                99,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                2,
+                1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                std::ptr::null(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                input.as_ptr(),
+                std::ptr::null_mut()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                0,
+                std::ptr::null(),
+                std::ptr::null_mut()
+            ),
+            0
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                scene::MAX_SCENE_MARKS + 1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+
+        for (lo, hi, px0, px1, constant) in [
+            (f64::NAN, 1.0, 0.0, 1.0, 1.0),
+            (0.0, f64::INFINITY, 0.0, 1.0, 1.0),
+            (0.0, 1.0, f64::NEG_INFINITY, 1.0, 1.0),
+            (0.0, 1.0, 0.0, f64::NAN, 1.0),
+            (0.0, 1.0, 0.0, 1.0, 0.0),
+            (0.0, 1.0, 0.0, 1.0, f64::NAN),
+        ] {
+            assert_eq!(
+                call(
+                    2,
+                    1,
+                    lo,
+                    hi,
+                    px0,
+                    px1,
+                    constant,
+                    0,
+                    1,
+                    input.as_ptr(),
+                    output.as_mut_ptr()
+                ),
+                1
+            );
+        }
+    }
+
+    #[test]
     #[cfg(panic = "unwind")]
     fn ffi_guard_maps_panic_to_sentinel() {
         // A panic anywhere behind the C ABI must become the entry point's
