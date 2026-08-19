@@ -1849,8 +1849,12 @@ def test_inline_svg_gallery_validator_requires_every_styled_preview(tmp_path: Pa
     run=False,
 )
 def test_xy_markdown_docs_links_match_exported_sitemap() -> None:
-    """Validate every XY docs link in every Markdown source against the sitemap."""
-    valid_routes = _sitemap_routes(EXPORTED_SITEMAP)
+    """Validate links against the sitemap, or discovered routes in preview."""
+    valid_routes = (
+        _sitemap_routes(EXPORTED_SITEMAP)
+        if PUBLIC_DOCS_URL
+        else {page.route.rstrip("/") or "/" for page in discover_docs(DOCS_CONFIG)}
+    )
     errors: list[str] = []
 
     for path in _markdown_files(DOCS_ROOT):
