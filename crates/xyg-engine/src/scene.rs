@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 3;
+pub const SCENE_VERSION: u32 = 4;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -100,6 +100,21 @@ impl AxisScale {
             ScaleKind::Linear => coord,
             ScaleKind::Log => 10_f64.powf(coord),
             ScaleKind::SymLog => coord.signum() * self.constant * coord.abs().exp_m1(),
+        }
+    }
+
+    fn domain(self) -> (f64, f64) {
+        (
+            self.value(self.coord_lo),
+            self.value(self.coord_lo + self.coord_span),
+        )
+    }
+
+    fn ticks(self) -> Result<AxisTicks, SceneError> {
+        let (lo, hi) = self.domain();
+        match self.kind {
+            ScaleKind::Log => log_ticks(lo, hi, 6),
+            ScaleKind::Linear | ScaleKind::SymLog => linear_ticks(lo, hi, 6),
         }
     }
 
@@ -799,10 +814,54 @@ struct EncodedRecord {
     diameter: f64,
 }
 
-/// Validated, owned Scene v3 document consumed identically by vector and
+fn format_tick(value: f64, step: f64, kind: ScaleKind) -> String {
+    let magnitude = value.abs();
+    if magnitude >= 1e6 || (magnitude != 0.0 && magnitude < 1e-4) {
+        let mut text = format!("{value:.1e}");
+        text = text
+            .replace("e+0", "e")
+            .replace("e-0", "e-")
+            .replace("e+", "e");
+        return text;
+    }
+    let mut decimals = if kind == ScaleKind::Log && magnitude > 0.0 && magnitude < 1.0 {
+        (-magnitude.log10()).ceil().clamp(0.0, 8.0) as usize
+    } else if step != 0.0 {
+        (-step.abs().log10()).ceil().clamp(0.0, 8.0) as usize
+    } else {
+        0
+    };
+    while kind != ScaleKind::Log && decimals < 8 {
+        let factor = 10_f64.powi(decimals as i32);
+        let rounded = (step * factor).round() / factor;
+        if (rounded - step).abs() <= step.abs() / 1000.0 {
+            break;
+        }
+        decimals += 1;
+    }
+    format!("{value:.decimals$}")
+}
+
+fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str) {
+    out.push_str("<line x1=\"");
+    push_num(out, x1);
+    out.push_str("\" y1=\"");
+    push_num(out, y1);
+    out.push_str("\" x2=\"");
+    push_num(out, x2);
+    out.push_str("\" y2=\"");
+    push_num(out, y2);
+    out.push_str("\" stroke=\"");
+    out.push_str(paint);
+    out.push_str("\" stroke-width=\"1\"/>");
+}
+
+/// Validated, owned Scene v4 document consumed identically by vector and
 /// raster export. Hosts never reinterpret record geometry after encoding.
 pub struct SceneDocument {
     layout: PlotLayout,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
 }
@@ -885,6 +944,68 @@ impl SceneDocument {
         {
             return Err(SceneError::NonFinite);
         }
+        let scale_kind = |code| match code {
+            0 => Ok(ScaleKind::Linear),
+            1 => Ok(ScaleKind::Log),
+            2 => Ok(ScaleKind::SymLog),
+            _ => Err(SceneError::Length),
+        };
+        let x_kind = scale_kind(bytes[96])?;
+        let y_kind = scale_kind(bytes[104])?;
+        let x_scale = AxisScale::new(
+            x_kind,
+            AxisScale {
+                kind: x_kind,
+                px0: layout.left,
+                coord_lo: f64_at(112),
+                coord_span: f64_at(120) - f64_at(112),
+                px_delta: layout.right - layout.left,
+                constant: f64_at(144),
+                mask_nonpositive: bytes[97] == 1,
+            }
+            .value(f64_at(112)),
+            AxisScale {
+                kind: x_kind,
+                px0: layout.left,
+                coord_lo: f64_at(112),
+                coord_span: f64_at(120) - f64_at(112),
+                px_delta: layout.right - layout.left,
+                constant: f64_at(144),
+                mask_nonpositive: bytes[97] == 1,
+            }
+            .value(f64_at(120)),
+            layout.left,
+            layout.right,
+            f64_at(144),
+            bytes[97] == 1,
+        )?;
+        let y_scale = AxisScale::new(
+            y_kind,
+            AxisScale {
+                kind: y_kind,
+                px0: layout.bottom,
+                coord_lo: f64_at(128),
+                coord_span: f64_at(136) - f64_at(128),
+                px_delta: layout.top - layout.bottom,
+                constant: f64_at(152),
+                mask_nonpositive: bytes[105] == 1,
+            }
+            .value(f64_at(128)),
+            AxisScale {
+                kind: y_kind,
+                px0: layout.bottom,
+                coord_lo: f64_at(128),
+                coord_span: f64_at(136) - f64_at(128),
+                px_delta: layout.top - layout.bottom,
+                constant: f64_at(152),
+                mask_nonpositive: bytes[105] == 1,
+            }
+            .value(f64_at(136)),
+            layout.bottom,
+            layout.top,
+            f64_at(152),
+            bytes[105] == 1,
+        )?;
         let mut styles = Vec::with_capacity(style_count);
         let mut offset = SCENE_BATCH_HEADER_BYTES;
         for _ in 0..style_count {
@@ -971,6 +1092,8 @@ impl SceneDocument {
         }
         Ok(Self {
             layout,
+            x_scale,
+            y_scale,
             styles,
             records,
         })
@@ -994,7 +1117,40 @@ impl SceneDocument {
         push_num(&mut out, self.layout.right - self.layout.left);
         out.push_str("\" height=\"");
         push_num(&mut out, self.layout.bottom - self.layout.top);
-        out.push_str("\"/></clipPath></defs><g clip-path=\"url(#xy-scene-plot)\">");
+        out.push_str("\"/></clipPath></defs><g data-xy-chrome=\"grid\">");
+        let x_ticks = self.x_scale.ticks().unwrap_or(AxisTicks {
+            ticks: Vec::new(),
+            labeled: Vec::new(),
+            step: 1.0,
+        });
+        let y_ticks = self.y_scale.ticks().unwrap_or(AxisTicks {
+            ticks: Vec::new(),
+            labeled: Vec::new(),
+            step: 1.0,
+        });
+        for value in &x_ticks.ticks {
+            let x = self.x_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                x,
+                self.layout.top,
+                x,
+                self.layout.bottom,
+                "rgba(32,32,32,0.14)",
+            );
+        }
+        for value in &y_ticks.ticks {
+            let y = self.y_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                self.layout.left,
+                y,
+                self.layout.right,
+                y,
+                "rgba(32,32,32,0.14)",
+            );
+        }
+        out.push_str("</g><g clip-path=\"url(#xy-scene-plot)\">");
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -1077,13 +1233,56 @@ impl SceneDocument {
                 }
             }
         }
-        out.push_str("</g><g><path fill=\"none\" stroke=\"rgb(0,0,0)\" stroke-width=\"1\" d=\"M ");
+        out.push_str("</g><g data-xy-chrome=\"axes\">");
+        for value in &x_ticks.labeled {
+            let x = self.x_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                x,
+                self.layout.bottom,
+                x,
+                self.layout.bottom + 4.0,
+                "rgba(32,32,32,0.55)",
+            );
+            out.push_str("<text x=\"");
+            push_num(&mut out, x);
+            out.push_str("\" y=\"");
+            push_num(&mut out, self.layout.bottom + 16.0);
+            out.push_str(
+                "\" fill=\"rgba(32,32,32,0.85)\" font-size=\"12\" text-anchor=\"middle\">",
+            );
+            out.push_str(&format_tick(*value, x_ticks.step, self.x_scale.kind));
+            out.push_str("</text>");
+        }
+        for value in &y_ticks.labeled {
+            let y = self.y_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                self.layout.left - 4.0,
+                y,
+                self.layout.left,
+                y,
+                "rgba(32,32,32,0.55)",
+            );
+            out.push_str("<text x=\"");
+            push_num(&mut out, self.layout.left - 8.0);
+            out.push_str("\" y=\"");
+            push_num(&mut out, y + 4.0);
+            out.push_str("\" fill=\"rgba(32,32,32,0.85)\" font-size=\"12\" text-anchor=\"end\">");
+            out.push_str(&format_tick(*value, y_ticks.step, self.y_scale.kind));
+            out.push_str("</text>");
+        }
+        out.push_str(
+            "<path fill=\"none\" stroke=\"rgba(32,32,32,0.55)\" stroke-width=\"1\" d=\"M ",
+        );
         push_num(&mut out, self.layout.left);
         out.push(' ');
         push_num(&mut out, self.layout.bottom);
         out.push_str(" H ");
         push_num(&mut out, self.layout.right);
-        out.push_str("\"/><path fill=\"none\" stroke=\"rgb(0,0,0)\" stroke-width=\"1\" d=\"M ");
+        out.push_str(
+            "\"/><path fill=\"none\" stroke=\"rgba(32,32,32,0.55)\" stroke-width=\"1\" d=\"M ",
+        );
         push_num(&mut out, self.layout.left);
         out.push(' ');
         push_num(&mut out, self.layout.top);
@@ -1115,6 +1314,36 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.top)?;
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
+        let x_ticks = self.x_scale.ticks()?;
+        let y_ticks = self.y_scale.ticks()?;
+        for value in &x_ticks.ticks {
+            let x = self.x_scale.pixel(*value);
+            out.push(3);
+            out.extend_from_slice(&2u32.to_le_bytes());
+            for (px, py) in [(x, self.layout.top), (x, self.layout.bottom)] {
+                f32_push(&mut out, px)?;
+                f32_push(&mut out, py)?;
+            }
+            f32_push(&mut out, 1.0)?;
+            out.extend_from_slice(&[32, 32, 32, 36]);
+            out.push(0);
+            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push(1);
+        }
+        for value in &y_ticks.ticks {
+            let y = self.y_scale.pixel(*value);
+            out.push(3);
+            out.extend_from_slice(&2u32.to_le_bytes());
+            for (px, py) in [(self.layout.left, y), (self.layout.right, y)] {
+                f32_push(&mut out, px)?;
+                f32_push(&mut out, py)?;
+            }
+            f32_push(&mut out, 1.0)?;
+            out.extend_from_slice(&[32, 32, 32, 36]);
+            out.push(0);
+            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push(1);
+        }
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -1229,10 +1458,60 @@ impl SceneDocument {
                 f32_push(&mut out, y)?;
             }
             f32_push(&mut out, 1.0)?;
-            out.extend_from_slice(&[0, 0, 0, 255]);
+            out.extend_from_slice(&[32, 32, 32, 140]);
             out.push(0);
             out.extend_from_slice(&0u32.to_le_bytes());
             out.push(1);
+        }
+        for (is_x, ticks) in [(true, &x_ticks), (false, &y_ticks)] {
+            for value in &ticks.labeled {
+                let (x, y, anchor, segment) = if is_x {
+                    let x = self.x_scale.pixel(*value);
+                    (
+                        x,
+                        self.layout.bottom + 16.0,
+                        1,
+                        [(x, self.layout.bottom), (x, self.layout.bottom + 4.0)],
+                    )
+                } else {
+                    let y = self.y_scale.pixel(*value);
+                    (
+                        self.layout.left - 8.0,
+                        y + 4.0,
+                        2,
+                        [(self.layout.left - 4.0, y), (self.layout.left, y)],
+                    )
+                };
+                out.push(3);
+                out.extend_from_slice(&2u32.to_le_bytes());
+                for (px, py) in segment {
+                    f32_push(&mut out, px)?;
+                    f32_push(&mut out, py)?;
+                }
+                f32_push(&mut out, 1.0)?;
+                out.extend_from_slice(&[32, 32, 32, 140]);
+                out.push(0);
+                out.extend_from_slice(&0u32.to_le_bytes());
+                out.push(1);
+
+                let text = format_tick(
+                    *value,
+                    ticks.step,
+                    if is_x {
+                        self.x_scale.kind
+                    } else {
+                        self.y_scale.kind
+                    },
+                );
+                out.push(6);
+                f32_push(&mut out, x)?;
+                f32_push(&mut out, y)?;
+                out.push(anchor);
+                f32_push(&mut out, 12.0)?;
+                out.extend_from_slice(&[32, 32, 32, 217]);
+                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.extend_from_slice(text.as_bytes());
+            }
         }
         Ok(out)
     }
@@ -1601,7 +1880,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 3);
+        assert_eq!(SCENE_VERSION, 4);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -1637,7 +1916,7 @@ mod tests {
         .unwrap();
         let encoded = batch.encode();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 3);
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 4);
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
@@ -2268,7 +2547,9 @@ mod tests {
             .unwrap()
             .to_raster_commands(1.0)
             .unwrap();
-        let mut offset = 17; // initial plot clip command
+        let grid_count = linear_ticks(0.0, 18.0, 6).unwrap().ticks.len()
+            + linear_ticks(0.0, 1.0, 6).unwrap().ticks.len();
+        let mut offset = 17 + grid_count * 35; // clip plus canonical grid strokes
         for code in 0..=18 {
             assert_eq!(commands[offset], 4);
             assert_eq!(commands[offset + 13], code);

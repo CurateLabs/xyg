@@ -7,11 +7,11 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 3 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 4 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 3, so additive emission is not safe.
+bitmap or schema negotiation in version 4, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
@@ -121,7 +121,7 @@ scale in f64, then requires both that product and its f32 representation to be
 finite. Failure rejects the whole command stream, so NaN/Inf never reaches a
 vertex buffer even for extreme finite Scene values or scales (§19).
 
-The byte layout is fixed for scene version 3:
+The byte layout established by version 3 remains fixed in version 4:
 
 | Offset | Bytes | Field |
 | ---: | ---: | --- |
@@ -176,10 +176,34 @@ Python `Figure.to_scene()` and Node `Figure.toScene()` compile the migrated
 constant-style cartesian scatter/line/bar subset plus two axes. Their explicit
 Scene SVG/raster APIs exercise the Rust consumers. Public Python SVG/PNG/PDF
 remain on the established compatibility renderers until Scene records encode
-ticks, tick text, grids, and chrome; they must not silently select a
+canonical layout and authored text/style; they must not silently select a
 semantically incomplete scene. Missing/nonfinite coordinates and unsupported
 customization fail closed from the explicit scene API. This is a migration
 boundary, not a silent approximation.
+
+## Version 4: default numeric Cartesian chrome
+
+Version 4 keeps the version-3 byte widths but changes whole-scene rendering
+semantics, so the strict contract requires a version bump. Rust now derives a
+bounded default chrome layer from the two encoded axis scales in both consumers:
+
+- linear and symlog axes use the canonical 1/2/2.5/5/10 ladder; log axes use
+  the canonical 1/2/5 ladder, with at most 200 ticks per axis;
+- grid lines render behind clipped marks, while spines, outward ticks, and
+  labels render in the unclipped chrome layer;
+- numeric labels use deterministic step-derived fixed/scientific formatting,
+  including magnitude-derived precision for fractional log decades; and
+- raster lowering checks every chrome coordinate and font size through the
+  same finite f64-to-f32 gate as marks before emitting existing stroke and
+  baked-font text commands.
+
+Default paints match the established static exporter: `rgba(32,32,32,0.14)`
+grid, `rgba(32,32,32,0.55)` axis, and `rgba(32,32,32,0.85)` 12px labels.
+Version 4 does not encode titles, axis titles, custom tick values/text, custom
+sides, minor ticks, or authored chrome styles. Hosts reject those features from
+explicit Scene compilation, and public exports retain compatibility routing.
+Canonical layout/gutter selection and authored text/style records must land
+before public SVG/PNG/PDF selection can be exact.
 
 ## Evidence and extension order
 
@@ -189,6 +213,6 @@ text, and customization through the compatibility path. Node tests consume the
 same scene fixture and reject the same unsupported subset. ABI generation,
 parity, and version-first loading cover both hosts.
 
-Next slices add time/category/angular ticks, tick text, remaining mark families,
-chrome/legend/annotation records, and browser consumption. Browser DOM measurement and WebGL paint remain
+Next slices add time/category/angular ticks, authored text/chrome styles,
+remaining mark families, legend/annotation records, and browser consumption. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

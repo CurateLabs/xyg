@@ -160,7 +160,7 @@ fn is_sorted_f64(bencher: Bencher, n: usize) {
     bencher.bench(|| kernels::is_sorted_f64(black_box(&x)));
 }
 
-/// Scene v3's shared scale/layout/record encoding path for mixed core marks.
+/// Scene v4's shared scale/layout/record encoding path for mixed core marks.
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
 fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
     let mut x = uniform(n, 0x0055_AA11);
@@ -277,12 +277,14 @@ fn scene_v3_document(n: usize) -> SceneDocument {
     let commands = document.to_raster_commands(1.0).unwrap();
     assert!(svg.matches("<polyline points=\"").count() >= 1);
     assert!(svg.matches("<rect x=\"").count() >= 2); // plot clip + data rectangle
-    let (fills, strokes) = scene_raster_primitive_counts(&commands).expect("valid scene commands");
+    let (fills, strokes, texts) =
+        scene_raster_primitive_counts(&commands).expect("valid scene commands");
     assert!(fills >= 1 && strokes >= 3); // data rectangle + data line + two axes
+    assert!(texts >= 2); // both canonical axes retain labels
     document
 }
 
-fn scene_raster_primitive_counts(commands: &[u8]) -> Option<(usize, usize)> {
+fn scene_raster_primitive_counts(commands: &[u8]) -> Option<(usize, usize, usize)> {
     fn advance(offset: &mut usize, count: usize, len: usize) -> Option<()> {
         *offset = offset.checked_add(count)?;
         (*offset <= len).then_some(())
@@ -294,7 +296,7 @@ fn scene_raster_primitive_counts(commands: &[u8]) -> Option<(usize, usize)> {
         Some(value)
     }
 
-    let (mut fills, mut strokes, mut offset) = (0, 0, 0);
+    let (mut fills, mut strokes, mut texts, mut offset) = (0, 0, 0, 0);
     while offset < commands.len() {
         let operation = *commands.get(offset)?;
         offset += 1;
@@ -325,10 +327,16 @@ fn scene_raster_primitive_counts(commands: &[u8]) -> Option<(usize, usize)> {
                 strokes += 1;
             }
             4 => advance(&mut offset, 25, commands.len())?,
+            6 => {
+                advance(&mut offset, 17, commands.len())?;
+                let bytes = read_u32(commands, &mut offset)?;
+                advance(&mut offset, bytes, commands.len())?;
+                texts += 1;
+            }
             _ => return None,
         }
     }
-    Some((fills, strokes))
+    Some((fills, strokes, texts))
 }
 
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]

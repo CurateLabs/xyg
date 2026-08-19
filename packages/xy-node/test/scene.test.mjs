@@ -9,7 +9,7 @@ import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
 
-test("Node figure compiles the exact shared scatter, line, bar Scene v3 fixture", () => {
+test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
   figure.scatter([1, 2], [2, 3], { id: 0, style: { color: "#3987e5", size: 6, opacity: 0.8, symbol: "diamond" } });
@@ -18,7 +18,11 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v3 fixture"
   const encoded = figure.toScene();
   assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), figureSceneFixture.expected_sha256);
   assert.equal(encoded[160 + 3 * 16 + 2], 2); // canonical diamond symbol code
-  assert.match(sceneSvg(encoded), /^<svg xmlns=/);
+  const svg = sceneSvg(encoded);
+  assert.match(svg, /^<svg xmlns=/);
+  assert.match(svg, /data-xy-chrome="grid"/);
+  assert.match(svg, /data-xy-chrome="axes"/);
+  assert.equal((svg.match(/<text /g) ?? []).length, 11);
   assert.ok(sceneRasterCommands(encoded).length > 100);
 });
 
@@ -38,13 +42,13 @@ test("Node figure defaults match Python Scene bytes and canonical values", () =>
   assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
 });
 
-test("Node Scene v3 whole-scene consumers reject malformed and unsupported input", () => {
+test("Node Scene v4 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
   const figure = new Figure().area([0, 1], [1, 2]);
   assert.throws(() => figure.toScene(), /does not yet support area/);
 });
 
-test("Node Scene v3 raster rejects nonrepresentable f32 commands", () => {
+test("Node Scene v4 raster rejects nonrepresentable f32 commands", () => {
   const figure = new Figure().line([0, 1], [0, 1]);
   assert.throws(() => sceneRasterCommands(figure.toScene(), Number.MAX_VALUE), /invalid canonical scene/);
   const huge = sceneBatchEncode({
@@ -64,7 +68,7 @@ test("Node Scene v3 raster rejects nonrepresentable f32 commands", () => {
   assert.throws(() => sceneRasterCommands(hugeWidth), /invalid canonical scene/);
 });
 
-test("Node figure Scene v3 rejects the same incomplete customization as Python", () => {
+test("Node figure Scene v4 rejects the same incomplete customization as Python", () => {
   assert.throws(() => new Figure({ title: "Not encoded" }).scatter([1], [1]).toScene(), /titles/);
   for (const key of ["marker_path", "marker_glyph"]) {
     const figure = new Figure();
@@ -82,7 +86,7 @@ test("Node figure Scene v3 rejects the same incomplete customization as Python",
   assert.throws(() => badSymbol.toScene(), /does not support scatter symbol "kite"/);
 });
 
-test("Node figure Scene v3 rejects missing coordinates until break records exist", () => {
+test("Node figure Scene v4 rejects missing coordinates until break records exist", () => {
   for (const kind of ["line", "scatter"]) {
     const figure = new Figure();
     figure[kind]([0, 1, 2], [1, Number.NaN, 2]);
@@ -90,7 +94,7 @@ test("Node figure Scene v3 rejects missing coordinates until break records exist
   }
 });
 
-test("Node Scene v3 matches shared scatter, line, bar, and axis bytes", () => {
+test("Node Scene v4 matches shared scatter, line, bar, and axis bytes", () => {
   const encoded = sceneBatchEncode({
     viewport: sceneFixture.viewport, margins: sceneFixture.margins,
     xAxis: { id: sceneFixture.x_axis[0], kind: "linear", domain: sceneFixture.x_axis.slice(2, 4), constant: sceneFixture.x_axis[4], nonpositive: "clip" },
@@ -115,7 +119,7 @@ test("Node Scene v3 matches shared scatter, line, bar, and axis bytes", () => {
   assert.deepEqual(Array.from({ length: 4 }, (_, index) => view.getFloat64(rect + 16 + index * 8, true)), [156, 142, 272, 318]);
 });
 
-test("Node Scene v3 rejects malformed batches", () => {
+test("Node Scene v4 rejects malformed batches", () => {
   const base = {
     viewport: [100, 80], margins: [10, 10, 10, 10],
     xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
@@ -129,7 +133,7 @@ test("Node Scene v3 rejects malformed batches", () => {
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
 });
 
-test("Node Scene v3 validates unsigned fields before typed-array coercion", () => {
+test("Node Scene v4 validates unsigned fields before typed-array coercion", () => {
   const base = {
     viewport: [100, 80], margins: [10, 10, 10, 10],
     xAxis: { id: (1n << 64n) - 1n, domain: [0, 1] }, yAxis: { id: (1n << 64n) - 1n, domain: [0, 1] },
@@ -160,7 +164,7 @@ test("Node Scene v3 validates unsigned fields before typed-array coercion", () =
   }
 });
 
-test("Node Scene v3 log mask ignores reserved coordinates and breaks line runs", () => {
+test("Node Scene v4 log mask ignores reserved coordinates and breaks line runs", () => {
   const encoded = sceneBatchEncode({
     viewport: [100, 100], margins: [10, 10, 10, 10],
     xAxis: { id: 1, kind: "log", domain: [1, 10], nonpositive: "mask" },
@@ -201,7 +205,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 3);
+  assert.equal(sceneVersion(), 4);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],

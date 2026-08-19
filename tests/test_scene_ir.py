@@ -38,7 +38,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert encoded.hex() == fixture["expected_hex"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 3
+    assert int.from_bytes(encoded[4:8], "little") == 4
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -258,7 +258,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 3
+    assert _native.scene_version() == 4
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

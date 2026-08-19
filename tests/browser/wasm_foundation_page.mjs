@@ -235,7 +235,7 @@ async function run() {
     maxArenaBytes: 1024,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 1 || ready.sceneVersion !== 3) {
+  if (ready.abiVersion !== 1 || ready.sceneVersion !== 4) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
 

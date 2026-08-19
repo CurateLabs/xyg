@@ -2,7 +2,7 @@
 //!
 //! This crate owns only WASM memory, instance, status, and lifecycle concerns.
 //! Product policy stays in `xyg-engine`; browser painting stays in TypeScript.
-//! The first bounded seam validates the exact canonical Scene v3 batch. It is
+//! The first bounded seam validates the exact canonical Scene v4 batch. It is
 //! not a second browser scene schema and does not claim complete chart compile.
 
 use std::sync::{Mutex, MutexGuard};
