@@ -29,10 +29,10 @@ pub enum ScaleKind {
 #[derive(Clone, Copy, Debug)]
 pub struct AxisScale {
     kind: ScaleKind,
-    lo: f64,
-    hi: f64,
     px0: f64,
-    px1: f64,
+    coord_lo: f64,
+    coord_span: f64,
+    px_delta: f64,
     constant: f64,
     mask_nonpositive: bool,
 }
@@ -54,15 +54,24 @@ impl AxisScale {
         {
             return Err(SceneError::NonFinite);
         }
-        Ok(Self {
+        let mut scale = Self {
             kind,
-            lo,
-            hi,
             px0,
-            px1,
+            coord_lo: 0.0,
+            coord_span: 1.0,
+            px_delta: px1 - px0,
             constant,
             mask_nonpositive,
-        })
+        };
+        let coord_lo = scale.coord(lo);
+        let coord_hi = scale.coord(hi);
+        scale.coord_lo = coord_lo;
+        scale.coord_span = if coord_hi == coord_lo {
+            1.0
+        } else {
+            coord_hi - coord_lo
+        };
+        Ok(scale)
     }
 
     pub fn coord(self, value: f64) -> f64 {
@@ -87,10 +96,7 @@ impl AxisScale {
     }
 
     pub fn pixel(self, value: f64) -> f64 {
-        let low = self.coord(self.lo);
-        let high = self.coord(self.hi);
-        let span = if high == low { 1.0 } else { high - low };
-        self.px0 + (self.coord(value) - low) / span * (self.px1 - self.px0)
+        self.px0 + (self.coord(value) - self.coord_lo) / self.coord_span * self.px_delta
     }
 }
 
@@ -772,5 +778,75 @@ mod tests {
         let coordinate = symlog.coord(-4.0);
         assert!((symlog.value(coordinate) + 4.0).abs() < 1e-12);
         assert!((symlog.pixel(0.0) - 50.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn precomputed_pixel_invariants_preserve_reference_mapping() {
+        for (kind, lo, hi, px0, px1, constant, mask, values) in [
+            (
+                ScaleKind::Linear,
+                10.0,
+                -2.0,
+                700.0,
+                20.0,
+                1.0,
+                false,
+                vec![-2.0, 0.0, 10.0, f64::NAN],
+            ),
+            (
+                ScaleKind::Linear,
+                4.0,
+                4.0,
+                8.0,
+                18.0,
+                1.0,
+                false,
+                vec![4.0, 5.0],
+            ),
+            (
+                ScaleKind::Log,
+                0.1,
+                100.0,
+                0.0,
+                300.0,
+                1.0,
+                false,
+                vec![-1.0, 0.1, 1.0, 100.0, f64::NAN],
+            ),
+            (
+                ScaleKind::Log,
+                0.1,
+                100.0,
+                300.0,
+                0.0,
+                1.0,
+                true,
+                vec![0.0, 0.1, 10.0],
+            ),
+            (
+                ScaleKind::SymLog,
+                -20.0,
+                20.0,
+                5.0,
+                405.0,
+                2.0,
+                false,
+                vec![-20.0, -1.0, 0.0, 7.0, 20.0],
+            ),
+        ] {
+            let scale = AxisScale::new(kind, lo, hi, px0, px1, constant, mask).unwrap();
+            let low = scale.coord(lo);
+            let high = scale.coord(hi);
+            let span = if high == low { 1.0 } else { high - low };
+            for value in values {
+                let expected = px0 + (scale.coord(value) - low) / span * (px1 - px0);
+                let actual = scale.pixel(value);
+                assert!(
+                    (expected.is_nan() && actual.is_nan())
+                        || expected.to_bits() == actual.to_bits(),
+                    "{kind:?} value {value}: expected {expected:?}, got {actual:?}"
+                );
+            }
+        }
     }
 }
