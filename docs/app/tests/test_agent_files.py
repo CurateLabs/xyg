@@ -126,9 +126,13 @@ def test_preview_page_markdown_uses_truthful_host_relative_agent_url() -> None:
     assert all(content.startswith(f"{directive}\n\n") for _path, content in assets)
 
 
-def test_preview_html_shell_omits_agent_discovery_directive() -> None:
-    """The preview shell has no public llms URL until an origin is configured."""
-    assert _llms_txt_directive() is None
+def test_preview_html_shell_uses_host_relative_agent_discovery() -> None:
+    """The preview shell advertises the co-located llms asset without a host."""
+    rendered = str(_llms_txt_directive())
+    assert "For AI agents: the complete XY documentation index is at" in rendered
+    assert 'to:"/llms.txt"' in rendered
+    assert "/docs/xy/docs/xy/llms.txt" not in rendered
+    assert "https://" not in rendered
 
 
 def test_agent_files_publish_under_the_frontend_path(

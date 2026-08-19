@@ -5,6 +5,7 @@ from pathlib import Path
 
 from reflex_site_shared.docs import discover_docs
 from xy_docs.config import DOCS_CONFIG, DOCS_REDIRECTS
+from xy_docs.constants import LLMS_TXT_PATH, agent_docs_url
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 CLIENT_ROOT = APP_ROOT / ".web" / "build" / "client"
@@ -16,6 +17,7 @@ INLINE_SVG_PREVIEW_COUNT = 34
 XY_PAYLOAD_PATTERN = re.compile(r'["\'](?P<url>/docs/xy/xy/[a-f0-9]+\.xyf)["\']')
 XY_PAYLOAD_MAGIC = b"XYBF"
 LLMS_DIRECTIVE = "For AI agents: the complete XY documentation index is at"
+LLMS_HREF = f'href="{agent_docs_url(LLMS_TXT_PATH)}"'
 
 
 def route_html_paths(route: str) -> tuple[Path, ...]:
@@ -117,6 +119,9 @@ def main() -> None:
         for html_path in html_paths:
             if html_path.is_file() and LLMS_DIRECTIVE not in html_path.read_text(encoding="utf-8"):
                 msg = f"Prerendered route omits the llms.txt directive: {html_path}"
+                raise RuntimeError(msg)
+            if html_path.is_file() and LLMS_HREF not in html_path.read_text(encoding="utf-8"):
+                msg = f"Prerendered route has the wrong llms.txt href: {html_path}"
                 raise RuntimeError(msg)
 
     for route in DOCS_REDIRECTS:

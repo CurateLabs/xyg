@@ -13,7 +13,13 @@ from reflex_base.plugins import Plugin
 from reflex_site_shared.docs import DocsPage, DocsSiteConfig, discover_docs
 
 from xy_docs.api_reference import append_component_api_markdown
-from xy_docs.constants import LLMS_FULL_TXT_PATH, LLMS_TXT_PATH, PUBLIC_DOCS_URL, public_docs_url
+from xy_docs.constants import (
+    LLMS_FULL_TXT_PATH,
+    LLMS_TXT_PATH,
+    PUBLIC_DOCS_URL,
+    agent_docs_url,
+    public_docs_url,
+)
 
 MARKDOWN_DIRECTIVE = (
     "> For AI agents: the complete XY documentation index is at "
@@ -56,10 +62,7 @@ def _page_markdown_url(page: DocsPage) -> str:
 
 def _markdown_directive() -> str:
     """Return the standard agent discovery directive for published Markdown."""
-    llms_url = _public_url(LLMS_TXT_PATH)
-    if llms_url is None:
-        llms_url = f"{get_config().frontend_path.rstrip('/')}{LLMS_TXT_PATH}"
-    return MARKDOWN_DIRECTIVE.format(llms_txt_url=llms_url)
+    return MARKDOWN_DIRECTIVE.format(llms_txt_url=agent_docs_url(LLMS_TXT_PATH))
 
 
 def _strip_markdown_directive(content: str) -> str:

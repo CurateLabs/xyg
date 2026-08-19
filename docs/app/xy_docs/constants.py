@@ -22,6 +22,7 @@ DOCS_CHANNEL = os.getenv("XY_DOCS_CHANNEL", "preview").strip().lower()
 SOCIAL_IMAGE_URL = f"{PUBLIC_DOCS_URL}/xy-social-card.png" if PUBLIC_DOCS_URL else ""
 LLMS_TXT_PATH = "/llms.txt"
 LLMS_FULL_TXT_PATH = "/llms-full.txt"
+DOCS_FRONTEND_PATH = "/docs/xy"
 
 
 def public_docs_url(path: str, *, origin: str | None = None) -> str | None:
@@ -32,16 +33,31 @@ def public_docs_url(path: str, *, origin: str | None = None) -> str | None:
     return f"{base}/{path.lstrip('/')}"
 
 
+def agent_docs_url(path: str, *, origin: str | None = None) -> str:
+    """Return an absolute owned URL or the truthful host-relative docs asset."""
+    return public_docs_url(path, origin=origin) or (
+        f"{DOCS_FRONTEND_PATH.rstrip('/')}/{path.lstrip('/')}"
+    )
+
+
+def html_agent_docs_href(path: str) -> str:
+    """Return an absolute URL or an app-relative href for Reflex routing."""
+    return public_docs_url(path) or f"/{path.lstrip('/')}"
+
+
 if DOCS_CHANNEL not in {"preview", "stable"}:
     msg = "XY_DOCS_CHANNEL must be either 'preview' or 'stable'"
     raise ValueError(msg)
 
 __all__ = [
     "DOCS_CHANNEL",
+    "DOCS_FRONTEND_PATH",
     "LLMS_FULL_TXT_PATH",
     "LLMS_TXT_PATH",
     "PUBLIC_DOCS_URL",
     "PUBLIC_XY_VERSION",
     "SOCIAL_IMAGE_URL",
+    "agent_docs_url",
+    "html_agent_docs_href",
     "public_docs_url",
 ]

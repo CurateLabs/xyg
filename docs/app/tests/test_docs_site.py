@@ -54,7 +54,13 @@ from xy_docs.api_reference import (
 )
 from xy_docs.breadcrumb import _breadcrumb_parts, xy_docs_breadcrumb
 from xy_docs.config import DOCS_CONFIG, DOCS_NAVIGATION, DOCS_REDIRECTS, DOCS_SECTIONS
-from xy_docs.constants import PUBLIC_DOCS_URL, PUBLIC_XY_VERSION, SOCIAL_IMAGE_URL, public_docs_url
+from xy_docs.constants import (
+    PUBLIC_DOCS_URL,
+    PUBLIC_XY_VERSION,
+    SOCIAL_IMAGE_URL,
+    agent_docs_url,
+    public_docs_url,
+)
 from xy_docs.footer import xy_docs_footer
 from xy_docs.gallery import (
     _GALLERY_GROUPS,
@@ -2270,6 +2276,10 @@ def test_explicit_production_origin_builds_owned_route_urls() -> None:
     assert public_docs_url("/llms.txt", origin=origin) == (
         "https://docs.curatelabs.com/xyg/llms.txt"
     )
+    assert agent_docs_url("/llms.txt", origin=origin) == (
+        "https://docs.curatelabs.com/xyg/llms.txt"
+    )
+    assert agent_docs_url("/llms.txt") == "/docs/xy/llms.txt"
     assert public_docs_url("/charts/scatter/") is None
 
     with pytest.raises(ValueError, match="HTTPS origin"):

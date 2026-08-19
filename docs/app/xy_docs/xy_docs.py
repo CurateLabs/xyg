@@ -13,7 +13,7 @@ from reflex_site_shared.utils.docpage import right_sidebar_item_highlight
 from xy_docs.breadcrumb import xy_docs_breadcrumb
 from xy_docs.code import CODE_COPY_STYLE, code_copy_feedback_script
 from xy_docs.config import DOCS_CONFIG, DOCS_REDIRECTS
-from xy_docs.constants import LLMS_TXT_PATH, SOCIAL_IMAGE_URL, public_docs_url
+from xy_docs.constants import LLMS_TXT_PATH, SOCIAL_IMAGE_URL, html_agent_docs_href, public_docs_url
 from xy_docs.footer import xy_docs_footer
 from xy_docs.markdown import page_with_api_reference_toc, render_xy_markdown_page
 from xy_docs.navbar import xy_docs_navbar
@@ -30,11 +30,9 @@ _CHART_STYLE = {
 }
 
 
-def _llms_txt_directive() -> rx.Component | None:
+def _llms_txt_directive() -> rx.Component:
     """Return the hidden agent-facing documentation index directive."""
-    llms_url = public_docs_url(LLMS_TXT_PATH)
-    if llms_url is None:
-        return None
+    llms_url = html_agent_docs_href(LLMS_TXT_PATH)
     return rx.el.blockquote(
         rx.el.span("For AI agents: the complete XY documentation index is at "),
         rx.el.a(
