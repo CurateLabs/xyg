@@ -1710,7 +1710,28 @@ def validate_workflow_hosting_policy(
                 f"{path} Playwright install must not use --with-deps; "
                 "install bounded browser-specific runtime dependencies separately"
             )
+        if sum(line == "jobs:" for line in _yaml_code_lines(text)) != 1:
+            errors.append(f"{path} must define one canonical block-style top-level jobs mapping")
+            continue
+        jobs_block = _unique_mapping_block(text, "jobs", indent=0)
+        if jobs_block is None:
+            errors.append(f"{path} must define one canonical block-style top-level jobs mapping")
+            continue
+        job_mappings = [
+            parsed
+            for line in _yaml_code_lines(jobs_block)
+            if (parsed := _direct_yaml_mapping(line)) is not None and parsed[0] == 2
+        ]
+        if not job_mappings or any(
+            unsafe or job_name is None or value.strip()
+            for _indent, job_name, unsafe, value in job_mappings
+        ):
+            errors.append(f"{path} every job must use a canonical block-style mapping")
+            continue
         job_blocks = _job_blocks(text)
+        if len(job_blocks) != len(job_mappings):
+            errors.append(f"{path} every job must be structurally visible to runner validation")
+            continue
         for job_name, block in job_blocks.items():
             runner_values, runner_unsafe = _direct_yaml_key_values(block, "runs-on", indent=4)
             if runner_unsafe or len(runner_values) != 1:

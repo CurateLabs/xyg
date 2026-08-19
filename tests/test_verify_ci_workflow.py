@@ -1473,6 +1473,22 @@ def test_workflow_policy_restricts_codspeed_runner_to_benchmark_job(tmp_path: Pa
     assert any("job unrelated" in error and "codspeed-macro" in error for error in errors)
 
 
+def test_workflow_policy_rejects_noncanonical_job_structures(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    cases = [
+        '"jobs":\n  test:\n    runs-on: arbitrary-third-party-runner\n    steps: []\n',
+        "jobs:\n  test: { runs-on: arbitrary-third-party-runner, steps: [] }\n",
+        "jobs: { test: { runs-on: arbitrary-third-party-runner, steps: [] } }\n",
+    ]
+    for index, content in enumerate(cases):
+        path = workflows / f"encoded-{index}.yml"
+        path.write_text(content, encoding="utf-8")
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert errors
+        path.unlink()
+
+
 def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
     tmp_path: Path,
 ) -> None:
