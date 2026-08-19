@@ -48,8 +48,10 @@ backend-neutral Rust-owned typed batch for canonical plot layout, axes,
 scatter, polyline, and rectangle records through both host bindings. The v1
 scatter SVG wrapper remains temporarily for scatter-only compatibility. Python
 and Node now compile the same representative constant-style scatter/line/bar
-figure fixture to identical Scene bytes; Rust consumes those bytes for complete
-SVG and native-raster commands. Python PDF consumes the Rust SVG. See
+figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
+Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
+compatibility renderer until Scene v3 carries tick, grid, text, and chrome
+semantics. See
 [scene-ir.md](scene-ir.md). Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.

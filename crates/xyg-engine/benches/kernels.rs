@@ -214,15 +214,40 @@ fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
 }
 
 fn scene_v3_document(n: usize) -> SceneDocument {
-    let x = uniform(n, 0x0055_AA11);
-    let y = uniform(n, 0x0066_BB22);
-    let kinds: Vec<u8> = (0..n).map(|index| (index % 3) as u8).collect();
-    let ids: Vec<u64> = (0..n as u64).collect();
-    let style_refs: Vec<u32> = (0..n).map(|index| (index % 8) as u32).collect();
+    let mut x = uniform(n, 0x0055_AA11);
+    let mut y = uniform(n, 0x0066_BB22);
+    let kinds: Vec<u8> = (0..n).map(|index| [1, 1, 0, 2, 2, 0][index % 6]).collect();
+    let ids: Vec<u64> = (0..n)
+        .map(|index| {
+            if index % 6 < 2 {
+                (index / 6) as u64
+            } else {
+                index as u64
+            }
+        })
+        .collect();
+    let style_refs: Vec<u32> = kinds.iter().map(|kind| u32::from(*kind)).collect();
     let diameter: Vec<f64> = kinds
         .iter()
         .map(|kind| if *kind == 0 { 6.0 } else { 0.0 })
         .collect();
+    let mut x1 = x.clone();
+    let mut y1 = y.clone();
+    for index in 0..n {
+        match index % 6 {
+            3 => {
+                x1[index] = x[index] + 0.2;
+                y1[index] = y[index] + 0.15;
+            }
+            4 => {
+                x[index] = 1.15;
+                y[index] = 0.85;
+                x1[index] = 0.55;
+                y1[index] = -0.15;
+            }
+            _ => {}
+        }
+    }
     let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
     let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
     let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
@@ -242,12 +267,17 @@ fn scene_v3_document(n: usize) -> SceneDocument {
         &vec![0; n],
         &x,
         &y,
-        &x,
-        &y,
+        &x1,
+        &y1,
     )
     .unwrap()
     .encode();
-    SceneDocument::decode(&encoded).unwrap()
+    let document = SceneDocument::decode(&encoded).unwrap();
+    let svg = document.to_svg();
+    let commands = document.to_raster_commands(1.0).unwrap();
+    debug_assert!(svg.contains("<polyline points=\"") && svg.contains("<rect x=\""));
+    debug_assert!(commands.contains(&1) && commands.contains(&3));
+    document
 }
 
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]

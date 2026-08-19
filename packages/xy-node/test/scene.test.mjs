@@ -27,6 +27,29 @@ test("Node Scene v3 whole-scene consumers reject malformed and unsupported input
   assert.throws(() => figure.toScene(), /does not yet support area/);
 });
 
+test("Node figure Scene v3 rejects the same incomplete customization as Python", () => {
+  assert.throws(() => new Figure({ title: "Not encoded" }).scatter([1], [1]).toScene(), /titles/);
+  for (const key of ["marker_path", "marker_glyph"]) {
+    const figure = new Figure();
+    figure.scatter([1], [1], { _composed: true, style: { [key]: "M0 0" } });
+    assert.throws(() => figure.toScene(), new RegExp(key));
+  }
+  const named = new Figure();
+  named.scatter([1], [1], { _composed: true, name: "series" });
+  assert.throws(() => named.toScene(), /legends/);
+  const unsafeId = new Figure();
+  unsafeId.scatter([1], [1], { _composed: true, id: 2 ** 53 });
+  assert.throws(() => unsafeId.toScene(), /stableIds/);
+});
+
+test("Node figure Scene v3 rejects missing coordinates until break records exist", () => {
+  for (const kind of ["line", "scatter"]) {
+    const figure = new Figure();
+    figure[kind]([0, 1, 2], [1, Number.NaN, 2]);
+    assert.throws(() => figure.toScene(), /missing-data breaks/);
+  }
+});
+
 test("Node Scene v3 matches shared scatter, line, bar, and axis bytes", () => {
   const encoded = sceneBatchEncode({
     viewport: sceneFixture.viewport, margins: sceneFixture.margins,

@@ -1542,6 +1542,41 @@ mod tests {
     }
 
     #[test]
+    fn polyline_style_changes_are_canonical_run_breaks_for_all_consumers() {
+        let encode = |style_refs: &[u32; 4]| {
+            SceneBatch::new(
+                PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap(),
+                1,
+                2,
+                AxisScale::new(ScaleKind::Linear, 0.0, 3.0, 10.0, 110.0, 1.0, false).unwrap(),
+                AxisScale::new(ScaleKind::Linear, 0.0, 3.0, 90.0, 10.0, 1.0, false).unwrap(),
+                &[1, 1, 1, 1],
+                &[7, 7, 7, 7],
+                style_refs,
+                &[0; 8],
+                &[239, 68, 68, 255, 37, 99, 235, 255],
+                &[2.0, 2.0],
+                &[0.0; 4],
+                &[0; 4],
+                &[0.0, 1.0, 2.0, 3.0],
+                &[0.0, 1.0, 1.0, 2.0],
+                &[0.0; 4],
+                &[0.0; 4],
+            )
+            .unwrap()
+            .encode()
+        };
+        let same = SceneDocument::decode(&encode(&[0, 0, 0, 0])).unwrap();
+        let split = SceneDocument::decode(&encode(&[0, 0, 1, 1])).unwrap();
+        assert_eq!(same.to_svg().matches("<polyline ").count(), 1);
+        assert_eq!(split.to_svg().matches("<polyline ").count(), 2);
+        assert!(
+            split.to_raster_commands(1.0).unwrap().len()
+                > same.to_raster_commands(1.0).unwrap().len()
+        );
+    }
+
+    #[test]
     fn canonical_symbol_extents_drive_scene_clipping() {
         let layout = PlotLayout::new(100.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
         let scale = AxisScale::new(ScaleKind::Linear, 0.0, 80.0, 10.0, 90.0, 1.0, false).unwrap();

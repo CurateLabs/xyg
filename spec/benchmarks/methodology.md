@@ -382,10 +382,15 @@ versioned canonical-scene slice (#58), including host paint resolution, the
 typed Rust scene call, built-in marker geometry, and SVG fragment assembly.
 The 100k `test_scene_scale_map_100k` row isolates the vectorized Rust-owned
 symlog domain-to-pixel record used before scatter/line/bar scene construction.
-The Rust `scene_v3_batch_encode` rows at 10k and 100k records isolate the shared
-layout, scale, clipping, stable-record, and little-endian encoding path for a
-deterministic mixed scatter/polyline/rectangle workload. Run it through the
-repository CodSpeed harness; hosted CodSpeed remains the performance authority.
+The Rust `scene_v3_batch_encode`, `scene_v3_svg`, and
+`scene_v3_raster_commands` rows at 10k, 100k, and 1M records isolate the shared
+layout, scale, clipping, stable-record, encoding, and consumer paths. Renderer
+inputs deterministically include contiguous repeated-ID two-vertex polylines,
+nondegenerate forward and reversed rectangles, and rectangle endpoints outside
+the domain so clipping is exercised rather than merely claimed. Construction
+asserts that both line and rectangle primitives reach SVG and raster commands.
+Run them through the repository CodSpeed harness; hosted CodSpeed remains the
+performance authority.
 
 ## 9. Shim gates and CI coverage
 

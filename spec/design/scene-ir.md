@@ -136,8 +136,9 @@ invalid.
 - **Polyline vertex (kind 1):** `x0,y0` is one mapped vertex; `x1,y1`, symbol,
   and diameter are zero. Reserved `x1,y1` inputs are neither finite-checked nor
   scale-mapped. Consecutive visible kind-1 records with the same stable
-  ID form one polyline in record order. A stable-ID change, a non-polyline
-  record, or an invisible vertex (including a log-masked `x0` or `y0`) terminates the run; a later repeated stable ID
+  ID and the same `style_ref` form one polyline in record order. A stable-ID
+  change, style change, non-polyline record, or invisible vertex (including a
+  log-masked `x0` or `y0`) terminates the run; a later repeated stable ID
   starts a new run and never reconnects across the break. A one-vertex run is
   valid but draws no segment.
 - **Rectangle (kind 2):** coordinates are normalized screen-space
@@ -154,20 +155,21 @@ The existing `xyg_scene_scatter_svg` entry point remains a compatibility
 wrapper during migration. Version 3 intentionally has no mark-specific new SVG
 ABIs: whole-scene SVG/raster consumers attach to the single scene batch.
 Python `Figure.to_scene()` and Node `Figure.toScene()` compile the migrated
-constant-style cartesian scatter/line/bar subset plus two axes. Python native
-SVG/PNG routes select it for the representative mixed scatter/line/bar figure;
-other combinations remain on the compatibility path while migration proceeds. PDF
-converts the Rust-generated SVG. Unsupported marks or customization raise from
-the explicit scene API and retain the established exporter as the compatibility
-fallback from public static export. This is a migration boundary, not a silent
-approximation.
+constant-style cartesian scatter/line/bar subset plus two axes. Their explicit
+Scene SVG/raster APIs exercise the Rust consumers. Public Python SVG/PNG/PDF
+remain on the established compatibility renderers until Scene records encode
+ticks, tick text, grids, and chrome; they must not silently select a
+semantically incomplete scene. Missing/nonfinite coordinates and unsupported
+customization fail closed from the explicit scene API. This is a migration
+boundary, not a silent approximation.
 
 ## Evidence and extension order
 
 Rust unit tests pin schema validation and byte-deterministic SVG. Python tests
-prove the public scatter exporter consumes the Rust scene and preserves its
-custom-marker fallback. Node tests consume the same scene fixture and expected
-fragment. ABI generation, parity, and version-first loading cover both hosts.
+prove explicit Scene consumption while public exports preserve ticks, grids,
+text, and customization through the compatibility path. Node tests consume the
+same scene fixture and reject the same unsupported subset. ABI generation,
+parity, and version-first loading cover both hosts.
 
 Next slices add time/category/angular ticks, tick text, remaining mark families,
 chrome/legend/annotation records, and browser consumption. Browser DOM measurement and WebGL paint remain

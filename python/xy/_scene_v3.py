@@ -47,6 +47,16 @@ def figure_scene(
         raise UnsupportedSceneV3("Scene v3 figure compilation currently supports cartesian only")
     if set(figure.axis_options) != {"x", "y"}:
         raise UnsupportedSceneV3("Scene v3 figure compilation currently supports exactly x/y axes")
+    for axis_id, options in figure.axis_options.items():
+        expected_side = "bottom" if axis_id == "x" else "left"
+        if options.get("side", expected_side) != expected_side:
+            raise UnsupportedSceneV3("Scene v3 does not yet encode customized axis sides")
+        supported_axis_keys = {"type", "constant", "domain", "nonpositive", "label", "side"}
+        if any(
+            key not in supported_axis_keys and value not in (None, False, [], {})
+            for key, value in options.items()
+        ):
+            raise UnsupportedSceneV3("Scene v3 does not yet encode tick, grid, or axis styling")
     if figure.title or figure.x_label or figure.y_label or figure.annotations:
         raise UnsupportedSceneV3("Scene v3 does not yet encode titles, labels, or annotations")
     if figure.colorbar_options or figure.extra_legends:
@@ -64,6 +74,8 @@ def figure_scene(
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
     for trace in figure.traces:
+        if trace.x_axis != "x" or trace.y_axis != "y":
+            raise UnsupportedSceneV3("Scene v3 currently supports only the primary x/y axes")
         if trace.name and figure.show_legend:
             raise UnsupportedSceneV3("Scene v3 does not yet encode legends")
         if trace.hidden or trace.has_per_item_channels():
@@ -99,6 +111,12 @@ def figure_scene(
                 np.zeros(len(trace.x)),
             ]
             count = len(trace.x)
+        if any(
+            not np.isfinite(source).all() for source in arrays[: 4 if trace.kind == "bar" else 2]
+        ):
+            raise UnsupportedSceneV3(
+                "Scene v3 does not yet encode missing-data breaks or nonfinite coordinates"
+            )
         symbol_name = str(style.get("symbol", "circle"))
         if symbol_name not in _SYMBOL_CODES:
             raise UnsupportedSceneV3(f"Scene v3 does not support scatter symbol {symbol_name!r}")

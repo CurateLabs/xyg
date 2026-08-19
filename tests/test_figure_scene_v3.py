@@ -34,13 +34,42 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     assert 'clip-path="url(#xy-scene-plot)"' in svg
 
 
-def test_python_scene_raster_is_nonblank_and_matches_export_route() -> None:
+def test_python_explicit_scene_raster_is_nonblank() -> None:
     figure = representative_figure()
     scene = figure.to_scene()
     commands = _native.scene_raster_commands(scene)
     pixels = kernels.rasterize(commands, 320, 240)
     assert np.count_nonzero(pixels[:, :, 3]) > 200
+
+
+def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.MonkeyPatch) -> None:
+    figure = representative_figure()
+    figure.title = "Compatibility title"
+    figure.set_axis(
+        "x",
+        label="Horizontal",
+        domain=(0, 4),
+        tick_values=[0, 2, 4],
+        tick_labels=["zero", "two", "four"],
+        style={"grid_color": "#123456"},
+    )
+    figure.set_axis("y", label="Vertical", domain=(0, 5))
+
+    def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
+        raise AssertionError("public export must not select incomplete Scene v3")
+
+    monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
+    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
+    svg = figure.to_svg()
+    assert "Compatibility title" in svg
+    assert "Horizontal" in svg
+    assert "Vertical" in svg
+    assert "two" in svg
+    assert "#123456" in svg
+    with pytest.raises(UnsupportedSceneV3, match="tick, grid, or axis styling"):
+        figure.to_scene()
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
+    assert figure.to_image(format="pdf").startswith(b"%PDF-")
 
 
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
@@ -50,3 +79,12 @@ def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -
     with pytest.raises(UnsupportedSceneV3, match="area"):
         unsupported.to_scene()
     assert "<svg" in unsupported.to_svg()
+
+
+@pytest.mark.parametrize("kind", ["line", "scatter"])
+def test_python_scene_rejects_missing_coordinates_until_break_records_exist(kind: str) -> None:
+    figure = Figure()
+    getattr(figure, kind)([0.0, 1.0, 2.0], [1.0, np.nan, 2.0])
+    with pytest.raises(UnsupportedSceneV3, match="missing-data breaks"):
+        figure.to_scene()
+    assert "<svg" in figure.to_svg()
