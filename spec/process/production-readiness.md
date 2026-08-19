@@ -49,14 +49,15 @@ CurateLabs/xyg is a permanently divergent product repository, not a deployment
 branch of `reflex-dev/xy`. CI therefore retains only workflows whose external
 integrations are owned or explicitly controlled by CurateLabs:
 
-- Every Actions job runs on a pinned Blacksmith Linux, ARM, Windows, or macOS
-  runner; the canonical Linux CI image is
+- Every Actions job except the CodSpeed performance job runs on a pinned
+  Blacksmith Linux, ARM, Windows, or macOS runner; the canonical Linux CI image is
   `blacksmith-4vcpu-ubuntu-2404`, and no workflow may use a GitHub-hosted
   runner alias. `ci.yml`,
   `docs.yml`, `binder.yml`, and `bazel.yml` are hard verification paths.
   Binder builds locally with repo2docker; Bazel keeps uv's cache inside the
   writable workspace.
-- `codspeed.yml` is the repository's native performance trend path and uses
+- The sole runner-policy exception is `codspeed.yml`: it is the repository's
+  native performance trend path and uses
   the dedicated `codspeed-macro` bare-metal runner plus GitHub OIDC to the
   CurateLabs CodSpeed project. This prevents base/head comparisons from
   crossing Blacksmith Intel and AMD generations; CodSpeed remains the hosted

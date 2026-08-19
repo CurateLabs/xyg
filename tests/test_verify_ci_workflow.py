@@ -1238,7 +1238,7 @@ def test_workflow_policy_rejects_github_hosted_runner_and_playwright_apt(
 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
-    assert any("Blacksmith runners" in error and "ubuntu-latest" in error for error in errors)
+    assert any("ubuntu-latest" in error for error in errors)
     assert any("must not use --with-deps" in error for error in errors)
 
 
@@ -1389,7 +1389,7 @@ def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> 
 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
-    assert any("approved Blacksmith runners" in error for error in errors)
+    assert any("approved Blacksmith runner" in error for error in errors)
 
 
 def test_workflow_policy_allows_codspeed_host_only_in_codspeed_workflow(
@@ -1407,6 +1407,19 @@ def test_workflow_policy_allows_codspeed_host_only_in_codspeed_workflow(
     assert any(
         "ci.yml" in error and "dedicated CodSpeed hosted runner" in error for error in errors
     )
+
+
+def test_workflow_policy_rejects_quoted_runs_on_third_party_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "quoted.yml").write_text(
+        'jobs:\n  test:\n    "runs-on": arbitrary-third-party-runner\n    steps: []\n',
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("arbitrary-third-party-runner" in error for error in errors)
 
 
 def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(

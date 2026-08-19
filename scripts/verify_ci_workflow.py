@@ -1706,6 +1706,21 @@ def validate_workflow_hosting_policy(
             )
         job_blocks = _job_blocks(text)
         for job_name, block in job_blocks.items():
+            runner_values, runner_unsafe = _direct_yaml_key_values(block, "runs-on", indent=4)
+            if runner_unsafe or len(runner_values) != 1:
+                errors.append(f"{path} job {job_name} must declare one direct runs-on value")
+                continue
+            runner = runner_values[0]
+            codspeed_hosted = path.name == "codspeed.yml" and runner == CODSPEED_HOSTED_RUNNER
+            if (
+                runner != "${{ matrix.os }}"
+                and runner not in ALLOWED_BLACKSMITH_RUNNERS
+                and not codspeed_hosted
+            ):
+                errors.append(
+                    f"{path} job {job_name} must use an approved Blacksmith runner or the "
+                    f"dedicated CodSpeed hosted runner, got {runner}"
+                )
             if "runs-on: ${{ matrix.os }}" not in block:
                 continue
             matrix_runners, dynamic_axis = _matrix_os_values(block)
@@ -1726,7 +1741,6 @@ def validate_workflow_hosting_policy(
                     )
         for lineno, line in enumerate(text.splitlines(), start=1):
             code = line.split("#", 1)[0]
-            stripped = code.strip()
             if re.search(
                 r"(?:^|[\s,{\[\"'])"
                 r"(?:ubuntu-latest|ubuntu-24\.04-arm|windows-latest|macos-latest|macos-\d+(?:-large)?)"
@@ -1737,18 +1751,6 @@ def validate_workflow_hosting_policy(
                     f"{path}:{lineno} workflow contains a GitHub-hosted runner alias; "
                     "use an explicit Blacksmith label"
                 )
-            if stripped.startswith("runs-on:"):
-                runner = stripped.partition(":")[2].strip()
-                codspeed_hosted = path.name == "codspeed.yml" and runner == CODSPEED_HOSTED_RUNNER
-                if (
-                    runner != "${{ matrix.os }}"
-                    and runner not in ALLOWED_BLACKSMITH_RUNNERS
-                    and not codspeed_hosted
-                ):
-                    errors.append(
-                        f"{path}:{lineno} jobs must use approved Blacksmith runners or the "
-                        f"dedicated CodSpeed hosted runner, got {runner}"
-                    )
     return errors
 
 
