@@ -849,7 +849,6 @@ class _Scale:
         # policy implementation; retain its scalar result so those consumers
         # do not cross the ABI again for an identical scale operation.
         self._scalar_cache: tuple[dict[str, float], ...] = ({}, {}, {})
-        self.lo, self.hi = (float(value) for value in self.coord([lo, hi]))
 
     @property
     def _kind_code(self) -> int:

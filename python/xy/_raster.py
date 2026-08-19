@@ -381,7 +381,7 @@ class _Cmd:
             self._raw_d(float(meta.get("scale") or 1.0))
             self._raw_d(float(meta.get("offset", 0.0)))
         for axis in (sx, sy):
-            for value in (axis.lo, axis.hi, axis.px0, axis.px1):
+            for value in (axis.data_lo, axis.data_hi, axis.px0, axis.px1):
                 self._raw_d(float(value))
         self._raw_d(float(self.s))
 
@@ -422,7 +422,7 @@ class _Cmd:
             self._raw_d(float(meta.get("scale") or 1.0))
             self._raw_d(float(meta.get("offset", 0.0)))
         for axis in (sx, sy):
-            for value in (axis.lo, axis.hi, axis.px0, axis.px1):
+            for value in (axis.data_lo, axis.data_hi, axis.px0, axis.px1):
                 self._raw_d(float(value))
         self._raw_d(float(self.s))
 
@@ -552,12 +552,12 @@ class _Cmd:
         self.buf.append(_SMOOTH_STROKE)
         self._u32(n)
         for value in (
-            sx.lo,
-            sx.hi,
+            sx.data_lo,
+            sx.data_hi,
             sx.px0 * self.s,
             sx.px1 * self.s,
-            sy.lo,
-            sy.hi,
+            sy.data_lo,
+            sy.data_hi,
             sy.px0 * self.s,
             sy.px1 * self.s,
         ):

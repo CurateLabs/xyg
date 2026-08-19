@@ -71,9 +71,9 @@ def test_static_scale_reuses_rust_scalar_results_across_export_consumers(monkeyp
     assert scale(5.0) == scale(5.0) == 70.0
     assert scale.coord(5.0) == scale.coord(5.0) == 5.0
     assert scale.value(5.0) == scale.value(5.0) == 5.0
-    # One vector call initializes the transformed domain, then one Rust call
-    # per distinct scalar operation; repeated consumers are cache hits.
-    assert calls == 4
+    # One Rust call per distinct scalar operation; repeated consumers are
+    # cache hits. Rust owns transformed-domain preparation inside each batch.
+    assert calls == 3
 
 
 def test_static_scale_batches_vectors_and_seeds_followup_scalar_consumers(monkeypatch) -> None:
@@ -90,7 +90,7 @@ def test_static_scale_batches_vectors_and_seeds_followup_scalar_consumers(monkey
     # Tick/grid/label consumers revisit these positions individually. The
     # vector's Rust results seed the bounded cache, so none adds an ABI call.
     assert [scale(value) for value in (2.0, 4.0, 6.0)] == [40.0, 60.0, 80.0]
-    assert shapes == [(2,), (3,)]
+    assert shapes == [(3,)]
 
 
 def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> None:
