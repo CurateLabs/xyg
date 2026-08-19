@@ -110,17 +110,20 @@ def test_component_api_is_present_in_every_agent_markdown_export() -> None:
         assert "### xy.y_axis" in content
         assert "| Prop | Type | Description |" in content
 
-    assert _markdown_directive() == ""
-    assert published_markdown.startswith("---\n")
+    assert _markdown_directive().endswith(
+        "[llms.txt](/docs/xy/llms.txt). Markdown versions are available by appending `.md` or sending `Accept: text/markdown`."
+    )
+    assert published_markdown.startswith(f"{_markdown_directive()}\n\n---\n")
 
 
-def test_preview_page_markdown_omits_public_agent_discovery_url() -> None:
-    """Preview Markdown does not advertise an unconfigured public llms URL."""
+def test_preview_page_markdown_uses_truthful_host_relative_agent_url() -> None:
+    """Preview Markdown advertises the co-located llms asset without a host."""
     directive = _markdown_directive()
     assets = XyDocsMarkdownPlugin(docs=DOCS_CONFIG).get_static_assets()
     assert assets
-    assert directive == ""
-    assert all("https://" not in content.split("\n\n", maxsplit=1)[0] for _path, content in assets)
+    assert "[llms.txt](/docs/xy/llms.txt)" in directive
+    assert "https://" not in directive
+    assert all(content.startswith(f"{directive}\n\n") for _path, content in assets)
 
 
 def test_preview_html_shell_omits_agent_discovery_directive() -> None:
