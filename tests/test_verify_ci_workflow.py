@@ -1489,6 +1489,46 @@ def test_workflow_policy_rejects_noncanonical_job_structures(tmp_path: Path) -> 
         path.unlink()
 
 
+def test_workflow_policy_rejects_quoted_dynamic_axis_with_include_decoy(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "dynamic.yml").write_text(
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        '        "os": ${{ fromJSON(vars.RUNNERS) }}\n'
+        "        include:\n"
+        "          - os: blacksmith-4vcpu-ubuntu-2404\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_explicit_and_tagged_job_keys(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    cases = [
+        "jobs:\n  ? evil\n  :\n    runs-on: arbitrary-third-party-runner\n    steps: []\n"
+        "  good:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps: []\n",
+        "jobs:\n  !!str evil:\n    runs-on: arbitrary-third-party-runner\n    steps: []\n"
+        "  good:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps: []\n",
+    ]
+    for index, content in enumerate(cases):
+        path = workflows / f"unsafe-{index}.yml"
+        path.write_text(content, encoding="utf-8")
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert errors
+        path.unlink()
+
+
 def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
     tmp_path: Path,
 ) -> None:

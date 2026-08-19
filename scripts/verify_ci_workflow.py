@@ -120,31 +120,46 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
         matrix_lines.append(line.split("#", 1)[0])
 
     values: list[str] = []
-    dynamic_axis = False
+    direct_axes = []
     for index, line in enumerate(matrix_lines):
+        parsed = _direct_yaml_mapping(line)
+        if parsed is not None and parsed[0] == 8 and parsed[1] == "os":
+            direct_axes.append(parsed)
+            value = parsed[3].strip()
+            inline_list = re.fullmatch(r"\[(.*)\]", value)
+            if inline_list:
+                values.extend(
+                    item.strip().strip("\"'")
+                    for item in inline_list.group(1).split(",")
+                    if item.strip()
+                )
+                continue
+            if not value:
+                for value_line in matrix_lines[index + 1 :]:
+                    value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
+                    if value_match:
+                        values.append(value_match.group(1).strip("\"'"))
+                        continue
+                    if value_line.strip():
+                        break
+            continue
         inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
-        if inline_list:
+        if inline_list:  # pragma: no cover - handled structurally above
             values.extend(
                 value.strip().strip("\"'")
                 for value in inline_list.group(1).split(",")
                 if value.strip()
             )
             continue
-        direct_scalar = re.fullmatch(r"\s{8}os:\s*(\S.*?)\s*", line)
-        if direct_scalar:
-            dynamic_axis = True
-            continue
-        if re.fullmatch(r"\s{8}os:\s*", line):
-            for value_line in matrix_lines[index + 1 :]:
-                value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
-                if value_match:
-                    values.append(value_match.group(1).strip("\"'"))
-                    continue
-                if value_line.strip():
-                    break
-            continue
         for match in re.finditer(r"(?:^\s*-\s*\{\s*|^\s*-\s+|,\s*)os:\s*([^,}\]\s]+)", line):
             values.append(match.group(1).strip("\"'"))
+    dynamic_axis = len(direct_axes) > 1 or (
+        len(direct_axes) == 1
+        and (
+            direct_axes[0][2]
+            or bool(direct_axes[0][3].strip() and not direct_axes[0][3].strip().startswith("["))
+        )
+    )
     return values, dynamic_axis
 
 
@@ -1722,9 +1737,15 @@ def validate_workflow_hosting_policy(
             for line in _yaml_code_lines(jobs_block)
             if (parsed := _direct_yaml_mapping(line)) is not None and parsed[0] == 2
         ]
-        if not job_mappings or any(
-            unsafe or job_name is None or value.strip()
-            for _indent, job_name, unsafe, value in job_mappings
+        job_keys = [entry for entry in _yaml_mapping_keys(jobs_block) if entry[0] == 2]
+        if (
+            not job_mappings
+            or len(job_keys) != len(job_mappings)
+            or any(unsafe or job_name is None for _indent, job_name, unsafe in job_keys)
+            or any(
+                unsafe or job_name is None or value.strip()
+                for _indent, job_name, unsafe, value in job_mappings
+            )
         ):
             errors.append(f"{path} every job must use a canonical block-style mapping")
             continue
