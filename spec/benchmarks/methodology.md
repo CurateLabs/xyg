@@ -388,7 +388,8 @@ layout, scale, clipping, stable-record, encoding, and consumer paths. Renderer
 inputs deterministically include contiguous repeated-ID two-vertex polylines,
 nondegenerate forward and reversed rectangles, and rectangle endpoints outside
 the domain so clipping is exercised rather than merely claimed. Construction
-asserts that both line and rectangle primitives reach SVG and raster commands.
+uses release-active assertions to count SVG primitives and structurally parse
+raster opcodes, failing the setup if data lines or rectangles disappear.
 Run them through the repository CodSpeed harness; hosted CodSpeed remains the
 performance authority.
 

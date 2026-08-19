@@ -908,14 +908,23 @@ impl SceneDocument {
             return Err(SceneError::NonFinite);
         }
         let mut out = Vec::with_capacity(self.records.len().saturating_mul(40));
-        let f32_push = |out: &mut Vec<u8>, value: f64| {
-            out.extend_from_slice(&((value * scale) as f32).to_le_bytes())
+        let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
+            let scaled = value * scale;
+            if !scaled.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            let narrowed = scaled as f32;
+            if !narrowed.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            out.extend_from_slice(&narrowed.to_le_bytes());
+            Ok(())
         };
         out.push(0);
-        f32_push(&mut out, self.layout.left);
-        f32_push(&mut out, self.layout.top);
-        f32_push(&mut out, self.layout.right - self.layout.left);
-        f32_push(&mut out, self.layout.bottom - self.layout.top);
+        f32_push(&mut out, self.layout.left)?;
+        f32_push(&mut out, self.layout.top)?;
+        f32_push(&mut out, self.layout.right - self.layout.left)?;
+        f32_push(&mut out, self.layout.bottom - self.layout.top)?;
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -932,12 +941,12 @@ impl SceneDocument {
                         style.stroke_width,
                     );
                     out.push(4);
-                    f32_push(&mut out, record.coordinates[0]);
-                    f32_push(&mut out, record.coordinates[1]);
-                    f32_push(&mut out, geometry.radius);
+                    f32_push(&mut out, record.coordinates[0])?;
+                    f32_push(&mut out, record.coordinates[1])?;
+                    f32_push(&mut out, geometry.radius)?;
                     out.push(record.symbol);
                     out.extend_from_slice(&style.fill);
-                    f32_push(&mut out, geometry.stroke_width);
+                    f32_push(&mut out, geometry.stroke_width)?;
                     out.extend_from_slice(&style.stroke);
                     index += 1;
                 }
@@ -951,18 +960,18 @@ impl SceneDocument {
                     out.push(1);
                     out.extend_from_slice(&4u32.to_le_bytes());
                     for (x, y) in points {
-                        f32_push(&mut out, x);
-                        f32_push(&mut out, y);
+                        f32_push(&mut out, x)?;
+                        f32_push(&mut out, y)?;
                     }
                     out.extend_from_slice(&style.fill);
                     if style.stroke_width > 0.0 {
                         out.push(3);
                         out.extend_from_slice(&4u32.to_le_bytes());
                         for (x, y) in points {
-                            f32_push(&mut out, x);
-                            f32_push(&mut out, y);
+                            f32_push(&mut out, x)?;
+                            f32_push(&mut out, y)?;
                         }
-                        f32_push(&mut out, style.stroke_width);
+                        f32_push(&mut out, style.stroke_width)?;
                         out.extend_from_slice(&style.stroke);
                         out.push(1);
                         out.extend_from_slice(&0u32.to_le_bytes());
@@ -990,10 +999,10 @@ impl SceneDocument {
                         out.push(3);
                         out.extend_from_slice(&(count as u32).to_le_bytes());
                         for point in &self.records[start..index] {
-                            f32_push(&mut out, point.coordinates[0]);
-                            f32_push(&mut out, point.coordinates[1]);
+                            f32_push(&mut out, point.coordinates[0])?;
+                            f32_push(&mut out, point.coordinates[1])?;
                         }
-                        f32_push(&mut out, style.stroke_width);
+                        f32_push(&mut out, style.stroke_width)?;
                         out.extend_from_slice(&style.stroke);
                         out.push(0);
                         out.extend_from_slice(&0u32.to_le_bytes());
@@ -1011,7 +1020,7 @@ impl SceneDocument {
             self.layout.viewport_width,
             self.layout.viewport_height,
         ] {
-            f32_push(&mut out, value);
+            f32_push(&mut out, value)?;
         }
         for points in [
             [
@@ -1026,10 +1035,10 @@ impl SceneDocument {
             out.push(3);
             out.extend_from_slice(&2u32.to_le_bytes());
             for (x, y) in points {
-                f32_push(&mut out, x);
-                f32_push(&mut out, y);
+                f32_push(&mut out, x)?;
+                f32_push(&mut out, y)?;
             }
-            f32_push(&mut out, 1.0);
+            f32_push(&mut out, 1.0)?;
             out.extend_from_slice(&[0, 0, 0, 255]);
             out.push(0);
             out.extend_from_slice(&0u32.to_le_bytes());
@@ -1573,6 +1582,85 @@ mod tests {
         assert!(
             split.to_raster_commands(1.0).unwrap().len()
                 > same.to_raster_commands(1.0).unwrap().len()
+        );
+    }
+
+    #[test]
+    fn scene_raster_rejects_every_nonrepresentable_f32_lowering() {
+        let encoded = SceneBatch::new(
+            PlotLayout::new(100.0, 80.0, 10.0, 10.0, 10.0, 10.0).unwrap(),
+            1,
+            2,
+            AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 10.0, 90.0, 1.0, false).unwrap(),
+            AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 70.0, 10.0, 1.0, false).unwrap(),
+            &[0],
+            &[1],
+            &[0],
+            &[0, 0, 0, 255],
+            &[0, 0, 0, 255],
+            &[1.0],
+            &[8.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded).unwrap();
+        assert_eq!(
+            document.to_raster_commands(f64::MAX),
+            Err(SceneError::NonFinite)
+        );
+
+        let mut extreme_coordinate = encoded.clone();
+        let record = SCENE_BATCH_HEADER_BYTES + SCENE_STYLE_RECORD_BYTES;
+        extreme_coordinate[record + 16..record + 24].copy_from_slice(&f64::MAX.to_le_bytes());
+        assert_eq!(
+            SceneDocument::decode(&extreme_coordinate)
+                .unwrap()
+                .to_raster_commands(1.0),
+            Err(SceneError::NonFinite)
+        );
+
+        let mut extreme_width = encoded;
+        extreme_width[SCENE_BATCH_HEADER_BYTES + 8..SCENE_BATCH_HEADER_BYTES + 16]
+            .copy_from_slice(&f64::MAX.to_le_bytes());
+        assert_eq!(
+            SceneDocument::decode(&extreme_width)
+                .unwrap()
+                .to_raster_commands(1.0),
+            Err(SceneError::NonFinite)
+        );
+
+        let huge_layout = PlotLayout::new(f64::MAX, f64::MAX, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let huge = SceneBatch::new(
+            huge_layout,
+            1,
+            2,
+            AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 0.0, f64::MAX, 1.0, false).unwrap(),
+            AxisScale::new(ScaleKind::Linear, 0.0, 1.0, f64::MAX, 0.0, 1.0, false).unwrap(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap()
+        .encode();
+        assert_eq!(
+            SceneDocument::decode(&huge)
+                .unwrap()
+                .to_raster_commands(1.0),
+            Err(SceneError::NonFinite)
         );
     }
 

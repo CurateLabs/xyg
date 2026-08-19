@@ -85,7 +85,7 @@ scatter symbols use the stable built-in symbol table and authored outer
 diameters/stroke widths must be finite and non-negative. The canonical marker
 policy shared with the version-1 SVG wrapper is:
 
-- line-only symbols (`plus-line`, `x-line`, `horizontal-line`, `vertical-line`)
+- line-only symbols (`plus_line`, `x_line`, `horizontal_line`, `vertical_line`)
   use an implicit 1px stroke only when authored stroke width is zero;
 - path radius is `max(diameter / 2 - effective_stroke_width / 2, 0)`, with no
   hidden minimum-radius clamp;
@@ -95,6 +95,12 @@ policy shared with the version-1 SVG wrapper is:
   line path extent is zero on its perpendicular axis; and
 - clipping adds half the effective stroke width to each path-axis extent.
 
+Both host compilers accept the exact canonical string names `circle`, `square`,
+`diamond`, `triangle`, `cross`, `hexagon`, `pentagon`, `star`,
+`triangle_down`, `triangle_left`, `triangle_right`, `x`, `point`, `pixel`,
+`thin_diamond`, `plus_line`, `x_line`, `horizontal_line`, and `vertical_line`;
+Node numeric codes remain strictly bounded to the corresponding 0–18 values.
+
 Masked/non-finite results and fully clipped
 scatter or rectangle records are invisible with zeroed coordinates, enforcing
 §19 before a renderer sees vertex data. Scatter clipping uses the complete
@@ -102,6 +108,10 @@ symbol-specific path extent plus half the stroke width, so a center outside the 
 visible when the marker overlaps it. Polyline vertices remain available outside the
 plot so a backend can clip segments correctly at the canonical bounds. Python
 and Node consume the same checked-in scatter/line/bar/axis byte fixture.
+Raster lowering multiplies every coordinate, radius, and width by the requested
+scale in f64, then requires both that product and its f32 representation to be
+finite. Failure rejects the whole command stream, so NaN/Inf never reaches a
+vertex buffer even for extreme finite Scene values or scales (§19).
 
 The byte layout is fixed for scene version 3:
 

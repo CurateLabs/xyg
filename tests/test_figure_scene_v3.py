@@ -18,7 +18,7 @@ def representative_figure() -> Figure:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
-    figure.scatter([1, 2], [2, 3], color="#3987e5", size=6, opacity=0.8)
+    figure.scatter([1, 2], [2, 3], color="#3987e5", size=6, opacity=0.8, symbol="diamond")
     figure.line([1, 2, 3], [1, 4, 2], color="#ef4444", width=2)
     figure.bar([1, 2], [3, 2], color="#22c55e", opacity=0.85)
     return figure
@@ -27,6 +27,7 @@ def representative_figure() -> Figure:
 def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     scene = representative_figure().to_scene()
     assert hashlib.sha256(scene).hexdigest() == FIXTURE["expected_sha256"]
+    assert scene[160 + 3 * 16 + 2] == 2  # canonical diamond symbol code
     svg = _native.scene_svg(scene)
     assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"')
     assert svg.count("<polyline ") == 1
@@ -40,6 +41,52 @@ def test_python_explicit_scene_raster_is_nonblank() -> None:
     commands = _native.scene_raster_commands(scene)
     pixels = kernels.rasterize(commands, 320, 240)
     assert np.count_nonzero(pixels[:, :, 3]) > 200
+
+
+def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
+    scene = representative_figure().to_scene()
+    with pytest.raises(ValueError, match="invalid canonical scene"):
+        _native.scene_raster_commands(scene, np.finfo(np.float64).max)
+    huge_viewport = _native.scene_batch_encode(
+        viewport=(1e100, 1e100),
+        margins=(0.0, 0.0, 0.0, 0.0),
+        x_axis=(1, 0, 0.0, 1.0, 1.0, False),
+        y_axis=(2, 0, 0.0, 1.0, 1.0, False),
+        kinds=[],
+        stable_ids=[],
+        style_refs=[],
+        fill_rgba=[],
+        stroke_rgba=[],
+        stroke_width=[],
+        diameter=[],
+        symbols=[],
+        x0=[],
+        y0=[],
+        x1=[],
+        y1=[],
+    )
+    with pytest.raises(ValueError, match="invalid canonical scene"):
+        _native.scene_raster_commands(huge_viewport)
+    huge_width = _native.scene_batch_encode(
+        viewport=(100.0, 80.0),
+        margins=(10.0, 10.0, 10.0, 10.0),
+        x_axis=(1, 0, 0.0, 1.0, 1.0, False),
+        y_axis=(2, 0, 0.0, 1.0, 1.0, False),
+        kinds=[1, 1],
+        stable_ids=[1, 1],
+        style_refs=[0, 0],
+        fill_rgba=[0, 0, 0, 0],
+        stroke_rgba=[0, 0, 0, 255],
+        stroke_width=[1e100],
+        diameter=[0.0, 0.0],
+        symbols=[0, 0],
+        x0=[0.0, 1.0],
+        y0=[0.0, 1.0],
+        x1=[0.0, 0.0],
+        y1=[0.0, 0.0],
+    )
+    with pytest.raises(ValueError, match="invalid canonical scene"):
+        _native.scene_raster_commands(huge_width)
 
 
 def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.MonkeyPatch) -> None:

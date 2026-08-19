@@ -12,11 +12,12 @@ const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fi
 test("Node figure compiles the exact shared scatter, line, bar Scene v3 fixture", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
-  figure.scatter([1, 2], [2, 3], { id: 0, style: { color: "#3987e5", size: 6, opacity: 0.8 } });
+  figure.scatter([1, 2], [2, 3], { id: 0, style: { color: "#3987e5", size: 6, opacity: 0.8, symbol: "diamond" } });
   figure.line([1, 2, 3], [1, 4, 2], { id: 1, color: "#ef4444", width: 2 });
   figure.bar([1, 2], [3, 2], { id: 2, color: "#22c55e", opacity: 0.85 });
   const encoded = figure.toScene();
   assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), figureSceneFixture.expected_sha256);
+  assert.equal(encoded[160 + 3 * 16 + 2], 2); // canonical diamond symbol code
   assert.match(sceneSvg(encoded), /^<svg xmlns=/);
   assert.ok(sceneRasterCommands(encoded).length > 100);
 });
@@ -25,6 +26,26 @@ test("Node Scene v3 whole-scene consumers reject malformed and unsupported input
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
   const figure = new Figure().area([0, 1], [1, 2]);
   assert.throws(() => figure.toScene(), /does not yet support area/);
+});
+
+test("Node Scene v3 raster rejects nonrepresentable f32 commands", () => {
+  const figure = new Figure().line([0, 1], [0, 1]);
+  assert.throws(() => sceneRasterCommands(figure.toScene(), Number.MAX_VALUE), /invalid canonical scene/);
+  const huge = sceneBatchEncode({
+    viewport: [1e100, 1e100], margins: [0, 0, 0, 0],
+    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    kinds: [], stableIds: [], styleRefs: [], styles: [], diameter: [], symbols: [],
+    x0: [], y0: [], x1: [], y1: [],
+  });
+  assert.throws(() => sceneRasterCommands(huge), /invalid canonical scene/);
+  const hugeWidth = sceneBatchEncode({
+    viewport: [100, 80], margins: [10, 10, 10, 10],
+    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    kinds: [1, 1], stableIds: [1, 1], styleRefs: [0, 0],
+    styles: [{ fillRgba: [0, 0, 0, 0], strokeRgba: [0, 0, 0, 255], strokeWidth: 1e100 }],
+    diameter: [0, 0], symbols: [0, 0], x0: [0, 1], y0: [0, 1], x1: [0, 0], y1: [0, 0],
+  });
+  assert.throws(() => sceneRasterCommands(hugeWidth), /invalid canonical scene/);
 });
 
 test("Node figure Scene v3 rejects the same incomplete customization as Python", () => {
@@ -40,6 +61,9 @@ test("Node figure Scene v3 rejects the same incomplete customization as Python",
   const unsafeId = new Figure();
   unsafeId.scatter([1], [1], { _composed: true, id: 2 ** 53 });
   assert.throws(() => unsafeId.toScene(), /stableIds/);
+  const badSymbol = new Figure();
+  badSymbol.scatter([1], [1], { _composed: true, style: { symbol: "kite" } });
+  assert.throws(() => badSymbol.toScene(), /does not support scatter symbol "kite"/);
 });
 
 test("Node figure Scene v3 rejects missing coordinates until break records exist", () => {

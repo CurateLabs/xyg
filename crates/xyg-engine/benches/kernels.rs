@@ -275,9 +275,60 @@ fn scene_v3_document(n: usize) -> SceneDocument {
     let document = SceneDocument::decode(&encoded).unwrap();
     let svg = document.to_svg();
     let commands = document.to_raster_commands(1.0).unwrap();
-    debug_assert!(svg.contains("<polyline points=\"") && svg.contains("<rect x=\""));
-    debug_assert!(commands.contains(&1) && commands.contains(&3));
+    assert!(svg.matches("<polyline points=\"").count() >= 1);
+    assert!(svg.matches("<rect x=\"").count() >= 2); // plot clip + data rectangle
+    let (fills, strokes) = scene_raster_primitive_counts(&commands).expect("valid scene commands");
+    assert!(fills >= 1 && strokes >= 3); // data rectangle + data line + two axes
     document
+}
+
+fn scene_raster_primitive_counts(commands: &[u8]) -> Option<(usize, usize)> {
+    fn advance(offset: &mut usize, count: usize, len: usize) -> Option<()> {
+        *offset = offset.checked_add(count)?;
+        (*offset <= len).then_some(())
+    }
+    fn read_u32(commands: &[u8], offset: &mut usize) -> Option<usize> {
+        let end = offset.checked_add(4)?;
+        let value = u32::from_le_bytes(commands.get(*offset..end)?.try_into().ok()?) as usize;
+        *offset = end;
+        Some(value)
+    }
+
+    let (mut fills, mut strokes, mut offset) = (0, 0, 0);
+    while offset < commands.len() {
+        let operation = *commands.get(offset)?;
+        offset += 1;
+        match operation {
+            0 => advance(&mut offset, 16, commands.len())?,
+            1 => {
+                let points = read_u32(commands, &mut offset)?;
+                advance(
+                    &mut offset,
+                    points.checked_mul(8)?.checked_add(4)?,
+                    commands.len(),
+                )?;
+                fills += 1;
+            }
+            3 => {
+                let points = read_u32(commands, &mut offset)?;
+                advance(
+                    &mut offset,
+                    points.checked_mul(8)?.checked_add(9)?,
+                    commands.len(),
+                )?;
+                let dash_count = read_u32(commands, &mut offset)?;
+                advance(
+                    &mut offset,
+                    dash_count.checked_mul(4)?.checked_add(1)?,
+                    commands.len(),
+                )?;
+                strokes += 1;
+            }
+            4 => advance(&mut offset, 25, commands.len())?,
+            _ => return None,
+        }
+    }
+    Some((fills, strokes))
 }
 
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]

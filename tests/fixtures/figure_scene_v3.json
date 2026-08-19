@@ -2,5 +2,5 @@
   "viewport": [320, 240],
   "x_domain": [0, 4],
   "y_domain": [0, 5],
-  "expected_sha256": "443c14fd412cc93269e3a29744461a9d4fc47f5e77c0fed42865e958111da3ca"
+  "expected_sha256": "1a7515c72c461874c56e60d67da84b6ccf5e2e6e29d8988c21de844c12b05f53"
 }

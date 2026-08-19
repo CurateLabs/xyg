@@ -13,6 +13,23 @@ import { asF64Array, f64Ptr, u32Ptr, u8Ptr } from "./encode.js";
 import { parseCssColor } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
+const SYMBOL_CODES = new Map([
+  "circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star",
+  "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel",
+  "thin_diamond", "plus_line", "x_line", "horizontal_line", "vertical_line",
+].map((name, code) => [name, code]));
+
+function sceneSymbolCode(value) {
+  if (typeof value === "string") {
+    const code = SYMBOL_CODES.get(value);
+    if (code == null) throw new RangeError(`Scene v3 does not support scatter symbol ${JSON.stringify(value)}`);
+    return code;
+  }
+  if (!Number.isInteger(value) || value < 0 || value >= SYMBOL_CODES.size) {
+    throw new RangeError("Scene v3 scatter symbol code must be an integer from 0 through 18");
+  }
+  return value;
+}
 
 function asU8Array(value, name) {
   if (value instanceof Uint8Array) return value;
@@ -234,7 +251,7 @@ export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
       kinds.push(trace.kind === "scatter" ? 0 : trace.kind === "line" ? 1 : 2);
       stableIds.push(id); styleRefs.push(styleRef);
       diameter.push(trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 6) : 0);
-      symbols.push(trace.kind === "scatter" ? Number(style.symbol ?? 0) : 0);
+      symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
       if (trace.kind === "bar") { x0.push(trace.x0[index]); y0.push(trace.y0[index]); x1.push(trace.x1[index]); y1.push(trace.y1[index]); }
       else { x0.push(trace.x[index]); y0.push(trace.y[index]); x1.push(0); y1.push(0); }
     }
