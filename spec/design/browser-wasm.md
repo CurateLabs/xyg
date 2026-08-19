@@ -1,7 +1,7 @@
 # Direct-browser Rust/WASM boundary
 
-**Status:** bounded lifecycle/toolchain foundation, **not** a complete direct-browser
-chart host. Tracking: [#59](https://github.com/CurateLabs/xyg/issues/59).
+**Status:** bounded lifecycle plus canonical Scene v4 paint slice, **not** a
+complete direct-browser chart host. Tracking: [#59](https://github.com/CurateLabs/xyg/issues/59).
 Canonical scene dependency: [Scene v4](scene-ir.md).
 
 ## Runtime taxonomy
@@ -27,6 +27,7 @@ chrome.
 | `js/src/wasm_abi_generated.ts` | Generated export validator and typed declarations |
 | `js/src/wasm_worker.ts` | Static strict-CSP module Worker |
 | `js/src/47_wasm.ts` | Main-thread lifecycle proxy; requires explicit worker and WASM assets |
+| `js/src/48_wasm_scene.ts` | Thin display-list adapter into the existing WebGL painter |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
 The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
@@ -64,19 +65,47 @@ ABI version, and scene version.
 The Worker normalizes semantically unsigned wasm32 results before exposing
 them, so a set high bit in either copied-byte half remains a non-negative u32.
 They never log user values.
+Painter output is attempt-local instance state. Arena resize, validation,
+cancellation, the start of another prepare, any failed prepare, and disposal
+clear it; the Worker copies a successful output into one transferable
+ArrayBuffer before resetting the arena. A prior success can therefore never be
+observed after a later failure or non-paint operation.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` starts at 1. `SCENE_VERSION` remains independently versioned
-at 3. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
+`WASM_ABI_VERSION` is 2 for the Scene paint output exports. `SCENE_VERSION` remains independently versioned
+at 4. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant. `js/package-wasm.mjs` parses the compiled module's type,
 function, and export sections and rejects artifact-level signature drift.
 
-The only scene operation in this slice is allocation-free validation of an
-already canonical Scene v4 batch. That establishes exact integration without
-inventing a provisional browser chart schema. It does **not** compile a public
-chart specification or satisfy #59's scatter/line/bar acceptance criteria.
+`validateScene` remains the allocation-free validation seam. `prepareScene`
+validates the same bytes and asks `xyg-engine::SceneDocument` to lower them to
+bounded painter-ready f32/u32 columns plus a fixed trace descriptor table.
+`renderWasmScene` creates only descriptor-sized views over that transferred
+buffer and hydrates the existing WebGL painter. TypeScript does not scan Scene
+records, map data, decide clipping or grouping, narrow f64 geometry, copy
+columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
+columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
+
+Painter contract v2 begins with `XYPB`, independent painter version 2, Scene
+version 4, a 64-byte header, 64-byte trace descriptors, viewport/plot f32
+bounds, bounded trace and tick counts, and absolute offsets to the tick and
+UTF-8 label tables. Each trace descriptor identifies scatter/polyline/rect,
+style, count, and absolute packed-column offsets. Rust derives default numeric
+ticks and their exact labels, maps them to painter coordinates, and emits them
+as fixed 16-byte records. TypeScript creates descriptor-sized views and hands
+those painter-ready values to the existing canvas/DOM chrome surfaces; it does
+not generate ticks, format labels, or choose layout. Reserved fields, exact
+offsets, finite geometry, known kinds and symbols, valid UTF-8, and exact final
+length fail closed before hydration.
+
+This is the public direct-browser entry for the stable Scene v4
+scatter/line/bar subset with its canonical default numeric grid, spines, ticks,
+and labels. Scene production from raw browser columns and authored chrome
+remain later #59/#58 slices. The two version numbers are
+checked independently so rebasing the axis/chrome work cannot silently widen
+this consumer.
 
 ## Lifecycle and failure model
 
@@ -111,6 +140,11 @@ const engine = createXygWasmWorker({
   workerUrl: new URL("./wasm-worker.js", import.meta.url),
   wasm: compiledModule, // or explicit local URL / bytes
 });
+const view = await renderWasmScene({
+  el: document.querySelector("#chart"),
+  scene: canonicalSceneBytes,
+  worker: engine,
+});
 ```
 
 The library never uses `Blob`, `eval`, a CDN, default URL, or path probing.
@@ -124,7 +158,8 @@ WebAssembly compilation; it does not permit JavaScript `eval`.
 `scripts/wasm_foundation_smoke.mjs` serves an allowlisted local-only asset set
 under that CSP and tests explicit Module/bytes/URL loading, transfer and copy
 diagnostics, lifecycle, cancellation, stale sequence, malformed module/scene,
-resource bounds, redirect rejection, a real runtime trap, and disposal. It
+resource bounds, redirect rejection, a real runtime trap, public Scene paint,
+existing-painter hydration, and disposal. It
 also verifies unsigned split-u64 accounting across the `0x80000000` boundary
 and that an invalid source is rejected before a Worker is allocated.
 
@@ -138,18 +173,24 @@ cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
 node js/build.mjs
 node js/package-wasm.mjs
 node scripts/wasm_foundation_smoke.mjs
+node benchmarks/bench_wasm_scene.mjs
 ```
 
-The CI artifact is compile- and runtime-verified. This slice makes no startup,
-throughput, memory, or bundle-size win claim. Those budgets and comparisons
+The opt-in Chromium benchmark reports 10k/100k/1M mixed scatter/line/rect
+worker preparation, hydration/upload, two-frame first paint, Scene/painter
+bytes, and JS heap delta when Chromium exposes it. It asserts three grouped
+traces and stable-ID survival. Results are environmental measurements, not a
+committed win claim. The hosted Rust benchmark isolates the same conversion at
+those three sizes. This slice makes no startup, throughput, memory, or
+bundle-size win claim. Those budgets and comparisons
 must be established through the repository's hosted CodSpeed workflow before
 Issue `#59` can close; raw local timings are not performance evidence.
 
 ## Remaining #59 work
 
 - typed column and chart-spec ingest;
-- Rust Scene v4 production for the first scatter/line/bar/aggregate slice;
-- integration with the existing WebGL painter and export path;
+- raw typed-column compilation and aggregate production in Rust;
+- authored browser chrome after the next versioned #58 Scene extension;
 - native Python/Node/WASM/Pyodide conformance fixtures;
 - cooperative cancellation inside long Rust operations;
 - small-through-massive CodSpeed and browser budget evidence; and

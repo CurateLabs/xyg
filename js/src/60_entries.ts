@@ -2,6 +2,7 @@ import { bytesToSpan, decodeFrame, payloadBuffers, payloadCoherent } from "./00_
 import { ChartView } from "./50_chartview";
 import { MARK_KINDS, markOf } from "./55_marks";
 import { createXygWasmWorker, XygWasmError, XygWasmWorker } from "./47_wasm";
+import { renderWasmScene } from "./48_wasm_scene";
 // Prototype-augmentation modules: imported for their side effect of attaching
 // methods to ChartView.prototype. Every entry point must load them before the
 // first ChartView is constructed.
@@ -109,5 +110,6 @@ export {
   createXygWasmWorker,
   XygWasmError,
   XygWasmWorker,
+  renderWasmScene,
 };
 export default { render, decodeFrame };

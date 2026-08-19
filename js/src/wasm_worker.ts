@@ -20,8 +20,8 @@ function isDisposed(): boolean {
   return lifecycle === "disposed";
 }
 
-function reply(requestId: number, value: unknown) {
-  scope.postMessage({ requestId, ok: true, value });
+function reply(requestId: number, value: unknown, transfer: Transferable[] = []) {
+  scope.postMessage({ requestId, ok: true, value }, transfer);
 }
 
 function error(requestId: number, code: string, message: string, status: number | null = null) {
@@ -127,6 +127,7 @@ function diagnostics() {
     abiVersion: exports.xyg_wasm_abi_version() >>> 0,
     sceneVersion: exports.xyg_wasm_scene_version() >>> 0,
     arenaBytes: exports.xyg_wasm_arena_len(handle) >>> 0,
+    memoryBytes: exports.memory.buffer.byteLength,
     copyCount: exports.xyg_wasm_copy_count(handle) >>> 0,
     copyBytesLo: exports.xyg_wasm_copy_bytes_lo(handle) >>> 0,
     copyBytesHi: exports.xyg_wasm_copy_bytes_hi(handle) >>> 0,
@@ -161,21 +162,38 @@ function validateScene(message: any) {
     // is copied into WASM. The logical arena is cleared after the operation.
     new Uint8Array(exports.memory.buffer, ptr, message.scene.byteLength)
       .set(new Uint8Array(message.scene));
-    status = exports.xyg_wasm_scene_validate(
-      handle,
-      Number(message.sequence),
-      0,
-      message.scene.byteLength,
-    );
+    const paint = message.type === "scene.paint";
+    status = paint
+      ? exports.xyg_wasm_scene_prepare(
+        handle, Number(message.sequence), 0, message.scene.byteLength,
+      )
+      : exports.xyg_wasm_scene_validate(
+        handle, Number(message.sequence), 0, message.scene.byteLength,
+      );
     const detail = status === XYG_WASM_STATUS.OK ? "" : readXygWasmError(exports, handle);
     const value = { sequence: Number(message.sequence), ...diagnostics() };
-    exports.xyg_wasm_arena_resize(handle, 0);
-    value.arenaBytes = 0;
     if (status !== XYG_WASM_STATUS.OK) {
+      exports.xyg_wasm_arena_resize(handle, 0);
       error(message.requestId, statusCode(status), detail, status);
       return;
     }
-    reply(message.requestId, value);
+    if (paint) {
+      const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
+      const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
+      const outputEnd = outputPtr + outputLen;
+      if (!outputPtr || !outputLen || !Number.isSafeInteger(outputEnd)
+          || outputEnd > exports.memory.buffer.byteLength) {
+        throw new Error("Rust browser-paint output returned an invalid range");
+      }
+      const painter = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
+      exports.xyg_wasm_arena_resize(handle, 0);
+      value.arenaBytes = 0;
+      reply(message.requestId, { ...value, painter }, [painter]);
+    } else {
+      exports.xyg_wasm_arena_resize(handle, 0);
+      value.arenaBytes = 0;
+      reply(message.requestId, value);
+    }
   } catch (cause) {
     // A Rust trap invalidates the instance. Fail closed and require a fresh
     // worker; never continue with partially mutated engine state.
@@ -195,7 +213,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     void initialize(message);
     return;
   }
-  if (message?.type === "scene.validate") {
+  if (message?.type === "scene.validate" || message?.type === "scene.paint") {
     // Deferring one task turn gives a cancellation already queued by the main
     // thread a chance to suppress work before a synchronous WASM call starts.
     const timer = setTimeout(() => validateScene(message), 0);

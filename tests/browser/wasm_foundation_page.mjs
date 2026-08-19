@@ -1,4 +1,4 @@
-import { createXygWasmWorker, XygWasmError } from "/packages/xy-client/dist/index.js";
+import { createXygWasmWorker, renderWasmScene, XygWasmError } from "/packages/xy-client/dist/index.js";
 
 function canonicalSceneV4() {
   const bytes = new Uint8Array(160 + 16 + 56);
@@ -79,6 +79,9 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
     "xyg_wasm_arena_len",
     "xyg_wasm_cancel",
     "xyg_wasm_scene_validate",
+    "xyg_wasm_scene_prepare",
+    "xyg_wasm_output_ptr",
+    "xyg_wasm_output_len",
     "xyg_wasm_last_error_ptr",
     "xyg_wasm_last_error_len",
     "xyg_wasm_copy_count",
@@ -98,7 +101,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
       0x7f,
     ]),
   ];
-  const functionTypes = [0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 1];
+  const functionTypes = [0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
   const exports = [
@@ -108,7 +111,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
   ];
   const highBit = 0x80000000;
   const values = [
-    1, 4, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0,
+    2, 4, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
@@ -191,7 +194,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 1,
+    expectedAbiVersion: 2,
     expectedSceneVersion: 4,
   };
 }
@@ -235,9 +238,10 @@ async function run() {
     maxArenaBytes: 1024,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 1 || ready.sceneVersion !== 4) {
+  if (ready.abiVersion !== 2 || ready.sceneVersion !== 4) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
+  if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
 
   const canonical = canonicalSceneV4();
   const transferred = canonical.buffer;
@@ -250,10 +254,23 @@ async function run() {
     throw new Error(`unexpected copy or arena diagnostics ${JSON.stringify(valid)}`);
   }
 
+  const paint = await worker.prepareScene(canonicalSceneV4(), { sequence: 11 }).result;
+  if (!(paint.painter instanceof ArrayBuffer) || paint.painter.byteLength < 64) {
+    throw new Error("Rust Scene paint lowering did not return a transferable display list");
+  }
+  const host = document.body.appendChild(document.createElement("div"));
+  const rendered = await renderWasmScene({ el: host, scene: canonicalSceneV4(), worker, transfer: false });
+  if (!host.querySelector("canvas") || rendered.gpuTraces.length < 1) {
+    throw new Error("public WASM Scene API did not hydrate the existing painter");
+  }
+  if (rendered.sceneStableId(0, 0) !== 7n) throw new Error("canonical stable id was not preserved through painter hydration");
+  rendered.destroy();
+  host.remove();
+
   const malformed = canonicalSceneV4();
   malformed[0] = 0;
   await rejected(
-    worker.validateScene(malformed, { sequence: 11 }).result,
+    worker.validateScene(malformed, { sequence: 13 }).result,
     "XYG_WASM_MALFORMED_SCENE",
     5,
   );
@@ -263,11 +280,11 @@ async function run() {
     7,
   );
 
-  const cancelled = worker.validateScene(canonicalSceneV4(), { sequence: 12 });
+  const cancelled = worker.validateScene(canonicalSceneV4(), { sequence: 14 });
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
-  const afterRejected = await worker.validateScene(canonicalSceneV4(), { sequence: 13 }).result;
-  if (afterRejected.copyCount !== 5 || afterRejected.copyBytesLo !== 232 * 5) {
+  const afterRejected = await worker.validateScene(canonicalSceneV4(), { sequence: 15 }).result;
+  if (afterRejected.copyCount !== 7 || afterRejected.copyBytesLo !== 232 * 7) {
     throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
   await worker.dispose();

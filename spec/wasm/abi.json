@@ -1,7 +1,11 @@
 {
   "schema_version": 1,
-  "abi_version": 1,
+  "abi_version": 2,
   "scene_version": 4,
+  "painter_version": 2,
+  "painter_header_bytes": 64,
+  "painter_trace_bytes": 64,
+  "painter_tick_bytes": 16,
   "statuses": {
     "OK": 0,
     "INVALID_HANDLE": 1,
@@ -23,6 +27,9 @@
     { "name": "xyg_wasm_arena_len", "params": ["u32"], "result": "usize" },
     { "name": "xyg_wasm_cancel", "params": ["u32", "u32"], "result": "i32" },
     { "name": "xyg_wasm_scene_validate", "params": ["u32", "u32", "usize", "usize"], "result": "i32" },
+    { "name": "xyg_wasm_scene_prepare", "params": ["u32", "u32", "usize", "usize"], "result": "i32" },
+    { "name": "xyg_wasm_output_ptr", "params": ["u32"], "result": "usize" },
+    { "name": "xyg_wasm_output_len", "params": ["u32"], "result": "usize" },
     { "name": "xyg_wasm_last_error_ptr", "params": ["u32"], "result": "usize" },
     { "name": "xyg_wasm_last_error_len", "params": ["u32"], "result": "usize" },
     { "name": "xyg_wasm_copy_count", "params": ["u32"], "result": "u32" },

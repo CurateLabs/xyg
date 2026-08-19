@@ -162,7 +162,7 @@ fn is_sorted_f64(bencher: Bencher, n: usize) {
 
 /// Scene v4's shared scale/layout/record encoding path for mixed core marks.
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
-fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
+fn scene_v4_batch_encode(bencher: Bencher, n: usize) {
     let mut x = uniform(n, 0x0055_AA11);
     let mut y = uniform(n, 0x0066_BB22);
     for index in (0..n).step_by(97) {
@@ -213,7 +213,7 @@ fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
     bencher.bench(|| black_box(batch.encode()));
 }
 
-fn scene_v3_document(n: usize) -> SceneDocument {
+fn scene_v4_document(n: usize) -> SceneDocument {
     let mut x = uniform(n, 0x0055_AA11);
     let mut y = uniform(n, 0x0066_BB22);
     let kinds: Vec<u8> = (0..n).map(|index| [1, 1, 0, 2, 2, 0][index % 6]).collect();
@@ -340,13 +340,25 @@ fn scene_raster_primitive_counts(commands: &[u8]) -> Option<(usize, usize, usize
 }
 
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
-fn scene_v3_svg(bencher: Bencher, n: usize) {
-    let document = scene_v3_document(n);
+fn scene_v4_svg(bencher: Bencher, n: usize) {
+    let document = scene_v4_document(n);
     bencher.bench(|| black_box(document.to_svg()));
 }
 
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
-fn scene_v3_raster_commands(bencher: Bencher, n: usize) {
-    let document = scene_v3_document(n);
+fn scene_v4_raster_commands(bencher: Bencher, n: usize) {
+    let document = scene_v4_document(n);
     bencher.bench(|| black_box(document.to_raster_commands(1.0).unwrap()));
+}
+
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_v4_browser_painter(bencher: Bencher, n: usize) {
+    let document = scene_v4_document(n);
+    let output = document.to_browser_painter(64 * 1024 * 1024).unwrap();
+    assert_eq!(&output[..4], b"XYPB");
+    assert_eq!(u32::from_le_bytes(output[4..8].try_into().unwrap()), 2);
+    assert!(u32::from_le_bytes(output[48..52].try_into().unwrap()) >= 3);
+    assert!(u32::from_le_bytes(output[52..56].try_into().unwrap()) >= 3);
+    assert!(output.len() > n * 16);
+    bencher.bench(|| black_box(document.to_browser_painter(64 * 1024 * 1024).unwrap()));
 }

@@ -217,6 +217,16 @@ text, and customization through the compatibility path. Node tests consume the
 same scene fixture and reject the same unsupported subset. ABI generation,
 parity, and version-first loading cover both hosts.
 
+The first browser consumer accepts the exact v4 bytes through the static WASM
+Worker. Rust validates and lowers them through
+`SceneDocument::to_browser_painter` into checked f32 geometry and split-u64
+stable-ID columns plus the default numeric ticks and formatted UTF-8 labels.
+Painter contract v2 carries fixed trace and tick descriptors with exact bounds.
+The TypeScript adapter creates views over transferred columns and supplies the
+Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
+performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
+clipping, identity, tick generation, or label formatting policy.
+
 Next slices add time/category/angular ticks, authored text/chrome styles,
-remaining mark families, legend/annotation records, and browser consumption. Browser DOM measurement and WebGL paint remain
+remaining mark families, and legend/annotation records. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

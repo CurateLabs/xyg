@@ -357,6 +357,13 @@ sorted ingest) at the same 10k/100k/1M sizes the pytest suite uses. A
 mixed with FFI and NumPy work, and each row carries its own flame graph. They
 run in the same CodSpeed job:
 
+The Scene rows cover native SVG/raster lowering. The direct-browser harness
+adds representative small/medium/large Scene-to-painter cases and reports
+worker transfer/lowering, WebGL upload/first paint, and retained JS/WASM byte
+classes from real Chromium. Those wall-clock rows are not CodSpeed simulation
+claims; the Rust `scene_v4_browser_painter` rows isolate bounded conversion in
+the hosted CodSpeed job.
+
 ```bash
 cargo codspeed build --bench kernels
 codspeed run --mode simulation -- cargo codspeed run --bench kernels
