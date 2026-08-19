@@ -306,12 +306,25 @@ jobs:
           # Full history and tags: the distribution version is derived
           # from the latest `xyg-v*` tag, and a shallow clone has none.
           fetch-depth: 0
+      # workflow_dispatch is useful for a dry-run matrix, but turning dry_run
+      # off must not turn an arbitrary branch build into a release. Dispatch a
+      # real publish against the already-created release tag.
+      - name: Real publish must run from an XYG release tag
+        if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/xyg-v*) ;;
+            *)
+              echo "::error::real publishing requires refs/tags/xyg-v*, got $GITHUB_REF"
+              exit 1
+              ;;
+          esac
       # The tag now *is* the version (pyproject derives it), so there is no
       # second number left to disagree with it. What a tag can't vouch for is
       # that the release was written up: this gate requires the tag to be shaped
       # like a release tag and CHANGELOG.md to carry a dated entry for it.
       - name: Release version gate (tag == CHANGELOG)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'
         run: python3 scripts/check_release_version.py
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -329,7 +342,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true'
         run: |
           echo "::notice::Dry run — built and verified $(ls dist/*.whl dist/*.tar.gz 2>/dev/null | wc -l | tr -d ' ') artifacts across the full release matrix. Skipping PyPI publish."
-          echo "Re-run this workflow with dry_run=false, or push a v* tag, to publish for real."
+          echo "Re-run this workflow against an existing xyg-v* tag with dry_run=false, or push a new xyg-v* tag, to publish for real."
       # Publish-name guard (#13): real uploads must be distribution `xyg`
       # (the pending PyPI project) and must never be upstream's `xy`. Dry
       # runs skip the check so the cross-compile matrix stays verifiable.
@@ -360,9 +373,29 @@ jobs:
       # default, so a fresh clone of this fork cannot publish no matter what
       # it tags or dispatches.
       - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
-        if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
+        if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && startsWith(github.ref, 'refs/tags/xyg-v') && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
         with:
           packages-dir: dist/
           # A failed upload can leave a partial release on immutable PyPI.
           # Retrying the same tag should skip files that were already accepted.
           skip-existing: true
+
+  github-release:
+    name: Create GitHub Release
+    needs: [publish]
+    if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && startsWith(github.ref, 'refs/tags/xyg-v') && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The browser-runtime wheel is useful outside pip and is the artifact the
+      # docs promotion contract promises on the matching GitHub Release. Native
+      # wheels and the sdist remain authoritative on PyPI.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: release-dist
+          pattern: dist-pyemscripten
+      - name: Create release and attach the PyEmscripten wheel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release-dist/*.whl --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes

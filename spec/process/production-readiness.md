@@ -368,6 +368,15 @@ publisher) publishes only from tagged releases, with layered guards:
   does not exist by default, so a version tag builds and verifies artifacts
   but does not upload until that opt-in is set. The first successful upload
   claims the pending PyPI project `xyg`.
+- **Tagged dispatch only.** A non-dry-run `workflow_dispatch` must target an
+  existing `refs/tags/xyg-v*` ref and runs the same tag/CHANGELOG gate as a tag
+  push. Dispatching `main` can exercise the complete dry-run matrix, but can
+  never publish even when the repository opt-in is enabled.
+- **GitHub Release after PyPI.** Once the PyPI job succeeds, `github-release`
+  creates the matching GitHub Release with generated notes and attaches the
+  runtime-verified PyEmscripten wheel. It has `contents: write`; build and PyPI
+  jobs remain read-only except for the OIDC token. Production docs wait for
+  both this release and the exact `xyg` version on PyPI before promotion.
 
 `scripts/verify_ci_workflow.py` (`make check-ci`) pins these guards, and
 `tests/test_verify_ci_workflow.py` covers their removal.

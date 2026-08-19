@@ -35,7 +35,10 @@ in the README).
   PyPI project `xyg`. The dedicated `xyg-v*` tag line now drives versions and
   releases, so inherited upstream `v*` tags remain as provenance but cannot
   influence a build or trigger publication. `pyproject.toml` project URLs
-  point at `CurateLabs/xyg`.
+  point at `CurateLabs/xyg`. Non-dry-run manual dispatches must target an
+  existing `xyg-v*` tag and pass the same changelog gate; successful PyPI
+  publication now creates the matching GitHub Release and attaches the
+  runtime-verified PyEmscripten wheel.
 
 ## [0.0.5] - 2026-07-31
 
