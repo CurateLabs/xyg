@@ -67,7 +67,7 @@ function utf8(value) {
   return [...u32(bytes.length), ...bytes];
 }
 
-async function trappingModule() {
+async function fixtureModule({ trap = false, highBitDiagnostics = false } = {}) {
   const names = [
     "xyg_wasm_abi_version",
     "xyg_wasm_scene_version",
@@ -106,9 +106,16 @@ async function trappingModule() {
     ...utf8("memory"), 2, 0,
     ...names.flatMap((name, index) => [...utf8(name), 0, ...u32(index)]),
   ];
-  const values = [1, 3, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0];
+  const highBit = 0x80000000;
+  const values = [
+    1, 3, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0,
+    highBitDiagnostics ? highBit : 0,
+    highBitDiagnostics ? highBit : 0,
+    highBitDiagnostics ? 1 : 0,
+    0, 0,
+  ];
   const bodies = names.map((_, index) => {
-    const instructions = index === 9
+    const instructions = trap && index === 9
       ? [0x00, 0x0b] // unreachable; end
       : [0x41, ...i32(values[index] ?? 0), 0x0b];
     const body = [0, ...instructions]; // no local declarations
@@ -230,7 +237,7 @@ async function run() {
 
   const trapped = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
-    wasm: await trappingModule(),
+    wasm: await fixtureModule({ trap: true }),
     maxArenaBytes: 1024,
   });
   await trapped.ready;
@@ -239,6 +246,24 @@ async function run() {
     "XYG_WASM_TRAP",
   );
   await trapped.dispose();
+
+  const unsigned = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: await fixtureModule({ highBitDiagnostics: true }),
+    maxArenaBytes: 1024,
+  });
+  const unsignedReady = await unsigned.ready;
+  if (unsignedReady.copyCount !== 0x80000000
+      || unsignedReady.copyBytesLo !== 0x80000000
+      || unsignedReady.copyBytesHi !== 1) {
+    throw new Error(`unsigned diagnostics lost their u32 values: ${JSON.stringify(unsignedReady)}`);
+  }
+  const combinedCopyBytes = (BigInt(unsignedReady.copyBytesHi) << 32n)
+    | BigInt(unsignedReady.copyBytesLo);
+  if (combinedCopyBytes !== 0x180000000n) {
+    throw new Error(`split-u64 copy accounting was corrupted: ${combinedCopyBytes}`);
+  }
+  await unsigned.dispose();
 
   const malformedModule = await WebAssembly.compile(
     new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]),

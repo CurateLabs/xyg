@@ -102,8 +102,8 @@ export function bindXygWasmExports(instance: WebAssembly.Instance): XygWasmExpor
 }
 
 export function readXygWasmError(exports: XygWasmExports, handle: number): string {
-  const ptr = exports.xyg_wasm_last_error_ptr(handle);
-  const len = exports.xyg_wasm_last_error_len(handle);
+  const ptr = exports.xyg_wasm_last_error_ptr(handle) >>> 0;
+  const len = exports.xyg_wasm_last_error_len(handle) >>> 0;
   if (!ptr || !len) return "XYG WASM operation failed";
   const end = ptr + len;
   if (!Number.isSafeInteger(end) || end > exports.memory.buffer.byteLength) {

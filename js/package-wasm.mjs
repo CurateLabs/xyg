@@ -2,7 +2,7 @@
 // Copy a separately compiled raw xyg-wasm artifact into the browser package.
 // Keeping this separate from js/build.mjs lets native/Python builds remain
 // independent of the direct-browser target while CI verifies both paths.
-import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -108,5 +108,7 @@ for (const item of manifest.exports) {
 }
 if (!actual.has("memory")) throw new Error("xyg-wasm missing exported linear memory");
 mkdirSync(dirname(output), { recursive: true });
-copyFileSync(source, output);
+// Publish the exact bytes compiled and signature-checked above; rereading the
+// source path here would create a validate-then-copy race.
+writeFileSync(output, bytes);
 console.log(`packaged raw xyg-wasm artifact at ${output}`);

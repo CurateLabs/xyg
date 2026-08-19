@@ -58,6 +58,8 @@ silently cloning or changing ownership.
 
 The foundation diagnostics report copy count, split-u64 copied bytes, current
 logical arena length, scene record/style counts, ABI version, and scene version.
+The Worker normalizes semantically unsigned wasm32 results before exposing
+them, so a set high bit in either copied-byte half remains a non-negative u32.
 They never log user values.
 
 ## Version and scene contract
@@ -115,7 +117,8 @@ WebAssembly compilation; it does not permit JavaScript `eval`.
 under that CSP and tests explicit Module/bytes/URL loading, transfer and copy
 diagnostics, lifecycle, cancellation, stale sequence, malformed module/scene,
 resource bounds, redirect rejection, a real runtime trap, and disposal. It
-also verifies that an invalid source is rejected before a Worker is allocated.
+also verifies unsigned split-u64 accounting across the `0x80000000` boundary
+and that an invalid source is rejected before a Worker is allocated.
 
 ## Build and evidence
 

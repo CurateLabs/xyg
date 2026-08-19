@@ -76,7 +76,7 @@ async function initialize(message: any) {
     if (!Number.isInteger(max) || max <= 0 || max > bound.xyg_wasm_max_arena_bytes()) {
       throw new Error("maxArenaBytes exceeds the Rust adapter bound");
     }
-    const created = bound.xyg_wasm_instance_new(max);
+    const created = bound.xyg_wasm_instance_new(max) >>> 0;
     if (!created) throw new Error("XYG WASM instance budget is exhausted");
     exports = bound;
     handle = created;
@@ -95,14 +95,14 @@ async function initialize(message: any) {
 function diagnostics() {
   if (!exports || !handle) throw new Error("XYG WASM worker is not initialized");
   return {
-    abiVersion: exports.xyg_wasm_abi_version(),
-    sceneVersion: exports.xyg_wasm_scene_version(),
-    arenaBytes: exports.xyg_wasm_arena_len(handle),
-    copyCount: exports.xyg_wasm_copy_count(handle),
-    copyBytesLo: exports.xyg_wasm_copy_bytes_lo(handle),
-    copyBytesHi: exports.xyg_wasm_copy_bytes_hi(handle),
-    records: exports.xyg_wasm_last_scene_records(handle),
-    styles: exports.xyg_wasm_last_scene_styles(handle),
+    abiVersion: exports.xyg_wasm_abi_version() >>> 0,
+    sceneVersion: exports.xyg_wasm_scene_version() >>> 0,
+    arenaBytes: exports.xyg_wasm_arena_len(handle) >>> 0,
+    copyCount: exports.xyg_wasm_copy_count(handle) >>> 0,
+    copyBytesLo: exports.xyg_wasm_copy_bytes_lo(handle) >>> 0,
+    copyBytesHi: exports.xyg_wasm_copy_bytes_hi(handle) >>> 0,
+    records: exports.xyg_wasm_last_scene_records(handle) >>> 0,
+    styles: exports.xyg_wasm_last_scene_styles(handle) >>> 0,
   };
 }
 
@@ -122,7 +122,7 @@ function validateScene(message: any) {
       error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
       return;
     }
-    const ptr = exports.xyg_wasm_arena_ptr(handle);
+    const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
     const end = ptr + message.scene.byteLength;
     if (!ptr || !Number.isSafeInteger(end) || end > exports.memory.buffer.byteLength) {
       throw new Error("Rust staging arena returned an invalid range");
