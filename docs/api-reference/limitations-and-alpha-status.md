@@ -95,7 +95,7 @@ implementation. The bullets below are the boundaries that page's rows imply.
   not have. The native raster's baked atlas is one face, so PNG/JPEG/WebP honor
   a slot's size and paint but not its typeface. `xy.colorbar(style=...)` still
   has no native channel — use the `colorbar_*` slots. The full matrix is
-  [Static export §9](https://github.com/reflex-dev/xy/blob/main/spec/api/export.md),
+  [Static export §9](https://github.com/CurateLabs/xyg/blob/main/spec/api/export.md),
   pinned by `tests/test_export_style_survival.py`.
 - Native PNG cannot apply author `custom_css`, and neither can native SVG, PDF,
   JPEG, or WebP. Unlike the per-slot case this one *raises* rather than

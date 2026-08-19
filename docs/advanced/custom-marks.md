@@ -91,7 +91,7 @@ scaffolding. A plugin that composes built-in marks cannot draw anything the
 engine could not already draw, which is what lets it reuse the engine's
 existing paths. A plugin carrying its own shader would reuse none of them and
 would have to reimplement decimation, picking, and three export paths itself.
-See [§24 of the design dossier](https://github.com/reflex-dev/xy/blob/main/spec/design-dossier.md).
+See [§24 of the design dossier](https://github.com/CurateLabs/xyg/blob/main/spec/design-dossier.md).
 
 ## Registry rules
 

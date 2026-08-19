@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       source_ref:
-        description: "Source commit SHA from reflex-dev/xy"
+        description: "Source commit SHA from CurateLabs/xyg"
         required: true
         type: string
       auto_merge:

@@ -91,13 +91,13 @@ a wheel.
 To reproduce the 0.0.1 release from Git with uv:
 
 ~~~bash
-uv add "xy @ git+https://github.com/reflex-dev/xy.git@v0.0.1"
+uv add "xyg @ git+https://github.com/CurateLabs/xyg.git@v0.0.1"
 ~~~
 
 Or install the same tagged source with pip:
 
 ~~~bash
-python -m pip install "xy @ git+https://github.com/reflex-dev/xy.git@v0.0.1"
+python -m pip install "xyg @ git+https://github.com/CurateLabs/xyg.git@v0.0.1"
 ~~~
 
 A source build without Rust can finish installing, but it has no compute

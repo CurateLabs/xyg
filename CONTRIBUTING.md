@@ -7,8 +7,8 @@ chart-type contribution walkthrough — lives at
 Quick start:
 
 ```bash
-git clone https://github.com/reflex-dev/xy.git
-cd xy
+git clone https://github.com/CurateLabs/xyg.git
+cd xyg
 make setup        # dev environment + native core (needs Rust)
 make check        # fast gate
 make check-full   # full production gate (also needs Node 18+ and clippy)

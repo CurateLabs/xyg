@@ -98,12 +98,12 @@ unfinished rendering or deferred work.
 
 The methodology and artifact contracts are documented in the repository:
 
-- [README benchmark summary](https://github.com/reflex-dev/xy#benchmarks)
-- [Benchmark runbook](https://github.com/reflex-dev/xy/blob/main/benchmarks/README.md)
-- [Interactive UX harness](https://github.com/reflex-dev/xy/blob/main/benchmarks/bench_ux.py)
-- [Full ladder runner](https://github.com/reflex-dev/xy/blob/main/benchmarks/run_ux_suite.sh)
-- [Result summarizer](https://github.com/reflex-dev/xy/blob/main/benchmarks/summarize_ux.py)
-- [Competitive benchmark specification](https://github.com/reflex-dev/xy/blob/main/spec/benchmarks/results.md)
+- [README benchmark summary](https://github.com/CurateLabs/xyg#benchmarks)
+- [Benchmark runbook](https://github.com/CurateLabs/xyg/blob/main/benchmarks/README.md)
+- [Interactive UX harness](https://github.com/CurateLabs/xyg/blob/main/benchmarks/bench_ux.py)
+- [Full ladder runner](https://github.com/CurateLabs/xyg/blob/main/benchmarks/run_ux_suite.sh)
+- [Result summarizer](https://github.com/CurateLabs/xyg/blob/main/benchmarks/summarize_ux.py)
+- [Competitive benchmark specification](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md)
 
 After completing the runbook setup, run the same size ladder:
 

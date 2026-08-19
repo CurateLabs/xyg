@@ -72,6 +72,11 @@ the same contracts against the same pinned competitor versions on the same
 machine. Add a new version/environment directory for later launches; never
 overwrite an earlier launch baseline or mix hardware and SwiftShader rows.
 
+The two checked-in `environment.json` records identify
+`https://github.com/reflex-dev/xy` because those measurements predate the
+CurateLabs fork. That repository value is immutable provenance, not the current
+support, source, or release location for XYG.
+
 Warm the checkout before a measured run. A first invocation in a fresh worktree
 pays for cold bytecode caches, Matplotlib's font cache, and Kaleido's browser
 download, which inflate every library's first row by an amount that is not part

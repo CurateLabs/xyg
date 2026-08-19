@@ -1,5 +1,10 @@
 # Changelog
 
+> [!NOTE]
+> This changelog preserves the inherited `reflex-dev/xy` release history below.
+> Entries under **Unreleased** and future versions describe the permanently
+> divergent [CurateLabs/xyg](https://github.com/CurateLabs/xyg) project.
+
 All notable changes to **xy** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/) once `1.0.0` ships;
@@ -28,6 +33,9 @@ in the README).
   `publish.yaml` match the pending PyPI trusted publisher.
 
 ### Changed
+- Repository branding and all owned documentation, support, CI, security, and
+  source pointers now target `CurateLabs/xyg`; inherited benchmark records keep
+  their original repository field as provenance (#14).
 - Release publishing (#13): workflow filename is `publish.yaml` (PyPI trusted
   publisher binding), repository guard is `CurateLabs/xyg`, artifacts are
   named `xyg`, and the upload still requires `XYG_ALLOW_PYPI_PUBLISH=true`

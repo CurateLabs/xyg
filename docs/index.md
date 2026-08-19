@@ -29,7 +29,7 @@ sdf_plots = xy_sdf_plot_grid
 All four interactive charts are live — drag to pan, scroll to zoom, and hover
 to inspect exact values. Together they render more than a million points from a
 single probability field across four chart families.
-[View the customizable Python source](https://github.com/reflex-dev/xy/blob/main/docs/app/xy_docs/demos/xy_sdf_plots.py).
+[View the customizable Python source](https://github.com/CurateLabs/xyg/blob/main/docs/app/xy_docs/demos/xy_sdf_plots.py).
 
 ~~~md alert warning
 **Early alpha.** XY is pre-1.0. The declarative composition model is stabilizing, but callback

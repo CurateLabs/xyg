@@ -54,7 +54,13 @@ from xy_docs.api_reference import (
 )
 from xy_docs.breadcrumb import _breadcrumb_parts, xy_docs_breadcrumb
 from xy_docs.config import DOCS_CONFIG, DOCS_NAVIGATION, DOCS_REDIRECTS, DOCS_SECTIONS
-from xy_docs.constants import PUBLIC_DOCS_URL, PUBLIC_XY_VERSION, SOCIAL_IMAGE_URL
+from xy_docs.constants import (
+    PUBLIC_DOCS_URL,
+    PUBLIC_XY_VERSION,
+    SOCIAL_IMAGE_URL,
+    agent_docs_url,
+    public_docs_url,
+)
 from xy_docs.footer import xy_docs_footer
 from xy_docs.gallery import (
     _GALLERY_GROUPS,
@@ -1762,7 +1768,7 @@ def test_annotations_have_one_canonical_guide_and_a_legacy_redirect() -> None:
     redirect = app._unevaluated_pages["charts/annotations"]
     rendered_meta = "\n".join(str(component) for component in redirect.meta)
     assert redirect.context == {"sitemap": None}
-    assert "https://reflex.dev/docs/xy/components/annotations/" in rendered_meta
+    assert 'rel:"canonical"' not in rendered_meta
     assert "0; url=/docs/xy/components/annotations/" in rendered_meta
     assert "Open the combined Annotations guide" in str(redirect.component())
 
@@ -1849,8 +1855,12 @@ def test_inline_svg_gallery_validator_requires_every_styled_preview(tmp_path: Pa
     run=False,
 )
 def test_xy_markdown_docs_links_match_exported_sitemap() -> None:
-    """Validate every XY docs link in every Markdown source against the sitemap."""
-    valid_routes = _sitemap_routes(EXPORTED_SITEMAP)
+    """Validate links against the sitemap, or discovered routes in preview."""
+    valid_routes = (
+        _sitemap_routes(EXPORTED_SITEMAP)
+        if PUBLIC_DOCS_URL
+        else {page.route.rstrip("/") or "/" for page in discover_docs(DOCS_CONFIG)}
+    )
     errors: list[str] = []
 
     for path in _markdown_files(DOCS_ROOT):
@@ -1882,9 +1892,11 @@ def test_xy_markdown_docs_links_match_exported_sitemap() -> None:
 
 def test_xy_sitemap_path_normalization_requires_the_exact_frontend_path() -> None:
     """Normalize canonical locations without accepting sibling docs sites."""
-    assert _normalize_xy_docs_path("https://reflex.dev/docs/xy/") == "/"
+    assert _normalize_xy_docs_path("https://example.invalid/docs/xy/") == "/"
     assert (
-        _normalize_xy_docs_path("https://reflex.dev/docs/xy/charts/scatter/?source=test#example")
+        _normalize_xy_docs_path(
+            "https://example.invalid/docs/xy/charts/scatter/?source=test#example"
+        )
         == "/charts/scatter"
     )
     assert _normalize_xy_docs_path("https://reflex.dev/docs/charts/") is None
@@ -2218,10 +2230,10 @@ def test_xy_footer_is_project_specific_and_keeps_source_aware_links() -> None:
 
     rendered = str(xy_docs_footer(page))
 
-    assert "https://github.com/reflex-dev/xy/issues/new" in rendered
-    assert "Issue%20with%20reflex.dev/docs/xy/overview/gallery/" in rendered
+    assert "https://github.com/CurateLabs/xyg/issues/new" in rendered
+    assert "Issue%20with%20XYG%20docs%3A%20/docs/xy/overview/gallery/" in rendered
     assert "Path%3A%20/docs/xy/overview/gallery/%0A%0A" in rendered
-    assert "https://github.com/reflex-dev/xy/blob/main/docs/overview/gallery.md" in rendered
+    assert "https://github.com/CurateLabs/xyg/blob/main/docs/overview/gallery.md" in rendered
     assert 'to:"/guides/getting-help/"' in rendered
     assert 'to:"/guides/deployment-recipes/"' in rendered
     assert 'to:"/docs/xy/' not in rendered
@@ -2230,8 +2242,10 @@ def test_xy_footer_is_project_specific_and_keeps_source_aware_links() -> None:
     assert "reflex.dev/docs/getting-started" not in rendered
 
 
-def test_every_docs_route_has_canonical_and_social_metadata() -> None:
-    """Publish branded canonical and social metadata for every route."""
+def test_preview_routes_omit_unconfigured_public_metadata() -> None:
+    """Do not invent canonical, sitemap, social, or agent URLs in preview."""
+    assert PUBLIC_DOCS_URL == ""
+    assert SOCIAL_IMAGE_URL == ""
     assert len(_DOCS_ROUTES) + len(DOCS_REDIRECTS) == len(app._unevaluated_pages)
     assert PUBLIC_XY_VERSION == "0.0.1"
     assert (
@@ -2241,16 +2255,35 @@ def test_every_docs_route_has_canonical_and_social_metadata() -> None:
     for route in _DOCS_ROUTES:
         route_key = route.path.strip("/") or "index"
         page = app._unevaluated_pages[route_key]
-        canonical = f"{PUBLIC_DOCS_URL}{route.path}"
         rendered_meta = "\n".join(str(component) for component in page.meta)
 
-        assert page.context == {"sitemap": {"loc": canonical}}
-        assert page.image == SOCIAL_IMAGE_URL
-        assert f'href:"{canonical}",rel:"canonical"' in rendered_meta
+        assert page.context == {"sitemap": None}
+        assert page.image is None
+        assert 'rel:"canonical"' not in rendered_meta
         assert 'property:"og:title"' in rendered_meta
-        assert f'content:"{canonical}",property:"og:url"' in rendered_meta
+        assert 'property:"og:url"' not in rendered_meta
         assert 'content:"summary_large_image",name:"twitter:card"' in rendered_meta
-        assert f'content:"{SOCIAL_IMAGE_URL}",name:"twitter:image"' in rendered_meta
+        assert 'name:"twitter:image"' not in rendered_meta
+
+
+def test_explicit_production_origin_builds_owned_route_urls() -> None:
+    """Construct public routes only from an explicitly configured HTTPS base."""
+    origin = "https://docs.curatelabs.com/xyg"
+
+    assert public_docs_url("/charts/scatter/", origin=origin) == (
+        "https://docs.curatelabs.com/xyg/charts/scatter/"
+    )
+    assert public_docs_url("/llms.txt", origin=origin) == (
+        "https://docs.curatelabs.com/xyg/llms.txt"
+    )
+    assert agent_docs_url("/llms.txt", origin=origin) == (
+        "https://docs.curatelabs.com/xyg/llms.txt"
+    )
+    assert agent_docs_url("/llms.txt") == "/docs/xy/llms.txt"
+    assert public_docs_url("/charts/scatter/") is None
+
+    with pytest.raises(ValueError, match="HTTPS origin"):
+        public_docs_url("/charts/scatter/", origin="http://docs.curatelabs.com")
 
 
 def test_component_api_uses_generated_shared_tables() -> None:

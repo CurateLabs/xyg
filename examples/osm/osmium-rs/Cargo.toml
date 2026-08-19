@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Fast, multithreaded extraction of node coordinates from OpenStreetMap .osm.pbf into raw f64 columns."
 license = "Apache-2.0"
-repository = "https://github.com/reflex-dev/osmpbf-nodes"
+repository = "https://github.com/CurateLabs/xyg/tree/main/examples/osm/osmium-rs"
 keywords = ["openstreetmap", "osm", "pbf", "geo", "parser"]
 categories = ["parser-implementations", "science::geo"]
 

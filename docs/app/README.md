@@ -71,3 +71,10 @@ uv run --no-sync python scripts/check_html_routes.py
 
 The frontend is mounted at `/docs/xy`; preserve that prefix in canonical URLs,
 the sitemap, Markdown aliases, and internal documentation links.
+
+Set `XY_DOCS_PUBLIC_URL` to the CurateLabs-owned HTTPS production origin when
+building a deployment. Without that deployment configuration, preview builds
+deliberately omit canonical, sitemap, social-image, and public agent URLs; a
+repository page is not treated as a deployable documentation origin. Generated
+Markdown still links to its co-located `/docs/xy/llms.txt` asset by host-relative
+path, which remains truthful in local preview and any eventual deployment.

@@ -8,7 +8,7 @@ fixes.
 ## Reporting a vulnerability
 
 Please **do not** open a public issue for security reports. Instead, use
-[GitHub private vulnerability reporting](https://github.com/reflex-dev/xy/security/advisories/new)
+[GitHub private vulnerability reporting](https://github.com/CurateLabs/xyg/security/advisories/new)
 on this repository. Reports are acknowledged within a week.
 
 ## Standalone HTML Safety And CSP

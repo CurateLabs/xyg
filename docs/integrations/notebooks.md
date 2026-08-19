@@ -108,7 +108,7 @@ its own event surface.
 ## Run the Examples on Binder
 
 The repository's example notebooks run hosted, with no local install, on
-[mybinder.org](https://mybinder.org/v2/gh/reflex-dev/xy/main?urlpath=lab/tree/examples)
+[mybinder.org](https://mybinder.org/v2/gh/CurateLabs/xyg/main?urlpath=lab/tree/examples)
 (the launch badge in the README opens the same link). Binder compiles XY from
 source at the launched ref — including the native Rust core — so the
 notebooks match the code of that revision; this link and the badge launch
