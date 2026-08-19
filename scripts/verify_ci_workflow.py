@@ -121,8 +121,54 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
 
     values: list[str] = []
     direct_axes = []
+    include_unsafe = False
+    in_include = False
     for index, line in enumerate(matrix_lines):
         parsed = _direct_yaml_mapping(line)
+        if parsed is not None and parsed[0] == 8 and parsed[1] == "include":
+            in_include = True
+            include_unsafe = include_unsafe or parsed[2] or bool(parsed[3].strip())
+            continue
+        if in_include and line.strip() and len(line) - len(line.lstrip()) <= 8:
+            in_include = False
+        if in_include:
+            flow_item = line.strip()
+            if flow_item.startswith("- {"):
+                if not flow_item.endswith("}"):
+                    include_unsafe = True
+                    continue
+                os_values: list[str] = []
+                for match in re.finditer(
+                    rf"(?:^|[,{{])\s*(?P<key>{_YAML_KEY_TOKEN})\s*:\s*"
+                    r"(?P<value>[^,}]+)",
+                    flow_item.removeprefix("- "),
+                ):
+                    key, unsafe = _decode_yaml_key(match.group("key"))
+                    include_unsafe = include_unsafe or unsafe
+                    if key == "os":
+                        os_values.append(match.group("value").strip().strip("\"'"))
+                if len(os_values) != 1 or os_values[0].startswith("${{"):
+                    include_unsafe = True
+                else:
+                    values.extend(os_values)
+                continue
+            item = _sequence_item_yaml_mapping(line)
+            continuation = _direct_yaml_mapping(line)
+            include_mapping = item or (
+                continuation if continuation is not None and continuation[0] == 12 else None
+            )
+            if include_mapping is not None:
+                _indent, key, unsafe, value = include_mapping
+                include_unsafe = include_unsafe or unsafe
+                if key == "os":
+                    if not value.strip() or value.lstrip().startswith(("{", "[", "${{")):
+                        include_unsafe = True
+                    else:
+                        values.append(value.strip().strip("\"'"))
+                continue
+            if line.strip() and len(line) - len(line.lstrip()) >= 10:
+                include_unsafe = True
+            continue
         if parsed is not None and parsed[0] == 8 and parsed[1] == "os":
             direct_axes.append(parsed)
             value = parsed[3].strip()
@@ -151,13 +197,15 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
                 if value.strip()
             )
             continue
-        for match in re.finditer(r"(?:^\s*-\s*\{\s*|^\s*-\s+|,\s*)os:\s*([^,}\]\s]+)", line):
-            values.append(match.group(1).strip("\"'"))
-    dynamic_axis = len(direct_axes) > 1 or (
-        len(direct_axes) == 1
-        and (
-            direct_axes[0][2]
-            or bool(direct_axes[0][3].strip() and not direct_axes[0][3].strip().startswith("["))
+    dynamic_axis = (
+        include_unsafe
+        or len(direct_axes) > 1
+        or (
+            len(direct_axes) == 1
+            and (
+                direct_axes[0][2]
+                or bool(direct_axes[0][3].strip() and not direct_axes[0][3].strip().startswith("["))
+            )
         )
     )
     return values, dynamic_axis
