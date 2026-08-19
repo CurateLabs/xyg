@@ -46,8 +46,8 @@ integration are still experimental and may change before a 1.0 release.
 ## Fork CI posture
 
 CurateLabs/xyg is a permanently divergent product repository, not a deployment
-branch of `reflex-dev/xy`. CI therefore retains only workflows whose runners,
-registries, credentials, and destinations belong to this repository:
+branch of `reflex-dev/xy`. CI therefore retains only workflows whose external
+integrations are owned or explicitly controlled by CurateLabs:
 
 - `ci.yml`, `docs.yml`, `binder.yml`, and `bazel.yml` are hard verification
   paths. Binder builds locally with repo2docker; Bazel runs on the configured

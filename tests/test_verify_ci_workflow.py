@@ -77,6 +77,59 @@ def test_bazel_workflow_requires_writable_output_user_root(tmp_path: Path) -> No
     assert any("output user root" in error for error in errors)
 
 
+def test_bazel_workflow_rejects_required_values_in_comments_or_steps(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
+    path = tmp_path / "bazel.yml"
+    path.write_text(
+        workflow.replace(
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n    env:\n      # Blacksmith",
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404-extra\n"
+            "    # runs-on: blacksmith-4vcpu-ubuntu-2404\n"
+            "    env:\n"
+            "      # Blacksmith",
+        )
+        .replace(
+            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
+            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv-extra\n"
+            "      # UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
+        )
+        .replace(
+            "      XDG_CACHE_HOME: ${{ github.workspace }}/.cache",
+            "      # XDG_CACHE_HOME moved to a step and is therefore too late\n"
+            "    steps:\n"
+            "      - name: Misplaced cache\n"
+            "        env:\n"
+            "          XDG_CACHE_HOME: ${{ github.workspace }}/.cache\n"
+            "        run: true",
+        )
+        .replace("    steps:\n      - uses:", "      - uses:", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_bazel_workflow(path)
+
+    assert any("configured Blacksmith runner" in error for error in errors)
+    assert any("uv's cache" in error for error in errors)
+    assert any("output user root" in error for error in errors)
+
+
+def test_bazel_workflow_rejects_runner_context_in_any_job_env_value(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
+    path = tmp_path / "bazel.yml"
+    path.write_text(
+        workflow.replace(
+            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
+            "      UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv\n"
+            "      OTHER_CACHE: ${{ runner.temp }}/other",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_bazel_workflow(path)
+
+    assert any("runner context" in error for error in errors)
+
+
 def test_ci_workflow_requires_locked_reflex_environment(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"

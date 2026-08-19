@@ -1208,14 +1208,28 @@ def validate_bazel_workflow(path: Path = DEFAULT_BAZEL_WORKFLOW) -> list[str]:
     if not bazel:
         errors.append("Bazel workflow missing required bazel job")
         return errors
-    if "runs-on: blacksmith-4vcpu-ubuntu-2404" not in bazel:
+
+    runner_values, runner_unsafe = _direct_yaml_key_values(bazel, "runs-on", indent=4)
+    if runner_unsafe or runner_values != ["blacksmith-4vcpu-ubuntu-2404"]:
         errors.append("Bazel job must run on the configured Blacksmith runner")
-    if "UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv" not in bazel:
+
+    env = _unique_mapping_block(bazel, "env", indent=4)
+    uv_values, uv_unsafe = _direct_yaml_key_values(env or "", "UV_CACHE_DIR", indent=6)
+    if env is None or uv_unsafe or uv_values != ["${{ github.workspace }}/.cache/uv"]:
         errors.append("Bazel job must place uv's cache in the writable GitHub workspace")
-    if "XDG_CACHE_HOME: ${{ github.workspace }}/.cache" not in bazel:
+    xdg_values, xdg_unsafe = _direct_yaml_key_values(env or "", "XDG_CACHE_HOME", indent=6)
+    if env is None or xdg_unsafe or xdg_values != ["${{ github.workspace }}/.cache"]:
         errors.append("Bazel job must place its output user root in the writable workspace cache")
-    if "UV_CACHE_DIR: ${{ runner." in bazel:
-        errors.append("Bazel job-level env cannot use the unavailable runner context")
+
+    if env is not None:
+        for line in _yaml_code_lines(env):
+            indent = len(line) - len(line.lstrip(" "))
+            match = _DIRECT_YAML_KEY.fullmatch(line[indent:])
+            if indent != 6 or match is None:
+                continue
+            if re.search(r"\$\{\{\s*runner\.", match.group("value")):
+                errors.append("Bazel job-level env cannot use the unavailable runner context")
+                break
     return errors
 
 
