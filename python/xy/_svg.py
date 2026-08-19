@@ -830,6 +830,8 @@ def _density_column(blob: bytes, meta: dict[str, Any], density: dict[str, Any]) 
 class _Scale:
     """value -> px for one axis (linear / time-in-ms / log / category)."""
 
+    _SCALAR_CACHE_LIMIT = 256
+
     def __init__(self, axis: dict[str, Any], px0: float, px1: float) -> None:
         self.kind = axis.get("kind", "linear")
         lo, hi = axis["range"]
@@ -842,6 +844,11 @@ class _Scale:
         self.constant = float(axis.get("constant", 1.0))
         self.data_lo, self.data_hi = float(lo), float(hi)
         self.px0, self.px1 = px0, px1
+        # Static exporters revisit the same ticks, baselines, and polar band
+        # edges across grid, labels, marks, and clips. Rust remains the only
+        # policy implementation; retain its scalar result so those consumers
+        # do not cross the ABI again for an identical scale operation.
+        self._scalar_cache: tuple[dict[str, float], ...] = ({}, {}, {})
         self.lo, self.hi = (float(value) for value in self.coord([lo, hi]))
 
     @property
@@ -849,7 +856,13 @@ class _Scale:
         return 1 if self.log else 2 if self.symlog else 0
 
     def _map(self, value: Any, operation: int) -> Any:
-        return _native.scene_scale_map(
+        scalar = np.ndim(value) == 0
+        scalar_value = float(value) if scalar else 0.0
+        cache_key = scalar_value.hex()
+        cache = self._scalar_cache[operation]
+        if scalar and cache_key in cache:
+            return cache[cache_key]
+        result = _native.scene_scale_map(
             value,
             self._kind_code,
             operation,
@@ -860,6 +873,9 @@ class _Scale:
             self.constant,
             self.nonpositive == "mask",
         )
+        if scalar and len(cache) < self._SCALAR_CACHE_LIMIT:
+            cache[cache_key] = float(result)
+        return result
 
     def coord(self, v: Any) -> Any:
         return self._map(v, 0)

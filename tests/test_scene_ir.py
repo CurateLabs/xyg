@@ -57,6 +57,25 @@ def test_static_log_scale_preserves_clip_mask_and_nan_behavior() -> None:
     assert np.isnan(masked.coord(0.0))
 
 
+def test_static_scale_reuses_rust_scalar_results_across_export_consumers(monkeypatch) -> None:
+    calls = 0
+    original = _native.scene_scale_map
+
+    def recording(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(_native, "scene_scale_map", recording)
+    scale = _svg._Scale({"range": [0.0, 10.0]}, 20.0, 120.0)
+    assert scale(5.0) == scale(5.0) == 70.0
+    assert scale.coord(5.0) == scale.coord(5.0) == 5.0
+    assert scale.value(5.0) == scale.value(5.0) == 5.0
+    # One vector call initializes the transformed domain, then one Rust call
+    # per distinct scalar operation; repeated consumers are cache hits.
+    assert calls == 4
+
+
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
     assert _native.scene_version() == 1
     assert (
