@@ -63,7 +63,7 @@ def _markdown_directive() -> str:
 def _strip_markdown_directive(content: str) -> str:
     """Remove the generated discovery directive from combined page content."""
     directive = _markdown_directive()
-    if content.startswith(directive):
+    if directive and content.startswith(directive):
         return content.removeprefix(directive).lstrip()
     return content
 

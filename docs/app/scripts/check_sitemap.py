@@ -46,6 +46,12 @@ def main() -> None:
         APP_ROOT / ".web" / "build" / "client" / "docs" / "xy" / "sitemap.xml",
     )
     expected = expected_locations()
+    if not PUBLIC_DOCS_URL:
+        for sitemap_path in sitemap_paths:
+            if sitemap_path.is_file() and sitemap_locations(sitemap_path):
+                msg = f"Preview build must not publish sitemap locations: {sitemap_path}"
+                raise RuntimeError(msg)
+        return
     for sitemap_path in sitemap_paths:
         actual = sitemap_locations(sitemap_path)
         if actual != expected:
