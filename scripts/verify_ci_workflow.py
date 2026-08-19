@@ -1398,6 +1398,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "a tag/version/CHANGELOG agreement gate, and the fork publish guards (#13)",
         "needs: [wheels, sdist, wasm]",
         "environment: pypi",
+        "contents: read",
         "id-token: write",
         "scripts/check_release_version.py",
         "actions/download-artifact@",

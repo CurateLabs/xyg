@@ -1786,6 +1786,19 @@ def test_release_workflow_rejects_missing_publish_opt_in_variable(tmp_path: Path
     assert any("is not gated by the dry-run predicate" in error for error in errors)
 
 
+def test_release_publish_job_keeps_checkout_read_permission(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    prefix, separator, publish_and_after = workflow.partition("  publish:\n")
+    assert separator and "      contents: read\n" in publish_and_after
+    publish_and_after = publish_and_after.replace("      contents: read\n", "", 1)
+    path = tmp_path / "publish.yaml"
+    path.write_text(prefix + separator + publish_and_after, encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("publish job" in error and "contents: read" in error for error in errors)
+
+
 def test_release_workflow_rejects_non_retryable_pypi_publish(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
