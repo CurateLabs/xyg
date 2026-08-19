@@ -496,4 +496,81 @@ mod tests {
             Some(SceneError::NegativeSize)
         );
     }
+
+    #[test]
+    fn scatter_scene_rejects_limit_and_invalid_paint() {
+        let too_many = vec![0.0; MAX_SCENE_MARKS + 1];
+        assert_eq!(
+            ScatterScene::new(&too_many, &[], &[], &[], &[], &[], &[], None, None, None,).err(),
+            Some(SceneError::Limit)
+        );
+        assert_eq!(
+            ScatterScene::new(
+                &[1.0],
+                &[1.0],
+                &[1.0],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[0],
+                None,
+                Some("not-a-color"),
+                None,
+            )
+            .err(),
+            Some(SceneError::InvalidPaint)
+        );
+    }
+
+    #[test]
+    fn scatter_scene_hides_marks_and_preserves_constant_css_paint() {
+        let scene = ScatterScene::new(
+            &[10.0, 20.0],
+            &[11.0, 21.0],
+            &[8.0, 10.0],
+            &[37, 99, 235, 255, 239, 68, 68, 128],
+            &[0; 8],
+            &[0.0, 0.0],
+            &[ScatterSymbol::Circle as u8, ScatterSymbol::Circle as u8],
+            Some(&[0, 1]),
+            Some("var(--brand)"),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            scene.to_svg(),
+            "<g><circle cx=\"20\" cy=\"21\" r=\"5\" fill=\"var(--brand)\" fill-opacity=\"0.5\"/></g>"
+        );
+
+        let mut escaped = String::new();
+        push_escaped_attribute(&mut escaped, "&<>\"");
+        assert_eq!(escaped, "&amp;&lt;&gt;&quot;");
+    }
+
+    #[test]
+    fn symbol_shape_families_have_deterministic_svg() {
+        let mut outputs = Vec::new();
+        for symbol in [
+            ScatterSymbol::Square,
+            ScatterSymbol::Diamond,
+            ScatterSymbol::Triangle,
+            ScatterSymbol::Cross,
+            ScatterSymbol::X,
+            ScatterSymbol::Pentagon,
+            ScatterSymbol::Star,
+        ] {
+            let mut output = String::new();
+            push_symbol(&mut output, symbol, 10.0, 20.0, 2.0);
+            outputs.push(output);
+        }
+        assert!(outputs.iter().map(String::as_str).eq([
+            "<rect x=\"8\" y=\"18\" width=\"4\" height=\"4\"",
+            "<path d=\"M 10 17.17 L 12.83 20 L 10 22.83 L 7.17 20 Z\"",
+            "<path d=\"M 10 18 L 12 22 L 8 22 Z\"",
+            "<path d=\"M 9.32 18 H 10.68 V 19.32 H 12 V 20.68 H 10.68 V 22 H 9.32 V 20.68 H 8 V 19.32 H 9.32 Z\"",
+            "<path d=\"M 8.56 18 L 10 19.44 L 11.44 18 L 12 18.56 L 10.56 20 L 12 21.44 L 11.44 22 L 10 20.56 L 8.56 22 L 8 21.44 L 9.44 20 L 8 18.56 Z\"",
+            "<path d=\"M 10 18 L 11.9 19.38 L 11.18 21.62 L 8.82 21.62 L 8.1 19.38 Z\"",
+            "<path d=\"M 10 18 L 10.53 19.27 L 11.9 19.38 L 10.86 20.28 L 11.18 21.62 L 10 20.9 L 8.82 21.62 L 9.14 20.28 L 8.1 19.38 L 9.47 19.27 Z\"",
+        ]));
+    }
 }

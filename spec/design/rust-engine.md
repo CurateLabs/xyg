@@ -312,7 +312,8 @@ formats only; the SVG and PDF export paths have their own text contracts.
   has landed: `crates/xyg-core/src/lib.rs` defines `ffi_guard(sentinel, body)`
   — `catch_unwind(AssertUnwindSafe(body)).unwrap_or(sentinel)` — and wraps
   every exported entry point that does work in it (every `extern "C" fn`
-  except `xyg_abi_version`, which returns a constant and needs no shield),
+  except `xyg_abi_version` and `xyg_scene_version`, which return constants and
+  need no shield),
   so any panic becomes that entry point's error sentinel instead of unwinding
   across `extern "C"`. Output buffers may be partially written on that path,
   exactly like the existing invalid-argument paths. Still outstanding:

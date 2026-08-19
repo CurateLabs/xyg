@@ -28,7 +28,8 @@ Version 1 contains a screen-space scatter scene with one record per mark:
 - an optional visibility byte.
 
 Rust validates equal record counts, finite coordinates and sizes, non-negative
-diameter/stroke width, and the `DIRECT_SOFT_CEILING` bound of 2,000,000 marks.
+diameter/stroke width, and the `MAX_SCENE_MARKS` bound of 2,000,000 marks, which
+mirrors the direct-render soft ceiling.
 It then owns stroke-inclusive radius calculation, every built-in marker shape,
 visibility, deterministic numeric formatting, and SVG fragment construction.
 Unknown symbol codes fail closed to the circle shape, matching the existing
