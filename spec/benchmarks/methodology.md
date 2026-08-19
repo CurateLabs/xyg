@@ -389,7 +389,11 @@ inputs deterministically include contiguous repeated-ID two-vertex polylines,
 nondegenerate forward and reversed rectangles, and rectangle endpoints outside
 the domain so clipping is exercised rather than merely claimed. Construction
 uses release-active assertions to count SVG primitives and structurally parse
-raster opcodes, failing the setup if data lines or rectangles disappear.
+raster opcodes, failing the setup if data lines or rectangles disappear. The
+encode row hides the batch behind `black_box` on every iteration, so the
+measurement always covers the shipped encoder instead of a copy the optimizer
+specialized to the fixture's constant axes; without it the row moves whenever
+an unrelated call site changes an inlining decision.
 Run them through the repository CodSpeed harness; hosted CodSpeed remains the
 performance authority.
 

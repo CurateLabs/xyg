@@ -210,7 +210,9 @@ fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
         &y1,
     )
     .unwrap();
-    bencher.bench(|| black_box(batch.encode()));
+    // The batch is opaque to the optimizer so the measurement always covers the
+    // real encoder, never a copy specialized to this fixture's constant axes.
+    bencher.bench(|| black_box(black_box(&batch).encode()));
 }
 
 fn scene_v3_document(n: usize) -> SceneDocument {

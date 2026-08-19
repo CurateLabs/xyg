@@ -107,6 +107,27 @@ impl AxisScale {
     pub fn pixel(self, value: f64) -> f64 {
         self.px0 + (self.coord(value) - self.coord_lo) / self.coord_span * self.px_delta
     }
+
+    /// Whether `coord` is the identity, i.e. the pixel mapping needs no
+    /// per-value transform. Batch encoding resolves this once per axis instead
+    /// of dispatching on the scale kind for every coordinate.
+    #[inline(always)]
+    fn is_identity_coord(self) -> bool {
+        matches!(self.kind, ScaleKind::Linear)
+    }
+
+    /// Pixel mapping with the scale-kind dispatch already resolved by the
+    /// caller through `is_identity_coord`. The identity path performs exactly
+    /// the arithmetic `pixel` performs for `Linear`, so encoded coordinates
+    /// stay bit-identical.
+    #[inline(always)]
+    fn pixel_resolved(self, value: f64, identity: bool) -> f64 {
+        if identity {
+            self.px0 + (value - self.coord_lo) / self.coord_span * self.px_delta
+        } else {
+            self.pixel(value)
+        }
+    }
 }
 
 pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneError> {
@@ -527,30 +548,45 @@ impl<'a> SceneBatch<'a> {
             out.extend_from_slice(&self.stroke_width[index].to_le_bytes());
         }
 
-        for index in 0..self.kinds.len() {
-            let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
+        // `new` proved every column has exactly `len` entries; re-slicing here
+        // states that once so the record loop reads each column without a
+        // per-field bounds check.
+        let len = self.kinds.len();
+        let kinds = &self.kinds[..len];
+        let stable_ids = &self.stable_ids[..len];
+        let style_refs = &self.style_refs[..len];
+        let symbols = &self.symbols[..len];
+        let diameter = &self.diameter[..len];
+        let x0 = &self.x0[..len];
+        let y0 = &self.y0[..len];
+        let x1 = &self.x1[..len];
+        let y1 = &self.y1[..len];
+        let (x_scale, y_scale) = (self.x_scale, self.y_scale);
+        let (x_identity, y_identity) = (x_scale.is_identity_coord(), y_scale.is_identity_coord());
+        for index in 0..len {
+            let kind = SceneRecordKind::from_code(kinds[index]).expect("validated kind");
             let mapped = match kind {
                 SceneRecordKind::Scatter | SceneRecordKind::Polyline => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
+                    x_scale.pixel_resolved(x0[index], x_identity),
+                    y_scale.pixel_resolved(y0[index], y_identity),
                     0.0,
                     0.0,
                 ],
                 SceneRecordKind::Rect => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
-                    self.x_scale.pixel(self.x1[index]),
-                    self.y_scale.pixel(self.y1[index]),
+                    x_scale.pixel_resolved(x0[index], x_identity),
+                    y_scale.pixel_resolved(y0[index], y_identity),
+                    x_scale.pixel_resolved(x1[index], x_identity),
+                    y_scale.pixel_resolved(y1[index], y_identity),
                 ],
             };
             let visible = mapped.iter().all(|value| value.is_finite())
                 && match kind {
                     SceneRecordKind::Polyline => true,
                     SceneRecordKind::Scatter => {
-                        let style = self.style_refs[index] as usize;
+                        let style = style_refs[index] as usize;
                         let geometry = MarkerGeometry::new(
-                            ScatterSymbol::from_code(self.symbols[index]),
-                            self.diameter[index],
+                            ScatterSymbol::from_code(symbols[index]),
+                            diameter[index],
                             self.stroke_width[style],
                         );
                         mapped[0] + geometry.extent_x >= self.layout.left
@@ -565,12 +601,6 @@ impl<'a> SceneBatch<'a> {
                             && mapped[1].max(mapped[3]) >= self.layout.top
                     }
                 };
-            out.push(kind as u8);
-            out.push(u8::from(visible));
-            out.push(self.symbols[index]);
-            out.push(0);
-            out.extend_from_slice(&self.style_refs[index].to_le_bytes());
-            out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
             let record_coordinates = if !visible {
                 [0.0; 4]
             } else {
@@ -586,10 +616,20 @@ impl<'a> SceneBatch<'a> {
                     ],
                 }
             };
-            for value in record_coordinates {
-                out.extend_from_slice(&value.to_le_bytes());
+            // Records are fixed width, so stage one in a constant-size frame
+            // and append it with a single bounded copy instead of thirteen
+            // capacity-checked writes.
+            let mut frame = [0u8; SCENE_BATCH_RECORD_BYTES];
+            frame[0] = kind as u8;
+            frame[1] = u8::from(visible);
+            frame[2] = symbols[index];
+            frame[4..8].copy_from_slice(&style_refs[index].to_le_bytes());
+            frame[8..16].copy_from_slice(&stable_ids[index].to_le_bytes());
+            for (slot, value) in frame[16..48].chunks_exact_mut(8).zip(record_coordinates) {
+                slot.copy_from_slice(&value.to_le_bytes());
             }
-            out.extend_from_slice(&self.diameter[index].to_le_bytes());
+            frame[48..].copy_from_slice(&diameter[index].to_le_bytes());
+            out.extend_from_slice(&frame);
         }
         out
     }
