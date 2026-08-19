@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 61;
+pub const ABI_VERSION: u32 = 62;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -142,6 +142,61 @@ pub unsafe extern "C" fn xyg_scene_axis_ticks(
     *out_labeled_len = result.labeled.len();
     *out_step = result.step;
     required
+}
+
+/// Apply a canonical scene scale to a typed f64 buffer. `kind` is 0 linear,
+/// 1 log, or 2 symlog. `operation` is 0 domain-to-scale coordinate, 1
+/// domain-to-pixel, or 2 scale-coordinate-to-domain. Returns zero on success.
+///
+/// # Safety
+/// Input and output must address `len` readable/writable f64 values and must
+/// not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_scale_map(
+    values: *const f64,
+    len: usize,
+    kind: u32,
+    operation: u32,
+    lo: f64,
+    hi: f64,
+    px0: f64,
+    px1: f64,
+    constant: f64,
+    mask_nonpositive: i32,
+    out: *mut f64,
+) -> i32 {
+    if len > scene::MAX_SCENE_MARKS
+        || !matches!(mask_nonpositive, 0 | 1)
+        || operation > 2
+        || (len > 0 && (values.is_null() || out.is_null()))
+    {
+        return 1;
+    }
+    let kind = match kind {
+        0 => scene::ScaleKind::Linear,
+        1 => scene::ScaleKind::Log,
+        2 => scene::ScaleKind::SymLog,
+        _ => return 1,
+    };
+    let Ok(scale) = scene::AxisScale::new(kind, lo, hi, px0, px1, constant, mask_nonpositive != 0)
+    else {
+        return 1;
+    };
+    if len == 0 {
+        return 0;
+    }
+    let input = std::slice::from_raw_parts(values, len);
+    let output = std::slice::from_raw_parts_mut(out, len);
+    ffi_guard(1, || {
+        for (destination, value) in output.iter_mut().zip(input) {
+            *destination = match operation {
+                0 => scale.coord(*value),
+                1 => scale.pixel(*value),
+                _ => scale.value(*value),
+            };
+        }
+        0
+    })
 }
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
@@ -5069,6 +5124,166 @@ pub unsafe extern "C" fn xyg_contourf_bands(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scene_scale_abi_rejects_malformed_boundaries() {
+        let input = [1.0f64];
+        let mut output = [0.0f64];
+        let call = |kind,
+                    operation,
+                    lo,
+                    hi,
+                    px0,
+                    px1,
+                    constant,
+                    mask,
+                    len,
+                    input_ptr,
+                    output_ptr| unsafe {
+            xyg_scene_scale_map(
+                input_ptr, len, kind, operation, lo, hi, px0, px1, constant, mask, output_ptr,
+            )
+        };
+
+        assert_eq!(
+            call(
+                99,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                99,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                2,
+                1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                std::ptr::null(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                1,
+                input.as_ptr(),
+                std::ptr::null_mut()
+            ),
+            1
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                0,
+                std::ptr::null(),
+                std::ptr::null_mut()
+            ),
+            0
+        );
+        assert_eq!(
+            call(
+                0,
+                1,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                scene::MAX_SCENE_MARKS + 1,
+                input.as_ptr(),
+                output.as_mut_ptr()
+            ),
+            1
+        );
+
+        for (lo, hi, px0, px1, constant) in [
+            (f64::NAN, 1.0, 0.0, 1.0, 1.0),
+            (0.0, f64::INFINITY, 0.0, 1.0, 1.0),
+            (0.0, 1.0, f64::NEG_INFINITY, 1.0, 1.0),
+            (0.0, 1.0, 0.0, f64::NAN, 1.0),
+            (0.0, 1.0, 0.0, 1.0, 0.0),
+            (0.0, 1.0, 0.0, 1.0, f64::NAN),
+        ] {
+            assert_eq!(
+                call(
+                    2,
+                    1,
+                    lo,
+                    hi,
+                    px0,
+                    px1,
+                    constant,
+                    0,
+                    1,
+                    input.as_ptr(),
+                    output.as_mut_ptr()
+                ),
+                1
+            );
+        }
+    }
 
     #[test]
     #[cfg(panic = "unwind")]

@@ -27,6 +27,86 @@ def test_linear_and_log_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> N
     assert calls == [(0, -0.9, 5.1, 6), (1, 0.1, 100.0, 6)]
 
 
+def test_static_scale_consumes_rust_scene_policy_for_all_numeric_kinds(monkeypatch) -> None:
+    calls: list[tuple[int, int]] = []
+    original = _native.scene_scale_map
+
+    def recording(values, kind, operation, *args, **kwargs):
+        calls.append((kind, operation))
+        return original(values, kind, operation, *args, **kwargs)
+
+    monkeypatch.setattr(_native, "scene_scale_map", recording)
+    linear = _svg._Scale({"kind": "linear", "range": [0.0, 10.0]}, 20.0, 120.0)
+    np.testing.assert_allclose(linear([0.0, 5.0, 10.0]), [20.0, 70.0, 120.0])
+    log = _svg._Scale({"kind": "linear", "scale": "log", "range": [0.1, 100.0]}, 0.0, 300.0)
+    np.testing.assert_allclose(log([0.1, 1.0, 100.0]), [0.0, 100.0, 300.0])
+    symlog = _svg._Scale(
+        {"kind": "linear", "scale": "symlog", "constant": 2.0, "range": [-10.0, 10.0]}, 0.0, 100.0
+    )
+    coordinates = symlog.coord([-4.0, 0.0, 4.0])
+    np.testing.assert_allclose(symlog.value(coordinates), [-4.0, 0.0, 4.0])
+    assert {(0, 1), (1, 1), (2, 0), (2, 2)} <= set(calls)
+
+
+def test_static_log_scale_preserves_clip_mask_and_nan_behavior() -> None:
+    clipped = _svg._Scale({"range": [0.1, 10.0], "scale": "log"}, 0.0, 100.0)
+    masked = _svg._Scale({"range": [0.1, 10.0], "scale": "log", "nonpositive": "mask"}, 0.0, 100.0)
+    clipped_values = np.asarray(clipped.coord([-1.0, 0.0, np.nan]))
+    assert clipped_values[:2].tolist() == [-300.0, -300.0]
+    assert np.isnan(clipped_values[2])
+    assert np.isnan(masked.coord(0.0))
+
+
+def test_static_scale_reuses_rust_scalar_results_across_export_consumers(monkeypatch) -> None:
+    calls = 0
+    original = _native.scene_scale_map
+
+    def recording(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(_native, "scene_scale_map", recording)
+    scale = _svg._Scale({"range": [0.0, 10.0]}, 20.0, 120.0)
+    assert scale(5.0) == scale(5.0) == 70.0
+    assert scale.coord(5.0) == scale.coord(5.0) == 5.0
+    assert scale.value(5.0) == scale.value(5.0) == 5.0
+    # One Rust call per distinct scalar operation; repeated consumers are
+    # cache hits. Rust owns transformed-domain preparation inside each batch.
+    assert calls == 3
+
+
+def test_static_scale_batches_vectors_and_seeds_followup_scalar_consumers(monkeypatch) -> None:
+    shapes: list[tuple[int, ...]] = []
+    original = _native.scene_scale_map
+
+    def recording(values, *args, **kwargs):
+        shapes.append(np.shape(values))
+        return original(values, *args, **kwargs)
+
+    monkeypatch.setattr(_native, "scene_scale_map", recording)
+    scale = _svg._Scale({"range": [0.0, 10.0]}, 20.0, 120.0)
+    np.testing.assert_allclose(scale([2.0, 4.0, 6.0]), [40.0, 60.0, 80.0])
+    # Tick/grid/label consumers revisit these positions individually. The
+    # vector's Rust results seed the bounded cache, so none adds an ABI call.
+    assert [scale(value) for value in (2.0, 4.0, 6.0)] == [40.0, 60.0, 80.0]
+    assert shapes == [(3,)]
+
+
+def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> None:
+    scale = _svg._Scale({"range": [0.0, 1000.0]}, 0.0, 1000.0)
+    scale(np.arange(250.0))
+    scale(np.concatenate((np.arange(240.0, 250.0), np.arange(250.0, 496.0))))
+    assert len(scale._scalar_cache[1]) == scale._SCALAR_CACHE_LIMIT
+
+    # A disjoint vector at the per-call limit cannot grow a full cache. Other
+    # operations retain independent hard bounds rather than sharing capacity.
+    scale(np.arange(1000.0, 1256.0))
+    scale.coord(np.arange(512.0))
+    scale.value(np.arange(512.0, 768.0))
+    assert all(len(cache) <= scale._SCALAR_CACHE_LIMIT for cache in scale._scalar_cache)
+
+
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
     assert _native.scene_version() == 1
     assert (

@@ -1453,6 +1453,58 @@ def scene_axis_ticks(
     return ticks[:written].tolist(), labeled[: labeled_len.value].tolist(), step.value
 
 
+def scene_scale_map(
+    values: npt.ArrayLike,
+    kind: int,
+    operation: int,
+    lo: float,
+    hi: float,
+    px0: float,
+    px1: float,
+    constant: float = 1.0,
+    mask_nonpositive: bool = False,
+) -> float | npt.NDArray[np.float64]:
+    """Apply the bounded canonical scene scale while preserving input shape."""
+    source = np.asarray(values, dtype=np.float64)
+    if source.ndim == 0:
+        scalar = ctypes.c_double(float(source))
+        result = ctypes.c_double()
+        status = _lib.xyg_scene_scale_map(
+            ctypes.byref(scalar),
+            1,
+            kind,
+            operation,
+            lo,
+            hi,
+            px0,
+            px1,
+            constant,
+            int(mask_nonpositive),
+            ctypes.byref(result),
+        )
+        if status != 0:
+            raise ValueError("invalid canonical scene scale")
+        return result.value
+    flat = np.ascontiguousarray(source).reshape(-1)
+    out = np.empty(len(flat), dtype=np.float64)
+    status = _lib.xyg_scene_scale_map(
+        _ptr_f64(flat) if len(flat) else 0,
+        len(flat),
+        kind,
+        operation,
+        lo,
+        hi,
+        px0,
+        px1,
+        constant,
+        int(mask_nonpositive),
+        _ptr_f64(out) if len(flat) else 0,
+    )
+    if status != 0:
+        raise ValueError("invalid canonical scene scale")
+    return out.reshape(source.shape)
+
+
 def scene_scatter_svg(
     x: npt.ArrayLike,
     y: npt.ArrayLike,

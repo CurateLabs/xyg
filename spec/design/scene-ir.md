@@ -35,16 +35,22 @@ visibility, deterministic numeric formatting, and SVG fragment construction.
 Unknown symbol codes fail closed to the circle shape, matching the existing
 compatibility fallback.
 
-The same schema owns bounded f64 tick records for linear and base-10 log axes.
+The same schema owns bounded f64 tick records for linear and base-10 log axes,
+plus vectorized linear, log, and symlog scale records.
 Each record carries all tick positions, the labeled subset, and the canonical
 step. Rust applies the existing 1/2/2.5/5/10 linear ladder and 1/2/5 log
 ladder, with a hard 200-tick ceiling. Python's SVG and raster exporters call
 this record through `_svg._linear_ticks` and `_svg._log_ticks`; Node exposes it
 as `axisTicks`. Invalid domains and target counts fail closed at the ABI.
+Scale records own domain-to-coordinate, domain-to-pixel, and inverse-coordinate
+mapping, including reversed pixel ranges, log clip/mask behavior, and symlog's
+positive constant. Python's `_Scale` and Node's `scaleMap` consume the same
+bounded f64 policy. Browser interaction retains its TypeScript mapping until
+the direct Rust/WASM execution boundary in #59 is available.
 
-Python calls this path from `_svg._scatter_marks`; Node exposes the same record
+Python calls the scatter path from `_svg._scatter_marks`; Node exposes the same record
 through `scatterSceneSvg`. Python remains responsible for ingest coercion,
-public validation text, channel-to-RGBA resolution, scales, and polar projection
+public validation text, channel-to-RGBA resolution, plot layout, and polar projection
 until those policies move in later slices. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
@@ -56,7 +62,7 @@ prove the public scatter exporter consumes the Rust scene and preserves its
 custom-marker fallback. Node tests consume the same scene fixture and expected
 fragment. ABI generation, parity, and version-first loading cover both hosts.
 
-Next slices add time/category/angular/symlog ticks and scale/layout records,
+Next slices add time/category/angular/symlog ticks and plot-layout records,
 line and area records, remaining mark
 families, chrome/legend/annotation records, and finally native whole-scene SVG,
 PNG, and PDF consumption. Browser DOM measurement and WebGL paint remain

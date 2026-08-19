@@ -381,7 +381,7 @@ class _Cmd:
             self._raw_d(float(meta.get("scale") or 1.0))
             self._raw_d(float(meta.get("offset", 0.0)))
         for axis in (sx, sy):
-            for value in (axis.lo, axis.hi, axis.px0, axis.px1):
+            for value in (axis.data_lo, axis.data_hi, axis.px0, axis.px1):
                 self._raw_d(float(value))
         self._raw_d(float(self.s))
 
@@ -422,7 +422,7 @@ class _Cmd:
             self._raw_d(float(meta.get("scale") or 1.0))
             self._raw_d(float(meta.get("offset", 0.0)))
         for axis in (sx, sy):
-            for value in (axis.lo, axis.hi, axis.px0, axis.px1):
+            for value in (axis.data_lo, axis.data_hi, axis.px0, axis.px1):
                 self._raw_d(float(value))
         self._raw_d(float(self.s))
 
@@ -552,12 +552,12 @@ class _Cmd:
         self.buf.append(_SMOOTH_STROKE)
         self._u32(n)
         for value in (
-            sx.lo,
-            sx.hi,
+            sx.data_lo,
+            sx.data_hi,
             sx.px0 * self.s,
             sx.px1 * self.s,
-            sy.lo,
-            sy.hi,
+            sy.data_lo,
+            sy.data_hi,
             sy.px0 * self.s,
             sy.px1 * self.s,
         ):
@@ -2755,6 +2755,10 @@ def _emit_bars(
         # Annular sectors, flattened: the display list has no arc opcode, so the
         # same wedge the SVG exporter draws with `A` ships as a polygon here.
         paint = _polar_wedge_fill(cmd, style, color, plot, fills)
+        radial = np.asarray(
+            polar.norm_radius(np.column_stack((np.minimum(v0, v1), np.maximum(v0, v1)))),
+            dtype=np.float64,
+        )
         for i in range(len(pos)):
             poly = polar_wedge_points(
                 polar,
@@ -2764,6 +2768,7 @@ def _emit_bars(
                 float(max(v0[i], v1[i])),
                 corner_radius=float(np.max(radii[i])) if len(radii) else 0.0,
                 wedge_gap=float(style.get("wedge_gap", 0.0) or 0.0),
+                normalized=(float(radial[i, 0]), float(radial[i, 1])),
             )
             if len(poly) < 3:
                 continue

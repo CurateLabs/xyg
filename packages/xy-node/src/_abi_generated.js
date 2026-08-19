@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 61;
-export const SIGNATURE_SHA256 = "9205575d38831abfff36045c2a3e3badb7f0d8762d7d409961d2050894aa0af5";
+export const ABI_VERSION = 62;
+export const SIGNATURE_SHA256 = "b749f6ec1bd690f4e0c0e2209f97fcba2470bc36a4f068c765bd7f99a9cf6844";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -81,6 +81,7 @@ export let xySampleMaskU32;
 export let xySampleRangeIndices;
 export let xySankeyLayout;
 export let xySceneAxisTicks;
+export let xySceneScaleMap;
 export let xySceneScatterSvg;
 export let xySceneVersion;
 export let xySectorTriangles;
@@ -187,6 +188,7 @@ export function bindGeneratedAbi(lib) {
   xySampleRangeIndices = lib.func("size_t xyg_sample_range_indices(size_t size, uint64_t seed, uint64_t threshold, uint32_t * out, size_t capacity)");
   xySankeyLayout = lib.func("int32_t xyg_sankey_layout(uint64_t n_nodes, uint64_t n_links, const uint64_t * sources, const uint64_t * targets, const double * values, double node_width, double node_padding, uint32_t align, uint32_t iterations, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_layer, double * out_value, double * out_source_y0, double * out_source_y1, double * out_target_y0, double * out_target_y1, uint32_t * out_layers, uint64_t * out_err_nodes, uint64_t * out_err_n)");
   xySceneAxisTicks = lib.func("size_t xyg_scene_axis_ticks(uint32_t kind, double lo, double hi, size_t target, double * out_ticks, double * out_labeled, size_t * out_labeled_len, double * out_step, size_t out_cap)");
+  xySceneScaleMap = lib.func("int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)");
   xySceneScatterSvg = lib.func("size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap)");
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");
   xySectorTriangles = lib.func("size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)");

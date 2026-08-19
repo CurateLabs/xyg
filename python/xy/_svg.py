@@ -830,6 +830,8 @@ def _density_column(blob: bytes, meta: dict[str, Any], density: dict[str, Any]) 
 class _Scale:
     """value -> px for one axis (linear / time-in-ms / log / category)."""
 
+    _SCALAR_CACHE_LIMIT = 256
+
     def __init__(self, axis: dict[str, Any], px0: float, px1: float) -> None:
         self.kind = axis.get("kind", "linear")
         lo, hi = axis["range"]
@@ -840,39 +842,57 @@ class _Scale:
         self.nonpositive = axis.get("nonpositive", "clip")
         self.symlog = axis.get("scale") == "symlog"
         self.constant = float(axis.get("constant", 1.0))
-        if self.log:
-            lo, hi = np.log10(max(lo, 1e-300)), np.log10(max(hi, 1e-300))
-        elif self.symlog:
-            lo, hi = self._symlog(lo), self._symlog(hi)
-        self.lo, self.hi = float(lo), float(hi)
+        self.data_lo, self.data_hi = float(lo), float(hi)
         self.px0, self.px1 = px0, px1
+        # Static exporters revisit the same ticks, baselines, and polar band
+        # edges across grid, labels, marks, and clips. Rust remains the only
+        # policy implementation; retain its scalar result so those consumers
+        # do not cross the ABI again for an identical scale operation.
+        self._scalar_cache: tuple[dict[str, float], ...] = ({}, {}, {})
+
+    @property
+    def _kind_code(self) -> int:
+        return 1 if self.log else 2 if self.symlog else 0
+
+    def _map(self, value: Any, operation: int) -> Any:
+        scalar = np.ndim(value) == 0
+        scalar_value = float(value) if scalar else 0.0
+        cache_key = scalar_value.hex()
+        cache = self._scalar_cache[operation]
+        if scalar and cache_key in cache:
+            return cache[cache_key]
+        result = _native.scene_scale_map(
+            value,
+            self._kind_code,
+            operation,
+            self.data_lo,
+            self.data_hi,
+            self.px0,
+            self.px1,
+            self.constant,
+            self.nonpositive == "mask",
+        )
+        if scalar and len(cache) < self._SCALAR_CACHE_LIMIT:
+            cache[cache_key] = float(result)
+        elif not scalar and np.size(value) <= self._SCALAR_CACHE_LIMIT:
+            for source, mapped in zip(np.ravel(value), np.ravel(result), strict=True):
+                key = float(source).hex()
+                if key in cache:
+                    continue
+                if len(cache) >= self._SCALAR_CACHE_LIMIT:
+                    break
+                cache[key] = float(mapped)
+        return result
 
     def coord(self, v: Any) -> Any:
-        if self.log:
-            values = np.asarray(v)
-            if self.nonpositive == "mask":
-                with np.errstate(divide="ignore", invalid="ignore"):
-                    return np.where(values > 0, np.log10(values), np.nan)
-            return np.log10(np.maximum(values, 1e-300))
-        return self._symlog(v) if self.symlog else v
-
-    def _symlog(self, v: Any) -> Any:
-        value = np.asarray(v)
-        return np.sign(value) * np.log1p(np.abs(value) / self.constant)
+        return self._map(v, 0)
 
     def __call__(self, v: Any) -> Any:
-        c = self.coord(v)
-        span = (self.hi - self.lo) or 1.0
-        return self.px0 + (c - self.lo) / span * (self.px1 - self.px0)
+        return self._map(v, 1)
 
     def value(self, c: Any) -> Any:
         """Inverse of `coord`: scale coordinate back to a data value."""
-        if self.log:
-            return np.power(10.0, c)
-        if self.symlog:
-            c = np.asarray(c)
-            return np.sign(c) * self.constant * np.expm1(np.abs(c))
-        return c
+        return self._map(c, 2)
 
     @property
     def affine(self) -> bool:
@@ -3094,15 +3114,16 @@ def _axis_tick_label_layout(
     # the same offset and pairwise gaps are unchanged.  Mirror JS exactly.
     axis_style = axis.get("style") or {}
     anchor = _tick_label_anchor(axis, axis_style, "center") if is_x else "center"
+    positions = np.asarray(scale(values), dtype=np.float64)
     labels = [
         {
             "value": value,
-            "pos": float(scale(value)),
+            "pos": float(position),
             "text": _tick_text(axis, value, step),
             "angle": base_angle,
             "row": 0,
         }
-        for value in values
+        for value, position in zip(values, positions, strict=True)
     ]
     if len(labels) <= 1:
         return labels
@@ -3273,6 +3294,7 @@ def polar_wedge_points(
     steps: Optional[int] = None,
     corner_radius: float = 0.0,
     wedge_gap: float = 0.0,
+    normalized: Optional[tuple[float, float]] = None,
 ) -> list[tuple[float, float]]:
     """An annular sector as a closed polygon — the flattened twin of
     `_polar_wedge_path`, for the raster display list (no arc opcode).
@@ -3292,7 +3314,11 @@ def polar_wedge_points(
     # axis `norm_radius` is decreasing, so norm(r1) < norm(r0) for r1 > r0 and
     # taking them positionally dropped every wedge from both static exports
     # while the shader (which min/maxes u_rrange) kept drawing them.
-    lo_frac, hi_frac = sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+    lo_frac, hi_frac = (
+        sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+        if normalized is None
+        else sorted(normalized)
+    )
     outer = min(1.0, max(floor, hi_frac)) * polar.radius
     inner = min(1.0, max(floor, lo_frac)) * polar.radius
     if outer <= 0.0 or outer <= inner:
@@ -3427,6 +3453,7 @@ def _polar_wedge_path(
     r1: float,
     corner_radius: float = 0.0,
     wedge_gap: float = 0.0,
+    normalized: Optional[tuple[float, float]] = None,
 ) -> str:
     """An annular sector as an SVG path: outer arc, inner arc reversed, closed.
 
@@ -3440,7 +3467,11 @@ def _polar_wedge_path(
     # axis `norm_radius` is decreasing, so norm(r1) < norm(r0) for r1 > r0 and
     # taking them positionally dropped every wedge from both static exports
     # while the shader (which min/maxes u_rrange) kept drawing them.
-    lo_frac, hi_frac = sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+    lo_frac, hi_frac = (
+        sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+        if normalized is None
+        else sorted(normalized)
+    )
     outer = min(1.0, max(floor, hi_frac)) * polar.radius
     inner = min(1.0, max(floor, lo_frac)) * polar.radius
     if outer <= 0.0 or outer <= inner:
@@ -3874,12 +3905,20 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
     hide_y = ya.get("tick_label_strategy") == "none"
     if polar is not None:
         _polar_grid(grid, polar, xt, yt, xstyle, ystyle, default_grid, hide_x, hide_y)
-    for v in xmt:
+    x_minor_px = (
+        np.asarray(sx(xmt), dtype=np.float64) if polar is None and xmt else [0.0] * len(xmt)
+    )
+    y_minor_px = (
+        np.asarray(sy(ymt), dtype=np.float64) if polar is None and ymt else [0.0] * len(ymt)
+    )
+    x_tick_px = np.asarray(sx(xt), dtype=np.float64) if polar is None and xt else [0.0] * len(xt)
+    y_tick_px = np.asarray(sy(yt), dtype=np.float64) if polar is None and yt else [0.0] * len(yt)
+    for _v, mapped in zip(xmt, x_minor_px, strict=True):
         if polar is not None:
             break
         if hide_x:
             break
-        px = float(sx(v))
+        px = float(mapped)
         grid.append(
             f'<line data-xy-grid="minor" x1="{_num(px)}" y1="{_num(plot["y"])}" '
             f'x2="{_num(px)}" y2="{_num(plot["y"] + plot["h"])}" '
@@ -3887,12 +3926,12 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f'stroke-width="{_num(float(xmstyle.get("grid_width", 1)))}"'
             f"{_axis_grid_attrs(xmstyle)}/>"
         )
-    for v in ymt:
+    for _v, mapped in zip(ymt, y_minor_px, strict=True):
         if polar is not None:
             break
         if hide_y:
             break
-        py = float(sy(v))
+        py = float(mapped)
         grid.append(
             f'<line data-xy-grid="minor" x1="{_num(plot["x"])}" y1="{_num(py)}" '
             f'x2="{_num(plot["x"] + plot["w"])}" y2="{_num(py)}" '
@@ -3900,12 +3939,12 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f'stroke-width="{_num(float(ymstyle.get("grid_width", 1)))}"'
             f"{_axis_grid_attrs(ymstyle)}/>"
         )
-    for v in xt:
+    for _v, mapped in zip(xt, x_tick_px, strict=True):
         if polar is not None:
             break
         if hide_x:
             break
-        px = float(sx(v))
+        px = float(mapped)
         grid.append(
             f'<line x1="{_num(px)}" y1="{_num(plot["y"])}" x2="{_num(px)}" '
             f'y2="{_num(plot["y"] + plot["h"])}" '
@@ -3913,12 +3952,12 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f'stroke-width="{_num(float(xstyle.get("grid_width", 1)))}"'
             f"{_axis_grid_attrs(xstyle)}/>"
         )
-    for v in yt:
+    for _v, mapped in zip(yt, y_tick_px, strict=True):
         if polar is not None:
             break
         if hide_y:
             break
-        py = float(sy(v))
+        py = float(mapped)
         grid.append(
             f'<line x1="{_num(plot["x"])}" y1="{_num(py)}" x2="{_num(plot["x"] + plot["w"])}" '
             f'y2="{_num(py)}" stroke="{escape(_css(ystyle.get("grid_color"), default_grid))}" '
@@ -5750,6 +5789,10 @@ def _bar_marks(
     if polar is not None:
         # Annular sectors. SVG has real arcs, so these are exact `A` commands
         # rather than the flattened polygons the raster path needs.
+        radial = np.asarray(
+            polar.norm_radius(np.column_stack((np.minimum(v0, v1), np.maximum(v0, v1)))),
+            dtype=np.float64,
+        )
         for i in range(len(pos)):
             d = _polar_wedge_path(
                 polar,
@@ -5759,6 +5802,7 @@ def _bar_marks(
                 float(max(v0[i], v1[i])),
                 float(np.max(radii[i])) if radii is not None and len(radii) else 0.0,
                 float(style.get("wedge_gap", 0.0) or 0.0),
+                normalized=(float(radial[i, 0]), float(radial[i, 1])),
             )
             if d:
                 out.append(f'<path d="{d}" fill="{fills[i]}"{extras[i]}/>')
