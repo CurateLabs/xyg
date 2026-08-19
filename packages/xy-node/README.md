@@ -33,7 +33,7 @@ Lookup never searches system library directories.
 
 ```bash
 XYG_NATIVE_LIB=/path/to/libxyg_core.dylib npm test
-XYG_EXPECTED_ABI=59 npm test   # optional ABI golden override
+XYG_EXPECTED_ABI=60 npm test   # optional ABI golden override
 ```
 
 ## Paint client (HTML / webviews)

@@ -16,13 +16,13 @@ XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ct
 
 | Policy | Files | Disposition | Destination |
 | --- | ---: | --- | --- |
-| `rust-engine` | 15 | `keep-rust` | current owner |
+| `rust-engine` | 16 | `keep-rust` | current owner |
 | `rust-c-abi` | 1 | `keep-rust` | current owner |
 | `python-host` | 52 | `keep-host` | current owner |
 | `python-scene-migration` | 22 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `python-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
 | `node-host` | 7 | `keep-host` | current owner |
-| `node-scene-migration` | 28 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
+| `node-scene-migration` | 29 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `node-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
 | `browser-client` | 16 | `keep-shared-client` | current owner |
 | `browser-scene-migration` | 1 | `move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
@@ -186,6 +186,7 @@ Forbidden:
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/raster.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/sankey.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/simd.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/stats.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/stream.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -245,6 +246,7 @@ Forbidden:
 | `packages/xy-node/src/native.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/pyramid.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/sankey.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/scene.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/vscode.js` | Node host | `node-host` | `keep-host` | — |
 | `python/reflex_xy/__init__.py` | Python host | `python-host` | `keep-host` | — |
 | `python/reflex_xy/app.py` | Python host | `python-host` | `keep-host` | — |

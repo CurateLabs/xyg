@@ -1423,6 +1423,78 @@ def svg_poly_path(x: npt.ArrayLike, y: npt.ArrayLike) -> str:
         capacity = written
 
 
+def scene_version() -> int:
+    """Return the canonical Rust scene-schema version."""
+    return int(_lib.xyg_scene_version())
+
+
+def scene_scatter_svg(
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
+    diameter: npt.ArrayLike,
+    fill_rgba: npt.ArrayLike,
+    stroke_rgba: npt.ArrayLike,
+    stroke_width: npt.ArrayLike,
+    symbols: npt.ArrayLike,
+    visible: Optional[npt.ArrayLike] = None,
+    fill_css: Optional[str] = None,
+    stroke_css: Optional[str] = None,
+) -> str:
+    """Build the versioned built-in scatter scene and serialize its SVG fragment."""
+    xa = _as_f64(np.asarray(x), "scene x")
+    ya = _as_f64(np.asarray(y), "scene y")
+    diameters = _as_f64(np.asarray(diameter), "scene diameter")
+    widths = _as_f64(np.asarray(stroke_width), "scene stroke_width")
+    symbol_codes = np.ascontiguousarray(symbols, dtype=np.uint8).reshape(-1)
+    fills = np.ascontiguousarray(fill_rgba, dtype=np.uint8).reshape(-1)
+    strokes = np.ascontiguousarray(stroke_rgba, dtype=np.uint8).reshape(-1)
+    n = len(xa)
+    expected = {
+        "y": len(ya),
+        "diameter": len(diameters),
+        "stroke_width": len(widths),
+        "symbols": len(symbol_codes),
+    }
+    bad = [name for name, length in expected.items() if length != n]
+    if bad or len(fills) != n * 4 or len(strokes) != n * 4:
+        raise ValueError("scatter scene arrays must have one record per mark and RGBA rows")
+    visibility: Optional[npt.NDArray[np.uint8]] = None
+    if visible is not None:
+        visibility = np.ascontiguousarray(visible, dtype=np.uint8).reshape(-1)
+        if len(visibility) != n:
+            raise ValueError("scene visibility must have one value per mark")
+    fill_css_bytes = np.frombuffer(fill_css.encode("utf-8"), dtype=np.uint8) if fill_css else None
+    stroke_css_bytes = (
+        np.frombuffer(stroke_css.encode("utf-8"), dtype=np.uint8) if stroke_css else None
+    )
+
+    capacity = max(32, n * 160)
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = _lib.xyg_scene_scatter_svg(
+            _ptr_f64(xa) if n else 0,
+            _ptr_f64(ya) if n else 0,
+            _ptr_f64(diameters) if n else 0,
+            _ptr_u8(fills) if n else 0,
+            _ptr_u8(strokes) if n else 0,
+            _ptr_f64(widths) if n else 0,
+            _ptr_u8(symbol_codes) if n else 0,
+            _ptr_u8(visibility) if visibility is not None and n else 0,
+            _ptr_u8(fill_css_bytes) if fill_css_bytes is not None else 0,
+            len(fill_css_bytes) if fill_css_bytes is not None else 0,
+            _ptr_u8(stroke_css_bytes) if stroke_css_bytes is not None else 0,
+            len(stroke_css_bytes) if stroke_css_bytes is not None else 0,
+            n,
+            out,
+            capacity,
+        )
+        if written == _USIZE_MAX:
+            raise ValueError("invalid canonical scatter scene")
+        if written <= capacity:
+            return out.raw[:written].decode("ascii")
+        capacity = written
+
+
 def marching_squares(
     z: npt.NDArray[np.float64],
     x_coords: npt.NDArray[np.float64],

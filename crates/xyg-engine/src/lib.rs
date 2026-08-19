@@ -17,6 +17,7 @@ pub mod kernels;
 pub mod lod_plan;
 pub mod raster;
 pub mod sankey;
+pub mod scene;
 pub mod stats;
 pub mod stream;
 pub mod svg;

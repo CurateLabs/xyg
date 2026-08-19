@@ -236,7 +236,7 @@ pyramid replaces per-view scans with per-view *tile composition*.
 > **Shipped vs target (don’t misread):** the Phase-3 kernel in `crates/xyg-engine/src/tiles.rs`
 > stores each level as **one contiguous grid** (`levels: Vec<Vec<u32>>` plus
 > optional `[u16; 4]` mean-color planes) — there is no `(level, tx, ty)`
-> addressing, tile fetch, or spill in the shipped ABI (59; `spec/abi/xyg-abi.json`). The 256²-tile
+> addressing, tile fetch, or spill in the shipped ABI (60; `spec/abi/xyg-abi.json`). The 256²-tile
 > decomposition described here is the **Phase-4 target layout**
 > ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) locked decision D1,
 > issue [#5](https://github.com/CurateLabs/graphforge-xy/issues/5)); the

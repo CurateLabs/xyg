@@ -7,7 +7,7 @@
 use std::fmt::Write;
 
 #[inline]
-fn push_num(out: &mut String, value: f64) {
+pub(crate) fn push_num(out: &mut String, value: f64) {
     let start = out.len();
     write!(out, "{value:.2}").expect("writing to String cannot fail");
     while out.as_bytes().last() == Some(&b'0') {

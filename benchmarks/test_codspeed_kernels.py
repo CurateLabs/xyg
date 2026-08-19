@@ -1039,6 +1039,14 @@ def test_native_png_export_heatmap(benchmark, core_2d_data):
     assert png.startswith(b"\x89PNG")
 
 
+def test_svg_export_scatter(benchmark, export_data):
+    """Canonical Rust scatter scene serialization for a 100k direct view."""
+    x, y = export_data
+    fig = xy.chart(xy.scatter(x=x, y=y)).figure()
+    svg = benchmark(fig.to_svg, width=720, height=420)
+    assert svg.startswith("<svg")
+
+
 def test_svg_export_line(benchmark, export_data):
     """Static SVG export shares decimation but exercises XML serialization."""
     x, y = export_data
