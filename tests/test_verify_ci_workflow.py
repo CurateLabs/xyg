@@ -1243,6 +1243,27 @@ def test_workflow_policy_accepts_blacksmith_and_matrix_runners(tmp_path: Path) -
     assert verify_ci_workflow.validate_workflow_hosting_policy(workflows) == []
 
 
+def test_ci_workflow_rejects_unbounded_or_missing_webkit_dependencies(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Install WebKit runtime libraries\n"
+            "        timeout-minutes: 10\n"
+            "        run: npx playwright install-deps webkit\n",
+            "      - name: Install WebKit runtime libraries\n        run: true\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("WebKit dependency install" in error for error in errors)
+
+
 def test_ci_workflow_rejects_missing_dashboard_reliability_smoke(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     block = (

@@ -286,6 +286,9 @@ jobs:
         run: |
           npm ci
           npx playwright install chromium firefox webkit
+      - name: Install WebKit runtime libraries
+        timeout-minutes: 10
+        run: npx playwright install-deps webkit
       - name: Build render client
         run: node js/build.mjs
       - name: Run accessibility and cross-browser conformance

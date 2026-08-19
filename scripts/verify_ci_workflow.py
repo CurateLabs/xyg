@@ -930,6 +930,14 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "timeout-minutes: 15",
         "npx playwright install chromium firefox webkit",
     )
+    _require_step_contains(
+        errors,
+        jobs.get("browser_conformance", ""),
+        "Install WebKit runtime libraries",
+        "bounded Blacksmith-only WebKit dependency install",
+        "timeout-minutes: 10",
+        "npx playwright install-deps webkit",
+    )
     _require_job_contains(
         errors,
         jobs,

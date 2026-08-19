@@ -63,8 +63,10 @@ integrations are owned or explicitly controlled by CurateLabs:
 
 Playwright browser artifacts are cached on Blacksmith. Install steps download
 only the pinned browsers and are time-bounded; they never invoke Playwright's
-`--with-deps` apt path. Blacksmith images carry the supported runner-image
-browser libraries, while real browser launches remain the dependency proof.
+coupled `--with-deps` path. Blacksmith images carry the Chromium and Firefox
+runner libraries. The three-engine job installs only WebKit's additional
+runtime libraries in a separate ten-minute-bounded step. Real browser launches
+remain the dependency proof.
 
 The inherited reflex.dev deployment workflows were removed. They built images
 for upstream AWS, Harbor, and Azure registries, changed
