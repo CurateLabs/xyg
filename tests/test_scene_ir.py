@@ -93,6 +93,20 @@ def test_static_scale_batches_vectors_and_seeds_followup_scalar_consumers(monkey
     assert shapes == [(2,), (3,)]
 
 
+def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> None:
+    scale = _svg._Scale({"range": [0.0, 1000.0]}, 0.0, 1000.0)
+    scale(np.arange(250.0))
+    scale(np.concatenate((np.arange(240.0, 250.0), np.arange(250.0, 496.0))))
+    assert len(scale._scalar_cache[1]) == scale._SCALAR_CACHE_LIMIT
+
+    # A disjoint vector at the per-call limit cannot grow a full cache. Other
+    # operations retain independent hard bounds rather than sharing capacity.
+    scale(np.arange(1000.0, 1256.0))
+    scale.coord(np.arange(512.0))
+    scale.value(np.arange(512.0, 768.0))
+    assert all(len(cache) <= scale._SCALAR_CACHE_LIMIT for cache in scale._scalar_cache)
+
+
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
     assert _native.scene_version() == 1
     assert (

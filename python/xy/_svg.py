@@ -877,7 +877,12 @@ class _Scale:
             cache[cache_key] = float(result)
         elif not scalar and np.size(value) <= self._SCALAR_CACHE_LIMIT:
             for source, mapped in zip(np.ravel(value), np.ravel(result), strict=True):
-                cache[float(source).hex()] = float(mapped)
+                key = float(source).hex()
+                if key in cache:
+                    continue
+                if len(cache) >= self._SCALAR_CACHE_LIMIT:
+                    break
+                cache[key] = float(mapped)
         return result
 
     def coord(self, v: Any) -> Any:
