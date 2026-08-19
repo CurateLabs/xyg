@@ -239,7 +239,10 @@ and tier discipline applies to them rather than a threshold.
 
 `.github/workflows/codspeed.yml` runs `cargo codspeed run --bench kernels` and
 `pytest benchmarks/test_codspeed_*.py --codspeed` under `CodSpeedHQ/action` in
-`simulation` mode, after asserting `xy.kernels.BACKEND == "native"`. The job
+`simulation` mode on CodSpeed's dedicated `codspeed-macro` bare-metal runner,
+after asserting `xy.kernels.BACKEND == "native"`. The dedicated runner keeps
+base and head measurements on one stable runtime instead of comparing mixed
+Blacksmith CPU generations. The job
 authenticates to CodSpeed over OIDC (`id-token: write`); it does not read a
 `CODSPEED_TOKEN` repository secret. Simulation counts instructions rather than
 wall time, so browser, install, and cross-library process benchmarks stay out of

@@ -45,6 +45,7 @@ ALLOWED_BLACKSMITH_RUNNERS = {
     "blacksmith-6vcpu-macos-15",
     "blacksmith-12vcpu-macos-15",
 }
+CODSPEED_HOSTED_RUNNER = "codspeed-macro"
 
 
 def _job_blocks(text: str) -> dict[str, str]:
@@ -1403,6 +1404,11 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     if missing_jobs:
         errors.append(f"CodSpeed workflow missing required jobs: {missing_jobs}")
 
+    benchmarks = jobs.get("benchmarks", "")
+    runner_values, runner_unsafe = _direct_yaml_key_values(benchmarks, "runs-on", indent=4)
+    if runner_unsafe or runner_values != [CODSPEED_HOSTED_RUNNER]:
+        errors.append("CodSpeed benchmarks job must run on the dedicated codspeed-macro runner")
+
     _require_workflow_contains(
         errors,
         text,
@@ -1733,10 +1739,15 @@ def validate_workflow_hosting_policy(
                 )
             if stripped.startswith("runs-on:"):
                 runner = stripped.partition(":")[2].strip()
-                if runner != "${{ matrix.os }}" and runner not in ALLOWED_BLACKSMITH_RUNNERS:
+                codspeed_hosted = path.name == "codspeed.yml" and runner == CODSPEED_HOSTED_RUNNER
+                if (
+                    runner != "${{ matrix.os }}"
+                    and runner not in ALLOWED_BLACKSMITH_RUNNERS
+                    and not codspeed_hosted
+                ):
                     errors.append(
-                        f"{path}:{lineno} jobs must use approved Blacksmith runners "
-                        f"(CodSpeed remains the hosted performance authority), got {runner}"
+                        f"{path}:{lineno} jobs must use approved Blacksmith runners or the "
+                        f"dedicated CodSpeed hosted runner, got {runner}"
                     )
     return errors
 

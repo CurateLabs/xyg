@@ -22,7 +22,9 @@ concurrency:
 jobs:
   benchmarks:
     name: Run benchmarks
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # Dedicated CodSpeed bare metal keeps base/head runtime identity stable;
+    # Blacksmith's general x64 pool can alternate Intel and AMD generations.
+    runs-on: codspeed-macro
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

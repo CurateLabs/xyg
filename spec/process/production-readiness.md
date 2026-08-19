@@ -57,8 +57,10 @@ integrations are owned or explicitly controlled by CurateLabs:
   Binder builds locally with repo2docker; Bazel keeps uv's cache inside the
   writable workspace.
 - `codspeed.yml` is the repository's native performance trend path and uses
-  a Blacksmith execution runner plus GitHub OIDC to the CurateLabs CodSpeed
-  project; CodSpeed remains the hosted performance authority.
+  the dedicated `codspeed-macro` bare-metal runner plus GitHub OIDC to the
+  CurateLabs CodSpeed project. This prevents base/head comparisons from
+  crossing Blacksmith Intel and AMD generations; CodSpeed remains the hosted
+  performance authority.
 - `benchmark-refresh.yml` and `ceiling-benchmark.yml` are manual evidence
   workflows. The ceiling sweep uses the billed
   `blacksmith-12vcpu-macos-15` Apple Silicon M4 runner (48 GB RAM).

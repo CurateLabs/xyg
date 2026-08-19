@@ -1190,6 +1190,22 @@ def test_codspeed_workflow_rejects_missing_native_kernel_benches(tmp_path: Path)
     assert any("CodSpeed benchmarks job" in error and "cargo-codspeed" in error for error in errors)
 
 
+def test_codspeed_workflow_requires_dedicated_hosted_runner(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "    runs-on: codspeed-macro\n",
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("dedicated codspeed-macro runner" in error for error in errors)
+
+
 def test_ci_workflow_rejects_missing_interaction_stress_smoke(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
@@ -1374,6 +1390,23 @@ def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
     assert any("approved Blacksmith runners" in error for error in errors)
+
+
+def test_workflow_policy_allows_codspeed_host_only_in_codspeed_workflow(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    content = "jobs:\n  benchmarks:\n    runs-on: codspeed-macro\n    steps: []\n"
+    (workflows / "codspeed.yml").write_text(content, encoding="utf-8")
+
+    assert verify_ci_workflow.validate_workflow_hosting_policy(workflows) == []
+
+    (workflows / "ci.yml").write_text(content, encoding="utf-8")
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+    assert any(
+        "ci.yml" in error and "dedicated CodSpeed hosted runner" in error for error in errors
+    )
 
 
 def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
