@@ -19,6 +19,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
+DEFAULT_BAZEL_WORKFLOW = ROOT / ".github" / "workflows" / "bazel.yml"
 DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 REQUIRED_CI_JOBS = {
@@ -1195,6 +1196,27 @@ def validate_workflow(path: Path = DEFAULT_WORKFLOW) -> list[str]:
     return validate_ci_workflow(path)
 
 
+def validate_bazel_workflow(path: Path = DEFAULT_BAZEL_WORKFLOW) -> list[str]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"cannot read Bazel workflow {path}: {exc}"]
+
+    errors: list[str] = []
+    jobs = _job_blocks(text)
+    bazel = jobs.get("bazel", "")
+    if not bazel:
+        errors.append("Bazel workflow missing required bazel job")
+        return errors
+    if "runs-on: blacksmith-4vcpu-ubuntu-2404" not in bazel:
+        errors.append("Bazel job must run on the configured Blacksmith runner")
+    if "UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv" not in bazel:
+        errors.append("Bazel job must place uv's cache in the writable GitHub workspace")
+    if "UV_CACHE_DIR: ${{ runner." in bazel:
+        errors.append("Bazel job-level env cannot use the unavailable runner context")
+    return errors
+
+
 def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -1483,11 +1505,13 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
 def validate_all_workflows(
     ci_path: Path = DEFAULT_CI_WORKFLOW,
     codspeed_path: Path = DEFAULT_CODSPEED_WORKFLOW,
+    bazel_path: Path = DEFAULT_BAZEL_WORKFLOW,
     release_path: Path = DEFAULT_RELEASE_WORKFLOW,
 ) -> list[str]:
     return [
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
+        *validate_bazel_workflow(bazel_path),
         *validate_release_workflow(release_path),
     ]
 
@@ -1502,6 +1526,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
     parser.add_argument("--ci-workflow", type=Path, default=DEFAULT_CI_WORKFLOW)
     parser.add_argument("--codspeed-workflow", type=Path, default=DEFAULT_CODSPEED_WORKFLOW)
+    parser.add_argument("--bazel-workflow", type=Path, default=DEFAULT_BAZEL_WORKFLOW)
     parser.add_argument("--release-workflow", type=Path, default=DEFAULT_RELEASE_WORKFLOW)
     parser.add_argument("--ci-only", action="store_true")
     parser.add_argument("--codspeed-only", action="store_true")
@@ -1528,11 +1553,13 @@ def main(argv: Optional[list[str]] = None) -> int:
         errors = validate_all_workflows(
             args.ci_workflow,
             args.codspeed_workflow,
+            args.bazel_workflow,
             args.release_workflow,
         )
         checked = [
             args.ci_workflow,
             args.codspeed_workflow,
+            args.bazel_workflow,
             args.release_workflow,
         ]
 

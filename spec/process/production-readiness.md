@@ -43,6 +43,29 @@ screen-bounded performance core, but the stable commitments today are narrower:
 The composition API, chart-type set, visual styling surface, and Reflex
 integration are still experimental and may change before a 1.0 release.
 
+## Fork CI posture
+
+CurateLabs/xyg is a permanently divergent product repository, not a deployment
+branch of `reflex-dev/xy`. CI therefore retains only workflows whose runners,
+registries, credentials, and destinations belong to this repository:
+
+- `ci.yml`, `docs.yml`, `binder.yml`, and `bazel.yml` are hard verification
+  paths. Binder builds locally with repo2docker; Bazel runs on the configured
+  Blacksmith fleet and keeps uv's cache inside the writable workspace.
+- `codspeed.yml` is the repository's native performance trend path and uses
+  GitHub OIDC through the CurateLabs CodSpeed project.
+- `benchmark-refresh.yml` and `ceiling-benchmark.yml` are manual evidence
+  workflows. The ceiling sweep requires the CurateLabs organization to enable
+  the billed macOS larger runner before dispatch.
+- `publish.yaml` is the guarded `xyg` release workflow described below.
+
+The inherited reflex.dev deployment workflows were removed. They built images
+for upstream AWS, Harbor, and Azure registries, changed
+`reflex-dev/helm-charts`, and polled the upstream `xy` PyPI project; they could
+only fail or mutate infrastructure outside this repository. XYG documentation
+deployment must be introduced as a new CurateLabs-owned contract rather than
+reenabling those workflows.
+
 ## Accessibility and Cross-Browser Conformance Status
 
 The current conformance tier covers a parallel semantic chart region and
@@ -374,16 +397,19 @@ publisher) publishes only from tagged releases, with layered guards:
 - **GitHub Release after PyPI.** Once the PyPI job succeeds, `github-release`
   creates the matching GitHub Release with generated notes and attaches the
   runtime-verified PyEmscripten wheel. It has `contents: write`; build and PyPI
-  jobs remain read-only except for the OIDC token. Production docs wait for
-  both this release and the exact `xyg` version on PyPI before promotion.
+  jobs remain read-only except for the OIDC token. There is currently no
+  production-documentation deployment workflow: the inherited reflex.dev
+  promotion path was removed because CurateLabs does not own its registries or
+  Helm destination. A future docs deployment needs a separate
+  CurateLabs-owned destination and release contract.
 
 `scripts/verify_ci_workflow.py` (`make check-ci`) pins these guards, and
 `tests/test_verify_ci_workflow.py` covers their removal.
 
 **Versioning decision.** The fork has its own `xyg-v*` tag line. Dunamai's
-default `v` pattern is narrowed with `pattern-prefix = "xyg-"`; the release and
-docs workflows trigger on the same prefix, and the release gate rejects bare
-`vX.Y.Z`. Inherited upstream tags (`v0.0.1`–`v0.0.6a2`), docs CalVer tags, and
+default `v` pattern is narrowed with `pattern-prefix = "xyg-"`; the release
+workflow triggers on that prefix, and the release gate rejects bare `vX.Y.Z`.
+Inherited upstream tags (`v0.0.1`–`v0.0.6a2`), docs CalVer tags, and
 `reflex-xy-v0.0.1`/`v0.0.2` remain on `origin` as historical provenance, but
 cannot determine an XYG version or trigger an XYG release. No destructive tag
 pruning is required. The first production tag starts the fork line at

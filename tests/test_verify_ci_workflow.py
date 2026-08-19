@@ -45,6 +45,23 @@ RELEASE_PUBLISH_GATE_LINE = (
 def test_ci_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_workflow() == []
     assert verify_ci_workflow.validate_ci_workflow() == []
+    assert verify_ci_workflow.validate_bazel_workflow() == []
+
+
+def test_bazel_workflow_rejects_runner_context_in_job_env(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
+    path = tmp_path / "bazel.yml"
+    path.write_text(
+        workflow.replace(
+            "UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv",
+            "UV_CACHE_DIR: ${{ runner.temp }}/uv-cache",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_bazel_workflow(path)
+
+    assert any("runner context" in error for error in errors)
 
 
 def test_ci_workflow_requires_locked_reflex_environment(tmp_path: Path) -> None:
