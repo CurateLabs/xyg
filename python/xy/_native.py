@@ -1548,6 +1548,14 @@ def scene_batch_encode(
             raise ValueError(f"{name} values exceed their unsigned integer range")
         return np.ascontiguousarray(raw, dtype=dtype)
 
+    def scene_u64_scalar(value: object, name: str) -> int:
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
+            raise ValueError(f"{name} must be an unsigned 64-bit integer")
+        converted = int(value)
+        if converted < 0 or converted > np.iinfo(np.uint64).max:
+            raise ValueError(f"{name} must be an unsigned 64-bit integer")
+        return converted
+
     kind_array = scene_uint(kinds, np.uint8, np.iinfo(np.uint8).max, "scene kinds")
     ids = scene_uint(stable_ids, np.uint64, np.iinfo(np.uint64).max, "scene stable_ids")
     styles = scene_uint(style_refs, np.uint32, np.iinfo(np.uint32).max, "scene style_refs")
@@ -1560,6 +1568,8 @@ def scene_batch_encode(
         _as_f64(np.asarray(value), name)
         for value, name in ((x0, "scene x0"), (y0, "scene y0"), (x1, "scene x1"), (y1, "scene y1"))
     ]
+    x_axis = (scene_u64_scalar(x_axis[0], "scene x_axis id"), *x_axis[1:])
+    y_axis = (scene_u64_scalar(y_axis[0], "scene y_axis id"), *y_axis[1:])
     n = len(kind_array)
     if any(len(value) != n for value in [ids, styles, diameters, symbol_codes, *coordinates]):
         raise ValueError("scene batch arrays must have equal length")

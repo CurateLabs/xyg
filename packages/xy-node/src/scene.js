@@ -37,6 +37,17 @@ function asUnsignedArray(value, name, max, TypedArray) {
   return TypedArray.from(items);
 }
 
+function asU64(value, name) {
+  if (typeof value === "bigint") {
+    if (value < 0n || value > USIZE_MAX_64) throw new RangeError(`${name} must be an unsigned 64-bit integer`);
+    return value;
+  }
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(`${name} number must be a non-negative safe integer; use BigInt above 2^53 - 1`);
+  }
+  return BigInt(value);
+}
+
 function asStableIds(value) {
   if (value instanceof BigUint64Array) return value;
   let items;
@@ -45,16 +56,7 @@ function asStableIds(value) {
   } catch (error) {
     throw new TypeError("stableIds must be an array-like unsigned 64-bit integer sequence", { cause: error });
   }
-  const converted = items.map((item) => {
-    if (typeof item === "bigint") {
-      if (item < 0n || item > USIZE_MAX_64) throw new RangeError("stableIds values must be unsigned 64-bit integers");
-      return item;
-    }
-    if (typeof item !== "number" || !Number.isSafeInteger(item) || item < 0) {
-      throw new RangeError("stableIds number values must be non-negative safe integers; use BigInt above 2^53 - 1");
-    }
-    return BigInt(item);
-  });
+  const converted = items.map((item) => asU64(item, "stableIds value"));
   return BigUint64Array.from(converted);
 }
 
@@ -118,7 +120,7 @@ function axisDescriptor(axis, name) {
   if (kindCode < 0) throw new RangeError(`${name}.kind must be linear, log, or symlog`);
   if (nonpositive !== "clip" && nonpositive !== "mask") throw new RangeError(`${name}.nonpositive must be clip or mask`);
   if (!Array.isArray(domain) || domain.length !== 2) throw new RangeError(`${name}.domain must contain two values`);
-  return [BigInt(id), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
+  return [asU64(id, `${name}.id`), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
 }
 
 /** Encode the shared backend-neutral Scene v3 typed batch. */

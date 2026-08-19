@@ -106,7 +106,15 @@ def test_python_scene_v3_rejects_unsigned_values_before_coercion() -> None:
         y1=[0.0],
     )
     assert _native.scene_batch_encode(
-        **(options | {"stable_ids": [2**64 - 1], "fill_rgba": [0, 255, 0, 255]})
+        **(
+            options
+            | {
+                "x_axis": (2**64 - 1, 0, 0.0, 1.0, 1.0, False),
+                "y_axis": (2**64 - 1, 0, 0.0, 1.0, 1.0, False),
+                "stable_ids": [2**64 - 1],
+                "fill_rgba": [0, 255, 0, 255],
+            }
+        )
     )
     for field, values in (
         ("kinds", [-1]),
@@ -123,6 +131,11 @@ def test_python_scene_v3_rejects_unsigned_values_before_coercion() -> None:
     ):
         with np.testing.assert_raises_regex(ValueError, "unsigned"):
             _native.scene_batch_encode(**(options | {field: values}))
+    for axis in ("x_axis", "y_axis"):
+        for invalid_id in (-1, 2**64, 1.5):
+            value = (invalid_id, 0, 0.0, 1.0, 1.0, False)
+            with np.testing.assert_raises_regex(ValueError, f"scene {axis} id"):
+                _native.scene_batch_encode(**(options | {axis: value}))
 
 
 def test_python_scene_v3_log_mask_ignores_reserved_coordinates_and_breaks_lines() -> None:

@@ -48,7 +48,7 @@ test("Node Scene v3 rejects malformed batches", () => {
 test("Node Scene v3 validates unsigned fields before typed-array coercion", () => {
   const base = {
     viewport: [100, 80], margins: [10, 10, 10, 10],
-    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    xAxis: { id: (1n << 64n) - 1n, domain: [0, 1] }, yAxis: { id: (1n << 64n) - 1n, domain: [0, 1] },
     kinds: [0], stableIds: [(1n << 64n) - 1n], styleRefs: [0],
     styles: [{ fillRgba: [0, 255, 0, 255], strokeRgba: [255, 0, 255, 0], strokeWidth: 0 }],
     diameter: [8], symbols: [0], x0: [0.5], y0: [0.5], x1: [0], y1: [0],
@@ -65,6 +65,10 @@ test("Node Scene v3 validates unsigned fields before typed-array coercion", () =
   }
   for (const stableIds of [[-1], [-1n], [2 ** 53], [2n ** 64n], [1.5]]) {
     assert.throws(() => sceneBatchEncode({ ...base, stableIds }), /stableIds/);
+  }
+  for (const id of [-1, -1n, 2 ** 53, 2n ** 64n, 1.5]) {
+    assert.throws(() => sceneBatchEncode({ ...base, xAxis: { ...base.xAxis, id } }), /xAxis.id/);
+    assert.throws(() => sceneBatchEncode({ ...base, yAxis: { ...base.yAxis, id } }), /yAxis.id/);
   }
   for (const channel of [-1, 256, 1.5]) {
     const styles = [{ ...base.styles[0], fillRgba: [channel, 0, 0, 255] }];
