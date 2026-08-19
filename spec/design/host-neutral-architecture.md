@@ -165,8 +165,10 @@ let #18 absorb the module.
 
 1. **#56** — classify every production source and enforce the ownership
    ledger. This is the gate for new architecture work, not a line-count quota.
-2. **#57** — make the ABI manifest typed and generate the low-level ctypes and
-   Koffi declarations while preserving one shared C ABI artifact.
+2. **#57** — typed ABI manifest and generated low-level ctypes/Koffi/C-header
+   declarations while preserving one shared C ABI artifact. **Implemented:**
+   generated artifacts are byte-for-byte gated and loaders validate the
+   version before binding the complete surface.
 3. **#58** — move canonical scene/layout/export behavior into Rust in bounded
    slices; Python/Node retain ergonomic wrappers.
 4. **#59** — add direct browser execution using the same Rust engine compiled

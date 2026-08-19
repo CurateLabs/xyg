@@ -111,9 +111,10 @@ client must not grow a parallel “JS layout/LOD” product path.
 - **REQ-HOSTPARITY-0c (MUST).** Node bindings MUST NOT depend on browser-only
   APIs; the browser client MUST NOT import Node-only modules (`koffi`,
   `node:fs`, …).
-- **REQ-HOSTPARITY-1 (MUST).** One XYG Rust C ABI serves Python (`ctypes` today)
-  and Node (koffi / N-API-shaped loader). `ABI_VERSION` bumps apply to both
-  loaders.
+- **REQ-HOSTPARITY-1 (MUST).** One XYG Rust C ABI serves Python (ctypes) and
+  Node (Koffi, which uses Node-API internally). Both low-level declaration sets
+  are generated from the typed Rust contract; `ABI_VERSION` bumps apply to both
+  loaders without making XYG a PyO3 or napi-rs extension.
 - **REQ-HOSTPARITY-1b (MUST).** **Rust owns decisions:** chart/graph behavior
   that affects buffers, layout, encodings, or recorded LOD/layout decisions is
   implemented in Rust. Hosts MAY validate and coerce inputs but MUST NOT own a

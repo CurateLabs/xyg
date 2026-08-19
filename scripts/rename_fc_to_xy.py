@@ -31,8 +31,9 @@ Idempotent: a second --apply run changes nothing. Exit code is non-zero when
 the audit finds an occurrence that is neither rewritten nor whitelisted.
 
 Note: renaming the ``fc_*`` exported symbols is an ABI change — bump
-``ABI_VERSION`` in src/lib.rs and python/xy/_native.py together, and
-regenerate the static client (``node js/build.mjs``) after applying.
+``ABI_VERSION`` in the Rust C-ABI crate, regenerate ABI artifacts with
+``python3 scripts/gen_abi_manifest.py --write``, and regenerate the static
+client (``node js/build.mjs``) after applying.
 """
 
 from __future__ import annotations

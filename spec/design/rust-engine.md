@@ -279,9 +279,10 @@ formats only; the SVG and PDF export paths have their own text contracts.
   array data, no callbacks into hosts, no unwinding across FFI.
 - **f64 in, f32 out** for geometry (offset-encoded, §16); **u64 for graph
   element indices**; u32 only for explicitly versioned non-graph contracts.
-- **Lockstep `ABI_VERSION`** in `crates/xyg-core/src/lib.rs`,
-  `python/xy/_native.py`, `packages/xy-node/src/native-path.js`, and
-  `scripts/abi_smoke.py`. Both hosts call `xyg_abi_version()` immediately
+- **Lockstep `ABI_VERSION`** originates in `crates/xyg-core/src/lib.rs` and is
+  generated into `python/xy/_abi_generated.py`,
+  `packages/xy-node/src/_abi_generated.js`, `spec/abi/xyg.h`, and the JSON
+  contract. Both hosts call `xyg_abi_version()` immediately
   after loading the library, **before binding or calling any other symbol**,
   and fail with expected-vs-observed versions plus a reinstall/build
   instruction — an old wheel never mis-calls a new lib.
@@ -416,27 +417,29 @@ Rules, in priority order:
 
 ### 3.5 ABI manifest and parity gate (machine-checkable contract)
 
-Hand-maintained ctypes/koffi declarations drift. The current manifest checks
-symbol presence and arity; [#57](https://github.com/CurateLabs/xyg/issues/57)
-extends it to typed arguments and generates the low-level declarations. Until
-that issue lands, the declarations remain audited migration debt rather than a
-fully generated source of truth:
+The Rust `extern "C"` surface is the single typed signature authority. Issue
+[#57](https://github.com/CurateLabs/xyg/issues/57) replaced hand-maintained
+ctypes/Koffi prototypes with deterministic generated artifacts:
 
 - `scripts/gen_abi_manifest.py` parses the `extern "C"` surface of
-  `crates/xyg-core/src/lib.rs` (symbols, argument/return types, `ABI_VERSION`)
-  and writes `spec/abi/xyg-abi.json`.
-- `scripts/check_abi_parity.py` regenerates the manifest and validates every
-  declaration site against it: the checked-in manifest itself (stale-manifest
-  detection), Python ctypes bindings in `python/xy/_native.py`, Node koffi
-  prototype strings in `packages/xy-node/src/native.js`, the stdlib
-  redeclarations in `scripts/abi_smoke.py`, and the `ABI_VERSION` constants.
-  Python ctypes must match the Rust symbol set exactly. `abi_smoke` and Node
-  koffi may bind a subset (the stdlib smoke is a focused probe; hosts that do
-  not need every kernel omit unused symbols). Extra symbols or Node arity
-  disagreement against Rust fail the gate. Version skew anywhere fails the gate.
-- The gate runs in the test suite and CI; regenerating the manifest is part of
-  any ABI change, and a bump of `ABI_VERSION` must land in lock-step
-  everywhere it is declared.
+  `crates/xyg-core/src/lib.rs` (ordered argument names, scalar widths, pointer
+  const/mutable direction and depth, return types, buffer metadata, and
+  `ABI_VERSION`) and writes `spec/abi/xyg-abi.json`, `spec/abi/xyg.h`,
+  `python/xy/_abi_generated.py`, and
+  `packages/xy-node/src/_abi_generated.js`.
+- `python/xy/_native.py` and `packages/xy-node/src/native.js` retain library
+  discovery, version-first loading, pointer coercion, public errors, and
+  ergonomic wrappers, but contain no function signatures.
+- `scripts/check_abi_parity.py` regenerates all four artifacts byte-for-byte,
+  validates both complete host symbol sets and the focused stdlib smoke, and
+  rejects signature-hash changes without an `ABI_VERSION` bump. The drift
+  comparison scans all available manifest history rather than a bounded
+  revision window; missing generated consumers fail with the regeneration
+  command instead of an incidental file-read traceback.
+- Run `python3 scripts/gen_abi_manifest.py --write` for every ABI change. The
+  generated files are never edited directly; staleness and version skew fail
+  in tests and CI before either host can load another symbol. CI structurally
+  verifies that this freshness command executes in its named hard-gate step.
 
 ## 4. What Python keeps forever
 

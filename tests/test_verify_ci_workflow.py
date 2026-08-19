@@ -613,6 +613,24 @@ def test_reference_gate_commands_must_be_in_the_named_step(tmp_path: Path) -> No
     assert any("reference test commands" in error for error in errors)
 
 
+def test_generated_abi_check_must_execute_in_its_named_step(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    command = "        run: python3 scripts/gen_abi_manifest.py --check\n"
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            command,
+            "        run: echo skipped # python3 scripts/gen_abi_manifest.py --check\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("ABI artifact freshness check" in error for error in errors)
+
+
 def test_reference_gate_commands_cannot_hide_in_inline_comments(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     commands = (

@@ -93,8 +93,13 @@ Internal architecture: how the engine is built and why.
 Machine-checkable C ABI contract for `libxyg_core`.
 
 - [`xyg-abi.json`](abi/xyg-abi.json) — **generated** from
-  `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`. Hosts are
-  checked against it by `scripts/check_abi_parity.py`; do not hand-edit.
+  `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`, including
+  ordered names, widths, pointer direction/depth, and buffer metadata.
+- [`xyg.h`](abi/xyg.h) — generated C header for the same contract.
+
+The same command generates `python/xy/_abi_generated.py` and
+`packages/xy-node/src/_abi_generated.js`. `scripts/check_abi_parity.py`
+checks all artifacts byte-for-byte; do not hand-edit any of them.
 
 ## matplotlib/
 

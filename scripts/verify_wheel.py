@@ -48,6 +48,7 @@ REQUIRED_FILES = {
     "reflex_xy/tokens.py",
     "reflex_xy/vars.py",
     "xy/__init__.py",
+    "xy/_abi_generated.py",
     "xy/_native.py",
     "xy/_framing.py",
     "xy/channels.py",

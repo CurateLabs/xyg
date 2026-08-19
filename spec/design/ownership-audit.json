@@ -113,12 +113,7 @@
         "A parallel implementation of canonical layout, LOD, encoding, aggregation, scene, or export policy.",
         "Hand-maintained low-level C signatures."
       ],
-      "forbidden_patterns": [
-        {
-          "pattern": "\\bctypes\\.CDLL\\b",
-          "instruction": "Low-level native loading belongs in the generated ABI binding classified under issue #57."
-        }
-      ],
+      "forbidden_patterns": [],
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     "python-scene-migration": {
@@ -160,12 +155,7 @@
         "A parallel implementation of canonical layout, LOD, encoding, aggregation, scene, or export policy.",
         "Hand-maintained Koffi C signatures."
       ],
-      "forbidden_patterns": [
-        {
-          "pattern": "\\bfrom\\s+[\"']koffi[\"']",
-          "instruction": "Only the generated low-level binding classified under issue #57 may import Koffi."
-        }
-      ],
+      "forbidden_patterns": [],
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     "node-scene-migration": {
@@ -520,6 +510,14 @@
       "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     },
     {
+      "path": "packages/xy-node/src/_abi_generated.js",
+      "current_owner": "Node low-level ABI binding",
+      "policy": "node-abi-generated",
+      "disposition": "generate",
+      "follow_up_issue": 57,
+      "rationale": "The Koffi declarations must be generated from the same typed contract as ctypes."
+    },
+    {
       "path": "packages/xy-node/src/abi.js",
       "current_owner": "Node host",
       "policy": "node-host",
@@ -769,11 +767,11 @@
     },
     {
       "path": "packages/xy-node/src/native.js",
-      "current_owner": "Node low-level ABI binding",
-      "policy": "node-abi-generated",
-      "disposition": "generate",
-      "follow_up_issue": 57,
-      "rationale": "The Koffi declarations must be generated from the same typed contract as ctypes."
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
       "path": "packages/xy-node/src/pyramid.js",
@@ -904,6 +902,14 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xy/_abi_generated.py",
+      "current_owner": "Python low-level ABI binding",
+      "policy": "python-abi-generated",
+      "disposition": "generate",
+      "follow_up_issue": 57,
+      "rationale": "The low-level declarations must be generated from the typed shared ABI contract."
+    },
+    {
       "path": "python/xy/_annotations.py",
       "current_owner": "Python host with canonical-policy debt",
       "policy": "python-scene-migration",
@@ -993,11 +999,11 @@
     },
     {
       "path": "python/xy/_native.py",
-      "current_owner": "Python low-level ABI binding",
-      "policy": "python-abi-generated",
-      "disposition": "generate",
-      "follow_up_issue": 57,
-      "rationale": "The low-level declarations must be generated from the typed shared ABI contract."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xy/_ooc.py",

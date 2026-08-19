@@ -10,7 +10,7 @@ The verifier inventories tracked source only. Tests, examples, benchmarks, gener
 
 ## Binding seam decision
 
-XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ctypes and Node uses Koffi; Koffi itself is built on Node-API, but XYG is not an N-API addon. PyO3/abi3 and napi-rs would create separate host-specific native artifacts, packaging paths, and version seams. They are not the default while the product requires one core artifact usable by CPython versions, Node, VS Code, and future adapters. Issue #57 strengthens this seam by generating both low-level bindings from one typed ABI contract; measured evidence may revisit the decision later.
+XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ctypes and Node uses Koffi; Koffi itself is built on Node-API, but XYG is not an N-API addon. PyO3/abi3 and napi-rs would create separate host-specific native artifacts, packaging paths, and version seams. They are not the default while the product requires one core artifact usable by CPython versions, Node, VS Code, and future adapters. Issue #57 generated both low-level bindings and the C header from one typed ABI contract; measured evidence may revisit the seam later.
 
 ## Disposition summary
 
@@ -18,10 +18,10 @@ XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ct
 | --- | ---: | --- | --- |
 | `rust-engine` | 15 | `keep-rust` | current owner |
 | `rust-c-abi` | 1 | `keep-rust` | current owner |
-| `python-host` | 51 | `keep-host` | current owner |
+| `python-host` | 52 | `keep-host` | current owner |
 | `python-scene-migration` | 22 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `python-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
-| `node-host` | 6 | `keep-host` | current owner |
+| `node-host` | 7 | `keep-host` | current owner |
 | `node-scene-migration` | 28 | `split-and-move-rust` | [#58](https://github.com/CurateLabs/xyg/issues/58) |
 | `node-abi-generated` | 1 | `generate` | [#57](https://github.com/CurateLabs/xyg/issues/57) |
 | `browser-client` | 16 | `keep-shared-client` | current owner |
@@ -210,6 +210,7 @@ Forbidden:
 | `js/src/57_viewstate.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/58_graph.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/60_entries.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `packages/xy-node/src/_abi_generated.js` | Node low-level ABI binding | `node-abi-generated` | `generate` | #57 |
 | `packages/xy-node/src/abi.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/charts.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/color.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
@@ -241,7 +242,7 @@ Forbidden:
 | `packages/xy-node/src/marks/triangle_mesh.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/violin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/native-path.js` | Node host | `node-host` | `keep-host` | — |
-| `packages/xy-node/src/native.js` | Node low-level ABI binding | `node-abi-generated` | `generate` | #57 |
+| `packages/xy-node/src/native.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/pyramid.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/sankey.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/vscode.js` | Node host | `node-host` | `keep-host` | — |
@@ -258,6 +259,7 @@ Forbidden:
 | `python/reflex_xy/tokens.py` | Python host | `python-host` | `keep-host` | — |
 | `python/reflex_xy/vars.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xy/__init__.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xy/_abi_generated.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
 | `python/xy/_annotations.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_arrowgeom.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_benchmark_theme.py` | Python host | `python-host` | `keep-host` | — |
@@ -269,7 +271,7 @@ Forbidden:
 | `python/xy/_hosts.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xy/_jpeg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_legendfit.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_native.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
+| `python/xy/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xy/_ooc.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xy/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |

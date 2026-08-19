@@ -48,6 +48,10 @@ Run the fast local gate:
 make check
 ```
 
+After any `extern "C"` signature or `ABI_VERSION` change, run
+`make abi-generate`, review the typed JSON/C/Python/Node diff, and run
+`make abi-check`. Generated ABI files must never be edited directly.
+
 Before a production-facing PR, run:
 
 ```bash
