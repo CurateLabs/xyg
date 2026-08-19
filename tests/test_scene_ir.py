@@ -26,6 +26,11 @@ def test_python_scene_v2_matches_shared_scatter_line_bar_axis_bytes() -> None:
         kinds=fixture["kinds"],
         stable_ids=fixture["stable_ids"],
         style_refs=fixture["style_refs"],
+        fill_rgba=[channel for style in fixture["styles"] for channel in style["fill_rgba"]],
+        stroke_rgba=[channel for style in fixture["styles"] for channel in style["stroke_rgba"]],
+        stroke_width=[style["stroke_width"] for style in fixture["styles"]],
+        diameter=fixture["diameter"],
+        symbols=fixture["symbols"],
         x0=fixture["x0"],
         y0=fixture["y0"],
         x1=fixture["x1"],
@@ -34,6 +39,10 @@ def test_python_scene_v2_matches_shared_scatter_line_bar_axis_bytes() -> None:
     assert encoded.hex() == fixture["expected_hex"]
     assert encoded[:4] == b"XYGS"
     assert int.from_bytes(encoded[4:8], "little") == 2
+    records = 160 + len(fixture["styles"]) * 16
+    assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
+    assert encoded[records + 2] == 2  # diamond
+    assert np.frombuffer(encoded, dtype="<f8", count=1, offset=records + 48)[0] == 16.0
 
 
 def test_python_scene_v2_rejects_malformed_batches() -> None:
@@ -45,6 +54,11 @@ def test_python_scene_v2_rejects_malformed_batches() -> None:
         kinds=[0],
         stable_ids=[1],
         style_refs=[0],
+        fill_rgba=[0, 0, 0, 255],
+        stroke_rgba=[0, 0, 0, 255],
+        stroke_width=[1.0],
+        diameter=[8.0],
+        symbols=[0],
         x0=[0.5],
         y0=[0.5],
         x1=[0.5],
@@ -54,6 +68,8 @@ def test_python_scene_v2_rejects_malformed_batches() -> None:
         _native.scene_batch_encode(**(options | {"stable_ids": []}))
     with np.testing.assert_raises_regex(ValueError, "invalid canonical scene batch"):
         _native.scene_batch_encode(**(options | {"kinds": [9]}))
+    with np.testing.assert_raises_regex(ValueError, "invalid canonical scene batch"):
+        _native.scene_batch_encode(**(options | {"style_refs": [1]}))
     with np.testing.assert_raises_regex(ValueError, "invalid canonical scene batch"):
         _native.scene_batch_encode(**(options | {"margins": (60.0, 40.0, 10.0, 10.0)}))
 

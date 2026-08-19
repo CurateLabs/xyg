@@ -11,8 +11,10 @@ use std::fmt::Write;
 pub const SCENE_VERSION: u32 = 2;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
-pub const SCENE_BATCH_HEADER_BYTES: usize = 152;
-pub const SCENE_BATCH_RECORD_BYTES: usize = 48;
+pub const MAX_SCENE_STYLES: usize = 65_536;
+pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
+pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
+pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AxisTicks {
@@ -326,6 +328,11 @@ pub struct SceneBatch<'a> {
     kinds: &'a [u8],
     stable_ids: &'a [u64],
     style_refs: &'a [u32],
+    fill_rgba: &'a [u8],
+    stroke_rgba: &'a [u8],
+    stroke_width: &'a [f64],
+    diameter: &'a [f64],
+    symbols: &'a [u8],
     x0: &'a [f64],
     y0: &'a [f64],
     x1: &'a [f64],
@@ -343,6 +350,11 @@ impl<'a> SceneBatch<'a> {
         kinds: &'a [u8],
         stable_ids: &'a [u64],
         style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
         x0: &'a [f64],
         y0: &'a [f64],
         x1: &'a [f64],
@@ -352,9 +364,18 @@ impl<'a> SceneBatch<'a> {
         if len > MAX_SCENE_MARKS {
             return Err(SceneError::Limit);
         }
+        let style_count = stroke_width.len();
+        if style_count > MAX_SCENE_STYLES
+            || fill_rgba.len() != style_count.saturating_mul(4)
+            || stroke_rgba.len() != style_count.saturating_mul(4)
+        {
+            return Err(SceneError::Limit);
+        }
         if [
             stable_ids.len(),
             style_refs.len(),
+            diameter.len(),
+            symbols.len(),
             x0.len(),
             y0.len(),
             x1.len(),
@@ -368,12 +389,26 @@ impl<'a> SceneBatch<'a> {
         {
             return Err(SceneError::Length);
         }
+        for (index, kind) in kinds.iter().enumerate() {
+            let kind = SceneRecordKind::from_code(*kind)?;
+            if style_refs[index] as usize >= style_count
+                || (kind == SceneRecordKind::Scatter && symbols[index] > ScatterSymbol::X as u8)
+                || (kind != SceneRecordKind::Scatter
+                    && (diameter[index] != 0.0 || symbols[index] != 0))
+            {
+                return Err(SceneError::Length);
+            }
+        }
         if x0
             .iter()
             .chain(y0)
             .chain(x1)
             .chain(y1)
             .any(|value| !value.is_finite())
+            || diameter
+                .iter()
+                .chain(stroke_width)
+                .any(|value| !value.is_finite() || *value < 0.0)
         {
             return Err(SceneError::NonFinite);
         }
@@ -386,6 +421,11 @@ impl<'a> SceneBatch<'a> {
             kinds,
             stable_ids,
             style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
             x0,
             y0,
             x1,
@@ -395,13 +435,16 @@ impl<'a> SceneBatch<'a> {
 
     pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(
-            SCENE_BATCH_HEADER_BYTES + self.kinds.len() * SCENE_BATCH_RECORD_BYTES,
+            SCENE_BATCH_HEADER_BYTES
+                + self.stroke_width.len() * SCENE_STYLE_RECORD_BYTES
+                + self.kinds.len() * SCENE_BATCH_RECORD_BYTES,
         );
         out.extend_from_slice(b"XYGS");
         out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
         out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
         out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
         out.extend_from_slice(&(self.kinds.len() as u64).to_le_bytes());
+        out.extend_from_slice(&(self.stroke_width.len() as u64).to_le_bytes());
         for value in [
             self.layout.viewport_width,
             self.layout.viewport_height,
@@ -429,6 +472,12 @@ impl<'a> SceneBatch<'a> {
         out.extend_from_slice(&self.y_scale.constant.to_le_bytes());
         debug_assert_eq!(out.len(), SCENE_BATCH_HEADER_BYTES);
 
+        for index in 0..self.stroke_width.len() {
+            out.extend_from_slice(&self.fill_rgba[index * 4..index * 4 + 4]);
+            out.extend_from_slice(&self.stroke_rgba[index * 4..index * 4 + 4]);
+            out.extend_from_slice(&self.stroke_width[index].to_le_bytes());
+        }
+
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
             let mapped = [
@@ -441,10 +490,14 @@ impl<'a> SceneBatch<'a> {
                 && match kind {
                     SceneRecordKind::Polyline => true,
                     SceneRecordKind::Scatter => {
-                        mapped[0] >= self.layout.left
-                            && mapped[0] <= self.layout.right
-                            && mapped[1] >= self.layout.top
-                            && mapped[1] <= self.layout.bottom
+                        let style = self.style_refs[index] as usize;
+                        let stroke = self.stroke_width[style];
+                        let radius = ((self.diameter[index] - stroke) / 2.0).max(0.25);
+                        let extent = radius + stroke / 2.0;
+                        mapped[0] + extent >= self.layout.left
+                            && mapped[0] - extent <= self.layout.right
+                            && mapped[1] + extent >= self.layout.top
+                            && mapped[1] - extent <= self.layout.bottom
                     }
                     SceneRecordKind::Rect => {
                         mapped[0].min(mapped[2]) <= self.layout.right
@@ -455,12 +508,14 @@ impl<'a> SceneBatch<'a> {
                 };
             out.push(kind as u8);
             out.push(u8::from(visible));
-            out.extend_from_slice(&[0; 2]);
+            out.push(self.symbols[index]);
+            out.push(0);
             out.extend_from_slice(&self.style_refs[index].to_le_bytes());
             out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
             for value in if visible { mapped } else { [0.0; 4] } {
                 out.extend_from_slice(&value.to_le_bytes());
             }
+            out.extend_from_slice(&self.diameter[index].to_le_bytes());
         }
         out
     }
@@ -850,9 +905,14 @@ mod tests {
             &[0, 1, 1, 2],
             &[101, 201, 201, 301],
             &[1, 2, 2, 3],
-            &[5.0, -1.0, 10.0, 2.0],
+            &[0; 16],
+            &[0; 16],
+            &[0.0, 2.0, 1.0, 0.0],
+            &[16.0, 0.0, 0.0, 0.0],
+            &[ScatterSymbol::Diamond as u8, 0, 0, 0],
+            &[-0.1, -1.0, 10.0, 2.0],
             &[5.0, 1.0, 9.0, 3.0],
-            &[5.0, -1.0, 10.0, 4.0],
+            &[-0.1, -1.0, 10.0, 4.0],
             &[5.0, 1.0, 9.0, 7.0],
         )
         .unwrap();
@@ -862,17 +922,21 @@ mod tests {
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
-            SCENE_BATCH_HEADER_BYTES + 4 * SCENE_BATCH_RECORD_BYTES
+            SCENE_BATCH_HEADER_BYTES + 4 * SCENE_STYLE_RECORD_BYTES + 4 * SCENE_BATCH_RECORD_BYTES
         );
-        assert_eq!(u64::from_le_bytes(encoded[72..80].try_into().unwrap()), 11);
-        assert_eq!(u64::from_le_bytes(encoded[80..88].try_into().unwrap()), 12);
-        // Scatter is in bounds, and both polyline vertices remain available
-        // for a backend to clip the segment at the plot rectangle.
-        assert_eq!(encoded[SCENE_BATCH_HEADER_BYTES + 1], 1);
+        assert_eq!(u64::from_le_bytes(encoded[24..32].try_into().unwrap()), 4);
+        assert_eq!(u64::from_le_bytes(encoded[80..88].try_into().unwrap()), 11);
+        assert_eq!(u64::from_le_bytes(encoded[88..96].try_into().unwrap()), 12);
+        let records = SCENE_BATCH_HEADER_BYTES + 4 * SCENE_STYLE_RECORD_BYTES;
+        // The diamond center maps left of the plot, but its diameter plus
+        // stroke overlaps the plot and must remain renderable.
+        assert_eq!(encoded[records + 1], 1);
+        assert_eq!(encoded[records + 2], ScatterSymbol::Diamond as u8);
         assert_eq!(
-            encoded[SCENE_BATCH_HEADER_BYTES + SCENE_BATCH_RECORD_BYTES + 1],
-            1
+            f64::from_le_bytes(encoded[records + 48..records + 56].try_into().unwrap()),
+            16.0
         );
+        assert_eq!(encoded[records + SCENE_BATCH_RECORD_BYTES + 1], 1);
     }
 
     #[test]
@@ -893,6 +957,11 @@ mod tests {
                 &[9],
                 &[1],
                 &[0],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[1.0],
+                &[0],
                 &[0.0],
                 &[0.0],
                 &[0.0],
@@ -910,6 +979,11 @@ mod tests {
                 scale,
                 &[0],
                 &[],
+                &[0],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[1.0],
                 &[0],
                 &[0.0],
                 &[0.0],
@@ -929,6 +1003,11 @@ mod tests {
                 &[0],
                 &[1],
                 &[0],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[1.0],
+                &[0],
                 &[f64::NAN],
                 &[0.0],
                 &[0.0],
@@ -936,6 +1015,54 @@ mod tests {
             )
             .err(),
             Some(SceneError::NonFinite)
+        );
+        let invalid_record = |style_ref, diameter, symbol| {
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[0],
+                &[1],
+                &[style_ref],
+                &[0; 4],
+                &[0; 4],
+                &[0.0],
+                &[diameter],
+                &[symbol],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+            )
+            .err()
+        };
+        assert_eq!(invalid_record(1, 1.0, 0), Some(SceneError::Length));
+        assert_eq!(invalid_record(0, 1.0, 19), Some(SceneError::Length));
+        assert_eq!(invalid_record(0, -1.0, 0), Some(SceneError::NonFinite));
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &vec![0.0; MAX_SCENE_STYLES + 1],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+            )
+            .err(),
+            Some(SceneError::Limit)
         );
     }
 

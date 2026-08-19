@@ -168,10 +168,36 @@ fn scene_v2_batch_encode(bencher: Bencher, n: usize) {
     let kinds: Vec<u8> = (0..n).map(|index| (index % 3) as u8).collect();
     let ids: Vec<u64> = (0..n as u64).collect();
     let styles: Vec<u32> = (0..n).map(|index| (index % 8) as u32).collect();
+    let fill = vec![0x88u8; 8 * 4];
+    let stroke = vec![0x22u8; 8 * 4];
+    let stroke_width = vec![1.0; 8];
+    let diameter: Vec<f64> = kinds
+        .iter()
+        .map(|kind| if *kind == 0 { 6.0 } else { 0.0 })
+        .collect();
+    let symbols = vec![0u8; n];
     let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
     let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
     let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
-    let batch =
-        SceneBatch::new(layout, 1, 2, sx, sy, &kinds, &ids, &styles, &x, &y, &x, &y).unwrap();
+    let batch = SceneBatch::new(
+        layout,
+        1,
+        2,
+        sx,
+        sy,
+        &kinds,
+        &ids,
+        &styles,
+        &fill,
+        &stroke,
+        &stroke_width,
+        &diameter,
+        &symbols,
+        &x,
+        &y,
+        &x,
+        &y,
+    )
+    .unwrap();
     bencher.bench(|| black_box(batch.encode()));
 }

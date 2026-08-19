@@ -85,24 +85,40 @@ function axisDescriptor(axis, name) {
 }
 
 /** Encode the shared backend-neutral Scene v2 typed batch. */
-export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, x0, y0, x1, y1 }) {
+export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
   }
   const kindArray = kinds instanceof Uint8Array ? kinds : Uint8Array.from(kinds);
   const ids = stableIds instanceof BigUint64Array ? stableIds : BigUint64Array.from(stableIds, BigInt);
-  const styles = styleRefs instanceof Uint32Array ? styleRefs : Uint32Array.from(styleRefs, Number);
+  const styleRefArray = styleRefs instanceof Uint32Array ? styleRefs : Uint32Array.from(styleRefs, Number);
+  const diameters = asF64Array(diameter, "diameter");
+  const symbolCodes = symbols instanceof Uint8Array ? symbols : Uint8Array.from(symbols);
+  const fills = new Uint8Array(styles.length * 4);
+  const strokes = new Uint8Array(styles.length * 4);
+  const widths = new Float64Array(styles.length);
+  for (const [index, style] of styles.entries()) {
+    const fill = asU8Array(style.fillRgba, `styles[${index}].fillRgba`);
+    const stroke = asU8Array(style.strokeRgba, `styles[${index}].strokeRgba`);
+    requireLength(fill, 4, `styles[${index}].fillRgba`);
+    requireLength(stroke, 4, `styles[${index}].strokeRgba`);
+    fills.set(fill, index * 4);
+    strokes.set(stroke, index * 4);
+    widths[index] = Number(style.strokeWidth ?? 0);
+  }
   const coordinates = [x0, y0, x1, y1].map((value, index) => asF64Array(value, ["x0", "y0", "x1", "y1"][index]));
   const length = kindArray.length;
-  for (const [value, name] of [[ids, "stableIds"], [styles, "styleRefs"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
+  for (const [value, name] of [[ids, "stableIds"], [styleRefArray, "styleRefs"], [diameters, "diameter"], [symbolCodes, "symbols"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
   const xd = axisDescriptor(xAxis, "xAxis");
   const yd = axisDescriptor(yAxis, "yAxis");
-  let capacity = 152 + length * 48;
+  let capacity = 160 + widths.length * 16 + length * 56;
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
       Number(viewport[0]), Number(viewport[1]), ...margins.map(Number), ...xd, ...yd,
-      u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styles),
+      u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
+      u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
+      f64Ptr(diameters), u8Ptr(symbolCodes),
       ...coordinates.map(f64Ptr), BigInt(length), u8Ptr(output), BigInt(capacity),
     );
     if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical scene batch");

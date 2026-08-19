@@ -1514,6 +1514,11 @@ def scene_batch_encode(
     kinds: npt.ArrayLike,
     stable_ids: npt.ArrayLike,
     style_refs: npt.ArrayLike,
+    fill_rgba: npt.ArrayLike,
+    stroke_rgba: npt.ArrayLike,
+    stroke_width: npt.ArrayLike,
+    diameter: npt.ArrayLike,
+    symbols: npt.ArrayLike,
     x0: npt.ArrayLike,
     y0: npt.ArrayLike,
     x1: npt.ArrayLike,
@@ -1523,14 +1528,21 @@ def scene_batch_encode(
     kind_array = np.ascontiguousarray(kinds, dtype=np.uint8).reshape(-1)
     ids = np.ascontiguousarray(stable_ids, dtype=np.uint64).reshape(-1)
     styles = np.ascontiguousarray(style_refs, dtype=np.uint32).reshape(-1)
+    fills = np.ascontiguousarray(fill_rgba, dtype=np.uint8).reshape(-1)
+    strokes = np.ascontiguousarray(stroke_rgba, dtype=np.uint8).reshape(-1)
+    widths = _as_f64(np.asarray(stroke_width), "scene style stroke_width")
+    diameters = _as_f64(np.asarray(diameter), "scene diameter")
+    symbol_codes = np.ascontiguousarray(symbols, dtype=np.uint8).reshape(-1)
     coordinates = [
         _as_f64(np.asarray(value), name)
         for value, name in ((x0, "scene x0"), (y0, "scene y0"), (x1, "scene x1"), (y1, "scene y1"))
     ]
     n = len(kind_array)
-    if any(len(value) != n for value in [ids, styles, *coordinates]):
+    if any(len(value) != n for value in [ids, styles, diameters, symbol_codes, *coordinates]):
         raise ValueError("scene batch arrays must have equal length")
-    capacity = 152 + n * 48
+    if len(fills) != len(widths) * 4 or len(strokes) != len(widths) * 4:
+        raise ValueError("scene style table must have one fill and stroke RGBA per style")
+    capacity = 160 + len(widths) * 16 + n * 56
     while True:
         out = ctypes.create_string_buffer(capacity)
         written = _lib.xyg_scene_batch_encode(
@@ -1542,6 +1554,12 @@ def scene_batch_encode(
             kind_array.ctypes.data if n else 0,
             ids.ctypes.data if n else 0,
             styles.ctypes.data if n else 0,
+            _ptr_u8(fills) if len(widths) else 0,
+            _ptr_u8(strokes) if len(widths) else 0,
+            _ptr_f64(widths) if len(widths) else 0,
+            len(widths),
+            _ptr_f64(diameters) if n else 0,
+            _ptr_u8(symbol_codes) if n else 0,
             *(_ptr_f64(value) if n else 0 for value in coordinates),
             n,
             out,

@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 63;
+pub const ABI_VERSION: u32 = 64;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -230,6 +230,12 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     kinds: *const u8,
     stable_ids: *const u64,
     style_refs: *const u32,
+    fill_rgba: *const u8,
+    stroke_rgba: *const u8,
+    stroke_width: *const f64,
+    style_count: usize,
+    diameter: *const f64,
+    symbols: *const u8,
     x0: *const f64,
     y0: *const f64,
     x1: *const f64,
@@ -239,16 +245,21 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     out_cap: usize,
 ) -> usize {
     if len > scene::MAX_SCENE_MARKS
+        || style_count > scene::MAX_SCENE_STYLES
         || !matches!(x_mask_nonpositive, 0 | 1)
         || !matches!(y_mask_nonpositive, 0 | 1)
         || (len > 0
             && (kinds.is_null()
                 || stable_ids.is_null()
                 || style_refs.is_null()
+                || diameter.is_null()
+                || symbols.is_null()
                 || x0.is_null()
                 || y0.is_null()
                 || x1.is_null()
                 || y1.is_null()))
+        || (style_count > 0
+            && (fill_rgba.is_null() || stroke_rgba.is_null() || stroke_width.is_null()))
     {
         return usize::MAX;
     }
@@ -306,6 +317,31 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         } else {
             std::slice::from_raw_parts(style_refs, len)
         };
+        let fill_rgba = if style_count == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(fill_rgba, style_count * 4)
+        };
+        let stroke_rgba = if style_count == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(stroke_rgba, style_count * 4)
+        };
+        let stroke_width = if style_count == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(stroke_width, style_count)
+        };
+        let diameter = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(diameter, len)
+        };
+        let symbols = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(symbols, len)
+        };
         let f64s = |pointer| {
             if len == 0 {
                 &[]
@@ -322,6 +358,11 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             kinds,
             stable_ids,
             style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
             f64s(x0),
             f64s(y0),
             f64s(x1),
@@ -5433,9 +5474,13 @@ mod tests {
     fn scene_batch_abi_is_bounded_and_rejects_malformed_records() {
         let kinds = [0u8];
         let ids = [1u64];
-        let styles = [2u32];
+        let styles = [0u32];
+        let rgba = [0u8; 4];
+        let widths = [1.0f64];
+        let diameter = [8.0f64];
+        let symbols = [2u8];
         let values = [0.5f64];
-        let mut output = [0u8; 200];
+        let mut output = [0u8; 232];
         let mut call = |kind, mask, len, kinds_ptr| unsafe {
             xyg_scene_batch_encode(
                 100.0,
@@ -5459,6 +5504,12 @@ mod tests {
                 kinds_ptr,
                 ids.as_ptr(),
                 styles.as_ptr(),
+                rgba.as_ptr(),
+                rgba.as_ptr(),
+                widths.as_ptr(),
+                1,
+                diameter.as_ptr(),
+                symbols.as_ptr(),
                 values.as_ptr(),
                 values.as_ptr(),
                 values.as_ptr(),
@@ -5468,7 +5519,7 @@ mod tests {
                 output.len(),
             )
         };
-        assert_eq!(call(0, 0, 1, kinds.as_ptr()), 200);
+        assert_eq!(call(0, 0, 1, kinds.as_ptr()), 232);
         assert_eq!(call(99, 0, 1, kinds.as_ptr()), usize::MAX);
         assert_eq!(call(0, 2, 1, kinds.as_ptr()), usize::MAX);
         assert_eq!(call(0, 0, 1, std::ptr::null()), usize::MAX);

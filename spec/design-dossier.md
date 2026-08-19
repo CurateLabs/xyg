@@ -510,9 +510,14 @@ F3, still pending (above).
 - **Retained scene graph**, spec-diff → buffer-diff. Pan/zoom is a view-matrix uniform
   update, touching zero data buffers.
 - **Versioned canonical scene IR** in `xyg-engine` ([scene-ir.md](design/scene-ir.md)).
-  Version 1 moves bounded built-in scatter records and SVG construction behind
-  the shared Rust ABI; #58 expands it through layout, ticks, remaining marks,
-  chrome, and whole-scene native export without moving browser paint/lifecycle.
+  Version 2 adds a backend-neutral typed batch behind the shared Rust ABI:
+  canonical viewport/plot bounds and axes; embedded bounded RGBA/stroke styles;
+  and independently renderable scatter (symbol + diameter), polyline, and
+  rectangle records with stable IDs and extent-aware clipping. Numeric records
+  are fixed little-endian bytes, never JSON. The legacy version-1 scatter SVG
+  wrapper remains only as a migration consumer; #58 next connects public figure
+  compilation and whole-scene native export without moving browser paint or
+  interaction lifecycle out of TypeScript.
 - **GPU picking** for hover/select — render IDs to an offscreen target, read back the
   pixel under the cursor. O(1) regardless of point count.
 
@@ -905,8 +910,12 @@ driver-dependent. The testing architecture:
   the chosen tier and the decimated/binned output are deterministic and asserted —
   so "it looked different" can always be bisected to *layout*, *LOD*, or *raster*.
 - The canonical scene has its own schema version. Rust scene goldens and
-  cross-host fixtures are checked before backend pixel comparisons; version 1
-  covers built-in scatter SVG records and #58 grows that oracle by vertical slice.
+  cross-host fixtures are checked before backend pixel comparisons. Version 2
+  fixes layout/axis/style plus scatter/polyline/rectangle record bytes across
+  Python and Node. Any new emitted kind or field semantic bumps the scene
+  version until explicit capability negotiation exists; consumers fail closed
+  on unsupported versions and unknown kinds. #58 grows that oracle by vertical
+  slice before native and browser render consumers attach.
 - CI matrix: reference images from CPU rasterizer; per-backend perceptual diffs;
   the §12 perf harness gains **interaction-latency** metrics (input-to-photon for
   pan, hover, tier-swap; p50/p99 frame time — "60fps" now means *p99 ≤ 16.7 ms

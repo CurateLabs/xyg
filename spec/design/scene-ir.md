@@ -9,8 +9,12 @@ This document is the version contract for that migration.
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
 `SCENE_VERSION` is 2 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
-Changing a record's meaning, units, ordering, or bounds requires a scene-version
-bump. Adding a new record that old consumers never receive does not.
+Changing a record's meaning, units, ordering, bounds, or adding any newly
+emitted record kind requires a scene-version bump. There is no capability
+bitmap or schema negotiation in version 2, so additive emission is not safe.
+If capability negotiation lands later, only explicitly negotiated additions
+may avoid a version bump. Consumers must reject an unsupported scene version
+and, once decoders land, fail closed on an unknown kind rather than guessing.
 
 The IR is an in-process typed contract, not a JSON data path. Numeric arrays
 cross the C ABI as bounded typed buffers and remain subject to the dossier's
@@ -63,15 +67,25 @@ static exporters or the browser Worker consume canonical scenes. One generated
 little-endian byte batch; it does not emit SVG and never places numeric data in
 JSON. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
 two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64
-domain, and symlog constant). Each 48-byte record contains its kind
-(`ScatterScene`, `PolylineScene` vertex, or `RectScene`), visibility/clipping
-flag, stable u64 id, u32 style reference, and four f64 screen coordinates.
+domain, and symlog constant). A bounded embedded style table (maximum 65,536
+entries) makes every style reference batch-local and independently resolvable:
+each 16-byte style stores fill RGBA8, stroke RGBA8, and f64 stroke width.
+Each 56-byte mark record contains its kind (`ScatterScene`, `PolylineScene`
+vertex, or `RectScene`), visibility/clipping flag, scatter symbol, stable u64
+id, u32 style-table index, four f64 screen coordinates, and scatter diameter.
+Non-scatter records must set symbol and diameter to zero.
 
 Rust validates finite non-negative viewport/margins, a non-empty plot region,
 all scale fields, known record kinds, equal array lengths, finite input values,
-and `MAX_SCENE_MARKS`. Masked/non-finite results and fully clipped scatter or
-rectangle records are invisible with zeroed coordinates, enforcing §19 before
-a renderer sees vertex data. Polyline vertices remain available outside the
+and `MAX_SCENE_MARKS`. Style references must resolve inside the embedded table;
+scatter symbols use the stable built-in symbol table and authored outer
+diameters/stroke widths must be finite and non-negative. A renderer derives the
+marker path radius as `max((diameter - stroke_width) / 2, 0.25)`, matching the
+version-1 built-in geometry. Masked/non-finite results and fully clipped
+scatter or rectangle records are invisible with zeroed coordinates, enforcing
+§19 before a renderer sees vertex data. Scatter clipping uses the complete
+derived path radius plus half the stroke width, so a center outside the plot remains
+visible when the marker overlaps it. Polyline vertices remain available outside the
 plot so a backend can clip segments correctly at the canonical bounds. Python
 and Node consume the same checked-in scatter/line/bar/axis byte fixture.
 
@@ -81,14 +95,16 @@ The byte layout is fixed for scene version 2:
 | ---: | ---: | --- |
 | 0 | 4 | ASCII `XYGS` |
 | 4 | 4 | scene version u32 |
-| 8 | 4 | header bytes u32 (152) |
-| 12 | 4 | record bytes u32 (48) |
+| 8 | 4 | header bytes u32 (160) |
+| 12 | 4 | record bytes u32 (56) |
 | 16 | 8 | record count u64 |
-| 24 | 48 | viewport width/height and plot left/top/right/bottom f64 |
-| 72 | 16 | x/y axis stable ids u64 |
-| 88 | 16 | x/y kind u8, mask u8, six reserved zero bytes |
-| 104 | 48 | x/y transformed low/high and constants f64 |
-| 152 | 48 × count | record kind/flags/style/id/four f64 coordinates |
+| 24 | 8 | style count u64 |
+| 32 | 48 | viewport width/height and plot left/top/right/bottom f64 |
+| 80 | 16 | x/y axis stable ids u64 |
+| 96 | 16 | x/y kind u8, mask u8, six reserved zero bytes |
+| 112 | 48 | x/y transformed low/high and constants f64 |
+| 160 | 16 × style count | fill/stroke RGBA8 and stroke-width f64 styles |
+| after styles | 56 × record count | kind/flags/symbol/style/id/four f64 coordinates/diameter |
 
 The existing `xyg_scene_scatter_svg` entry point remains a compatibility
 wrapper during migration. Version 2 intentionally does not add mark-specific

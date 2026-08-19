@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 63
-#define XYG_ABI_SIGNATURE_SHA256 "12b2389231879ed58de4013645fba2323887bb051b9f12eb9a05e33d12609d4b"
+#define XYG_ABI_VERSION 64
+#define XYG_ABI_SIGNATURE_SHA256 "888b598ac477a004d4a2e1d7172e718e8bcf710e2d506c14120d43df814dfbb4"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,7 +87,7 @@ int32_t xyg_sample_mask_u32(const uint32_t * ids, size_t len, uint64_t seed, uin
 size_t xyg_sample_range_indices(size_t size, uint64_t seed, uint64_t threshold, uint32_t * out, size_t capacity);
 int32_t xyg_sankey_layout(uint64_t n_nodes, uint64_t n_links, const uint64_t * sources, const uint64_t * targets, const double * values, double node_width, double node_padding, uint32_t align, uint32_t iterations, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_layer, double * out_value, double * out_source_y0, double * out_source_y1, double * out_target_y0, double * out_target_y1, uint32_t * out_layers, uint64_t * out_err_nodes, uint64_t * out_err_n);
 size_t xyg_scene_axis_ticks(uint32_t kind, double lo, double hi, size_t target, double * out_ticks, double * out_labeled, size_t * out_labeled_len, double * out_step, size_t out_cap);
-size_t xyg_scene_batch_encode(double viewport_width, double viewport_height, double margin_left, double margin_right, double margin_top, double margin_bottom, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * kinds, const uint64_t * stable_ids, const uint32_t * style_refs, const double * x0, const double * y0, const double * x1, const double * y1, size_t len, uint8_t * out, size_t out_cap);
+size_t xyg_scene_batch_encode(double viewport_width, double viewport_height, double margin_left, double margin_right, double margin_top, double margin_bottom, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * kinds, const uint64_t * stable_ids, const uint32_t * style_refs, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, size_t style_count, const double * diameter, const uint8_t * symbols, const double * x0, const double * y0, const double * x1, const double * y1, size_t len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out);
 size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap);
 uint32_t xyg_scene_version();

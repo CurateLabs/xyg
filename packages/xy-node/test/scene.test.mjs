@@ -12,9 +12,15 @@ test("Node Scene v2 matches shared scatter, line, bar, and axis bytes", () => {
     xAxis: { id: sceneFixture.x_axis[0], kind: "linear", domain: sceneFixture.x_axis.slice(2, 4), constant: sceneFixture.x_axis[4], nonpositive: "clip" },
     yAxis: { id: sceneFixture.y_axis[0], kind: "linear", domain: sceneFixture.y_axis.slice(2, 4), constant: sceneFixture.y_axis[4], nonpositive: "clip" },
     kinds: sceneFixture.kinds, stableIds: sceneFixture.stable_ids, styleRefs: sceneFixture.style_refs,
+    styles: sceneFixture.styles.map((style) => ({ fillRgba: style.fill_rgba, strokeRgba: style.stroke_rgba, strokeWidth: style.stroke_width })),
+    diameter: sceneFixture.diameter, symbols: sceneFixture.symbols,
     x0: sceneFixture.x0, y0: sceneFixture.y0, x1: sceneFixture.x1, y1: sceneFixture.y1,
   });
   assert.equal(Buffer.from(encoded).toString("hex"), sceneFixture.expected_hex);
+  const records = 160 + sceneFixture.styles.length * 16;
+  assert.equal(encoded[records + 1], 1); // center outside, full marker overlaps
+  assert.equal(encoded[records + 2], 2); // diamond
+  assert.equal(new DataView(encoded.buffer, encoded.byteOffset).getFloat64(records + 48, true), 16);
 });
 
 test("Node Scene v2 rejects malformed batches", () => {
@@ -22,9 +28,12 @@ test("Node Scene v2 rejects malformed batches", () => {
     viewport: [100, 80], margins: [10, 10, 10, 10],
     xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
     kinds: [0], stableIds: [1], styleRefs: [0], x0: [0.5], y0: [0.5], x1: [0.5], y1: [0.5],
+    styles: [{ fillRgba: [0, 0, 0, 255], strokeRgba: [0, 0, 0, 255], strokeWidth: 1 }],
+    diameter: [8], symbols: [0],
   };
   assert.throws(() => sceneBatchEncode({ ...base, stableIds: [] }), /stableIds must have length 1/);
   assert.throws(() => sceneBatchEncode({ ...base, kinds: [9] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...base, styleRefs: [1] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
 });
 
