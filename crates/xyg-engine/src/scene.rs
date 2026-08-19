@@ -1498,6 +1498,97 @@ impl SceneDocument {
         self.raster_mark_capacity.saturating_add(chrome_capacity)
     }
 
+    #[inline(never)]
+    fn append_raster_marks(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+        let mut index = 0;
+        while index < self.records.len() {
+            let record = self.records[index];
+            if !record.visible {
+                index += 1;
+                continue;
+            }
+            let style = self.styles[record.style_ref];
+            match record.kind {
+                SceneRecordKind::Scatter => {
+                    let geometry = MarkerGeometry::new(
+                        ScatterSymbol::from_code(record.symbol),
+                        record.diameter,
+                        style.stroke_width,
+                    );
+                    out.push(4);
+                    push_raster_f32(out, record.coordinates[0], scale)?;
+                    push_raster_f32(out, record.coordinates[1], scale)?;
+                    push_raster_f32(out, geometry.radius, scale)?;
+                    out.push(record.symbol);
+                    out.extend_from_slice(&style.fill);
+                    push_raster_f32(out, geometry.stroke_width, scale)?;
+                    out.extend_from_slice(&style.stroke);
+                    index += 1;
+                }
+                SceneRecordKind::Rect => {
+                    let points = [
+                        (record.coordinates[0], record.coordinates[1]),
+                        (record.coordinates[2], record.coordinates[1]),
+                        (record.coordinates[2], record.coordinates[3]),
+                        (record.coordinates[0], record.coordinates[3]),
+                    ];
+                    out.push(1);
+                    out.extend_from_slice(&4u32.to_le_bytes());
+                    for (x, y) in points {
+                        push_raster_f32(out, x, scale)?;
+                        push_raster_f32(out, y, scale)?;
+                    }
+                    out.extend_from_slice(&style.fill);
+                    if style.stroke_width > 0.0 {
+                        out.push(3);
+                        out.extend_from_slice(&4u32.to_le_bytes());
+                        for (x, y) in points {
+                            push_raster_f32(out, x, scale)?;
+                            push_raster_f32(out, y, scale)?;
+                        }
+                        push_raster_f32(out, style.stroke_width, scale)?;
+                        out.extend_from_slice(&style.stroke);
+                        out.push(1);
+                        out.extend_from_slice(&0u32.to_le_bytes());
+                        out.push(1);
+                    }
+                    index += 1;
+                }
+                SceneRecordKind::Polyline => {
+                    let start = index;
+                    let id = record.stable_id;
+                    let style_ref = record.style_ref;
+                    while index < self.records.len() {
+                        let point = self.records[index];
+                        if point.kind != SceneRecordKind::Polyline
+                            || point.stable_id != id
+                            || point.style_ref != style_ref
+                            || !point.visible
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                    let count = index - start;
+                    if count >= 2 && style.stroke_width > 0.0 {
+                        out.push(3);
+                        out.extend_from_slice(&(count as u32).to_le_bytes());
+                        for point in &self.records[start..index] {
+                            push_raster_f32(out, point.coordinates[0], scale)?;
+                            push_raster_f32(out, point.coordinates[1], scale)?;
+                        }
+                        push_raster_f32(out, style.stroke_width, scale)?;
+                        out.extend_from_slice(&style.stroke);
+                        out.push(0);
+                        out.extend_from_slice(&0u32.to_le_bytes());
+                        out.push(1);
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
@@ -1531,92 +1622,7 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
         self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
-        let mut index = 0;
-        while index < self.records.len() {
-            let record = self.records[index];
-            if !record.visible {
-                index += 1;
-                continue;
-            }
-            let style = self.styles[record.style_ref];
-            match record.kind {
-                SceneRecordKind::Scatter => {
-                    let geometry = MarkerGeometry::new(
-                        ScatterSymbol::from_code(record.symbol),
-                        record.diameter,
-                        style.stroke_width,
-                    );
-                    out.push(4);
-                    f32_push(&mut out, record.coordinates[0])?;
-                    f32_push(&mut out, record.coordinates[1])?;
-                    f32_push(&mut out, geometry.radius)?;
-                    out.push(record.symbol);
-                    out.extend_from_slice(&style.fill);
-                    f32_push(&mut out, geometry.stroke_width)?;
-                    out.extend_from_slice(&style.stroke);
-                    index += 1;
-                }
-                SceneRecordKind::Rect => {
-                    let points = [
-                        (record.coordinates[0], record.coordinates[1]),
-                        (record.coordinates[2], record.coordinates[1]),
-                        (record.coordinates[2], record.coordinates[3]),
-                        (record.coordinates[0], record.coordinates[3]),
-                    ];
-                    out.push(1);
-                    out.extend_from_slice(&4u32.to_le_bytes());
-                    for (x, y) in points {
-                        f32_push(&mut out, x)?;
-                        f32_push(&mut out, y)?;
-                    }
-                    out.extend_from_slice(&style.fill);
-                    if style.stroke_width > 0.0 {
-                        out.push(3);
-                        out.extend_from_slice(&4u32.to_le_bytes());
-                        for (x, y) in points {
-                            f32_push(&mut out, x)?;
-                            f32_push(&mut out, y)?;
-                        }
-                        f32_push(&mut out, style.stroke_width)?;
-                        out.extend_from_slice(&style.stroke);
-                        out.push(1);
-                        out.extend_from_slice(&0u32.to_le_bytes());
-                        out.push(1);
-                    }
-                    index += 1;
-                }
-                SceneRecordKind::Polyline => {
-                    let start = index;
-                    let id = record.stable_id;
-                    let style_ref = record.style_ref;
-                    while index < self.records.len() {
-                        let point = self.records[index];
-                        if point.kind != SceneRecordKind::Polyline
-                            || point.stable_id != id
-                            || point.style_ref != style_ref
-                            || !point.visible
-                        {
-                            break;
-                        }
-                        index += 1;
-                    }
-                    let count = index - start;
-                    if count >= 2 && style.stroke_width > 0.0 {
-                        out.push(3);
-                        out.extend_from_slice(&(count as u32).to_le_bytes());
-                        for point in &self.records[start..index] {
-                            f32_push(&mut out, point.coordinates[0])?;
-                            f32_push(&mut out, point.coordinates[1])?;
-                        }
-                        f32_push(&mut out, style.stroke_width)?;
-                        out.extend_from_slice(&style.stroke);
-                        out.push(0);
-                        out.extend_from_slice(&0u32.to_le_bytes());
-                        out.push(1);
-                    }
-                }
-            }
-        }
+        self.append_raster_marks(&mut out, scale)?;
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;

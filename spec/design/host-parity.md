@@ -51,14 +51,14 @@ fallback, so the direct-browser product acceptance remains open. See
 [browser-wasm.md](browser-wasm.md).
 
 The #58 scene migration is active: scene schema version 4 provides one
-backend-neutral Rust-owned typed batch for canonical plot layout, axes,
+backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,
 scatter, polyline, and rectangle records through both host bindings. The v1
 scatter SVG wrapper remains temporarily for scatter-only compatibility. Python
 and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
-compatibility renderer until Scene v4 adds canonical layout and authored
-text/style records beyond its Rust-owned default numeric chrome. See
+compatibility renderer until Rust owns canonical layout/gutter selection and Scene
+records cover authored text/style beyond its Rust-owned default numeric chrome. See
 [scene-ir.md](scene-ir.md). Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.

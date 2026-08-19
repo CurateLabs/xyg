@@ -387,8 +387,8 @@ The Rust `scene_v3_batch_encode`, `scene_v3_svg`, and
 layout, scale, clipping, stable-record, encoding, and consumer paths. Renderer
 rows include Scene v4's bounded default two-axis grid/tick/label/spine work;
 that chrome is constant in record count, while the same small/medium/large
-rows expose any accidental per-mark coupling.
-inputs deterministically include contiguous repeated-ID two-vertex polylines,
+rows expose any accidental per-mark coupling. Renderer inputs deterministically
+include contiguous repeated-ID two-vertex polylines,
 nondegenerate forward and reversed rectangles, and rectangle endpoints outside
 the domain so clipping is exercised rather than merely claimed. Construction
 uses release-active assertions to count SVG primitives and structurally parse
