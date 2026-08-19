@@ -98,13 +98,13 @@ def _matrix_include_entries(job_text: str) -> list[dict[str, str]]:
     return entries
 
 
-def _matrix_os_values(job_text: str) -> list[str]:
-    """Return only statically enumerated ``strategy.matrix.os`` values."""
+def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
+    """Return static ``strategy.matrix.os`` values and whether an axis is dynamic."""
     lines = job_text.splitlines()
     try:
         start = next(i for i, line in enumerate(lines) if line == "      matrix:")
     except StopIteration:
-        return []
+        return [], False
     matrix_lines: list[str] = []
     for line in lines[start + 1 :]:
         if line.strip() and len(line) - len(line.lstrip()) <= 6:
@@ -112,6 +112,7 @@ def _matrix_os_values(job_text: str) -> list[str]:
         matrix_lines.append(line.split("#", 1)[0])
 
     values: list[str] = []
+    dynamic_axis = False
     for index, line in enumerate(matrix_lines):
         inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
         if inline_list:
@@ -120,6 +121,10 @@ def _matrix_os_values(job_text: str) -> list[str]:
                 for value in inline_list.group(1).split(",")
                 if value.strip()
             )
+            continue
+        direct_scalar = re.fullmatch(r"\s{8}os:\s*(\S.*?)\s*", line)
+        if direct_scalar:
+            dynamic_axis = True
             continue
         if re.fullmatch(r"\s{8}os:\s*", line):
             for value_line in matrix_lines[index + 1 :]:
@@ -130,9 +135,9 @@ def _matrix_os_values(job_text: str) -> list[str]:
                 if value_line.strip():
                     break
             continue
-        for match in re.finditer(r"(?:^\s*-\s*\{\s*|,\s*)os:\s*([^,}\]\s]+)", line):
+        for match in re.finditer(r"(?:^\s*-\s*\{\s*|^\s*-\s+|,\s*)os:\s*([^,}\]\s]+)", line):
             values.append(match.group(1).strip("\"'"))
-    return values
+    return values, dynamic_axis
 
 
 def _missing_needles(block: str, needles: tuple[str, ...]) -> list[str]:
@@ -1632,8 +1637,12 @@ def validate_workflow_hosting_policy(
         for job_name, block in job_blocks.items():
             if "runs-on: ${{ matrix.os }}" not in block:
                 continue
-            matrix_runners = _matrix_os_values(block)
-            if not matrix_runners:
+            matrix_runners, dynamic_axis = _matrix_os_values(block)
+            if dynamic_axis:
+                errors.append(
+                    f"{path} job {job_name} matrix.os must be a static list, not an expression"
+                )
+            if not matrix_runners and not dynamic_axis:
                 errors.append(
                     f"{path} job {job_name} uses matrix.os without statically "
                     "enumerated runner values"
