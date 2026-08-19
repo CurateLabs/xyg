@@ -479,30 +479,12 @@ _AXIS_GRID_DASHES = {
 # ---------------------------------------------------------------------------
 
 
-def _nice_step(rough: float) -> float:
-    rough = abs(rough)
-    if not np.isfinite(rough) or rough <= 0:
-        return 1.0
-    mag = 10.0 ** np.floor(np.log10(rough))
-    for m in (1, 2, 2.5, 5, 10):
-        if rough <= m * mag * (1 + 1e-12):
-            return m * mag
-    return 10 * mag
-
-
 def _linear_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], float]:
-    a, b = min(lo, hi), max(lo, hi)
-    if not (np.isfinite(a) and np.isfinite(b)):
+    try:
+        ticks, _labeled, step = _native.scene_axis_ticks(0, lo, hi, target)
+        return ticks, step
+    except ValueError:
         return [], 1.0
-    if a == b:
-        return [a], 1.0
-    step = _nice_step((b - a) / target)
-    v = np.ceil(a / step) * step
-    out: list[float] = []
-    while v <= b + step * 1e-9 and len(out) < 200:
-        out.append(0.0 if abs(v) < step * 1e-9 else v)
-        v += step
-    return out, step
 
 
 # Angular tick ladders. `_nice_step`'s [1, 2, 2.5, 5, 10] cannot produce 15,
@@ -543,26 +525,10 @@ def _angular_ticks(lo: float, hi: float, unit: str, target: int = 6) -> tuple[li
 
 def _log_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], list[float], float]:
     """Returns (ticks, labeled_ticks, step)."""
-    a, b = min(lo, hi), max(lo, hi)
-    if a <= 0 or b <= 0 or not (np.isfinite(a) and np.isfinite(b)):
+    try:
+        return _native.scene_axis_ticks(1, lo, hi, target)
+    except ValueError:
         return [], [], 1.0
-    e0 = int(np.floor(np.log10(a)))
-    e1 = int(np.ceil(np.log10(b)))
-    mults = (1, 2, 5) if max(1, e1 - e0) <= max(2, target) else (1,)
-    label_every = max(1, int(np.ceil((e1 - e0 + 1) / max(1, target))))
-    out: list[float] = []
-    labels: list[float] = []
-    for e in range(e0, e1 + 1):
-        base = 10.0**e
-        for m in mults:
-            v = m * base
-            if a * (1 - 1e-12) <= v <= b * (1 + 1e-12):
-                out.append(v)
-                if m == 1 and (e - e0) % label_every == 0:
-                    labels.append(v)
-            if len(out) >= 200:
-                break
-    return out, (labels or out), 1.0
 
 
 def _category_ticks(lo: float, hi: float, n_categories: int, target: int = 6) -> list[int]:

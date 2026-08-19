@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { scatterSceneSvg, sceneVersion } from "../src/index.js";
+import { axisTicks, scatterSceneSvg, sceneVersion } from "../src/index.js";
+
+test("Node consumes Rust-owned canonical axis ticks", () => {
+  assert.deepEqual(axisTicks({ kind: "linear", lo: -0.9, hi: 5.1, target: 6 }), {
+    ticks: [0, 1, 2, 3, 4, 5], labeled: [0, 1, 2, 3, 4, 5], step: 1,
+  });
+  assert.deepEqual(axisTicks({ kind: "log", lo: 0.1, hi: 100, target: 6 }).labeled, [0.1, 1, 10, 100]);
+});
 
 test("Node consumes the versioned Rust scatter scene", () => {
   assert.equal(sceneVersion(), 1);

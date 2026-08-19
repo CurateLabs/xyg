@@ -1428,6 +1428,31 @@ def scene_version() -> int:
     return int(_lib.xyg_scene_version())
 
 
+def scene_axis_ticks(
+    kind: int, lo: float, hi: float, target: int
+) -> tuple[list[float], list[float], float]:
+    """Build bounded canonical linear/log ticks in Rust."""
+    capacity = 200
+    ticks = np.empty(capacity, dtype=np.float64)
+    labeled = np.empty(capacity, dtype=np.float64)
+    labeled_len = ctypes.c_size_t()
+    step = ctypes.c_double()
+    written = _lib.xyg_scene_axis_ticks(
+        kind,
+        lo,
+        hi,
+        target,
+        _ptr_f64(ticks),
+        _ptr_f64(labeled),
+        ctypes.byref(labeled_len),
+        ctypes.byref(step),
+        capacity,
+    )
+    if written == _USIZE_MAX or written > capacity or labeled_len.value > written:
+        raise ValueError("invalid canonical axis tick request")
+    return ticks[:written].tolist(), labeled[: labeled_len.value].tolist(), step.value
+
+
 def scene_scatter_svg(
     x: npt.ArrayLike,
     y: npt.ArrayLike,

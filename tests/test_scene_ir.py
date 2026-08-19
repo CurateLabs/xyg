@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from xy import _native
+from xy import _native, _svg
 from xy._figure import Figure
 
 EXPECTED_SCATTER = (
@@ -11,6 +11,20 @@ EXPECTED_SCATTER = (
     'M 20 16.5 V 25.5" fill="none" stroke="rgb(17,24,39)" '
     'stroke-opacity="0.25" stroke-width="1"/></g>'
 )
+
+
+def test_linear_and_log_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
+    calls: list[tuple[int, float, float, int]] = []
+    original = _native.scene_axis_ticks
+
+    def recording(kind: int, lo: float, hi: float, target: int):
+        calls.append((kind, lo, hi, target))
+        return original(kind, lo, hi, target)
+
+    monkeypatch.setattr(_native, "scene_axis_ticks", recording)
+    assert _svg._linear_ticks(-0.9, 5.1, 6) == ([0.0, 1.0, 2.0, 3.0, 4.0, 5.0], 1.0)
+    assert _svg._log_ticks(0.1, 100.0, 6)[1] == [0.1, 1.0, 10.0, 100.0]
+    assert calls == [(0, -0.9, 5.1, 6), (1, 0.1, 100.0, 6)]
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:

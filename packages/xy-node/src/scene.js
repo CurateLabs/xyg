@@ -1,6 +1,7 @@
 /** Thin Node adapter for the versioned Rust-owned canonical scene IR. */
 import {
   pointer,
+  xySceneAxisTicks,
   xySceneScatterSvg,
   xySceneVersion,
 } from "./native.js";
@@ -26,6 +27,28 @@ function requireLength(value, length, name) {
 
 export function sceneVersion() {
   return xySceneVersion();
+}
+
+export function axisTicks({ kind = "linear", lo, hi, target = 6 }) {
+  const kindCode = kind === "linear" ? 0 : kind === "log" ? 1 : -1;
+  if (kindCode < 0) throw new RangeError("kind must be linear or log");
+  const capacity = 200;
+  const ticks = new Float64Array(capacity);
+  const labeled = new Float64Array(capacity);
+  const labeledLength = new BigUint64Array(1);
+  const step = new Float64Array(1);
+  const rawWritten = xySceneAxisTicks(
+    kindCode, Number(lo), Number(hi), BigInt(target),
+    pointer(ticks, "double *"), pointer(labeled, "double *"),
+    pointer(labeledLength, "size_t *"), pointer(step, "double *"), BigInt(capacity),
+  );
+  if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical axis tick request");
+  const written = Number(rawWritten);
+  const labels = Number(labeledLength[0]);
+  if (!Number.isSafeInteger(written) || written > capacity || labels > written) {
+    throw new RangeError("canonical axis ticks exceeded host output limits");
+  }
+  return { ticks: Array.from(ticks.subarray(0, written)), labeled: Array.from(labeled.subarray(0, labels)), step: step[0] };
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

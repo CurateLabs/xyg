@@ -10,6 +10,96 @@ use std::fmt::Write;
 
 pub const SCENE_VERSION: u32 = 1;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
+pub const MAX_AXIS_TICKS: usize = 200;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AxisTicks {
+    pub ticks: Vec<f64>,
+    pub labeled: Vec<f64>,
+    pub step: f64,
+}
+
+pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneError> {
+    if !lo.is_finite() || !hi.is_finite() || target == 0 || target > MAX_AXIS_TICKS {
+        return Err(SceneError::NonFinite);
+    }
+    let (a, b) = if lo <= hi { (lo, hi) } else { (hi, lo) };
+    if a == b {
+        return Ok(AxisTicks {
+            ticks: vec![a],
+            labeled: vec![a],
+            step: 1.0,
+        });
+    }
+    let rough = (b - a) / target as f64;
+    let magnitude = 10_f64.powf(rough.abs().log10().floor());
+    let step = [1.0, 2.0, 2.5, 5.0, 10.0]
+        .into_iter()
+        .map(|m| m * magnitude)
+        .find(|candidate| rough <= candidate * (1.0 + 1e-12))
+        .unwrap_or(10.0 * magnitude);
+    let mut value = (a / step).ceil() * step;
+    let mut ticks = Vec::with_capacity(target.saturating_add(2).min(MAX_AXIS_TICKS));
+    while value <= b + step * 1e-9 && ticks.len() < MAX_AXIS_TICKS {
+        ticks.push(if value.abs() < step * 1e-9 {
+            0.0
+        } else {
+            value
+        });
+        value += step;
+    }
+    Ok(AxisTicks {
+        labeled: ticks.clone(),
+        ticks,
+        step,
+    })
+}
+
+pub fn log_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneError> {
+    if !lo.is_finite()
+        || !hi.is_finite()
+        || lo <= 0.0
+        || hi <= 0.0
+        || target == 0
+        || target > MAX_AXIS_TICKS
+    {
+        return Err(SceneError::NonFinite);
+    }
+    let (a, b) = if lo <= hi { (lo, hi) } else { (hi, lo) };
+    let e0 = a.log10().floor() as i32;
+    let e1 = b.log10().ceil() as i32;
+    let multipliers: &[f64] = if (e1 - e0).max(1) <= (target as i32).max(2) {
+        &[1.0, 2.0, 5.0]
+    } else {
+        &[1.0]
+    };
+    let label_every = (((e1 - e0 + 1) as f64 / target as f64).ceil() as i32).max(1);
+    let mut ticks = Vec::new();
+    let mut labeled = Vec::new();
+    'outer: for exponent in e0..=e1 {
+        let base = 10_f64.powi(exponent);
+        for multiplier in multipliers {
+            let value = multiplier * base;
+            if value >= a * (1.0 - 1e-12) && value <= b * (1.0 + 1e-12) {
+                ticks.push(value);
+                if *multiplier == 1.0 && (exponent - e0) % label_every == 0 {
+                    labeled.push(value);
+                }
+            }
+            if ticks.len() >= MAX_AXIS_TICKS {
+                break 'outer;
+            }
+        }
+    }
+    if labeled.is_empty() {
+        labeled.clone_from(&ticks);
+    }
+    Ok(AxisTicks {
+        ticks,
+        labeled,
+        step: 1.0,
+    })
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -572,5 +662,24 @@ mod tests {
             "<path d=\"M 10 18 L 11.9 19.38 L 11.18 21.62 L 8.82 21.62 L 8.1 19.38 Z\"",
             "<path d=\"M 10 18 L 10.53 19.27 L 11.9 19.38 L 10.86 20.28 L 11.18 21.62 L 10 20.9 L 8.82 21.62 L 9.14 20.28 L 8.1 19.38 L 9.47 19.27 Z\"",
         ]));
+    }
+
+    #[test]
+    fn canonical_linear_and_log_ticks_match_public_policy() {
+        assert_eq!(
+            linear_ticks(-0.9, 5.1, 6).unwrap(),
+            AxisTicks {
+                ticks: vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+                labeled: vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+                step: 1.0,
+            }
+        );
+        let log = log_ticks(0.1, 100.0, 6).unwrap();
+        assert_eq!(
+            log.ticks,
+            vec![0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]
+        );
+        assert_eq!(log.labeled, vec![0.1, 1.0, 10.0, 100.0]);
+        assert_eq!(log.step, 1.0);
     }
 }

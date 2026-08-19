@@ -88,12 +88,60 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 60;
+pub const ABI_VERSION: u32 = 61;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
 pub extern "C" fn xyg_scene_version() -> u32 {
     scene::SCENE_VERSION
+}
+
+/// Build canonical axis ticks. `kind` is 0 for linear and 1 for base-10 log.
+/// Returns the required tick count or `usize::MAX` for invalid arguments. The
+/// labeled count and step are written only when `out_cap` is sufficient.
+///
+/// # Safety
+/// Output buffers must each address `out_cap` writable values; scalar outputs
+/// must address one writable value. Output spans must not overlap.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_axis_ticks(
+    kind: u32,
+    lo: f64,
+    hi: f64,
+    target: usize,
+    out_ticks: *mut f64,
+    out_labeled: *mut f64,
+    out_labeled_len: *mut usize,
+    out_step: *mut f64,
+    out_cap: usize,
+) -> usize {
+    let result = ffi_guard(None, || match kind {
+        0 => scene::linear_ticks(lo, hi, target).ok(),
+        1 => scene::log_ticks(lo, hi, target).ok(),
+        _ => None,
+    });
+    let Some(result) = result else {
+        return usize::MAX;
+    };
+    let required = result.ticks.len();
+    if out_cap < required {
+        return required;
+    }
+    if out_labeled_len.is_null()
+        || out_step.is_null()
+        || (required > 0 && (out_ticks.is_null() || out_labeled.is_null()))
+    {
+        return usize::MAX;
+    }
+    if required > 0 {
+        std::slice::from_raw_parts_mut(out_ticks, out_cap)[..required]
+            .copy_from_slice(&result.ticks);
+        std::slice::from_raw_parts_mut(out_labeled, out_cap)[..result.labeled.len()]
+            .copy_from_slice(&result.labeled);
+    }
+    *out_labeled_len = result.labeled.len();
+    *out_step = result.step;
+    required
 }
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 

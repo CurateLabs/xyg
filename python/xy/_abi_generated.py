@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 60
-SIGNATURE_SHA256 = "96ddcc4403c5fce01c36020322b0b526ac01f53d7532a6e28d81416976e65415"
+ABI_VERSION = 61
+SIGNATURE_SHA256 = "9205575d38831abfff36045c2a3e3badb7f0d8762d7d409961d2050894aa0af5"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -310,6 +310,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_sankey_layout
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_scene_axis_ticks(uint32_t kind, double lo, double hi, size_t target, double * out_ticks, double * out_labeled, size_t * out_labeled_len, double * out_step, size_t out_cap)
+    function = lib.xyg_scene_axis_ticks
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_scatter_svg
     function.restype = ctypes.c_size_t
