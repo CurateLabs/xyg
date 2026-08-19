@@ -1376,7 +1376,7 @@ def test_workflow_policy_rejects_arbitrary_matrix_runner(tmp_path: Path) -> None
 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
-    assert any("approved Blacksmith label" in error for error in errors)
+    assert any("matrix.os must be a static list" in error for error in errors)
 
 
 def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> None:
@@ -1606,6 +1606,45 @@ def test_workflow_policy_rejects_multiline_matrix_runner_scalar(tmp_path: Path) 
         "        os:\n"
         "          - blacksmith-4vcpu-ubuntu-2404\n"
         "            arbitrary-third-party-runner\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_quoted_flow_include_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "quoted-flow.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        include:\n"
+        '          - { os: "blacksmith-4vcpu-ubuntu-2404}arbitrary-third-party-runner" }\n'
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_inline_matrix_axis(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "inline-axis.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        '        os: ["blacksmith-4vcpu-ubuntu-2404,blacksmith-4vcpu-ubuntu-2404"]\n'
         "    steps: []\n",
         encoding="utf-8",
     )

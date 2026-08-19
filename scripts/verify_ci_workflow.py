@@ -147,7 +147,10 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
                     key, unsafe = _decode_yaml_key(match.group("key"))
                     include_unsafe = include_unsafe or unsafe
                     if key == "os":
-                        os_values.append(match.group("value").strip().strip("\"'"))
+                        raw_value = match.group("value").strip()
+                        if raw_value.startswith(('"', "'")):
+                            include_unsafe = True
+                        os_values.append(raw_value.strip("\"'"))
                 if len(os_values) != 1 or os_values[0].startswith("${{"):
                     include_unsafe = True
                 else:
@@ -175,11 +178,7 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
             value = parsed[3].strip()
             inline_list = re.fullmatch(r"\[(.*)\]", value)
             if inline_list:
-                values.extend(
-                    item.strip().strip("\"'")
-                    for item in inline_list.group(1).split(",")
-                    if item.strip()
-                )
+                axis_unsafe = True
                 continue
             if not value:
                 for value_line in matrix_lines[index + 1 :]:
@@ -196,14 +195,6 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
                             values.append(scalar.strip("\"'"))
                         continue
                     axis_unsafe = True
-            continue
-        inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
-        if inline_list:  # pragma: no cover - handled structurally above
-            values.extend(
-                value.strip().strip("\"'")
-                for value in inline_list.group(1).split(",")
-                if value.strip()
-            )
             continue
     dynamic_axis = (
         axis_unsafe
