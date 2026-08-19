@@ -942,9 +942,9 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "direct-browser Rust/WASM foundation",
         "wasm32-unknown-unknown",
         "toolchain: 1.88.0",
+        "persist-credentials: false",
         "python3 scripts/gen_wasm_abi.py --check",
         "cargo test -p xyg-wasm",
-        "cargo build -p xyg-wasm --release --target",
         "native PNG",
         "node js/build.mjs",
         "node js/package-wasm.mjs",
@@ -954,13 +954,48 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "packages/xy-client/dist/xyg-wasm.wasm",
         "packages/xy-client/dist/wasm-worker.js",
     )
+    wasm_job = jobs.get("wasm_foundation", "")
+    _require_step_runs_exactly(
+        errors,
+        wasm_job,
+        "Build raw browser adapter without raster or PNG",
+        "exact fail-closed wasm32 build and dependency evidence commands",
+        "set -euo pipefail",
+        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt",
+        "test -s wasm-tree.txt",
+        "if grep -Eq '(^| )png v' wasm-tree.txt; then",
+        'echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"',
+        "exit 1",
+        "fi",
+    )
+    _require_step_runs_exactly(
+        errors,
+        wasm_job,
+        "Install Chromium",
+        "active bounded browser-only Playwright install without apt",
+        "npx playwright install chromium",
+    )
     _require_step_contains(
         errors,
-        jobs.get("wasm_foundation", ""),
+        wasm_job,
         "Install Chromium",
-        "bounded browser-only Playwright install without apt",
+        "bounded Chromium install timeout",
         "timeout-minutes: 10",
-        "npx playwright install chromium",
+    )
+    _require_step_runs_exactly(
+        errors,
+        wasm_job,
+        "Strict-CSP local-only lifecycle smoke",
+        "active strict-CSP lifecycle command",
+        "node scripts/wasm_foundation_smoke.mjs",
+    )
+    _require_step_contains(
+        errors,
+        wasm_job,
+        "Strict-CSP local-only lifecycle smoke",
+        "bounded lifecycle timeout",
+        "timeout-minutes: 10",
     )
     test_job = jobs.get("test", "")
     _require_step_runs_exactly(

@@ -186,6 +186,10 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
             );
         }
         instance.arena.resize(length, 0);
+        if length != 0 {
+            instance.copy_count = instance.copy_count.saturating_add(1);
+            instance.copy_bytes = instance.copy_bytes.saturating_add(length as u64);
+        }
         instance.last_error.clear();
         STATUS_OK
     })
@@ -252,8 +256,6 @@ pub extern "C" fn xyg_wasm_scene_validate(
         };
         let result = scene::validate_scene_batch(batch);
         instance.latest_sequence = sequence;
-        instance.copy_count = instance.copy_count.saturating_add(1);
-        instance.copy_bytes = instance.copy_bytes.saturating_add(length as u64);
         match result {
             Ok(summary) => {
                 instance.last_scene_records = summary.records;
@@ -378,15 +380,20 @@ mod tests {
         assert_eq!(xyg_wasm_last_scene_records(handle), 1);
         assert_eq!(xyg_wasm_last_scene_styles(handle), 1);
         assert_eq!(xyg_wasm_copy_count(handle), 1);
+        write_arena(handle, &bytes);
         assert_eq!(
             xyg_wasm_scene_validate(handle, 1, 0, bytes.len()),
             STATUS_STALE_SEQUENCE
         );
+        assert_eq!(xyg_wasm_copy_count(handle), 2);
         assert_eq!(xyg_wasm_cancel(handle, 3), STATUS_OK);
+        write_arena(handle, &bytes);
         assert_eq!(
             xyg_wasm_scene_validate(handle, 2, 0, bytes.len()),
             STATUS_CANCELLED
         );
+        assert_eq!(xyg_wasm_copy_count(handle), 3);
+        assert_eq!(xyg_wasm_copy_bytes_lo(handle), (bytes.len() * 3) as u32);
         assert_eq!(
             xyg_wasm_scene_validate(handle, 4, bytes.len(), 1),
             STATUS_INVALID_ARGUMENT

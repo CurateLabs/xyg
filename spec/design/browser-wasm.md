@@ -56,8 +56,11 @@ aliasing. `SharedArrayBuffer` is an optional future optimization that requires
 an isolated context; this foundation rejects it explicitly rather than
 silently cloning or changing ownership.
 
-The foundation diagnostics report copy count, split-u64 copied bytes, current
-logical arena length, scene record/style counts, ABI version, and scene version.
+The foundation diagnostics report every non-empty JS→WASM staging copy at the
+successful arena-resize boundary, before validation can reject a stale,
+cancelled, malformed, or incompatible request. They include copy count,
+split-u64 copied bytes, current logical arena length, scene record/style counts,
+ABI version, and scene version.
 The Worker normalizes semantically unsigned wasm32 results before exposing
 them, so a set high bit in either copied-byte half remains a non-negative u32.
 They never log user values.
@@ -140,7 +143,7 @@ node scripts/wasm_foundation_smoke.mjs
 The CI artifact is compile- and runtime-verified. This slice makes no startup,
 throughput, memory, or bundle-size win claim. Those budgets and comparisons
 must be established through the repository's hosted CodSpeed workflow before
-#59 can close; raw local timings are not performance evidence.
+Issue `#59` can close; raw local timings are not performance evidence.
 
 ## Remaining #59 work
 

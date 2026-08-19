@@ -34,13 +34,22 @@ function statusCode(status: number): string {
 }
 
 function disposeRust() {
-  if (exports && handle) exports.xyg_wasm_instance_dispose(handle);
-  handle = 0;
-  exports = null;
+  try {
+    if (exports && handle) exports.xyg_wasm_instance_dispose(handle);
+  } catch {
+    // A trapped instance may trap again during cleanup; preserve the original error.
+  } finally {
+    handle = 0;
+    exports = null;
+  }
 }
 
 function disposeAttempt(bound: XygWasmExports | null, created: number) {
-  if (bound && created) bound.xyg_wasm_instance_dispose(created);
+  try {
+    if (bound && created) bound.xyg_wasm_instance_dispose(created);
+  } catch {
+    // Best-effort cleanup for a partially initialized or trapped instance.
+  }
 }
 
 async function loadModule(source: any): Promise<WebAssembly.Module> {

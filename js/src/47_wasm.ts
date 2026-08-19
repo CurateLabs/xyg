@@ -184,10 +184,18 @@ export class XygWasmWorker {
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const payload = sceneMessage(scene, options.transfer !== false);
     const result = this.promiseFor<XygWasmSceneValidation>(requestId);
-    this.worker.postMessage(
-      { type: "scene.validate", requestId, sequence, scene: payload.buffer },
-      payload.transfer,
-    );
+    try {
+      this.worker.postMessage(
+        { type: "scene.validate", requestId, sequence, scene: payload.buffer },
+        payload.transfer,
+      );
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError(
+        "XYG_WASM_INVALID_ARGUMENT",
+        cause instanceof Error ? cause.message : "could not post the scene to the worker",
+      );
+    }
     return {
       requestId,
       sequence,

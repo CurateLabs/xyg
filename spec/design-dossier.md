@@ -485,9 +485,10 @@ F3, still pending (above).
   WASM core (§8).
 - ✅ Retained scene graph + buffer diffs — updating a color is a uniform write, not a
   data re-upload.
-- ✅ Large canonical columns live outside WASM linear memory (JS ArrayBuffers / GPU).
+- ✅ Large canonical columns live outside WASM linear memory in JS-owned ArrayBuffers.
   Direct-browser Rust scans them through bounded copied chunks; linear memory holds
   only the current staging slice, metadata, and screen-sized derived buffers (§4).
+  GPU buffers are derived, rebuildable caches rather than canonical storage.
 - ✅ Arrow **validity bitmaps** carried through the pipeline — nulls cost 1 bit, not a
   sentinel column (see §19).
 - ✅ **Explicit memory budgets with eviction.** VRAM is finite and not queryable in

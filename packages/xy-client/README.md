@@ -19,6 +19,10 @@ from the repository root.
 | `./wasm-worker` (`dist/wasm-worker.js`) | Static module Worker | Explicit direct-browser Rust/WASM lifecycle foundation (#59) |
 | `./xyg-wasm.wasm` (`dist/xyg-wasm.wasm`) | Raw WebAssembly | Same safe `xyg-engine`, compiled without native raster/PNG |
 
+The raw WASM artifact is not produced by `js/build.mjs`. Build it with
+`npm run build:wasm`, which compiles `xyg-wasm` for `wasm32-unknown-unknown`
+and packages the validated bytes into `dist/xyg-wasm.wasm`.
+
 The direct-browser foundation requires callers to provide both an explicit
 static worker URL and an explicit local WASM URL, `WebAssembly.Module`, or byte
 buffer. It never creates a Blob worker, guesses an asset path, imports from a

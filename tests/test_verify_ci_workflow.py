@@ -1243,6 +1243,42 @@ def test_ci_workflow_rejects_unbounded_wasm_chromium_install(tmp_path: Path) -> 
     assert any("Install Chromium" in error and "timeout-minutes: 10" in error for error in errors)
 
 
+def test_ci_workflow_binds_exact_wasm_target_build(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+            "cargo build -p xyg-wasm --release --target x86_64-unknown-linux-gnu",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("exact fail-closed wasm32 build" in error for error in errors)
+
+
+def test_ci_workflow_rejects_commented_wasm_chromium_install(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "          # Keep Chromium artifact installation cached and browser-specific.\n"
+            "          npx playwright install chromium\n",
+            "          # Keep Chromium artifact installation cached and browser-specific.\n"
+            "          # npx playwright install chromium\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("active bounded browser-only Playwright" in error for error in errors)
+
+
 def test_ci_workflow_rejects_duplicate_wasm_foundation_job(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"

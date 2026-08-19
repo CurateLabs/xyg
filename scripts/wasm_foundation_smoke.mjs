@@ -13,6 +13,8 @@ const allowed = new Set([
   "/packages/xy-client/dist/xyg-wasm.wasm",
 ]);
 const requests = [];
+const delayedResponses = [];
+const delayedWaiters = [];
 const csp = [
   "default-src 'none'",
   "script-src 'self' 'wasm-unsafe-eval'",
@@ -44,9 +46,22 @@ const server = createServer(async (request, response) => {
     return;
   }
   if (url.pathname === "/delayed.wasm") {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    response.setHeader("Content-Type", "application/wasm");
-    response.end(await readFile(join(root, "packages/xy-client/dist/xyg-wasm.wasm")));
+    delayedResponses.push(response);
+    for (const waiter of delayedWaiters.splice(0)) waiter.end("ready");
+    return;
+  }
+  if (url.pathname === "/await-delayed") {
+    if (delayedResponses.length) response.end("ready");
+    else delayedWaiters.push(response);
+    return;
+  }
+  if (url.pathname === "/release-delayed") {
+    const bytes = await readFile(join(root, "packages/xy-client/dist/xyg-wasm.wasm"));
+    for (const delayed of delayedResponses.splice(0)) {
+      delayed.setHeader("Content-Type", "application/wasm");
+      delayed.end(bytes);
+    }
+    response.end("released");
     return;
   }
   if (!allowed.has(url.pathname)) {
@@ -70,15 +85,23 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
   const external = [];
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.hostname !== "127.0.0.1") external.push(request.url());
   });
   await page.goto(`http://127.0.0.1:${address.port}/`);
-  const result = await page.evaluate(async () => globalThis.__xygWasmFoundation);
+  const result = await Promise.race([
+    page.evaluate(async () => globalThis.__xygWasmFoundation),
+    new Promise((_, reject) => setTimeout(() => reject(new Error("browser foundation smoke timed out")), 20_000)),
+  ]);
+  if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);
-  const known = new Set(["/", "/redirect.wasm", "/delayed.wasm", ...allowed]);
+  const known = new Set([
+    "/", "/redirect.wasm", "/delayed.wasm", "/await-delayed", "/release-delayed", ...allowed,
+  ]);
   const unknown = requests.filter((path) => !known.has(path));
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);
   console.log("strict-CSP local-only WASM worker lifecycle smoke passed");

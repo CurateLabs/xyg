@@ -67,7 +67,7 @@ function utf8(value) {
   return [...u32(bytes.length), ...bytes];
 }
 
-async function fixtureModule({ trap = false, highBitDiagnostics = false } = {}) {
+async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnostics = false } = {}) {
   const names = [
     "xyg_wasm_abi_version",
     "xyg_wasm_scene_version",
@@ -115,7 +115,7 @@ async function fixtureModule({ trap = false, highBitDiagnostics = false } = {}) 
     0, 0,
   ];
   const bodies = names.map((_, index) => {
-    const instructions = trap && index === 9
+    const instructions = (trap && index === 9) || (disposeTrap && index === 4)
       ? [0x00, 0x0b] // unreachable; end
       : [0x41, ...i32(values[index] ?? 0), 0x0b];
     const body = [0, ...instructions]; // no local declarations
@@ -152,14 +152,33 @@ function rawWorkerHarness() {
   const messages = [];
   worker.onmessage = (event) => {
     messages.push(event.data);
-    pending.get(event.data?.requestId)?.(event.data);
+    const entry = pending.get(event.data?.requestId);
+    if (entry) {
+      clearTimeout(entry.timeout);
+      entry.resolve(event.data);
+    }
     pending.delete(event.data?.requestId);
   };
+  const failPending = (cause) => {
+    for (const entry of pending.values()) {
+      clearTimeout(entry.timeout);
+      entry.reject(cause);
+    }
+    pending.clear();
+  };
+  worker.onerror = (event) => failPending(new Error(event.message || "raw worker failed"));
+  worker.onmessageerror = () => failPending(new Error("raw worker returned an unreadable message"));
   return {
     worker,
     messages,
     request(message) {
-      const response = new Promise((resolve) => pending.set(message.requestId, resolve));
+      const response = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pending.delete(message.requestId);
+          reject(new Error(`raw worker request ${message.requestId} timed out`));
+        }, 2_000);
+        pending.set(message.requestId, { resolve, reject, timeout });
+      });
       worker.postMessage(message);
       return response;
     },
@@ -184,10 +203,12 @@ async function run() {
 
   const duplicate = rawWorkerHarness();
   const firstInit = duplicate.request(rawInit(100, { kind: "url", value: "/delayed.wasm" }));
+  await fetch("/await-delayed");
   const secondInit = await duplicate.request(rawInit(101, { kind: "module", value: wasmModule }));
   if (secondInit.ok || secondInit.error?.code !== "XYG_WASM_ALREADY_INITIALIZED") {
     throw new Error(`concurrent duplicate init was not rejected: ${JSON.stringify(secondInit)}`);
   }
+  await fetch("/release-delayed");
   const firstReady = await firstInit;
   if (!firstReady.ok) throw new Error(`first concurrent init failed: ${JSON.stringify(firstReady)}`);
   await duplicate.request({ type: "dispose", requestId: 102 });
@@ -197,11 +218,12 @@ async function run() {
   disposedDuringInit.worker.postMessage(
     rawInit(110, { kind: "url", value: "/delayed.wasm" }),
   );
+  await fetch("/await-delayed");
   const disposedResponse = await disposedDuringInit.request({ type: "dispose", requestId: 111 });
   if (!disposedResponse.ok) {
     throw new Error(`dispose during init failed: ${JSON.stringify(disposedResponse)}`);
   }
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await fetch("/release-delayed");
   if (disposedDuringInit.messages.some((message) => message.requestId === 110)) {
     throw new Error("disposed initialization published a late ready or error response");
   }
@@ -244,6 +266,10 @@ async function run() {
   const cancelled = worker.validateScene(canonicalSceneV3(), { sequence: 12 });
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
+  const afterRejected = await worker.validateScene(canonicalSceneV3(), { sequence: 13 }).result;
+  if (afterRejected.copyCount !== 4 || afterRejected.copyBytesLo !== 232 * 4) {
+    throw new Error(`stale/malformed staging copies were not counted: ${JSON.stringify(afterRejected)}`);
+  }
   await worker.dispose();
   try {
     worker.validateScene(canonicalSceneV3());
@@ -271,6 +297,15 @@ async function run() {
     maxArenaBytes: 1024,
   });
   await byBytes.ready;
+  const detached = canonicalSceneV3().buffer;
+  await byBytes.validateScene(detached, { sequence: 1 }).result;
+  try {
+    byBytes.validateScene(detached, { sequence: 2 });
+    throw new Error("detached scene buffer was accepted");
+  } catch (error) {
+    if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_INVALID_ARGUMENT") throw error;
+  }
+  await byBytes.validateScene(canonicalSceneV3(), { sequence: 3 }).result;
   await byBytes.dispose();
 
   // Explicit user URL is supported and is the only branch allowed to fetch
@@ -303,6 +338,18 @@ async function run() {
     "XYG_WASM_TRAP",
   );
   await trapped.dispose();
+
+  const doubleTrapped = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: await fixtureModule({ trap: true, disposeTrap: true }),
+    maxArenaBytes: 1024,
+  });
+  await doubleTrapped.ready;
+  await rejected(
+    doubleTrapped.validateScene(canonicalSceneV3(), { sequence: 1 }).result,
+    "XYG_WASM_TRAP",
+  );
+  await doubleTrapped.dispose();
 
   const unsigned = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

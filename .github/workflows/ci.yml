@@ -265,20 +265,18 @@ jobs:
         run: .venv/bin/python scripts/bench.py --sizes 1e5,1e6
 
   wasm_foundation:
-    name: Direct browser Rust/WASM foundation (${{ matrix.target }})
+    name: Direct browser Rust/WASM foundation (wasm32-unknown-unknown)
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [wasm32-unknown-unknown]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Packaging derives the version from the latest xyg-v* tag.
           fetch-depth: 0
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
           toolchain: 1.88.0
-          targets: ${{ matrix.target }}
+          targets: wasm32-unknown-unknown
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
@@ -293,8 +291,10 @@ jobs:
         run: cargo test -p xyg-wasm
       - name: Build raw browser adapter without raster or PNG
         run: |
-          cargo build -p xyg-wasm --release --target ${{ matrix.target }}
-          cargo tree -p xyg-wasm --target ${{ matrix.target }} | tee wasm-tree.txt
+          set -euo pipefail
+          cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+          cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt
+          test -s wasm-tree.txt
           if grep -Eq '(^| )png v' wasm-tree.txt; then
             echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"
             exit 1
@@ -303,7 +303,7 @@ jobs:
         run: |
           npm ci
           node js/build.mjs
-          node js/package-wasm.mjs target/${{ matrix.target }}/release/xyg_wasm.wasm
+          node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
       - name: Install Chromium
         timeout-minutes: 10
         run: |
@@ -311,6 +311,7 @@ jobs:
           # Keep Chromium artifact installation cached and browser-specific.
           npx playwright install chromium
       - name: Strict-CSP local-only lifecycle smoke
+        timeout-minutes: 10
         run: node scripts/wasm_foundation_smoke.mjs
       - name: Upload direct-browser foundation artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
