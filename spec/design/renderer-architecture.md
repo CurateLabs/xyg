@@ -16,7 +16,7 @@ the kernel channel (`54_kernel.ts`) in [wire-protocol.md](wire-protocol.md).
 What remains normatively unspecified is the ARIA/DOM accessibility contract —
 see R11.
 
-Scene v2 ([scene-ir.md](scene-ir.md)) is the incoming backend-neutral target,
+Scene v3 ([scene-ir.md](scene-ir.md)) is the incoming backend-neutral target,
 not yet a TypeScript decoder. Its fixed binary batch embeds bounded styles and
 complete scatter symbol/diameter geometry plus polyline/rectangle records.
 When #59 attaches the browser consumer, TypeScript keeps GPU paint, picking,

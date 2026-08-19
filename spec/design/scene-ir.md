@@ -11,7 +11,7 @@ This document is the version contract for that migration.
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 2, so additive emission is not safe.
+bitmap or schema negotiation in version 3, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
@@ -59,9 +59,9 @@ until those policies move in later slices. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
 
-## Version 2: backend-neutral core scene batch
+## Version 3: backend-neutral core scene batch
 
-Version 2 establishes the renderer-independent contract required before whole
+Version 3 establishes the renderer-independent contract required before whole
 static exporters or the browser Worker consume canonical scenes. One generated
 `xyg_scene_batch_encode` ABI accepts bounded typed arrays and emits a stable
 little-endian byte batch; it does not emit SVG and never places numeric data in
@@ -79,17 +79,28 @@ Rust validates finite non-negative viewport/margins, a non-empty plot region,
 all scale fields, known record kinds, equal array lengths, finite input values,
 and `MAX_SCENE_MARKS`. Style references must resolve inside the embedded table;
 scatter symbols use the stable built-in symbol table and authored outer
-diameters/stroke widths must be finite and non-negative. A renderer derives the
-marker path radius as `max((diameter - stroke_width) / 2, 0.25)`, matching the
-version-1 built-in geometry. Masked/non-finite results and fully clipped
+diameters/stroke widths must be finite and non-negative. The canonical marker
+policy shared with the version-1 SVG wrapper is:
+
+- line-only symbols (`plus-line`, `x-line`, `horizontal-line`, `vertical-line`)
+  use an implicit 1px stroke only when authored stroke width is zero;
+- path radius is `max(diameter / 2 - effective_stroke_width / 2, 0)`, with no
+  hidden minimum-radius clamp;
+- most symbols have path x/y extent equal to radius; diamond uses `sqrt(2) ×
+  radius` on both axes, thin-diamond uses `0.6 × sqrt(2) × radius` on x and
+  `sqrt(2) × radius` on y, x-line uses `0.707 × radius`, and horizontal/vertical
+  line path extent is zero on its perpendicular axis; and
+- clipping adds half the effective stroke width to each path-axis extent.
+
+Masked/non-finite results and fully clipped
 scatter or rectangle records are invisible with zeroed coordinates, enforcing
 §19 before a renderer sees vertex data. Scatter clipping uses the complete
-derived path radius plus half the stroke width, so a center outside the plot remains
+symbol-specific path extent plus half the stroke width, so a center outside the plot remains
 visible when the marker overlaps it. Polyline vertices remain available outside the
 plot so a backend can clip segments correctly at the canonical bounds. Python
 and Node consume the same checked-in scatter/line/bar/axis byte fixture.
 
-The byte layout is fixed for scene version 2:
+The byte layout is fixed for scene version 3:
 
 | Offset | Bytes | Field |
 | ---: | ---: | --- |
@@ -106,8 +117,35 @@ The byte layout is fixed for scene version 2:
 | 160 | 16 × style count | fill/stroke RGBA8 and stroke-width f64 styles |
 | after styles | 56 × record count | kind/flags/symbol/style/id/four f64 coordinates/diameter |
 
+### Fixed record semantics
+
+All records are emitted in authored order. `visible = 0` means all four
+coordinates are zero and the consumer emits no primitive. Every record's
+`style_ref` indexes the batch-local style table; out-of-range references are
+invalid.
+
+- **Scatter (kind 0):** `x0,y0` is the mapped center; `x1,y1` is reserved and
+  always zero. `symbol` is the stable built-in symbol code and `diameter` is the
+  authored outer diameter interpreted by the canonical marker policy above.
+  Each record is an independent marker; stable ID supplies animation/picking
+  identity, not grouping.
+- **Polyline vertex (kind 1):** `x0,y0` is one mapped vertex; `x1,y1`, symbol,
+  and diameter are zero. Consecutive visible kind-1 records with the same stable
+  ID form one polyline in record order. A stable-ID change, a non-polyline
+  record, or an invisible vertex terminates the run; a later repeated stable ID
+  starts a new run and never reconnects across the break. A one-vertex run is
+  valid but draws no segment.
+- **Rectangle (kind 2):** coordinates are normalized screen-space
+  `left,top,right,bottom` in `x0,y0,x1,y1`, independent of data order or reversed
+  axes. Symbol and diameter are zero. Each record is one closed axis-aligned
+  rectangle; stable ID is independent animation/picking identity.
+
+Decoders must require the exact header/record widths for the declared version,
+reject unknown kinds, and enforce the reserved-zero fields above. They must not
+infer a different grouping or corner convention.
+
 The existing `xyg_scene_scatter_svg` entry point remains a compatibility
-wrapper during migration. Version 2 intentionally does not add mark-specific
+wrapper during migration. Version 3 intentionally does not add mark-specific
 SVG ABIs: native SVG/raster consumers and the Rust/WASM browser Worker attach
 to this single scene batch in subsequent slices.
 

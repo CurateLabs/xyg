@@ -4,9 +4,9 @@ import test from "node:test";
 
 import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneVersion } from "../src/index.js";
 
-const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v2.json", import.meta.url), "utf8"));
+const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 
-test("Node Scene v2 matches shared scatter, line, bar, and axis bytes", () => {
+test("Node Scene v3 matches shared scatter, line, bar, and axis bytes", () => {
   const encoded = sceneBatchEncode({
     viewport: sceneFixture.viewport, margins: sceneFixture.margins,
     xAxis: { id: sceneFixture.x_axis[0], kind: "linear", domain: sceneFixture.x_axis.slice(2, 4), constant: sceneFixture.x_axis[4], nonpositive: "clip" },
@@ -20,10 +20,18 @@ test("Node Scene v2 matches shared scatter, line, bar, and axis bytes", () => {
   const records = 160 + sceneFixture.styles.length * 16;
   assert.equal(encoded[records + 1], 1); // center outside, full marker overlaps
   assert.equal(encoded[records + 2], 2); // diamond
-  assert.equal(new DataView(encoded.buffer, encoded.byteOffset).getFloat64(records + 48, true), 16);
+  const view = new DataView(encoded.buffer, encoded.byteOffset);
+  assert.equal(view.getFloat64(records + 48, true), 16);
+  const line0 = records + 56;
+  const line1 = line0 + 56;
+  const rect = line1 + 56;
+  assert.equal(view.getBigUint64(line0 + 8, true), 201n);
+  assert.equal(view.getBigUint64(line1 + 8, true), 201n);
+  assert.deepEqual([view.getFloat64(line0 + 32, true), view.getFloat64(line0 + 40, true)], [0, 0]);
+  assert.deepEqual(Array.from({ length: 4 }, (_, index) => view.getFloat64(rect + 16 + index * 8, true)), [156, 142, 272, 318]);
 });
 
-test("Node Scene v2 rejects malformed batches", () => {
+test("Node Scene v3 rejects malformed batches", () => {
   const base = {
     viewport: [100, 80], margins: [10, 10, 10, 10],
     xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
@@ -61,7 +69,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 2);
+  assert.equal(sceneVersion(), 3);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],

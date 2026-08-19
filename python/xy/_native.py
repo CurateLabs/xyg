@@ -1524,7 +1524,7 @@ def scene_batch_encode(
     x1: npt.ArrayLike,
     y1: npt.ArrayLike,
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v2 typed batch."""
+    """Encode the bounded backend-neutral Scene v3 typed batch."""
     kind_array = np.ascontiguousarray(kinds, dtype=np.uint8).reshape(-1)
     ids = np.ascontiguousarray(stable_ids, dtype=np.uint64).reshape(-1)
     styles = np.ascontiguousarray(style_refs, dtype=np.uint32).reshape(-1)

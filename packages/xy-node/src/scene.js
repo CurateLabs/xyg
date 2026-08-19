@@ -84,7 +84,7 @@ function axisDescriptor(axis, name) {
   return [BigInt(id), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
 }
 
-/** Encode the shared backend-neutral Scene v2 typed batch. */
+/** Encode the shared backend-neutral Scene v3 typed batch. */
 export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");

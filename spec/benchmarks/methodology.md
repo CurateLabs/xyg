@@ -381,7 +381,7 @@ versioned canonical-scene slice (#58), including host paint resolution, the
 typed Rust scene call, built-in marker geometry, and SVG fragment assembly.
 The 100k `test_scene_scale_map_100k` row isolates the vectorized Rust-owned
 symlog domain-to-pixel record used before scatter/line/bar scene construction.
-The Rust `scene_v2_batch_encode` rows at 10k and 100k records isolate the shared
+The Rust `scene_v3_batch_encode` rows at 10k and 100k records isolate the shared
 layout, scale, clipping, stable-record, and little-endian encoding path for a
 deterministic mixed scatter/polyline/rectangle workload. Run it through the
 repository CodSpeed harness; hosted CodSpeed remains the performance authority.

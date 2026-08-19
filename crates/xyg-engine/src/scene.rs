@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 2;
+pub const SCENE_VERSION: u32 = 3;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -243,6 +243,52 @@ impl ScatterSymbol {
             self,
             Self::PlusLine | Self::XLine | Self::HorizontalLine | Self::VerticalLine
         )
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct MarkerGeometry {
+    radius: f64,
+    stroke_width: f64,
+    extent_x: f64,
+    extent_y: f64,
+}
+
+impl MarkerGeometry {
+    /// Canonical built-in marker geometry shared by Scene v1 SVG and v3
+    /// clipping. `diameter` is the authored outer size. Line-only symbols get
+    /// the historical implicit 1px stroke when the authored stroke is zero.
+    fn new(symbol: ScatterSymbol, diameter: f64, authored_stroke: f64) -> Self {
+        let stroke_width = if symbol.is_line() && authored_stroke <= 0.0 {
+            1.0
+        } else {
+            authored_stroke
+        };
+        let radius = (diameter / 2.0 - stroke_width / 2.0).max(0.0);
+        let (path_x, path_y) = match symbol {
+            ScatterSymbol::Diamond => {
+                let extent = std::f64::consts::SQRT_2 * radius;
+                (extent, extent)
+            }
+            ScatterSymbol::ThinDiamond => (
+                std::f64::consts::SQRT_2 * radius * 0.6,
+                std::f64::consts::SQRT_2 * radius,
+            ),
+            ScatterSymbol::XLine => {
+                let extent = 0.707 * radius;
+                (extent, extent)
+            }
+            ScatterSymbol::HorizontalLine => (radius, 0.0),
+            ScatterSymbol::VerticalLine => (0.0, radius),
+            _ => (radius, radius),
+        };
+        let stroke_extent = stroke_width / 2.0;
+        Self {
+            radius,
+            stroke_width,
+            extent_x: path_x + stroke_extent,
+            extent_y: path_y + stroke_extent,
+        }
     }
 }
 
@@ -491,13 +537,15 @@ impl<'a> SceneBatch<'a> {
                     SceneRecordKind::Polyline => true,
                     SceneRecordKind::Scatter => {
                         let style = self.style_refs[index] as usize;
-                        let stroke = self.stroke_width[style];
-                        let radius = ((self.diameter[index] - stroke) / 2.0).max(0.25);
-                        let extent = radius + stroke / 2.0;
-                        mapped[0] + extent >= self.layout.left
-                            && mapped[0] - extent <= self.layout.right
-                            && mapped[1] + extent >= self.layout.top
-                            && mapped[1] - extent <= self.layout.bottom
+                        let geometry = MarkerGeometry::new(
+                            ScatterSymbol::from_code(self.symbols[index]),
+                            self.diameter[index],
+                            self.stroke_width[style],
+                        );
+                        mapped[0] + geometry.extent_x >= self.layout.left
+                            && mapped[0] - geometry.extent_x <= self.layout.right
+                            && mapped[1] + geometry.extent_y >= self.layout.top
+                            && mapped[1] - geometry.extent_y <= self.layout.bottom
                     }
                     SceneRecordKind::Rect => {
                         mapped[0].min(mapped[2]) <= self.layout.right
@@ -512,7 +560,22 @@ impl<'a> SceneBatch<'a> {
             out.push(0);
             out.extend_from_slice(&self.style_refs[index].to_le_bytes());
             out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
-            for value in if visible { mapped } else { [0.0; 4] } {
+            let record_coordinates = if !visible {
+                [0.0; 4]
+            } else {
+                match kind {
+                    SceneRecordKind::Scatter | SceneRecordKind::Polyline => {
+                        [mapped[0], mapped[1], 0.0, 0.0]
+                    }
+                    SceneRecordKind::Rect => [
+                        mapped[0].min(mapped[2]),
+                        mapped[1].min(mapped[3]),
+                        mapped[0].max(mapped[2]),
+                        mapped[1].max(mapped[3]),
+                    ],
+                }
+            };
+            for value in record_coordinates {
                 out.extend_from_slice(&value.to_le_bytes());
             }
             out.extend_from_slice(&self.diameter[index].to_le_bytes());
@@ -603,13 +666,15 @@ impl<'a> ScatterScene<'a> {
                 continue;
             }
             let symbol = ScatterSymbol::from_code(self.symbols[index]);
-            let stroke_width = if symbol.is_line() && self.stroke_width[index] <= 0.0 {
-                1.0
-            } else {
-                self.stroke_width[index]
-            };
-            let radius = (self.diameter[index] / 2.0 - stroke_width / 2.0).max(0.0);
-            push_symbol(&mut out, symbol, self.x[index], self.y[index], radius);
+            let geometry =
+                MarkerGeometry::new(symbol, self.diameter[index], self.stroke_width[index]);
+            push_symbol(
+                &mut out,
+                symbol,
+                self.x[index],
+                self.y[index],
+                geometry.radius,
+            );
             let fill = rgba_at(self.fill_rgba, index);
             let stroke = rgba_at(self.stroke_rgba, index);
             if symbol.is_line() {
@@ -617,10 +682,10 @@ impl<'a> ScatterScene<'a> {
             } else {
                 push_paint(&mut out, "fill", fill, self.fill_css);
             }
-            if stroke_width > 0.0 || symbol.is_line() {
+            if geometry.stroke_width > 0.0 || symbol.is_line() {
                 push_paint(&mut out, "stroke", stroke, self.stroke_css);
                 out.push_str(" stroke-width=\"");
-                push_num(&mut out, stroke_width);
+                push_num(&mut out, geometry.stroke_width);
                 out.push('"');
             }
             out.push_str("/>");
@@ -882,7 +947,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 2);
+        assert_eq!(SCENE_VERSION, 3);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -890,7 +955,7 @@ mod tests {
     }
 
     #[test]
-    fn scene_v2_batch_encodes_layout_axes_and_all_core_record_kinds() {
+    fn scene_v3_batch_encodes_layout_axes_and_all_core_record_kinds() {
         let layout = PlotLayout::new(640.0, 480.0, 40.0, 20.0, 10.0, 30.0).unwrap();
         let x_scale =
             AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 40.0, 620.0, 1.0, false).unwrap();
@@ -918,7 +983,7 @@ mod tests {
         .unwrap();
         let encoded = batch.encode();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 2);
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 3);
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
@@ -928,8 +993,8 @@ mod tests {
         assert_eq!(u64::from_le_bytes(encoded[80..88].try_into().unwrap()), 11);
         assert_eq!(u64::from_le_bytes(encoded[88..96].try_into().unwrap()), 12);
         let records = SCENE_BATCH_HEADER_BYTES + 4 * SCENE_STYLE_RECORD_BYTES;
-        // The diamond center maps left of the plot, but its diameter plus
-        // stroke overlaps the plot and must remain renderable.
+        // The diamond center maps left of the plot, but its canonical
+        // symbol-specific extent overlaps and must remain renderable.
         assert_eq!(encoded[records + 1], 1);
         assert_eq!(encoded[records + 2], ScatterSymbol::Diamond as u8);
         assert_eq!(
@@ -937,10 +1002,76 @@ mod tests {
             16.0
         );
         assert_eq!(encoded[records + SCENE_BATCH_RECORD_BYTES + 1], 1);
+        assert_eq!(&encoded[records + 32..records + 48], &[0; 16]);
+        let line0 = records + SCENE_BATCH_RECORD_BYTES;
+        let line1 = line0 + SCENE_BATCH_RECORD_BYTES;
+        assert_eq!(
+            u64::from_le_bytes(encoded[line0 + 8..line0 + 16].try_into().unwrap()),
+            201
+        );
+        assert_eq!(
+            u64::from_le_bytes(encoded[line1 + 8..line1 + 16].try_into().unwrap()),
+            201
+        );
+        assert_eq!(&encoded[line0 + 32..line0 + 48], &[0; 16]);
+        let rect = line1 + SCENE_BATCH_RECORD_BYTES;
+        let rect_coords: Vec<f64> = (0..4)
+            .map(|slot| {
+                f64::from_le_bytes(
+                    encoded[rect + 16 + slot * 8..rect + 24 + slot * 8]
+                        .try_into()
+                        .unwrap(),
+                )
+            })
+            .collect();
+        assert_eq!(rect_coords, vec![156.0, 142.0, 272.0, 318.0]);
     }
 
     #[test]
-    fn scene_v2_batch_rejects_bad_bounds_lengths_kinds_and_nonfinite_input() {
+    fn canonical_symbol_extents_drive_scene_clipping() {
+        let layout = PlotLayout::new(100.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let scale = AxisScale::new(ScaleKind::Linear, 0.0, 80.0, 10.0, 90.0, 1.0, false).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            1,
+            2,
+            scale,
+            scale,
+            &[0, 0, 0, 0],
+            &[1, 2, 3, 4],
+            &[0; 4],
+            &[0; 4],
+            &[0; 4],
+            &[0.0],
+            &[20.0; 4],
+            &[
+                ScatterSymbol::Diamond as u8,
+                ScatterSymbol::Diamond as u8,
+                ScatterSymbol::ThinDiamond as u8,
+                ScatterSymbol::ThinDiamond as u8,
+            ],
+            &[-12.0, -14.2, 40.0, 40.0],
+            &[40.0, 40.0, -12.0, -14.2],
+            &[0.0; 4],
+            &[0.0; 4],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        let records = SCENE_BATCH_HEADER_BYTES + SCENE_STYLE_RECORD_BYTES;
+        assert_eq!(encoded[records + 1], 1);
+        assert_eq!(encoded[records + SCENE_BATCH_RECORD_BYTES + 1], 0);
+        assert_eq!(encoded[records + 2 * SCENE_BATCH_RECORD_BYTES + 1], 1);
+        assert_eq!(encoded[records + 3 * SCENE_BATCH_RECORD_BYTES + 1], 0);
+
+        let line = MarkerGeometry::new(ScatterSymbol::PlusLine, 0.0, 0.0);
+        assert_eq!(line.radius, 0.0);
+        assert_eq!(line.stroke_width, 1.0);
+        assert_eq!(line.extent_x, 0.5);
+        assert_eq!(line.extent_y, 0.5);
+    }
+
+    #[test]
+    fn scene_v3_batch_rejects_bad_bounds_lengths_kinds_and_nonfinite_input() {
         assert_eq!(
             PlotLayout::new(10.0, 10.0, 6.0, 4.0, 0.0, 0.0),
             Err(SceneError::NonFinite)

@@ -160,9 +160,9 @@ fn is_sorted_f64(bencher: Bencher, n: usize) {
     bencher.bench(|| kernels::is_sorted_f64(black_box(&x)));
 }
 
-/// Scene v2's shared scale/layout/record encoding path for mixed core marks.
+/// Scene v3's shared scale/layout/record encoding path for mixed core marks.
 #[divan::bench(args = [SMALL_N, MEDIUM_N])]
-fn scene_v2_batch_encode(bencher: Bencher, n: usize) {
+fn scene_v3_batch_encode(bencher: Bencher, n: usize) {
     let x = uniform(n, 0x0055_AA11);
     let y = uniform(n, 0x0066_BB22);
     let kinds: Vec<u8> = (0..n).map(|index| (index % 3) as u8).collect();

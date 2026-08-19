@@ -510,7 +510,7 @@ F3, still pending (above).
 - **Retained scene graph**, spec-diff → buffer-diff. Pan/zoom is a view-matrix uniform
   update, touching zero data buffers.
 - **Versioned canonical scene IR** in `xyg-engine` ([scene-ir.md](design/scene-ir.md)).
-  Version 2 adds a backend-neutral typed batch behind the shared Rust ABI:
+  Version 3 adds a backend-neutral typed batch behind the shared Rust ABI:
   canonical viewport/plot bounds and axes; embedded bounded RGBA/stroke styles;
   and independently renderable scatter (symbol + diameter), polyline, and
   rectangle records with stable IDs and extent-aware clipping. Numeric records
@@ -910,7 +910,7 @@ driver-dependent. The testing architecture:
   the chosen tier and the decimated/binned output are deterministic and asserted —
   so "it looked different" can always be bisected to *layout*, *LOD*, or *raster*.
 - The canonical scene has its own schema version. Rust scene goldens and
-  cross-host fixtures are checked before backend pixel comparisons. Version 2
+  cross-host fixtures are checked before backend pixel comparisons. Version 3
   fixes layout/axis/style plus scatter/polyline/rectangle record bytes across
   Python and Node. Any new emitted kind or field semantic bumps the scene
   version until explicit capability negotiation exists; consumers fail closed

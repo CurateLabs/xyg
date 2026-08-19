@@ -199,7 +199,7 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
     })
 }
 
-/// Encode a bounded backend-neutral Scene v2 batch. Record kinds are scatter
+/// Encode a bounded backend-neutral Scene v3 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
 /// typed binary, never JSON. Returns required bytes or `usize::MAX` on error.
 ///

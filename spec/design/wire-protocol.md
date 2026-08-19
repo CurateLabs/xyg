@@ -13,7 +13,7 @@ has the shape specified here, byte for byte. What varies is *which* messages a
 host sends — the Reflex wrapper resolves `view_change` in the browser and never
 emits it (§2).
 
-The canonical Scene v2 batch is currently an in-process native host contract,
+The canonical Scene v3 batch is currently an in-process native host contract,
 not an `XYBF` message and not a JSON-number payload. Its little-endian layout,
 embedded style table, and mark records are specified in
 [scene-ir.md](scene-ir.md). A future #59 browser/WASM transport must carry those

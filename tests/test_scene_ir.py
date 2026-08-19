@@ -16,8 +16,8 @@ EXPECTED_SCATTER = (
 )
 
 
-def test_python_scene_v2_matches_shared_scatter_line_bar_axis_bytes() -> None:
-    fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v2.json").read_text())
+def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v3.json").read_text())
     encoded = _native.scene_batch_encode(
         viewport=tuple(fixture["viewport"]),
         margins=tuple(fixture["margins"]),
@@ -38,14 +38,26 @@ def test_python_scene_v2_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert encoded.hex() == fixture["expected_hex"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 2
+    assert int.from_bytes(encoded[4:8], "little") == 3
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
     assert np.frombuffer(encoded, dtype="<f8", count=1, offset=records + 48)[0] == 16.0
+    line0 = records + 56
+    line1 = line0 + 56
+    rect = line1 + 56
+    assert int.from_bytes(encoded[line0 + 8 : line0 + 16], "little") == 201
+    assert int.from_bytes(encoded[line1 + 8 : line1 + 16], "little") == 201
+    np.testing.assert_array_equal(
+        np.frombuffer(encoded, dtype="<f8", count=2, offset=line0 + 32), 0
+    )
+    np.testing.assert_allclose(
+        np.frombuffer(encoded, dtype="<f8", count=4, offset=rect + 16),
+        [156.0, 142.0, 272.0, 318.0],
+    )
 
 
-def test_python_scene_v2_rejects_malformed_batches() -> None:
+def test_python_scene_v3_rejects_malformed_batches() -> None:
     options = dict(
         viewport=(100.0, 80.0),
         margins=(10.0, 10.0, 10.0, 10.0),
@@ -169,7 +181,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 2
+    assert _native.scene_version() == 3
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],
