@@ -187,8 +187,12 @@ Version 4 keeps the version-3 byte widths but changes whole-scene rendering
 semantics, so the strict contract requires a version bump. Rust now derives a
 bounded default chrome layer from the two encoded axis scales in both consumers:
 
-- linear and symlog axes use the canonical 1/2/2.5/5/10 ladder; log axes use
-  the canonical 1/2/5 ladder, with at most 200 ticks per axis;
+- linear axes use the canonical 1/2/2.5/5/10 ladder and log axes use the
+  canonical 1/2/5 ladder. Symlog transforms the domain to coordinate space,
+  applies the linear ladder there, inverse-maps the results, and guarantees a
+  zero tick when the data domain crosses zero. Default target density is
+  `max(3, floor(plot_width / 80))` for x and
+  `max(3, floor(plot_height / 45))` for y, capped at 200 ticks per axis;
 - grid lines render behind clipped marks, while spines, outward ticks, and
   labels render in the unclipped chrome layer;
 - numeric labels use deterministic step-derived fixed/scientific formatting,

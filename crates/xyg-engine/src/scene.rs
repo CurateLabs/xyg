@@ -23,6 +23,40 @@ pub struct AxisTicks {
     pub step: f64,
 }
 
+fn push_raster_f32(out: &mut Vec<u8>, value: f64, scale: f64) -> Result<(), SceneError> {
+    let scaled = value * scale;
+    if !scaled.is_finite() {
+        return Err(SceneError::NonFinite);
+    }
+    let narrowed = scaled as f32;
+    if !narrowed.is_finite() {
+        return Err(SceneError::NonFinite);
+    }
+    out.extend_from_slice(&narrowed.to_le_bytes());
+    Ok(())
+}
+
+fn push_raster_stroke(
+    out: &mut Vec<u8>,
+    points: [(f64, f64); 2],
+    width: f64,
+    rgba: [u8; 4],
+    scale: f64,
+) -> Result<(), SceneError> {
+    out.push(3);
+    out.extend_from_slice(&2u32.to_le_bytes());
+    for (x, y) in points {
+        push_raster_f32(out, x, scale)?;
+        push_raster_f32(out, y, scale)?;
+    }
+    push_raster_f32(out, width, scale)?;
+    out.extend_from_slice(&rgba);
+    out.push(0);
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push(1);
+    Ok(())
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScaleKind {
     Linear,
@@ -110,11 +144,39 @@ impl AxisScale {
         )
     }
 
-    fn ticks(self) -> Result<AxisTicks, SceneError> {
+    fn ticks(self, length_px: f64, is_x: bool) -> Result<AxisTicks, SceneError> {
         let (lo, hi) = self.domain();
+        let divisor = if is_x { 80.0 } else { 45.0 };
+        let target = ((length_px / divisor) as usize).clamp(3, MAX_AXIS_TICKS);
         match self.kind {
-            ScaleKind::Log => log_ticks(lo, hi, 6),
-            ScaleKind::Linear | ScaleKind::SymLog => linear_ticks(lo, hi, 6),
+            ScaleKind::Log => log_ticks(lo, hi, target),
+            ScaleKind::Linear => linear_ticks(lo, hi, target),
+            ScaleKind::SymLog => {
+                let coordinates = linear_ticks(self.coord(lo), self.coord(hi), target)?;
+                let mut ticks: Vec<f64> = coordinates
+                    .ticks
+                    .iter()
+                    .map(|coordinate| self.value(*coordinate))
+                    .collect();
+                if lo.min(hi) <= 0.0
+                    && lo.max(hi) >= 0.0
+                    && !ticks.iter().any(|value| value.abs() < 1e-12)
+                {
+                    ticks.push(0.0);
+                    ticks.sort_by(|a, b| {
+                        if lo > hi {
+                            b.total_cmp(a)
+                        } else {
+                            a.total_cmp(b)
+                        }
+                    });
+                }
+                Ok(AxisTicks {
+                    labeled: ticks.clone(),
+                    ticks,
+                    step: self.value(coordinates.step).abs(),
+                })
+            }
         }
     }
 
@@ -1118,16 +1180,22 @@ impl SceneDocument {
         out.push_str("\" height=\"");
         push_num(&mut out, self.layout.bottom - self.layout.top);
         out.push_str("\"/></clipPath></defs><g data-xy-chrome=\"grid\">");
-        let x_ticks = self.x_scale.ticks().unwrap_or(AxisTicks {
-            ticks: Vec::new(),
-            labeled: Vec::new(),
-            step: 1.0,
-        });
-        let y_ticks = self.y_scale.ticks().unwrap_or(AxisTicks {
-            ticks: Vec::new(),
-            labeled: Vec::new(),
-            step: 1.0,
-        });
+        let x_ticks = self
+            .x_scale
+            .ticks(self.layout.right - self.layout.left, true)
+            .unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            });
+        let y_ticks = self
+            .y_scale
+            .ticks(self.layout.bottom - self.layout.top, false)
+            .unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            });
         for value in &x_ticks.ticks {
             let x = self.x_scale.pixel(*value);
             push_svg_line(
@@ -1292,6 +1360,108 @@ impl SceneDocument {
         out
     }
 
+    #[inline(never)]
+    fn append_raster_grid(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) -> Result<(), SceneError> {
+        for value in &x_ticks.ticks {
+            let x = self.x_scale.pixel(*value);
+            push_raster_stroke(
+                out,
+                [(x, self.layout.top), (x, self.layout.bottom)],
+                1.0,
+                [32, 32, 32, 36],
+                scale,
+            )?;
+        }
+        for value in &y_ticks.ticks {
+            let y = self.y_scale.pixel(*value);
+            push_raster_stroke(
+                out,
+                [(self.layout.left, y), (self.layout.right, y)],
+                1.0,
+                [32, 32, 32, 36],
+                scale,
+            )?;
+        }
+        Ok(())
+    }
+
+    #[inline(never)]
+    fn append_raster_axes(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) -> Result<(), SceneError> {
+        out.push(0);
+        for value in [
+            0.0,
+            0.0,
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+        ] {
+            push_raster_f32(out, value, scale)?;
+        }
+        for points in [
+            [
+                (self.layout.left, self.layout.bottom),
+                (self.layout.right, self.layout.bottom),
+            ],
+            [
+                (self.layout.left, self.layout.top),
+                (self.layout.left, self.layout.bottom),
+            ],
+        ] {
+            push_raster_stroke(out, points, 1.0, [32, 32, 32, 140], scale)?;
+        }
+        for (is_x, ticks) in [(true, x_ticks), (false, y_ticks)] {
+            for value in &ticks.labeled {
+                let (x, y, anchor, segment) = if is_x {
+                    let x = self.x_scale.pixel(*value);
+                    (
+                        x,
+                        self.layout.bottom + 16.0,
+                        1,
+                        [(x, self.layout.bottom), (x, self.layout.bottom + 4.0)],
+                    )
+                } else {
+                    let y = self.y_scale.pixel(*value);
+                    (
+                        self.layout.left - 8.0,
+                        y + 4.0,
+                        2,
+                        [(self.layout.left - 4.0, y), (self.layout.left, y)],
+                    )
+                };
+                push_raster_stroke(out, segment, 1.0, [32, 32, 32, 140], scale)?;
+                let text = format_tick(
+                    *value,
+                    ticks.step,
+                    if is_x {
+                        self.x_scale.kind
+                    } else {
+                        self.y_scale.kind
+                    },
+                );
+                out.push(6);
+                push_raster_f32(out, x, scale)?;
+                push_raster_f32(out, y, scale)?;
+                out.push(anchor);
+                push_raster_f32(out, 12.0, scale)?;
+                out.extend_from_slice(&[32, 32, 32, 217]);
+                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.extend_from_slice(text.as_bytes());
+            }
+        }
+        Ok(())
+    }
+
     pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
@@ -1314,36 +1484,13 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.top)?;
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
-        let x_ticks = self.x_scale.ticks()?;
-        let y_ticks = self.y_scale.ticks()?;
-        for value in &x_ticks.ticks {
-            let x = self.x_scale.pixel(*value);
-            out.push(3);
-            out.extend_from_slice(&2u32.to_le_bytes());
-            for (px, py) in [(x, self.layout.top), (x, self.layout.bottom)] {
-                f32_push(&mut out, px)?;
-                f32_push(&mut out, py)?;
-            }
-            f32_push(&mut out, 1.0)?;
-            out.extend_from_slice(&[32, 32, 32, 36]);
-            out.push(0);
-            out.extend_from_slice(&0u32.to_le_bytes());
-            out.push(1);
-        }
-        for value in &y_ticks.ticks {
-            let y = self.y_scale.pixel(*value);
-            out.push(3);
-            out.extend_from_slice(&2u32.to_le_bytes());
-            for (px, py) in [(self.layout.left, y), (self.layout.right, y)] {
-                f32_push(&mut out, px)?;
-                f32_push(&mut out, py)?;
-            }
-            f32_push(&mut out, 1.0)?;
-            out.extend_from_slice(&[32, 32, 32, 36]);
-            out.push(0);
-            out.extend_from_slice(&0u32.to_le_bytes());
-            out.push(1);
-        }
+        let x_ticks = self
+            .x_scale
+            .ticks(self.layout.right - self.layout.left, true)?;
+        let y_ticks = self
+            .y_scale
+            .ticks(self.layout.bottom - self.layout.top, false)?;
+        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -1432,87 +1579,7 @@ impl SceneDocument {
         }
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
-        out.push(0);
-        for value in [
-            0.0,
-            0.0,
-            self.layout.viewport_width,
-            self.layout.viewport_height,
-        ] {
-            f32_push(&mut out, value)?;
-        }
-        for points in [
-            [
-                (self.layout.left, self.layout.bottom),
-                (self.layout.right, self.layout.bottom),
-            ],
-            [
-                (self.layout.left, self.layout.top),
-                (self.layout.left, self.layout.bottom),
-            ],
-        ] {
-            out.push(3);
-            out.extend_from_slice(&2u32.to_le_bytes());
-            for (x, y) in points {
-                f32_push(&mut out, x)?;
-                f32_push(&mut out, y)?;
-            }
-            f32_push(&mut out, 1.0)?;
-            out.extend_from_slice(&[32, 32, 32, 140]);
-            out.push(0);
-            out.extend_from_slice(&0u32.to_le_bytes());
-            out.push(1);
-        }
-        for (is_x, ticks) in [(true, &x_ticks), (false, &y_ticks)] {
-            for value in &ticks.labeled {
-                let (x, y, anchor, segment) = if is_x {
-                    let x = self.x_scale.pixel(*value);
-                    (
-                        x,
-                        self.layout.bottom + 16.0,
-                        1,
-                        [(x, self.layout.bottom), (x, self.layout.bottom + 4.0)],
-                    )
-                } else {
-                    let y = self.y_scale.pixel(*value);
-                    (
-                        self.layout.left - 8.0,
-                        y + 4.0,
-                        2,
-                        [(self.layout.left - 4.0, y), (self.layout.left, y)],
-                    )
-                };
-                out.push(3);
-                out.extend_from_slice(&2u32.to_le_bytes());
-                for (px, py) in segment {
-                    f32_push(&mut out, px)?;
-                    f32_push(&mut out, py)?;
-                }
-                f32_push(&mut out, 1.0)?;
-                out.extend_from_slice(&[32, 32, 32, 140]);
-                out.push(0);
-                out.extend_from_slice(&0u32.to_le_bytes());
-                out.push(1);
-
-                let text = format_tick(
-                    *value,
-                    ticks.step,
-                    if is_x {
-                        self.x_scale.kind
-                    } else {
-                        self.y_scale.kind
-                    },
-                );
-                out.push(6);
-                f32_push(&mut out, x)?;
-                f32_push(&mut out, y)?;
-                out.push(anchor);
-                f32_push(&mut out, 12.0)?;
-                out.extend_from_slice(&[32, 32, 32, 217]);
-                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
-                out.extend_from_slice(text.as_bytes());
-            }
-        }
+        self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
         Ok(out)
     }
 }
@@ -1864,6 +1931,43 @@ fn push_regular_polygon(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn raster_text_count(commands: &[u8]) -> Option<usize> {
+        let mut offset = 0usize;
+        let mut texts = 0usize;
+        let read_u32 = |offset: &mut usize| -> Option<usize> {
+            let end = offset.checked_add(4)?;
+            let value = u32::from_le_bytes(commands.get(*offset..end)?.try_into().ok()?) as usize;
+            *offset = end;
+            Some(value)
+        };
+        while offset < commands.len() {
+            let operation = *commands.get(offset)?;
+            offset += 1;
+            let bytes = match operation {
+                0 => 16,
+                1 => read_u32(&mut offset)?.checked_mul(8)?.checked_add(4)?,
+                3 => {
+                    let points = read_u32(&mut offset)?;
+                    offset = offset.checked_add(points.checked_mul(8)?.checked_add(9)?)?;
+                    let dashes = read_u32(&mut offset)?;
+                    dashes.checked_mul(4)?.checked_add(1)?
+                }
+                4 => 25,
+                6 => {
+                    offset = offset.checked_add(17)?;
+                    texts += 1;
+                    read_u32(&mut offset)?
+                }
+                _ => return None,
+            };
+            offset = offset.checked_add(bytes)?;
+            if offset > commands.len() {
+                return None;
+            }
+        }
+        Some(texts)
+    }
 
     #[test]
     fn scatter_scene_is_versioned_bounded_and_deterministic() {
@@ -2547,8 +2651,8 @@ mod tests {
             .unwrap()
             .to_raster_commands(1.0)
             .unwrap();
-        let grid_count = linear_ticks(0.0, 18.0, 6).unwrap().ticks.len()
-            + linear_ticks(0.0, 1.0, 6).unwrap().ticks.len();
+        let grid_count = linear_ticks(0.0, 18.0, 3).unwrap().ticks.len()
+            + linear_ticks(0.0, 1.0, 3).unwrap().ticks.len();
         let mut offset = 17 + grid_count * 35; // clip plus canonical grid strokes
         for code in 0..=18 {
             assert_eq!(commands[offset], 4);
@@ -2574,6 +2678,75 @@ mod tests {
         );
         assert_eq!(log.labeled, vec![0.1, 1.0, 10.0, 100.0]);
         assert_eq!(log.step, 1.0);
+    }
+
+    #[test]
+    fn viewport_density_and_symlog_coordinate_ticks_match_both_consumers() {
+        let narrow = AxisScale::new(ScaleKind::Linear, 0.0, 100.0, 0.0, 200.0, 1.0, false)
+            .unwrap()
+            .ticks(200.0, true)
+            .unwrap();
+        let wide = AxisScale::new(ScaleKind::Linear, 0.0, 100.0, 0.0, 1_000.0, 1.0, false)
+            .unwrap()
+            .ticks(1_000.0, true)
+            .unwrap();
+        assert!(wide.ticks.len() > narrow.ticks.len());
+
+        for (lo, hi) in [(-100.0, 10.0), (10.0, -100.0)] {
+            let layout = PlotLayout::new(420.0, 260.0, 50.0, 20.0, 20.0, 40.0).unwrap();
+            let x_scale = AxisScale::new(
+                ScaleKind::SymLog,
+                lo,
+                hi,
+                layout.left,
+                layout.right,
+                2.0,
+                false,
+            )
+            .unwrap();
+            let ticks = x_scale.ticks(layout.right - layout.left, true).unwrap();
+            assert!(ticks.ticks.iter().any(|value| value.abs() < 1e-12));
+            let coordinate_ticks = linear_ticks(x_scale.coord(lo), x_scale.coord(hi), 4).unwrap();
+            for (actual, coordinate) in ticks.ticks.iter().zip(&coordinate_ticks.ticks) {
+                assert!((actual - x_scale.value(*coordinate)).abs() < 1e-12);
+            }
+
+            let encoded = SceneBatch::new(
+                layout,
+                1,
+                2,
+                x_scale,
+                AxisScale::new(
+                    ScaleKind::SymLog,
+                    -1.0,
+                    1.0,
+                    layout.bottom,
+                    layout.top,
+                    1.0,
+                    false,
+                )
+                .unwrap(),
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+            )
+            .unwrap()
+            .encode();
+            let document = SceneDocument::decode(&encoded).unwrap();
+            let svg_labels = document.to_svg().matches("<text ").count();
+            let raster_labels = raster_text_count(&document.to_raster_commands(1.0).unwrap());
+            assert_eq!(raster_labels, Some(svg_labels));
+            assert!(svg_labels >= 4);
+        }
     }
 
     #[test]

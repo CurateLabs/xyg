@@ -369,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn scene_v3_status_cancel_stale_and_diagnostics_are_stable() {
+    fn scene_v4_status_cancel_stale_and_diagnostics_are_stable() {
         let bytes = valid_scene();
         let handle = xyg_wasm_instance_new(bytes.len() + 8);
         write_arena(handle, &bytes);

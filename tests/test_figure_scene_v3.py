@@ -48,8 +48,8 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     assert 'clip-path="url(#xy-scene-plot)"' in svg
     assert 'data-xy-chrome="grid"' in svg
     assert 'data-xy-chrome="axes"' in svg
-    assert svg.count("<text ") == 11
-    assert ">0<" in svg and ">5<" in svg
+    assert svg.count("<text ") == 6
+    assert ">0<" in svg and ">4<" in svg
 
 
 def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:

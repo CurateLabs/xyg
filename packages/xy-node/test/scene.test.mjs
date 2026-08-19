@@ -22,7 +22,7 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture"
   assert.match(svg, /^<svg xmlns=/);
   assert.match(svg, /data-xy-chrome="grid"/);
   assert.match(svg, /data-xy-chrome="axes"/);
-  assert.equal((svg.match(/<text /g) ?? []).length, 11);
+  assert.equal((svg.match(/<text /g) ?? []).length, 6);
   assert.ok(sceneRasterCommands(encoded).length > 100);
 });
 
