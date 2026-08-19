@@ -1466,7 +1466,34 @@ impl SceneDocument {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
         }
-        let mut out = Vec::with_capacity(self.records.len().saturating_mul(40));
+        let x_ticks = self
+            .x_scale
+            .ticks(self.layout.right - self.layout.left, true)?;
+        let y_ticks = self
+            .y_scale
+            .ticks(self.layout.bottom - self.layout.top, false)?;
+        // Grid strokes are 35 bytes each. Labeled ticks add another stroke
+        // plus a bounded text command; reserve their space up front so adding
+        // constant-size chrome never copies the full mark command buffer.
+        let chrome_capacity = x_ticks
+            .ticks
+            .len()
+            .saturating_add(y_ticks.ticks.len())
+            .saturating_mul(35)
+            .saturating_add(
+                x_ticks
+                    .labeled
+                    .len()
+                    .saturating_add(y_ticks.labeled.len())
+                    .saturating_mul(99),
+            )
+            .saturating_add(87);
+        let mut out = Vec::with_capacity(
+            self.records
+                .len()
+                .saturating_mul(40)
+                .saturating_add(chrome_capacity),
+        );
         let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
             let scaled = value * scale;
             if !scaled.is_finite() {
@@ -1484,12 +1511,6 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.top)?;
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
-        let x_ticks = self
-            .x_scale
-            .ticks(self.layout.right - self.layout.left, true)?;
-        let y_ticks = self
-            .y_scale
-            .ticks(self.layout.bottom - self.layout.top, false)?;
         self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
         let mut index = 0;
         while index < self.records.len() {
