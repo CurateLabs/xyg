@@ -76,6 +76,23 @@ def test_static_scale_reuses_rust_scalar_results_across_export_consumers(monkeyp
     assert calls == 4
 
 
+def test_static_scale_batches_vectors_and_seeds_followup_scalar_consumers(monkeypatch) -> None:
+    shapes: list[tuple[int, ...]] = []
+    original = _native.scene_scale_map
+
+    def recording(values, *args, **kwargs):
+        shapes.append(np.shape(values))
+        return original(values, *args, **kwargs)
+
+    monkeypatch.setattr(_native, "scene_scale_map", recording)
+    scale = _svg._Scale({"range": [0.0, 10.0]}, 20.0, 120.0)
+    np.testing.assert_allclose(scale([2.0, 4.0, 6.0]), [40.0, 60.0, 80.0])
+    # Tick/grid/label consumers revisit these positions individually. The
+    # vector's Rust results seed the bounded cache, so none adds an ABI call.
+    assert [scale(value) for value in (2.0, 4.0, 6.0)] == [40.0, 60.0, 80.0]
+    assert shapes == [(2,), (3,)]
+
+
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
     assert _native.scene_version() == 1
     assert (

@@ -875,6 +875,9 @@ class _Scale:
         )
         if scalar and len(cache) < self._SCALAR_CACHE_LIMIT:
             cache[cache_key] = float(result)
+        elif not scalar and np.size(value) <= self._SCALAR_CACHE_LIMIT:
+            for source, mapped in zip(np.ravel(value), np.ravel(result), strict=True):
+                cache[float(source).hex()] = float(mapped)
         return result
 
     def coord(self, v: Any) -> Any:
@@ -3107,15 +3110,16 @@ def _axis_tick_label_layout(
     # the same offset and pairwise gaps are unchanged.  Mirror JS exactly.
     axis_style = axis.get("style") or {}
     anchor = _tick_label_anchor(axis, axis_style, "center") if is_x else "center"
+    positions = np.asarray(scale(values), dtype=np.float64)
     labels = [
         {
             "value": value,
-            "pos": float(scale(value)),
+            "pos": float(position),
             "text": _tick_text(axis, value, step),
             "angle": base_angle,
             "row": 0,
         }
-        for value in values
+        for value, position in zip(values, positions, strict=True)
     ]
     if len(labels) <= 1:
         return labels
@@ -3286,6 +3290,7 @@ def polar_wedge_points(
     steps: Optional[int] = None,
     corner_radius: float = 0.0,
     wedge_gap: float = 0.0,
+    normalized: Optional[tuple[float, float]] = None,
 ) -> list[tuple[float, float]]:
     """An annular sector as a closed polygon — the flattened twin of
     `_polar_wedge_path`, for the raster display list (no arc opcode).
@@ -3305,7 +3310,11 @@ def polar_wedge_points(
     # axis `norm_radius` is decreasing, so norm(r1) < norm(r0) for r1 > r0 and
     # taking them positionally dropped every wedge from both static exports
     # while the shader (which min/maxes u_rrange) kept drawing them.
-    lo_frac, hi_frac = sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+    lo_frac, hi_frac = (
+        sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+        if normalized is None
+        else sorted(normalized)
+    )
     outer = min(1.0, max(floor, hi_frac)) * polar.radius
     inner = min(1.0, max(floor, lo_frac)) * polar.radius
     if outer <= 0.0 or outer <= inner:
@@ -3440,6 +3449,7 @@ def _polar_wedge_path(
     r1: float,
     corner_radius: float = 0.0,
     wedge_gap: float = 0.0,
+    normalized: Optional[tuple[float, float]] = None,
 ) -> str:
     """An annular sector as an SVG path: outer arc, inner arc reversed, closed.
 
@@ -3453,7 +3463,11 @@ def _polar_wedge_path(
     # axis `norm_radius` is decreasing, so norm(r1) < norm(r0) for r1 > r0 and
     # taking them positionally dropped every wedge from both static exports
     # while the shader (which min/maxes u_rrange) kept drawing them.
-    lo_frac, hi_frac = sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+    lo_frac, hi_frac = (
+        sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
+        if normalized is None
+        else sorted(normalized)
+    )
     outer = min(1.0, max(floor, hi_frac)) * polar.radius
     inner = min(1.0, max(floor, lo_frac)) * polar.radius
     if outer <= 0.0 or outer <= inner:
@@ -3887,12 +3901,20 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
     hide_y = ya.get("tick_label_strategy") == "none"
     if polar is not None:
         _polar_grid(grid, polar, xt, yt, xstyle, ystyle, default_grid, hide_x, hide_y)
-    for v in xmt:
+    x_minor_px = (
+        np.asarray(sx(xmt), dtype=np.float64) if polar is None and xmt else [0.0] * len(xmt)
+    )
+    y_minor_px = (
+        np.asarray(sy(ymt), dtype=np.float64) if polar is None and ymt else [0.0] * len(ymt)
+    )
+    x_tick_px = np.asarray(sx(xt), dtype=np.float64) if polar is None and xt else [0.0] * len(xt)
+    y_tick_px = np.asarray(sy(yt), dtype=np.float64) if polar is None and yt else [0.0] * len(yt)
+    for _v, mapped in zip(xmt, x_minor_px, strict=True):
         if polar is not None:
             break
         if hide_x:
             break
-        px = float(sx(v))
+        px = float(mapped)
         grid.append(
             f'<line data-xy-grid="minor" x1="{_num(px)}" y1="{_num(plot["y"])}" '
             f'x2="{_num(px)}" y2="{_num(plot["y"] + plot["h"])}" '
@@ -3900,12 +3922,12 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f'stroke-width="{_num(float(xmstyle.get("grid_width", 1)))}"'
             f"{_axis_grid_attrs(xmstyle)}/>"
         )
-    for v in ymt:
+    for _v, mapped in zip(ymt, y_minor_px, strict=True):
         if polar is not None:
             break
         if hide_y:
             break
-        py = float(sy(v))
+        py = float(mapped)
         grid.append(
             f'<line data-xy-grid="minor" x1="{_num(plot["x"])}" y1="{_num(py)}" '
             f'x2="{_num(plot["x"] + plot["w"])}" y2="{_num(py)}" '
@@ -3913,12 +3935,12 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f'stroke-width="{_num(float(ymstyle.get("grid_width", 1)))}"'
             f"{_axis_grid_attrs(ymstyle)}/>"
         )
-    for v in xt:
+    for _v, mapped in zip(xt, x_tick_px, strict=True):
         if polar is not None:
             break
         if hide_x:
             break
-        px = float(sx(v))
+        px = float(mapped)
         grid.append(
             f'<line x1="{_num(px)}" y1="{_num(plot["y"])}" x2="{_num(px)}" '
             f'y2="{_num(plot["y"] + plot["h"])}" '
@@ -3926,12 +3948,12 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
             f'stroke-width="{_num(float(xstyle.get("grid_width", 1)))}"'
             f"{_axis_grid_attrs(xstyle)}/>"
         )
-    for v in yt:
+    for _v, mapped in zip(yt, y_tick_px, strict=True):
         if polar is not None:
             break
         if hide_y:
             break
-        py = float(sy(v))
+        py = float(mapped)
         grid.append(
             f'<line x1="{_num(plot["x"])}" y1="{_num(py)}" x2="{_num(plot["x"] + plot["w"])}" '
             f'y2="{_num(py)}" stroke="{escape(_css(ystyle.get("grid_color"), default_grid))}" '
@@ -5763,6 +5785,10 @@ def _bar_marks(
     if polar is not None:
         # Annular sectors. SVG has real arcs, so these are exact `A` commands
         # rather than the flattened polygons the raster path needs.
+        radial = np.asarray(
+            polar.norm_radius(np.column_stack((np.minimum(v0, v1), np.maximum(v0, v1)))),
+            dtype=np.float64,
+        )
         for i in range(len(pos)):
             d = _polar_wedge_path(
                 polar,
@@ -5772,6 +5798,7 @@ def _bar_marks(
                 float(max(v0[i], v1[i])),
                 float(np.max(radii[i])) if radii is not None and len(radii) else 0.0,
                 float(style.get("wedge_gap", 0.0) or 0.0),
+                normalized=(float(radial[i, 0]), float(radial[i, 1])),
             )
             if d:
                 out.append(f'<path d="{d}" fill="{fills[i]}"{extras[i]}/>')
