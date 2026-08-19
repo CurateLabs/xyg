@@ -947,7 +947,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "native PNG",
         "node js/build.mjs",
         "node js/package-wasm.mjs",
-        "npx playwright install --with-deps chromium",
+        "npx playwright install chromium",
         "node scripts/wasm_foundation_smoke.mjs",
         "direct-browser-wasm-foundation",
         "packages/xy-client/dist/xyg-wasm.wasm",

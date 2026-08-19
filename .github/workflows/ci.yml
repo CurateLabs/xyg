@@ -266,7 +266,7 @@ jobs:
 
   wasm_foundation:
     name: Direct browser Rust/WASM foundation (${{ matrix.target }})
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
@@ -305,7 +305,10 @@ jobs:
           node js/build.mjs
           node js/package-wasm.mjs target/${{ matrix.target }}/release/xyg_wasm.wasm
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          # Blacksmith's Ubuntu image carries the supported runner-image browser libraries.
+          # Keep Chromium artifact installation cached and browser-specific.
+          npx playwright install chromium
       - name: Strict-CSP local-only lifecycle smoke
         run: node scripts/wasm_foundation_smoke.mjs
       - name: Upload direct-browser foundation artifact
