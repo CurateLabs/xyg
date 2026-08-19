@@ -1505,6 +1505,55 @@ def scene_scale_map(
     return out.reshape(source.shape)
 
 
+def scene_batch_encode(
+    *,
+    viewport: tuple[float, float],
+    margins: tuple[float, float, float, float],
+    x_axis: tuple[int, int, float, float, float, bool],
+    y_axis: tuple[int, int, float, float, float, bool],
+    kinds: npt.ArrayLike,
+    stable_ids: npt.ArrayLike,
+    style_refs: npt.ArrayLike,
+    x0: npt.ArrayLike,
+    y0: npt.ArrayLike,
+    x1: npt.ArrayLike,
+    y1: npt.ArrayLike,
+) -> bytes:
+    """Encode the bounded backend-neutral Scene v2 typed batch."""
+    kind_array = np.ascontiguousarray(kinds, dtype=np.uint8).reshape(-1)
+    ids = np.ascontiguousarray(stable_ids, dtype=np.uint64).reshape(-1)
+    styles = np.ascontiguousarray(style_refs, dtype=np.uint32).reshape(-1)
+    coordinates = [
+        _as_f64(np.asarray(value), name)
+        for value, name in ((x0, "scene x0"), (y0, "scene y0"), (x1, "scene x1"), (y1, "scene y1"))
+    ]
+    n = len(kind_array)
+    if any(len(value) != n for value in [ids, styles, *coordinates]):
+        raise ValueError("scene batch arrays must have equal length")
+    capacity = 152 + n * 48
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = _lib.xyg_scene_batch_encode(
+            viewport[0],
+            viewport[1],
+            *margins,
+            *x_axis,
+            *y_axis,
+            kind_array.ctypes.data if n else 0,
+            ids.ctypes.data if n else 0,
+            styles.ctypes.data if n else 0,
+            *(_ptr_f64(value) if n else 0 for value in coordinates),
+            n,
+            out,
+            capacity,
+        )
+        if written == _USIZE_MAX:
+            raise ValueError("invalid canonical scene batch")
+        if written <= capacity:
+            return out.raw[:written]
+        capacity = written
+
+
 def scene_scatter_svg(
     x: npt.ArrayLike,
     y: npt.ArrayLike,

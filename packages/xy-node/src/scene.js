@@ -2,11 +2,12 @@
 import {
   pointer,
   xySceneAxisTicks,
+  xySceneBatchEncode,
   xySceneScaleMap,
   xySceneScatterSvg,
   xySceneVersion,
 } from "./native.js";
-import { asF64Array, f64Ptr, u8Ptr } from "./encode.js";
+import { asF64Array, f64Ptr, u32Ptr, u8Ptr } from "./encode.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 
@@ -72,6 +73,44 @@ export function scaleMap({ values, kind = "linear", operation = "pixel", domain,
   );
   if (status !== 0) throw new RangeError("invalid canonical scene scale");
   return output;
+}
+
+function axisDescriptor(axis, name) {
+  const { id, kind = "linear", domain, constant = 1, nonpositive = "clip" } = axis;
+  const kindCode = kind === "linear" ? 0 : kind === "log" ? 1 : kind === "symlog" ? 2 : -1;
+  if (kindCode < 0) throw new RangeError(`${name}.kind must be linear, log, or symlog`);
+  if (nonpositive !== "clip" && nonpositive !== "mask") throw new RangeError(`${name}.nonpositive must be clip or mask`);
+  if (!Array.isArray(domain) || domain.length !== 2) throw new RangeError(`${name}.domain must contain two values`);
+  return [BigInt(id), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
+}
+
+/** Encode the shared backend-neutral Scene v2 typed batch. */
+export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, x0, y0, x1, y1 }) {
+  if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
+    throw new RangeError("viewport and margins must contain two and four values");
+  }
+  const kindArray = kinds instanceof Uint8Array ? kinds : Uint8Array.from(kinds);
+  const ids = stableIds instanceof BigUint64Array ? stableIds : BigUint64Array.from(stableIds, BigInt);
+  const styles = styleRefs instanceof Uint32Array ? styleRefs : Uint32Array.from(styleRefs, Number);
+  const coordinates = [x0, y0, x1, y1].map((value, index) => asF64Array(value, ["x0", "y0", "x1", "y1"][index]));
+  const length = kindArray.length;
+  for (const [value, name] of [[ids, "stableIds"], [styles, "styleRefs"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
+  const xd = axisDescriptor(xAxis, "xAxis");
+  const yd = axisDescriptor(yAxis, "yAxis");
+  let capacity = 152 + length * 48;
+  for (;;) {
+    const output = new Uint8Array(capacity);
+    const rawWritten = xySceneBatchEncode(
+      Number(viewport[0]), Number(viewport[1]), ...margins.map(Number), ...xd, ...yd,
+      u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styles),
+      ...coordinates.map(f64Ptr), BigInt(length), u8Ptr(output), BigInt(capacity),
+    );
+    if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical scene batch");
+    const written = Number(rawWritten);
+    if (!Number.isSafeInteger(written) || written < 0) throw new RangeError("canonical scene batch exceeded host output limits");
+    if (written <= capacity) return output.slice(0, written);
+    capacity = written;
+  }
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

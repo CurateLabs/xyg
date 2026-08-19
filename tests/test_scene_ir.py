@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
 
 from xy import _native, _svg
@@ -11,6 +14,48 @@ EXPECTED_SCATTER = (
     'M 20 16.5 V 25.5" fill="none" stroke="rgb(17,24,39)" '
     'stroke-opacity="0.25" stroke-width="1"/></g>'
 )
+
+
+def test_python_scene_v2_matches_shared_scatter_line_bar_axis_bytes() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v2.json").read_text())
+    encoded = _native.scene_batch_encode(
+        viewport=tuple(fixture["viewport"]),
+        margins=tuple(fixture["margins"]),
+        x_axis=tuple(fixture["x_axis"]),
+        y_axis=tuple(fixture["y_axis"]),
+        kinds=fixture["kinds"],
+        stable_ids=fixture["stable_ids"],
+        style_refs=fixture["style_refs"],
+        x0=fixture["x0"],
+        y0=fixture["y0"],
+        x1=fixture["x1"],
+        y1=fixture["y1"],
+    )
+    assert encoded.hex() == fixture["expected_hex"]
+    assert encoded[:4] == b"XYGS"
+    assert int.from_bytes(encoded[4:8], "little") == 2
+
+
+def test_python_scene_v2_rejects_malformed_batches() -> None:
+    options = dict(
+        viewport=(100.0, 80.0),
+        margins=(10.0, 10.0, 10.0, 10.0),
+        x_axis=(1, 0, 0.0, 1.0, 1.0, False),
+        y_axis=(2, 0, 0.0, 1.0, 1.0, False),
+        kinds=[0],
+        stable_ids=[1],
+        style_refs=[0],
+        x0=[0.5],
+        y0=[0.5],
+        x1=[0.5],
+        y1=[0.5],
+    )
+    with np.testing.assert_raises_regex(ValueError, "equal length"):
+        _native.scene_batch_encode(**(options | {"stable_ids": []}))
+    with np.testing.assert_raises_regex(ValueError, "invalid canonical scene batch"):
+        _native.scene_batch_encode(**(options | {"kinds": [9]}))
+    with np.testing.assert_raises_regex(ValueError, "invalid canonical scene batch"):
+        _native.scene_batch_encode(**(options | {"margins": (60.0, 40.0, 10.0, 10.0)}))
 
 
 def test_linear_and_log_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
@@ -108,7 +153,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 1
+    assert _native.scene_version() == 2
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

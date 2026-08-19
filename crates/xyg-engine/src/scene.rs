@@ -8,9 +8,11 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 1;
+pub const SCENE_VERSION: u32 = 2;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
+pub const SCENE_BATCH_HEADER_BYTES: usize = 152;
+pub const SCENE_BATCH_RECORD_BYTES: usize = 48;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AxisTicks {
@@ -65,6 +67,9 @@ impl AxisScale {
         };
         let coord_lo = scale.coord(lo);
         let coord_hi = scale.coord(hi);
+        if !coord_lo.is_finite() || !coord_hi.is_finite() {
+            return Err(SceneError::NonFinite);
+        }
         scale.coord_lo = coord_lo;
         scale.coord_span = if coord_hi == coord_lo {
             1.0
@@ -246,6 +251,219 @@ pub enum SceneError {
     NonFinite,
     NegativeSize,
     InvalidPaint,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PlotLayout {
+    pub viewport_width: f64,
+    pub viewport_height: f64,
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+}
+
+impl PlotLayout {
+    pub fn new(
+        viewport_width: f64,
+        viewport_height: f64,
+        margin_left: f64,
+        margin_right: f64,
+        margin_top: f64,
+        margin_bottom: f64,
+    ) -> Result<Self, SceneError> {
+        if [
+            viewport_width,
+            viewport_height,
+            margin_left,
+            margin_right,
+            margin_top,
+            margin_bottom,
+        ]
+        .iter()
+        .any(|value| !value.is_finite() || *value < 0.0)
+            || viewport_width <= margin_left + margin_right
+            || viewport_height <= margin_top + margin_bottom
+        {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(Self {
+            viewport_width,
+            viewport_height,
+            left: margin_left,
+            top: margin_top,
+            right: viewport_width - margin_right,
+            bottom: viewport_height - margin_bottom,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum SceneRecordKind {
+    Scatter = 0,
+    Polyline = 1,
+    Rect = 2,
+}
+
+impl SceneRecordKind {
+    fn from_code(value: u8) -> Result<Self, SceneError> {
+        match value {
+            0 => Ok(Self::Scatter),
+            1 => Ok(Self::Polyline),
+            2 => Ok(Self::Rect),
+            _ => Err(SceneError::Length),
+        }
+    }
+}
+
+pub struct SceneBatch<'a> {
+    layout: PlotLayout,
+    x_axis_id: u64,
+    y_axis_id: u64,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    kinds: &'a [u8],
+    stable_ids: &'a [u64],
+    style_refs: &'a [u32],
+    x0: &'a [f64],
+    y0: &'a [f64],
+    x1: &'a [f64],
+    y1: &'a [f64],
+}
+
+impl<'a> SceneBatch<'a> {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        let len = kinds.len();
+        if len > MAX_SCENE_MARKS {
+            return Err(SceneError::Limit);
+        }
+        if [
+            stable_ids.len(),
+            style_refs.len(),
+            x0.len(),
+            y0.len(),
+            x1.len(),
+            y1.len(),
+        ]
+        .into_iter()
+        .any(|value| value != len)
+            || kinds
+                .iter()
+                .any(|kind| SceneRecordKind::from_code(*kind).is_err())
+        {
+            return Err(SceneError::Length);
+        }
+        if x0
+            .iter()
+            .chain(y0)
+            .chain(x1)
+            .chain(y1)
+            .any(|value| !value.is_finite())
+        {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(Self {
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            kinds,
+            stable_ids,
+            style_refs,
+            x0,
+            y0,
+            x1,
+            y1,
+        })
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(
+            SCENE_BATCH_HEADER_BYTES + self.kinds.len() * SCENE_BATCH_RECORD_BYTES,
+        );
+        out.extend_from_slice(b"XYGS");
+        out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
+        out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
+        out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
+        out.extend_from_slice(&(self.kinds.len() as u64).to_le_bytes());
+        for value in [
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+            self.layout.left,
+            self.layout.top,
+            self.layout.right,
+            self.layout.bottom,
+        ] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&self.x_axis_id.to_le_bytes());
+        out.extend_from_slice(&self.y_axis_id.to_le_bytes());
+        // AxisScene records: kind/mask, transformed domain, and symlog constant.
+        out.push(self.x_scale.kind as u8);
+        out.push(u8::from(self.x_scale.mask_nonpositive));
+        out.extend_from_slice(&[0; 6]);
+        out.push(self.y_scale.kind as u8);
+        out.push(u8::from(self.y_scale.mask_nonpositive));
+        out.extend_from_slice(&[0; 6]);
+        out.extend_from_slice(&self.x_scale.coord_lo.to_le_bytes());
+        out.extend_from_slice(&(self.x_scale.coord_lo + self.x_scale.coord_span).to_le_bytes());
+        out.extend_from_slice(&self.y_scale.coord_lo.to_le_bytes());
+        out.extend_from_slice(&(self.y_scale.coord_lo + self.y_scale.coord_span).to_le_bytes());
+        out.extend_from_slice(&self.x_scale.constant.to_le_bytes());
+        out.extend_from_slice(&self.y_scale.constant.to_le_bytes());
+        debug_assert_eq!(out.len(), SCENE_BATCH_HEADER_BYTES);
+
+        for index in 0..self.kinds.len() {
+            let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
+            let mapped = [
+                self.x_scale.pixel(self.x0[index]),
+                self.y_scale.pixel(self.y0[index]),
+                self.x_scale.pixel(self.x1[index]),
+                self.y_scale.pixel(self.y1[index]),
+            ];
+            let visible = mapped.iter().all(|value| value.is_finite())
+                && match kind {
+                    SceneRecordKind::Polyline => true,
+                    SceneRecordKind::Scatter => {
+                        mapped[0] >= self.layout.left
+                            && mapped[0] <= self.layout.right
+                            && mapped[1] >= self.layout.top
+                            && mapped[1] <= self.layout.bottom
+                    }
+                    SceneRecordKind::Rect => {
+                        mapped[0].min(mapped[2]) <= self.layout.right
+                            && mapped[0].max(mapped[2]) >= self.layout.left
+                            && mapped[1].min(mapped[3]) <= self.layout.bottom
+                            && mapped[1].max(mapped[3]) >= self.layout.top
+                    }
+                };
+            out.push(kind as u8);
+            out.push(u8::from(visible));
+            out.extend_from_slice(&[0; 2]);
+            out.extend_from_slice(&self.style_refs[index].to_le_bytes());
+            out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
+            for value in if visible { mapped } else { [0.0; 4] } {
+                out.extend_from_slice(&value.to_le_bytes());
+            }
+        }
+        out
+    }
 }
 
 pub struct ScatterScene<'a> {
@@ -609,10 +827,115 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 1);
+        assert_eq!(SCENE_VERSION, 2);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
+        );
+    }
+
+    #[test]
+    fn scene_v2_batch_encodes_layout_axes_and_all_core_record_kinds() {
+        let layout = PlotLayout::new(640.0, 480.0, 40.0, 20.0, 10.0, 30.0).unwrap();
+        let x_scale =
+            AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 40.0, 620.0, 1.0, false).unwrap();
+        let y_scale =
+            AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 450.0, 10.0, 1.0, false).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            11,
+            12,
+            x_scale,
+            y_scale,
+            &[0, 1, 1, 2],
+            &[101, 201, 201, 301],
+            &[1, 2, 2, 3],
+            &[5.0, -1.0, 10.0, 2.0],
+            &[5.0, 1.0, 9.0, 3.0],
+            &[5.0, -1.0, 10.0, 4.0],
+            &[5.0, 1.0, 9.0, 7.0],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        assert_eq!(&encoded[..4], b"XYGS");
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 2);
+        assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
+        assert_eq!(
+            encoded.len(),
+            SCENE_BATCH_HEADER_BYTES + 4 * SCENE_BATCH_RECORD_BYTES
+        );
+        assert_eq!(u64::from_le_bytes(encoded[72..80].try_into().unwrap()), 11);
+        assert_eq!(u64::from_le_bytes(encoded[80..88].try_into().unwrap()), 12);
+        // Scatter is in bounds, and both polyline vertices remain available
+        // for a backend to clip the segment at the plot rectangle.
+        assert_eq!(encoded[SCENE_BATCH_HEADER_BYTES + 1], 1);
+        assert_eq!(
+            encoded[SCENE_BATCH_HEADER_BYTES + SCENE_BATCH_RECORD_BYTES + 1],
+            1
+        );
+    }
+
+    #[test]
+    fn scene_v2_batch_rejects_bad_bounds_lengths_kinds_and_nonfinite_input() {
+        assert_eq!(
+            PlotLayout::new(10.0, 10.0, 6.0, 4.0, 0.0, 0.0),
+            Err(SceneError::NonFinite)
+        );
+        let layout = PlotLayout::new(10.0, 10.0, 1.0, 1.0, 1.0, 1.0).unwrap();
+        let scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 1.0, 9.0, 1.0, false).unwrap();
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[9],
+                &[1],
+                &[0],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+                &[0.0]
+            )
+            .err(),
+            Some(SceneError::Length)
+        );
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[0],
+                &[],
+                &[0],
+                &[0.0],
+                &[0.0],
+                &[0.0],
+                &[0.0]
+            )
+            .err(),
+            Some(SceneError::Length)
+        );
+        assert_eq!(
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                scale,
+                scale,
+                &[0],
+                &[1],
+                &[0],
+                &[f64::NAN],
+                &[0.0],
+                &[0.0],
+                &[0.0]
+            )
+            .err(),
+            Some(SceneError::NonFinite)
         );
     }
 

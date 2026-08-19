@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` starts at 1 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 2 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, or bounds requires a scene-version
 bump. Adding a new record that old consumers never receive does not.
@@ -55,6 +55,46 @@ until those policies move in later slices. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
 
+## Version 2: backend-neutral core scene batch
+
+Version 2 establishes the renderer-independent contract required before whole
+static exporters or the browser Worker consume canonical scenes. One generated
+`xyg_scene_batch_encode` ABI accepts bounded typed arrays and emits a stable
+little-endian byte batch; it does not emit SVG and never places numeric data in
+JSON. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
+two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64
+domain, and symlog constant). Each 48-byte record contains its kind
+(`ScatterScene`, `PolylineScene` vertex, or `RectScene`), visibility/clipping
+flag, stable u64 id, u32 style reference, and four f64 screen coordinates.
+
+Rust validates finite non-negative viewport/margins, a non-empty plot region,
+all scale fields, known record kinds, equal array lengths, finite input values,
+and `MAX_SCENE_MARKS`. Masked/non-finite results and fully clipped scatter or
+rectangle records are invisible with zeroed coordinates, enforcing §19 before
+a renderer sees vertex data. Polyline vertices remain available outside the
+plot so a backend can clip segments correctly at the canonical bounds. Python
+and Node consume the same checked-in scatter/line/bar/axis byte fixture.
+
+The byte layout is fixed for scene version 2:
+
+| Offset | Bytes | Field |
+| ---: | ---: | --- |
+| 0 | 4 | ASCII `XYGS` |
+| 4 | 4 | scene version u32 |
+| 8 | 4 | header bytes u32 (152) |
+| 12 | 4 | record bytes u32 (48) |
+| 16 | 8 | record count u64 |
+| 24 | 48 | viewport width/height and plot left/top/right/bottom f64 |
+| 72 | 16 | x/y axis stable ids u64 |
+| 88 | 16 | x/y kind u8, mask u8, six reserved zero bytes |
+| 104 | 48 | x/y transformed low/high and constants f64 |
+| 152 | 48 × count | record kind/flags/style/id/four f64 coordinates |
+
+The existing `xyg_scene_scatter_svg` entry point remains a compatibility
+wrapper during migration. Version 2 intentionally does not add mark-specific
+SVG ABIs: native SVG/raster consumers and the Rust/WASM browser Worker attach
+to this single scene batch in subsequent slices.
+
 ## Evidence and extension order
 
 Rust unit tests pin schema validation and byte-deterministic SVG. Python tests
@@ -62,8 +102,7 @@ prove the public scatter exporter consumes the Rust scene and preserves its
 custom-marker fallback. Node tests consume the same scene fixture and expected
 fragment. ABI generation, parity, and version-first loading cover both hosts.
 
-Next slices add time/category/angular/symlog ticks and plot-layout records,
-line and area records, remaining mark
-families, chrome/legend/annotation records, and finally native whole-scene SVG,
-PNG, and PDF consumption. Browser DOM measurement and WebGL paint remain
+Next slices add time/category/angular ticks, remaining mark families,
+chrome/legend/annotation records, and native whole-scene SVG, PNG, and PDF
+consumption. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

@@ -88,7 +88,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 62;
+pub const ABI_VERSION: u32 = 63;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -197,6 +197,150 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
         }
         0
     })
+}
+
+/// Encode a bounded backend-neutral Scene v2 batch. Record kinds are scatter
+/// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
+/// typed binary, never JSON. Returns required bytes or `usize::MAX` on error.
+///
+/// # Safety
+/// Every input array must address `len` readable elements. If capacity is
+/// sufficient, `out` must address `out_cap` writable bytes.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_scene_batch_encode(
+    viewport_width: f64,
+    viewport_height: f64,
+    margin_left: f64,
+    margin_right: f64,
+    margin_top: f64,
+    margin_bottom: f64,
+    x_axis_id: u64,
+    x_kind: u32,
+    x_lo: f64,
+    x_hi: f64,
+    x_constant: f64,
+    x_mask_nonpositive: i32,
+    y_axis_id: u64,
+    y_kind: u32,
+    y_lo: f64,
+    y_hi: f64,
+    y_constant: f64,
+    y_mask_nonpositive: i32,
+    kinds: *const u8,
+    stable_ids: *const u64,
+    style_refs: *const u32,
+    x0: *const f64,
+    y0: *const f64,
+    x1: *const f64,
+    y1: *const f64,
+    len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if len > scene::MAX_SCENE_MARKS
+        || !matches!(x_mask_nonpositive, 0 | 1)
+        || !matches!(y_mask_nonpositive, 0 | 1)
+        || (len > 0
+            && (kinds.is_null()
+                || stable_ids.is_null()
+                || style_refs.is_null()
+                || x0.is_null()
+                || y0.is_null()
+                || x1.is_null()
+                || y1.is_null()))
+    {
+        return usize::MAX;
+    }
+    let scale_kind = |value| match value {
+        0 => Some(scene::ScaleKind::Linear),
+        1 => Some(scene::ScaleKind::Log),
+        2 => Some(scene::ScaleKind::SymLog),
+        _ => None,
+    };
+    let (Some(x_kind), Some(y_kind)) = (scale_kind(x_kind), scale_kind(y_kind)) else {
+        return usize::MAX;
+    };
+    let Some(encoded) = ffi_guard(None, || {
+        let layout = scene::PlotLayout::new(
+            viewport_width,
+            viewport_height,
+            margin_left,
+            margin_right,
+            margin_top,
+            margin_bottom,
+        )
+        .ok()?;
+        let x_scale = scene::AxisScale::new(
+            x_kind,
+            x_lo,
+            x_hi,
+            layout.left,
+            layout.right,
+            x_constant,
+            x_mask_nonpositive != 0,
+        )
+        .ok()?;
+        let y_scale = scene::AxisScale::new(
+            y_kind,
+            y_lo,
+            y_hi,
+            layout.bottom,
+            layout.top,
+            y_constant,
+            y_mask_nonpositive != 0,
+        )
+        .ok()?;
+        let kinds = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(kinds, len)
+        };
+        let stable_ids = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(stable_ids, len)
+        };
+        let style_refs = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(style_refs, len)
+        };
+        let f64s = |pointer| {
+            if len == 0 {
+                &[]
+            } else {
+                std::slice::from_raw_parts(pointer, len)
+            }
+        };
+        scene::SceneBatch::new(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            kinds,
+            stable_ids,
+            style_refs,
+            f64s(x0),
+            f64s(y0),
+            f64s(x1),
+            f64s(y1),
+        )
+        .ok()
+        .map(|batch| batch.encode())
+    }) else {
+        return usize::MAX;
+    };
+    let required = encoded.len();
+    if out_cap < required {
+        return required;
+    }
+    if required > 0 && out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&encoded);
+    required
 }
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
@@ -5283,6 +5427,57 @@ mod tests {
                 1
             );
         }
+    }
+
+    #[test]
+    fn scene_batch_abi_is_bounded_and_rejects_malformed_records() {
+        let kinds = [0u8];
+        let ids = [1u64];
+        let styles = [2u32];
+        let values = [0.5f64];
+        let mut output = [0u8; 200];
+        let mut call = |kind, mask, len, kinds_ptr| unsafe {
+            xyg_scene_batch_encode(
+                100.0,
+                80.0,
+                10.0,
+                10.0,
+                10.0,
+                10.0,
+                11,
+                kind,
+                0.0,
+                1.0,
+                1.0,
+                mask,
+                12,
+                0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                kinds_ptr,
+                ids.as_ptr(),
+                styles.as_ptr(),
+                values.as_ptr(),
+                values.as_ptr(),
+                values.as_ptr(),
+                values.as_ptr(),
+                len,
+                output.as_mut_ptr(),
+                output.len(),
+            )
+        };
+        assert_eq!(call(0, 0, 1, kinds.as_ptr()), 200);
+        assert_eq!(call(99, 0, 1, kinds.as_ptr()), usize::MAX);
+        assert_eq!(call(0, 2, 1, kinds.as_ptr()), usize::MAX);
+        assert_eq!(call(0, 0, 1, std::ptr::null()), usize::MAX);
+        assert_eq!(
+            call(0, 0, scene::MAX_SCENE_MARKS + 1, kinds.as_ptr()),
+            usize::MAX
+        );
+        let invalid_kind = [9u8];
+        assert_eq!(call(0, 0, 1, invalid_kind.as_ptr()), usize::MAX);
     }
 
     #[test]

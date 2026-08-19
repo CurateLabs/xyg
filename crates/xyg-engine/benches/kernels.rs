@@ -17,6 +17,7 @@
 use divan::{black_box, Bencher};
 
 use xyg_engine::kernels::{self, DEFAULT_CHUNK};
+use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch};
 
 fn main() {
     divan::main();
@@ -157,4 +158,20 @@ fn range_indices(bencher: Bencher, n: usize) {
 fn is_sorted_f64(bencher: Bencher, n: usize) {
     let (x, _) = series(n);
     bencher.bench(|| kernels::is_sorted_f64(black_box(&x)));
+}
+
+/// Scene v2's shared scale/layout/record encoding path for mixed core marks.
+#[divan::bench(args = [SMALL_N, MEDIUM_N])]
+fn scene_v2_batch_encode(bencher: Bencher, n: usize) {
+    let x = uniform(n, 0x0055_AA11);
+    let y = uniform(n, 0x0066_BB22);
+    let kinds: Vec<u8> = (0..n).map(|index| (index % 3) as u8).collect();
+    let ids: Vec<u64> = (0..n as u64).collect();
+    let styles: Vec<u32> = (0..n).map(|index| (index % 8) as u32).collect();
+    let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
+    let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
+    let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
+    let batch =
+        SceneBatch::new(layout, 1, 2, sx, sy, &kinds, &ids, &styles, &x, &y, &x, &y).unwrap();
+    bencher.bench(|| black_box(batch.encode()));
 }
