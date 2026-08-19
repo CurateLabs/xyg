@@ -267,8 +267,8 @@ async function run() {
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
   const afterRejected = await worker.validateScene(canonicalSceneV3(), { sequence: 13 }).result;
-  if (afterRejected.copyCount !== 4 || afterRejected.copyBytesLo !== 232 * 4) {
-    throw new Error(`stale/malformed staging copies were not counted: ${JSON.stringify(afterRejected)}`);
+  if (afterRejected.copyCount !== 5 || afterRejected.copyBytesLo !== 232 * 5) {
+    throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
   await worker.dispose();
   try {
