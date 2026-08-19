@@ -933,6 +933,25 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "spec/benchmarks/metrics.md",
         "transport.json",
     )
+    _require_job_contains(
+        errors,
+        jobs,
+        "wasm_foundation",
+        "CI",
+        "direct-browser Rust/WASM foundation",
+        "wasm32-unknown-unknown",
+        "python3 scripts/gen_wasm_abi.py --check",
+        "cargo test -p xyg-wasm",
+        "cargo build -p xyg-wasm --release --target",
+        "native PNG",
+        "node js/build.mjs",
+        "node js/package-wasm.mjs",
+        "npx playwright install --with-deps chromium",
+        "node scripts/wasm_foundation_smoke.mjs",
+        "direct-browser-wasm-foundation",
+        "packages/xy-client/dist/xyg-wasm.wasm",
+        "packages/xy-client/dist/wasm-worker.js",
+    )
     test_job = jobs.get("test", "")
     _require_step_runs_exactly(
         errors,

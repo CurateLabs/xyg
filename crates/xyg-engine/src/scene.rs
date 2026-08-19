@@ -302,6 +302,192 @@ pub enum SceneError {
     NonFinite,
     NegativeSize,
     InvalidPaint,
+    Version,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SceneBatchSummary {
+    pub records: usize,
+    pub styles: usize,
+}
+
+fn batch_u32(bytes: &[u8], offset: usize) -> Result<u32, SceneError> {
+    let raw = bytes
+        .get(offset..offset + 4)
+        .ok_or(SceneError::Length)?
+        .try_into()
+        .map_err(|_| SceneError::Length)?;
+    Ok(u32::from_le_bytes(raw))
+}
+
+fn batch_u64(bytes: &[u8], offset: usize) -> Result<u64, SceneError> {
+    let raw = bytes
+        .get(offset..offset + 8)
+        .ok_or(SceneError::Length)?
+        .try_into()
+        .map_err(|_| SceneError::Length)?;
+    Ok(u64::from_le_bytes(raw))
+}
+
+fn batch_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
+    let raw = bytes
+        .get(offset..offset + 8)
+        .ok_or(SceneError::Length)?
+        .try_into()
+        .map_err(|_| SceneError::Length)?;
+    Ok(f64::from_le_bytes(raw))
+}
+
+/// Validate a serialized canonical Scene v3 batch without allocating.
+///
+/// The direct-browser adapter uses this decoder as its first exact scene seam:
+/// TypeScript does not guess record offsets or accept a provisional browser
+/// schema. Future WASM compute exports will produce this same Rust-owned batch.
+pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneError> {
+    if bytes.get(..4) != Some(b"XYGS") {
+        return Err(SceneError::Length);
+    }
+    if batch_u32(bytes, 4)? != SCENE_VERSION {
+        return Err(SceneError::Version);
+    }
+    if batch_u32(bytes, 8)? as usize != SCENE_BATCH_HEADER_BYTES
+        || batch_u32(bytes, 12)? as usize != SCENE_BATCH_RECORD_BYTES
+    {
+        return Err(SceneError::Length);
+    }
+
+    let records = usize::try_from(batch_u64(bytes, 16)?).map_err(|_| SceneError::Limit)?;
+    let styles = usize::try_from(batch_u64(bytes, 24)?).map_err(|_| SceneError::Limit)?;
+    if records > MAX_SCENE_MARKS || styles > MAX_SCENE_STYLES {
+        return Err(SceneError::Limit);
+    }
+    let expected = SCENE_BATCH_HEADER_BYTES
+        .checked_add(
+            styles
+                .checked_mul(SCENE_STYLE_RECORD_BYTES)
+                .ok_or(SceneError::Limit)?,
+        )
+        .and_then(|value| {
+            records
+                .checked_mul(SCENE_BATCH_RECORD_BYTES)
+                .and_then(|record_bytes| value.checked_add(record_bytes))
+        })
+        .ok_or(SceneError::Limit)?;
+    if bytes.len() != expected {
+        return Err(SceneError::Length);
+    }
+
+    let viewport_width = batch_f64(bytes, 32)?;
+    let viewport_height = batch_f64(bytes, 40)?;
+    let left = batch_f64(bytes, 48)?;
+    let top = batch_f64(bytes, 56)?;
+    let right = batch_f64(bytes, 64)?;
+    let bottom = batch_f64(bytes, 72)?;
+    if [viewport_width, viewport_height, left, top, right, bottom]
+        .iter()
+        .any(|value| !value.is_finite())
+        || viewport_width <= 0.0
+        || viewport_height <= 0.0
+        || left < 0.0
+        || top < 0.0
+        || right <= left
+        || bottom <= top
+        || right > viewport_width
+        || bottom > viewport_height
+    {
+        return Err(SceneError::NonFinite);
+    }
+
+    for axis in [96usize, 104] {
+        let kind = bytes[axis];
+        let mask = bytes[axis + 1];
+        if kind > ScaleKind::SymLog as u8
+            || mask > 1
+            || bytes[axis + 2..axis + 8].iter().any(|value| *value != 0)
+        {
+            return Err(SceneError::Length);
+        }
+    }
+    let transformed = [
+        batch_f64(bytes, 112)?,
+        batch_f64(bytes, 120)?,
+        batch_f64(bytes, 128)?,
+        batch_f64(bytes, 136)?,
+    ];
+    let constants = [batch_f64(bytes, 144)?, batch_f64(bytes, 152)?];
+    if transformed.iter().any(|value| !value.is_finite())
+        || transformed[0] == transformed[1]
+        || transformed[2] == transformed[3]
+        || constants
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(SceneError::NonFinite);
+    }
+
+    let styles_offset = SCENE_BATCH_HEADER_BYTES;
+    for index in 0..styles {
+        let offset = styles_offset + index * SCENE_STYLE_RECORD_BYTES;
+        let stroke_width = batch_f64(bytes, offset + 8)?;
+        if !stroke_width.is_finite() || stroke_width < 0.0 {
+            return Err(SceneError::NegativeSize);
+        }
+    }
+
+    let records_offset = styles_offset + styles * SCENE_STYLE_RECORD_BYTES;
+    for index in 0..records {
+        let offset = records_offset + index * SCENE_BATCH_RECORD_BYTES;
+        let kind = SceneRecordKind::from_code(bytes[offset])?;
+        let visible = bytes[offset + 1];
+        let symbol = bytes[offset + 2];
+        if visible > 1 || bytes[offset + 3] != 0 {
+            return Err(SceneError::Length);
+        }
+        let style = batch_u32(bytes, offset + 4)? as usize;
+        if style >= styles {
+            return Err(SceneError::Length);
+        }
+        let coords = [
+            batch_f64(bytes, offset + 16)?,
+            batch_f64(bytes, offset + 24)?,
+            batch_f64(bytes, offset + 32)?,
+            batch_f64(bytes, offset + 40)?,
+        ];
+        let diameter = batch_f64(bytes, offset + 48)?;
+        if coords.iter().any(|value| !value.is_finite()) || !diameter.is_finite() || diameter < 0.0
+        {
+            return Err(SceneError::NonFinite);
+        }
+        if visible == 0
+            && bytes[offset + 16..offset + 48]
+                .iter()
+                .any(|value| *value != 0)
+        {
+            return Err(SceneError::Length);
+        }
+        match kind {
+            SceneRecordKind::Scatter => {
+                if symbol > ScatterSymbol::X as u8 || coords[2] != 0.0 || coords[3] != 0.0 {
+                    return Err(SceneError::Length);
+                }
+            }
+            SceneRecordKind::Polyline => {
+                if symbol != 0 || diameter != 0.0 || coords[2] != 0.0 || coords[3] != 0.0 {
+                    return Err(SceneError::Length);
+                }
+            }
+            SceneRecordKind::Rect => {
+                if symbol != 0
+                    || diameter != 0.0
+                    || (visible != 0 && (coords[0] > coords[2] || coords[1] > coords[3]))
+                {
+                    return Err(SceneError::Length);
+                }
+            }
+        }
+    }
+
+    Ok(SceneBatchSummary { records, styles })
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -1493,6 +1679,32 @@ mod tests {
             })
             .collect();
         assert_eq!(rect_coords, vec![156.0, 142.0, 272.0, 318.0]);
+        assert_eq!(
+            validate_scene_batch(&encoded),
+            Ok(SceneBatchSummary {
+                records: 4,
+                styles: 4
+            })
+        );
+
+        let mut incompatible = encoded.clone();
+        incompatible[4..8].copy_from_slice(&(SCENE_VERSION + 1).to_le_bytes());
+        assert_eq!(
+            validate_scene_batch(&incompatible),
+            Err(SceneError::Version)
+        );
+
+        let mut bad_style = encoded.clone();
+        bad_style[records + 4..records + 8].copy_from_slice(&99u32.to_le_bytes());
+        assert_eq!(validate_scene_batch(&bad_style), Err(SceneError::Length));
+
+        let mut nonfinite = encoded.clone();
+        nonfinite[records + 16..records + 24].copy_from_slice(&f64::NAN.to_le_bytes());
+        assert_eq!(validate_scene_batch(&nonfinite), Err(SceneError::NonFinite));
+        assert_eq!(
+            validate_scene_batch(&encoded[..encoded.len() - 1]),
+            Err(SceneError::Length)
+        );
     }
 
     #[test]

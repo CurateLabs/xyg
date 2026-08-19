@@ -43,6 +43,13 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 | **2. Node host** | `packages/xy-node` (`@curatelabs/xyg-node`) | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. Never publish `@xy/node`. `toHtml()` inlines the host-neutral standalone client, not the Python tree. Root `npm ci` does **not** install this package; CI Test and Python 3.11 jobs run `npm ci --prefix packages/xy-node` so koffi is present for Node host tests. |
 | **3. Browser surface** | `js/src/*.ts` + Rust/WASM → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 painter and browser lifecycle. Today it draws §29 buffers uploaded by Python/Node and has a bounded kernel-less fallback; #59 adds direct browser execution by compiling the same Rust engine to WebAssembly in a Worker. TypeScript keeps paint, pick, gestures, accessibility, DOM chrome, transitions, caches, and request scheduling; Rust owns canonical layout/LOD/encode decisions. |
 
+The #59 foundation now adds `crates/xyg-wasm`, a generated raw-export adapter,
+and an explicit static module Worker. It proves bounded JS→WASM staging,
+version/status/lifecycle behavior, and exact Scene v3 validation. It does not
+yet compile browser chart specifications or replace the kernel-less density
+fallback, so the direct-browser product acceptance remains open. See
+[browser-wasm.md](browser-wasm.md).
+
 The #58 scene migration is active: scene schema version 3 provides one
 backend-neutral Rust-owned typed batch for canonical plot layout, axes,
 scatter, polyline, and rectangle records through both host bindings. The v1

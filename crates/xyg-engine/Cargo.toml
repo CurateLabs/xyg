@@ -9,11 +9,18 @@ publish = false
 [lib]
 name = "xyg_engine"
 
+[features]
+# Native hosts keep the complete raster/PNG exporter. The direct-browser WASM
+# adapter disables defaults so browser compute does not carry an unused PNG
+# encoder or the baked raster font atlas.
+default = ["raster"]
+raster = ["dep:png"]
+
 # Static chart export uses the focused `png` crate's fdeflate fast path;
 # compression belongs beside rasterization so the hot path never round-trips
 # a full framebuffer through a host language.
 [dependencies]
-png = "0.18.1"
+png = { version = "0.18.1", optional = true }
 
 [dev-dependencies]
 # CodSpeed's divan compatibility layer: the same `divan` API, instrumented when

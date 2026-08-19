@@ -264,6 +264,58 @@ jobs:
       - name: Benchmark smoke (1e5/1e6 — §12 harness runs every phase)
         run: .venv/bin/python scripts/bench.py --sizes 1e5,1e6
 
+  wasm_foundation:
+    name: Direct browser Rust/WASM foundation (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [wasm32-unknown-unknown]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: wasm-playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - name: Verify generated WASM adapter
+        run: python3 scripts/gen_wasm_abi.py --check
+      - name: Test raw lifecycle adapter natively
+        run: cargo test -p xyg-wasm
+      - name: Build raw browser adapter without raster or PNG
+        run: |
+          cargo build -p xyg-wasm --release --target ${{ matrix.target }}
+          cargo tree -p xyg-wasm --target ${{ matrix.target }} | tee wasm-tree.txt
+          if grep -Eq '(^| )png v' wasm-tree.txt; then
+            echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"
+            exit 1
+          fi
+      - name: Build static worker and package WASM artifact
+        run: |
+          npm ci
+          node js/build.mjs
+          node js/package-wasm.mjs target/${{ matrix.target }}/release/xyg_wasm.wasm
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Strict-CSP local-only lifecycle smoke
+        run: node scripts/wasm_foundation_smoke.mjs
+      - name: Upload direct-browser foundation artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: direct-browser-wasm-foundation
+          if-no-files-found: error
+          path: |
+            packages/xy-client/dist/xyg-wasm.wasm
+            packages/xy-client/dist/wasm-worker.js
+
   browser_conformance:
     name: Accessibility + cross-browser conformance
     runs-on: blacksmith-4vcpu-ubuntu-2404

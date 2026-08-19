@@ -4,6 +4,7 @@
   "description": "Development-only dependencies for xy: the vite/typescript client build toolchain and browser test runner",
   "scripts": {
     "build": "node js/build.mjs",
+    "build:wasm": "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown && node js/package-wasm.mjs",
     "typecheck": "tsc -p js/tsconfig.json",
     "browser_client_smoke": "node scripts/browser_client_smoke.mjs"
   },

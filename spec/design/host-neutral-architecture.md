@@ -105,6 +105,14 @@ related, not the same acceptance criteria.
 | Generated host bindings | **#57** | Typed ABI contract generates ctypes and Koffi declarations; retains one cdylib rather than PyO3/napi-rs artifacts |
 | Canonical scene/export | **#58** | Move shared scene, layout, tick, geometry, and static-export construction into Rust; keep host API shells |
 | Direct browser engine | **#59** | Compile the same Rust engine to WASM in a Worker; keep TypeScript paint/pick/gesture/lifecycle |
+
+#59's first foundation is now concrete: a `wasm32-unknown-unknown`
+`crates/xyg-wasm` raw adapter, generated TypeScript binding, and static
+strict-CSP Worker establish memory, version, status, cancellation, trap, and
+disposal semantics against exact Scene v3. This is deliberately only “part of
+#59”; typed chart ingest, Rust scene production, painter integration, full
+conformance, and CodSpeed-backed budgets remain. See
+[browser-wasm.md](browser-wasm.md).
 | Phase-4 tile spill | **#5** → #7 (done), **#8**, **#9**, #10, #11 | Derived cache spill. Append = dirty *tiles*, not owning the f64 store |
 | Fork CI hygiene | #12, #15, #16, #21 | Not on this architecture critical path |
 

@@ -22,7 +22,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const clientDir = join(root, "packages", "xy-client", "dist");
 const staticDir = join(root, "python", "xy", "static");
-const BUNDLES = ["index.js", "standalone.js"];
+const PYTHON_BUNDLES = ["index.js", "standalone.js"];
 
 // Typecheck first: a bundle must never be built from source tsc rejects
 // (esbuild strips types without checking them, so this is the only gate).
@@ -126,12 +126,41 @@ async function buildBundles(outDir) {
   }
 }
 
+/** Build the strict-CSP direct-browser worker as a separate static ES module.
+ * It is deliberately not copied into the Python package: direct browser WASM
+ * and the Pyodide/PyEmscripten wheel are distinct runtime products. */
+async function buildWasmWorker(outDir) {
+  await build({
+    configFile: false,
+    root: here,
+    logLevel: "warn",
+    clearScreen: false,
+    build: {
+      outDir,
+      emptyOutDir: false,
+      copyPublicDir: false,
+      target: "es2022",
+      minify: true,
+      reportCompressedSize: false,
+      rollupOptions: {
+        input: join(here, "src", "wasm_worker.ts"),
+        preserveEntrySignatures: "strict",
+        output: {
+          format: "es",
+          entryFileNames: "wasm-worker.js",
+        },
+      },
+    },
+  });
+}
+
 mkdirSync(clientDir, { recursive: true });
 await buildBundles(clientDir);
+await buildWasmWorker(clientDir);
 mkdirSync(staticDir, { recursive: true });
-for (const name of BUNDLES) {
+for (const name of PYTHON_BUNDLES) {
   copyFileSync(join(clientDir, name), join(staticDir, name));
 }
 console.log(
-  "built minified @curatelabs/xyg (packages/xy-client/dist) and copied into python/xy/static",
+  "built minified @curatelabs/xyg plus static WASM worker; copied paint bundles into python/xy/static",
 );

@@ -16,6 +16,16 @@ from the repository root.
 | --- | --- | --- |
 | `.` (`dist/index.js`) | ESM | `render` / `renderStandalone` for bundlers and anywidget |
 | `./standalone` (`dist/standalone.js`) | IIFE `window.xy` | Inline HTML (`toHtml` / `to_html`) and VS Code webviews |
+| `./wasm-worker` (`dist/wasm-worker.js`) | Static module Worker | Explicit direct-browser Rust/WASM lifecycle foundation (#59) |
+| `./xyg-wasm.wasm` (`dist/xyg-wasm.wasm`) | Raw WebAssembly | Same safe `xyg-engine`, compiled without native raster/PNG |
+
+The direct-browser foundation requires callers to provide both an explicit
+static worker URL and an explicit local WASM URL, `WebAssembly.Module`, or byte
+buffer. It never creates a Blob worker, guesses an asset path, imports from a
+CDN, or silently runs chart algorithms in JavaScript. The worker currently
+proves bounded memory/lifecycle handling and exact canonical Scene v3
+compatibility; complete browser-side chart compilation remains tracked by
+[#59](https://github.com/CurateLabs/xyg/issues/59).
 
 The Node host (`packages/xy-node`, published later as `@curatelabs/xyg-node`)
 must not import this module as a runtime WebGL graph — it **inlines**
