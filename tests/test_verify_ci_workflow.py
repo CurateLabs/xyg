@@ -1594,6 +1594,27 @@ def test_workflow_policy_preserves_hash_in_quoted_matrix_runner(tmp_path: Path) 
         path.unlink()
 
 
+def test_workflow_policy_rejects_multiline_matrix_runner_scalar(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "multiline.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os:\n"
+        "          - blacksmith-4vcpu-ubuntu-2404\n"
+        "            arbitrary-third-party-runner\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
 def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
     tmp_path: Path,
 ) -> None:

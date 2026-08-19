@@ -121,6 +121,7 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
 
     values: list[str] = []
     direct_axes = []
+    axis_unsafe = False
     include_unsafe = False
     in_include = False
     for index, line in enumerate(matrix_lines):
@@ -182,12 +183,19 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
                 continue
             if not value:
                 for value_line in matrix_lines[index + 1 :]:
+                    if not value_line.strip():
+                        continue
+                    if len(value_line) - len(value_line.lstrip()) <= 8:
+                        break
                     value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
                     if value_match:
-                        values.append(value_match.group(1).strip("\"'"))
+                        scalar = value_match.group(1).strip()
+                        if scalar.startswith(("{", "[", "|", ">", "${{")):
+                            axis_unsafe = True
+                        else:
+                            values.append(scalar.strip("\"'"))
                         continue
-                    if value_line.strip():
-                        break
+                    axis_unsafe = True
             continue
         inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
         if inline_list:  # pragma: no cover - handled structurally above
@@ -198,7 +206,8 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
             )
             continue
     dynamic_axis = (
-        include_unsafe
+        axis_unsafe
+        or include_unsafe
         or len(direct_axes) > 1
         or (
             len(direct_axes) == 1
