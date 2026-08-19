@@ -98,6 +98,43 @@ def _matrix_include_entries(job_text: str) -> list[dict[str, str]]:
     return entries
 
 
+def _matrix_os_values(job_text: str) -> list[str]:
+    """Return only statically enumerated ``strategy.matrix.os`` values."""
+    lines = job_text.splitlines()
+    try:
+        start = next(i for i, line in enumerate(lines) if line == "      matrix:")
+    except StopIteration:
+        return []
+    matrix_lines: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.strip() and len(line) - len(line.lstrip()) <= 6:
+            break
+        matrix_lines.append(line.split("#", 1)[0])
+
+    values: list[str] = []
+    for index, line in enumerate(matrix_lines):
+        inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
+        if inline_list:
+            values.extend(
+                value.strip().strip("\"'")
+                for value in inline_list.group(1).split(",")
+                if value.strip()
+            )
+            continue
+        if re.fullmatch(r"\s{8}os:\s*", line):
+            for value_line in matrix_lines[index + 1 :]:
+                value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
+                if value_match:
+                    values.append(value_match.group(1).strip("\"'"))
+                    continue
+                if value_line.strip():
+                    break
+            continue
+        for match in re.finditer(r"(?:^\s*-\s*\{\s*|,\s*)os:\s*([^,}\]\s]+)", line):
+            values.append(match.group(1).strip("\"'"))
+    return values
+
+
 def _missing_needles(block: str, needles: tuple[str, ...]) -> list[str]:
     return [needle for needle in needles if needle not in block]
 
@@ -1595,28 +1632,7 @@ def validate_workflow_hosting_policy(
         for job_name, block in job_blocks.items():
             if "runs-on: ${{ matrix.os }}" not in block:
                 continue
-            matrix_runners: list[str] = []
-            lines = block.splitlines()
-            for index, raw_line in enumerate(lines):
-                line = raw_line.split("#", 1)[0]
-                inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
-                if inline_list:
-                    matrix_runners.extend(
-                        value.strip().strip("\"'")
-                        for value in inline_list.group(1).split(",")
-                        if value.strip()
-                    )
-                for match in re.finditer(r"(?:[{,]\s*|-\s+)os:\s*([^,}\]\s]+)", line):
-                    matrix_runners.append(match.group(1).strip("\"'"))
-                if re.fullmatch(r"\s{8}os:\s*", line):
-                    for value_line in lines[index + 1 :]:
-                        value_code = value_line.split("#", 1)[0]
-                        value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_code)
-                        if value_match:
-                            matrix_runners.append(value_match.group(1).strip("\"'"))
-                            continue
-                        if value_code.strip():
-                            break
+            matrix_runners = _matrix_os_values(block)
             if not matrix_runners:
                 errors.append(
                     f"{path} job {job_name} uses matrix.os without statically "

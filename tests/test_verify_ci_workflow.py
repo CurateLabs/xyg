@@ -1303,6 +1303,29 @@ def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> 
     assert any("approved Blacksmith runners" in error for error in errors)
 
 
+def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "dynamic.yml").write_text(
+        "jobs:\n"
+        "  test:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os: ${{ fromJSON(vars.RUNNERS) }}\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    steps:\n"
+        "      - run: true\n"
+        "        env: { os: blacksmith-4vcpu-ubuntu-2404 }\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("without statically enumerated runner values" in error for error in errors)
+
+
 def test_ci_workflow_rejects_unbounded_or_missing_webkit_dependencies(
     tmp_path: Path,
 ) -> None:
