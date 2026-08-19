@@ -109,7 +109,7 @@ function sceneMessage(scene: ArrayBuffer | Uint8Array, transfer: boolean) {
  * Thin lifecycle proxy for the direct-browser Rust worker foundation.
  *
  * This API does not compile chart specifications yet. It proves explicit
- * static asset loading, bounded JS→WASM copies, exact Scene v3 compatibility,
+ * static asset loading, bounded JS→WASM copies, exact Scene v4 compatibility,
  * cancellation/stale handling, traps, and deterministic disposal. Unsupported
  * browser chart work fails; it never falls back to JavaScript algorithms.
  */

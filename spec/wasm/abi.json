@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "abi_version": 1,
-  "scene_version": 3,
+  "scene_version": 4,
   "statuses": {
     "OK": 0,
     "INVALID_HANDLE": 1,

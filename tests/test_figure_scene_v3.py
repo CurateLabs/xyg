@@ -46,6 +46,10 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     assert svg.count("<polyline ") == 1
     assert svg.count("<rect ") == 3  # plot clip plus two bars
     assert 'clip-path="url(#xy-scene-plot)"' in svg
+    assert 'data-xy-chrome="grid"' in svg
+    assert 'data-xy-chrome="axes"' in svg
+    assert svg.count("<text ") == 6
+    assert ">0<" in svg and ">4<" in svg
 
 
 def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
@@ -126,7 +130,7 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     figure.set_axis("y", label="Vertical", domain=(0, 5))
 
     def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("public export must not select incomplete Scene v3")
+        raise AssertionError("public export must not select incomplete Scene v4")
 
     monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
     monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)

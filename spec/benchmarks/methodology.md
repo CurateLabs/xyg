@@ -385,7 +385,10 @@ symlog domain-to-pixel record used before scatter/line/bar scene construction.
 The Rust `scene_v3_batch_encode`, `scene_v3_svg`, and
 `scene_v3_raster_commands` rows at 10k, 100k, and 1M records isolate the shared
 layout, scale, clipping, stable-record, encoding, and consumer paths. Renderer
-inputs deterministically include contiguous repeated-ID two-vertex polylines,
+rows include Scene v4's bounded default two-axis grid/tick/label/spine work;
+that chrome is constant in record count, while the same small/medium/large
+rows expose any accidental per-mark coupling. Renderer inputs deterministically
+include contiguous repeated-ID two-vertex polylines,
 nondegenerate forward and reversed rectangles, and rectangle endpoints outside
 the domain so clipping is exercised rather than merely claimed. Construction
 uses release-active assertions to count SVG primitives and structurally parse

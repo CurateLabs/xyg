@@ -63,8 +63,8 @@ raster-only option that was passed non-default.
 | PNG | `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode` | `Page.captureScreenshot` |
 | JPEG | `_raster.to_rgba` → `_jpeg.encode` (pure numpy/stdlib baseline JFIF, 4:4:4) | `Page.captureScreenshot` |
 | WebP | `_raster.to_rgba` → `_webp.encode` (pure numpy/stdlib VP8L, **lossless only**) | `Page.captureScreenshot` (lossy) |
-| SVG | `_svg.to_svg`; explicit `Figure.to_scene()` output can be passed to the Rust Scene v3 SVG consumer during migration | none — SVG is native-only |
-| PDF | `_svg.to_svg` → `_pdf.svg_to_pdf`; Scene v3 remains explicit until it carries ticks/text/chrome | `Page.printToPDF` |
+| SVG | `_svg.to_svg`; explicit `Figure.to_scene()` output can be passed to the Rust Scene v4 SVG consumer during migration | none — SVG is native-only |
+| PDF | `_svg.to_svg` → `_pdf.svg_to_pdf`; Scene v4 remains explicit until canonical layout and authored text/style records land | `Page.printToPDF` |
 
 `_png.encode` auto-selects an indexed-palette PNG (color type 3 + `tRNS`) when
 the image has ≤256 distinct RGBA colors. `optimize=True` selects this

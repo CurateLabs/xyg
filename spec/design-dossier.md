@@ -513,16 +513,17 @@ F3, still pending (above).
 - **Retained scene graph**, spec-diff → buffer-diff. Pan/zoom is a view-matrix uniform
   update, touching zero data buffers.
 - **Versioned canonical scene IR** in `xyg-engine` ([scene-ir.md](design/scene-ir.md)).
-  Version 3 adds a backend-neutral typed batch behind the shared Rust ABI:
+  Version 4 extends the backend-neutral typed batch behind the shared Rust ABI:
   canonical viewport/plot bounds and axes; embedded bounded RGBA/stroke styles;
   and independently renderable scatter (symbol + diameter), polyline, and
   rectangle records with stable IDs and extent-aware clipping. Numeric records
   are fixed little-endian bytes, never JSON. The legacy version-1 scatter SVG
   wrapper remains only as a migration consumer. The first #58 whole-scene slice
   compiles constant-style cartesian scatter/line/bar figures in Python and Node,
-  then exposes the exact same Scene v3 bytes to explicit Rust SVG and
+  then exposes the exact same Scene v4 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports keep their compatibility
-  renderers until the scene carries tick, grid, text, and chrome semantics;
+  renderers until canonical layout and authored text/style records land. Rust
+  now owns default numeric tick, label, grid, spine, and chrome ordering;
   unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. Browser paint and interaction lifecycle stay
   in TypeScript.
@@ -554,7 +555,7 @@ F3, still pending (above).
   to the stretched overview texture.
 - Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM.
   The first foundation now builds a static strict-CSP Worker plus a raw adapter over
-  `xyg-engine`; it validates exact Scene v3 and lifecycle/bounds but does not yet
+  `xyg-engine`; it validates exact Scene v4 and lifecycle/bounds but does not yet
   compile public charts or replace the density fallback. Transferable ArrayBuffers
   avoid a main↔Worker clone, followed by an explicit bounded copy into WASM linear
   memory. SharedArrayBuffer remains an optional isolated-context optimization.

@@ -2,7 +2,7 @@
   "viewport": [320, 240],
   "x_domain": [0, 4],
   "y_domain": [0, 5],
-  "expected_sha256": "1a7515c72c461874c56e60d67da84b6ccf5e2e6e29d8988c21de844c12b05f53",
-  "default_scatter_sha256": "69a7f9c1d83158c7eaccf5b20df9ac342b52fcaa9479c7bc27db5cba9e359e49",
-  "default_line_sha256": "8be806514b600abb616de981f86c1b5ab00ec14d7a38a916470e07ec8197a011"
+  "expected_sha256": "25555abdebef5e37e9b7126beadceabbbd262934570a921e1f47f7411bb60ff6",
+  "default_scatter_sha256": "8294798e9e8666d0650b875b43defac992a86fca1fe617d2b78f602755134293",
+  "default_line_sha256": "68833d34e7ba73828fe252dda8e2bc406640baf6d29c51c6dfdc3efc0862c6bc"
 }

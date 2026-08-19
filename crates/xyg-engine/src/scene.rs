@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 3;
+pub const SCENE_VERSION: u32 = 4;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -21,6 +21,40 @@ pub struct AxisTicks {
     pub ticks: Vec<f64>,
     pub labeled: Vec<f64>,
     pub step: f64,
+}
+
+fn push_raster_f32(out: &mut Vec<u8>, value: f64, scale: f64) -> Result<(), SceneError> {
+    let scaled = value * scale;
+    if !scaled.is_finite() {
+        return Err(SceneError::NonFinite);
+    }
+    let narrowed = scaled as f32;
+    if !narrowed.is_finite() {
+        return Err(SceneError::NonFinite);
+    }
+    out.extend_from_slice(&narrowed.to_le_bytes());
+    Ok(())
+}
+
+fn push_raster_stroke(
+    out: &mut Vec<u8>,
+    points: [(f64, f64); 2],
+    width: f64,
+    rgba: [u8; 4],
+    scale: f64,
+) -> Result<(), SceneError> {
+    out.push(3);
+    out.extend_from_slice(&2u32.to_le_bytes());
+    for (x, y) in points {
+        push_raster_f32(out, x, scale)?;
+        push_raster_f32(out, y, scale)?;
+    }
+    push_raster_f32(out, width, scale)?;
+    out.extend_from_slice(&rgba);
+    out.push(0);
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push(1);
+    Ok(())
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -100,6 +134,49 @@ impl AxisScale {
             ScaleKind::Linear => coord,
             ScaleKind::Log => 10_f64.powf(coord),
             ScaleKind::SymLog => coord.signum() * self.constant * coord.abs().exp_m1(),
+        }
+    }
+
+    fn domain(self) -> (f64, f64) {
+        (
+            self.value(self.coord_lo),
+            self.value(self.coord_lo + self.coord_span),
+        )
+    }
+
+    fn ticks(self, length_px: f64, is_x: bool) -> Result<AxisTicks, SceneError> {
+        let (lo, hi) = self.domain();
+        let divisor = if is_x { 80.0 } else { 45.0 };
+        let target = ((length_px / divisor) as usize).clamp(3, MAX_AXIS_TICKS);
+        match self.kind {
+            ScaleKind::Log => log_ticks(lo, hi, target),
+            ScaleKind::Linear => linear_ticks(lo, hi, target),
+            ScaleKind::SymLog => {
+                let coordinates = linear_ticks(self.coord(lo), self.coord(hi), target)?;
+                let mut ticks: Vec<f64> = coordinates
+                    .ticks
+                    .iter()
+                    .map(|coordinate| self.value(*coordinate))
+                    .collect();
+                if lo.min(hi) <= 0.0
+                    && lo.max(hi) >= 0.0
+                    && !ticks.iter().any(|value| value.abs() < 1e-12)
+                {
+                    ticks.push(0.0);
+                    ticks.sort_by(|a, b| {
+                        if lo > hi {
+                            b.total_cmp(a)
+                        } else {
+                            a.total_cmp(b)
+                        }
+                    });
+                }
+                Ok(AxisTicks {
+                    labeled: ticks.clone(),
+                    ticks,
+                    step: self.value(coordinates.step).abs(),
+                })
+            }
         }
     }
 
@@ -338,7 +415,7 @@ fn batch_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
     Ok(f64::from_le_bytes(raw))
 }
 
-/// Validate a serialized canonical Scene v3 batch without allocating.
+/// Validate a serialized canonical Scene v4 batch without allocating.
 ///
 /// The direct-browser adapter uses this decoder as its first exact scene seam:
 /// TypeScript does not guess record offsets or accept a provisional browser
@@ -799,12 +876,57 @@ struct EncodedRecord {
     diameter: f64,
 }
 
-/// Validated, owned Scene v3 document consumed identically by vector and
+fn format_tick(value: f64, step: f64, kind: ScaleKind) -> String {
+    let magnitude = value.abs();
+    if magnitude >= 1e6 || (magnitude != 0.0 && magnitude < 1e-4) {
+        let mut text = format!("{value:.1e}");
+        text = text
+            .replace("e+0", "e")
+            .replace("e-0", "e-")
+            .replace("e+", "e");
+        return text;
+    }
+    let mut decimals = if kind == ScaleKind::Log && magnitude > 0.0 && magnitude < 1.0 {
+        (-magnitude.log10()).ceil().clamp(0.0, 8.0) as usize
+    } else if step != 0.0 {
+        (-step.abs().log10()).ceil().clamp(0.0, 8.0) as usize
+    } else {
+        0
+    };
+    while kind != ScaleKind::Log && decimals < 8 {
+        let factor = 10_f64.powi(decimals as i32);
+        let rounded = (step * factor).round() / factor;
+        if (rounded - step).abs() <= step.abs() / 1000.0 {
+            break;
+        }
+        decimals += 1;
+    }
+    format!("{value:.decimals$}")
+}
+
+fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str) {
+    out.push_str("<line x1=\"");
+    push_num(out, x1);
+    out.push_str("\" y1=\"");
+    push_num(out, y1);
+    out.push_str("\" x2=\"");
+    push_num(out, x2);
+    out.push_str("\" y2=\"");
+    push_num(out, y2);
+    out.push_str("\" stroke=\"");
+    out.push_str(paint);
+    out.push_str("\" stroke-width=\"1\"/>");
+}
+
+/// Validated, owned Scene v4 document consumed identically by vector and
 /// raster export. Hosts never reinterpret record geometry after encoding.
 pub struct SceneDocument {
     layout: PlotLayout,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
+    raster_mark_capacity: usize,
 }
 
 impl SceneDocument {
@@ -885,6 +1007,68 @@ impl SceneDocument {
         {
             return Err(SceneError::NonFinite);
         }
+        let scale_kind = |code| match code {
+            0 => Ok(ScaleKind::Linear),
+            1 => Ok(ScaleKind::Log),
+            2 => Ok(ScaleKind::SymLog),
+            _ => Err(SceneError::Length),
+        };
+        let x_kind = scale_kind(bytes[96])?;
+        let y_kind = scale_kind(bytes[104])?;
+        let x_scale = AxisScale::new(
+            x_kind,
+            AxisScale {
+                kind: x_kind,
+                px0: layout.left,
+                coord_lo: f64_at(112),
+                coord_span: f64_at(120) - f64_at(112),
+                px_delta: layout.right - layout.left,
+                constant: f64_at(144),
+                mask_nonpositive: bytes[97] == 1,
+            }
+            .value(f64_at(112)),
+            AxisScale {
+                kind: x_kind,
+                px0: layout.left,
+                coord_lo: f64_at(112),
+                coord_span: f64_at(120) - f64_at(112),
+                px_delta: layout.right - layout.left,
+                constant: f64_at(144),
+                mask_nonpositive: bytes[97] == 1,
+            }
+            .value(f64_at(120)),
+            layout.left,
+            layout.right,
+            f64_at(144),
+            bytes[97] == 1,
+        )?;
+        let y_scale = AxisScale::new(
+            y_kind,
+            AxisScale {
+                kind: y_kind,
+                px0: layout.bottom,
+                coord_lo: f64_at(128),
+                coord_span: f64_at(136) - f64_at(128),
+                px_delta: layout.top - layout.bottom,
+                constant: f64_at(152),
+                mask_nonpositive: bytes[105] == 1,
+            }
+            .value(f64_at(128)),
+            AxisScale {
+                kind: y_kind,
+                px0: layout.bottom,
+                coord_lo: f64_at(128),
+                coord_span: f64_at(136) - f64_at(128),
+                px_delta: layout.top - layout.bottom,
+                constant: f64_at(152),
+                mask_nonpositive: bytes[105] == 1,
+            }
+            .value(f64_at(136)),
+            layout.bottom,
+            layout.top,
+            f64_at(152),
+            bytes[105] == 1,
+        )?;
         let mut styles = Vec::with_capacity(style_count);
         let mut offset = SCENE_BATCH_HEADER_BYTES;
         for _ in 0..style_count {
@@ -906,6 +1090,7 @@ impl SceneDocument {
             offset += SCENE_STYLE_RECORD_BYTES;
         }
         let mut records = Vec::with_capacity(record_count);
+        let mut raster_mark_capacity = 0usize;
         for _ in 0..record_count {
             let kind = SceneRecordKind::from_code(bytes[offset])?;
             let visible = match bytes[offset + 1] {
@@ -958,6 +1143,20 @@ impl SceneDocument {
             {
                 return Err(SceneError::NonFinite);
             }
+            if visible {
+                let record_capacity = match kind {
+                    SceneRecordKind::Scatter => 26,
+                    SceneRecordKind::Polyline => 27,
+                    SceneRecordKind::Rect => {
+                        41 + if styles[style_ref].stroke_width > 0.0 {
+                            51
+                        } else {
+                            0
+                        }
+                    }
+                };
+                raster_mark_capacity = raster_mark_capacity.saturating_add(record_capacity);
+            }
             records.push(EncodedRecord {
                 kind,
                 visible,
@@ -971,8 +1170,11 @@ impl SceneDocument {
         }
         Ok(Self {
             layout,
+            x_scale,
+            y_scale,
             styles,
             records,
+            raster_mark_capacity,
         })
     }
 
@@ -994,7 +1196,46 @@ impl SceneDocument {
         push_num(&mut out, self.layout.right - self.layout.left);
         out.push_str("\" height=\"");
         push_num(&mut out, self.layout.bottom - self.layout.top);
-        out.push_str("\"/></clipPath></defs><g clip-path=\"url(#xy-scene-plot)\">");
+        out.push_str("\"/></clipPath></defs><g data-xy-chrome=\"grid\">");
+        let x_ticks = self
+            .x_scale
+            .ticks(self.layout.right - self.layout.left, true)
+            .unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            });
+        let y_ticks = self
+            .y_scale
+            .ticks(self.layout.bottom - self.layout.top, false)
+            .unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            });
+        for value in &x_ticks.ticks {
+            let x = self.x_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                x,
+                self.layout.top,
+                x,
+                self.layout.bottom,
+                "rgba(32,32,32,0.14)",
+            );
+        }
+        for value in &y_ticks.ticks {
+            let y = self.y_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                self.layout.left,
+                y,
+                self.layout.right,
+                y,
+                "rgba(32,32,32,0.14)",
+            );
+        }
+        out.push_str("</g><g clip-path=\"url(#xy-scene-plot)\">");
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -1077,13 +1318,56 @@ impl SceneDocument {
                 }
             }
         }
-        out.push_str("</g><g><path fill=\"none\" stroke=\"rgb(0,0,0)\" stroke-width=\"1\" d=\"M ");
+        out.push_str("</g><g data-xy-chrome=\"axes\">");
+        for value in &x_ticks.labeled {
+            let x = self.x_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                x,
+                self.layout.bottom,
+                x,
+                self.layout.bottom + 4.0,
+                "rgba(32,32,32,0.55)",
+            );
+            out.push_str("<text x=\"");
+            push_num(&mut out, x);
+            out.push_str("\" y=\"");
+            push_num(&mut out, self.layout.bottom + 16.0);
+            out.push_str(
+                "\" fill=\"rgba(32,32,32,0.85)\" font-size=\"12\" text-anchor=\"middle\">",
+            );
+            out.push_str(&format_tick(*value, x_ticks.step, self.x_scale.kind));
+            out.push_str("</text>");
+        }
+        for value in &y_ticks.labeled {
+            let y = self.y_scale.pixel(*value);
+            push_svg_line(
+                &mut out,
+                self.layout.left - 4.0,
+                y,
+                self.layout.left,
+                y,
+                "rgba(32,32,32,0.55)",
+            );
+            out.push_str("<text x=\"");
+            push_num(&mut out, self.layout.left - 8.0);
+            out.push_str("\" y=\"");
+            push_num(&mut out, y + 4.0);
+            out.push_str("\" fill=\"rgba(32,32,32,0.85)\" font-size=\"12\" text-anchor=\"end\">");
+            out.push_str(&format_tick(*value, y_ticks.step, self.y_scale.kind));
+            out.push_str("</text>");
+        }
+        out.push_str(
+            "<path fill=\"none\" stroke=\"rgba(32,32,32,0.55)\" stroke-width=\"1\" d=\"M ",
+        );
         push_num(&mut out, self.layout.left);
         out.push(' ');
         push_num(&mut out, self.layout.bottom);
         out.push_str(" H ");
         push_num(&mut out, self.layout.right);
-        out.push_str("\"/><path fill=\"none\" stroke=\"rgb(0,0,0)\" stroke-width=\"1\" d=\"M ");
+        out.push_str(
+            "\"/><path fill=\"none\" stroke=\"rgba(32,32,32,0.55)\" stroke-width=\"1\" d=\"M ",
+        );
         push_num(&mut out, self.layout.left);
         out.push(' ');
         push_num(&mut out, self.layout.top);
@@ -1093,28 +1377,129 @@ impl SceneDocument {
         out
     }
 
-    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
-        if !scale.is_finite() || scale <= 0.0 {
-            return Err(SceneError::NonFinite);
+    #[inline(never)]
+    fn append_raster_grid(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) -> Result<(), SceneError> {
+        for value in &x_ticks.ticks {
+            let x = self.x_scale.pixel(*value);
+            push_raster_stroke(
+                out,
+                [(x, self.layout.top), (x, self.layout.bottom)],
+                1.0,
+                [32, 32, 32, 36],
+                scale,
+            )?;
         }
-        let mut out = Vec::with_capacity(self.records.len().saturating_mul(40));
-        let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
-            let scaled = value * scale;
-            if !scaled.is_finite() {
-                return Err(SceneError::NonFinite);
-            }
-            let narrowed = scaled as f32;
-            if !narrowed.is_finite() {
-                return Err(SceneError::NonFinite);
-            }
-            out.extend_from_slice(&narrowed.to_le_bytes());
-            Ok(())
-        };
+        for value in &y_ticks.ticks {
+            let y = self.y_scale.pixel(*value);
+            push_raster_stroke(
+                out,
+                [(self.layout.left, y), (self.layout.right, y)],
+                1.0,
+                [32, 32, 32, 36],
+                scale,
+            )?;
+        }
+        Ok(())
+    }
+
+    #[inline(never)]
+    fn append_raster_axes(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) -> Result<(), SceneError> {
         out.push(0);
-        f32_push(&mut out, self.layout.left)?;
-        f32_push(&mut out, self.layout.top)?;
-        f32_push(&mut out, self.layout.right - self.layout.left)?;
-        f32_push(&mut out, self.layout.bottom - self.layout.top)?;
+        for value in [
+            0.0,
+            0.0,
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+        ] {
+            push_raster_f32(out, value, scale)?;
+        }
+        for points in [
+            [
+                (self.layout.left, self.layout.bottom),
+                (self.layout.right, self.layout.bottom),
+            ],
+            [
+                (self.layout.left, self.layout.top),
+                (self.layout.left, self.layout.bottom),
+            ],
+        ] {
+            push_raster_stroke(out, points, 1.0, [32, 32, 32, 140], scale)?;
+        }
+        for (is_x, ticks) in [(true, x_ticks), (false, y_ticks)] {
+            for value in &ticks.labeled {
+                let (x, y, anchor, segment) = if is_x {
+                    let x = self.x_scale.pixel(*value);
+                    (
+                        x,
+                        self.layout.bottom + 16.0,
+                        1,
+                        [(x, self.layout.bottom), (x, self.layout.bottom + 4.0)],
+                    )
+                } else {
+                    let y = self.y_scale.pixel(*value);
+                    (
+                        self.layout.left - 8.0,
+                        y + 4.0,
+                        2,
+                        [(self.layout.left - 4.0, y), (self.layout.left, y)],
+                    )
+                };
+                push_raster_stroke(out, segment, 1.0, [32, 32, 32, 140], scale)?;
+                let text = format_tick(
+                    *value,
+                    ticks.step,
+                    if is_x {
+                        self.x_scale.kind
+                    } else {
+                        self.y_scale.kind
+                    },
+                );
+                out.push(6);
+                push_raster_f32(out, x, scale)?;
+                push_raster_f32(out, y, scale)?;
+                out.push(anchor);
+                push_raster_f32(out, 12.0, scale)?;
+                out.extend_from_slice(&[32, 32, 32, 217]);
+                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.extend_from_slice(text.as_bytes());
+            }
+        }
+        Ok(())
+    }
+
+    fn raster_command_capacity(&self, x_ticks: &AxisTicks, y_ticks: &AxisTicks) -> usize {
+        let label_capacity = |ticks: &AxisTicks, kind: ScaleKind| {
+            ticks.labeled.iter().fold(0usize, |capacity, value| {
+                capacity.saturating_add(
+                    57usize.saturating_add(format_tick(*value, ticks.step, kind).len()),
+                )
+            })
+        };
+        let chrome_capacity = x_ticks
+            .ticks
+            .len()
+            .saturating_add(y_ticks.ticks.len())
+            .saturating_mul(35)
+            .saturating_add(label_capacity(x_ticks, self.x_scale.kind))
+            .saturating_add(label_capacity(y_ticks, self.y_scale.kind))
+            .saturating_add(104);
+        self.raster_mark_capacity.saturating_add(chrome_capacity)
+    }
+
+    #[inline(never)]
+    fn append_raster_marks(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -1131,12 +1516,12 @@ impl SceneDocument {
                         style.stroke_width,
                     );
                     out.push(4);
-                    f32_push(&mut out, record.coordinates[0])?;
-                    f32_push(&mut out, record.coordinates[1])?;
-                    f32_push(&mut out, geometry.radius)?;
+                    push_raster_f32(out, record.coordinates[0], scale)?;
+                    push_raster_f32(out, record.coordinates[1], scale)?;
+                    push_raster_f32(out, geometry.radius, scale)?;
                     out.push(record.symbol);
                     out.extend_from_slice(&style.fill);
-                    f32_push(&mut out, geometry.stroke_width)?;
+                    push_raster_f32(out, geometry.stroke_width, scale)?;
                     out.extend_from_slice(&style.stroke);
                     index += 1;
                 }
@@ -1150,18 +1535,18 @@ impl SceneDocument {
                     out.push(1);
                     out.extend_from_slice(&4u32.to_le_bytes());
                     for (x, y) in points {
-                        f32_push(&mut out, x)?;
-                        f32_push(&mut out, y)?;
+                        push_raster_f32(out, x, scale)?;
+                        push_raster_f32(out, y, scale)?;
                     }
                     out.extend_from_slice(&style.fill);
                     if style.stroke_width > 0.0 {
                         out.push(3);
                         out.extend_from_slice(&4u32.to_le_bytes());
                         for (x, y) in points {
-                            f32_push(&mut out, x)?;
-                            f32_push(&mut out, y)?;
+                            push_raster_f32(out, x, scale)?;
+                            push_raster_f32(out, y, scale)?;
                         }
-                        f32_push(&mut out, style.stroke_width)?;
+                        push_raster_f32(out, style.stroke_width, scale)?;
                         out.extend_from_slice(&style.stroke);
                         out.push(1);
                         out.extend_from_slice(&0u32.to_le_bytes());
@@ -1189,10 +1574,10 @@ impl SceneDocument {
                         out.push(3);
                         out.extend_from_slice(&(count as u32).to_le_bytes());
                         for point in &self.records[start..index] {
-                            f32_push(&mut out, point.coordinates[0])?;
-                            f32_push(&mut out, point.coordinates[1])?;
+                            push_raster_f32(out, point.coordinates[0], scale)?;
+                            push_raster_f32(out, point.coordinates[1], scale)?;
                         }
-                        f32_push(&mut out, style.stroke_width)?;
+                        push_raster_f32(out, style.stroke_width, scale)?;
                         out.extend_from_slice(&style.stroke);
                         out.push(0);
                         out.extend_from_slice(&0u32.to_le_bytes());
@@ -1201,38 +1586,48 @@ impl SceneDocument {
                 }
             }
         }
+        Ok(())
+    }
+
+    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
+        if !scale.is_finite() || scale <= 0.0 {
+            return Err(SceneError::NonFinite);
+        }
+        let x_ticks = self
+            .x_scale
+            .ticks(self.layout.right - self.layout.left, true)?;
+        let y_ticks = self
+            .y_scale
+            .ticks(self.layout.bottom - self.layout.top, false)?;
+        // Grid strokes are 35 bytes each. Labeled ticks add another stroke
+        // plus a bounded text command; reserve their space up front so adding
+        // constant-size chrome never copies the full mark command buffer.
+        let reserved_capacity = self.raster_command_capacity(&x_ticks, &y_ticks);
+        let mut out = Vec::with_capacity(reserved_capacity);
+        let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
+            let scaled = value * scale;
+            if !scaled.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            let narrowed = scaled as f32;
+            if !narrowed.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            out.extend_from_slice(&narrowed.to_le_bytes());
+            Ok(())
+        };
+        out.push(0);
+        f32_push(&mut out, self.layout.left)?;
+        f32_push(&mut out, self.layout.top)?;
+        f32_push(&mut out, self.layout.right - self.layout.left)?;
+        f32_push(&mut out, self.layout.bottom - self.layout.top)?;
+        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+        self.append_raster_marks(&mut out, scale)?;
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
-        out.push(0);
-        for value in [
-            0.0,
-            0.0,
-            self.layout.viewport_width,
-            self.layout.viewport_height,
-        ] {
-            f32_push(&mut out, value)?;
-        }
-        for points in [
-            [
-                (self.layout.left, self.layout.bottom),
-                (self.layout.right, self.layout.bottom),
-            ],
-            [
-                (self.layout.left, self.layout.top),
-                (self.layout.left, self.layout.bottom),
-            ],
-        ] {
-            out.push(3);
-            out.extend_from_slice(&2u32.to_le_bytes());
-            for (x, y) in points {
-                f32_push(&mut out, x)?;
-                f32_push(&mut out, y)?;
-            }
-            f32_push(&mut out, 1.0)?;
-            out.extend_from_slice(&[0, 0, 0, 255]);
-            out.push(0);
-            out.extend_from_slice(&0u32.to_le_bytes());
-            out.push(1);
+        self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
+        if out.len() > reserved_capacity {
+            return Err(SceneError::Limit);
         }
         Ok(out)
     }
@@ -1586,6 +1981,43 @@ fn push_regular_polygon(
 mod tests {
     use super::*;
 
+    fn raster_text_count(commands: &[u8]) -> Option<usize> {
+        let mut offset = 0usize;
+        let mut texts = 0usize;
+        let read_u32 = |offset: &mut usize| -> Option<usize> {
+            let end = offset.checked_add(4)?;
+            let value = u32::from_le_bytes(commands.get(*offset..end)?.try_into().ok()?) as usize;
+            *offset = end;
+            Some(value)
+        };
+        while offset < commands.len() {
+            let operation = *commands.get(offset)?;
+            offset += 1;
+            let bytes = match operation {
+                0 => 16,
+                1 => read_u32(&mut offset)?.checked_mul(8)?.checked_add(4)?,
+                3 => {
+                    let points = read_u32(&mut offset)?;
+                    offset = offset.checked_add(points.checked_mul(8)?.checked_add(9)?)?;
+                    let dashes = read_u32(&mut offset)?;
+                    dashes.checked_mul(4)?.checked_add(1)?
+                }
+                4 => 25,
+                6 => {
+                    offset = offset.checked_add(17)?;
+                    texts += 1;
+                    read_u32(&mut offset)?
+                }
+                _ => return None,
+            };
+            offset = offset.checked_add(bytes)?;
+            if offset > commands.len() {
+                return None;
+            }
+        }
+        Some(texts)
+    }
+
     #[test]
     fn scatter_scene_is_versioned_bounded_and_deterministic() {
         let scene = ScatterScene::new(
@@ -1601,7 +2033,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 3);
+        assert_eq!(SCENE_VERSION, 4);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -1637,7 +2069,7 @@ mod tests {
         .unwrap();
         let encoded = batch.encode();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 3);
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 4);
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
@@ -1741,7 +2173,12 @@ mod tests {
                 && svg.contains("<polyline points=\"")
                 && svg.contains("<rect x=\"")
         );
+        let x_ticks = document.x_scale.ticks(100.0, true).unwrap();
+        let y_ticks = document.y_scale.ticks(80.0, false).unwrap();
+        let reserved_capacity = document.raster_command_capacity(&x_ticks, &y_ticks);
         let commands = document.to_raster_commands(2.0).unwrap();
+        assert!(commands.len() <= reserved_capacity);
+        assert!(commands.capacity() >= reserved_capacity);
         assert!(commands.contains(&4)); // point
         assert!(commands.contains(&3)); // polyline + axes
         assert!(commands.contains(&1)); // rectangle fill
@@ -2268,7 +2705,9 @@ mod tests {
             .unwrap()
             .to_raster_commands(1.0)
             .unwrap();
-        let mut offset = 17; // initial plot clip command
+        let grid_count = linear_ticks(0.0, 18.0, 3).unwrap().ticks.len()
+            + linear_ticks(0.0, 1.0, 3).unwrap().ticks.len();
+        let mut offset = 17 + grid_count * 35; // clip plus canonical grid strokes
         for code in 0..=18 {
             assert_eq!(commands[offset], 4);
             assert_eq!(commands[offset + 13], code);
@@ -2293,6 +2732,75 @@ mod tests {
         );
         assert_eq!(log.labeled, vec![0.1, 1.0, 10.0, 100.0]);
         assert_eq!(log.step, 1.0);
+    }
+
+    #[test]
+    fn viewport_density_and_symlog_coordinate_ticks_match_both_consumers() {
+        let narrow = AxisScale::new(ScaleKind::Linear, 0.0, 100.0, 0.0, 200.0, 1.0, false)
+            .unwrap()
+            .ticks(200.0, true)
+            .unwrap();
+        let wide = AxisScale::new(ScaleKind::Linear, 0.0, 100.0, 0.0, 1_000.0, 1.0, false)
+            .unwrap()
+            .ticks(1_000.0, true)
+            .unwrap();
+        assert!(wide.ticks.len() > narrow.ticks.len());
+
+        for (lo, hi) in [(-100.0, 10.0), (10.0, -100.0)] {
+            let layout = PlotLayout::new(420.0, 260.0, 50.0, 20.0, 20.0, 40.0).unwrap();
+            let x_scale = AxisScale::new(
+                ScaleKind::SymLog,
+                lo,
+                hi,
+                layout.left,
+                layout.right,
+                2.0,
+                false,
+            )
+            .unwrap();
+            let ticks = x_scale.ticks(layout.right - layout.left, true).unwrap();
+            assert!(ticks.ticks.iter().any(|value| value.abs() < 1e-12));
+            let coordinate_ticks = linear_ticks(x_scale.coord(lo), x_scale.coord(hi), 4).unwrap();
+            for (actual, coordinate) in ticks.ticks.iter().zip(&coordinate_ticks.ticks) {
+                assert!((actual - x_scale.value(*coordinate)).abs() < 1e-12);
+            }
+
+            let encoded = SceneBatch::new(
+                layout,
+                1,
+                2,
+                x_scale,
+                AxisScale::new(
+                    ScaleKind::SymLog,
+                    -1.0,
+                    1.0,
+                    layout.bottom,
+                    layout.top,
+                    1.0,
+                    false,
+                )
+                .unwrap(),
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+            )
+            .unwrap()
+            .encode();
+            let document = SceneDocument::decode(&encoded).unwrap();
+            let svg_labels = document.to_svg().matches("<text ").count();
+            let raster_labels = raster_text_count(&document.to_raster_commands(1.0).unwrap());
+            assert_eq!(raster_labels, Some(svg_labels));
+            assert!(svg_labels >= 4);
+        }
     }
 
     #[test]

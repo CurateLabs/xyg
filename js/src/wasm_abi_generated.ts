@@ -2,7 +2,7 @@
 // Do not hand-edit raw WASM signatures or status numbers here.
 
 export const XYG_WASM_ABI_VERSION = 1 as const;
-export const XYG_WASM_SCENE_VERSION = 3 as const;
+export const XYG_WASM_SCENE_VERSION = 4 as const;
 export const XYG_WASM_STATUS = {
   OK: 0,
   INVALID_HANDLE: 1,

@@ -2239,7 +2239,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
         return _svg.to_svg(self, path, width=width, height=height)
 
     def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:
-        """Compile the migrated scatter/line/bar subset to canonical Scene v3.
+        """Compile the migrated scatter/line/bar subset to canonical Scene v4.
 
         Unsupported marks or customization raise explicitly; ordinary SVG and
         raster exports retain their established renderer as the compatibility

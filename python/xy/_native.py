@@ -1525,7 +1525,7 @@ def scene_batch_encode(
     x1: npt.ArrayLike,
     y1: npt.ArrayLike,
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v3 typed batch."""
+    """Encode the bounded backend-neutral Scene v4 typed batch."""
 
     def scene_uint(
         value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
@@ -1622,12 +1622,12 @@ def _scene_bytes_output(encoded: bytes, function: Any, label: str, *extra: Any) 
 
 
 def scene_svg(encoded: bytes) -> str:
-    """Render one validated Scene v3 document as a complete SVG."""
+    """Render one validated Scene v4 document as a complete SVG."""
     return _scene_bytes_output(encoded, _lib.xyg_scene_svg, "SVG").decode("utf-8")
 
 
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
-    """Compile Scene v3 into the existing native raster display list."""
+    """Compile Scene v4 into the existing native raster display list."""
     factor = float(scale)
     if not math.isfinite(factor) or factor <= 0.0:
         raise ValueError("scene raster scale must be positive and finite")

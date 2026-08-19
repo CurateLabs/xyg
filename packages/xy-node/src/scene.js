@@ -22,11 +22,11 @@ const SYMBOL_CODES = new Map([
 function sceneSymbolCode(value) {
   if (typeof value === "string") {
     const code = SYMBOL_CODES.get(value);
-    if (code == null) throw new RangeError(`Scene v3 does not support scatter symbol ${JSON.stringify(value)}`);
+    if (code == null) throw new RangeError(`Scene v4 does not support scatter symbol ${JSON.stringify(value)}`);
     return code;
   }
   if (!Number.isInteger(value) || value < 0 || value >= SYMBOL_CODES.size) {
-    throw new RangeError("Scene v3 scatter symbol code must be an integer from 0 through 18");
+    throw new RangeError("Scene v4 scatter symbol code must be an integer from 0 through 18");
   }
   return value;
 }
@@ -143,7 +143,7 @@ function axisDescriptor(axis, name) {
   return [asU64(id, `${name}.id`), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
 }
 
-/** Encode the shared backend-neutral Scene v3 typed batch. */
+/** Encode the shared backend-neutral Scene v4 typed batch. */
 export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
@@ -219,20 +219,20 @@ function rgba8(css, opacity, name) {
   return parsed.map((value, index) => Math.round(value * (index === 3 ? opacity : 1) * 255));
 }
 
-/** Compile the representative cartesian scatter/line/bar subset to Scene v3. */
+/** Compile the representative cartesian scatter/line/bar subset to Scene v4. */
 export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
-  if (figure.coords !== "cartesian") throw new RangeError("Scene v3 figure compilation currently supports cartesian coordinates only");
-  if (figure.title != null) throw new RangeError("Scene v3 does not yet encode titles");
+  if (figure.coords !== "cartesian") throw new RangeError("Scene v4 figure compilation currently supports cartesian coordinates only");
+  if (figure.title != null) throw new RangeError("Scene v4 does not yet encode titles");
   const supported = new Set(["scatter", "line", "bar"]);
   const unsupported = figure.traces.find((trace) => !supported.has(trace.kind));
-  if (unsupported) throw new RangeError(`Scene v3 figure compilation does not yet support ${unsupported.kind}`);
+  if (unsupported) throw new RangeError(`Scene v4 figure compilation does not yet support ${unsupported.kind}`);
   const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [];
   for (const trace of figure.traces) {
-    if (trace.name != null) throw new RangeError("Scene v3 does not yet encode legends");
-    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v3 currently supports only the primary x/y axes");
+    if (trace.name != null) throw new RangeError("Scene v4 does not yet encode legends");
+    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v4 currently supports only the primary x/y axes");
     const style = trace.style ?? {};
     for (const key of ["color_channel", "size_channel", "stroke_channel", "dash", "curve", "smooth", "linecap", "marker_path", "marker_glyph"]) {
-      if (style[key] != null) throw new RangeError(`Scene v3 figure compilation does not yet support ${key}`);
+      if (style[key] != null) throw new RangeError(`Scene v4 figure compilation does not yet support ${key}`);
     }
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
@@ -245,7 +245,7 @@ export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
     const count = trace.kind === "bar" ? trace.x0.length : trace.x.length;
     const coordinateColumns = trace.kind === "bar" ? [trace.x0, trace.y0, trace.x1, trace.y1] : [trace.x, trace.y];
     if (coordinateColumns.some((column) => column == null || column.length !== count || Array.from(column).some((value) => !Number.isFinite(value)))) {
-      throw new RangeError("Scene v3 does not yet encode missing-data breaks or nonfinite coordinates");
+      throw new RangeError("Scene v4 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     for (let index = 0; index < count; index += 1) {
       kinds.push(trace.kind === "scatter" ? 0 : trace.kind === "line" ? 1 : 2);

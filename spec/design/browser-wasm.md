@@ -2,7 +2,7 @@
 
 **Status:** bounded lifecycle/toolchain foundation, **not** a complete direct-browser
 chart host. Tracking: [#59](https://github.com/CurateLabs/xyg/issues/59).
-Canonical scene dependency: [Scene v3](scene-ir.md).
+Canonical scene dependency: [Scene v4](scene-ir.md).
 
 ## Runtime taxonomy
 
@@ -74,7 +74,7 @@ scene constant. `js/package-wasm.mjs` parses the compiled module's type,
 function, and export sections and rejects artifact-level signature drift.
 
 The only scene operation in this slice is allocation-free validation of an
-already canonical Scene v3 batch. That establishes exact integration without
+already canonical Scene v4 batch. That establishes exact integration without
 inventing a provisional browser chart schema. It does **not** compile a public
 chart specification or satisfy #59's scatter/line/bar acceptance criteria.
 
@@ -148,7 +148,7 @@ Issue `#59` can close; raw local timings are not performance evidence.
 ## Remaining #59 work
 
 - typed column and chart-spec ingest;
-- Rust Scene v3 production for the first scatter/line/bar/aggregate slice;
+- Rust Scene v4 production for the first scatter/line/bar/aggregate slice;
 - integration with the existing WebGL painter and export path;
 - native Python/Node/WASM/Pyodide conformance fixtures;
 - cooperative cancellation inside long Rust operations;
