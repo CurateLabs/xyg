@@ -39,7 +39,7 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | C ABI shell crate | `xy-core` (`xy_core`) | **`crates/xyg-core`** (`xyg_core`) | decided |
 | Shipped cdylib artifact | `libxy_core.so` / `libxy_core.dylib` / `xy_core.dll` | **`libxyg_core.so` / `libxyg_core.dylib` / `xyg_core.dll`** (one artifact per platform; wasm target packs as `libxyg_core.so`) | decided |
 | C ABI symbol prefix | `xy_*` (e.g. `xy_abi_version`) | **`xyg_*`** (e.g. `xyg_abi_version`); prefix change ships with the ABI 58 bump, so an old wrapper can never half-bind a new library | decided |
-| ABI manifest | — (declarations duplicated by hand) | **`spec/abi/xyg-abi.json`**, generated from `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`; parity-checked against Python/Node/smoke declarations by `scripts/check_abi_parity.py` | decided |
+| ABI contract | — (declarations duplicated by hand) | **`spec/abi/xyg-abi.json` + `xyg.h`**, generated with Python ctypes and Node Koffi declarations from `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`; byte-for-byte checked by `scripts/check_abi_parity.py` | landed (#57) |
 | Python distribution | `xy` | **`xyg`** | landed (`pyproject.toml` / wheels / `pip install xyg`; import still `xy`) |
 | Python import namespace | `import xy` (`python/xy/`) | **`import xyg`** (`python/xyg/`) | decided (owner, 2026-08-11) |
 | Bundled Reflex adapter | `reflex_xy` (`python/reflex_xy/`) | **`reflex_xyg`** (`python/reflex_xyg/`); extra spelled `xyg[reflex]` | decided (owner, 2026-08-11) |

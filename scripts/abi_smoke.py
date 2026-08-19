@@ -22,15 +22,13 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def _expected_abi_version() -> int:
-    """Read ABI_VERSION from the ctypes wrapper source (stdlib-only; the
-    wrapper imports numpy, so it can't be imported here). One less copy of
-    the constant to keep in sync — crates/xyg-core/src/lib.rs and _native.py stay the two
-    authoritative locations (CLAUDE.md invariant)."""
-    source = (ROOT / "python" / "xy" / "_native.py").read_text(encoding="utf-8")
+    """Read ABI_VERSION from the generated ctypes declarations, stdlib-only."""
+    path = ROOT / "python" / "xy" / "_abi_generated.py"
+    source = path.read_text(encoding="utf-8")
     for line in source.splitlines():
         if line.startswith("ABI_VERSION = "):
             return int(line.split("=", 1)[1].strip())
-    raise SystemExit("ABI_VERSION not found in python/xy/_native.py")
+    raise SystemExit(f"ABI_VERSION not found in {path.relative_to(ROOT)}")
 
 
 ABI_VERSION = _expected_abi_version()

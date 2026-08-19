@@ -216,9 +216,10 @@ inside this frame; changing any of it means editing this section first.
 ### WP1 — Rust tile store ABI ([#8](https://github.com/CurateLabs/graphforge-xy/issues/8))
 
 - `xyg_pyramid_spill` / `xyg_tile_fetch` / `xyg_tiles_compose` (names TBD) —
-  bump `ABI_VERSION` in `crates/xyg-core/src/lib.rs` **and** `python/xy/_native.py` together,
-  then regenerate `spec/abi/xyg-abi.json` and keep Node (`packages/xy-node`),
-  `scripts/abi_smoke.py`, and `scripts/check_abi_parity.py` on the same version.
+  bump `ABI_VERSION` in `crates/xyg-core/src/lib.rs`, then run
+  `python3 scripts/gen_abi_manifest.py --write` to regenerate the JSON, C
+  header, ctypes, and Koffi declarations; keep `scripts/abi_smoke.py` and
+  `scripts/check_abi_parity.py` green on that version.
 - LRU under `PYRAMID_RESIDENT_BYTES` per locked decisions D2–D3.
 - Zone-map-pruned tile index for unordered scatter (D5, dossier §32b).
 

@@ -7,7 +7,7 @@ WHEEL ?=
 BENCHMARK_JSON ?= benchmark.json
 BENCHMARK_KIND ?= auto
 
-.PHONY: help setup setup-browser check check-full check-browser check-conformance check-docs check-examples check-security check-errors check-api check-import check-ci check-ownership check-benchmark-harness check-pyplot check-pyplot-speed check-sdist check-wheel check-artifacts check-benchmark-report list-checks test lint format typecheck public-api python-floor js-check rust-check abi-smoke
+.PHONY: help setup setup-browser check check-full check-browser check-conformance check-docs check-examples check-security check-errors check-api check-import check-ci check-ownership check-benchmark-harness check-pyplot check-pyplot-speed check-sdist check-wheel check-artifacts check-benchmark-report list-checks test lint format typecheck public-api python-floor js-check rust-check abi-generate abi-check abi-smoke
 
 help:
 	@printf '%s\n' \
@@ -27,6 +27,8 @@ help:
 		'  make check-import     run import-time and dependency-boundary checks' \
 		'  make check-ci         run CI/release workflow invariant checks' \
 		'  make check-ownership  validate the production-source ownership ledger' \
+		'  make abi-generate     regenerate the typed ABI contract and host declarations' \
+		'  make abi-check        verify generated ABI artifacts and host parity' \
 		'  make check-benchmark-harness run benchmark metadata/report/regression tests' \
 		'  make check-pyplot      run the matplotlib-shim suite and compatibility corpus' \
 		'  make check-pyplot-speed enforce the per-family 10x static-PNG target (requires matplotlib)' \
@@ -163,6 +165,13 @@ js-check:
 rust-check:
 	cargo test
 	cargo clippy --all-targets -- -D warnings
+
+abi-generate:
+	$(PYTHON) scripts/gen_abi_manifest.py --write
+
+abi-check:
+	$(PYTHON) scripts/gen_abi_manifest.py --check
+	$(PYTHON) scripts/check_abi_parity.py
 
 abi-smoke:
 	$(PYTHON) scripts/abi_smoke.py

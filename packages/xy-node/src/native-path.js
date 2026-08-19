@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-/** Lockstep with `crates/xyg-core/src/lib.rs` and `python/xy/_native.py`. */
-export const ABI_VERSION = 59;
+import { ABI_VERSION } from "./_abi_generated.js";
+
+export { ABI_VERSION };
 
 /** Platform filenames for the one shipped cdylib. */
 export const NATIVE_LIBRARY_NAMES = Object.freeze([

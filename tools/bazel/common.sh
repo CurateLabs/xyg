@@ -89,9 +89,9 @@ run_python() {
 
 expected_abi_from_source() {
   local root="${1}"
-  local native_py="${root}/python/xy/_native.py"
-  if [[ -f "${native_py}" ]]; then
-    sed -n 's/^ABI_VERSION = //p' "${native_py}" | head -n 1
+  local generated_py="${root}/python/xy/_abi_generated.py"
+  if [[ -f "${generated_py}" ]]; then
+    sed -n 's/^ABI_VERSION = //p' "${generated_py}" | head -n 1
     return 0
   fi
   local lib_rs="${root}/crates/xyg-core/src/lib.rs"

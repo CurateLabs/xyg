@@ -45,9 +45,10 @@ control.
   One cdylib per platform serves every CPython version. Caveat: crates.io is
   unreachable from the dev sandbox, so a required crate must be vendored
   (`cargo vendor`) or the sandbox loses the ability to build/test the core;
-  prefer feature-gated optional deps. Bump `ABI_VERSION` in
-  `crates/xyg-core/src/lib.rs` *and* `python/xy/_native.py` together on any
-  signature change.
+  prefer feature-gated optional deps. On any signature change, bump
+  `ABI_VERSION` in `crates/xyg-core/src/lib.rs` and run
+  `python3 scripts/gen_abi_manifest.py --write`; never edit generated Python,
+  Node, C-header, or JSON ABI declarations by hand.
 - `python/xy/` — package. `_native.py` (ctypes) binds the required
   Rust core; there is no NumPy fallback — `kernels.py` raises a clear
   ImportError if the native core can't load. `components.py`
