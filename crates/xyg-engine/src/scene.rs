@@ -926,6 +926,7 @@ pub struct SceneDocument {
     y_scale: AxisScale,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
+    raster_mark_capacity: usize,
 }
 
 impl SceneDocument {
@@ -1089,6 +1090,7 @@ impl SceneDocument {
             offset += SCENE_STYLE_RECORD_BYTES;
         }
         let mut records = Vec::with_capacity(record_count);
+        let mut raster_mark_capacity = 0usize;
         for _ in 0..record_count {
             let kind = SceneRecordKind::from_code(bytes[offset])?;
             let visible = match bytes[offset + 1] {
@@ -1141,6 +1143,20 @@ impl SceneDocument {
             {
                 return Err(SceneError::NonFinite);
             }
+            if visible {
+                let record_capacity = match kind {
+                    SceneRecordKind::Scatter => 26,
+                    SceneRecordKind::Polyline => 27,
+                    SceneRecordKind::Rect => {
+                        41 + if styles[style_ref].stroke_width > 0.0 {
+                            51
+                        } else {
+                            0
+                        }
+                    }
+                };
+                raster_mark_capacity = raster_mark_capacity.saturating_add(record_capacity);
+            }
             records.push(EncodedRecord {
                 kind,
                 visible,
@@ -1158,6 +1174,7 @@ impl SceneDocument {
             y_scale,
             styles,
             records,
+            raster_mark_capacity,
         })
     }
 
@@ -1462,6 +1479,25 @@ impl SceneDocument {
         Ok(())
     }
 
+    fn raster_command_capacity(&self, x_ticks: &AxisTicks, y_ticks: &AxisTicks) -> usize {
+        let label_capacity = |ticks: &AxisTicks, kind: ScaleKind| {
+            ticks.labeled.iter().fold(0usize, |capacity, value| {
+                capacity.saturating_add(
+                    57usize.saturating_add(format_tick(*value, ticks.step, kind).len()),
+                )
+            })
+        };
+        let chrome_capacity = x_ticks
+            .ticks
+            .len()
+            .saturating_add(y_ticks.ticks.len())
+            .saturating_mul(35)
+            .saturating_add(label_capacity(x_ticks, self.x_scale.kind))
+            .saturating_add(label_capacity(y_ticks, self.y_scale.kind))
+            .saturating_add(104);
+        self.raster_mark_capacity.saturating_add(chrome_capacity)
+    }
+
     pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
@@ -1475,25 +1511,8 @@ impl SceneDocument {
         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
         // plus a bounded text command; reserve their space up front so adding
         // constant-size chrome never copies the full mark command buffer.
-        let chrome_capacity = x_ticks
-            .ticks
-            .len()
-            .saturating_add(y_ticks.ticks.len())
-            .saturating_mul(35)
-            .saturating_add(
-                x_ticks
-                    .labeled
-                    .len()
-                    .saturating_add(y_ticks.labeled.len())
-                    .saturating_mul(99),
-            )
-            .saturating_add(87);
-        let mut out = Vec::with_capacity(
-            self.records
-                .len()
-                .saturating_mul(40)
-                .saturating_add(chrome_capacity),
-        );
+        let reserved_capacity = self.raster_command_capacity(&x_ticks, &y_ticks);
+        let mut out = Vec::with_capacity(reserved_capacity);
         let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
             let scaled = value * scale;
             if !scaled.is_finite() {
@@ -1601,6 +1620,9 @@ impl SceneDocument {
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
+        if out.len() > reserved_capacity {
+            return Err(SceneError::Limit);
+        }
         Ok(out)
     }
 }
@@ -2145,7 +2167,12 @@ mod tests {
                 && svg.contains("<polyline points=\"")
                 && svg.contains("<rect x=\"")
         );
+        let x_ticks = document.x_scale.ticks(100.0, true).unwrap();
+        let y_ticks = document.y_scale.ticks(80.0, false).unwrap();
+        let reserved_capacity = document.raster_command_capacity(&x_ticks, &y_ticks);
         let commands = document.to_raster_commands(2.0).unwrap();
+        assert!(commands.len() <= reserved_capacity);
+        assert_eq!(commands.capacity(), reserved_capacity);
         assert!(commands.contains(&4)); // point
         assert!(commands.contains(&3)); // polyline + axes
         assert!(commands.contains(&1)); // rectangle fill
