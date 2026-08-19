@@ -60,7 +60,8 @@ integrations are owned or explicitly controlled by CurateLabs:
   a Blacksmith execution runner plus GitHub OIDC to the CurateLabs CodSpeed
   project; CodSpeed remains the hosted performance authority.
 - `benchmark-refresh.yml` and `ceiling-benchmark.yml` are manual evidence
-  workflows. The ceiling sweep uses a billed Blacksmith macOS 15 runner.
+  workflows. The ceiling sweep uses the billed
+  `blacksmith-12vcpu-macos-15` Apple Silicon M4 runner (48 GB RAM).
 - `publish.yaml` is the guarded `xyg` release workflow described below.
 
 Playwright browser artifacts are cached on Blacksmith. Chromium-only install

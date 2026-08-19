@@ -1236,6 +1236,10 @@ def test_workflow_policy_accepts_blacksmith_and_matrix_runners(tmp_path: Path) -
         "    steps:\n"
         "      - run: npx playwright install chromium\n"
         "  wheels:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os:\n"
+        "          - blacksmith-4vcpu-ubuntu-2404\n"
         "    runs-on: ${{ matrix.os }}\n",
         encoding="utf-8",
     )
@@ -1266,6 +1270,24 @@ def test_workflow_policy_rejects_quoted_matrix_alias_and_continued_with_deps(
 
     assert any("GitHub-hosted runner alias" in error for error in errors)
     assert any("must not use --with-deps" in error for error in errors)
+
+
+def test_workflow_policy_rejects_arbitrary_matrix_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "matrix.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        '        os: ["blacksmith-4vcpu-ubuntu-2404", "arbitrary-runner"]\n'
+        "    runs-on: ${{ matrix.os }}\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix runner must use Blacksmith" in error for error in errors)
 
 
 def test_ci_workflow_rejects_unbounded_or_missing_webkit_dependencies(
