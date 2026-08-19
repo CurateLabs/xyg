@@ -57,12 +57,18 @@ def _job_blocks(text: str) -> dict[str, str]:
 
     blocks: dict[str, list[str]] = {}
     current: Optional[str] = None
+    unsafe_index = 0
     for line in lines[start + 1 :]:
         if line.strip() and len(line) == len(line.lstrip(" ")):
             break
-        match = re.match(r"^  ([A-Za-z0-9_-]+):\s*$", line)
-        if match:
-            current = match.group(1)
+        parsed = _direct_yaml_mapping(line)
+        if parsed is not None and parsed[0] == 2 and not parsed[3].strip():
+            _indent, job_name, unsafe, _value = parsed
+            if unsafe or job_name is None:
+                unsafe_index += 1
+                current = f"__unsafe_job_{unsafe_index}"
+            else:
+                current = job_name
             blocks[current] = [line]
             continue
         if current is not None:
@@ -1711,7 +1717,11 @@ def validate_workflow_hosting_policy(
                 errors.append(f"{path} job {job_name} must declare one direct runs-on value")
                 continue
             runner = runner_values[0]
-            codspeed_hosted = path.name == "codspeed.yml" and runner == CODSPEED_HOSTED_RUNNER
+            codspeed_hosted = (
+                path.name == "codspeed.yml"
+                and job_name == "benchmarks"
+                and runner == CODSPEED_HOSTED_RUNNER
+            )
             if (
                 runner != "${{ matrix.os }}"
                 and runner not in ALLOWED_BLACKSMITH_RUNNERS
@@ -1721,7 +1731,7 @@ def validate_workflow_hosting_policy(
                     f"{path} job {job_name} must use an approved Blacksmith runner or the "
                     f"dedicated CodSpeed hosted runner, got {runner}"
                 )
-            if "runs-on: ${{ matrix.os }}" not in block:
+            if runner != "${{ matrix.os }}":
                 continue
             matrix_runners, dynamic_axis = _matrix_os_values(block)
             if dynamic_axis:
