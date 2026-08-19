@@ -19,6 +19,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
+DEFAULT_BAZEL_WORKFLOW = ROOT / ".github" / "workflows" / "bazel.yml"
 DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
 REQUIRED_CI_JOBS = {
@@ -1195,6 +1196,43 @@ def validate_workflow(path: Path = DEFAULT_WORKFLOW) -> list[str]:
     return validate_ci_workflow(path)
 
 
+def validate_bazel_workflow(path: Path = DEFAULT_BAZEL_WORKFLOW) -> list[str]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"cannot read Bazel workflow {path}: {exc}"]
+
+    errors: list[str] = []
+    jobs = _job_blocks(text)
+    bazel = jobs.get("bazel", "")
+    if not bazel:
+        errors.append("Bazel workflow missing required bazel job")
+        return errors
+
+    runner_values, runner_unsafe = _direct_yaml_key_values(bazel, "runs-on", indent=4)
+    if runner_unsafe or runner_values != ["blacksmith-4vcpu-ubuntu-2404"]:
+        errors.append("Bazel job must run on the configured Blacksmith runner")
+
+    env = _unique_mapping_block(bazel, "env", indent=4)
+    uv_values, uv_unsafe = _direct_yaml_key_values(env or "", "UV_CACHE_DIR", indent=6)
+    if env is None or uv_unsafe or uv_values != ["${{ github.workspace }}/.cache/uv"]:
+        errors.append("Bazel job must place uv's cache in the writable GitHub workspace")
+    xdg_values, xdg_unsafe = _direct_yaml_key_values(env or "", "XDG_CACHE_HOME", indent=6)
+    if env is None or xdg_unsafe or xdg_values != ["${{ github.workspace }}/.cache"]:
+        errors.append("Bazel job must place its output user root in the writable workspace cache")
+
+    if env is not None:
+        for line in _yaml_code_lines(env):
+            indent = len(line) - len(line.lstrip(" "))
+            match = _DIRECT_YAML_KEY.fullmatch(line[indent:])
+            if indent != 6 or match is None:
+                continue
+            if re.search(r"\$\{\{\s*runner\.", match.group("value")):
+                errors.append("Bazel job-level env cannot use the unavailable runner context")
+                break
+    return errors
+
+
 def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -1483,11 +1521,13 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
 def validate_all_workflows(
     ci_path: Path = DEFAULT_CI_WORKFLOW,
     codspeed_path: Path = DEFAULT_CODSPEED_WORKFLOW,
+    bazel_path: Path = DEFAULT_BAZEL_WORKFLOW,
     release_path: Path = DEFAULT_RELEASE_WORKFLOW,
 ) -> list[str]:
     return [
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
+        *validate_bazel_workflow(bazel_path),
         *validate_release_workflow(release_path),
     ]
 
@@ -1502,6 +1542,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
     parser.add_argument("--ci-workflow", type=Path, default=DEFAULT_CI_WORKFLOW)
     parser.add_argument("--codspeed-workflow", type=Path, default=DEFAULT_CODSPEED_WORKFLOW)
+    parser.add_argument("--bazel-workflow", type=Path, default=DEFAULT_BAZEL_WORKFLOW)
     parser.add_argument("--release-workflow", type=Path, default=DEFAULT_RELEASE_WORKFLOW)
     parser.add_argument("--ci-only", action="store_true")
     parser.add_argument("--codspeed-only", action="store_true")
@@ -1528,11 +1569,13 @@ def main(argv: Optional[list[str]] = None) -> int:
         errors = validate_all_workflows(
             args.ci_workflow,
             args.codspeed_workflow,
+            args.bazel_workflow,
             args.release_workflow,
         )
         checked = [
             args.ci_workflow,
             args.codspeed_workflow,
+            args.bazel_workflow,
             args.release_workflow,
         ]
 
