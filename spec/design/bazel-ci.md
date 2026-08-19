@@ -49,7 +49,9 @@ has no `version` input; bazelisk reads `.bazelversion`. The job sets
 disks own `~/.cache` and uv cannot create `~/.cache/uv` there. A job-level
 environment expression cannot use the `runner` context: GitHub evaluates that
 mapping before a runner exists. The workspace context is available at that
-stage and gives uv a writable, run-scoped location.
+stage and gives uv a writable, run-scoped location. `XDG_CACHE_HOME` is set to
+that same workspace cache root so Bazel derives its output user root as
+`.cache/bazel` instead of the unwritable `~/.cache/bazel` mount.
 
 Rust is pinned to **1.88.0** in the workflow (`dtolnay/rust-toolchain`)
 and `rust-toolchain.toml`. Node graph goldens default to the current

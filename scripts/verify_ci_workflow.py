@@ -1212,6 +1212,8 @@ def validate_bazel_workflow(path: Path = DEFAULT_BAZEL_WORKFLOW) -> list[str]:
         errors.append("Bazel job must run on the configured Blacksmith runner")
     if "UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv" not in bazel:
         errors.append("Bazel job must place uv's cache in the writable GitHub workspace")
+    if "XDG_CACHE_HOME: ${{ github.workspace }}/.cache" not in bazel:
+        errors.append("Bazel job must place its output user root in the writable workspace cache")
     if "UV_CACHE_DIR: ${{ runner." in bazel:
         errors.append("Bazel job-level env cannot use the unavailable runner context")
     return errors

@@ -64,6 +64,19 @@ def test_bazel_workflow_rejects_runner_context_in_job_env(tmp_path: Path) -> Non
     assert any("runner context" in error for error in errors)
 
 
+def test_bazel_workflow_requires_writable_output_user_root(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/bazel.yml").read_text(encoding="utf-8")
+    path = tmp_path / "bazel.yml"
+    path.write_text(
+        workflow.replace("XDG_CACHE_HOME: ${{ github.workspace }}/.cache", ""),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_bazel_workflow(path)
+
+    assert any("output user root" in error for error in errors)
+
+
 def test_ci_workflow_requires_locked_reflex_environment(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
