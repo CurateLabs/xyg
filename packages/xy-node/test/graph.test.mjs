@@ -15,7 +15,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 59);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 60);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);

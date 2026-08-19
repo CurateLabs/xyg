@@ -6,7 +6,7 @@
 //! (`libxyg_core`) serves Python ctypes and Node koffi.
 //!
 //! Canonical f64 columns live in `xyg-engine::stream` behind `xyg_stream_*`
-//! handles (ABI 59). Hosts coerce ingest and hold the opaque handle; they
+//! handles (introduced in ABI 59). Hosts coerce ingest and hold the opaque handle; they
 //! do not own the growable backing store. Out-of-core memmap columns remain
 //! host-owned (they cannot sit behind this first in-RAM handle).
 //!
@@ -28,6 +28,7 @@ use xyg_engine::kernels::ZoneMap;
 use xyg_engine::lod_plan;
 use xyg_engine::raster;
 use xyg_engine::sankey;
+use xyg_engine::scene;
 use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
@@ -87,7 +88,13 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 59;
+pub const ABI_VERSION: u32 = 60;
+
+/// Version of the bounded canonical scene record schema.
+#[no_mangle]
+pub extern "C" fn xyg_scene_version() -> u32 {
+    scene::SCENE_VERSION
+}
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 
 #[no_mangle]
@@ -200,6 +207,143 @@ pub unsafe extern "C" fn xyg_svg_poly_path(
         return usize::MAX;
     }
     std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(path.as_bytes());
+    required
+}
+
+/// Build and serialize a canonical built-in scatter scene as an SVG fragment.
+/// Returns the required byte count, or `usize::MAX` for invalid inputs. When
+/// `out_cap` is too small no bytes are written, allowing callers to retry.
+///
+/// RGBA buffers contain four bytes per mark. `visible` may be null to keep all
+/// marks, otherwise it contains one byte per mark (zero hides the mark).
+///
+/// # Safety
+/// Every non-null input must address the documented number of readable values.
+/// When `out_cap` is sufficient, `out` must address `out_cap` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_scatter_svg(
+    x: *const f64,
+    y: *const f64,
+    diameter: *const f64,
+    fill_rgba: *const u8,
+    stroke_rgba: *const u8,
+    stroke_width: *const f64,
+    symbols: *const u8,
+    visible: *const u8,
+    fill_css: *const u8,
+    fill_css_len: usize,
+    stroke_css: *const u8,
+    stroke_css_len: usize,
+    len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if len > scene::MAX_SCENE_MARKS {
+        return usize::MAX;
+    }
+    let rgba_len = match len.checked_mul(4) {
+        Some(value) => value,
+        None => return usize::MAX,
+    };
+    if len > 0
+        && (x.is_null()
+            || y.is_null()
+            || diameter.is_null()
+            || fill_rgba.is_null()
+            || stroke_rgba.is_null()
+            || stroke_width.is_null()
+            || symbols.is_null())
+    {
+        return usize::MAX;
+    }
+    let x = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(x, len)
+    };
+    let y = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(y, len)
+    };
+    let diameter = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(diameter, len)
+    };
+    let fill_rgba = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(fill_rgba, rgba_len)
+    };
+    let stroke_rgba = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(stroke_rgba, rgba_len)
+    };
+    let stroke_width = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(stroke_width, len)
+    };
+    let symbols = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(symbols, len)
+    };
+    let visible = if visible.is_null() {
+        None
+    } else {
+        Some(std::slice::from_raw_parts(visible, len))
+    };
+    let fill_css = if fill_css_len == 0 {
+        None
+    } else if fill_css.is_null() {
+        return usize::MAX;
+    } else {
+        match std::str::from_utf8(std::slice::from_raw_parts(fill_css, fill_css_len)) {
+            Ok(value) => Some(value),
+            Err(_) => return usize::MAX,
+        }
+    };
+    let stroke_css = if stroke_css_len == 0 {
+        None
+    } else if stroke_css.is_null() {
+        return usize::MAX;
+    } else {
+        match std::str::from_utf8(std::slice::from_raw_parts(stroke_css, stroke_css_len)) {
+            Ok(value) => Some(value),
+            Err(_) => return usize::MAX,
+        }
+    };
+    let Some(svg) = ffi_guard(None, || {
+        scene::ScatterScene::new(
+            x,
+            y,
+            diameter,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            symbols,
+            visible,
+            fill_css,
+            stroke_css,
+        )
+        .ok()
+        .map(|scene| scene.to_svg())
+    }) else {
+        return usize::MAX;
+    };
+    let required = svg.len();
+    if out_cap < required {
+        return required;
+    }
+    if required > 0 && out.is_null() {
+        return usize::MAX;
+    }
+    if required > 0 {
+        std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(svg.as_bytes());
+    }
     required
 }
 

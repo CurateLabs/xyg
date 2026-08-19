@@ -74,6 +74,8 @@ Internal architecture: how the engine is built and why.
 - [`rust-engine.md`](design/rust-engine.md) — the Rust workspace
   (`crates/xyg-engine` + `crates/xyg-core`), what lives in Rust vs the hosts,
   and how the C-ABI/FFI seam evolves without rewrites.
+- [`scene-ir.md`](design/scene-ir.md) — versioned, bounded canonical scene
+  records and the #58 vertical-slice migration from host render policy to Rust.
 - [`xyg-naming.md`](design/xyg-naming.md) — the locked XYG naming matrix, the
   XY-vs-XYG usage policy, and the identity-migration order.
 - [`host-parity.md`](design/host-parity.md) — three runtime surfaces; Rust owns

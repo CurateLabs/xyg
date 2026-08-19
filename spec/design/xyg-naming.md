@@ -92,7 +92,8 @@ one reviewed PR on `main` before any release tag:
    `libxyg_core` at this step. Repo-internal only; nothing is published from
    an intermediate commit.
 3. **ABI contract** — symbol prefix `xyg_*`, lockstep `ABI_VERSION` (58 at
-   the crate-split landing; 59 adds `xyg_stream_*`), generated
+   the crate-split landing; 59 adds `xyg_stream_*`; 60 adds the first
+   versioned canonical scene records), generated
    manifest, and the parity gate. Python ctypes, Node koffi, and the ABI smoke
    are re-bound to the new names **in the same change** as the Rust rename, so
    at every commit each host either fully matches the library it loads or

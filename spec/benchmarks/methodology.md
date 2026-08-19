@@ -259,7 +259,7 @@ single-thread one (§22).
 The glob collects six modules — `test_codspeed_animation.py`,
 `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **109 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **110 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
 
@@ -365,7 +365,7 @@ the path measured rather than the identity fast path. Browser input-to-pixel
 latency stays in `bench_interaction.py`; before this module a selection
 regression could only surface as browser wall-clock noise.
 
-**`benchmarks/test_codspeed_kernels.py` — 74 rows** (71 functions; two are
+**`benchmarks/test_codspeed_kernels.py` — 75 rows** (72 functions; two are
 parametrized, over 2 ingest flavors and 3 `bin_2d` thread-cap regimes). This is
 the bulk of the suite and covers the native compute core the rest of the engine
 sits on: decimation tiers, f32 encoding, and zone maps (`spec/design-dossier.md`
@@ -376,7 +376,9 @@ screen-bounded large-data path) rather than to one arbitrary N. Seventeen rows
 are `first_payload_*`, one per chart kind, which makes this the per-kind guard
 that §7's scatter-only gate does not provide. Its module docstring carries the same backend rule the workflow
 asserts: fallback timings are correctness smoke data, not production
-performance data.
+performance data. The 100k `test_svg_export_scatter` row tracks the first
+versioned canonical-scene slice (#58), including host paint resolution, the
+typed Rust scene call, built-in marker geometry, and SVG fragment assembly.
 
 ## 9. Shim gates and CI coverage
 

@@ -509,6 +509,10 @@ F3, still pending (above).
   and it stays crisp/accessible/selectable.
 - **Retained scene graph**, spec-diff → buffer-diff. Pan/zoom is a view-matrix uniform
   update, touching zero data buffers.
+- **Versioned canonical scene IR** in `xyg-engine` ([scene-ir.md](design/scene-ir.md)).
+  Version 1 moves bounded built-in scatter records and SVG construction behind
+  the shared Rust ABI; #58 expands it through layout, ticks, remaining marks,
+  chrome, and whole-scene native export without moving browser paint/lifecycle.
 - **GPU picking** for hover/select — render IDs to an offscreen target, read back the
   pixel under the cursor. O(1) regardless of point count.
 
@@ -900,6 +904,9 @@ driver-dependent. The testing architecture:
 - **LOD decisions are part of the tested contract**: given (data, viewport, tier),
   the chosen tier and the decimated/binned output are deterministic and asserted —
   so "it looked different" can always be bisected to *layout*, *LOD*, or *raster*.
+- The canonical scene has its own schema version. Rust scene goldens and
+  cross-host fixtures are checked before backend pixel comparisons; version 1
+  covers built-in scatter SVG records and #58 grows that oracle by vertical slice.
 - CI matrix: reference images from CPU rasterizer; per-backend perceptual diffs;
   the §12 perf harness gains **interaction-latency** metrics (input-to-photon for
   pan, hover, tier-swap; p50/p99 frame time — "60fps" now means *p99 ≤ 16.7 ms

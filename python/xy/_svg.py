@@ -5267,6 +5267,30 @@ def _scatter_marks(
     )
     marker_path = style.get("marker_path")
     marker_glyph = style.get("marker_glyph")
+    if not marker_path and not marker_glyph and not grouped_alpha:
+        symbol_codes = np.fromiter(
+            (_SYMBOL_NAMES.index(symbol) if symbol in _SYMBOL_NAMES else 0 for symbol in symbols),
+            dtype=np.uint8,
+            count=n,
+        )
+        fill_u8 = np.ascontiguousarray(np.rint(np.clip(face_rgba, 0.0, 1.0) * 255), dtype=np.uint8)
+        stroke_u8 = np.ascontiguousarray(
+            np.rint(np.clip(stroke_rgba, 0.0, 1.0) * 255), dtype=np.uint8
+        )
+        return [
+            _native.scene_scatter_svg(
+                px,
+                py,
+                radii * 2.0,
+                fill_u8,
+                stroke_u8,
+                stroke_widths,
+                symbol_codes,
+                visible,
+                face_css if face_css_constant else None,
+                stroke_css if stroke_css_constant else None,
+            )
+        ]
     if grouped_alpha:
         fill_group = float(scalar_artist) * _fill_opacity(style, 1.0)
         stroke_group = float(scalar_artist) * _stroke_opacity(style, 1.0)

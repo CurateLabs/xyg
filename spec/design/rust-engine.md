@@ -149,6 +149,10 @@ crates/
                         #   only — no shaping, no FreeType, no unsafe. Coverage
                         #   limits are a product constraint, not a detail: §2.1.
     css.rs              # tiered CSS value/color validation behind `xyg_css_check`.
+    scene.rs            # versioned, bounded canonical scene records. v1 owns
+                        #   built-in scatter validation, stroke-inclusive marker
+                        #   geometry/symbols, visibility, and SVG construction;
+                        #   consumed identically by Python and Node (#58).
     svg.rs              # screen-space coordinate serialization for the SVG path:
                         #   `poly_path` alone, folding parallel f64 x/y arrays
                         #   into one `M`/`L` path-data string with Python-matching
@@ -156,7 +160,8 @@ crates/
                         #   case). Rejects length-mismatched, empty, or non-finite
                         #   input by returning None. Deliberately narrow: it
                         #   exists to kill one Python string per point, and the
-                        #   rest of SVG scene construction stays in Python.
+                        #   broader construction migrates through scene.rs in
+                        #   bounded #58 slices; compatibility-only paths remain.
     simd.rs             # AVX2 twins of eligible kernels, runtime-dispatched
                         #   (§3.4). The one place besides xyg-core's marshaling
                         #   layer allowed `unsafe`.
@@ -307,7 +312,8 @@ formats only; the SVG and PDF export paths have their own text contracts.
   has landed: `crates/xyg-core/src/lib.rs` defines `ffi_guard(sentinel, body)`
   — `catch_unwind(AssertUnwindSafe(body)).unwrap_or(sentinel)` — and wraps
   every exported entry point that does work in it (every `extern "C" fn`
-  except `xyg_abi_version`, which returns a constant and needs no shield),
+  except `xyg_abi_version` and `xyg_scene_version`, which return constants and
+  need no shield),
   so any panic becomes that entry point's error sentinel instead of unwinding
   across `extern "C"`. Output buffers may be partially written on that path,
   exactly like the existing invalid-argument paths. Still outstanding:
@@ -366,7 +372,7 @@ int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x,
                                  float* out, uint8_t* out_rgba);
 /* free: 1 if it existed, 0 for stale/unknown */
 int32_t xyg_pyramid_free(uint64_t handle);
-/* stream store (ABI 59): Rust-owned canonical f64. 0 handle / 0 status on
+/* stream store (introduced in ABI 59): Rust-owned canonical f64. 0 handle / 0 status on
    stale/busy/bad args. Pyramid fetch may read through these handles. */
 uint64_t xyg_stream_new(const double* data, size_t len);
 int32_t  xyg_stream_append(uint64_t handle, const double* data, size_t len);

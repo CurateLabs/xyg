@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 59;
-export const SIGNATURE_SHA256 = "a433b56024a43b0a23eaf82d3e493b7c496953d0ed9b8a2efbfbe6b7f5eae0e5";
+export const ABI_VERSION = 60;
+export const SIGNATURE_SHA256 = "96ddcc4403c5fce01c36020322b0b526ac01f53d7532a6e28d81416976e65415";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -80,6 +80,8 @@ export let xySampleMask;
 export let xySampleMaskU32;
 export let xySampleRangeIndices;
 export let xySankeyLayout;
+export let xySceneScatterSvg;
+export let xySceneVersion;
 export let xySectorTriangles;
 export let xySpectrogram;
 export let xyStackedBounds;
@@ -183,6 +185,8 @@ export function bindGeneratedAbi(lib) {
   xySampleMaskU32 = lib.func("int32_t xyg_sample_mask_u32(const uint32_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)");
   xySampleRangeIndices = lib.func("size_t xyg_sample_range_indices(size_t size, uint64_t seed, uint64_t threshold, uint32_t * out, size_t capacity)");
   xySankeyLayout = lib.func("int32_t xyg_sankey_layout(uint64_t n_nodes, uint64_t n_links, const uint64_t * sources, const uint64_t * targets, const double * values, double node_width, double node_padding, uint32_t align, uint32_t iterations, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_layer, double * out_value, double * out_source_y0, double * out_source_y1, double * out_target_y0, double * out_target_y1, uint32_t * out_layers, uint64_t * out_err_nodes, uint64_t * out_err_n)");
+  xySceneScatterSvg = lib.func("size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap)");
+  xySceneVersion = lib.func("uint32_t xyg_scene_version()");
   xySectorTriangles = lib.func("size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)");
   xySpectrogram = lib.func("int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power)");
   xyStackedBounds = lib.func("int32_t xyg_stacked_bounds(const double * values, size_t rows, size_t cols, uint32_t baseline, double * out_lower, double * out_upper)");
