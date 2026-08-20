@@ -160,6 +160,14 @@ def figure_scene(
         raise UnsupportedSceneV3("Scene v7 figure compilation currently supports cartesian only")
     if set(figure.axis_options) != {"x", "y"}:
         raise UnsupportedSceneV3("Scene v7 figure compilation currently supports exactly x/y axes")
+    figure_style = getattr(figure, "style", None) or {}
+    if isinstance(figure_style, dict):
+        background = figure_style.get("background")
+        if background not in (None, "", "transparent", "none"):
+            raise UnsupportedSceneV3("Scene v7 does not yet encode figure backgrounds")
+        plot_background = figure_style.get("--chart-bg")
+        if plot_background not in (None, "", "transparent", "none", "#ffffff", "#fff", "white"):
+            raise UnsupportedSceneV3("Scene v7 does not yet encode plot backgrounds")
     for axis_id, options in figure.axis_options.items():
         expected_side = "bottom" if axis_id == "x" else "left"
         if options.get("side", expected_side) != expected_side:
@@ -550,3 +558,53 @@ def figure_svg(figure: Any, **options: Any) -> str:
 
 def figure_raster_commands(figure: Any, *, scale: float = 1.0, **options: Any) -> bytes:
     return _native.scene_raster_commands(figure_scene(figure, **options), scale)
+
+
+def try_public_svg(figure: Any, **options: Any) -> str | None:
+    """Return Scene SVG when the figure is in the migrated subset, else ``None``.
+
+    Public exporters call this before the compatibility ``_svg`` / ``_raster``
+    paths so Scene-capable cartesian figures share Rust layout without forcing
+    incomplete chrome (legends, density, polar, styled axes) onto Scene.
+    """
+    try:
+        return figure_svg(figure, **options)
+    except UnsupportedSceneV3:
+        return None
+
+
+def try_public_png(
+    figure: Any,
+    *,
+    scale: float = 1.0,
+    width: int | None = None,
+    height: int | None = None,
+    **options: Any,
+) -> bytes | None:
+    """Return Scene-rasterized PNG bytes when the figure is Scene-capable."""
+    from . import kernels
+
+    try:
+        scene = figure_scene(figure, width=width, height=height, **options)
+        commands = _native.scene_raster_commands(scene, scale)
+    except UnsupportedSceneV3:
+        return None
+    w = int(width if width is not None else figure.width)
+    h = int(height if height is not None else figure.height)
+    pixel_w = max(1, int(round(w * float(scale))))
+    pixel_h = max(1, int(round(h * float(scale))))
+    return kernels.rasterize_png(commands, pixel_w, pixel_h)
+
+
+def try_public_pdf(figure: Any, **options: Any) -> bytes | None:
+    """Return Scene SVG→PDF when both Scene compilation and the PDF subset accept."""
+    from . import _pdf
+
+    svg = try_public_svg(figure, **options)
+    if svg is None:
+        return None
+    try:
+        return _pdf.svg_to_pdf(svg)
+    except ValueError:
+        # Scene SVG may use attributes outside the closed ``_pdf`` subset; fall back.
+        return None

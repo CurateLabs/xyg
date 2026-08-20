@@ -294,8 +294,11 @@ performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
 Next slices add remaining polar marks, labeled/rich annotation records, and
-legend records, then select public SVG/PNG/PDF Scene routing once
-backgrounds/density/chrome parity is covered. Unlabeled cartesian `rule` and
+legend records, then retire duplicated ``_svg.py`` layout helpers once public
+Scene selection covers the remaining chrome gaps. Public SVG/PNG/PDF already
+select the migrated Scene subset when compilation succeeds and fall back to
+the compatibility exporters otherwise (styled axes, legends, density, polar,
+and export background overrides). Unlabeled cartesian `rule` and
 `band` annotations already lower onto Scene Polyline and Rect records. Category, angular, and time/calendar tick ladders already move
 through `xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome
 paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
