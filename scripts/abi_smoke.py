@@ -636,6 +636,34 @@ def load() -> ctypes.CDLL:
         F64P,
         F64P,
     ]
+
+    lib.xyg_geo_column_new.restype = ctypes.c_uint64
+    lib.xyg_geo_column_new.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint64),
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_int32),
+    ]
+    lib.xyg_geo_column_free.restype = ctypes.c_int32
+    lib.xyg_geo_column_free.argtypes = [ctypes.c_uint64]
+    lib.xyg_geo_column_len.restype = ctypes.c_size_t
+    lib.xyg_geo_column_len.argtypes = [ctypes.c_uint64]
+    lib.xyg_geo_column_vertex_count.restype = ctypes.c_size_t
+    lib.xyg_geo_column_vertex_count.argtypes = [ctypes.c_uint64]
+    lib.xyg_geo_column_geometry.restype = ctypes.c_uint32
+    lib.xyg_geo_column_geometry.argtypes = [ctypes.c_uint64]
+    lib.xyg_geo_column_crs.restype = ctypes.c_uint32
+    lib.xyg_geo_column_crs.argtypes = [ctypes.c_uint64]
     lib.xyg_pyramid_build_from_stream.restype = ctypes.c_uint64
     lib.xyg_pyramid_build_from_stream.argtypes = [
         ctypes.c_uint64,
@@ -2247,6 +2275,51 @@ def main() -> None:
     empty = lib.xyg_stream_new(None, 0)
     ok(empty != 0, "empty stream_new")
     ok(lib.xyg_stream_free(ctypes.c_uint64(empty)) == 1, "free empty stream")
+
+    # Geographic column descriptor ingest (#47).
+    xy = (ctypes.c_double * 2)(-104.9903, 39.7392)
+    validity = (ctypes.c_uint8 * 1)(1)
+    err = ctypes.c_int32(0)
+    gh = lib.xyg_geo_column_new(
+        1,  # point
+        4326,
+        xy,
+        2,
+        validity,
+        1,
+        None,
+        None,
+        0,
+        None,
+        0,
+        None,
+        0,
+        ctypes.byref(err),
+    )
+    ok(gh != 0 and err.value == 0, "geo_column_new point")
+    ok(int(lib.xyg_geo_column_len(ctypes.c_uint64(gh))) == 1, "geo_column_len")
+    ok(int(lib.xyg_geo_column_vertex_count(ctypes.c_uint64(gh))) == 1, "geo_column_vertex_count")
+    ok(int(lib.xyg_geo_column_geometry(ctypes.c_uint64(gh))) == 1, "geo_column_geometry")
+    ok(int(lib.xyg_geo_column_crs(ctypes.c_uint64(gh))) == 4326, "geo_column_crs")
+    ok(lib.xyg_geo_column_free(ctypes.c_uint64(gh)) == 1, "geo_column_free")
+    ok(lib.xyg_geo_column_free(ctypes.c_uint64(gh)) == 0, "stale geo_column_free")
+    bad = lib.xyg_geo_column_new(
+        1,
+        9999,
+        xy,
+        2,
+        validity,
+        1,
+        None,
+        None,
+        0,
+        None,
+        0,
+        None,
+        0,
+        ctypes.byref(err),
+    )
+    ok(bad == 0 and err.value == -2, "geo_column_new rejects unsupported CRS")
 
     # Mean-color density (LOD doc §2): per-cell mean point color + count-only
     # alpha. One red and one blue point per side of a 2x1 grid, then both in

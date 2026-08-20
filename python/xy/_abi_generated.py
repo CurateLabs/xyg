@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 71
-SIGNATURE_SHA256 = "0b8a702c55845be9eeb007a0527f174495988c7add9987c2a26cab835cf6fc25"
+ABI_VERSION = 72
+SIGNATURE_SHA256 = "9ae897b5cec8594c7bdec3751847df29eaf703a9891895b98bd8b93ca0b36310"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -102,6 +102,30 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_factorize_unicode1_u8_counts
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # uint32_t xyg_geo_column_crs(uint64_t handle)
+    function = lib.xyg_geo_column_crs
+    function.restype = ctypes.c_uint32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_geo_column_free(uint64_t handle)
+    function = lib.xyg_geo_column_free
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # uint32_t xyg_geo_column_geometry(uint64_t handle)
+    function = lib.xyg_geo_column_geometry
+    function.restype = ctypes.c_uint32
+    function.argtypes = [ctypes.c_uint64]
+    # size_t xyg_geo_column_len(uint64_t handle)
+    function = lib.xyg_geo_column_len
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint64]
+    # uint64_t xyg_geo_column_new(uint32_t geometry, uint32_t crs, const double * xy, size_t xy_len, const uint8_t * validity, size_t validity_len, const uint64_t * feature_ids, const uint32_t * offsets0, size_t offsets0_len, const uint32_t * offsets1, size_t offsets1_len, const uint32_t * offsets2, size_t offsets2_len, int32_t * out_error)
+    function = lib.xyg_geo_column_new
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # size_t xyg_geo_column_vertex_count(uint64_t handle)
+    function = lib.xyg_geo_column_vertex_count
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint64]
     # int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len)
     function = lib.xyg_graph_build_csr
     function.restype = ctypes.c_int32

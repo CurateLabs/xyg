@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 71;
-export const SIGNATURE_SHA256 = "0b8a702c55845be9eeb007a0527f174495988c7add9987c2a26cab835cf6fc25";
+export const ABI_VERSION = 72;
+export const SIGNATURE_SHA256 = "9ae897b5cec8594c7bdec3751847df29eaf703a9891895b98bd8b93ca0b36310";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -28,6 +28,12 @@ export let xyFactorizeFixed;
 export let xyFactorizeFixedU8;
 export let xyFactorizeFixedU8Counts;
 export let xyFactorizeUnicode1U8Counts;
+export let xyGeoColumnCrs;
+export let xyGeoColumnFree;
+export let xyGeoColumnGeometry;
+export let xyGeoColumnLen;
+export let xyGeoColumnNew;
+export let xyGeoColumnVertexCount;
 export let xyGraphBuildCsr;
 export let xyGraphBuildRender;
 export let xyGraphClusterAggregate;
@@ -156,6 +162,12 @@ export function bindGeneratedAbi(lib) {
   xyFactorizeFixedU8 = lib.func("size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity)");
   xyFactorizeFixedU8Counts = lib.func("size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity)");
   xyFactorizeUnicode1U8Counts = lib.func("size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32_t swap_endian, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity)");
+  xyGeoColumnCrs = lib.func("uint32_t xyg_geo_column_crs(uint64_t handle)");
+  xyGeoColumnFree = lib.func("int32_t xyg_geo_column_free(uint64_t handle)");
+  xyGeoColumnGeometry = lib.func("uint32_t xyg_geo_column_geometry(uint64_t handle)");
+  xyGeoColumnLen = lib.func("size_t xyg_geo_column_len(uint64_t handle)");
+  xyGeoColumnNew = lib.func("uint64_t xyg_geo_column_new(uint32_t geometry, uint32_t crs, const double * xy, size_t xy_len, const uint8_t * validity, size_t validity_len, const uint64_t * feature_ids, const uint32_t * offsets0, size_t offsets0_len, const uint32_t * offsets1, size_t offsets1_len, const uint32_t * offsets2, size_t offsets2_len, int32_t * out_error)");
+  xyGeoColumnVertexCount = lib.func("size_t xyg_geo_column_vertex_count(uint64_t handle)");
   xyGraphBuildCsr = lib.func("int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len)");
   xyGraphBuildRender = lib.func("int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept)");
   xyGraphClusterAggregate = lib.func("int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, uint64_t node_budget, uint64_t edge_budget, double * out_x, double * out_y, uint64_t * out_count, uint64_t * out_member_of, uint32_t * out_tier, uint64_t * out_edges_kept)");
