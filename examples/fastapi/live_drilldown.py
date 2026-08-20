@@ -327,7 +327,10 @@ const comm = {{
   onMessage: (cb) => callbacks.push(cb),
 }};
 
-const view = new xyg.ChartView(
+// The standalone bundle intentionally retains the compatibility global
+// `window.xy` until the browser-branding stage (#14). Python's public import
+// is `xyg`, but browser runtime identifiers are a separate protocol surface.
+const view = new xy.ChartView(
   document.getElementById("chart"),
   spec,
   initialBytes.buffer,

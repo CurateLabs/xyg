@@ -109,7 +109,10 @@ def test_fastapi_app_serves_live_charts_and_code() -> None:
     assert "def line_walk" in code.text  # live source, not a saved string
 
     assert client.get("/healthz").status_code == 200
-    assert client.get("/drilldown").status_code == 200
+    drilldown_page = client.get("/drilldown")
+    assert drilldown_page.status_code == 200
+    assert "new xy.ChartView(" in drilldown_page.text
+    assert "new xyg.ChartView(" not in drilldown_page.text  # xyg-stale-name: allow - negative
 
     drill = client.post(
         "/api/xy/drilldown",

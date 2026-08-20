@@ -96,6 +96,10 @@ NEEDLES = (
         re.compile(r"(?<![A-Za-z0-9_])xy(?:\[(?:reflex|dev)\]|==)"),
     ),
     ("user-facing xyg alias", re.compile(r"(?:^|[;])\s*import\s+xyg\s+as\s+xy\b")),
+    (
+        "premature xyg browser global",
+        re.compile(r"(?<![A-Za-z0-9_])xyg\.(?:renderStandalone|decodeFrame|ChartView|markOf)\b"),
+    ),
     ("current product XY brand", re.compile(r"(?<![A-Za-z0-9_])XY(?![A-Za-z0-9_])")),
     (
         "backticked xy Python API",

@@ -131,6 +131,15 @@ def test_allows_deferred_browser_global_in_python_template(tmp_path: Path) -> No
     assert check_stale_names.check_stale_names(tmp_path) == []
 
 
+def test_rejects_premature_xyg_browser_global_in_python_template(tmp_path: Path) -> None:
+    (tmp_path / "browser.py").write_text(
+        'HTML = "new xyg.' + "ChartView(host, spec, buf); xyg." + 'decodeFrame(frame)"\n',
+        encoding="utf-8",
+    )
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert sum("premature xyg browser global" in error for error in errors) == 2
+
+
 def test_repository_module_descriptions_reject_ambiguous_xy_product_wording(
     tmp_path: Path,
 ) -> None:
