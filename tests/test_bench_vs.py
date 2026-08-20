@@ -37,7 +37,7 @@ def test_run_enforces_budget_as_hard_measurement_timeout(monkeypatch) -> None:
         "skipped(hard timeout after 0.02s budget)",
         "skipped(over budget)",
     ]
-# Process-tree teardown varies by host. The large gap proves interruption
+    # Process-tree teardown varies by host. The large gap proves interruption
     # without confusing scheduler/cleanup latency with the five-second body.
     assert elapsed < 4.0
 
