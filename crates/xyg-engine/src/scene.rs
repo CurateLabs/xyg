@@ -272,6 +272,115 @@ pub fn log_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneErro
     })
 }
 
+/// Category-index ticks for discrete axes. `n_categories` is the category count;
+/// `lo`/`hi` are the visible domain in index space.
+pub fn category_ticks(
+    lo: f64,
+    hi: f64,
+    n_categories: usize,
+    target: usize,
+) -> Result<AxisTicks, SceneError> {
+    if !lo.is_finite()
+        || !hi.is_finite()
+        || n_categories == 0
+        || target == 0
+        || target > MAX_AXIS_TICKS
+    {
+        return Err(SceneError::NonFinite);
+    }
+    let start = lo.min(hi).ceil().max(0.0) as isize;
+    let stop = lo.max(hi).floor().min((n_categories - 1) as f64) as isize;
+    if stop < start {
+        return Ok(AxisTicks {
+            ticks: Vec::new(),
+            labeled: Vec::new(),
+            step: 1.0,
+        });
+    }
+    let visible = (stop - start + 1) as usize;
+    let step = ((visible as f64 / target as f64).ceil() as usize).max(1);
+    let mut ticks = Vec::with_capacity(((visible / step) + 1).min(MAX_AXIS_TICKS));
+    let mut value = start;
+    while value <= stop && ticks.len() < MAX_AXIS_TICKS {
+        ticks.push(value as f64);
+        value += step as isize;
+    }
+    Ok(AxisTicks {
+        labeled: ticks.clone(),
+        ticks,
+        step: step as f64,
+    })
+}
+
+const DEGREE_STEPS: &[f64] = &[
+    1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0, 90.0, 120.0, 180.0, 360.0,
+];
+const RADIAN_STEPS: &[f64] = &[
+    std::f64::consts::PI / 12.0,
+    std::f64::consts::PI / 8.0,
+    std::f64::consts::PI / 6.0,
+    std::f64::consts::PI / 4.0,
+    std::f64::consts::PI / 3.0,
+    std::f64::consts::PI / 2.0,
+    2.0 * std::f64::consts::PI / 3.0,
+    std::f64::consts::PI,
+    2.0 * std::f64::consts::PI,
+];
+
+/// Angular ticks on a human-readable degree or radian ladder.
+pub fn angular_ticks(
+    lo: f64,
+    hi: f64,
+    degrees: bool,
+    target: usize,
+) -> Result<AxisTicks, SceneError> {
+    if !lo.is_finite() || !hi.is_finite() || target == 0 || target > MAX_AXIS_TICKS {
+        return Err(SceneError::NonFinite);
+    }
+    let (a, b) = if lo <= hi { (lo, hi) } else { (hi, lo) };
+    if a == b {
+        return Ok(AxisTicks {
+            ticks: vec![a],
+            labeled: vec![a],
+            step: 1.0,
+        });
+    }
+    let ladder = if degrees {
+        DEGREE_STEPS
+    } else {
+        RADIAN_STEPS
+    };
+    let rough = (b - a) / target as f64;
+    let step = ladder
+        .iter()
+        .copied()
+        .find(|candidate| *candidate >= rough * (1.0 - 1e-12))
+        .unwrap_or(*ladder.last().unwrap());
+    let mut value = (a / step).ceil() * step;
+    let mut ticks = Vec::with_capacity(target.saturating_add(2).min(MAX_AXIS_TICKS));
+    while value <= b + step * 1e-9 && ticks.len() < MAX_AXIS_TICKS {
+        ticks.push(if value.abs() < step * 1e-9 {
+            0.0
+        } else {
+            value
+        });
+        value += step;
+    }
+    let turn = if degrees {
+        360.0
+    } else {
+        2.0 * std::f64::consts::PI
+    };
+    if ticks.len() > 1 && (ticks[ticks.len() - 1] - ticks[0] - turn).abs() < step * 1e-9 {
+        ticks.pop();
+    }
+    Ok(AxisTicks {
+        labeled: ticks.clone(),
+        ticks,
+        step,
+    })
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum ScatterSymbol {
@@ -3012,6 +3121,20 @@ mod tests {
         );
         assert_eq!(log.labeled, vec![0.1, 1.0, 10.0, 100.0]);
         assert_eq!(log.step, 1.0);
+    }
+
+    #[test]
+    fn category_and_angular_ticks_match_host_policy() {
+        assert_eq!(
+            category_ticks(-0.5, 9.5, 10, 5).unwrap().ticks,
+            vec![0.0, 2.0, 4.0, 6.0, 8.0]
+        );
+        let degrees = angular_ticks(0.0, 360.0, true, 8).unwrap();
+        assert_eq!(degrees.step, 45.0);
+        assert_eq!(degrees.ticks.first().copied(), Some(0.0));
+        assert!(!degrees.ticks.iter().any(|v| (*v - 360.0).abs() < 1e-9));
+        let radians = angular_ticks(0.0, std::f64::consts::TAU, false, 8).unwrap();
+        assert!((radians.step - std::f64::consts::FRAC_PI_4).abs() < 1e-12);
     }
 
     #[test]

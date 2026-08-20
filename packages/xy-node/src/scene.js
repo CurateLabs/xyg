@@ -90,16 +90,39 @@ export function sceneVersion() {
   return xySceneVersion();
 }
 
-export function axisTicks({ kind = "linear", lo, hi, target = 6 }) {
-  const kindCode = kind === "linear" ? 0 : kind === "log" ? 1 : -1;
-  if (kindCode < 0) throw new RangeError("kind must be linear or log");
+export function axisTicks({
+  kind = "linear",
+  lo,
+  hi,
+  target = 6,
+  categories,
+  unit,
+}) {
+  let kindCode = -1;
+  let aux = 0;
+  if (kind === "linear") kindCode = 0;
+  else if (kind === "log") kindCode = 1;
+  else if (kind === "category") {
+    kindCode = 2;
+    const count = Array.isArray(categories) ? categories.length : Number(categories);
+    if (!Number.isFinite(count) || count < 1) {
+      throw new RangeError("category ticks require a positive categories length");
+    }
+    aux = count;
+  } else if (kind === "angular") {
+    kindCode = unit === "degrees" ? 3 : unit === "radians" ? 4 : -1;
+    if (kindCode < 0) throw new RangeError('angular unit must be "degrees" or "radians"');
+  }
+  if (kindCode < 0) {
+    throw new RangeError("kind must be linear, log, category, or angular");
+  }
   const capacity = 200;
   const ticks = new Float64Array(capacity);
   const labeled = new Float64Array(capacity);
   const labeledLength = new BigUint64Array(1);
   const step = new Float64Array(1);
   const rawWritten = xySceneAxisTicks(
-    kindCode, Number(lo), Number(hi), BigInt(target),
+    kindCode, Number(lo), Number(hi), BigInt(target), Number(aux),
     pointer(ticks, "double *"), pointer(labeled, "double *"),
     pointer(labeledLength, "size_t *"), pointer(step, "double *"), BigInt(capacity),
   );

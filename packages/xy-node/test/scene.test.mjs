@@ -202,6 +202,14 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
     ticks: [0, 1, 2, 3, 4, 5], labeled: [0, 1, 2, 3, 4, 5], step: 1,
   });
   assert.deepEqual(axisTicks({ kind: "log", lo: 0.1, hi: 100, target: 6 }).labeled, [0.1, 1, 10, 100]);
+  assert.deepEqual(
+    axisTicks({ kind: "category", lo: -0.5, hi: 9.5, target: 5, categories: new Array(10) }),
+    { ticks: [0, 2, 4, 6, 8], labeled: [0, 2, 4, 6, 8], step: 2 },
+  );
+  assert.deepEqual(
+    axisTicks({ kind: "angular", lo: 0, hi: 360, target: 8, unit: "degrees" }).ticks,
+    [0, 45, 90, 135, 180, 225, 270, 315],
+  );
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {

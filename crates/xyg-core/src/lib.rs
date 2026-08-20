@@ -89,7 +89,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 66;
+pub const ABI_VERSION: u32 = 67;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -97,7 +97,15 @@ pub extern "C" fn xyg_scene_version() -> u32 {
     scene::SCENE_VERSION
 }
 
-/// Build canonical axis ticks. `kind` is 0 for linear and 1 for base-10 log.
+/// Build canonical axis ticks.
+///
+/// `kind` is:
+/// - `0` linear
+/// - `1` base-10 log
+/// - `2` category (`aux` = category count)
+/// - `3` angular degrees
+/// - `4` angular radians
+///
 /// Returns the required tick count or `usize::MAX` for invalid arguments. The
 /// labeled count and step are written only when `out_cap` is sufficient.
 ///
@@ -110,6 +118,7 @@ pub unsafe extern "C" fn xyg_scene_axis_ticks(
     lo: f64,
     hi: f64,
     target: usize,
+    aux: f64,
     out_ticks: *mut f64,
     out_labeled: *mut f64,
     out_labeled_len: *mut usize,
@@ -119,6 +128,14 @@ pub unsafe extern "C" fn xyg_scene_axis_ticks(
     let result = ffi_guard(None, || match kind {
         0 => scene::linear_ticks(lo, hi, target).ok(),
         1 => scene::log_ticks(lo, hi, target).ok(),
+        2 => {
+            if !(aux.is_finite() && aux >= 1.0 && aux <= scene::MAX_SCENE_MARKS as f64) {
+                return None;
+            }
+            scene::category_ticks(lo, hi, aux as usize, target).ok()
+        }
+        3 => scene::angular_ticks(lo, hi, true, target).ok(),
+        4 => scene::angular_ticks(lo, hi, false, target).ok(),
         _ => None,
     });
     let Some(result) = result else {

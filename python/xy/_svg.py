@@ -487,40 +487,21 @@ def _linear_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], f
         return [], 1.0
 
 
-# Angular tick ladders. `_nice_step`'s [1, 2, 2.5, 5, 10] cannot produce 15,
-# 30, 45 or 90, so feeding it degrees yields 0/50/100/150 — a grid nobody reads
-# angles on. Fixed ladders instead, in the style of the time-tick steps.
-# Mirrored by DEGREE_STEPS/RADIAN_STEPS in js/src/30_ticks.ts.
-_DEGREE_STEPS = (1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0, 90.0, 120.0, 180.0, 360.0)
-_RADIAN_STEPS = tuple(
-    math.pi * f for f in (1 / 12, 1 / 8, 1 / 6, 1 / 4, 1 / 3, 1 / 2, 2 / 3, 1.0, 2.0)
-)
+# Angular tick ladders live in Rust (`scene::angular_ticks`); hosts call
+# `_native.scene_axis_ticks(3|4, ...)`.
 
 
 def _angular_ticks(lo: float, hi: float, unit: str, target: int = 6) -> tuple[list[float], float]:
     """Ticks for an angular axis, on a ladder humans read angles on.
 
-    Mirrors `angularTicks` in js/src/30_ticks.ts.
+    Mirrors `angularTicks` in js/src/30_ticks.ts via Rust scene policy.
     """
-    a, b = min(lo, hi), max(lo, hi)
-    if not (np.isfinite(a) and np.isfinite(b)):
+    kind = 3 if unit == "degrees" else 4
+    try:
+        ticks, _labeled, step = _native.scene_axis_ticks(kind, lo, hi, target)
+        return ticks, step
+    except ValueError:
         return [], 1.0
-    if a == b:
-        return [a], 1.0
-    ladder = _DEGREE_STEPS if unit == "degrees" else _RADIAN_STEPS
-    rough = (b - a) / max(1, target)
-    step = next((s for s in ladder if s >= rough * (1 - 1e-12)), ladder[-1])
-    v = math.ceil(a / step) * step
-    out: list[float] = []
-    while v <= b + step * 1e-9 and len(out) < 200:
-        out.append(0.0 if abs(v) < step * 1e-9 else v)
-        v += step
-    # A full turn puts a tick at both ends of the seam; they are the same
-    # spoke, so the duplicate label is dropped rather than overdrawn.
-    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
-    if len(out) > 1 and abs((out[-1] - out[0]) - turn) < step * 1e-9:
-        out.pop()
-    return out, step
 
 
 def _log_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], list[float], float]:
@@ -532,12 +513,13 @@ def _log_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], list
 
 
 def _category_ticks(lo: float, hi: float, n_categories: int, target: int = 6) -> list[int]:
-    start = max(0, int(np.ceil(min(lo, hi))))
-    stop = min(n_categories - 1, int(np.floor(max(lo, hi))))
-    if stop < start:
+    try:
+        ticks, _labeled, _step = _native.scene_axis_ticks(
+            2, lo, hi, target, aux=float(n_categories)
+        )
+        return [int(v) for v in ticks]
+    except ValueError:
         return []
-    step = max(1, int(np.ceil((stop - start + 1) / max(1, target))))
-    return list(range(start, stop + 1, step))
 
 
 _TIME_STEPS = [
