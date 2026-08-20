@@ -344,6 +344,10 @@ pub extern "C" fn xyg_wasm_scene_prepare(
                 instance.last_error.clear();
                 STATUS_OK
             }
+            Err(SceneError::PainterTraceLimit) => fail(
+                instance, STATUS_RESOURCE_LIMIT,
+                "canonical scene fragments into more than 1024 browser traces",
+            ),
             Ok(_) | Err(SceneError::Limit) => fail(
                 instance,
                 STATUS_RESOURCE_LIMIT,
@@ -371,7 +375,7 @@ fn map_compile_error(instance: &mut Instance, error: SceneError) -> i32 {
             STATUS_SCENE_VERSION,
             "typed-column compile version is incompatible",
         ),
-        SceneError::Limit => fail(
+        SceneError::Limit | SceneError::PainterTraceLimit => fail(
             instance,
             STATUS_RESOURCE_LIMIT,
             "typed-column compile exceeds a Rust engine bound",
@@ -444,6 +448,10 @@ fn compile_from_arena(
             instance.last_error.clear();
             STATUS_OK
         }
+        Err(SceneError::PainterTraceLimit) => fail(
+            instance, STATUS_RESOURCE_LIMIT,
+            "compiled scene fragments into more than 1024 browser traces",
+        ),
         Ok(_) | Err(SceneError::Limit) => fail(
             instance,
             STATUS_RESOURCE_LIMIT,
@@ -570,6 +578,22 @@ mod tests {
     fn write_arena(handle: u32, bytes: &[u8]) {
         assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
         with_instance_mut(handle, |instance| instance.arena.copy_from_slice(bytes)).unwrap();
+    }
+
+    fn fragmented_scene(count: usize) -> Vec<u8> {
+        let layout = scene::PlotLayout::new(100.0, 80.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let x = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 10.0, 90.0, 1.0, false).unwrap();
+        let y = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 70.0, 10.0, 1.0, false).unwrap();
+        let coordinates = vec![0.5; count];
+        let zeros = vec![0.0; count];
+        let symbols: Vec<u8> = (0..count).map(|index| (index % 2) as u8).collect();
+        scene::SceneBatch::new(
+            layout, 1, 2, x, y, &vec![0; count], &vec![7; count], &vec![0; count],
+            &[1, 2, 3, 255], &[0, 0, 0, 0], &[0.0], &vec![4.0; count], &symbols,
+            &coordinates, &coordinates, &zeros, &zeros,
+        )
+        .unwrap()
+        .encode()
     }
 
     #[test]
@@ -722,6 +746,20 @@ mod tests {
         assert_eq!(xyg_wasm_output_len(handle), painter_len);
         with_instance_mut(handle, |instance| {
             assert!(instance.arena.len() + instance.output.len() <= instance.max_arena_bytes);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn fragmented_scene_returns_stable_resource_limit_without_output() {
+        let bytes = fragmented_scene(scene::MAX_BROWSER_PAINTER_TRACES + 1);
+        let handle = xyg_wasm_instance_new(bytes.len());
+        write_arena(handle, &bytes);
+        assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_RESOURCE_LIMIT);
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(instance.last_error, "canonical scene fragments into more than 1024 browser traces");
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);

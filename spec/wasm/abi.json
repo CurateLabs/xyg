@@ -6,6 +6,7 @@
   "painter_header_bytes": 64,
   "painter_trace_bytes": 64,
   "painter_tick_bytes": 16,
+  "painter_max_traces": 1024,
   "statuses": {
     "OK": 0,
     "INVALID_HANDLE": 1,

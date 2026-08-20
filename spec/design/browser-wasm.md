@@ -98,7 +98,7 @@ columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
 
 Painter contract v2 begins with `XYPB`, independent painter version 2, Scene
-version 4, a 64-byte header, 64-byte trace descriptors, viewport/plot f32
+version 7, a 64-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Each trace descriptor identifies scatter/polyline/rect,
 style, count, and absolute packed-column offsets. Rust derives default numeric
@@ -109,7 +109,18 @@ not generate ticks, format labels, or choose layout. Reserved fields, exact
 offsets, finite geometry, known kinds and symbols, valid UTF-8, and exact final
 length fail closed before hydration.
 
-This is the public direct-browser entry for the stable Scene v4
+The descriptor graph has an independent Rust-enforced ceiling of 1,024 trace
+runs, recorded as `painter_max_traces` in the generated WASM contract. A valid
+Scene can alternate stable IDs, styles, or symbols on every record; without
+this ceiling its compact input could expand into O(records) `ChartView` and GL
+objects on the main thread. Rust stops while discovering run 1,025 and returns
+the stable `RESOURCE_LIMIT` diagnostic before allocating or transferring a
+descriptor table. TypeScript repeats the generated ceiling as defense in depth.
+Callers may reduce fragmentation or split work into explicitly managed views;
+the browser never silently merges runs because that would change line breaks,
+styles, symbols, or stable identity.
+
+This is the public direct-browser entry for the stable Scene v7
 scatter/line/bar subset with its canonical default numeric grid, spines, ticks,
 and labels. Packed `XYCC` compile plus series-shaped `encodeWasmChart` /
 `renderWasmChart` expand browser chart inputs into that Scene without main-thread

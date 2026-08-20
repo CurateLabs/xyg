@@ -21,6 +21,7 @@ def render(manifest: dict[str, object]) -> str:
     painter_header_bytes = int(manifest["painter_header_bytes"])
     painter_trace_bytes = int(manifest["painter_trace_bytes"])
     painter_tick_bytes = int(manifest["painter_tick_bytes"])
+    painter_max_traces = int(manifest["painter_max_traces"])
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if not isinstance(statuses, dict) or not isinstance(exports, list):
@@ -36,6 +37,7 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_PAINTER_HEADER_BYTES = {painter_header_bytes} as const;",
         f"export const XYG_WASM_PAINTER_TRACE_BYTES = {painter_trace_bytes} as const;",
         f"export const XYG_WASM_PAINTER_TICK_BYTES = {painter_tick_bytes} as const;",
+        f"export const XYG_WASM_PAINTER_MAX_TRACES = {painter_max_traces} as const;",
         "export const XYG_WASM_STATUS = {",
     ]
     for name, value in statuses.items():
@@ -126,6 +128,7 @@ def verify_rust(manifest: dict[str, object]) -> None:
         ("BROWSER_PAINTER_HEADER_BYTES", "painter_header_bytes"),
         ("BROWSER_PAINTER_TRACE_BYTES", "painter_trace_bytes"),
         ("BROWSER_PAINTER_TICK_BYTES", "painter_tick_bytes"),
+        ("MAX_BROWSER_PAINTER_TRACES", "painter_max_traces"),
     ):
         match = re.search(rf"pub const {rust_name}: usize = (\d+);", engine)
         if not match or int(match.group(1)) != int(manifest[manifest_name]):

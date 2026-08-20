@@ -45,6 +45,30 @@ function canonicalSceneV5() {
   return bytes;
 }
 
+function fragmentedScene(count) {
+  const records = 176;
+  const body = records + count * 56;
+  const bytes = new Uint8Array(body + 40);
+  const view = new DataView(bytes.buffer);
+  bytes.set([88, 89, 71, 83], 0);
+  view.setUint32(4, 7, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
+  [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
+  view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
+  [0, 1, 0, 1, 1, 1].forEach((value, index) => view.setFloat64(112 + index * 8, value, true));
+  bytes.set([37, 99, 235, 255, 0, 0, 0, 0], 160); view.setFloat64(168, 0, true);
+  for (let index = 0; index < count; index++) {
+    const record = records + index * 56;
+    bytes[record] = 0; bytes[record + 1] = 1; bytes[record + 2] = index % 2;
+    view.setUint32(record + 4, 0, true); view.setBigUint64(record + 8, 7n, true);
+    view.setFloat64(record + 16, 50, true); view.setFloat64(record + 24, 40, true);
+    view.setFloat64(record + 48, 8, true);
+  }
+  bytes.set([32, 32, 32, 36, 32, 32, 32, 140, 32, 32, 32, 217], body);
+  view.setFloat64(body + 16, 12, true);
+  return bytes;
+}
+
 function u32(value) {
   const bytes = [];
   do {
@@ -160,7 +184,7 @@ async function rejected(promise, code, status = null) {
     if (status !== null && error.status !== status) {
       throw new Error(`wanted status ${status}, got ${error.status}`);
     }
-    return;
+    return error;
   }
   throw new Error(`expected ${code} rejection`);
 }
@@ -290,6 +314,27 @@ async function run() {
   if (rendered.sceneStableId(0, 0) !== 7n) throw new Error("canonical stable id was not preserved through painter hydration");
   rendered.destroy();
   host.remove();
+
+  const fragmentedWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await fragmentedWorker.ready;
+  const fragmentedHost = document.body.appendChild(document.createElement("div"));
+  const fragmentedError = await rejected(
+    renderWasmScene({ el: fragmentedHost, scene: fragmentedScene(1025), worker: fragmentedWorker, transfer: false }),
+    "XYG_WASM_RESOURCE_LIMIT",
+    3,
+  );
+  if (!fragmentedError.message.includes("more than 1024 browser traces")) {
+    throw new Error(`fragmented Scene diagnostic was not actionable: ${fragmentedError.message}`);
+  }
+  if (fragmentedHost.childNodes.length !== 0) {
+    throw new Error("fragmented Scene allocated browser painter state before rejection");
+  }
+  fragmentedHost.remove();
+  await fragmentedWorker.dispose();
 
   const columnWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

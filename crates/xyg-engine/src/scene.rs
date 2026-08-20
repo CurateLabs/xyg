@@ -22,6 +22,10 @@ pub const BROWSER_PAINTER_VERSION: u32 = 2;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
+/// Hard ceiling on browser-side trace objects created from one painter output.
+/// A valid Scene can alternate run identity/style on every record, so this is
+/// independent of the byte arena and prevents O(records) ChartView/GL objects.
+pub const MAX_BROWSER_PAINTER_TRACES: usize = 1024;
 
 /// Authored chrome paints and label size carried in the Scene v5 trailer.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -694,6 +698,7 @@ impl MarkerGeometry {
 pub enum SceneError {
     Length,
     Limit,
+    PainterTraceLimit,
     NonFinite,
     NegativeSize,
     InvalidPaint,
@@ -2562,6 +2567,9 @@ impl SceneDocument {
                 symbol: record.symbol,
                 diameter: record.diameter,
             });
+            if groups.len() > MAX_BROWSER_PAINTER_TRACES {
+                return Err(SceneError::PainterTraceLimit);
+            }
         }
 
         let descriptors = groups
@@ -3526,6 +3534,31 @@ mod tests {
         bad_kind[SCENE_BATCH_HEADER_BYTES + 3 * SCENE_STYLE_RECORD_BYTES] = 9;
         assert!(SceneDocument::decode(&bad_kind).is_err());
         assert!(SceneDocument::decode(&bad_kind[..bad_kind.len() - 1]).is_err());
+    }
+
+    #[test]
+    fn browser_painter_rejects_record_fragmentation_before_descriptor_allocation() {
+        let make_document = |count: usize| {
+            let layout = PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+            let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 10.0, 110.0, 1.0, false).unwrap();
+            let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 90.0, 10.0, 1.0, false).unwrap();
+            let symbols: Vec<u8> = (0..count).map(|index| (index % 2) as u8).collect();
+            let coordinates = vec![0.5; count];
+            let zeros = vec![0.0; count];
+            let encoded = SceneBatch::new(
+                layout, 1, 2, sx, sy, &vec![0; count], &vec![7; count], &vec![0; count],
+                &[57, 135, 229, 255], &[0, 0, 0, 0], &[0.0], &vec![4.0; count],
+                &symbols, &coordinates, &coordinates, &zeros, &zeros,
+            )
+            .unwrap()
+            .encode();
+            SceneDocument::decode(&encoded).unwrap()
+        };
+        let boundary = make_document(MAX_BROWSER_PAINTER_TRACES);
+        let painter = boundary.to_browser_painter(1024 * 1024).unwrap();
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize, MAX_BROWSER_PAINTER_TRACES);
+        let fragmented = make_document(MAX_BROWSER_PAINTER_TRACES + 1);
+        assert_eq!(fragmented.to_browser_painter(1024 * 1024), Err(SceneError::PainterTraceLimit));
     }
 
     #[test]
