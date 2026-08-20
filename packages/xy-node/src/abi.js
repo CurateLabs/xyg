@@ -77,6 +77,8 @@ import {
 export { nativeLibraryPath };
 
 const U64_MAX = (1n << 64n) - 1n;
+const I64_MIN = -(1n << 63n);
+const I64_MAX = (1n << 63n) - 1n;
 
 export const GRAPH_LAYOUT_PRESET = 0;
 export const GRAPH_LAYOUT_GRID = 1;
@@ -618,15 +620,15 @@ export function temporalControllerCreate({
   koffi.encode(encoded, TemporalControllerDescriptor, {
     instance_id: toU64(instanceId, "instanceId"),
     group_id: toU64(groupId, "groupId"),
-    domain_start: BigInt(domainStart),
-    domain_end: BigInt(domainEnd),
-    cursor: BigInt(cursor == null ? domainStart : cursor),
-    window: BigInt(windowUs),
-    step: BigInt(step),
-    direction,
-    rate_milli: rateMilli,
-    loop_enabled: loopEnabled ? 1 : 0,
-    reduced_motion: reducedMotion ? 1 : 0,
+    domain_start: toI64(domainStart, "domainStart"),
+    domain_end: toI64(domainEnd, "domainEnd"),
+    cursor: toI64(cursor == null ? domainStart : cursor, "cursor"),
+    window: toI64(windowUs, "window"),
+    step: toI64(step, "step"),
+    direction: toI32(direction, "direction"),
+    rate_milli: toStrictU32(rateMilli, "rateMilli"),
+    loop_enabled: toStrictBool(loopEnabled, "loopEnabled") ? 1 : 0,
+    reduced_motion: toStrictBool(reducedMotion, "reducedMotion") ? 1 : 0,
     reserved: 0,
   });
   temporalStatus(xyTemporalControllerCreate(koffi.as(encoded, "const void *"), u64Ptr(outHandle)));
@@ -690,11 +692,13 @@ export function temporalControllerState(handle) {
 }
 
 export function temporalControllerSetRange(handle, start, end) {
-  temporalStatus(xyTemporalControllerSetRange(toU64(handle, "handle"), BigInt(start), BigInt(end)));
+  temporalStatus(xyTemporalControllerSetRange(
+    toU64(handle, "handle"), toI64(start, "start"), toI64(end, "end"),
+  ));
 }
 
 export function temporalControllerSetCursor(handle, cursor) {
-  temporalStatus(xyTemporalControllerSetCursor(toU64(handle, "handle"), BigInt(cursor)));
+  temporalStatus(xyTemporalControllerSetCursor(toU64(handle, "handle"), toI64(cursor, "cursor")));
 }
 
 export function temporalControllerStep(handle) {
@@ -710,24 +714,34 @@ export function temporalControllerPause(handle) {
 }
 
 export function temporalControllerSetRateMilli(handle, rateMilli) {
-  temporalStatus(xyTemporalControllerSetRateMilli(toU64(handle, "handle"), rateMilli));
+  temporalStatus(xyTemporalControllerSetRateMilli(
+    toU64(handle, "handle"), toStrictU32(rateMilli, "rateMilli"),
+  ));
 }
 
 export function temporalControllerSetDirection(handle, direction) {
-  temporalStatus(xyTemporalControllerSetDirection(toU64(handle, "handle"), direction));
+  temporalStatus(xyTemporalControllerSetDirection(
+    toU64(handle, "handle"), toI32(direction, "direction"),
+  ));
 }
 
 export function temporalControllerSetLoop(handle, enabled) {
-  temporalStatus(xyTemporalControllerSetLoop(toU64(handle, "handle"), enabled ? 1 : 0));
+  temporalStatus(xyTemporalControllerSetLoop(
+    toU64(handle, "handle"), toStrictBool(enabled, "enabled") ? 1 : 0,
+  ));
 }
 
 export function temporalControllerSetReducedMotion(handle, enabled) {
-  temporalStatus(xyTemporalControllerSetReducedMotion(toU64(handle, "handle"), enabled ? 1 : 0));
+  temporalStatus(xyTemporalControllerSetReducedMotion(
+    toU64(handle, "handle"), toStrictBool(enabled, "enabled") ? 1 : 0,
+  ));
 }
 
 export function temporalControllerTick(handle, dtMicros) {
   const advanced = new Uint32Array(1);
-  temporalStatus(xyTemporalControllerTick(toU64(handle, "handle"), BigInt(dtMicros), u32Ptr(advanced)));
+  temporalStatus(xyTemporalControllerTick(
+    toU64(handle, "handle"), toI64(dtMicros, "dtMicros"), u32Ptr(advanced),
+  ));
   return advanced[0] !== 0;
 }
 
@@ -770,10 +784,10 @@ export function temporalControllerApplyEvent(handle, event) {
     toU64(event.groupId, "groupId"),
     toU64(event.sourceInstance, "sourceInstance"),
     toU64(event.revision, "revision"),
-    BigInt(event.rangeStart),
-    BigInt(event.rangeEnd),
-    BigInt(event.cursor),
-    BigInt(event.window),
+    toI64(event.rangeStart, "rangeStart"),
+    toI64(event.rangeEnd, "rangeEnd"),
+    toI64(event.cursor, "cursor"),
+    toI64(event.window, "window"),
     u32Ptr(applied),
   ));
   return applied[0] !== 0;
@@ -785,10 +799,10 @@ export function temporalCoordinateDeliver(event) {
     toU64(event.groupId, "groupId"),
     toU64(event.sourceInstance, "sourceInstance"),
     toU64(event.revision, "revision"),
-    BigInt(event.rangeStart),
-    BigInt(event.rangeEnd),
-    BigInt(event.cursor),
-    BigInt(event.window),
+    toI64(event.rangeStart, "rangeStart"),
+    toI64(event.rangeEnd, "rangeEnd"),
+    toI64(event.cursor, "cursor"),
+    toI64(event.window, "window"),
     u32Ptr(applied),
   ));
   return applied[0];
@@ -1318,6 +1332,48 @@ function toU64(value, name) {
     throw new RangeError(`${name} must be a non-negative safe integer or bigint`);
   }
   return BigInt(value);
+}
+
+function toI64(value, name) {
+  let converted;
+  if (typeof value === "bigint") {
+    converted = value;
+  } else {
+    if (typeof value !== "number" || !Number.isSafeInteger(value)) {
+      throw new RangeError(`${name} must be a safe integer or bigint fitting in int64`);
+    }
+    converted = BigInt(value);
+  }
+  if (converted < I64_MIN || converted > I64_MAX) {
+    throw new RangeError(`${name} must fit in int64`);
+  }
+  return converted;
+}
+
+function toStrictU32(value, name) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 0xffff_ffff) {
+    throw new RangeError(`${name} must be a uint32 number`);
+  }
+  return value;
+}
+
+function toI32(value, name) {
+  if (
+    typeof value !== "number"
+    || !Number.isInteger(value)
+    || value < -0x8000_0000
+    || value > 0x7fff_ffff
+  ) {
+    throw new RangeError(`${name} must be an int32 number`);
+  }
+  return value;
+}
+
+function toStrictBool(value, name) {
+  if (typeof value !== "boolean") {
+    throw new TypeError(`${name} must be a boolean`);
+  }
+  return value;
 }
 
 function toLength(value, name) {

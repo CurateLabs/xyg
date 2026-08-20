@@ -395,6 +395,7 @@ Forbidden:
 | `python/xyg/styles.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/styling/__init__.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/styling/capabilities.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/temporal_controller.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/widget.py` | Python host | `python-host` | `keep-host` | — |
 
 ## Contributor rule

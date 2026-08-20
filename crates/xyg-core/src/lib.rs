@@ -94,7 +94,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 75;
+pub const ABI_VERSION: u32 = 76;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5257,9 +5257,7 @@ pub unsafe extern "C" fn xyg_temporal_controller_create(
     *out_handle = 0;
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
         let descriptor = &*descriptor;
-        if descriptor.reserved != 0
-            || descriptor.loop_enabled > 1
-            || descriptor.reduced_motion > 1
+        if descriptor.reserved != 0 || descriptor.loop_enabled > 1 || descriptor.reduced_motion > 1
         {
             return temporal::TemporalError::InvalidArgument as i32;
         }
@@ -5281,10 +5279,13 @@ pub unsafe extern "C" fn xyg_temporal_controller_create(
             descriptor.loop_enabled == 1,
             descriptor.reduced_motion == 1,
         ) {
-            Ok(controller) => {
-                *out_handle = temporal_controller::controller_insert(controller);
-                0
-            }
+            Ok(controller) => match temporal_controller::controller_insert(controller) {
+                Ok(handle) => {
+                    *out_handle = handle;
+                    0
+                }
+                Err(error) => error as i32,
+            },
             Err(error) => error as i32,
         }
     })
@@ -5542,7 +5543,8 @@ pub unsafe extern "C" fn xyg_temporal_controller_tick(
 /// Poll and clear the pending outbound coordination event.
 ///
 /// # Safety
-/// Output pointers must be valid. Writes `out_has_event` 0/1.
+/// Output pointers must be valid. Writes `out_has_event` 0/1 and initializes
+/// every event field to zero when no event is available or the handle is stale.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
     handle: u64,
@@ -5566,6 +5568,14 @@ pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
     {
         return temporal::TemporalError::InvalidArgument as i32;
     }
+    *out_has_event = 0;
+    *out_group_id = 0;
+    *out_source_instance = 0;
+    *out_revision = 0;
+    *out_range_start = 0;
+    *out_range_end = 0;
+    *out_cursor = 0;
+    *out_window = 0;
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
         temporal_controller::controller_with_mut(handle, |c| {
             if let Some(event) = c.take_outbound() {
@@ -5577,8 +5587,6 @@ pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
                 *out_range_end = event.range_end;
                 *out_cursor = event.cursor;
                 *out_window = event.window;
-            } else {
-                *out_has_event = 0;
             }
             0
         })
@@ -8156,5 +8164,44 @@ mod tests {
         };
         assert_eq!(bad, 0);
         assert_eq!(err, -2);
+    }
+
+    #[test]
+    fn temporal_poll_initializes_all_outputs_on_failure() {
+        let mut has_event = 9_u32;
+        let mut group_id = 9_u64;
+        let mut source = 9_u64;
+        let mut revision = 9_u64;
+        let mut range_start = 9_i64;
+        let mut range_end = 9_i64;
+        let mut cursor = 9_i64;
+        let mut window = 9_i64;
+        let status = unsafe {
+            xyg_temporal_controller_poll_event(
+                0,
+                &mut has_event,
+                &mut group_id,
+                &mut source,
+                &mut revision,
+                &mut range_start,
+                &mut range_end,
+                &mut cursor,
+                &mut window,
+            )
+        };
+        assert_eq!(status, temporal::TemporalError::StaleHandle as i32);
+        assert_eq!(
+            (
+                has_event,
+                group_id,
+                source,
+                revision,
+                range_start,
+                range_end,
+                cursor,
+                window,
+            ),
+            (0, 0, 0, 0, 0, 0, 0, 0)
+        );
     }
 }

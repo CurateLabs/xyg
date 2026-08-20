@@ -54,6 +54,7 @@ _EXPORTS = {
     "Selection": "._figure",
     "Spring": ".components",
     "Theme": ".components",
+    "TemporalController": ".temporal_controller",
     "Tooltip": ".components",
     "ZoneMaps": ".columns",
     "area": ".components",
@@ -162,6 +163,7 @@ __all__ = [
     "Modebar",
     "Selection",
     "Spring",
+    "TemporalController",
     "Theme",
     "Tooltip",
     "ZoneMaps",
@@ -400,3 +402,4 @@ if TYPE_CHECKING:
         registered_marks,
         unregister_mark,
     )
+    from .temporal_controller import TemporalController

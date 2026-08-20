@@ -30,7 +30,7 @@ and precision travel as explicit metadata beside the i64 buffers.
 ### Temporal coordination (#44)
 
 Linked-view scrubbing uses revisioned `CoordinationEvent` payloads
-([temporal-controller.md](temporal-controller.md), ABI 72): `group_id`,
+([temporal-controller.md](temporal-controller.md), ABI 76): `group_id`,
 `source_instance`, `revision`, half-open `range_*`, `cursor`, and `window` as
 typed integers. Self-echo and stale revisions are rejected in Rust; unrelated
 groups never share state.

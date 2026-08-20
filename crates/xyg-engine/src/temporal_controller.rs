@@ -100,6 +100,8 @@ impl TemporalController {
         }
         let cursor = clamp(cursor, domain_start, domain_end.saturating_sub(1));
         let (range_start, range_end) = window_around(cursor, window, domain_start, domain_end)?;
+        let span = range_end.saturating_sub(range_start);
+        let canonical_window = if span == 1 { 0 } else { span };
         Ok(Self {
             state: ControllerState {
                 instance_id,
@@ -109,7 +111,7 @@ impl TemporalController {
                 range_start,
                 range_end,
                 cursor,
-                window,
+                window: canonical_window,
                 step,
                 direction,
                 rate_milli,
@@ -165,10 +167,20 @@ impl TemporalController {
         if start < self.state.domain_start || end > self.state.domain_end {
             return Err(TemporalError::InvalidArgument);
         }
+        let span = end.saturating_sub(start);
+        let window = if span == 1 { 0 } else { span };
+        let cursor = clamp(self.state.cursor, start, end.saturating_sub(1));
+        if self.state.range_start == start
+            && self.state.range_end == end
+            && self.state.window == window
+            && self.state.cursor == cursor
+        {
+            return Ok(());
+        }
         self.state.range_start = start;
         self.state.range_end = end;
-        self.state.window = end.saturating_sub(start);
-        self.state.cursor = clamp(self.state.cursor, start, end.saturating_sub(1));
+        self.state.window = window;
+        self.state.cursor = cursor;
         self.bump_and_queue();
         Ok(())
     }
@@ -180,13 +192,19 @@ impl TemporalController {
             self.state.domain_start,
             self.state.domain_end.saturating_sub(1),
         );
-        self.state.cursor = cursor;
         let (start, end) = window_around(
             cursor,
             self.state.window,
             self.state.domain_start,
             self.state.domain_end,
         )?;
+        if self.state.cursor == cursor
+            && self.state.range_start == start
+            && self.state.range_end == end
+        {
+            return Ok(());
+        }
+        self.state.cursor = cursor;
         self.state.range_start = start;
         self.state.range_end = end;
         self.bump_and_queue();
@@ -195,7 +213,10 @@ impl TemporalController {
 
     pub fn step(&mut self) -> Result<(), TemporalError> {
         self.ensure_live()?;
-        let delta = self.state.step.saturating_mul(self.state.direction.as_i64());
+        let delta = self
+            .state
+            .step
+            .saturating_mul(self.state.direction.as_i64());
         let mut next = self.state.cursor.saturating_add(delta);
         if next < self.state.domain_start || next >= self.state.domain_end {
             if self.state.loop_enabled {
@@ -292,38 +313,47 @@ impl TemporalController {
                 self.state.playing = false;
             }
         }
+        let moved = next != self.state.cursor;
         self.set_cursor(next)?;
-        Ok(true)
+        Ok(moved)
     }
 
-    /// Apply a peer coordination event. Rejects self-echo and stale revisions.
-    pub fn apply_event(&mut self, event: &CoordinationEvent) -> Result<bool, TemporalError> {
+    /// Validate a peer event without mutating state. This split lets group
+    /// delivery fail atomically when one eligible peer has a narrower domain.
+    fn validate_event(&self, event: &CoordinationEvent) -> Result<bool, TemporalError> {
         self.ensure_live()?;
+        validate_event_shape(event)?;
         if self.state.group_id == 0 || event.group_id != self.state.group_id {
             return Ok(false);
         }
         if event.source_instance == self.state.instance_id {
             return Err(TemporalError::SelfEcho);
         }
-        let last = self.last_remote.get(&event.source_instance).copied().unwrap_or(0);
+        let last = self
+            .last_remote
+            .get(&event.source_instance)
+            .copied()
+            .unwrap_or(0);
         if event.revision <= last {
             return Err(TemporalError::StaleRevision);
-        }
-        if event.range_start >= event.range_end {
-            return Err(TemporalError::ReversedInterval);
         }
         if event.range_start < self.state.domain_start || event.range_end > self.state.domain_end {
             return Err(TemporalError::InvalidArgument);
         }
-        self.last_remote.insert(event.source_instance, event.revision);
+        Ok(true)
+    }
+
+    /// Apply a peer coordination event. Rejects self-echo and stale revisions.
+    pub fn apply_event(&mut self, event: &CoordinationEvent) -> Result<bool, TemporalError> {
+        if !self.validate_event(event)? {
+            return Ok(false);
+        }
+        self.last_remote
+            .insert(event.source_instance, event.revision);
         self.state.range_start = event.range_start;
         self.state.range_end = event.range_end;
         self.state.window = event.window;
-        self.state.cursor = clamp(
-            event.cursor,
-            event.range_start,
-            event.range_end.saturating_sub(1),
-        );
+        self.state.cursor = event.cursor;
         // Remote apply does not bump local revision or emit outbound (no echo).
         Ok(true)
     }
@@ -338,6 +368,24 @@ impl TemporalController {
         self.last_remote.clear();
         Ok(())
     }
+}
+
+fn validate_event_shape(event: &CoordinationEvent) -> Result<(), TemporalError> {
+    if event.source_instance == 0 || event.revision == 0 || event.window < 0 {
+        return Err(TemporalError::InvalidArgument);
+    }
+    if event.range_start >= event.range_end {
+        return Err(TemporalError::ReversedInterval);
+    }
+    let span = event.range_end.saturating_sub(event.range_start);
+    let canonical_window = if span == 1 { 0 } else { span };
+    if event.window != canonical_window
+        || event.cursor < event.range_start
+        || event.cursor >= event.range_end
+    {
+        return Err(TemporalError::InvalidArgument);
+    }
+    Ok(())
 }
 
 fn clamp(value: i64, lo: i64, hi: i64) -> i64 {
@@ -381,15 +429,27 @@ fn registry() -> &'static Mutex<Registry> {
     REGISTRY.get_or_init(|| Mutex::new((0, HashMap::new())))
 }
 
-pub fn controller_insert(controller: TemporalController) -> u64 {
-    let mut guard = registry().lock().expect("temporal controller registry poisoned");
+pub fn controller_insert(controller: TemporalController) -> Result<u64, TemporalError> {
+    let mut guard = registry()
+        .lock()
+        .expect("temporal controller registry poisoned");
+    if controller.state().group_id != 0
+        && guard.1.values().any(|member| {
+            let member = member.lock().expect("temporal controller poisoned");
+            !member.state().disposed
+                && member.state().group_id == controller.state().group_id
+                && member.state().instance_id == controller.state().instance_id
+        })
+    {
+        return Err(TemporalError::InvalidArgument);
+    }
     guard.0 = guard
         .0
         .checked_add(1)
         .expect("temporal controller handle exhausted");
     let handle = guard.0;
     guard.1.insert(handle, Arc::new(Mutex::new(controller)));
-    handle
+    Ok(handle)
 }
 
 pub fn controller_with_mut<R>(
@@ -397,7 +457,9 @@ pub fn controller_with_mut<R>(
     f: impl FnOnce(&mut TemporalController) -> R,
 ) -> Option<R> {
     let arc = {
-        let guard = registry().lock().expect("temporal controller registry poisoned");
+        let guard = registry()
+            .lock()
+            .expect("temporal controller registry poisoned");
         guard.1.get(&handle).cloned()
     };
     arc.map(|value| {
@@ -421,31 +483,44 @@ pub fn coordinate_deliver(event: &CoordinationEvent) -> Result<u32, TemporalErro
     if event.group_id == 0 {
         return Err(TemporalError::InvalidArgument);
     }
-    let members: Vec<Arc<Mutex<TemporalController>>> = {
-        let guard = registry().lock().expect("temporal controller registry poisoned");
+    validate_event_shape(event)?;
+    let mut members: Vec<(u64, Arc<Mutex<TemporalController>>)> = {
+        let guard = registry()
+            .lock()
+            .expect("temporal controller registry poisoned");
         guard
             .1
-            .values()
-            .cloned()
+            .iter()
+            .map(|(handle, controller)| (*handle, Arc::clone(controller)))
             .collect()
     };
-    let mut applied = 0_u32;
-    for member in members {
-        let mut controller = member.lock().expect("temporal controller poisoned");
-        if controller.state().disposed {
+    // Lock in stable handle order. Validate the complete eligible group before
+    // applying to any peer so a mixed-domain failure cannot partially update it.
+    members.sort_unstable_by_key(|(handle, _)| *handle);
+    let mut controllers: Vec<_> = members
+        .iter()
+        .map(|(_, member)| member.lock().expect("temporal controller poisoned"))
+        .collect();
+    let mut eligible = Vec::new();
+    for (index, controller) in controllers.iter().enumerate() {
+        if controller.state().disposed
+            || controller.state().group_id != event.group_id
+            || controller.state().instance_id == event.source_instance
+        {
             continue;
         }
-        if controller.state().group_id != event.group_id {
-            continue;
-        }
-        if controller.state().instance_id == event.source_instance {
-            continue;
-        }
-        match controller.apply_event(event) {
-            Ok(true) => applied += 1,
-            Ok(false) => {}
-            Err(TemporalError::StaleRevision) | Err(TemporalError::SelfEcho) => {}
+        match controller.validate_event(event) {
+            Ok(true) => eligible.push(index),
+            Ok(false) | Err(TemporalError::StaleRevision) | Err(TemporalError::SelfEcho) => {}
             Err(error) => return Err(error),
+        }
+    }
+    let mut applied = 0_u32;
+    for index in eligible {
+        // Prevalidation above guarantees these applies cannot fail unless the
+        // validation and mutation contract diverge while all locks are held.
+        if controllers[index].apply_event(event)? {
+            applied += 1;
         }
     }
     Ok(applied)
@@ -454,6 +529,13 @@ pub fn coordinate_deliver(event: &CoordinationEvent) -> Result<u32, TemporalErro
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static NEXT_TEST_GROUP: AtomicU64 = AtomicU64::new(1_000);
+
+    fn test_group() -> u64 {
+        NEXT_TEST_GROUP.fetch_add(1, Ordering::Relaxed)
+    }
 
     fn make(id: u64, group: u64) -> TemporalController {
         TemporalController::create(
@@ -496,6 +578,83 @@ mod tests {
     }
 
     #[test]
+    fn inbound_event_rejects_noncanonical_identity_window_and_cursor() {
+        let mut target = make(2, 7);
+        let valid = CoordinationEvent {
+            group_id: 7,
+            source_instance: 1,
+            revision: 2,
+            range_start: 100_000,
+            range_end: 150_000,
+            cursor: 125_000,
+            window: 50_000,
+        };
+        for malformed in [
+            CoordinationEvent {
+                source_instance: 0,
+                ..valid.clone()
+            },
+            CoordinationEvent {
+                revision: 0,
+                ..valid.clone()
+            },
+            CoordinationEvent {
+                window: -1,
+                ..valid.clone()
+            },
+            CoordinationEvent {
+                window: 40_000,
+                ..valid.clone()
+            },
+            CoordinationEvent {
+                cursor: 150_000,
+                ..valid.clone()
+            },
+        ] {
+            assert_eq!(
+                target.apply_event(&malformed),
+                Err(TemporalError::InvalidArgument)
+            );
+        }
+        assert!(target.apply_event(&valid).unwrap());
+
+        let mut single = make(3, 7);
+        let single_event = CoordinationEvent {
+            range_start: 100_000,
+            range_end: 100_001,
+            cursor: 100_000,
+            window: 1,
+            revision: 3,
+            ..valid
+        };
+        assert_eq!(
+            single.apply_event(&single_event),
+            Err(TemporalError::InvalidArgument)
+        );
+    }
+
+    #[test]
+    fn oversized_authored_window_is_canonicalized_to_domain() {
+        let controller = TemporalController::create(
+            1,
+            0,
+            10,
+            20,
+            15,
+            100,
+            1,
+            PlaybackDirection::Forward,
+            1000,
+            false,
+            false,
+        )
+        .unwrap();
+        assert_eq!(controller.state().range_start, 10);
+        assert_eq!(controller.state().range_end, 20);
+        assert_eq!(controller.state().window, 10);
+    }
+
+    #[test]
     fn disposal_stops_playback_and_rejects_stale() {
         let mut a = make(1, 0);
         a.play().unwrap();
@@ -527,13 +686,49 @@ mod tests {
         let before = a.state().cursor;
         assert!(a.tick(20_000).unwrap());
         assert_eq!(a.state().cursor, before + 20_000);
+
+        a.set_loop(false).unwrap();
+        a.set_cursor(a.state().domain_end).unwrap();
+        a.play().unwrap();
+        let revision = a.state().revision;
+        assert!(!a.tick(20_000).unwrap());
+        assert!(!a.state().playing);
+        assert_eq!(a.state().revision, revision);
+    }
+
+    #[test]
+    fn setters_and_bound_step_are_idempotent() {
+        let group = test_group();
+        let mut controller = make(50, group);
+        let initial = controller.state().clone();
+        controller
+            .set_range(initial.range_start, initial.range_end)
+            .unwrap();
+        controller.set_cursor(initial.cursor).unwrap();
+        assert_eq!(controller.state().revision, initial.revision);
+        assert!(controller.take_outbound().is_none());
+
+        controller
+            .set_cursor(controller.state().domain_end)
+            .unwrap();
+        controller.take_outbound();
+        controller.set_loop(false).unwrap();
+        let revision = controller.state().revision;
+        controller.step().unwrap();
+        assert_eq!(controller.state().revision, revision);
+        assert!(controller.take_outbound().is_none());
+
+        controller.set_range(100, 101).unwrap();
+        assert_eq!(controller.state().window, 0);
     }
 
     #[test]
     fn same_process_deliver_isolates_groups() {
-        let a = controller_insert(make(1, 5));
-        let b = controller_insert(make(2, 5));
-        let c = controller_insert(make(3, 8));
+        let group = test_group();
+        let other_group = test_group();
+        let a = controller_insert(make(1, group)).unwrap();
+        let b = controller_insert(make(2, group)).unwrap();
+        let c = controller_insert(make(3, other_group)).unwrap();
         let event = controller_with_mut(a, |ctrl| {
             ctrl.set_cursor(300_000).unwrap();
             ctrl.take_outbound().unwrap()
@@ -547,6 +742,88 @@ mod tests {
         controller_remove(a);
         controller_remove(b);
         controller_remove(c);
+    }
+
+    #[test]
+    fn mixed_domain_delivery_is_atomic() {
+        let group = test_group();
+        let source = controller_insert(make(100, group)).unwrap();
+        let wide = controller_insert(make(101, group)).unwrap();
+        let narrow = controller_insert(
+            TemporalController::create(
+                102,
+                group,
+                0,
+                250_000,
+                100_000,
+                50_000,
+                10_000,
+                PlaybackDirection::Forward,
+                1000,
+                true,
+                false,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let event = controller_with_mut(source, |ctrl| {
+            ctrl.set_cursor(300_000).unwrap();
+            ctrl.take_outbound().unwrap()
+        })
+        .unwrap();
+        let wide_before = controller_with_mut(wide, |ctrl| ctrl.state().clone()).unwrap();
+        let narrow_before = controller_with_mut(narrow, |ctrl| ctrl.state().clone()).unwrap();
+
+        assert_eq!(
+            coordinate_deliver(&event),
+            Err(TemporalError::InvalidArgument)
+        );
+        assert_eq!(
+            controller_with_mut(wide, |ctrl| ctrl.state().clone()).unwrap(),
+            wide_before
+        );
+        assert_eq!(
+            controller_with_mut(narrow, |ctrl| ctrl.state().clone()).unwrap(),
+            narrow_before
+        );
+        controller_remove(source);
+        controller_remove(wide);
+        controller_remove(narrow);
+    }
+
+    #[test]
+    fn delivery_rejects_malformed_shape_without_an_eligible_peer() {
+        let group = test_group();
+        let malformed = CoordinationEvent {
+            group_id: group,
+            source_instance: 1,
+            revision: 1,
+            range_start: 10,
+            range_end: 20,
+            cursor: 20,
+            window: 10,
+        };
+        assert_eq!(
+            coordinate_deliver(&malformed),
+            Err(TemporalError::InvalidArgument)
+        );
+    }
+
+    #[test]
+    fn exchange_group_instance_ids_are_unique_while_live() {
+        let group = test_group();
+        let first = controller_insert(make(500, group)).unwrap();
+        assert_eq!(
+            controller_insert(make(500, group)),
+            Err(TemporalError::InvalidArgument)
+        );
+        // The same identity in an unrelated group does not collide.
+        let other = controller_insert(make(500, test_group())).unwrap();
+        controller_with_mut(first, |controller| controller.dispose().unwrap()).unwrap();
+        let replacement = controller_insert(make(500, group)).unwrap();
+        controller_remove(first);
+        controller_remove(other);
+        controller_remove(replacement);
     }
 
     #[test]
