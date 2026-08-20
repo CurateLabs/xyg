@@ -36,7 +36,7 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_66() -> None:
+def test_abi_version_is_68() -> None:
     manifest = gen_abi_manifest.generate_manifest()
     assert manifest["abi_version"] == 68
     assert manifest["artifact"] == "xyg_core"

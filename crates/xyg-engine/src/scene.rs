@@ -463,6 +463,8 @@ fn calendar_ticks(lo: f64, hi: f64, rough: f64) -> AxisTicks {
         .find(|candidate| f64::from(*candidate) >= months_rough)
         .unwrap_or(*MONTH_STEPS.last().unwrap());
     let (year, month0) = utc_year_month0_from_ms(lo);
+    // Year-local month alignment matches Python `_calendar_ticks` and JS
+    // `calendarTicks` (ceil month0 onto `step_m`, then walk `year + m/12`).
     let mut month_index =
         ((f64::from(month0) / f64::from(step_m)).ceil() as i64) * i64::from(step_m);
     let mut ticks = Vec::new();

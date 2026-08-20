@@ -178,7 +178,15 @@ def test_linear_and_log_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> N
     assert calls == [(0, -0.9, 5.1, 6), (1, 0.1, 100.0, 6)]
 
 
-def test_time_ticks_are_consumed_from_the_rust_scene() -> None:
+def test_time_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
+    calls: list[tuple[int, float, float, int]] = []
+    original = _native.scene_axis_ticks
+
+    def recording(kind: int, lo: float, hi: float, target: int, aux: float = 0.0):
+        calls.append((kind, lo, hi, target))
+        return original(kind, lo, hi, target, aux=aux)
+
+    monkeypatch.setattr(_native, "scene_axis_ticks", recording)
     hour = 3_600_000.0
     assert _svg._time_ticks(0.0, 3.0 * hour, 6) == (
         [0.0, 0.5 * hour, hour, 1.5 * hour, 2.0 * hour, 2.5 * hour, 3.0 * hour],
@@ -195,6 +203,7 @@ def test_time_ticks_are_consumed_from_the_rust_scene() -> None:
         datetime(2021, 7, 1, tzinfo=UTC).timestamp() * 1e3,
         hi,
     ]
+    assert calls == [(5, 0.0, 3.0 * hour, 6), (5, lo, hi, 6)]
 
 
 def test_static_scale_consumes_rust_scene_policy_for_all_numeric_kinds(monkeypatch) -> None:
