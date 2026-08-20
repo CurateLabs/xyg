@@ -1,1 +1,1 @@
-"""XY documentation application."""
+"""XYG documentation application."""

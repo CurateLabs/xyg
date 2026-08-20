@@ -119,7 +119,7 @@ without the boilerplate or a Cytoscape detour.
 
 Legend: **M** = must, **S** = should, **—** = out of scope.
 
-| Capability | Sigma | vis | D3 | Ogma | Plotly | XY |
+| Capability | Sigma | vis | D3 | Ogma | Plotly | XYG |
 |---|---|---|---|---|---|---|
 | First-class graph mark / API | yes | yes | DIY | yes | no | **M** |
 | WebGL nodes + edges | yes | no | DIY | yes | hack | **M** |

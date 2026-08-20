@@ -23,7 +23,7 @@ conditional wrappers. For axis paint and tick styling, continue to
 | A host-owned legend, tooltip, or color scale | [Custom component replacements](#custom-component-replacements) |
 | Reduction badges or facet wrappers | [Conditional badges and facet wrappers](#conditional-badges-and-facet-wrappers) |
 
-The key boundary is ownership: built-in chrome can be restyled through XY
+The key boundary is ownership: built-in chrome can be restyled through XYG
 slots, while a genuinely custom Reflex component must be rendered and updated
 by the host application.
 
@@ -44,12 +44,12 @@ styles it.
 | Crosshair and selection | `interaction_config(crosshair=True, select=True, brush=True)` | Theme tokens or `crosshair_x`, `crosshair_y`, and `selection` slots |
 | Modebar | `modebar(show=...)` | `modebar`, `modebar_button`, and the granular `modebar_*` slots or component-local class/style |
 | Chart frame | Chart `class_name`, `class_names`, `style`, and `styles` | `root`, `title`, `chrome`, `canvas`, `labels`, and `annotation_layer` slots |
-| Reduction badges | Emitted automatically when XY reduces, samples, or rasterizes data | `badge` and `badge_item` slots plus badge theme tokens |
+| Reduction badges | Emitted automatically when XYG reduces, samples, or rasterizes data | `badge` and `badge_item` slots plus badge theme tokens |
 | Facets | `facet_chart(..., gap=...)` and the shared child chart styles | Per-panel chart slots; standalone grid selectors are `.xy-facet-grid`, `.xy-facet-panel`, and `.xy-facet-title` |
 | Data marks | Mark factories such as `line`, `scatter`, and `bar` | The validated mark `style` subset, not DOM classes |
 
 `vline` is the vertical **x reference line** and `hline` is the horizontal
-**y reference line**. XY does not expose separate `x_line` or `y_line` names.
+**y reference line**. XYG does not expose separate `x_line` or `y_line` names.
 
 ## Built-in legend and tooltip
 
@@ -527,7 +527,7 @@ There are three different meanings of “custom”:
    built-in Reflex adapter.
 
 For a framework-owned legend in Reflex, compose it next to the chart and hide
-XY's built-in legend:
+XYG's built-in legend:
 
 ~~~python demo exec
 import reflex as rx

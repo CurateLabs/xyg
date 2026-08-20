@@ -7,7 +7,7 @@ components:
 
 # Tooltips in Python
 
-XY shows a built-in hover tooltip by default. With no tooltip component it
+XYG shows a built-in hover tooltip by default. With no tooltip component it
 leads with the hovered series name when one is available, then reports the
 available x/y values and encoded color or size values. Polar charts label the
 radial row `r` and drop the numeric angle, which is layout rather than data.
@@ -197,7 +197,7 @@ for the exact tooltip signature.
 
 ### How do I show values on hover in a Python chart?
 
-XY shows a built-in hover tooltip by default — with no configuration it reports
+XYG shows a built-in hover tooltip by default — with no configuration it reports
 the available x/y values plus any encoded color or size values. Add
 `xyg.tooltip()` as a chart child only when you want to choose fields, formats,
 or a title template.

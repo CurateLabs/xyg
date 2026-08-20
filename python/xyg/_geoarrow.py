@@ -33,7 +33,7 @@ def _require_pyarrow() -> Any:
         import pyarrow as pa
     except ImportError as exc:  # pragma: no cover - exercised via importorskip tests
         raise ImportError(
-            "GeoArrow ingest requires pyarrow; install the xy[dev] / CI pyarrow extra"
+            "GeoArrow ingest requires pyarrow; install the xyg[dev] / CI pyarrow extra"
         ) from exc
     return pa
 

@@ -14,7 +14,6 @@ from dataclasses import dataclass
 import numpy as np
 
 import xyg
-import xyg as xy
 
 
 def line_walk() -> xyg.Chart:
@@ -22,10 +21,10 @@ def line_walk() -> xyg.Chart:
     n = 120_000
     x = np.arange(n, dtype=np.float64)
     y = np.cumsum(rng.normal(0, 0.35, n)) + np.sin(np.linspace(0, 24, n)) * 18
-    return xy.line_chart(
-        xy.line(x, y, name="walk", color="#3267c8", width=1.4),
-        xy.x_axis(label="sample"),
-        xy.y_axis(label="value"),
+    return xyg.line_chart(
+        xyg.line(x, y, name="walk", color="#3267c8", width=1.4),
+        xyg.x_axis(label="sample"),
+        xyg.y_axis(label="value"),
         title="120k sample random walk",
         width="100%",
         height=430,
@@ -38,12 +37,12 @@ def area() -> xyg.Chart:
     x = np.arange(n, dtype=np.float64)
     y = 35 + np.sin(np.linspace(0, 28, n)) * 8 + np.cumsum(rng.normal(0, 0.025, n))
     base = np.full(n, 25.0)
-    return xy.area_chart(
-        xy.area(
+    return xyg.area_chart(
+        xyg.area(
             x, y, base=base, name="active users", color="#0891b2", opacity=0.34, line_width=1.1
         ),
-        xy.x_axis(label="sample"),
-        xy.y_axis(label="active users"),
+        xyg.x_axis(label="sample"),
+        xyg.y_axis(label="active users"),
         title="80k filled area",
         width="100%",
         height=430,
@@ -57,10 +56,10 @@ def density_scatter() -> xyg.Chart:
     groups = rng.integers(0, len(centers), n, dtype=np.int8)
     x = centers[groups, 0] + rng.normal(0, 0.33, n)
     y = centers[groups, 1] + rng.normal(0, 0.33, n)
-    return xy.scatter_chart(
-        xy.scatter(x, y, opacity=0.9),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+    return xyg.scatter_chart(
+        xyg.scatter(x, y, opacity=0.9),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
         title="10M density scatter",
         width="100%",
         height=430,
@@ -70,10 +69,10 @@ def density_scatter() -> xyg.Chart:
 def histogram() -> xyg.Chart:
     rng = np.random.default_rng(41)
     values = np.concatenate([rng.normal(-1.2, 0.55, 250_000), rng.normal(1.4, 0.8, 250_000)])
-    return xy.histogram_chart(
-        xy.hist(values, bins=160, name="distribution", color="#3b82f6"),
-        xy.x_axis(label="value"),
-        xy.y_axis(label="count"),
+    return xyg.histogram_chart(
+        xyg.hist(values, bins=160, name="distribution", color="#3b82f6"),
+        xyg.x_axis(label="value"),
+        xyg.y_axis(label="count"),
         title="500k sample histogram",
         width="100%",
         height=430,
@@ -83,11 +82,11 @@ def histogram() -> xyg.Chart:
 def histogram_x_zoom() -> xyg.Chart:
     rng = np.random.default_rng(73)
     values = rng.lognormal(mean=4.25, sigma=0.48, size=250_000)
-    return xy.histogram_chart(
-        xy.hist(values, bins=140, name="requests", color="#7c3aed"),
-        xy.interaction_config(zoom_axes=("x",)),
-        xy.x_axis(label="request latency (ms)", domain=(0.0, 250.0)),
-        xy.y_axis(label="requests"),
+    return xyg.histogram_chart(
+        xyg.hist(values, bins=140, name="requests", color="#7c3aed"),
+        xyg.interaction_config(zoom_axes=("x",)),
+        xyg.x_axis(label="request latency (ms)", domain=(0.0, 250.0)),
+        xyg.y_axis(label="requests"),
         title="Latency histogram with x-only zoom",
         width="100%",
         height=430,
@@ -97,11 +96,11 @@ def histogram_x_zoom() -> xyg.Chart:
 def box_zoom_drag() -> xyg.Chart:
     rng = np.random.default_rng(107)
     values = np.concatenate([rng.normal(38, 7, 140_000), rng.normal(72, 12, 110_000)])
-    return xy.histogram_chart(
-        xy.hist(values, bins=120, name="duration", color="#0891b2"),
-        xy.interaction_config(default_drag_action="zoom", zoom_axes=("x",)),
-        xy.x_axis(label="duration (ms)"),
-        xy.y_axis(label="requests"),
+    return xyg.histogram_chart(
+        xyg.hist(values, bins=120, name="duration", color="#0891b2"),
+        xyg.interaction_config(default_drag_action="zoom", zoom_axes=("x",)),
+        xyg.x_axis(label="duration (ms)"),
+        xyg.y_axis(label="requests"),
         title="Drag over the histogram to zoom x",
         width="100%",
         height=430,
@@ -117,16 +116,16 @@ def grouped_bars() -> xyg.Chart:
             [42.0, 39.0, 26.0, 31.0, 19.0, 14.0],
         ]
     )
-    return xy.bar_chart(
-        xy.bar(
+    return xyg.bar_chart(
+        xyg.bar(
             categories,
             values,
             mode="grouped",
             series=["Desktop", "Mobile", "Tablet"],
             colors=["#2563eb", "#16a34a", "#f59e0b"],
         ),
-        xy.x_axis(label="channel"),
-        xy.y_axis(label="conversions"),
+        xyg.x_axis(label="channel"),
+        xyg.y_axis(label="conversions"),
         title="Grouped category bars",
         width="100%",
         height=430,
@@ -138,16 +137,16 @@ def stacked_bars() -> xyg.Chart:
     values = np.array(
         [[42.0, 48.0, 54.0, 61.0], [28.0, 34.0, 37.0, 42.0], [16.0, 19.0, 24.0, 29.0]]
     )
-    return xy.column_chart(
-        xy.column(
+    return xyg.column_chart(
+        xyg.column(
             quarters,
             values,
             mode="stacked",
             series=["Core", "Expansion", "Services"],
             colors=["#0f766e", "#7c3aed", "#dc2626"],
         ),
-        xy.x_axis(label="quarter"),
-        xy.y_axis(label="revenue"),
+        xyg.x_axis(label="quarter"),
+        xyg.y_axis(label="revenue"),
         title="Stacked revenue bars",
         width="100%",
         height=430,
@@ -157,10 +156,10 @@ def stacked_bars() -> xyg.Chart:
 def horizontal_bars() -> xyg.Chart:
     regions = ["NA", "EU", "APAC", "LATAM", "MEA"]
     values = np.array([142.0, 128.0, 116.0, 74.0, 52.0])
-    return xy.bar_chart(
-        xy.bar(regions, values, orientation="horizontal", name="revenue", color="#9333ea"),
-        xy.x_axis(label="revenue"),
-        xy.y_axis(label="region"),
+    return xyg.bar_chart(
+        xyg.bar(regions, values, orientation="horizontal", name="revenue", color="#9333ea"),
+        xyg.x_axis(label="revenue"),
+        xyg.y_axis(label="region"),
         title="Horizontal category bars",
         width="100%",
         height=430,
@@ -176,16 +175,16 @@ def normalized_bars() -> xyg.Chart:
             [17.0, 18.0, 22.0, 23.0, 27.0],
         ]
     )
-    return xy.bar_chart(
-        xy.bar(
+    return xyg.bar_chart(
+        xyg.bar(
             channels,
             values,
             mode="normalized",
             series=["New", "Returning", "Reactivated"],
             colors=["#2563eb", "#14b8a6", "#f59e0b"],
         ),
-        xy.x_axis(label="acquisition channel"),
-        xy.y_axis(
+        xyg.x_axis(label="acquisition channel"),
+        xyg.y_axis(
             label="customer mix",
             domain=(0, 1),
             tick_values=[0, 0.25, 0.5, 0.75, 1],
@@ -200,9 +199,9 @@ def normalized_bars() -> xyg.Chart:
 def diverging_bars() -> xyg.Chart:
     products = ["Core", "Cloud", "Data", "Mobile", "Support", "Labs"]
     changes = [0.34, 0.21, 0.12, -0.08, -0.17, 0.27]
-    return xy.bar_chart(
+    return xyg.bar_chart(
         *[
-            xy.bar(
+            xyg.bar(
                 [product],
                 [value],
                 name=product,
@@ -213,7 +212,7 @@ def diverging_bars() -> xyg.Chart:
             for product, value in zip(products, changes, strict=True)
         ],
         *[
-            xy.text(
+            xyg.text(
                 product,
                 value,
                 f"{value:+.0%}",
@@ -223,10 +222,10 @@ def diverging_bars() -> xyg.Chart:
             )
             for product, value in zip(products, changes, strict=True)
         ],
-        xy.hline(0, color="#64748b", width=1.4),
-        xy.x_axis(label="product"),
-        xy.y_axis(label="year-over-year change", domain=(-0.3, 0.45)),
-        xy.legend(show=False),
+        xyg.hline(0, color="#64748b", width=1.4),
+        xyg.x_axis(label="product"),
+        xyg.y_axis(label="year-over-year change", domain=(-0.3, 0.45)),
+        xyg.legend(show=False),
         title="Diverging product growth",
         width="100%",
         height=430,
@@ -243,9 +242,9 @@ def rounded_goal_bars() -> xyg.Chart:
         {"gradient": "linear-gradient(to right, #0f766e, #34d399)", "space": "plot"},
         {"gradient": "linear-gradient(to right, #c2410c, #fb923c)", "space": "plot"},
     ]
-    return xy.bar_chart(
+    return xyg.bar_chart(
         *[
-            xy.bar(
+            xyg.bar(
                 [team],
                 [value],
                 orientation="horizontal",
@@ -259,13 +258,13 @@ def rounded_goal_bars() -> xyg.Chart:
             for team, value, fill in zip(teams, completion, fills, strict=True)
         ],
         *[
-            xy.text(value, team, f"{value:.0f}%", dx=10, dy=4, anchor="start")
+            xyg.text(value, team, f"{value:.0f}%", dx=10, dy=4, anchor="start")
             for team, value in zip(teams, completion, strict=True)
         ],
-        xy.vline(80, text="goal", color="#475569", width=1.5),
-        xy.x_axis(label="quarterly goal completion", domain=(0, 110)),
-        xy.y_axis(label=None),
-        xy.legend(show=False),
+        xyg.vline(80, text="goal", color="#475569", width=1.5),
+        xyg.x_axis(label="quarterly goal completion", domain=(0, 110)),
+        xyg.y_axis(label=None),
+        xyg.legend(show=False),
         title="Team goal progress",
         width="100%",
         height=430,
@@ -285,10 +284,10 @@ def heatmap() -> xyg.Chart:
             [0.38, 0.40, 0.44, 0.48, 0.55, 0.58, 0.50],
         ]
     )
-    return xy.heatmap_chart(
-        xy.heatmap(z, x=cols, y=rows, name="activity", colormap="turbo"),
-        xy.x_axis(label="day"),
-        xy.y_axis(label="hour"),
+    return xyg.heatmap_chart(
+        xyg.heatmap(z, x=cols, y=rows, name="activity", colormap="turbo"),
+        xyg.x_axis(label="day"),
+        xyg.y_axis(label="hour"),
         title="Weekly activity heatmap",
         width="100%",
         height=430,
@@ -303,9 +302,9 @@ def composed_layers() -> xyg.Chart:
         "forecast": np.array([40.0, 43.0, 46.0, 50.0, 55.0, 60.0]),
         "sample": np.array([41.0, 47.0, 46.5, 53.5, 56.0, 64.0]),
     }
-    return xy.chart(
-        xy.bar(x="month", y="bookings", data=data, name="bookings", color="#f59e0b", opacity=0.34),
-        xy.area(
+    return xyg.chart(
+        xyg.bar(x="month", y="bookings", data=data, name="bookings", color="#f59e0b", opacity=0.34),
+        xyg.area(
             x="month",
             y="forecast",
             data=data,
@@ -314,19 +313,19 @@ def composed_layers() -> xyg.Chart:
             color="#14b8a6",
             opacity=0.18,
         ),
-        xy.scatter(x="month", y="sample", data=data, name="samples", color="#2563eb", size=8.0),
-        xy.line(x="month", y="target", data=data, name="target", color="#dc2626", width=2.0),
-        xy.x_band("Mar", "May", text="launch window", color="#7c3aed", opacity=0.12),
-        xy.vline("Apr", text="release", color="#7c3aed", width=1.8),
-        xy.marker("Jun", 64.0, text="sample peak", color="#2563eb", size=10.0, symbol="diamond"),
-        xy.x_axis(label="month"),
-        xy.y_axis(label="pipeline"),
-        xy.tooltip(
+        xyg.scatter(x="month", y="sample", data=data, name="samples", color="#2563eb", size=8.0),
+        xyg.line(x="month", y="target", data=data, name="target", color="#dc2626", width=2.0),
+        xyg.x_band("Mar", "May", text="launch window", color="#7c3aed", opacity=0.12),
+        xyg.vline("Apr", text="release", color="#7c3aed", width=1.8),
+        xyg.marker("Jun", 64.0, text="sample peak", color="#2563eb", size=10.0, symbol="diamond"),
+        xyg.x_axis(label="month"),
+        xyg.y_axis(label="pipeline"),
+        xyg.tooltip(
             fields=["month", "bookings", "forecast", "sample", "target"],
             title="{month}",
             format={"bookings": ".1f", "forecast": ".1f", "sample": ".1f", "target": ".1f"},
         ),
-        xy.legend(),
+        xyg.legend(),
         title="Composed layered chart",
         width="100%",
         height=430,
@@ -345,8 +344,8 @@ def annotated_heatmap() -> xyg.Chart:
         ]
     )
     data = {"day": cols, "risk_tier": rows, "risk_score": risk}
-    return xy.chart(
-        xy.heatmap(
+    return xyg.chart(
+        xyg.heatmap(
             z="risk_score",
             x="day",
             y="risk_tier",
@@ -355,11 +354,11 @@ def annotated_heatmap() -> xyg.Chart:
             colormap="turbo",
             domain=(0.0, 1.0),
         ),
-        xy.threshold_zone(
+        xyg.threshold_zone(
             "Wed", "Fri", axis="x", text="launch window", color="#2563eb", opacity=0.10
         ),
-        xy.threshold("High", axis="y", text="alert threshold", color="#e11d48", width=1.8),
-        xy.marker(
+        xyg.threshold("High", axis="y", text="alert threshold", color="#e11d48", width=1.8),
+        xyg.marker(
             "Thu",
             "Critical",
             text="max load",
@@ -369,18 +368,18 @@ def annotated_heatmap() -> xyg.Chart:
             dx=10.0,
             dy=20.0,
         ),
-        xy.label("Wed", "High", "72%", dx=0.0, dy=-6.0, color="#0f172a", anchor="middle"),
-        xy.label("Thu", "Critical", "96%", dx=0.0, dy=-6.0, color="#ffffff", anchor="middle"),
-        xy.arrow("Tue", "Medium", "Wed", "High", text="escalation", color="#7c3aed"),
-        xy.callout("Fri", "Critical", "ops review", dx=-78.0, dy=-30.0, color="#0f172a"),
-        xy.x_axis(label="day"),
-        xy.y_axis(label="risk tier"),
-        xy.tooltip(
+        xyg.label("Wed", "High", "72%", dx=0.0, dy=-6.0, color="#0f172a", anchor="middle"),
+        xyg.label("Thu", "Critical", "96%", dx=0.0, dy=-6.0, color="#ffffff", anchor="middle"),
+        xyg.arrow("Tue", "Medium", "Wed", "High", text="escalation", color="#7c3aed"),
+        xyg.callout("Fri", "Critical", "ops review", dx=-78.0, dy=-30.0, color="#0f172a"),
+        xyg.x_axis(label="day"),
+        xyg.y_axis(label="risk tier"),
+        xyg.tooltip(
             fields=["day", "risk_tier", "risk_score"],
             title="{risk_tier} / {day}",
             format={"risk_score": ".0%"},
         ),
-        xy.legend(),
+        xyg.legend(),
         title="Annotated risk heatmap",
         width="100%",
         height=430,
@@ -393,15 +392,17 @@ def axes_scales() -> xyg.Chart:
     rank = 96.0 - lx * 11.5 + np.sin(lx * 3.0) * 3.0
     conversion = 0.08 + lx * 0.035 + np.cos(lx * 2.1) * 0.012
     sampled = np.linspace(0, len(x) - 1, 34, dtype=np.int64)
-    return xy.chart(
-        xy.line(x=x, y=rank, name="quality rank", color="#2563eb", width=2.0),
-        xy.scatter(x=x[sampled], y=rank[sampled], name="sampled checks", color="#0f766e", size=7.0),
-        xy.line(x=x, y=conversion, y_axis="y2", name="conversion", color="#dc2626", width=1.8),
-        xy.x_axis(label="request volume", type_="log", domain=(1.0, 1_000_000.0), format=",.0f"),
-        xy.y_axis(label="rank (reversed)", domain=(0.0, 100.0), reverse=True, format=".0f"),
-        xy.y_axis(id="y2", label="conversion", side="right", domain=(0.0, 0.35), format=".0%"),
-        xy.legend(),
-        xy.interaction_config(
+    return xyg.chart(
+        xyg.line(x=x, y=rank, name="quality rank", color="#2563eb", width=2.0),
+        xyg.scatter(
+            x=x[sampled], y=rank[sampled], name="sampled checks", color="#0f766e", size=7.0
+        ),
+        xyg.line(x=x, y=conversion, y_axis="y2", name="conversion", color="#dc2626", width=1.8),
+        xyg.x_axis(label="request volume", type_="log", domain=(1.0, 1_000_000.0), format=",.0f"),
+        xyg.y_axis(label="rank (reversed)", domain=(0.0, 100.0), reverse=True, format=".0f"),
+        xyg.y_axis(id="y2", label="conversion", side="right", domain=(0.0, 0.35), format=".0%"),
+        xyg.legend(),
+        xyg.interaction_config(
             pan_axes=("x", "y2"),
             zoom_axes=("x", "y2"),
             zoom_limits={"x": (1.0, 64.0), "y2": (0.5, 32.0)},
@@ -417,10 +418,10 @@ def interaction_basics() -> xyg.Chart:
     x = np.linspace(0.0, 12.0, 180)
     actual = np.sin(x) + x * 0.08
     trend = x * 0.08
-    return xy.chart(
-        xy.scatter(x=x[::6], y=actual[::6], name="samples", color="#2563eb", size=8.0),
-        xy.line(x=x, y=trend, name="trend", color="#dc2626", width=2.0),
-        xy.interaction_config(
+    return xyg.chart(
+        xyg.scatter(x=x[::6], y=actual[::6], name="samples", color="#2563eb", size=8.0),
+        xyg.line(x=x, y=trend, name="trend", color="#dc2626", width=2.0),
+        xyg.interaction_config(
             hover=True,
             click=True,
             select=True,
@@ -428,10 +429,10 @@ def interaction_basics() -> xyg.Chart:
             crosshair=True,
             zoom_axes=("x",),
         ),
-        xy.tooltip(fields=["x", "y"], format={"x": ".2f", "y": ".2f"}),
-        xy.legend(),
-        xy.x_axis(label="time", tick_count=13),
-        xy.y_axis(label="value"),
+        xyg.tooltip(fields=["x", "y"], format={"x": ".2f", "y": ".2f"}),
+        xyg.legend(),
+        xyg.x_axis(label="time", tick_count=13),
+        xyg.y_axis(label="value"),
         title="X-only zoom, crosshair, click, and brush select",
         width="100%",
         height=430,
@@ -441,16 +442,16 @@ def interaction_basics() -> xyg.Chart:
 def business_overview() -> xyg.Chart:
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
     values = np.array([[42.0, 45.0, 48.0, 51.0, 55.0, 59.0], [35.0, 38.0, 42.0, 40.0, 46.0, 50.0]])
-    return xy.column_chart(
-        xy.column(
+    return xyg.column_chart(
+        xyg.column(
             months,
             values,
             mode="grouped",
             series=["Revenue", "Pipeline"],
             colors=["#2563eb", "#16a34a"],
         ),
-        xy.x_axis(label="month"),
-        xy.y_axis(label="USD thousands"),
+        xyg.x_axis(label="month"),
+        xyg.y_axis(label="USD thousands"),
         title="Small business overview",
         width="100%",
         height=430,
@@ -470,10 +471,10 @@ def retention_cohort() -> xyg.Chart:
             [1.00, 0.77, 0.68, 0.62, 0.57, 0.52],
         ]
     )
-    return xy.heatmap_chart(
-        xy.heatmap(retention, x=weeks, y=cohorts, name="retention", colormap="viridis"),
-        xy.x_axis(label="week"),
-        xy.y_axis(label="signup cohort"),
+    return xyg.heatmap_chart(
+        xyg.heatmap(retention, x=weeks, y=cohorts, name="retention", colormap="viridis"),
+        xyg.x_axis(label="week"),
+        xyg.y_axis(label="signup cohort"),
         title="Small retention cohort",
         width="100%",
         height=430,

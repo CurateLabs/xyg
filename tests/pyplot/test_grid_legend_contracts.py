@@ -250,7 +250,7 @@ def test_best_legend_materializes_cumulative_histogram_and_ecdf_paths():
 
     for ax in axes:
         ax.legend()
-    # These are the gallery's Matplotlib axes dimensions. XY's current
+    # These are the gallery's Matplotlib axes dimensions. XYG's current
     # constrained-layout fallback produces a narrower panel; that independent
     # layout discrepancy is deliberately not hidden by the scorer.
     locations = [

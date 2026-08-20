@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 class Engine(StrEnum):
     """Static-export engine.
 
-    ``default`` is XY's fast, deterministic native renderer. ``chromium``
+    ``default`` is XYG's fast, deterministic native renderer. ``chromium``
     renders the standalone chart with an automatically discovered installed
     Chromium-family browser for browser CSS/WebGL fidelity. ``auto`` picks
     deterministically per format: native for every natively supported format

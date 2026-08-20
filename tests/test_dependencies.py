@@ -39,7 +39,7 @@ def test_core_publishes_only_the_reflex_optional_dependency() -> None:
         _dependency_name(requirement) == "reflex" and ">=0.9.6" in requirement
         for requirement in extras["reflex"]
     ), (
-        "xy[reflex] must select the supported Reflex floor while the adapter "
+        "xyg[reflex] must select the supported Reflex floor while the adapter "
         "source remains bundled in the xy distribution"
     )
     assert {"dev", "codspeed"} <= groups.keys()

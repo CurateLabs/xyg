@@ -53,7 +53,7 @@ def test_preview_llms_txt_indexes_pages_without_inventing_public_urls() -> None:
     assert "https://" not in content
     assert len(content) < 50_000
     assert content.startswith(
-        "# XY Documentation\n\n> XY is a high-performance plotting library for Python and Reflex."
+        "# XYG Documentation\n\n> XYG is a high-performance plotting library for Python and Reflex."
     )
     assert "\n## Docs\n\n" in content
     expected_sections = (
@@ -82,7 +82,7 @@ def test_preview_llms_txt_indexes_pages_without_inventing_public_urls() -> None:
 def test_llms_full_txt_keeps_section_headers_above_page_content() -> None:
     """The combined file has one H1 and an H2 section per page."""
     content = build_llms_full_txt(DOCS_CONFIG)
-    assert _headings(content, level=1) == ["# XY Documentation"]
+    assert _headings(content, level=1) == ["# XYG Documentation"]
     section_headers = _headings(content, level=2)
     for page in discover_docs(DOCS_CONFIG):
         assert f"## {page.title}" in section_headers
@@ -129,7 +129,7 @@ def test_preview_page_markdown_uses_truthful_host_relative_agent_url() -> None:
 def test_preview_html_shell_uses_host_relative_agent_discovery() -> None:
     """The preview shell advertises the co-located llms asset without a host."""
     rendered = str(_llms_txt_directive())
-    assert "For AI agents: the complete XY documentation index is at" in rendered
+    assert "For AI agents: the complete XYG documentation index is at" in rendered
     assert 'to:"/llms.txt"' in rendered
     assert "/docs/xy/docs/xy/llms.txt" not in rendered
     assert "https://" not in rendered

@@ -5,11 +5,11 @@ description: Create an interactive XYG chart in a Python script or notebook, the
 
 # Your First Chart
 
-You only need the core `xy` package to create, display, and export a chart. The
+You only need the core `xyg` package to create, display, and export a chart. The
 same chart object works in a Python script and a notebook; only the final
 display line changes.
 
-If XY is not installed yet, follow [Installation](/docs/xy/overview/installation/).
+If XYG is not installed yet, follow [Installation](/docs/xy/overview/installation/).
 
 ## Script path: export interactive HTML
 
@@ -110,7 +110,7 @@ and troubleshooting.
 ## Same code, millions of points
 
 Those four values are a placeholder, not a limit. Hand the same mark a few
-million points and nothing else in the script changes: XY switches the scatter
+million points and nothing else in the script changes: XYG switches the scatter
 to a screen-bounded density view and keeps pan, zoom, and hover smooth.
 
 ~~~python

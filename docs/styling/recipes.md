@@ -5,7 +5,7 @@ description: Ready-to-use styling examples for dashboard areas, gradient bars, a
 
 # Styling Recipes
 
-Each recipe uses public XY styling APIs. Copy the chart construction into a
+Each recipe uses public XYG styling APIs. Copy the chart construction into a
 script or notebook; the `reflex_xy.chart(...)` function simply displays the
 interactive preview on this page.
 
@@ -271,7 +271,7 @@ def dense_categorical_axis_recipe():
 ~~~
 
 Keep the chart root's overflow visible. Tooltips and other DOM chrome can be
-clipped when `overflow-hidden` is applied directly to the XY root.
+clipped when `overflow-hidden` is applied directly to the XYG root.
 
 ## Theme-aware scatter
 

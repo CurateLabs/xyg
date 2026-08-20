@@ -1,4 +1,4 @@
-"""XY-specific Markdown rendering behavior."""
+"""XYG-specific Markdown rendering behavior."""
 
 from __future__ import annotations
 
@@ -99,14 +99,14 @@ def _heading_link(text: str, level: int) -> rx.Component:
 
 
 class XyDocsMarkdownTransformer(ReflexDocTransformer):
-    """Render XY docs while keeping heading links independent of router state."""
+    """Render XYG docs while keeping heading links independent of router state."""
 
     def heading(self, block: HeadingBlock) -> rx.Component:
         """Render one route-local Markdown heading."""
         return _heading_link(_spans_to_plaintext(block.children), block.level)
 
     def code_block(self, block: CodeBlock) -> rx.Component:
-        """Use the accessible XY code block for every visible source fence."""
+        """Use the accessible XYG code block for every visible source fence."""
         flags = set(block.flags)
         language = block.language or "plain"
         if language == "python" and flags.intersection({"demo", "demo-only", "exec", "eval"}):
@@ -139,7 +139,7 @@ class XyDocsMarkdownTransformer(ReflexDocTransformer):
 
 
 def render_xy_markdown_page(page: DocsPage) -> rx.Component:
-    """Render one discovered XY documentation page."""
+    """Render one discovered XYG documentation page."""
     source_path = page.source_path.resolve()
 
     def _render(markdown_text: str) -> rx.Component:

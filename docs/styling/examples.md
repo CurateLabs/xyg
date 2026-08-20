@@ -1,6 +1,6 @@
 ---
 title: Examples
-description: Copy polished chart patterns and explore live palette variations built with XY.
+description: Copy polished chart patterns and explore live palette variations built with XYG.
 ---
 
 # Examples
@@ -833,7 +833,7 @@ chart_playground()
 
 ## Build your own
 
-These examples use the same public composition model as the rest of XY. Start
+These examples use the same public composition model as the rest of XYG. Start
 from the closest pattern, replace the data, then tune the mark colors, axes,
 tooltip, and theme. For the full option surface, continue to
 [Line](/docs/xy/charts/line-chart/),

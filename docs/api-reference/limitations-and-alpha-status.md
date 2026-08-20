@@ -1,11 +1,11 @@
 ---
 title: Limitations and Alpha Status
-description: Understand XY's supported contracts, experimental surfaces, and known limits.
+description: Understand XYG's supported contracts, experimental surfaces, and known limits.
 ---
 
 # Limitations and Alpha Status
 
-XY is early alpha. The declarative API, implemented 2D chart families,
+XYG is early alpha. The declarative API, implemented 2D chart families,
 notebook display, standalone HTML, native PNG, and SVG are usable today, but
 pre-1.0 releases can make breaking changes with migration notes.
 
@@ -65,7 +65,7 @@ and [Benchmarks](/docs/xy/overview/benchmarks/) for scoped evidence.
 - Polar histograms, box plots, hexbin/density, generic segments, and meshes
   remain outside the mark allowlist. Polar LOD, facets/animation, and angular
   navigation/selection are also deferred.
-- Browser context limits matter on large dashboards. XY's context governor
+- Browser context limits matter on large dashboards. XYG's context governor
   defaults to 12 live contexts and reacquires off-screen charts as they return;
   more than that many simultaneously visible charts is not an unbounded
   guarantee.
@@ -125,7 +125,7 @@ required by your application.
 
 ## Platform Boundary
 
-XY requires Python 3.11 or newer. Published native wheels include the Rust core
+XYG requires Python 3.11 or newer. Published native wheels include the Rust core
 and bundled browser client; source builds require a Rust toolchain. There is no
 silent NumPy compute fallback when the native core is unavailable.
 

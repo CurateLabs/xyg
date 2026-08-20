@@ -460,7 +460,7 @@ New chart kinds land as composition marks plus a family container
 
 The rectangle/polygon/grid-texture foundations, statistical breadth block,
 full mark styling, native PNG rasterizer, core polar/pie/donut composition, and
-the **Reflex-first reactive API** (bundled `xy[reflex]` integration) are in place, and
+the **Reflex-first reactive API** (bundled `xyg[reflex]` integration) are in place, and
 `v0.0.1` is launched with a live docs site. The next product track is
 **post-launch stabilization** (the open interaction/adapter bug backlog),
 followed by statistical compatibility depth and pie/donut depth (nesting and

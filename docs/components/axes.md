@@ -1,6 +1,6 @@
 ---
 title: Axes in Python
-description: Configure XY scale types, domains, ticks, labels, and named axes.
+description: Configure XYG scale types, domains, ticks, labels, and named axes.
 components:
   - xyg.x_axis
   - xyg.y_axis
@@ -9,7 +9,7 @@ components:
 # Axes in Python
 
 Add `x_axis()` and `y_axis()` children when a chart needs an explicit scale or
-presentation contract. Without them, XY infers ordinary numeric, datetime, and
+presentation contract. Without them, XYG infers ordinary numeric, datetime, and
 categorical behavior from the bound data.
 
 ## Label the Axes and Fix the Domain

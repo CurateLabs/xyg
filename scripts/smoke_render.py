@@ -21,7 +21,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xyg as xy
+import xyg
 from xyg.export import _bundled_js
 
 CHROMIUM_CANDIDATES = [
@@ -51,9 +51,9 @@ def build_page() -> str:
     x = np.arange(n, dtype=np.float64)
     rng = np.random.default_rng(1)
     y = np.cumsum(rng.normal(size=n))
-    chart = xy.chart(
-        xy.line(x, y, name="walk"),
-        xy.scatter(x[::100], y[::100] + 20.0, name="pts", size=3.0),
+    chart = xyg.chart(
+        xyg.line(x, y, name="walk"),
+        xyg.scatter(x[::100], y[::100] + 20.0, name="pts", size=3.0),
         title="smoke",
     )
     spec, blob = chart.figure().build_payload()
@@ -67,7 +67,7 @@ def build_page() -> str:
   const spec = {json.dumps(spec)};
   const bytes = Uint8Array.from(atob("{base64.b64encode(blob).decode()}"), c => c.charCodeAt(0));
   try {{
-    const view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
+    const view = xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
     setTimeout(() => {{
       try {{
         view._drawNow();  // synchronous draw; read back in the same task

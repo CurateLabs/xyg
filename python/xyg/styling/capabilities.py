@@ -1,4 +1,4 @@
-"""An inventory of what XY can be styled with, and where each thing reaches.
+"""An inventory of what XYG can be styled with, and where each thing reaches.
 
 One entry per CSS-addressable DOM slot and one per mark style property, each
 carrying its support level in the WebGL client, the SVG writer, and the native
@@ -100,7 +100,7 @@ class RendererDivergence:
 
 @dataclass(frozen=True)
 class ExtensionPoint:
-    """A way to add behavior XY does not ship, without forking it."""
+    """A way to add behavior XYG does not ship, without forking it."""
 
     id: str
     status: str
@@ -181,7 +181,7 @@ MARK_STYLE_PROPERTIES: tuple[MarkStyleProperty, ...] = (
         support={"webgl": "full", "svg": "full", "native": "full"},
         status="shipped",
         notes=(
-            "Line family only — a cap is open-path geometry. XY's default is "
+            "Line family only — a cap is open-path geometry. XYG's default is "
             "`round`, not CSS's `butt`, because the native rasterizer has always "
             "drawn round and is the reference for static export. Verified per "
             "renderer: a Rust coverage test, a rasterized-ink test, and three "
@@ -208,7 +208,7 @@ MARK_STYLE_PROPERTIES: tuple[MarkStyleProperty, ...] = (
             "rather than an angle: an angular pad's seam is `r * dtheta` wide, "
             "so it tapers to nothing at the hole and reads as uneven spacing. "
             "The angular inset therefore grows as the radius shrinks, which is "
-            "the same construction as d3's padAngle/padRadius pair. An XY "
+            "the same construction as d3's padAngle/padRadius pair. An XYG "
             "vocabulary name: CSS has no gap between two arcs."
         ),
     ),
@@ -220,7 +220,7 @@ MARK_STYLE_PROPERTIES: tuple[MarkStyleProperty, ...] = (
         status="shipped",
         notes=(
             "17 shapes, drawn as analytic signed-distance fields in all three "
-            "renderers. An XY vocabulary name: CSS has no shape keyword for a "
+            "renderers. An XYG vocabulary name: CSS has no shape keyword for a "
             "non-DOM point mark, and the CSS spelling and `symbol=` compile to "
             "the same value."
         ),
@@ -296,7 +296,7 @@ CHART_SLOTS: tuple[SlotCapability, ...] = tuple(
 )
 
 
-#: Ways to add behavior the core does not ship. This is the leg XY lost
+#: Ways to add behavior the core does not ship. This is the leg XYG lost
 #: outright before `xyg.register_mark` existed, and the honest entry is still
 #: narrower than Matplotlib's custom `Artist`.
 EXTENSION_POINTS: tuple[ExtensionPoint, ...] = (

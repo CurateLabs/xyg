@@ -5,7 +5,7 @@ from __future__ import annotations
 import reflex as rx
 
 import reflex_xy
-import xyg as xy
+import xyg
 from xyg._benchmark_theme import (
     benchmark_chart_class,
     benchmark_live_theme,
@@ -17,8 +17,8 @@ MATPLOTLIB_COLOR = "#8B8D98"
 PLOTLY_COLOR = "#B9BBC6"
 FAILURE_COLOR = "#D64545"
 SERIES = (
-    ("XY", XY_COLOR),
-    ("XY · density off", XY_EXACT_COLOR),  # noqa: RUF001
+    ("XYG", XY_COLOR),
+    ("XYG · density off", XY_EXACT_COLOR),  # noqa: RUF001
     ("Matplotlib", MATPLOTLIB_COLOR),
     ("Plotly", PLOTLY_COLOR),
 )
@@ -30,9 +30,9 @@ _CARD_CLASS = (
 )
 
 
-def _theme() -> xy.Theme:
+def _theme() -> xyg.Theme:
     """Return the neutral benchmark theme shared by the docs site."""
-    return xy.theme(**benchmark_live_theme())
+    return xyg.theme(**benchmark_live_theme())
 
 
 def _legend() -> rx.Component:
@@ -87,21 +87,21 @@ _MATPLOTLIB_VALUES = [0.086, 0.115, 0.224, 0.357, 0.758, 1.424, 2.804, 6.838, 13
 _PLOTLY_VALUES = [0.341, 0.373, 0.477, 0.614, 1.033, 1.785, 3.367, 9.794]
 
 
-def _series(values: list[float], name: str, color: str, width: float) -> tuple[xy.Mark, xy.Mark]:
+def _series(values: list[float], name: str, color: str, width: float) -> tuple[xyg.Mark, xyg.Mark]:
     """Return a line and a dot for every measured benchmark cell."""
     sizes = _SIZES[: len(values)]
     return (
-        xy.line(sizes, values, name=name, color=color, width=width),
-        xy.scatter(x=sizes, y=values, color=color, size=6.5),
+        xyg.line(sizes, values, name=name, color=color, width=width),
+        xyg.scatter(x=sizes, y=values, color=color, size=6.5),
     )
 
 
-_RENDER_TIME_CHART = xy.line_chart(
-    *_series(_XY_VALUES, "XY", XY_COLOR, 3),
-    *_series(_XY_EXACT_VALUES, "XY · density off", XY_EXACT_COLOR, 2.5),  # noqa: RUF001
+_RENDER_TIME_CHART = xyg.line_chart(
+    *_series(_XY_VALUES, "XYG", XY_COLOR, 3),
+    *_series(_XY_EXACT_VALUES, "XYG · density off", XY_EXACT_COLOR, 2.5),  # noqa: RUF001
     *_series(_MATPLOTLIB_VALUES, "Matplotlib WebAgg", MATPLOTLIB_COLOR, 2),
     *_series(_PLOTLY_VALUES, "Plotly scattergl", PLOTLY_COLOR, 2),
-    xy.line(
+    xyg.line(
         [_SIZES[7], _SIZES[8]],
         [_PLOTLY_VALUES[-1], _PLOTLY_VALUES[-1]],
         color=FAILURE_COLOR,
@@ -109,14 +109,14 @@ _RENDER_TIME_CHART = xy.line_chart(
         dash="dashed",
         opacity=0.6,
     ),
-    xy.marker(
+    xyg.marker(
         _SIZES[8],
         _PLOTLY_VALUES[-1],
         size=10,
         symbol="cross",
         color=FAILURE_COLOR,
     ),
-    xy.text(
+    xyg.text(
         _SIZES[8],
         _PLOTLY_VALUES[-1],
         "fails at 50M",
@@ -125,7 +125,7 @@ _RENDER_TIME_CHART = xy.line_chart(
         anchor="start",
         color=FAILURE_COLOR,
     ),
-    xy.line(
+    xyg.line(
         [_SIZES[8], _SIZES[9]],
         [_MATPLOTLIB_VALUES[-1], _MATPLOTLIB_VALUES[-1]],
         color=FAILURE_COLOR,
@@ -133,14 +133,14 @@ _RENDER_TIME_CHART = xy.line_chart(
         dash="dashed",
         opacity=0.6,
     ),
-    xy.marker(
+    xyg.marker(
         _SIZES[9],
         _MATPLOTLIB_VALUES[-1],
         size=10,
         symbol="cross",
         color=FAILURE_COLOR,
     ),
-    xy.text(
+    xyg.text(
         70_710_678,
         _MATPLOTLIB_VALUES[-1],
         "fails at 100M",
@@ -148,11 +148,11 @@ _RENDER_TIME_CHART = xy.line_chart(
         anchor="middle",
         color=FAILURE_COLOR,
     ),
-    xy.tooltip(format={"y": ".3f s"}),
-    xy.legend(show=False),
-    xy.modebar(show=False),
-    xy.interaction_config(navigation=False),
-    xy.x_axis(
+    xyg.tooltip(format={"y": ".3f s"}),
+    xyg.legend(show=False),
+    xyg.modebar(show=False),
+    xyg.interaction_config(navigation=False),
+    xyg.x_axis(
         label="Points plotted",
         type_="log",
         domain=(8_000, 125_000_000),
@@ -160,7 +160,7 @@ _RENDER_TIME_CHART = xy.line_chart(
         tick_labels=["10k", "100k", "1M", "10M", "100M"],
         style={"grid_width": 1, "grid_opacity": 1},
     ),
-    xy.y_axis(
+    xyg.y_axis(
         label="Time until every point is on screen",
         domain=(0, 14.6),
         tick_values=[0, 2, 4, 6, 8, 10, 12, 14],

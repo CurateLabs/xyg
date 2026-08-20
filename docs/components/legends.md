@@ -143,7 +143,7 @@ replacement = chart.chrome_components()["legend"]
 assert replacement is my_framework_legend
 ~~~
 
-Core XY neither imports nor serializes that object. The example is complete,
+Core XYG neither imports nor serializes that object. The example is complete,
 but it only demonstrates storage: the shipped `reflex_xy.chart` adapter does
 not currently mount custom legend content. A custom adapter can read
 `chrome_components()` and mount the returned component. Standalone HTML keeps

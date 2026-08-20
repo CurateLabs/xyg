@@ -1,11 +1,11 @@
 ---
-title: XY Architecture
-description: See how XY keeps exact data in Python while native compute and screen-bounded rendering keep charts responsive.
+title: XYG Architecture
+description: See how XYG keeps exact data in Python while native compute and screen-bounded rendering keep charts responsive.
 ---
 
-# XY Architecture
+# XYG Architecture
 
-XY separates source data, render data, and presentation. Python owns the chart
+XYG separates source data, render data, and presentation. Python owns the chart
 definition and exact columns, Rust handles data-heavy work, and the browser
 draws only the representation needed for the current view.
 
@@ -88,13 +88,13 @@ WebGL, SVG, and native PNG. See
 
 ~~~text
 Conventional path: O(N) encode + transfer + parse + draw
-XY tiered path:    O(N) ingest/reduce + O(P) transfer + draw
+XYG tiered path:    O(N) ingest/reduce + O(P) transfer + draw
 
 N = source rows
 P = detail useful at the current pixel resolution
 ~~~
 
-XY still has to inspect source data. Its advantage is that every source row
+XYG still has to inspect source data. Its advantage is that every source row
 does not automatically become a browser object:
 
 - Native columnar kernels avoid Python object loops for data-heavy work.
@@ -105,7 +105,7 @@ does not automatically become a browser object:
 
 This focused design is the foundation for making every chart faster. The
 [benchmark snapshot](/docs/xy/overview/benchmarks/) publishes those contracts
-and records when XY uses a reduced representation.
+and records when XYG uses a reduced representation.
 
 ## Runtime and output choices
 

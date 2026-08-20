@@ -1,11 +1,11 @@
 ---
 title: Installation
-description: Install XY, understand its bundled runtime, and choose optional integrations.
+description: Install XYG, understand its bundled runtime, and choose optional integrations.
 ---
 
 # Installation
 
-XY 0.0.1 supports Python 3.11 and newer. Install the released core package
+XYG 0.0.1 supports Python 3.11 and newer. Install the released core package
 from PyPI with your preferred package manager:
 
 ~~~~md tabs
@@ -43,10 +43,10 @@ python -c "import xyg; print(xyg.__version__)"
 
 ## Supported platforms
 
-XY supports the platforms below. The PyPI column describes only the files in
-the current 0.0.1 upload, not whether XY supports the platform.
+XYG supports the platforms below. The PyPI column describes only the files in
+the current 0.0.1 upload, not whether XYG supports the platform.
 
-| Platform | Compatibility | Architectures | XY support | PyPI 0.0.1 wheel |
+| Platform | Compatibility | Architectures | XYG support | PyPI 0.0.1 wheel |
 | --- | --- | --- | --- | --- |
 | macOS | macOS 10.12+ on Intel; macOS 11+ on Apple silicon | `x86_64`, `arm64` | Supported | Included |
 | Linux | glibc (`manylinux_2_17`) | `x86_64`, `aarch64`, `armv7l` | Supported | Included |
@@ -54,7 +54,7 @@ the current 0.0.1 upload, not whether XY supports the platform.
 | Windows | Native Windows | `x86_64`, `x86`, `arm64` | Supported | Not included |
 | WebAssembly | Pyodide 314 (Emscripten, PEP 783) | `wasm32` | Supported | Not in 0.0.1 (on PyPI since 0.0.3) |
 
-Windows is supported by XY's native core and release pipeline. The current
+Windows is supported by XYG's native core and release pipeline. The current
 0.0.1 PyPI upload does not include Windows wheels or a source distribution, so
 `uv add xyg` and `python -m pip install xyg` cannot install it directly on
 Windows yet. Until a Windows wheel is published, install the tagged source
@@ -64,7 +64,7 @@ The runtime-verified WebAssembly wheel targets the standardized PEP 783
 `pyemscripten_2026_0_wasm32` platform and, as of 0.0.3, is published to PyPI
 alongside the native wheels. In-browser Python installs it by package name —
 `micropip.install("xyg")`, or `%pip install xyg` in a JupyterLite notebook.
-This target runs XY's Python and Rust core inside Pyodide; it is separate
+This target runs XYG's Python and Rust core inside Pyodide; it is separate
 from the JavaScript/WebGL client (`@curatelabs/xyg`, copied into every Python
 wheel). See
 [Notebooks](/docs/xy/integrations/notebooks/) for how charts display on WASM
@@ -102,7 +102,7 @@ python -m pip install "xyg @ git+https://github.com/CurateLabs/xyg.git@v0.0.1"
 
 A source build without Rust can finish installing, but it has no compute
 backend and fails with an actionable error when a chart first needs native
-compute. XY does not silently switch to a slower implementation. Building for
+compute. XYG does not silently switch to a slower implementation. Building for
 an unsupported operating system or architecture may also require target-specific
 Rust tooling beyond the commands above.
 

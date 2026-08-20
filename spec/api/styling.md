@@ -1,4 +1,4 @@
-# Styling XY
+# Styling XYG
 
 Each public chrome slot names a stable, CSS-addressable DOM surface. You can
 restyle those surfaces with plain CSS, attribute selectors, Tailwind, or
@@ -81,7 +81,7 @@ amber surface, large title, and shadow utilities are applied.](../assets/tailwin
 
 ## Rendered marks: standard CSS vocabulary
 
-WebGL and native-raster marks are not DOM elements, so XY compiles a deliberate
+WebGL and native-raster marks are not DOM elements, so XYG compiles a deliberate
 CSS subset instead of pretending every browser property can work. Property
 names are canonical CSS kebab-case; snake_case aliases remain accepted for
 Python compatibility. Unsupported properties raise before the figure mutates.
@@ -163,7 +163,7 @@ client capped flat; both now cap round.](../assets/linecap-cross-renderer-before
 
 ![The three stroke-linecap values: butt, round, and square.](../assets/linecap-values.png)
 
-XY's default is `round`, deliberately not the CSS initial value `butt`. Before
+XYG's default is `round`, deliberately not the CSS initial value `butt`. Before
 this vocabulary existed the three renderers silently disagreed — the native
 rasterizer capped round from its clamped segment distance field
 (`crates/xyg-engine/src/raster.rs`), the WebGL client capped butt with a half-pixel bleed, and
@@ -187,7 +187,7 @@ disagreeing with the rasterizer at no benefit.
 `marker-shape` selects one of the 19 renderer-backed scatter symbols and is the
 CSS spelling of the existing `symbol=` argument — both resolve to the same
 `symbol` trace-style value, so the two spellings produce identical specs. It is
-an **XY vocabulary name, not a standard CSS property**: CSS has no shape keyword
+an **XYG vocabulary name, not a standard CSS property**: CSS has no shape keyword
 for a non-DOM point mark, and the alternative (a `-xy-` vendor prefix) would
 force an unusable `_xy_marker_shape` Python alias. The distinction is recorded
 per property rather than encoded in the name.
@@ -195,7 +195,7 @@ per property rather than encoded in the name.
 ### Reflex integration boundary
 
 Reflex owns reactive `Var` values, conditions, application state, event
-handlers, layouts, and themes. XY does not duplicate those facilities. The
+handlers, layouts, and themes. XYG does not duplicate those facilities. The
 integration resolves them into concrete `style`, `styles`, `class_name`, and
 `class_names` values and updates the renderer. CSS variables are the preferred
 bridge for design tokens and theme changes.
@@ -1211,7 +1211,7 @@ used these four symbols render at a corrected size or orientation for an
 unchanged `size`; the set of available symbols does not change.
 
 Interaction state belongs to the host framework. In Reflex, use Reflex state,
-event handlers, conditions, and ordinary CSS classes/styles; XY only emits the
+event handlers, conditions, and ordinary CSS classes/styles; XYG only emits the
 events and renders the resulting props. The component API deliberately does not
 define a parallel hover/selected/unselected styling language.
 
@@ -1373,7 +1373,7 @@ Full contract and enforcement: [export.md](export.md) § 9 and
 Spellings that are unambiguous are normalized rather than refused: case and
 whitespace are free, `-`/`_` work as separators, either word order is accepted,
 `"right"`/`"left"` alone mean the centered edges, and **`top`/`bottom` are
-accepted for `upper`/`lower`** — the CSS and Plotly spelling, and the one XY's
+accepted for `upper`/`lower`** — the CSS and Plotly spelling, and the one XYG's
 own docs use.
 
 Everything else is **refused**. The writers resolve a location by substring, so

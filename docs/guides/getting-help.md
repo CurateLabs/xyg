@@ -1,12 +1,12 @@
 ---
 title: Getting Help
-description: Report XY bugs, request features, disclose vulnerabilities, and provide useful environment details.
+description: Report XYG bugs, request features, disclose vulnerabilities, and provide useful environment details.
 ---
 
 # Getting Help
 
-A useful starting point is a small reproducible case with the installed XY
-version and the output environment. XY is early alpha and does not publish a
+A useful starting point is a small reproducible case with the installed XYG
+version and the output environment. XYG is early alpha and does not publish a
 general response-time or resolution SLA, so an issue is a project report rather
 than a promise of a fix or delivery date.
 
@@ -20,7 +20,7 @@ than a promise of a fix or delivery date.
 | Reproducible regression | Open an [XYG issue](https://github.com/CurateLabs/xyg/issues/new) with the last working and first failing versions |
 | Suspected vulnerability | Use [GitHub private vulnerability reporting](https://github.com/CurateLabs/xyg/security/advisories/new); do not open a public issue |
 
-The issue tracker is the repository's public, XY-specific project channel. Do
+The issue tracker is the repository's public, XYG-specific project channel. Do
 not send secrets, credentials, private datasets, or embargoed vulnerability
 details through a public issue.
 
@@ -52,7 +52,7 @@ python -m pip show xy
 python -m pip check
 ~~~
 
-Include whether XY came from PyPI, a Git commit, a local editable checkout, or
+Include whether XYG came from PyPI, a Git commit, a local editable checkout, or
 an internal mirror. For a Git install, include the full commit SHA. “Latest” is
 not a version and can refer to different code by the time someone investigates.
 
@@ -118,7 +118,7 @@ when uncertain, start privately and let the maintainers triage it.
 
 ## Roadmap and support expectations
 
-XY does not promise a public release cadence, feature-delivery date, or general
+XYG does not promise a public release cadence, feature-delivery date, or general
 support response time. Open issues and pull requests show active work, not a
 commitment that a feature will ship in a particular release. The
 [Changelog](/docs/xy/api-reference/changelog/) is the record of released and

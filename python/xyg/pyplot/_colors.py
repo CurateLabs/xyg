@@ -305,7 +305,7 @@ def cmap_extreme(
 ) -> np.ndarray | None:
     """Resolve one shim or Matplotlib colormap extreme to straight RGBA.
 
-    XY's lightweight colormaps store ``_bad``/``_under``/``_over`` while
+    XYG's lightweight colormaps store ``_bad``/``_under``/``_over`` while
     Matplotlib's own colormaps use ``_rgba_bad``/``_rgba_under``/
     ``_rgba_over``.  Keeping both spellings behind one resolver prevents
     images, contours, and their colorbars from disagreeing about configured

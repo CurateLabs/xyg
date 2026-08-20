@@ -3302,11 +3302,11 @@ class PlotTypeMixin:
                     "xerr": xerr,
                     # Matplotlib keeps underscore-prefixed labels on the
                     # container but excludes them from automatic legends.
-                    # Do not expose those private labels to XY's renderer.
+                    # Do not expose those private labels to XYG's renderer.
                     "name": (None if str(container_label).startswith("_") else container_label),
                     "color": color,
                     "width": errorbar_width,
-                    # Core XY caps are symmetric data-unit geometry. Matplotlib
+                    # Core XYG caps are symmetric data-unit geometry. Matplotlib
                     # caps are fixed-size ``_``/``|`` line markers in points,
                     # so the pyplot overlays below own them instead.
                     "cap_size": 0.0,

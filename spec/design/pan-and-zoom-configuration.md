@@ -5,7 +5,7 @@ pipeline, linked views, semantic events, Reflex transport, and examples describe
 here ship together. Touch pinch and dedicated keyboard viewport navigation remain
 the explicitly deferred follow-ups in section 22.
 
-**Audience:** XY maintainers, adapter authors, and application developers who need
+**Audience:** XYG maintainers, adapter authors, and application developers who need
 predictable viewport behavior across standalone HTML, notebooks, and Reflex apps.
 
 ## 1. Decision summary
@@ -59,7 +59,7 @@ constraint: every zoom-enabled axis stops at its original home span when zooming
 
 ## 3. Non-goals
 
-- A reactive state system inside XY.
+- A reactive state system inside XYG.
 - Sending every pointer or wheel frame through Reflex state.
 - Arbitrary transforms, rotation, or 3D cameras.
 - Per-mark viewport policies inside one panel.
@@ -262,7 +262,7 @@ The action computes candidate ranges keyed by axis ID. Filtering discards candid
 for non-participating axes. Clamping happens afterward, so changing `x` cannot perturb
 `y`, and changing `y` cannot perturb `y2`.
 
-If the clamped result equals the current view, XY redraws nothing, requests no LOD,
+If the clamped result equals the current view, XYG redraws nothing, requests no LOD,
 emits no event, and broadcasts no update.
 
 ## 7. Action semantics
@@ -301,7 +301,7 @@ leaves its home extents and stays bit-for-bit unchanged at home magnification.
 - On contained axes (§7.1) the positional clamp keeps the zoomed window inside
   home extents, so cursor anchoring cannot relocate a pan-locked axis.
 - Deltas accumulate and apply at most once per animation frame.
-- XY calls `preventDefault()` only inside the plot while wheel zoom is enabled.
+- XYG calls `preventDefault()` only inside the plot while wheel zoom is enabled.
   Otherwise the page remains scrollable.
 - A precision floor prevents ranges smaller than the renderer can represent.
 - Sensitivity is not public until cross-device normalization is stable.
@@ -703,7 +703,7 @@ zoom through `zoom_axes`, and Home resets. It must activate only in an explicit 
 navigation mode so it does not replace current point-exploration keys.
 
 Touch needs an implementation pass. The target mapping is one-finger pan and
-two-finger pinch zoom, filtered by the same axis policies. XY must not claim touch
+two-finger pinch zoom, filtered by the same axis policies. XYG must not claim touch
 parity before pinch zoom is tested.
 
 ## 15. Performance requirements

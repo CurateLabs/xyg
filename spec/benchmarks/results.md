@@ -28,7 +28,7 @@ The xy-only arm also runs with no dependencies via
 
 ## Competitive product goal
 
-XY's product goal is to outperform every competing charting library across
+XYG's product goal is to outperform every competing charting library across
 user-visible performance, chart breadth, and customization. The benchmark
 program is the evidence system for that goal, not a showcase for one favorable
 workload.
@@ -45,7 +45,7 @@ Timing alone cannot prove chart breadth or design control. Those dimensions
 use the generated capability matrix, matched visual examples, renderer
 coverage, and compatibility corpora as evidence. When another library is
 better on a relevant workload or capability, record the loss as a product gap,
-add a reproducible comparison, and keep it visible until XY wins it.
+add a reproducible comparison, and keep it visible until XYG wins it.
 
 ## Benchmark categories and goals
 
@@ -736,7 +736,7 @@ current tested local-static ceiling; browser delivery remains separately
 bounded by transport and ArrayBuffer limits.
 
 A focused same-process diagnostic on the same 2026-07-11 macOS arm64 worktree
-measured the 10M XY density binary spec at **10 ms / 258 KiB**, while Plotly
+measured the 10M XYG density binary spec at **10 ms / 258 KiB**, while Plotly
 `Scattergl` produced a direct-marker HTML payload in **920 ms / 259 MiB**.
 Those modes and retained information differ, so this is a scaling/payload
 comparison—not a same-render-target speedup claim.

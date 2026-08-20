@@ -24,7 +24,7 @@ coordinates. See #39 / #49 for the shell boundary.
 | Concern | Contract |
 | --- | --- |
 | Geometry kinds | Homogeneous `point`, `linestring`, `polygon`, `multipoint`, `multilinestring`, `multipolygon` |
-| Coordinates | Separated GeoArrow XY as interleaved host `f64` (`[x0,y0,x1,y1,…]`) |
+| Coordinates | Separated GeoArrow XYG as interleaved host `f64` (`[x0,y0,x1,y1,…]`) |
 | CRS | Explicit only: `EPSG:4326` (lon/lat) and `EPSG:3857` (easting/northing) |
 | Axis order | Always x/y; never inferred or swapped |
 | Nullability | Top-level per-feature validity (`0`/`1`); nested parts cannot be null |

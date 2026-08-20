@@ -19,7 +19,7 @@ Jump to [a polar line chart](#create-a-polar-line-chart),
 [the angular axis](#configure-the-angular-axis), or
 [supported marks and limits](#supported-marks-and-current-limits).
 
-XY uses the same composition model as its Cartesian charts. Put `line`,
+XYG uses the same composition model as its Cartesian charts. Put `line`,
 `scatter`, `area`, `bar`, `column`, `heatmap`, `contour`, or `errorbar` marks
 inside `polar_chart()`. Focused helpers build
 [radar](/docs/xy/charts/radar-chart/),

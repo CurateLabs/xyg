@@ -1,4 +1,4 @@
-"""XY-specific footer configuration for the documentation site."""
+"""XYG-specific footer configuration for the documentation site."""
 
 from datetime import datetime
 from urllib.parse import quote
@@ -17,7 +17,7 @@ REPOSITORY_URL = "https://github.com/CurateLabs/xyg"
 
 
 def _footer_link(text: str, href: str) -> rx.Component:
-    """Render one XY footer link."""
+    """Render one XYG footer link."""
     router_href = href.removeprefix("/docs/xy") if href.startswith("/docs/xy/") else href
     return rx.el.a(
         text,
@@ -56,7 +56,7 @@ def _page_action(text: str, href: str) -> rx.Component:
 
 
 def xy_docs_footer(page: DocsPage) -> rx.Component:
-    """Render project links and source-aware actions for an XY docs page."""
+    """Render project links and source-aware actions for an XYG docs page."""
     public_path = f"/docs/xy{page.route}"
     issue_title = quote(f"Issue with XYG docs: {public_path}")
     issue_body = quote("Path: " + public_path + "\n\n")
@@ -89,7 +89,7 @@ def xy_docs_footer(page: DocsPage) -> rx.Component:
         _footer_column(
             "Start",
             _footer_link("Overview", "/docs/xy/"),
-            _footer_link("Why XY", "/docs/xy/#why-xy"),
+            _footer_link("Why XYG", "/docs/xy/#why-xy"),
             _footer_link("Installation", "/docs/xy/overview/installation/"),
             _footer_link("First chart", "/docs/xy/overview/first-chart/"),
         ),
@@ -111,13 +111,13 @@ def xy_docs_footer(page: DocsPage) -> rx.Component:
     )
     controls = rx.box(
         rx.box(dark_mode_toggle(), class_name="[&>div]:!ml-0"),
-        _footer_link("View XY on GitHub ↗", REPOSITORY_URL),
+        _footer_link("View XYG on GitHub ↗", REPOSITORY_URL),
         class_name="flex w-full flex-row items-end justify-between gap-6",
     )
     channel_label = "main-branch preview" if DOCS_CHANNEL == "preview" else "stable docs"
     copyright_status = rx.el.div(
         rx.text(
-            f"XY {PUBLIC_XY_VERSION} · {channel_label}",
+            f"XYG {PUBLIC_XY_VERSION} · {channel_label}",
             class_name="font-small text-secondary-9",
         ),
         rx.text(

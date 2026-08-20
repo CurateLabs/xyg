@@ -1,11 +1,11 @@
 ---
 title: Mark Styles
-description: Style WebGL, SVG, and native-raster marks with XY's validated CSS subset.
+description: Style WebGL, SVG, and native-raster marks with XYG's validated CSS subset.
 ---
 
 # Mark Styles
 
-Data marks are not DOM nodes. XY accepts familiar CSS property names through a
+Data marks are not DOM nodes. XYG accepts familiar CSS property names through a
 mark's `style=` mapping, validates them, and compiles them into a renderer-neutral
 trace style. Unsupported properties raise before data is ingested, so one
 renderer cannot silently ignore a declaration that another honors.
@@ -104,7 +104,7 @@ and each dash end. It is polyline geometry, so only the line family accepts it â
 a `bar` or a `scatter` raises rather than accepting a declaration no renderer
 can draw.
 
-XY defaults to `round`, **not** to the CSS initial value `butt`: the native
+XYG defaults to `round`, **not** to the CSS initial value `butt`: the native
 rasterizer has always drawn round caps and it is the reference for static
 export. Set the property to opt into the CSS initial value.
 
@@ -120,7 +120,7 @@ Joins are always round and are not selectable.
 `square`, `diamond`, `triangle`, `cross`, `hexagon`, `pentagon`, `star`,
 `triangle_down`, `triangle_left`, `triangle_right`, `x`, `point`, `pixel`,
 `thin_diamond`, `plus_line`, `x_line`, `horizontal_line`, `vertical_line` â€” and
-is the CSS spelling of the existing `symbol=` argument. It is an XY vocabulary
+is the CSS spelling of the existing `symbol=` argument. It is an XYG vocabulary
 name rather than a standard CSS property: CSS has no shape keyword for a non-DOM
 point mark.
 
@@ -286,7 +286,7 @@ than a CSS selector.
 
 ## Validation
 
-XY's native CSS grammar validates colors, gradients, numeric ranges, lengths,
+XYG's native CSS grammar validates colors, gradients, numeric ranges, lengths,
 and declaration safety at chart-build time:
 
 - malformed closed forms such as `#3b82zz`, unknown color names, and `12parsecs`
@@ -302,7 +302,7 @@ and declaration safety at chart-build time:
 
 CSS selectors cannot target individual canvas points, bars, line segments, or
 annotation shapes. A mark `class_name` does not turn its geometry into a DOM
-element. XY preserves it as trace metadata, but browser, Reflex, SVG, and
+element. XYG preserves it as trace metadata, but browser, Reflex, SVG, and
 native renderers do not interpret it as a paint selector. Use
 mark props, channels, and the compiled `style=` subset for data geometry.
 
@@ -311,6 +311,6 @@ canvas-painted; use their `color`, `stroke_color`, `stroke_width`, and
 `opacity` props. Annotation labels are DOM and can use the `annotation_label`
 slot or a per-annotation `class_name`/`style`.
 
-XY does not define a parallel hover/selected/unselected mark-style language.
+XYG does not define a parallel hover/selected/unselected mark-style language.
 Application state belongs to the notebook or host framework, which can update
 the chart's ordinary props and CSS variables.

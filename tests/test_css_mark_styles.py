@@ -338,7 +338,7 @@ def test_stroke_linejoin_is_not_offered_until_the_client_draws_joins() -> None:
 
 
 def test_default_cap_stays_off_the_wire() -> None:
-    # XY's default is round in every renderer, so a spec that asks for it
+    # XYG's default is round in every renderer, so a spec that asks for it
     # explicitly must stay byte-identical to one that never mentions it.
     plain = xy.chart(xy.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0])).figure()
     explicit = xy.chart(

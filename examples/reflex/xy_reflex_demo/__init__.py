@@ -1,1 +1,1 @@
-"""XY Reflex showcase app."""
+"""XYG Reflex showcase app."""

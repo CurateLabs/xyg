@@ -111,7 +111,7 @@ _TEXT_ROT_CCW = 0x80
 _TEXT_ROT_CW = 0x40
 _TEXT_ITALIC = 0x01
 _TEXT_BOLD = 0x02
-# stroke-linecap — must match CAP_* in crates/xyg-engine/src/raster.rs. XY's default is round,
+# stroke-linecap — must match CAP_* in crates/xyg-engine/src/raster.rs. XYG's default is round,
 # which is the geometry the rasterizer's capsule distance field has always
 # drawn. Joins are always round and carry no wire field.
 _CAP_CODES = {"butt": 0, "round": 1, "square": 2}

@@ -127,7 +127,7 @@ jobs:
       - name: Source ownership gate (stdlib only)
         run: python3 scripts/verify_ownership.py
 
-      - name: Stale XY identity names
+      - name: Stale XYG identity names
         run: python3 scripts/check_stale_names.py
 
       # Playwright's Chromium, not the apt/snap one: Ubuntu's chromium-browser is
@@ -756,11 +756,11 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xyg as xy
+          import xyg
           import xyg.kernels as kernels
 
           version = metadata.version("xyg")
-          assert xy.__version__ == version
+          assert xyg.__version__ == version
           assert reflex_xy.__version__ == version
           assert kernels.BACKEND == "native", kernels.BACKEND
           print("sdist built and loaded the native Rust core")
@@ -777,10 +777,10 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xyg as xy
+          import xyg
 
           version = metadata.version("xyg")
-          assert xy.__version__ == version
+          assert xyg.__version__ == version
           assert reflex_xy.__version__ == version
           try:
               import xyg.kernels  # noqa: F401

@@ -1,7 +1,7 @@
 [project]
 name = "xy-docs-app"
 version = "0.1.0"
-description = "Documentation site for XY."
+description = "Documentation site for XYG."
 requires-python = ">=3.11"
 dependencies = [
     "numpy",

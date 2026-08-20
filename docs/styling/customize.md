@@ -1,11 +1,11 @@
 ---
 title: Customize Each Part
-description: Style marks, axes, color scales, legends, tooltips, annotations, and interaction chrome with the right XY API.
+description: Style marks, axes, color scales, legends, tooltips, annotations, and interaction chrome with the right XYG API.
 ---
 
 # Customize Each Part
 
-Start with the part you want to change. Data marks and axis geometry use XY's
+Start with the part you want to change. Data marks and axis geometry use XYG's
 validated renderer-neutral style vocabulary. Colorbars, legends, tooltips,
 controls, and annotation labels are DOM chrome and also accept component or
 slot styles.
@@ -100,7 +100,7 @@ add `border-radius`. `line`, `step`, `stairs`, and `ecdf` add
 because a cap is open-path geometry. `scatter` adds `marker-shape`.
 
 `stroke-linecap` (`butt`, `round`, `square`) carries its standard SVG meaning,
-and XY defaults it to `round` rather than to the CSS initial value — the native
+and XYG defaults it to `round` rather than to the CSS initial value — the native
 rasterizer has always drawn round caps and it is the reference for static
 export. `marker-shape` is the CSS spelling of `symbol=` and takes any of the 17
 built-in marker names.
@@ -379,7 +379,7 @@ scale, then style its container, gradient, ticks, and title through the
 
 ### Build a colormap from your own colors
 
-`colormap=` takes any of XY's twenty built-in names, and also a **custom ramp**
+`colormap=` takes any of XYG's twenty built-in names, and also a **custom ramp**
 built from the colors your design system already defines:
 
 | Form | Example |
@@ -390,7 +390,7 @@ built from the colors your design system already defines:
 
 A gradient takes up to 8 stops, the list forms up to 256. Colormap stops are
 opaque: use the mark's `opacity`/`fill-opacity` for transparency rather than a
-translucent stop, which XY refuses instead of silently flattening to black.
+translucent stop, which XYG refuses instead of silently flattening to black.
 
 ~~~python
 chart = xyg.hexbin_chart(
@@ -404,7 +404,7 @@ The ramp is resolved once, in Python, so the browser, `to_svg()`, and
 In the browser the legend row for a continuous encoding also becomes a gradient
 swatch of the ramp; the static legend draws a solid handle, as it always has.
 
-One rule follows from that: colormap stops must be colors XY can resolve
+One rule follows from that: colormap stops must be colors XYG can resolve
 without a browser — hex, `rgb()`, `hsl()`, or a named color. `var(--brand)`,
 `oklch(...)`, and `color-mix(...)` are fine on an individual `color=`, `stroke`,
 or `fill`, but not as a colormap stop or an `xyg.theme(palette=...)` entry. Both
@@ -453,12 +453,12 @@ already used, and say so with a warning.
 
 Palette entries follow the same rule as colormap stops: literal colors only —
 hex, `rgb()`, `hsl()`, or a named color. `var(--brand-500)` is fine on an
-individual `color=`, but not in a palette, because a palette is indexed and XY
+individual `color=`, but not in a palette, because a palette is indexed and XYG
 has to resolve each entry itself for density surfaces and for `to_svg()` /
 `to_png()`. Several `var()` entries would land on one fallback and merge
-distinct categories into a single color, so XY refuses them and says why.
+distinct categories into a single color, so XYG refuses them and says why.
 Resolve your token to a literal in Python and pass that. Named colors,
-`rgb()`, and `hsl()` are all fine — XY normalizes them to hex for you.
+`rgb()`, and `hsl()` are all fine — XYG normalizes them to hex for you.
 
 ~~~python demo exec toggle preview-code id=customize-palette-demo
 stages = ["Ingest", "Compact", "Query", "Replicate", "Snapshot", "Vacuum"]
@@ -564,7 +564,7 @@ def customize_colorbar_preview():
 
 Use a legend instead when colors identify discrete categories. Built-in
 colorbars are available in browser, SVG, native PNG, and Chromium output; host
-framework components passed through `render=` are not part of standalone XY
+framework components passed through `render=` are not part of standalone XYG
 exports. See [Colorbars](/docs/xy/components/colorbars/) for supported marks,
 orientation, inferred scales, and custom-component boundaries.
 
@@ -665,7 +665,7 @@ A short, rounded swatch makes an area-series legend read like its visible
 stroke instead of a generic color chip. A genuinely custom host legend is
 ordinary Reflex UI: hide the built-in legend
 with `xyg.legend(show=False)`, keep the chart in state, and render the controls
-beside it. Host-owned UI is not included in standalone XY exports.
+beside it. Host-owned UI is not included in standalone XYG exports.
 
 ## Tooltip
 

@@ -1,6 +1,6 @@
 ---
 title: Matplotlib (xyg.pyplot)
-description: Migrate common Matplotlib workflows through XY's pyplot compatibility layer.
+description: Migrate common Matplotlib workflows through XYG's pyplot compatibility layer.
 ---
 
 # Matplotlib (`xyg.pyplot`)
@@ -21,9 +21,9 @@ ax.legend()
 plt.show()
 ~~~
 
-The compatibility layer translates calls onto XY's declarative chart API. It
+The compatibility layer translates calls onto XYG's declarative chart API. It
 does not require Matplotlib at runtime and uses the same native compute,
-screen-bounded representations, notebook widget, and exporters as ordinary XY
+screen-bounded representations, notebook widget, and exporters as ordinary XYG
 charts.
 
 ## What Is Covered
@@ -32,7 +32,7 @@ The shim includes every method in Matplotlib 3.11.0's 2-D `Axes` **Plotting**
 inventory. A reviewed snapshot locks that surface, and CI checks it against the
 released `matplotlib==3.11.0` package. The shim also covers common stateful
 pyplot, multi-panel, ticks, scales, legends, colorbars, styles, and export
-workflows, plus XY-owned locator, formatter, date, colormap, `GridSpec`, and
+workflows, plus XYG-owned locator, formatter, date, colormap, `GridSpec`, and
 `FacetGrid` helpers.
 
 Coverage means that a plotting entry point exists and its supported contract
@@ -98,14 +98,14 @@ the shared coordinate system. Focused guides cover
 
 Three-dimensional, geographic, ternary, and custom projections; animations;
 GUI backends; arbitrary third-party Artist graphs; clipping/transform graphs;
-and material options that XY cannot honor fail with an actionable error
+and material options that XYG cannot honor fail with an actionable error
 instead of being silently ignored. Polar is the supported non-Cartesian
 projection, with the limits above.
 
 Consult the repository's
 [generated compatibility matrix](https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat-matrix.md)
 when a workflow depends on a specific option. Compatibility shims remain
-experimental and can change before XY 1.0.
+experimental and can change before XYG 1.0.
 
 ## Migration Path
 

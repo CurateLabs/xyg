@@ -112,7 +112,7 @@ def theme_component_preview():
 The preview separates two kinds of values:
 
 - `plot_background`, `grid_color`, `axis_color`, and `text_color` configure
-  standard XY chrome through `xyg.theme()`.
+  standard XYG chrome through `xyg.theme()`.
 - The chart class supplies neutral light and dark hex values for the demo
   surface and chrome. The area keeps one saturated rose stroke and matching
   30%-to-transparent fade so the theme choices stay visually distinct.
@@ -306,7 +306,7 @@ move together across the whole chart.
 | `--chart-focus` | Keyboard focus ring on the plot canvas, and on toolbar buttons unless `--chart-modebar-focus` is set | `#aa99ec` |
 
 You can define application-specific variables such as `--chart-accent` and use
-them from mark styles. XY validates the `var(...)` shape, then the browser
+them from mark styles. XYG validates the `var(...)` shape, then the browser
 resolves it against the chart root on each render.
 
 ## Cascading from host CSS
@@ -336,7 +336,7 @@ chart = xyg.area_chart(
 ~~~
 
 In Reflex, resolve reactive theme choices into ordinary classes, styles, or CSS
-variables. XY does not duplicate Reflex conditions or application state.
+variables. XYG does not duplicate Reflex conditions or application state.
 
 ## What survives each output
 
@@ -467,9 +467,9 @@ chart = xyg.area_chart(
 ~~~
 
 Tailwind users can apply configured `font-*`, `text-*`, and `leading-*`
-utilities through `class_name` in the same way. XY's default root typography
+utilities through `class_name` in the same way. XYG's default root typography
 lives in the low-priority browser chrome stylesheet, so those utilities win
-through the normal cascade. XY does not download, register, or rewrite font
+through the normal cascade. XYG does not download, register, or rewrite font
 files itself.
 
 Standalone HTML and Chromium PNG accept the font declaration through
@@ -512,8 +512,8 @@ chart.to_png(
 | Toolbar SVG | Preserves the computed family and font styles, but does not embed the font file. |
 | Standalone HTML | Supports `@font-face` and root `font-family` through `custom_css`. |
 | Chromium PNG | Supports the same browser CSS through `custom_css`. |
-| Native PNG | Uses XY's baked bitmap font; custom fonts are not supported. |
-| Python `to_svg()` | Uses XY's fixed system font stack and cannot embed a custom font. |
+| Native PNG | Uses XYG's baked bitmap font; custom fonts are not supported. |
+| Python `to_svg()` | Uses XYG's fixed system font stack and cannot embed a custom font. |
 
 ## Automatic dark mode for the toolbar
 

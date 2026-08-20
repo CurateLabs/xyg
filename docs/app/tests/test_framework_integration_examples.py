@@ -94,7 +94,7 @@ for heading, source in examples.items():
         assert calls == [(('chart-token',), {{'x': [3], 'y': [5]}})]
 
 assets = list(Path("assets/xy").glob("*.xyf"))
-assert assets, "The fixed chart example should compile a real static XY payload"
+assert assets, "The fixed chart example should compile a real static XYG payload"
 """
     result = subprocess.run(
         [sys.executable, "-c", runner],

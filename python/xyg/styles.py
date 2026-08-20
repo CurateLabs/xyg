@@ -1,9 +1,9 @@
-"""CSS-first styling for rendered XY marks.
+"""CSS-first styling for rendered XYG marks.
 
 DOM chrome already accepts arbitrary safe CSS declarations.  Marks are drawn
 by WebGL, SVG, and the native rasterizer, so they cannot honestly accept the
 entire browser cascade.  This module defines the smaller, internal CSS subset
-that all renderers can compile to XY's existing trace style vocabulary.
+that all renderers can compile to XYG's existing trace style vocabulary.
 
 The input contract is ordinary CSS: kebab-case property names and CSS values.
 Python snake_case aliases remain accepted for ergonomics and backwards
@@ -62,7 +62,7 @@ _AXIS_DASH_STYLES = frozenset({"solid", "dashed", "dotted", "dashdot"})
 _AXIS_DIRECTIONS = frozenset({"in", "out", "inout"})
 
 # Polyline stroke geometry. All three mark renderers (WebGL, SVG, native
-# rasterizer) draw these caps identically; XY defaults to `round` rather than
+# rasterizer) draw these caps identically; XYG defaults to `round` rather than
 # the CSS initial value `butt` because the native rasterizer is the reference
 # for static export and has always drawn round. Set the property to opt into
 # the CSS initial value.

@@ -388,7 +388,7 @@ Object.assign(ChartView.prototype, {
     // overlay/hit-test churn), which strands a live tooltip and an
     // `active: true` hover payload while the pointer roams the page. While a
     // pointer-owned readout is live (`_lastHoverXY` set and no keyboard
-    // prefix — keyboard traversal also stores an XY for exact replies, but
+    // prefix — keyboard traversal also stores an XYG for exact replies, but
     // its readout must survive mouse movement elsewhere; Escape owns it),
     // any pointerover whose target left the chart root runs the same exit.
     this._listen(document, "pointerover", (e) => {

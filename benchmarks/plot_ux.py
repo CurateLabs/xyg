@@ -23,8 +23,8 @@ from xyg._benchmark_theme import BENCHMARK_DARK_THEME, BENCHMARK_LIGHT_THEME
 GIB = 2**30
 
 STYLE: dict[str, dict[str, Any]] = {
-    "xy": {"name": "XY (density, default)", "color": "#6E56CF", "width": 3.0},
-    "xy-exact": {"name": "XY (density off)", "color": "#A594E8", "width": 2.5},
+    "xy": {"name": "XYG (density, default)", "color": "#6E56CF", "width": 3.0},
+    "xy-exact": {"name": "XYG (density off)", "color": "#A594E8", "width": 2.5},
     "plotly": {"name": "Plotly scattergl", "color": "#B9BBC6", "width": 2.0},
     "matplotlib": {"name": "Matplotlib WebAgg", "color": "#8B8D98", "width": 2.0},
     "datashader": {"name": "Datashader (Bokeh server)", "color": "#7FB3A6", "width": 2.0},

@@ -35,7 +35,7 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
-import xyg as xy
+import xyg
 from xyg.export import _bundled_js, _javascript_for_inline_script
 
 CHROMIUM_CANDIDATES = (
@@ -52,7 +52,7 @@ CHROMIUM_CANDIDATES = (
 @dataclass(frozen=True)
 class Case:
     name: str
-    chart: xy.Chart
+    chart: xyg.Chart
     marks: frozenset[str]
     min_live_pixels: int
     grid_shape: str
@@ -80,9 +80,9 @@ def _cases() -> list[Case]:
             for r in radius
         ]
     )
-    heatmap_contour = xy.polar_chart(
-        xy.heatmap(surface, x=theta, y=radius, name="surface"),
-        xy.contour(
+    heatmap_contour = xyg.polar_chart(
+        xyg.heatmap(surface, x=theta, y=radius, name="surface"),
+        xyg.contour(
             surface,
             x=theta,
             y=radius,
@@ -91,8 +91,8 @@ def _cases() -> list[Case]:
             width=2.0,
             name="isolines",
         ),
-        xy.theta_axis(unit="degrees"),
-        xy.r_axis(type_="log", domain=(1.0, 100.0)),
+        xyg.theta_axis(unit="degrees"),
+        xyg.r_axis(type_="log", domain=(1.0, 100.0)),
         width=520,
         height=520,
         title="Polar heatmap + contour",
@@ -100,8 +100,8 @@ def _cases() -> list[Case]:
 
     error_theta = [-90.0, -45.0, 0.0, 45.0, 90.0]
     error_radius = [2.0, 3.0, 2.5, 4.0, 3.2]
-    sector_hole_errors = xy.polar_chart(
-        xy.errorbar(
+    sector_hole_errors = xyg.polar_chart(
+        xyg.errorbar(
             error_theta,
             error_radius,
             yerr=[0.3, 0.5, 0.4, 0.6, 0.3],
@@ -111,14 +111,14 @@ def _cases() -> list[Case]:
             cap_size=10.0,
             name="uncertainty",
         ),
-        xy.scatter(error_theta, error_radius, color="#111827", size=8.0),
-        xy.theta_axis(
+        xyg.scatter(error_theta, error_radius, color="#111827", size=8.0),
+        xyg.theta_axis(
             unit="degrees",
             sector=(-110.0, 110.0),
             zero="N",
             direction="clockwise",
         ),
-        xy.r_axis(domain=(0.0, 5.0), hole=0.35),
+        xyg.r_axis(domain=(0.0, 5.0), hole=0.35),
         width=640,
         height=420,
         title="Sector + hole + polar error bars",
@@ -126,22 +126,22 @@ def _cases() -> list[Case]:
 
     categories = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
     values = [1.0, 5.0, 25.0, 120.0, 600.0, 180.0, 40.0, 7.0]
-    categorical_log_polygon = xy.polar_chart(
-        xy.line(
+    categorical_log_polygon = xyg.polar_chart(
+        xyg.line(
             categories + [categories[0]],
             values + [values[0]],
             color="#2563eb",
             width=3.0,
             name="range",
         ),
-        xy.scatter(categories, values, color="#f59e0b", size=9.0),
-        xy.theta_axis(
+        xyg.scatter(categories, values, color="#f59e0b", size=9.0),
+        xyg.theta_axis(
             grid_shape="linear",
             zero="N",
             direction="clockwise",
             style={"grid_color": "#10b981"},
         ),
-        xy.r_axis(
+        xyg.r_axis(
             type_="log",
             domain=(1.0, 1000.0),
             style={"grid_color": "#10b981"},
@@ -151,20 +151,20 @@ def _cases() -> list[Case]:
         title="Categorical theta + log r + polygon grid",
     )
 
-    symlog_origin = xy.polar_chart(
+    symlog_origin = xyg.polar_chart(
         # The opposite outer points deliberately create a diameter chord. The
         # annular clip must retain only its two visible end segments instead of
         # painting through the data-space-origin hole.
-        xy.line(
+        xyg.line(
             [0.0, 180.0],
             [100.0, 100.0],
             color="#7c3aed",
             width=5.0,
             name="clipped diameter",
         ),
-        xy.scatter([45.0], [0.0], color="#0f766e", size=12.0, name="symlog zero"),
-        xy.theta_axis(unit="degrees"),
-        xy.r_axis(
+        xyg.scatter([45.0], [0.0], color="#0f766e", size=12.0, name="symlog zero"),
+        xyg.theta_axis(unit="degrees"),
+        xyg.r_axis(
             type_="symlog",
             constant=1.0,
             domain=(-10.0, 100.0),
@@ -176,8 +176,8 @@ def _cases() -> list[Case]:
         title="Symlog r + data-space radial origin",
     )
 
-    composed_wedges = xy.polar_chart(
-        xy.bar(
+    composed_wedges = xyg.polar_chart(
+        xyg.bar(
             [0.0, 90.0, 180.0, 270.0],
             [100.0, 35.0, 70.0, 20.0],
             base=1.0,
@@ -187,31 +187,31 @@ def _cases() -> list[Case]:
             animation=False,
             name="range",
         ),
-        xy.line(
+        xyg.line(
             [0.0, 90.0, 180.0, 270.0, 360.0],
             [100.0, 35.0, 70.0, 20.0, 100.0],
             color="#f97316",
             width=2.0,
             name="outline",
         ),
-        xy.scatter(
+        xyg.scatter(
             [0.0, 90.0, 180.0, 270.0],
             [100.0, 35.0, 70.0, 20.0],
             color="#111827",
             size=7.0,
         ),
-        xy.theta_axis(unit="degrees", zero="N", direction="clockwise"),
-        xy.r_axis(type_="log", domain=(1.0, 100.0), hole=0.28),
+        xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
+        xyg.r_axis(type_="log", domain=(1.0, 100.0), hole=0.28),
         width=520,
         height=520,
         title="Composed polar bars + line + scatter",
     )
 
-    origin_descending_wedge = xy.polar_chart(
+    origin_descending_wedge = xyg.polar_chart(
         # Descending endpoint order exercises the other annular-strip
         # orientation. On this log axis the visible minimum sits at exactly
         # one third of the disc because r_origin=1 is one decade below it.
-        xy.bar(
+        xyg.bar(
             [0.0],
             [-990.0],
             base=1000.0,
@@ -221,8 +221,8 @@ def _cases() -> list[Case]:
             animation=False,
             name="descending annular bar",
         ),
-        xy.theta_axis(unit="degrees"),
-        xy.r_axis(type_="log", domain=(10.0, 1000.0), origin=1.0),
+        xyg.theta_axis(unit="degrees"),
+        xyg.r_axis(type_="log", domain=(10.0, 1000.0), origin=1.0),
         width=520,
         height=520,
         title="Descending bar + log-r origin",
@@ -356,7 +356,7 @@ const glTargets = {json.dumps(_rgb_targets(gl_colors))};
 const chromeTargets = {json.dumps(_rgb_targets(chrome_colors))};
 const bytes = Uint8Array.from(atob("{blob64}"), c => c.charCodeAt(0));
 try {{
-  const view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
+  const view = xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
   setTimeout(() => {{
     try {{
       view._drawNow();
@@ -573,7 +573,7 @@ def _validate_static(case: Case, figure: Any, output_dir: Path) -> tuple[int, in
     if case.name == "heatmap_contour" and b"<image" not in svg:
         raise AssertionError(f"{case.name}: SVG lost the inverse-rasterized heatmap")
 
-    png = figure.to_image(format="png", engine=xy.Engine.default, scale=1)
+    png = figure.to_image(format="png", engine=xyg.Engine.default, scale=1)
     if not png.startswith(b"\x89PNG\r\n\x1a\n"):
         raise AssertionError(f"{case.name}: native export is not a PNG")
     image = np.asarray(Image.open(io.BytesIO(png)).convert("RGB"))

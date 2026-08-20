@@ -9,7 +9,7 @@ and contributor contracts. The public documentation lives directly under
 engine: Rust owns every decision that changes shipped buffers or recorded
 outcomes, Python and Node are thin host bindings over one native C ABI
 (`libxyg_core`), and the browser client is paint/pick/gesture/transport only.
-The project began as a fork of `reflex-dev/xy`; **XY** appears in this tree
+The project began as a fork of `reflex-dev/xy`; **XYG** appears in this tree
 only as historical provenance, upstream comparison, inherited compatibility
 evidence, or license attribution. The canonical naming matrix and the staged
 identity migration live in [`design/xyg-naming.md`](design/xyg-naming.md).
@@ -65,7 +65,7 @@ Internal architecture: how the engine is built and why.
   flat per-axis viewport-navigation contract: capability/action/axis/source
   switches, `zoom_limits`, reset, and the semantic `ranges` view events.
 - [`reflex-integration.md`](design/reflex-integration.md) — the bundled
-  `xy[reflex]` integration design: figures as first-class Reflex components over a second
+  `xyg[reflex]` integration design: figures as first-class Reflex components over a second
   socket.io namespace.
 - [`reflex-shaped-api.md`](design/reflex-shaped-api.md) — how the core package
   feels Reflex-shaped while keeping no Reflex dependency.

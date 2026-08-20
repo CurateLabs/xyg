@@ -8,7 +8,7 @@ components:
 # Colorbars in Python
 
 A colorbar explains a continuous color scale. Add `xyg.colorbar()` after a
-compatible continuous-color mark and XY derives the validated domain,
+compatible continuous-color mark and XYG derives the validated domain,
 colormap, and a useful title from that mark. The built-in colorbar renders in
 the browser, SVG, native PNG, and Chromium PNG.
 
@@ -67,13 +67,13 @@ def colorbar_orientation_preview():
     )
 ~~~
 
-The last compatible continuous mark wins when a chart layers several scales. XY
+The last compatible continuous mark wins when a chart layers several scales. XYG
 derives colorbars for heatmaps, continuous scatter, hexbin, contour,
 continuous segments, and triangle meshes. A field or mark name supplies the
 default title; `title=` overrides it, `ticks=` supplies finite tick positions,
 and `orientation=` accepts `"vertical"` or `"horizontal"`.
 
-XY deliberately emits no built-in colorbar for constant or categorical color,
+XYG deliberately emits no built-in colorbar for constant or categorical color,
 RGB(A) heatmaps, or density-tier scatter whose per-row color channel is not
 resident in the browser. `colorbar(show=False)` removes an inferred scale.
 `xyg.pyplot` has its own Matplotlib-shaped colorbar-authoring API.
@@ -186,7 +186,7 @@ replacement = chart.chrome_components()["colorbar"]
 assert replacement is my_color_scale
 ~~~
 
-Core XY stores that object but does not mount it, and the shipped
+Core XYG stores that object but does not mount it, and the shipped
 `reflex_xy.chart` adapter does not currently mount custom chrome either. A
 custom adapter must read `chrome_components()` and place the returned component
 itself; standalone HTML, SVG, and PNG ignore the opaque replacement.
@@ -230,7 +230,7 @@ for the complete signature.
 ### How do I add a color scale to a chart in Python?
 
 Add `xyg.colorbar()` as a chart child after a continuous-color mark such as a
-heatmap or a scatter with a numeric `color=` channel. XY derives the validated
+heatmap or a scatter with a numeric `color=` channel. XYG derives the validated
 domain, colormap, and a default title from that mark, and the built-in colorbar
 renders in the browser, SVG, native PNG, and Chromium PNG.
 
@@ -249,7 +249,7 @@ share the same `title` and `ticks` API.
 
 ### Why is no colorbar showing on my chart?
 
-XY only derives colorbars for continuous-color marks: heatmaps, continuous
+XYG only derives colorbars for continuous-color marks: heatmaps, continuous
 scatter, hexbin, contour, continuous segments, and triangle meshes. Constant or
 categorical color, RGB(A) heatmaps, and density-tier scatter whose per-row
 color channel is not resident in the browser deliberately get no built-in

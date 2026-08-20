@@ -1,6 +1,6 @@
 ---
 title: Composition Model
-description: Understand how XY containers, children, shared props, and chart methods fit together.
+description: Understand how XYG containers, children, shared props, and chart methods fit together.
 ---
 
 # Composition Model

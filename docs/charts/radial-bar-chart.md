@@ -17,7 +17,7 @@ Jump to [a basic radial bar chart](#basic-radial-bar-chart),
 [partial gauges](#partial-gauges).
 
 The first example keeps that geometry intentionally small. The blocks after it
-combine XY's exportable sectors with ordinary Reflex layout for center values,
+combine XYG's exportable sectors with ordinary Reflex layout for center values,
 legends, rails, and summary statistics. This keeps the visualization reusable
 without forcing dashboard UI into the chart itself.
 
@@ -590,7 +590,7 @@ half.
 5. Hide axes and the native legend when Reflex supplies the surrounding labels.
 6. Keep raw data and derived spans outside the chart construction.
 
-XY does not add a background track or infer a maximum automatically. Explicit
+XYG does not add a background track or infer a maximum automatically. Explicit
 track marks make the maximum, thickness, color, and export behavior unambiguous.
 
 ## Inner Radius and Sector Geometry
@@ -676,7 +676,7 @@ degrees. Add `zero="N", direction="clockwise"` for compass bearings. With the
 default radian axis, both the center angles and widths must be radians.
 
 On `theta_axis()`, `domain=` is a compatibility alias for `sector=`; pass only
-one. XY clips marks and ticks to that interval and fits the visible arc to its
+one. XYG clips marks and ticks to that interval and fits the visible arc to its
 own bounding box.
 
 ## Interaction and Export

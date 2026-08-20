@@ -5,7 +5,7 @@ description: Configure domains, scale types, ticks, formatting, and named axes.
 
 # Axes and Scales
 
-Add `x_axis()` and `y_axis()` children to label and constrain a chart. XY
+Add `x_axis()` and `y_axis()` children to label and constrain a chart. XYG
 infers linear, time, and categorical scales from the bound columns.
 Datetime-like values select the time scale automatically, or you can make the
 contract explicit.
@@ -43,7 +43,7 @@ def scale_type_and_domain_demo():
     return reflex_xy.chart(chart, height="360px")
 ~~~
 
-Log domains must be positive. Date and datetime values use XY's canonical
+Log domains must be positive. Date and datetime values use XYG's canonical
 milliseconds-since-epoch coordinate system while their ticks render as time.
 String categories preserve a stable category order and receive categorical
 positions.

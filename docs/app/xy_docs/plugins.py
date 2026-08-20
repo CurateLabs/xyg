@@ -1,4 +1,4 @@
-"""XY-specific compiler assets for agent-readable documentation."""
+"""XYG-specific compiler assets for agent-readable documentation."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from xy_docs.constants import (
 )
 
 MARKDOWN_DIRECTIVE = (
-    "> For AI agents: the complete XY documentation index is at "
+    "> For AI agents: the complete XYG documentation index is at "
     "[llms.txt]({llms_txt_url}). Markdown versions are available by appending "
     "`.md` or sending `Accept: text/markdown`."
 )
@@ -114,11 +114,11 @@ def page_markdown_with_api_reference(
 
 
 def build_llms_txt(config: DocsSiteConfig) -> str:
-    """Build the comprehensive agent-readable index of public XY pages."""
+    """Build the comprehensive agent-readable index of public XYG pages."""
     lines = [
-        "# XY Documentation",
+        "# XYG Documentation",
         "",
-        "> XY is a high-performance plotting library for Python and Reflex. "
+        "> XYG is a high-performance plotting library for Python and Reflex. "
         "Use this index to find agent-readable Markdown docs.",
         "",
         "## Docs",
@@ -146,11 +146,11 @@ def build_llms_txt(config: DocsSiteConfig) -> str:
 
 
 def build_llms_full_txt(config: DocsSiteConfig) -> str:
-    """Combine all public XY pages into one agent-readable Markdown file."""
+    """Combine all public XYG pages into one agent-readable Markdown file."""
     lines = [
-        "# XY Documentation",
+        "# XYG Documentation",
         (
-            "This file stitches together the full XY documentation as Markdown "
+            "This file stitches together the full XYG documentation as Markdown "
             "for AI agents and LLM indexing."
         ),
         "",
@@ -182,7 +182,7 @@ def build_llms_full_txt(config: DocsSiteConfig) -> str:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class XYDocsAgentFilesPlugin(Plugin):
-    """Publish concise and complete agent-readable XY documentation."""
+    """Publish concise and complete agent-readable XYG documentation."""
 
     docs: DocsSiteConfig
 

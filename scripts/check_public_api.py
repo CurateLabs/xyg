@@ -168,7 +168,7 @@ def validate_public_api(pkg: ModuleType) -> list[str]:
     dir_names = set(dir(pkg))
     dir_missing = sorted(public_set - dir_names)
     if dir_missing:
-        errors.append(f"dir(xy) is missing public names: {dir_missing}")
+        errors.append(f"dir(xyg) is missing public names: {dir_missing}")
 
     for name, module_name in sorted(exports.items()):
         if not isinstance(name, str) or not isinstance(module_name, str):
@@ -331,7 +331,7 @@ def validate_pep561_marker(
     except OSError as exc:
         return [f"missing PEP 561 marker {marker_path}: {exc}"]
     if data != b"":
-        return [f"xy py.typed must be an empty full-package PEP 561 marker; got {data!r}"]
+        return [f"xyg py.typed must be an empty full-package PEP 561 marker; got {data!r}"]
     return []
 
 
@@ -378,7 +378,7 @@ def validate_static_typing_surface(
     missing = sorted(public_names - declared)
     if missing:
         errors.append(
-            f"xy public names have no static TYPE_CHECKING import or annotation: {missing}"
+            f"xyg public names have no static TYPE_CHECKING import or annotation: {missing}"
         )
     return errors
 
@@ -437,7 +437,7 @@ def _format_fresh_public_metadata_findings(label: str, result: dict[str, Any]) -
         )
     elif missing_from_dir:
         errors.append(
-            f"{label} dir(xy) is missing public names after a fresh import: {missing_from_dir}"
+            f"{label} dir(xyg) is missing public names after a fresh import: {missing_from_dir}"
         )
     return errors
 
@@ -461,10 +461,10 @@ def check_fresh_import_budget(
 
         third_party_imports = {sorted(HEAVY_THIRD_PARTY_IMPORTS)!r}
         t0 = time.perf_counter()
-        import xyg as xy
+        import xyg
         elapsed_ms = (time.perf_counter() - t0) * 1000
-        public_all = list(xy.__all__)
-        dir_names = set(dir(xy))
+        public_all = list(xyg.__all__)
+        dir_names = set(dir(xyg))
         missing_from_dir = sorted(name for name in public_all if name not in dir_names)
         eager = sorted(
             name
@@ -476,7 +476,7 @@ def check_fresh_import_budget(
             "eager": eager,
             "missing_from_dir": missing_from_dir,
             "public_all": public_all,
-            "version": xy.__version__,
+            "version": xyg.__version__,
         }}))
     """
     env = os.environ.copy()
@@ -547,7 +547,7 @@ def check_public_api(*, check_lazy_import: bool = True) -> list[str]:
         try:
             getattr(pkg, name)
         except Exception as exc:
-            errors.append(f"getattr(xy, {name!r}) failed: {exc!r}")
+            errors.append(f"getattr(xyg, {name!r}) failed: {exc!r}")
 
     return errors
 

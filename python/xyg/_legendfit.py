@@ -1,7 +1,7 @@
 """Least-occupied legend placement — the engine behind ``loc="best"``.
 
 `best` is Matplotlib's default `loc`, so it is the spelling users reach for
-first. XY resolves it **at payload-build time** into one of the concrete
+first. XYG resolves it **at payload-build time** into one of the concrete
 locations, which is what makes the three renderers agree: the browser client,
 the SVG writer and the raster writer all receive a settled `loc` and none of
 them needs its own occupancy model. §28 — the choice is recorded on the wire

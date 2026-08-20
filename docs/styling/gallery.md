@@ -1,6 +1,6 @@
 ---
 title: Advanced Styling Gallery
-description: Inspect advanced XY styling paths for scalar fields, uncertainty, explicit geometry, facets, reduction badges, and custom chrome.
+description: Inspect advanced XYG styling paths for scalar fields, uncertainty, explicit geometry, facets, reduction badges, and custom chrome.
 ---
 
 # Advanced Styling Gallery
@@ -457,7 +457,7 @@ def reduction_badge_preview():
 ## Styled facets
 
 `facet_chart` applies the same mark, axis, annotation, theme, and chart-slot
-styles to every panel. XY's standalone wrapper owns the grid, so wrapper
+styles to every panel. XYG's standalone wrapper owns the grid, so wrapper
 layout selectors belong in export CSS.
 
 ~~~python demo exec
@@ -540,7 +540,7 @@ html = styled_facets.to_html(
 
 ## Custom legend and styled cursor tooltip
 
-XY's built-in tooltip already follows the pointer and can be fully restyled.
+XYG's built-in tooltip already follows the pointer and can be fully restyled.
 This example keeps that client-owned positioning while rendering an interactive
 host-owned legend below the chart. Reflex hover callbacks expose the resolved
 row rather than pointer coordinates, so a state-backed tooltip cannot follow

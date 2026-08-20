@@ -1,4 +1,4 @@
-"""Prerender every public XY documentation route in production builds."""
+"""Prerender every public XYG documentation route in production builds."""
 
 from __future__ import annotations
 

@@ -504,7 +504,7 @@ Before tagging an `xyg-v*` release:
 Every `xy` release carries the `reflex_xy` Python package and JSX wrapper. The
 wrapper links to the render client in the same installed distribution, so
 client, kernel, and framework bridge share one version. Plain `xy` must not
-install Reflex; `xy[reflex]` must install the declared supported floor.
+install Reflex; `xyg[reflex]` must install the declared supported floor.
 Release smoke tests install Reflex, import `reflex_xy`, and assert that its
 reported version matches the `xy` distribution version.
 

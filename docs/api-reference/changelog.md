@@ -1,6 +1,6 @@
 ---
 title: Changelog
-description: Review migration notes and notable changes in the XY alpha series.
+description: Review migration notes and notable changes in the XYG alpha series.
 ---
 
 # Changelog

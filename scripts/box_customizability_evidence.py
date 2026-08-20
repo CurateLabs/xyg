@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xyg as xy
+import xyg
 
 
 def samples() -> list[np.ndarray]:
@@ -19,8 +19,8 @@ def samples() -> list[np.ndarray]:
     ]
 
 
-def chart(mode: str) -> xy.Chart:
-    marks: list[xy.Component] = []
+def chart(mode: str) -> xyg.Chart:
+    marks: list[xyg.Component] = []
     colors = ["#818cf8", "#38bdf8", "#2dd4bf"]
     names = ["Core", "Growth", "Enterprise"]
     for position, (values, color, name) in enumerate(zip(samples(), colors, names, strict=True)):
@@ -49,7 +49,7 @@ def chart(mode: str) -> xy.Chart:
                 "marker-shape": "diamond",
             }
         marks.append(
-            xy.box(
+            xyg.box(
                 values,
                 x=np.full(len(values), position),
                 name=name,
@@ -61,9 +61,9 @@ def chart(mode: str) -> xy.Chart:
             )
         )
 
-    return xy.box_chart(
+    return xyg.box_chart(
         *marks,
-        xy.x_axis(
+        xyg.x_axis(
             domain=(-0.65, 2.65),
             tick_values=[0, 1, 2],
             tick_labels=names,
@@ -75,7 +75,7 @@ def chart(mode: str) -> xy.Chart:
                 "tick_label_size": 13,
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             label="Response time (ms)",
             domain=(25, 110),
             style={
@@ -87,8 +87,8 @@ def chart(mode: str) -> xy.Chart:
                 "label_color": "#cbd5e1",
             },
         ),
-        xy.legend(show=False),
-        xy.theme(
+        xyg.legend(show=False),
+        xyg.theme(
             background="#0b1120",
             plot_background="#0b1120",
             text_color="#e2e8f0",

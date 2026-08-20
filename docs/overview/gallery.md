@@ -1,6 +1,6 @@
 ---
 title: Chart Gallery
-description: Browse every chart type and visual pattern available in XY.
+description: Browse every chart type and visual pattern available in XYG.
 ---
 
 # Chart Gallery

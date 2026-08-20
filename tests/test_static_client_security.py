@@ -102,7 +102,7 @@ def test_chrome_visual_defaults_are_a_defeatable_where_stylesheet() -> None:
     background/color that would beat a utility class)."""
     for path, text in THEME_FILES:
         assert "@layer base{" in text, (
-            f"{path} leaves XY defaults unlayered, which outranks Tailwind utilities"
+            f"{path} leaves XYG defaults unlayered, which outranks Tailwind utilities"
         )
         for rule in _CHROME_WHERE_RULES:
             assert rule in text, f"{path} missing defeatable chrome rule {rule!r}"

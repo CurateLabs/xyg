@@ -8,7 +8,7 @@ components:
 # Radar Charts in Python
 
 A **radar chart** (also called a spider chart, spider plot, or radar plot)
-compares several measurements across the same categorical dimensions. XY places
+compares several measurements across the same categorical dimensions. XYG places
 the categories at evenly spaced angles, draws one spoke for each category, and
 closes every series across the circular seam.
 
@@ -121,7 +121,7 @@ Radar charts have a deliberately narrow input contract:
 - Put values directly on the mark. Column-name strings are not resolved because
   the category list supplies the angular positions.
 
-XY raises `ValueError` for a category/value mismatch instead of silently
+XYG raises `ValueError` for a category/value mismatch instead of silently
 dropping a dimension or drawing a malformed polygon.
 
 ## Configure the Scale

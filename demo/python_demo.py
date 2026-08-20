@@ -14,10 +14,10 @@ from pathlib import Path
 
 import numpy as np
 
-import xyg as xy
+import xyg
 
 
-def spiral_galaxy_scatter() -> xy.Chart:
+def spiral_galaxy_scatter() -> xyg.Chart:
     """300k-point spiral galaxy, color-encoded by distance from center."""
     rng = np.random.default_rng(42)
     n = 300_000
@@ -27,12 +27,12 @@ def spiral_galaxy_scatter() -> xy.Chart:
     theta = arm * (2 * np.pi / arms) + r * 0.55 + rng.normal(0, 0.18, n)
     x = r * np.cos(theta) + rng.normal(0, 0.12, n)
     y = r * np.sin(theta) + rng.normal(0, 0.12, n)
-    return xy.scatter_chart(
-        xy.scatter(x, y, color=r, colormap="magma", size=2.5, opacity=0.55, name="stars"),
-        xy.x_axis(label="x (kpc)"),
-        xy.y_axis(label="y (kpc)"),
-        xy.tooltip(fields=["x", "y"], format={"x": ".2f", "y": ".2f"}),
-        title="XY Python demo — 300k-point spiral galaxy (zoom, pan, hover)",
+    return xyg.scatter_chart(
+        xyg.scatter(x, y, color=r, colormap="magma", size=2.5, opacity=0.55, name="stars"),
+        xyg.x_axis(label="x (kpc)"),
+        xyg.y_axis(label="y (kpc)"),
+        xyg.tooltip(fields=["x", "y"], format={"x": ".2f", "y": ".2f"}),
+        title="XYG Python demo — 300k-point spiral galaxy (zoom, pan, hover)",
         width="100%",
         height=560,
     )

@@ -13,7 +13,7 @@ instead of treating the implementation alone as authoritative.
 
 ## Product North Star
 
-XY is being built to outperform every competing charting library and become
+XYG is being built to outperform every competing charting library and become
 the best overall charting system for Python. That goal spans every chart type
 and every data scale, from a handful of values to billions of rows, across the
 two dimensions users should not have to trade off: performance and
@@ -22,7 +22,7 @@ customization.
 Treat every competitor lead as a concrete product gap. Work that affects a
 user-visible capability should:
 
-- compare XY with the relevant leaders, including Matplotlib, Seaborn, Plotly,
+- compare XYG with the relevant leaders, including Matplotlib, Seaborn, Plotly,
   Bokeh, Altair, Datashader, HoloViews/hvPlot, and emerging alternatives;
 - add or extend reproducible evidence across small, medium, large, and massive
   data, covering startup, build and render time, interaction, memory, payload
@@ -32,7 +32,7 @@ user-visible capability should:
 - commit the environment, raw results, output contracts, and reproduction
   commands needed to inspect the win and catch regressions.
 
-The goal is not to win one large-scatter benchmark. XY should become the
+The goal is not to win one large-scatter benchmark. XYG should become the
 library users choose for ordinary charts, massive data, every chart family,
 notebooks, applications, static output, performance, and complete design
 control.
@@ -71,7 +71,7 @@ control.
   `reflex_xy`; design: `spec/design/reflex-integration.md`). Chart
   data rides the app's own websocket as a second socket.io namespace;
   figures live in a per-process registry rebuilt from Reflex state on miss.
-  The source ships in every `xy` artifact; the `xy[reflex]` extra selects the
+  The source ships in every `xy` artifact; the `xyg[reflex]` extra selects the
   supported Reflex floor while plain `xy` keeps no Reflex runtime dependency.
   The core `python/xyg` package must never import Reflex. The render client is
   linked out of that package at app compile (no second copy to drift).

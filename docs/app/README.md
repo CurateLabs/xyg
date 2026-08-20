@@ -1,4 +1,4 @@
-# XY Docs
+# XYG Docs
 
 This Reflex app renders the public Markdown files in the parent `docs/`
 directory with the same `reflex-site-shared` shell, Markdown pipeline, and
@@ -39,7 +39,7 @@ tabs. Add `# --- chart ---` after a hardcoded data section only when that
 section exceeds 10 nonblank lines; it then renders in a separate Data tab. Use
 `python demo-only exec` only when the code is intentionally shown elsewhere.
 Keep examples deterministic, small, and valid without external services.
-Static XY payloads generated during compilation are written below `assets/xy/`
+Static XYG payloads generated during compilation are written below `assets/xy/`
 and must not be committed.
 
 ## Checks

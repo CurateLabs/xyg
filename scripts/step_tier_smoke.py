@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xyg as xy
+import xyg
 from xyg.export import _bundled_js
 
 CHROMIUM_CANDIDATES = [
@@ -54,7 +54,7 @@ def build_page() -> str:
     x = np.arange(n, dtype=np.float64)
     rng = np.random.default_rng(7)
     y = np.cumsum(rng.normal(size=n))
-    chart = xy.chart(xy.step(x, y, name="steps", where="post"), title="step tier smoke")
+    chart = xyg.chart(xyg.step(x, y, name="steps", where="post"), title="step tier smoke")
     spec, blob = chart.figure().build_payload()
     assert spec["traces"][0]["tier"] == "decimated", spec["traces"][0]["tier"]
     assert spec["traces"][0]["style"].get("step") == "post"
@@ -73,7 +73,7 @@ def build_page() -> str:
     return d;
   }}
   try {{
-    const view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
+    const view = xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
     setTimeout(() => {{
       try {{
         const g = view.gpuTraces[0];

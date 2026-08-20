@@ -241,7 +241,7 @@ damping=..., mass=...)` supplies a bounded spring policy.
 Live Reflex state rebuilds and notebook append refreshes update the mounted
 chart in place. Use the button in this example to reorder retained accounts,
 insert two accounts, remove two, and sharply change their values. Stable keys
-let XY distinguish each case:
+let XYG distinguish each case:
 
 ~~~python demo exec toggle preview-code id=animation-keyed-update-demo
 import reflex as rx
@@ -363,7 +363,7 @@ def keyed_replacement_demo():
 
 `key=` accepts an array or a `data=` column name on line, area, scatter, bar,
 column, error-band, and errorbar marks. Values must be present, supported,
-unique, and the same length as the logical rows. XY validates these conditions
+unique, and the same length as the logical rows. XYG validates these conditions
 before rendering. For a replacement without stable identity, choose
 `match="index"` explicitly.
 
@@ -712,7 +712,7 @@ Standalone HTML dispatches local `xy:animation_start` and
 ## Large data stays bounded
 
 Key matching is intentionally limited to direct representations. Above the
-matching limit, and for decimated lines or density grids, XY snaps to the new
+matching limit, and for decimated lines or density grids, XYG snaps to the new
 screen-bounded representation instead of constructing a browser map for every
 canonical row. Density and level-of-detail (LOD) tier handoffs retain their separate
 stale-while-refine blending and never flash blank.

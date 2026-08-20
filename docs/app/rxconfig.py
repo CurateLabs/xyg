@@ -1,4 +1,4 @@
-"""Reflex configuration for the XY documentation site."""
+"""Reflex configuration for the XYG documentation site."""
 
 import reflex as rx
 from reflex_site_shared.plugins import SharedSiteStylesPlugin

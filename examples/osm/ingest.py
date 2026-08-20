@@ -35,7 +35,7 @@ import numpy as np
 _HERE = os.path.dirname(__file__)
 _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "python"))
-import xyg as xy  # noqa: E402
+import xyg  # noqa: E402
 from xyg._ooc import open_f64  # noqa: E402
 
 
@@ -73,7 +73,7 @@ def bench(xcol: np.memmap, ycol: np.memmap) -> None:
     print(f"\n=== rendering {n:,} points (out-of-core density scatter) ===", flush=True)
 
     t0 = time.perf_counter()
-    fig = xy.chart(xy.scatter(x=xcol, y=ycol, density=True)).figure()
+    fig = xyg.chart(xyg.scatter(x=xcol, y=ycol, density=True)).figure()
     print(
         f"figure build (ingest + zone maps, one disk scan): {time.perf_counter() - t0:.0f}s",
         flush=True,

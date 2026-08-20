@@ -2,7 +2,7 @@
 
 **Status:** implemented core contract; adapter boundary clarified.
 
-Goal: make XY feel like a Reflex component tree: declarative,
+Goal: make XYG feel like a Reflex component tree: declarative,
 children-first, styleable with normal CSS/Tailwind, and easy to wrap in Reflex
 later. The core package must still have **no Reflex dependency** and must keep
 the notebook/static export ergonomics users already expect: `.show()`,
@@ -13,7 +13,7 @@ and overlays; this one defines the public API shape and styling contract.
 
 ## 1. Summary
 
-XY should expose a small framework-agnostic component model:
+XYG should expose a small framework-agnostic component model:
 
 ```python
 import xyg
@@ -54,7 +54,7 @@ chart.to_png("chart.png")    # fast browser-free native PNG
 chart.to_png("browser.png", engine=xyg.Engine.chromium)  # browser CSS/WebGL fidelity
 ```
 
-The tree is not a Reflex tree. It is a pure XY Python object graph that
+The tree is not a Reflex tree. It is a pure XYG Python object graph that
 can be rendered by notebooks, static HTML export, and future adapters:
 
 ```mermaid
@@ -77,7 +77,7 @@ flowchart LR
 
 ### Reflex owns application behavior
 
-XY is a renderer, not a second reactive framework. A Reflex integration owns:
+XYG is a renderer, not a second reactive framework. A Reflex integration owns:
 
 - `Var` expressions and computed state;
 - conditional values and conditional styles;
@@ -85,9 +85,9 @@ XY is a renderer, not a second reactive framework. A Reflex integration owns:
 - component composition, responsive application layout, and lifecycle;
 - application themes, design tokens, and reusable style systems.
 
-XY accepts the concrete values, CSS declarations, classes, data buffers, and
+XYG accepts the concrete values, CSS declarations, classes, data buffers, and
 callbacks supplied by that integration. It emits render output and event
-payloads. XY must not add parallel `field()`, `condition()`, selection-state,
+payloads. XYG must not add parallel `field()`, `condition()`, selection-state,
 event-action, layout, or template DSLs; doing so would create two competing
 sources of state and composition semantics.
 
@@ -97,7 +97,7 @@ sources of state and composition semantics.
   in Reflex, Dash, Streamlit, or plain web apps, but it imports none of them.
 - **Adapters use the thinnest possible dependency.** The bundled
   `reflex_xy` namespace uses full Reflex because that is the supported public
-  integration point today, but keeps it behind the `xy[reflex]` extra. Plain
+  integration point today, but keeps it behind the `xyg[reflex]` extra. Plain
   `xy` users never inherit the framework dependency. A supported
   core/component-only package would be a future improvement.
 - **Declarative by default.** Component construction records intent. Rendering
@@ -109,10 +109,10 @@ sources of state and composition semantics.
   cannot fork.
 - **CSS vocabulary styles chrome and marks.** DOM chrome receives the normal
   browser cascade. WebGL/native/SVG marks accept a smaller documented CSS
-  appearance subset which XY compiles to renderer values. Marks remain pixels,
+  appearance subset which XYG compiles to renderer values. Marks remain pixels,
   not selector-addressable DOM nodes.
 - **Data never lives in framework state.** Component props describe bindings and
-  styling. Large canonical arrays stay in XY column storage and ship as
+  styling. Large canonical arrays stay in XYG column storage and ship as
   binary buffers.
 - **Notebook and static export stay first-class.** The declarative API is not
   only for web apps. It must render in Jupyter and export to standalone HTML.
@@ -244,7 +244,7 @@ widgets remain an explicit `widget()` / `show(display="widget")` choice.
 
 ## 4. Styling Contract
 
-XY should support styling through three layers, in this order:
+XYG should support styling through three layers, in this order:
 
 1. **CSS variables** for theme tokens used by canvas and DOM chrome.
 2. **Class hooks** for DOM chrome and wrapper styling.
@@ -271,8 +271,8 @@ Recommended token surface:
 | `--chart-modebar-active` | Modebar active/hovered button background |
 | `--chart-modebar-focus` | Modebar keyboard focus ring (falls back to `--chart-focus`) |
 
-`--chart-accent` is not an XY token; the renderer never reads it. It is a
-caller-defined convention variable that XY only passes through when a mark
+`--chart-accent` is not an XYG token; the renderer never reads it. It is a
+caller-defined convention variable that XYG only passes through when a mark
 color is written as `var(--chart-accent)`.
 
 Example:
@@ -535,15 +535,15 @@ The component tree compiles once and can target multiple renderers.
 | Notebook/static HTML repr | `_repr_html_()` / `show(display="html")` | Self-contained fallback that reuses standalone export; auto-selected by `show()` on WASM kernels (JupyterLite/Pyodide), whose prebuilt frontends cannot load the anywidget extension |
 | Standalone HTML | `to_html()` / optional `html()` alias | Self-contained, no Python callbacks |
 | Static PNG | `to_png()` | Fast native default; optional Chromium standalone screenshot |
-| Reflex | bundled `reflex_xy` namespace via `xy[reflex]` | Uses the smallest supported Reflex surface; core does not import Reflex |
+| Reflex | bundled `reflex_xy` namespace via `xyg[reflex]` | Uses the smallest supported Reflex surface; core does not import Reflex |
 | Future server app | generic payload/message routes | Same wire protocol |
 
-This keeps the API framework-shaped without making XY a framework
+This keeps the API framework-shaped without making XYG a framework
 package.
 
 ## 8. The Bundled Reflex Adapter
 
-XY core:
+XYG core:
 
 ```python
 chart = xyg.chart(
@@ -578,7 +578,7 @@ app may import full Reflex because it is a Reflex app. The bundled
 `reflex_xy` namespace uses the supported full-Reflex floor today; a smaller
 future framework surface remains preferable if Reflex exposes one:
 
-- Current: keep `reflex` optional behind `xy[reflex]`.
+- Current: keep `reflex` optional behind `xyg[reflex]`.
 - Future: depend on a supported Reflex core/component package if Reflex
   provides one.
 
@@ -588,7 +588,7 @@ Dependency rule:
 
 ```text
 pip install xyg                 # never installs Reflex
-pip install "xy[reflex]"       # adds the supported full-Reflex floor
+pip install "xyg[reflex]"       # adds the supported full-Reflex floor
 ```
 
 The integration can assume it is running inside a Reflex app when the user
@@ -604,7 +604,7 @@ of the API before implementation details are locked.
 ### 9.1 Notebook-First Chart That Also Exports
 
 This is the core promise: the declarative API feels component-shaped, but it
-still works like today's notebook-friendly XY objects.
+still works like today's notebook-friendly XYG objects.
 
 ```python
 import numpy as np
@@ -702,7 +702,7 @@ framework-independent.
 
 ### 9.3 Reflex App With The Bundled Adapter
 
-The adapter consumes XY objects; XY itself does not import Reflex. This example
+The adapter consumes XYG objects; XYG itself does not import Reflex. This example
 imports Reflex because it is user application code, not because the core
 charting package depends on Reflex.
 
@@ -737,7 +737,7 @@ def page():
 ```
 
 The adapter owns the registry and event forwarding. Its full Reflex dependency
-is optional behind `xy[reflex]`; core XY owns the declarative chart object,
+is optional behind `xyg[reflex]`; core XYG owns the declarative chart object,
 binary payload, and renderer.
 
 ## 10. Compatibility Contract
@@ -768,7 +768,7 @@ Now part of the core alpha contract:
 Future dependency refinement:
 
 - Keep the adapter bundled as `reflex_xy` in the `xy` distribution and
-  available through `xy[reflex]`; if Reflex exposes a smaller supported
+  available through `xyg[reflex]`; if Reflex exposes a smaller supported
   core/component package, use that package instead of the full framework.
 
 Should avoid:
@@ -816,7 +816,7 @@ Should avoid:
 ### Phase 5: Bundled Reflex Adapter (Shipped)
 
 - Ship the `reflex_xy` namespace in the `xy` distribution.
-- Keep full Reflex optional behind `xy[reflex]`.
+- Keep full Reflex optional behind `xyg[reflex]`.
 - Use registry tokens for large figures.
 - Use the shared websocket namespace for the binary data plane.
 - Map bounded semantic events to Reflex handlers.

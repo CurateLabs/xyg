@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/xy-sdf-binned-scatter.png" alt="XY-shaped probability field shown as a binned scatter chart." width="521">
+  <img src="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/xy-sdf-binned-scatter.png" alt="XYG-shaped probability field shown as a binned scatter chart." width="521">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
   <a href="https://mybinder.org/v2/gh/CurateLabs/xyg/main?urlpath=lab/tree/examples" target="_blank" rel="noopener noreferrer"><img src="https://mybinder.org/badge_logo.svg" alt="Launch the examples on Binder" /></a>
 </p>
 
-XY is an extremely fast, interactive, customizable Python charting library for
+XYG is an extremely fast, interactive, customizable Python charting library for
 the web, notebooks, and static exports.
 
 Charts are composed declaratively or through matplotlib conventions. You can
@@ -21,15 +21,15 @@ Rust core computes only what the screen needs to display, based on its
 resolution. Pan, zoom, hover, and selection can show full details by running the
 same process for the new range, and a selection returns the original rows.
 
-With XY we rendered the entirety of OpenStreetMap — a **10,000,000,000 point** dataset. [See the example →](https://github.com/CurateLabs/xyg/tree/main/examples/osm)
+With XYG we rendered the entirety of OpenStreetMap — a **10,000,000,000 point** dataset. [See the example →](https://github.com/CurateLabs/xyg/tree/main/examples/osm)
 
 > [!IMPORTANT]
-> **XY is in alpha** and is receiving frequent enhancements.
+> **XYG is in alpha** and is receiving frequent enhancements.
 > ⭐️ Star the repo to follow the progress.
 
-## Is XY right for me?
+## Is XYG right for me?
 
-XY is for Python users who want one flexible charting library for everything
+XYG is for Python users who want one flexible charting library for everything
 from everyday plots to custom application visuals and large datasets. Build a
 chart once, then use it in notebooks and web apps or export it as HTML, PNG,
 SVG, or PDF.
@@ -165,17 +165,17 @@ their last chunk lands.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/ux-render-time-dark.png">
-    <img src="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/ux-render-time.png" alt="Time until every point is on screen, 10k to 100M points, for XY, Matplotlib, and Plotly. Lower is better." width="1200">
+    <img src="https://raw.githubusercontent.com/CurateLabs/xyg/main/spec/assets/ux-render-time.png" alt="Time until every point is on screen, 10k to 100M points, for XYG, Matplotlib, and Plotly. Lower is better." width="1200">
   </picture>
 </p>
 
-XY holds **0.071 s at 10k and 0.081 s at 100M**, flat across four orders of
+XYG holds **0.071 s at 10k and 0.081 s at 100M**, flat across four orders of
 magnitude, because above 200k rows it draws a screen-bounded density surface
 instead of one marker per row, and zoom drills back to exact rows. Every
 exact-marker path scales with N instead: Matplotlib crosses a second at ~3M
 and reaches 13.4 s at 50M; Plotly crosses at ~2.5M and reaches 9.8 s at 25M.
 
-The pale line is XY with `density=False`: the same engine drawing one marker
+The pale line is XYG with `density=False`: the same engine drawing one marker
 per row, no aggregation credit. It renders 100M exact markers in 1.34 s on
 5.26 GiB.
 
@@ -185,9 +185,9 @@ Matplotlib draws at 100M but never resolves the zoom that follows.
 
 | Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| *XY speedup* | *1×* | *2×* | *3×* | *4×* | *9×* | *16×* | *34×* | *89×* | *177×* | *—* |
-| **XY** | **0.071** | **0.072** | **0.075** | **0.084** | **0.083** | **0.089** | **0.083** | **0.077** | **0.076** | **0.081** |
-| XY (`density=False`) | 0.085 | 0.074 | 0.087 | 0.098 | 0.111 | 0.144 | 0.206 | 0.424 | 0.645 | 1.343 |
+| *XYG speedup* | *1×* | *2×* | *3×* | *4×* | *9×* | *16×* | *34×* | *89×* | *177×* | *—* |
+| **XYG** | **0.071** | **0.072** | **0.075** | **0.084** | **0.083** | **0.089** | **0.083** | **0.077** | **0.076** | **0.081** |
+| XYG (`density=False`) | 0.085 | 0.074 | 0.087 | 0.098 | 0.111 | 0.144 | 0.206 | 0.424 | 0.645 | 1.343 |
 | Matplotlib (WebAgg) | 0.086 | 0.115 | 0.224 | 0.357 | 0.758 | 1.424 | 2.804 | 6.838 | 13.385 | ✕ |
 | Plotly (scattergl) | 0.341 | 0.373 | 0.477 | 0.614 | 1.033 | 1.785 | 3.367 | 9.794 | ✕ | ✕ |
 
@@ -197,9 +197,9 @@ anything.
 
 | Points | 10k | 100k | 500k | 1M | 2.5M | 5M | 10M | 25M | 50M | 100M |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| *XY advantage* | *1.8×* | *1.7×* | *1.9×* | *2.1×* | *2.1×* | *2.4×* | *2.6×* | *2.9×* | *2.8×* | *—* |
-| **XY** | **0.05** | **0.05** | **0.06** | **0.07** | **0.13** | **0.19** | **0.32** | **0.70** | **1.36** | **2.58** |
-| XY (`density=False`) | 0.05 | 0.05 | 0.07 | 0.10 | 0.18 | 0.31 | 0.57 | 1.35 | 2.66 | 5.26 |
+| *XYG advantage* | *1.8×* | *1.7×* | *1.9×* | *2.1×* | *2.1×* | *2.4×* | *2.6×* | *2.9×* | *2.8×* | *—* |
+| **XYG** | **0.05** | **0.05** | **0.06** | **0.07** | **0.13** | **0.19** | **0.32** | **0.70** | **1.36** | **2.58** |
+| XYG (`density=False`) | 0.05 | 0.05 | 0.07 | 0.10 | 0.18 | 0.31 | 0.57 | 1.35 | 2.66 | 5.26 |
 | Matplotlib (WebAgg) | 0.09 | 0.09 | 0.12 | 0.15 | 0.28 | 0.46 | 0.84 | 2.06 | 3.85 | ✕ |
 | Plotly (scattergl) | 0.21 | 0.18 | 0.28 | 0.36 | 0.60 | 1.05 | 1.86 | 4.70 | ✕ | ✕ |
 
@@ -210,7 +210,7 @@ For the environment, methodology, per-size videos, and raw results, see the
 [benchmark runbook](https://github.com/CurateLabs/xyg/blob/main/benchmarks/README.md) and
 [competitive benchmark specification](https://github.com/CurateLabs/xyg/blob/main/spec/benchmarks/results.md).
 
-## Embed XY in a Reflex app
+## Embed XYG in a Reflex app
 
 The Reflex integration bundled with `xyg` turns any XYG chart into a regular
 Reflex component, with no JavaScript, iframe, or separate chart service.
@@ -220,7 +220,7 @@ Install the `reflex` extra to select a compatible framework version:
 pip install "xyg[reflex]"
 
 # or, with uv
-uv add "xy[reflex]"
+uv add "xyg[reflex]"
 ```
 
 The import namespace remains `reflex_xy`. Register the integration once:
@@ -282,7 +282,7 @@ and setup.
 ## How it works
 
 Most chart stacks serialize every value as JSON and ask the browser to draw
-every mark. XY keeps exact values in a `ColumnStore`, computes a level of detail
+every mark. XYG keeps exact values in a `ColumnStore`, computes a level of detail
 in Rust, and transfers typed binary buffers. Decimated and density views are
 bounded by the visible result.
 

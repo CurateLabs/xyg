@@ -80,6 +80,14 @@ stage lands. Proposed targets are recorded so the later rename is mechanical.
 | Public documentation origin | inherited `https://reflex.dev/docs/xy` | explicit CurateLabs-owned `XY_DOCS_PUBLIC_URL` deployment configuration | unset in preview/source builds; canonical, sitemap, social, and absolute public agent URLs are omitted rather than invented; generated Markdown retains only its truthful host-relative `/docs/xy/llms.txt` discovery link |
 | Upstream-inherited corpus/fixtures | `scripts/rename_fc_to_xy.py`, matplotlib compat corpus labels | permitted historical evidence | never (provenance) |
 
+The host-relative `/docs/xy/` route, `xy-*` DOM/event/CSS prefixes,
+`xy_client.js` asset name, and `packages/xy-node/` source directory are
+compatibility or protocol surfaces rather than the Python product identity.
+They remain unchanged in #51 and must never be presented as the current
+package, import namespace, or product brand. The browser compatibility global
+likewise remains only `window.xy`, `xy.renderStandalone`, and `xy.decodeFrame`
+until its separately versioned migration.
+
 ## 3. Migration order (no mixed intermediate artifact)
 
 The rule: **no published artifact may combine an old host wrapper with a

@@ -621,7 +621,7 @@ fn fill_poly(
 type StrokeSegment = ((f32, f32), (f32, f32));
 
 // stroke-linecap, in the wire order python/xyg/styles.py compiles:
-// butt/round/square. XY's default is round, which is what the clamped segment
+        // butt/round/square. XYG's default is round, which is what the clamped segment
 // distance field below has always drawn, so `stroke` stays the fast path and
 // byte-for-byte unchanged; the other two route through `stroke_shaped`.
 //
@@ -752,7 +752,7 @@ fn stroke(
     stroke_with_threads(cv, pts, width, rgba, closed, dash, None);
 }
 
-/// Stroke honoring an explicit cap. `round` is XY's default and is exactly what
+    /// Stroke honoring an explicit cap. `round` is XYG's default and is exactly what
 /// the capsule field above draws, so it delegates and the common path keeps its
 /// banding, its scratch-buffer reuse, and its bytes. Interior vertices always
 /// get a round join, which is what the capsule field produced before the cap
@@ -3450,7 +3450,7 @@ mod tests {
     }
 
     /// stroke-linecap changes what is painted past the endpoint, and round —
-    /// XY's default — must keep drawing exactly what it drew before caps
+    /// XYG's default — must keep drawing exactly what it drew before caps
     /// existed, because it is the geometry every committed PNG expectation
     /// was rendered with.
     #[test]

@@ -1,6 +1,6 @@
 ---
 title: Modebars & Controls in Python
-description: Configure XY's toolbar, gestures, selection, exports, and linked viewports.
+description: Configure XYG's toolbar, gestures, selection, exports, and linked viewports.
 components:
   - xyg.modebar
   - xyg.interaction_config

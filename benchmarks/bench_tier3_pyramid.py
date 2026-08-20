@@ -2,7 +2,7 @@
 """Tier-3 pyramid scale evidence (CI-safe).
 
 Build once at modest N, compose many viewports, assert screen-bounded
-replies and resident bytes ≪ raw XY. Never allocates 100M/1B points.
+replies and resident bytes ≪ raw XYG. Never allocates 100M/1B points.
 
 See spec/design/tier3-testing.md.
 """

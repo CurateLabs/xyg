@@ -64,7 +64,8 @@ def test_flags_product_wording_across_runtime_docs_and_workflows(tmp_path: Path)
         'throw new Error("Update the xy package");\n', encoding="utf-8"
     )
     (tmp_path / "workflow.yml").write_text(
-        "# build the editable xy dependency\nrun: bench --packages xy,plotly\n",
+        "# build the editable xy dependency\n"
+        "run: bench --packages xy,plotly && pip install 'xy[reflex]'\n",
         encoding="utf-8",
     )
     errors = check_stale_names.check_stale_names(tmp_path)
@@ -72,6 +73,16 @@ def test_flags_product_wording_across_runtime_docs_and_workflows(tmp_path: Path)
     assert "xy-native product wording" in joined
     assert joined.count("retired xy product description") == 2
     assert "retired xy benchmark target" in joined
+    assert "retired xy distribution constraint" in joined
+
+
+def test_flags_current_brand_and_user_facing_alias(tmp_path: Path) -> None:
+    (tmp_path / "example.py").write_text(
+        '"""Build an XY chart."""\nimport xyg as xy\n', encoding="utf-8"
+    )
+    errors = "\n".join(check_stale_names.check_stale_names(tmp_path))
+    assert "current product XY brand" in errors
+    assert "user-facing xyg alias" in errors
 
 
 def test_explicit_line_allow_marker_preserves_compatibility_probe(tmp_path: Path) -> None:

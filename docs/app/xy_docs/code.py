@@ -1,4 +1,4 @@
-"""Accessible code blocks for the XY documentation site."""
+"""Accessible code blocks for the XYG documentation site."""
 
 from __future__ import annotations
 

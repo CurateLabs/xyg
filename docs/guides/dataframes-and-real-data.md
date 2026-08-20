@@ -1,13 +1,13 @@
 ---
 title: DataFrames and Real Data
-description: Clean, aggregate, chart, and export a pandas DataFrame with public XY APIs.
+description: Clean, aggregate, chart, and export a pandas DataFrame with public XYG APIs.
 ---
 
 # DataFrames and Real Data
 
-XY accepts a pandas DataFrame anywhere its public mark API accepts `data=`.
+XYG accepts a pandas DataFrame anywhere its public mark API accepts `data=`.
 Column-name strings then resolve against that table. Keep cleaning, joins,
-grouping, and business calculations in the dataframe library; give XY the
+grouping, and business calculations in the dataframe library; give XYG the
 finished columns that should become marks.
 
 The workflow below is a complete script. It reads CSV data, validates the
@@ -143,14 +143,14 @@ You do not need pandas when a simpler boundary is clearer:
   chance of avoiding a copy; nulls, chunks, integer or temporal conversion,
   and unsupported coordinate types can require materialization or rejection.
   See [Data and columns](/docs/xy/core-concepts/data/) for the exact boundary.
-- **Polars:** XY does not currently document a dedicated Polars DataFrame
+- **Polars:** XYG does not currently document a dedicated Polars DataFrame
   contract. Extract supported one-dimensional columns explicitly, for example
   `frame["x"].to_numpy()` and `frame["y"].to_numpy()`, then pass those arrays
   to a mark. Converting to pandas is also an application-level option when the
   extra dependency and copy are acceptable.
 - **SQL and DuckDB:** Execute filtering and aggregation in the query engine,
   then materialize only the result columns as pandas, Arrow, or NumPy values.
-  XY does not execute SQL or manage an out-of-core query plan.
+  XYG does not execute SQL or manage an out-of-core query plan.
 
 ## Production data checklist
 

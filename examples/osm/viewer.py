@@ -32,7 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # examples/osm/ → repo root is two levels up; the package lives in python/.
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "python"))
-import xyg as xy  # noqa: E402
+import xyg  # noqa: E402
 from xyg import channel  # noqa: E402
 from xyg._ooc import open_f64  # noqa: E402
 
@@ -97,7 +97,7 @@ def build_figure(out_dir: str):
     xcol = open_f64(os.path.join(out_dir, "osm_lon.f64"))
     ycol = open_f64(os.path.join(out_dir, "osm_lat.f64"))
     print(f"loaded {len(xcol):,} nodes from disk (out-of-core)", flush=True)
-    fig = xy.chart(xy.scatter(x=xcol, y=ycol, density=True)).figure()
+    fig = xyg.chart(xyg.scatter(x=xcol, y=ycol, density=True)).figure()
     spec, bufs = fig.build_payload_split()
     spec.setdefault("interaction", {})["_transport_view_change"] = True
     # Attach the Tier-3 spatial index if built (osm-sort): deep zoom then serves

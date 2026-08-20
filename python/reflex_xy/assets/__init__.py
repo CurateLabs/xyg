@@ -33,9 +33,9 @@ _CLIENT_NAME = "xy_client.js"
 
 def _client_source() -> Path:
     """The canonical render client inside the installed xyg package."""
-    import xyg as xy
+    import xyg
 
-    source = Path(xy.__file__).resolve().parent / "static" / "index.js"
+    source = Path(xyg.__file__).resolve().parent / "static" / "index.js"
     if not source.exists():
         msg = (
             f"{source} missing — the xyg install has no bundled JS client. "

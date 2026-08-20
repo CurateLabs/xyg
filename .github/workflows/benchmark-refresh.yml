@@ -47,7 +47,7 @@ jobs:
       - name: Build native core
         run: cargo build --release
       - name: Install package + comparison deps
-        # Install the full adapter set. In particular, a density-mode XY
+        # Install the full adapter set. In particular, a density-mode XYG
         # row must publish beside Datashader/HoloViews rather than only raw-marker
         # competitors; unavailable rows remain explicit in the report.
         run: |

@@ -537,7 +537,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
 
         This low-level compatibility hook is intentionally not exposed by the
         declarative component API. Reflex integrations should derive ordinary
-        mark props/styles from Reflex state instead of maintaining XY state.
+        mark props/styles from Reflex state instead of maintaining XYG state.
         """
         for state, value in (
             ("hover", hover),

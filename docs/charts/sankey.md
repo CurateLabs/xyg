@@ -12,7 +12,7 @@ Node height represents total flow, and each connecting ribbon is proportional
 to its value. Use one for budgets, energy transfer, conversion funnels, supply
 chains, or any directed flow where the size of each path matters.
 
-With `xy`, pass `(source, target, value)` triples to `sankey_chart`. XY assigns
+With `xy`, pass `(source, target, value)` triples to `sankey_chart`. XYG assigns
 layers, minimizes crossings, sizes the nodes, stacks the ribbon endpoints, and
 uses each link's source and target colors to paint its gradient.
 
@@ -293,7 +293,7 @@ the chart has room for larger text.
 ## Layout and Flow Rules
 
 Sankey links form a directed acyclic graph: every path moves from an earlier
-stage to a later stage. XY rejects cycles and names the nodes involved instead
+stage to a later stage. XYG rejects cycles and names the nodes involved instead
 of drawing a misleading backward flow.
 
 Each `(source, target)` pair must appear once. Aggregate repeated pairs before
@@ -357,12 +357,12 @@ implemented yet.
 
 ### How do I create a Sankey diagram in Python?
 
-Pass `(source, target, value)` triples to `xyg.sankey_chart(...)`. XY computes
+Pass `(source, target, value)` triples to `xyg.sankey_chart(...)`. XYG computes
 the node layers, sizes, ordering, and ribbon endpoints automatically.
 
 ### Can a Sankey diagram contain cycles?
 
-No. A Sankey flows from earlier stages to later stages. XY raises an error that
+No. A Sankey flows from earlier stages to later stages. XYG raises an error that
 names the nodes in a cycle so you can break or aggregate that loop explicitly.
 
 ### How do I control Sankey colors?

@@ -1,4 +1,4 @@
-"""Markdown-backed XY documentation site."""
+"""Markdown-backed XYG documentation site."""
 
 import dataclasses
 import re
@@ -34,7 +34,7 @@ def _llms_txt_directive() -> rx.Component:
     """Return the hidden agent-facing documentation index directive."""
     llms_url = html_agent_docs_href(LLMS_TXT_PATH)
     return rx.el.blockquote(
-        rx.el.span("For AI agents: the complete XY documentation index is at "),
+        rx.el.span("For AI agents: the complete XYG documentation index is at "),
         rx.el.a(
             "llms.txt",
             href=llms_url,
@@ -57,13 +57,13 @@ app = rx.App(
     head_components=[
         *get_pixel_website_trackers(),
         rx.el.style(CODE_COPY_STYLE),
-        rx.el.meta(name="application-name", content="XY"),
+        rx.el.meta(name="application-name", content="XYG"),
         rx.el.meta(name="theme-color", content="#6E56CF"),
     ],
 )
 
 _LAYOUT_CONFIG = DocsLayoutConfig(
-    site_title="XY",
+    site_title="XYG",
     github_url="https://github.com/CurateLabs/xyg",
     show_github_navbar=False,
     navbar=xy_docs_navbar,
@@ -114,11 +114,11 @@ _DOCS_ROUTES = build_docs_routes(
 
 for _route in _DOCS_ROUTES:
     _canonical_url = public_docs_url(_route.path)
-    _seo_title = f"{_route.title or 'Documentation'} · XY"
-    _description = _route.description or "Build responsive interactive Python charts with XY."
+    _seo_title = f"{_route.title or 'Documentation'} · XYG"
+    _description = _route.description or "Build responsive interactive Python charts with XYG."
     _meta = [
         rx.el.meta(property="og:type", content="website"),
-        rx.el.meta(property="og:site_name", content="XY"),
+        rx.el.meta(property="og:site_name", content="XYG"),
         rx.el.meta(property="og:title", content=_seo_title),
         rx.el.meta(property="og:description", content=_description),
         rx.el.meta(name="twitter:card", content="summary_large_image"),
@@ -194,13 +194,13 @@ for _legacy_route, _destination in DOCS_REDIRECTS.items():
         component=_redirect_page(_destination),
         route=_legacy_route,
         title=(
-            "Annotations moved · XY"
+            "Annotations moved · XYG"
             if _is_annotations_redirect
-            else "Recipe moved · XY"
+            else "Recipe moved · XYG"
             if _is_recipe_redirect
-            else "Styling guide moved · XY"
+            else "Styling guide moved · XYG"
             if _is_customize_redirect
-            else "Playground moved · XY"
+            else "Playground moved · XYG"
         ),
         description=(
             "Annotations are documented in one combined component guide."

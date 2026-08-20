@@ -233,7 +233,7 @@ files already written stay on disk. The return value is the list of written
 byte strings, in input order.
 ## 9. What styling survives which export path
 
-XY has five styling mechanisms (`spec/api/styling.md` § The five ways to style)
+XYG has five styling mechanisms (`spec/api/styling.md` § The five ways to style)
 and three rendering families. They do not intersect uniformly, and until this
 section existed the gaps were discoverable only by exporting and looking. An
 undocumented asymmetry reads as a bug; a documented one is a contract.

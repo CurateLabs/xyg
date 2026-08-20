@@ -1,6 +1,6 @@
 ---
 title: Notebooks
-description: Display interactive XY charts in Jupyter, VS Code, Colab, and Marimo.
+description: Display interactive XYG charts in Jupyter, VS Code, Colab, and Marimo.
 ---
 
 # Notebooks
@@ -29,7 +29,7 @@ a separate desktop window. In code that calls IPython directly, passing
 
 ## One Widget Across Notebook Hosts
 
-XY uses one `anywidget` implementation across the supported notebook hosts.
+XYG uses one `anywidget` implementation across the supported notebook hosts.
 The chart spec travels as small JSON metadata and numeric columns travel as
 binary comm frames instead of JSON number arrays.
 
@@ -39,14 +39,14 @@ runtime once the Python packages are installed.
 
 ## JupyterLite and Pyodide (WASM Kernels)
 
-XY publishes a Pyodide/Emscripten wheel, so `%pip install xyg` works in a
+XYG publishes a Pyodide/Emscripten wheel, so `%pip install xyg` works in a
 JupyterLite notebook. Hosted deployments with a prebuilt frontend — for
 example [try Jupyter](https://jupyter.org/try-jupyter/lab/) — cannot load the
 `anywidget` frontend extension at runtime, because `%pip` installs only the
 kernel-side package. Displaying the live widget there fails in the browser
 with `Failed to load model class 'AnyModel' from module 'anywidget'`.
 
-On WASM kernels XY therefore switches to its standalone-HTML display host
+On WASM kernels XYG therefore switches to its standalone-HTML display host
 automatically: `chart.show()` (or a bare `chart`) renders the same
 self-contained interactive document as `to_html()` inside an isolated iframe.
 Pan, zoom, hover, the modebar, and export all work in the browser. Python
@@ -109,7 +109,7 @@ its own event surface.
 
 The repository's example notebooks run hosted, with no local install, on
 [mybinder.org](https://mybinder.org/v2/gh/CurateLabs/xyg/main?urlpath=lab/tree/examples)
-(the launch badge in the README opens the same link). Binder compiles XY from
+(the launch badge in the README opens the same link). Binder compiles XYG from
 source at the launched ref — including the native Rust core — so the
 notebooks match the code of that revision; this link and the badge launch
 `main`, and any branch or tag can be substituted in the URL. Expect the first
@@ -126,6 +126,6 @@ for validation rules and snapshot behavior.
 
 ## Display Problems
 
-After installing or upgrading XY in a running notebook environment, restart
+After installing or upgrading XYG in a running notebook environment, restart
 the kernel so Python and the bundled client come from the same installation.
 If a chart remains blank, see [Troubleshooting](/docs/xy/guides/troubleshooting/).

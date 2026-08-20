@@ -1,13 +1,13 @@
 ---
 title: Serving, CSP, and Offline Use
-description: Serve bundled XY assets under CSP and operate without a CDN or network access.
+description: Serve bundled XYG assets under CSP and operate without a CDN or network access.
 ---
 
 # Serving, CSP, and Offline Use
 
-Published XY wheels contain the Python package, native core, and versioned
+Published XYG wheels contain the Python package, native core, and versioned
 JavaScript/WebGL client. Notebook display, standalone export, and the Reflex
-adapter do not load XY from a CDN.
+adapter do not load XYG from a CDN.
 
 ## Offline Environments
 
@@ -60,7 +60,7 @@ Socket.IO connection. The adapter does not create a second service or websocket
 endpoint.
 
 Account for the application's own script, style, worker, asset, and websocket
-directives when writing a host CSP. XY's lack of a CDN dependency does not make
+directives when writing a host CSP. XYG's lack of a CDN dependency does not make
 a live state-backed application backend-free.
 
 ## Self-Contained Does Not Mean Live

@@ -89,7 +89,7 @@ class StandaloneHtmlProbe(HTMLParser):
 
 
 def extract_quickstart(page: Path, label: str) -> str:
-    """Return the single exportable XY quickstart fenced on ``page``.
+    """Return the single exportable XYG quickstart fenced on ``page``.
 
     The quickstart is the beginner script that exports ``scatter.html``; other
     exportable showcase fences on the page (for example the large-data demo)
@@ -111,14 +111,16 @@ def extract_quickstart(page: Path, label: str) -> str:
 
 
 def verify_checkout_import(xy_module: ModuleType, label: str) -> None:
-    """Ensure the snippet imported XY from the checkout under test."""
+    """Ensure the snippet imported XYG from the checkout under test."""
     module_file = getattr(xy_module, "__file__", None)
-    require(module_file is not None, f"{label} imported an XY module without a filesystem path")
+    require(module_file is not None, f"{label} imported an XYG module without a filesystem path")
     imported_path = Path(module_file).resolve()
     try:
         imported_path.relative_to(SOURCE_PACKAGE)
     except ValueError:
-        fail(f"{label} imported XY from {imported_path}, expected the checkout at {SOURCE_PACKAGE}")
+        fail(
+            f"{label} imported XYG from {imported_path}, expected the checkout at {SOURCE_PACKAGE}"
+        )
 
 
 def verify_standalone_html(html_path: Path, label: str) -> None:

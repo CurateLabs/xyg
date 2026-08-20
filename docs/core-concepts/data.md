@@ -139,7 +139,7 @@ categorical values use a discrete palette.
 
 ## The canonical column store
 
-XY converts numeric coordinates to contiguous float64 canonical columns owned
+XYG converts numeric coordinates to contiguous float64 canonical columns owned
 by the native engine (`xyg_stream_*` after a column grows). Hosts coerce ingest
 and hold opaque handles; Python may expose a NumPy view of that buffer.
 Derived float32, index, density, and decimated buffers are rendering
@@ -153,7 +153,7 @@ counts, and copies paid during ingest.
 
 ## Arrow input and zero-copy cases
 
-PyArrow is an optional input format, not an XY runtime dependency. Install it
+PyArrow is an optional input format, not an XYG runtime dependency. Install it
 separately (`uv add pyarrow` or `pip install pyarrow`) and pass an Array or
 ChunkedArray directly:
 

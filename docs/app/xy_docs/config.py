@@ -140,7 +140,7 @@ DOCS_SECTIONS = (
         "/advanced/",
         "network",
         (
-            ("XY Architecture", "/advanced/"),
+            ("XYG Architecture", "/advanced/"),
             ("Custom Marks", "/advanced/custom-marks/"),
             (
                 "Runtime and Deployment",

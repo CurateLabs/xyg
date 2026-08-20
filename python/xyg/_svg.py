@@ -1916,7 +1916,7 @@ def _star_path(cx: float, cy: float, r: float, points: int, inner: float, start_
 def _cap_join_attrs(style: dict[str, Any], *, join: bool = True) -> str:
     """Polyline stroke geometry, always written out rather than inherited.
 
-    SVG's initial values are `butt`/`miter`; XY's are `round`/`round`, and the
+    SVG's initial values are `butt`/`miter`; XYG's are `round`/`round`, and the
     trace only carries `linecap` when it differs (`marks._stroke_geometry`).
     The join is not selectable, but it is still named on every stroked path:
     leaving it out let the format's `miter` default through, and `_pdf` reads

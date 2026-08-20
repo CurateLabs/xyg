@@ -1,4 +1,4 @@
-"""Machine-checkable records about XY's styling surface.
+"""Machine-checkable records about XYG's styling surface.
 
 `capabilities` is the one that matters: what can be styled, in which renderer,
 and how far it travels. It is imported by the docs generator and pinned by

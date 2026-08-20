@@ -1,11 +1,11 @@
 ---
 title: Choosing a Runtime and Deployment Mode
-description: XY applications run on Reflex. Choose a Reflex data tier for apps, and a notebook, HTML file, or static image for everything that is not an app.
+description: XYG applications run on Reflex. Choose a Reflex data tier for apps, and a notebook, HTML file, or static image for everything that is not an app.
 ---
 
 # Choosing a Runtime and Deployment Mode
 
-If you are building an application, the runtime is Reflex. XY does not ship a
+If you are building an application, the runtime is Reflex. XYG does not ship a
 second application runtime and does not embed into another web framework. The
 choice you actually make is *inside* Reflex: which data tier a chart uses.
 
@@ -14,19 +14,19 @@ application runtime. Those are exploration and output.
 
 ## Applications run on Reflex
 
-XY charts are first-class Reflex components in an all-Python app. Reflex owns
-UI, state, events, and deployment; XY owns transport, rendering, and
+XYG charts are first-class Reflex components in an all-Python app. Reflex owns
+UI, state, events, and deployment; XYG owns transport, rendering, and
 interaction math.
 
-- Compose XY charts with normal Reflex components in Python.
+- Compose XYG charts with normal Reflex components in Python.
 - Drive charts from per-session state with `@reflex_xy.figure`.
 - Connect hover, click, selection, and view changes to Reflex event handlers,
   then stream updates with `reflex_xy.append`.
-- Reuse the app's existing websocket and XY's binary data plane instead of
+- Reuse the app's existing websocket and XYG's binary data plane instead of
   deploying a separate chart service.
 
 The integration is experimental and ships inside the published `xy`
-distribution. Install `xy[reflex]` so the environment also selects a supported
+distribution. Install `xyg[reflex]` so the environment also selects a supported
 Reflex version, then import it as `reflex_xy`. See
 [Deployment Recipes](/docs/xy/guides/deployment-recipes/).
 
@@ -38,7 +38,7 @@ comes from, and therefore what the chart can still do after you deploy.
 | Tier | Data comes from | Live Python | Events | `append()` | Exact row selection | `reflex export` |
 | --- | --- | --- | --- | --- | --- | --- |
 | `reflex_xy.chart(chart)` | fixed, compiled into an asset | no | browser-local | no | no | yes |
-| `reflex_xy.inline(chart)` | fixed, kept in the XY registry | yes | yes | yes | yes | no |
+| `reflex_xy.inline(chart)` | fixed, kept in the XYG registry | yes | yes | yes | yes | no |
 | `@reflex_xy.figure` | per-session Reflex state | yes | yes | yes | yes | no |
 
 Browser-local means hover, pan, zoom, and selection still work in the page;

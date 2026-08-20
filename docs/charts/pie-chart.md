@@ -10,7 +10,7 @@ components:
 A **pie chart** (also called a pie plot or pie graph) maps each share to an
 angular span. A donut uses the same sectors
 with a positive inner radius, leaving room for a total, status, or supporting
-label. In XY, both are compositions of unequal-width bars inside
+label. In XYG, both are compositions of unequal-width bars inside
 `polar_bar_chart()`. For the standard composition, use
 `xyg.pie_chart(labels, values, hole=...)`; the examples below use the lower-level
 bars directly to demonstrate custom sector geometry and dashboard layouts.
@@ -20,7 +20,7 @@ Jump to [a basic pie chart](#basic-pie-chart),
 [build your own pie block](#build-your-own-pie-block).
 
 The first example keeps the chart intentionally small. The examples after it
-combine XY's exportable sector geometry with ordinary Reflex layout for center
+combine XYG's exportable sector geometry with ordinary Reflex layout for center
 labels, legends, captions, and summary rows. That separation keeps the data
 visualization reusable while the surrounding block remains easy to adapt to a
 dashboard.
@@ -710,7 +710,7 @@ corner-radius, clipping, and partial-sector details.
 
 ## FAQ
 
-### Does XY have a dedicated pie mark?
+### Does XYG have a dedicated pie mark?
 
 No. Every pie plot and donut plot on this page is composed from `xyg.bar()`
 marks inside `xyg.polar_bar_chart()`. This keeps sector styling and export

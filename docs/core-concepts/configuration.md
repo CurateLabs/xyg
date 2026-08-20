@@ -5,7 +5,7 @@ description: Configure chart-local defaults, interactions, themes, and output be
 
 # Configuration
 
-XY's declarative chart API keeps configuration local to a chart. It has no
+XYG's declarative chart API keeps configuration local to a chart. It has no
 public mutable global-settings object: compose configuration components or pass
 props where the behavior is used. This keeps notebooks, exports, and multiple
 charts in one process from changing one another implicitly. The separate

@@ -16,7 +16,7 @@ the hard-won production invariants while the chart surface grows.
 
 ## Competitive Evidence
 
-XY's product north star is to outperform every competing charting library
+XYG's product north star is to outperform every competing charting library
 across performance, chart breadth, customization, and data scale. Feature work
 should move that comparison forward and leave evidence behind:
 

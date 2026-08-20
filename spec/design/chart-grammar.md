@@ -294,7 +294,7 @@ integer, and `gap` a non-negative one.
 
 The tree above is precisely a Reflex component tree's shape: snake_case
 props, children composition, `data=` + column-name resolution (`data_key`
-idiom), event props. It remains a XY-owned tree, not a Reflex object,
+idiom), event props. It remains a XYG-owned tree, not a Reflex object,
 so the core package keeps zero Reflex dependencies. A future Reflex wrapper is
 therefore a *thin* codegen layer:
 

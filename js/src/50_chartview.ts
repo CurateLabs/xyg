@@ -6009,7 +6009,7 @@ export class ChartView {
     gl.uniform1f(u("u_revealSegments"), g.n - 1);
     const lineWidth = (width ?? g.trace.style.width ?? 1.5) * this.dpr;
     gl.uniform1f(u("u_width"), lineWidth);
-    // Absent cap/join keys mean XY's default, which is round for both — the
+    // Absent cap/join keys mean XYG's default, which is round for both — the
     // trace only carries them when they differ from it (marks._stroke_geometry).
     const cap = LINE_CAP_MODES[g.trace.style.linecap] ?? LINE_CAP_MODES.round;
     gl.uniform1i(u("u_cap"), cap);

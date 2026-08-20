@@ -3,7 +3,7 @@
 **Status:** design + implementation plan. Supersedes nothing — this refines
 dossier §5/§10/§16/§17/§22/§28 into a buildable spec, grounded in what already
 ships (`python/xyg/lod.py`, `js/src/45_lod.ts`, `interaction.py`,
-kernels ABI v3). The whole XY claim rests on one sentence:
+kernels ABI v3). The whole XYG claim rests on one sentence:
 
 > **Large data stays truthful and interactive.**
 

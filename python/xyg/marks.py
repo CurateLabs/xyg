@@ -123,7 +123,7 @@ def _validated_marker_path(value: Any) -> dict[str, Any]:
 def _stroke_geometry(css: Mapping[str, Any]) -> dict[str, str]:
     """The polyline cap key from compiled CSS, omitted at its default.
 
-    Every renderer already draws XY's default `round`, so a spec that never
+    Every renderer already draws XYG's default `round`, so a spec that never
     asks for another cap stays byte-identical to one built before the property
     existed.
     """

@@ -5,7 +5,7 @@ description: Diagnose installation, display, export, validation, streaming, and 
 
 # Troubleshooting
 
-XY validates contracts at the boundary so a bad option fails close to the
+XYG validates contracts at the boundary so a bad option fails close to the
 chart call instead of producing a silently wrong visualization. Start with the
 exception text: public validation errors name the argument, unsupported value,
 or mismatched lengths involved.
@@ -13,7 +13,7 @@ or mismatched lengths involved.
 ## Installation and Native Core
 
 **The native library is missing or cannot load.** Install a published wheel for
-the current Python and platform. XY's native core is required; it does not
+the current Python and platform. XYG's native core is required; it does not
 silently fall back to a slower Python implementation. A source checkout or
 unsupported platform needs a Rust build toolchain.
 
@@ -37,9 +37,9 @@ then display `chart.widget()` directly to isolate surrounding layout.
 **JupyterLite shows `Failed to load model class 'AnyModel' from module
 'anywidget'`.** The deployment's prebuilt frontend lacks the anywidget
 extension, and `%pip install anywidget` adds only the kernel-side package —
-frontend JavaScript cannot be installed at runtime. Current XY releases
+frontend JavaScript cannot be installed at runtime. Current XYG releases
 detect WASM kernels and display through the standalone-HTML host instead, so
-`chart.show()` renders without the widget comm; upgrade XY if you still see
+`chart.show()` renders without the widget comm; upgrade XYG if you still see
 this error. If the error persists on a current release, check for an explicit
 `XY_NOTEBOOK_DISPLAY=widget` or `show(display="widget")` override forcing the
 widget host — set those only in a self-built JupyterLite deployment that
@@ -48,7 +48,7 @@ this error: it bundles its own anywidget frontend and keeps live widgets. See
 [Notebooks](/docs/xy/integrations/notebooks/).
 
 **Only some charts in a large dashboard remain live.** Browsers limit WebGL
-contexts. Avoid keeping more than XY's default context budget of 12 charts
+contexts. Avoid keeping more than XYG's default context budget of 12 charts
 simultaneously visible; see
 [Dashboards and linked views](/docs/xy/guides/dashboards-and-linked-views/).
 
@@ -118,6 +118,6 @@ The selection payloads also differ: notebook `on_select` receives an
 `reflex_xy.inline(chart)` at module scope so each backend worker creates the
 same content-addressed registration.
 
-When reporting a reproducible failure, include the XY version, Python version,
+When reporting a reproducible failure, include the XYG version, Python version,
 platform, output engine, chart dimensions, full exception, and a minimal chart
 constructor. `chart.memory_report()` is useful for memory or large-data cases.

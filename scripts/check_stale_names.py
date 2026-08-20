@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if current-product files still use retired XY/XYG identities.
+"""Fail if current-product files still use retired XYG/XYG identities.
 
 Enforces spec/design/xyg-naming.md, including the clean Python ``xyg``
 namespace cutover. Historical audits, the naming matrix's old column, and the
@@ -88,6 +88,12 @@ NEEDLES = (
     ("retired xy.pyplot label", re.compile(r"Matplotlib\s*\(xy\.pyplot\)")),
     ("retired xy benchmark target", re.compile(r"--packages\s+xy(?:,|\s|$)")),
     (
+        "retired xy distribution constraint",
+        re.compile(r"(?<![A-Za-z0-9_])xy(?:\[(?:reflex|dev)\]|==)"),
+    ),
+    ("user-facing xyg alias", re.compile(r"(?:^|[;])\s*import\s+xyg\s+as\s+xy\b")),
+    ("current product XY brand", re.compile(r"(?<![A-Za-z0-9_])XY(?![A-Za-z0-9_])")),
+    (
         "backticked xy Python API",
         re.compile(r"`xy\.(?!renderStandalone\b|decodeFrame\b)"),
     ),
@@ -150,7 +156,7 @@ def _python_text_errors(path: Path, rel: str, text: str, *, repository_scan: boo
 
 
 def _module_description_errors(path: Path, rel: str, text: str) -> list[str]:
-    """Reject ambiguous XY product/API wording in current developer surfaces."""
+    """Reject ambiguous XYG product/API wording in current developer surfaces."""
     if path.suffix != ".py" or not rel.startswith(("scripts/", "benchmarks/", "examples/")):
         return []
     try:
@@ -168,7 +174,7 @@ def _module_description_errors(path: Path, rel: str, text: str) -> list[str]:
     if not matches:
         return []
     lineno = tree.body[0].lineno if tree.body else 1
-    return [f"{rel}:{lineno}: stale XY product/API wording in module description"]
+    return [f"{rel}:{lineno}: stale XYG product/API wording in module description"]
 
 
 def _skip(path: Path) -> bool:
@@ -235,6 +241,18 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
                     if label == "src/lib.rs ABI" and _allowed_src_lib_rs(line, match.start()):
                         continue
                     if label == "@xy/node" and _allowed_xy_node(line):
+                        continue
+                    if label == "user-facing xyg alias" and rel.startswith(
+                        ("tests/", "docs/app/tests/", "benchmarks/")
+                    ):
+                        continue
+                    if label == "current product XY brand" and rel.startswith("spec/process/"):
+                        continue
+                    if label == "current product XY brand" and (
+                        "XY-vs-XYG" in line
+                        or "f64 XY" in line
+                        or re.search(r"\bXY-(?:SEC|CI|PERF)-", line)
+                    ):
                         continue
                     errors.append(f"{rel}:{lineno}: stale {label}: {line.strip()}")
     return errors

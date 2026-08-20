@@ -21,7 +21,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xyg as xy
+import xyg
 from xyg.export import _STANDALONE_CSP, _bundled_js, _json_for_inline_script
 
 HERE = Path(__file__).resolve().parent
@@ -35,7 +35,7 @@ def spark(kind: str, x, y, color: str, *, fill: bool = True, width: float = 2.4)
     ResizeObserver rather than overflowing at a fixed pixel width.
     """
     if kind == "area":
-        mark = xy.area(
+        mark = xyg.area(
             x,
             y,
             color=color,
@@ -45,18 +45,18 @@ def spark(kind: str, x, y, color: str, *, fill: bool = True, width: float = 2.4)
             fill="linear-gradient(currentColor, transparent)" if fill else None,
         )
     else:
-        mark = xy.line(x, y, color=color, curve="smooth", width=width)
+        mark = xyg.line(x, y, color=color, curve="smooth", width=width)
     hidden_axis = {
         "style": {"grid_color": "rgba(0,0,0,0)", "axis_color": "rgba(0,0,0,0)"},
         "tick_label_strategy": "none",
     }
-    chart = xy.chart(
+    chart = xyg.chart(
         mark,
-        xy.x_axis(**hidden_axis),
-        xy.y_axis(**hidden_axis),
-        xy.legend(show=False),
-        xy.tooltip(show=False),
-        xy.modebar(show=False),
+        xyg.x_axis(**hidden_axis),
+        xyg.y_axis(**hidden_axis),
+        xyg.legend(show=False),
+        xyg.tooltip(show=False),
+        xyg.modebar(show=False),
         width="100%",
         height=104,
         padding=[6, 1, 2, 1],
@@ -172,7 +172,7 @@ def build_html() -> str:
         ("ok", spark("area", x, ok, ORANGE)),
     ]
     mounts = "\n".join(
-        f'<script>xy.renderStandalone(document.getElementById("{cid}"),'
+        f'<script>xyg.renderStandalone(document.getElementById("{cid}"),'
         f"{_json_for_inline_script(spec)},"
         f'Uint8Array.from(atob("{b64}"),c=>c.charCodeAt(0)).buffer);</script>'
         for cid, (spec, b64) in charts

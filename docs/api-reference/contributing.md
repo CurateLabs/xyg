@@ -1,11 +1,11 @@
 ---
 title: Contributing
-description: Set up XY development, run the right gates, and prepare a focused change.
+description: Set up XYG development, run the right gates, and prepare a focused change.
 ---
 
 # Contributing
 
-XY welcomes focused bug fixes, documentation improvements, tests, and chart
+XYG welcomes focused bug fixes, documentation improvements, tests, and chart
 surface work. The canonical contributor guide is
 [CONTRIBUTING.md](https://github.com/CurateLabs/xyg/blob/main/CONTRIBUTING.md);
 the internal [contributor specification](https://github.com/CurateLabs/xyg/blob/main/spec/process/contributing.md)

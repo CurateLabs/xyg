@@ -1,4 +1,4 @@
-"""Public XY documentation constants."""
+"""Public XYG documentation constants."""
 
 import os
 from urllib.parse import urlsplit

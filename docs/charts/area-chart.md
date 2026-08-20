@@ -168,7 +168,7 @@ one value per bin and, when supplied, one more edge than values.
 `step` and `stairs` add `where="pre"`, `"mid"`, or `"post"`; `stairs` also
 accepts `edges` and otherwise generates integer edges.
 
-For very long lines, XY decimates to the visible resolution and refines again
+For very long lines, XYG decimates to the visible resolution and refines again
 when the viewport changes.
 
 ## FAQ

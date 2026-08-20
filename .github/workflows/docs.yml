@@ -143,7 +143,7 @@ jobs:
           }
 
           dump_diagnostics() {
-            echo "XY docs production check failed while ${stage}"
+            echo "XYG docs production check failed while ${stage}"
             dump_file "reflex server log" "$server_log" 2000
             dump_file "response: /docs/xy/" "$response"
             dump_file "response: /docs/xy/core-concepts/data/" "$nested_response"
@@ -189,7 +189,7 @@ jobs:
           done
 
           if [[ ! -s "$response" ]]; then
-            echo "XY docs did not become ready within 300 seconds"
+            echo "XYG docs did not become ready within 300 seconds"
             exit 1
           fi
 
@@ -200,7 +200,7 @@ jobs:
             --output "$nested_response"
 
           stage="checking the title of /docs/xy/core-concepts/data/"
-          grep -Fq '<title>Data and Columns · XY</title>' "$nested_response"
+          grep -Fq '<title>Data and Columns · XYG</title>' "$nested_response"
 
           if [[ "$DOCS_PYTHON_VERSION" == "3.12" ]]; then
             stage="running the production-DOM accessibility checks"
@@ -213,7 +213,7 @@ jobs:
 
           stage="scanning the server log for runtime errors"
           if grep -Eiq "traceback|uncaught|unhandled|fatal error" "$server_log"; then
-            echo "XY docs emitted a production runtime error"
+            echo "XYG docs emitted a production runtime error"
             exit 1
           fi
       - name: Validate Markdown links against the generated sitemap

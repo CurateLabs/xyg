@@ -148,11 +148,11 @@ chart.to_png(
 svg = chart.to_svg(width=1200, height=630)
 ~~~
 
-The default PNG engine is XY's browser-free native rasterizer; set
+The default PNG engine is XYG's browser-free native rasterizer; set
 `optimize=True` to spend more time producing a smaller native PNG. SVG export
 is browser-free and screen-bounded: long lines are decimated before vector
 generation, while density and heatmap representations embed compact raster
-data where appropriate. For Chromium exports, XY searches for Chrome,
+data where appropriate. For Chromium exports, XYG searches for Chrome,
 Chromium, Edge, or `chrome-headless-shell`; set `XY_BROWSER` to select an
 executable explicitly. The browser sandbox is enabled by default; disable it
 only for trusted input in an environment where the caller accepts that risk.
@@ -192,7 +192,7 @@ the full HTML grid.
 
 ## Migrating from Plotly
 
-| Plotly | XY |
+| Plotly | XYG |
 | --- | --- |
 | `fig.to_image(format="png", scale=2)` | `chart.to_image("png", scale=2)` |
 | `fig.write_image("out.webp")` | `chart.write_image("out.webp")` |

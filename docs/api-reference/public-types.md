@@ -1,6 +1,6 @@
 ---
 title: Public Types
-description: Inventory XY's root-exported declarative, output, selection, and column types.
+description: Inventory XYG's root-exported declarative, output, selection, and column types.
 ---
 
 # Public Types
@@ -38,7 +38,7 @@ but the lowercase factories perform the intended validation and normalization.
 | `Engine` | Static-image engine choice: `auto`, `default`, or `chromium` |
 
 `Engine.auto` is the default for `to_image()` and `write_image()`: it selects
-XY's native, browser-free renderer unless `custom_css` requires a browser CSS
+XYG's native, browser-free renderer unless `custom_css` requires a browser CSS
 engine. `Engine.default` explicitly selects the native renderer, while
 `Engine.chromium` selects browser-fidelity export. Use enum members rather than
 temporary historical string values.
@@ -65,6 +65,6 @@ The old fluent `Figure` class is not root-exported. `Chart.figure()` returns an
 internal engine object as an advanced escape hatch; do not import
 `xyg._figure.Figure` as an application API.
 
-XY ships a package-wide `py.typed` marker. The authoritative runtime inventory
+XYG ships a package-wide `py.typed` marker. The authoritative runtime inventory
 is `xyg.__all__`, and [Marks and components](/docs/xy/api-reference/marks-and-components/)
 contains generated callable signatures.

@@ -4,7 +4,7 @@ Status: **implementation landed** (`python/reflex_xy`, tests under
 `tests/reflex_adapter/`). This document is the authoritative design; the
 prototype implements it end to end over Reflex 0.9.6. The deliverable is an
 integration bundled in the `xy` distribution and installed with
-`xy[reflex]`. It makes a xy figure a first-class Reflex component with the
+`xyg[reflex]`. It makes a xy figure a first-class Reflex component with the
 same performance contract as the notebook path: screen-bounded binary wire
 (§29), kernel-side canonical data (§27), stale-while-revalidate interaction
 (§17).
@@ -722,7 +722,7 @@ tests/reflex_adapter/        token/registry/var/bridge/payload-asset units,
 root beside `register()`/`release()`.
 
 The core `python/xyg` package itself stays Reflex-free (CLAUDE.md rule).
-`xy[reflex]` adds full `reflex>=0.9.6` for now — the `reflex-base` split covers
+`xyg[reflex]` adds full `reflex>=0.9.6` for now — the `reflex-base` split covers
 components/vars but not yet App/state-manager access; revisit when a smaller
 supported surface exists.
 

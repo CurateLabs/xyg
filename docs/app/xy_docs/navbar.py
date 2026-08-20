@@ -1,4 +1,4 @@
-"""XY documentation navbar built from the official shared primitives."""
+"""XYG documentation navbar built from the official shared primitives."""
 
 import reflex as rx
 import reflex_components_internal as ui
@@ -18,10 +18,10 @@ _XY_NAV_LINKS = (
 
 
 def xy_docs_logo() -> rx.Component:
-    """Render the Reflex XY documentation wordmark.
+    """Render the Reflex XYG documentation wordmark.
 
     Returns:
-        The responsive Reflex XY wordmark SVG.
+        The responsive Reflex XYG wordmark SVG.
     """
     wordmark_fill = rx.color_mode_cond(light="#1B212A", dark="#FFFFFF")
     return rx.el.svg(
@@ -55,7 +55,7 @@ def xy_docs_logo() -> rx.Component:
         height="16",
         view_box="0 0 118 16",
         fill="none",
-        aria_label="Reflex XY",
+        aria_label="Reflex XYG",
     )
 
 
@@ -81,8 +81,8 @@ def _menu_item(label: str, href: str) -> rx.Component:
 
 
 def _github_button() -> rx.Component:
-    """Render the external XY repository link."""
-    label = "View XY on GitHub"
+    """Render the external XYG repository link."""
+    label = "View XYG on GitHub"
     return rx.el.elements.a(
         button(
             get_icon(icon="github_navbar", class_name="size-4 shrink-0"),
@@ -104,7 +104,7 @@ def _navigation_menu() -> rx.Component:
     """Render the official desktop controls and mobile drawer trigger.
 
     Returns:
-        XY navigation menu.
+        XYG navigation menu.
     """
     return ui.navigation_menu.root(
         ui.navigation_menu.list(
@@ -139,7 +139,7 @@ def _navigation_menu() -> rx.Component:
 
 
 def _xy_launch_banner() -> rx.Component:
-    """Render the XY initial-launch announcement."""
+    """Render the XYG initial-launch announcement."""
     return rx.el.div(
         rx.cond(
             HostingBannerState.is_banner_visible,
@@ -164,7 +164,7 @@ def _xy_launch_banner() -> rx.Component:
                                 ),
                             ),
                             rx.el.span(
-                                "XY's initial launch is here",
+                                "XYG's initial launch is here",
                                 rx.el.span(
                                     ". Get started",
                                     class_name="text-white/70 lg:hidden",
@@ -184,7 +184,7 @@ def _xy_launch_banner() -> rx.Component:
                                 ui.icon("ArrowRight01Icon"),
                                 variant="ghost-highlight",
                                 size="xs",
-                                aria_label="Get started with XY on GitHub",
+                                aria_label="Get started with XYG on GitHub",
                                 class_name=("text-white hover:text-primary-10 max-lg:hidden"),
                             ),
                             class_name="flex flex-row items-center gap-2 md:gap-4",
@@ -202,7 +202,7 @@ def _xy_launch_banner() -> rx.Component:
                         class_name="relative flex flex-row items-center",
                     ),
                     href=XY_REPOSITORY_URL,
-                    aria_label="Get started with XY on GitHub",
+                    aria_label="Get started with XYG on GitHub",
                     class_name=(
                         "flex max-w-[73rem] justify-start md:col-start-2 md:justify-center"
                     ),
@@ -231,7 +231,7 @@ def _xy_launch_banner() -> rx.Component:
 
 
 def _xy_docs_navbar_frame(logo: rx.Component, navigation: rx.Component) -> rx.Component:
-    """Render the unchanged docs navbar frame with the XY launch banner."""
+    """Render the unchanged docs navbar frame with the XYG launch banner."""
     return rx.el.div(
         _xy_launch_banner(),
         rx.el.header(
@@ -257,10 +257,10 @@ def _xy_docs_navbar_frame(logo: rx.Component, navigation: rx.Component) -> rx.Co
 
 @rx.memo
 def xy_docs_navbar() -> rx.Component:
-    """Render the memoized XY navbar.
+    """Render the memoized XYG navbar.
 
     Returns:
-        Official documentation navbar with an active XY section.
+        Official documentation navbar with an active XYG section.
     """
     return _xy_docs_navbar_frame(
         rx.el.elements.a(

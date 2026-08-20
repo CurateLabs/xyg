@@ -21,7 +21,7 @@ a buffer-affecting decision, the host-parity placement rule supersedes it.
 The exhaustive current file ownership and migration destinations are enforced
 by [design/ownership-audit.md](design/ownership-audit.md).
 
-The project began as a fork of `reflex-dev/xy`; XY names in this document are
+The project began as a fork of `reflex-dev/xy`; XYG names in this document are
 provenance and remain valid as the historical record. The canonical naming
 matrix and migration order live in
 [design/xyg-naming.md](design/xyg-naming.md).

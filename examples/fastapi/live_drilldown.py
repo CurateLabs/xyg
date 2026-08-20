@@ -7,7 +7,7 @@ The pattern this example demonstrates is deliberately small:
 - wire `ChartView` to a custom transport — a `comm` object whose `send` POSTs
   the client's messages to one endpoint and feeds each reply — an `XYBF`
   binary frame (`spec/design/wire-protocol.md` §7): small JSON metadata plus
-  raw f32/u8 buffers, decoded in the browser with `xy.decodeFrame` — back
+  raw f32/u8 buffers, decoded in the browser with `xyg.decodeFrame` — back
   through `onMessage`, with no base64 on either side;
 - the endpoint dispatches `density_view` / `pick` straight to the figure,
   under one lock.
@@ -35,7 +35,7 @@ import numpy as np
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-import xyg as xy
+import xyg
 
 # The live drilldown server probes the engine directly (density_view, pick),
 # so it works on the internal figure compiled from the public composition API
@@ -43,7 +43,7 @@ import xyg as xy
 from xyg._figure import Figure
 
 # `encode_frame` builds the XYBF binary transport frame (wire-protocol.md §7)
-# the browser decodes with the bundled `xy.decodeFrame`; it is re-exported from
+# the browser decodes with the bundled `xyg.decodeFrame`; it is re-exported from
 # the transport-neutral channel module, the same seam the Reflex adapter uses.
 from xyg.channel import encode_frame
 from xyg.widget import bundled_js
@@ -120,13 +120,13 @@ def colored_scatter_chart(
     title: str | None = None,
     width: Union[str, int] = "100%",
     height: int = 430,
-) -> xy.Chart:
+) -> xyg.Chart:
     title = title or f"{_point_label(n)} live drilldown scatter"
     x, y, color, size = colored_scatter_data(n)
-    return xy.scatter_chart(
-        xy.scatter(x, y, color=color, size=size, colormap="viridis", opacity=0.72, density=True),
-        xy.x_axis(label="feature A"),
-        xy.y_axis(label="feature B"),
+    return xyg.scatter_chart(
+        xyg.scatter(x, y, color=color, size=size, colormap="viridis", opacity=0.72, density=True),
+        xyg.x_axis(label="feature A"),
+        xyg.y_axis(label="feature B"),
         title=title,
         width=width,
         height=height,
@@ -161,7 +161,7 @@ def _b64(buf: bytes) -> str:
 
 # Round-trip replies travel as XYBF binary frames (wire-protocol.md §7): the
 # reply message is the frame's compact JSON metadata and each numeric buffer
-# rides raw and 8-byte aligned, so the browser decodes one `xy.decodeFrame`
+# rides raw and 8-byte aligned, so the browser decodes one `xyg.decodeFrame`
 # and hands the kernel zero-copy views. First paint still embeds its blob as
 # base64 in the page below, because inline HTML has no binary channel
 # (wire-protocol.md §6).
@@ -287,7 +287,7 @@ async function sendMessage(msg) {{
       body: JSON.stringify(msg),
     }});
     if (!res.ok) throw new Error(`HTTP ${{res.status}}`);
-    const frame = xy.decodeFrame(await res.arrayBuffer());
+    const frame = xyg.decodeFrame(await res.arrayBuffer());
     const message = frame.message;
     if (!message) return;
     for (const cb of callbacks) cb(message, frame.buffers);
@@ -327,7 +327,7 @@ const comm = {{
   onMessage: (cb) => callbacks.push(cb),
 }};
 
-const view = new xy.ChartView(
+const view = new xyg.ChartView(
   document.getElementById("chart"),
   spec,
   initialBytes.buffer,

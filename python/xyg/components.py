@@ -3192,7 +3192,7 @@ def colorbar(
         *children: Optional opaque replacement content.
         show: Whether to display the colorbar.
         render: Opaque renderer supplied by an adapter.
-        title: Optional colorbar title. By default XY uses the color field or
+        title: Optional colorbar title. By default XYG uses the color field or
             mark name when one is available.
         orientation: ``vertical`` or ``horizontal`` placement.
         ticks: Optional finite numeric tick positions.
@@ -3399,7 +3399,7 @@ def theme(
         selection_fill: Selection-region fill color.
         palette: Categorical color cycle for this chart — the colors unnamed
             series take in order, and the colors a categorical ``color=``
-            channel assigns to its categories. Defaults to XY's CVD-safe
+            channel assigns to its categories. Defaults to XYG's CVD-safe
             eight-slot palette; a shorter list repeats (with a warning).
 
             A ``{category: color}`` mapping pins colors to category *labels*
@@ -3409,7 +3409,7 @@ def theme(
             the map does not name take the next unused default color (with a
             warning), and unnamed series cycle the map's values in order.
 
-            Entries must be colors XY can resolve without a browser (hex,
+            Entries must be colors XYG can resolve without a browser (hex,
             ``rgb()``, ``hsl()``, named), like colormap stops: a palette is
             indexed, and browser-only entries would collapse several categories
             onto one fallback color in exports and density surfaces.
@@ -5017,13 +5017,13 @@ def _slot_styles_dict(value: Any, label: str) -> dict[str, dict[str, StyleValue]
 
 
 def _palette_list(value: Any, label: str) -> Union[list[str], dict[str, str], None]:
-    """A categorical color cycle: one or more CSS colors XY can resolve itself.
+    """A categorical color cycle: one or more CSS colors XYG can resolve itself.
 
     A `{category: color}` mapping pins colors to category *labels* instead;
     both forms come back normalized to hex.
 
     Same rule as colormap stops, for the same reason. A palette is *indexed* —
-    XY has to hand a concrete color to four consumers that have no DOM between
+    XYG has to hand a concrete color to four consumers that have no DOM between
     them: the aggregated density plane, the SVG writer, the native rasterizer,
     and the client's own worker re-bin. A browser-only entry (`var()`,
     `oklch()`, `color-mix()`) has no channels in any of those, and the failure

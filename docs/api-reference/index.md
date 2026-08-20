@@ -5,7 +5,7 @@ description: Find XYG chart factories, components, methods, callbacks, types, an
 
 # API Reference
 
-XY exports its supported declarative surface from `import xyg`. Prefer
+XYG exports its supported declarative surface from `import xyg`. Prefer
 lowercase factories such as `xyg.scatter()` and `xyg.x_axis()`; public node types
 are primarily useful for inspection and annotations.
 
@@ -27,5 +27,5 @@ are primarily useful for inspection and annotations.
 - [Contributing](/docs/xy/api-reference/contributing/) provides the development
   quick start and required checks.
 
-Generated tables read the installed XY signatures, so parameter names, types,
+Generated tables read the installed XYG signatures, so parameter names, types,
 and defaults remain aligned with the package used to build this site.

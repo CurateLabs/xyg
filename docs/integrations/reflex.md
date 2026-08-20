@@ -1,6 +1,6 @@
 ---
 title: Reflex
-description: Render fixed and state-backed XY charts as first-class Reflex components.
+description: Render fixed and state-backed XYG charts as first-class Reflex components.
 components:
   - reflex_xy.chart
   - reflex_xy.figure
@@ -12,26 +12,26 @@ components:
 
 The experimental Reflex integration bundled with `xyg` renders an XYG chart as a
 first-class Reflex component. The core stays framework-neutral at runtime:
-application state and events remain in Reflex while XY owns chart data,
+application state and events remain in Reflex while XYG owns chart data,
 rendering, and interaction math.
 
 ## Install and Configure
 
 Install the `reflex` extra from PyPI. It installs the supported Reflex
 dependency floor; the `reflex_xy` import namespace is already included in
-every `xy` wheel:
+every `xyg` wheel:
 
 ~~~~md tabs
 ## uv
 
 ~~~bash
-uv add "xy[reflex]"
+uv add "xyg[reflex]"
 ~~~
 
 ## pip
 
 ~~~bash
-python -m pip install "xy[reflex]"
+python -m pip install "xyg[reflex]"
 ~~~
 ~~~~
 
@@ -48,7 +48,7 @@ config = rx.Config(
 )
 ~~~
 
-The plugin attaches XY's binary data plane to the Reflex app's existing
+The plugin attaches XYG's binary data plane to the Reflex app's existing
 Socket.IO server. It does not add another HTTP service or websocket endpoint to
 deploy.
 
@@ -184,8 +184,8 @@ for the mutation and snapshot contract.
 | Component source | Best for | Backend |
 | --- | --- | --- |
 | A direct `xyg.Chart`: `reflex_xy.chart(chart)` | Fixed, exportable charts | None |
-| A module-scope `token = reflex_xy.inline(chart)`, then `reflex_xy.chart(token)` | Fixed data with kernel round-trips | XY registry |
-| An `@reflex_xy.figure` var: `reflex_xy.chart(State.figure)` | Session and state-driven charts | Reflex + XY registry |
+| A module-scope `token = reflex_xy.inline(chart)`, then `reflex_xy.chart(token)` | Fixed data with kernel round-trips | XYG registry |
+| An `@reflex_xy.figure` var: `reflex_xy.chart(State.figure)` | Session and state-driven charts | Reflex + XYG registry |
 
 `inline()` should run at module scope so every backend worker registers the
 same content-addressed token. Despite its name, `inline()` is the live,

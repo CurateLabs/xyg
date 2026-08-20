@@ -15,7 +15,7 @@ are published.
    every row `direct | decimated | density | sampled`, preserving the result
    needed to compare and improve each path.
 2. **Same-work comparisons.** Each competitor renders the *same visual
-   contract*, not the same API call: if XY aggregates at 10M, the
+   contract*, not the same API call: if XYG aggregates at 10M, the
    fair Plotly comparison is Plotly failing/succeeding at raw markers AND
    Plotly+Datashader doing aggregation — both are reported. We never
    benchmark our fast path against a competitor's wrong tool.
@@ -113,7 +113,7 @@ reported).
   artifact are banned (existing policy, kept).
 - **Warm/cold discipline:** every timing reports which it is; first-run
   (cold cache) and steady-state are separate rows for TTFR and import.
-- **Losses ship.** The report has a standing "where XY loses" table
+- **Losses ship.** The report has a standing "where XYG loses" table
   (e.g., tiny-data static PNG export vs matplotlib; ecosystem breadth).
   Nothing buys credibility like published losses.
 

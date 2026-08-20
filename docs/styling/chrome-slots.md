@@ -74,17 +74,17 @@ that class can control.
 
 | Surface | Examples | Tailwind contract |
 | --- | --- | --- |
-| Visually overridable DOM | `root`, `title`, legend, colorbar, tooltip, badge, axis/label, `selection`, `crosshair_*`, and granular modebar slots | Normal utilities override XY's layered visual defaults: color, background, border, typography, padding, shadow, filter, opacity, and cursor. An explicit `styles={...}` value is inline author intent and still outranks a normal utility. |
-| Structural-owned DOM | Chart layers; legend/colorbar/modebar anchors; tooltip, selection, and crosshair geometry | XY keeps required position, size, display, z-index, pointer-event, and transform state inline. A normal utility does not necessarily override those declarations; changing them means taking responsibility for layout or interaction. |
+| Visually overridable DOM | `root`, `title`, legend, colorbar, tooltip, badge, axis/label, `selection`, `crosshair_*`, and granular modebar slots | Normal utilities override XYG's layered visual defaults: color, background, border, typography, padding, shadow, filter, opacity, and cursor. An explicit `styles={...}` value is inline author intent and still outranks a normal utility. |
+| Structural-owned DOM | Chart layers; legend/colorbar/modebar anchors; tooltip, selection, and crosshair geometry | XYG keeps required position, size, display, z-index, pointer-event, and transform state inline. A normal utility does not necessarily override those declarations; changing them means taking responsibility for layout or interaction. |
 | Whole bitmap | `canvas`, `chrome`, and `annotation_layer` | A class styles the canvas element as one box, so opacity, filter, border, or transform affect the whole bitmap. It cannot select WebGL marks or canvas-painted grid, polar axes, and annotation shapes; use mark/axis/annotation props and `--chart-*` tokens for those pixels. |
-| Repeated or ephemeral DOM | Legend rows/swatches/labels, colorbar lines/ticks, tooltip rows, modebar parts/buttons, badges, axis rules/labels, selection/crosshair overlays | One slot class applies to every matching node whenever XY creates it. Counts and node identities can change with payloads, hover content, interaction state, and responsive layout, so target the slot or an exposed state attribute rather than retaining a particular node. |
+| Repeated or ephemeral DOM | Legend rows/swatches/labels, colorbar lines/ticks, tooltip rows, modebar parts/buttons, badges, axis rules/labels, selection/crosshair overlays | One slot class applies to every matching node whenever XYG creates it. Counts and node identities can change with payloads, hover content, interaction state, and responsive layout, so target the slot or an exposed state attribute rather than retaining a particular node. |
 | State-owned / conditional inline | Legend hover/toggle, tooltip/selection/crosshair visibility and geometry, modebar active/open/fit state | The client writes the live property or exposes a state class/attribute. Durable visual utilities still apply, but replacing an inline state property requires `!important` and transfers responsibility for that behavior to the author. |
 
 `modebar` styles the toolbar surface, while the `modebar_*` subpart slots
 independently reach its drag handle, control group, separators, button icons,
 zoom value, indicators, selection icon, menus, menu icons/labels, and history
 group. `modebar_button` intentionally remains the common button hook for both
-top-level controls and menu items. XY continues to own toolbar/menu placement,
+top-level controls and menu items. XYG continues to own toolbar/menu placement,
 fit visibility, opacity, open/closed display, and pointer-event state.
 
 Cartesian axes expose `axis_line`, `tick_mark`, `tick_label`, and `axis_title`.
@@ -196,7 +196,7 @@ explicit inventory is merged with those discovered classes.
 
 List every complete class that a state-driven figure can emit, not just the
 classes in its initial state. When a live payload changes root or slot classes,
-XY rebuilds its DOM chrome so the new class set replaces the old one while the
+XYG rebuilds its DOM chrome so the new class set replaces the old one while the
 stable figure token remains mounted. The replacement preserves every named-axis
 range and silently rehydrates durable box/range/lasso geometry before
 refreshing the selection mask, so a theme swap does not replay callbacks or
@@ -223,8 +223,8 @@ and use a raw Python string when writing a descendant selector. Prefer
 the arbitrary selector form is useful when one root class needs to target
 descendants.
 
-Without `TailwindV4Plugin`, XY still places the names in the DOM but no Tailwind
-utilities are generated, so the chart renders without those styles. An XY
+Without `TailwindV4Plugin`, XYG still places the names in the DOM but no Tailwind
+utilities are generated, so the chart renders without those styles. An XYG
 standalone HTML export likewise carries the names but does not bundle Tailwind;
 inject already-compiled rules with `custom_css` or use ordinary CSS for a
 portable file.
@@ -345,7 +345,7 @@ chart.to_html("analytics.html", custom_css=css)
 ~~~
 
 `custom_css` becomes an author `<style>` in the self-contained HTML document.
-XY rejects strings that could break out of that style element. The same option
+XYG rejects strings that could break out of that style element. The same option
 works for Chromium PNG capture; native PNG has no browser cascade and rejects
 `custom_css`.
 
@@ -391,7 +391,7 @@ tooltips, the modebar, hover chrome.
 Built-in visual rules live in the low-priority `base` cascade layer and use
 zero-specificity `:where(...)`, so Tailwind's utility layer and ordinary
 unlayered author selectors beat those visual defaults without `!important`.
-That priority is not blanket: XY retains structural and conditional inline
+That priority is not blanket: XYG retains structural and conditional inline
 styles for positioning, dimensions, visibility, z-index, and interaction
 state. Avoid overriding those unless you intentionally take responsibility for
 chart layout or behavior.
@@ -417,7 +417,7 @@ figure rebuild; CSS-only tokens used by DOM chrome update immediately.
 
 The `selection` slot reaches box/range rectangles and the completed lasso's SVG
 path and editable handles. Use box-oriented background/border utilities for
-rectangles and SVG `fill-*` / `stroke-*` utilities for the lasso nodes. XY keeps
+rectangles and SVG `fill-*` / `stroke-*` utilities for the lasso nodes. XYG keeps
 the lasso path non-interactive and the handles draggable even if a shared
 selection class contains `pointer-events-none`.
 

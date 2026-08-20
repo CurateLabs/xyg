@@ -158,7 +158,7 @@ LEGEND_LOCATIONS: tuple[str, ...] = (
 
 
 #: Unambiguous synonyms for the vertical band. Matplotlib says `upper`/`lower`;
-#: CSS, Plotly and XY's own docs say `top`/`bottom`. Both name the same edge, so
+#: CSS, Plotly and XYG's own docs say `top`/`bottom`. Both name the same edge, so
 #: both are accepted rather than made into a trap.
 _LEGEND_LOC_SYNONYMS: dict[str, str] = {"top": "upper", "bottom": "lower"}
 
@@ -624,7 +624,7 @@ def mark_fill(value: Any, label: str) -> Optional[dict[str, Any]]:
 def resolvable_paint(css: str, label: str, subject: str) -> tuple[float, float, float, float]:
     """Assert a validated CSS color has fixed channels, and return them.
 
-    The gate for every paint XY must resolve *itself* rather than hand to the
+    The gate for every paint XYG must resolve *itself* rather than hand to the
     browser — colormap stops and palette entries. Both are indexed lookups
     consumed by renderers with no DOM (SVG, native raster, the density plane),
     so a `var()`/`oklch()`/`color-mix()` value cannot produce the same result
@@ -638,7 +638,7 @@ def resolvable_paint(css: str, label: str, subject: str) -> tuple[float, float, 
         raise ValueError(
             f"{label} {css!r} cannot be resolved to fixed channels; {subject} must be "
             "hex, rgb()/rgba(), hsl()/hsla(), or a named color (var()/oklch()/color-mix() "
-            "resolve only in a browser, and XY has to resolve this one itself for SVG, "
+            "resolve only in a browser, and XYG has to resolve this one itself for SVG, "
             "native PNG, and aggregated density surfaces)"
         )
     return rgba
@@ -668,7 +668,7 @@ def _resolved_rgb(color: Any, label: str) -> tuple[int, int, int]:
     writer, and the native rasterizer — and only the first of those has a DOM.
     So a stop must parse to concrete channels *here* (hex, `rgb()`, `hsl()`,
     named colors: the closed grammars in crates/xyg-engine/src/css.rs). Browser-resolved forms
-    (`var()`, `oklch()`, `color-mix()`) are legal everywhere XY takes a single
+    (`var()`, `oklch()`, `color-mix()`) are legal everywhere XYG takes a single
     paint color, but they cannot produce the same ramp in a headless export, so
     they are refused with the reason rather than silently baked to a fallback
     (§28).

@@ -1,4 +1,4 @@
-"""Tests for the standalone XY documentation application."""
+"""Tests for the standalone XYG documentation application."""
 
 import ast
 import hashlib
@@ -153,7 +153,7 @@ def _walk_blocks(blocks: tuple[Block, ...]) -> Iterator[LinkSpan]:
 
 
 def _normalize_xy_docs_path(url: str) -> str | None:
-    """Return an app-relative route for a canonical XY docs URL.
+    """Return an app-relative route for a canonical XYG docs URL.
 
     Args:
         url: Absolute or path-only documentation URL.
@@ -170,7 +170,7 @@ def _normalize_xy_docs_path(url: str) -> str | None:
 
 
 def _sitemap_routes(sitemap_path: Path) -> set[str]:
-    """Read normalized XY routes from an exported sitemap.
+    """Read normalized XYG routes from an exported sitemap.
 
     Args:
         sitemap_path: Generated sitemap file.
@@ -567,7 +567,7 @@ def test_animation_replay_demos_reuse_example_chrome_and_controls() -> None:
 
 
 def test_palette_playground_drives_a_reactive_chart_grid() -> None:
-    """Keep preset and custom colors wired to the state-backed XY figures."""
+    """Keep preset and custom colors wired to the state-backed XYG figures."""
     from xy_docs.playground import (
         BERRY_PALETTE,
         PLAYGROUND_PALETTES,
@@ -588,11 +588,11 @@ def test_palette_playground_drives_a_reactive_chart_grid() -> None:
         assert f"set_{role.lower()}_color" in rendered_page
     assert state_source.count('self.preset = "Custom"') == 3
     assert "self.primary, self.secondary, self.accent = BERRY_PALETTE" in state_source
-    assert state_source.count("xy.theme(palette=") == 6
+    assert state_source.count("xyg.theme(palette=") == 6
     assert "_HIDDEN_AXIS_STYLE" not in state_source
     assert '"axis_color": "#00000000"' not in state_source
-    assert "xy.x_axis(tick_count=6, show=False)" in state_source
-    assert "xy.y_axis(domain=(0, 80), show=False, grid=True)" in state_source
+    assert "xyg.x_axis(tick_count=6, show=False)" in state_source
+    assert "xyg.y_axis(domain=(0, 80), show=False, grid=True)" in state_source
     for handler, value, role in (
         (ChartPlaygroundState.set_primary_color, "#123456", "primary"),
         (ChartPlaygroundState.set_secondary_color, "#abcdef", "secondary"),
@@ -736,7 +736,7 @@ def test_styling_docs_cover_every_annotation_factory_and_alias() -> None:
 
 
 def test_what_is_xy_restores_the_sdf_hero_and_ends_with_a_short_pitch() -> None:
-    """Keep the original visual opening and the merged Why XY section."""
+    """Keep the original visual opening and the merged Why XYG section."""
     content = (DOCS_ROOT / "index.md").read_text(encoding="utf-8")
 
     heading = content.index("# What is `xy`?")
@@ -744,7 +744,7 @@ def test_what_is_xy_restores_the_sdf_hero_and_ends_with_a_short_pitch() -> None:
     hero = content.index("~~~python demo-only exec")
     early_alpha = content.index("**Early alpha.**")
     start_here = content.index("## Start here")
-    why_xy = content.index("## Why XY")
+    why_xy = content.index("## Why XYG")
     why_copy = content[why_xy:]
 
     assert heading < styling < hero < early_alpha < start_here < why_xy
@@ -959,7 +959,7 @@ def test_live_preview_markdown_builds_real_xy_components(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Compile every live preview through docgen and the static XY adapter."""
+    """Compile every live preview through docgen and the static XYG adapter."""
     app_payload_dir = DOCS_APP_ROOT / "assets" / "xy"
     app_payloads_before = {path: path.read_bytes() for path in app_payload_dir.glob("*.xyf")}
     monkeypatch.chdir(tmp_path)
@@ -1094,7 +1094,7 @@ def test_beginner_examples_use_tabbed_demos(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Keep beginner code and its live result together in XY's tab model."""
+    """Keep beginner code and its live result together in XYG's tab model."""
     source_path = DOCS_ROOT / relative_path
     content = source_path.read_text(encoding="utf-8")
     live_blocks = [
@@ -1267,7 +1267,7 @@ def test_installation_distinguishes_supported_targets_from_pypi_artifacts() -> N
     assert "| Supported | Not included |" in windows_row
     assert "Pyodide 314" in wasm_row
     assert "`wasm32` | Supported | Not in 0.0.1 (on PyPI since 0.0.3) |" in wasm_row
-    assert "Windows is supported by XY's native core and release pipeline." in content
+    assert "Windows is supported by XYG's native core and release pipeline." in content
     assert "0.0.1 PyPI upload does not include Windows wheels" in content
     assert "runtime-verified WebAssembly wheel" in content
     assert "`pyemscripten_2026_0_wasm32` platform" in content
@@ -1802,16 +1802,16 @@ def test_live_preview_route_validator_requires_real_xy_payloads(
     ("module_source", "payload", "error"),
     (
         ('src:"/docs/xy/xy/abc123.xyf"', b"XYBFpayload", "does not compile XYChart"),
-        ("jsx(XYChart,{})", None, "has no static XY payload"),
+        ("jsx(XYChart,{})", None, "has no static XYG payload"),
         (
             'jsx(XYChart,{src:"/docs/xy/xy/abc123.xyf"})',
             None,
-            "Missing XY payload",
+            "Missing XYG payload",
         ),
         (
             'jsx(XYChart,{src:"/docs/xy/xy/abc123.xyf"})',
             b"not-an-xy-payload",
-            "Invalid XY payload",
+            "Invalid XYG payload",
         ),
     ),
 )
@@ -1822,7 +1822,7 @@ def test_live_preview_route_validator_rejects_incomplete_builds(
     payload: bytes | None,
     error: str,
 ) -> None:
-    """Reject routes missing the component, reference, file, or XY payload header."""
+    """Reject routes missing the component, reference, file, or XYG payload header."""
     client_root = tmp_path / "client"
     module_path = tmp_path / "route.jsx"
     module_path.write_text(module_source, encoding="utf-8")
@@ -1857,7 +1857,7 @@ def test_inline_svg_gallery_validator_requires_every_styled_preview(tmp_path: Pa
 
 @pytest.mark.xfail(
     not EXPORTED_SITEMAP.is_file(),
-    reason="Build the XY docs frontend before validating Markdown links.",
+    reason="Build the XYG docs frontend before validating Markdown links.",
     run=False,
 )
 def test_xy_markdown_docs_links_match_exported_sitemap() -> None:
@@ -2073,7 +2073,7 @@ def test_xy_sidebar_reuses_memoized_official_navigation_rows() -> None:
         assert icon in rendered
     assert "LucidePlug" not in rendered
     assert rendered.count('"aria-current":((') == direct_link_count
-    assert ">XY<" not in rendered
+    assert ">XYG<" not in rendered
 
 
 @pytest.mark.parametrize(
@@ -2109,14 +2109,14 @@ def test_xy_sidebar_opens_only_the_current_chart_family(
 
 
 def test_xy_navbar_uses_xy_links_github_and_the_official_drawer() -> None:
-    """Keep the XY navbar focused while retaining its mobile drawer trigger."""
+    """Keep the XYG navbar focused while retaining its mobile drawer trigger."""
     component = xy_docs_navbar()
     assert isinstance(component, MemoComponent)
 
     rendered = str(xy_docs_navbar._definition.component)
 
     assert 'href:"/"' in rendered
-    assert '"aria-label":"Reflex XY"' in rendered
+    assert '"aria-label":"Reflex XYG"' in rendered
     assert "M29 16H32V10H39V7H32V4H39V1H29V16" in rendered
     assert 'href:"/docs/xy/"' in rendered
     assert 'href:"/docs/xy/integrations/reflex/"' in rendered
@@ -2125,12 +2125,12 @@ def test_xy_navbar_uses_xy_links_github_and_the_official_drawer() -> None:
     assert 'variant:"ghost"},"Build with AI"' not in rendered
     assert 'variant:"ghost"},"Framework"' not in rendered
     assert 'variant:"ghost"},"Cloud"' not in rendered
-    assert 'variant:"ghost"},"XY"' not in rendered
+    assert 'variant:"ghost"},"XYG"' not in rendered
     assert "Forum" not in rendered
     assert "Discord Community" not in rendered
     assert 'variant:"primary"' in rendered
-    assert "View XY on GitHub -" not in rendered
-    assert rendered.count("View XY on GitHub") == 2
+    assert "View XYG on GitHub -" not in rendered
+    assert rendered.count("View XYG on GitHub") == 2
     assert 'target:"_blank"' in rendered
     assert 'rel:"noopener noreferrer"' in rendered
     assert "Open sidebar" in rendered
@@ -2140,7 +2140,7 @@ def test_xy_navbar_uses_xy_links_github_and_the_official_drawer() -> None:
     assert "<details" not in rendered
     assert "<summary" not in rendered
     assert XY_REPOSITORY_URL in rendered
-    assert "XY's initial launch is here" in rendered
+    assert "XYG's initial launch is here" in rendered
     assert "Get started" in rendered
     assert "Reserve your spot" not in rendered
     assert "https://luma.com/a1ty77bt" not in rendered
@@ -2231,7 +2231,7 @@ def test_core_concept_breadcrumbs_use_page_titles(
 
 
 def test_xy_footer_is_project_specific_and_keeps_source_aware_links() -> None:
-    """Target XY support and source pages without parent-product dead ends."""
+    """Target XYG support and source pages without parent-product dead ends."""
     page = next(page for page in discover_docs(DOCS_CONFIG) if page.route == "/overview/gallery/")
 
     rendered = str(xy_docs_footer(page))

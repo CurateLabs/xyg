@@ -189,9 +189,9 @@ def test_fresh_import_budget_probes_public_metadata(
     errors = check_public_api.check_fresh_import_budget()
 
     assert errors == []
-    assert "import xyg as xy" in seen_code
-    assert "xy.__all__" in seen_code
-    assert "dir(xy)" in seen_code
+    assert "import xyg" in seen_code
+    assert "xyg.__all__" in seen_code
+    assert "dir(xyg)" in seen_code
 
 
 def test_fresh_import_budget_rejects_invalid_public_all(
@@ -229,7 +229,7 @@ def test_fresh_import_budget_rejects_dir_public_name_drift(
 
     errors = check_public_api.check_fresh_import_budget()
 
-    assert any("dir(xy)" in error and "scatter_chart" in error for error in errors)
+    assert any("dir(xyg)" in error and "scatter_chart" in error for error in errors)
 
 
 def test_public_api_checker_rejects_stale_all_entry() -> None:
@@ -345,7 +345,7 @@ def test_public_api_checker_rejects_stale_component_module_all() -> None:
 # The version reference is installed distribution metadata, not pyproject (which
 # no longer records one). These drive the check against a distribution that is
 # certainly installed wherever the suite runs — pytest itself — so they assert
-# the comparison rather than whatever version `xy` happens to be built at.
+# the comparison rather than whatever version `xyg` happens to be built at.
 REFERENCE_DISTRIBUTION = "pytest"
 
 
@@ -379,7 +379,7 @@ def test_public_api_checker_rejects_uninstalled_distribution() -> None:
     fake = ModuleType("xyg")
     fake.__version__ = "1.2.3"
 
-    errors = check_public_api.validate_version_consistency(fake, "xy-not-a-real-distribution")
+    errors = check_public_api.validate_version_consistency(fake, "xyg-not-a-real-distribution")
 
     assert any("is not installed" in error for error in errors)
 
@@ -427,7 +427,7 @@ if TYPE_CHECKING:
     errors = check_public_api.validate_static_typing_surface(fake, init_path)
 
     assert errors == [
-        "xy public names have no static TYPE_CHECKING import or annotation: ['LazyOnly']"
+        "xyg public names have no static TYPE_CHECKING import or annotation: ['LazyOnly']"
     ]
 
 
@@ -456,6 +456,6 @@ else:
     errors = check_public_api.validate_static_typing_surface(fake, init_path)
 
     assert errors == [
-        "xy public names have no static TYPE_CHECKING import or annotation: "
+        "xyg public names have no static TYPE_CHECKING import or annotation: "
         "['ClassOnly', 'ElseOnly', 'FunctionOnly']"
     ]

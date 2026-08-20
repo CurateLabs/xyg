@@ -1,11 +1,11 @@
 ---
 title: Custom Marks
-description: Add a chart kind XY does not ship by composing its built-in marks, without forking the renderer.
+description: Add a chart kind XYG does not ship by composing its built-in marks, without forking the renderer.
 ---
 
 # Custom Marks
 
-XY ships twenty mark kinds. When you need one it does not have — a candlestick,
+XYG ships twenty mark kinds. When you need one it does not have — a candlestick,
 a high-low band, a ribbon, a dumbbell — you can register it instead of waiting
 for it or forking the renderer.
 
@@ -13,7 +13,7 @@ A mark plugin is two functions and a name:
 
 - **`calc`** turns your input columns into the columns you want to draw. It runs
   once, on arrays, before anything is built.
-- **`build`** returns ordinary XY marks. Not shaders, not draw calls — the same
+- **`build`** returns ordinary XYG marks. Not shaders, not draw calls — the same
   `xyg.segments(...)`, `xyg.scatter(...)`, `xyg.line(...)` you would write by hand.
 
 That second constraint is the point rather than a limitation. Because a plugin's

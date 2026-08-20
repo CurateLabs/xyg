@@ -1,4 +1,4 @@
-# XY full-surface coverage
+# XYG full-surface coverage
 
 **Status:** living checklist for chart-family coverage across the three runtime
 surfaces ([host-parity.md](host-parity.md) §0) and utilization of the

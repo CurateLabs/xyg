@@ -61,7 +61,7 @@ use `width` to control how wide each box sits within its slot.
 
 Use `style` for the box body and the three part-specific mappings for the
 remaining geometry. Every mapping uses the same validated CSS vocabulary as
-ordinary XY marks and survives interactive and static renderers.
+ordinary XYG marks and survives interactive and static renderers.
 
 ~~~python
 custom_box = xyg.box(

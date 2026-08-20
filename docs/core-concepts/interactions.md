@@ -158,7 +158,7 @@ Reflex event props work with a live adapter source—an `inline()` token or an
 ## Exact readout and selection
 
 The renderer may display a decimated line, density grid, or retained sample,
-but XY keeps canonical rows in Python:
+but XYG keeps canonical rows in Python:
 
 ~~~python demo exec
 import reflex as rx

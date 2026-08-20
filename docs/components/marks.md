@@ -1,6 +1,6 @@
 ---
 title: Marks in Python
-description: Bind data to XY marks, channels, axes, styles, and layers.
+description: Bind data to XYG marks, channels, axes, styles, and layers.
 components:
   - xyg.line
   - xyg.scatter
@@ -68,7 +68,7 @@ chart = xyg.line_chart(
 A mark-level data source overrides the chart-level source. Column-name
 resolution works with pandas, NumPy-compatible mappings, and Arrow-backed
 tables described in [Data and columns](/docs/xy/core-concepts/data/).
-XY validates missing columns and incompatible channel lengths when the chart is
+XYG validates missing columns and incompatible channel lengths when the chart is
 built.
 
 ## Choose a Mark Family

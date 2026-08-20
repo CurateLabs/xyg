@@ -1,4 +1,4 @@
-"""Generated API-reference sections for XY's public component factories."""
+"""Generated API-reference sections for XYG's public component factories."""
 
 import inspect
 import re
@@ -17,14 +17,14 @@ from reflex_site_shared.components.docs_api import (
 )
 
 import reflex_xy
-import xyg as xy
+import xyg
 from xyg.components import _POLAR_INERT_AXIS_KEYWORDS
 
 COMPONENT_API_METADATA_KEY = "components"
 API_REFERENCE_HEADING = "API Reference"
 _COMPONENT_API_NAMESPACES = {
     "reflex_xy": reflex_xy,
-    "xyg": xy,
+    "xyg": xyg,
 }
 _COMPONENT_API_COLUMN_WIDTHS = ("w-[20%]", "w-[25%]", "w-[55%]")
 _NON_ID_CHARACTER = re.compile(r"[^a-z0-9]+")
@@ -32,9 +32,9 @@ _NON_ID_CHARACTER = re.compile(r"[^a-z0-9]+")
 CHART_FACTORY_GROUPS = (
     (
         "Line and Area",
-        (xy.line_chart, xy.area_chart, xy.step_chart, xy.stairs_chart),
+        (xyg.line_chart, xyg.area_chart, xyg.step_chart, xyg.stairs_chart),
     ),
-    ("Scatter", (xy.scatter_chart,)),
+    ("Scatter", (xyg.scatter_chart,)),
     # The polar compositions are public factories like any other, so they belong
     # in the generated inventory. `pie_chart` is listed with them: without an
     # entry here the API reference implied the only way to draw a pie was to
@@ -42,47 +42,47 @@ CHART_FACTORY_GROUPS = (
     (
         "Polar",
         (
-            xy.polar_chart,
-            xy.radar_chart,
-            xy.polar_bar_chart,
-            xy.pie_chart,
-            xy.wind_rose,
+            xyg.polar_chart,
+            xyg.radar_chart,
+            xyg.polar_bar_chart,
+            xyg.pie_chart,
+            xyg.wind_rose,
         ),
     ),
-    ("Bar and Column", (xy.bar_chart, xy.column_chart)),
+    ("Bar and Column", (xyg.bar_chart, xyg.column_chart)),
     (
         "Distributions",
         (
-            xy.histogram_chart,
-            xy.ecdf_chart,
-            xy.box_chart,
-            xy.violin_chart,
+            xyg.histogram_chart,
+            xyg.ecdf_chart,
+            xyg.box_chart,
+            xyg.violin_chart,
         ),
     ),
     (
         "Density and Grids",
-        (xy.hexbin_chart, xy.heatmap_chart, xy.contour_chart),
+        (xyg.hexbin_chart, xyg.heatmap_chart, xyg.contour_chart),
     ),
-    ("Uncertainty", (xy.error_band_chart, xy.errorbar_chart)),
+    ("Uncertainty", (xyg.error_band_chart, xyg.errorbar_chart)),
     (
         "Specialized",
         (
-            xy.stem_chart,
-            xy.segments_chart,
-            xy.sankey_chart,
-            xy.graph_chart,
-            xy.triangle_mesh_chart,
+            xyg.stem_chart,
+            xyg.segments_chart,
+            xyg.sankey_chart,
+            xyg.graph_chart,
+            xyg.triangle_mesh_chart,
         ),
     ),
-    ("Annotations", (xy.chart,)),
-    ("Facets and Layers", (xy.chart, xy.facet_chart)),
+    ("Annotations", (xyg.chart,)),
+    ("Facets and Layers", (xyg.chart, xyg.facet_chart)),
 )
 _CHART_FACTORY_COMPONENTS = frozenset(
     factory for _group_name, factories in CHART_FACTORY_GROUPS for factory in factories
 )
 _FORWARDED_AXIS_COMPONENTS = {
-    xy.theta_axis: xy.x_axis,
-    xy.r_axis: xy.y_axis,
+    xyg.theta_axis: xyg.x_axis,
+    xyg.r_axis: xyg.y_axis,
 }
 # `theta_axis`/`r_axis` forward `**props` to the Cartesian axis vocabulary, but
 # they refuse the keywords no polar renderer implements. Angular `reverse` is
@@ -90,61 +90,61 @@ _FORWARDED_AXIS_COMPONENTS = {
 # remains supported. Documenting the forwarded signatures verbatim would
 # re-advertise exactly those traps, so they are dropped from the relevant table.
 _REFUSED_POLAR_AXIS_PARAMETERS = {
-    xy.theta_axis: frozenset({*_POLAR_INERT_AXIS_KEYWORDS, "reverse"}),
-    xy.r_axis: frozenset(_POLAR_INERT_AXIS_KEYWORDS),
+    xyg.theta_axis: frozenset({*_POLAR_INERT_AXIS_KEYWORDS, "reverse"}),
+    xyg.r_axis: frozenset(_POLAR_INERT_AXIS_KEYWORDS),
 }
 
 MARKS = (
-    xy.line,
-    xy.scatter,
-    xy.area,
-    xy.bar,
-    xy.column,
-    xy.histogram,
-    xy.box,
-    xy.violin,
-    xy.ecdf,
-    xy.heatmap,
-    xy.hexbin,
-    xy.contour,
-    xy.errorbar,
-    xy.error_band,
-    xy.step,
-    xy.stairs,
-    xy.stem,
-    xy.segments,
-    xy.ribbon,
-    xy.sankey,
-    xy.triangle_mesh,
+    xyg.line,
+    xyg.scatter,
+    xyg.area,
+    xyg.bar,
+    xyg.column,
+    xyg.histogram,
+    xyg.box,
+    xyg.violin,
+    xyg.ecdf,
+    xyg.heatmap,
+    xyg.hexbin,
+    xyg.contour,
+    xyg.errorbar,
+    xyg.error_band,
+    xyg.step,
+    xyg.stairs,
+    xyg.stem,
+    xyg.segments,
+    xyg.ribbon,
+    xyg.sankey,
+    xyg.triangle_mesh,
 )
 
 AXES_AND_ANNOTATIONS = (
-    xy.x_axis,
-    xy.y_axis,
-    xy.theta_axis,
-    xy.r_axis,
-    xy.vline,
-    xy.hline,
-    xy.x_band,
-    xy.y_band,
-    xy.threshold,
-    xy.threshold_zone,
-    xy.text,
-    xy.label,
-    xy.marker,
-    xy.arrow,
-    xy.callout,
+    xyg.x_axis,
+    xyg.y_axis,
+    xyg.theta_axis,
+    xyg.r_axis,
+    xyg.vline,
+    xyg.hline,
+    xyg.x_band,
+    xyg.y_band,
+    xyg.threshold,
+    xyg.threshold_zone,
+    xyg.text,
+    xyg.label,
+    xyg.marker,
+    xyg.arrow,
+    xyg.callout,
 )
 
 CHROME_AND_BEHAVIOR = (
-    xy.legend,
-    xy.tooltip,
-    xy.colorbar,
-    xy.modebar,
-    xy.theme,
-    xy.interaction_config,
-    xy.animation,
-    xy.spring,
+    xyg.legend,
+    xyg.tooltip,
+    xyg.colorbar,
+    xyg.modebar,
+    xyg.theme,
+    xyg.interaction_config,
+    xyg.animation,
+    xyg.spring,
 )
 
 
@@ -275,7 +275,7 @@ def _documented_parameters(
     if component not in _CHART_FACTORY_COMPONENTS:
         return tuple((parameter, descriptions) for parameter in parameters)
 
-    shared_descriptions = _parameter_descriptions(inspect.getdoc(xy.Chart.__init__) or "")
+    shared_descriptions = _parameter_descriptions(inspect.getdoc(xyg.Chart.__init__) or "")
     merged_descriptions = {**shared_descriptions, **descriptions}
     existing_names = {
         parameter.name
@@ -284,7 +284,7 @@ def _documented_parameters(
     }
     shared_parameters = tuple(
         parameter
-        for parameter in inspect.signature(xy.Chart).parameters.values()
+        for parameter in inspect.signature(xyg.Chart).parameters.values()
         if parameter.name not in {"kind", "children", *existing_names}
     )
 
@@ -598,7 +598,7 @@ def chart_containers_api() -> rx.Component:
     """
     return rx.box(
         callable_api_reference(
-            xy.Chart.__init__,
+            xyg.Chart.__init__,
             display_name="Shared chart props",
             exclude_parameters=("self", "kind"),
             parameter_descriptions={

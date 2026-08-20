@@ -1,6 +1,6 @@
 """End-to-end probe for the Reflex integration (reflex-integration.md §1/§2).
 
-Drives headless Chromium at a *running* XY Reflex showcase app (see
+Drives headless Chromium at a *running* XYG Reflex showcase app (see
 examples/reflex: `reflex run`) and asserts the load-bearing claims of the
 design:
 
@@ -363,7 +363,7 @@ def main() -> None:
         for failure in failures:
             print(f"  - {failure}")
         raise SystemExit(1)
-    print("\nxy[reflex] websocket smoke: all checks passed")
+    print("\nxyg[reflex] websocket smoke: all checks passed")
 
 
 if __name__ == "__main__":

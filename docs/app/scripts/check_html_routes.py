@@ -16,7 +16,7 @@ INLINE_SVG_PREVIEW_ROUTES = {"/overview/gallery/"}
 INLINE_SVG_PREVIEW_COUNT = 35
 XY_PAYLOAD_PATTERN = re.compile(r'["\'](?P<url>/docs/xy/xy/[a-f0-9]+\.xyf)["\']')
 XY_PAYLOAD_MAGIC = b"XYBF"
-LLMS_DIRECTIVE = "For AI agents: the complete XY documentation index is at"
+LLMS_DIRECTIVE = "For AI agents: the complete XYG documentation index is at"
 LLMS_HREF = f'href="{agent_docs_url(LLMS_TXT_PATH)}"'
 
 
@@ -66,16 +66,16 @@ def validate_live_preview(page_route: str, module_path: Path) -> None:
 
     payload_urls = set(XY_PAYLOAD_PATTERN.findall(source))
     if not payload_urls:
-        msg = f"Live-preview route has no static XY payload: {page_route}"
+        msg = f"Live-preview route has no static XYG payload: {page_route}"
         raise RuntimeError(msg)
 
     for payload_url in payload_urls:
         payload_path = CLIENT_ROOT / payload_url.lstrip("/")
         if not payload_path.is_file():
-            msg = f"Missing XY payload for {page_route}: {payload_path}"
+            msg = f"Missing XYG payload for {page_route}: {payload_path}"
             raise RuntimeError(msg)
         if not payload_path.read_bytes().startswith(XY_PAYLOAD_MAGIC):
-            msg = f"Invalid XY payload for {page_route}: {payload_path}"
+            msg = f"Invalid XYG payload for {page_route}: {payload_path}"
             raise RuntimeError(msg)
 
 

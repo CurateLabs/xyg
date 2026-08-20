@@ -114,7 +114,7 @@ reflex_chrome: dict[str, object] = chart.reflex_components()
 ~~~
 
 These methods return the exact opaque replacement objects passed to
-`legend()`, `tooltip()`, or `colorbar()`. Core XY does not serialize those
+`legend()`, `tooltip()`, or `colorbar()`. Core XYG does not serialize those
 objects. `reflex_components()` is an alias retained for adapter code.
 
 ## FacetChart Methods

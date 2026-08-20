@@ -1,4 +1,4 @@
-"""XY Reflex showcase: ways to link chart data into a Reflex app.
+"""XYG Reflex showcase: ways to link chart data into a Reflex app.
 
 One page of six sections; each has a "Code" accordion showing its own source
 via `inspect.getsource`.
@@ -47,7 +47,6 @@ import reflex as rx
 
 import reflex_xy
 import xyg
-import xyg as xy
 from reflex_xy.tokens import BUILDER_ATTR
 
 POINTS = 1_000_000
@@ -93,10 +92,10 @@ def sparkline_chart() -> xyg.Chart:
     to a static payload asset."""
     t = np.linspace(0.0, 6.0 * np.pi, 4000)
     decay = np.exp(-t / 9.0)
-    return xy.line_chart(
-        xy.line(t, np.sin(t) * decay, name="signal"),
-        xy.line(t, decay, name="envelope"),
-        xy.x_axis(label="t"),
+    return xyg.line_chart(
+        xyg.line(t, np.sin(t) * decay, name="signal"),
+        xyg.line(t, decay, name="envelope"),
+        xyg.x_axis(label="t"),
         title="static payload tier",
         width="100%",
         height=240,
@@ -110,10 +109,10 @@ def orbits_chart() -> xyg.Chart:
     n = 400_000
     theta = rng.uniform(0.0, 2.0 * np.pi, n)
     r = rng.normal(1.0, 0.05, n) * (1.0 + 0.4 * np.sin(theta * 3.0))
-    return xy.scatter_chart(
-        xy.scatter(r * np.cos(theta), r * np.sin(theta), opacity=0.6, density=True),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+    return xyg.scatter_chart(
+        xyg.scatter(r * np.cos(theta), r * np.sin(theta), opacity=0.6, density=True),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
         title="inline() token",
         width="100%",
         height=240,
@@ -135,7 +134,7 @@ def legend_series_chart() -> xyg.Chart:
     ``xyg.legend(highlight=False)`` / ``xyg.legend(toggle=False)`` opt out."""
     rng = np.random.default_rng(7)
     marks = [
-        xy.scatter(
+        xyg.scatter(
             rng.normal(cx, 0.5, 60_000),
             rng.normal(cy, 0.5, 60_000),
             name=name,
@@ -147,11 +146,11 @@ def legend_series_chart() -> xyg.Chart:
             ("control", 1.6, -0.4),
         )
     ]
-    return xy.scatter_chart(
+    return xyg.scatter_chart(
         *marks,
         xyg.legend(),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
         title="named series — hover dims, click hides",
         width="100%",
         height=300,
@@ -171,11 +170,11 @@ def legend_category_chart() -> xyg.Chart:
     x = rng.normal(centers[cat, 0], 0.55)
     y = rng.normal(centers[cat, 1], 0.55)
     labels = np.array(["sensor A", "sensor B", "sensor C"])[cat]
-    return xy.scatter_chart(
-        xy.scatter(x, y, color=labels, opacity=0.7, density=True),
+    return xyg.scatter_chart(
+        xyg.scatter(x, y, color=labels, opacity=0.7, density=True),
         xyg.legend(),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
         title="categorical density — click a row to mask & re-bin",
         width="100%",
         height=300,
@@ -245,10 +244,10 @@ def drilldown_chart(n: int = DRILLDOWN_POINTS) -> xyg.Chart:
         y[start:end] = ys
         np.hypot(xs, ys, out=color[start:end])
         size[start:end] = ss
-    return xy.scatter_chart(
-        xy.scatter(x, y, color=color, size=size, colormap="viridis", opacity=0.72, density=True),
-        xy.x_axis(label="feature A"),
-        xy.y_axis(label="feature B"),
+    return xyg.scatter_chart(
+        xyg.scatter(x, y, color=color, size=size, colormap="viridis", opacity=0.72, density=True),
+        xyg.x_axis(label="feature A"),
+        xyg.y_axis(label="feature B"),
         title=f"{_point_label(n)} live drilldown scatter",
         width="100%",
         height=430,
@@ -295,13 +294,13 @@ class Demo(rx.State):
     @reflex_xy.figure
     def cloud(self) -> xyg.Chart:
         x, y, mag = _cloud(POINTS)
-        return xy.scatter_chart(
-            xy.scatter(x, y, color=mag, colormap="viridis", opacity=0.8, density=True),
+        return xyg.scatter_chart(
+            xyg.scatter(x, y, color=mag, colormap="viridis", opacity=0.8, density=True),
             # hover and click are off by default; enable them so the point
             # events reach the handlers below (select/pan/zoom are on already).
-            xy.interaction_config(hover=True, click=True),
-            xy.x_axis(label="feature A"),
-            xy.y_axis(label="feature B"),
+            xyg.interaction_config(hover=True, click=True),
+            xyg.x_axis(label="feature A"),
+            xyg.y_axis(label="feature B"),
             title=(
                 f"{POINTS // 1_000_000}M points, drillable · "
                 f"handler revision {self.interaction_revision}"
@@ -318,9 +317,9 @@ class Demo(rx.State):
         if self.sel_active and self.sel_x1 > self.sel_x0:
             mag = mag[(x >= self.sel_x0) & (x <= self.sel_x1)]
         label = "selection" if self.sel_active else "all points"
-        return xy.histogram_chart(
-            xy.histogram(mag, bins=self.bins),
-            xy.x_axis(label=f"magnitude ({label})"),
+        return xyg.histogram_chart(
+            xyg.histogram(mag, bins=self.bins),
+            xyg.x_axis(label=f"magnitude ({label})"),
             title=f"magnitude distribution — {self.bins} bins",
             width="100%",
             height=240,
@@ -328,8 +327,8 @@ class Demo(rx.State):
 
     @reflex_xy.figure
     def live(self) -> xyg.Chart:
-        return xy.line_chart(
-            xy.line(np.array([0.0]), np.array([0.0])),
+        return xyg.line_chart(
+            xyg.line(np.array([0.0]), np.array([0.0])),
             title="live stream",
             width="100%",
             height=240,
@@ -338,11 +337,11 @@ class Demo(rx.State):
     @reflex_xy.figure
     def overview(self) -> xyg.Chart:
         x, y = _scan(120_000)
-        return xy.scatter_chart(
-            xy.scatter(x, y, opacity=0.5, density=True),
-            xy.interaction_config(zoom_axes=("x",)),
-            xy.x_axis(label="t"),
-            xy.y_axis(label="value"),
+        return xyg.scatter_chart(
+            xyg.scatter(x, y, opacity=0.5, density=True),
+            xyg.interaction_config(zoom_axes=("x",)),
+            xyg.x_axis(label="t"),
+            xyg.y_axis(label="value"),
             title="overview — zoom the x range",
             width="100%",
             height=240,
@@ -360,9 +359,9 @@ class Demo(rx.State):
             if self.view_ready
             else "detail — pan/zoom the overview"
         )
-        return xy.histogram_chart(
-            xy.histogram(y, bins=48, color="#7c3aed"),
-            xy.x_axis(label="value in view"),
+        return xyg.histogram_chart(
+            xyg.histogram(y, bins=48, color="#7c3aed"),
+            xyg.x_axis(label="value in view"),
             title=title,
             width="100%",
             height=240,
@@ -720,4 +719,4 @@ def index() -> rx.Component:
 
 
 app = rx.App()
-app.add_page(index, title="XY Reflex showcase")
+app.add_page(index, title="XYG Reflex showcase")

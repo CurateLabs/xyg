@@ -26,7 +26,6 @@ from typing import Any, Literal, Optional
 import numpy as np
 
 import xyg
-import xyg as xy
 
 from .. import _textblock
 from .._typing import ArrayLike, ColorLike, ColorsLike, LimitsLike, Scalar
@@ -6376,7 +6375,7 @@ class Axes(PlotTypeMixin):
             return
         # Matplotlib Text._ha_for_angle: bottom labels have verticalalignment
         # "top", while top labels use "bottom". Convert its left/right result
-        # to XY's start/end anchor vocabulary.
+        # to XYG's start/end anchor vocabulary.
         value = float(angle) % 360.0
         anchor_at_bottom = props.get("side", "bottom") == "top"
         if (
@@ -7476,7 +7475,7 @@ class Axes(PlotTypeMixin):
                     # pyplot entry, but core ``xyg.step`` has fixed round caps
                     # and does not accept the Matplotlib-only keyword.
                     kw.pop("dash_capstyle", None)
-                children.append(getattr(xy, e["factory"])(*e["args"], **kw, **axis_kw))
+                children.append(getattr(xyg, e["factory"])(*e["args"], **kw, **axis_kw))
             elif kind == "@table_cell":
                 geometry = e["table_geometry"]
                 plot_width, plot_height = getattr(
@@ -7728,7 +7727,7 @@ class Axes(PlotTypeMixin):
     ) -> builtins.set[int]:
         """Attach Matplotlib-only handle paint to automatic legend traces.
 
-        Plot markers and dash gap colors are separate XY marks so the data
+        Plot markers and dash gap colors are separate XYG marks so the data
         renderer can stay compact, but Matplotlib's ``HandlerLine2D`` combines
         them into one legend handle. Match each named source entry to its
         materialized trace and retain that handle-only state without changing
@@ -8680,7 +8679,7 @@ class Axes(PlotTypeMixin):
             component_legend_options.pop("handletextpad", None)
             children.append(xyg.legend(**component_legend_options))
         elif not any(entry.get("kwargs", {}).get("name") for entry in self._entries):
-            # Core XY can auto-create a continuous-color "value" legend.
+            # Core XYG can auto-create a continuous-color "value" legend.
             # An unlabeled Matplotlib collection must not acquire one.
             children.append(xyg.legend(show=False))
         if not self.figure._show_toolbar():

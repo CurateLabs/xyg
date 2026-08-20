@@ -27,7 +27,7 @@ The exhaustive file-level placement contract is
 ergonomics only.** XYG serves dual Python+Node hosts (see
 [host-parity.md](host-parity.md)): any decision that changes buffers, layout,
 encodings, or recorded §28 LOD/layout outcomes is implemented in Rust so both
-bindings stay thin and bit-identical. (Upstream XY's "Python owns decisions"
+bindings stay thin and bit-identical. (Upstream XYG's "Python owns decisions"
 rule is historical; this document states the current model directly.)
 
 Precisely:

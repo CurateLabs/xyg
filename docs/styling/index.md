@@ -5,10 +5,10 @@ description: Choose between CSS/Tailwind chrome hooks, mark styles, theme tokens
 
 # Styling Overview
 
-XY has two rendering surfaces. Chart chrome—titles, axis labels, legends,
+XYG has two rendering surfaces. Chart chrome—titles, axis labels, legends,
 tooltips, controls, and annotation labels—is DOM and participates in the normal
 CSS cascade. Data marks are painted by WebGL, SVG, or the native rasterizer, so
-XY compiles a deliberate CSS-property subset for them instead of claiming that
+XYG compiles a deliberate CSS-property subset for them instead of claiming that
 arbitrary browser selectors can reach a canvas.
 
 ~~~python demo exec toggle preview-code id=styling-overview-area-demo
@@ -117,7 +117,7 @@ section that owns it.
 ## Choose the styling surface
 
 Start with the thing you want to change. DOM chrome can use classes or arbitrary
-safe DOM declarations; rendered geometry must use XY's validated mark or axis
+safe DOM declarations; rendered geometry must use XYG's validated mark or axis
 vocabulary.
 
 | Mechanism | Small example | Best for |
@@ -222,13 +222,13 @@ def styling_overview_preview():
 
 ## What “your styles win” means
 
-XY's built-in **visual** chrome rules live in the low-priority `base` cascade
+XYG's built-in **visual** chrome rules live in the low-priority `base` cascade
 layer and use `:where(...)`, which has zero CSS specificity. A later utility
 layer or ordinary unlayered author selector therefore overrides the default
 background, color, padding, border, font, shadow, or cursor without
 `!important`.
 
-The promise is scoped to built-in visual defaults. XY still applies structural
+The promise is scoped to built-in visual defaults. XYG still applies structural
 inline layout—position, size, z-index, and interaction state—and an explicit
 inline `styles[slot]` or per-annotation style naturally outranks a class. Marks
 follow their compiled style contract rather than the DOM cascade.
@@ -246,8 +246,8 @@ other canvas geometry through typed props or mark `style=`.
 | A custom font silently falls back | `font-family` names a face the browser has not loaded. | Register it in host CSS with `@font-face`, then apply the family to the chart root; see [Custom fonts and export limitations](/docs/xy/styling/themes-and-tokens/#custom-fonts-and-export-limitations). |
 | A class changes the legend but not a line or point | Marks are WebGL/canvas geometry, not DOM nodes. | Use the mark's typed paint props or supported `style=` declarations from [Customize Each Part](/docs/xy/styling/customize/). |
 | Standalone HTML looks different from the application | The exported document cannot inherit the host page's stylesheet or design-system variables. | Put essential tokens on the chart and pass author rules with `to_html(custom_css=...)`. |
-| Native PNG ignores CSS or a custom font | The native renderer does not run a browser cascade and uses XY's baked bitmap font. | Use `engine=Engine.chromium` with `custom_css` when browser CSS/font fidelity is required. |
-| Axis titles or annotation labels are clipped | `overflow-hidden` is applied to the XY root or a tight ancestor. | Leave the chart root visible; apply intentional clipping to an outer wrapper and provide enough padding. |
+| Native PNG ignores CSS or a custom font | The native renderer does not run a browser cascade and uses XYG's baked bitmap font. | Use `engine=Engine.chromium` with `custom_css` when browser CSS/font fidelity is required. |
+| Axis titles or annotation labels are clipped | `overflow-hidden` is applied to the XYG root or a tight ancestor. | Leave the chart root visible; apply intentional clipping to an outer wrapper and provide enough padding. |
 | A responsive chart is blank or collapsed | `height="100%"` has no ancestor with a defined height, or the container initially measures zero. | Give the chart/component an explicit height; `width="100%"` can remain fluid. |
 | A class loses to another declaration | Inline `styles`, component-local styles, or later author rules win through the normal cascade. | Remove the competing declaration or move the intended value to the same/higher-priority styling surface instead of adding `!important`. |
 

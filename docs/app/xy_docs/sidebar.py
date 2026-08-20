@@ -1,4 +1,4 @@
-"""Curated sidebar for the XY documentation site."""
+"""Curated sidebar for the XYG documentation site."""
 
 from __future__ import annotations
 
@@ -103,7 +103,7 @@ def _leaf(
     *,
     guide_margin_class: str = "ml-[3rem]",
 ) -> rx.Component:
-    """Render one memoized XY documentation leaf.
+    """Render one memoized XYG documentation leaf.
 
     Args:
         title: Visible navigation label.
@@ -234,13 +234,13 @@ def _matches_route(
 
 @rx.memo
 def xy_docs_sidebar_comp(url: rx.vars.StringVar[str]) -> rx.Component:
-    """Render the memoized XY sidebar tree.
+    """Render the memoized XYG sidebar tree.
 
     Args:
         url: Current normalized documentation route.
 
     Returns:
-        Curated XY documentation navigation.
+        Curated XYG documentation navigation.
     """
     categories = rx.el.ul(
         docs_sidebar_category(
@@ -299,13 +299,13 @@ def xy_docs_sidebar_comp(url: rx.vars.StringVar[str]) -> rx.Component:
 
 
 def xy_docs_sidebar(route: str) -> rx.Component:
-    """Render the XY sidebar for one static documentation route.
+    """Render the XYG sidebar for one static documentation route.
 
     Args:
         route: Current page route.
 
     Returns:
-        Memoized XY sidebar component.
+        Memoized XYG sidebar component.
     """
     normalized_route = route.rstrip("/") + "/"
     return xy_docs_sidebar_comp(url=normalized_route)

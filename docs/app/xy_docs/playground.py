@@ -8,7 +8,7 @@ from collections.abc import Sequence
 import reflex as rx
 
 import reflex_xy
-import xyg as xy
+import xyg
 
 BERRY_PALETTE = ("#8e51ff", "#2b7fff", "#00b8db")
 INDIGO_PALETTE = ("#2b7fff", "#8e51ff", "#6a7282")
@@ -96,12 +96,12 @@ class ChartPlaygroundState(rx.State):
                 self.copied_chart = ""
 
     @reflex_xy.figure
-    def momentum(self) -> xy.Chart:
+    def momentum(self) -> xyg.Chart:
         """Build the state-backed area preview."""
         weeks = list(range(1, 13))
         active = [28, 32, 31, 38, 43, 41, 49, 55, 53, 61, 66, 72]
-        return xy.area_chart(
-            xy.area(
+        return xyg.area_chart(
+            xyg.area(
                 weeks,
                 active,
                 name="Current",
@@ -112,12 +112,12 @@ class ChartPlaygroundState(rx.State):
                 line_width=2,
                 line_opacity=1,
             ),
-            xy.tooltip(title="Week {x}", format={"y": ",.0f"}),
-            xy.x_axis(
+            xyg.tooltip(title="Week {x}", format={"y": ",.0f"}),
+            xyg.x_axis(
                 tick_count=6,
                 show=False,
             ),
-            xy.y_axis(
+            xyg.y_axis(
                 domain=(0, 80),
                 show=False,
                 grid=True,
@@ -128,35 +128,35 @@ class ChartPlaygroundState(rx.State):
         )
 
     @reflex_xy.figure
-    def comparison(self) -> xy.Chart:
+    def comparison(self) -> xyg.Chart:
         """Build the state-backed line comparison preview."""
         months = list(range(1, 13))
         signups = [18, 24, 22, 31, 36, 40, 45, 43, 52, 58, 63, 69]
         activated = [12, 16, 17, 21, 25, 29, 32, 35, 39, 44, 49, 54]
-        return xy.line_chart(
-            xy.theme(palette=[self.primary, self.secondary, self.accent]),
-            xy.line(
+        return xyg.line_chart(
+            xyg.theme(palette=[self.primary, self.secondary, self.accent]),
+            xyg.line(
                 months,
                 signups,
                 name="Signups",
                 width=2.6,
                 curve="smooth",
             ),
-            xy.line(
+            xyg.line(
                 months,
                 activated,
                 name="Activated",
                 width=2.6,
                 curve="smooth",
             ),
-            xy.tooltip(title="Month {x}", format={"y": ",.0f"}),
-            xy.legend(loc="upper left"),
-            xy.x_axis(
+            xyg.tooltip(title="Month {x}", format={"y": ",.0f"}),
+            xyg.legend(loc="upper left"),
+            xyg.x_axis(
                 tick_count=6,
                 tick_label_strategy="none",
                 grid=False,
             ),
-            xy.y_axis(
+            xyg.y_axis(
                 domain=(0, 80),
                 show=False,
                 grid=True,
@@ -167,7 +167,7 @@ class ChartPlaygroundState(rx.State):
         )
 
     @reflex_xy.figure
-    def product_mix(self) -> xy.Chart:
+    def product_mix(self) -> xyg.Chart:
         """Build the state-backed stack with only its outside edge rounded."""
         months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
         core = [28, 31, 35, 38, 42, 46]
@@ -176,21 +176,21 @@ class ChartPlaygroundState(rx.State):
         enterprise_base = [
             core_value + growth_value for core_value, growth_value in zip(core, growth, strict=True)
         ]
-        return xy.column_chart(
-            xy.theme(palette=[self.primary, self.secondary, self.accent]),
-            xy.column(months, core, name="Core"),
-            xy.column(months, growth, base=core, name="Growth"),
-            xy.column(
+        return xyg.column_chart(
+            xyg.theme(palette=[self.primary, self.secondary, self.accent]),
+            xyg.column(months, core, name="Core"),
+            xyg.column(months, growth, base=core, name="Growth"),
+            xyg.column(
                 months,
                 enterprise,
                 base=enterprise_base,
                 name="Enterprise",
                 corner_radius=(6, 0),
             ),
-            xy.tooltip(title="{x}", format={"y": "$,.0fK"}),
-            xy.legend(loc="upper left"),
-            xy.x_axis(tick_label_strategy="none", grid=False),
-            xy.y_axis(
+            xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
+            xyg.legend(loc="upper left"),
+            xyg.x_axis(tick_label_strategy="none", grid=False),
+            xyg.y_axis(
                 domain=(0, 100),
                 show=False,
                 grid=True,
@@ -201,12 +201,12 @@ class ChartPlaygroundState(rx.State):
         )
 
     @reflex_xy.figure
-    def funnel(self) -> xy.Chart:
+    def funnel(self) -> xyg.Chart:
         """Build the state-backed horizontal bar preview."""
         stages = ["Visit", "Signup", "Activate", "Invite", "Retain"]
         completion = [94, 82, 71, 58, 47]
-        return xy.bar_chart(
-            xy.bar(
+        return xyg.bar_chart(
+            xyg.bar(
                 stages,
                 completion,
                 orientation="horizontal",
@@ -217,27 +217,27 @@ class ChartPlaygroundState(rx.State):
                 },
                 corner_radius=(6, 0),
             ),
-            xy.tooltip(title="{x}", format={"y": ".0f%"}),
-            xy.x_axis(
+            xyg.tooltip(title="{x}", format={"y": ".0f%"}),
+            xyg.x_axis(
                 domain=(0, 100),
                 tick_label_strategy="none",
                 grid=False,
             ),
-            xy.y_axis(show=False, grid=True),
+            xyg.y_axis(show=False, grid=True),
             width="100%",
             height=300,
             padding=(24, 24, 42, 82),
         )
 
     @reflex_xy.figure
-    def traffic_share(self) -> xy.Chart:
+    def traffic_share(self) -> xyg.Chart:
         """Build the state-backed overlapping area preview."""
         months = list(range(1, 9))
         month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
         desktop = [0.68, 0.65, 0.63, 0.59, 0.61, 0.57, 0.54, 0.52]
         mobile = [0.42, 0.45, 0.43, 0.48, 0.51, 0.56, 0.61, 0.67]
-        return xy.area_chart(
-            xy.area(
+        return xyg.area_chart(
+            xyg.area(
                 months,
                 desktop,
                 name="Desktop",
@@ -248,7 +248,7 @@ class ChartPlaygroundState(rx.State):
                 line_width=2,
                 line_opacity=1,
             ),
-            xy.area(
+            xyg.area(
                 months,
                 mobile,
                 name="Mobile",
@@ -259,14 +259,14 @@ class ChartPlaygroundState(rx.State):
                 line_width=2,
                 line_opacity=1,
             ),
-            xy.tooltip(title="{x}", format={"y": ".0f%"}),
-            xy.legend(loc="upper left"),
-            xy.x_axis(
+            xyg.tooltip(title="{x}", format={"y": ".0f%"}),
+            xyg.legend(loc="upper left"),
+            xyg.x_axis(
                 tick_values=months,
                 tick_labels=month_labels,
                 show=False,
             ),
-            xy.y_axis(
+            xyg.y_axis(
                 domain=(0, 0.8),
                 show=False,
                 grid=True,
@@ -277,15 +277,15 @@ class ChartPlaygroundState(rx.State):
         )
 
     @reflex_xy.figure
-    def channel_mix(self) -> xy.Chart:
+    def channel_mix(self) -> xyg.Chart:
         """Build the state-backed grouped-column preview."""
         channels = ["Search", "Social", "Email", "Direct", "Partner", "Referral"]
         channel_centers = list(range(len(channels)))
         organic = [72, 58, 64, 49, 43, 36]
         paid = [54, 46, 38, 42, 35, 29]
-        return xy.column_chart(
-            xy.theme(palette=[self.primary, self.secondary, self.accent]),
-            xy.column(
+        return xyg.column_chart(
+            xyg.theme(palette=[self.primary, self.secondary, self.accent]),
+            xyg.column(
                 [center - 0.14 for center in channel_centers],
                 organic,
                 name="Organic",
@@ -294,7 +294,7 @@ class ChartPlaygroundState(rx.State):
                 corner_radius=0,
                 stroke_width=0,
             ),
-            xy.column(
+            xyg.column(
                 [center + 0.14 for center in channel_centers],
                 paid,
                 name="Paid",
@@ -303,15 +303,15 @@ class ChartPlaygroundState(rx.State):
                 corner_radius=0,
                 stroke_width=0,
             ),
-            xy.tooltip(title="Channel mix", format={"y": ",.0fK"}),
-            xy.legend(show=False),
-            xy.x_axis(
+            xyg.tooltip(title="Channel mix", format={"y": ",.0fK"}),
+            xyg.legend(show=False),
+            xyg.x_axis(
                 domain=(-0.5, 5.5),
                 tick_values=channel_centers,
                 tick_labels=channels,
                 show=False,
             ),
-            xy.y_axis(
+            xyg.y_axis(
                 domain=(0, 80),
                 show=False,
                 grid=True,
@@ -324,8 +324,8 @@ class ChartPlaygroundState(rx.State):
     @rx.var
     def momentum_code(self) -> str:
         """Return a copyable area-chart snippet using the selected palette."""
-        return f'''chart = xy.area_chart(
-    xy.area(
+        return f'''chart = xyg.area_chart(
+    xyg.area(
         list(range(1, 13)),
         [28, 32, 31, 38, 43, 41, 49, 55, 53, 61, 66, 72],
         name="Current",
@@ -336,35 +336,35 @@ class ChartPlaygroundState(rx.State):
         line_width=2,
         line_opacity=1,
     ),
-    xy.tooltip(title="Week {{x}}", format={{"y": ",.0f"}}),
-    xy.x_axis(tick_count=6, show=False),
-    xy.y_axis(domain=(0, 80), show=False, grid=True),
+    xyg.tooltip(title="Week {{x}}", format={{"y": ",.0f"}}),
+    xyg.x_axis(tick_count=6, show=False),
+    xyg.y_axis(domain=(0, 80), show=False, grid=True),
 )'''
 
     @rx.var
     def comparison_code(self) -> str:
         """Return a copyable line-chart snippet using the selected palette."""
         return f'''months = list(range(1, 13))
-chart = xy.line_chart(
-    xy.theme(palette=["{self.primary}", "{self.secondary}", "{self.accent}"]),
-    xy.line(
+chart = xyg.line_chart(
+    xyg.theme(palette=["{self.primary}", "{self.secondary}", "{self.accent}"]),
+    xyg.line(
         months,
         [18, 24, 22, 31, 36, 40, 45, 43, 52, 58, 63, 69],
         name="Signups",
         width=2.6,
         curve="smooth",
     ),
-    xy.line(
+    xyg.line(
         months,
         [12, 16, 17, 21, 25, 29, 32, 35, 39, 44, 49, 54],
         name="Activated",
         width=2.6,
         curve="smooth",
     ),
-    xy.tooltip(title="Month {{x}}", format={{"y": ",.0f"}}),
-    xy.legend(loc="upper left"),
-    xy.x_axis(tick_label_strategy="none", grid=False),
-    xy.y_axis(domain=(0, 80), show=False, grid=True),
+    xyg.tooltip(title="Month {{x}}", format={{"y": ",.0f"}}),
+    xyg.legend(loc="upper left"),
+    xyg.x_axis(tick_label_strategy="none", grid=False),
+    xyg.y_axis(domain=(0, 80), show=False, grid=True),
 )'''
 
     @rx.var
@@ -376,28 +376,28 @@ growth = [16, 18, 19, 23, 25, 29]
 enterprise = [7, 8, 10, 12, 14, 17]
 enterprise_base = [a + b for a, b in zip(core, growth, strict=True)]
 
-chart = xy.column_chart(
-    xy.theme(palette=["{self.primary}", "{self.secondary}", "{self.accent}"]),
-    xy.column(months, core, name="Core"),
-    xy.column(months, growth, base=core, name="Growth"),
-    xy.column(
+chart = xyg.column_chart(
+    xyg.theme(palette=["{self.primary}", "{self.secondary}", "{self.accent}"]),
+    xyg.column(months, core, name="Core"),
+    xyg.column(months, growth, base=core, name="Growth"),
+    xyg.column(
         months,
         enterprise,
         base=enterprise_base,
         name="Enterprise",
         corner_radius=(6, 0),
     ),
-    xy.tooltip(title="{{x}}", format={{"y": "$,.0fK"}}),
-    xy.legend(loc="upper left"),
-    xy.x_axis(tick_label_strategy="none", grid=False),
-    xy.y_axis(domain=(0, 100), show=False, grid=True),
+    xyg.tooltip(title="{{x}}", format={{"y": "$,.0fK"}}),
+    xyg.legend(loc="upper left"),
+    xyg.x_axis(tick_label_strategy="none", grid=False),
+    xyg.y_axis(domain=(0, 100), show=False, grid=True),
 )'''
 
     @rx.var
     def funnel_code(self) -> str:
         """Return a copyable horizontal-bar snippet using the selected palette."""
-        return f'''chart = xy.bar_chart(
-    xy.bar(
+        return f'''chart = xyg.bar_chart(
+    xyg.bar(
         ["Visit", "Signup", "Activate", "Invite", "Retain"],
         [94, 82, 71, 58, 47],
         orientation="horizontal",
@@ -408,9 +408,9 @@ chart = xy.column_chart(
         }},
         corner_radius=(6, 0),
     ),
-    xy.tooltip(title="{{x}}", format={{"y": ".0f%"}}),
-    xy.x_axis(domain=(0, 100), tick_label_strategy="none", grid=False),
-    xy.y_axis(show=False, grid=True),
+    xyg.tooltip(title="{{x}}", format={{"y": ".0f%"}}),
+    xyg.x_axis(domain=(0, 100), tick_label_strategy="none", grid=False),
+    xyg.y_axis(show=False, grid=True),
 )'''
 
     @rx.var
@@ -421,8 +421,8 @@ month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
 desktop = [0.68, 0.65, 0.63, 0.59, 0.61, 0.57, 0.54, 0.52]
 mobile = [0.42, 0.45, 0.43, 0.48, 0.51, 0.56, 0.61, 0.67]
 
-chart = xy.area_chart(
-    xy.area(
+chart = xyg.area_chart(
+    xyg.area(
         months,
         desktop,
         name="Desktop",
@@ -433,7 +433,7 @@ chart = xy.area_chart(
         line_width=2,
         line_opacity=1,
     ),
-    xy.area(
+    xyg.area(
         months,
         mobile,
         name="Mobile",
@@ -444,14 +444,14 @@ chart = xy.area_chart(
         line_width=2,
         line_opacity=1,
     ),
-    xy.tooltip(title="{{x}}", format={{"y": ".0f%"}}),
-    xy.legend(loc="upper left"),
-    xy.x_axis(
+    xyg.tooltip(title="{{x}}", format={{"y": ".0f%"}}),
+    xyg.legend(loc="upper left"),
+    xyg.x_axis(
         tick_values=months,
         tick_labels=month_labels,
         show=False,
     ),
-    xy.y_axis(domain=(0, 0.8), show=False, grid=True),
+    xyg.y_axis(domain=(0, 0.8), show=False, grid=True),
 )'''
 
     @rx.var
@@ -462,9 +462,9 @@ channel_centers = list(range(len(channels)))
 organic = [72, 58, 64, 49, 43, 36]
 paid = [54, 46, 38, 42, 35, 29]
 
-chart = xy.column_chart(
-    xy.theme(palette=["{self.primary}", "{self.secondary}", "{self.accent}"]),
-    xy.column(
+chart = xyg.column_chart(
+    xyg.theme(palette=["{self.primary}", "{self.secondary}", "{self.accent}"]),
+    xyg.column(
         [center - 0.14 for center in channel_centers],
         organic,
         name="Organic",
@@ -473,7 +473,7 @@ chart = xy.column_chart(
         corner_radius=0,
         stroke_width=0,
     ),
-    xy.column(
+    xyg.column(
         [center + 0.14 for center in channel_centers],
         paid,
         name="Paid",
@@ -482,15 +482,15 @@ chart = xy.column_chart(
         corner_radius=0,
         stroke_width=0,
     ),
-    xy.tooltip(title="Channel mix", format={{"y": ",.0fK"}}),
-    xy.legend(show=False),
-    xy.x_axis(
+    xyg.tooltip(title="Channel mix", format={{"y": ",.0fK"}}),
+    xyg.legend(show=False),
+    xyg.x_axis(
         domain=(-0.5, 5.5),
         tick_values=channel_centers,
         tick_labels=channels,
         show=False,
     ),
-    xy.y_axis(domain=(0, 80), show=False, grid=True),
+    xyg.y_axis(domain=(0, 80), show=False, grid=True),
 )'''
 
 

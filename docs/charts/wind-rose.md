@@ -10,7 +10,7 @@ components:
 A **wind rose** (also called a wind rose chart, wind rose plot, or wind rose
 diagram) summarizes
 how often observations arrive from each compass direction and how those
-observations are distributed across speed bands. XY bins the raw direction/speed
+observations are distributed across speed bands. XYG bins the raw direction/speed
 pairs in Python and renders the result as stacked polar bars.
 
 Use `wind_rose()` when you have one bearing and one magnitude per observation.
@@ -85,7 +85,7 @@ rose = xyg.wind_rose(
 ~~~
 
 The final edge should cover the fastest observation; values above it do not
-belong to a displayed band. XY removes duplicate edges and orders the remaining
+belong to a displayed band. XYG removes duplicate edges and orders the remaining
 values. When `speed_bins` is omitted, it derives up to four readable bands from
 the speed quartiles and rounds the top edge upward so every finite observation
 is covered.
@@ -165,7 +165,7 @@ def wind_rose_annual_demo():
 - `sectors` must be 3 or greater.
 - `speed_bins` must contain at least one edge when supplied.
 
-XY raises `ValueError` for mismatched arrays, an empty finite dataset, too few
+XYG raises `ValueError` for mismatched arrays, an empty finite dataset, too few
 sectors, or an empty band definition.
 
 ## Read and Style the Result
@@ -224,7 +224,7 @@ clockwise theta settings automatically.
 
 ### What happens when I omit `speed_bins`?
 
-XY derives up to four bands from the finite speed quartiles and rounds the final
+XYG derives up to four bands from the finite speed quartiles and rounds the final
 edge upward to include the maximum observation.
 
 ### Why are some observations missing?
