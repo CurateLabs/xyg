@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 5;
+pub const SCENE_VERSION: u32 = 6;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -946,6 +946,11 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     return Err(SceneError::Length);
                 }
             }
+            SceneRecordKind::Band => {
+                if symbol != 0 || diameter != 0.0 {
+                    return Err(SceneError::Length);
+                }
+            }
         }
     }
 
@@ -1003,6 +1008,9 @@ pub enum SceneRecordKind {
     Scatter = 0,
     Polyline = 1,
     Rect = 2,
+    /// Filled band: each record is one (top, base) sample; consecutive same
+    /// stable-id/style_ref runs form a closed polygon (tops forward, bases reverse).
+    Band = 3,
 }
 
 impl SceneRecordKind {
@@ -1011,6 +1019,7 @@ impl SceneRecordKind {
             0 => Ok(Self::Scatter),
             1 => Ok(Self::Polyline),
             2 => Ok(Self::Rect),
+            3 => Ok(Self::Band),
             _ => Err(SceneError::Length),
         }
     }
@@ -1148,8 +1157,10 @@ impl<'a> SceneBatch<'a> {
         if kinds.iter().enumerate().any(|(index, kind)| {
             !x0[index].is_finite()
                 || !y0[index].is_finite()
-                || (SceneRecordKind::from_code(*kind) == Ok(SceneRecordKind::Rect)
-                    && (!x1[index].is_finite() || !y1[index].is_finite()))
+                || (matches!(
+                        SceneRecordKind::from_code(*kind),
+                        Ok(SceneRecordKind::Rect | SceneRecordKind::Band)
+                    ) && (!x1[index].is_finite() || !y1[index].is_finite()))
         }) || diameter
             .iter()
             .chain(stroke_width)
@@ -1235,7 +1246,7 @@ impl<'a> SceneBatch<'a> {
                     0.0,
                     0.0,
                 ],
-                SceneRecordKind::Rect => [
+                SceneRecordKind::Rect | SceneRecordKind::Band => [
                     self.x_scale.pixel(self.x0[index]),
                     self.y_scale.pixel(self.y0[index]),
                     self.x_scale.pixel(self.x1[index]),
@@ -1244,7 +1255,7 @@ impl<'a> SceneBatch<'a> {
             };
             let visible = mapped.iter().all(|value| value.is_finite())
                 && match kind {
-                    SceneRecordKind::Polyline => true,
+                    SceneRecordKind::Polyline | SceneRecordKind::Band => true,
                     SceneRecordKind::Scatter => {
                         let style = self.style_refs[index] as usize;
                         let geometry = MarkerGeometry::new(
@@ -1283,6 +1294,8 @@ impl<'a> SceneBatch<'a> {
                         mapped[0].max(mapped[2]),
                         mapped[1].max(mapped[3]),
                     ],
+                    // Keep top/base sample order — winding matters for the fill.
+                    SceneRecordKind::Band => mapped,
                 }
             };
             for value in record_coordinates {
@@ -1638,7 +1651,8 @@ impl SceneDocument {
                 || !diameter.is_finite()
                 || diameter < 0.0
                 || (kind != SceneRecordKind::Scatter && diameter != 0.0)
-                || (kind != SceneRecordKind::Rect && coordinates[2..] != [0.0, 0.0])
+                || (matches!(kind, SceneRecordKind::Scatter | SceneRecordKind::Polyline)
+                    && coordinates[2..] != [0.0, 0.0])
                 || (visible
                     && kind == SceneRecordKind::Rect
                     && (coordinates[0] > coordinates[2] || coordinates[1] > coordinates[3]))
@@ -1653,6 +1667,15 @@ impl SceneDocument {
                     SceneRecordKind::Rect => {
                         41 + if styles[style_ref].stroke_width > 0.0 {
                             51
+                        } else {
+                            0
+                        }
+                    }
+                    // Worst-case per-sample share of a closed Band fill (and optional
+                    // stroke): a two-sample run emits 41 fill bytes, so reserve 21 each.
+                    SceneRecordKind::Band => {
+                        21 + if styles[style_ref].stroke_width > 0.0 {
+                            26
                         } else {
                             0
                         }
@@ -1801,6 +1824,52 @@ impl SceneDocument {
                     }
                     out.push_str("/>");
                     index += 1;
+                }
+                SceneRecordKind::Band => {
+                    let id = record.stable_id;
+                    let style_ref = record.style_ref;
+                    let start = index;
+                    while index < self.records.len() {
+                        let point = self.records[index];
+                        if point.kind != SceneRecordKind::Band
+                            || point.stable_id != id
+                            || point.style_ref != style_ref
+                            || !point.visible
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                    let run = &self.records[start..index];
+                    if run.len() >= 2 {
+                        out.push_str("<path d=\"M ");
+                        push_num(&mut out, run[0].coordinates[0]);
+                        out.push(' ');
+                        push_num(&mut out, run[0].coordinates[1]);
+                        for point in &run[1..] {
+                            out.push_str(" L ");
+                            push_num(&mut out, point.coordinates[0]);
+                            out.push(' ');
+                            push_num(&mut out, point.coordinates[1]);
+                        }
+                        for point in run.iter().rev() {
+                            out.push_str(" L ");
+                            push_num(&mut out, point.coordinates[2]);
+                            out.push(' ');
+                            push_num(&mut out, point.coordinates[3]);
+                        }
+                        out.push_str(" Z\"");
+                        push_paint(&mut out, "fill", style.fill, None);
+                        if style.stroke_width > 0.0 {
+                            push_paint(&mut out, "stroke", style.stroke, None);
+                            out.push_str(" stroke-width=\"");
+                            push_num(&mut out, style.stroke_width);
+                            out.push('"');
+                        } else {
+                            out.push_str(" stroke=\"none\"");
+                        }
+                        out.push_str("/>");
+                    }
                 }
                 SceneRecordKind::Polyline => {
                     out.push_str("<polyline points=\"");
@@ -2126,6 +2195,54 @@ impl SceneDocument {
                     }
                     index += 1;
                 }
+                SceneRecordKind::Band => {
+                    let start = index;
+                    let id = record.stable_id;
+                    let style_ref = record.style_ref;
+                    while index < self.records.len() {
+                        let point = self.records[index];
+                        if point.kind != SceneRecordKind::Band
+                            || point.stable_id != id
+                            || point.style_ref != style_ref
+                            || !point.visible
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                    let run = &self.records[start..index];
+                    if run.len() >= 2 {
+                        let count = (run.len() * 2) as u32;
+                        out.push(1); // OP_FILL_POLY
+                        out.extend_from_slice(&count.to_le_bytes());
+                        for point in run {
+                            push_raster_f32(out, point.coordinates[0], scale)?;
+                            push_raster_f32(out, point.coordinates[1], scale)?;
+                        }
+                        for point in run.iter().rev() {
+                            push_raster_f32(out, point.coordinates[2], scale)?;
+                            push_raster_f32(out, point.coordinates[3], scale)?;
+                        }
+                        out.extend_from_slice(&style.fill);
+                        if style.stroke_width > 0.0 {
+                            out.push(3); // OP_STROKE
+                            out.extend_from_slice(&count.to_le_bytes());
+                            for point in run {
+                                push_raster_f32(out, point.coordinates[0], scale)?;
+                                push_raster_f32(out, point.coordinates[1], scale)?;
+                            }
+                            for point in run.iter().rev() {
+                                push_raster_f32(out, point.coordinates[2], scale)?;
+                                push_raster_f32(out, point.coordinates[3], scale)?;
+                            }
+                            push_raster_f32(out, style.stroke_width, scale)?;
+                            out.extend_from_slice(&style.stroke);
+                            out.push(1); // closed
+                            out.extend_from_slice(&0u32.to_le_bytes());
+                            out.push(1);
+                        }
+                    }
+                }
                 SceneRecordKind::Polyline => {
                     let start = index;
                     let id = record.stable_id;
@@ -2299,6 +2416,27 @@ impl SceneDocument {
                         index += 1;
                     }
                 }
+                SceneRecordKind::Band => {
+                    if record.coordinates[0] != record.coordinates[2] {
+                        return Err(SceneError::Length);
+                    }
+                    while index < self.records.len() {
+                        let next = self.records[index];
+                        if !next.visible
+                            || next.kind != SceneRecordKind::Band
+                            || next.stable_id != record.stable_id
+                            || next.style_ref != record.style_ref
+                        {
+                            break;
+                        }
+                        // Browser area paint uses one x column with a y-base; reject
+                        // bands whose base x differs from the top sample.
+                        if next.coordinates[0] != next.coordinates[2] {
+                            return Err(SceneError::Length);
+                        }
+                        index += 1;
+                    }
+                }
             }
             groups.push(Group {
                 start,
@@ -2318,7 +2456,7 @@ impl SceneDocument {
             .checked_add(descriptors)
             .ok_or(SceneError::Limit)?;
         for group in &groups {
-            let columns = if group.kind == SceneRecordKind::Rect {
+            let columns = if matches!(group.kind, SceneRecordKind::Rect | SceneRecordKind::Band) {
                 6
             } else {
                 4
@@ -2379,11 +2517,12 @@ impl SceneDocument {
             out[descriptor + 1] = group.symbol;
             let count = group.end - group.start;
             out[descriptor + 4..descriptor + 8].copy_from_slice(&(count as u32).to_le_bytes());
-            let coordinate_columns = if group.kind == SceneRecordKind::Rect {
-                4
-            } else {
-                2
-            };
+            let coordinate_columns =
+                if matches!(group.kind, SceneRecordKind::Rect | SceneRecordKind::Band) {
+                    4
+                } else {
+                    2
+                };
             for column in 0..coordinate_columns {
                 let column_offset = out.len();
                 out[descriptor + 8 + column * 4..descriptor + 12 + column * 4]
@@ -3077,7 +3216,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 5);
+        assert_eq!(SCENE_VERSION, 6);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -3113,7 +3252,7 @@ mod tests {
         .unwrap();
         let encoded = batch.encode();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 5);
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), SCENE_VERSION);
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
@@ -3855,6 +3994,46 @@ mod tests {
     }
 
     #[test]
+    fn scene_v6_band_fills_closed_path_from_top_and_base() {
+        let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 2.0, layout.left, layout.right, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 2.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &[3, 3],
+            &[9, 9],
+            &[0, 0],
+            &[57, 99, 235, 180],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[0.0, 0.0],
+            &[0, 0],
+            &[0.0, 2.0],
+            &[1.0, 1.5],
+            &[0.0, 2.0],
+            &[0.0, 0.0],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            SCENE_VERSION
+        );
+        let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
+        assert!(svg.contains("<path d=\"M "));
+        assert!(svg.contains(" Z\""));
+        let commands = SceneDocument::decode(&encoded)
+            .unwrap()
+            .to_raster_commands(1.0)
+            .unwrap();
+        assert!(commands.contains(&1), "band fill poly opcode missing");
+    }
+
+    #[test]
     fn scene_v5_encodes_authored_chrome_text() {
         let layout = PlotLayout::new(200.0, 120.0, 40.0, 20.0, 20.0, 30.0).unwrap();
         let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false).unwrap();
@@ -3883,7 +4062,7 @@ mod tests {
         )
         .unwrap();
         let encoded = batch.encode();
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 5);
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), SCENE_VERSION);
         assert!(encoded.ends_with(b"Helloxy"));
         let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
         assert!(svg.contains("data-xy-chrome=\"title\""));

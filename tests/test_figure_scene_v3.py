@@ -149,10 +149,43 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
     with pytest.raises(ValueError, match="invalid canonical scene"):
         _native.scene_svg(b"not-a-scene")
-    unsupported = Figure().area([0, 1], [1, 2])
-    with pytest.raises(UnsupportedSceneV3, match="area"):
+    unsupported = Figure().ribbon([0.0], [1.0], [0.0], [0.3], [0.2], [0.5])
+    with pytest.raises(UnsupportedSceneV3, match="ribbon"):
         unsupported.to_scene()
     assert "<svg" in unsupported.to_svg()
+
+
+def test_python_scene_compiles_area_and_error_band() -> None:
+    area = Figure(width=240, height=160)
+    area.axis_options["x"]["domain"] = (0.0, 2.0)
+    area.axis_options["y"]["domain"] = (0.0, 3.0)
+    area.area([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], base=0.0, color="#3987e5", opacity=0.5)
+    scene = area.to_scene()
+    assert scene[4:8] == (6).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert '<path d="M ' in svg
+    assert ' Z"' in svg
+
+    band = Figure(width=240, height=160)
+    band.axis_options["x"]["domain"] = (0.0, 2.0)
+    band.axis_options["y"]["domain"] = (0.0, 3.0)
+    band.error_band([0.0, 1.0, 2.0], [0.7, 1.2, 0.9], [1.3, 1.8, 1.5], color="#22c55e")
+    assert '<path d="M ' in _native.scene_svg(band.to_scene())
+
+
+def test_python_scene_compiles_box_and_contour() -> None:
+    box = Figure(width=240, height=160)
+    box.axis_options["x"]["domain"] = (-0.5, 1.5)
+    box.axis_options["y"]["domain"] = (0.0, 5.0)
+    box.box([[1.0, 2.0, 2.5, 3.0, 4.0], [0.5, 1.5, 2.0, 2.5, 3.5]], show_outliers=False)
+    svg = _native.scene_svg(box.to_scene())
+    assert svg.count("<rect ") >= 3  # clip + two boxes
+    assert svg.count("<polyline ") >= 2
+
+    contour = Figure(width=240, height=160)
+    z = np.array([[0.0, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.0]], dtype=np.float64)
+    contour.contour(z, levels=[0.5, 1.0, 1.5], color="#ef4444")
+    assert "<polyline " in _native.scene_svg(contour.to_scene())
 
 
 @pytest.mark.parametrize("kind", ["line", "scatter"])
@@ -195,7 +228,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (5).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (6).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg
