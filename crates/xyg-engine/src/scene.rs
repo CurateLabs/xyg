@@ -2792,6 +2792,207 @@ fn push_regular_polygon(
     out.push_str(" Z\"");
 }
 
+/// DejaVu Sans advances at BASE_PX=16 for printable ASCII (matches
+/// `python/xy/_fontmetrics.py` / `font.rs` so native and WASM gutters agree
+/// without pulling the raster coverage atlas into the browser adapter).
+const ASCII_ADVANCES: [i32; 95] = [
+    5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    5, 5, 13, 13, 13, 8, 16, 11, 11, 11, 12, 10, 9, 12, 12, 5, 5, 10, 9, 14, 12, 13, 10, 13, 11,
+    10, 10, 12, 11, 16, 11, 10, 11, 6, 5, 6, 13, 8, 8, 10, 10, 9, 10, 10, 6, 10, 10, 4, 4, 9, 4,
+    16, 10, 10, 10, 10, 7, 8, 6, 10, 9, 13, 9, 9, 8, 10, 5, 10, 13,
+];
+const FONT_BASE_PX: f64 = 16.0;
+const MISSING_ADVANCE: i32 = 16; // U+FFFD width at BASE_PX
+
+fn text_advance(text: &str, font_size: f64) -> f64 {
+    let mut units = 0_i32;
+    for ch in text.chars() {
+        let code = ch as u32;
+        units += if (32..=126).contains(&code) {
+            ASCII_ADVANCES[(code - 32) as usize]
+        } else {
+            MISSING_ADVANCE
+        };
+    }
+    font_size * f64::from(units) / FONT_BASE_PX
+}
+
+const AXIS_TEXT_EDGE_PAD: f64 = 4.0;
+const Y_TITLE_TICK_GAP: f64 = 0.4;
+const LABEL_FONT_PX: f64 = 12.0;
+
+/// Inputs for [`cartesian_scene_margins`].
+#[derive(Clone, Copy, Debug)]
+pub struct CartesianLayoutRequest<'a> {
+    pub viewport_width: f64,
+    pub viewport_height: f64,
+    pub authored_padding: Option<[f64; 4]>,
+    pub title: &'a str,
+    pub x_label: &'a str,
+    pub y_label: &'a str,
+    pub x_kind: ScaleKind,
+    pub x_lo: f64,
+    pub x_hi: f64,
+    pub x_constant: f64,
+    pub x_mask_nonpositive: bool,
+    pub y_kind: ScaleKind,
+    pub y_lo: f64,
+    pub y_hi: f64,
+    pub y_constant: f64,
+    pub y_mask_nonpositive: bool,
+}
+
+/// Cartesian default gutters for the Scene-eligible export subset.
+///
+/// Mirrors `_svg.layout()` for primary x/y, default sides, no colorbar, and
+/// no secondary axes: compact/regular pads or authored `(top, right, bottom,
+/// left)` padding, title band, measured default tick labels, and outside
+/// axis-title rooms. Hosts must not invent Scene margins once this lands.
+pub fn cartesian_scene_margins(
+    request: CartesianLayoutRequest<'_>,
+) -> Result<(f64, f64, f64, f64), SceneError> {
+    let CartesianLayoutRequest {
+        viewport_width,
+        viewport_height,
+        authored_padding,
+        title,
+        x_label,
+        y_label,
+        x_kind,
+        x_lo,
+        x_hi,
+        x_constant,
+        x_mask_nonpositive,
+        y_kind,
+        y_lo,
+        y_hi,
+        y_constant,
+        y_mask_nonpositive,
+    } = request;
+    if ![viewport_width, viewport_height]
+        .iter()
+        .all(|value| value.is_finite() && *value > 0.0)
+    {
+        return Err(SceneError::NonFinite);
+    }
+    if let Some(padding) = authored_padding {
+        if padding.iter().any(|value| !value.is_finite() || *value < 0.0) {
+            return Err(SceneError::NonFinite);
+        }
+    }
+    let compact = viewport_width < 520.0;
+    let (mut top, mut right, mut bottom, mut left) = match authored_padding {
+        Some([top, right, bottom, left]) => (top, right, bottom, left),
+        None if compact => (6.0, 8.0, 36.0, 46.0),
+        None => (10.0, 14.0, 42.0, 62.0),
+    };
+    let title_wrap = (viewport_width - left - right).max(40.0);
+    if !title.is_empty() {
+        let width = text_advance(title, 14.0);
+        let lines = if width <= title_wrap {
+            1.0
+        } else {
+            (width / title_wrap).ceil().max(1.0)
+        };
+        let height = lines * 14.0 * 1.2;
+        top += {
+            let floor = if compact { 26.0_f64 } else { 30.0_f64 };
+            floor.max(height + 8.0)
+        };
+    }
+
+    let provisional_w = (viewport_width - left - right).max(40.0);
+    let provisional_h = (viewport_height - top - bottom).max(40.0);
+    let x_scale = AxisScale::new(
+        x_kind,
+        x_lo,
+        x_hi,
+        0.0,
+        provisional_w,
+        x_constant,
+        x_mask_nonpositive,
+    )?;
+    let y_scale = AxisScale::new(
+        y_kind,
+        y_lo,
+        y_hi,
+        provisional_h,
+        0.0,
+        y_constant,
+        y_mask_nonpositive,
+    )?;
+    let x_ticks = x_scale.ticks(provisional_w, true)?;
+    let y_ticks = y_scale.ticks(provisional_h, false)?;
+
+    let mut tick_label_width = 0.0_f64;
+    for value in &y_ticks.labeled {
+        tick_label_width = tick_label_width.max(text_advance(
+            &format_tick(*value, y_ticks.step, y_kind),
+            LABEL_FONT_PX,
+        ));
+    }
+    let y_tick_room = if y_ticks.labeled.is_empty() {
+        0.0
+    } else {
+        AXIS_TEXT_EDGE_PAD + 8.0 + tick_label_width
+    };
+    let left_needed = if y_label.is_empty() {
+        y_tick_room
+    } else {
+        AXIS_TEXT_EDGE_PAD
+            + LABEL_FONT_PX * 1.2
+            + Y_TITLE_TICK_GAP * LABEL_FONT_PX
+            + y_tick_room
+    };
+    left = left.max(left_needed);
+
+    let x_tick_room = if x_ticks.labeled.is_empty() {
+        0.0
+    } else {
+        AXIS_TEXT_EDGE_PAD + 8.0 + LABEL_FONT_PX
+    };
+    let bottom_needed = if x_label.is_empty() {
+        x_tick_room
+    } else {
+        (AXIS_TEXT_EDGE_PAD + 24.0 + LABEL_FONT_PX * 0.82 + LABEL_FONT_PX * 0.2).max(x_tick_room)
+    };
+    bottom = bottom.max(bottom_needed);
+
+    // Terminal x-label overhang against the spine ends (two passes).
+    for _ in 0..2 {
+        let plot_w = (viewport_width - left - right).max(40.0);
+        let x_scale = AxisScale::new(
+            x_kind,
+            x_lo,
+            x_hi,
+            0.0,
+            plot_w,
+            x_constant,
+            x_mask_nonpositive,
+        )?;
+        let x_ticks = x_scale.ticks(plot_w, true)?;
+        if x_ticks.labeled.is_empty() {
+            break;
+        }
+        let first = x_ticks.labeled[0];
+        let last = *x_ticks.labeled.last().expect("non-empty");
+        let first_w = text_advance(&format_tick(first, x_ticks.step, x_kind), LABEL_FONT_PX);
+        let last_w = text_advance(&format_tick(last, x_ticks.step, x_kind), LABEL_FONT_PX);
+        let first_x = x_scale.pixel(first);
+        let last_x = x_scale.pixel(last);
+        let next_left = left.max(AXIS_TEXT_EDGE_PAD + first_w * 0.5 - first_x);
+        let next_right = right.max(AXIS_TEXT_EDGE_PAD + last_x + last_w * 0.5 - plot_w);
+        if (next_left - left).abs() < 1e-9 && (next_right - right).abs() < 1e-9 {
+            break;
+        }
+        left = next_left;
+        right = next_right;
+    }
+
+    PlotLayout::new(viewport_width, viewport_height, left, right, top, bottom)?;
+    Ok((left, right, top, bottom))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2831,6 +3032,34 @@ mod tests {
             }
         }
         Some(texts)
+    }
+
+    #[test]
+    fn cartesian_scene_margins_match_compact_defaults() {
+        let (left, right, top, bottom) = cartesian_scene_margins(CartesianLayoutRequest {
+            viewport_width: 320.0,
+            viewport_height: 240.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 0.0,
+            x_hi: 4.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            y_kind: ScaleKind::Linear,
+            y_lo: 0.0,
+            y_hi: 5.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+        })
+        .unwrap();
+        assert!(left >= 46.0, "left={left}");
+        assert!(right >= 8.0, "right={right}");
+        assert!(top >= 6.0, "top={top}");
+        assert!(bottom >= 36.0, "bottom={bottom}");
+        PlotLayout::new(320.0, 240.0, left, right, top, bottom).unwrap();
     }
 
     #[test]

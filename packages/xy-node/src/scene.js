@@ -3,6 +3,7 @@ import {
   pointer,
   xySceneAxisTicks,
   xySceneBatchEncode,
+  xyScenePlotLayout,
   xySceneRasterCommands,
   xySceneScaleMap,
   xySceneScatterSvg,
@@ -256,7 +257,7 @@ function rgba8(css, opacity, name) {
 }
 
 /** Compile the representative cartesian scatter/line/bar subset to Scene v5. */
-export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
+export function figureSceneV3(figure, { margins = null } = {}) {
   if (figure.coords !== "cartesian") throw new RangeError("Scene v5 figure compilation currently supports cartesian coordinates only");
   if (figure.annotations?.length) throw new RangeError("Scene v5 does not yet encode annotations");
   const supported = new Set(["scatter", "line", "bar"]);
@@ -292,10 +293,33 @@ export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
       else { x0.push(trace.x[index]); y0.push(trace.y[index]); x1.push(0); y1.push(0); }
     }
   }
-  return sceneBatchEncode({ viewport: [figure.width, figure.height], margins,
-    xAxis: { id: 1, domain: figure._range("x") }, yAxis: { id: 2, domain: figure._range("y") },
+  const title = figure.title ?? "";
+  const xLabel = figure.xLabel ?? figure.x_label ?? "";
+  const yLabel = figure.yLabel ?? figure.y_label ?? "";
+  const xDomain = figure._range("x");
+  const yDomain = figure._range("y");
+  let resolvedMargins = margins;
+  if (resolvedMargins == null) {
+    const out = new Float64Array(4);
+    const titleBytes = new TextEncoder().encode(String(title));
+    const xLabelBytes = new TextEncoder().encode(String(xLabel));
+    const yLabelBytes = new TextEncoder().encode(String(yLabel));
+    const written = xyScenePlotLayout(
+      Number(figure.width), Number(figure.height), 0,
+      0, Number(xDomain[0]), Number(xDomain[1]), 1, 0,
+      0, Number(yDomain[0]), Number(yDomain[1]), 1, 0,
+      titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
+      xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
+      yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
+      f64Ptr(out),
+    );
+    if (written !== 4n && written !== 4) throw new RangeError("invalid canonical scene plot layout");
+    resolvedMargins = [out[0], out[1], out[2], out[3]];
+  }
+  return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
+    xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
     kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-    title: figure.title ?? "", xLabel: figure.xLabel ?? figure.x_label ?? "", yLabel: figure.yLabel ?? figure.y_label ?? "",
+    title, xLabel, yLabel,
   });
 }
 

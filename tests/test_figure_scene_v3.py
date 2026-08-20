@@ -130,7 +130,7 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     figure.set_axis("y", label="Vertical", domain=(0, 5))
 
     def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("public export must not select incomplete Scene v4")
+        raise AssertionError("public export must not select incomplete Scene chrome")
 
     monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
     monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)

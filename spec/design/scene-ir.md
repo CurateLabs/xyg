@@ -207,7 +207,7 @@ Version 4 derived default numeric chrome only. Version 5 adds authored chrome
 paints and title/axis-label text in the trailer. Custom tick values/text,
 custom sides, minor ticks, legends, and annotations remain rejected from
 explicit Scene compilation; public exports retain compatibility routing until
-canonical layout/gutter selection lands.
+remaining chrome parity lands beside `xyg_scene_plot_layout`.
 
 ## Version 5: authored chrome paints and title/axis labels
 
@@ -232,8 +232,10 @@ consumers paint grid/axis/labels from the trailer and place title / x-label /
 y-label with deterministic margin-relative anchors. Hosts may now compile
 figure titles and axis labels into the explicit Scene path; annotations,
 legends, custom sides, and authored tick geometry remain rejected until later
-slices. Public SVG/PNG/PDF still use the compatibility renderers until layout
-gutters and remaining chrome records land.
+slices. `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
+Public SVG/PNG/PDF still use the compatibility renderers until remaining
+chrome (backgrounds, density overlays, fuller measured rooms) can select
+Scene without dropping established export behavior.
 
 ## Evidence and extension order
 
@@ -243,7 +245,7 @@ text, and customization through the compatibility path. Node tests consume the
 same scene fixture and reject the same unsupported subset. ABI generation,
 parity, and version-first loading cover both hosts.
 
-The first browser consumer accepts the exact v4 bytes through the static WASM
+The first browser consumer accepts the exact v5 bytes through the static WASM
 Worker. Rust validates and lowers them through
 `SceneDocument::to_browser_painter` into checked f32 geometry and split-u64
 stable-ID columns plus the default numeric ticks and formatted UTF-8 labels.
@@ -256,9 +258,10 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining mark families, legend/annotation records, and
-canonical layout/gutter selection so public SVG/PNG/PDF can select the Scene
-path. Category, angular, and time/calendar tick ladders already move through
-`xyg_scene_axis_ticks` kinds 2–5, and Scene v5 carries authored chrome paints
-plus title/axis-label UTF-8. Browser DOM measurement and WebGL paint remain
+Next slices add remaining mark families and legend/annotation records, then
+select public SVG/PNG/PDF Scene routing once backgrounds/density/chrome parity
+is covered. Category, angular, and time/calendar tick ladders already move
+through `xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome
+paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
+gutters for Scene compilation. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

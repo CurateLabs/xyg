@@ -1541,6 +1541,57 @@ def scene_scale_map(
     return out.reshape(source.shape)
 
 
+def scene_plot_layout(
+    *,
+    viewport: tuple[float, float],
+    x_axis: tuple[int, float, float, float, bool],
+    y_axis: tuple[int, float, float, float, bool],
+    title: str = "",
+    x_label: str = "",
+    y_label: str = "",
+    padding: tuple[float, float, float, float] | None = None,
+) -> tuple[float, float, float, float]:
+    """Rust-owned Cartesian gutters for the Scene-eligible export subset.
+
+    Returns ``(left, right, top, bottom)``. ``padding`` is optional authored
+    ``(top, right, bottom, left)``; omit it for compact/regular defaults.
+    """
+    title_b = title.encode("utf-8")
+    xlabel_b = x_label.encode("utf-8")
+    ylabel_b = y_label.encode("utf-8")
+    out = (ctypes.c_double * 4)()
+    pad_buf = None
+    pad_ptr = None
+    if padding is not None:
+        pad_buf = (ctypes.c_double * 4)(*padding)
+        pad_ptr = ctypes.cast(pad_buf, ctypes.POINTER(ctypes.c_double))
+    written = _lib.xyg_scene_plot_layout(
+        float(viewport[0]),
+        float(viewport[1]),
+        pad_ptr,
+        int(x_axis[0]),
+        float(x_axis[1]),
+        float(x_axis[2]),
+        float(x_axis[3]),
+        1 if x_axis[4] else 0,
+        int(y_axis[0]),
+        float(y_axis[1]),
+        float(y_axis[2]),
+        float(y_axis[3]),
+        1 if y_axis[4] else 0,
+        title_b if title_b else None,
+        len(title_b),
+        xlabel_b if xlabel_b else None,
+        len(xlabel_b),
+        ylabel_b if ylabel_b else None,
+        len(ylabel_b),
+        out,
+    )
+    if written != 4:
+        raise ValueError("invalid canonical scene plot layout")
+    return float(out[0]), float(out[1]), float(out[2]), float(out[3])
+
+
 def scene_batch_encode(
     *,
     viewport: tuple[float, float],
