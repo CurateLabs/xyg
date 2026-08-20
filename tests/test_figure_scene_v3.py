@@ -146,6 +146,22 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
 
 
+def test_try_public_scene_helpers_select_migrated_subset() -> None:
+    from xy import _scene_v3
+
+    figure = representative_figure()
+    svg = _scene_v3.try_public_svg(figure)
+    assert svg is not None
+    assert 'clip-path="url(#xy-scene-plot)"' in svg
+    png = _scene_v3.try_public_png(figure, scale=1)
+    assert png is not None and png.startswith(b"\x89PNG\r\n\x1a\n")
+    pdf = _scene_v3.try_public_pdf(figure)
+    assert pdf is not None and pdf.startswith(b"%PDF-")
+    styled = representative_figure()
+    styled.set_axis("x", style={"grid_color": "#123456"})
+    assert _scene_v3.try_public_svg(styled) is None
+
+
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
     with pytest.raises(ValueError, match="invalid canonical scene"):
         _native.scene_svg(b"not-a-scene")

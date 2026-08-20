@@ -2233,20 +2233,25 @@ class Figure(AnnotationsMixin, PayloadMixin):
         """Static SVG (_svg.py): a pure-Python render of the same decimated
         payload the browser client consumes — resolution-independent, tiny
         (screen-bounded regardless of source size), and dependency-free.
-        `width`/`height` override the figure's pixel size."""
+        `width`/`height` override the figure's pixel size.
+
+        Scene SVG is available via ``_scene_v3.try_public_svg`` / explicit
+        ``to_scene()`` consumers; public auto-selection waits on chrome and
+        CSS-spelling parity with ``_svg.py``.
+        """
         from . import _svg
 
         return _svg.to_svg(self, path, width=width, height=height)
 
     def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:
-        """Compile the migrated Scene v5 mark subset for this figure.
+        """Compile the migrated Scene mark subset for this figure.
 
         Supports cartesian scatter/line (including step), bar/column/histogram/
         violin rects, segments/errorbar/stem polylines, area/error_band/ribbon
         bands, triangle_mesh polyfills, and unlabeled rule/band annotations.
         Unsupported marks or customization raise explicitly; ordinary SVG and
-        raster exports retain their established renderer as the compatibility
-        fallback until public Scene selection covers remaining chrome.
+        raster exports retain their established renderer until public Scene
+        auto-selection covers remaining chrome and CSS-spelling parity.
         """
         from . import _scene_v3
 
