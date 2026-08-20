@@ -5359,6 +5359,9 @@ pub unsafe extern "C" fn xyg_temporal_controller_state(
 }
 
 /// Set selected half-open range.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_set_range(
     handle: u64,
@@ -5375,6 +5378,9 @@ pub unsafe extern "C" fn xyg_temporal_controller_set_range(
 }
 
 /// Set cursor (re-centers window when possible).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_set_cursor(handle: u64, cursor: i64) -> i32 {
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
@@ -5386,6 +5392,10 @@ pub unsafe extern "C" fn xyg_temporal_controller_set_cursor(handle: u64, cursor:
     })
 }
 
+/// Start playback when reduced motion is off.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_play(handle: u64) -> i32 {
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
@@ -5397,6 +5407,10 @@ pub unsafe extern "C" fn xyg_temporal_controller_play(handle: u64) -> i32 {
     })
 }
 
+/// Pause playback.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_pause(handle: u64) -> i32 {
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
@@ -5408,6 +5422,10 @@ pub unsafe extern "C" fn xyg_temporal_controller_pause(handle: u64) -> i32 {
     })
 }
 
+/// Advance one step along the current direction.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_step(handle: u64) -> i32 {
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
@@ -5419,6 +5437,10 @@ pub unsafe extern "C" fn xyg_temporal_controller_step(handle: u64) -> i32 {
     })
 }
 
+/// Set playback rate in milli-units (1000 = 1.0×).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_set_rate_milli(
     handle: u64,
@@ -5433,6 +5455,10 @@ pub unsafe extern "C" fn xyg_temporal_controller_set_rate_milli(
     })
 }
 
+/// Set playback direction (−1 reverse, +1 forward).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_set_direction(handle: u64, direction: i32) -> i32 {
     let Some(direction) = temporal_controller::PlaybackDirection::from_i32(direction) else {
@@ -5447,6 +5473,10 @@ pub unsafe extern "C" fn xyg_temporal_controller_set_direction(handle: u64, dire
     })
 }
 
+/// Enable or disable looping at domain bounds.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_set_loop(handle: u64, enabled: u32) -> i32 {
     if enabled > 1 {
@@ -5461,6 +5491,10 @@ pub unsafe extern "C" fn xyg_temporal_controller_set_loop(handle: u64, enabled: 
     })
 }
 
+/// Set reduced-motion policy (`play` becomes a no-op when enabled).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_set_reduced_motion(
     handle: u64,
@@ -5593,6 +5627,9 @@ pub unsafe extern "C" fn xyg_temporal_controller_apply_event(
 }
 
 /// Same-process group deliver for the polled event fields.
+///
+/// # Safety
+/// `out_applied` must be valid for one `u32`.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_coordinate_deliver(
     group_id: u64,
@@ -5628,6 +5665,9 @@ pub unsafe extern "C" fn xyg_temporal_coordinate_deliver(
 }
 
 /// Dispose a controller (stops playback; further ops fail with Disposed).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_dispose(handle: u64) -> i32 {
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
@@ -5640,6 +5680,9 @@ pub unsafe extern "C" fn xyg_temporal_controller_dispose(handle: u64) -> i32 {
 }
 
 /// Destroy the handle (after dispose or instead of it).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_temporal_controller_destroy(handle: u64) -> i32 {
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
