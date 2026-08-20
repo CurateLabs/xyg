@@ -163,14 +163,14 @@ def test_python_scene_compiles_area_and_error_band() -> None:
     scene = area.to_scene()
     assert scene[4:8] == (6).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
-    assert "<path d=\"M " in svg
-    assert " Z\"" in svg
+    assert '<path d="M ' in svg
+    assert ' Z"' in svg
 
     band = Figure(width=240, height=160)
     band.axis_options["x"]["domain"] = (0.0, 2.0)
     band.axis_options["y"]["domain"] = (0.0, 3.0)
     band.error_band([0.0, 1.0, 2.0], [0.7, 1.2, 0.9], [1.3, 1.8, 1.5], color="#22c55e")
-    assert "<path d=\"M " in _native.scene_svg(band.to_scene())
+    assert '<path d="M ' in _native.scene_svg(band.to_scene())
 
 
 def test_python_scene_compiles_box_and_contour() -> None:
