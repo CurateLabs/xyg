@@ -425,16 +425,13 @@ class PayloadMixin(_Host):
         return entry
 
     @staticmethod
-    def _attach_tooltip_rows(
-        entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray]
-    ) -> None:
+    def _attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray]) -> None:
         """Ship optional semantic hover rows (Sankey / graph props), filtered with geometry."""
         if t.tooltip_rows is None:
             return
         if len(t.tooltip_rows) != t.n_points:
             raise ValueError(
-                f"{t.kind} tooltip rows must match geometry "
-                f"({len(t.tooltip_rows)} != {t.n_points})"
+                f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
             )
         indices = range(len(t.tooltip_rows)) if sel is None else (int(i) for i in sel)
         entry["tooltip_rows"] = [dict(t.tooltip_rows[i]) for i in indices]
