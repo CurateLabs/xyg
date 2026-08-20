@@ -3,8 +3,8 @@
 
 export const XYG_WASM_ABI_VERSION = 3 as const;
 export const XYG_WASM_SCENE_VERSION = 8 as const;
-export const XYG_WASM_PAINTER_VERSION = 3 as const;
-export const XYG_WASM_PAINTER_HEADER_BYTES = 264 as const;
+export const XYG_WASM_PAINTER_VERSION = 4 as const;
+export const XYG_WASM_PAINTER_HEADER_BYTES = 280 as const;
 export const XYG_WASM_PAINTER_TRACE_BYTES = 64 as const;
 export const XYG_WASM_PAINTER_TICK_BYTES = 16 as const;
 export const XYG_WASM_PAINTER_MAX_TRACES = 1024 as const;

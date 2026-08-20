@@ -687,20 +687,29 @@ mod tests {
         write_arena(handle, &bytes);
         assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_OK);
         assert_ne!(xyg_wasm_output_ptr(handle), 0);
-        assert_eq!(xyg_wasm_output_len(handle), 458);
+        assert_eq!(xyg_wasm_output_len(handle), 474);
         assert_eq!(xyg_wasm_last_scene_records(handle), 1);
         with_instance_mut(handle, |instance| {
             assert_eq!(&instance.output[..4], b"XYPB");
             assert_eq!(
                 u32::from_le_bytes(instance.output[4..8].try_into().unwrap()),
-                3
+                scene::BROWSER_PAINTER_VERSION
             );
             assert_eq!(
                 u32::from_le_bytes(instance.output[20..24].try_into().unwrap()),
                 1
             );
             assert_eq!(
-                u32::from_le_bytes(instance.output[336..340].try_into().unwrap()),
+                u32::from_le_bytes(
+                    instance.output[scene::BROWSER_PAINTER_HEADER_BYTES
+                        + scene::BROWSER_PAINTER_TRACE_BYTES
+                        + 8
+                        ..scene::BROWSER_PAINTER_HEADER_BYTES
+                            + scene::BROWSER_PAINTER_TRACE_BYTES
+                            + 12]
+                        .try_into()
+                        .unwrap()
+                ),
                 7
             );
             assert_eq!(

@@ -91,6 +91,15 @@ function compilePainter(painter: ArrayBuffer) {
   const decoder = new TextDecoder("utf-8", { fatal: true });
   const tickValues: number[] = [], tickLabels: string[] = [], tickMajor: boolean[] = [];
   let nextString = stringOffset;
+  const textLengths = [u32(264), u32(268), u32(272)];
+  if (textLengths.some((value) => value > 4096) || bytes.subarray(276, 280).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text header is invalid");
+  const text = textLengths.map((length) => {
+    const end = nextString + length;
+    if (!Number.isSafeInteger(end) || end > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text range is invalid");
+    try { return decoder.decode(bytes.subarray(nextString, end)); }
+    catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome text is invalid UTF-8"); }
+    finally { nextString = end; }
+  });
   for (let index = 0; index < tickCount; index++) {
     const descriptor = tickOffset + index * XYG_WASM_PAINTER_TICK_BYTES;
     const position = f32(descriptor), labelOffset = u32(descriptor + 4), labelLength = u32(descriptor + 8);
@@ -121,8 +130,9 @@ function compilePainter(painter: ArrayBuffer) {
     const labelColor = rgba(bytes.subarray(axisOffset + 28, axisOffset + 32));
     return { id, scale: "linear", range, tick_values: majorValues, minor_tick_values: minorValues, tick_labels: majorLabels, tick_label_strategy: "auto", tick_sides: sides.filter((_, index) => tickMask & (1 << index)), tick_label_sides: sides.filter((_, index) => labelMask & (1 << index)), grid: true, side: sides[sideCode], style: { axis_color: rgba(bytes.subarray(axisOffset + 8, axisOffset + 12)), grid_color: rgba(bytes.subarray(axisOffset + 12, axisOffset + 16)), tick_color: rgba(bytes.subarray(axisOffset + 16, axisOffset + 20)), tick_label_color: labelColor, label_color: labelColor, axis_width: numbers[0], grid_width: numbers[1], tick_width: numbers[2], tick_length: numbers[3], tick_direction: direction[majorDirection], tick_label_size: labelSize, label_size: labelSize }, minor_style: { grid_color: rgba(bytes.subarray(axisOffset + 20, axisOffset + 24)), tick_color: rgba(bytes.subarray(axisOffset + 24, axisOffset + 28)), grid_width: numbers[4], tick_width: numbers[5], tick_length: numbers[6], tick_direction: direction[minorDirection] } };
   };
-  const xAxis = axis("x", [left, right], 0, xTickCount, true, chrome + 24), yAxis = axis("y", [bottom, top], xTickCount, yTickCount, false, chrome + 112);
-  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: null, x_axis: xAxis, y_axis: yAxis, axes: { x: xAxis, y: yAxis }, traces, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) } }, show_legend: false, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes };
+  const xAxis = { ...axis("x", [left, right], 0, xTickCount, true, chrome + 24), label: text[1] };
+  const yAxis = { ...axis("y", [bottom, top], xTickCount, yTickCount, false, chrome + 112), label: text[2] };
+  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: text[0] || null, x_axis: xAxis, y_axis: yAxis, axes: { x: xAxis, y: yAxis }, traces, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) } }, show_legend: false, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes };
 }
 
 export interface RenderWasmSceneOptions { el: HTMLElement; scene: ArrayBuffer | Uint8Array; worker: XygWasmWorker; transfer?: boolean }

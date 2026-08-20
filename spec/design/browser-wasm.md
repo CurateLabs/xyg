@@ -97,16 +97,20 @@ records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
 
-Painter contract v3 begins with `XYPB`, independent painter version 3, Scene
-version 8, a 264-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v4 begins with `XYPB`, independent painter version 4, Scene
+version 8, a 280-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v8
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
-geometry). Each trace descriptor identifies scatter/polyline/rect,
+geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
+lengths and bytes 276–279 are reserved zeros. The shared string table stores
+those three authored texts before formatted tick labels. Each trace descriptor identifies scatter/polyline/rect,
 style, count, and absolute packed-column offsets. Rust derives default numeric
 ticks or consumes bounded authored major/minor positions, formats major labels,
 maps positions to painter coordinates, and emits fixed 16-byte records whose
-last u32 distinguishes major from minor. TypeScript creates descriptor-sized views and hands
+last u32 distinguishes major from minor. TypeScript validates the three chrome
+texts and supplies them to the existing title, axis-title, and accessibility
+surfaces. It creates descriptor-sized views and hands
 those painter-ready values to the existing canvas/DOM chrome surfaces; it does
 not generate ticks, format labels, or choose layout. Reserved fields, exact
 offsets, finite geometry, known kinds and symbols, valid UTF-8, and exact final

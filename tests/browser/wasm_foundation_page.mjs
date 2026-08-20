@@ -29,7 +29,11 @@ function writeDefaultSceneV8Chrome(bytes, view, body) {
 function canonicalSceneV8({ authored = false } = {}) {
   const body = 160 + 16 + 56;
   const ticks = authored ? [0, 1, 0.5, 0, 1] : [];
-  const bytes = new Uint8Array(body + 232 + ticks.length * 8);
+  const text = authored
+    ? ["Authored Cartesian chrome", "Horizontal measure", "Vertical measure"].map((value) => new TextEncoder().encode(value))
+    : [new Uint8Array(), new Uint8Array(), new Uint8Array()];
+  const textBytes = text.reduce((total, value) => total + value.length, 0);
+  const bytes = new Uint8Array(body + 232 + textBytes + ticks.length * 8);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
   view.setUint32(4, 8, true);
@@ -68,7 +72,12 @@ function canonicalSceneV8({ authored = false } = {}) {
     view.setUint32(body + 212, 2, true);
     view.setUint32(body + 216, 1, true);
     view.setUint32(body + 220, 2, true);
+    text.forEach((value, index) => view.setUint32(body + 200 + index * 4, value.length, true));
     let tickOffset = body + 232;
+    for (const value of text) {
+      bytes.set(value, tickOffset);
+      tickOffset += value.length;
+    }
     for (const tick of ticks) {
       view.setFloat64(tickOffset, tick, true);
       tickOffset += 8;
@@ -326,7 +335,7 @@ async function run() {
   }
 
   const paint = await worker.prepareScene(canonicalSceneV8(), { sequence: 11 }).result;
-  if (!(paint.painter instanceof ArrayBuffer) || paint.painter.byteLength < 264) {
+  if (!(paint.painter instanceof ArrayBuffer) || paint.painter.byteLength < 280) {
     throw new Error("Rust Scene paint lowering did not return a transferable display list");
   }
   const host = document.body.appendChild(document.createElement("div"));
@@ -365,6 +374,20 @@ async function run() {
   }
   if (!authoredHost.querySelector('[data-xy-tick-kind="minor"]')) {
     throw new Error("Rust-authored minor tick was not consumed by the browser painter");
+  }
+  if (authoredHost.querySelector('[data-xy-slot="title"]')?.textContent !== "Authored Cartesian chrome") {
+    throw new Error("Rust-authored figure title was not consumed by the browser DOM");
+  }
+  const axisTitles = [...authoredHost.querySelectorAll('[data-xy-label-kind="label"]')]
+    .map((node) => node.textContent);
+  if (!axisTitles.includes("Horizontal measure") || !axisTitles.includes("Vertical measure")) {
+    throw new Error(`Rust-authored axis titles were not consumed by the browser DOM: ${JSON.stringify(axisTitles)}`);
+  }
+  const authoredRegion = authoredHost.querySelector('.xy[role="region"]');
+  if (authoredRegion?.getAttribute("aria-label") !== "Chart: Authored Cartesian chrome"
+      || !authoredRegion.textContent.includes("X axis (Horizontal measure)")
+      || !authoredRegion.textContent.includes("Y axis (Vertical measure)")) {
+    throw new Error("Rust-authored title and axis labels were not exposed to accessibility text");
   }
   authored.destroy();
   authoredHost.remove();

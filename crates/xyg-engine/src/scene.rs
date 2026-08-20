@@ -20,8 +20,8 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 232;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 3;
-pub const BROWSER_PAINTER_HEADER_BYTES: usize = 264;
+pub const BROWSER_PAINTER_VERSION: u32 = 4;
+pub const BROWSER_PAINTER_HEADER_BYTES: usize = 280;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 /// Hard ceiling on browser-side trace objects created from one painter output.
@@ -199,7 +199,7 @@ impl SceneChromeStyle {
             return Err(SceneError::Length);
         }
         let label_font_size = f64::from_le_bytes(bytes[16..24].try_into().unwrap());
-        Ok(Self {
+        Self {
             chart_background_rgba: bytes[0..4].try_into().unwrap(),
             plot_background_rgba: bytes[4..8].try_into().unwrap(),
             label_rgba: bytes[8..12].try_into().unwrap(),
@@ -211,7 +211,7 @@ impl SceneChromeStyle {
             y_major_ticks,
             y_minor_ticks,
         }
-        .validated()?)
+        .validated()
     }
 
     pub fn style_input(&self) -> Vec<u8> {
@@ -3316,6 +3316,11 @@ impl SceneDocument {
         for (_, label, _) in x_ticks.iter().chain(&y_ticks) {
             required = required.checked_add(label.len()).ok_or(SceneError::Limit)?;
         }
+        required = required
+            .checked_add(self.text.title.len())
+            .and_then(|value| value.checked_add(self.text.x_label.len()))
+            .and_then(|value| value.checked_add(self.text.y_label.len()))
+            .ok_or(SceneError::Limit)?;
         if required > max_bytes {
             return Err(SceneError::Limit);
         }
@@ -3407,8 +3412,18 @@ impl SceneDocument {
         let mut chrome_input = Vec::with_capacity(SCENE_CHROME_STYLE_INPUT_BYTES);
         write_chrome_style_input(&mut chrome_input, &self.chrome);
         debug_assert_eq!(chrome_input.len(), SCENE_CHROME_STYLE_INPUT_BYTES);
-        out[64..BROWSER_PAINTER_HEADER_BYTES].copy_from_slice(&chrome_input);
+        out[64..264].copy_from_slice(&chrome_input);
+        for (offset, value) in [
+            (264, self.text.title.len()),
+            (268, self.text.x_label.len()),
+            (272, self.text.y_label.len()),
+        ] {
+            out[offset..offset + 4].copy_from_slice(&(value as u32).to_le_bytes());
+        }
         out.resize(string_offset, 0);
+        out.extend_from_slice(self.text.title.as_bytes());
+        out.extend_from_slice(self.text.x_label.as_bytes());
+        out.extend_from_slice(self.text.y_label.as_bytes());
         for (tick_index, (position, label, major)) in x_ticks.iter().chain(&y_ticks).enumerate() {
             let descriptor = tick_offset + tick_index * BROWSER_PAINTER_TICK_BYTES;
             let label_offset = out.len();
@@ -4219,17 +4234,36 @@ mod tests {
         let painter_len = painter.len();
         assert_eq!(&painter[..4], b"XYPB");
         assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 3);
-        assert_eq!([painter[264], painter[328], painter[392]], [0, 1, 2]);
         assert_eq!(
-            u32::from_le_bytes(painter[464..468].try_into().unwrap()),
+            [
+                painter[BROWSER_PAINTER_HEADER_BYTES],
+                painter[BROWSER_PAINTER_HEADER_BYTES + BROWSER_PAINTER_TRACE_BYTES],
+                painter[BROWSER_PAINTER_HEADER_BYTES + 2 * BROWSER_PAINTER_TRACE_BYTES],
+            ],
+            [0, 1, 2]
+        );
+        assert_eq!(
+            u32::from_le_bytes(
+                painter[BROWSER_PAINTER_HEADER_BYTES + 200..BROWSER_PAINTER_HEADER_BYTES + 204]
+                    .try_into()
+                    .unwrap()
+            ),
             10
         );
         assert_eq!(
-            u32::from_le_bytes(painter[488..492].try_into().unwrap()),
+            u32::from_le_bytes(
+                painter[BROWSER_PAINTER_HEADER_BYTES + 224..BROWSER_PAINTER_HEADER_BYTES + 228]
+                    .try_into()
+                    .unwrap()
+            ),
             20
         );
         assert_eq!(
-            u32::from_le_bytes(painter[520..524].try_into().unwrap()),
+            u32::from_le_bytes(
+                painter[BROWSER_PAINTER_HEADER_BYTES + 256..BROWSER_PAINTER_HEADER_BYTES + 260]
+                    .try_into()
+                    .unwrap()
+            ),
             30
         );
         assert!(u32::from_le_bytes(painter[48..52].try_into().unwrap()) >= 3);
@@ -5077,9 +5111,11 @@ mod tests {
             false,
         )
         .unwrap();
-        let mut chrome = SceneChromeStyle::default();
-        chrome.chart_background_rgba = [1, 2, 3, 255];
-        chrome.plot_background_rgba = [4, 5, 6, 128];
+        let mut chrome = SceneChromeStyle {
+            chart_background_rgba: [1, 2, 3, 255],
+            plot_background_rgba: [4, 5, 6, 128],
+            ..SceneChromeStyle::default()
+        };
         chrome.x_axis.side = AxisSide::High;
         chrome.x_axis.tick_sides = 0b11;
         chrome.x_axis.tick_label_sides = 0b10;
@@ -5098,7 +5134,7 @@ mod tests {
             x,
             y,
             chrome,
-            SceneChromeText::default(),
+            SceneChromeText::from_parts("Chart", "Horizontal", "Vertical").unwrap(),
             &[],
             &[],
             &[],
@@ -5127,7 +5163,18 @@ mod tests {
         assert_eq!(&raster[78..82], &[4, 5, 6, 128]);
         let painter = document.to_browser_painter(16_384).unwrap();
         assert_eq!(&painter[64..264], style_input.as_slice());
+        assert_eq!(u32::from_le_bytes(painter[264..268].try_into().unwrap()), 5);
+        assert_eq!(
+            u32::from_le_bytes(painter[268..272].try_into().unwrap()),
+            10
+        );
+        assert_eq!(u32::from_le_bytes(painter[272..276].try_into().unwrap()), 8);
         let tick_offset = u32::from_le_bytes(painter[56..60].try_into().unwrap()) as usize;
+        let string_offset = u32::from_le_bytes(painter[60..64].try_into().unwrap()) as usize;
+        assert_eq!(
+            &painter[string_offset..string_offset + 23],
+            b"ChartHorizontalVertical"
+        );
         let flags = (0..3)
             .map(|index| {
                 u32::from_le_bytes(
@@ -5156,8 +5203,10 @@ mod tests {
         invalid.x_axis.tick_length = MAX_SCENE_CHROME_LENGTH + 1.0;
         assert_eq!(invalid.validated().err(), Some(SceneError::NonFinite));
 
-        let mut too_many_resolved = SceneChromeStyle::default();
-        too_many_resolved.x_minor_ticks = vec![0.5; MAX_AXIS_TICKS];
+        let too_many_resolved = SceneChromeStyle {
+            x_minor_ticks: vec![0.5; MAX_AXIS_TICKS],
+            ..SceneChromeStyle::default()
+        };
         assert_eq!(
             SceneBatch::new_with_chrome(
                 layout,

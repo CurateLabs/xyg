@@ -359,7 +359,7 @@ fn scene_v4_browser_painter(bencher: Bencher, n: usize) {
     let document = browser_scene_document(n, false);
     let output = document.to_browser_painter(64 * 1024 * 1024).unwrap();
     assert_eq!(&output[..4], b"XYPB");
-    assert_eq!(u32::from_le_bytes(output[4..8].try_into().unwrap()), 3);
+    assert_eq!(u32::from_le_bytes(output[4..8].try_into().unwrap()), 4);
     assert!(u32::from_le_bytes(output[48..52].try_into().unwrap()) >= 3);
     assert!(u32::from_le_bytes(output[52..56].try_into().unwrap()) >= 3);
     assert!(output.len() > n * 16);
@@ -372,9 +372,11 @@ fn authored_chrome_document(n: usize) -> SceneDocument {
     let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
     let x = uniform(n, 0x00A1_B2C3);
     let y = uniform(n, 0x00D4_E5F6);
-    let mut chrome = SceneChromeStyle::default();
-    chrome.chart_background_rgba = [15, 23, 42, 255];
-    chrome.plot_background_rgba = [248, 250, 252, 255];
+    let mut chrome = SceneChromeStyle {
+        chart_background_rgba: [15, 23, 42, 255],
+        plot_background_rgba: [248, 250, 252, 255],
+        ..SceneChromeStyle::default()
+    };
     chrome.x_axis.side = AxisSide::High;
     chrome.x_axis.tick_sides = 0b11;
     chrome.x_axis.tick_label_sides = 0b10;

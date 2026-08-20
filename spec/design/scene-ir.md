@@ -313,10 +313,12 @@ line, tick, grid, or text independently, including `show=False` shorthands.
 
 Python and Node mechanically pack the same 200-byte block and tick arrays;
 their non-default fixture is exact-byte identical. Rust SVG and raster consume
-the decoded values directly. Browser painter v3 carries the same 200 bytes in
-its fixed 264-byte header and marks every 16-byte tick descriptor as major or
-minor. TypeScript validates and projects those values into existing DOM/WebGL
-paint surfaces without generating tick positions, sides, or style defaults.
+the decoded values directly. Browser painter v4 carries the same 200 bytes in
+its fixed 280-byte header, adds the three bounded authored title/axis-label
+lengths, and marks every 16-byte tick descriptor as major or minor. TypeScript
+validates and projects those values and texts into existing DOM/WebGL and
+accessibility paint surfaces without generating tick positions, sides, or
+style defaults.
 
 Legends, colorbars, and annotations are deliberately not part of this slice
 and remain loud Scene-compile errors for later issue-#116 work. Category,
@@ -336,8 +338,8 @@ The first browser consumer accepts the exact v8 bytes through the static WASM
 Worker. Rust validates and lowers them through
 `SceneDocument::to_browser_painter` into checked f32 geometry and split-u64
 stable-ID columns plus authored/automatic numeric ticks and formatted UTF-8 labels.
-Painter contract v3 carries fixed trace and tick descriptors, the exact chrome
-style block, and major/minor flags with exact bounds.
+Painter contract v4 carries fixed trace and tick descriptors, the exact chrome
+style block, authored figure/axis titles, and major/minor flags with exact bounds.
 Browser tick tables serialize every `AxisTicks::ticks` position (so log minor
 grid lines match SVG/raster) and attach formatted labels only for
 `AxisTicks::labeled`; unlabeled minor ticks carry empty UTF-8 labels.
