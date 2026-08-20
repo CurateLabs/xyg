@@ -173,6 +173,7 @@ crates/
                         #   over the ABI (§3.3).
     geo.rs              # GeoColumn / GeoArrow descriptor ingest, CRS + geometry
                         #   validation, feature identity (#47; see geospatial.md).
+    edge_route.rs       # directed multigraph paint routing (parallels/loops/arrows)
     graph.rs            # graph display layouts, progressive force ticks, CSR,
                         #   graph LOD/cluster/render-graph decisions
                         #   ([graph-mark.md](graph-mark.md)).
