@@ -13,6 +13,10 @@ pub const COMPILE_MAGIC: &[u8; 4] = b"XYCC";
 pub const COMPILE_VERSION: u32 = 1;
 pub const COMPILE_HEADER_BYTES: usize = 192;
 pub const FLAG_AUTO_MARGINS: u32 = 1;
+/// When set, Rust derives axis domains from finite column values so the browser
+/// main thread does not scan O(N) data for lo/hi.
+pub const FLAG_AUTO_DOMAIN: u32 = 2;
+const FLAG_KNOWN: u32 = FLAG_AUTO_MARGINS | FLAG_AUTO_DOMAIN;
 
 #[derive(Debug)]
 pub struct CompiledScene {
@@ -104,6 +108,63 @@ fn scale_kind(value: u32) -> Result<ScaleKind, SceneError> {
     }
 }
 
+fn consider_finite(value: f64, lo: &mut f64, hi: &mut f64, any: &mut bool) {
+    if !value.is_finite() {
+        return;
+    }
+    if !*any {
+        *lo = value;
+        *hi = value;
+        *any = true;
+        return;
+    }
+    if value < *lo {
+        *lo = value;
+    }
+    if value > *hi {
+        *hi = value;
+    }
+}
+
+/// Derive axis domains from finite geometry columns. Scatter/polyline use
+/// `(x0, y0)`; rect/band also include `(x1, y1)`. Returns `None` when either
+/// axis has no finite coordinate.
+fn auto_domain_from_columns(
+    kinds: &[u8],
+    x0: &[f64],
+    y0: &[f64],
+    x1: &[f64],
+    y1: &[f64],
+) -> Option<(f64, f64, f64, f64)> {
+    let mut x_lo = 0.0;
+    let mut x_hi = 0.0;
+    let mut y_lo = 0.0;
+    let mut y_hi = 0.0;
+    let mut any_x = false;
+    let mut any_y = false;
+    for (index, kind) in kinds.iter().copied().enumerate() {
+        consider_finite(x0[index], &mut x_lo, &mut x_hi, &mut any_x);
+        consider_finite(y0[index], &mut y_lo, &mut y_hi, &mut any_y);
+        // Rect (2) and band (3) span both corners; scatter/polyline leave x1/y1 unused.
+        if matches!(kind, 2 | 3) {
+            consider_finite(x1[index], &mut x_lo, &mut x_hi, &mut any_x);
+            consider_finite(y1[index], &mut y_lo, &mut y_hi, &mut any_y);
+        }
+    }
+    if !any_x || !any_y {
+        return None;
+    }
+    if x_lo == x_hi {
+        x_lo -= 0.5;
+        x_hi += 0.5;
+    }
+    if y_lo == y_hi {
+        y_lo -= 0.5;
+        y_hi += 0.5;
+    }
+    Some((x_lo, x_hi, y_lo, y_hi))
+}
+
 /// Decode one packed typed-column request and encode the canonical Scene batch.
 pub fn compile_scene_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
     if bytes.len() < COMPILE_HEADER_BYTES {
@@ -119,7 +180,7 @@ pub fn compile_scene_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> 
         return Err(SceneError::Length);
     }
     let flags = u32_at(bytes, 12)?;
-    if flags & !FLAG_AUTO_MARGINS != 0 {
+    if flags & !FLAG_KNOWN != 0 {
         return Err(SceneError::Length);
     }
     let record_count = u32_at(bytes, 16)? as usize;
@@ -154,11 +215,11 @@ pub fn compile_scene_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> 
     if !matches!(x_mask, 0 | 1) || !matches!(y_mask, 0 | 1) {
         return Err(SceneError::Length);
     }
-    let x_lo = f64_at(bytes, 120)?;
-    let x_hi = f64_at(bytes, 128)?;
+    let mut x_lo = f64_at(bytes, 120)?;
+    let mut x_hi = f64_at(bytes, 128)?;
     let x_constant = f64_at(bytes, 136)?;
-    let y_lo = f64_at(bytes, 144)?;
-    let y_hi = f64_at(bytes, 152)?;
+    let mut y_lo = f64_at(bytes, 144)?;
+    let mut y_hi = f64_at(bytes, 152)?;
     let y_constant = f64_at(bytes, 160)?;
     for reserved in (168..COMPILE_HEADER_BYTES).step_by(4) {
         if u32_at(bytes, reserved)? != 0 {
@@ -190,6 +251,16 @@ pub fn compile_scene_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> 
     let x_label = std::str::from_utf8(x_label_bytes).map_err(|_| SceneError::Length)?;
     let y_label = std::str::from_utf8(y_label_bytes).map_err(|_| SceneError::Length)?;
     let text = SceneChromeText::from_parts(title, x_label, y_label)?;
+
+    if flags & FLAG_AUTO_DOMAIN != 0 {
+        let Some(domain) = auto_domain_from_columns(&kinds, &x0, &y0, &x1, &y1) else {
+            return Err(SceneError::NonFinite);
+        };
+        x_lo = domain.0;
+        x_hi = domain.1;
+        y_lo = domain.2;
+        y_hi = domain.3;
+    }
 
     let (margin_left, margin_right, margin_top, margin_bottom) =
         if flags & FLAG_AUTO_MARGINS != 0 {
@@ -336,10 +407,23 @@ mod tests {
     #[test]
     fn unknown_flags_and_trailing_bytes_fail_closed() {
         let mut bad = pack_scatter();
-        bad[12..16].copy_from_slice(&2u32.to_le_bytes());
+        bad[12..16].copy_from_slice(&4u32.to_le_bytes()); // bit 2 is unknown
         assert!(compile_scene_request(&bad).is_err());
         let mut trailing = pack_scatter();
         trailing.push(0);
         assert!(compile_scene_request(&trailing).is_err());
+    }
+
+    #[test]
+    fn auto_domain_overrides_header_lo_hi() {
+        let mut packed = pack_scatter();
+        packed[12..16].copy_from_slice(&(FLAG_AUTO_MARGINS | FLAG_AUTO_DOMAIN).to_le_bytes());
+        // Header domains are deliberately wrong; geometry is at (0.5, 0.5).
+        packed[120..128].copy_from_slice(&(-10.0f64).to_le_bytes());
+        packed[128..136].copy_from_slice(&(-9.0f64).to_le_bytes());
+        packed[144..152].copy_from_slice(&(-10.0f64).to_le_bytes());
+        packed[152..160].copy_from_slice(&(-9.0f64).to_le_bytes());
+        let compiled = compile_scene_request(&packed).unwrap();
+        scene::validate_scene_batch(&compiled.bytes).unwrap();
     }
 }

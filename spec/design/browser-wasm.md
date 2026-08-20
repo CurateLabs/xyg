@@ -1,8 +1,10 @@
 # Direct-browser Rust/WASM boundary
 
 **Status:** bounded lifecycle, canonical Scene paint, and packed typed-column
-compile (`XYCC`) for scatter/polyline/rect/band, **not** a complete
-direct-browser chart host. Tracking: [#59](https://github.com/CurateLabs/xyg/issues/59).
+compile (`XYCC`) for scatter/polyline/rect/band, plus series-shaped chart
+ergonomics (`encodeWasmChart` / `renderWasmChart`) that expand into that seam.
+This is **not** yet a complete direct-browser chart host. Tracking:
+[#59](https://github.com/CurateLabs/xyg/issues/59).
 Canonical scene dependency: [Scene IR](scene-ir.md).
 
 ## Runtime taxonomy
@@ -30,6 +32,7 @@ chrome.
 | `js/src/47_wasm.ts` | Main-thread lifecycle proxy; requires explicit worker and WASM assets |
 | `js/src/48_wasm_scene.ts` | Thin display-list adapter into the existing WebGL painter |
 | `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
+| `js/src/49_wasm_chart.ts` | Series→column expansion (`scatter`/`line`/`bar`/`area`); framing only |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
 The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
@@ -108,8 +111,11 @@ length fail closed before hydration.
 
 This is the public direct-browser entry for the stable Scene v4
 scatter/line/bar subset with its canonical default numeric grid, spines, ticks,
-and labels. Scene production from raw browser columns and authored chrome
-remain later #59/#58 slices. The two version numbers are
+and labels. Packed `XYCC` compile plus series-shaped `encodeWasmChart` /
+`renderWasmChart` expand browser chart inputs into that Scene without main-thread
+domain scans (`FLAG_AUTO_DOMAIN`) or TypeScript Scene policy. Aggregate
+production, density replacement, and cross-host conformance remain later #59
+slices. The two version numbers are
 checked independently so rebasing the axis/chrome work cannot silently widen
 this consumer.
 
@@ -150,6 +156,16 @@ const view = await renderWasmScene({
   el: document.querySelector("#chart"),
   scene: canonicalSceneBytes,
   worker: engine,
+});
+// Or series-shaped input (expands to XYCC; Rust owns domain/margins/Scene):
+const chartView = await renderWasmChart({
+  el: document.querySelector("#chart"),
+  worker: engine,
+  chart: {
+    width: 640,
+    height: 400,
+    series: [{ kind: "scatter", x: xs, y: ys }],
+  },
 });
 ```
 
@@ -194,10 +210,13 @@ Issue `#59` can close; raw local timings are not performance evidence.
 
 ## Remaining #59 work
 
-- public chart-spec ergonomics above the packed typed-column seam;
 - aggregate production paths beyond direct Scene records;
 - native Python/Node/WASM/Pyodide conformance fixtures;
 - cooperative cancellation inside long Rust operations;
 - small-through-massive CodSpeed and browser budget evidence; and
 - replacement (not expansion) of `46_worker.ts` only after WASM covers its
   density contract without regression.
+
+Public chart-spec ergonomics (`expandWasmChart` / `encodeWasmChart` /
+`renderWasmChart`) and `FLAG_AUTO_DOMAIN` (Rust derives axis domains in the
+Worker) sit above the packed typed-column seam and are in place.
