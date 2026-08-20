@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 65
-SIGNATURE_SHA256 = "09a06cc3eb5f9727dbb2d8ffa1f074af6ca715cfb6255368637e6f6c1d3baaf1"
+ABI_VERSION = 66
+SIGNATURE_SHA256 = "4b875e3b46174d31bd577a9e4b0fb9f6a8d44e8baf9f48f669ee7bfd4a36b822"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -134,6 +134,34 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_lod_decision
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_graph_projection_copy_edge_ids(uint64_t handle, uint8_t * output, uint64_t capacity)
+    function = lib.xyg_graph_projection_copy_edge_ids
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_graph_projection_copy_endpoints(uint64_t handle, uint64_t * out_sources, uint64_t * out_targets, uint64_t capacity)
+    function = lib.xyg_graph_projection_copy_endpoints
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_graph_projection_copy_node_ids(uint64_t handle, uint8_t * output, uint64_t capacity)
+    function = lib.xyg_graph_projection_copy_node_ids
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_graph_projection_copy_parents(uint64_t handle, uint64_t * out_parents, uint8_t * out_validity, uint64_t capacity)
+    function = lib.xyg_graph_projection_copy_parents
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_graph_projection_counts(uint64_t handle, uint64_t * out_nodes, uint64_t * out_edges, uint32_t * out_directed)
+    function = lib.xyg_graph_projection_counts
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_graph_projection_create(const void * descriptor, uint64_t * out_handle)
+    function = lib.xyg_graph_projection_create
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_graph_projection_destroy(uint64_t handle)
+    function = lib.xyg_graph_projection_destroy
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
     # uint64_t xyg_graph_sample_edges(uint64_t n_edges, uint64_t budget, uint64_t * out_indices)
     function = lib.xyg_graph_sample_edges
     function.restype = ctypes.c_uint64
