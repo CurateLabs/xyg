@@ -1285,18 +1285,18 @@ def test_chart_gallery_grid_renders_every_type_as_inline_svg(
     chart_section = next(
         leaves for title, _landing_route, _icon, leaves in DOCS_SECTIONS if title == "Chart Gallery"
     )
-    assert len(chart_section) == 20
+    assert len(chart_section) == 21
     assert "XYChart" not in rendered
-    assert rendered.count("dangerouslySetInnerHTML") == 34
+    assert rendered.count("dangerouslySetInnerHTML") == 35
     assert rendered.count('id:"xy-chart-gallery"') == 1
     assert rendered.count("main:has(#xy-chart-gallery) > div:has(#toc-navigation)") == 1
     assert rendered.count("main:has(#xy-chart-gallery) > div:has(article #xy-chart-gallery)") == 1
     assert rendered.count("display: none") == 1
     assert rendered.count("max-width: 88rem") == 1
     assert rendered.count("2xl:grid-cols-3") == 9
-    assert rendered.count("aspect-[320/232]") == 34
-    assert rendered.count("shadow-large") == 34
-    assert rendered.count("transition-bg") == 34
+    assert rendered.count("aspect-[320/232]") == 35
+    assert rendered.count("shadow-large") == 35
+    assert rendered.count("transition-bg") == 35
     assert "--gallery-preview-surface: #fff" in rendered
     assert "--gallery-preview-fill: #efeaff" in rendered
     assert "--gallery-preview-soft: #dccfff" in rendered
@@ -1307,7 +1307,7 @@ def test_chart_gallery_grid_renders_every_type_as_inline_svg(
     assert "object-contain" not in rendered
     assert "object-center" not in rendered
     assert "xy-tailwind-bridge" not in rendered
-    assert rendered.count("size:14") == 34
+    assert rendered.count("size:14") == 35
     assert "size:6" not in rendered
     for chart_type in (
         "Line",
@@ -1334,6 +1334,7 @@ def test_chart_gallery_grid_renders_every_type_as_inline_svg(
         "Stem",
         "Segments",
         "Sankey",
+        "Graph",
         "Threshold",
         "Triangle Mesh",
         "Horizontal Line",
@@ -1378,7 +1379,7 @@ def test_chart_gallery_inline_svgs_share_the_component_preview_style() -> None:
         for item in group.items
     }
 
-    assert len(previews) == 34
+    assert len(previews) == 35
     for svg in previews.values():
         assert 'viewBox="0 0 320 232"' in svg
         assert '<rect x="52" y="62" width="216" height="108" rx="12"' in svg
@@ -1506,6 +1507,7 @@ def test_chart_gallery_cards_link_to_family_pages_with_live_demo_anchors() -> No
         "/charts/stem-plot/": "xy.stem(",
         "/charts/segments/": "xy.segments(",
         "/charts/sankey/": "xy.sankey_chart(",
+        "/charts/graph/": "xy.graph_chart(",
         "/components/triangle-mesh/": "xy.triangle_mesh(",
     }
     for route, mark in standalone_chart_marks.items():
@@ -1544,7 +1546,7 @@ def test_chart_gallery_combines_only_the_requested_related_tiles() -> None:
     titles = {item.title for group in _GALLERY_GROUPS for item in group.items}
     section_titles = [group.title for group in _GALLERY_GROUPS]
 
-    assert len(titles) == 34
+    assert len(titles) == 35
     assert section_titles[:3] == [
         "Line and Area",
         "Distributions",
@@ -1572,6 +1574,7 @@ def test_chart_gallery_combines_only_the_requested_related_tiles() -> None:
         ("Stem", "/charts/stem-plot/"),
         ("Segments", "/charts/segments/"),
         ("Sankey", "/charts/sankey/"),
+        ("Graph", "/charts/graph/"),
         ("Triangle Mesh", "/components/triangle-mesh/"),
     ]
     assert {"Step + Stairs", "Bar + Column"} <= titles
@@ -1590,6 +1593,7 @@ def test_chart_gallery_combines_only_the_requested_related_tiles() -> None:
         "Error Band",
         "Error Bar",
         "Sankey",
+        "Graph",
         "Facet Chart",
         "Layered Marks",
     } <= titles
@@ -1835,7 +1839,7 @@ def test_inline_svg_gallery_validator_requires_every_styled_preview(tmp_path: Pa
     module_path = tmp_path / "route.jsx"
     preview = 'viewBox=\\"0 0 320 232\\"'
     module_path.write_text(
-        preview * 34 + "gallery-preview-surface aspect-[320/232] shadow-large",
+        preview * 35 + "gallery-preview-surface aspect-[320/232] shadow-large",
         encoding="utf-8",
     )
 
@@ -1845,7 +1849,7 @@ def test_inline_svg_gallery_validator_requires_every_styled_preview(tmp_path: Pa
         preview * 33 + "gallery-preview-surface aspect-[320/232] shadow-large",
         encoding="utf-8",
     )
-    with pytest.raises(RuntimeError, match="33 previews, expected 34"):
+    with pytest.raises(RuntimeError, match="34 previews, expected 35"):
         check_html_routes.validate_inline_svg_gallery("/overview/gallery/", module_path)
 
 
@@ -2401,6 +2405,7 @@ def test_chart_gallery_pages_append_factory_api_tables() -> None:
         "/charts/stem-plot/": ("xy.stem_chart",),
         "/charts/segments/": ("xy.segments_chart",),
         "/charts/sankey/": ("xy.sankey_chart",),
+        "/charts/graph/": ("xy.graph_chart",),
         "/components/triangle-mesh/": ("xy.triangle_mesh_chart",),
         "/components/facets-and-layers/": ("xy.chart", "xy.facet_chart"),
     }

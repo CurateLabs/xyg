@@ -1,3 +1,10 @@
+---
+title: Graph Charts and GraphForge Ingest
+description: Build node-link graphs in Python and Node with xy. Ingest GraphForge Arrow projections with stable UUID identity, tooltips, and host-parity marks.
+components:
+  - xy.graph_chart
+---
+
 # Graph charts and GraphForge ingest
 
 Build node–link graphs with `xy.graph` / `xy.graph_chart`, or the Node
@@ -52,7 +59,7 @@ fig = xy.Figure().graph(data, layout="circle")
 
 Node mirror:
 
-```js
+```javascript
 import { composeGraph, figure, fromGraphForgeTables } from "@curatelabs/xyg-node";
 
 const composed = composeGraph(nodes, edges, { layout: "grid", size: "rank" });
