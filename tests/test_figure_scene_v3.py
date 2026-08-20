@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import struct
 from pathlib import Path
 
 import numpy as np
@@ -44,7 +45,7 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     svg = _native.scene_svg(scene)
     assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"')
     assert svg.count("<polyline ") == 1
-    assert svg.count("<rect ") == 3  # plot clip plus two bars
+    assert svg.count("<rect ") == 5  # plot clip, two backgrounds, and two bars
     assert 'clip-path="url(#xy-scene-plot)"' in svg
     assert 'data-xy-chrome="grid"' in svg
     assert 'data-xy-chrome="axes"' in svg
@@ -140,7 +141,7 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     assert "Vertical" in svg
     assert "two" in svg
     assert "#123456" in svg
-    with pytest.raises(UnsupportedSceneV3, match="tick, grid, or axis styling"):
+    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
         figure.to_scene()
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
@@ -159,7 +160,64 @@ def test_try_public_scene_helpers_select_migrated_subset() -> None:
     assert pdf is not None and pdf.startswith(b"%PDF-")
     styled = representative_figure()
     styled.set_axis("x", style={"grid_color": "#123456"})
-    assert _scene_v3.try_public_svg(styled) is None
+    styled_svg = _scene_v3.try_public_svg(styled)
+    assert styled_svg is not None and "rgba(18,52,86,1.000000)" in styled_svg
+
+
+def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -> None:
+    figure = default_style_figure("scatter")
+    figure.style = {"background": "#102030", "--chart-bg": "#f1f5f9"}
+    figure.set_axis(
+        "x",
+        domain=(0, 1),
+        side="top",
+        tick_sides=["bottom", "top"],
+        tick_label_sides=["top"],
+        tick_values=[0, 0.5, 1],
+        minor_tick_values=[0.25, 0.75],
+        style={
+            "axis_color": "#ef4444",
+            "axis_width": 2,
+            "tick_length": 8,
+            "tick_direction": "inout",
+        },
+        minor_style={
+            "grid_color": "#22c55e",
+            "tick_color": "#3b82f6",
+            "tick_length": 3,
+            "tick_direction": "in",
+        },
+    )
+    figure.set_axis(
+        "y",
+        domain=(0, 1),
+        style={
+            "axis_width": 0,
+            "tick_width": 0,
+            "tick_length": 0,
+            "grid_opacity": 0,
+            "tick_label_color": "#00000000",
+            "label_color": "#00000000",
+        },
+    )
+    encoded = figure.to_scene()
+    assert int.from_bytes(encoded[4:8], "little") == 8
+    svg = _native.scene_svg(encoded)
+    assert 'fill="rgba(16,32,48,1.000000)"' in svg
+    assert 'fill="rgba(241,245,249,1.000000)"' in svg
+    assert 'stroke="rgba(34,197,94,1.000000)"' in svg
+    assert 'stroke="rgba(59,130,246,1.000000)"' in svg
+    assert 'stroke="rgba(239,68,68,1.000000)" stroke-width="2"' in svg
+
+
+def test_scene_v8_axis_line_visibility_does_not_hide_independent_ticks() -> None:
+    from xy import _scene_v3
+
+    figure = default_style_figure("scatter")
+    figure.set_axis("x", style={"axis_width": 0, "axis_color": "#00000000"})
+    chrome = _scene_v3._scene_chrome_style(figure)
+    assert struct.unpack_from("<d", chrome, 24 + 32)[0] == 0
+    assert chrome[24 + 16 : 24 + 20] == bytes((32, 32, 32, 140))
 
 
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
@@ -177,7 +235,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (7).to_bytes(4, "little")
+    assert scene[4:8] == (8).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -203,7 +261,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
     area.axis_options["y"]["domain"] = (0.0, 3.0)
     area.area([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], base=0.0, color="#3987e5", opacity=0.5)
     scene = area.to_scene()
-    assert scene[4:8] == (7).to_bytes(4, "little")
+    assert scene[4:8] == (8).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -253,22 +311,19 @@ def test_python_scene_encodes_title_and_axis_labels() -> None:
     assert "Peak days" in svg and ">day<" in svg and ">count<" in svg
 
 
-def test_python_scene_compiles_rule_and_band_annotations() -> None:
+def test_python_scene_defers_rule_and_band_annotations() -> None:
     figure = representative_figure()
     figure.vline(2.0, color="#ef4444", width=2.0)
     figure.hline(1.0, color="#22c55e")
     figure.x_band(0.5, 1.5, color="#3987e5", opacity=0.25)
-    scene = figure.to_scene()
-    assert scene[4:8] == (7).to_bytes(4, "little")
-    svg = _native.scene_svg(scene)
-    assert svg.count("<polyline ") >= 2
-    assert svg.count("<rect ") >= 4  # clip + bars + band
+    with pytest.raises(UnsupportedSceneV3, match="does not yet encode annotations"):
+        figure.to_scene()
 
 
 def test_python_scene_still_rejects_labeled_and_rich_annotations() -> None:
     labeled = representative_figure()
     labeled.vline(1.0, text="threshold")
-    with pytest.raises(UnsupportedSceneV3, match="annotation labels"):
+    with pytest.raises(UnsupportedSceneV3, match="does not yet encode annotations"):
         labeled.to_scene()
     figure = representative_figure()
     figure.annotations.append({"kind": "text", "x": 1, "y": 2, "text": "note"})
@@ -286,7 +341,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (7).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (8).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg

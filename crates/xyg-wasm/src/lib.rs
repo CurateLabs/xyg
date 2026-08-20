@@ -345,7 +345,8 @@ pub extern "C" fn xyg_wasm_scene_prepare(
                 STATUS_OK
             }
             Err(SceneError::PainterTraceLimit) => fail(
-                instance, STATUS_RESOURCE_LIMIT,
+                instance,
+                STATUS_RESOURCE_LIMIT,
                 "canonical scene fragments into more than 1024 browser traces",
             ),
             Ok(_) | Err(SceneError::Limit) => fail(
@@ -449,7 +450,8 @@ fn compile_from_arena(
             STATUS_OK
         }
         Err(SceneError::PainterTraceLimit) => fail(
-            instance, STATUS_RESOURCE_LIMIT,
+            instance,
+            STATUS_RESOURCE_LIMIT,
             "compiled scene fragments into more than 1024 browser traces",
         ),
         Ok(_) | Err(SceneError::Limit) => fail(
@@ -582,15 +584,31 @@ mod tests {
 
     fn fragmented_scene(count: usize) -> Vec<u8> {
         let layout = scene::PlotLayout::new(100.0, 80.0, 10.0, 10.0, 10.0, 10.0).unwrap();
-        let x = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 10.0, 90.0, 1.0, false).unwrap();
-        let y = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 70.0, 10.0, 1.0, false).unwrap();
+        let x = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 10.0, 90.0, 1.0, false)
+            .unwrap();
+        let y = scene::AxisScale::new(scene::ScaleKind::Linear, 0.0, 1.0, 70.0, 10.0, 1.0, false)
+            .unwrap();
         let coordinates = vec![0.5; count];
         let zeros = vec![0.0; count];
         let symbols: Vec<u8> = (0..count).map(|index| (index % 2) as u8).collect();
         scene::SceneBatch::new(
-            layout, 1, 2, x, y, &vec![0; count], &vec![7; count], &vec![0; count],
-            &[1, 2, 3, 255], &[0, 0, 0, 0], &[0.0], &vec![4.0; count], &symbols,
-            &coordinates, &coordinates, &zeros, &zeros,
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &vec![0; count],
+            &vec![7; count],
+            &vec![0; count],
+            &[1, 2, 3, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &vec![4.0; count],
+            &symbols,
+            &coordinates,
+            &coordinates,
+            &zeros,
+            &zeros,
         )
         .unwrap()
         .encode()
@@ -669,24 +687,24 @@ mod tests {
         write_arena(handle, &bytes);
         assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_OK);
         assert_ne!(xyg_wasm_output_ptr(handle), 0);
-        assert_eq!(xyg_wasm_output_len(handle), 258);
+        assert_eq!(xyg_wasm_output_len(handle), 458);
         assert_eq!(xyg_wasm_last_scene_records(handle), 1);
         with_instance_mut(handle, |instance| {
             assert_eq!(&instance.output[..4], b"XYPB");
             assert_eq!(
                 u32::from_le_bytes(instance.output[4..8].try_into().unwrap()),
-                2
+                3
             );
             assert_eq!(
                 u32::from_le_bytes(instance.output[20..24].try_into().unwrap()),
                 1
             );
             assert_eq!(
-                u32::from_le_bytes(instance.output[136..140].try_into().unwrap()),
+                u32::from_le_bytes(instance.output[336..340].try_into().unwrap()),
                 7
             );
             assert_eq!(
-                u32::from_le_bytes(instance.output[140..144].try_into().unwrap()),
+                u32::from_le_bytes(instance.output[340..344].try_into().unwrap()),
                 0
             );
             assert_eq!(
@@ -756,10 +774,16 @@ mod tests {
         let bytes = fragmented_scene(scene::MAX_BROWSER_PAINTER_TRACES + 1);
         let handle = xyg_wasm_instance_new(bytes.len());
         write_arena(handle, &bytes);
-        assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_RESOURCE_LIMIT);
+        assert_eq!(
+            xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()),
+            STATUS_RESOURCE_LIMIT
+        );
         assert_eq!(xyg_wasm_output_len(handle), 0);
         with_instance_mut(handle, |instance| {
-            assert_eq!(instance.last_error, "canonical scene fragments into more than 1024 browser traces");
+            assert_eq!(
+                instance.last_error,
+                "canonical scene fragments into more than 1024 browser traces"
+            );
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
