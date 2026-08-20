@@ -149,10 +149,36 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
     with pytest.raises(ValueError, match="invalid canonical scene"):
         _native.scene_svg(b"not-a-scene")
-    unsupported = Figure().ribbon([0.0], [1.0], [0.0], [0.3], [0.2], [0.5])
-    with pytest.raises(UnsupportedSceneV3, match="ribbon"):
+    unsupported = Figure().heatmap([[0.0, 1.0], [1.0, 0.0]])
+    with pytest.raises(UnsupportedSceneV3, match="heatmap"):
         unsupported.to_scene()
     assert "<svg" in unsupported.to_svg()
+
+
+def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
+    ribbon = Figure(width=320, height=200)
+    ribbon.axis_options["x"]["domain"] = (0.0, 1.0)
+    ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
+    ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
+    scene = ribbon.to_scene()
+    assert scene[4:8] == (7).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert '<path d="M ' in svg
+    assert ' Z"' in svg
+
+    mesh = Figure(width=240, height=160)
+    mesh.axis_options["x"]["domain"] = (0.0, 1.0)
+    mesh.axis_options["y"]["domain"] = (0.0, 1.0)
+    mesh.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0], color="#22c55e")
+    mesh_svg = _native.scene_svg(mesh.to_scene())
+    assert '<path d="M ' in mesh_svg
+
+    gradient = Figure()
+    gradient.ribbon(
+        [0.0], [1.0], [0.0], [0.3], [0.2], [0.5], color="#7c3aed", color_target="#34d399"
+    )
+    with pytest.raises(UnsupportedSceneV3, match="two-ended ribbon gradients"):
+        gradient.to_scene()
 
 
 def test_python_scene_compiles_area_and_error_band() -> None:
@@ -161,7 +187,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
     area.axis_options["y"]["domain"] = (0.0, 3.0)
     area.area([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], base=0.0, color="#3987e5", opacity=0.5)
     scene = area.to_scene()
-    assert scene[4:8] == (6).to_bytes(4, "little")
+    assert scene[4:8] == (7).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -228,7 +254,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (6).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (7).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg

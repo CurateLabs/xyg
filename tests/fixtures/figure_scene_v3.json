@@ -11,7 +11,7 @@
     0,
     5
   ],
-  "expected_sha256": "bba9e25a06067aa0ed1e8489547b6faa5ad0c01f12832326be1fb2a5857ae4f1",
-  "default_scatter_sha256": "8d534c180e874de5691763e178a4831b25c0edf6e381c291310e45d1a15a1c97",
-  "default_line_sha256": "98d8232dbf0afe4a2530ec6c79f65f8ef0d176dc3561685058be9b35bfbd0dc1"
+  "expected_sha256": "16d2f2a3825e562e0cd1c7be82231d69add62e954fc8b39727a5e1a235bb3bab",
+  "default_scatter_sha256": "3554c1f3c328655533ca5b668c77a53c77c3cc4e893825883cbfeba8e9b582e6",
+  "default_line_sha256": "396938c9a340c10ff6ac0760251fabe041b98da29b1bd99c8f17aa0ef35adb39"
 }

@@ -23,11 +23,11 @@ const SYMBOL_CODES = new Map([
 function sceneSymbolCode(value) {
   if (typeof value === "string") {
     const code = SYMBOL_CODES.get(value);
-    if (code == null) throw new RangeError(`Scene v6 does not support scatter symbol ${JSON.stringify(value)}`);
+    if (code == null) throw new RangeError(`Scene v7 does not support scatter symbol ${JSON.stringify(value)}`);
     return code;
   }
   if (!Number.isInteger(value) || value < 0 || value >= SYMBOL_CODES.size) {
-    throw new RangeError("Scene v6 scatter symbol code must be an integer from 0 through 18");
+    throw new RangeError("Scene v7 scatter symbol code must be an integer from 0 through 18");
   }
   return value;
 }
@@ -170,7 +170,7 @@ function axisDescriptor(axis, name) {
   return [asU64(id, `${name}.id`), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
 }
 
-/** Encode the shared backend-neutral Scene v6 typed batch. */
+/** Encode the shared backend-neutral Scene v7 typed batch. */
 export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
   title = "", xLabel = "", yLabel = "",
@@ -259,27 +259,44 @@ function rgba8(css, opacity, name) {
 const RECT_KINDS = new Set(["bar", "column", "histogram", "violin", "box"]);
 const SEGMENT_KINDS = new Set(["segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const BAND_KINDS = new Set(["area", "error_band"]);
+const RIBBON_KINDS = new Set(["ribbon"]);
+const POLYFILL_KINDS = new Set(["triangle_mesh"]);
 const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const SUPPORTED_KINDS = new Set([
   "scatter", "line", "bar", "column", "histogram", "violin", "box",
   "segments", "errorbar", "stem", "contour", "box_whisker", "box_median",
-  "area", "error_band",
+  "area", "error_band", "ribbon", "triangle_mesh",
 ]);
+const RIBBON_STEPS = 96;
+
+function ribbonEdge(x0, x1, ya, yb, steps = RIBBON_STEPS) {
+  const outX = new Float64Array(steps + 1);
+  const outY = new Float64Array(steps + 1);
+  const mid = (x0 + x1) * 0.5;
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const u = 1 - t;
+    outX[i] = u ** 3 * x0 + 3 * u ** 2 * t * mid + 3 * u * t ** 2 * mid + t ** 3 * x1;
+    outY[i] = u ** 3 * ya + 3 * u ** 2 * t * ya + 3 * u * t ** 2 * yb + t ** 3 * yb;
+  }
+  return { x: outX, y: outY };
+}
+
 
 function rejectRectExtras(style, kind) {
   if (style.fill != null && typeof style.fill === "object") {
-    throw new RangeError(`Scene v6 does not yet encode ${kind} gradient fills`);
+    throw new RangeError(`Scene v7 does not yet encode ${kind} gradient fills`);
   }
   const radius = style.corner_radius ?? 0;
   if (Array.isArray(radius)) {
     if (radius.some((value) => Number(value) !== 0)) {
-      throw new RangeError(`Scene v6 does not yet encode ${kind} corner_radius`);
+      throw new RangeError(`Scene v7 does not yet encode ${kind} corner_radius`);
     }
   } else if (Number(radius) !== 0) {
-    throw new RangeError(`Scene v6 does not yet encode ${kind} corner_radius`);
+    throw new RangeError(`Scene v7 does not yet encode ${kind} corner_radius`);
   }
   if (Number(style.wedge_gap ?? 0) !== 0) {
-    throw new RangeError(`Scene v6 does not yet encode ${kind} wedge_gap`);
+    throw new RangeError(`Scene v7 does not yet encode ${kind} wedge_gap`);
   }
 }
 
@@ -305,28 +322,28 @@ function stepArrays(xv, yv, where) {
 
 function requireEqualColumns(columns, kind, label) {
   if (columns.some((column) => column == null)) {
-    throw new RangeError(`${kind} Scene v6 compilation requires four ${label} columns`);
+    throw new RangeError(`${kind} Scene v7 compilation requires four ${label} columns`);
   }
   const count = columns[0].length;
   if (columns.some((column) => column.length !== count)) {
-    throw new RangeError(`Scene v6 ${kind} ${label} columns must have equal length`);
+    throw new RangeError(`Scene v7 ${kind} ${label} columns must have equal length`);
   }
   if (columns.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
-    throw new RangeError("Scene v6 does not yet encode missing-data breaks or nonfinite coordinates");
+    throw new RangeError("Scene v7 does not yet encode missing-data breaks or nonfinite coordinates");
   }
   return count;
 }
 
-/** Compile migrated cartesian marks to Scene v6. */
+/** Compile migrated cartesian marks to Scene v7. */
 export function figureSceneV3(figure, { margins = null } = {}) {
-  if (figure.coords !== "cartesian") throw new RangeError("Scene v6 figure compilation currently supports cartesian coordinates only");
-  if (figure.annotations?.length) throw new RangeError("Scene v6 does not yet encode annotations");
+  if (figure.coords !== "cartesian") throw new RangeError("Scene v7 figure compilation currently supports cartesian coordinates only");
+  if (figure.annotations?.length) throw new RangeError("Scene v7 does not yet encode annotations");
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
-  if (unsupported) throw new RangeError(`Scene v6 figure compilation does not yet support ${unsupported.kind}`);
+  if (unsupported) throw new RangeError(`Scene v7 figure compilation does not yet support ${unsupported.kind}`);
   const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [];
   for (const trace of figure.traces) {
-    if (trace.name != null) throw new RangeError("Scene v6 does not yet encode legends");
-    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v6 currently supports only the primary x/y axes");
+    if (trace.name != null) throw new RangeError("Scene v7 does not yet encode legends");
+    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v7 currently supports only the primary x/y axes");
     if (
       trace.kind === "scatter" &&
       shouldUseDensity(trace.x?.length ?? 0, {
@@ -335,19 +352,21 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         coords: figure.coords ?? "cartesian",
       })
     ) {
-      throw new RangeError("Scene v6 does not yet encode density-tier scatter");
+      throw new RangeError("Scene v7 does not yet encode density-tier scatter");
     }
     const style = trace.style ?? {};
     for (const key of ["color_channel", "size_channel", "stroke_channel", "dash", "curve", "smooth", "linecap", "marker_path", "marker_glyph"]) {
-      if (style[key] != null) throw new RangeError(`Scene v6 figure compilation does not yet support ${key}`);
+      if (style[key] != null) throw new RangeError(`Scene v7 figure compilation does not yet support ${key}`);
     }
     if (RECT_KINDS.has(trace.kind)) rejectRectExtras(style, trace.kind);
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
-    const color = style.color ?? "#3987e5";
+    const color = style.color
+      ?? (typeof trace.color === "string" ? trace.color : trace.color?.color)
+      ?? "#3987e5";
     const fillDefault = SEGMENT_KINDS.has(trace.kind) ? "#00000000" : color;
     const fillCss = style.fill ?? fillDefault;
-    if (typeof fillCss !== "string") throw new RangeError(`Scene v6 does not yet encode ${trace.kind} non-CSS fills`);
+    if (typeof fillCss !== "string") throw new RangeError(`Scene v7 does not yet encode ${trace.kind} non-CSS fills`);
     const strokeCss = style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000");
     const width = Number(
       style.stroke_width ?? style.width ?? style.line_width ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
@@ -356,20 +375,77 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const styleRef = styles.length - 1;
     const id = Number(trace.id);
 
+    if (RIBBON_KINDS.has(trace.kind)) {
+      if (trace.color_target != null) {
+        throw new RangeError("Scene v7 does not yet encode two-ended ribbon gradients");
+      }
+      const cols = [trace.x0, trace.x1, trace.y0, trace.y1, trace.x, trace.y];
+      if (cols.some((column) => column == null)) {
+        throw new RangeError("ribbon Scene v7 compilation requires six geometry columns");
+      }
+      const count = cols[0].length;
+      if (cols.some((column) => column.length !== count)) {
+        throw new RangeError("Scene v7 ribbon columns must have equal length");
+      }
+      if (cols.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
+        throw new RangeError("Scene v7 does not yet encode missing-data breaks or nonfinite coordinates");
+      }
+      for (let bandIndex = 0; bandIndex < count; bandIndex += 1) {
+        const upper = ribbonEdge(Number(trace.x0[bandIndex]), Number(trace.x1[bandIndex]), Number(trace.y1[bandIndex]), Number(trace.y[bandIndex]));
+        const lower = ribbonEdge(Number(trace.x0[bandIndex]), Number(trace.x1[bandIndex]), Number(trace.y0[bandIndex]), Number(trace.x[bandIndex]));
+        const stableId = (BigInt(id) << 32n) | BigInt(bandIndex);
+        for (let sample = 0; sample < upper.x.length; sample += 1) {
+          kinds.push(3); stableIds.push(stableId); styleRefs.push(styleRef);
+          diameter.push(0); symbols.push(0);
+          x0.push(upper.x[sample]); y0.push(upper.y[sample]);
+          x1.push(lower.x[sample]); y1.push(lower.y[sample]);
+        }
+      }
+      continue;
+    }
+
+    if (POLYFILL_KINDS.has(trace.kind)) {
+      if (style.joined_fill) throw new RangeError("Scene v7 does not yet encode joined triangle-mesh fills");
+      const cols = [trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y];
+      if (cols.some((column) => column == null)) {
+        throw new RangeError("triangle_mesh Scene v7 compilation requires six vertex columns");
+      }
+      const count = cols[0].length;
+      if (cols.some((column) => column.length !== count)) {
+        throw new RangeError("Scene v7 triangle_mesh columns must have equal length");
+      }
+      if (cols.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
+        throw new RangeError("Scene v7 does not yet encode missing-data breaks or nonfinite coordinates");
+      }
+      for (let triIndex = 0; triIndex < count; triIndex += 1) {
+        const stableId = (BigInt(id) << 32n) | BigInt(triIndex);
+        for (const [px, py] of [
+          [trace.x0[triIndex], trace.y0[triIndex]],
+          [trace.x1[triIndex], trace.y1[triIndex]],
+          [trace.x[triIndex], trace.y[triIndex]],
+        ]) {
+          kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
+          diameter.push(0); symbols.push(0);
+          x0.push(px); y0.push(py); x1.push(0); y1.push(0);
+        }
+      }
+      continue;
+    }
+
     if (BAND_KINDS.has(trace.kind)) {
       const xv = trace.x, yv = trace.y, base = trace.base;
       if (xv == null || yv == null || base == null) {
-        throw new RangeError(`${trace.kind} Scene v6 compilation requires x, y, and base columns`);
+        throw new RangeError(`${trace.kind} Scene v7 compilation requires x, y, and base columns`);
       }
       if (!(xv.length === yv.length && yv.length === base.length)) {
-        throw new RangeError(`Scene v6 ${trace.kind} band columns must have equal length`);
+        throw new RangeError(`Scene v7 ${trace.kind} band columns must have equal length`);
       }
       if (
         Array.from(xv).some((value) => !Number.isFinite(value))
         || Array.from(yv).some((value) => !Number.isFinite(value))
         || Array.from(base).some((value) => !Number.isFinite(value))
       ) {
-        throw new RangeError("Scene v6 does not yet encode missing-data breaks or nonfinite coordinates");
+        throw new RangeError("Scene v7 does not yet encode missing-data breaks or nonfinite coordinates");
       }
       for (let index = 0; index < xv.length; index += 1) {
         kinds.push(3); stableIds.push(id); styleRefs.push(styleRef);
@@ -406,18 +482,18 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     let yv = trace.y;
     const where = style.step;
     if (where != null) {
-      if (trace.kind !== "line") throw new RangeError("Scene v6 step expansion applies only to line traces");
+      if (trace.kind !== "line") throw new RangeError("Scene v7 step expansion applies only to line traces");
       if (!["pre", "post", "mid"].includes(where)) {
-        throw new RangeError(`Scene v6 does not support step mode ${JSON.stringify(where)}`);
+        throw new RangeError(`Scene v7 does not support step mode ${JSON.stringify(where)}`);
       }
       const stepped = stepArrays(xv, yv, where);
       xv = stepped.x; yv = stepped.y;
     }
     if (xv == null || yv == null || xv.length !== yv.length) {
-      throw new RangeError("Scene v6 does not yet encode missing-data breaks or nonfinite coordinates");
+      throw new RangeError("Scene v7 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     if (Array.from(xv).some((value) => !Number.isFinite(value)) || Array.from(yv).some((value) => !Number.isFinite(value))) {
-      throw new RangeError("Scene v6 does not yet encode missing-data breaks or nonfinite coordinates");
+      throw new RangeError("Scene v7 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     const kindCode = trace.kind === "scatter" ? 0 : 1;
     for (let index = 0; index < xv.length; index += 1) {
