@@ -1,11 +1,23 @@
-import { createXygWasmWorker, renderWasmScene, XygWasmError } from "/packages/xy-client/dist/index.js";
+import { createXygWasmWorker, renderWasmChart, renderWasmScene, XygWasmError } from "/packages/xy-client/dist/index.js";
+
+function writeDefaultSceneV8Chrome(bytes, view, body) {
+  bytes.set([32, 32, 32, 217], body + 8); view.setFloat64(body + 16, 12, true);
+  for (const offset of [body + 24, body + 112]) {
+    bytes.set([0, 1, 1, 0, 0, 0, 0, 0], offset);
+    bytes.set([32, 32, 32, 140], offset + 8); bytes.set([32, 32, 32, 36], offset + 12);
+    bytes.set([32, 32, 32, 140], offset + 16); bytes.set([32, 32, 32, 140], offset + 24);
+    bytes.set([32, 32, 32, 217], offset + 28);
+    [1, 1, 1, 4, 1, 1, 0].forEach((value, index) => view.setFloat64(offset + 32 + index * 8, value, true));
+  }
+  view.setUint32(body + 212, 0xffffffff, true); view.setUint32(body + 220, 0xffffffff, true);
+}
 
 function coreScene(count) {
   const body = 160 + 3 * 16 + count * 56;
-  const bytes = new Uint8Array(body + 40);
+  const bytes = new Uint8Array(body + 232);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83]);
-  view.setUint32(4, 7, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 8, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 3n, true);
   [800, 600, 60, 20, 780, 550].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -28,8 +40,7 @@ function coreScene(count) {
       view.setFloat64(record + 40, 22 + ((index * 37) % 991) / 990 * 528, true);
     }
   }
-  bytes.set([32, 32, 32, 36, 32, 32, 32, 140, 32, 32, 32, 217], body);
-  view.setFloat64(body + 16, 12, true);
+  writeDefaultSceneV8Chrome(bytes, view, body);
   return bytes;
 }
 
@@ -59,11 +70,23 @@ async function run() {
     if (chromeLabels < 2 || chromeRules < 2) throw new Error(`expected Rust-authored chrome, got ${chromeLabels} labels and ${chromeRules} rules`);
     const heapAfter = performance.memory?.usedJSHeapSize ?? null;
     const lastTrace = view.gpuTraces.length - 1;
-    rows.push({ count, sceneBytes: 160 + 3 * 16 + count * 56 + 40, traces: view.gpuTraces.length, chromeLabels, chromeRules, ...view.wasmMetrics,
+    rows.push({ count, sceneBytes: 160 + 3 * 16 + count * 56 + 232, traces: view.gpuTraces.length, chromeLabels, chromeRules, ...view.wasmMetrics,
       firstPaintMs: performance.now() - started,
       retainedJsHeapDelta: heapBefore === null ? null : Math.max(0, heapAfter - heapBefore),
       stableIdTail: String(view.sceneStableId(lastTrace, view.gpuTraces[lastTrace]._sceneIds.lo.length - 1)) });
     view.destroy(); host.remove();
+  }
+  for (const count of [100, 10_000, 100_000, 1_000_000]) {
+    const chartWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 384 * 1024 * 1024 });
+    await chartWorker.ready;
+    const x = new Float64Array(count), y = new Float64Array(count);
+    for (let index = 0; index < count; index++) { x[index] = (index % 1024) / 1023; y[index] = ((index * 37) % 1024) / 1023; }
+    const host = document.body.appendChild(document.createElement("div"));
+    const started = performance.now();
+    const handle = await renderWasmChart({ el: host, worker: chartWorker, dataOwnership: "transfer", workerOwnership: "own", chart: { width: 800, height: 600, series: [{ kind: "scatter", x, y }] } });
+    await frame(); await frame();
+    rows.push({ count, typedSeries: true, firstPaintMs: performance.now() - started, ...handle.diagnostics() });
+    await handle.dispose(); host.remove();
   }
   const fragmentedHost = document.body.appendChild(document.createElement("div"));
   const fragmentedStarted = performance.now();

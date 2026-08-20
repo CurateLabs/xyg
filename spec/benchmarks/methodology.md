@@ -282,6 +282,13 @@ cargo codspeed build -m simulation --bench kernels
 codspeed run --mode simulation -- cargo codspeed run --bench kernels
 ```
 
+`crates/xyg-wasm/benches/typed_series.rs` adds four Rust-owned typed-series
+expansion rows at 100, 10k, 100k, and 1M records (small, medium, large, and
+massive). Matching browser harness rows measure first paint, copy counters, and
+WASM memory high-water at the same sizes. The Rust rows are reserved for nightly latest-main CodSpeed
+collection and are not a per-PR gate; the browser rows remain wall-time
+evidence as required above.
+
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and

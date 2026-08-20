@@ -1,7 +1,9 @@
 import {
   XYG_WASM_ABI_VERSION,
+  XYG_WASM_MAX_ARENA_BYTES,
   XYG_WASM_SCENE_VERSION,
 } from "./wasm_abi_generated";
+import type { XygWasmTypedSeriesRequest } from "./49_wasm_chart";
 
 export type XygWasmSource = string | URL | ArrayBuffer | Uint8Array | WebAssembly.Module;
 
@@ -18,7 +20,10 @@ export interface XygWasmDiagnostics {
   abiVersion: number;
   sceneVersion: number;
   arenaBytes: number;
+  arenaHighWaterBytes: number;
   memoryBytes: number;
+  /** Current linear memory is also its high-water because WebAssembly memory cannot shrink. */
+  memoryHighWaterBytes: number;
   copyCount: number;
   copyBytesLo: number;
   copyBytesHi: number;
@@ -129,6 +134,7 @@ export class XygWasmWorker {
   private nextRequestId = 1;
   private nextSequence = 1;
   private disposed = false;
+  private readonly maxArenaBytes: number;
   readonly ready: Promise<XygWasmDiagnostics>;
 
   constructor(options: XygWasmWorkerOptions) {
@@ -138,6 +144,11 @@ export class XygWasmWorker {
     // Validate and normalize the source before allocating a Worker so a bad
     // source cannot leak an otherwise unreachable worker process.
     const loaded = sourceMessage(options.wasm);
+    const maxArenaBytes = options.maxArenaBytes ?? 16 * 1024 * 1024;
+    if (!Number.isInteger(maxArenaBytes) || maxArenaBytes <= 0 || maxArenaBytes > XYG_WASM_MAX_ARENA_BYTES) {
+      throw new RangeError(`maxArenaBytes must be an integer in 1..${XYG_WASM_MAX_ARENA_BYTES}`);
+    }
+    this.maxArenaBytes = maxArenaBytes;
     this.worker = new Worker(String(options.workerUrl), {
       type: "module",
       name: "xyg-wasm",
@@ -164,7 +175,7 @@ export class XygWasmWorker {
           type: "init",
           requestId,
           source: loaded.source,
-          maxArenaBytes: options.maxArenaBytes ?? 16 * 1024 * 1024,
+          maxArenaBytes,
           expectedAbiVersion: XYG_WASM_ABI_VERSION,
           expectedSceneVersion: XYG_WASM_SCENE_VERSION,
         },
@@ -209,6 +220,60 @@ export class XygWasmWorker {
     options: { sequence?: number; transfer?: boolean } = {},
   ): XygWasmTask<XygWasmScenePaint> {
     return this.sceneTask("scene.compile_paint", request, options);
+  }
+
+  /** Transfer typed columns without main-thread record expansion. */
+  compilePrepareSeries(
+    request: XygWasmTypedSeriesRequest,
+    options: { sequence?: number; transfer?: boolean } = {},
+  ): XygWasmTask<XygWasmScenePaint> {
+    this.assertLive();
+    if (!(request?.prefix instanceof ArrayBuffer) || !Array.isArray(request.columns)) {
+      throw new TypeError("typed-series request is malformed");
+    }
+    const buffers = [request.prefix, ...request.columns];
+    if (request.columns.some((column) => !(column instanceof ArrayBuffer))
+        || new Set(buffers).size !== buffers.length) {
+      throw new TypeError("typed-series request requires distinct ArrayBuffers");
+    }
+    const actualBytes = buffers.reduce((total, buffer) => total + buffer.byteLength, 0);
+    if (!Number.isSafeInteger(actualBytes) || actualBytes !== request.byteLength) {
+      throw new TypeError("typed-series buffers do not match byteLength");
+    }
+    if (!Number.isSafeInteger(request.byteLength) || request.byteLength <= 0
+        || request.byteLength > this.maxArenaBytes) {
+      throw new RangeError("typed-series request exceeds the worker arena byte budget");
+    }
+    if (!Number.isSafeInteger(request.peakBytes) || request.peakBytes < request.byteLength
+        || request.peakBytes > this.maxArenaBytes) {
+      throw new RangeError("typed-series request exceeds the worker peak byte budget");
+    }
+    const sequence = options.sequence ?? this.nextSequence++;
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
+      throw new RangeError("sequence must be a nonzero u32");
+    }
+    this.nextSequence = Math.max(this.nextSequence, sequence + 1);
+    const requestId = this.allocateRequest();
+    const result = this.promiseFor<XygWasmScenePaint>(requestId);
+    const transfer = options.transfer === true ? buffers : [];
+    try {
+      this.worker.postMessage(
+        { type: "series.compile_paint", requestId, sequence, ...request },
+        transfer,
+      );
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer typed series");
+    }
+    return {
+      requestId, sequence, result,
+      cancel: () => {
+        const pending = this.pending.get(requestId); if (!pending) return;
+        this.pending.delete(requestId);
+        pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "request was cancelled", 6));
+        if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
+      },
+    };
   }
 
   private sceneTask<T extends XygWasmSceneValidation>(

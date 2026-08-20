@@ -22,6 +22,18 @@ def render(manifest: dict[str, object]) -> str:
     painter_trace_bytes = int(manifest["painter_trace_bytes"])
     painter_tick_bytes = int(manifest["painter_tick_bytes"])
     painter_max_traces = int(manifest["painter_max_traces"])
+    typed_series_version = int(manifest["typed_series_version"])
+    typed_series_header_bytes = int(manifest["typed_series_header_bytes"])
+    typed_series_descriptor_bytes = int(manifest["typed_series_descriptor_bytes"])
+    typed_series_max_series = int(manifest["typed_series_max_series"])
+    typed_series_max_records = int(manifest["typed_series_max_records"])
+    typed_series_max_text_bytes = int(manifest["typed_series_max_text_bytes"])
+    typed_series_max_symbol_code = int(manifest["typed_series_max_symbol_code"])
+    typed_series_peak_fixed_bytes = int(manifest["typed_series_peak_fixed_bytes"])
+    typed_series_peak_bytes_per_record = int(manifest["typed_series_peak_bytes_per_record"])
+    typed_series_peak_bytes_per_series = int(manifest["typed_series_peak_bytes_per_series"])
+    typed_series_peak_input_multiplier = int(manifest["typed_series_peak_input_multiplier"])
+    max_arena_bytes = int(manifest["max_arena_bytes"])
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if not isinstance(statuses, dict) or not isinstance(exports, list):
@@ -38,6 +50,18 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_PAINTER_TRACE_BYTES = {painter_trace_bytes} as const;",
         f"export const XYG_WASM_PAINTER_TICK_BYTES = {painter_tick_bytes} as const;",
         f"export const XYG_WASM_PAINTER_MAX_TRACES = {painter_max_traces} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_VERSION = {typed_series_version} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_HEADER_BYTES = {typed_series_header_bytes} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_DESCRIPTOR_BYTES = {typed_series_descriptor_bytes} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_MAX_SERIES = {typed_series_max_series} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_MAX_RECORDS = {typed_series_max_records} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_MAX_TEXT_BYTES = {typed_series_max_text_bytes} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_MAX_SYMBOL_CODE = {typed_series_max_symbol_code} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_PEAK_FIXED_BYTES = {typed_series_peak_fixed_bytes} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_RECORD = {typed_series_peak_bytes_per_record} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_SERIES = {typed_series_peak_bytes_per_series} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_PEAK_INPUT_MULTIPLIER = {typed_series_peak_input_multiplier} as const;",
+        f"export const XYG_WASM_MAX_ARENA_BYTES = {max_arena_bytes} as const;",
         "export const XYG_WASM_STATUS = {",
     ]
     for name, value in statuses.items():
@@ -133,6 +157,30 @@ def verify_rust(manifest: dict[str, object]) -> None:
         match = re.search(rf"pub const {rust_name}: usize = (\d+);", engine)
         if not match or int(match.group(1)) != int(manifest[manifest_name]):
             raise SystemExit(f"xyg-engine {rust_name} differs from spec/wasm/abi.json")
+    compile_source = (ROOT / "crates" / "xyg-wasm" / "src" / "compile.rs").read_text(
+        encoding="utf-8"
+    )
+    for rust_name, manifest_name in (
+        ("SERIES_VERSION", "typed_series_version"),
+        ("COMPILE_HEADER_BYTES", "typed_series_header_bytes"),
+        ("SERIES_DESCRIPTOR_BYTES", "typed_series_descriptor_bytes"),
+        ("MAX_SERIES", "typed_series_max_series"),
+        ("MAX_RECORDS", "typed_series_max_records"),
+        ("MAX_TEXT_BYTES", "typed_series_max_text_bytes"),
+        ("MAX_SYMBOL_CODE", "typed_series_max_symbol_code"),
+        ("SERIES_PEAK_FIXED_BYTES", "typed_series_peak_fixed_bytes"),
+        ("SERIES_PEAK_BYTES_PER_RECORD", "typed_series_peak_bytes_per_record"),
+        ("SERIES_PEAK_BYTES_PER_SERIES", "typed_series_peak_bytes_per_series"),
+        ("SERIES_PEAK_INPUT_MULTIPLIER", "typed_series_peak_input_multiplier"),
+    ):
+        match = re.search(rf"pub const {rust_name}: (?:u32|usize) = ([0-9_]+);", compile_source)
+        if not match or int(match.group(1).replace("_", "")) != int(manifest[manifest_name]):
+            raise SystemExit(f"xyg-wasm {rust_name} differs from spec/wasm/abi.json")
+    arena_match = re.search(r"pub const MAX_ARENA_BYTES: usize = ([0-9_]+);", source)
+    if not arena_match or int(arena_match.group(1).replace("_", "")) != int(
+        manifest["max_arena_bytes"]
+    ):
+        raise SystemExit("xyg-wasm MAX_ARENA_BYTES differs from spec/wasm/abi.json")
     for name, value in manifest["statuses"].items():
         match = re.search(rf"pub const STATUS_{re.escape(str(name))}: i32 = (\d+);", source)
         if not match or int(match.group(1)) != int(value):

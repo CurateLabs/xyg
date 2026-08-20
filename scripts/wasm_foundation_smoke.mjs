@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), ".."));
 const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
+  "/tests/fixtures/figure_scene_v3.json",
   "/packages/xy-client/dist/index.js",
   "/packages/xy-client/dist/wasm-worker.js",
   "/packages/xy-client/dist/xyg-wasm.wasm",
@@ -27,6 +28,7 @@ const contentType = {
   ".js": "text/javascript",
   ".mjs": "text/javascript",
   ".wasm": "application/wasm",
+  ".json": "application/json",
 };
 
 const server = createServer(async (request, response) => {

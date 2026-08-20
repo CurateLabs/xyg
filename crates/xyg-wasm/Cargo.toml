@@ -14,3 +14,10 @@ crate-type = ["cdylib", "rlib"]
 # The browser adapter deliberately excludes native raster/PNG export. Browser
 # painting stays in the existing TypeScript/WebGL client.
 xyg-engine = { path = "../xyg-engine", default-features = false }
+
+[dev-dependencies]
+divan = { version = "5.0.1", package = "codspeed-divan-compat" }
+
+[[bench]]
+name = "typed_series"
+harness = false

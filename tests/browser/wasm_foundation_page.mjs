@@ -1,6 +1,6 @@
 import {
   createXygWasmWorker,
-  encodeWasmChart,
+  frameWasmChart,
   encodeWasmColumns,
   renderWasmChart,
   renderWasmColumns,
@@ -167,6 +167,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
     "xyg_wasm_copy_count",
     "xyg_wasm_copy_bytes_lo",
     "xyg_wasm_copy_bytes_hi",
+    "xyg_wasm_arena_high_water",
     "xyg_wasm_last_scene_records",
     "xyg_wasm_last_scene_styles",
   ];
@@ -182,7 +183,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -193,11 +194,11 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
   ];
   const highBit = 0x80000000;
   const values = [
-    3, 8, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    4, 8, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0,
+    0, 0, 0,
   ];
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
@@ -276,12 +277,14 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 3,
+    expectedAbiVersion: 4,
     expectedSceneVersion: 8,
   };
 }
 
+let foundationStage = "startup";
 async function run() {
+  const sharedFixture = await fetch("/tests/fixtures/figure_scene_v3.json").then((response) => response.json());
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
   const wasmBytes = await wasmResponse.arrayBuffer();
   const wasmModule = await WebAssembly.compile(wasmBytes);
@@ -298,6 +301,42 @@ async function run() {
   if (!firstReady.ok) throw new Error(`first concurrent init failed: ${JSON.stringify(firstReady)}`);
   await duplicate.request({ type: "dispose", requestId: 102 });
   duplicate.worker.terminate();
+
+  const malformedSeriesWorker = rawWorkerHarness();
+  const malformedReady = await malformedSeriesWorker.request({
+    ...rawInit(103, { kind: "module", value: wasmModule }),
+    maxArenaBytes: 1024 * 1024,
+  });
+  if (!malformedReady.ok) throw new Error(`raw typed-series worker failed init: ${JSON.stringify(malformedReady)}`);
+  const rawSeries = frameWasmChart({
+    width: 320,
+    height: 240,
+    series: [{ kind: "scatter", x: new Float64Array([0.5]), y: new Float64Array([0.5]) }],
+  });
+  const malformedCombined = await malformedSeriesWorker.request({
+    type: "series.compile_paint",
+    requestId: 104,
+    sequence: 1,
+    prefix: rawSeries.prefix,
+    columns: rawSeries.columns,
+    byteLength: rawSeries.byteLength + 1,
+  });
+  if (malformedCombined.ok || malformedCombined.error?.code !== "XYG_WASM_INVALID_ARGUMENT") {
+    throw new Error(`combined typed-series length did not fail closed: ${JSON.stringify(malformedCombined)}`);
+  }
+  const afterMalformedCombined = await malformedSeriesWorker.request({
+    type: "series.compile_paint",
+    requestId: 105,
+    sequence: 2,
+    prefix: rawSeries.prefix,
+    columns: rawSeries.columns,
+    byteLength: rawSeries.byteLength,
+  });
+  if (!afterMalformedCombined.ok) {
+    throw new Error(`combined-length rejection destroyed worker: ${JSON.stringify(afterMalformedCombined)}`);
+  }
+  await malformedSeriesWorker.request({ type: "dispose", requestId: 106 });
+  malformedSeriesWorker.worker.terminate();
 
   const disposedDuringInit = rawWorkerHarness();
   disposedDuringInit.worker.postMessage(
@@ -320,7 +359,7 @@ async function run() {
     maxArenaBytes: 1024,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 3 || ready.sceneVersion !== 8) {
+  if (ready.abiVersion !== 4 || ready.sceneVersion !== 8) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -488,34 +527,105 @@ async function run() {
     series: [
       {
         kind: "scatter",
-        x: [0.2, 0.8],
-        y: [0.3, 0.7],
+        x: new Float64Array([0.2, 0.8]),
+        y: new Float64Array([0.3, 0.7]),
         stableIdBase: 70n,
         diameter: 8,
       },
       {
         kind: "line",
-        x: [0.1, 0.5, 0.9],
-        y: [0.2, 0.6, 0.4],
+        x: new Float64Array([0.1, 0.5, 0.9]),
+        y: new Float64Array([0.2, 0.6, 0.4]),
         stableIdBase: 80n,
-        style: { strokeRgba: [15, 23, 42, 255], strokeWidth: 2, fillRgba: [0, 0, 0, 0] },
+      },
+      {
+        kind: "bar",
+        x: new Float64Array([0.3]),
+        y: new Float64Array([0.5]),
+        stableIdBase: 90n,
+      },
+      {
+        kind: "area",
+        x: new Float64Array([0.1, 0.9]),
+        y: new Float64Array([0.4, 0.6]),
+        stableIdBase: 100n,
       },
     ],
   };
-  const chartPacked = encodeWasmChart(chart);
-  const chartFlags = new DataView(chartPacked).getUint32(12, true);
+  const chartPacked = frameWasmChart(chart);
+  const chartFlags = new DataView(chartPacked.prefix).getUint32(12, true);
   if ((chartFlags & 3) !== 3) {
     throw new Error(`chart ergonomics did not set autoMargins|autoDomain flags: ${chartFlags}`);
   }
-  if (new Uint8Array(chartPacked).subarray(0, 4).join(",") !== "88,89,67,67") {
-    throw new Error("chart ergonomics encoder did not emit XYCC");
+  if (new Uint8Array(chartPacked.prefix).subarray(0, 4).join(",") !== "88,89,84,83") {
+    throw new Error("chart ergonomics framer did not emit XYTS");
+  }
+  const fixtureMagic = new TextDecoder().decode(new Uint8Array(chartPacked.prefix, 0, 4));
+  if (fixtureMagic !== sharedFixture.wasm_typed_series_v1.magic) {
+    throw new Error("browser typed-series framing drifted from the shared Python/Node fixture");
+  }
+  const aliased = new Float64Array([0, 1]);
+  try {
+    frameWasmChart({ width: 10, height: 10, series: [{ kind: "scatter", x: aliased, y: aliased }] });
+    throw new Error("chart ergonomics accepted aliased transferable columns");
+  } catch (error) {
+    if (!(error instanceof TypeError) || !String(error.message).includes("distinct transferable")) throw error;
+  }
+  for (const malformedSeries of [
+    { kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), diameter: 2 },
+    { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), y0: new Float64Array([0]) },
+    { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: -1 },
+    { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: [2] },
+    { kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style: { fillRgba: [1, 2, 3, 4] } },
+  ]) {
+    try {
+      frameWasmChart({ width: 10, height: 10, series: [malformedSeries] });
+      throw new Error("chart ergonomics accepted inapplicable or negative geometry");
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+    }
+  }
+  const oversizedX = new Float64Array(4_000), oversizedY = new Float64Array(4_000);
+  try {
+    chartWorker.compilePrepareSeries(frameWasmChart({
+      width: 10, height: 10, series: [{ kind: "scatter", x: oversizedX, y: oversizedY }],
+    }));
+    throw new Error("chart ergonomics transferred a request beyond the configured peak");
+  } catch (error) {
+    if (!(error instanceof RangeError) || !String(error.message).includes("peak byte budget")) throw error;
+  }
+  if (oversizedX.byteLength === 0 || oversizedY.byteLength === 0) {
+    throw new Error("oversized typed-series buffers detached before bounded rejection");
+  }
+  const failedOwnedWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await failedOwnedWorker.ready;
+  try {
+    await renderWasmChart({
+      el: document.body.appendChild(document.createElement("div")),
+      worker: failedOwnedWorker,
+      workerOwnership: "own",
+      chart: { width: 10, height: 10, series: [{ kind: "scatter", x: oversizedX, y: oversizedY }] },
+    });
+    throw new Error("oversized initial update unexpectedly succeeded");
+  } catch (error) {
+    if (!(error instanceof RangeError) || !String(error.message).includes("peak byte budget")) throw error;
+  }
+  try {
+    failedOwnedWorker.validateScene(canonicalSceneV8());
+    throw new Error("failed initial update leaked its owned worker");
+  } catch (error) {
+    if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_DISPOSED") throw error;
   }
   const chartHost = document.body.appendChild(document.createElement("div"));
+  foundationStage = "initial typed-series render";
   const chartView = await renderWasmChart({
     el: chartHost,
     chart,
     worker: chartWorker,
-    transfer: false,
   });
   if (!chartHost.querySelector("canvas") || chartView.gpuTraces.length < 1) {
     throw new Error("chart ergonomics public API did not hydrate the existing painter");
@@ -523,9 +633,74 @@ async function run() {
   if (chartView.sceneStableId(0, 0) !== 70n) {
     throw new Error("chart ergonomics stable id was not preserved through painter hydration");
   }
-  chartView.destroy();
+  const defaultLine = chartView.gpuTraces.find((gpu) => gpu.trace?.kind === "line")?.trace;
+  if (defaultLine?.style?.color !== "rgba(37 99 235 / 1)" || defaultLine.style.width !== 1.5) {
+    throw new Error(`Rust line defaults drifted from the shared fixture: ${JSON.stringify(defaultLine?.style)}`);
+  }
+  const renderedKinds = new Set(chartView.gpuTraces.map((gpu) => gpu.trace?.kind));
+  for (const expected of ["scatter", "line", "box", "area"]) {
+    if (!renderedKinds.has(expected)) throw new Error(`Rust typed-series painter omitted ${expected}`);
+  }
+  const chartDiagnostics = chartView.diagnostics();
+  if (!chartDiagnostics || chartDiagnostics.arenaHighWaterBytes < chartPacked.byteLength
+      || chartDiagnostics.memoryHighWaterBytes !== chartDiagnostics.memoryBytes) {
+    throw new Error(`chart ergonomics did not report arena high-water: ${JSON.stringify(chartDiagnostics)}`);
+  }
+  const updateInput = (stableIdBase) => ({
+    width: 320,
+    height: 240,
+    series: [{
+      kind: "scatter",
+      x: new Float64Array([0.25, 0.75]),
+      y: new Float64Array([0.4, 0.6]),
+      stableIdBase,
+    }],
+  });
+  foundationStage = "chart update cancellation";
+  const staleUpdate = chartView.update(updateInput(90n));
+  const currentUpdate = chartView.update(updateInput(100n));
+  await rejected(staleUpdate, "XYG_WASM_CANCELLED", 6);
+  await currentUpdate;
+  if (chartView.sceneStableId(0, 0) !== 100n) {
+    throw new Error("chart handle did not retain only the newest update");
+  }
+  if (chart.series.some((series) => series.x.byteLength === 0 || series.y.byteLength === 0)) {
+    throw new Error("default chart rendering detached caller-owned arrays");
+  }
+  foundationStage = "failed chart update clears painter state";
+  try {
+    await chartView.update({
+      width: 10,
+      height: 10,
+      series: [{ kind: "scatter", x: oversizedX, y: oversizedY }],
+    });
+    throw new Error("over-budget chart update unexpectedly succeeded");
+  } catch (error) {
+    if (!(error instanceof RangeError) || !String(error.message).includes("peak byte budget")) throw error;
+  }
+  if (chartView.diagnostics() !== null || chartView.gpuTraces.length !== 0
+      || chartHost.querySelector("canvas")) {
+    throw new Error("failed chart update retained stale painter state");
+  }
+  await chartView.dispose();
+  await chartWorker.validateScene(canonicalSceneV8(), { sequence: 20 }).result;
   chartHost.remove();
   await chartWorker.dispose();
+  const transferWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await transferWorker.ready;
+  const transferredX = new Float64Array([0.2, 0.8]), transferredY = new Float64Array([0.8, 0.2]);
+  foundationStage = "explicit typed-series transfer";
+  await transferWorker.compilePrepareSeries(frameWasmChart({
+    width: 320, height: 240, series: [{ kind: "scatter", x: transferredX, y: transferredY }],
+  }), { transfer: true }).result;
+  if (transferredX.byteLength !== 0 || transferredY.byteLength !== 0) {
+    throw new Error("explicit typed-series transfer did not detach caller buffers");
+  }
+  await transferWorker.dispose();
 
   const malformed = canonicalSceneV8();
   malformed[0] = 0;
@@ -674,5 +849,5 @@ async function run() {
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({
   ok: false,
-  error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+  error: error instanceof Error ? `${foundationStage}: ${error.name}: ${error.message}` : String(error),
 }));

@@ -47,10 +47,16 @@ The #59 foundation now adds `crates/xyg-wasm`, a generated raw-export adapter,
 and an explicit static module Worker. It proves bounded JS→WASM staging,
 version/status/lifecycle behavior, exact Scene validation/paint lowering, and
 packed typed-column compile into the same canonical Scene batch native hosts
-encode. Public chart-spec ergonomics (`encodeWasmChart` / `renderWasmChart`)
-expand series into the packed typed-column seam; density replacement remains
+encode. Public `frameWasmChart` / `renderWasmChart` transfer typed series while
+Rust assigns identities and expands canonical mark/default geometry; density replacement remains
 open, so the direct-browser product acceptance remains open. See
 [browser-wasm.md](browser-wasm.md).
+
+Those typed series use versioned `XYTS` canonical compile ingress: exact raw
+f64 source columns move JS → Worker and undergo one bounded copy into WASM.
+They are not the live paint wire and are not `XYBF`. Rust alone validates and
+lowers them to the shared offset-f32/u8 painter buffer consumed by WebGL; the
+browser host has no per-record conversion or policy fallback.
 
 The #58 scene migration is active: scene schema version 8 provides one
 backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,
@@ -75,7 +81,7 @@ bounded path, text, and chrome records land.
   reimplement layout, LOD tiering, channel encode, or other buffer-affecting
   decisions in Python or TypeScript.
 - **Browser TypeScript never reimplements layout / LOD / encode** for the
-  product path. The client applies Rust-produced §29 buffers and runs screen-bounded
+  product path. The client applies Rust-produced live §29 offset-f32/u8 buffers and runs screen-bounded
   interaction; force ticks and LOD plans stay off the browser main thread’s
   decision path (native Rust today, the same Rust compiled to WASM under #59).
 - **Isolation:** the Node package MUST NOT use browser-only APIs (`window`,

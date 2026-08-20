@@ -1,275 +1,216 @@
-/**
- * Public chart-spec ergonomics above the packed `XYCC` typed-column seam.
- *
- * TypeScript only expands series-shaped inputs into flat columns and frames the
- * request. Domain, margins, Scene policy, and paint lowering stay in Rust WASM.
- */
-
-import {
-  encodeWasmColumns,
-  renderWasmColumns,
-  type XygWasmColumnCompileInput,
-  type XygWasmColumnStyle,
-  type XygWasmScaleKind,
-} from "./49_wasm_columns";
-import type { XygWasmSceneView } from "./48_wasm_scene";
-import type { XygWasmWorker } from "./47_wasm";
+/** Transferable typed-series framing for Rust-owned direct-browser compile. */
+import { hydrateWasmPainter, type XygWasmSceneView } from "./48_wasm_scene";
+import type { XygWasmScaleKind } from "./49_wasm_columns";
+import { XygWasmWorker, type XygWasmDiagnostics, type XygWasmTask, type XygWasmScenePaint } from "./47_wasm";
+import { XYG_WASM_TYPED_SERIES_DESCRIPTOR_BYTES as DESCRIPTOR, XYG_WASM_TYPED_SERIES_HEADER_BYTES as HEADER, XYG_WASM_TYPED_SERIES_MAX_RECORDS as MAX_RECORDS, XYG_WASM_TYPED_SERIES_MAX_SERIES as MAX_SERIES, XYG_WASM_TYPED_SERIES_MAX_SYMBOL_CODE as MAX_SYMBOL, XYG_WASM_TYPED_SERIES_MAX_TEXT_BYTES as MAX_TEXT_BYTES, XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_RECORD as PEAK_RECORD, XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_SERIES as PEAK_SERIES, XYG_WASM_TYPED_SERIES_PEAK_FIXED_BYTES as PEAK_FIXED, XYG_WASM_TYPED_SERIES_PEAK_INPUT_MULTIPLIER as PEAK_INPUT, XYG_WASM_TYPED_SERIES_VERSION } from "./wasm_abi_generated";
 
 export type XygWasmChartSeriesKind = "scatter" | "line" | "bar" | "area";
-
 export interface XygWasmChartSeries {
-  kind: XygWasmChartSeriesKind;
-  x: ArrayLike<number>;
-  y: ArrayLike<number>;
-  /** Required for `bar` (bar tops) and `area` (upper band edge). Defaults to `y`. */
-  y1?: ArrayLike<number>;
-  /** Required for `bar` (bar bottoms). Defaults to zeros. */
-  y0?: ArrayLike<number>;
-  diameter?: number | ArrayLike<number>;
+  kind: XygWasmChartSeriesKind; x: Float64Array; y: Float64Array;
+  y1?: Float64Array; y0?: Float64Array; diameter?: number | Float64Array;
   symbol?: number;
-  style?: Partial<XygWasmColumnStyle> & {
-    fillRgba?: Uint8Array | number[];
-    strokeRgba?: Uint8Array | number[];
-    strokeWidth?: number;
-  };
-  /** Base stable id; each expanded record uses `stableIdBase + index`. */
+  style?: { fillRgba?: Uint8Array | number[]; strokeRgba?: Uint8Array | number[]; strokeWidth?: number };
   stableIdBase?: bigint | number;
 }
-
 export interface XygWasmChartCompileInput {
-  width: number;
-  height: number;
-  margins?: [number, number, number, number];
-  /** Default true — Rust chooses gutters via `cartesian_scene_margins`. */
-  autoMargins?: boolean;
-  /**
-   * Default true when `x.lo`/`x.hi`/`y.lo`/`y.hi` are omitted. Rust derives
-   * domains from finite geometry in the Worker so the main thread never scans.
-   */
-  autoDomain?: boolean;
-  xAxisId?: bigint | number;
-  yAxisId?: bigint | number;
-  x?: {
-    kind?: XygWasmScaleKind;
-    lo?: number;
-    hi?: number;
-    constant?: number;
-    maskNonpositive?: boolean;
-  };
-  y?: {
-    kind?: XygWasmScaleKind;
-    lo?: number;
-    hi?: number;
-    constant?: number;
-    maskNonpositive?: boolean;
-  };
-  title?: string;
-  xLabel?: string;
-  yLabel?: string;
-  series: XygWasmChartSeries[];
+  width: number; height: number; margins?: [number, number, number, number];
+  autoMargins?: boolean; autoDomain?: boolean; xAxisId?: bigint | number; yAxisId?: bigint | number;
+  x?: { kind?: XygWasmScaleKind; lo?: number; hi?: number; constant?: number; maskNonpositive?: boolean };
+  y?: { kind?: XygWasmScaleKind; lo?: number; hi?: number; constant?: number; maskNonpositive?: boolean };
+  title?: string; xLabel?: string; yLabel?: string; series: XygWasmChartSeries[];
 }
+export interface XygWasmTypedSeriesRequest { prefix: ArrayBuffer; columns: ArrayBuffer[]; byteLength: number; peakBytes: number }
 
-const DEFAULT_FILL = [37, 99, 235, 255];
-const DEFAULT_STROKE = [0, 0, 0, 0];
-
-function asArray(source: ArrayLike<number>): number[] {
-  const out = new Array<number>(source.length);
-  for (let index = 0; index < source.length; index++) {
-    out[index] = source[index]!;
+const align8 = (value: number) => (value + 7) & ~7;
+function finite(view: DataView, offset: number, value: number, label: string) {
+  if (!Number.isFinite(value)) throw new TypeError(`${label} must be finite`);
+  view.setFloat64(offset, value, true);
+}
+function u64(view: DataView, offset: number, value: bigint | number, label: string) {
+  if (typeof value === "number" && (!Number.isSafeInteger(value) || value < 0)) throw new TypeError(`${label} must be a safe nonnegative integer or bigint`);
+  const parsed = typeof value === "bigint" ? value : BigInt(value);
+  if (parsed < 0n || parsed > 0xffffffffffffffffn) throw new RangeError(`${label} must fit u64`);
+  view.setBigUint64(offset, parsed, true);
+}
+function scale(value: XygWasmScaleKind | undefined) {
+  if (value === undefined || value === "linear" || value === 0) return 0;
+  if (value === "log" || value === 1) return 1;
+  if (value === "symlog" || value === 2) return 2;
+  throw new TypeError("scale kind must be linear, log, or symlog");
+}
+function kind(value: XygWasmChartSeriesKind) {
+  const code = ({ scatter: 0, line: 1, bar: 2, area: 3 } as const)[value];
+  if (code === undefined) throw new TypeError("series kind must be scatter, line, bar, or area");
+  return code;
+}
+function column(value: unknown, count: number, label: string) {
+  if (!(value instanceof Float64Array) || value.length !== count) throw new TypeError(`${label} must be a Float64Array matching x length`);
+  if (!(value.buffer instanceof ArrayBuffer) || value.byteOffset || value.byteLength !== value.buffer.byteLength) throw new TypeError(`${label} must own an exact transferable ArrayBuffer`);
+  return value;
+}
+function rgba(value: Uint8Array | number[] | undefined, label: string) {
+  if (value === undefined) return null;
+  if (value.length !== 4) throw new TypeError(`${label} must contain four channels`);
+  const out = new Uint8Array(4);
+  for (let index = 0; index < 4; index++) {
+    const channel = value[index]!;
+    if (!Number.isInteger(channel) || channel < 0 || channel > 255) throw new TypeError(`${label} channels must be integers in 0..255`);
+    out[index] = channel;
   }
   return out;
 }
 
-function seriesStyle(series: XygWasmChartSeries): XygWasmColumnStyle {
-  const fill = series.style?.fillRgba ?? DEFAULT_FILL;
-  const stroke = series.style?.strokeRgba ?? DEFAULT_STROKE;
-  return {
-    fillRgba: fill,
-    strokeRgba: stroke,
-    strokeWidth: series.style?.strokeWidth ?? (series.kind === "line" ? 1.5 : 0),
+/** O(series) framing only; Rust owns every per-record decision and expansion. */
+export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSeriesRequest {
+  if (!input || !Array.isArray(input.series) || !input.series.length) throw new TypeError("series must be a non-empty array");
+  if (input.series.length > MAX_SERIES) throw new RangeError("series exceeds the descriptor bound");
+  const encode = new TextEncoder();
+  const title = encode.encode(input.title ?? ""), xLabel = encode.encode(input.xLabel ?? ""), yLabel = encode.encode(input.yLabel ?? "");
+  if ([title, xLabel, yLabel].some((text) => text.length > MAX_TEXT_BYTES)) throw new RangeError("chrome text exceeds the Rust scene text bound");
+  const prefixLength = align8(HEADER + input.series.length * DESCRIPTOR + title.length + xLabel.length + yLabel.length);
+  const prefix = new ArrayBuffer(prefixLength), bytes = new Uint8Array(prefix), view = new DataView(prefix);
+  bytes.set([88, 89, 84, 83]); view.setUint32(4, XYG_WASM_TYPED_SERIES_VERSION, true); view.setUint32(8, HEADER, true);
+  const explicit = input.x?.lo !== undefined || input.x?.hi !== undefined || input.y?.lo !== undefined || input.y?.hi !== undefined;
+  view.setUint32(12, (input.autoMargins ?? true ? 1 : 0) | (input.autoDomain ?? !explicit ? 2 : 0), true);
+  view.setUint32(16, input.series.length, true); view.setUint32(24, title.length, true); view.setUint32(28, xLabel.length, true); view.setUint32(32, yLabel.length, true);
+  finite(view, 40, input.width, "width"); finite(view, 48, input.height, "height");
+  const margins = input.margins ?? [0, 0, 0, 0];
+  if (margins.length !== 4) throw new TypeError("margins must have four values");
+  margins.forEach((value, index) => finite(view, 56 + index * 8, value, "margin"));
+  u64(view, 88, input.xAxisId ?? 1, "xAxisId"); u64(view, 96, input.yAxisId ?? 2, "yAxisId");
+  view.setUint32(104, scale(input.x?.kind), true); view.setUint32(108, scale(input.y?.kind), true);
+  view.setUint32(112, input.x?.maskNonpositive ? 1 : 0, true); view.setUint32(116, input.y?.maskNonpositive ? 1 : 0, true);
+  ([[120, input.x?.lo ?? 0, "x.lo"], [128, input.x?.hi ?? 1, "x.hi"], [136, input.x?.constant ?? 1, "x.constant"], [144, input.y?.lo ?? 0, "y.lo"], [152, input.y?.hi ?? 1, "y.hi"], [160, input.y?.constant ?? 1, "y.constant"]] as const).forEach(([offset, value, label]) => finite(view, offset, value, label));
+  let textOffset = HEADER + input.series.length * DESCRIPTOR;
+  bytes.set(title, textOffset); textOffset += title.length; bytes.set(xLabel, textOffset); textOffset += xLabel.length; bytes.set(yLabel, textOffset);
+  const columns: ArrayBuffer[] = [], transferred = new Set<ArrayBuffer>(); let dataOffset = prefixLength, records = 0;
+  const add = (value: Float64Array) => {
+    const buffer = value.buffer as ArrayBuffer;
+    if (transferred.has(buffer)) throw new TypeError("typed-series columns must own distinct transferable buffers");
+    const end = dataOffset + value.byteLength;
+    if (!Number.isSafeInteger(end) || end > 0xffffffff) {
+      throw new RangeError("typed-series data exceeds the u32 column offset bound");
+    }
+    transferred.add(buffer);
+    const offset = dataOffset; columns.push(buffer); dataOffset = end; return offset;
   };
-}
-
-/**
- * Expand series-shaped chart input into flat typed columns for `encodeWasmColumns`.
- * Framing only — no domain scan, no Scene policy.
- */
-export function expandWasmChart(input: XygWasmChartCompileInput): XygWasmColumnCompileInput {
-  if (!input?.series || !Array.isArray(input.series) || input.series.length === 0) {
-    throw new TypeError("series must be a non-empty array");
-  }
-
-  const kinds: number[] = [];
-  const stableIds: bigint[] = [];
-  const styleRefs: number[] = [];
-  const diameter: number[] = [];
-  const symbols: number[] = [];
-  const x0: number[] = [];
-  const y0: number[] = [];
-  const x1: number[] = [];
-  const y1: number[] = [];
-  const styles: XygWasmColumnStyle[] = [];
-
-  for (const series of input.series) {
-    const styleRef = styles.length;
-    styles.push(seriesStyle(series));
-    const xs = asArray(series.x);
-    const ys = asArray(series.y);
-    if (xs.length !== ys.length) {
-      throw new TypeError("each series x and y must share the same length");
+  input.series.forEach((series, seriesIndex) => {
+    if (!(series.x instanceof Float64Array) || !series.x.length) throw new TypeError("series x must be a non-empty Float64Array");
+    if (series.kind !== "scatter" && (series.diameter !== undefined || series.symbol !== undefined)) {
+      throw new TypeError("diameter and symbol are supported only for scatter series");
     }
-    if (xs.length === 0) {
-      throw new TypeError("each series must contain at least one point");
+    if ((series.kind === "scatter" || series.kind === "line")
+        && (series.y0 !== undefined || series.y1 !== undefined)) {
+      throw new TypeError("y0 and y1 are supported only for bar and area series");
     }
-    const base =
-      typeof series.stableIdBase === "bigint"
-        ? series.stableIdBase
-        : BigInt(series.stableIdBase ?? styles.length);
-
-    if (series.kind === "scatter") {
-      const diameters =
-        typeof series.diameter === "number"
-          ? null
-          : series.diameter
-            ? asArray(series.diameter)
-            : null;
-      if (diameters && diameters.length !== xs.length) {
-        throw new TypeError("scatter diameter must match series length");
-      }
-      for (let index = 0; index < xs.length; index++) {
-        kinds.push(0);
-        stableIds.push(base + BigInt(index));
-        styleRefs.push(styleRef);
-        diameter.push(diameters ? diameters[index]! : (series.diameter as number | undefined) ?? 8);
-        symbols.push(series.symbol ?? 0);
-        x0.push(xs[index]!);
-        y0.push(ys[index]!);
-        x1.push(0);
-        y1.push(0);
-      }
-      continue;
+    if (series.kind === "line" && series.style?.fillRgba !== undefined) {
+      throw new TypeError("line series do not support fillRgba");
     }
-
-    if (series.kind === "line") {
-      // Scene polylines are one vertex per record; consecutive same-style
-      // vertices form a stroke run in the painter.
-      for (let index = 0; index < xs.length; index++) {
-        kinds.push(1);
-        stableIds.push(base + BigInt(index));
-        styleRefs.push(styleRef);
-        diameter.push(0);
-        symbols.push(0);
-        x0.push(xs[index]!);
-        y0.push(ys[index]!);
-        x1.push(0);
-        y1.push(0);
-      }
-      continue;
+    const count = series.x.length, x = column(series.x, count, "x"), y = column(series.y, count, "y");
+    records += count; if (records > MAX_RECORDS) throw new RangeError("typed series exceeds the record bound");
+    const base = HEADER + seriesIndex * DESCRIPTOR; view.setUint32(base, kind(series.kind), true); view.setUint32(base + 8, count, true);
+    const symbol = series.symbol ?? 0; if (!Number.isInteger(symbol) || symbol < 0 || symbol > MAX_SYMBOL) throw new TypeError(`symbol must be 0..${MAX_SYMBOL}`); view.setUint32(base + 4, symbol, true);
+    let flags = 0;
+    if (series.diameter !== undefined && typeof series.diameter !== "number"
+        && !(series.diameter instanceof Float64Array)) {
+      throw new TypeError("diameter must be a number or a Float64Array");
     }
-
-    if (series.kind === "bar") {
-      const bottoms = series.y0 ? asArray(series.y0) : xs.map(() => 0);
-      const tops = series.y1 ? asArray(series.y1) : ys;
-      if (bottoms.length !== xs.length || tops.length !== xs.length) {
-        throw new TypeError("bar y0/y1 must match series length");
-      }
-      // Unit-width bars centered on each x.
-      for (let index = 0; index < xs.length; index++) {
-        const cx = xs[index]!;
-        kinds.push(2);
-        stableIds.push(base + BigInt(index));
-        styleRefs.push(styleRef);
-        diameter.push(0);
-        symbols.push(0);
-        x0.push(cx - 0.4);
-        y0.push(bottoms[index]!);
-        x1.push(cx + 0.4);
-        y1.push(tops[index]!);
-      }
-      continue;
-    }
-
-    if (series.kind === "area") {
-      const upper = series.y1 ? asArray(series.y1) : ys;
-      const lower = series.y0 ? asArray(series.y0) : xs.map(() => 0);
-      if (upper.length !== xs.length || lower.length !== xs.length) {
-        throw new TypeError("area y0/y1 must match series length");
-      }
-      for (let index = 0; index < xs.length; index++) {
-        kinds.push(3);
-        stableIds.push(base + BigInt(index));
-        styleRefs.push(styleRef);
-        diameter.push(0);
-        symbols.push(0);
-        x0.push(xs[index]!);
-        y0.push(lower[index]!);
-        x1.push(xs[index]!);
-        y1.push(upper[index]!);
-      }
-      continue;
-    }
-
-    throw new TypeError("series kind must be scatter, line, bar, or area");
-  }
-
-  const explicitDomain =
-    input.x?.lo !== undefined
-    || input.x?.hi !== undefined
-    || input.y?.lo !== undefined
-    || input.y?.hi !== undefined;
-  const autoDomain = input.autoDomain ?? !explicitDomain;
-
-  return {
-    width: input.width,
-    height: input.height,
-    margins: input.margins,
-    autoMargins: input.autoMargins ?? true,
-    autoDomain,
-    xAxisId: input.xAxisId,
-    yAxisId: input.yAxisId,
-    x: input.x,
-    y: input.y,
-    title: input.title,
-    xLabel: input.xLabel,
-    yLabel: input.yLabel,
-    kinds,
-    stableIds,
-    styleRefs,
-    diameter,
-    symbols,
-    x0,
-    y0,
-    x1,
-    y1,
-    styles,
-  };
-}
-
-/** Pack a series-shaped chart into the little-endian `XYCC` request. */
-export function encodeWasmChart(input: XygWasmChartCompileInput): ArrayBuffer {
-  return encodeWasmColumns(expandWasmChart(input));
+    const diameters = series.diameter instanceof Float64Array ? column(series.diameter, count, "diameter") : null;
+    const lower = series.y0 ? column(series.y0, count, "y0") : null, upper = series.y1 ? column(series.y1, count, "y1") : null;
+    if (diameters) flags |= 1; if (lower) flags |= 2; if (upper) flags |= 4;
+    const fill = rgba(series.style?.fillRgba, "fillRgba"), stroke = rgba(series.style?.strokeRgba, "strokeRgba");
+    if (fill) { flags |= 8; bytes.set(fill, base + 40); } if (stroke) { flags |= 16; bytes.set(stroke, base + 44); }
+    if (series.stableIdBase !== undefined) { flags |= 32; u64(view, base + 16, series.stableIdBase, "stableIdBase"); }
+    view.setUint32(base + 12, flags, true);
+    if (typeof series.diameter === "number") {
+      if (series.diameter < 0) throw new TypeError("diameter must be nonnegative");
+      finite(view, base + 24, series.diameter, "diameter");
+    } else view.setFloat64(base + 24, Number.NaN, true);
+    if (series.style?.strokeWidth !== undefined) {
+      if (series.style.strokeWidth < 0) throw new TypeError("strokeWidth must be nonnegative");
+      finite(view, base + 32, series.style.strokeWidth, "strokeWidth");
+    } else view.setFloat64(base + 32, Number.NaN, true);
+    view.setUint32(base + 48, add(x), true); view.setUint32(base + 52, add(y), true);
+    if (lower) view.setUint32(base + 56, add(lower), true); if (upper) view.setUint32(base + 60, add(upper), true); if (diameters) view.setUint32(base + 64, add(diameters), true);
+  });
+  view.setUint32(20, records, true);
+  const peakBytes = dataOffset * PEAK_INPUT + records * PEAK_RECORD
+    + input.series.length * PEAK_SERIES + PEAK_FIXED;
+  if (!Number.isSafeInteger(peakBytes)) throw new RangeError("typed-series peak byte estimate overflowed");
+  return { prefix, columns, byteLength: dataOffset, peakBytes };
 }
 
 export interface RenderWasmChartOptions {
-  el: HTMLElement;
-  chart: XygWasmChartCompileInput;
-  worker: XygWasmWorker;
-  transfer?: boolean;
+  el: HTMLElement; chart: XygWasmChartCompileInput; worker: XygWasmWorker;
+  /** Preserve caller arrays by default; opt into detaching zero-clone transfers explicitly. */
+  dataOwnership?: "preserve" | "transfer";
+  /** Caller-owned by default; opt in only for a Worker dedicated to this handle. */
+  workerOwnership?: "borrow" | "own";
 }
-
-/**
- * Expand series → columns, compile in the Rust WASM worker, hydrate the painter.
- */
-export async function renderWasmChart(
-  options: RenderWasmChartOptions,
-): Promise<XygWasmSceneView> {
-  if (!options?.el || !options.chart || !options.worker) {
-    throw new TypeError("el, chart, and worker are required");
+export class XygWasmChartHandle {
+  private view: XygWasmSceneView | null = null;
+  private task: XygWasmTask<XygWasmScenePaint> | null = null;
+  private latest: XygWasmDiagnostics | null = null;
+  private disposed = false;
+  constructor(
+    private readonly el: HTMLElement,
+    private readonly worker: XygWasmWorker,
+    private readonly transferData: boolean,
+    private readonly ownWorker: boolean,
+  ) {}
+  async update(chart: XygWasmChartCompileInput): Promise<this> {
+    if (this.disposed) throw new Error("XYG WASM chart handle was disposed");
+    this.task?.cancel();
+    const started = performance.now();
+    let task: XygWasmTask<XygWasmScenePaint> | null = null;
+    try {
+      task = this.worker.compilePrepareSeries(frameWasmChart(chart), {
+        transfer: this.transferData,
+      });
+      this.task = task;
+      const prepared = await task.result;
+      if (this.disposed || this.task !== task) throw new Error("XYG WASM chart update became stale");
+      const next = hydrateWasmPainter(this.el, prepared, { workerPrepareMs: performance.now() - started });
+      this.view?.destroy(); this.view = next; this.latest = prepared; this.task = null;
+      return this;
+    } catch (cause) {
+      // Only the newest update owns visible-state cleanup. An older cancelled
+      // task must not erase a view installed by a later successful update.
+      if (!this.disposed && (task === null || this.task === task)) {
+        this.task = null;
+        this.view?.destroy(); this.view = null; this.latest = null;
+      }
+      throw cause;
+    }
   }
-  return renderWasmColumns({
-    el: options.el,
-    columns: expandWasmChart(options.chart),
-    worker: options.worker,
-    transfer: options.transfer,
-  });
+  diagnostics(): XygWasmDiagnostics | null { return this.latest ? { ...this.latest } : null; }
+  sceneStableId(traceIndex: number, rowIndex: number): bigint | null {
+    if (!this.view) throw new Error("XYG WASM chart has not painted");
+    return this.view.sceneStableId(traceIndex, rowIndex);
+  }
+  get gpuTraces() { return this.view?.gpuTraces ?? []; }
+  async dispose(): Promise<void> {
+    if (this.disposed) return; this.disposed = true; this.task?.cancel(); this.task = null;
+    this.view?.destroy(); this.view = null;
+    if (this.ownWorker) await this.worker.dispose();
+  }
+  destroy(): void { void this.dispose(); }
+}
+export async function renderWasmChart(options: RenderWasmChartOptions): Promise<XygWasmChartHandle> {
+  if (!options?.el || !(options.worker instanceof XygWasmWorker) || !options.chart) throw new TypeError("el, chart, and an XygWasmWorker are required");
+  if (options.dataOwnership !== undefined && !["preserve", "transfer"].includes(options.dataOwnership)) throw new TypeError("dataOwnership must be preserve or transfer");
+  if (options.workerOwnership !== undefined && !["borrow", "own"].includes(options.workerOwnership)) throw new TypeError("workerOwnership must be borrow or own");
+  await options.worker.ready;
+  const handle = new XygWasmChartHandle(
+    options.el,
+    options.worker,
+    options.dataOwnership === "transfer",
+    options.workerOwnership === "own",
+  );
+  try {
+    return await handle.update(options.chart);
+  } catch (cause) {
+    await handle.dispose();
+    throw cause;
+  }
 }
