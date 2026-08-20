@@ -182,6 +182,7 @@ impl TemporalColumn {
     /// - `Fold`: fails under [`DisambiguationPolicy::Reject`]; otherwise
     ///   `offset_seconds[i]` is the earlier offset and `fold_later_offset_seconds[i]`
     ///   is the later offset.
+    #[allow(clippy::too_many_arguments)] // descriptor planes mirror the C ABI
     pub fn from_naive_local_unit(
         values: &[i64],
         validity: &[u8],
@@ -313,10 +314,11 @@ impl IntervalIndex {
             if endpoints.start_valid[i] > 1 || endpoints.end_valid[i] > 1 {
                 return Err(TemporalError::InvalidArgument);
             }
-            if endpoints.start_valid[i] == 1 && endpoints.end_valid[i] == 1 {
-                if endpoints.starts[i] >= endpoints.ends[i] {
-                    return Err(TemporalError::ReversedInterval);
-                }
+            if endpoints.start_valid[i] == 1
+                && endpoints.end_valid[i] == 1
+                && endpoints.starts[i] >= endpoints.ends[i]
+            {
+                return Err(TemporalError::ReversedInterval);
             }
         }
         let mut order: Vec<u32> = (0..n as u32).collect();
@@ -342,6 +344,10 @@ impl IntervalIndex {
         self.starts.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.starts.is_empty()
+    }
+
     /// Visibility at an instant: row i is visible iff
     /// `(start is null || start <= t) && (end is null || t < end)`.
     pub fn visibility_at(
@@ -361,18 +367,26 @@ impl IntervalIndex {
         if cancel.is_cancelled() {
             return Err(TemporalError::Cancelled);
         }
-        for i in 0..n {
+        for (i, (((&start, &start_valid), &end), &end_valid)) in self
+            .starts
+            .iter()
+            .zip(self.start_valid.iter())
+            .zip(self.ends.iter())
+            .zip(self.end_valid.iter())
+            .enumerate()
+        {
             if (i & 0xffff) == 0 && cancel.is_cancelled() {
                 return Err(TemporalError::Cancelled);
             }
-            let start_ok = self.start_valid[i] == 0 || self.starts[i] <= instant_micros;
-            let end_ok = self.end_valid[i] == 0 || instant_micros < self.ends[i];
+            let start_ok = start_valid == 0 || start <= instant_micros;
+            let end_ok = end_valid == 0 || instant_micros < end;
             out[i] = u8::from(start_ok && end_ok);
         }
         Ok(())
     }
 
     /// Event membership: an event instant is visible when it falls in `[start, end)`.
+    #[allow(clippy::too_many_arguments)] // mirrors the C ABI filter surface
     pub fn events_in_range(
         &self,
         event_micros: &[i64],
@@ -398,18 +412,17 @@ impl IntervalIndex {
         if cancel.is_cancelled() {
             return Err(TemporalError::Cancelled);
         }
-        for i in 0..n {
+        for (i, (&t, &valid)) in event_micros.iter().zip(event_valid.iter()).enumerate() {
             if (i & 0xffff) == 0 && cancel.is_cancelled() {
                 return Err(TemporalError::Cancelled);
             }
-            if event_valid[i] > 1 {
+            if valid > 1 {
                 return Err(TemporalError::InvalidArgument);
             }
-            if event_valid[i] == 0 {
+            if valid == 0 {
                 out[i] = 0;
                 continue;
             }
-            let t = event_micros[i];
             let start_ok = range_start.map(|s| t >= s).unwrap_or(true);
             let end_ok = range_end.map(|e| t < e).unwrap_or(true);
             out[i] = u8::from(start_ok && end_ok);
