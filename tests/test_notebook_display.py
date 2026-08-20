@@ -18,7 +18,7 @@ import types
 
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import export
 
 
@@ -27,11 +27,11 @@ def _no_display_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("XY_NOTEBOOK_DISPLAY", raising=False)
 
 
-def _chart() -> xy.Chart:
-    return xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0], [2.0, 4.0, 3.0]),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+def _chart() -> xyg.Chart:
+    return xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0], [2.0, 4.0, 3.0]),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
     )
 
 
@@ -185,8 +185,8 @@ def test_scatter_to_html_includes_standalone_client() -> None:
 
 def test_graph_to_html_includes_standalone_and_graph_meta() -> None:
     """graph_chart → figure → to_html carries graph meta for the shared client."""
-    chart = xy.graph_chart(
-        xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="grid"),
+    chart = xyg.graph_chart(
+        xyg.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="grid"),
         width=400,
         height=300,
     )
@@ -205,10 +205,10 @@ def test_graph_to_html_includes_standalone_and_graph_meta() -> None:
 
 
 def test_composition_api_graph_and_scatter_still_public() -> None:
-    assert callable(xy.graph_chart)
-    assert callable(xy.scatter_chart)
-    assert callable(xy.graph)
-    assert callable(xy.scatter)
+    assert callable(xyg.graph_chart)
+    assert callable(xyg.scatter_chart)
+    assert callable(xyg.graph)
+    assert callable(xyg.scatter)
 
 
 def test_figure_show_honors_display_host() -> None:
@@ -219,8 +219,8 @@ def test_figure_show_honors_display_host() -> None:
 
 
 def test_facet_chart_show_honors_display_host() -> None:
-    chart = xy.facet_chart(
-        xy.line(x="x", y="y"),
+    chart = xyg.facet_chart(
+        xyg.line(x="x", y="y"),
         by="g",
         data={"x": [0.0, 1.0, 0.0, 1.0], "y": [1.0, 2.0, 3.0, 4.0], "g": ["a", "a", "b", "b"]},
     )
@@ -248,8 +248,8 @@ def test_facet_chart_bare_display_is_composed_document_on_every_host(
     monkeypatch.setattr(sys, "platform", "emscripten")
     monkeypatch.delitem(sys.modules, "marimo", raising=False)
 
-    xy.facet_chart(
-        xy.line(x="x", y="y"),
+    xyg.facet_chart(
+        xyg.line(x="x", y="y"),
         by="g",
         data={"x": [0.0, 1.0, 0.0, 1.0], "y": [1.0, 2.0, 3.0, 4.0], "g": ["a", "a", "b", "b"]},
     )._ipython_display_()
@@ -262,8 +262,8 @@ def test_facet_chart_bare_display_is_composed_document_on_every_host(
 
 
 def test_facet_grid_show_honors_display_host() -> None:
-    grid = xy.facet_chart(
-        xy.line(x="x", y="y"),
+    grid = xyg.facet_chart(
+        xyg.line(x="x", y="y"),
         by="g",
         data={"x": [0.0, 1.0, 0.0, 1.0], "y": [1.0, 2.0, 3.0, 4.0], "g": ["a", "a", "b", "b"]},
     ).figure()

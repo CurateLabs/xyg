@@ -1,6 +1,6 @@
 ---
 title: ECDF Plot in Python
-description: ECDF Python charts with xy — plot an empirical cumulative distribution function as a fast, interactive step curve that pans, zooms, and reads percentiles directly.
+description: ECDF Python charts with XYG — plot an empirical cumulative distribution function as a fast, interactive step curve that pans, zooms, and reads percentiles directly.
 components:
   - xyg.ecdf_chart
 ---

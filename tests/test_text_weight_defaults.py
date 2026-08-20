@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _raster
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -38,10 +38,10 @@ _STYLED_HEADER = 31
 
 def _title_axis_legend_figure(**axis_style):
     """A chart exercising title, both axis labels, legend title and annotation."""
-    fig = xy.chart(
-        xy.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.5], name="series-a"),
-        xy.x_axis(label="XLABEL", style=axis_style or None),
-        xy.y_axis(label="YLABEL", style=axis_style or None),
+    fig = xyg.chart(
+        xyg.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.5], name="series-a"),
+        xyg.x_axis(label="XLABEL", style=axis_style or None),
+        xyg.y_axis(label="YLABEL", style=axis_style or None),
         title="TITLE",
     ).figure()
     fig.legend_options = {"title": "LEGENDTITLE"}

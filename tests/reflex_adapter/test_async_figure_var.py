@@ -13,7 +13,7 @@ from reflex.istate.manager.memory import StateManagerMemory
 from reflex_base.vars.base import AsyncComputedVar
 
 import reflex_xy
-import xyg as xy
+import xyg
 from reflex_xy.state_bridge import make_rebuild_hook
 from reflex_xy.tokens import build_state_token
 from reflex_xy.vars import AsyncFigureVar, FigureVar
@@ -34,23 +34,23 @@ class AsyncVarDemo(rx.State):
     _offset: float = 0.0
 
     @reflex_xy.figure
-    async def chart(self) -> xy.Chart:
+    async def chart(self) -> xyg.Chart:
         BUILDER_CALLS["count"] += 1
         scale = await _fetch_scale()
         xs = np.linspace(0.0, 1.0, self.n)
-        return xy.scatter_chart(xy.scatter(xs, xs * scale + self._offset), width=400, height=300)
+        return xyg.scatter_chart(xyg.scatter(xs, xs * scale + self._offset), width=400, height=300)
 
     @reflex_xy.figure
     async def maybe_chart(self):
         if self.n < 0:
             return None
         xs = np.linspace(0.0, 1.0, 4)
-        return xy.line_chart(xy.line(xs, xs), width=300, height=200)
+        return xyg.line_chart(xyg.line(xs, xs), width=300, height=200)
 
     @reflex_xy.figure
-    def sync_chart(self) -> xy.Chart:
+    def sync_chart(self) -> xyg.Chart:
         xs = np.linspace(0.0, 1.0, 8)
-        return xy.line_chart(xy.line(xs, xs), width=300, height=200)
+        return xyg.line_chart(xyg.line(xs, xs), width=300, height=200)
 
 
 def hydrated_substate(client_token: str) -> AsyncVarDemo:

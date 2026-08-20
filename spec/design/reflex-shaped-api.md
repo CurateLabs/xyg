@@ -767,7 +767,7 @@ Now part of the core alpha contract:
 
 Future dependency refinement:
 
-- Keep the adapter bundled as `reflex_xy` in the `xy` distribution and
+- Keep the adapter bundled as `reflex_xy` in the `xyg` distribution and
   available through `xyg[reflex]`; if Reflex exposes a smaller supported
   core/component package, use that package instead of the full framework.
 
@@ -815,7 +815,7 @@ Should avoid:
 
 ### Phase 5: Bundled Reflex Adapter (Shipped)
 
-- Ship the `reflex_xy` namespace in the `xy` distribution.
+- Ship the `reflex_xy` namespace in the `xyg` distribution.
 - Keep full Reflex optional behind `xyg[reflex]`.
 - Use registry tokens for large figures.
 - Use the shared websocket namespace for the binary data plane.

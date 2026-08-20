@@ -67,7 +67,7 @@ def build_page() -> str:
   const spec = {json.dumps(spec)};
   const bytes = Uint8Array.from(atob("{base64.b64encode(blob).decode()}"), c => c.charCodeAt(0));
   try {{
-    const view = xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
+    const view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
     setTimeout(() => {{
       try {{
         view._drawNow();  // synchronous draw; read back in the same task

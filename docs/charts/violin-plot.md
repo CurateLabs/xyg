@@ -1,6 +1,6 @@
 ---
 title: Violin Plot in Python
-description: Violin plot Python charts with xy — compare full distribution shapes across groups with mirrored density curves in a fast, interactive plot that pans and zooms.
+description: Violin plot Python charts with XYG — compare full distribution shapes across groups with mirrored density curves in a fast, interactive plot that pans and zooms.
 components:
   - xyg.violin_chart
 ---

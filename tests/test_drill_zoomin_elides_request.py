@@ -32,7 +32,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import run_browser_probe
 from xyg.export import find_chromium
 
@@ -163,10 +163,10 @@ def _density_html() -> str:
     # density=True forces the density tier (the drill is a sibling of it),
     # regardless of point count, so the export exercises the request path
     # deterministically and cheaply.
-    chart = xy.scatter_chart(
-        xy.scatter(x, y, density=True),
-        xy.x_axis(),
-        xy.y_axis(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x, y, density=True),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=480,
         height=360,
     )

@@ -49,7 +49,7 @@ def _parse_counts(text: str) -> list[int]:
 def _dashboard_figures(count: int) -> list[Any]:
     if np is None:
         raise SystemExit("numpy is required for benchmarks/bench_dashboard.py")
-    import xyg as xy
+    import xyg
 
     rng = np.random.default_rng(91_337)
     figures: list[Any] = []
@@ -60,8 +60,8 @@ def _dashboard_figures(count: int) -> list[Any]:
             x = np.arange(n, dtype=np.float64)
             y = np.cumsum(rng.normal(0.0, 0.05, n)).astype(np.float64, copy=False)
             figures.append(
-                xy.chart(
-                    xy.line(x=x, y=y, name="signal"),
+                xyg.chart(
+                    xyg.line(x=x, y=y, name="signal"),
                     width=RENDER_W,
                     height=RENDER_H,
                     title=f"Line {i + 1}",
@@ -72,8 +72,8 @@ def _dashboard_figures(count: int) -> list[Any]:
             x = rng.normal(0.0, 1.0, n).astype(np.float64, copy=False)
             y = (0.45 * x + rng.normal(0.0, 0.8, n)).astype(np.float64, copy=False)
             figures.append(
-                xy.chart(
-                    xy.scatter(x=x, y=y, name="points", opacity=0.65),
+                xyg.chart(
+                    xyg.scatter(x=x, y=y, name="points", opacity=0.65),
                     width=RENDER_W,
                     height=RENDER_H,
                     title=f"Scatter {i + 1}",
@@ -87,8 +87,8 @@ def _dashboard_figures(count: int) -> list[Any]:
                 ]
             ).astype(np.float64, copy=False)
             figures.append(
-                xy.chart(
-                    xy.hist(values, bins=160, name="distribution"),
+                xyg.chart(
+                    xyg.hist(values, bins=160, name="distribution"),
                     width=RENDER_W,
                     height=RENDER_H,
                     title=f"Histogram {i + 1}",
@@ -98,8 +98,8 @@ def _dashboard_figures(count: int) -> list[Any]:
             labels = np.array([f"C{j:02d}" for j in range(36)], dtype=object)
             values = rng.random((3, len(labels))) * 100
             figures.append(
-                xy.chart(
-                    xy.bar(
+                xyg.chart(
+                    xyg.bar(
                         labels,
                         values,
                         mode="grouped",
@@ -119,8 +119,8 @@ def _dashboard_figures(count: int) -> list[Any]:
                 + rng.normal(0.0, 0.06, (len(ys), len(xs)))
             )
             figures.append(
-                xy.chart(
-                    xy.heatmap(z, colormap="turbo"),
+                xyg.chart(
+                    xyg.heatmap(z, colormap="turbo"),
                     width=RENDER_W,
                     height=RENDER_H,
                     title=f"Heatmap {i + 1}",

@@ -5,14 +5,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _raster, _svg
 from xyg._figure import Figure
 from xyg.styles import compile_mark_style, normalize_css_style
 
 
 def test_renderer_style_capabilities_are_not_a_public_schema() -> None:
-    assert not hasattr(xy, "mark_style_schema")
+    assert not hasattr(xyg, "mark_style_schema")
 
 
 def test_python_style_aliases_normalize_to_css_names() -> None:
@@ -44,8 +44,8 @@ def test_line_css_compiles_to_existing_renderer_contract() -> None:
 
 
 def test_css_opacity_channels_remain_independent_in_svg() -> None:
-    fig = xy.chart(
-        xy.scatter(
+    fig = xyg.chart(
+        xyg.scatter(
             x=[0.0],
             y=[1.0],
             size=10,
@@ -67,8 +67,8 @@ def test_css_opacity_channels_remain_independent_in_svg() -> None:
 
 
 def test_css_style_wins_over_legacy_appearance_aliases() -> None:
-    fig = xy.chart(
-        xy.line(
+    fig = xyg.chart(
+        xyg.line(
             x=[0.0, 1.0],
             y=[1.0, 2.0],
             color="blue",
@@ -83,16 +83,16 @@ def test_css_style_wins_over_legacy_appearance_aliases() -> None:
 
 def test_css_color_is_not_an_alias_for_mark_paint() -> None:
     with pytest.raises(ValueError, match=r"unsupported CSS property.*color"):
-        xy.chart(
-            xy.line(
+        xyg.chart(
+            xyg.line(
                 x=[0.0, 1.0],
                 y=[1.0, 2.0],
                 style={"color": "red", "stroke": "currentColor"},
             )
         ).figure()
 
-    fig = xy.chart(
-        xy.line(
+    fig = xyg.chart(
+        xyg.line(
             x=[0.0, 1.0],
             y=[1.0, 2.0],
             color="red",
@@ -103,13 +103,13 @@ def test_css_color_is_not_an_alias_for_mark_paint() -> None:
 
 
 def test_scatter_and_rect_css_use_fill_stroke_and_border_radius() -> None:
-    chart = xy.chart(
-        xy.scatter(
+    chart = xyg.chart(
+        xyg.scatter(
             x=[0.0, 1.0],
             y=[1.0, 2.0],
             style={"fill": "#22c55e", "stroke": "#052e16", "stroke-width": 2},
         ),
-        xy.bar(
+        xyg.bar(
             x=[3.0, 4.0],
             y=[1.0, 2.0],
             style={
@@ -135,8 +135,8 @@ def test_scatter_and_rect_css_use_fill_stroke_and_border_radius() -> None:
 
 
 def test_css_mark_style_reaches_svg_and_native_renderers() -> None:
-    fig = xy.chart(
-        xy.scatter(
+    fig = xyg.chart(
+        xyg.scatter(
             x=[0.0, 1.0],
             y=[1.0, 2.0],
             size=8,
@@ -160,9 +160,9 @@ def test_css_mark_style_reaches_svg_and_native_renderers() -> None:
 
 
 def test_axis_style_reaches_svg_and_native_renderers() -> None:
-    fig = xy.chart(
-        xy.line(x=[0.0, 1.0], y=[1.0, 2.0]),
-        xy.x_axis(
+    fig = xyg.chart(
+        xyg.line(x=[0.0, 1.0], y=[1.0, 2.0]),
+        xyg.x_axis(
             label="time",
             style={
                 "grid_color": "#ff0000",
@@ -195,7 +195,7 @@ def test_axis_style_reaches_svg_and_native_renderers() -> None:
 
 
 def test_axis_style_is_normalized_and_rejected_before_render() -> None:
-    axis = xy.x_axis(
+    axis = xyg.x_axis(
         style={
             "grid-width": "3px",
             "tick_label_size": "13px",
@@ -215,23 +215,23 @@ def test_axis_style_is_normalized_and_rejected_before_render() -> None:
     }
 
     with pytest.raises(ValueError, match=r"unsupported property 'box-shadow'"):
-        xy.x_axis(style={"box-shadow": "0 0 2px red"})
+        xyg.x_axis(style={"box-shadow": "0 0 2px red"})
     with pytest.raises(ValueError, match=r"finite CSS px length"):
-        xy.x_axis(style={"grid_width": "3em"})
+        xyg.x_axis(style={"grid_width": "3em"})
     with pytest.raises(ValueError, match=r"not a recognized CSS color"):
-        xy.y_axis(style={"tick_color": "definitely-not-a-color"})
+        xyg.y_axis(style={"tick_color": "definitely-not-a-color"})
     with pytest.raises(ValueError, match=r"must be one of"):
-        xy.y_axis(style={"tick_direction": "sideways"})
+        xyg.y_axis(style={"tick_direction": "sideways"})
     with pytest.raises(ValueError, match=r"must be one of"):
-        xy.x_axis(style={"tick_label_anchor": "sideways"})
+        xyg.x_axis(style={"tick_label_anchor": "sideways"})
 
 
 def test_area_outline_obeys_whole_mark_and_stroke_opacity() -> None:
-    default = xy.chart(xy.area(x=[0.0, 1.0], y=[1.0, 2.0])).figure().to_svg()
+    default = xyg.chart(xyg.area(x=[0.0, 1.0], y=[1.0, 2.0])).figure().to_svg()
     assert 'stroke-opacity="0.35"' in default
 
-    styled = xy.chart(
-        xy.area(
+    styled = xyg.chart(
+        xyg.area(
             x=[0.0, 1.0],
             y=[1.0, 2.0],
             opacity=0.4,
@@ -257,8 +257,8 @@ def test_mark_style_rejects_unrenderable_css_before_mutating_figure() -> None:
 
 
 def test_css_variables_remain_reflex_owned_dom_values() -> None:
-    chart = xy.chart(
-        xy.line(x=[0.0, 1.0], y=[1.0, 2.0], style={"stroke": "var(--accent)"}),
+    chart = xyg.chart(
+        xyg.line(x=[0.0, 1.0], y=[1.0, 2.0], style={"stroke": "var(--accent)"}),
         style={"--accent": "oklch(0.7 0.2 250)"},
     )
     fig = chart.figure()
@@ -269,9 +269,9 @@ def test_css_variables_remain_reflex_owned_dom_values() -> None:
 
 
 def test_static_renderers_resolve_complete_chart_color_tokens() -> None:
-    fig = xy.chart(
-        xy.line(x=[0.0, 1.0], y=[1.0, 2.0], style={"stroke": "var(--accent)"}),
-        xy.line(x=[0.0, 1.0], y=[2.0, 1.0], style={"stroke": "var(--missing, #0ea5e9)"}),
+    fig = xyg.chart(
+        xyg.line(x=[0.0, 1.0], y=[1.0, 2.0], style={"stroke": "var(--accent)"}),
+        xyg.line(x=[0.0, 1.0], y=[2.0, 1.0], style={"stroke": "var(--missing, #0ea5e9)"}),
         style={"--accent": "var(--brand)", "--brand": "#7c3aed"},
     ).figure()
 
@@ -286,8 +286,8 @@ def test_static_renderers_resolve_complete_chart_color_tokens() -> None:
 
 
 def test_scatter_css_fill_survives_density_lod() -> None:
-    fig = xy.chart(
-        xy.scatter(
+    fig = xyg.chart(
+        xyg.scatter(
             x=[0.0, 1.0, 2.0],
             y=[1.0, 2.0, 3.0],
             density=True,
@@ -304,8 +304,8 @@ def test_scatter_css_fill_survives_density_lod() -> None:
 
 def test_faceting_preserves_concrete_css_style() -> None:
     data = {"x": [0.0, 1.0], "y": [1.0, 2.0], "panel": ["a", "b"]}
-    chart = xy.facet_chart(
-        xy.line(x="x", y="y", data=data, style={"stroke": "#7c3aed"}),
+    chart = xyg.facet_chart(
+        xyg.line(x="x", y="y", data=data, style={"stroke": "#7c3aed"}),
         data=data,
         by="panel",
     )
@@ -340,9 +340,9 @@ def test_stroke_linejoin_is_not_offered_until_the_client_draws_joins() -> None:
 def test_default_cap_stays_off_the_wire() -> None:
     # XYG's default is round in every renderer, so a spec that asks for it
     # explicitly must stay byte-identical to one that never mentions it.
-    plain = xy.chart(xy.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0])).figure()
-    explicit = xy.chart(
-        xy.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0], style={"stroke-linecap": "round"})
+    plain = xyg.chart(xyg.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0])).figure()
+    explicit = xyg.chart(
+        xyg.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0], style={"stroke-linecap": "round"})
     ).figure()
 
     assert "linecap" not in explicit.traces[0].style
@@ -351,17 +351,17 @@ def test_default_cap_stays_off_the_wire() -> None:
 
 def test_cap_rides_the_spec_for_the_line_family() -> None:
     for mark in (
-        xy.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0], style={"stroke-linecap": "square"}),
-        xy.step(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0], style={"stroke-linecap": "square"}),
-        xy.ecdf(values=[0.0, 1.0, 2.0], style={"stroke-linecap": "square"}),
+        xyg.line(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0], style={"stroke-linecap": "square"}),
+        xyg.step(x=[0.0, 1.0, 2.0], y=[1.0, 2.0, 1.0], style={"stroke-linecap": "square"}),
+        xyg.ecdf(values=[0.0, 1.0, 2.0], style={"stroke-linecap": "square"}),
     ):
-        spec, _ = xy.chart(mark).figure().build_payload()
+        spec, _ = xyg.chart(mark).figure().build_payload()
         assert spec["traces"][0]["style"]["linecap"] == "square"
 
 
 def test_cap_reaches_svg_and_native_renderers() -> None:
-    fig = xy.chart(
-        xy.line(
+    fig = xyg.chart(
+        xyg.line(
             x=[0.0, 1.0, 2.0],
             y=[1.0, 2.0, 1.0],
             style={"stroke-width": "9px", "stroke-linecap": "butt"},
@@ -377,8 +377,8 @@ def test_cap_reaches_svg_and_native_renderers() -> None:
     # The native rasterizer must actually draw a different shape, not just
     # accept the keyword: a square cap paints past the endpoint, butt does not.
     def _ink(cap: str) -> int:
-        figure = xy.chart(
-            xy.line(
+        figure = xyg.chart(
+            xyg.line(
                 x=[0.0, 1.0, 2.0],
                 y=[1.0, 2.0, 1.0],
                 style={"stroke": "#ff0000", "stroke-width": "9px", "stroke-linecap": cap},
@@ -397,8 +397,8 @@ def test_marker_shape_css_selects_the_scatter_symbol() -> None:
     with pytest.raises(ValueError, match="unsupported CSS property"):
         compile_mark_style("line", {"marker-shape": "diamond"})
 
-    fig = xy.chart(
-        xy.scatter(
+    fig = xyg.chart(
+        xyg.scatter(
             x=[0.0, 1.0],
             y=[1.0, 2.0],
             size=12,
@@ -410,8 +410,8 @@ def test_marker_shape_css_selects_the_scatter_symbol() -> None:
 
     # A square marker fills its bounding box; a circle of the same size cannot.
     def _ink(shape: str) -> int:
-        figure = xy.chart(
-            xy.scatter(
+        figure = xyg.chart(
+            xyg.scatter(
                 x=[0.0, 1.0],
                 y=[1.0, 2.0],
                 size=24,
@@ -425,8 +425,8 @@ def test_marker_shape_css_selects_the_scatter_symbol() -> None:
 
 
 def test_marker_shape_css_loses_to_no_one_but_agrees_with_the_symbol_argument() -> None:
-    css = xy.chart(
-        xy.scatter(x=[0.0], y=[1.0], symbol="circle", style={"marker-shape": "triangle"})
+    css = xyg.chart(
+        xyg.scatter(x=[0.0], y=[1.0], symbol="circle", style={"marker-shape": "triangle"})
     ).figure()
-    argument = xy.chart(xy.scatter(x=[0.0], y=[1.0], symbol="triangle")).figure()
+    argument = xyg.chart(xyg.scatter(x=[0.0], y=[1.0], symbol="triangle")).figure()
     assert css.build_payload()[0] == argument.build_payload()[0]

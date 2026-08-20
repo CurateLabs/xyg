@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import probe_document, run_browser_probe
 from xyg.export import find_chromium
 
@@ -69,8 +69,8 @@ def test_reversed_polar_radial_axis_keeps_bar_and_area_visible(tmp_path: Path) -
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.polar_chart(
-        xy.bar(
+    chart = xyg.polar_chart(
+        xyg.bar(
             [0.0],
             [8.0],
             base=2.0,
@@ -79,7 +79,7 @@ def test_reversed_polar_radial_axis_keeps_bar_and_area_visible(tmp_path: Path) -
             opacity=1.0,
             animation=False,
         ),
-        xy.area(
+        xyg.area(
             [math.pi / 2.0, math.pi, 3.0 * math.pi / 2.0],
             [8.0, 6.0, 8.0],
             base=2.0,
@@ -88,7 +88,7 @@ def test_reversed_polar_radial_axis_keeps_bar_and_area_visible(tmp_path: Path) -
             line_width=0.0,
             animation=False,
         ),
-        xy.r_axis(domain=(1.0, 10.0), reverse=True),
+        xyg.r_axis(domain=(1.0, 10.0), reverse=True),
         width=420,
         height=420,
     )
@@ -154,13 +154,13 @@ def test_polar_keyboard_traversal_does_not_hover_culled_point(tmp_path: Path) ->
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.polar_chart(
+    chart = xyg.polar_chart(
         # Source order is deliberate: the first point lies outside the sector,
         # while the second is visible and should receive the next key traversal.
-        xy.scatter([math.pi, math.pi / 4.0], [0.5, 0.5], size=12.0),
-        xy.theta_axis(sector=(0.0, math.pi / 2.0)),
-        xy.r_axis(domain=(0.0, 1.0)),
-        xy.interaction_config(hover=True),
+        xyg.scatter([math.pi, math.pi / 4.0], [0.5, 0.5], size=12.0),
+        xyg.theta_axis(sector=(0.0, math.pi / 2.0)),
+        xyg.r_axis(domain=(0.0, 1.0)),
+        xyg.interaction_config(hover=True),
         width=420,
         height=320,
     )
@@ -238,18 +238,18 @@ def test_polar_gl_chords_are_clipped_to_hole_and_sector(tmp_path: Path) -> None:
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.polar_chart(
+    chart = xyg.polar_chart(
         # This diameter crosses the hole.
-        xy.line([0.0, math.pi], [1.0, 1.0], color="#ff0000", width=14),
+        xyg.line([0.0, math.pi], [1.0, 1.0], color="#ff0000", width=14),
         # This boundary-to-boundary chord crosses the excluded 270°..360°
         # wedge of the partial sector.
-        xy.line(
+        xyg.line(
             [0.0, 1.5 * math.pi],
             [1.0, 1.0],
             color="#0000ff",
             width=14,
         ),
-        xy.scatter(
+        xyg.scatter(
             [1.0],
             [0.7],
             color="#ff0000",
@@ -258,9 +258,9 @@ def test_polar_gl_chords_are_clipped_to_hole_and_sector(tmp_path: Path) -> None:
             density=False,
             _marker_glyph="●",
         ),
-        xy.text(1.0, 0.7, "joint", dx=0, dy=0),
-        xy.theta_axis(sector=(0.0, 1.5 * math.pi)),
-        xy.r_axis(domain=(0.0, 1.0), hole=0.35),
+        xyg.text(1.0, 0.7, "joint", dx=0, dy=0),
+        xyg.theta_axis(sector=(0.0, 1.5 * math.pi)),
+        xyg.r_axis(domain=(0.0, 1.0), hole=0.35),
         width=420,
         height=420,
     )
@@ -402,9 +402,9 @@ def test_polar_wheel_zoom_is_alive_and_keeps_r_lo_fixed(tmp_path: Path) -> None:
 
     theta = [i * 2.0 * math.pi / 40.0 for i in range(40)]
     r = [1.0 + 0.4 * math.sin(3.0 * t) for t in theta]
-    chart = xy.polar_chart(
-        xy.line(theta, r, animation=False),
-        xy.interaction_config(zoom=True),
+    chart = xyg.polar_chart(
+        xyg.line(theta, r, animation=False),
+        xyg.interaction_config(zoom=True),
         width=420,
         height=420,
     )
@@ -480,7 +480,7 @@ def test_polar_zoom_is_off_by_default_and_releases_page_scroll(tmp_path: Path) -
 
     theta = [i * 2.0 * math.pi / 40.0 for i in range(40)]
     r = [1.0 + 0.4 * math.sin(3.0 * t) for t in theta]
-    chart = xy.polar_chart(xy.line(theta, r, animation=False), width=420, height=420)
+    chart = xyg.polar_chart(xyg.line(theta, r, animation=False), width=420, height=420)
     probe = """
 <script>
 setTimeout(() => {
@@ -556,9 +556,9 @@ setTimeout(() => {
         # Zoom off but reset authored: the menu is needed, the readout is not.
         (
             "polar",
-            lambda: xy.polar_chart(
-                xy.line([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], animation=False),
-                xy.interaction_config(reset_axes=("y",)),
+            lambda: xyg.polar_chart(
+                xyg.line([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], animation=False),
+                xyg.interaction_config(reset_axes=("y",)),
                 width=420,
                 height=420,
             ),
@@ -567,9 +567,9 @@ setTimeout(() => {
         # percentage can never move.
         (
             "cartesian",
-            lambda: xy.line_chart(
-                xy.line([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], animation=False),
-                xy.interaction_config(zoom=False),
+            lambda: xyg.line_chart(
+                xyg.line([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], animation=False),
+                xyg.interaction_config(zoom=False),
                 width=420,
                 height=300,
             ),
@@ -653,7 +653,7 @@ def test_wind_rose_keeps_radial_zoom_without_restoring_box_zoom(tmp_path: Path) 
 
     bearings = [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0] * 4
     speeds = [1.0, 4.0, 9.0, 3.0, 6.0, 2.0, 7.0, 5.0] * 4
-    chart = xy.wind_rose(bearings, speeds, width=420, height=420)
+    chart = xyg.wind_rose(bearings, speeds, width=420, height=420)
     probe = """
 <script>
 setTimeout(() => {
@@ -709,9 +709,9 @@ def test_polar_bar_hover_wraps_across_the_seam(tmp_path: Path) -> None:
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.polar_chart(
-        xy.bar([0.0, 90.0, 180.0], [3.0, 2.0, 1.0], width=30.0, animation=False),
-        xy.theta_axis(unit="degrees", zero="N", direction="clockwise"),
+    chart = xyg.polar_chart(
+        xyg.bar([0.0, 90.0, 180.0], [3.0, 2.0, 1.0], width=30.0, animation=False),
+        xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
         width=420,
         height=420,
     )
@@ -758,7 +758,7 @@ def test_polar_tooltip_content_speaks_polar(tmp_path: Path) -> None:
 
     theta = [i * 2.0 * math.pi / 24.0 for i in range(24)]
     r = [1.0 + 0.4 * math.sin(3.0 * t) for t in theta]
-    chart = xy.polar_chart(xy.line(theta, r, name="gain", animation=False), width=420, height=400)
+    chart = xyg.polar_chart(xyg.line(theta, r, name="gain", animation=False), width=420, height=400)
     probe = """
 <script>
 setTimeout(() => {
@@ -801,9 +801,9 @@ def test_polar_tooltip_angle_row_is_opt_in(tmp_path: Path) -> None:
 
     theta = [i * 2.0 * math.pi / 24.0 for i in range(24)]
     r = [1.0 + 0.4 * math.sin(3.0 * t) for t in theta]
-    chart = xy.polar_chart(
-        xy.line(theta, r, name="gain", animation=False),
-        xy.tooltip(labels={"x": "bearing"}),
+    chart = xyg.polar_chart(
+        xyg.line(theta, r, name="gain", animation=False),
+        xyg.tooltip(labels={"x": "bearing"}),
         width=420,
         height=400,
     )
@@ -838,9 +838,9 @@ def test_polar_tooltip_degrees_and_radar_labels(tmp_path: Path) -> None:
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.radar_chart(
+    chart = xyg.radar_chart(
         ["speed", "power", "range", "agility"],
-        xy.area([0.9, 0.7, 0.5, 0.8], name="Model A"),
+        xyg.area([0.9, 0.7, 0.5, 0.8], name="Model A"),
         width=420,
         height=400,
     )
@@ -883,9 +883,9 @@ def test_client_keeps_explicit_theta_ticks_across_the_seam(tmp_path: Path) -> No
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.polar_chart(
-        xy.line([310.0, 350.0, 30.0, 50.0], [1.0, 2.0, 3.0, 2.0]),
-        xy.theta_axis(
+    chart = xyg.polar_chart(
+        xyg.line([310.0, 350.0, 30.0, 50.0], [1.0, 2.0, 3.0, 2.0]),
+        xyg.theta_axis(
             unit="degrees",
             sector=(300.0, 420.0),
             tick_values=[300.0, 330.0, 0.0, 30.0, 60.0],
@@ -941,9 +941,9 @@ def test_polar_rect_hover_span_matches_the_drawn_wedge(tmp_path: Path) -> None:
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.polar_chart(
-        xy.bar([30.0], [1.0], width=10.0),
-        xy.theta_axis(unit="degrees"),
+    chart = xyg.polar_chart(
+        xyg.bar([30.0], [1.0], width=10.0),
+        xyg.theta_axis(unit="degrees"),
         width=420,
         height=420,
     )

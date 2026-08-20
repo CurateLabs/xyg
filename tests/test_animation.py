@@ -10,7 +10,7 @@ import re
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 import xyg.components as component_api
 from xyg import kernels as k
 
@@ -52,9 +52,9 @@ def _swapped(values: np.ndarray) -> np.ndarray:
 def test_animation_component_serializes_without_callbacks() -> None:
     started = lambda event: event  # noqa: E731
     ended = lambda event: event  # noqa: E731
-    chart = xy.scatter_chart(
-        xy.scatter(x=[1.0], y=[2.0]),
-        xy.animation(
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=[1.0], y=[2.0]),
+        xyg.animation(
             enabled=True,
             delay=20,
             duration=250,
@@ -85,8 +85,8 @@ def test_animation_component_serializes_without_callbacks() -> None:
 
 
 def test_spring_policy_is_bounded_and_serializable() -> None:
-    spring = xy.spring(stiffness=210, damping=28, mass=0.8)
-    spec = xy.animation(easing=spring).to_spec()
+    spring = xyg.spring(stiffness=210, damping=28, mass=0.8)
+    spec = xyg.animation(easing=spring).to_spec()
     assert spec["easing"] == {
         "type": "spring",
         "stiffness": 210.0,
@@ -94,20 +94,20 @@ def test_spring_policy_is_bounded_and_serializable() -> None:
         "mass": 0.8,
     }
     with pytest.raises(ValueError, match="spring damping must be positive"):
-        xy.spring(damping=0)
+        xyg.spring(damping=0)
 
 
 @pytest.mark.parametrize(
     ("kind", "mark"),
     [
-        ("line", lambda: xy.line([0, 1], [2, 3], key=["a", "b"])),
-        ("area", lambda: xy.area([0, 1], [2, 3], key=["a", "b"])),
-        ("bar", lambda: xy.bar([0, 1], [2, 3], key=["a", "b"])),
-        ("column", lambda: xy.column([0, 1], [2, 3], key=["a", "b"])),
-        ("scatter", lambda: xy.scatter([0, 1], [2, 3], key=["a", "b"])),
+        ("line", lambda: xyg.line([0, 1], [2, 3], key=["a", "b"])),
+        ("area", lambda: xyg.area([0, 1], [2, 3], key=["a", "b"])),
+        ("bar", lambda: xyg.bar([0, 1], [2, 3], key=["a", "b"])),
+        ("column", lambda: xyg.column([0, 1], [2, 3], key=["a", "b"])),
+        ("scatter", lambda: xyg.scatter([0, 1], [2, 3], key=["a", "b"])),
         (
             "error_band",
-            lambda: xy.error_band(
+            lambda: xyg.error_band(
                 [0, 1],
                 [1, 2],
                 [3, 4],
@@ -116,7 +116,7 @@ def test_spring_policy_is_bounded_and_serializable() -> None:
         ),
         (
             "errorbar",
-            lambda: xy.errorbar(
+            lambda: xyg.errorbar(
                 [0, 1],
                 [2, 3],
                 yerr=[0.2, 0.3],
@@ -129,9 +129,9 @@ def test_common_keyed_animation_contract_across_mark_kinds(
     kind: str,
     mark,
 ) -> None:
-    chart = xy.chart(
+    chart = xyg.chart(
         mark(),
-        xy.animation(
+        xyg.animation(
             enabled="auto",
             delay=15,
             duration=450,
@@ -164,14 +164,14 @@ def test_common_keyed_animation_contract_across_mark_kinds(
 
 
 def test_keyed_scatter_ships_identity_as_binary_u32_words() -> None:
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             x="x",
             y="y",
             key="country",
             data={"x": [1.0, 2.0], "y": [3.0, 4.0], "country": ["ES", "FR"]},
         ),
-        xy.animation(match="key"),
+        xyg.animation(match="key"),
     )
 
     spec, blob = chart.figure().build_payload()
@@ -188,9 +188,9 @@ def test_keyed_scatter_ships_identity_as_binary_u32_words() -> None:
 
 
 def test_stable_keys_are_type_sensitive_and_deterministic() -> None:
-    chart = xy.scatter_chart(
-        xy.scatter(x=[1.0, 2.0, 3.0], y=[3.0, 4.0, 5.0], key=[1, 1.0, True]),
-        xy.animation(match="key"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=[1.0, 2.0, 3.0], y=[3.0, 4.0, 5.0], key=[1, 1.0, True]),
+        xyg.animation(match="key"),
     )
 
     first_spec, first_blob = chart.figure().build_payload()
@@ -463,18 +463,18 @@ def test_native_transition_key_argument_errors_are_loud() -> None:
 
 def _keyed_scatter(animation, n: int = 8):
     x = [float(i) for i in range(n)]
-    marks = [xy.scatter(x=x, y=x, key=[f"k{i}" for i in range(n)])]
-    return xy.scatter_chart(*marks, *([animation] if animation is not None else [])).figure()
+    marks = [xyg.scatter(x=x, y=x, key=[f"k{i}" for i in range(n)])]
+    return xyg.scatter_chart(*marks, *([animation] if animation is not None else [])).figure()
 
 
 @pytest.mark.parametrize(
     ("animation", "ships"),
     [
-        pytest.param(xy.animation(match="key"), True, id="match-key"),
-        pytest.param(xy.animation(match="index"), False, id="match-index"),
+        pytest.param(xyg.animation(match="key"), True, id="match-key"),
+        pytest.param(xyg.animation(match="index"), False, id="match-index"),
         # `match` defaults to "index", so a bare animation() never key-matches.
-        pytest.param(xy.animation(duration=250), False, id="match-defaulted"),
-        pytest.param(xy.animation(match="key", enabled=False), False, id="disabled"),
+        pytest.param(xyg.animation(duration=250), False, id="match-defaulted"),
+        pytest.param(xyg.animation(match="key", enabled=False), False, id="disabled"),
         pytest.param(None, False, id="no-animation-spec"),
     ],
 )
@@ -491,25 +491,25 @@ def test_identity_planes_ship_only_when_the_client_can_key_match(animation, ship
 @pytest.mark.parametrize(
     "animation",
     [
-        pytest.param(xy.animation(match="index"), id="match-index"),
-        pytest.param(xy.animation(enabled=False), id="disabled"),
+        pytest.param(xyg.animation(match="index"), id="match-index"),
+        pytest.param(xyg.animation(enabled=False), id="disabled"),
         pytest.param(None, id="no-animation-spec"),
     ],
 )
 def test_key_validation_still_runs_when_planes_are_skipped(animation) -> None:
     """Uniqueness and typing are construction contract, not animation policy."""
-    marks = xy.scatter(x=[1.0, 2.0, 3.0], y=[1.0, 2.0, 3.0], key=["a", "b", "a"])
+    marks = xyg.scatter(x=[1.0, 2.0, 3.0], y=[1.0, 2.0, 3.0], key=["a", "b", "a"])
     with pytest.raises(ValueError, match="duplicate value at rows 0 and 2"):
-        xy.scatter_chart(marks, *([animation] if animation is not None else [])).figure()
+        xyg.scatter_chart(marks, *([animation] if animation is not None else [])).figure()
 
-    bad = xy.scatter(x=[1.0, 2.0], y=[1.0, 2.0], key=[object(), object()])
+    bad = xyg.scatter(x=[1.0, 2.0], y=[1.0, 2.0], key=[object(), object()])
     with pytest.raises(ValueError, match="animation key values must be"):
-        xy.scatter_chart(bad, *([animation] if animation is not None else [])).figure()
+        xyg.scatter_chart(bad, *([animation] if animation is not None else [])).figure()
 
 
 def test_key_matching_payload_is_unchanged_by_the_skip() -> None:
     """The path that does key-match must be byte-identical to before."""
-    spec, blob = _keyed_scatter(xy.animation(match="key"), n=32).build_payload()
+    spec, blob = _keyed_scatter(xyg.animation(match="key"), n=32).build_payload()
     trace = spec["traces"][0]
     lo = _column(blob, spec, trace["keys"]["lo"])
     hi = _column(blob, spec, trace["keys"]["hi"])
@@ -525,14 +525,14 @@ def test_mark_animation_cascades_over_chart_level_fields() -> None:
     one, so setting any field reset every other field to its default —
     silently turning off a chart-level ``match="key"``.
     """
-    figure = xy.scatter_chart(
-        xy.scatter(
+    figure = xyg.scatter_chart(
+        xyg.scatter(
             x=[1.0, 2.0],
             y=[1.0, 2.0],
             key=["a", "b"],
-            animation=xy.animation(duration=90),
+            animation=xyg.animation(duration=90),
         ),
-        xy.animation(match="key", easing="linear"),
+        xyg.animation(match="key", easing="linear"),
     ).figure()
     spec, _ = figure.build_payload_split()
     # Exactly the merge the client performs in `_resolvedAnimation`.
@@ -546,14 +546,14 @@ def test_mark_animation_cascades_over_chart_level_fields() -> None:
 
 def test_mark_animation_can_restate_a_default_to_override_the_chart() -> None:
     """Passing a default explicitly is an override, not an absence."""
-    figure = xy.scatter_chart(
-        xy.scatter(
+    figure = xyg.scatter_chart(
+        xyg.scatter(
             x=[1.0, 2.0],
             y=[1.0, 2.0],
             key=["a", "b"],
-            animation=xy.animation(match="index"),
+            animation=xyg.animation(match="index"),
         ),
-        xy.animation(match="key"),
+        xyg.animation(match="key"),
     ).figure()
     spec, _ = figure.build_payload_split()
     resolved = {**spec.get("animation", {}), **(spec["traces"][0].get("animation") or {})}
@@ -565,46 +565,46 @@ def test_mark_animation_can_restate_a_default_to_override_the_chart() -> None:
 def test_mark_animation_cascade_restores_the_match_key_guard() -> None:
     """The clobbering also suppressed this validation entirely."""
     with pytest.raises(ValueError, match="animation match='key' requires key="):
-        xy.scatter_chart(
-            xy.scatter(x=[1.0, 2.0], y=[1.0, 2.0], animation=xy.animation(duration=90)),
-            xy.animation(match="key"),
+        xyg.scatter_chart(
+            xyg.scatter(x=[1.0, 2.0], y=[1.0, 2.0], animation=xyg.animation(duration=90)),
+            xyg.animation(match="key"),
         ).figure()
 
 
 def test_mark_animation_alone_still_resolves_to_a_complete_policy() -> None:
     """No chart-level spec means the cascade base is the defaults, not {}."""
-    figure = xy.scatter_chart(
-        xy.scatter(x=[1.0], y=[2.0], animation=xy.animation(duration=90)),
+    figure = xyg.scatter_chart(
+        xyg.scatter(x=[1.0], y=[2.0], animation=xyg.animation(duration=90)),
     ).figure()
     spec, _ = figure.build_payload_split()
     resolved = {**spec.get("animation", {}), **(spec["traces"][0].get("animation") or {})}
 
     assert resolved["duration"] == 90.0
-    assert set(resolved) == set(xy.animation().to_spec())
+    assert set(resolved) == set(xyg.animation().to_spec())
     assert resolved["easing"] == "ease-out"
     assert resolved["match"] == "index"
 
 
 def test_animation_override_spec_reports_only_what_was_set() -> None:
-    assert xy.animation(duration=90).to_override_spec() == {"duration": 90.0}
-    assert xy.animation(match="index").to_override_spec() == {"match": "index"}
-    assert xy.animation().to_override_spec() == {}
-    assert xy.animation().to_spec() == xy.Animation().to_spec()
+    assert xyg.animation(duration=90).to_override_spec() == {"duration": 90.0}
+    assert xyg.animation(match="index").to_override_spec() == {"match": "index"}
+    assert xyg.animation().to_override_spec() == {}
+    assert xyg.animation().to_spec() == xyg.Animation().to_spec()
     # Direct construction is public too; it falls back to diffing the defaults.
-    assert xy.Animation(duration=90).to_override_spec() == {"duration": 90.0}
-    assert xy.Animation().to_override_spec() == {}
+    assert xyg.Animation(duration=90).to_override_spec() == {"duration": 90.0}
+    assert xyg.Animation().to_override_spec() == {}
 
 
 def test_aggregate_tier_records_key_matching_fallback() -> None:
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             x=[1.0, 2.0, 3.0],
             y=[3.0, 4.0, 5.0],
             key=["a", "b", "c"],
             density=True,
-            animation=xy.animation(duration=90),
+            animation=xyg.animation(duration=90),
         ),
-        xy.animation(match="key"),
+        xyg.animation(match="key"),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -617,14 +617,14 @@ def test_aggregate_tier_records_key_matching_fallback() -> None:
 
 
 def test_mark_animation_overrides_chart_defaults() -> None:
-    chart = xy.chart(
-        xy.scatter(
+    chart = xyg.chart(
+        xyg.scatter(
             x=[1.0],
             y=[2.0],
-            animation=xy.animation(enabled=True, duration=80, enter="scale"),
+            animation=xyg.animation(enabled=True, duration=80, enter="scale"),
         ),
-        xy.line(x=[1.0, 2.0], y=[2.0, 3.0], animation=False),
-        xy.animation(enabled="auto", duration=500),
+        xyg.line(x=[1.0, 2.0], y=[2.0, 3.0], animation=False),
+        xyg.animation(enabled="auto", duration=500),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -639,10 +639,10 @@ def test_mark_animation_overrides_chart_defaults() -> None:
 
 
 def test_disabled_mark_does_not_require_chart_level_key_matching_identity() -> None:
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[3.0, 4.0], key=["a", "b"]),
-        xy.line(x=[1.0, 2.0], y=[2.0, 3.0], animation=False),
-        xy.animation(match="key"),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[3.0, 4.0], key=["a", "b"]),
+        xyg.line(x=[1.0, 2.0], y=[2.0, 3.0], animation=False),
+        xyg.animation(match="key"),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -653,13 +653,13 @@ def test_disabled_mark_does_not_require_chart_level_key_matching_identity() -> N
 
 def test_chart_and_mark_lifecycle_callbacks_reach_widget(monkeypatch) -> None:
     events: list[tuple[str, str]] = []
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             x=[1.0],
             y=[2.0],
-            animation=xy.animation(on_start=lambda event: events.append(("mark", event["phase"]))),
+            animation=xyg.animation(on_start=lambda event: events.append(("mark", event["phase"]))),
         ),
-        xy.animation(on_start=lambda event: events.append(("chart", event["phase"]))),
+        xyg.animation(on_start=lambda event: events.append(("chart", event["phase"]))),
     )
 
     class CapturingWidget:
@@ -684,32 +684,32 @@ def test_chart_and_mark_lifecycle_callbacks_reach_widget(monkeypatch) -> None:
     ],
 )
 def test_invalid_stable_keys_fail_clearly(keys: list[object], match: str) -> None:
-    chart = xy.scatter_chart(
-        xy.scatter(x=[1.0, 2.0], y=[3.0, 4.0], key=keys),
-        xy.animation(match="key"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=[1.0, 2.0], y=[3.0, 4.0], key=keys),
+        xyg.animation(match="key"),
     )
     with pytest.raises(ValueError, match=match):
         chart.figure()
 
 
 def test_key_matching_requires_a_key_on_every_animated_mark() -> None:
-    chart = xy.line_chart(
-        xy.line(x=[1.0, 2.0], y=[3.0, 4.0]),
-        xy.animation(match="key"),
+    chart = xyg.line_chart(
+        xyg.line(x=[1.0, 2.0], y=[3.0, 4.0]),
+        xyg.animation(match="key"),
     )
     with pytest.raises(ValueError, match="match='key' requires key"):
         chart.figure()
 
 
 def test_line_keys_follow_the_geometry_sort_order() -> None:
-    chart = xy.line_chart(
-        xy.line(x=[3.0, 1.0, 2.0], y=[30.0, 10.0, 20.0], key=["c", "a", "b"]),
-        xy.animation(match="key"),
+    chart = xyg.line_chart(
+        xyg.line(x=[3.0, 1.0, 2.0], y=[30.0, 10.0, 20.0], key=["c", "a", "b"]),
+        xyg.animation(match="key"),
     )
     figure = chart.figure()
-    expected = xy.line_chart(
-        xy.line(x=[1.0, 2.0, 3.0], y=[10.0, 20.0, 30.0], key=["a", "b", "c"]),
-        xy.animation(match="key"),
+    expected = xyg.line_chart(
+        xyg.line(x=[1.0, 2.0, 3.0], y=[10.0, 20.0, 30.0], key=["a", "b", "c"]),
+        xyg.animation(match="key"),
     ).figure()
 
     np.testing.assert_array_equal(
@@ -718,15 +718,15 @@ def test_line_keys_follow_the_geometry_sort_order() -> None:
 
 
 def test_errorbar_expansion_has_unique_stable_segment_keys() -> None:
-    chart = xy.errorbar_chart(
-        xy.errorbar(
+    chart = xyg.errorbar_chart(
+        xyg.errorbar(
             x=[1.0, 2.0],
             y=[3.0, 4.0],
             yerr=[0.2, 0.3],
             cap_size=5,
             key=["a", "b"],
         ),
-        xy.animation(match="key"),
+        xyg.animation(match="key"),
     )
 
     spec, blob = chart.figure().build_payload()
@@ -739,15 +739,15 @@ def test_errorbar_expansion_has_unique_stable_segment_keys() -> None:
 
 
 def test_errorbar_role_qualification_rejects_binary_key_collisions() -> None:
-    figure = xy.errorbar_chart(
-        xy.errorbar(
+    figure = xyg.errorbar_chart(
+        xyg.errorbar(
             x=[1.0, 2.0],
             y=[3.0, 4.0],
             yerr=[0.2, 0.3],
             cap_size=5,
             key=["a", "b"],
         ),
-        xy.animation(match="key"),
+        xyg.animation(match="key"),
     ).figure()
     figure.traces[0].transition_keys = np.array(
         [[0, 0], [0x9E3779B9, 0x85EBCA6B]],
@@ -759,9 +759,9 @@ def test_errorbar_role_qualification_rejects_binary_key_collisions() -> None:
 
 
 def test_key_count_mismatch_records_index_fallback() -> None:
-    figure = xy.scatter_chart(
-        xy.scatter(x=[1.0, 2.0], y=[3.0, 4.0], key=["a", "b"]),
-        xy.animation(match="key"),
+    figure = xyg.scatter_chart(
+        xyg.scatter(x=[1.0, 2.0], y=[3.0, 4.0], key=["a", "b"]),
+        xyg.animation(match="key"),
     ).figure()
     transition_keys = figure.traces[0].transition_keys
     assert transition_keys is not None
@@ -775,10 +775,10 @@ def test_key_count_mismatch_records_index_fallback() -> None:
 
 
 def test_static_exports_ignore_motion_and_html_can_freeze_progress() -> None:
-    plain = xy.line_chart(xy.line(x=[0.0, 1.0], y=[1.0, 2.0]))
-    animated = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[1.0, 2.0]),
-        xy.animation(enabled=True, enter="reveal"),
+    plain = xyg.line_chart(xyg.line(x=[0.0, 1.0], y=[1.0, 2.0]))
+    animated = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[1.0, 2.0]),
+        xyg.animation(enabled=True, enter="reveal"),
     )
 
     assert animated.to_svg() == plain.to_svg()
@@ -810,12 +810,12 @@ def test_static_exports_ignore_motion_and_html_can_freeze_progress() -> None:
 )
 def test_animation_validation(kwargs: dict) -> None:
     with pytest.raises(ValueError, match="animation"):
-        xy.animation(**kwargs)
+        xyg.animation(**kwargs)
 
 
 def test_exit_is_not_a_supported_animation_option() -> None:
     with pytest.raises(TypeError, match="unexpected keyword argument 'exit'"):
-        xy.animation(**{"exit": "fade"})
+        xyg.animation(**{"exit": "fade"})
 
 
 # --- stable-key encoding: same answers, without the per-row dictionaries -----

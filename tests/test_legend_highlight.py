@@ -29,7 +29,7 @@ from conftest import density_category_chart, probe_document, run_browser_probe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-import xyg as xy  # noqa: E402
+import xyg  # noqa: E402
 from xyg.export import find_chromium  # noqa: E402
 
 
@@ -42,7 +42,7 @@ def _data() -> dict[str, np.ndarray]:
 
 
 def test_continuous_column_name_becomes_channel_label() -> None:
-    chart = xy.scatter_chart(xy.scatter("x", "y", data=_data(), color="temperature"))
+    chart = xyg.scatter_chart(xyg.scatter("x", "y", data=_data(), color="temperature"))
     trace = chart.figure().traces[0]
     assert trace.color_ch is not None
     assert trace.color_ch.label == "temperature"
@@ -51,7 +51,7 @@ def test_continuous_column_name_becomes_channel_label() -> None:
 
 def test_continuous_array_color_ships_no_label() -> None:
     data = _data()
-    chart = xy.scatter_chart(xy.scatter("x", "y", data=data, color=data["temperature"]))
+    chart = xyg.scatter_chart(xyg.scatter("x", "y", data=data, color=data["temperature"]))
     trace = chart.figure().traces[0]
     assert trace.color_ch is not None
     assert trace.color_ch.label is None
@@ -59,7 +59,7 @@ def test_continuous_array_color_ships_no_label() -> None:
 
 
 def test_named_trace_keeps_both_name_and_channel_label() -> None:
-    chart = xy.scatter_chart(xy.scatter("x", "y", data=_data(), color="temperature", name="obs"))
+    chart = xyg.scatter_chart(xyg.scatter("x", "y", data=_data(), color="temperature", name="obs"))
     trace = chart.figure().traces[0]
     assert trace.name == "obs"
     assert trace.color_ch.label == "temperature"
@@ -67,13 +67,13 @@ def test_named_trace_keeps_both_name_and_channel_label() -> None:
 
 def test_legend_highlight_option() -> None:
     data = _data()
-    disabled = xy.scatter_chart(xy.scatter("x", "y", data=data), xy.legend(highlight=False))
+    disabled = xyg.scatter_chart(xyg.scatter("x", "y", data=data), xyg.legend(highlight=False))
     assert disabled.figure().legend_options["highlight"] is False
     # Default-on rides implicitly: existing specs stay byte-identical.
-    default = xy.scatter_chart(xy.scatter("x", "y", data=data), xy.legend())
+    default = xyg.scatter_chart(xyg.scatter("x", "y", data=data), xyg.legend())
     assert "highlight" not in default.figure().legend_options
     with pytest.raises(ValueError):
-        xy.legend(highlight="yes")
+        xyg.legend(highlight="yes")
 
 
 _HIGHLIGHT_PROBE = """
@@ -158,15 +158,15 @@ def test_browser_legend_hover_dims_other_series() -> None:
         pytest.skip("no chromium available for the legend highlight probe")
 
     data = _data()
-    chart = xy.scatter_chart(
+    chart = xyg.scatter_chart(
         # Trace 0: named, constant color — plain marker row.
-        xy.scatter("x", "y", data=data, name="alpha"),
+        xyg.scatter("x", "y", data=data, name="alpha"),
         # Traces 1+2: identical unnamed continuous encodings — must collapse
         # into ONE "temperature" row that emphasizes both traces on hover.
-        xy.scatter("x", "y", data=data, color="temperature"),
-        xy.scatter("x", "y", data=data, color="temperature"),
+        xyg.scatter("x", "y", data=data, color="temperature"),
+        xyg.scatter("x", "y", data=data, color="temperature"),
         # Trace 3: categorical — one row per category, LUT-dim on hover.
-        xy.scatter(
+        xyg.scatter(
             "x",
             "y",
             data=data,
@@ -175,8 +175,8 @@ def test_browser_legend_hover_dims_other_series() -> None:
         # Trace 4: unnamed continuous from a raw array — no name, no label,
         # so it must contribute NO legend row (no generic fallback), while
         # still dimming like any other series when a row is hovered.
-        xy.scatter("x", "y", data=data, color=data["temperature"] * 2.0),
-        xy.legend(),
+        xyg.scatter("x", "y", data=data, color=data["temperature"] * 2.0),
+        xyg.legend(),
         width=520,
         height=340,
     )

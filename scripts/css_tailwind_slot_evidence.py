@@ -238,7 +238,7 @@ def _replace_bundle(document: str, bundle: Path | None) -> str:
 
 
 def _instrument(document: str) -> str:
-    render_call = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
+    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     if render_call not in document:
         raise RuntimeError("standalone render call changed; update the evidence script")
     instrumented = """
@@ -258,7 +258,7 @@ try {
     minor_ticks: true,
     lines: [{value: 0.5, color: "#94a3b8", width: 2, dash: "dashed"}],
   };
-  const view = xyg.renderStandalone(document.getElementById("chart"), spec, buf);
+  const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);
   view._drawNow();
   view._raf = null;
   const bar = view.root.querySelector('[data-xy-slot="modebar"]');

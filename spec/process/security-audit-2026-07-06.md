@@ -1,6 +1,6 @@
 # Security Audit - 2026-07-06
 
-Scope: XY Python package, standalone/browser client, Rust native core,
+Scope: XYG Python package, standalone/browser client, Rust native core,
 HTML/PNG export paths, example app dependency manifests, CI/release workflows,
 and packaging verifiers.
 

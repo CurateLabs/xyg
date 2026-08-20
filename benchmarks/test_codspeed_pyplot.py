@@ -27,7 +27,7 @@ import io
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 import xyg.pyplot as plt
 from xyg import kernels as k
 
@@ -66,12 +66,12 @@ def warm_lazy_modules() -> None:
     """
     x = np.array([0.0, 1.0, 2.0, 3.0])
     y = np.array([0.0, 1.0, 0.0, 1.0])
-    raw = xy.chart(xy.line(x=x, y=y), xy.scatter(x=x, y=y), xy.x_axis(), xy.y_axis()).figure()
+    raw = xyg.chart(xyg.line(x=x, y=y), xyg.scatter(x=x, y=y), xyg.x_axis(), xyg.y_axis()).figure()
     raw.build_payload_split(N_BUCKETS)
-    xy.chart(xy.bar(["a", "b"], np.array([1.0, 2.0]))).figure().build_payload_split(N_BUCKETS)
-    xy.chart(xy.histogram(y, bins=4)).figure().build_payload_split(N_BUCKETS)
-    raw_fig = xy.chart(xy.line(x=x, y=y)).figure()
-    raw_fig.to_png(engine=xy.Engine.default, scale=1.0)
+    xyg.chart(xyg.bar(["a", "b"], np.array([1.0, 2.0]))).figure().build_payload_split(N_BUCKETS)
+    xyg.chart(xyg.histogram(y, bins=4)).figure().build_payload_split(N_BUCKETS)
+    raw_fig = xyg.chart(xyg.line(x=x, y=y)).figure()
+    raw_fig.to_png(engine=xyg.Engine.default, scale=1.0)
 
     plt.close("all")
     fig, ax = plt.subplots()
@@ -159,10 +159,10 @@ def export_data() -> tuple[np.ndarray, np.ndarray]:
 
 
 def _raw_line_payload(x: np.ndarray, y: np.ndarray) -> int:
-    c = xy.chart(
-        xy.line(x=x, y=y, color="#1f77b4"),
-        xy.x_axis(margin=0.05),
-        xy.y_axis(margin=0.05),
+    c = xyg.chart(
+        xyg.line(x=x, y=y, color="#1f77b4"),
+        xyg.x_axis(margin=0.05),
+        xyg.y_axis(margin=0.05),
         width=WIDTH,
         height=HEIGHT,
     )
@@ -179,10 +179,10 @@ def _pyplot_line_payload(x: np.ndarray, y: np.ndarray) -> int:
 
 
 def _raw_scatter_payload(x: np.ndarray, y: np.ndarray) -> int:
-    c = xy.chart(
-        xy.scatter(x=x, y=y, color="#1f77b4", size=6.0),
-        xy.x_axis(),
-        xy.y_axis(),
+    c = xyg.chart(
+        xyg.scatter(x=x, y=y, color="#1f77b4", size=6.0),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=WIDTH,
         height=HEIGHT,
     )
@@ -199,10 +199,10 @@ def _pyplot_scatter_payload(x: np.ndarray, y: np.ndarray) -> int:
 
 
 def _raw_histogram_payload(values: np.ndarray) -> int:
-    c = xy.chart(
-        xy.histogram(values, bins=HIST_BINS),
-        xy.x_axis(),
-        xy.y_axis(),
+    c = xyg.chart(
+        xyg.histogram(values, bins=HIST_BINS),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=WIDTH,
         height=HEIGHT,
     )
@@ -219,10 +219,10 @@ def _pyplot_histogram_payload(values: np.ndarray) -> int:
 
 
 def _raw_bar_payload(categories: list[str], values: np.ndarray) -> int:
-    c = xy.chart(
-        xy.bar(categories, values),
-        xy.x_axis(),
-        xy.y_axis(),
+    c = xyg.chart(
+        xyg.bar(categories, values),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=WIDTH,
         height=HEIGHT,
     )
@@ -241,13 +241,13 @@ def _pyplot_bar_payload(categories: list[str], values: np.ndarray) -> int:
 def _raw_styled_panel_payload(
     x: np.ndarray, actual: np.ndarray, target: np.ndarray, sample: np.ndarray
 ) -> int:
-    c = xy.chart(
-        xy.line(x=x, y=actual, color="#ff0000", dash="dashed", width=2.0, name="actual"),
-        xy.line(x=x, y=target, color="#008000", name="target"),
-        xy.scatter(x=x, y=sample, color="#1f77b4", size=6.0, name="sample"),
-        xy.x_axis(label="time"),
-        xy.y_axis(label="value"),
-        xy.legend(),
+    c = xyg.chart(
+        xyg.line(x=x, y=actual, color="#ff0000", dash="dashed", width=2.0, name="actual"),
+        xyg.line(x=x, y=target, color="#008000", name="target"),
+        xyg.scatter(x=x, y=sample, color="#1f77b4", size=6.0, name="sample"),
+        xyg.x_axis(label="time"),
+        xyg.y_axis(label="value"),
+        xyg.legend(),
         title="pipeline",
         width=WIDTH,
         height=HEIGHT,
@@ -378,8 +378,8 @@ def test_png_export_line_raw(benchmark, export_data):
     shim's gap.
     """
     x, y = export_data
-    fig = xy.chart(xy.line(x=x, y=y), width=WIDTH, height=HEIGHT).figure()
-    png = benchmark(fig.to_png, engine=xy.Engine.default, scale=2.0)
+    fig = xyg.chart(xyg.line(x=x, y=y), width=WIDTH, height=HEIGHT).figure()
+    png = benchmark(fig.to_png, engine=xyg.Engine.default, scale=2.0)
     assert png.startswith(b"\x89PNG")
 
 

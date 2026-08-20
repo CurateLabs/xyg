@@ -1,6 +1,6 @@
 """Kernel dispatch: the native Rust core is required.
 
-xy computes through a compiled Rust C-ABI core. There is no pure-Python
+xyg computes through a compiled Rust C-ABI core. There is no pure-Python
 fallback: if the native core cannot be loaded — an unsupported platform with no
 published wheel and no local Rust build — importing this module raises
 ImportError with remediation, rather than silently degrading (§33: no-wheel

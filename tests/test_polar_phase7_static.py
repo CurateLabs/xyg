@@ -8,7 +8,7 @@ import re
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _raster, _svg
 from xyg._svg import (
     _annotation_connector_unclipped,
@@ -60,8 +60,8 @@ def test_reversed_radial_origin_maps_static_geometry_inward_to_outward() -> None
     )
     assert float(polar.radius_value(0.6)) == pytest.approx(6.0)
 
-    figure = xy.polar_chart(
-        xy.area(
+    figure = xyg.polar_chart(
+        xyg.area(
             [0.0, math.pi / 2.0, math.pi],
             [8.0, 6.0, 4.0],
             base=[10.0, 10.0, 10.0],
@@ -69,7 +69,7 @@ def test_reversed_radial_origin_maps_static_geometry_inward_to_outward() -> None
             opacity=1.0,
             line_width=0.0,
         ),
-        xy.r_axis(domain=(2.0, 10.0), reverse=True, origin=12.0),
+        xyg.r_axis(domain=(2.0, 10.0), reverse=True, origin=12.0),
         width=240,
         height=220,
     ).figure()
@@ -82,9 +82,9 @@ def test_reversed_radial_origin_maps_static_geometry_inward_to_outward() -> None
 
 
 def test_near_one_hole_is_an_empty_native_clip_not_a_rejected_stream() -> None:
-    figure = xy.polar_chart(
-        xy.scatter([0.0], [1.0], color="#ff0000"),
-        xy.r_axis(domain=(0.0, 1.0), hole=1.0 - 1e-12),
+    figure = xyg.polar_chart(
+        xyg.scatter([0.0], [1.0], color="#ff0000"),
+        xyg.r_axis(domain=(0.0, 1.0), hole=1.0 - 1e-12),
         width=200,
         height=200,
     ).figure()
@@ -155,14 +155,14 @@ def test_category_labels_take_precedence_over_angular_formatting() -> None:
 
 
 def test_svg_uses_annular_sector_clip_polygon_grid_and_polar_heatmap() -> None:
-    chart = xy.polar_chart(
-        xy.heatmap(
+    chart = xyg.polar_chart(
+        xyg.heatmap(
             np.arange(12.0).reshape(3, 4),
             x=np.linspace(0.0, math.pi, 4),
             y=[1.0, 2.0, 3.0],
         ),
-        xy.theta_axis(sector=(0.0, math.pi), grid_shape="linear"),
-        xy.r_axis(domain=(0.0, 3.0), hole=0.25),
+        xyg.theta_axis(sector=(0.0, math.pi), grid_shape="linear"),
+        xyg.r_axis(domain=(0.0, 3.0), hole=0.25),
         width=360,
         height=280,
     )
@@ -453,17 +453,17 @@ def test_native_point_annotations_use_joint_polar_projection() -> None:
 
 def test_native_polar_clip_masks_area_hole_and_line_across_missing_sector() -> None:
     theta0, theta1 = math.pi / 4.0, 7.0 * math.pi / 4.0
-    figure = xy.polar_chart(
-        xy.area(
+    figure = xyg.polar_chart(
+        xyg.area(
             [theta0, math.pi, theta1],
             [0.9, 0.9, 0.9],
             base=[0.0, 0.0, 0.0],
             color="#ff0000",
             opacity=1.0,
         ),
-        xy.line([theta0, theta1], [0.9, 0.9], color="#ff0000", width=8.0),
-        xy.theta_axis(sector=(theta0, theta1)),
-        xy.r_axis(domain=(0.0, 1.0), hole=0.35),
+        xyg.line([theta0, theta1], [0.9, 0.9], color="#ff0000", width=8.0),
+        xyg.theta_axis(sector=(theta0, theta1)),
+        xyg.r_axis(domain=(0.0, 1.0), hole=0.35),
         width=260,
         height=220,
     ).figure()
@@ -490,11 +490,11 @@ def test_phase7_marks_complete_both_static_exports(kind: str) -> None:
     radial = np.linspace(0.5, 2.5, 4)
     values = np.sin(theta[None, :]) + radial[:, None]
     if kind == "heatmap":
-        mark = xy.heatmap(values, x=theta, y=radial)
+        mark = xyg.heatmap(values, x=theta, y=radial)
     elif kind == "contour":
-        mark = xy.contour(values, x=theta, y=radial, levels=4)
+        mark = xyg.contour(values, x=theta, y=radial, levels=4)
     else:
-        mark = xy.errorbar(theta[:4], radial, yerr=0.35)
-    figure = xy.polar_chart(mark, width=300, height=300).figure()
+        mark = xyg.errorbar(theta[:4], radial, yerr=0.35)
+    figure = xyg.polar_chart(mark, width=300, height=300).figure()
     assert figure.to_image(format="svg").startswith(b"<svg")
     assert figure.to_image(format="png", scale=1).startswith(b"\x89PNG\r\n\x1a\n")

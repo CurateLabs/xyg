@@ -172,7 +172,7 @@ def build_html() -> str:
         ("ok", spark("area", x, ok, ORANGE)),
     ]
     mounts = "\n".join(
-        f'<script>xyg.renderStandalone(document.getElementById("{cid}"),'
+        f'<script>xy.renderStandalone(document.getElementById("{cid}"),'
         f"{_json_for_inline_script(spec)},"
         f'Uint8Array.from(atob("{b64}"),c=>c.charCodeAt(0)).buffer);</script>'
         for cid, (spec, b64) in charts

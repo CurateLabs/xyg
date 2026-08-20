@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import RENDER_CALLS, probe_document, run_browser_probe
 from xyg.export import find_chromium
 
@@ -22,8 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _chart_html(probe: str) -> str:
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             [0.0, 0.5, 1.0],
             [0.0, 0.5, 1.0],
             size=10,
@@ -300,11 +300,11 @@ _FIFTY_VIEW_PROBE = r"""
 
 def _sixty_view_shader_cache_probe() -> str:
     figures = [
-        xy.chart(xy.line(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
-        xy.chart(xy.scatter(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
-        xy.chart(xy.hist([0, 1, 1, 2], bins=3), width=62, height=82).figure(),
-        xy.chart(
-            xy.bar(
+        xyg.chart(xyg.line(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
+        xyg.chart(xyg.scatter(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
+        xyg.chart(xyg.hist([0, 1, 1, 2], bins=3), width=62, height=82).figure(),
+        xyg.chart(
+            xyg.bar(
                 ["a", "b"],
                 [[1, 2], [2, 1]],
                 mode="grouped",
@@ -313,7 +313,7 @@ def _sixty_view_shader_cache_probe() -> str:
             width=62,
             height=82,
         ).figure(),
-        xy.chart(xy.heatmap([[0, 1], [2, 3]], colormap="turbo"), width=62, height=82).figure(),
+        xyg.chart(xyg.heatmap([[0, 1], [2, 3]], colormap="turbo"), width=62, height=82).figure(),
     ]
     payloads = []
     for figure in figures:
@@ -1207,8 +1207,8 @@ def _mixed_size_probe() -> str:
     # --force-device-scale-factor=2 — with margin, so no environment's layout
     # pass can shrink a chart away from its requested size mid-probe.
     for width, height in ((62, 82), (150, 90), (70, 170)):
-        figure = xy.scatter_chart(
-            xy.scatter([0.0, 0.5, 1.0], [0.0, 0.5, 1.0], size=10),
+        figure = xyg.scatter_chart(
+            xyg.scatter([0.0, 0.5, 1.0], [0.0, 0.5, 1.0], size=10),
             width=width,
             height=height,
             padding=(4, 4, 4, 4),
@@ -1664,8 +1664,8 @@ _FRAME_GATE_PROBE = r"""
 
 
 def _frame_gate_probe() -> str:
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 0.5, 1.0], [0.0, 0.5, 1.0], size=10),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 0.5, 1.0], [0.0, 0.5, 1.0], size=10),
         width=62,
         height=82,
         padding=(4, 4, 4, 4),

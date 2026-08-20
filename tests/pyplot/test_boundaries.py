@@ -55,7 +55,7 @@ def test_importing_xy_does_not_load_the_shim() -> None:
     _run_fresh(
         """
         import sys
-        import xyg as xy
+        import xyg
         assert not any("pyplot" in name for name in sys.modules), [
             n for n in sys.modules if "pyplot" in n
         ]

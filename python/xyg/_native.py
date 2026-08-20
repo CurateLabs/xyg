@@ -170,7 +170,7 @@ def _find_library() -> Path:
     raise ImportError(
         f"xyg native core not found (looked for {name} in "
         f"{[str(c) for c in candidates]}). No prebuilt wheel exists for this "
-        "platform — see the xy README for supported platforms, or build "
+        "platform — see the xyg README for supported platforms, or build "
         "from source with `cargo build --release`."
     )
 

@@ -50,7 +50,7 @@ def test_package_import_is_lazy_and_light() -> None:
         import time
 
         t0 = time.perf_counter()
-        import xyg as xy
+        import xyg
         elapsed_ms = (time.perf_counter() - t0) * 1000
 
         heavy = {sorted(HEAVY_MODULES)!r}
@@ -61,7 +61,7 @@ def test_package_import_is_lazy_and_light() -> None:
         ]
         assert eager == [], eager
         assert elapsed_ms < 200, elapsed_ms
-        assert xy.__version__
+        assert xyg.__version__
         print(f"{{elapsed_ms:.3f}}")
         """
     )
@@ -73,14 +73,14 @@ def test_public_metadata_and_dir_are_lazy() -> None:
         f"""
         import sys
 
-        import xyg as xy
+        import xyg
 
-        names = dir(xy)
-        assert "__version__" in xy.__all__
+        names = dir(xyg)
+        assert "__version__" in xyg.__all__
         assert "Figure" not in names
-        assert "Figure" not in xy.__all__
+        assert "Figure" not in xyg.__all__
         assert "scatter_chart" in names
-        assert xy.__version__
+        assert xyg.__version__
 
         heavy = {sorted(HEAVY_MODULES)!r}
         eager = [
@@ -153,19 +153,19 @@ def test_export_helpers_do_not_load_widget_numpy_or_kernels() -> None:
 def test_star_import_matches_public_all() -> None:
     _run_fresh(
         """
-        import xyg as xy
+        import xyg
 
         ns = {}
         exec("from xyg import *", ns)
 
-        exported = sorted(name for name in ns if name in xy.__all__)
+        exported = sorted(name for name in ns if name in xyg.__all__)
         extras = sorted(
-            name for name in ns if not name.startswith("__") and name not in xy.__all__
+            name for name in ns if not name.startswith("__") and name not in xyg.__all__
         )
-        assert exported == sorted(xy.__all__)
+        assert exported == sorted(xyg.__all__)
         assert extras == []
         assert "Figure" not in ns
-        assert ns["scatter_chart"] is xy.scatter_chart
+        assert ns["scatter_chart"] is xyg.scatter_chart
         """
     )
 
@@ -175,16 +175,16 @@ def test_lazy_public_exports_still_work() -> None:
         f"""
         import sys
 
-        import xyg as xy
+        import xyg
         assert "numpy" not in sys.modules
 
         from xyg import Column, scatter, scatter_chart
 
-        assert Column is xy.Column
+        assert Column is xyg.Column
         assert callable(scatter)
         assert callable(scatter_chart)
-        assert callable(xy.column)
-        assert xy.column(x=["a"], y=[1]).kind == "column"
+        assert callable(xyg.column)
+        assert xyg.column(x=["a"], y=[1]).kind == "column"
         assert "xyg._figure" in sys.modules
         assert "numpy" in sys.modules
 
@@ -202,17 +202,17 @@ def test_figure_is_not_public_and_denial_stays_light() -> None:
         """
         import sys
 
-        import xyg as xy
+        import xyg
         assert "numpy" not in sys.modules
 
         try:
-            xy.Figure
+            xyg.Figure
         except AttributeError:
             pass
         else:
             raise AssertionError("xyg.Figure must not be public")
 
-        assert "Figure" not in xy.__all__
+        assert "Figure" not in xyg.__all__
         assert "numpy" not in sys.modules
         assert "xyg._figure" not in sys.modules
         assert "xyg.kernels" not in sys.modules
@@ -227,10 +227,10 @@ def test_composition_api_loads_compute_without_widget_stack() -> None:
         """
         import sys
 
-        import xyg as xy
+        import xyg
         assert "numpy" not in sys.modules
 
-        scatter = xy.scatter
+        scatter = xyg.scatter
 
         assert callable(scatter)
         assert "xyg.components" in sys.modules
@@ -253,9 +253,9 @@ def test_dom_slot_contract_loads_without_compute_or_widget_stack() -> None:
         """
         import sys
 
-        import xyg as xy
+        import xyg
 
-        slots = xy.CHART_DOM_SLOTS
+        slots = xyg.CHART_DOM_SLOTS
 
         assert slots[0] == "root"
         assert "tooltip" in slots
@@ -276,9 +276,9 @@ def test_html_export_does_not_load_widget_stack() -> None:
         """
         import sys
 
-        import xyg as xy
+        import xyg
 
-        chart = xy.line_chart(xy.line(x=[0, 1], y=[1, 2]), title="lazy boundary")
+        chart = xyg.line_chart(xyg.line(x=[0, 1], y=[1, 2]), title="lazy boundary")
         assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
@@ -298,15 +298,15 @@ def test_declarative_html_exports_do_not_load_widget_stack() -> None:
         """
         import sys
 
-        import xyg as xy
+        import xyg
 
-        chart = xy.chart(
-            xy.scatter(x=[0, 1, 2], y=[1, 3, 2], name="points"),
-            xy.line(x=[0, 1, 2], y=[1, 2, 2.5], name="trend"),
-            xy.x_axis(label="x"),
-            xy.y_axis(label="y"),
-            xy.legend(),
-            xy.tooltip(fields=["x", "y"]),
+        chart = xyg.chart(
+            xyg.scatter(x=[0, 1, 2], y=[1, 3, 2], name="points"),
+            xyg.line(x=[0, 1, 2], y=[1, 2, 2.5], name="trend"),
+            xyg.x_axis(label="x"),
+            xyg.y_axis(label="y"),
+            xyg.legend(),
+            xyg.tooltip(fields=["x", "y"]),
             title="declarative lazy boundary",
         )
         assert "xyg.widget" not in sys.modules
@@ -343,9 +343,9 @@ def test_widget_method_is_the_widget_import_boundary() -> None:
         """
         import sys
 
-        import xyg as xy
+        import xyg
 
-        chart = xy.line_chart(xy.line(x=[0, 1], y=[1, 2]), title="widget boundary")
+        chart = xyg.line_chart(xyg.line(x=[0, 1], y=[1, 2]), title="widget boundary")
         chart.to_html()
         assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
@@ -366,11 +366,11 @@ def test_column_factory_does_not_shadow_columns_submodule() -> None:
         """
         import importlib
 
-        import xyg as xy
+        import xyg
 
         columns = importlib.import_module("xyg.columns")
-        assert columns.Column is xy.Column
-        assert xy.column(x=["a"], y=[1]).kind == "column"
+        assert columns.Column is xyg.Column
+        assert xyg.column(x=["a"], y=[1]).kind == "column"
 
         try:
             importlib.import_module("xyg.column")
@@ -407,9 +407,9 @@ def test_chart_headless_append_does_not_load_widget_stack() -> None:
         """
         import sys
 
-        import xyg as xy
+        import xyg
 
-        chart = xy.scatter_chart(xy.scatter(x=[0.0, 1.0], y=[0.0, 1.0]))
+        chart = xyg.scatter_chart(xyg.scatter(x=[0.0, 1.0], y=[0.0, 1.0]))
         chart.append(0, [2.0], [3.0])
 
         assert len(chart.figure().traces[0].x.values) == 3

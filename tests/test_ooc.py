@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 
-import xyg as xy
+import xyg
 from xyg._ooc import MemmapF64Builder, is_memmapped, open_f64
 from xyg.columns import ColumnStore
 
@@ -106,7 +106,7 @@ def test_scatter_density_screen_bounded_out_of_core(tmp_path):
     rng = np.random.default_rng(0)
     xcol = _build(tmp_path, "sx.f64", rng.normal(0, 1, n), capacity=n)
     ycol = _build(tmp_path, "sy.f64", rng.normal(0, 1, n), capacity=n)
-    fig = xy.chart(xy.scatter(x=xcol, y=ycol, density=True)).figure()
+    fig = xyg.chart(xyg.scatter(x=xcol, y=ycol, density=True)).figure()
 
     rep = fig.store.memory_report()
     assert rep["canonical_bytes"] == 0

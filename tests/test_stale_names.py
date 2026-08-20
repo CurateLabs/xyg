@@ -1,4 +1,4 @@
-"""Retired XY native identity must not reappear in current-product files."""
+"""Legacy native identity must not reappear in current-product files."""
 
 from __future__ import annotations
 
@@ -55,6 +55,27 @@ def test_flags_retired_artifact_and_backticked_api_docs(tmp_path: Path) -> None:
     joined = "\n".join(errors)
     assert "xy wheel artifact" in joined
     assert "backticked xy Python API" in joined
+
+
+def test_flags_artifact_glob_pip_show_and_corrupted_upstream(tmp_path: Path) -> None:
+    (tmp_path / "Makefile").write_text(
+        "verify dist/xy-*.whl dist/xy-*.tar.gz\n"
+        "python -m pip show xy\n"
+        "upstream XYG policy at reflex-dev/XYG\n",
+        encoding="utf-8",
+    )
+    errors = "\n".join(check_stale_names.check_stale_names(tmp_path))
+    assert errors.count("xy artifact glob") == 2
+    assert "pip show xy" in errors
+    assert errors.count("corrupted upstream XYG") == 2
+
+
+def test_allows_exact_upstream_and_historical_identifiers(tmp_path: Path) -> None:
+    (tmp_path / "history.md").write_text(
+        "upstream XY came from " + "reflex-dev/" + "xy\nXY-vs-XYG policy retains XY-SEC-2026-03\n",
+        encoding="utf-8",
+    )
+    assert check_stale_names.check_stale_names(tmp_path) == []
 
 
 def test_flags_product_wording_across_runtime_docs_and_workflows(tmp_path: Path) -> None:

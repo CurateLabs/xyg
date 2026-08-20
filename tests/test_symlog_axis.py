@@ -5,15 +5,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _svg
 from xyg._figure import Figure
 
 
 def test_symlog_component_emits_original_domain_and_constant() -> None:
-    chart = xy.chart(
-        xy.scatter(x=[0.0, 1.0, 1_000_000.0], y=[-10.0, 0.0, 10.0]),
-        xy.x_axis(type_="symlog", constant=1_000.0),
+    chart = xyg.chart(
+        xyg.scatter(x=[0.0, 1.0, 1_000_000.0], y=[-10.0, 0.0, 10.0]),
+        xyg.x_axis(type_="symlog", constant=1_000.0),
     )
     spec, _ = chart.figure().build_payload()
 
@@ -33,12 +33,12 @@ def test_symlog_accepts_zero_and_negative_explicit_domain() -> None:
 @pytest.mark.parametrize("constant", [0, -1, float("inf")])
 def test_symlog_rejects_invalid_constant(constant: float) -> None:
     with pytest.raises(ValueError, match="constant"):
-        xy.x_axis(type_="symlog", constant=constant)
+        xyg.x_axis(type_="symlog", constant=constant)
 
 
 def test_constant_is_rejected_for_other_scales() -> None:
     with pytest.raises(ValueError, match="only valid"):
-        xy.y_axis(type_="linear", constant=1)
+        xyg.y_axis(type_="linear", constant=1)
 
 
 def test_static_symlog_scale_is_symmetric_and_zero_preserving() -> None:
@@ -206,9 +206,9 @@ def test_client_number_format_accepts_literal_affixes(tmp_path) -> None:
     chromium = find_chromium()
     if chromium is None:
         pytest.skip("Chromium unavailable")
-    chart = xy.scatter_chart(
-        xy.scatter(x=[0.0, 1.0], y=[0.0, 200.0]),
-        xy.y_axis(domain=(0, 200), format="$.0f"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=[0.0, 1.0], y=[0.0, 200.0]),
+        xyg.y_axis(domain=(0, 200), format="$.0f"),
         width=480,
         height=360,
     )

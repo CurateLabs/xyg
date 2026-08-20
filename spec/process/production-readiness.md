@@ -481,7 +481,7 @@ Before tagging an `xyg-v*` release:
 - Confirm the no-Rust install job passed (it must build, install, and then
   raise a clear ImportError on first compute — never a silent fallback).
 - Confirm the sdist verifier passed and the build-input-only source archive
-  contains `xy`, bundled `reflex_xy`, the JSX/render-client bundles, complete
+  contains `xyg`, bundled `reflex_xy`, the JSX/render-client bundles, complete
   JS/Rust build sources, and the expected `PKG-INFO` package name, Python floor,
   runtime dependencies, and Reflex extra. It must exclude repository-only
   docs, tests, scripts, benchmarks, examples, native binaries, and generated
@@ -501,12 +501,12 @@ Before tagging an `xyg-v*` release:
 - Confirm `spec/api/api-examples.md` runs against the tagged API.
 ### Bundled Reflex integration
 
-Every `xy` release carries the `reflex_xy` Python package and JSX wrapper. The
+Every `xyg` release carries the `reflex_xy` Python package and JSX wrapper. The
 wrapper links to the render client in the same installed distribution, so
-client, kernel, and framework bridge share one version. Plain `xy` must not
+client, kernel, and framework bridge share one version. Plain `xyg` must not
 install Reflex; `xyg[reflex]` must install the declared supported floor.
 Release smoke tests install Reflex, import `reflex_xy`, and assert that its
-reported version matches the `xy` distribution version.
+reported version matches the `xyg` distribution version.
 
 ## Hardening Backlog
 

@@ -8,7 +8,7 @@ import pytest
 import reflex as rx
 
 import reflex_xy
-import xyg as xy
+import xyg
 from xyg.channel import decode_frame
 
 
@@ -77,20 +77,20 @@ def test_component_import_is_local_library(app_cwd):
 
 def test_static_chart_classes_are_visible_to_tailwind_source_scan(app_cwd):
     """XYBF is opaque to Tailwind, so static chart classes need a JSX literal."""
-    static_chart = xy.chart(
-        xy.line(
+    static_chart = xyg.chart(
+        xyg.line(
             [0, 1],
             [1, 2],
             class_name="adapter-only-mark-metadata",
         ),
-        xy.vline(
+        xyg.vline(
             0.5,
             text="release",
             class_name="[text-wrap:balance] opacity-80",
         ),
-        xy.legend(class_name="max-h-24 overflow-y-auto"),
-        xy.tooltip(class_name="max-w-64 break-words"),
-        xy.modebar(
+        xyg.legend(class_name="max-h-24 overflow-y-auto"),
+        xyg.tooltip(class_name="max-w-64 break-words"),
+        xyg.modebar(
             class_name="rounded-lg shadow-sm",
             button_class_name="hover:bg-slate-100 focus:ring-2",
         ),
@@ -123,8 +123,8 @@ def test_static_facet_chart_compiles_as_grid_of_panel_payloads(app_cwd):
         "y": [1, 2, 3, 3, 2, 1],
         "region": ["West", "West", "West", "East", "East", "East"],
     }
-    facets = xy.facet_chart(
-        xy.scatter(x="x", y="y", color="#6e56cf"),
+    facets = xyg.facet_chart(
+        xyg.scatter(x="x", y="y", color="#6e56cf"),
         by="region",
         data=data,
         cols=2,
@@ -187,8 +187,8 @@ def test_tailwind_scan_inventory_is_verbatim_for_live_and_static_charts(app_cwd)
     )
     static_rendered = str(
         reflex_xy.chart(
-            xy.line_chart(
-                xy.line([0, 1], [1, 2]),
+            xyg.line_chart(
+                xyg.line([0, 1], [1, 2]),
                 class_name=manifest,
             )
         )
@@ -203,8 +203,8 @@ def test_tailwind_scan_inventory_is_verbatim_for_live_and_static_charts(app_cwd)
 
 
 def test_tailwind_scan_inventory_is_verbatim_for_every_facet_panel(app_cwd):
-    facets = xy.facet_chart(
-        xy.scatter(x="x", y="y"),
+    facets = xyg.facet_chart(
+        xyg.scatter(x="x", y="y"),
         by="region",
         data={
             "x": [0, 1],
@@ -226,8 +226,8 @@ def test_tailwind_scan_inventory_is_verbatim_for_every_facet_panel(app_cwd):
 
 
 def test_explicit_tailwind_inventory_merges_with_static_discovery(app_cwd):
-    static_chart = xy.line_chart(
-        xy.line([0, 1], [1, 2]),
+    static_chart = xyg.line_chart(
+        xyg.line([0, 1], [1, 2]),
         class_name="rounded-xl bg-white",
     )
 

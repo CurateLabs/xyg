@@ -17,7 +17,7 @@ import zlib
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import export
 from xyg._figure import Figure
 
@@ -116,9 +116,9 @@ def test_svg_background_paints_one_backdrop_rect():
 
 
 def _themed_chart():
-    return xy.chart(
-        xy.line("x", "y", data={"x": np.arange(20.0), "y": np.arange(20.0)}),
-        xy.theme(background="#ff0000", plot_background="#00ff00"),
+    return xyg.chart(
+        xyg.line("x", "y", data={"x": np.arange(20.0), "y": np.arange(20.0)}),
+        xyg.theme(background="#ff0000", plot_background="#00ff00"),
         width=300,
         height=200,
     )
@@ -267,13 +267,13 @@ def test_write_image_html_routes_and_rejects_raster_options(tmp_path):
 
 
 def test_write_images_mixed_formats_and_chart_objects(tmp_path):
-    chart = xy.chart(
-        xy.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
+    chart = xyg.chart(
+        xyg.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
         width=200,
         height=140,
     )
     paths = [tmp_path / "a.png", tmp_path / "b.svg", tmp_path / "c.jpg", tmp_path / "d.html"]
-    out = xy.write_images(figures=[_fig(), _fig(), chart, _fig()], files=paths)
+    out = xyg.write_images(figures=[_fig(), _fig(), chart, _fig()], files=paths)
     assert out[0][:8] == b"\x89PNG\r\n\x1a\n"
     assert out[1][:5] == b"<svg "
     assert out[2][:3] == b"\xff\xd8\xff"
@@ -300,9 +300,9 @@ def test_write_images_resolves_chart_export_config_defaults(tmp_path):
     # Converting charts to figures must not drop their declarative export
     # defaults (PR #115 review): a chart configured for 123x77 at scale 1
     # exports at exactly 123x77 through the batch API too.
-    chart = xy.chart(
-        xy.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
-        xy.export_config(width=123, height=77, scale=1.0),
+    chart = xyg.chart(
+        xyg.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
+        xyg.export_config(width=123, height=77, scale=1.0),
     )
     out = export.write_images([chart], [tmp_path / "configured.png"])
     assert _decode(out[0]).size == (123, 77)
@@ -331,9 +331,9 @@ def test_write_images_alias_conflicts_rejected(tmp_path):
 
 
 def test_export_config_reaches_spec():
-    chart = xy.chart(
-        xy.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
-        xy.export_config(
+    chart = xyg.chart(
+        xyg.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
+        xyg.export_config(
             formats=["png", "jpg", "csv"],
             filename="report",
             width=640,
@@ -356,9 +356,9 @@ def test_export_config_reaches_spec():
 
 
 def test_export_config_defaults_apply_and_explicit_args_win():
-    chart = xy.chart(
-        xy.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
-        xy.export_config(width=640, height=360, scale=1.0, quality=75),
+    chart = xyg.chart(
+        xyg.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
+        xyg.export_config(width=640, height=360, scale=1.0, quality=75),
     )
     assert _decode(chart.to_image("png")).size == (640, 360)
     assert _decode(chart.to_image("png", width=320, height=180)).size == (320, 180)
@@ -368,15 +368,15 @@ def test_export_config_defaults_apply_and_explicit_args_win():
 
 
 def test_export_config_empty_formats_and_validation():
-    assert xy.export_config(formats=[]).formats == ()
+    assert xyg.export_config(formats=[]).formats == ()
     with pytest.raises(ValueError, match="format must be one of"):
-        xy.export_config(formats=["bmp"])
+        xyg.export_config(formats=["bmp"])
     with pytest.raises(ValueError, match="repeats"):
-        xy.export_config(formats=["png", "jpg", "jpeg"])
+        xyg.export_config(formats=["png", "jpg", "jpeg"])
     with pytest.raises(ValueError, match="plain basename"):
-        xy.export_config(filename="../evil")
+        xyg.export_config(filename="../evil")
     with pytest.raises(ValueError, match=r"1\.\.100"):
-        xy.export_config(quality=101)
+        xyg.export_config(quality=101)
 
 
 def test_export_config_quality_reaches_chromium_webp(monkeypatch):
@@ -384,9 +384,9 @@ def test_export_config_quality_reaches_chromium_webp(monkeypatch):
     # (PR #115 review); native WebP continues to ignore it (lossless).
     session = _FakeSession()
     monkeypatch.setattr(export, "_browser_session", lambda **kw: session)
-    chart = xy.chart(
-        xy.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
-        xy.export_config(quality=37),
+    chart = xyg.chart(
+        xyg.line("x", "y", data={"x": np.arange(10.0), "y": np.arange(10.0)}),
+        xyg.export_config(quality=37),
     )
     chart.to_image("webp", engine=export.Engine.chromium)
     image_calls = [c for c in session.calls if c[0] == "image"]
@@ -417,9 +417,9 @@ def test_facet_browser_background_reaches_document(monkeypatch):
 
 
 def test_export_config_component_is_revalidated_at_compile():
-    chart = xy.chart(
-        xy.line("x", "y", data={"x": np.arange(4.0), "y": np.arange(4.0)}),
-        xy.ExportConfig(formats=("bmp",)),
+    chart = xyg.chart(
+        xyg.line("x", "y", data={"x": np.arange(4.0), "y": np.arange(4.0)}),
+        xyg.ExportConfig(formats=("bmp",)),
     )
     with pytest.raises(ValueError, match="format must be one of"):
         chart.figure()
@@ -429,8 +429,8 @@ def test_export_config_component_is_revalidated_at_compile():
 
 
 def _grid():
-    return xy.facet_chart(
-        xy.scatter("x", "y"),
+    return xyg.facet_chart(
+        xyg.scatter("x", "y"),
         data={
             "x": np.arange(40.0),
             "y": np.arange(40.0),

@@ -29,7 +29,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import run_browser_probe
 from xyg.export import find_chromium
 
@@ -72,10 +72,10 @@ _PROBE_BODY = """
 """
 
 
-def _histogram_chart(values: np.ndarray) -> xy.Chart:
-    return xy.histogram_chart(
-        xy.histogram(values, bins=48, color="#7c3aed"),
-        xy.x_axis(label="value in view"),
+def _histogram_chart(values: np.ndarray) -> xyg.Chart:
+    return xyg.histogram_chart(
+        xyg.histogram(values, bins=48, color="#7c3aed"),
+        xyg.x_axis(label="value in view"),
         width=480,
         height=360,
     )

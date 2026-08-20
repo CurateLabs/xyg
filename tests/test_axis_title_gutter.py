@@ -23,7 +23,7 @@ from xml.etree import ElementTree
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _fontmetrics, _raster, _svg
 
 _ASCENT = _fontmetrics.ASCENT / _fontmetrics.BASE_PX
@@ -95,9 +95,9 @@ def _first_ink_column(spec, blob, plot) -> int:
 def _chart(*, y_label, y_values, width=760, height=420, padding=None, style=None, **axis):
     """A minimal core (non-pyplot) line chart with a labeled y axis."""
     resolved = {"label_size": 14, "tick_label_size": 14} if style is None else style
-    return xy.line_chart(
-        xy.line(x=[float(index) for index in range(len(y_values))], y=list(y_values)),
-        xy.y_axis(label=y_label, style=resolved, **axis),
+    return xyg.line_chart(
+        xyg.line(x=[float(index) for index in range(len(y_values))], y=list(y_values)),
+        xyg.y_axis(label=y_label, style=resolved, **axis),
         width=width,
         height=height,
         padding=padding,
@@ -121,9 +121,9 @@ def test_wide_numeric_tick_labels_keep_the_y_title_clear() -> None:
 
 def test_long_categorical_tick_labels_keep_the_y_title_clear() -> None:
     categories = [f"Questionnaire item {index}" for index in range(1, 7)]
-    chart = xy.bar_chart(
-        xy.bar(x=categories, y=[10.0, 20.0, 30.0, 40.0, 50.0, 60.0], orientation="horizontal"),
-        xy.y_axis(label="survey question", style={"label_size": 14, "tick_label_size": 14}),
+    chart = xyg.bar_chart(
+        xyg.bar(x=categories, y=[10.0, 20.0, 30.0, 40.0, 50.0, 60.0], orientation="horizontal"),
+        xyg.y_axis(label="survey question", style={"label_size": 14, "tick_label_size": 14}),
         width=640,
         height=480,
     )
@@ -181,9 +181,9 @@ def test_ordinary_numeric_axis_keeps_the_default_gutter() -> None:
     Default 11 px ticks under a 12 px title fit inside 62 px, so a chart that
     was laid out correctly before this change is laid out identically after it.
     """
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 2.0]),
-        xy.y_axis(label="value"),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0, 2.0], y=[0.0, 1.0, 2.0]),
+        xyg.y_axis(label="value"),
         width=760,
         height=420,
     )
@@ -194,9 +194,9 @@ def test_ordinary_numeric_axis_keeps_the_default_gutter() -> None:
 
 
 def test_titleless_axis_reserves_only_its_tick_labels() -> None:
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0, 2.0], y=[1e9, 2e9, 3e9]),
-        xy.y_axis(style={"tick_label_size": 18}),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0, 2.0], y=[1e9, 2e9, 3e9]),
+        xyg.y_axis(style={"tick_label_size": 18}),
         width=760,
         height=420,
     )
@@ -271,10 +271,10 @@ def test_hidden_tick_labels_do_not_reserve_tick_room() -> None:
 
 def test_transparent_axis_text_does_not_reinflate_zero_padding() -> None:
     """The axis switches and measured gutter must compose."""
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[1_000_000.0, 2_000_000.0]),
-        xy.x_axis(show=False),
-        xy.y_axis(label="hidden title", show=False),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[1_000_000.0, 2_000_000.0]),
+        xyg.x_axis(show=False),
+        xyg.y_axis(label="hidden title", show=False),
         width=320,
         height=180,
         padding=0,

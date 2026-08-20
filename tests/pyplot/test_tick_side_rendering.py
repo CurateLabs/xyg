@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-import xyg as xy
+import xyg
 import xyg.pyplot as plt
 from xyg import _raster, _svg
 from xyg.config import PROTOCOL_VERSION
@@ -104,13 +104,13 @@ def test_tick_params_ships_both_tick_sides_without_moving_default_labels() -> No
 
 
 def test_axis_component_validates_and_canonicalizes_tick_sides() -> None:
-    assert xy.x_axis(tick_sides=("top", "bottom", "top")).tick_sides == [
+    assert xyg.x_axis(tick_sides=("top", "bottom", "top")).tick_sides == [
         "bottom",
         "top",
     ]
-    assert xy.y_axis(tick_sides=()).tick_sides == []
+    assert xyg.y_axis(tick_sides=()).tick_sides == []
     with pytest.raises(ValueError, match="tick_sides"):
-        xy.x_axis(tick_sides=("left",))
+        xyg.x_axis(tick_sides=("left",))
 
 
 def test_tick_sides_bump_wire_protocol_and_client_in_lockstep() -> None:
@@ -130,13 +130,13 @@ def test_tick_sides_bump_wire_protocol_and_client_in_lockstep() -> None:
 
 
 def test_axis_component_validates_and_canonicalizes_tick_label_sides() -> None:
-    assert xy.x_axis(tick_label_sides=("top", "bottom", "top")).tick_label_sides == [
+    assert xyg.x_axis(tick_label_sides=("top", "bottom", "top")).tick_label_sides == [
         "bottom",
         "top",
     ]
-    assert xy.y_axis(tick_label_sides=()).tick_label_sides == []
+    assert xyg.y_axis(tick_label_sides=()).tick_label_sides == []
     with pytest.raises(ValueError, match="tick_label_sides"):
-        xy.x_axis(tick_label_sides=("left",))
+        xyg.x_axis(tick_label_sides=("left",))
 
 
 def test_tick_params_adds_opposite_labels_without_moving_axis_or_tick_marks() -> None:

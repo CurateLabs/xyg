@@ -356,7 +356,7 @@ const glTargets = {json.dumps(_rgb_targets(gl_colors))};
 const chromeTargets = {json.dumps(_rgb_targets(chrome_colors))};
 const bytes = Uint8Array.from(atob("{blob64}"), c => c.charCodeAt(0));
 try {{
-  const view = xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
+  const view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
   setTimeout(() => {{
     try {{
       view._drawNow();

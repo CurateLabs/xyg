@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-import xyg as xy
+import xyg
 from xyg._figure import Figure
 from xyg._sankey import compute_layout
 from xyg._scene import RIBBON_STEPS, ribbon_polygon
@@ -209,7 +209,7 @@ def test_ribbon_autorange_rejects_incomplete_geometry() -> None:
 
 
 def test_sankey_chart_builds_ribbon_traces_only() -> None:
-    chart = xy.sankey_chart(LINKS, width=680, height=420)
+    chart = xyg.sankey_chart(LINKS, width=680, height=420)
     figure = chart.figure()
     spec, _ = figure.build_payload_split()
     assert [t["kind"] for t in spec["traces"]] == ["ribbon", "ribbon"]

@@ -3,7 +3,7 @@
 Status: **implementation landed** (`python/reflex_xy`, tests under
 `tests/reflex_adapter/`). This document is the authoritative design; the
 prototype implements it end to end over Reflex 0.9.6. The deliverable is an
-integration bundled in the `xy` distribution and installed with
+integration bundled in the `xyg` distribution and installed with
 `xyg[reflex]`. It makes a xy figure a first-class Reflex component with the
 same performance contract as the notebook path: screen-bounded binary wire
 (§29), kernel-side canonical data (§27), stale-while-revalidate interaction

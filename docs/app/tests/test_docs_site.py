@@ -93,7 +93,7 @@ from xy_docs.sidebar import (
 from xy_docs.xy_docs import _CHART_STYLE, _DOCS_ROUTES, app
 
 import reflex_xy
-import xyg as xy
+import xyg
 from xyg.components import _MARK_APPLIERS, _POLAR_INERT_AXIS_KEYWORDS
 
 SITEMAP_NAMESPACE = {"sitemap": "https://www.sitemaps.org/schemas/sitemap/0.9"}
@@ -417,7 +417,7 @@ def test_styling_docs_cover_every_public_dom_slot() -> None:
     chrome = (DOCS_ROOT / "styling/chrome-slots.md").read_text(encoding="utf-8")
     variations = (DOCS_ROOT / "styling/component-variations.md").read_text(encoding="utf-8")
 
-    assert all(f"`{slot}`" in chrome for slot in xy.CHART_DOM_SLOTS)
+    assert all(f"`{slot}`" in chrome for slot in xyg.CHART_DOM_SLOTS)
     for slot in ("root", "title", "chrome", "canvas", "labels", "badge", "badge_item"):
         assert f"`{slot}`" in variations
 
@@ -754,7 +754,7 @@ def test_what_is_xy_restores_the_sdf_hero_and_ends_with_a_short_pitch() -> None:
     assert "View the customizable Python source" in content
     assert "/docs/xy/overview/first-chart/" in content
     assert "/docs/xy/overview/why-xy/" not in content
-    assert not (DOCS_ROOT / "overview/why-xy.md").exists()
+    assert not (DOCS_ROOT / "overview/why-xyg.md").exists()
     # The pitch-length cap measures prose (pitch plus the closing install
     # call-to-action); embedded demo and shell fences don't count.
     why_prose = re.sub(r"~~~.*?~~~|```.*?```", "", why_copy, flags=re.DOTALL)
@@ -947,11 +947,11 @@ def test_handwritten_output_reference_tracks_the_public_api() -> None:
     assert len(method_blocks) == 4
     assert all(block.language == "python" for block in method_blocks)
     assert "animation_progress=None" in method_blocks[0].content
-    for method in (xy.Chart.to_html, xy.Chart.html):
+    for method in (xyg.Chart.to_html, xyg.Chart.html):
         assert "animation_progress" in inspect.signature(method).parameters
 
     type_reference = (DOCS_ROOT / "api-reference/public-types.md").read_text(encoding="utf-8")
-    for engine in xy.Engine:
+    for engine in xyg.Engine:
         assert f"`{engine.__class__.__name__}.{engine.name}`" in type_reference
 
 
@@ -1225,7 +1225,7 @@ def test_first_chart_shows_clean_code_with_hidden_live_previews(
         msg = "hidden demo executed chart.to_html()"
         raise AssertionError(msg)
 
-    monkeypatch.setattr(xy.Chart, "to_html", forbid_export)
+    monkeypatch.setattr(xyg.Chart, "to_html", forbid_export)
     monkeypatch.chdir(tmp_path)
     rendered = str(
         render_markdown(
@@ -2447,7 +2447,7 @@ def test_chart_factory_api_expands_forwarded_chart_props() -> None:
     """Document the real Chart kwargs instead of a generic ``**props`` row."""
     shared_names = tuple(
         parameter.name
-        for parameter in inspect.signature(xy.Chart).parameters.values()
+        for parameter in inspect.signature(xyg.Chart).parameters.values()
         if parameter.name not in {"kind", "children"}
     )
 
@@ -2493,10 +2493,10 @@ def test_polar_axis_api_expands_forwarded_axis_props() -> None:
     theta_refused = frozenset({*_POLAR_INERT_AXIS_KEYWORDS, "reverse"})
     radial_refused = frozenset(_POLAR_INERT_AXIS_KEYWORDS)
     x_axis_names = tuple(
-        name for name in inspect.signature(xy.x_axis).parameters if name not in theta_refused
+        name for name in inspect.signature(xyg.x_axis).parameters if name not in theta_refused
     )
     y_axis_names = tuple(
-        name for name in inspect.signature(xy.y_axis).parameters if name not in radial_refused
+        name for name in inspect.signature(xyg.y_axis).parameters if name not in radial_refused
     )
 
     assert theta_names[:5] == ("unit", "zero", "direction", "sector", "grid_shape")
@@ -2585,7 +2585,7 @@ def test_documented_factories_describe_every_parameter() -> None:
         *MARKS,
         *AXES_AND_ANNOTATIONS,
         *CHROME_AND_BEHAVIOR,
-        xy.facet_chart,
+        xyg.facet_chart,
     )
 
     for factory in factories:
@@ -2597,9 +2597,9 @@ def test_documented_factories_describe_every_parameter() -> None:
                 parameter.name,
             )
 
-    chart_docstring = inspect.getdoc(xy.Chart.__init__) or ""
+    chart_docstring = inspect.getdoc(xyg.Chart.__init__) or ""
     assert "Args:" in chart_docstring
-    for parameter in inspect.signature(xy.Chart).parameters.values():
+    for parameter in inspect.signature(xyg.Chart).parameters.values():
         assert f"{parameter.name}:" in chart_docstring, (
             "Chart",
             parameter.name,

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-import xyg as xy
+import xyg
 
 
 def test_explicit_axis_bounds_ship_separately_from_initial_domain() -> None:
-    chart = xy.bar_chart(
-        xy.bar(["A", "B", "C"], [10, 20, 30]),
-        xy.y_axis(domain=(5, 25), bounds=(0, 30)),
+    chart = xyg.bar_chart(
+        xyg.bar(["A", "B", "C"], [10, 20, 30]),
+        xyg.y_axis(domain=(5, 25), bounds=(0, 30)),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -22,9 +22,9 @@ def test_explicit_axis_bounds_ship_separately_from_initial_domain() -> None:
 
 
 def test_data_bounds_resolve_independently_of_explicit_domain() -> None:
-    chart = xy.line_chart(
-        xy.line([10, 20, 30], [2, 4, 8]),
-        xy.x_axis(domain=(12, 18), bounds="data"),
+    chart = xyg.line_chart(
+        xyg.line([10, 20, 30], [2, 4, 8]),
+        xyg.x_axis(domain=(12, 18), bounds="data"),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -34,11 +34,11 @@ def test_data_bounds_resolve_independently_of_explicit_domain() -> None:
     assert spec["x_axis"]["bounds"][1] > 30
 
 
-@pytest.mark.parametrize("factory", [xy.x_axis, xy.y_axis])
+@pytest.mark.parametrize("factory", [xyg.x_axis, xyg.y_axis])
 def test_axis_bounds_validation(factory) -> None:
     with pytest.raises(ValueError, match="bounds"):
         factory(bounds=(2, 1))
     with pytest.raises(ValueError, match="bounds"):
         factory(bounds="everything")
     with pytest.raises(ValueError, match="positive"):
-        xy.line_chart(xy.line([1, 2], [1, 2]), factory(type_="log", bounds=(-1, 10))).figure()
+        xyg.line_chart(xyg.line([1, 2], [1, 2]), factory(type_="log", bounds=(-1, 10))).figure()

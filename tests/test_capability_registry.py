@@ -101,11 +101,11 @@ def test_every_partial_or_missing_entry_explains_itself() -> None:
 
 
 def test_the_shipped_extension_point_is_the_one_that_exists() -> None:
-    import xyg as xy
+    import xyg
 
     shipped = {e.id for e in caps.EXTENSION_POINTS if e.status == "shipped"}
     assert shipped == {"mark_plugin_composition"}
-    assert callable(xy.register_mark)
+    assert callable(xyg.register_mark)
     for point in caps.EXTENSION_POINTS:
         if point.status == "shipped":
             assert point.entry_point and point.limits, f"{point.id!r} claims no limits"

@@ -51,7 +51,7 @@ from abi_smoke import load  # noqa: E402
 from categories import BENCHMARK_CATEGORIES, categories_for  # noqa: E402
 from environment import SCHEMA_VERSION, collect_environment_metadata  # noqa: E402
 
-# Mirror the Python defaults (xy._figure).
+# Mirror the Python defaults (xyg._figure).
 DENSITY_THRESHOLD = 200_000
 GRID_W, GRID_H = 512, 384
 RENDER_W, RENDER_H = 900, 420
@@ -116,13 +116,13 @@ def gen_numpy_categories(n: int, groups: int) -> Any:
     return np.asarray(list(alphabet[:groups]))[codes]
 
 
-def _warm_production_path(xy: Any, np: Any) -> None:
+def _warm_production_path(xyg_module: Any, np: Any) -> None:
     """Exclude lazy module import/bytecode work from large-row timing."""
     global _PRODUCTION_WARMED
     if _PRODUCTION_WARMED:
         return
     tiny = np.array([0.0, 1.0, 2.0, 3.0])
-    fig = xy.scatter_chart(xy.scatter(x=tiny, y=tiny), width=64, height=48).figure()
+    fig = xyg_module.scatter_chart(xyg_module.scatter(x=tiny, y=tiny), width=64, height=48).figure()
     fig.build_payload()
     _PRODUCTION_WARMED = True
 
@@ -183,9 +183,9 @@ def bench_production(
     """Time the real Figure -> spec/blob path and assert its reduction contract."""
     import numpy as np
 
-    import xyg as xy
+    import xyg
 
-    _warm_production_path(xy, np)
+    _warm_production_path(xyg, np)
 
     # Source generation is outside this region, so repeat through 100M to
     # suppress parallel-scheduler noise without multiplying ceiling-run RAM.
@@ -194,8 +194,8 @@ def bench_production(
     result = None
     for _ in range(reps):
         t0 = time.perf_counter()
-        fig = xy.scatter_chart(
-            xy.scatter(x=x, y=y, color=color),
+        fig = xyg.scatter_chart(
+            xyg.scatter(x=x, y=y, color=color),
             width=RENDER_W,
             height=RENDER_H,
         ).figure()

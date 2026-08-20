@@ -30,9 +30,9 @@ def inline_json(obj: Any) -> str:
 
 
 def _standalone_js() -> str:
-    import xyg as xy
+    import xyg
 
-    path = Path(xy.__file__).resolve().parent / "static" / "standalone.js"
+    path = Path(xyg.__file__).resolve().parent / "static" / "standalone.js"
     return path.read_text(encoding="utf-8")
 
 

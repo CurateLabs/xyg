@@ -75,7 +75,7 @@ def _gen(n: int):
 def run_xy_native(n: int) -> dict[str, object]:
     import warnings
 
-    import xyg as xy
+    import xyg
     from xyg import _raster
 
     x, y = _gen(n)
@@ -83,8 +83,8 @@ def run_xy_native(n: int) -> dict[str, object]:
     t0 = time.perf_counter()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)  # density=False opt-out (§28)
-        fig = xy.scatter_chart(
-            xy.scatter(x=x, y=y, size=MARKER_PX, opacity=OPACITY, density=False),
+        fig = xyg.scatter_chart(
+            xyg.scatter(x=x, y=y, size=MARKER_PX, opacity=OPACITY, density=False),
             width=W,
             height=H,
         ).figure()

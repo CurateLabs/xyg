@@ -35,7 +35,7 @@ import sys
 
 import xyg
 
-print("xy:", xyg.__version__)
+print("xyg:", xyg.__version__)
 print("python:", sys.version.replace("\n", " "))
 print("platform:", platform.platform())
 print("machine:", platform.machine())
@@ -48,7 +48,7 @@ except Exception as error:
     print("backend import failed:", repr(error))
 PY
 
-python -m pip show xy
+python -m pip show xyg
 python -m pip check
 ~~~
 

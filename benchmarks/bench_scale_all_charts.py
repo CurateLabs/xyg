@@ -38,7 +38,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
-import xyg as xy  # noqa: E402
+import xyg  # noqa: E402
 from xyg import _graph, _native  # noqa: E402
 
 BASELINE_PATH = Path(__file__).resolve().parent / "baseline.json"
@@ -153,7 +153,7 @@ def bench_scatter_chart(n: int) -> dict[str, Any]:
     y = rng.standard_normal(n)
 
     def build():
-        return xy.scatter_chart(xy.scatter(x, y), width=640, height=360).figure()
+        return xyg.scatter_chart(xyg.scatter(x, y), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -173,7 +173,7 @@ def bench_line_chart(n: int) -> dict[str, Any]:
     y = np.sin(x * 1e-3)
 
     def build():
-        return xy.line_chart(xy.line(x, y), width=640, height=360).figure()
+        return xyg.line_chart(xyg.line(x, y), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -192,7 +192,7 @@ def bench_hist_chart(n: int) -> dict[str, Any]:
     values = rng.standard_normal(n)
 
     def build():
-        return xy.histogram_chart(xy.histogram(values, bins=64), width=640, height=360).figure()
+        return xyg.histogram_chart(xyg.histogram(values, bins=64), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -213,7 +213,7 @@ def bench_bar_chart(n: int) -> dict[str, Any]:
     vals = np.linspace(1.0, float(k), k)
 
     def build():
-        return xy.bar_chart(xy.bar(cats, vals), width=640, height=360).figure()
+        return xyg.bar_chart(xyg.bar(cats, vals), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -234,7 +234,7 @@ def bench_heatmap_chart(n: int) -> dict[str, Any]:
     z = np.arange(side * side, dtype=np.float64).reshape(side, side)
 
     def build():
-        return xy.heatmap_chart(xy.heatmap(z), width=640, height=360).figure()
+        return xyg.heatmap_chart(xyg.heatmap(z), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -254,7 +254,7 @@ def bench_hexbin_chart(n: int) -> dict[str, Any]:
     y = rng.standard_normal(n)
 
     def build():
-        return xy.hexbin_chart(xy.hexbin(x, y, gridsize=32), width=640, height=360).figure()
+        return xyg.hexbin_chart(xyg.hexbin(x, y, gridsize=32), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -273,7 +273,7 @@ def bench_box_chart(n: int) -> dict[str, Any]:
     values = rng.standard_normal(n)
 
     def build():
-        return xy.box_chart(xy.box(values), width=640, height=360).figure()
+        return xyg.box_chart(xyg.box(values), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -292,7 +292,7 @@ def bench_violin_chart(n: int) -> dict[str, Any]:
     values = rng.standard_normal(n)
 
     def build():
-        return xy.violin_chart(xy.violin(values), width=640, height=360).figure()
+        return xyg.violin_chart(xyg.violin(values), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -311,7 +311,7 @@ def bench_area_chart(n: int) -> dict[str, Any]:
     y = np.sin(x * 1e-3) + 1.0
 
     def build():
-        return xy.area_chart(xy.area(x, y), width=640, height=360).figure()
+        return xyg.area_chart(xyg.area(x, y), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -331,7 +331,7 @@ def bench_contour_chart(n: int) -> dict[str, Any]:
     z = np.sin(xs * 0.3) * np.cos(ys * 0.3)
 
     def build():
-        return xy.contour_chart(xy.contour(z, levels=8), width=640, height=360).figure()
+        return xyg.contour_chart(xyg.contour(z, levels=8), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -351,7 +351,7 @@ def bench_errorbar_chart(n: int) -> dict[str, Any]:
     y = np.sin(x * 0.01)
 
     def build():
-        return xy.errorbar_chart(xy.errorbar(x, y, yerr=0.1), width=640, height=360).figure()
+        return xyg.errorbar_chart(xyg.errorbar(x, y, yerr=0.1), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -371,7 +371,7 @@ def bench_stem_chart(n: int) -> dict[str, Any]:
     y = np.cos(x * 0.02)
 
     def build():
-        return xy.stem_chart(xy.stem(x, y), width=640, height=360).figure()
+        return xyg.stem_chart(xyg.stem(x, y), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -390,7 +390,7 @@ def bench_ecdf_chart(n: int) -> dict[str, Any]:
     values = rng.standard_normal(n)
 
     def build():
-        return xy.ecdf_chart(xy.ecdf(values), width=640, height=360).figure()
+        return xyg.ecdf_chart(xyg.ecdf(values), width=640, height=360).figure()
 
     t_build = _best(lambda: build())
     fig = build()
@@ -411,8 +411,8 @@ def bench_scatter_density_tier(n: int) -> dict[str, Any]:
     y = rng.standard_normal(n)
 
     def build():
-        return xy.scatter_chart(
-            xy.scatter(x, y, density=True),
+        return xyg.scatter_chart(
+            xyg.scatter(x, y, density=True),
             width=640,
             height=360,
         ).figure()
@@ -474,8 +474,8 @@ def bench_graph_render(n_nodes: int, *, node_budget: int, edge_budget: int) -> d
     edges = [(nodes[i], nodes[(i + 1) % len(nodes)]) for i in range(len(nodes))]
 
     def chart_build():
-        return xy.graph_chart(
-            xy.graph(nodes, edges, layout="grid"),
+        return xyg.graph_chart(
+            xyg.graph(nodes, edges, layout="grid"),
             width=400,
             height=300,
         ).figure()

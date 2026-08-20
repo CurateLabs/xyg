@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-import xyg as xy
+import xyg
 from xyg import kernels
 from xyg.config import DENSITY_GRID, PYRAMID_MIN_POINTS
 
@@ -19,7 +19,7 @@ def test_first_paint_records_pyramid_binning():
     rng = np.random.default_rng(1)
     x = rng.random(n)
     y = rng.random(n)
-    fig = xy.scatter_chart(xy.scatter(x, y, density=True), width=320, height=240).figure()
+    fig = xyg.scatter_chart(xyg.scatter(x, y, density=True), width=320, height=240).figure()
     spec, _blob = fig.build_payload()
     dens = spec["traces"][0]["density"]
     assert dens["binning"].startswith("pyramid-L")

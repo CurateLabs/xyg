@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _svg, _textblock, components
 from xyg._svg import layout
 from xyg.config import (
@@ -36,7 +36,7 @@ CHARTVIEW = (ROOT / "js/src/50_chartview.ts").read_text(encoding="utf-8")
 
 def _wind_rose(*children, **props):
     rng = np.random.default_rng(11)
-    return xy.wind_rose(
+    return xyg.wind_rose(
         rng.uniform(0.0, 360.0, 400),
         rng.gamma(2.0, 3.0, 400),
         *children,
@@ -92,9 +92,9 @@ def test_client_wedge_subdivision_mirrors_the_python_formula() -> None:
 
 def test_flattened_wedge_polygon_shrinks_with_the_span() -> None:
     """The raster twin flattens per wedge, so it pays per wedge."""
-    chart = xy.polar_bar_chart(
-        xy.bar([0.0, 90.0, 180.0, 270.0], [1.0, 2.0, 3.0, 4.0], width=22.5),
-        xy.theta_axis(unit="degrees"),
+    chart = xyg.polar_bar_chart(
+        xyg.bar([0.0, 90.0, 180.0, 270.0], [1.0, 2.0, 3.0, 4.0], width=22.5),
+        xyg.theta_axis(unit="degrees"),
         width=520,
         height=520,
     )
@@ -119,9 +119,9 @@ def test_time_radius_autoranges_from_the_data_not_epoch_zero() -> None:
     days = [datetime(2026, 1, 1, tzinfo=UTC) + timedelta(days=i) for i in range(12)]
     theta = np.linspace(0.0, 300.0, 12)
     spec, _blob = (
-        xy.polar_chart(
-            xy.line(theta, days),
-            xy.theta_axis(unit="degrees"),
+        xyg.polar_chart(
+            xyg.line(theta, days),
+            xyg.theta_axis(unit="degrees"),
         )
         .figure()
         .build_payload()
@@ -137,7 +137,9 @@ def test_time_radius_autoranges_from_the_data_not_epoch_zero() -> None:
     # A numeric radius keeps the centre origin: this is an exemption, not a
     # change to the default.
     numeric, _blob = (
-        xy.polar_chart(xy.line(theta, np.linspace(100.0, 140.0, 12)), xy.theta_axis(unit="degrees"))
+        xyg.polar_chart(
+            xyg.line(theta, np.linspace(100.0, 140.0, 12)), xyg.theta_axis(unit="degrees")
+        )
         .figure()
         .build_payload()
     )
@@ -151,10 +153,10 @@ def test_radial_margin_is_honoured_instead_of_discarded() -> None:
 
     def radial_range(**axis):
         spec, _blob = (
-            xy.polar_chart(
-                xy.line(theta, values),
-                xy.theta_axis(unit="degrees"),
-                xy.r_axis(**axis),
+            xyg.polar_chart(
+                xyg.line(theta, values),
+                xyg.theta_axis(unit="degrees"),
+                xyg.r_axis(**axis),
             )
             .figure()
             .build_payload()
@@ -188,7 +190,7 @@ def test_radial_margin_is_honoured_instead_of_discarded() -> None:
 def test_polar_refuses_axis_options_no_renderer_implements(axis, kwargs, message) -> None:
     """Each of these rode the wire and was dropped by all three renderers, so
     the documented polar axis surface advertised controls that did nothing."""
-    factory = xy.theta_axis if axis == "theta" else xy.r_axis
+    factory = xyg.theta_axis if axis == "theta" else xyg.r_axis
     with pytest.raises(ValueError, match=message):
         factory(**kwargs)
 
@@ -196,10 +198,10 @@ def test_polar_refuses_axis_options_no_renderer_implements(axis, kwargs, message
 @pytest.mark.parametrize("strategy", ("off", "none"))
 @pytest.mark.parametrize("axis", ("theta", "r"))
 def test_polar_keeps_the_tick_label_strategies_it_honours(axis, strategy) -> None:
-    factory = xy.theta_axis if axis == "theta" else xy.r_axis
+    factory = xyg.theta_axis if axis == "theta" else xyg.r_axis
     theta = np.linspace(0.0, 300.0, 8)
     values = np.linspace(1.0, 8.0, 8)
-    chart = xy.polar_chart(xy.line(theta, values), factory(tick_label_strategy=strategy))
+    chart = xyg.polar_chart(xyg.line(theta, values), factory(tick_label_strategy=strategy))
     chart.figure().build_payload_split()
 
 
@@ -228,17 +230,17 @@ def test_the_pyplot_adapter_drops_what_a_hand_authored_axis_refuses() -> None:
 
 def test_cartesian_axes_keep_every_refused_keyword() -> None:
     """The refusals are polar-only; nothing about a Cartesian axis changed."""
-    chart = xy.line_chart(
-        xy.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
-        xy.x_axis(minor_tick_values=[0.5, 1.5], tick_label_min_gap=12.0),
-        xy.y_axis(tick_label_anchor="start", tick_label_strategy="stagger"),
+    chart = xyg.line_chart(
+        xyg.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
+        xyg.x_axis(minor_tick_values=[0.5, 1.5], tick_label_min_gap=12.0),
+        xyg.y_axis(tick_label_anchor="start", tick_label_strategy="stagger"),
     )
     chart.figure().build_payload_split()
 
 
 def test_polar_axes_keep_every_keyword_they_do_honour() -> None:
     """The refusal must not have caught anything that works."""
-    xy.theta_axis(
+    xyg.theta_axis(
         unit="degrees",
         zero="N",
         direction="clockwise",
@@ -252,7 +254,7 @@ def test_polar_axes_keep_every_keyword_they_do_honour() -> None:
         tick_label_angle=15.0,
         style={"grid_color": "#eee"},
     )
-    xy.r_axis(
+    xyg.r_axis(
         hole=0.3,
         label="speed",
         type_="log",
@@ -282,32 +284,32 @@ def test_authored_theta_format_wins_over_the_angular_default() -> None:
 def test_a_zero_width_wedge_draws_nothing_instead_of_raising() -> None:
     """0% is a data state: a progress ring at zero, an empty aggregated
     category, the first frame of a grow animation."""
-    chart = xy.polar_bar_chart(
-        xy.bar([0.0], [1.0], base=0.6, width=0.0),
-        xy.theta_axis(unit="degrees"),
-        xy.r_axis(domain=(0.0, 1.0)),
+    chart = xyg.polar_bar_chart(
+        xyg.bar([0.0], [1.0], base=0.6, width=0.0),
+        xyg.theta_axis(unit="degrees"),
+        xyg.r_axis(domain=(0.0, 1.0)),
     )
     spec, _blob = chart.figure().build_payload()
     assert spec["traces"]
 
     # The hand-rolled gauge recipe, swept from 0% to 100%.
     for percent in (0, 1, 50, 100):
-        xy.polar_bar_chart(
-            xy.bar([percent * 3.6 / 2.0], [1.0], base=0.7, width=percent * 3.6),
-            xy.theta_axis(unit="degrees", zero="N", direction="clockwise"),
-            xy.r_axis(domain=(0.0, 1.0)),
+        xyg.polar_bar_chart(
+            xyg.bar([percent * 3.6 / 2.0], [1.0], base=0.7, width=percent * 3.6),
+            xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
+            xyg.r_axis(domain=(0.0, 1.0)),
         ).figure().build_payload()
 
     # `pie_chart` reaches 0% too, and drops the row rather than showing a
     # swatch that highlights nothing.
-    spec, _blob = xy.pie_chart(["done", "left"], [0.0, 8.0]).figure().build_payload()
+    spec, _blob = xyg.pie_chart(["done", "left"], [0.0, 8.0]).figure().build_payload()
     assert len([t for t in spec["traces"] if t.get("name")]) == 1
 
 
 @pytest.mark.parametrize("width", (-1.0, float("nan"), float("inf")))
 def test_meaningless_bar_widths_are_still_refused(width) -> None:
     with pytest.raises(ValueError, match="width"):
-        xy.bar_chart(xy.bar(["a"], [1.0], width=width)).figure().build_payload()
+        xyg.bar_chart(xyg.bar(["a"], [1.0], width=width)).figure().build_payload()
 
 
 # -- title wrapping ---------------------------------------------------------
@@ -315,9 +317,9 @@ def test_meaningless_bar_widths_are_still_refused(width) -> None:
 
 def test_wrapped_titles_reserve_the_lines_they_occupy() -> None:
     long_title = "Wind rose — Fastnet Rock lighthouse, hourly observations 2024"
-    narrow = xy.polar_chart(
-        xy.line([0.0, 90.0, 180.0], [1.0, 2.0, 3.0]),
-        xy.theta_axis(unit="degrees"),
+    narrow = xyg.polar_chart(
+        xyg.line([0.0, 90.0, 180.0], [1.0, 2.0, 3.0]),
+        xyg.theta_axis(unit="degrees"),
         title=long_title,
         width=380,
         height=460,
@@ -335,7 +337,7 @@ def test_wrapped_titles_reserve_the_lines_they_occupy() -> None:
 
 def test_single_line_titles_reserve_exactly_what_they_did() -> None:
     """The wrap rule must not move any chart whose title already fitted."""
-    chart = xy.line_chart(xy.line([0.0, 1.0], [0.0, 1.0]), title="Latency", width=900, height=420)
+    chart = xyg.line_chart(xyg.line([0.0, 1.0], [0.0, 1.0]), title="Latency", width=900, height=420)
     spec, _blob = chart.figure().build_payload()
     _w, _h, compact, plot = layout(spec)
     assert not compact
@@ -454,7 +456,7 @@ def test_the_legend_clip_covers_the_polar_gutter() -> None:
 
 def test_a_cartesian_legend_clip_is_still_the_plot_rect() -> None:
     spec, _blob = (
-        xy.line_chart(xy.line([0.0, 1.0], [0.0, 1.0], name="a"), xy.legend())
+        xyg.line_chart(xyg.line([0.0, 1.0], [0.0, 1.0], name="a"), xyg.legend())
         .figure()
         .build_payload()
     )
@@ -466,8 +468,8 @@ def test_the_native_png_carries_the_polar_legend() -> None:
     """The pixels, not just the rect: the swatch has to survive the clip."""
     from test_png_export import _decode_rgba
 
-    chart = xy.polar_chart(
-        xy.scatter([45.0], [1.0], color="#0f766e", size=12.0, name="one"),
+    chart = xyg.polar_chart(
+        xyg.scatter([45.0], [1.0], color="#0f766e", size=12.0, name="one"),
         width=520,
         height=520,
     )
@@ -491,7 +493,7 @@ def test_an_authored_anchor_reserves_no_polar_gutter() -> None:
     """An anchor is an explicit plot-relative placement the author owns;
     relocating it would be the same class of bug as ignoring a keyword."""
     spec, _blob = (
-        _wind_rose(xy.legend(anchor=(0.9, 0.9)), width=720, height=520).figure().build_payload()
+        _wind_rose(xyg.legend(anchor=(0.9, 0.9)), width=720, height=520).figure().build_payload()
     )
     _w, _h, _compact, plot = layout(spec)
     assert "legend_box_w" not in plot
@@ -509,9 +511,9 @@ def test_authored_padding_reserves_no_polar_gutter() -> None:
 
 def test_a_cartesian_legend_still_overlays_its_plot() -> None:
     spec, _blob = (
-        xy.line_chart(
-            xy.line([0.0, 1.0], [0.0, 1.0], name="a"),
-            xy.legend(),
+        xyg.line_chart(
+            xyg.line([0.0, 1.0], [0.0, 1.0], name="a"),
+            xyg.legend(),
             width=720,
             height=420,
         )
@@ -621,7 +623,7 @@ def test_categorical_theta_labels_widen_the_disc_gutter() -> None:
     `radar_chart` hid this because it authors `tick_labels` explicitly.
     """
     names = ["EAST-NORTH-EAST", "SOUTH-SOUTH-WEST", "WEST-NORTH-WEST", "NORTH-NORTH-EAST"]
-    chart = xy.polar_bar_chart(xy.bar(names, [3.0, 5.0, 2.0, 4.0]), width=460, height=440)
+    chart = xyg.polar_bar_chart(xyg.bar(names, [3.0, 5.0, 2.0, 4.0]), width=460, height=440)
     spec, _blob = chart.figure().build_payload_split()
     theta_axis = spec["x_axis"]
     assert theta_axis["kind"] == "category"
@@ -640,9 +642,9 @@ def test_hiding_angular_labels_keeps_the_legend_gutter() -> None:
     kept the cartesian gutters it should have given back.
     """
     theta = np.linspace(0.0, 2.0 * math.pi, 60)
-    chart = xy.polar_chart(
-        xy.line(theta, np.ones(60), name="series one"),
-        xy.theta_axis(tick_label_strategy="none"),
+    chart = xyg.polar_chart(
+        xyg.line(theta, np.ones(60), name="series one"),
+        xyg.theta_axis(tick_label_strategy="none"),
         width=460,
         height=420,
     )
@@ -652,7 +654,7 @@ def test_hiding_angular_labels_keeps_the_legend_gutter() -> None:
     assert plot["legend_box_w"] > 0
 
     # The recut still ran: the cartesian left gutter is given back.
-    cartesian = xy.line_chart(xy.line(theta, np.ones(60)), width=460, height=420)
+    cartesian = xyg.line_chart(xyg.line(theta, np.ones(60)), width=460, height=420)
     cart_spec, _ = cartesian.figure().build_payload_split()
     _cw, _ch, _cc, cart_plot = _svg.layout(cart_spec)
     assert plot["x"] < cart_plot["x"]
@@ -673,11 +675,11 @@ def test_horizontal_bars_are_refused_under_polar() -> None:
     angles = np.arange(4.0)
     values = np.arange(1.0, 5.0)
     with pytest.raises(ValueError, match="does not support bar orientation='horizontal'"):
-        xy.polar_bar_chart(xy.bar(angles, values, orientation="horizontal")).figure()
+        xyg.polar_bar_chart(xyg.bar(angles, values, orientation="horizontal")).figure()
 
     # Vertical polar bars and cartesian horizontal bars are both untouched.
-    spec, _blob = xy.polar_bar_chart(xy.bar(angles, values)).figure().build_payload_split()
+    spec, _blob = xyg.polar_bar_chart(xyg.bar(angles, values)).figure().build_payload_split()
     assert spec["traces"][0]["bar"]["orientation"] == "vertical"
-    cartesian = xy.bar_chart(xy.bar(["a", "b"], [1.0, 2.0], orientation="horizontal"))
+    cartesian = xyg.bar_chart(xyg.bar(["a", "b"], [1.0, 2.0], orientation="horizontal"))
     cart_spec, _ = cartesian.figure().build_payload_split()
     assert cart_spec["traces"][0]["bar"]["orientation"] == "horizontal"

@@ -64,11 +64,8 @@ SCAN_SUFFIXES = {
 ALLOWLIST_FILES = {
     Path("spec/design/xyg-naming.md"),
     Path("CHANGELOG.md"),
-    Path("spec/process/perf-audit-2026-07-22.md"),
-    Path("spec/process/security-audit-2026-07-06.md"),
     Path("scripts/rename_fc_to_xy.py"),
     Path("scripts/check_stale_names.py"),
-    Path("tests/test_stale_names.py"),
 }
 
 # Retired current-product identity. XYG_* names must not match these.
@@ -77,11 +74,18 @@ LINE_ALLOW_MARKER = "xyg-stale-name: allow"
 NEEDLES = (
     ("python/xy package path", re.compile(r"python/xy(?:/|\b)")),
     ("xy wheel artifact", re.compile(r"(?<![A-Za-z0-9_])xy\.(?:whl|tar\.gz)\b")),
+    ("xy artifact glob", re.compile(r"(?<![A-Za-z0-9_])xy-\*\.(?:whl|tar\.gz)\b")),
+    ("pip show xy", re.compile(r"\bpip\s+show\s+xy\b")),
+    (
+        "backticked xy product noun",
+        re.compile(r"`xy`\s+(?:release|content|distribution)\b", re.IGNORECASE),
+    ),
+    ("corrupted upstream XYG", re.compile(r"(?:upstream\s+XYG|reflex-dev/XYG)")),
     ("xy-native product wording", re.compile(r"(?<![A-Za-z0-9_])xy-native\b", re.IGNORECASE)),
     (
         "retired xy product description",
         re.compile(
-            r"(?<![A-Za-z0-9_])(?:an?\s+)?xy(?=\s+(?:chart|package|wheel|dependency)\b)",
+            r"(?<![A-Za-z0-9_])(?:an?\s+)?xy(?=\s+(?:chart|package|wheel|dependency|distribution|install|engine|README)\b|\s*—\s*)",
             re.IGNORECASE,
         ),
     ),
@@ -209,6 +213,52 @@ def _allowed_xy_node(line: str) -> bool:
     return "never publish" in line.lower()
 
 
+def _allowed_provenance_xy(line: str) -> bool:
+    """Allow only explicit upstream/history identifiers, never current branding."""
+    return bool(
+        "XY-vs-XYG" in line
+        or "upstream XY" in line
+        or ("reflex-dev/" + "xy") in line
+        or re.search(r"\bXY-(?:SEC|CI|PERF)-", line)
+    )
+
+
+_HISTORICAL_IDENTITY_ALLOWLIST = {
+    ("spec/process/perf-audit-2026-07-22.md", "libxy_core"),
+    ("spec/process/security-audit-2026-07-06.md", "XY_REQUIRE_CARGO"),
+    ("spec/process/security-audit-2026-07-06.md", "XY_NATIVE_LIB"),
+}
+
+_NEGATIVE_TEST_LINE_FRAGMENTS = (
+    "libxy_core",
+    "XY_NATIVE_LIB",
+    "import xy",
+    "python/xy",
+    "xy Python module reference",
+    "xy.whl",
+    "xy wheel artifact",
+    "`xy.legend",
+    "backticked xy Python API",
+    "xy-*.whl",
+    "xy-*.tar.gz",
+    "pip show xy",
+    "upstream XYG",
+    "reflex-dev/XYG",
+    "corrupted upstream XYG",
+    "xy-native",
+    "xy package",
+    "xy dependency",
+    "--packages xy",
+    "xy[reflex]",
+    "retired xy distribution constraint",
+    "Build an XY chart",
+    "import xyg as xy",
+    "current product XY brand",
+    "src/lib.rs ABI",
+    "ABI_VERSION in src/lib.rs",
+)
+
+
 def iter_scan_files(root: Path) -> list[Path]:
     files = []
     for path in root.rglob("*"):
@@ -236,22 +286,20 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
         for lineno, line in enumerate(text.splitlines(), 1):
             if LINE_ALLOW_MARKER in line:
                 continue
+            if rel == "tests/test_stale_names.py" and any(
+                fragment in line for fragment in _NEGATIVE_TEST_LINE_FRAGMENTS
+            ):
+                continue
             for label, pattern in NEEDLES:
                 for match in pattern.finditer(line):
                     if label == "src/lib.rs ABI" and _allowed_src_lib_rs(line, match.start()):
                         continue
                     if label == "@xy/node" and _allowed_xy_node(line):
                         continue
-                    if label == "user-facing xyg alias" and rel.startswith(
-                        ("tests/", "docs/app/tests/", "benchmarks/")
-                    ):
-                        continue
-                    if label == "current product XY brand" and rel.startswith("spec/process/"):
+                    if (rel, label) in _HISTORICAL_IDENTITY_ALLOWLIST:
                         continue
                     if label == "current product XY brand" and (
-                        "XY-vs-XYG" in line
-                        or "f64 XY" in line
-                        or re.search(r"\bXY-(?:SEC|CI|PERF)-", line)
+                        _allowed_provenance_xy(line) or "f64 XY" in line
                     ):
                         continue
                     errors.append(f"{rel}:{lineno}: stale {label}: {line.strip()}")

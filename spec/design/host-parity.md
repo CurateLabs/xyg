@@ -21,7 +21,7 @@ behavior. **Rust owns decisions** that affect buffers, layout, encodings, LOD,
 and recorded §28 outcomes — not only O(N) loops. Hosts own ergonomics and
 idiomatic I/O only; the browser client owns screen-bounded draw and gestures
 only. [rust-engine.md](rust-engine.md) §1 states this rule directly for XYG
-(upstream XYG's "Python owns decisions" is recorded there as historical).
+(upstream XY's "Python owns decisions" is recorded there as historical).
 
 **Host-neutral packaging:** Python exists only when the user is using
 Python. Public npm names are `@curatelabs/xyg` (paint client) and

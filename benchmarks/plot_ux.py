@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-import xyg as xy
+import xyg
 from xyg._benchmark_theme import BENCHMARK_DARK_THEME, BENCHMARK_LIGHT_THEME
 
 GIB = 2**30
@@ -70,7 +70,7 @@ def build(
     arms: list[str],
     metric: str,
     color_scheme: str = "light",
-) -> xy.Chart:
+) -> xyg.Chart:
     marks: list[Any] = []
     notes: list[Any] = []
     for arm in arms:
@@ -79,16 +79,16 @@ def build(
         if not values:
             continue
         marks.append(
-            xy.line(labels, values, name=style["name"], color=style["color"], width=style["width"])
+            xyg.line(labels, values, name=style["name"], color=style["color"], width=style["width"])
         )
         # Every measured cell is a visible dot: the reader can see exactly
         # which sizes were run rather than inferring them from line bends.
-        marks.append(xy.scatter(x=labels, y=values, color=style["color"], size=6.5))
+        marks.append(xyg.scatter(x=labels, y=values, color=style["color"], size=6.5))
         unit = "s" if metric == "time" else " GiB"
         text = f"{values[-1]:.2f}{unit}"
-        notes.append(xy.marker(labels[-1], values[-1], size=6, color=style["color"]))
+        notes.append(xyg.marker(labels[-1], values[-1], size=6, color=style["color"]))
         notes.append(
-            xy.text(
+            xyg.text(
                 labels[-1],
                 values[-1],
                 text,
@@ -105,7 +105,7 @@ def build(
             # 50M rather than on the survivor next to it.
             fail_n = float(sizes[len(values)])
             notes.append(
-                xy.line(
+                xyg.line(
                     [labels[-1], fail_n],
                     [values[-1], values[-1]],
                     color="#D64545",
@@ -114,14 +114,14 @@ def build(
                     opacity=0.6,
                 )
             )
-            notes.append(xy.marker(fail_n, values[-1], size=10, symbol="cross", color="#D64545"))
+            notes.append(xyg.marker(fail_n, values[-1], size=10, symbol="cross", color="#D64545"))
             at_edge = fail_n >= float(sizes[-1])
             # In the empty space past the cross, or -- when the cross sits at
             # the chart edge -- centered under the dashed segment, which is
             # the one region guaranteed free of survivor lines and labels.
             mid = (labels[-1] * fail_n) ** 0.5
             notes.append(
-                xy.text(
+                xyg.text(
                     mid if at_edge else fail_n,
                     values[-1],
                     f"fails at {label(int(fail_n))}",
@@ -152,14 +152,14 @@ def build(
 
     decades = [1e4, 1e5, 1e6, 1e7, 1e8]
     theme = BENCHMARK_DARK_THEME if color_scheme == "dark" else BENCHMARK_LIGHT_THEME
-    return xy.line_chart(
+    return xyg.line_chart(
         *marks,
         *notes,
-        xy.theme(**theme),
-        xy.legend(show=True, loc="upper left"),
-        xy.modebar(show=False),
-        xy.tooltip(format={"y": ".3f"}),
-        xy.x_axis(
+        xyg.theme(**theme),
+        xyg.legend(show=True, loc="upper left"),
+        xyg.modebar(show=False),
+        xyg.tooltip(format={"y": ".3f"}),
+        xyg.x_axis(
             label="Points plotted",
             type_="log",
             domain=(8e3, 1.25e8),
@@ -167,7 +167,7 @@ def build(
             tick_labels=["10k", "100k", "1M", "10M", "100M"],
             style={"grid_width": 1, "grid_opacity": 1},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             label=axis,
             domain=domain,
             tick_values=ticks,

@@ -7,20 +7,20 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import run_browser_probe
 from xyg.export import find_chromium
 
 
 def test_heatmap_colorbar_uses_compiled_scale_and_public_chrome_options() -> None:
-    chart = xy.heatmap_chart(
-        xy.heatmap(
+    chart = xyg.heatmap_chart(
+        xyg.heatmap(
             [[-2.0, 0.0], [2.0, 4.0]],
             name="temperature",
             colormap="coolwarm",
             domain=(-3.0, 5.0),
         ),
-        xy.colorbar(
+        xyg.colorbar(
             title="Temperature (°C)",
             orientation="horizontal",
             ticks=[-3, 0, 5],
@@ -43,9 +43,9 @@ def test_heatmap_colorbar_uses_compiled_scale_and_public_chrome_options() -> Non
 
 
 def test_heatmap_colorbar_autoscales_and_uses_the_mark_name() -> None:
-    chart = xy.chart(
-        xy.heatmap([[0.25, 0.75], [1.25, 1.75]], name="intensity", colormap="purples"),
-        xy.colorbar(),
+    chart = xyg.chart(
+        xyg.heatmap([[0.25, 0.75], [1.25, 1.75]], name="intensity", colormap="purples"),
+        xyg.colorbar(),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -64,8 +64,8 @@ def test_continuous_scatter_colorbar_uses_color_column_not_trace_name() -> None:
         "y": [2.0, 3.0, 5.0],
         "temperature": [12.0, 18.0, 31.0],
     }
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             x="x",
             y="y",
             color="temperature",
@@ -74,7 +74,7 @@ def test_continuous_scatter_colorbar_uses_color_column_not_trace_name() -> None:
             colormap="plasma",
             color_domain=(10.0, 35.0),
         ),
-        xy.colorbar(),
+        xyg.colorbar(),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -92,9 +92,9 @@ def test_continuous_scatter_colorbar_uses_color_column_not_trace_name() -> None:
     ["#2563eb", ["low", "medium", "high"]],
 )
 def test_noncontinuous_scatter_does_not_invent_a_colorbar(color) -> None:
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0], [2.0, 3.0, 5.0], color=color),
-        xy.colorbar(),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0], [2.0, 3.0, 5.0], color=color),
+        xyg.colorbar(),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -103,15 +103,15 @@ def test_noncontinuous_scatter_does_not_invent_a_colorbar(color) -> None:
 
 
 def test_density_scatter_colorbar_labels_the_aggregated_color_channel() -> None:
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             [0.0, 1.0, 2.0],
             [2.0, 3.0, 5.0],
             color=[10.0, 20.0, 30.0],
             density=True,
             colormap="plasma",
         ),
-        xy.colorbar(),
+        xyg.colorbar(),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -129,9 +129,9 @@ def test_density_scatter_colorbar_labels_the_aggregated_color_channel() -> None:
 def test_hexbin_and_contour_colorbars_use_compiled_domains() -> None:
     x = np.array([-0.9, -0.8, -0.7, 0.1, 0.2, 0.3, 0.4])
     y = np.array([-0.8, -0.7, -0.6, 0.1, 0.2, 0.3, 0.4])
-    hex_chart = xy.hexbin_chart(
-        xy.hexbin(x, y, gridsize=4, mincnt=1, colormap="magma"),
-        xy.colorbar(),
+    hex_chart = xyg.hexbin_chart(
+        xyg.hexbin(x, y, gridsize=4, mincnt=1, colormap="magma"),
+        xyg.colorbar(),
     )
     hex_fig = hex_chart.figure()
     hex_spec, _ = hex_fig.build_payload()
@@ -144,9 +144,9 @@ def test_hexbin_and_contour_colorbars_use_compiled_domains() -> None:
         "orientation": "vertical",
     }
 
-    log_hex_chart = xy.hexbin_chart(
-        xy.hexbin(x, y, gridsize=4, mincnt=1, bins="log", colormap="inferno"),
-        xy.colorbar(),
+    log_hex_chart = xyg.hexbin_chart(
+        xyg.hexbin(x, y, gridsize=4, mincnt=1, bins="log", colormap="inferno"),
+        xyg.colorbar(),
     )
     log_hex_fig = log_hex_chart.figure()
     log_hex_spec, _ = log_hex_fig.build_payload()
@@ -169,15 +169,15 @@ def test_hexbin_and_contour_colorbars_use_compiled_domains() -> None:
             [0.0, 1.0, 2.0],
         ]
     )
-    contour_chart = xy.contour_chart(
-        xy.contour(
+    contour_chart = xyg.contour_chart(
+        xyg.contour(
             field,
             levels=[-1.5, -0.5, 0.5, 1.5],
             filled=True,
             name="elevation",
             colormap="spectral",
         ),
-        xy.colorbar(),
+        xyg.colorbar(),
     )
     contour_spec, _ = contour_chart.figure().build_payload()
 
@@ -191,20 +191,20 @@ def test_hexbin_and_contour_colorbars_use_compiled_domains() -> None:
 
 
 def test_colorbar_uses_last_continuous_mark_and_show_false_removes_it() -> None:
-    chart = xy.chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], name="field", colormap="viridis"),
-        xy.scatter(
+    chart = xyg.chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], name="field", colormap="viridis"),
+        xyg.scatter(
             [0.0, 1.0],
             [0.0, 1.0],
             color=[100.0, 200.0],
             name="quality",
             colormap="plasma",
         ),
-        xy.colorbar(),
+        xyg.colorbar(),
     )
-    hidden = xy.chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
-        xy.colorbar(show=False),
+    hidden = xyg.chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
+        xyg.colorbar(show=False),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -221,29 +221,29 @@ def test_colorbar_uses_last_continuous_mark_and_show_false_removes_it() -> None:
 
 def test_colorbar_rejects_invalid_public_options() -> None:
     with pytest.raises(ValueError, match="colorbar orientation"):
-        xy.colorbar(orientation="diagonal")
+        xyg.colorbar(orientation="diagonal")
     with pytest.raises(ValueError, match="colorbar orientation"):
-        xy.colorbar(orientation=["vertical"])
+        xyg.colorbar(orientation=["vertical"])
     with pytest.raises(ValueError, match="colorbar ticks"):
-        xy.colorbar(ticks="0, 1")
+        xyg.colorbar(ticks="0, 1")
     with pytest.raises(ValueError, match="finite"):
-        xy.colorbar(ticks=[0.0, np.inf])
+        xyg.colorbar(ticks=[0.0, np.inf])
 
 
 @pytest.mark.parametrize(
     ("node", "message"),
     [
-        (xy.Colorbar(show="yes"), "colorbar show"),
-        (xy.Colorbar(title=42), "colorbar title"),
-        (xy.Colorbar(orientation="diagonal"), "colorbar orientation"),
-        (xy.Colorbar(ticks=[0.0, np.inf]), "colorbar tick"),
-        (xy.Colorbar(class_name=42), "colorbar class_name"),
-        (xy.Colorbar(style="color: red"), "colorbar style"),
+        (xyg.Colorbar(show="yes"), "colorbar show"),
+        (xyg.Colorbar(title=42), "colorbar title"),
+        (xyg.Colorbar(orientation="diagonal"), "colorbar orientation"),
+        (xyg.Colorbar(ticks=[0.0, np.inf]), "colorbar tick"),
+        (xyg.Colorbar(class_name=42), "colorbar class_name"),
+        (xyg.Colorbar(style="color: red"), "colorbar style"),
     ],
 )
 def test_direct_colorbar_instance_cannot_bypass_factory_validation(node, message) -> None:
-    chart = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
+    chart = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
         node,
     )
 
@@ -253,7 +253,7 @@ def test_direct_colorbar_instance_cannot_bypass_factory_validation(node, message
 
 def test_colorbar_uses_semantic_positional_fields_and_custom_render() -> None:
     renderer = object()
-    node = xy.Colorbar(
+    node = xyg.Colorbar(
         True,
         "Temperature",
         "horizontal",
@@ -270,8 +270,8 @@ def test_colorbar_uses_semantic_positional_fields_and_custom_render() -> None:
     assert node.style == {"color": "red"}
     assert node.render is renderer
 
-    custom = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
+    custom = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
         node,
     )
     custom_spec, _ = custom.figure().build_payload()
@@ -279,9 +279,9 @@ def test_colorbar_uses_semantic_positional_fields_and_custom_render() -> None:
 
 
 def test_declarative_colorbar_reaches_svg_export() -> None:
-    svg = xy.heatmap_chart(
-        xy.heatmap([[0.0, 0.5], [1.0, 1.5]], name="Intensity", colormap="purples"),
-        xy.colorbar(title="Intensity & confidence", ticks=[0.0, 1.5]),
+    svg = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 0.5], [1.0, 1.5]], name="Intensity", colormap="purples"),
+        xyg.colorbar(title="Intensity & confidence", ticks=[0.0, 1.5]),
         width=520,
         height=320,
     ).to_svg()
@@ -293,9 +293,9 @@ def test_declarative_colorbar_reaches_svg_export() -> None:
 
 
 def test_svg_explicit_colorbar_ticks_preserve_authored_precision() -> None:
-    svg = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
-        xy.colorbar(ticks=[0.123, 2.987]),
+    svg = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
+        xyg.colorbar(ticks=[0.123, 2.987]),
         width=520,
         height=320,
     ).to_svg()
@@ -344,9 +344,9 @@ def test_declarative_colorbar_reaches_browser_chrome(tmp_path: Path) -> None:
     chromium = find_chromium()
     if chromium is None:
         pytest.skip("Chromium unavailable")
-    chart = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], name="Intensity", colormap="purples"),
-        xy.colorbar(ticks=[0.123, 2.987]),
+    chart = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], name="Intensity", colormap="purples"),
+        xyg.colorbar(ticks=[0.123, 2.987]),
         width=480,
         height=300,
     )

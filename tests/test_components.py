@@ -1,4 +1,4 @@
-"""Reflex-style composition API: xy.scatter_chart(xy.scatter(...), xy.x_axis(...)).
+"""Reflex-style composition API: xyg.scatter_chart(xyg.scatter(...), xyg.x_axis(...)).
 
 Verifies the component tree builds the same Figure the fluent API would, plus
 data= column-name resolution, event-prop wiring, and box-select (§34)."""
@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 import xyg.components as components_module
 import xyg.export as export_module
 from xyg._figure import Figure
@@ -68,44 +68,44 @@ def _inline_spec_literal(html: str) -> str:
 
 
 def test_factories_return_components():
-    assert isinstance(xy.scatter(x=[1], y=[2]), Mark)
-    assert xy.scatter(x=[1], y=[2]).kind == "scatter"
-    assert xy.line(x=[1], y=[2]).kind == "line"
-    assert xy.area(x=[1], y=[2]).kind == "area"
-    assert xy.histogram(values=[1, 2, 3]).kind == "histogram"
-    assert xy.hist(values=[1, 2, 3]).kind == "histogram"
-    assert xy.bar(x=["a"], y=[1]).kind == "bar"
-    assert xy.column(x=["a"], y=[1]).kind == "column"
-    assert xy.heatmap(z=[[1]]).kind == "heatmap"
-    assert isinstance(xy.arrow(0.0, 1.0, 2.0, 3.0), Annotation)
-    assert isinstance(xy.callout(0.0, 1.0, "label"), Annotation)
-    assert isinstance(xy.vline(1.0), Annotation)
-    assert isinstance(xy.hline(1.0), Annotation)
-    assert isinstance(xy.x_band(0.0, 1.0), Annotation)
-    assert isinstance(xy.y_band(0.0, 1.0), Annotation)
-    assert isinstance(xy.text(0.0, 1.0, "label"), Annotation)
-    assert isinstance(xy.label(0.0, 1.0, "label"), Annotation)
-    assert isinstance(xy.marker(0.0, 1.0), Annotation)
-    assert isinstance(xy.threshold(1.0), Annotation)
-    assert isinstance(xy.threshold_zone(0.0, 1.0), Annotation)
-    assert isinstance(xy.tooltip(fields=["x"]), Tooltip)
-    assert isinstance(xy.colorbar(show=False), Colorbar)
-    assert isinstance(xy.modebar(show=False), Modebar)
-    assert isinstance(xy.theme(style={"--chart-bg": "transparent"}), Theme)
-    assert isinstance(xy.interaction_config(crosshair=True), Interaction)
-    assert not hasattr(xy, "mark_style")
-    chart = xy.scatter_chart(xy.scatter(x=[1.0], y=[2.0]))
+    assert isinstance(xyg.scatter(x=[1], y=[2]), Mark)
+    assert xyg.scatter(x=[1], y=[2]).kind == "scatter"
+    assert xyg.line(x=[1], y=[2]).kind == "line"
+    assert xyg.area(x=[1], y=[2]).kind == "area"
+    assert xyg.histogram(values=[1, 2, 3]).kind == "histogram"
+    assert xyg.hist(values=[1, 2, 3]).kind == "histogram"
+    assert xyg.bar(x=["a"], y=[1]).kind == "bar"
+    assert xyg.column(x=["a"], y=[1]).kind == "column"
+    assert xyg.heatmap(z=[[1]]).kind == "heatmap"
+    assert isinstance(xyg.arrow(0.0, 1.0, 2.0, 3.0), Annotation)
+    assert isinstance(xyg.callout(0.0, 1.0, "label"), Annotation)
+    assert isinstance(xyg.vline(1.0), Annotation)
+    assert isinstance(xyg.hline(1.0), Annotation)
+    assert isinstance(xyg.x_band(0.0, 1.0), Annotation)
+    assert isinstance(xyg.y_band(0.0, 1.0), Annotation)
+    assert isinstance(xyg.text(0.0, 1.0, "label"), Annotation)
+    assert isinstance(xyg.label(0.0, 1.0, "label"), Annotation)
+    assert isinstance(xyg.marker(0.0, 1.0), Annotation)
+    assert isinstance(xyg.threshold(1.0), Annotation)
+    assert isinstance(xyg.threshold_zone(0.0, 1.0), Annotation)
+    assert isinstance(xyg.tooltip(fields=["x"]), Tooltip)
+    assert isinstance(xyg.colorbar(show=False), Colorbar)
+    assert isinstance(xyg.modebar(show=False), Modebar)
+    assert isinstance(xyg.theme(style={"--chart-bg": "transparent"}), Theme)
+    assert isinstance(xyg.interaction_config(crosshair=True), Interaction)
+    assert not hasattr(xyg, "mark_style")
+    chart = xyg.scatter_chart(xyg.scatter(x=[1.0], y=[2.0]))
     assert isinstance(chart, Chart)
-    assert isinstance(xy.chart(xy.scatter(x=[1.0], y=[2.0])), Chart)
+    assert isinstance(xyg.chart(xyg.scatter(x=[1.0], y=[2.0])), Chart)
 
 
 def test_neutral_chart_overlays_marks():
     x = np.arange(20.0)
-    chart = xy.chart(
-        xy.scatter(x=x, y=np.sin(x), name="points"),
-        xy.line(x=x, y=np.cos(x), name="fit"),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+    chart = xyg.chart(
+        xyg.scatter(x=x, y=np.sin(x), name="points"),
+        xyg.line(x=x, y=np.cos(x), name="fit"),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
         title="overlay",
     )
 
@@ -120,10 +120,10 @@ def test_neutral_chart_overlays_marks():
 
 def test_composed_layered_chart_families_build_payload():
     x = np.arange(8.0)
-    line_over_scatter = xy.chart(
-        xy.scatter(x=x, y=np.sin(x), name="samples"),
-        xy.line(x=x, y=np.sin(x) * 0.8, name="trend", color="#111111"),
-        xy.legend(),
+    line_over_scatter = xyg.chart(
+        xyg.scatter(x=x, y=np.sin(x), name="samples"),
+        xyg.line(x=x, y=np.sin(x) * 0.8, name="trend", color="#111111"),
+        xyg.legend(),
     )
     spec, _ = line_over_scatter.figure().build_payload()
     assert [trace["kind"] for trace in spec["traces"]] == ["scatter", "line"]
@@ -136,10 +136,10 @@ def test_composed_layered_chart_families_build_payload():
             "target": np.array([14.0, 15.0, 17.0, 20.0]),
         }
     )
-    bars_plus_line = xy.chart(
-        xy.bar(x="month", y="actual", data=data, name="actual"),
-        xy.line(x="month", y="target", data=data, name="target", color="#dc2626"),
-        xy.x_axis(label="month"),
+    bars_plus_line = xyg.chart(
+        xyg.bar(x="month", y="actual", data=data, name="actual"),
+        xyg.line(x="month", y="target", data=data, name="target", color="#dc2626"),
+        xyg.x_axis(label="month"),
     )
     fig = bars_plus_line.figure()
     spec, _ = fig.build_payload()
@@ -148,28 +148,28 @@ def test_composed_layered_chart_families_build_payload():
     assert spec["x_axis"]["categories"] == ["Jan", "Feb", "Mar", "Apr"]
     np.testing.assert_array_equal(fig.traces[1].x.values, [0.0, 1.0, 2.0, 3.0])
 
-    area_plus_points = xy.chart(
-        xy.area(x=x, y=np.cos(x) + 2.0, name="range", color="#0891b2"),
-        xy.scatter(x=x, y=np.cos(x) + 2.0, name="samples", size=8.0, color="#0f172a"),
+    area_plus_points = xyg.chart(
+        xyg.area(x=x, y=np.cos(x) + 2.0, name="range", color="#0891b2"),
+        xyg.scatter(x=x, y=np.cos(x) + 2.0, name="samples", size=8.0, color="#0f172a"),
     )
     spec, _ = area_plus_points.figure().build_payload()
     assert [trace["kind"] for trace in spec["traces"]] == ["area", "scatter"]
 
 
 def test_heatmap_can_compose_with_category_annotations():
-    chart = xy.chart(
-        xy.heatmap(
+    chart = xyg.chart(
+        xyg.heatmap(
             z=np.array([[0.1, 0.8], [0.4, 0.95]]),
             x=["Mon", "Tue"],
             y=["AM", "PM"],
             name="load",
         ),
-        xy.vline("Tue", text="deploy", color="#ef4444", width=2.0),
-        xy.hline("PM", text="peak"),
-        xy.x_band("Mon", "Tue", text="workweek", opacity=0.2),
-        xy.text("Tue", "PM", "max", dx=4.0, dy=-8.0, anchor="middle"),
-        xy.arrow("Mon", "AM", "Tue", "PM", text="flow", color="#0f172a"),
-        xy.callout("Tue", "AM", "watch", dx=18.0, dy=-16.0),
+        xyg.vline("Tue", text="deploy", color="#ef4444", width=2.0),
+        xyg.hline("PM", text="peak"),
+        xyg.x_band("Mon", "Tue", text="workweek", opacity=0.2),
+        xyg.text("Tue", "PM", "max", dx=4.0, dy=-8.0, anchor="middle"),
+        xyg.arrow("Mon", "AM", "Tue", "PM", text="flow", color="#0f172a"),
+        xyg.callout("Tue", "AM", "watch", dx=18.0, dy=-16.0),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -232,9 +232,9 @@ def test_heatmap_can_compose_with_category_annotations():
 
 
 def test_semantic_annotations_and_markers_emit_expected_specs():
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0, 3.0], y=[2.0, 5.0, 4.0]),
-        xy.marker(
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0, 3.0], y=[2.0, 5.0, 4.0]),
+        xyg.marker(
             2.0,
             5.0,
             text="peak",
@@ -247,9 +247,9 @@ def test_semantic_annotations_and_markers_emit_expected_specs():
             dy=-12,
             anchor="middle",
         ),
-        xy.label(3.0, 4.0, "last", anchor="end"),
-        xy.threshold(4.5, text="target"),
-        xy.threshold_zone(4.0, 6.0, text="warning"),
+        xyg.label(3.0, 4.0, "last", anchor="end"),
+        xyg.threshold(4.5, text="target"),
+        xyg.threshold_zone(4.0, 6.0, text="warning"),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -299,14 +299,14 @@ def test_semantic_annotations_and_markers_emit_expected_specs():
     ]
 
     with pytest.raises(ValueError, match="marker symbol"):
-        xy.chart(xy.scatter(x=[1.0], y=[1.0]), xy.marker(1.0, 1.0, symbol="pin")).figure()
+        xyg.chart(xyg.scatter(x=[1.0], y=[1.0]), xyg.marker(1.0, 1.0, symbol="pin")).figure()
     with pytest.raises(ValueError, match="threshold axis"):
-        xy.threshold(1.0, axis="z")
+        xyg.threshold(1.0, axis="z")
 
 
 def test_annotation_label_opacity_is_independent_from_geometry_opacity():
-    chart = xy.chart(
-        xy.x_band(
+    chart = xyg.chart(
+        xyg.x_band(
             1.0,
             2.0,
             text="window",
@@ -322,7 +322,7 @@ def test_annotation_label_opacity_is_independent_from_geometry_opacity():
     assert style["label_opacity"] == 0.85
 
     with pytest.raises(ValueError, match="label_opacity"):
-        xy.chart(xy.x_band(1.0, 2.0, text="window", style={"label_opacity": 1.1})).figure()
+        xyg.chart(xyg.x_band(1.0, 2.0, text="window", style={"label_opacity": 1.1})).figure()
 
 
 def test_layered_tooltip_sources_keep_fields_tied_to_their_traces():
@@ -334,11 +334,11 @@ def test_layered_tooltip_sources_keep_fields_tied_to_their_traces():
             "sample": np.array([13.0, 19.0, 15.0]),
         }
     )
-    chart = xy.chart(
-        xy.bar(x="month", y="bookings", data=data, name="bookings"),
-        xy.scatter(x="month", y="sample", data=data, name="sample"),
-        xy.line(x="month", y="target", data=data, name="target"),
-        xy.tooltip(
+    chart = xyg.chart(
+        xyg.bar(x="month", y="bookings", data=data, name="bookings"),
+        xyg.scatter(x="month", y="sample", data=data, name="sample"),
+        xyg.line(x="month", y="target", data=data, name="target"),
+        xyg.tooltip(
             fields=["month", "bookings", "sample", "target"],
             title="{month}",
             format={"bookings": ".1f", "target": ".1f", "sample": ".1f"},
@@ -361,9 +361,9 @@ def test_layered_tooltip_sources_keep_fields_tied_to_their_traces():
 
 
 def test_bad_category_annotation_does_not_cache_partial_chart_figure():
-    marker = xy.vline("Wed")
-    chart = xy.chart(
-        xy.heatmap(z=np.array([[1.0, 2.0]]), x=["Mon", "Tue"], y=["AM"]),
+    marker = xyg.vline("Wed")
+    chart = xyg.chart(
+        xyg.heatmap(z=np.array([[1.0, 2.0]]), x=["Mon", "Tue"], y=["AM"]),
         marker,
     )
 
@@ -381,7 +381,7 @@ def test_bad_category_annotation_does_not_cache_partial_chart_figure():
 
 def test_failed_declarative_mark_does_not_leak_axis_categories():
     fig = Figure()
-    mark = xy.scatter(x=["new-category"], y=[1.0], color=np.array([1.0, 2.0]))
+    mark = xyg.scatter(x=["new-category"], y=[1.0], color=np.array([1.0, 2.0]))
 
     with pytest.raises(ValueError, match="color array"):
         components_module._apply_scatter(fig, mark, None)
@@ -394,7 +394,7 @@ def test_component_api_default_payload_matches_fluent_figure():
     x = np.arange(16.0)
     y = x * 2
 
-    component = xy.chart(xy.line(x=x, y=y)).figure()
+    component = xyg.chart(xyg.line(x=x, y=y)).figure()
     fluent = Figure().line(x, y)
     component_spec, component_blob = component.build_payload()
     fluent_spec, fluent_blob = fluent.build_payload()
@@ -414,8 +414,8 @@ def test_component_style_tooltip_and_modebar_metadata_is_opt_in():
             "segment": np.array(["enterprise", "growth", "enterprise"]),
         }
     )
-    chart = xy.chart(
-        xy.scatter(
+    chart = xyg.chart(
+        xyg.scatter(
             x="feature_a",
             y="feature_b",
             color="segment",
@@ -423,8 +423,8 @@ def test_component_style_tooltip_and_modebar_metadata_is_opt_in():
             name="accounts",
             class_name="xy-mark-accounts",
         ),
-        xy.legend(class_name="legend-node", style={"max-height": 220}),
-        xy.tooltip(
+        xyg.legend(class_name="legend-node", style={"max-height": 220}),
+        xyg.tooltip(
             fields=["feature_a", "feature_b", "segment"],
             title="{segment}",
             format={"feature_a": ".2f"},
@@ -432,13 +432,13 @@ def test_component_style_tooltip_and_modebar_metadata_is_opt_in():
             class_name="tooltip-node",
             style={"background-color": "black"},
         ),
-        xy.modebar(
+        xyg.modebar(
             show=False,
             class_name="modebar-node",
             button_class_name="modebar-button-node",
             button_style={"border-radius": 4},
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="transparent",
             grid_color="rgba(0,0,0,.1)",
             selection_fill="rgba(37,99,235,.14)",
@@ -488,9 +488,9 @@ def test_theme_background_separates_figure_and_plot():
     # mpl parity: background= is the figure facecolor (root CSS background,
     # margins included); plot_background= is the axes facecolor (--chart-bg,
     # plot rect only).
-    chart = xy.scatter_chart(
-        xy.scatter(x=[1.0], y=[2.0]),
-        xy.theme(background="#000000", plot_background="#111111"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=[1.0], y=[2.0]),
+        xyg.theme(background="#000000", plot_background="#111111"),
     )
     spec, _ = chart.figure().build_payload()
     style = spec["dom"]["style"]
@@ -501,12 +501,12 @@ def test_theme_background_separates_figure_and_plot():
 def test_figure_dom_class_strings_covers_every_dom_class_carrying_surface():
     """`Figure.dom_class_strings()` is the Tailwind scan inventory (see its
     docstring): chart root, merged chrome slots, and annotation labels."""
-    chart = xy.chart(
-        xy.line([0, 1], [1, 2], class_name="mark-node"),
-        xy.vline(0.5, text="release", class_name="annotation-node"),
-        xy.hline(1.5, text="target", class_name="annotation-node"),  # dedupe
-        xy.marker(0.25, 1.25, class_name="shape-only-annotation"),
-        xy.legend(class_name="legend-node"),
+    chart = xyg.chart(
+        xyg.line([0, 1], [1, 2], class_name="mark-node"),
+        xyg.vline(0.5, text="release", class_name="annotation-node"),
+        xyg.hline(1.5, text="target", class_name="annotation-node"),  # dedupe
+        xyg.marker(0.25, 1.25, class_name="shape-only-annotation"),
+        xyg.legend(class_name="legend-node"),
         class_name="root-node",
         class_names={"title": "title-slot"},
     )
@@ -537,15 +537,15 @@ def test_declarative_core_contract_for_layered_axis_chrome_and_interaction():
         }
     )
 
-    chart = xy.chart(
-        xy.bar(
+    chart = xyg.chart(
+        xyg.bar(
             x="month",
             y="revenue",
             data=data,
             name="revenue",
             class_name="revenue-bars",
         ),
-        xy.line(
+        xyg.line(
             x="month",
             y="latency",
             data=data,
@@ -553,19 +553,19 @@ def test_declarative_core_contract_for_layered_axis_chrome_and_interaction():
             y_axis="y2",
             color="#dc2626",
         ),
-        xy.vline("Feb", text="campaign", color="#7c3aed"),
-        xy.x_axis(
+        xyg.vline("Feb", text="campaign", color="#7c3aed"),
+        xyg.x_axis(
             label="month",
             tick_count=3,
             tick_label_strategy="rotate",
         ),
-        xy.y_axis(
+        xyg.y_axis(
             label="revenue",
             domain=(0.0, 100.0),
             format="$,.0f",
             side="left",
         ),
-        xy.y_axis(
+        xyg.y_axis(
             id="y2",
             label="latency",
             type_="log",
@@ -576,12 +576,12 @@ def test_declarative_core_contract_for_layered_axis_chrome_and_interaction():
             label_position={"right": 18, "top": "50%"},
             style={"axis_color": "#dc2626"},
         ),
-        xy.legend(
+        xyg.legend(
             legend_component,
             class_name="legend-node",
             style={"max-height": 180},
         ),
-        xy.tooltip(
+        xyg.tooltip(
             tooltip_component,
             show=False,
             fields=["month", "revenue", "latency"],
@@ -589,18 +589,18 @@ def test_declarative_core_contract_for_layered_axis_chrome_and_interaction():
             class_name="tooltip-node",
             style={"background": "linear-gradient(red,blue)"},
         ),
-        xy.colorbar(
+        xyg.colorbar(
             colorbar_component,
             class_name="colorbar-node",
             style={"font-size": 12},
         ),
-        xy.modebar(
+        xyg.modebar(
             show=True,
             class_name="modebar-node",
             button_class_name="modebar-button",
         ),
-        xy.theme(plot_background="transparent", crosshair_color="#0f172a"),
-        xy.interaction_config(
+        xyg.theme(plot_background="transparent", crosshair_color="#0f172a"),
+        xyg.interaction_config(
             hover=True,
             click=True,
             brush=True,
@@ -706,9 +706,9 @@ def test_declarative_core_contract_for_layered_axis_chrome_and_interaction():
 
 
 def test_interaction_component_disables_pan_and_zoom():
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
-        xy.interaction_config(pan=False, zoom=False),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
+        xyg.interaction_config(pan=False, zoom=False),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -717,8 +717,8 @@ def test_interaction_component_disables_pan_and_zoom():
 
 
 def test_chart_level_pan_and_zoom_kwargs_build_declarative_spec():
-    chart = xy.bar_chart(
-        xy.bar(x=["A", "B"], y=[1.0, 2.0]),
+    chart = xyg.bar_chart(
+        xyg.bar(x=["A", "B"], y=[1.0, 2.0]),
         pan=False,
         zoom=False,
         zoom_axes=("x",),
@@ -730,14 +730,14 @@ def test_chart_level_pan_and_zoom_kwargs_build_declarative_spec():
 
 
 def test_zoom_axes_defaults_to_both_and_validates_explicit_dimensions():
-    default_chart = xy.chart(xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0]))
+    default_chart = xyg.chart(xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0]))
     default_spec, _ = default_chart.figure().build_payload()
     assert "zoom_axes" not in default_spec.get("interaction", {})
 
     for zoom_axes in ((), ("z",), "x"):
-        chart = xy.chart(
-            xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
-            xy.interaction_config(zoom_axes=zoom_axes),
+        chart = xyg.chart(
+            xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
+            xyg.interaction_config(zoom_axes=zoom_axes),
         )
         with pytest.raises(ValueError, match="zoom_axes"):
             chart.figure()
@@ -745,24 +745,24 @@ def test_zoom_axes_defaults_to_both_and_validates_explicit_dimensions():
 
 
 def test_default_drag_action_sets_initial_plain_drag_action_and_validates_values():
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
-        xy.interaction_config(default_drag_action="zoom"),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
+        xyg.interaction_config(default_drag_action="zoom"),
     )
 
     spec, _ = chart.figure().build_payload()
     assert spec["interaction"]["default_drag_action"] == "zoom"
 
     for default_drag_action in ("orbit", 1):
-        invalid = xy.chart(
-            xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
-            xy.interaction_config(default_drag_action=default_drag_action),
+        invalid = xyg.chart(
+            xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
+            xyg.interaction_config(default_drag_action=default_drag_action),
         )
         with pytest.raises(ValueError, match="default_drag_action"):
             invalid.figure()
 
-    chart_level = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
+    chart_level = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
         default_drag_action="zoom",
     )
     chart_level_spec, _ = chart_level.figure().build_payload()
@@ -770,11 +770,11 @@ def test_default_drag_action_sets_initial_plain_drag_action_and_validates_values
 
 
 def test_complete_navigation_policy_normalizes_dual_axis_wire_contract():
-    chart = xy.chart(
-        xy.line(x=[0.0, 1.0], y=[10.0, 20.0]),
-        xy.line(x=[0.0, 1.0], y=[100.0, 120.0], y_axis="y2"),
-        xy.y_axis(id="y2", side="right"),
-        xy.interaction_config(
+    chart = xyg.chart(
+        xyg.line(x=[0.0, 1.0], y=[10.0, 20.0]),
+        xyg.line(x=[0.0, 1.0], y=[100.0, 120.0], y_axis="y2"),
+        xyg.y_axis(id="y2", side="right"),
+        xyg.interaction_config(
             navigation=True,
             default_drag_action="zoom",
             pan=True,
@@ -815,13 +815,13 @@ def test_complete_navigation_policy_normalizes_dual_axis_wire_contract():
 
 def test_zoom_limit_tuple_and_partial_mapping_normalize_per_selected_axis():
     base_children = (
-        xy.line(x=[0.0, 1.0], y=[10.0, 20.0]),
-        xy.line(x=[0.0, 1.0], y=[100.0, 120.0], y_axis="y2"),
-        xy.y_axis(id="y2", side="right"),
+        xyg.line(x=[0.0, 1.0], y=[10.0, 20.0]),
+        xyg.line(x=[0.0, 1.0], y=[100.0, 120.0], y_axis="y2"),
+        xyg.y_axis(id="y2", side="right"),
     )
-    tuple_chart = xy.chart(
+    tuple_chart = xyg.chart(
         *base_children,
-        xy.interaction_config(zoom_axes=("x", "y2"), zoom_limits=(0.25, 64.0)),
+        xyg.interaction_config(zoom_axes=("x", "y2"), zoom_limits=(0.25, 64.0)),
     )
     tuple_spec, _ = tuple_chart.figure().build_payload()
     assert tuple_spec["interaction"]["zoom_limits"] == {
@@ -829,9 +829,9 @@ def test_zoom_limit_tuple_and_partial_mapping_normalize_per_selected_axis():
         "y2": [0.25, 64.0],
     }
 
-    mapping_chart = xy.chart(
+    mapping_chart = xyg.chart(
         *base_children,
-        xy.interaction_config(zoom_axes=("x", "y2"), zoom_limits={"y2": (None, None)}),
+        xyg.interaction_config(zoom_axes=("x", "y2"), zoom_limits={"y2": (None, None)}),
     )
     mapping_spec, _ = mapping_chart.figure().build_payload()
     assert mapping_spec["interaction"]["zoom_limits"] == {
@@ -846,9 +846,9 @@ def test_navigation_axis_policies_reject_empty_and_unknown_ids(name):
         kwargs = {name: axes}
         if name == "link_axes":
             kwargs["link_group"] = "group"
-        chart = xy.chart(
-            xy.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
-            xy.interaction_config(**kwargs),
+        chart = xyg.chart(
+            xyg.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
+            xyg.interaction_config(**kwargs),
         )
         with pytest.raises(ValueError, match=name):
             chart.figure()
@@ -867,9 +867,9 @@ def test_navigation_axis_policies_reject_empty_and_unknown_ids(name):
     ],
 )
 def test_zoom_limits_reject_invalid_intervals_and_axis_ids(limits):
-    chart = xy.chart(
-        xy.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.interaction_config(zoom_limits=limits),
+    chart = xyg.chart(
+        xyg.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.interaction_config(zoom_limits=limits),
     )
     with pytest.raises(ValueError, match="zoom_limits"):
         chart.figure()
@@ -885,9 +885,9 @@ def test_zoom_limits_reject_invalid_intervals_and_axis_ids(limits):
     ],
 )
 def test_explicit_default_drag_action_requires_its_capability(action, config):
-    chart = xy.chart(
-        xy.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.interaction_config(default_drag_action=action, **config),
+    chart = xyg.chart(
+        xyg.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.interaction_config(default_drag_action=action, **config),
     )
     with pytest.raises(ValueError, match="default_drag_action"):
         chart.figure()
@@ -895,9 +895,9 @@ def test_explicit_default_drag_action_requires_its_capability(action, config):
 
 def test_auto_and_none_default_drag_actions_are_always_valid():
     for action in ("auto", "none"):
-        chart = xy.chart(
-            xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-            xy.interaction_config(
+        chart = xyg.chart(
+            xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+            xyg.interaction_config(
                 navigation=False,
                 pan=False,
                 zoom=False,
@@ -911,10 +911,10 @@ def test_auto_and_none_default_drag_actions_are_always_valid():
 def test_legend_and_tooltip_accept_opaque_framework_components_without_serializing():
     legend_component = FakeReflexComponent("legend")
     tooltip_component = FakeReflexComponent("tooltip")
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
-        xy.legend(legend_component, show=False),
-        xy.tooltip(
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
+        xyg.legend(legend_component, show=False),
+        xyg.tooltip(
             tooltip_component,
             show=False,
             fields=["x", "y"],
@@ -945,9 +945,9 @@ def test_colorbar_show_false_clears_generated_colorbar_options(monkeypatch):
         fig.colorbar_options = {"domain": [0.0, 1.0], "colormap": "viridis"}
 
     monkeypatch.setitem(components_module._MARK_APPLIERS, "line", apply_with_colorbar)
-    chart = xy.chart(
-        xy.line(x=[0.0, 1.0], y=[1.0, 2.0]),
-        xy.colorbar(show=False),
+    chart = xyg.chart(
+        xyg.line(x=[0.0, 1.0], y=[1.0, 2.0]),
+        xyg.colorbar(show=False),
     )
 
     figure = chart.figure()
@@ -976,8 +976,8 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
             "segment": np.array(["enterprise", "growth", "enterprise"]),
         }
     )
-    chart = xy.chart(
-        xy.scatter(
+    chart = xyg.chart(
+        xyg.scatter(
             x="activation",
             y="retention",
             color="segment",
@@ -986,20 +986,20 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
             name="accounts",
             class_name="tw-mark-accounts",
         ),
-        xy.line(
+        xyg.line(
             x="activation",
             y="retention",
             data=data,
             name="trend",
             color="var(--chart-trend)",
         ),
-        xy.vline(
+        xyg.vline(
             0.24,
             text="release",
             color="#7c3aed",
             class_name="tw-release-marker",
         ),
-        xy.callout(
+        xyg.callout(
             0.38,
             0.73,
             "best cohort",
@@ -1008,15 +1008,15 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
             color="#0f172a",
             class_name="tw-callout",
         ),
-        xy.x_axis(label="activation", format=".0%"),
-        xy.y_axis(label="retention", format=".0%"),
-        xy.legend(
+        xyg.x_axis(label="activation", format=".0%"),
+        xyg.y_axis(label="retention", format=".0%"),
+        xyg.legend(
             legend_component,
             show=False,
             class_name="tw-legend",
             style={"display": "grid"},
         ),
-        xy.tooltip(
+        xyg.tooltip(
             tooltip_component,
             show=False,
             fields=["activation", "retention", "segment"],
@@ -1025,9 +1025,9 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
             class_name="tw-tooltip",
             style={"background": "linear-gradient(135deg,#020617,#2563eb)"},
         ),
-        xy.modebar(show=False, class_name="tw-modebar"),
-        xy.theme(grid_color="rgba(148,163,184,.28)"),
-        xy.interaction_config(hover=True, click=True, brush=True, crosshair=True),
+        xyg.modebar(show=False, class_name="tw-modebar"),
+        xyg.theme(grid_color="rgba(148,163,184,.28)"),
+        xyg.interaction_config(hover=True, click=True, brush=True, crosshair=True),
         title="Custom Reflex legend + tooltip",
         width="100%",
         height=360,
@@ -1150,9 +1150,9 @@ def test_declarative_chart_keeps_notebook_export_and_framework_chrome_contract(
 
 
 def test_interaction_component_builds_declarative_spec():
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
-        xy.interaction_config(
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
+        xyg.interaction_config(
             hover=True,
             click=True,
             select=True,
@@ -1177,8 +1177,8 @@ def test_interaction_component_builds_declarative_spec():
 
 
 def test_chart_callbacks_enable_matching_event_streams():
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0]),
         on_hover=lambda row: row,
         on_click=lambda row: row,
         on_brush=lambda brush: brush,
@@ -1206,10 +1206,10 @@ def test_chart_callbacks_are_python_only_and_do_not_serialize_to_html(monkeypatc
     }
     legend_component = FakeReflexComponent("legend")
     tooltip_component = FakeReflexComponent("tooltip")
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
-        xy.legend(legend_component, show=False),
-        xy.tooltip(tooltip_component, show=False, fields=["x", "y"]),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 3.0], name="points"),
+        xyg.legend(legend_component, show=False),
+        xyg.tooltip(tooltip_component, show=False, fields=["x", "y"]),
         on_hover=callbacks["hover"],
         on_click=callbacks["click"],
         on_brush=callbacks["brush"],
@@ -1262,9 +1262,9 @@ def test_chart_callbacks_are_python_only_and_do_not_serialize_to_html(monkeypatc
 
 
 def test_bad_interaction_options_do_not_cache_partial_chart_figure():
-    chart = xy.chart(
-        xy.scatter(x=[1.0], y=[2.0]),
-        xy.interaction_config(click="yes"),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0], y=[2.0]),
+        xyg.interaction_config(click="yes"),
     )
 
     with pytest.raises(ValueError, match="interaction click"):
@@ -1279,18 +1279,18 @@ def test_bad_interaction_options_do_not_cache_partial_chart_figure():
         "zoom_buttons",
         "double_click_reset",
     ):
-        chart = xy.chart(
-            xy.scatter(x=[1.0], y=[2.0]),
-            xy.interaction_config(**{option: "yes"}),
+        chart = xyg.chart(
+            xyg.scatter(x=[1.0], y=[2.0]),
+            xyg.interaction_config(**{option: "yes"}),
         )
 
         with pytest.raises(ValueError, match=f"interaction {option}"):
             chart.figure()
         assert chart._figure is None
 
-    chart = xy.chart(
-        xy.scatter(x=[1.0], y=[2.0]),
-        xy.interaction_config(link_group="dash", link_axes=("x", "z")),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0], y=[2.0]),
+        xyg.interaction_config(link_group="dash", link_axes=("x", "z")),
     )
     with pytest.raises(ValueError, match="link_axes"):
         chart.figure()
@@ -1300,10 +1300,10 @@ def test_bad_interaction_options_do_not_cache_partial_chart_figure():
 def test_legend_and_tooltip_accept_render_keyword_components():
     legend_component = FakeReflexComponent("legend")
     tooltip_component = FakeReflexComponent("tooltip")
-    chart = xy.chart(
-        xy.scatter(x=[1.0], y=[2.0]),
-        xy.legend(render=legend_component),
-        xy.tooltip(render=tooltip_component),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0], y=[2.0]),
+        xyg.legend(render=legend_component),
+        xyg.tooltip(render=tooltip_component),
     )
 
     assert chart.chrome_components()["legend"] is legend_component
@@ -1315,28 +1315,28 @@ def test_legend_and_tooltip_accept_render_keyword_components():
 
 def test_component_style_validation_rejects_non_serializable_values():
     with pytest.raises(ValueError, match="chart class_names"):
-        xy.chart(xy.scatter(x=[1.0], y=[2.0]), class_names={"legend": 2})
+        xyg.chart(xyg.scatter(x=[1.0], y=[2.0]), class_names={"legend": 2})
     with pytest.raises(ValueError, match="unknown slot"):
-        xy.chart(xy.scatter(x=[1.0], y=[2.0]), class_names={"legnd": "typo"})
+        xyg.chart(xyg.scatter(x=[1.0], y=[2.0]), class_names={"legnd": "typo"})
     with pytest.raises(ValueError, match="chart style"):
-        xy.chart(xy.scatter(x=[1.0], y=[2.0]), style={"--bad": np.inf})
+        xyg.chart(xyg.scatter(x=[1.0], y=[2.0]), style={"--bad": np.inf})
     with pytest.raises(ValueError, match="tooltip fields"):
-        xy.tooltip(fields=["x", 2])
+        xyg.tooltip(fields=["x", 2])
     with pytest.raises(ValueError, match="tooltip labels"):
-        xy.tooltip(labels={"x": 2})
+        xyg.tooltip(labels={"x": 2})
     with pytest.raises(TypeError, match="at most one"):
-        xy.legend(FakeReflexComponent("a"), FakeReflexComponent("b"))
+        xyg.legend(FakeReflexComponent("a"), FakeReflexComponent("b"))
     with pytest.raises(TypeError, match="component child with render"):
-        xy.tooltip(FakeReflexComponent("a"), render=FakeReflexComponent("b"))
+        xyg.tooltip(FakeReflexComponent("a"), render=FakeReflexComponent("b"))
 
 
 def test_tooltip_revalidates_public_dataclass_construction_and_mutation():
-    direct = xy.Tooltip(labels={"x": object()})
-    mutated = xy.tooltip(labels={"x": "X"})
+    direct = xyg.Tooltip(labels={"x": object()})
+    mutated = xyg.tooltip(labels={"x": "X"})
     mutated.labels["x"] = object()
 
     for node in (direct, mutated):
-        chart = xy.scatter_chart(xy.scatter(x=[1.0], y=[2.0]), node)
+        chart = xyg.scatter_chart(xyg.scatter(x=[1.0], y=[2.0]), node)
         with pytest.raises(ValueError, match="tooltip labels"):
             chart.figure()
 
@@ -1344,10 +1344,10 @@ def test_tooltip_revalidates_public_dataclass_construction_and_mutation():
 def test_composition_builds_figure():
     x = np.arange(100.0)
     y = np.sin(x)
-    chart = xy.scatter_chart(
-        xy.scatter(x=x, y=y, name="a"),
-        xy.x_axis(label="time"),
-        xy.y_axis(label="value"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=x, y=y, name="a"),
+        xyg.x_axis(label="time"),
+        xyg.y_axis(label="value"),
         title="t",
         width=800,
         height=300,
@@ -1370,8 +1370,8 @@ def test_data_key_resolution():
             "cont": np.array(["a", "b", "a"]),
         }
     )
-    chart = xy.scatter_chart(
-        xy.scatter(x="gdp", y="life", color="cont", size="pop", data=df),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x="gdp", y="life", color="cont", size="pop", data=df),
     )
     fig = chart.figure()
     t = fig.traces[0]
@@ -1383,7 +1383,7 @@ def test_data_key_resolution():
 
 def test_chart_level_data_default():
     df = FakeFrame({"a": np.arange(5.0), "b": np.arange(5.0) * 2})
-    chart = xy.scatter_chart(xy.scatter(x="a", y="b"), data=df)
+    chart = xyg.scatter_chart(xyg.scatter(x="a", y="b"), data=df)
     fig = chart.figure()
     np.testing.assert_array_equal(fig.traces[0].y.values, np.arange(5.0) * 2)
 
@@ -1391,49 +1391,49 @@ def test_chart_level_data_default():
 def test_css_color_vs_column():
     # A CSS color stays constant; a non-CSS string is a column name.
     df = FakeFrame({"x": np.arange(3.0), "y": np.arange(3.0), "grp": np.array(["p", "q", "p"])})
-    c1 = xy.scatter_chart(xy.scatter(x="x", y="y", color="#ff0000", data=df)).figure()
+    c1 = xyg.scatter_chart(xyg.scatter(x="x", y="y", color="#ff0000", data=df)).figure()
     assert c1.traces[0].color_ch.mode == "constant"
-    c2 = xy.scatter_chart(xy.scatter(x="x", y="y", color="red", data=df)).figure()
+    c2 = xyg.scatter_chart(xyg.scatter(x="x", y="y", color="red", data=df)).figure()
     assert c2.traces[0].color_ch.mode == "constant"
-    c3 = xy.scatter_chart(xy.scatter(x="x", y="y", color="grp", data=df)).figure()
+    c3 = xyg.scatter_chart(xyg.scatter(x="x", y="y", color="grp", data=df)).figure()
     assert c3.traces[0].color_ch.mode == "categorical"
 
 
 def test_missing_column_errors():
     df = FakeFrame({"a": np.arange(3.0)})
     with pytest.raises(ValueError, match=r"scatter\.y column 'missing' not found"):
-        xy.scatter_chart(xy.scatter(x="a", y="missing", data=df)).figure()
+        xyg.scatter_chart(xyg.scatter(x="a", y="missing", data=df)).figure()
 
 
 @pytest.mark.parametrize(
     ("chart", "match"),
     [
         (
-            lambda df: xy.scatter_chart(xy.scatter(x="a", y="b", color="missing"), data=df),
+            lambda df: xyg.scatter_chart(xyg.scatter(x="a", y="b", color="missing"), data=df),
             r"scatter\.color column 'missing' not found",
         ),
         (
-            lambda df: xy.scatter_chart(xy.scatter(x="a", y="b", size="missing"), data=df),
+            lambda df: xyg.scatter_chart(xyg.scatter(x="a", y="b", size="missing"), data=df),
             r"scatter\.size column 'missing' not found",
         ),
         (
-            lambda df: xy.area_chart(xy.area(x="a", y="b", base="missing"), data=df),
+            lambda df: xyg.area_chart(xyg.area(x="a", y="b", base="missing"), data=df),
             r"area\.base column 'missing' not found",
         ),
         (
-            lambda df: xy.histogram_chart(xy.histogram(values="missing"), data=df),
+            lambda df: xyg.histogram_chart(xyg.histogram(values="missing"), data=df),
             r"histogram\.values column 'missing' not found",
         ),
         (
-            lambda df: xy.heatmap_chart(xy.heatmap(z="missing"), data=df),
+            lambda df: xyg.heatmap_chart(xyg.heatmap(z="missing"), data=df),
             r"heatmap\.z column 'missing' not found",
         ),
         (
-            lambda df: xy.bar_chart(xy.bar(x="label", y="value", base="missing"), data=df),
+            lambda df: xyg.bar_chart(xyg.bar(x="label", y="value", base="missing"), data=df),
             r"bar\.base column 'missing' not found",
         ),
         (
-            lambda df: xy.column_chart(xy.column(x="label", y="value", base="missing"), data=df),
+            lambda df: xyg.column_chart(xyg.column(x="label", y="value", base="missing"), data=df),
             r"column\.base column 'missing' not found",
         ),
     ],
@@ -1454,9 +1454,9 @@ def test_component_data_key_errors_name_mark_field(chart, match):
 
 def test_failed_mark_application_does_not_cache_partial_chart_figure():
     df = FakeFrame({"x": np.arange(3.0), "y": np.arange(3.0) * 2})
-    second = xy.scatter(x="x", y="missing")
-    chart = xy.scatter_chart(
-        xy.line(x="x", y="y", name="first"),
+    second = xyg.scatter(x="x", y="missing")
+    chart = xyg.scatter_chart(
+        xyg.line(x="x", y="y", name="first"),
         second,
         data=df,
     )
@@ -1475,13 +1475,13 @@ def test_failed_mark_application_does_not_cache_partial_chart_figure():
 
 def test_column_name_without_data_errors():
     with pytest.raises(ValueError, match=r"scatter\.x.*no data"):
-        xy.scatter_chart(xy.scatter(x="a", y="b")).figure()
+        xyg.scatter_chart(xyg.scatter(x="a", y="b")).figure()
 
 
 def test_unknown_mark_kind_failure_does_not_cache_partial_chart_figure():
-    mark = xy.line([0.0, 1.0], [1.0, 2.0])
+    mark = xyg.line([0.0, 1.0], [1.0, 2.0])
     mark.kind = "not-real"
-    chart = xy.line_chart(mark)
+    chart = xyg.line_chart(mark)
 
     with pytest.raises(TypeError, match="not-real"):
         chart.figure()
@@ -1495,18 +1495,18 @@ def test_unknown_mark_kind_failure_does_not_cache_partial_chart_figure():
 
 
 def test_legend_off():
-    chart = xy.scatter_chart(
-        xy.scatter(x=np.arange(3.0), y=np.arange(3.0), name="s"),
-        xy.legend(show=False),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=np.arange(3.0), y=np.arange(3.0), name="s"),
+        xyg.legend(show=False),
     )
     spec, _ = chart.figure().build_payload()
     assert spec["show_legend"] is False
 
 
 def test_legend_location_and_columns_are_serialized():
-    chart = xy.scatter_chart(
-        xy.scatter(x=np.arange(3.0), y=np.arange(3.0), name="s"),
-        xy.legend(loc="upper left", ncols=2),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=np.arange(3.0), y=np.arange(3.0), name="s"),
+        xyg.legend(loc="upper left", ncols=2),
     )
     spec, _ = chart.figure().build_payload()
     assert spec["legend"] == {"loc": "upper left", "ncols": 2}
@@ -1590,31 +1590,31 @@ def test_public_component_dataclasses_preserve_v003_positional_prefix():
     assert legend.render is renderer
     assert legend.anchor is None
 
-    anchored = xy.legend(anchor=(0.25, 0.75))
+    anchored = xyg.legend(anchor=(0.25, 0.75))
     assert anchored.anchor == (0.25, 0.75)
 
 
 def test_component_bar_width_contracts_match_runtime_behavior():
     widths = np.array([0.25, 0.75])
     for mark in (
-        xy.bar(x=["a", "b"], y=[1.0, 2.0], width=widths),
-        xy.column(x=["a", "b"], y=[1.0, 2.0], width=widths),
+        xyg.bar(x=["a", "b"], y=[1.0, 2.0], width=widths),
+        xyg.column(x=["a", "b"], y=[1.0, 2.0], width=widths),
     ):
-        trace = xy.chart(mark).figure().traces[0]
+        trace = xyg.chart(mark).figure().traces[0]
         np.testing.assert_allclose(trace.x1.values - trace.x0.values, widths)
 
     with pytest.raises(ValueError, match="violin width must be a finite real number"):
-        xy.violin_chart(xy.violin(values=[[1.0, 2.0], [2.0, 3.0]], width=[0.25, 0.75])).figure()
+        xyg.violin_chart(xyg.violin(values=[[1.0, 2.0], [2.0, 3.0]], width=[0.25, 0.75])).figure()
 
 
 def test_component_axis_and_legend_validate_public_props_without_caching_failure():
     with pytest.raises(ValueError, match="axis type_"):
-        xy.x_axis(type_="logg")
+        xyg.x_axis(type_="logg")
     with pytest.raises(ValueError, match="legend show"):
-        xy.legend(show="false")
+        xyg.legend(show="false")
 
     bad_axis = Axis(which="z")
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)), bad_axis)
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)), bad_axis)
     with pytest.raises(ValueError, match=r"axis\.which"):
         chart.figure()
     assert chart._figure is None
@@ -1625,7 +1625,7 @@ def test_component_axis_and_legend_validate_public_props_without_caching_failure
     assert fig.x_label is None
 
     bad_legend = Legend(show="false")
-    chart2 = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)), bad_legend)
+    chart2 = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)), bad_legend)
     with pytest.raises(ValueError, match="legend show"):
         chart2.figure()
     assert chart2._figure is None
@@ -1633,7 +1633,7 @@ def test_component_axis_and_legend_validate_public_props_without_caching_failure
 
 
 def test_component_text_metadata_errors_do_not_cache_partial_chart_figure():
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)), title=123)
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)), title=123)
 
     with pytest.raises(ValueError, match="title must be a string or None"):
         chart.figure()
@@ -1644,37 +1644,37 @@ def test_component_text_metadata_errors_do_not_cache_partial_chart_figure():
     assert chart.figure() is fig
     assert fig.title == "ok"
 
-    bad_axis = xy.x_axis(label="ok")
+    bad_axis = xyg.x_axis(label="ok")
     bad_axis.label = 42
-    chart2 = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)), bad_axis)
+    chart2 = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)), bad_axis)
     with pytest.raises(ValueError, match="x_label must be a string or None"):
         chart2.figure()
     assert chart2._figure is None
 
-    chart3 = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0), name=123))
+    chart3 = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0), name=123))
     with pytest.raises(ValueError, match="scatter name must be a string or None"):
         chart3.figure()
     assert chart3._figure is None
 
 
 def test_component_axis_types_emit_log_domain_reverse_and_format():
-    fig = xy.scatter_chart(
-        xy.scatter(x=np.array([1.0, 10.0, 100.0]), y=np.arange(3.0)),
-        xy.x_axis(type_="linear"),
-        xy.y_axis(type_="time"),
+    fig = xyg.scatter_chart(
+        xyg.scatter(x=np.array([1.0, 10.0, 100.0]), y=np.arange(3.0)),
+        xyg.x_axis(type_="linear"),
+        xyg.y_axis(type_="time"),
     ).figure()
     assert len(fig.traces) == 1
 
-    chart = xy.scatter_chart(
-        xy.scatter(x=np.array([1.0, 10.0, 100.0]), y=np.array([0.2, 0.4, 0.8])),
-        xy.x_axis(
+    chart = xyg.scatter_chart(
+        xyg.scatter(x=np.array([1.0, 10.0, 100.0]), y=np.array([0.2, 0.4, 0.8])),
+        xyg.x_axis(
             type_="log",
             domain=(1.0, 100.0),
             reverse=True,
             format=".0f",
             style={"grid_color": "rgba(37,99,235,.2)", "tick_color": "#1d4ed8"},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0.0, 1.0),
             format=".1%",
             style={"axis_color": "#dc2626", "label_size": 13},
@@ -1698,25 +1698,25 @@ def test_component_axis_types_emit_log_domain_reverse_and_format():
 
 
 def test_component_axis_margin_controls_automatic_range():
-    chart = xy.chart(
-        xy.line(x=np.array([0.0, 10.0]), y=np.array([2.0, 4.0])),
-        xy.x_axis(margin=0.1),
-        xy.y_axis(margin=0.0),
+    chart = xyg.chart(
+        xyg.line(x=np.array([0.0, 10.0]), y=np.array([2.0, 4.0])),
+        xyg.x_axis(margin=0.1),
+        xyg.y_axis(margin=0.0),
     )
 
     assert chart.figure().x_range() == pytest.approx((-1.0, 11.0))
     assert chart.figure().y_range() == pytest.approx((2.0, 4.0))
     with pytest.raises(ValueError, match="x_axis margin"):
-        xy.x_axis(margin=-0.1)
+        xyg.x_axis(margin=-0.1)
     with pytest.raises(ValueError, match="y_axis margin"):
-        xy.y_axis(margin=np.nan)
+        xyg.y_axis(margin=np.nan)
 
 
 def test_component_axis_margin_controls_singleton_range():
-    chart = xy.chart(
-        xy.line(x=np.array([5.0]), y=np.array([1.0])),
-        xy.x_axis(margin=0.0),
-        xy.y_axis(margin=0.1),
+    chart = xyg.chart(
+        xyg.line(x=np.array([5.0]), y=np.array([1.0])),
+        xyg.x_axis(margin=0.0),
+        xyg.y_axis(margin=0.1),
     )
 
     assert chart.figure().x_range() == pytest.approx((5.0, 6.0))
@@ -1724,15 +1724,15 @@ def test_component_axis_margin_controls_singleton_range():
 
 
 def test_component_axis_label_position_controls_emit_to_payload():
-    chart = xy.chart(
-        xy.scatter(x=np.arange(3.0), y=np.arange(3.0)),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)),
+        xyg.x_axis(
             label="custom x",
             label_position="inside-end",
             label_offset=8,
             label_angle=12,
         ),
-        xy.y_axis(
+        xyg.y_axis(
             label="custom y",
             label_position={"left": 18, "top": "52%", "transform": "rotate(-75deg)"},
             label_offset=-4,
@@ -1756,24 +1756,24 @@ def test_component_axis_label_position_controls_emit_to_payload():
 
 def test_component_axis_label_position_rejects_invalid_values():
     with pytest.raises(ValueError, match="label_position"):
-        xy.x_axis(label_position="middle-ish")
+        xyg.x_axis(label_position="middle-ish")
     with pytest.raises(ValueError, match="label_offset"):
-        xy.y_axis(label_offset=True)
+        xyg.y_axis(label_offset=True)
     with pytest.raises(ValueError, match="label_angle"):
-        xy.y_axis(label_angle=np.nan)
+        xyg.y_axis(label_angle=np.nan)
 
 
 def test_component_axis_tick_layout_controls_emit_to_payload():
-    chart = xy.chart(
-        xy.line(x=np.arange(3.0), y=np.arange(3.0)),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line(x=np.arange(3.0), y=np.arange(3.0)),
+        xyg.x_axis(
             tick_count=4,
             tick_label_angle=-35,
             tick_label_strategy="stagger",
             tick_label_anchor="end",
             tick_label_min_gap=12,
         ),
-        xy.y_axis(tick_count=3, tick_label_strategy="hide"),
+        xyg.y_axis(tick_count=3, tick_label_strategy="hide"),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -1788,23 +1788,23 @@ def test_component_axis_tick_layout_controls_emit_to_payload():
     assert "tick_label_anchor" not in spec["y_axis"]
 
     # mpl `ha` vocabulary normalizes to the canonical anchors
-    assert xy.x_axis(tick_label_anchor="right").tick_label_anchor == "end"
-    assert xy.x_axis(tick_label_anchor="left").tick_label_anchor == "start"
-    assert xy.x_axis(tick_label_anchor="middle").tick_label_anchor == "center"
+    assert xyg.x_axis(tick_label_anchor="right").tick_label_anchor == "end"
+    assert xyg.x_axis(tick_label_anchor="left").tick_label_anchor == "start"
+    assert xyg.x_axis(tick_label_anchor="middle").tick_label_anchor == "center"
 
     with pytest.raises(ValueError, match="tick_count"):
-        xy.x_axis(tick_count=0)
+        xyg.x_axis(tick_count=0)
     with pytest.raises(ValueError, match="tick_label_strategy"):
-        xy.x_axis(tick_label_strategy="squish")
+        xyg.x_axis(tick_label_strategy="squish")
     with pytest.raises(ValueError, match="tick_label_anchor"):
-        xy.x_axis(tick_label_anchor="sideways")
+        xyg.x_axis(tick_label_anchor="sideways")
     with pytest.raises(ValueError, match="tick_label_min_gap"):
-        xy.y_axis(tick_label_min_gap=-1)
+        xyg.y_axis(tick_label_min_gap=-1)
 
 
 def test_line_chart():
     x = np.arange(100.0)
-    chart = xy.line_chart(xy.line(x=x, y=np.sin(x), name="wave", color="#123456"))
+    chart = xyg.line_chart(xyg.line(x=x, y=np.sin(x), name="wave", color="#123456"))
     fig = chart.figure()
     assert fig.traces[0].kind == "line"
     assert fig.traces[0].style["color"] == "#123456"
@@ -1818,7 +1818,7 @@ def test_area_chart_resolves_base_column():
             "base": np.array([1.0, 1.5, 1.0]),
         }
     )
-    fig = xy.area_chart(xy.area(x="x", y="y", base="base", color="#3355aa"), data=df).figure()
+    fig = xyg.area_chart(xyg.area(x="x", y="y", base="base", color="#3355aa"), data=df).figure()
     spec, blob = fig.build_payload()
     tr = spec["traces"][0]
     assert tr["kind"] == "area"
@@ -1830,7 +1830,7 @@ def test_area_chart_resolves_base_column():
 
 def test_histogram_chart_data_key():
     df = FakeFrame({"value": np.array([0.2, 0.4, 1.2, 1.8])})
-    chart = xy.histogram_chart(xy.histogram(values="value", bins=[0.0, 1.0, 2.0]), data=df)
+    chart = xyg.histogram_chart(xyg.histogram(values="value", bins=[0.0, 1.0, 2.0]), data=df)
     fig = chart.figure()
     spec, _ = fig.build_payload()
     assert fig.traces[0].kind == "histogram"
@@ -1840,7 +1840,7 @@ def test_histogram_chart_data_key():
 
 def test_bar_chart_data_keys_and_category_axis():
     df = FakeFrame({"label": np.array(["a", "b", "c"]), "value": np.array([3.0, 2.0, 4.0])})
-    chart = xy.bar_chart(xy.bar(x="label", y="value", color="#3355aa"), data=df)
+    chart = xyg.bar_chart(xyg.bar(x="label", y="value", color="#3355aa"), data=df)
     fig = chart.figure()
     assert fig.traces[0].kind == "bar"
     assert fig.traces[0].style["color"] == "#3355aa"
@@ -1858,7 +1858,7 @@ def test_component_xy_datetime_object_axes_do_not_become_categories():
         ],
         dtype=object,
     )
-    chart = xy.chart(xy.line(x=x, y=np.array([1.0, 2.0, 3.0])))
+    chart = xyg.chart(xyg.line(x=x, y=np.array([1.0, 2.0, 3.0])))
 
     spec, _ = chart.figure().build_payload()
 
@@ -1873,8 +1873,8 @@ def test_bar_chart_grouped_component_options():
             "values": np.array([[3.0, 2.0], [4.0, 5.0]]),
         }
     )
-    fig = xy.bar_chart(
-        xy.bar(
+    fig = xyg.bar_chart(
+        xyg.bar(
             x="label",
             y="values",
             mode="stacked",
@@ -1899,16 +1899,16 @@ def test_component_to_html_escapes_user_strings_across_public_surface(tmp_path):
             "values": np.array([[1.0, 3.0], [2.0, 4.0]], dtype=np.float64),
         }
     )
-    chart = xy.bar_chart(
-        xy.bar(
+    chart = xyg.bar_chart(
+        xyg.bar(
             x="label",
             y="values",
             series=[evil, also_evil],
             colors=["#111111", "#222222"],
         ),
-        xy.text(evil, 2.0, evil, class_name=also_evil, style={"color": "#111111"}),
-        xy.x_axis(label=evil),
-        xy.y_axis(label=also_evil),
+        xyg.text(evil, 2.0, evil, class_name=also_evil, style={"color": "#111111"}),
+        xyg.x_axis(label=evil),
+        xyg.y_axis(label=also_evil),
         title=evil,
         data=df,
     )
@@ -1944,11 +1944,11 @@ def test_component_to_html_path_keeps_existing_file_on_atomic_replace_failure(
 ):
     target = tmp_path / "component.html"
     target.write_text("old declarative chart artifact", encoding="utf-8")
-    chart = xy.chart(
-        xy.scatter(x=[1.0, 2.0], y=[2.0, 4.0], name="points"),
-        xy.line(x=[1.0, 2.0], y=[2.1, 3.9], name="trend"),
-        xy.legend(class_name="tw-legend"),
-        xy.tooltip(fields=["x", "y"]),
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0, 2.0], y=[2.0, 4.0], name="points"),
+        xyg.line(x=[1.0, 2.0], y=[2.1, 3.9], name="trend"),
+        xyg.legend(class_name="tw-legend"),
+        xyg.tooltip(fields=["x", "y"]),
         title="declarative atomic export",
     )
 
@@ -1967,7 +1967,7 @@ def test_component_to_html_path_keeps_existing_file_on_atomic_replace_failure(
 
 
 def test_component_to_png_delegates_to_composed_figure(monkeypatch):
-    chart = xy.line_chart(xy.line([0, 1], [1, 2]))
+    chart = xyg.line_chart(xyg.line([0, 1], [1, 2]))
     seen = {}
 
     def fake_to_png(
@@ -1977,7 +1977,7 @@ def test_component_to_png_delegates_to_composed_figure(monkeypatch):
         width=None,
         height=None,
         scale=2.0,
-        engine=xy.Engine.default,
+        engine=xyg.Engine.default,
         optimize=False,
         custom_css=None,
         sandbox=True,
@@ -2006,7 +2006,7 @@ def test_component_to_png_delegates_to_composed_figure(monkeypatch):
         width=320,
         height=200,
         scale=1.5,
-        engine=xy.Engine.chromium,
+        engine=xyg.Engine.chromium,
         optimize=True,
         custom_css=".chart { color: rebeccapurple; }",
         sandbox=False,
@@ -2020,7 +2020,7 @@ def test_component_to_png_delegates_to_composed_figure(monkeypatch):
         "width": 320,
         "height": 200,
         "scale": 1.5,
-        "engine": xy.Engine.chromium,
+        "engine": xyg.Engine.chromium,
         "optimize": True,
         "custom_css": ".chart { color: rebeccapurple; }",
         "sandbox": False,
@@ -2029,7 +2029,7 @@ def test_component_to_png_delegates_to_composed_figure(monkeypatch):
 
 
 def test_widget_failure_does_not_cache_partial_widget(monkeypatch):
-    chart = xy.line_chart(xy.line([0.0, 1.0], [1.0, 2.0]))
+    chart = xyg.line_chart(xyg.line([0.0, 1.0], [1.0, 2.0]))
     fig = chart.figure()
     calls = {"count": 0}
 
@@ -2069,7 +2069,7 @@ def test_widget_failure_does_not_cache_partial_widget(monkeypatch):
 
 def test_bar_chart_horizontal_component_option():
     df = FakeFrame({"label": np.array(["a", "b"]), "value": np.array([3.0, 2.0])})
-    fig = xy.bar_chart(xy.bar(x="label", y="value", orientation="horizontal"), data=df).figure()
+    fig = xyg.bar_chart(xyg.bar(x="label", y="value", orientation="horizontal"), data=df).figure()
     spec, _ = fig.build_payload()
     assert spec["y_axis"]["kind"] == "category"
     assert spec["y_axis"]["categories"] == ["a", "b"]
@@ -2083,7 +2083,7 @@ def test_column_chart_resolves_base_column():
             "base": np.array([1.0, 10.0]),
         }
     )
-    fig = xy.column_chart(xy.column(x="label", y="value", base="base"), data=df).figure()
+    fig = xyg.column_chart(xyg.column(x="label", y="value", base="base"), data=df).figure()
     spec, blob = fig.build_payload()
     bar = spec["traces"][0]["bar"]
     y0 = spec["columns"][bar["value0"]]
@@ -2099,8 +2099,8 @@ def test_heatmap_chart_data_keys():
             "rows": np.array(["north", "south"]),
         }
     )
-    fig = xy.heatmap_chart(
-        xy.heatmap(z="z", x="cols", y="rows", colormap="cividis", name="values"),
+    fig = xyg.heatmap_chart(
+        xyg.heatmap(z="z", x="cols", y="rows", colormap="cividis", name="values"),
         data=df,
     ).figure()
     spec, _ = fig.build_payload()
@@ -2113,11 +2113,11 @@ def test_heatmap_chart_data_keys():
 
 
 def test_dual_axis_component_payload_binds_traces_to_secondary_axis():
-    chart = xy.chart(
-        xy.line(x=np.arange(3.0), y=np.array([1.0, 2.0, 3.0]), name="left"),
-        xy.line(x=np.arange(3.0), y=np.array([20.0, 40.0, 80.0]), name="right", y_axis="y2"),
-        xy.y_axis(label="primary"),
-        xy.y_axis(id="y2", label="secondary", side="right", domain=(0.0, 100.0), format=",.1f"),
+    chart = xyg.chart(
+        xyg.line(x=np.arange(3.0), y=np.array([1.0, 2.0, 3.0]), name="left"),
+        xyg.line(x=np.arange(3.0), y=np.array([20.0, 40.0, 80.0]), name="right", y_axis="y2"),
+        xyg.y_axis(label="primary"),
+        xyg.y_axis(id="y2", label="secondary", side="right", domain=(0.0, 100.0), format=",.1f"),
     )
 
     spec, _ = chart.figure().build_payload()
@@ -2130,8 +2130,8 @@ def test_dual_axis_component_payload_binds_traces_to_secondary_axis():
     assert [trace["y_axis"] for trace in spec["traces"]] == ["y", "y2"]
 
     with pytest.raises(ValueError, match=r"matching xyg\.y_axis"):
-        xy.chart(
-            xy.line(x=np.arange(3.0), y=np.arange(3.0), y_axis="y2"),
+        xyg.chart(
+            xyg.line(x=np.arange(3.0), y=np.arange(3.0), y_axis="y2"),
         ).figure()
 
 
@@ -2145,7 +2145,7 @@ def test_declarative_named_axis_category_state_is_scoped_per_axis_id(
     axis_dim: str, primary_is_category: bool
 ) -> None:
     named_axis_id = f"{axis_dim}2"
-    axis_factory = xy.x_axis if axis_dim == "x" else xy.y_axis
+    axis_factory = xyg.x_axis if axis_dim == "x" else xyg.y_axis
     side = "top" if axis_dim == "x" else "right"
     category_values = ["Alpha", "Beta"]
     numeric_values = [100.0, 200.0]
@@ -2158,9 +2158,9 @@ def test_declarative_named_axis_category_state_is_scoped_per_axis_id(
         )
         if named:
             props[f"{axis_dim}_axis"] = named_axis_id
-        return xy.line(**props)
+        return xyg.line(**props)
 
-    chart = xy.chart(
+    chart = xyg.chart(
         mark(primary_values),
         mark(named_values, named=True),
         axis_factory(type_="linear" if not primary_is_category else None),
@@ -2189,11 +2189,11 @@ def test_declarative_named_axis_category_state_is_scoped_per_axis_id(
 
 def test_bad_child_type():
     with pytest.raises(TypeError, match="children"):
-        xy.scatter_chart("not a component").figure()
+        xyg.scatter_chart("not a component").figure()
 
 
 def test_figure_cached():
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)))
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)))
     assert chart.figure() is chart.figure()
 
 
@@ -2236,12 +2236,12 @@ def test_selection_payload():
 
 
 def test_chart_styles_prop_is_the_documented_per_slot_mechanism() -> None:
-    """spec/api/styling.md's fourth mechanism: `styles={slot: {...}}` on xy.chart —
+    """spec/api/styling.md's fourth mechanism: `styles={slot: {...}}` on xyg.chart —
     slot-validated, CSS-validated, merged with per-component `style=`."""
     xs = np.arange(6.0)
-    chart = xy.chart(
-        xy.scatter(x=xs, y=xs),
-        xy.tooltip(style={"color": "#fff"}),
+    chart = xyg.chart(
+        xyg.scatter(x=xs, y=xs),
+        xyg.tooltip(style={"color": "#fff"}),
         styles={
             "title": {"font_size": 18, "letter_spacing": "0.02em"},
             "tooltip": {"border_radius": "10px"},
@@ -2251,9 +2251,9 @@ def test_chart_styles_prop_is_the_documented_per_slot_mechanism() -> None:
     assert dom["styles"]["title"] == {"font_size": 18, "letter_spacing": "0.02em"}
     assert dom["styles"]["tooltip"] == {"color": "#fff", "border_radius": "10px"}
     with pytest.raises(ValueError, match="unknown slot"):
-        xy.chart(xy.scatter(x=xs, y=xs), styles={"tooltp": {"color": "#fff"}})
+        xyg.chart(xyg.scatter(x=xs, y=xs), styles={"tooltp": {"color": "#fff"}})
     with pytest.raises(ValueError, match="not a valid hex color"):
-        xy.chart(xy.scatter(x=xs, y=xs), styles={"title": {"color": "#3b82zz"}})
+        xyg.chart(xyg.scatter(x=xs, y=xs), styles={"title": {"color": "#3b82zz"}})
 
 
 # -- Chart live surface (data-live, structure-immutable) ----------------------
@@ -2270,7 +2270,7 @@ def test_chart_append_routes_through_live_widget(monkeypatch):
             appends.append((trace_id, x, y, color, size))
 
     monkeypatch.setattr("xyg.widget.FigureWidget", CapturingWidget)
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)))
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)))
     chart.widget()
     n_before = len(chart.figure().traces[0].x.values)
 
@@ -2283,7 +2283,7 @@ def test_chart_append_routes_through_live_widget(monkeypatch):
 
 
 def test_chart_append_headless_mutates_figure_without_widget_stack():
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)))
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)))
 
     chart.append(0, [3.0], [4.0])
 
@@ -2296,14 +2296,14 @@ def test_chart_append_headless_mutates_figure_without_widget_stack():
 
 
 def test_chart_append_contract_violations_raise():
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(3.0), y=np.arange(3.0)))
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(3.0), y=np.arange(3.0)))
 
     with pytest.raises(ValueError):
         chart.append(0, [1.0], [1.0, 2.0])  # length mismatch
 
 
 def test_chart_pick_matches_figure_pick():
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(5.0), y=np.arange(5.0) * 2))
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(5.0), y=np.arange(5.0) * 2))
 
     row = chart.pick(0, 2)
 
@@ -2314,7 +2314,7 @@ def test_chart_pick_matches_figure_pick():
 
 
 def test_chart_select_range_returns_selection():
-    chart = xy.scatter_chart(xy.scatter(x=np.arange(10.0), y=np.arange(10.0)))
+    chart = xyg.scatter_chart(xyg.scatter(x=np.arange(10.0), y=np.arange(10.0)))
 
     sel = chart.select_range(2.0, 5.0, 0.0, 6.0)
 
@@ -2330,8 +2330,8 @@ def test_declarative_chart_live_roundtrip():
     """End to end: declarative chart -> real widget -> simulated client
     messages fire callbacks -> chart.append streams -> readouts see new rows."""
     hovered, brushes, sels = [], [], []
-    chart = xy.chart(
-        xy.scatter(x=np.arange(10.0), y=np.arange(10.0), name="pts"),
+    chart = xyg.chart(
+        xyg.scatter(x=np.arange(10.0), y=np.arange(10.0), name="pts"),
         on_hover=hovered.append,
         on_brush=brushes.append,
         on_select=sels.append,

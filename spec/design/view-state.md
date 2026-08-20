@@ -248,8 +248,8 @@ mechanism, no special cases.
 
 Zero-backend charts (static payload tier, standalone HTML) have no Python
 side, but the client-side controller from §3 exists there too. The mount
-exposes it as a JS handle on the chart root (`root.xyg.applyState(patch)`,
-`root.xyg.state()`, `root.xyg.back()`, `root.xyg.forward()`), which is the
+exposes it as a JS handle on the chart root (`root.xy.applyState(patch)`,
+`root.xy.state()`, `root.xy.back()`, `root.xy.forward()`), which is the
 whole public JS control surface — one object, same patch semantics. This
 handle and the modebar are the *only* history-navigation surfaces (§4). This is what makes "shareable
 view" utilities possible on exported files without any server.

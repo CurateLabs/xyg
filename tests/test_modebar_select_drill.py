@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import run_browser_probe
 from xyg.export import find_chromium
 
@@ -66,14 +66,14 @@ _DENSITY_PROBE = """
 
 def _chart_html() -> str:
     rng = np.random.default_rng(7)
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             rng.normal(0.0, 1.0, 20_000),
             rng.normal(0.0, 1.0, 20_000),
             density=True,
         ),
-        xy.x_axis(),
-        xy.y_axis(),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=480,
         height=360,
     )

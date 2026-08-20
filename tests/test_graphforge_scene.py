@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _graph
 from xyg._figure import Figure
 
@@ -30,7 +30,7 @@ def _airports_tables():
 
 def test_graphforge_ipc_preserves_parallel_edge_identity_and_node_tooltips():
     nodes, edges = _airports_tables()
-    data = xy.from_graphforge_tables(nodes, edges)
+    data = xyg.from_graphforge_tables(nodes, edges)
     assert data.n_edges == 4
     assert len(set(data.edge_ids)) == 4
 
@@ -105,7 +105,7 @@ def test_graphforge_simple_path_ships_edge_tooltips_on_trace():
 
 def test_graphforge_graphdata_passthrough_and_column_encoding():
     nodes, edges = _airports_tables()
-    data = xy.from_graphforge_tables(nodes, edges)
+    data = xyg.from_graphforge_tables(nodes, edges)
     fig = Figure().graph(data, layout="circle", seed=2, size="rank", color="rank")
     node_trace = fig.traces[-1]
     assert node_trace.size_ch is not None
@@ -195,7 +195,7 @@ def test_projection_tooltip_rows_preserve_large_integers_as_strings():
         "src_uuid": ["00000000-0000-0000-0000-000000000001"],
         "dst_uuid": ["00000000-0000-0000-0000-000000000002"],
     }
-    data = xy.from_graphforge_tables(nodes, edges)
+    data = xyg.from_graphforge_tables(nodes, edges)
     node_rows, _edge_rows = _graph.projection_tooltip_rows(data)
     assert node_rows is not None
     assert node_rows[0]["big"] == "9007199254740993"

@@ -73,7 +73,7 @@ def build_page() -> str:
     return d;
   }}
   try {{
-    const view = xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
+    const view = xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);
     setTimeout(() => {{
       try {{
         const g = view.gpuTraces[0];

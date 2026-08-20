@@ -1,13 +1,13 @@
 # Tailwind customizability audit — 2026-07-26
 
 This audit follows Tailwind classes from Reflex source discovery through the
-generated application, XY's live payload boundary, browser cascade, repeated
+generated application, XYG's live payload boundary, browser cascade, repeated
 chrome nodes, interaction state, and canvas rendering. It uses Tailwind v4 and
 a production Reflex build rather than a development-only stylesheet.
 
 ## Summary
 
-XY already had a strong browser styling foundation: 29 validated public slots,
+XYG already had a strong browser styling foundation: 29 validated public slots,
 zero-specificity visual defaults in Tailwind's low-priority `base` layer, typed
 inline styles for explicit author intent, and CSS variables for canvas theme
 paint. The audit found gaps at three different boundaries:
@@ -59,7 +59,7 @@ Tailwind's text-scan contract.
 
 ## Cascade ownership
 
-Normal utilities own durable visual appearance on DOM slots. XY still owns
+Normal utilities own durable visual appearance on DOM slots. XYG still owns
 structural geometry and conditional interaction state: positioning, live
 display, z-index, transforms, pointer routing, legend hover/toggle
 opacity/filter, and modebar open/active state. An explicit `styles={...}` value

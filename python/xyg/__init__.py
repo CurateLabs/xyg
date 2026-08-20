@@ -1,4 +1,4 @@
-"""xy — an experimental Python charting engine.
+"""xyg — an experimental Python charting engine.
 
 Cost scales with pixels on screen, not points in the dataset: native Rust core
 in the Python process, offset-encoded f32 binary transport, M4 decimation, GPU

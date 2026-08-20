@@ -509,7 +509,7 @@ with the producing host. Python wheels embed a **copy** of `@curatelabs/xyg`
 at `python/xyg/static/index.js` so the JS that renders a payload is the build
 that shipped with the Python that produced it; `reflex_xy` deliberately does
 not package its own copy — `assets.register()` symlinks the client out of the
-installed `xy` distribution, repairing a stale link if the install moved.
+installed `xyg` distribution, repairing a stale link if the install moved.
 Node `toHtml` / VS Code webviews load the same host-neutral artifact, not the
 Python tree. The protocol check exists for the case that survives this: a
 browser holding a cached bundle against a restarted kernel.

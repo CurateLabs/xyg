@@ -74,15 +74,15 @@ def _parse_sizes(text: str) -> list[int]:
 def _scatter_figure(n: int) -> Any:
     if np is None:
         raise SystemExit("numpy is required for benchmarks/bench_interaction.py")
-    import xyg as xy
+    import xyg
 
     rng = np.random.default_rng(70_011 + n)
     x = rng.normal(0.0, 1.0, n).astype(np.float64, copy=False)
     y = (0.58 * x + rng.normal(0.0, 0.72, n)).astype(np.float64, copy=False)
-    return xy.scatter_chart(
-        xy.scatter(x=x, y=y, name="points", opacity=0.72),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+    return xyg.scatter_chart(
+        xyg.scatter(x=x, y=y, name="points", opacity=0.72),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
         width=RENDER_W,
         height=RENDER_H,
         title=f"{n:,} point interaction probe",
@@ -97,7 +97,7 @@ def _scatter_figure(n: int) -> Any:
 def _core_interaction_figures() -> list[dict[str, Any]]:
     if np is None:
         raise SystemExit("numpy is required for benchmarks/bench_interaction.py")
-    import xyg as xy
+    import xyg
 
     all_interactions = {
         "hover": True,
@@ -113,10 +113,10 @@ def _core_interaction_figures() -> list[dict[str, Any]]:
 
     x_line = np.linspace(0.0, 18_000.0, 120_000, dtype=np.float64)
     y_line = np.cumsum(rng.normal(0.0, 0.18, x_line.size)).astype(np.float64, copy=False)
-    line = xy.line_chart(
-        xy.line(x=x_line, y=y_line, name="signal", width=1.4),
-        xy.x_axis(label="sample"),
-        xy.y_axis(label="signal"),
+    line = xyg.line_chart(
+        xyg.line(x=x_line, y=y_line, name="signal", width=1.4),
+        xyg.x_axis(label="sample"),
+        xyg.y_axis(label="signal"),
         width=RENDER_W,
         height=RENDER_H,
         title="120k sample line interaction probe",
@@ -129,10 +129,10 @@ def _core_interaction_figures() -> list[dict[str, Any]]:
             rng.normal(1.35, 0.68, 50_000),
         ]
     )
-    hist = xy.histogram_chart(
-        xy.histogram(hist_values, bins=180, name="distribution"),
-        xy.x_axis(label="value"),
-        xy.y_axis(label="count"),
+    hist = xyg.histogram_chart(
+        xyg.histogram(hist_values, bins=180, name="distribution"),
+        xyg.x_axis(label="value"),
+        xyg.y_axis(label="count"),
         width=RENDER_W,
         height=RENDER_H,
         title="120k value histogram interaction probe",
@@ -145,10 +145,10 @@ def _core_interaction_figures() -> list[dict[str, Any]]:
         + 18.0 * np.sin(np.linspace(0.0, 18.0, len(categories)))
         + rng.normal(0.0, 3.0, len(categories))
     )
-    bars = xy.bar_chart(
-        xy.bar(categories, values, name="bars"),
-        xy.x_axis(label="category"),
-        xy.y_axis(label="value"),
+    bars = xyg.bar_chart(
+        xyg.bar(categories, values, name="bars"),
+        xyg.x_axis(label="category"),
+        xyg.y_axis(label="value"),
         width=RENDER_W,
         height=RENDER_H,
         title="1.2k bar interaction probe",
@@ -161,10 +161,10 @@ def _core_interaction_figures() -> list[dict[str, Any]]:
     z = np.exp(-((xx - 0.85) ** 2 + (yy + 0.3) ** 2)) + 0.72 * np.exp(
         -((xx + 1.2) ** 2 + (yy - 0.65) ** 2) / 0.52
     )
-    heatmap = xy.heatmap_chart(
-        xy.heatmap(z, x=hx, y=hy, name="heat"),
-        xy.x_axis(label="x"),
-        xy.y_axis(label="y"),
+    heatmap = xyg.heatmap_chart(
+        xyg.heatmap(z, x=hx, y=hy, name="heat"),
+        xyg.x_axis(label="x"),
+        xyg.y_axis(label="y"),
         width=RENDER_W,
         height=RENDER_H,
         title="220x180 heatmap interaction probe",
@@ -176,8 +176,8 @@ def _core_interaction_figures() -> list[dict[str, Any]]:
     graph_edges = list(zip(graph_nodes, graph_nodes[1:] + graph_nodes[:1], strict=True))
     graph_x = np.arange(graph_n, dtype=np.float64) % 50
     graph_y = np.arange(graph_n, dtype=np.float64) // 50
-    graph = xy.graph_chart(
-        xy.graph(
+    graph = xyg.graph_chart(
+        xyg.graph(
             graph_nodes,
             graph_edges,
             x=graph_x,

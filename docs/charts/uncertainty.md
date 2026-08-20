@@ -1,6 +1,6 @@
 ---
 title: Error Bar and Band Charts in Python
-description: Show uncertainty in Python with xy — draw error bars for point estimates and shaded error bands for confidence and forecast intervals.
+description: Show uncertainty in Python with XYG — draw error bars for point estimates and shaded error bands for confidence and forecast intervals.
 components:
   - xyg.error_band_chart
   - xyg.errorbar_chart

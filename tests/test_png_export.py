@@ -12,7 +12,7 @@ import zlib
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _png, _raster
 from xyg._figure import Figure
 
@@ -185,11 +185,11 @@ def test_png_is_screen_bounded_for_large_lines() -> None:
 
 
 def test_render_paints_figure_background() -> None:
-    import xyg as xy
+    import xyg
 
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.theme(background="#000000"),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.theme(background="#000000"),
         width=200,
         height=120,
     )
@@ -202,11 +202,11 @@ def test_render_paints_figure_background() -> None:
 
 
 def test_render_composites_translucent_figure_background() -> None:
-    import xyg as xy
+    import xyg
 
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.theme(background="rgba(0, 0, 0, 0.5)"),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.theme(background="rgba(0, 0, 0, 0.5)"),
         width=200,
         height=120,
     )
@@ -218,12 +218,12 @@ def test_render_composites_translucent_figure_background() -> None:
 
 
 def test_raster_honors_tick_label_anchor() -> None:
-    import xyg as xy
+    import xyg
 
     def render(**axis_kwargs):
-        chart = xy.line_chart(
-            xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-            xy.x_axis(**axis_kwargs),
+        chart = xyg.line_chart(
+            xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+            xyg.x_axis(**axis_kwargs),
             width=200,
             height=120,
         )
@@ -250,9 +250,9 @@ def test_raster_rotated_x_ticks_match_svg_default_anchor(
     expected_anchor: int,
 ) -> None:
     axis_id = "x" if side == "bottom" else "x2"
-    chart = xy.chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], x_axis=axis_id),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], x_axis=axis_id),
+        xyg.x_axis(
             id=axis_id,
             side=side,
             tick_values=(0.0, 1.0),
@@ -276,12 +276,12 @@ def test_raster_legend_text_honors_theme_text_color() -> None:
     # Red is reserved for the theme text color; every other paint is green,
     # and the tick labels are overridden, so red pixels can only come from
     # the legend text.
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0], color="#00ff00", name="walk"),
-        xy.x_axis(style={"tick_label_color": "#00ff00"}),
-        xy.y_axis(style={"tick_label_color": "#00ff00"}),
-        xy.legend(loc="upper right"),
-        xy.theme(
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0], color="#00ff00", name="walk"),
+        xyg.x_axis(style={"tick_label_color": "#00ff00"}),
+        xyg.y_axis(style={"tick_label_color": "#00ff00"}),
+        xyg.legend(loc="upper right"),
+        xyg.theme(
             text_color="#ff0000",
             grid_color="transparent",
             axis_color="#00ff00",
@@ -384,12 +384,12 @@ def test_native_long_legend_is_clamped_and_ellipsized_inside_plot(monkeypatch) -
     from xyg import _svg
 
     names = [f"series-{index}-" + "very-long-operational-label-" * 2 for index in range(4)]
-    chart = xy.line_chart(
+    chart = xyg.line_chart(
         *(
-            xy.line([0.0, 1.0], [float(index), float(index + 1)], name=name)
+            xyg.line([0.0, 1.0], [float(index), float(index + 1)], name=name)
             for index, name in enumerate(names)
         ),
-        xy.legend(
+        xyg.legend(
             loc="upper right",
             ncols=2,
             title="Long operational series",
@@ -418,17 +418,17 @@ def test_native_long_legend_is_clamped_and_ellipsized_inside_plot(monkeypatch) -
 def test_native_secondary_y_axis_scales_trace_and_renders_right_chrome() -> None:
     from xyg import _svg
 
-    chart = xy.chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb", width=3),
-        xy.line(
+    chart = xyg.chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], color="#2563eb", width=3),
+        xyg.line(
             [0.0, 1.0],
             [100.0, 200.0],
             color="#dc2626",
             width=3,
             y_axis="y2",
         ),
-        xy.y_axis(label="Primary"),
-        xy.y_axis(
+        xyg.y_axis(label="Primary"),
+        xyg.y_axis(
             id="y2",
             label="Secondary",
             side="right",
@@ -466,17 +466,17 @@ def test_native_secondary_y_axis_scales_trace_and_renders_right_chrome() -> None
 def test_native_secondary_x_axis_scales_trace_and_renders_top_chrome() -> None:
     from xyg import _svg
 
-    chart = xy.chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb", width=3),
-        xy.line(
+    chart = xyg.chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], color="#2563eb", width=3),
+        xyg.line(
             [100.0, 200.0],
             [0.2, 0.8],
             color="#dc2626",
             width=3,
             x_axis="x2",
         ),
-        xy.x_axis(label="Primary X"),
-        xy.x_axis(
+        xyg.x_axis(label="Primary X"),
+        xyg.x_axis(
             id="x2",
             label="Secondary X",
             side="top",
@@ -514,11 +514,11 @@ def test_native_secondary_x_axis_scales_trace_and_renders_top_chrome() -> None:
 def test_native_mixed_primary_and_named_x_axis_kinds_render_independently(monkeypatch) -> None:
     cases = (
         (
-            xy.chart(
-                xy.line(["Primary Alpha", "Primary Beta", "Primary Gamma"], [1.0, 2.0, 3.0]),
-                xy.line([100.0, 200.0, 300.0], [3.0, 2.0, 1.0], x_axis="x2"),
-                xy.x_axis(tick_label_strategy="rotate"),
-                xy.x_axis(
+            xyg.chart(
+                xyg.line(["Primary Alpha", "Primary Beta", "Primary Gamma"], [1.0, 2.0, 3.0]),
+                xyg.line([100.0, 200.0, 300.0], [3.0, 2.0, 1.0], x_axis="x2"),
+                xyg.x_axis(tick_label_strategy="rotate"),
+                xyg.x_axis(
                     id="x2",
                     side="top",
                     type_="linear",
@@ -532,16 +532,16 @@ def test_native_mixed_primary_and_named_x_axis_kinds_render_independently(monkey
             {"Primary Alpha", "Primary Gamma", "N100", "N300"},
         ),
         (
-            xy.chart(
-                xy.line([10.0, 20.0, 30.0], [1.0, 2.0, 3.0]),
-                xy.line(["Named Red", "Named Green", "Named Blue"], [3.0, 2.0, 1.0], x_axis="x2"),
-                xy.x_axis(
+            xyg.chart(
+                xyg.line([10.0, 20.0, 30.0], [1.0, 2.0, 3.0]),
+                xyg.line(["Named Red", "Named Green", "Named Blue"], [3.0, 2.0, 1.0], x_axis="x2"),
+                xyg.x_axis(
                     type_="linear",
                     tick_values=(10.0, 20.0, 30.0),
                     tick_labels=("P10", "P20", "P30"),
                     tick_label_strategy="rotate",
                 ),
-                xy.x_axis(id="x2", side="top", tick_label_strategy="rotate"),
+                xyg.x_axis(id="x2", side="top", tick_label_strategy="rotate"),
                 width=560,
                 height=300,
             ),
@@ -561,9 +561,9 @@ def test_native_named_axis_collision_and_title_placement_controls(monkeypatch) -
 
     values = list(range(30))
     tick_labels = [f"very-long-native-label-{value}" for value in values]
-    chart = xy.chart(
-        xy.line(values, values, x_axis="x2"),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line(values, values, x_axis="x2"),
+        xyg.x_axis(
             id="x2",
             side="top",
             label="Native positioned title",
@@ -604,9 +604,9 @@ def test_native_vertical_colorbar_label_is_rotated_beside_the_bar_inside_the_can
     """
     from xyg import _svg
 
-    chart = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
-        xy.colorbar(title="counts in bin"),
+    chart = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
+        xyg.colorbar(title="counts in bin"),
         width=560,
         height=320,
     )
@@ -632,9 +632,9 @@ def test_native_vertical_colorbar_label_is_rotated_beside_the_bar_inside_the_can
 
 def test_native_vertical_colorbar_label_leaves_the_canvas_edges_unpainted() -> None:
     """The clipping symptom itself: no label ink may reach the canvas border."""
-    chart = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
-        xy.colorbar(title="counts in bin"),
+    chart = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
+        xyg.colorbar(title="counts in bin"),
         width=560,
         height=320,
     )
@@ -648,9 +648,9 @@ def test_native_horizontal_colorbar_label_stays_upright_below_the_bar(monkeypatc
     """The horizontal orientation reads left-to-right, so it must not rotate."""
     from xyg import _svg
 
-    chart = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
-        xy.colorbar(title="counts in bin", orientation="horizontal"),
+    chart = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
+        xyg.colorbar(title="counts in bin", orientation="horizontal"),
         width=560,
         height=320,
     )
@@ -672,9 +672,9 @@ def test_native_diagonal_tick_angle_keeps_all_labels_when_they_fit(monkeypatch) 
     # same collision-selected label set as SVG/browser.
     tick_values = [0.0, 25.0, 50.0, 75.0, 100.0]
     tick_labels = ["t0", "t25", "t50", "t75", "t100"]
-    chart = xy.chart(
-        xy.line([0.0, 100.0], [0.0, 1.0]),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line([0.0, 100.0], [0.0, 1.0]),
+        xyg.x_axis(
             domain=(0.0, 100.0),
             tick_values=tick_values,
             tick_labels=tick_labels,
@@ -1060,12 +1060,12 @@ def _text_commands(monkeypatch, chart) -> dict[str, tuple[float, float]]:
     return emitted
 
 
-def _tick_geometry_chart(style=None) -> xy.Chart:
+def _tick_geometry_chart(style=None) -> xyg.Chart:
     """A 3x3 tick grid with a pinned plot rect, so offsets are exact integers."""
-    return xy.chart(
-        xy.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5]),
-        xy.x_axis(domain=(0.0, 2.0), tick_values=[0.0, 1.0, 2.0], style=style),
-        xy.y_axis(domain=(0.0, 1.0), tick_values=[0.0, 0.5, 1.0], style=style),
+    return xyg.chart(
+        xyg.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5]),
+        xyg.x_axis(domain=(0.0, 2.0), tick_values=[0.0, 1.0, 2.0], style=style),
+        xyg.y_axis(domain=(0.0, 1.0), tick_values=[0.0, 0.5, 1.0], style=style),
         width=400,
         height=300,
         padding=(40, 50, 40, 50),
@@ -1215,11 +1215,11 @@ def test_the_raster_exporter_draws_annotation_labels_and_marker_glyphs() -> None
     never emitted, and `xyg.marker()` drew nothing at all."""
     import xyg._raster as raster
 
-    chart = xy.line_chart(
-        xy.line([1, 2, 3, 4], [1, 3, 2, 3.4], name="signal"),
-        xy.hline(y=2, text="target"),
-        xy.x_band(x0=2.6, x1=3.2, text="window"),
-        xy.marker(x=2, y=3, text="peak"),
+    chart = xyg.line_chart(
+        xyg.line([1, 2, 3, 4], [1, 3, 2, 3.4], name="signal"),
+        xyg.hline(y=2, text="target"),
+        xyg.x_band(x0=2.6, x1=3.2, text="window"),
+        xyg.marker(x=2, y=3, text="peak"),
         width=680,
         height=400,
     )
@@ -1251,9 +1251,9 @@ def test_the_raster_exporter_expands_categorical_legend_rows() -> None:
     import xyg._raster as raster
 
     species = ["setosa"] * 4 + ["versicolor"] * 4 + ["virginica"] * 4
-    chart = xy.scatter_chart(
-        xy.scatter(list(range(12)), list(range(12)), color=species, name="iris"),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(list(range(12)), list(range(12)), color=species, name="iris"),
+        xyg.legend(),
         width=560,
         height=380,
     )
@@ -1276,7 +1276,7 @@ def test_the_raster_exporter_expands_categorical_legend_rows() -> None:
 
 
 def _title_png(title: str) -> bytes:
-    return xy.line_chart(xy.line([1, 2], [1, 2]), title=title, width=420, height=240).to_png()
+    return xyg.line_chart(xyg.line([1, 2], [1, 2]), title=title, width=420, height=240).to_png()
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
 ---
 title: Histogram in Python
-description: Histogram Python charts with xy — bin large datasets into a fast, interactive frequency distribution that pans, zooms, and refines smoothly at millions of values.
+description: Histogram Python charts with XYG — bin large datasets into a fast, interactive frequency distribution that pans, zooms, and refines smoothly at millions of values.
 components:
   - xyg.histogram_chart
 ---

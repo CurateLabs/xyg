@@ -273,7 +273,7 @@ ordinary tick labels, where a box would be plainly wrong.
 
 A warning surfaced at the Python export boundary (where messages belong, §4)
 remains the complete fix and is not yet implemented. The documented escape for
-real coverage is `engine=xyg.Engine.chromium` until `python/xyg/` ships (`xyg.Engine.chromium` is the future path), and the user-facing statement of
+real coverage is `engine=xyg.Engine.chromium`, and the user-facing statement of
 the same limitation lives in `spec/api/styling.md` §"Native text coverage" —
 these two must be amended together. The bound applies to the native raster
 formats only; the SVG and PDF export paths have their own text contracts.

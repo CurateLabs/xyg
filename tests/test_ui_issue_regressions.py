@@ -9,7 +9,7 @@ from xml.etree import ElementTree
 
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import run_browser_probe
 from xyg import _svg
 from xyg.export import find_chromium
@@ -19,7 +19,7 @@ from xyg.export import find_chromium
 _Y_TITLE_TICK_GAP_EM = 0.4
 
 
-def _svg_y_title_geometry(chart: xy.Chart, labels: set[str]) -> dict[str, dict[str, float]]:
+def _svg_y_title_geometry(chart: xyg.Chart, labels: set[str]) -> dict[str, dict[str, float]]:
     """Return the static renderer's resolved title anchors for named labels."""
     geometry: dict[str, dict[str, float]] = {}
     for element in ElementTree.fromstring(chart.to_svg()).iter():
@@ -41,16 +41,16 @@ def _svg_y_title_geometry(chart: xy.Chart, labels: set[str]) -> dict[str, dict[s
 
 def test_svg_y_axis_title_locations_center_primary_and_named_axes() -> None:
     labels = {"primary default", "right start", "left center", "right end"}
-    chart = xy.chart(
-        xy.line([0, 1], [0, 1]),
-        xy.line([0, 1], [1, 2], y_axis="y2"),
-        xy.line([0, 1], [2, 3], y_axis="y3"),
-        xy.line([0, 1], [3, 4], y_axis="y4"),
-        xy.x_axis(),
-        xy.y_axis(label="primary default", side="left"),
-        xy.y_axis(id="y2", label="right start", side="right", label_position="start"),
-        xy.y_axis(id="y3", label="left center", side="left", label_position="center"),
-        xy.y_axis(id="y4", label="right end", side="right", label_position="end"),
+    chart = xyg.chart(
+        xyg.line([0, 1], [0, 1]),
+        xyg.line([0, 1], [1, 2], y_axis="y2"),
+        xyg.line([0, 1], [2, 3], y_axis="y3"),
+        xyg.line([0, 1], [3, 4], y_axis="y4"),
+        xyg.x_axis(),
+        xyg.y_axis(label="primary default", side="left"),
+        xyg.y_axis(id="y2", label="right start", side="right", label_position="start"),
+        xyg.y_axis(id="y3", label="left center", side="left", label_position="center"),
+        xyg.y_axis(id="y4", label="right end", side="right", label_position="end"),
         width=720,
         height=440,
         padding=(48, 120, 48, 120),
@@ -69,7 +69,7 @@ def test_svg_y_axis_title_locations_center_primary_and_named_axes() -> None:
     assert geometry["right end"]["angle"] == 90
 
 
-def _probe(chart: xy.Chart, script: str, tmp_path: Path, name: str) -> dict:
+def _probe(chart: xyg.Chart, script: str, tmp_path: Path, name: str) -> dict:
     chromium = find_chromium()
     if chromium is None:
         pytest.skip("Chromium unavailable")
@@ -109,9 +109,9 @@ _POSTLUDE = """
 def test_browser_log_minor_grid_and_nonpositive_mode_reach_live_renderer(
     tmp_path: Path,
 ) -> None:
-    chart = xy.line_chart(
-        xy.line(x=[1.0, 10.0], y=[1.0, 2.0]),
-        xy.x_axis(
+    chart = xyg.line_chart(
+        xyg.line(x=[1.0, 10.0], y=[1.0, 2.0]),
+        xyg.x_axis(
             type_="log",
             domain=(1.0, 10.0),
             tick_values=[1.0, 10.0],
@@ -162,14 +162,14 @@ def test_tooltip_labels_and_semantic_slots_are_independently_styleable(tmp_path:
         "revenue_usd": [1000, 1250, 1500, 1750],
         "conversion_rate": [4.2, 4.8, 5.1, 5.7],
     }
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             x="quarter",
             y="revenue_usd",
             color="conversion_rate",
             data=data,
         ),
-        xy.tooltip(
+        xyg.tooltip(
             title="Quarter {quarter}",
             fields=["revenue_usd", "conversion_rate"],
             labels={"revenue_usd": 'Revenue <img src=x onerror="window.__bad=1">'},
@@ -241,7 +241,7 @@ def test_tooltip_labels_and_semantic_slots_are_independently_styleable(tmp_path:
 
 
 def test_sankey_tooltips_describe_flows_and_nodes(tmp_path: Path) -> None:
-    chart = xy.sankey_chart(
+    chart = xyg.sankey_chart(
         [
             ("Visitors", "Checkout", 42),
             ("Visitors", "Browse", 58),
@@ -320,9 +320,9 @@ def test_tooltip_labels_customize_default_channel_rows(tmp_path: Path) -> None:
         "revenue_usd": [1000, 1250],
         "segment": ["Direct", "Partner"],
     }
-    chart = xy.scatter_chart(
-        xy.scatter(x="quarter", y="revenue_usd", color="segment", data=data),
-        xy.tooltip(
+    chart = xyg.scatter_chart(
+        xyg.scatter(x="quarter", y="revenue_usd", color="segment", data=data),
+        xyg.tooltip(
             labels={
                 "quarter": "Quarter",
                 "revenue_usd": "Revenue",
@@ -364,10 +364,10 @@ def test_tooltip_labels_customize_default_channel_rows(tmp_path: Path) -> None:
 
 
 def test_legend_title_and_label_slots_are_independently_styleable(tmp_path: Path) -> None:
-    chart = xy.line_chart(
-        xy.line([0, 1], [1, 2], name="Revenue"),
-        xy.line([0, 1], [2, 1], name="Forecast"),
-        xy.legend(title="Series"),
+    chart = xyg.line_chart(
+        xyg.line([0, 1], [1, 2], name="Revenue"),
+        xyg.line([0, 1], [2, 1], name="Forecast"),
+        xyg.legend(title="Series"),
         styles={
             "legend_title": {"font-weight": 800},
             "legend_label": {"color": "#7c3aed"},
@@ -398,7 +398,7 @@ def test_legend_title_and_label_slots_are_independently_styleable(tmp_path: Path
 
 
 def test_density_badges_follow_dark_theme(tmp_path: Path) -> None:
-    chart = xy.line_chart(xy.line([0, 1], [0, 1]), width=320, height=220)
+    chart = xyg.line_chart(xyg.line([0, 1], [0, 1]), width=320, height=220)
     script = (
         _PRELUDE
         + """
@@ -422,7 +422,7 @@ def test_density_badges_follow_dark_theme(tmp_path: Path) -> None:
 
 
 def test_modebar_active_button_uses_dark_active_color(tmp_path: Path) -> None:
-    chart = xy.line_chart(xy.line([0, 1], [0, 1]), width=500, height=320)
+    chart = xyg.line_chart(xyg.line([0, 1], [0, 1]), width=500, height=320)
     script = (
         _PRELUDE
         + """
@@ -465,13 +465,13 @@ def test_modebar_active_button_uses_dark_active_color(tmp_path: Path) -> None:
 
 
 def test_narrow_annotation_labels_stay_inside_and_do_not_collide(tmp_path: Path) -> None:
-    chart = xy.line_chart(
-        xy.line([0, 25, 50, 75, 100], [0.1, 0.3, 0.55, 0.8, 1.0]),
-        xy.vline(76, text="Release freeze"),
-        xy.vline(94, text="Customer migration"),
-        xy.callout(98, 0.93, "Primary endpoint", dx=42, dy=-32),
-        xy.x_axis(domain=(0, 100)),
-        xy.y_axis(domain=(0, 1)),
+    chart = xyg.line_chart(
+        xyg.line([0, 25, 50, 75, 100], [0.1, 0.3, 0.55, 0.8, 1.0]),
+        xyg.vline(76, text="Release freeze"),
+        xyg.vline(94, text="Customer migration"),
+        xyg.callout(98, 0.93, "Primary endpoint", dx=42, dy=-32),
+        xyg.x_axis(domain=(0, 100)),
+        xyg.y_axis(domain=(0, 1)),
         width=260,
         height=320,
         padding=(50, 18, 48, 44),
@@ -576,10 +576,10 @@ def test_narrow_categorical_tick_labels_are_ellipsized_inside_chart(tmp_path: Pa
         "Another customer category whose identity must remain available",
         "Short category",
     ]
-    chart = xy.scatter_chart(
-        xy.scatter([1, 2, 3], categories),
-        xy.x_axis(),
-        xy.y_axis(reverse=True),
+    chart = xyg.scatter_chart(
+        xyg.scatter([1, 2, 3], categories),
+        xyg.x_axis(),
+        xyg.y_axis(reverse=True),
         width=260,
         height=360,
         padding=(56, 24, 56, 228),
@@ -616,9 +616,9 @@ def test_narrow_categorical_tick_labels_are_ellipsized_inside_chart(tmp_path: Pa
 def test_tick_label_padding_starts_after_outward_tick_and_text_bottom_aligns(
     tmp_path: Path,
 ) -> None:
-    chart = xy.chart(
-        xy.line([0, 1, 2], [0.25, 1.0, 0.5]),
-        xy.text(
+    chart = xyg.chart(
+        xyg.line([0, 1, 2], [0.25, 1.0, 0.5]),
+        xyg.text(
             1,
             1,
             "peak",
@@ -627,12 +627,12 @@ def test_tick_label_padding_starts_after_outward_tick_and_text_bottom_aligns(
             anchor="middle",
             style={"vertical_align": "bottom"},
         ),
-        xy.x_axis(
+        xyg.x_axis(
             domain=(0, 2),
             tick_values=[0, 1, 2],
             style={"tick_length": 6, "tick_label_pad": 5},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 1),
             tick_values=[0, 0.5, 1],
             style={"tick_length": 6, "tick_label_pad": 5},
@@ -673,10 +673,10 @@ def test_tick_label_padding_starts_after_outward_tick_and_text_bottom_aligns(
 
 
 def test_y_axis_title_stays_attached_when_left_padding_is_wide(tmp_path: Path) -> None:
-    chart = xy.chart(
-        xy.line([0, 1], [3600, 5400]),
-        xy.x_axis(),
-        xy.y_axis(
+    chart = xyg.chart(
+        xyg.line([0, 1], [3600, 5400]),
+        xyg.x_axis(),
+        xyg.y_axis(
             label="average daily births",
             domain=(3600, 5400),
             tick_values=[3600, 4000, 4400, 4800, 5200, 5400],
@@ -736,16 +736,16 @@ def test_y_axis_titles_center_and_match_svg_longitudinally_for_named_axes(
         "left center",
         "right end",
     }
-    chart = xy.chart(
-        xy.line([0, 1], [0, 1]),
-        xy.line([0, 1], [1, 2], y_axis="y2"),
-        xy.line([0, 1], [2, 3], y_axis="y3"),
-        xy.line([0, 1], [3, 4], y_axis="y4"),
-        xy.x_axis(),
-        xy.y_axis(label="primary default", side="left"),
-        xy.y_axis(id="y2", label="right start", side="right", label_position="start"),
-        xy.y_axis(id="y3", label="left center", side="left", label_position="center"),
-        xy.y_axis(id="y4", label="right end", side="right", label_position="end"),
+    chart = xyg.chart(
+        xyg.line([0, 1], [0, 1]),
+        xyg.line([0, 1], [1, 2], y_axis="y2"),
+        xyg.line([0, 1], [2, 3], y_axis="y3"),
+        xyg.line([0, 1], [3, 4], y_axis="y4"),
+        xyg.x_axis(),
+        xyg.y_axis(label="primary default", side="left"),
+        xyg.y_axis(id="y2", label="right start", side="right", label_position="start"),
+        xyg.y_axis(id="y3", label="left center", side="left", label_position="center"),
+        xyg.y_axis(id="y4", label="right end", side="right", label_position="end"),
         width=720,
         height=440,
         padding=(48, 120, 48, 120),
@@ -814,18 +814,18 @@ def test_y_axis_title_offset_unions_inward_tick_labels_with_the_spine(
         "tick_direction": "in",
         "tick_padding": -12,
     }
-    chart = xy.chart(
-        xy.line([0, 1], [0, 1]),
-        xy.line([0, 1], [1, 2], y_axis="y2"),
-        xy.x_axis(),
-        xy.y_axis(
+    chart = xyg.chart(
+        xyg.line([0, 1], [0, 1]),
+        xyg.line([0, 1], [1, 2], y_axis="y2"),
+        xyg.x_axis(),
+        xyg.y_axis(
             label="left spine union",
             side="left",
             tick_values=[0, 0.5, 1],
             tick_label_anchor="start",
             style=inside_tick_style,
         ),
-        xy.y_axis(
+        xyg.y_axis(
             id="y2",
             label="right spine union",
             side="right",
@@ -873,18 +873,18 @@ def test_y_axis_title_offset_unions_inward_tick_labels_with_the_spine(
 def test_y_axis_title_rotation_labelpad_and_tickless_spine_fallback(
     tmp_path: Path,
 ) -> None:
-    chart = xy.chart(
-        xy.line([0, 1], [0, 1]),
-        xy.line([0, 1], [1, 2], y_axis="y2"),
-        xy.x_axis(),
-        xy.y_axis(
+    chart = xyg.chart(
+        xyg.line([0, 1], [0, 1]),
+        xyg.line([0, 1], [1, 2], y_axis="y2"),
+        xyg.x_axis(),
+        xyg.y_axis(
             label="angled primary",
             side="left",
             label_angle=-45,
             label_offset=18,
             tick_values=[0, 0.5, 1],
         ),
-        xy.y_axis(
+        xyg.y_axis(
             id="y2",
             label="tickless secondary",
             side="right",
@@ -931,10 +931,10 @@ def test_y_axis_title_rotation_labelpad_and_tickless_spine_fallback(
 
 
 def test_structured_y_axis_title_position_remains_authoritative(tmp_path: Path) -> None:
-    chart = xy.chart(
-        xy.line([0, 1], [0, 1]),
-        xy.x_axis(),
-        xy.y_axis(
+    chart = xyg.chart(
+        xyg.line([0, 1], [0, 1]),
+        xyg.x_axis(),
+        xyg.y_axis(
             label="author positioned",
             label_position={
                 "right": 18,
@@ -972,13 +972,13 @@ def test_structured_y_axis_title_position_remains_authoritative(tmp_path: Path) 
 
 def test_long_y_categories_expand_the_browser_gutter(tmp_path: Path) -> None:
     categories = [f"Questionnaire item {index}" for index in range(1, 7)]
-    chart = xy.bar_chart(
-        xy.bar(
+    chart = xyg.bar_chart(
+        xyg.bar(
             x=categories,
             y=[10.0, 20.0, 30.0, 40.0, 50.0, 60.0],
             orientation="horizontal",
         ),
-        xy.y_axis(label="survey question", style={"label_size": 14, "tick_label_size": 14}),
+        xyg.y_axis(label="survey question", style={"label_size": 14, "tick_label_size": 14}),
         width=640,
         height=480,
     )
@@ -1018,17 +1018,17 @@ def test_rotated_x_labels_expand_top_and_bottom_browser_gutters(tmp_path: Path) 
         "United States of America",
         "Papua New Guinea",
     ]
-    chart = xy.chart(
-        xy.line(labels, [1.0, 2.0, 3.0]),
-        xy.line([0.0, 1.0, 2.0], [3.0, 2.0, 1.0], x_axis="x2"),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line(labels, [1.0, 2.0, 3.0]),
+        xyg.line([0.0, 1.0, 2.0], [3.0, 2.0, 1.0], x_axis="x2"),
+        xyg.x_axis(
             tick_values=[0.0, 1.0, 2.0],
             tick_labels=labels,
             tick_label_angle=45,
             tick_label_anchor="end",
             tick_label_strategy="preserve",
         ),
-        xy.x_axis(
+        xyg.x_axis(
             id="x2",
             side="top",
             tick_values=[0.0, 1.0, 2.0],
@@ -1081,13 +1081,13 @@ def test_categorical_tick_bounds_follow_anchor_rotation_and_extra_axis_side(
         "Secondary category with a long identity alpha",
         "Secondary category with a long identity beta",
     ]
-    chart = xy.chart(
-        xy.scatter([1, 2], primary),
-        xy.scatter([2, 3], secondary, y_axis="y2"),
-        xy.x_axis(),
-        xy.y_axis(tick_label_anchor="start", tick_label_angle=35),
+    chart = xyg.chart(
+        xyg.scatter([1, 2], primary),
+        xyg.scatter([2, 3], secondary, y_axis="y2"),
+        xyg.x_axis(),
+        xyg.y_axis(tick_label_anchor="start", tick_label_angle=35),
         # An unset extra-y side defaults to right in the chrome placement path.
-        xy.y_axis(id="y2", tick_label_anchor="center", tick_label_angle=-35),
+        xyg.y_axis(id="y2", tick_label_anchor="center", tick_label_angle=-35),
         width=320,
         height=300,
         padding=(48, 96, 48, 96),

@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg._figure import DIRECT_SOFT_CEILING, SCATTER_DENSITY_THRESHOLD, Figure
 from xyg.interaction import _decode_log_u8
 
@@ -455,11 +455,11 @@ def test_density_view_rebin_matches_range():
 
 def test_component_api_matrix():
     df = {"x": np.arange(20.0), "y": np.arange(20.0), "g": np.array(["a", "b"] * 10)}
-    chart = xy.scatter_chart(
-        xy.scatter(x="x", y="y", color="g", size=6.0, data=df),
-        xy.x_axis(label="X"),
-        xy.y_axis(label="Y"),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x="x", y="y", color="g", size=6.0, data=df),
+        xyg.x_axis(label="X"),
+        xyg.y_axis(label="Y"),
+        xyg.legend(),
         title="matrix",
     )
     spec, _ = chart.figure().build_payload()

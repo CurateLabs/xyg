@@ -5,12 +5,12 @@ composition API to the browser DOM, canvas/WebGL renderer, static writers, and
 Reflex Tailwind source inventory. It answers two separate questions:
 
 1. can an author reach the part with CSS-shaped styling; and
-2. can a normal CSS or Tailwind class beat XY's browser default without
+2. can a normal CSS or Tailwind class beat XYG's browser default without
    `!important`?
 
 The distinction matters. DOM chrome can participate directly in the cascade.
 Marks, grid lines, polar frames, and annotation geometry are pixels in a
-canvas, so making them one DOM node per primitive would discard XY's large-data
+canvas, so making them one DOM node per primitive would discard XYG's large-data
 rendering model. Those parts use typed, CSS-shaped mark/axis/annotation styles
 and CSS theme tokens instead.
 
@@ -54,7 +54,7 @@ typography, spacing, shadow, filter, opacity, and cursor. Explicit
 `styles={slot: ...}` remains inline author intent and outranks an ordinary
 utility.
 
-XY retains structural and state authority where changing it can break layout
+XYG retains structural and state authority where changing it can break layout
 or interaction: absolute coordinates, plot-sized dimensions, z-index, live
 display, popover transforms, pointer routing, modebar fit/drag state, tooltip
 placement, selection geometry, and legend toggle/hover opacity. Those elements

@@ -32,7 +32,7 @@ import math
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import kernels as k
 
 #: Angular samples for the line row: enough to make the projection and the
@@ -76,20 +76,20 @@ def warm_lazy_modules() -> None:
     """
     theta = np.array([0.0, 90.0, 180.0, 270.0])
     radius = np.array([1.0, 2.0, 3.0, 2.0])
-    figure = xy.polar_chart(
-        xy.line(theta, radius),
-        xy.theta_axis(unit="degrees"),
+    figure = xyg.polar_chart(
+        xyg.line(theta, radius),
+        xyg.theta_axis(unit="degrees"),
         width=240,
         height=240,
     ).figure()
     figure.build_payload_split(N_BUCKETS)
     figure.to_svg(width=240, height=240)
-    xy.polar_bar_chart(
-        xy.bar(theta, radius, width=22.5),
-        xy.theta_axis(unit="degrees"),
+    xyg.polar_bar_chart(
+        xyg.bar(theta, radius, width=22.5),
+        xyg.theta_axis(unit="degrees"),
         width=240,
         height=240,
-    ).figure().to_png(engine=xy.Engine.default, scale=1.0)
+    ).figure().to_png(engine=xyg.Engine.default, scale=1.0)
 
 
 @pytest.fixture(scope="module")
@@ -114,22 +114,22 @@ def polar_data() -> dict[str, object]:
 
 
 def _polar_line_payload(theta: np.ndarray, radius: np.ndarray) -> int:
-    figure = xy.polar_chart(
-        xy.line(theta, radius),
-        xy.theta_axis(unit="degrees"),
+    figure = xyg.polar_chart(
+        xyg.line(theta, radius),
+        xyg.theta_axis(unit="degrees"),
     ).figure()
     _spec, buffers = figure.build_payload_split(N_BUCKETS)
     return sum(b.nbytes for b in buffers)
 
 
 def _wind_rose_payload(directions: np.ndarray, speeds: np.ndarray) -> int:
-    figure = xy.wind_rose(directions, speeds, sectors=ROSE_SECTORS).figure()
+    figure = xyg.wind_rose(directions, speeds, sectors=ROSE_SECTORS).figure()
     _spec, buffers = figure.build_payload_split(N_BUCKETS)
     return sum(b.nbytes for b in buffers)
 
 
 def _pie_payload(labels: list[str], values: np.ndarray) -> int:
-    figure = xy.pie_chart(labels, values).figure()
+    figure = xyg.pie_chart(labels, values).figure()
     _spec, buffers = figure.build_payload_split(N_BUCKETS)
     return sum(b.nbytes for b in buffers)
 
@@ -185,7 +185,7 @@ def test_svg_export_polar_wedges(benchmark, polar_data):
     """
     directions = polar_data["directions"]
     speeds = polar_data["speeds"]
-    figure = xy.wind_rose(directions, speeds, sectors=ROSE_SECTORS).figure()
+    figure = xyg.wind_rose(directions, speeds, sectors=ROSE_SECTORS).figure()
     document = benchmark(figure.to_svg, width=720, height=720)
     assert document.startswith("<svg")
     # The wedges really are arcs, not chord-edged polygons: an `A` command per
@@ -204,8 +204,8 @@ def test_native_png_export_polar_wedges(benchmark, polar_data):
     """
     directions = polar_data["directions"]
     speeds = polar_data["speeds"]
-    figure = xy.wind_rose(directions, speeds, sectors=ROSE_SECTORS).figure()
-    png = benchmark(figure.to_png, engine=xy.Engine.default, scale=1.0)
+    figure = xyg.wind_rose(directions, speeds, sectors=ROSE_SECTORS).figure()
+    png = benchmark(figure.to_png, engine=xyg.Engine.default, scale=1.0)
     assert png.startswith(b"\x89PNG")
 
 
@@ -223,6 +223,6 @@ def test_native_png_export_polar_heatmap(benchmark, polar_data):
     values = (np.sin(grid_theta[None, :]) + np.asarray(grid_r)[:, None]).astype(
         np.float64, copy=False
     )
-    figure = xy.polar_chart(xy.heatmap(values, x=grid_theta, y=grid_r)).figure()
-    png = benchmark(figure.to_png, engine=xy.Engine.default, scale=1.0)
+    figure = xyg.polar_chart(xyg.heatmap(values, x=grid_theta, y=grid_r)).figure()
+    png = benchmark(figure.to_png, engine=xyg.Engine.default, scale=1.0)
     assert png.startswith(b"\x89PNG")

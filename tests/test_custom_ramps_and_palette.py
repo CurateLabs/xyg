@@ -16,7 +16,7 @@ import warnings
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import _svg, channels
 from xyg.config import DEFAULT_PALETTE
 
@@ -110,10 +110,10 @@ def test_browser_only_colors_are_refused_because_static_export_cannot_resolve_th
     # `var()` is legal on every *paint* prop — it just cannot build a LUT that
     # SVG and native PNG agree with, so it fails at build rather than making
     # the browser and the exports disagree.
-    xy.scatter_chart(xy.scatter(*_xy(), color="var(--brand)")).figure()
+    xyg.scatter_chart(xyg.scatter(*_xy(), color="var(--brand)")).figure()
     with pytest.raises(ValueError, match="colormap stops must be"):
-        xy.scatter_chart(
-            xy.scatter(*_xy(), color=np.linspace(0, 1, 400), colormap=["var(--a)", "#fff"])
+        xyg.scatter_chart(
+            xyg.scatter(*_xy(), color=np.linspace(0, 1, 400), colormap=["var(--a)", "#fff"])
         ).figure()
 
 
@@ -122,9 +122,9 @@ def test_browser_only_colors_are_refused_because_static_export_cannot_resolve_th
 
 def test_custom_ramp_reaches_the_wire_and_the_colorbar():
     x, y = _xy()
-    chart = xy.scatter_chart(
-        xy.scatter(x, y, color=np.linspace(0.0, 1.0, len(x)), colormap=RAMP),
-        xy.colorbar(title="v"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x, y, color=np.linspace(0.0, 1.0, len(x)), colormap=RAMP),
+        xyg.colorbar(title="v"),
     )
     spec, _ = chart.figure().build_payload()
     stops = channels.resolve_colormap(RAMP)
@@ -139,14 +139,14 @@ def test_every_colormap_bearing_mark_ships_the_custom_ramp(kind):
     rng = np.random.default_rng(9)
     if kind == "scatter":
         x, y = _xy()
-        chart = xy.scatter_chart(xy.scatter(x, y, color=rng.random(len(x)), colormap=RAMP))
+        chart = xyg.scatter_chart(xyg.scatter(x, y, color=rng.random(len(x)), colormap=RAMP))
     elif kind == "hexbin":
         x, y = _xy(2000)
-        chart = xy.hexbin_chart(xy.hexbin(x, y, gridsize=12, colormap=RAMP))
+        chart = xyg.hexbin_chart(xyg.hexbin(x, y, gridsize=12, colormap=RAMP))
     elif kind == "heatmap":
-        chart = xy.heatmap_chart(xy.heatmap(rng.random((8, 10)), colormap=RAMP))
+        chart = xyg.heatmap_chart(xyg.heatmap(rng.random((8, 10)), colormap=RAMP))
     else:
-        chart = xy.contour_chart(xy.contour(rng.random((8, 10)), levels=4, colormap=RAMP))
+        chart = xyg.contour_chart(xyg.contour(rng.random((8, 10)), levels=4, colormap=RAMP))
     spec, _ = chart.figure().build_payload()
     assert spec["traces"], f"{kind} produced no traces"
     # The ramp must reach the wire, not merely be accepted at the door: find it
@@ -160,8 +160,8 @@ def test_every_colormap_bearing_mark_ships_the_custom_ramp(kind):
 def test_svg_and_native_png_paint_the_custom_ramp_not_viridis():
     x, y = _xy(300)
     values = np.linspace(0.0, 1.0, len(x))
-    chart = xy.scatter_chart(
-        xy.scatter(x, y, color=values, colormap=RAMP, size=8), xy.colorbar(title="v")
+    chart = xyg.scatter_chart(
+        xyg.scatter(x, y, color=values, colormap=RAMP, size=8), xyg.colorbar(title="v")
     )
     svg = chart.to_svg()
     # The ramp's own endpoints must appear; viridis' must not.
@@ -196,9 +196,9 @@ def test_reversal_stays_a_builtin_only_affordance():
 
 
 def test_theme_palette_colors_unnamed_series_in_order():
-    chart = xy.line_chart(
-        *[xy.line([0, 1], [0, i], name=f"s{i}") for i in range(4)],
-        xy.theme(palette=PALETTE),
+    chart = xyg.line_chart(
+        *[xyg.line([0, 1], [0, i], name=f"s{i}") for i in range(4)],
+        xyg.theme(palette=PALETTE),
     )
     spec, _ = chart.figure().build_payload()
     assert [t["style"]["color"] for t in spec["traces"]] == PALETTE
@@ -207,24 +207,24 @@ def test_theme_palette_colors_unnamed_series_in_order():
 def test_theme_palette_drives_categorical_color_channels():
     x, y = _xy()
     cats = np.array(["a", "b", "c"])[np.arange(len(x)) % 3]
-    chart = xy.scatter_chart(xy.scatter(x, y, color=cats), xy.theme(palette=PALETTE))
+    chart = xyg.scatter_chart(xyg.scatter(x, y, color=cats), xyg.theme(palette=PALETTE))
     spec, _ = chart.figure().build_payload()
     assert spec["traces"][0]["color"]["palette"] == PALETTE[:3]
     assert spec["palette"] == PALETTE
 
 
 def test_without_a_theme_palette_nothing_changes():
-    chart = xy.line_chart(*[xy.line([0, 1], [0, i], name=f"s{i}") for i in range(3)])
+    chart = xyg.line_chart(*[xyg.line([0, 1], [0, i], name=f"s{i}") for i in range(3)])
     spec, _ = chart.figure().build_payload()
     assert [t["style"]["color"] for t in spec["traces"]] == list(DEFAULT_PALETTE[:3])
     assert "palette" not in spec, "the default palette must not bloat every spec"
 
 
 def test_explicit_color_still_beats_the_palette_and_keeps_its_slot():
-    chart = xy.line_chart(
-        xy.line([0, 1], [0, 1], name="a", color="#ff00ff"),
-        xy.line([0, 1], [0, 2], name="b"),
-        xy.theme(palette=PALETTE),
+    chart = xyg.line_chart(
+        xyg.line([0, 1], [0, 1], name="a", color="#ff00ff"),
+        xyg.line([0, 1], [0, 2], name="b"),
+        xyg.theme(palette=PALETTE),
     )
     spec, _ = chart.figure().build_payload()
     colors = [t["style"]["color"] for t in spec["traces"]]
@@ -237,16 +237,16 @@ def test_explicit_color_still_beats_the_palette_and_keeps_its_slot():
 @pytest.mark.parametrize(
     ("mark", "kwargs"),
     [
-        (xy.line, {"x": [0, 1], "y": [0, 1]}),
-        (xy.area, {"x": [0, 1], "y": [1, 2]}),
-        (xy.scatter, {"x": [0, 1], "y": [0, 1]}),
-        (xy.box, {"values": [1, 2, 3, 4, 9]}),
-        (xy.violin, {"values": [1, 2, 3, 4, 2, 3, 9]}),
-        (xy.stem, {"x": [0, 1], "y": [0, 1]}),
-        (xy.errorbar, {"x": [0, 1], "y": [0, 1], "yerr": [0.1, 0.1]}),
-        (xy.error_band, {"x": [0, 1], "lower": [0, 1], "upper": [2, 3]}),
-        (xy.bar, {"x": [0, 1], "y": [1, 2]}),
-        (xy.hist, {"values": [1, 2, 2, 3, 3, 3]}),
+        (xyg.line, {"x": [0, 1], "y": [0, 1]}),
+        (xyg.area, {"x": [0, 1], "y": [1, 2]}),
+        (xyg.scatter, {"x": [0, 1], "y": [0, 1]}),
+        (xyg.box, {"values": [1, 2, 3, 4, 9]}),
+        (xyg.violin, {"values": [1, 2, 3, 4, 2, 3, 9]}),
+        (xyg.stem, {"x": [0, 1], "y": [0, 1]}),
+        (xyg.errorbar, {"x": [0, 1], "y": [0, 1], "yerr": [0.1, 0.1]}),
+        (xyg.error_band, {"x": [0, 1], "lower": [0, 1], "upper": [2, 3]}),
+        (xyg.bar, {"x": [0, 1], "y": [1, 2]}),
+        (xyg.hist, {"values": [1, 2, 2, 3, 3, 3]}),
     ],
 )
 def test_every_mark_takes_exactly_one_palette_slot_per_series(mark, kwargs):
@@ -256,8 +256,8 @@ def test_every_mark_takes_exactly_one_palette_slot_per_series(mark, kwargs):
     four boxes under a four-color palette all wear `palette[0]`, and made any
     later series skip entries — this pins one slot per series instead.
     """
-    chart = xy.chart(
-        xy.theme(palette=PALETTE),
+    chart = xyg.chart(
+        xyg.theme(palette=PALETTE),
         *[mark(name=f"s{i}", **kwargs) for i in range(4)],
     )
     spec, _ = chart.figure().build_payload()
@@ -270,11 +270,11 @@ def test_every_mark_takes_exactly_one_palette_slot_per_series(mark, kwargs):
 
 
 def test_a_multi_trace_mark_does_not_shift_the_series_after_it():
-    chart = xy.chart(
-        xy.theme(palette=PALETTE),
-        xy.box(values=[1, 2, 3, 4, 9], x=[0] * 5, name="dist"),
-        xy.line([0, 1], [2, 3], name="a"),
-        xy.line([0, 1], [3, 4], name="b"),
+    chart = xyg.chart(
+        xyg.theme(palette=PALETTE),
+        xyg.box(values=[1, 2, 3, 4, 9], x=[0] * 5, name="dist"),
+        xyg.line([0, 1], [2, 3], name="a"),
+        xyg.line([0, 1], [3, 4], name="b"),
     )
     spec, _ = chart.figure().build_payload()
     named = [t for t in spec["traces"] if t.get("name")]
@@ -282,10 +282,10 @@ def test_a_multi_trace_mark_does_not_shift_the_series_after_it():
 
 
 def test_a_grouped_bar_takes_one_slot_per_series_it_emits():
-    chart = xy.chart(
-        xy.theme(palette=PALETTE),
-        xy.bar(x=["p", "q"], y=[[1, 2], [3, 4], [2, 1]], series=["s1", "s2", "s3"]),
-        xy.line([0, 1], [5, 6], name="after"),
+    chart = xyg.chart(
+        xyg.theme(palette=PALETTE),
+        xyg.bar(x=["p", "q"], y=[[1, 2], [3, 4], [2, 1]], series=["s1", "s2", "s3"]),
+        xyg.line([0, 1], [5, 6], name="after"),
     )
     spec, _ = chart.figure().build_payload()
     named = [t for t in spec["traces"] if t.get("name")]
@@ -296,7 +296,7 @@ def test_a_palette_map_pins_colors_to_category_labels():
     x, y = _xy()
     brand = {"setosa": "#4c72b0", "versicolor": "#dd8452", "virginica": "#55a868"}
     cats = np.array(["setosa", "versicolor", "virginica"])[np.arange(len(x)) % 3]
-    chart = xy.scatter_chart(xy.scatter(x, y, color=cats), xy.theme(palette=brand))
+    chart = xyg.scatter_chart(xyg.scatter(x, y, color=cats), xyg.theme(palette=brand))
     spec, _ = chart.figure().build_payload()
     color = spec["traces"][0]["color"]
     assert color["categories"] == ["setosa", "versicolor", "virginica"]
@@ -314,7 +314,7 @@ def test_a_palette_map_survives_a_panel_that_is_missing_a_category():
 
     def palette_for(labels):
         cats = np.array(labels)[np.arange(len(x)) % len(labels)]
-        chart = xy.scatter_chart(xy.scatter(x, y, color=cats), xy.theme(palette=brand))
+        chart = xyg.scatter_chart(xyg.scatter(x, y, color=cats), xyg.theme(palette=brand))
         spec, _ = chart.figure().build_payload()
         color = spec["traces"][0]["color"]
         return dict(zip(color["categories"], color["palette"], strict=True))
@@ -329,7 +329,9 @@ def test_categories_outside_the_palette_map_take_unused_defaults_and_warn():
     x, y = _xy()
     cats = np.array(["a", "b", "c"])[np.arange(len(x)) % 3]
     with pytest.warns(RuntimeWarning, match="not in the xyg.theme"):
-        chart = xy.scatter_chart(xy.scatter(x, y, color=cats), xy.theme(palette={"a": "#ff0000"}))
+        chart = xyg.scatter_chart(
+            xyg.scatter(x, y, color=cats), xyg.theme(palette={"a": "#ff0000"})
+        )
         spec, _ = chart.figure().build_payload()
     palette = spec["traces"][0]["color"]["palette"]
     assert palette[0] == "#ff0000"
@@ -338,9 +340,9 @@ def test_categories_outside_the_palette_map_take_unused_defaults_and_warn():
 
 
 def test_a_palette_map_still_cycles_plain_series():
-    chart = xy.line_chart(
-        *[xy.line([0, 1], [0, i], name=f"s{i}") for i in range(3)],
-        xy.theme(palette={"a": "#ff0000", "b": "#00ff00", "c": "#0000ff"}),
+    chart = xyg.line_chart(
+        *[xyg.line([0, 1], [0, i], name=f"s{i}") for i in range(3)],
+        xyg.theme(palette={"a": "#ff0000", "b": "#00ff00", "c": "#0000ff"}),
     )
     spec, _ = chart.figure().build_payload()
     assert [t["style"]["color"] for t in spec["traces"]] == ["#ff0000", "#00ff00", "#0000ff"]
@@ -349,8 +351,8 @@ def test_a_palette_map_still_cycles_plain_series():
 
 def test_a_list_of_css_colors_paints_those_colors_instead_of_factorizing():
     """`["#ff0000", "#00ff00"]` is paint, not two categories to re-encode."""
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], color=["#ff0000", "#00ff00", "#0000ff"])
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], color=["#ff0000", "#00ff00", "#0000ff"])
     )
     spec, _ = chart.figure().build_payload()
     assert spec["traces"][0]["color"]["mode"] == "direct_rgba"
@@ -384,8 +386,8 @@ def test_the_probe_still_reads_a_column_that_actually_looks_like_paint():
 
 
 def test_named_colors_stay_categorical_because_a_column_can_hold_them():
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], color=["red", "green", "blue"])
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], color=["red", "green", "blue"])
     )
     spec, _ = chart.figure().build_payload()
     assert spec["traces"][0]["color"]["mode"] == "categorical"
@@ -395,13 +397,15 @@ def test_palette_shorter_than_the_categories_warns_before_it_repeats():
     x, y = _xy()
     cats = np.array(["a", "b", "c", "d"])[np.arange(len(x)) % 4]
     with pytest.warns(RuntimeWarning, match="colors repeat every 2"):
-        xy.scatter_chart(xy.scatter(x, y, color=cats), xy.theme(palette=["#f00", "#0f0"])).figure()
+        xyg.scatter_chart(
+            xyg.scatter(x, y, color=cats), xyg.theme(palette=["#f00", "#0f0"])
+        ).figure()
 
 
 def test_static_exporters_use_the_chart_palette():
     x, y = _xy(200)
     cats = np.array(["a", "b"])[np.arange(len(x)) % 2]
-    chart = xy.scatter_chart(xy.scatter(x, y, color=cats, size=8), xy.theme(palette=PALETTE))
+    chart = xyg.scatter_chart(xyg.scatter(x, y, color=cats, size=8), xyg.theme(palette=PALETTE))
     svg = chart.to_svg()
     assert "rgb(56,189,248)" in svg and "rgb(232,121,249)" in svg  # #38bdf8 / #e879f9
     assert "rgb(57,135,229)" not in svg  # DEFAULT_PALETTE[0] = #3987e5
@@ -416,9 +420,9 @@ def test_browser_only_palette_entries_are_refused_like_colormap_stops(entry):
     # re-bin). Several browser-only entries would land on one fallback and merge
     # distinct categories, so the rule is the same as for colormap stops.
     with pytest.raises(ValueError, match="cannot be resolved to fixed channels"):
-        xy.theme(palette=[entry, "#ffffff"])
+        xyg.theme(palette=[entry, "#ffffff"])
     # ...but a single paint prop is unaffected: one mark, one color.
-    xy.scatter_chart(xy.scatter(*_xy(), color=entry)).figure()
+    xyg.scatter_chart(xyg.scatter(*_xy(), color=entry)).figure()
 
 
 def test_hand_authored_specs_degrade_per_index_never_onto_one_color():
@@ -446,7 +450,7 @@ def test_palette_entries_ship_resolved_to_hex(entry, expected):
     # and permanently so, because nothing rebuilds a cached palette LUT.
     x, y = _xy()
     cats = np.array(["a", "b"])[np.arange(len(x)) % 2]
-    chart = xy.scatter_chart(xy.scatter(x, y, color=cats), xy.theme(palette=[entry, "#ffffff"]))
+    chart = xyg.scatter_chart(xyg.scatter(x, y, color=cats), xyg.theme(palette=[entry, "#ffffff"]))
     spec, _ = chart.figure().build_payload()
     assert spec["traces"][0]["color"]["palette"][0] == expected
     assert spec["palette"][0] == expected
@@ -457,17 +461,17 @@ def test_palette_entries_ship_resolved_to_hex(entry, expected):
 
 
 def test_series_colors_from_the_palette_also_ship_as_hex():
-    chart = xy.line_chart(
-        *[xy.line([0, 1], [0, i], name=f"s{i}") for i in range(3)],
-        xy.theme(palette=["tomato", "rgb(14,165,233)", "hsl(280 80% 60%)"]),
+    chart = xyg.line_chart(
+        *[xyg.line([0, 1], [0, i], name=f"s{i}") for i in range(3)],
+        xyg.theme(palette=["tomato", "rgb(14,165,233)", "hsl(280 80% 60%)"]),
     )
     spec, _ = chart.figure().build_payload()
     assert [t["style"]["color"] for t in spec["traces"]] == ["#ff6347", "#0ea5e9", "#b447eb"]
 
 
 def test_translucent_palette_entries_keep_their_alpha_in_hex():
-    chart = xy.line_chart(
-        xy.line([0, 1], [0, 1], name="a"), xy.theme(palette=["rgba(255,0,0,0.5)"])
+    chart = xyg.line_chart(
+        xyg.line([0, 1], [0, 1], name="a"), xyg.theme(palette=["rgba(255,0,0,0.5)"])
     )
     spec, _ = chart.figure().build_payload()
     assert spec["traces"][0]["style"]["color"] == "#ff000080"
@@ -488,22 +492,22 @@ def test_a_fully_literal_palette_never_warns():
     cats = np.array(["a", "b"])[rng.integers(0, 2, n)]
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
-        xy.scatter_chart(
-            xy.scatter(x, y, color=cats, density=True), xy.theme(palette=PALETTE)
+        xyg.scatter_chart(
+            xyg.scatter(x, y, color=cats, density=True), xyg.theme(palette=PALETTE)
         ).figure().build_payload()
 
 
 @pytest.mark.parametrize("value", ["#f00", [], ["not a color"], 5])
 def test_bad_palettes_raise(value):
     with pytest.raises(ValueError):
-        xy.theme(palette=value)
+        xyg.theme(palette=value)
 
 
 # --- axis visibility shorthands ----------------------------------------------
 
 
 def test_show_false_hides_line_ticks_text_and_grid():
-    assert xy.x_axis(show=False).style == {
+    assert xyg.x_axis(show=False).style == {
         "axis_width": 0,
         "axis_color": "#00000000",
         "tick_length": 0,
@@ -523,17 +527,17 @@ def test_ticks_off_hides_the_marks_without_erasing_the_labels():
     Image = pytest.importorskip("PIL.Image")
 
     def pixels(*axis):
-        chart = xy.scatter_chart(xy.scatter([1, 2, 3], [1, 2, 3]), *axis, width=420, height=260)
+        chart = xyg.scatter_chart(xyg.scatter([1, 2, 3], [1, 2, 3]), *axis, width=420, height=260)
         return np.array(Image.open(io.BytesIO(chart.to_png())).convert("RGB")).astype(int)
 
     base = pixels()
-    no_ticks = pixels(xy.x_axis(ticks=False))
-    no_text = pixels(xy.x_axis(text=False))
+    no_ticks = pixels(xyg.x_axis(ticks=False))
+    no_text = pixels(xyg.x_axis(text=False))
     changed = lambda other: int((np.abs(base - other).sum(axis=2) > 12).sum())  # noqa: E731
     # Both do something, and removing the text moves far more pixels than
     # removing the marks -- i.e. ticks=False did not take the labels with it.
     assert 0 < changed(no_ticks) < changed(no_text) / 4
-    assert "#00000000" not in str(xy.x_axis(ticks=False).style)
+    assert "#00000000" not in str(xyg.x_axis(ticks=False).style)
 
 
 @pytest.mark.parametrize(
@@ -546,35 +550,35 @@ def test_ticks_off_hides_the_marks_without_erasing_the_labels():
     ],
 )
 def test_each_switch_touches_only_its_own_properties(kwargs, expected):
-    assert xy.y_axis(**kwargs).style == expected
+    assert xyg.y_axis(**kwargs).style == expected
 
 
 def test_a_narrow_switch_overrides_show_in_both_directions():
-    grid_only = xy.y_axis(show=False, grid=True).style
+    grid_only = xyg.y_axis(show=False, grid=True).style
     assert "grid_opacity" not in grid_only
     assert grid_only["axis_width"] == 0
-    only_grid_hidden = xy.y_axis(show=True, grid=False).style
+    only_grid_hidden = xyg.y_axis(show=True, grid=False).style
     assert only_grid_hidden == {"grid_opacity": 0}
 
 
 def test_explicit_style_wins_over_a_switch():
-    style = xy.x_axis(show=False, style={"tick_label_color": "#ff0000"}).style
+    style = xyg.x_axis(show=False, style={"tick_label_color": "#ff0000"}).style
     assert style["tick_label_color"] == "#ff0000"
     assert style["label_color"] == "#00000000"
 
 
 def test_switches_default_to_no_style_at_all():
-    assert xy.x_axis().style == {}
-    assert xy.y_axis(show=True).style == {}
+    assert xyg.x_axis().style == {}
+    assert xyg.y_axis(show=True).style == {}
 
 
 @pytest.mark.parametrize("switch", ["show", "line", "ticks", "grid", "text"])
 def test_switches_are_strictly_boolean(switch):
     with pytest.raises(ValueError, match="must be True or False"):
-        xy.x_axis(**{switch: 1})
+        xyg.x_axis(**{switch: 1})
 
 
 def test_text_switch_does_not_collide_with_tick_labels():
-    axis = xy.x_axis(tick_values=(0.0, 1.0), tick_labels=("lo", "hi"), text=False)
+    axis = xyg.x_axis(tick_values=(0.0, 1.0), tick_labels=("lo", "hi"), text=False)
     assert axis.tick_labels == ["lo", "hi"]
     assert axis.style["tick_label_color"] == "#00000000"

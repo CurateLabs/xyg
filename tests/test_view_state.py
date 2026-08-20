@@ -16,23 +16,23 @@ import math
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from xyg.channel import ChannelCallbacks, handle_message
 
 
 def _figure(**chart_kwargs):
-    chart = xy.scatter_chart(
-        xy.scatter(np.arange(10.0), np.arange(10.0)),
+    chart = xyg.scatter_chart(
+        xyg.scatter(np.arange(10.0), np.arange(10.0)),
         **chart_kwargs,
     )
     return chart.figure()
 
 
 def _dual_axis_figure():
-    chart = xy.scatter_chart(
-        xy.scatter(np.arange(10.0), np.arange(10.0)),
-        xy.line(x=[0.0, 9.0], y=[100.0, 120.0], y_axis="y2"),
-        xy.y_axis(id="y2", side="right"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(np.arange(10.0), np.arange(10.0)),
+        xyg.line(x=[0.0, 9.0], y=[100.0, 120.0], y_axis="y2"),
+        xyg.y_axis(id="y2", side="right"),
     )
     return chart.figure()
 
@@ -308,7 +308,7 @@ def test_chart_delegates_view_state_api() -> None:
     # `select=` (the interaction switch kwarg) must not shadow the
     # programmatic `Chart.select()` method — a real instance-attribute
     # collision this test pins down.
-    chart = xy.scatter_chart(xy.scatter(np.arange(4.0), np.arange(4.0)), select=True)
+    chart = xyg.scatter_chart(xyg.scatter(np.arange(4.0), np.arange(4.0)), select=True)
     widget = chart.widget()
     sent: list[dict] = []
     widget.send = lambda msg, buffers=None: sent.append(msg)
@@ -332,13 +332,13 @@ def test_chart_delegates_view_state_api() -> None:
 def test_interaction_history_switch_serializes() -> None:
     fig = _figure()
     assert "history" not in fig._interaction_spec()  # unset stays absent
-    disabled = xy.scatter_chart(
-        xy.scatter(np.arange(3.0), np.arange(3.0)),
-        xy.interaction_config(history=False),
+    disabled = xyg.scatter_chart(
+        xyg.scatter(np.arange(3.0), np.arange(3.0)),
+        xyg.interaction_config(history=False),
     ).figure()
     assert disabled._interaction_spec()["history"] is False
-    enabled = xy.scatter_chart(
-        xy.scatter(np.arange(3.0), np.arange(3.0)),
-        xy.interaction_config(history=True),
+    enabled = xyg.scatter_chart(
+        xyg.scatter(np.arange(3.0), np.arange(3.0)),
+        xyg.interaction_config(history=True),
     ).figure()
     assert enabled._interaction_spec()["history"] is True

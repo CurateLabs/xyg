@@ -14,15 +14,15 @@ import re
 
 import pytest
 
-import xyg as xy
+import xyg
 from xyg import Engine, _raster
 from xyg._svg import STATIC_STYLED_SLOTS
 from xyg.dom import CHART_DOM_SLOTS
 
 
-def _styled_chart() -> xy.Chart:
-    return xy.scatter_chart(
-        xy.scatter(x=[0.0, 1.0], y=[1.0, 2.0], name="series"),
+def _styled_chart() -> xyg.Chart:
+    return xyg.scatter_chart(
+        xyg.scatter(x=[0.0, 1.0], y=[1.0, 2.0], name="series"),
         title="title",
         class_names={slot: f"cls-{slot}" for slot in CHART_DOM_SLOTS},
         styles={slot: {"outline_color": "#123456"} for slot in CHART_DOM_SLOTS},
@@ -67,11 +67,13 @@ _SLOT_PAINT_PROPERTY = {slot: "fill" for slot in STATIC_STYLED_SLOTS} | {"legend
 def test_every_static_slot_carries_its_paint_into_svg(slot: str) -> None:
     # The headline of the per-slot contract: a slot that names chrome a static
     # file contains must carry that chrome's paint into the file.
-    chart = xy.scatter_chart(
-        xy.scatter(x=[0.0, 1.0], y=[1.0, 2.0], name="series", color=[0.0, 1.0], colormap="viridis"),
-        xy.legend(title="Legend title"),
-        xy.colorbar(title="Colorbar title"),
-        xy.x_axis(label="x label"),
+    chart = xyg.scatter_chart(
+        xyg.scatter(
+            x=[0.0, 1.0], y=[1.0, 2.0], name="series", color=[0.0, 1.0], colormap="viridis"
+        ),
+        xyg.legend(title="Legend title"),
+        xyg.colorbar(title="Colorbar title"),
+        xyg.x_axis(label="x label"),
         title="chart title",
         styles={slot: {_SLOT_PAINT_PROPERTY[slot]: "#123456"}},
     )
@@ -79,15 +81,15 @@ def test_every_static_slot_carries_its_paint_into_svg(slot: str) -> None:
 
 
 def test_the_two_spellings_of_a_legend_style_agree() -> None:
-    # xy.legend(style=...) and the chart-level styles={"legend": ...} are the
+    # xyg.legend(style=...) and the chart-level styles={"legend": ...} are the
     # same declaration written two ways. They agree in the browser, so they
     # must agree in a file.
-    through_component = xy.scatter_chart(
-        xy.scatter(x=[0.0, 1.0], y=[1.0, 2.0], name="series"),
-        xy.legend(style={"background": "#123456"}),
+    through_component = xyg.scatter_chart(
+        xyg.scatter(x=[0.0, 1.0], y=[1.0, 2.0], name="series"),
+        xyg.legend(style={"background": "#123456"}),
     ).figure()
-    through_slot = xy.scatter_chart(
-        xy.scatter(x=[0.0, 1.0], y=[1.0, 2.0], name="series"),
+    through_slot = xyg.scatter_chart(
+        xyg.scatter(x=[0.0, 1.0], y=[1.0, 2.0], name="series"),
         styles={"legend": {"background": "#123456"}},
     ).figure()
 
@@ -102,8 +104,8 @@ def test_a_legend_style_may_be_written_in_kebab_case() -> None:
     # declaration, so both must reach the file; kebab used to lose the shadow
     # and the corner radius outright.
     def svg(style):
-        return xy.line_chart(
-            xy.line([0.0, 1.0], [0.0, 1.0], name="alpha"), xy.legend(style=style)
+        return xyg.line_chart(
+            xyg.line([0.0, 1.0], [0.0, 1.0], name="alpha"), xyg.legend(style=style)
         ).to_svg()
 
     camel = svg({"background": "#ffeeaa", "borderRadius": "6px", "boxShadow": "2px 2px 4px #000"})
@@ -113,9 +115,9 @@ def test_a_legend_style_may_be_written_in_kebab_case() -> None:
 
 def test_the_narrower_selector_wins_over_the_chart_wide_slot() -> None:
     # An axis's own label_color is more specific than styles={"axis_title": ...}.
-    chart = xy.line_chart(
-        xy.line([0.0, 1.0], [0.0, 1.0]),
-        xy.x_axis(label="x label", style={"label_color": "#ff0000"}),
+    chart = xyg.line_chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0]),
+        xyg.x_axis(label="x label", style={"label_color": "#ff0000"}),
         styles={"axis_title": {"fill": "#0000ff"}},
     )
     svg = chart.figure().to_svg()
@@ -127,8 +129,8 @@ def test_the_narrower_selector_wins_over_the_chart_wide_slot() -> None:
 def test_an_explicit_legend_background_is_opaque_like_the_browser() -> None:
     # `background:#ff00ff` paints opaque in the browser; the frame-alpha token
     # is the separate knob for the default grey frame.
-    chart = xy.line_chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], name="series"),
+    chart = xyg.line_chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], name="series"),
         styles={"legend": {"background": "#ff00ff"}},
     )
     frame = next(
@@ -140,7 +142,7 @@ def test_an_explicit_legend_background_is_opaque_like_the_browser() -> None:
 def test_unstyled_output_is_untouched() -> None:
     # The per-slot path must be inert when nobody uses it: a chart with no
     # `styles=` renders exactly the bytes it rendered before the feature.
-    plain = xy.line_chart(xy.line([0.0, 1.0], [0.0, 1.0], name="series"), title="t").figure()
+    plain = xyg.line_chart(xyg.line([0.0, 1.0], [0.0, 1.0], name="series"), title="t").figure()
     svg = plain.to_svg()
     # 400 is Matplotlib's `axes.titleweight: normal`, the chrome-text default.
     assert '<text x="450" y="28" text-anchor="middle" font-size="14" font-weight="400"' in svg
@@ -168,8 +170,8 @@ def test_native_raster_matches_the_svg_writer_on_slot_styling() -> None:
     # weight and style all reach the pixels; it has no family axis and no
     # per-glyph advance control, so those two stay vector-only.
     def figure(**kwargs):
-        return xy.line_chart(
-            xy.line([0.0, 1.0], [0.0, 1.0], name="series"), title="title", **kwargs
+        return xyg.line_chart(
+            xyg.line([0.0, 1.0], [0.0, 1.0], name="series"), title="title", **kwargs
         ).figure()
 
     def render(**kwargs):
@@ -192,9 +194,9 @@ def test_an_extra_legend_is_styled_like_the_main_one_in_both_writers() -> None:
     # for the main legend only, so a multi-legend chart styled in SVG but not in
     # PNG — the exact parity this module exists to hold.
     def chart(**kwargs):
-        return xy.scatter_chart(
-            xy.scatter(x=[0.0, 1.0, 2.0, 3.0], y=[0.0, 1.0, 2.0, 3.0], color=["a", "b", "a", "b"]),
-            xy.line([0.0, 1.0], [0.0, 1.0], name="trend"),
+        return xyg.scatter_chart(
+            xyg.scatter(x=[0.0, 1.0, 2.0, 3.0], y=[0.0, 1.0, 2.0, 3.0], color=["a", "b", "a", "b"]),
+            xyg.line([0.0, 1.0], [0.0, 1.0], name="trend"),
             **kwargs,
         )
 

@@ -30,7 +30,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import run_browser_probe
 from xyg.export import find_chromium
 
@@ -200,10 +200,10 @@ def _density_html() -> str:
     n = 60_000
     x = rng.normal(0.0, 1.0, n)
     y = rng.normal(0.0, 1.0, n)
-    chart = xy.scatter_chart(
-        xy.scatter(x, y, density=True),
-        xy.x_axis(),
-        xy.y_axis(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x, y, density=True),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=480,
         height=360,
     )

@@ -31,7 +31,7 @@ from conftest import density_category_chart, probe_document, run_browser_probe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-import xyg as xy  # noqa: E402
+import xyg  # noqa: E402
 from xyg import channel  # noqa: E402
 from xyg._figure import Figure  # noqa: E402
 from xyg.export import find_chromium  # noqa: E402
@@ -168,12 +168,12 @@ def test_density_entry_ships_slim_categorical_spec() -> None:
 
 def test_legend_toggle_option() -> None:
     data = {"x": np.arange(8.0), "y": np.arange(8.0)}
-    disabled = xy.scatter_chart(xy.scatter("x", "y", data=data), xy.legend(toggle=False))
+    disabled = xyg.scatter_chart(xyg.scatter("x", "y", data=data), xyg.legend(toggle=False))
     assert disabled.figure().legend_options["toggle"] is False
-    default = xy.scatter_chart(xy.scatter("x", "y", data=data), xy.legend())
+    default = xyg.scatter_chart(xyg.scatter("x", "y", data=data), xyg.legend())
     assert "toggle" not in default.figure().legend_options
     with pytest.raises(ValueError):
-        xy.legend(toggle="yes")
+        xyg.legend(toggle="yes")
 
 
 _TOGGLE_PROBE = """
@@ -530,10 +530,10 @@ def test_browser_legend_click_toggles_series() -> None:
 
     codes = np.array(["A", "A", "A", "A", "A", "B", "B", "B"])
     data = {"x": np.arange(8.0), "y": np.arange(8.0)}
-    chart = xy.scatter_chart(
-        xy.scatter("x", "y", data=data, name="alpha"),
-        xy.scatter("x", "y", data=data, color=codes),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter("x", "y", data=data, name="alpha"),
+        xyg.scatter("x", "y", data=data, color=codes),
+        xyg.legend(),
         width=520,
         height=340,
     )

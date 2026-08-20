@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-import xyg as xy
+import xyg
 from conftest import run_browser_probe
 from xyg.export import find_chromium
 
@@ -131,10 +131,10 @@ _PROBE = """
 
 
 def _chart_html() -> str:
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
-        xy.x_axis(),
-        xy.y_axis(),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=480,
         height=360,
     )

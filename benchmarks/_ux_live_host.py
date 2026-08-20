@@ -36,7 +36,7 @@ import tornado.netutil
 import tornado.web
 import tornado.websocket
 
-import xyg as xy
+import xyg
 from xyg.channel import handle_message
 
 SEED = 20260713
@@ -168,11 +168,11 @@ def main() -> None:
     args = parser.parse_args()
 
     x, y = make_data(args.n)
-    mark = xy.scatter(x=x, y=y, density=False) if args.density == "off" else xy.scatter(x=x, y=y)
-    fig = xy.scatter_chart(mark, width=900, height=420).figure()
+    mark = xyg.scatter(x=x, y=y, density=False) if args.density == "off" else xyg.scatter(x=x, y=y)
+    fig = xyg.scatter_chart(mark, width=900, height=420).figure()
     spec, bufs = fig.build_payload_split()
 
-    static_dir = Path(xy.__file__).resolve().parent / "static"
+    static_dir = Path(xyg.__file__).resolve().parent / "static"
 
     class PageHandler(tornado.web.RequestHandler):
         def get(self) -> None:

@@ -8,7 +8,7 @@ choice survives every renderer that claims to support it.
 
 ## Summary
 
-XY has a strong customization foundation:
+XYG has a strong customization foundation:
 
 - mark and axis styles use closed, validated cross-renderer vocabularies;
 - every browser chrome element has a stable DOM slot for CSS and Tailwind;

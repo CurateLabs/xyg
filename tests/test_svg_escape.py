@@ -2,7 +2,7 @@
 
 `xyg._svg.escape` is a local copy of `xml.sax.saxutils.escape` (see the docstring
 there for why). These tests are the drift guard: they import the stdlib version
-*inside the test* — never at module import of xy — and compare outputs.
+*inside the test* — never at module import of xyg — and compare outputs.
 """
 
 from __future__ import annotations
@@ -74,8 +74,8 @@ def test_svg_export_does_not_import_urllib_or_ssl() -> None:
     code = (
         "import sys; import numpy as np\n"
         "before = set(sys.modules)\n"
-        "import xyg as xy\n"
-        "fig = xy.scatter_chart(xy.scatter(x=np.arange(5.0), y=np.arange(5.0)),\n"
+        "import xyg\n"
+        "fig = xyg.scatter_chart(xyg.scatter(x=np.arange(5.0), y=np.arange(5.0)),\n"
         "                       title='a & b < c > d').figure()\n"
         "svg = fig.to_svg(width=200, height=150)\n"
         "assert '&amp;' in svg and '&lt;' in svg and '&gt;' in svg, 'escape not exercised'\n"
