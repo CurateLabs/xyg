@@ -48,6 +48,8 @@ Release packaging stages the built cdylib into the matching platform package:
 cargo build --release
 python3 scripts/stage_node_platform_natives.py --also-facade
 python3 scripts/stage_node_platform_natives.py --list
+python3 scripts/verify_node_packages.py
+python3 scripts/verify_node_packages.py --require-native   # after staging
 ```
 
 ```bash

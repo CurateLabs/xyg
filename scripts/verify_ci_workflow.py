@@ -894,6 +894,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "scripts/check_public_api.py",
         "Install Node host bindings",
         "npm ci --prefix packages/xy-node",
+        "scripts/verify_node_packages.py",
         "scripts/abi_smoke.py",
         "scripts/check_abi_parity.py",
         "scripts/gen_abi_manifest.py --check",

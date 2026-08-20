@@ -429,8 +429,11 @@ pruning is required. The first production tag starts the fork line at
 to claim the pending PyPI project.
 
 npm registry publication of `@curatelabs/xyg` and `@curatelabs/xyg-node`
-remains tracked by the packaging milestone; packages remain `"private": true`
-until that ships. Never publish `@xy/node`.
+(plus exact-platform `@curatelabs/xyg-node-*` optionals) remains tracked by
+the packaging milestone; packages remain `"private": true` until that ships.
+In-tree inventory, hashes, path scans, and size budgets run via
+`python3 scripts/verify_node_packages.py` (CI Test job; `--require-native`
+after staging). Never publish `@xy/node`.
 
 Python import `xy` / `python/xy/` is still the in-tree namespace; the
 distribution name and `importlib.metadata` lookups are `xyg`. The clean-break
