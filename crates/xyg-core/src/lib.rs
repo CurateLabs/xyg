@@ -92,7 +92,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 74;
+pub const ABI_VERSION: u32 = 75;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -337,16 +337,18 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
     })
 }
 
-/// Encode a bounded backend-neutral Scene v5 batch. Record kinds are scatter
+/// Encode a bounded backend-neutral Scene v8 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
 /// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
 /// null when the corresponding length is zero. Returns required bytes or
 /// `usize::MAX` on error.
 ///
 /// # Safety
-/// Every input array must address `len` readable elements. Text pointers must
-/// address `*_len` readable bytes when non-zero. If capacity is sufficient,
-/// `out` must address `out_cap` writable bytes.
+/// Every record input array must address `len` readable elements. The chrome
+/// style pointer must address exactly `SCENE_CHROME_STYLE_INPUT_BYTES` bytes;
+/// each tick pointer must address its corresponding count when non-zero. Text
+/// pointers must address `*_len` readable bytes when non-zero. If capacity is
+/// sufficient, `out` must address `out_cap` writable bytes.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn xyg_scene_batch_encode(
@@ -368,6 +370,18 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     y_hi: f64,
     y_constant: f64,
     y_mask_nonpositive: i32,
+    chrome_style: *const u8,
+    chrome_style_len: usize,
+    x_major_ticks: *const f64,
+    x_major_count: usize,
+    x_major_auto: i32,
+    x_minor_ticks: *const f64,
+    x_minor_count: usize,
+    y_major_ticks: *const f64,
+    y_major_count: usize,
+    y_major_auto: i32,
+    y_minor_ticks: *const f64,
+    y_minor_count: usize,
     kinds: *const u8,
     stable_ids: *const u64,
     style_refs: *const u32,
@@ -395,6 +409,19 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || style_count > scene::MAX_SCENE_STYLES
         || !matches!(x_mask_nonpositive, 0 | 1)
         || !matches!(y_mask_nonpositive, 0 | 1)
+        || chrome_style_len != scene::SCENE_CHROME_STYLE_INPUT_BYTES
+        || chrome_style.is_null()
+        || !matches!(x_major_auto, 0 | 1)
+        || !matches!(y_major_auto, 0 | 1)
+        || (x_major_auto == 1 && x_major_count != 0)
+        || (y_major_auto == 1 && y_major_count != 0)
+        || [x_major_count, x_minor_count, y_major_count, y_minor_count]
+            .into_iter()
+            .any(|count| count > scene::MAX_AXIS_TICKS)
+        || (x_major_count > 0 && x_major_ticks.is_null())
+        || (x_minor_count > 0 && x_minor_ticks.is_null())
+        || (y_major_count > 0 && y_major_ticks.is_null())
+        || (y_minor_count > 0 && y_minor_ticks.is_null())
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
         || y_label_len > scene::MAX_SCENE_TEXT_BYTES
@@ -518,13 +545,28 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             std::str::from_utf8(std::slice::from_raw_parts(y_label, y_label_len)).ok()?
         };
         let text = scene::SceneChromeText::from_parts(title, x_label, y_label).ok()?;
+        let tick_values = |pointer: *const f64, count: usize| {
+            if count == 0 {
+                Vec::new()
+            } else {
+                std::slice::from_raw_parts(pointer, count).to_vec()
+            }
+        };
+        let chrome = scene::SceneChromeStyle::from_style_input(
+            std::slice::from_raw_parts(chrome_style, chrome_style_len),
+            (x_major_auto == 0).then(|| tick_values(x_major_ticks, x_major_count)),
+            tick_values(x_minor_ticks, x_minor_count),
+            (y_major_auto == 0).then(|| tick_values(y_major_ticks, y_major_count)),
+            tick_values(y_minor_ticks, y_minor_count),
+        )
+        .ok()?;
         scene::SceneBatch::new_with_chrome(
             layout,
             x_axis_id,
             y_axis_id,
             x_scale,
             y_scale,
-            scene::SceneChromeStyle::default(),
+            chrome,
             text,
             kinds,
             stable_ids,
@@ -555,7 +597,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     required
 }
 
-/// Serialize one validated Scene v4 document as a complete SVG image.
+/// Serialize one validated Scene v8 document as a complete SVG image.
 /// Returns required bytes or `usize::MAX` for malformed input.
 ///
 /// # Safety
@@ -589,7 +631,7 @@ pub unsafe extern "C" fn xyg_scene_svg(
     required
 }
 
-/// Compile one validated Scene v4 document to the existing raster display-list
+/// Compile one validated Scene v8 document to the existing raster display-list
 /// command stream. Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -4083,10 +4125,15 @@ pub unsafe extern "C" fn xyg_tile_store_fetch(
     let out_color = if out_color.is_null() {
         None
     } else {
-        Some(std::slice::from_raw_parts_mut(out_color as *mut [u16; 4], cells))
+        Some(std::slice::from_raw_parts_mut(
+            out_color as *mut [u16; 4],
+            cells,
+        ))
     };
     ffi_guard(0, || {
-        match tile_store::reg_with(store, |s| s.fetch_into(level, tx, ty, out_counts, out_color)) {
+        match tile_store::reg_with(store, |s| {
+            s.fetch_into(level, tx, ty, out_counts, out_color)
+        }) {
             Some(Ok(true)) => 1,
             _ => 0,
         }
@@ -4233,19 +4280,17 @@ pub unsafe extern "C" fn xyg_tile_store_stats(store: u64, out: *mut u64) -> i32 
         return 0;
     }
     let out = std::slice::from_raw_parts_mut(out, 6);
-    ffi_guard(0, || {
-        match tile_store::reg_with(store, |s| s.stats()) {
-            Some((hits, misses, resident, spilled, budget, over)) => {
-                out[0] = hits;
-                out[1] = misses;
-                out[2] = resident;
-                out[3] = spilled;
-                out[4] = budget;
-                out[5] = u64::from(over);
-                1
-            }
-            None => 0,
+    ffi_guard(0, || match tile_store::reg_with(store, |s| s.stats()) {
+        Some((hits, misses, resident, spilled, budget, over)) => {
+            out[0] = hits;
+            out[1] = misses;
+            out[2] = resident;
+            out[3] = spilled;
+            out[4] = budget;
+            out[5] = u64::from(over);
+            1
         }
+        None => 0,
     })
 }
 
@@ -4271,7 +4316,6 @@ pub unsafe extern "C" fn xyg_tile_budget_set(bytes: u64) -> i32 {
 pub unsafe extern "C" fn xyg_tile_store_free(store: u64) -> i32 {
     ffi_guard(0, || if tile_store::reg_remove(store) { 1 } else { 0 })
 }
-
 
 // -- canonical stream store (engine doc §5): opaque u64 handles --------------
 
@@ -5732,7 +5776,6 @@ pub unsafe extern "C" fn xyg_graph_build_render(
     })
 }
 
-
 /// Route render-graph edges into paint segments (#33).
 ///
 /// Emits deterministic parallel/reciprocal offsets, triangular self-loops, and
@@ -5761,10 +5804,7 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
     out_edge_index: *mut u64,
     out_n_segments: *mut u64,
 ) -> i32 {
-    if n_nodes > (usize::MAX as u64)
-        || n_edges > (usize::MAX as u64)
-        || out_n_segments.is_null()
-    {
+    if n_nodes > (usize::MAX as u64) || n_edges > (usize::MAX as u64) || out_n_segments.is_null() {
         return -1;
     }
     let n = n_nodes as usize;
@@ -6616,7 +6656,6 @@ pub unsafe extern "C" fn xyg_contourf_bands(
     })
 }
 
-
 // -- geographic columns (#47): opaque u64 handles over GeoColumn ------------
 
 fn geo_slice_f64<'a>(ptr: *const f64, len: usize) -> Option<&'a [f64]> {
@@ -6767,13 +6806,7 @@ pub unsafe extern "C" fn xyg_geo_column_new(
 /// No pointer arguments; safe for any handle value.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_geo_column_free(handle: u64) -> i32 {
-    ffi_guard(0, || {
-        if geo::reg_free(handle).is_ok() {
-            1
-        } else {
-            0
-        }
-    })
+    ffi_guard(0, || if geo::reg_free(handle).is_ok() { 1 } else { 0 })
 }
 
 /// Feature count (including nulls). `usize::MAX` on a stale handle.
@@ -6992,8 +7025,9 @@ mod tests {
         let diameter = [8.0f64];
         let symbols = [2u8];
         let values = [0.5f64];
-        let mut output = [0u8; 272];
-        let mut call = |kind, mask, len, kinds_ptr| unsafe {
+        let chrome = scene::SceneChromeStyle::default().style_input();
+        let mut output = [0u8; 464];
+        let mut call = |kind, mask, len, kinds_ptr, major_ptr, major_count, major_auto| unsafe {
             xyg_scene_batch_encode(
                 100.0,
                 80.0,
@@ -7012,6 +7046,18 @@ mod tests {
                 0.0,
                 1.0,
                 1.0,
+                0,
+                chrome.as_ptr(),
+                chrome.len(),
+                major_ptr,
+                major_count,
+                major_auto,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                1,
+                std::ptr::null(),
                 0,
                 kinds_ptr,
                 ids.as_ptr(),
@@ -7037,16 +7083,40 @@ mod tests {
                 output.len(),
             )
         };
-        assert_eq!(call(0, 0, 1, kinds.as_ptr()), 272);
-        assert_eq!(call(99, 0, 1, kinds.as_ptr()), usize::MAX);
-        assert_eq!(call(0, 2, 1, kinds.as_ptr()), usize::MAX);
-        assert_eq!(call(0, 0, 1, std::ptr::null()), usize::MAX);
+        assert_eq!(call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1), 464);
         assert_eq!(
-            call(0, 0, scene::MAX_SCENE_MARKS + 1, kinds.as_ptr()),
+            call(99, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1),
+            usize::MAX
+        );
+        assert_eq!(
+            call(0, 2, 1, kinds.as_ptr(), std::ptr::null(), 0, 1),
+            usize::MAX
+        );
+        assert_eq!(
+            call(0, 0, 1, std::ptr::null(), std::ptr::null(), 0, 1),
+            usize::MAX
+        );
+        assert_eq!(
+            call(
+                0,
+                0,
+                scene::MAX_SCENE_MARKS + 1,
+                kinds.as_ptr(),
+                std::ptr::null(),
+                0,
+                1
+            ),
             usize::MAX
         );
         let invalid_kind = [9u8];
-        assert_eq!(call(0, 0, 1, invalid_kind.as_ptr()), usize::MAX);
+        assert_eq!(
+            call(0, 0, 1, invalid_kind.as_ptr(), std::ptr::null(), 0, 1),
+            usize::MAX
+        );
+        assert_eq!(
+            call(0, 0, 1, kinds.as_ptr(), values.as_ptr(), 1, 1),
+            usize::MAX
+        );
 
         let log_kinds = [0u8, 1, 1, 2];
         let log_ids = [1u64, 20, 20, 30];
@@ -7056,7 +7126,7 @@ mod tests {
         let reserved_or_corner = [0.0f64; 4];
         let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
         let log_symbols = [0u8; 4];
-        let mut log_output = [0u8; 440];
+        let mut log_output = [0u8; 632];
         assert_eq!(
             unsafe {
                 xyg_scene_batch_encode(
@@ -7078,6 +7148,18 @@ mod tests {
                     10.0,
                     1.0,
                     1,
+                    chrome.as_ptr(),
+                    chrome.len(),
+                    std::ptr::null(),
+                    0,
+                    1,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    1,
+                    std::ptr::null(),
+                    0,
                     log_kinds.as_ptr(),
                     log_ids.as_ptr(),
                     log_style_refs.as_ptr(),

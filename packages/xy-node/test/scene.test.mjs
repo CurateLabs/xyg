@@ -42,13 +42,13 @@ test("Node figure defaults match Python Scene bytes and canonical values", () =>
   assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
 });
 
-test("Node Scene v7 whole-scene consumers reject malformed and unsupported input", () => {
+test("Node Scene v8 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
   const figure = new Figure().heatmap([[0, 1], [1, 0]]);
   assert.throws(() => figure.toScene(), /does not yet support heatmap/);
 });
 
-test("Node Scene v7 compiles ribbon and triangle_mesh", () => {
+test("Node Scene v8 compiles ribbon and triangle_mesh", () => {
   const ribbon = new Figure({ width: 320, height: 200 });
   ribbon.setAxisDomain("x", [0, 1]); ribbon.setAxisDomain("y", [0, 1]);
   ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], { color: "#7c3aed", name: null });
@@ -59,7 +59,7 @@ test("Node Scene v7 compiles ribbon and triangle_mesh", () => {
   assert.match(sceneSvg(mesh.toScene()), /<path d="M /);
 });
 
-test("Node Scene v7 compiles area bands", () => {
+test("Node Scene v8 compiles area bands", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 3]);
   figure.area([0, 1, 2], [1, 2, 1.5], { base: 0, color: "#3987e5", opacity: 0.5 });
@@ -127,7 +127,7 @@ test("Node Scene v4 matches shared scatter, line, bar, and axis bytes", () => {
     diameter: sceneFixture.diameter, symbols: sceneFixture.symbols,
     x0: sceneFixture.x0, y0: sceneFixture.y0, x1: sceneFixture.x1, y1: sceneFixture.y1,
   });
-  assert.equal(Buffer.from(encoded).toString("hex"), sceneFixture.expected_hex);
+  assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), sceneFixture.expected_sha256);
   const records = 160 + sceneFixture.styles.length * 16;
   assert.equal(encoded[records + 1], 1); // center outside, full marker overlaps
   assert.equal(encoded[records + 2], 2); // diamond
@@ -140,6 +140,38 @@ test("Node Scene v4 matches shared scatter, line, bar, and axis bytes", () => {
   assert.equal(view.getBigUint64(line1 + 8, true), 201n);
   assert.deepEqual([view.getFloat64(line0 + 32, true), view.getFloat64(line0 + 40, true)], [0, 0]);
   assert.deepEqual(Array.from({ length: 4 }, (_, index) => view.getFloat64(rect + 16 + index * 8, true)), [156, 142, 272, 318]);
+});
+
+test("Node Scene v8 authored chrome matches Python exact bytes", () => {
+  const encoded = sceneBatchEncode({
+    viewport: [100, 80], margins: [10, 10, 10, 10],
+    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    kinds: [0], stableIds: [9], styleRefs: [0],
+    styles: [{ fillRgba: [1, 2, 3, 255], strokeRgba: [0, 0, 0, 0], strokeWidth: 0 }],
+    diameter: [6], symbols: [0], x0: [0.5], y0: [0.5], x1: [0], y1: [0],
+    chromeStyle: Uint8Array.from(Buffer.from(sceneFixture.authored_chrome_style_hex, "hex")),
+    xMajorTicks: [0, 0.5, 1], xMinorTicks: [0.25, 0.75], yMajorTicks: [], yMinorTicks: [0.5],
+  });
+  assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), sceneFixture.authored_chrome_sha256);
+  assert.match(sceneSvg(encoded), /data-xy-chrome="chart-background"/);
+  assert.match(sceneSvg(encoded), /stroke="rgba\(23,24,25,1\.000000\)"/);
+});
+
+test("Node Scene v8 rejects non-byte chrome style input before the ABI", () => {
+  const input = {
+    viewport: [100, 80], margins: [10, 10, 10, 10],
+    xAxis: { id: 1, domain: [0, 1] }, yAxis: { id: 2, domain: [0, 1] },
+    kinds: [], stableIds: [], styleRefs: [], styles: [], diameter: [], symbols: [],
+    x0: [], y0: [], x1: [], y1: [],
+  };
+  assert.throws(
+    () => sceneBatchEncode({ ...input, chromeStyle: Array(200).fill(256) }),
+    /chromeStyle values must be integers from 0 through 255/,
+  );
+  assert.throws(
+    () => sceneBatchEncode({ ...input, title: "x".repeat(4097) }),
+    /4096 UTF-8 bytes/,
+  );
 });
 
 test("Node Scene v4 rejects malformed batches", () => {
@@ -257,7 +289,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 7);
+  assert.equal(sceneVersion(), 8);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -298,7 +330,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 7);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 8);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

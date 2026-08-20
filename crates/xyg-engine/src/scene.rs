@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 7;
+pub const SCENE_VERSION: u32 = 8;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -16,10 +16,12 @@ pub const MAX_SCENE_TEXT_BYTES: usize = 4_096;
 pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
 pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
-/// Fixed chrome trailer before UTF-8 title/axis-label payloads (Scene v5).
-pub const SCENE_CHROME_TRAILER_BYTES: usize = 40;
-pub const BROWSER_PAINTER_VERSION: u32 = 2;
-pub const BROWSER_PAINTER_HEADER_BYTES: usize = 64;
+/// Fixed chrome trailer before UTF-8 labels and authored tick payloads (Scene v8).
+pub const SCENE_CHROME_TRAILER_BYTES: usize = 232;
+pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
+pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
+pub const BROWSER_PAINTER_VERSION: u32 = 4;
+pub const BROWSER_PAINTER_HEADER_BYTES: usize = 280;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 /// Hard ceiling on browser-side trace objects created from one painter output.
@@ -27,31 +29,195 @@ pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 /// independent of the byte arena and prevents O(records) ChartView/GL objects.
 pub const MAX_BROWSER_PAINTER_TRACES: usize = 1024;
 
-/// Authored chrome paints and label size carried in the Scene v5 trailer.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum AxisSide {
+    Low = 0,
+    High = 1,
+}
+
+impl AxisSide {
+    fn from_code(value: u8) -> Result<Self, SceneError> {
+        match value {
+            0 => Ok(Self::Low),
+            1 => Ok(Self::High),
+            _ => Err(SceneError::Length),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum TickDirection {
+    Out = 0,
+    In = 1,
+    InOut = 2,
+}
+
+impl TickDirection {
+    fn from_code(value: u8) -> Result<Self, SceneError> {
+        match value {
+            0 => Ok(Self::Out),
+            1 => Ok(Self::In),
+            2 => Ok(Self::InOut),
+            _ => Err(SceneError::Length),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct SceneChromeStyle {
-    pub grid_rgba: [u8; 4],
+pub struct SceneAxisChromeStyle {
+    pub side: AxisSide,
+    /// Bit 0 is the low side (bottom/left), bit 1 the high side (top/right).
+    pub tick_sides: u8,
+    pub tick_label_sides: u8,
+    pub major_direction: TickDirection,
+    pub minor_direction: TickDirection,
     pub axis_rgba: [u8; 4],
+    pub grid_rgba: [u8; 4],
+    pub tick_rgba: [u8; 4],
+    pub minor_grid_rgba: [u8; 4],
+    pub minor_tick_rgba: [u8; 4],
+    pub label_rgba: [u8; 4],
+    pub axis_width: f64,
+    pub grid_width: f64,
+    pub tick_width: f64,
+    pub tick_length: f64,
+    pub minor_grid_width: f64,
+    pub minor_tick_width: f64,
+    pub minor_tick_length: f64,
+}
+
+impl SceneAxisChromeStyle {
+    fn default_style(side: AxisSide) -> Self {
+        Self {
+            side,
+            tick_sides: 1 << side as u8,
+            tick_label_sides: 1 << side as u8,
+            major_direction: TickDirection::Out,
+            minor_direction: TickDirection::Out,
+            axis_rgba: [32, 32, 32, 140],
+            grid_rgba: [32, 32, 32, 36],
+            tick_rgba: [32, 32, 32, 140],
+            minor_grid_rgba: [0; 4],
+            minor_tick_rgba: [32, 32, 32, 140],
+            label_rgba: [32, 32, 32, 217],
+            axis_width: 1.0,
+            grid_width: 1.0,
+            tick_width: 1.0,
+            tick_length: 4.0,
+            minor_grid_width: 1.0,
+            minor_tick_width: 1.0,
+            minor_tick_length: 0.0,
+        }
+    }
+
+    fn validated(self) -> Result<Self, SceneError> {
+        if self.tick_sides & !0b11 != 0 || self.tick_label_sides & !0b11 != 0 {
+            return Err(SceneError::Length);
+        }
+        if [
+            self.axis_width,
+            self.grid_width,
+            self.tick_width,
+            self.tick_length,
+            self.minor_grid_width,
+            self.minor_tick_width,
+            self.minor_tick_length,
+        ]
+        .into_iter()
+        .any(|value| !value.is_finite() || !(0.0..=MAX_SCENE_CHROME_LENGTH).contains(&value))
+        {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(self)
+    }
+}
+
+/// Authored Cartesian backgrounds, axis sides, and major/minor chrome.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SceneChromeStyle {
+    pub chart_background_rgba: [u8; 4],
+    pub plot_background_rgba: [u8; 4],
     pub label_rgba: [u8; 4],
     pub label_font_size: f64,
+    pub x_axis: SceneAxisChromeStyle,
+    pub y_axis: SceneAxisChromeStyle,
+    /// `None` requests Rust's bounded automatic major ticks; `Some` is authored.
+    pub x_major_ticks: Option<Vec<f64>>,
+    pub x_minor_ticks: Vec<f64>,
+    pub y_major_ticks: Option<Vec<f64>>,
+    pub y_minor_ticks: Vec<f64>,
 }
 
 impl SceneChromeStyle {
-    pub const fn default_style() -> Self {
+    pub fn default_style() -> Self {
         Self {
-            // Matches the historical static exporter: rgba(32,32,32,α).
-            grid_rgba: [32, 32, 32, 36],   // ≈ 0.14
-            axis_rgba: [32, 32, 32, 140],  // ≈ 0.55
+            chart_background_rgba: [0; 4],
+            plot_background_rgba: [0; 4],
             label_rgba: [32, 32, 32, 217], // ≈ 0.85
             label_font_size: 12.0,
+            x_axis: SceneAxisChromeStyle::default_style(AxisSide::Low),
+            y_axis: SceneAxisChromeStyle::default_style(AxisSide::Low),
+            x_major_ticks: None,
+            x_minor_ticks: Vec::new(),
+            y_major_ticks: None,
+            y_minor_ticks: Vec::new(),
         }
     }
 
     pub fn validated(self) -> Result<Self, SceneError> {
-        if !self.label_font_size.is_finite() || self.label_font_size <= 0.0 {
+        if !self.label_font_size.is_finite()
+            || self.label_font_size <= 0.0
+            || self.label_font_size > MAX_SCENE_CHROME_LENGTH
+        {
             return Err(SceneError::NonFinite);
         }
+        self.x_axis.validated()?;
+        self.y_axis.validated()?;
+        for values in [
+            self.x_major_ticks.as_deref().unwrap_or(&[]),
+            &self.x_minor_ticks,
+            self.y_major_ticks.as_deref().unwrap_or(&[]),
+            &self.y_minor_ticks,
+        ] {
+            if values.len() > MAX_AXIS_TICKS || values.iter().any(|value| !value.is_finite()) {
+                return Err(SceneError::Limit);
+            }
+        }
         Ok(self)
+    }
+
+    pub fn from_style_input(
+        bytes: &[u8],
+        x_major_ticks: Option<Vec<f64>>,
+        x_minor_ticks: Vec<f64>,
+        y_major_ticks: Option<Vec<f64>>,
+        y_minor_ticks: Vec<f64>,
+    ) -> Result<Self, SceneError> {
+        if bytes.len() != SCENE_CHROME_STYLE_INPUT_BYTES || bytes[12..16] != [0; 4] {
+            return Err(SceneError::Length);
+        }
+        let label_font_size = f64::from_le_bytes(bytes[16..24].try_into().unwrap());
+        Self {
+            chart_background_rgba: bytes[0..4].try_into().unwrap(),
+            plot_background_rgba: bytes[4..8].try_into().unwrap(),
+            label_rgba: bytes[8..12].try_into().unwrap(),
+            label_font_size,
+            x_axis: read_axis_chrome_style(bytes, 24)?,
+            y_axis: read_axis_chrome_style(bytes, 112)?,
+            x_major_ticks,
+            x_minor_ticks,
+            y_major_ticks,
+            y_minor_ticks,
+        }
+        .validated()
+    }
+
+    pub fn style_input(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(SCENE_CHROME_STYLE_INPUT_BYTES);
+        write_chrome_style_input(&mut out, self);
+        out
     }
 }
 
@@ -61,7 +227,7 @@ impl Default for SceneChromeStyle {
     }
 }
 
-/// Optional figure title and axis labels owned by the Scene v5 trailer.
+/// Optional figure title and axis labels owned by the Scene v8 trailer.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct SceneChromeText {
     pub title: String,
@@ -84,11 +250,37 @@ impl SceneChromeText {
     }
 
     fn encoded_bytes(&self) -> usize {
-        SCENE_CHROME_TRAILER_BYTES
-            + self.title.len()
-            + self.x_label.len()
-            + self.y_label.len()
+        SCENE_CHROME_TRAILER_BYTES + self.title.len() + self.x_label.len() + self.y_label.len()
     }
+}
+
+fn read_axis_chrome_style(bytes: &[u8], offset: usize) -> Result<SceneAxisChromeStyle, SceneError> {
+    let axis = bytes.get(offset..offset + 88).ok_or(SceneError::Length)?;
+    if axis[5..8] != [0; 3] {
+        return Err(SceneError::Length);
+    }
+    let f64_at = |inner| f64::from_le_bytes(axis[inner..inner + 8].try_into().unwrap());
+    SceneAxisChromeStyle {
+        side: AxisSide::from_code(axis[0])?,
+        tick_sides: axis[1],
+        tick_label_sides: axis[2],
+        major_direction: TickDirection::from_code(axis[3])?,
+        minor_direction: TickDirection::from_code(axis[4])?,
+        axis_rgba: axis[8..12].try_into().unwrap(),
+        grid_rgba: axis[12..16].try_into().unwrap(),
+        tick_rgba: axis[16..20].try_into().unwrap(),
+        minor_grid_rgba: axis[20..24].try_into().unwrap(),
+        minor_tick_rgba: axis[24..28].try_into().unwrap(),
+        label_rgba: axis[28..32].try_into().unwrap(),
+        axis_width: f64_at(32),
+        grid_width: f64_at(40),
+        tick_width: f64_at(48),
+        tick_length: f64_at(56),
+        minor_grid_width: f64_at(64),
+        minor_tick_width: f64_at(72),
+        minor_tick_length: f64_at(80),
+    }
+    .validated()
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -261,6 +453,51 @@ impl AxisScale {
     }
 }
 
+fn resolved_axis_ticks(
+    scale: AxisScale,
+    length: f64,
+    is_x: bool,
+    pixel_min: f64,
+    pixel_max: f64,
+    authored_major: Option<&[f64]>,
+    authored_minor: &[f64],
+) -> Result<AxisTicks, SceneError> {
+    let automatic = scale.ticks(length, is_x)?;
+    let mut labeled = authored_major
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| automatic.labeled.clone());
+    let in_plot = |value: &f64| {
+        let pixel = scale.pixel(*value);
+        pixel.is_finite() && pixel >= pixel_min && pixel <= pixel_max
+    };
+    labeled.retain(in_plot);
+    let mut ticks = labeled.clone();
+    let minor = if authored_minor.is_empty() && authored_major.is_none() {
+        automatic
+            .ticks
+            .into_iter()
+            .filter(|value| !automatic.labeled.contains(value))
+            .collect::<Vec<_>>()
+    } else {
+        authored_minor.to_vec()
+    };
+    ticks.extend(minor.into_iter().filter(in_plot));
+    if ticks.len() > MAX_AXIS_TICKS {
+        return Err(SceneError::Limit);
+    }
+    let step = labeled
+        .windows(2)
+        .next()
+        .map(|pair| (pair[1] - pair[0]).abs())
+        .filter(|step| step.is_finite() && *step > 0.0)
+        .unwrap_or(automatic.step);
+    Ok(AxisTicks {
+        ticks,
+        labeled,
+        step,
+    })
+}
+
 pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneError> {
     if !lo.is_finite() || !hi.is_finite() || target == 0 || target > MAX_AXIS_TICKS {
         return Err(SceneError::NonFinite);
@@ -416,11 +653,7 @@ pub fn angular_ticks(
             step: 1.0,
         });
     }
-    let ladder = if degrees {
-        DEGREE_STEPS
-    } else {
-        RADIAN_STEPS
-    };
+    let ladder = if degrees { DEGREE_STEPS } else { RADIAN_STEPS };
     let rough = (b - a) / target as f64;
     let step = ladder
         .iter()
@@ -745,20 +978,56 @@ fn read_chrome_trailer(
     let trailer = bytes
         .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
         .ok_or(SceneError::Length)?;
-    if trailer[12..16] != [0; 4] || trailer[36..40] != [0; 4] {
+    if trailer[12..16] != [0; 4] || trailer[228..232] != [0; 4] {
         return Err(SceneError::Length);
     }
     let label_font_size = f64::from_le_bytes(trailer[16..24].try_into().unwrap());
-    let chrome = SceneChromeStyle {
-        grid_rgba: trailer[0..4].try_into().unwrap(),
-        axis_rgba: trailer[4..8].try_into().unwrap(),
-        label_rgba: trailer[8..12].try_into().unwrap(),
-        label_font_size,
+    let read_axis = |offset: usize| -> Result<SceneAxisChromeStyle, SceneError> {
+        if trailer[offset + 5..offset + 8] != [0; 3] {
+            return Err(SceneError::Length);
+        }
+        let f64_at = |inner| {
+            f64::from_le_bytes(
+                trailer[offset + inner..offset + inner + 8]
+                    .try_into()
+                    .unwrap(),
+            )
+        };
+        SceneAxisChromeStyle {
+            side: AxisSide::from_code(trailer[offset])?,
+            tick_sides: trailer[offset + 1],
+            tick_label_sides: trailer[offset + 2],
+            major_direction: TickDirection::from_code(trailer[offset + 3])?,
+            minor_direction: TickDirection::from_code(trailer[offset + 4])?,
+            axis_rgba: trailer[offset + 8..offset + 12].try_into().unwrap(),
+            grid_rgba: trailer[offset + 12..offset + 16].try_into().unwrap(),
+            tick_rgba: trailer[offset + 16..offset + 20].try_into().unwrap(),
+            minor_grid_rgba: trailer[offset + 20..offset + 24].try_into().unwrap(),
+            minor_tick_rgba: trailer[offset + 24..offset + 28].try_into().unwrap(),
+            label_rgba: trailer[offset + 28..offset + 32].try_into().unwrap(),
+            axis_width: f64_at(32),
+            grid_width: f64_at(40),
+            tick_width: f64_at(48),
+            tick_length: f64_at(56),
+            minor_grid_width: f64_at(64),
+            minor_tick_width: f64_at(72),
+            minor_tick_length: f64_at(80),
+        }
+        .validated()
+    };
+    let title_len = u32::from_le_bytes(trailer[200..204].try_into().unwrap()) as usize;
+    let xlabel_len = u32::from_le_bytes(trailer[204..208].try_into().unwrap()) as usize;
+    let ylabel_len = u32::from_le_bytes(trailer[208..212].try_into().unwrap()) as usize;
+    let counts = [212, 216, 220, 224]
+        .map(|offset| u32::from_le_bytes(trailer[offset..offset + 4].try_into().unwrap()));
+    if counts[1] == u32::MAX || counts[3] == u32::MAX {
+        return Err(SceneError::Length);
     }
-    .validated()?;
-    let title_len = u32::from_le_bytes(trailer[24..28].try_into().unwrap()) as usize;
-    let xlabel_len = u32::from_le_bytes(trailer[28..32].try_into().unwrap()) as usize;
-    let ylabel_len = u32::from_le_bytes(trailer[32..36].try_into().unwrap()) as usize;
+    for count in counts {
+        if count != u32::MAX && count as usize > MAX_AXIS_TICKS {
+            return Err(SceneError::Limit);
+        }
+    }
     if title_len > MAX_SCENE_TEXT_BYTES
         || xlabel_len > MAX_SCENE_TEXT_BYTES
         || ylabel_len > MAX_SCENE_TEXT_BYTES
@@ -766,18 +1035,24 @@ fn read_chrome_trailer(
         return Err(SceneError::Limit);
     }
     let text_start = body_end + SCENE_CHROME_TRAILER_BYTES;
+    let tick_count = counts
+        .into_iter()
+        .filter(|count| *count != u32::MAX)
+        .try_fold(0usize, |total, count| total.checked_add(count as usize))
+        .ok_or(SceneError::Limit)?;
     let total = text_start
         .checked_add(title_len)
         .and_then(|value| value.checked_add(xlabel_len))
         .and_then(|value| value.checked_add(ylabel_len))
+        .and_then(|value| value.checked_add(tick_count.checked_mul(8)?))
         .ok_or(SceneError::Limit)?;
     if bytes.len() < total {
         return Err(SceneError::Length);
     }
     let title_bytes = &bytes[text_start..text_start + title_len];
     let xlabel_bytes = &bytes[text_start + title_len..text_start + title_len + xlabel_len];
-    let ylabel_bytes =
-        &bytes[text_start + title_len + xlabel_len..text_start + title_len + xlabel_len + ylabel_len];
+    let ylabel_bytes = &bytes
+        [text_start + title_len + xlabel_len..text_start + title_len + xlabel_len + ylabel_len];
     if title_bytes.contains(&0) || xlabel_bytes.contains(&0) || ylabel_bytes.contains(&0) {
         return Err(SceneError::Length);
     }
@@ -786,25 +1061,124 @@ fn read_chrome_trailer(
         x_label: String::from_utf8(xlabel_bytes.to_vec()).map_err(|_| SceneError::Length)?,
         y_label: String::from_utf8(ylabel_bytes.to_vec()).map_err(|_| SceneError::Length)?,
     };
+    let mut values_at = text_start + title_len + xlabel_len + ylabel_len;
+    let mut read_values = |count: u32| -> Result<Option<Vec<f64>>, SceneError> {
+        if count == u32::MAX {
+            return Ok(None);
+        }
+        let mut values = Vec::with_capacity(count as usize);
+        for _ in 0..count {
+            let value = f64::from_le_bytes(bytes[values_at..values_at + 8].try_into().unwrap());
+            if !value.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            values.push(value);
+            values_at += 8;
+        }
+        Ok(Some(values))
+    };
+    let x_major_ticks = read_values(counts[0])?;
+    let x_minor_ticks = read_values(counts[1])?.unwrap_or_default();
+    let y_major_ticks = read_values(counts[2])?;
+    let y_minor_ticks = read_values(counts[3])?.unwrap_or_default();
+    let chrome = SceneChromeStyle {
+        chart_background_rgba: trailer[0..4].try_into().unwrap(),
+        plot_background_rgba: trailer[4..8].try_into().unwrap(),
+        label_rgba: trailer[8..12].try_into().unwrap(),
+        label_font_size,
+        x_axis: read_axis(24)?,
+        y_axis: read_axis(112)?,
+        x_major_ticks,
+        x_minor_ticks,
+        y_major_ticks,
+        y_minor_ticks,
+    }
+    .validated()?;
     Ok((chrome, text, total))
 }
 
-fn write_chrome_trailer(out: &mut Vec<u8>, chrome: &SceneChromeStyle, text: &SceneChromeText) {
-    out.extend_from_slice(&chrome.grid_rgba);
-    out.extend_from_slice(&chrome.axis_rgba);
+fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
+    out.extend_from_slice(&chrome.chart_background_rgba);
+    out.extend_from_slice(&chrome.plot_background_rgba);
     out.extend_from_slice(&chrome.label_rgba);
     out.extend_from_slice(&[0; 4]);
     out.extend_from_slice(&chrome.label_font_size.to_le_bytes());
+    let write_axis = |out: &mut Vec<u8>, axis: &SceneAxisChromeStyle| {
+        out.extend_from_slice(&[
+            axis.side as u8,
+            axis.tick_sides,
+            axis.tick_label_sides,
+            axis.major_direction as u8,
+            axis.minor_direction as u8,
+            0,
+            0,
+            0,
+        ]);
+        out.extend_from_slice(&axis.axis_rgba);
+        out.extend_from_slice(&axis.grid_rgba);
+        out.extend_from_slice(&axis.tick_rgba);
+        out.extend_from_slice(&axis.minor_grid_rgba);
+        out.extend_from_slice(&axis.minor_tick_rgba);
+        out.extend_from_slice(&axis.label_rgba);
+        for value in [
+            axis.axis_width,
+            axis.grid_width,
+            axis.tick_width,
+            axis.tick_length,
+            axis.minor_grid_width,
+            axis.minor_tick_width,
+            axis.minor_tick_length,
+        ] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+    };
+    write_axis(out, &chrome.x_axis);
+    write_axis(out, &chrome.y_axis);
+}
+
+fn write_chrome_trailer(out: &mut Vec<u8>, chrome: &SceneChromeStyle, text: &SceneChromeText) {
+    write_chrome_style_input(out, chrome);
     out.extend_from_slice(&(text.title.len() as u32).to_le_bytes());
     out.extend_from_slice(&(text.x_label.len() as u32).to_le_bytes());
     out.extend_from_slice(&(text.y_label.len() as u32).to_le_bytes());
+    for (values, automatic) in [
+        (
+            chrome.x_major_ticks.as_deref().unwrap_or(&[]),
+            chrome.x_major_ticks.is_none(),
+        ),
+        (&chrome.x_minor_ticks, false),
+        (
+            chrome.y_major_ticks.as_deref().unwrap_or(&[]),
+            chrome.y_major_ticks.is_none(),
+        ),
+        (&chrome.y_minor_ticks, false),
+    ] {
+        out.extend_from_slice(
+            &(if automatic {
+                u32::MAX
+            } else {
+                values.len() as u32
+            })
+            .to_le_bytes(),
+        );
+    }
     out.extend_from_slice(&[0; 4]);
     out.extend_from_slice(text.title.as_bytes());
     out.extend_from_slice(text.x_label.as_bytes());
     out.extend_from_slice(text.y_label.as_bytes());
+    for values in [
+        chrome.x_major_ticks.as_deref().unwrap_or(&[]),
+        &chrome.x_minor_ticks,
+        chrome.y_major_ticks.as_deref().unwrap_or(&[]),
+        &chrome.y_minor_ticks,
+    ] {
+        for value in values {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+    }
 }
 
-/// Validate a serialized canonical Scene v5 batch without allocating.
+/// Validate a serialized canonical Scene v8 batch without allocating.
 ///
 /// The direct-browser adapter uses this decoder as its first exact scene seam:
 /// TypeScript does not guess record offsets or accept a provisional browser
@@ -1173,9 +1547,9 @@ impl<'a> SceneBatch<'a> {
             !x0[index].is_finite()
                 || !y0[index].is_finite()
                 || (matches!(
-                        SceneRecordKind::from_code(*kind),
-                        Ok(SceneRecordKind::Rect | SceneRecordKind::Band)
-                    ) && (!x1[index].is_finite() || !y1[index].is_finite()))
+                    SceneRecordKind::from_code(*kind),
+                    Ok(SceneRecordKind::Rect | SceneRecordKind::Band)
+                ) && (!x1[index].is_finite() || !y1[index].is_finite()))
         }) || diameter
             .iter()
             .chain(stroke_width)
@@ -1183,6 +1557,24 @@ impl<'a> SceneBatch<'a> {
         {
             return Err(SceneError::NonFinite);
         }
+        resolved_axis_ticks(
+            x_scale,
+            layout.right - layout.left,
+            true,
+            layout.left,
+            layout.right,
+            chrome.x_major_ticks.as_deref(),
+            &chrome.x_minor_ticks,
+        )?;
+        resolved_axis_ticks(
+            y_scale,
+            layout.bottom - layout.top,
+            false,
+            layout.top,
+            layout.bottom,
+            chrome.y_major_ticks.as_deref(),
+            &chrome.y_minor_ticks,
+        )?;
         Ok(Self {
             layout,
             x_axis_id,
@@ -1211,7 +1603,16 @@ impl<'a> SceneBatch<'a> {
             SCENE_BATCH_HEADER_BYTES
                 + self.stroke_width.len() * SCENE_STYLE_RECORD_BYTES
                 + self.kinds.len() * SCENE_BATCH_RECORD_BYTES
-                + self.text.encoded_bytes(),
+                + self.text.encoded_bytes()
+                + [
+                    self.chrome.x_major_ticks.as_deref().unwrap_or(&[]).len(),
+                    self.chrome.x_minor_ticks.len(),
+                    self.chrome.y_major_ticks.as_deref().unwrap_or(&[]).len(),
+                    self.chrome.y_minor_ticks.len(),
+                ]
+                .into_iter()
+                .sum::<usize>()
+                    * 8,
         );
         out.extend_from_slice(b"XYGS");
         out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
@@ -1255,7 +1656,9 @@ impl<'a> SceneBatch<'a> {
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
             let mapped = match kind {
-                SceneRecordKind::Scatter | SceneRecordKind::Polyline | SceneRecordKind::PolyFill => [
+                SceneRecordKind::Scatter
+                | SceneRecordKind::Polyline
+                | SceneRecordKind::PolyFill => [
                     self.x_scale.pixel(self.x0[index]),
                     self.y_scale.pixel(self.y0[index]),
                     0.0,
@@ -1270,7 +1673,9 @@ impl<'a> SceneBatch<'a> {
             };
             let visible = mapped.iter().all(|value| value.is_finite())
                 && match kind {
-                    SceneRecordKind::Polyline | SceneRecordKind::Band | SceneRecordKind::PolyFill => true,
+                    SceneRecordKind::Polyline
+                    | SceneRecordKind::Band
+                    | SceneRecordKind::PolyFill => true,
                     SceneRecordKind::Scatter => {
                         let style = self.style_refs[index] as usize;
                         let geometry = MarkerGeometry::new(
@@ -1369,7 +1774,7 @@ fn format_tick(value: f64, step: f64, kind: ScaleKind) -> String {
     format!("{value:.decimals$}")
 }
 
-fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str) {
+fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str, width: f64) {
     out.push_str("<line x1=\"");
     push_num(out, x1);
     out.push_str("\" y1=\"");
@@ -1380,7 +1785,9 @@ fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &s
     push_num(out, y2);
     out.push_str("\" stroke=\"");
     out.push_str(paint);
-    out.push_str("\" stroke-width=\"1\"/>");
+    out.push_str("\" stroke-width=\"");
+    push_num(out, width);
+    out.push_str("\"/>");
 }
 
 fn rgba_css(rgba: [u8; 4]) -> String {
@@ -1391,6 +1798,14 @@ fn rgba_css(rgba: [u8; 4]) -> String {
         rgba[2],
         f64::from(rgba[3]) / 255.0
     )
+}
+
+fn tick_span(direction: TickDirection, length: f64) -> (f64, f64) {
+    match direction {
+        TickDirection::Out => (0.0, length),
+        TickDirection::In => (length, 0.0),
+        TickDirection::InOut => (length * 0.5, length * 0.5),
+    }
 }
 
 fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
@@ -1416,7 +1831,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         out.push_str("\" y=\"");
         push_num(out, layout.viewport_height - 6.0);
         out.push_str("\" fill=\"");
-        out.push_str(&rgba_css(chrome.label_rgba));
+        out.push_str(&rgba_css(chrome.x_axis.label_rgba));
         out.push_str("\" font-size=\"");
         push_num(out, chrome.label_font_size);
         out.push_str("\" text-anchor=\"middle\">");
@@ -1431,7 +1846,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
         out.push_str("\" y=\"");
         push_num(out, y);
         out.push_str("\" fill=\"");
-        out.push_str(&rgba_css(chrome.label_rgba));
+        out.push_str(&rgba_css(chrome.y_axis.label_rgba));
         out.push_str("\" font-size=\"");
         push_num(out, chrome.label_font_size);
         out.push_str("\" text-anchor=\"middle\" transform=\"rotate(-90 ");
@@ -1444,7 +1859,7 @@ fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
     }
 }
 
-/// Validated, owned Scene v5 document consumed identically by vector and
+/// Validated, owned Scene v8 document consumed identically by vector and
 /// raster export. Hosts never reinterpret record geometry after encoding.
 pub struct SceneDocument {
     layout: PlotLayout,
@@ -1668,7 +2083,9 @@ impl SceneDocument {
                 || (kind != SceneRecordKind::Scatter && diameter != 0.0)
                 || (matches!(
                     kind,
-                    SceneRecordKind::Scatter | SceneRecordKind::Polyline | SceneRecordKind::PolyFill
+                    SceneRecordKind::Scatter
+                        | SceneRecordKind::Polyline
+                        | SceneRecordKind::PolyFill
                 ) && coordinates[2..] != [0.0, 0.0])
                 || (visible
                     && kind == SceneRecordKind::Rect
@@ -1739,6 +2156,45 @@ impl SceneDocument {
         self.styles.len()
     }
 
+    fn resolved_axis_ticks(&self, is_x: bool) -> Result<AxisTicks, SceneError> {
+        let (scale, length, pixel_min, pixel_max, authored_major, authored_minor) = if is_x {
+            (
+                self.x_scale,
+                self.layout.right - self.layout.left,
+                self.layout.left,
+                self.layout.right,
+                self.chrome.x_major_ticks.as_deref(),
+                self.chrome.x_minor_ticks.as_slice(),
+            )
+        } else {
+            (
+                self.y_scale,
+                self.layout.bottom - self.layout.top,
+                self.layout.top,
+                self.layout.bottom,
+                self.chrome.y_major_ticks.as_deref(),
+                self.chrome.y_minor_ticks.as_slice(),
+            )
+        };
+        resolved_axis_ticks(
+            scale,
+            length,
+            is_x,
+            pixel_min,
+            pixel_max,
+            authored_major,
+            authored_minor,
+        )
+    }
+
+    fn minor_ticks(ticks: &AxisTicks) -> impl Iterator<Item = f64> + '_ {
+        ticks
+            .ticks
+            .iter()
+            .copied()
+            .filter(|value| !ticks.labeled.contains(value))
+    }
+
     pub fn to_svg(&self) -> String {
         let mut out = String::with_capacity(self.records.len().saturating_mul(96));
         out.push_str("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"");
@@ -1757,24 +2213,51 @@ impl SceneDocument {
         push_num(&mut out, self.layout.right - self.layout.left);
         out.push_str("\" height=\"");
         push_num(&mut out, self.layout.bottom - self.layout.top);
-        out.push_str("\"/></clipPath></defs><g data-xy-chrome=\"grid\">");
-        let x_ticks = self
-            .x_scale
-            .ticks(self.layout.right - self.layout.left, true)
-            .unwrap_or(AxisTicks {
-                ticks: Vec::new(),
-                labeled: Vec::new(),
-                step: 1.0,
-            });
-        let y_ticks = self
-            .y_scale
-            .ticks(self.layout.bottom - self.layout.top, false)
-            .unwrap_or(AxisTicks {
-                ticks: Vec::new(),
-                labeled: Vec::new(),
-                step: 1.0,
-            });
-        for value in &x_ticks.ticks {
+        out.push_str("\"/></clipPath></defs>");
+        for (kind, x, y, width, height, paint) in [
+            (
+                "chart-background",
+                0.0,
+                0.0,
+                self.layout.viewport_width,
+                self.layout.viewport_height,
+                self.chrome.chart_background_rgba,
+            ),
+            (
+                "plot-background",
+                self.layout.left,
+                self.layout.top,
+                self.layout.right - self.layout.left,
+                self.layout.bottom - self.layout.top,
+                self.chrome.plot_background_rgba,
+            ),
+        ] {
+            out.push_str("<rect data-xy-chrome=\"");
+            out.push_str(kind);
+            out.push_str("\" x=\"");
+            push_num(&mut out, x);
+            out.push_str("\" y=\"");
+            push_num(&mut out, y);
+            out.push_str("\" width=\"");
+            push_num(&mut out, width);
+            out.push_str("\" height=\"");
+            push_num(&mut out, height);
+            out.push_str("\" fill=\"");
+            out.push_str(&rgba_css(paint));
+            out.push_str("\"/>");
+        }
+        out.push_str("<g data-xy-chrome=\"grid\">");
+        let x_ticks = self.resolved_axis_ticks(true).unwrap_or(AxisTicks {
+            ticks: Vec::new(),
+            labeled: Vec::new(),
+            step: 1.0,
+        });
+        let y_ticks = self.resolved_axis_ticks(false).unwrap_or(AxisTicks {
+            ticks: Vec::new(),
+            labeled: Vec::new(),
+            step: 1.0,
+        });
+        for value in &x_ticks.labeled {
             let x = self.x_scale.pixel(*value);
             push_svg_line(
                 &mut out,
@@ -1782,10 +2265,23 @@ impl SceneDocument {
                 self.layout.top,
                 x,
                 self.layout.bottom,
-                &rgba_css(self.chrome.grid_rgba),
+                &rgba_css(self.chrome.x_axis.grid_rgba),
+                self.chrome.x_axis.grid_width,
             );
         }
-        for value in &y_ticks.ticks {
+        for value in Self::minor_ticks(&x_ticks) {
+            let x = self.x_scale.pixel(value);
+            push_svg_line(
+                &mut out,
+                x,
+                self.layout.top,
+                x,
+                self.layout.bottom,
+                &rgba_css(self.chrome.x_axis.minor_grid_rgba),
+                self.chrome.x_axis.minor_grid_width,
+            );
+        }
+        for value in &y_ticks.labeled {
             let y = self.y_scale.pixel(*value);
             push_svg_line(
                 &mut out,
@@ -1793,7 +2289,20 @@ impl SceneDocument {
                 y,
                 self.layout.right,
                 y,
-                &rgba_css(self.chrome.grid_rgba),
+                &rgba_css(self.chrome.y_axis.grid_rgba),
+                self.chrome.y_axis.grid_width,
+            );
+        }
+        for value in Self::minor_ticks(&y_ticks) {
+            let y = self.y_scale.pixel(value);
+            push_svg_line(
+                &mut out,
+                self.layout.left,
+                y,
+                self.layout.right,
+                y,
+                &rgba_css(self.chrome.y_axis.minor_grid_rgba),
+                self.chrome.y_axis.minor_grid_width,
             );
         }
         out.push_str("</g><g clip-path=\"url(#xy-scene-plot)\">");
@@ -1966,67 +2475,137 @@ impl SceneDocument {
             }
         }
         out.push_str("</g><g data-xy-chrome=\"axes\">");
-        for value in &x_ticks.labeled {
-            let x = self.x_scale.pixel(*value);
+        for (is_x, ticks, scale, style) in [
+            (true, &x_ticks, self.x_scale, self.chrome.x_axis),
+            (false, &y_ticks, self.y_scale, self.chrome.y_axis),
+        ] {
+            let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
+            let (minor_in, minor_out) = tick_span(style.minor_direction, style.minor_tick_length);
+            for side_code in 0..2 {
+                if style.tick_sides & (1 << side_code) != 0 {
+                    for value in &ticks.labeled {
+                        let p = scale.pixel(*value);
+                        let edge = if is_x {
+                            if side_code == 0 {
+                                self.layout.bottom
+                            } else {
+                                self.layout.top
+                            }
+                        } else if side_code == 0 {
+                            self.layout.left
+                        } else {
+                            self.layout.right
+                        };
+                        let sign = if side_code == 0 { 1.0 } else { -1.0 };
+                        let (x1, y1, x2, y2) = if is_x {
+                            (p, edge - sign * major_in, p, edge + sign * major_out)
+                        } else {
+                            (edge - sign * major_out, p, edge + sign * major_in, p)
+                        };
+                        push_svg_line(
+                            &mut out,
+                            x1,
+                            y1,
+                            x2,
+                            y2,
+                            &rgba_css(style.tick_rgba),
+                            style.tick_width,
+                        );
+                    }
+                }
+                if style.tick_label_sides & (1 << side_code) != 0 {
+                    for value in &ticks.labeled {
+                        let p = scale.pixel(*value);
+                        let edge = if is_x {
+                            if side_code == 0 {
+                                self.layout.bottom + 16.0
+                            } else {
+                                self.layout.top - 7.0
+                            }
+                        } else if side_code == 0 {
+                            self.layout.left - 8.0
+                        } else {
+                            self.layout.right + 8.0
+                        };
+                        out.push_str("<text x=\"");
+                        push_num(&mut out, if is_x { p } else { edge });
+                        out.push_str("\" y=\"");
+                        push_num(&mut out, if is_x { edge } else { p + 4.0 });
+                        out.push_str("\" fill=\"");
+                        out.push_str(&rgba_css(style.label_rgba));
+                        out.push_str("\" font-size=\"");
+                        push_num(&mut out, self.chrome.label_font_size);
+                        out.push_str("\" text-anchor=\"");
+                        out.push_str(if is_x {
+                            "middle"
+                        } else if side_code == 0 {
+                            "end"
+                        } else {
+                            "start"
+                        });
+                        out.push_str("\">");
+                        out.push_str(&format_tick(*value, ticks.step, scale.kind));
+                        out.push_str("</text>");
+                    }
+                }
+            }
+            let side_code = style.side as u8;
+            for value in Self::minor_ticks(ticks) {
+                let p = scale.pixel(value);
+                let edge = if is_x {
+                    if side_code == 0 {
+                        self.layout.bottom
+                    } else {
+                        self.layout.top
+                    }
+                } else if side_code == 0 {
+                    self.layout.left
+                } else {
+                    self.layout.right
+                };
+                let sign = if side_code == 0 { 1.0 } else { -1.0 };
+                let (x1, y1, x2, y2) = if is_x {
+                    (p, edge - sign * minor_in, p, edge + sign * minor_out)
+                } else {
+                    (edge - sign * minor_out, p, edge + sign * minor_in, p)
+                };
+                push_svg_line(
+                    &mut out,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    &rgba_css(style.minor_tick_rgba),
+                    style.minor_tick_width,
+                );
+            }
+            let edge = if is_x {
+                if style.side == AxisSide::Low {
+                    self.layout.bottom
+                } else {
+                    self.layout.top
+                }
+            } else if style.side == AxisSide::Low {
+                self.layout.left
+            } else {
+                self.layout.right
+            };
+            let (x1, y1, x2, y2) = if is_x {
+                (self.layout.left, edge, self.layout.right, edge)
+            } else {
+                (edge, self.layout.top, edge, self.layout.bottom)
+            };
             push_svg_line(
                 &mut out,
-                x,
-                self.layout.bottom,
-                x,
-                self.layout.bottom + 4.0,
-                &rgba_css(self.chrome.axis_rgba),
+                x1,
+                y1,
+                x2,
+                y2,
+                &rgba_css(style.axis_rgba),
+                style.axis_width,
             );
-            out.push_str("<text x=\"");
-            push_num(&mut out, x);
-            out.push_str("\" y=\"");
-            push_num(&mut out, self.layout.bottom + 16.0);
-            out.push_str("\" fill=\"");
-            out.push_str(&rgba_css(self.chrome.label_rgba));
-            out.push_str("\" font-size=\"");
-            push_num(&mut out, self.chrome.label_font_size);
-            out.push_str("\" text-anchor=\"middle\">");
-            out.push_str(&format_tick(*value, x_ticks.step, self.x_scale.kind));
-            out.push_str("</text>");
         }
-        for value in &y_ticks.labeled {
-            let y = self.y_scale.pixel(*value);
-            push_svg_line(
-                &mut out,
-                self.layout.left - 4.0,
-                y,
-                self.layout.left,
-                y,
-                &rgba_css(self.chrome.axis_rgba),
-            );
-            out.push_str("<text x=\"");
-            push_num(&mut out, self.layout.left - 8.0);
-            out.push_str("\" y=\"");
-            push_num(&mut out, y + 4.0);
-            out.push_str("\" fill=\"");
-            out.push_str(&rgba_css(self.chrome.label_rgba));
-            out.push_str("\" font-size=\"");
-            push_num(&mut out, self.chrome.label_font_size);
-            out.push_str("\" text-anchor=\"end\">");
-            out.push_str(&format_tick(*value, y_ticks.step, self.y_scale.kind));
-            out.push_str("</text>");
-        }
-        out.push_str("<path fill=\"none\" stroke=\"");
-        out.push_str(&rgba_css(self.chrome.axis_rgba));
-        out.push_str("\" stroke-width=\"1\" d=\"M ");
-        push_num(&mut out, self.layout.left);
-        out.push(' ');
-        push_num(&mut out, self.layout.bottom);
-        out.push_str(" H ");
-        push_num(&mut out, self.layout.right);
-        out.push_str("\"/><path fill=\"none\" stroke=\"");
-        out.push_str(&rgba_css(self.chrome.axis_rgba));
-        out.push_str("\" stroke-width=\"1\" d=\"M ");
-        push_num(&mut out, self.layout.left);
-        out.push(' ');
-        push_num(&mut out, self.layout.top);
-        out.push_str(" V ");
-        push_num(&mut out, self.layout.bottom);
-        out.push_str("\"/></g>");
+        out.push_str("</g>");
         push_svg_chrome_text(&mut out, self);
         out.push_str("</svg>");
         out
@@ -2040,23 +2619,43 @@ impl SceneDocument {
         x_ticks: &AxisTicks,
         y_ticks: &AxisTicks,
     ) -> Result<(), SceneError> {
-        for value in &x_ticks.ticks {
+        for value in &x_ticks.labeled {
             let x = self.x_scale.pixel(*value);
             push_raster_stroke(
                 out,
                 [(x, self.layout.top), (x, self.layout.bottom)],
-                1.0,
-                self.chrome.grid_rgba,
+                self.chrome.x_axis.grid_width,
+                self.chrome.x_axis.grid_rgba,
                 scale,
             )?;
         }
-        for value in &y_ticks.ticks {
+        for value in Self::minor_ticks(x_ticks) {
+            let x = self.x_scale.pixel(value);
+            push_raster_stroke(
+                out,
+                [(x, self.layout.top), (x, self.layout.bottom)],
+                self.chrome.x_axis.minor_grid_width,
+                self.chrome.x_axis.minor_grid_rgba,
+                scale,
+            )?;
+        }
+        for value in &y_ticks.labeled {
             let y = self.y_scale.pixel(*value);
             push_raster_stroke(
                 out,
                 [(self.layout.left, y), (self.layout.right, y)],
-                1.0,
-                self.chrome.grid_rgba,
+                self.chrome.y_axis.grid_width,
+                self.chrome.y_axis.grid_rgba,
+                scale,
+            )?;
+        }
+        for value in Self::minor_ticks(y_ticks) {
+            let y = self.y_scale.pixel(value);
+            push_raster_stroke(
+                out,
+                [(self.layout.left, y), (self.layout.right, y)],
+                self.chrome.y_axis.minor_grid_width,
+                self.chrome.y_axis.minor_grid_rgba,
                 scale,
             )?;
         }
@@ -2080,55 +2679,111 @@ impl SceneDocument {
         ] {
             push_raster_f32(out, value, scale)?;
         }
-        for points in [
-            [
-                (self.layout.left, self.layout.bottom),
-                (self.layout.right, self.layout.bottom),
-            ],
-            [
-                (self.layout.left, self.layout.top),
-                (self.layout.left, self.layout.bottom),
-            ],
+        for (is_x, ticks, axis_scale, style) in [
+            (true, x_ticks, self.x_scale, self.chrome.x_axis),
+            (false, y_ticks, self.y_scale, self.chrome.y_axis),
         ] {
-            push_raster_stroke(out, points, 1.0, self.chrome.axis_rgba, scale)?;
-        }
-        for (is_x, ticks) in [(true, x_ticks), (false, y_ticks)] {
-            for value in &ticks.labeled {
-                let (x, y, anchor, segment) = if is_x {
-                    let x = self.x_scale.pixel(*value);
-                    (
-                        x,
-                        self.layout.bottom + 16.0,
-                        1,
-                        [(x, self.layout.bottom), (x, self.layout.bottom + 4.0)],
-                    )
+            let edge = if is_x {
+                if style.side == AxisSide::Low {
+                    self.layout.bottom
                 } else {
-                    let y = self.y_scale.pixel(*value);
-                    (
-                        self.layout.left - 8.0,
-                        y + 4.0,
-                        2,
-                        [(self.layout.left - 4.0, y), (self.layout.left, y)],
-                    )
-                };
-                push_raster_stroke(out, segment, 1.0, self.chrome.axis_rgba, scale)?;
-                let text = format_tick(
-                    *value,
-                    ticks.step,
-                    if is_x {
-                        self.x_scale.kind
+                    self.layout.top
+                }
+            } else if style.side == AxisSide::Low {
+                self.layout.left
+            } else {
+                self.layout.right
+            };
+            let spine = if is_x {
+                [(self.layout.left, edge), (self.layout.right, edge)]
+            } else {
+                [(edge, self.layout.top), (edge, self.layout.bottom)]
+            };
+            push_raster_stroke(out, spine, style.axis_width, style.axis_rgba, scale)?;
+            let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
+            for side_code in 0..2 {
+                if style.tick_sides & (1 << side_code) != 0 {
+                    let tick_edge = if is_x {
+                        if side_code == 0 {
+                            self.layout.bottom
+                        } else {
+                            self.layout.top
+                        }
+                    } else if side_code == 0 {
+                        self.layout.left
                     } else {
-                        self.y_scale.kind
-                    },
-                );
-                out.push(6);
-                push_raster_f32(out, x, scale)?;
-                push_raster_f32(out, y, scale)?;
-                out.push(anchor);
-                push_raster_f32(out, self.chrome.label_font_size, scale)?;
-                out.extend_from_slice(&self.chrome.label_rgba);
-                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
-                out.extend_from_slice(text.as_bytes());
+                        self.layout.right
+                    };
+                    let sign = if side_code == 0 { 1.0 } else { -1.0 };
+                    for value in &ticks.labeled {
+                        let p = axis_scale.pixel(*value);
+                        let segment = if is_x {
+                            [
+                                (p, tick_edge - sign * major_in),
+                                (p, tick_edge + sign * major_out),
+                            ]
+                        } else {
+                            [
+                                (tick_edge - sign * major_out, p),
+                                (tick_edge + sign * major_in, p),
+                            ]
+                        };
+                        push_raster_stroke(out, segment, style.tick_width, style.tick_rgba, scale)?;
+                    }
+                }
+            }
+            let (minor_in, minor_out) = tick_span(style.minor_direction, style.minor_tick_length);
+            let sign = if style.side == AxisSide::Low {
+                1.0
+            } else {
+                -1.0
+            };
+            for value in Self::minor_ticks(ticks) {
+                let p = axis_scale.pixel(value);
+                let segment = if is_x {
+                    [(p, edge - sign * minor_in), (p, edge + sign * minor_out)]
+                } else {
+                    [(edge - sign * minor_out, p), (edge + sign * minor_in, p)]
+                };
+                push_raster_stroke(
+                    out,
+                    segment,
+                    style.minor_tick_width,
+                    style.minor_tick_rgba,
+                    scale,
+                )?;
+            }
+            for side_code in 0..2 {
+                if style.tick_label_sides & (1 << side_code) == 0 {
+                    continue;
+                }
+                for value in &ticks.labeled {
+                    let p = axis_scale.pixel(*value);
+                    let (x, y, anchor) = if is_x {
+                        (
+                            p,
+                            if side_code == 0 {
+                                self.layout.bottom + 16.0
+                            } else {
+                                self.layout.top - 7.0
+                            },
+                            1,
+                        )
+                    } else if side_code == 0 {
+                        (self.layout.left - 8.0, p + 4.0, 2)
+                    } else {
+                        (self.layout.right + 8.0, p + 4.0, 0)
+                    };
+                    let text = format_tick(*value, ticks.step, axis_scale.kind);
+                    out.push(6);
+                    push_raster_f32(out, x, scale)?;
+                    push_raster_f32(out, y, scale)?;
+                    out.push(anchor);
+                    push_raster_f32(out, self.chrome.label_font_size, scale)?;
+                    out.extend_from_slice(&style.label_rgba);
+                    out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                    out.extend_from_slice(text.as_bytes());
+                }
             }
         }
         self.append_raster_chrome_text(out, scale)?;
@@ -2142,6 +2797,7 @@ impl SceneDocument {
                           y: f64,
                           anchor: u8,
                           size: f64,
+                          rgba: [u8; 4],
                           label: &str|
          -> Result<(), SceneError> {
             if label.is_empty() {
@@ -2152,7 +2808,7 @@ impl SceneDocument {
             push_raster_f32(out, y, scale)?;
             out.push(anchor);
             push_raster_f32(out, size, scale)?;
-            out.extend_from_slice(&self.chrome.label_rgba);
+            out.extend_from_slice(&rgba);
             out.extend_from_slice(&(label.len() as u32).to_le_bytes());
             out.extend_from_slice(label.as_bytes());
             Ok(())
@@ -2163,6 +2819,7 @@ impl SceneDocument {
             (self.layout.top * 0.55).max(self.chrome.label_font_size),
             1,
             self.chrome.label_font_size + 2.0,
+            self.chrome.label_rgba,
             &self.text.title,
         )?;
         push_label(
@@ -2171,6 +2828,7 @@ impl SceneDocument {
             self.layout.viewport_height - 6.0,
             1,
             self.chrome.label_font_size,
+            self.chrome.x_axis.label_rgba,
             &self.text.x_label,
         )?;
         // Anchor 0x81 = middle + 90° CCW for y-axis titles.
@@ -2180,6 +2838,7 @@ impl SceneDocument {
             0.5 * (self.layout.top + self.layout.bottom),
             0x81,
             self.chrome.label_font_size,
+            self.chrome.y_axis.label_rgba,
             &self.text.y_label,
         )?;
         Ok(())
@@ -2193,14 +2852,36 @@ impl SceneDocument {
                 )
             })
         };
-        let chrome_capacity = x_ticks
+        let stroke_count = x_ticks
             .ticks
             .len()
             .saturating_add(y_ticks.ticks.len())
+            .saturating_add(
+                x_ticks
+                    .labeled
+                    .len()
+                    .saturating_mul(self.chrome.x_axis.tick_sides.count_ones() as usize),
+            )
+            .saturating_add(
+                y_ticks
+                    .labeled
+                    .len()
+                    .saturating_mul(self.chrome.y_axis.tick_sides.count_ones() as usize),
+            )
+            .saturating_add(Self::minor_ticks(x_ticks).count())
+            .saturating_add(Self::minor_ticks(y_ticks).count())
+            .saturating_add(2);
+        let chrome_capacity = stroke_count
             .saturating_mul(35)
-            .saturating_add(label_capacity(x_ticks, self.x_scale.kind))
-            .saturating_add(label_capacity(y_ticks, self.y_scale.kind))
-            .saturating_add(104);
+            .saturating_add(
+                label_capacity(x_ticks, self.x_scale.kind)
+                    .saturating_mul(self.chrome.x_axis.tick_label_sides.count_ones() as usize),
+            )
+            .saturating_add(
+                label_capacity(y_ticks, self.y_scale.kind)
+                    .saturating_mul(self.chrome.y_axis.tick_label_sides.count_ones() as usize),
+            )
+            .saturating_add(186);
         self.raster_mark_capacity.saturating_add(chrome_capacity)
     }
 
@@ -2387,12 +3068,8 @@ impl SceneDocument {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
         }
-        let x_ticks = self
-            .x_scale
-            .ticks(self.layout.right - self.layout.left, true)?;
-        let y_ticks = self
-            .y_scale
-            .ticks(self.layout.bottom - self.layout.top, false)?;
+        let x_ticks = self.resolved_axis_ticks(true)?;
+        let y_ticks = self.resolved_axis_ticks(false)?;
         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
         // plus a bounded text command; reserve their space up front so adding
         // constant-size chrome never copies the full mark command buffer.
@@ -2410,6 +3087,38 @@ impl SceneDocument {
             out.extend_from_slice(&narrowed.to_le_bytes());
             Ok(())
         };
+        let push_background = |out: &mut Vec<u8>,
+                               x: f64,
+                               y: f64,
+                               w: f64,
+                               h: f64,
+                               rgba: [u8; 4]|
+         -> Result<(), SceneError> {
+            out.push(1);
+            out.extend_from_slice(&4u32.to_le_bytes());
+            for (px, py) in [(x, y), (x + w, y), (x + w, y + h), (x, y + h)] {
+                push_raster_f32(out, px, scale)?;
+                push_raster_f32(out, py, scale)?;
+            }
+            out.extend_from_slice(&rgba);
+            Ok(())
+        };
+        push_background(
+            &mut out,
+            0.0,
+            0.0,
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+            self.chrome.chart_background_rgba,
+        )?;
+        push_background(
+            &mut out,
+            self.layout.left,
+            self.layout.top,
+            self.layout.right - self.layout.left,
+            self.layout.bottom - self.layout.top,
+            self.chrome.plot_background_rgba,
+        )?;
         out.push(0);
         f32_push(&mut out, self.layout.left)?;
         f32_push(&mut out, self.layout.top)?;
@@ -2426,7 +3135,7 @@ impl SceneDocument {
         Ok(out)
     }
 
-    /// Lower Scene v3 to the existing browser painter's column model.
+    /// Lower Scene v8 to the browser painter's column model.
     ///
     /// The fixed descriptor table is O(trace runs); all O(record) coordinate
     /// and stable-id work happens here in Rust and lands directly in packed
@@ -2453,23 +3162,23 @@ impl SceneDocument {
         // Serialize every AxisTicks::ticks position so log minor grid lines
         // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
         // (empty UTF-8 for unlabeled minor ticks).
-        let browser_ticks = |scale: AxisScale, length: f64, is_x: bool| {
-            let axis = scale.ticks(length, is_x)?;
+        let browser_ticks = |scale: AxisScale, axis: AxisTicks| {
             axis.ticks
                 .iter()
                 .copied()
                 .map(|value| {
-                    let label = if axis.labeled.contains(&value) {
+                    let major = axis.labeled.contains(&value);
+                    let label = if major {
                         format_tick(value, axis.step, scale.kind)
                     } else {
                         String::new()
                     };
-                    Ok((f32_value(scale.pixel(value))?, label))
+                    Ok((f32_value(scale.pixel(value))?, label, major))
                 })
                 .collect::<Result<Vec<_>, SceneError>>()
         };
-        let x_ticks = browser_ticks(self.x_scale, self.layout.right - self.layout.left, true)?;
-        let y_ticks = browser_ticks(self.y_scale, self.layout.bottom - self.layout.top, false)?;
+        let x_ticks = browser_ticks(self.x_scale, self.resolved_axis_ticks(true)?)?;
+        let y_ticks = browser_ticks(self.y_scale, self.resolved_axis_ticks(false)?)?;
 
         let mut groups = Vec::new();
         let mut index = 0;
@@ -2604,9 +3313,14 @@ impl SceneDocument {
                     .ok_or(SceneError::Limit)?,
             )
             .ok_or(SceneError::Limit)?;
-        for (_, label) in x_ticks.iter().chain(&y_ticks) {
+        for (_, label, _) in x_ticks.iter().chain(&y_ticks) {
             required = required.checked_add(label.len()).ok_or(SceneError::Limit)?;
         }
+        required = required
+            .checked_add(self.text.title.len())
+            .and_then(|value| value.checked_add(self.text.x_label.len()))
+            .and_then(|value| value.checked_add(self.text.y_label.len()))
+            .ok_or(SceneError::Limit)?;
         if required > max_bytes {
             return Err(SceneError::Limit);
         }
@@ -2695,8 +3409,22 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         out[56..60].copy_from_slice(&(tick_offset as u32).to_le_bytes());
         out[60..64].copy_from_slice(&(string_offset as u32).to_le_bytes());
+        let mut chrome_input = Vec::with_capacity(SCENE_CHROME_STYLE_INPUT_BYTES);
+        write_chrome_style_input(&mut chrome_input, &self.chrome);
+        debug_assert_eq!(chrome_input.len(), SCENE_CHROME_STYLE_INPUT_BYTES);
+        out[64..264].copy_from_slice(&chrome_input);
+        for (offset, value) in [
+            (264, self.text.title.len()),
+            (268, self.text.x_label.len()),
+            (272, self.text.y_label.len()),
+        ] {
+            out[offset..offset + 4].copy_from_slice(&(value as u32).to_le_bytes());
+        }
         out.resize(string_offset, 0);
-        for (tick_index, (position, label)) in x_ticks.iter().chain(&y_ticks).enumerate() {
+        out.extend_from_slice(self.text.title.as_bytes());
+        out.extend_from_slice(self.text.x_label.as_bytes());
+        out.extend_from_slice(self.text.y_label.as_bytes());
+        for (tick_index, (position, label, major)) in x_ticks.iter().chain(&y_ticks).enumerate() {
             let descriptor = tick_offset + tick_index * BROWSER_PAINTER_TICK_BYTES;
             let label_offset = out.len();
             out[descriptor..descriptor + 4].copy_from_slice(&position.to_le_bytes());
@@ -2704,6 +3432,7 @@ impl SceneDocument {
                 .copy_from_slice(&(label_offset as u32).to_le_bytes());
             out[descriptor + 8..descriptor + 12]
                 .copy_from_slice(&(label.len() as u32).to_le_bytes());
+            out[descriptor + 12..descriptor + 16].copy_from_slice(&u32::from(*major).to_le_bytes());
             out.extend_from_slice(label.as_bytes());
         }
         debug_assert_eq!(out.len(), required);
@@ -3059,10 +3788,10 @@ fn push_regular_polygon(
 /// `python/xyg/_fontmetrics.py` / `font.rs` so native and WASM gutters agree
 /// without pulling the raster coverage atlas into the browser adapter).
 const ASCII_ADVANCES: [i32; 95] = [
-    5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    5, 5, 13, 13, 13, 8, 16, 11, 11, 11, 12, 10, 9, 12, 12, 5, 5, 10, 9, 14, 12, 13, 10, 13, 11,
-    10, 10, 12, 11, 16, 11, 10, 11, 6, 5, 6, 13, 8, 8, 10, 10, 9, 10, 10, 6, 10, 10, 4, 4, 9, 4,
-    16, 10, 10, 10, 10, 7, 8, 6, 10, 9, 13, 9, 9, 8, 10, 5, 10, 13,
+    5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 5,
+    5, 13, 13, 13, 8, 16, 11, 11, 11, 12, 10, 9, 12, 12, 5, 5, 10, 9, 14, 12, 13, 10, 13, 11, 10,
+    10, 12, 11, 16, 11, 10, 11, 6, 5, 6, 13, 8, 8, 10, 10, 9, 10, 10, 6, 10, 10, 4, 4, 9, 4, 16,
+    10, 10, 10, 10, 7, 8, 6, 10, 9, 13, 9, 9, 8, 10, 5, 10, 13,
 ];
 const FONT_BASE_PX: f64 = 16.0;
 const MISSING_ADVANCE: i32 = 16; // U+FFFD width at BASE_PX
@@ -3139,7 +3868,10 @@ pub fn cartesian_scene_margins(
         return Err(SceneError::NonFinite);
     }
     if let Some(padding) = authored_padding {
-        if padding.iter().any(|value| !value.is_finite() || *value < 0.0) {
+        if padding
+            .iter()
+            .any(|value| !value.is_finite() || *value < 0.0)
+        {
             return Err(SceneError::NonFinite);
         }
     }
@@ -3202,10 +3934,7 @@ pub fn cartesian_scene_margins(
     let left_needed = if y_label.is_empty() {
         y_tick_room
     } else {
-        AXIS_TEXT_EDGE_PAD
-            + LABEL_FONT_PX * 1.2
-            + Y_TITLE_TICK_GAP * LABEL_FONT_PX
-            + y_tick_room
+        AXIS_TEXT_EDGE_PAD + LABEL_FONT_PX * 1.2 + Y_TITLE_TICK_GAP * LABEL_FONT_PX + y_tick_room
     };
     left = left.max(left_needed);
 
@@ -3340,7 +4069,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 7);
+        assert_eq!(SCENE_VERSION, 8);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -3376,7 +4105,10 @@ mod tests {
         .unwrap();
         let encoded = batch.encode();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), SCENE_VERSION);
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            SCENE_VERSION
+        );
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
@@ -3502,17 +4234,36 @@ mod tests {
         let painter_len = painter.len();
         assert_eq!(&painter[..4], b"XYPB");
         assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 3);
-        assert_eq!([painter[64], painter[128], painter[192]], [0, 1, 2]);
         assert_eq!(
-            u32::from_le_bytes(painter[264..268].try_into().unwrap()),
+            [
+                painter[BROWSER_PAINTER_HEADER_BYTES],
+                painter[BROWSER_PAINTER_HEADER_BYTES + BROWSER_PAINTER_TRACE_BYTES],
+                painter[BROWSER_PAINTER_HEADER_BYTES + 2 * BROWSER_PAINTER_TRACE_BYTES],
+            ],
+            [0, 1, 2]
+        );
+        assert_eq!(
+            u32::from_le_bytes(
+                painter[BROWSER_PAINTER_HEADER_BYTES + 200..BROWSER_PAINTER_HEADER_BYTES + 204]
+                    .try_into()
+                    .unwrap()
+            ),
             10
         );
         assert_eq!(
-            u32::from_le_bytes(painter[288..292].try_into().unwrap()),
+            u32::from_le_bytes(
+                painter[BROWSER_PAINTER_HEADER_BYTES + 224..BROWSER_PAINTER_HEADER_BYTES + 228]
+                    .try_into()
+                    .unwrap()
+            ),
             20
         );
         assert_eq!(
-            u32::from_le_bytes(painter[320..324].try_into().unwrap()),
+            u32::from_le_bytes(
+                painter[BROWSER_PAINTER_HEADER_BYTES + 256..BROWSER_PAINTER_HEADER_BYTES + 260]
+                    .try_into()
+                    .unwrap()
+            ),
             30
         );
         assert!(u32::from_le_bytes(painter[48..52].try_into().unwrap()) >= 3);
@@ -3546,9 +4297,23 @@ mod tests {
             let coordinates = vec![0.5; count];
             let zeros = vec![0.0; count];
             let encoded = SceneBatch::new(
-                layout, 1, 2, sx, sy, &vec![0; count], &vec![7; count], &vec![0; count],
-                &[57, 135, 229, 255], &[0, 0, 0, 0], &[0.0], &vec![4.0; count],
-                &symbols, &coordinates, &coordinates, &zeros, &zeros,
+                layout,
+                1,
+                2,
+                sx,
+                sy,
+                &vec![0; count],
+                &vec![7; count],
+                &vec![0; count],
+                &[57, 135, 229, 255],
+                &[0, 0, 0, 0],
+                &[0.0],
+                &vec![4.0; count],
+                &symbols,
+                &coordinates,
+                &coordinates,
+                &zeros,
+                &zeros,
             )
             .unwrap()
             .encode();
@@ -3556,9 +4321,15 @@ mod tests {
         };
         let boundary = make_document(MAX_BROWSER_PAINTER_TRACES);
         let painter = boundary.to_browser_painter(1024 * 1024).unwrap();
-        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize, MAX_BROWSER_PAINTER_TRACES);
+        assert_eq!(
+            u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize,
+            MAX_BROWSER_PAINTER_TRACES
+        );
         let fragmented = make_document(MAX_BROWSER_PAINTER_TRACES + 1);
-        assert_eq!(fragmented.to_browser_painter(1024 * 1024), Err(SceneError::PainterTraceLimit));
+        assert_eq!(
+            fragmented.to_browser_painter(1024 * 1024),
+            Err(SceneError::PainterTraceLimit)
+        );
     }
 
     #[test]
@@ -4065,7 +4836,7 @@ mod tests {
             .unwrap();
         let grid_count = linear_ticks(0.0, 18.0, 3).unwrap().ticks.len()
             + linear_ticks(0.0, 1.0, 3).unwrap().ticks.len();
-        let mut offset = 17 + grid_count * 35; // clip plus canonical grid strokes
+        let mut offset = 82 + 17 + grid_count * 35; // two backgrounds, clip, grid
         for code in 0..=18 {
             assert_eq!(commands[offset], 4);
             assert_eq!(commands[offset + 13], code);
@@ -4145,8 +4916,26 @@ mod tests {
     #[test]
     fn scene_v6_band_fills_closed_path_from_top_and_base() {
         let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
-        let x = AxisScale::new(ScaleKind::Linear, 0.0, 2.0, layout.left, layout.right, 1.0, false).unwrap();
-        let y = AxisScale::new(ScaleKind::Linear, 0.0, 2.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            2.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            2.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
         let batch = SceneBatch::new(
             layout,
             1,
@@ -4185,8 +4974,26 @@ mod tests {
     #[test]
     fn scene_v7_polyfill_closes_triangle_path() {
         let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
-        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false).unwrap();
-        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
         let batch = SceneBatch::new(
             layout,
             1,
@@ -4225,8 +5032,26 @@ mod tests {
     #[test]
     fn scene_v5_encodes_authored_chrome_text() {
         let layout = PlotLayout::new(200.0, 120.0, 40.0, 20.0, 20.0, 30.0).unwrap();
-        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false).unwrap();
-        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
         let text = SceneChromeText::from_parts("Hello", "x", "y").unwrap();
         let batch = SceneBatch::new_with_chrome(
             layout,
@@ -4251,13 +5076,162 @@ mod tests {
         )
         .unwrap();
         let encoded = batch.encode();
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), SCENE_VERSION);
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            SCENE_VERSION
+        );
         assert!(encoded.ends_with(b"Helloxy"));
         let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
         assert!(svg.contains("data-xy-chrome=\"title\""));
         assert!(svg.contains("Hello"));
         assert!(svg.contains("data-xy-chrome=\"x-label\""));
         assert!(svg.contains("data-xy-chrome=\"y-label\""));
+    }
+
+    #[test]
+    fn scene_v8_cartesian_chrome_round_trips_all_consumers_and_bounds() {
+        let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let mut chrome = SceneChromeStyle {
+            chart_background_rgba: [1, 2, 3, 255],
+            plot_background_rgba: [4, 5, 6, 128],
+            ..SceneChromeStyle::default()
+        };
+        chrome.x_axis.side = AxisSide::High;
+        chrome.x_axis.tick_sides = 0b11;
+        chrome.x_axis.tick_label_sides = 0b10;
+        chrome.x_axis.major_direction = TickDirection::InOut;
+        chrome.x_axis.minor_direction = TickDirection::In;
+        chrome.x_axis.tick_length = 8.0;
+        chrome.x_axis.minor_tick_length = 3.0;
+        chrome.x_axis.minor_grid_rgba = [7, 8, 9, 255];
+        chrome.x_major_ticks = Some(vec![0.0, 1.0]);
+        chrome.x_minor_ticks = vec![0.5];
+        let style_input = chrome.style_input();
+        let encoded = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            chrome,
+            SceneChromeText::from_parts("Chart", "Horizontal", "Vertical").unwrap(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(svg.contains("data-xy-chrome=\"chart-background\""));
+        assert!(svg.contains("fill=\"rgba(1,2,3,1.000000)\""));
+        assert!(svg.contains("fill=\"rgba(4,5,6,0.501961)\""));
+        assert!(svg.contains("stroke=\"rgba(7,8,9,1.000000)\""));
+        assert!(svg.contains("y1=\"24\""));
+        assert!(svg.contains("y2=\"16\""));
+        let raster = document.to_raster_commands(1.0).unwrap();
+        assert_eq!(&raster[37..41], &[1, 2, 3, 255]);
+        assert_eq!(&raster[78..82], &[4, 5, 6, 128]);
+        let painter = document.to_browser_painter(16_384).unwrap();
+        assert_eq!(&painter[64..264], style_input.as_slice());
+        assert_eq!(u32::from_le_bytes(painter[264..268].try_into().unwrap()), 5);
+        assert_eq!(
+            u32::from_le_bytes(painter[268..272].try_into().unwrap()),
+            10
+        );
+        assert_eq!(u32::from_le_bytes(painter[272..276].try_into().unwrap()), 8);
+        let tick_offset = u32::from_le_bytes(painter[56..60].try_into().unwrap()) as usize;
+        let string_offset = u32::from_le_bytes(painter[60..64].try_into().unwrap()) as usize;
+        assert_eq!(
+            &painter[string_offset..string_offset + 23],
+            b"ChartHorizontalVertical"
+        );
+        let flags = (0..3)
+            .map(|index| {
+                u32::from_le_bytes(
+                    painter[tick_offset + index * 16 + 12..tick_offset + index * 16 + 16]
+                        .try_into()
+                        .unwrap(),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(flags, vec![1, 1, 0]);
+
+        let mut malformed = encoded.clone();
+        let trailer = SCENE_BATCH_HEADER_BYTES;
+        malformed[trailer + 24 + 1] = 4;
+        assert_eq!(
+            SceneDocument::decode(&malformed).err(),
+            Some(SceneError::Length)
+        );
+        let mut automatic_minor = encoded.clone();
+        automatic_minor[trailer + 216..trailer + 220].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert_eq!(
+            SceneDocument::decode(&automatic_minor).err(),
+            Some(SceneError::Length)
+        );
+        let mut invalid = SceneChromeStyle::default();
+        invalid.x_axis.tick_length = MAX_SCENE_CHROME_LENGTH + 1.0;
+        assert_eq!(invalid.validated().err(), Some(SceneError::NonFinite));
+
+        let too_many_resolved = SceneChromeStyle {
+            x_minor_ticks: vec![0.5; MAX_AXIS_TICKS],
+            ..SceneChromeStyle::default()
+        };
+        assert_eq!(
+            SceneBatch::new_with_chrome(
+                layout,
+                1,
+                2,
+                x,
+                y,
+                too_many_resolved,
+                SceneChromeText::default(),
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+            )
+            .err(),
+            Some(SceneError::Limit)
+        );
     }
 
     #[test]

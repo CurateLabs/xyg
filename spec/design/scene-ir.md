@@ -7,17 +7,17 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 7 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 8 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 7, so additive emission is not safe.
+bitmap or schema negotiation in version 8, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the exact version-6 layout (shared fixed
-widths since version 4), bounds,
+WASM lifecycle foundation; it validates the exact version-8 layout (shared fixed
+header/mark widths since version 4), bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
 
@@ -219,10 +219,8 @@ bounded default chrome layer from the two encoded axis scales in both consumers:
 Default paints match the established static exporter: `rgba(32,32,32,0.14)`
 grid, `rgba(32,32,32,0.55)` axis, and `rgba(32,32,32,0.85)` 12px labels.
 Version 4 derived default numeric chrome only. Version 5 adds authored chrome
-paints and title/axis-label text in the trailer. Custom tick values/text,
-custom sides, minor ticks, legends, and annotations remain rejected from
-explicit Scene compilation; public exports retain compatibility routing until
-remaining chrome parity lands beside `xyg_scene_plot_layout`.
+paints and title/axis-label text in the trailer. Version 8 supersedes that
+trailer with authored backgrounds, sides, and major/minor tick geometry.
 
 ## Version 5: authored chrome paints and title/axis labels
 
@@ -271,6 +269,62 @@ the host into Scene Band samples using the shared `RIBBON_STEPS` cubic edge
 contract; two-ended gradients remain rejected until a Scene gradient record
 exists. Version 6 consumers must reject version-7 batches.
 
+## Version 8: authored Cartesian backgrounds and axis geometry
+
+Version 8 keeps the 160-byte header, 16-byte style table records, and 56-byte
+mark records. It replaces the version-5 40-byte chrome trailer with a bounded
+232-byte trailer followed by title/x-label/y-label UTF-8 and four f64 tick
+lists. The first 200 bytes are also the generated C ABI's exact chrome style
+input and painter-v3's exact style block:
+
+| Trailer offset | Bytes | Field |
+| ---: | ---: | --- |
+| 0 | 4 | chart background RGBA8 |
+| 4 | 4 | plot background RGBA8 |
+| 8 | 4 | figure-title RGBA8 |
+| 12 | 4 | reserved zeros |
+| 16 | 8 | title/label font size f64 |
+| 24 | 88 | x-axis chrome record |
+| 112 | 88 | y-axis chrome record |
+| 200 | 12 | title/x-label/y-label byte lengths u32 |
+| 212 | 16 | x-major/x-minor/y-major/y-minor counts u32; `u32::MAX` means automatic majors |
+| 228 | 4 | reserved zeros |
+| 232 | … | text bytes, then the four tick lists as little-endian f64 |
+
+Each 88-byte axis record contains side (`bottom/top` or `left/right`), two-bit
+major-tick and tick-label side masks, separate major/minor direction enums
+(`out`, `in`, `inout`), RGBA8 axis/grid/tick/minor-grid/minor-tick/text paints,
+and seven f64 values: axis/grid/tick widths, major tick length, minor grid/tick
+widths, and minor tick length. Rust rejects unknown enums, nonzero reserved
+bytes, mask bits outside the two legal sides, more than 200 values per list,
+more than 200 resolved major-plus-minor positions per axis, nonfinite values,
+negative geometry, and geometry over 1,000px. `None`
+automatic majors and an authored empty major list are distinct.
+
+Paint order is chart background, plot background, major/minor grid, clipped
+marks, then unclipped spines/ticks/text. The x and y axes independently choose
+their primary spine side; major tick and label masks may mirror either side.
+Minor ticks use the primary side. Explicit major positions receive labels from
+Rust's deterministic formatter; explicit label strings, collision/rotation
+policy, custom fonts, dashed grids, and advanced label placement remain
+unsupported and fail closed at host compilation. Visibility is the existing
+public resolved-style contract: zero width/length and transparent paint hide
+line, tick, grid, or text independently, including `show=False` shorthands.
+
+Python and Node mechanically pack the same 200-byte block and tick arrays;
+their non-default fixture is exact-byte identical. Rust SVG and raster consume
+the decoded values directly. Browser painter v4 carries the same 200 bytes in
+its fixed 280-byte header, adds the three bounded authored title/axis-label
+lengths, and marks every 16-byte tick descriptor as major or minor. TypeScript
+validates and projects those values and texts into existing DOM/WebGL and
+accessibility paint surfaces without generating tick positions, sides, or
+style defaults.
+
+Legends, colorbars, and annotations are deliberately not part of this slice
+and remain loud Scene-compile errors for later issue-#116 work. Category,
+angular, time/calendar ticks, arbitrary tick-label strings, gradients, CSS
+fonts, and polar chrome likewise remain explicit unsupported boundaries.
+
 ## Evidence and extension order
 
 
@@ -280,11 +334,12 @@ text, and customization through the compatibility path. Node tests consume the
 same scene fixture and reject the same unsupported subset. ABI generation,
 parity, and version-first loading cover both hosts.
 
-The first browser consumer accepts the exact v7 bytes through the static WASM
+The first browser consumer accepts the exact v8 bytes through the static WASM
 Worker. Rust validates and lowers them through
 `SceneDocument::to_browser_painter` into checked f32 geometry and split-u64
-stable-ID columns plus the default numeric ticks and formatted UTF-8 labels.
-Painter contract v2 carries fixed trace and tick descriptors with exact bounds.
+stable-ID columns plus authored/automatic numeric ticks and formatted UTF-8 labels.
+Painter contract v4 carries fixed trace and tick descriptors, the exact chrome
+style block, authored figure/axis titles, and major/minor flags with exact bounds.
 Browser tick tables serialize every `AxisTicks::ticks` position (so log minor
 grid lines match SVG/raster) and attach formatted labels only for
 `AxisTicks::labeled`; unlabeled minor ticks carry empty UTF-8 labels.
@@ -293,12 +348,13 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining polar marks, labeled/rich annotation records, and
-legend records, then select public SVG/PNG/PDF Scene auto-routing once
+Next slices add remaining polar marks, annotation records, legend/colorbar
+records, then select public SVG/PNG/PDF Scene auto-routing once
 chrome and CSS-spelling parity with ``_svg.py`` is covered; ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` are the opt-in helpers. Unlabeled
-cartesian `rule` and `band` annotations already lower onto Scene Polyline and
-Rect records; authored figure/plot backgrounds stay rejected on Scene compile.
+cartesian annotations remain rejected rather than being approximated as marks.
+Authored solid chart/plot backgrounds, axis sides, and major/minor tick
+geometry/styles are Scene v8.
 Category, angular, and time/calendar tick ladders already move
 through `xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome
 paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian

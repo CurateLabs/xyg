@@ -8,12 +8,35 @@ import {
   XygWasmError,
 } from "/packages/xy-client/dist/index.js";
 
-function canonicalSceneV5() {
+function writeDefaultSceneV8Chrome(bytes, view, body) {
+  bytes.set([32, 32, 32, 217], body + 8);
+  view.setFloat64(body + 16, 12, true);
+  for (const offset of [body + 24, body + 112]) {
+    bytes.set([0, 1, 1, 0, 0, 0, 0, 0], offset);
+    bytes.set([32, 32, 32, 140], offset + 8);
+    bytes.set([32, 32, 32, 36], offset + 12);
+    bytes.set([32, 32, 32, 140], offset + 16);
+    bytes.set([32, 32, 32, 140], offset + 24);
+    bytes.set([32, 32, 32, 217], offset + 28);
+    [1, 1, 1, 4, 1, 1, 0].forEach((value, index) => {
+      view.setFloat64(offset + 32 + index * 8, value, true);
+    });
+  }
+  view.setUint32(body + 212, 0xffffffff, true);
+  view.setUint32(body + 220, 0xffffffff, true);
+}
+
+function canonicalSceneV8({ authored = false } = {}) {
   const body = 160 + 16 + 56;
-  const bytes = new Uint8Array(body + 40);
+  const ticks = authored ? [0, 1, 0.5, 0, 1] : [];
+  const text = authored
+    ? ["Authored Cartesian chrome", "Horizontal measure", "Vertical measure"].map((value) => new TextEncoder().encode(value))
+    : [new Uint8Array(), new Uint8Array(), new Uint8Array()];
+  const textBytes = text.reduce((total, value) => total + value.length, 0);
+  const bytes = new Uint8Array(body + 232 + textBytes + ticks.length * 8);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 7, true);
+  view.setUint32(4, 8, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -39,19 +62,39 @@ function canonicalSceneV5() {
   view.setFloat64(record + 32, 0, true);
   view.setFloat64(record + 40, 0, true);
   view.setFloat64(record + 48, 8, true);
-  // Scene v5 chrome trailer: default paints + empty UTF-8 labels.
-  bytes.set([32, 32, 32, 36, 32, 32, 32, 140, 32, 32, 32, 217], body);
-  view.setFloat64(body + 16, 12, true);
+  writeDefaultSceneV8Chrome(bytes, view, body);
+  if (authored) {
+    bytes.set([240, 248, 255, 255], body);
+    bytes.set([248, 250, 252, 255], body + 4);
+    bytes.set([211, 47, 47, 255], body + 8);
+    view.setFloat64(body + 16, 17, true);
+    bytes.set([1, 3, 2, 2, 1], body + 24);
+    bytes.set([94, 129, 172, 255], body + 24 + 20);
+    view.setFloat64(body + 24 + 80, 3, true);
+    view.setUint32(body + 212, 2, true);
+    view.setUint32(body + 216, 1, true);
+    view.setUint32(body + 220, 2, true);
+    text.forEach((value, index) => view.setUint32(body + 200 + index * 4, value.length, true));
+    let tickOffset = body + 232;
+    for (const value of text) {
+      bytes.set(value, tickOffset);
+      tickOffset += value.length;
+    }
+    for (const tick of ticks) {
+      view.setFloat64(tickOffset, tick, true);
+      tickOffset += 8;
+    }
+  }
   return bytes;
 }
 
 function fragmentedScene(count) {
   const records = 176;
   const body = records + count * 56;
-  const bytes = new Uint8Array(body + 40);
+  const bytes = new Uint8Array(body + 232);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 7, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 8, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -64,8 +107,7 @@ function fragmentedScene(count) {
     view.setFloat64(record + 16, 50, true); view.setFloat64(record + 24, 40, true);
     view.setFloat64(record + 48, 8, true);
   }
-  bytes.set([32, 32, 32, 36, 32, 32, 32, 140, 32, 32, 32, 217], body);
-  view.setFloat64(body + 16, 12, true);
+  writeDefaultSceneV8Chrome(bytes, view, body);
   return bytes;
 }
 
@@ -151,7 +193,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
   ];
   const highBit = 0x80000000;
   const values = [
-    3, 7, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    3, 8, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
@@ -235,7 +277,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 3,
-    expectedSceneVersion: 7,
+    expectedSceneVersion: 8,
   };
 }
 
@@ -278,42 +320,85 @@ async function run() {
     maxArenaBytes: 1024,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 3 || ready.sceneVersion !== 7) {
+  if (ready.abiVersion !== 3 || ready.sceneVersion !== 8) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
 
-  const canonical = canonicalSceneV5();
+  const canonical = canonicalSceneV8();
   const transferred = canonical.buffer;
   const valid = await worker.validateScene(transferred, { sequence: 10 }).result;
   if (transferred.byteLength !== 0) throw new Error("scene buffer was not transferred");
   if (valid.records !== 1 || valid.styles !== 1 || valid.copyCount !== 1) {
     throw new Error(`unexpected diagnostics ${JSON.stringify(valid)}`);
   }
-  if (valid.copyBytesLo !== 272 || valid.copyBytesHi !== 0 || valid.arenaBytes !== 0) {
+  if (valid.copyBytesLo !== 464 || valid.copyBytesHi !== 0 || valid.arenaBytes !== 0) {
     throw new Error(`unexpected copy or arena diagnostics ${JSON.stringify(valid)}`);
   }
 
-  const paint = await worker.prepareScene(canonicalSceneV5(), { sequence: 11 }).result;
-  if (!(paint.painter instanceof ArrayBuffer) || paint.painter.byteLength < 64) {
+  const paint = await worker.prepareScene(canonicalSceneV8(), { sequence: 11 }).result;
+  if (!(paint.painter instanceof ArrayBuffer) || paint.painter.byteLength < 280) {
     throw new Error("Rust Scene paint lowering did not return a transferable display list");
   }
   const host = document.body.appendChild(document.createElement("div"));
-  const rendered = await renderWasmScene({ el: host, scene: canonicalSceneV5(), worker, transfer: false });
+  const rendered = await renderWasmScene({ el: host, scene: canonicalSceneV8(), worker, transfer: false });
   if (!host.querySelector("canvas") || rendered.gpuTraces.length < 1) {
     throw new Error("public WASM Scene API did not hydrate the existing painter");
   }
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const labels = [...host.querySelectorAll('[data-xy-label-kind="tick"]')].map((node) => node.textContent);
   if (labels.length < 6 || !labels.includes("0.0") || !labels.includes("0.5") || !labels.includes("1.0")) {
-    throw new Error(`Rust-authored Scene v4 chrome labels were not painted: ${JSON.stringify(labels)}`);
+    throw new Error(`Rust-authored Scene v8 chrome labels were not painted: ${JSON.stringify(labels)}`);
   }
   if (host.querySelectorAll('[data-xy-axis-side="bottom"], [data-xy-axis-side="left"]').length < 2) {
-    throw new Error("Rust-authored Scene v4 axis chrome was not painted");
+    throw new Error("Rust-authored Scene v8 axis chrome was not painted");
   }
   if (rendered.sceneStableId(0, 0) !== 7n) throw new Error("canonical stable id was not preserved through painter hydration");
   rendered.destroy();
   host.remove();
+
+  const authoredWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await authoredWorker.ready;
+  const authoredHost = document.body.appendChild(document.createElement("div"));
+  const authored = await renderWasmScene({
+    el: authoredHost,
+    scene: canonicalSceneV8({ authored: true }),
+    worker: authoredWorker,
+    transfer: false,
+  });
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  if (!authoredHost.querySelector('[data-xy-axis-side="top"]')) {
+    throw new Error("Rust-authored high-side axis was not consumed by the browser painter");
+  }
+  if (!authoredHost.querySelector('[data-xy-tick-kind="minor"]')) {
+    throw new Error("Rust-authored minor tick was not consumed by the browser painter");
+  }
+  const authoredTitle = authoredHost.querySelector('[data-xy-slot="title"]');
+  if (authoredTitle?.textContent !== "Authored Cartesian chrome") {
+    throw new Error("Rust-authored figure title was not consumed by the browser DOM");
+  }
+  const authoredTitleStyle = getComputedStyle(authoredTitle);
+  if (authoredTitleStyle.color !== "rgb(211, 47, 47)" || authoredTitleStyle.fontSize !== "19px") {
+    throw new Error(`Rust-authored title paint was not consumed by the browser DOM: ${authoredTitleStyle.color}/${authoredTitleStyle.fontSize}`);
+  }
+  const axisTitles = [...authoredHost.querySelectorAll('[data-xy-label-kind="label"]')]
+    .map((node) => node.textContent);
+  if (!axisTitles.includes("Horizontal measure") || !axisTitles.includes("Vertical measure")) {
+    throw new Error(`Rust-authored axis titles were not consumed by the browser DOM: ${JSON.stringify(axisTitles)}`);
+  }
+  const authoredRegion = authoredHost.querySelector('.xy[role="region"]');
+  if (authoredRegion?.getAttribute("aria-label") !== "Chart: Authored Cartesian chrome"
+      || !authoredRegion.textContent.includes("X axis (Horizontal measure)")
+      || !authoredRegion.textContent.includes("Y axis (Vertical measure)")) {
+    throw new Error("Rust-authored title and axis labels were not exposed to accessibility text");
+  }
+  authored.destroy();
+  authoredHost.remove();
+  await authoredWorker.dispose();
 
   const fragmentedWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
@@ -442,7 +527,7 @@ async function run() {
   chartHost.remove();
   await chartWorker.dispose();
 
-  const malformed = canonicalSceneV5();
+  const malformed = canonicalSceneV8();
   malformed[0] = 0;
   await rejected(
     worker.validateScene(malformed, { sequence: 13 }).result,
@@ -450,24 +535,24 @@ async function run() {
     5,
   );
   await rejected(
-    worker.validateScene(canonicalSceneV5(), { sequence: 9 }).result,
+    worker.validateScene(canonicalSceneV8(), { sequence: 9 }).result,
     "XYG_WASM_STALE_SEQUENCE",
     7,
   );
 
-  const cancelled = worker.validateScene(canonicalSceneV5(), { sequence: 14 });
+  const cancelled = worker.validateScene(canonicalSceneV8(), { sequence: 14 });
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
-  const afterRejected = await worker.validateScene(canonicalSceneV5(), { sequence: 15 }).result;
+  const afterRejected = await worker.validateScene(canonicalSceneV8(), { sequence: 15 }).result;
   // Cancellation may suppress the deferred staging copy when it wins the race.
   // Count every completed arena resize; bytes must match the canonical scene size.
   if (afterRejected.copyCount < 6 || afterRejected.copyCount > 7
-      || afterRejected.copyBytesLo !== 272 * afterRejected.copyCount) {
+      || afterRejected.copyBytesLo !== 464 * afterRejected.copyCount) {
     throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
   await worker.dispose();
   try {
-    worker.validateScene(canonicalSceneV5());
+    worker.validateScene(canonicalSceneV8());
     throw new Error("disposed worker accepted work");
   } catch (error) {
     if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_DISPOSED") throw error;
@@ -492,7 +577,7 @@ async function run() {
     maxArenaBytes: 1024,
   });
   await byBytes.ready;
-  const detached = canonicalSceneV5().buffer;
+  const detached = canonicalSceneV8().buffer;
   await byBytes.validateScene(detached, { sequence: 1 }).result;
   try {
     byBytes.validateScene(detached, { sequence: 2 });
@@ -500,7 +585,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_INVALID_ARGUMENT") throw error;
   }
-  await byBytes.validateScene(canonicalSceneV5(), { sequence: 3 }).result;
+  await byBytes.validateScene(canonicalSceneV8(), { sequence: 3 }).result;
   await byBytes.dispose();
 
   // Explicit user URL is supported and is the only branch allowed to fetch
@@ -529,7 +614,7 @@ async function run() {
   });
   await trapped.ready;
   await rejected(
-    trapped.validateScene(canonicalSceneV5(), { sequence: 1 }).result,
+    trapped.validateScene(canonicalSceneV8(), { sequence: 1 }).result,
     "XYG_WASM_TRAP",
   );
   await trapped.dispose();
@@ -541,7 +626,7 @@ async function run() {
   });
   await doubleTrapped.ready;
   await rejected(
-    doubleTrapped.validateScene(canonicalSceneV5(), { sequence: 1 }).result,
+    doubleTrapped.validateScene(canonicalSceneV8(), { sequence: 1 }).result,
     "XYG_WASM_TRAP",
   );
   await doubleTrapped.dispose();

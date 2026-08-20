@@ -18,6 +18,7 @@ import math
 import numbers
 import operator
 import os
+import struct
 import sys
 from pathlib import Path
 from typing import Any, ClassVar, Optional, cast
@@ -27,6 +28,10 @@ import numpy.typing as npt
 
 from ._abi_generated import ABI_VERSION, bind_abi_version, bind_generated_abi
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
+
+_MAX_SCENE_MARKS = 2_000_000
+_MAX_SCENE_STYLES = 65_536
+_MAX_SCENE_TEXT_BYTES = 4_096
 
 
 class _GraphProjectionDescriptor(ctypes.Structure):
@@ -1693,8 +1698,13 @@ def scene_batch_encode(
     title: str = "",
     x_label: str = "",
     y_label: str = "",
+    chrome_style: bytes | None = None,
+    x_major_ticks: npt.ArrayLike | None = None,
+    x_minor_ticks: npt.ArrayLike = (),
+    y_major_ticks: npt.ArrayLike | None = None,
+    y_minor_ticks: npt.ArrayLike = (),
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v5 typed batch."""
+    """Encode the bounded backend-neutral Scene v8 typed batch."""
 
     def scene_uint(
         value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
@@ -1741,6 +1751,10 @@ def scene_batch_encode(
     x_axis = (scene_u64_scalar(x_axis[0], "scene x_axis id"), *x_axis[1:])
     y_axis = (scene_u64_scalar(y_axis[0], "scene y_axis id"), *y_axis[1:])
     n = len(kind_array)
+    if n > _MAX_SCENE_MARKS:
+        raise ValueError(f"scene batches are limited to {_MAX_SCENE_MARKS:,} records")
+    if len(widths) > _MAX_SCENE_STYLES:
+        raise ValueError(f"scene style tables are limited to {_MAX_SCENE_STYLES:,} entries")
     if any(len(value) != n for value in [ids, styles, diameters, symbol_codes, *coordinates]):
         raise ValueError("scene batch arrays must have equal length")
     if len(fills) != len(widths) * 4 or len(strokes) != len(widths) * 4:
@@ -1748,7 +1762,48 @@ def scene_batch_encode(
     title_b = title.encode("utf-8")
     xlabel_b = x_label.encode("utf-8")
     ylabel_b = y_label.encode("utf-8")
-    capacity = 160 + len(widths) * 16 + n * 56 + 40 + len(title_b) + len(xlabel_b) + len(ylabel_b)
+    if any(len(value) > _MAX_SCENE_TEXT_BYTES for value in (title_b, xlabel_b, ylabel_b)):
+        raise ValueError(
+            f"scene title and axis labels are limited to {_MAX_SCENE_TEXT_BYTES:,} UTF-8 bytes each"
+        )
+    if chrome_style is None:
+        chrome = bytearray(200)
+        chrome[8:12] = bytes((32, 32, 32, 217))
+        struct.pack_into("<d", chrome, 16, 12.0)
+        for offset in (24, 112):
+            chrome[offset + 1] = 1
+            chrome[offset + 2] = 1
+            chrome[offset + 8 : offset + 12] = bytes((32, 32, 32, 140))
+            chrome[offset + 12 : offset + 16] = bytes((32, 32, 32, 36))
+            chrome[offset + 16 : offset + 20] = bytes((32, 32, 32, 140))
+            chrome[offset + 24 : offset + 28] = bytes((32, 32, 32, 140))
+            chrome[offset + 28 : offset + 32] = bytes((32, 32, 32, 217))
+            struct.pack_into("<7d", chrome, offset + 32, 1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0)
+        chrome_style = bytes(chrome)
+    chrome_array = np.frombuffer(chrome_style, dtype=np.uint8)
+    if len(chrome_array) != 200:
+        raise ValueError("scene chrome_style must be exactly 200 bytes")
+    x_major = (
+        None if x_major_ticks is None else _as_f64(np.asarray(x_major_ticks), "scene x major ticks")
+    )
+    x_minor = _as_f64(np.asarray(x_minor_ticks), "scene x minor ticks")
+    y_major = (
+        None if y_major_ticks is None else _as_f64(np.asarray(y_major_ticks), "scene y major ticks")
+    )
+    y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
+    tick_arrays = (x_major, x_minor, y_major, y_minor)
+    if any(value is not None and len(value) > 200 for value in tick_arrays):
+        raise ValueError("scene axis tick lists are limited to 200 values")
+    capacity = (
+        160
+        + len(widths) * 16
+        + n * 56
+        + 232
+        + len(title_b)
+        + len(xlabel_b)
+        + len(ylabel_b)
+        + sum(0 if value is None else len(value) * 8 for value in tick_arrays)
+    )
     while True:
         out = ctypes.create_string_buffer(capacity)
         written = _lib.xyg_scene_batch_encode(
@@ -1757,6 +1812,18 @@ def scene_batch_encode(
             *margins,
             *x_axis,
             *y_axis,
+            _ptr_u8(chrome_array),
+            len(chrome_array),
+            _ptr_f64(x_major) if x_major is not None and len(x_major) else 0,
+            0 if x_major is None else len(x_major),
+            1 if x_major is None else 0,
+            _ptr_f64(x_minor) if len(x_minor) else 0,
+            len(x_minor),
+            _ptr_f64(y_major) if y_major is not None and len(y_major) else 0,
+            0 if y_major is None else len(y_major),
+            1 if y_major is None else 0,
+            _ptr_f64(y_minor) if len(y_minor) else 0,
+            len(y_minor),
             kind_array.ctypes.data if n else 0,
             ids.ctypes.data if n else 0,
             styles.ctypes.data if n else 0,
@@ -1800,12 +1867,12 @@ def _scene_bytes_output(encoded: bytes, function: Any, label: str, *extra: Any) 
 
 
 def scene_svg(encoded: bytes) -> str:
-    """Render one validated Scene v4 document as a complete SVG."""
+    """Render one validated Scene v8 document as a complete SVG."""
     return _scene_bytes_output(encoded, _lib.xyg_scene_svg, "SVG").decode("utf-8")
 
 
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
-    """Compile Scene v4 into the existing native raster display list."""
+    """Compile Scene v8 into the existing native raster display list."""
     factor = float(scale)
     if not math.isfinite(factor) or factor <= 0.0:
         raise ValueError("scene raster scale must be positive and finite")

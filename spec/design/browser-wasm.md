@@ -83,7 +83,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 ## Version and scene contract
 
 `WASM_ABI_VERSION` is 3 for Scene paint plus packed typed-column compile exports. `SCENE_VERSION` remains independently versioned
-at 7. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
+at 8. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant. `js/package-wasm.mjs` parses the compiled module's type,
 function, and export sections and rejects artifact-level signature drift.
@@ -97,13 +97,22 @@ records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
 
-Painter contract v2 begins with `XYPB`, independent painter version 2, Scene
-version 7, a 64-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v4 begins with `XYPB`, independent painter version 4, Scene
+version 8, a 280-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Each trace descriptor identifies scatter/polyline/rect,
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v8
+chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
+geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
+lengths and bytes 276–279 are reserved zeros. The shared string table stores
+those three authored texts before formatted tick labels. Each trace descriptor identifies scatter/polyline/rect,
 style, count, and absolute packed-column offsets. Rust derives default numeric
-ticks and their exact labels, maps them to painter coordinates, and emits them
-as fixed 16-byte records. TypeScript creates descriptor-sized views and hands
+ticks or consumes bounded authored major/minor positions, formats major labels,
+maps positions to painter coordinates, and emits fixed 16-byte records whose
+last u32 distinguishes major from minor. TypeScript validates the three chrome
+texts and supplies them to the existing title, axis-title, and accessibility
+surfaces. Figure-title paint is the authored label RGBA and its size is the
+authored label font size plus two pixels, matching Rust SVG and raster output.
+It creates descriptor-sized views and hands
 those painter-ready values to the existing canvas/DOM chrome surfaces; it does
 not generate ticks, format labels, or choose layout. Reserved fields, exact
 offsets, finite geometry, known kinds and symbols, valid UTF-8, and exact final
@@ -120,9 +129,10 @@ Callers may reduce fragmentation or split work into explicitly managed views;
 the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
-This is the public direct-browser entry for the stable Scene v7
-scatter/line/bar subset with its canonical default numeric grid, spines, ticks,
-and labels. Packed `XYCC` compile plus series-shaped `encodeWasmChart` /
+This is the public direct-browser entry for the stable Scene v8
+subset with canonical solid chart/plot backgrounds and authored Cartesian
+grid, spine, major/minor tick, side, visibility, and label paint. Packed `XYCC`
+compile plus series-shaped `encodeWasmChart` /
 `renderWasmChart` expand browser chart inputs into that Scene without main-thread
 domain scans (`FLAG_AUTO_DOMAIN`) or TypeScript Scene policy. Aggregate
 production, density replacement, and cross-host conformance remain later #59

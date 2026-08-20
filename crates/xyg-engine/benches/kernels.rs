@@ -17,7 +17,10 @@
 use divan::{black_box, Bencher};
 
 use xyg_engine::kernels::{self, DEFAULT_CHUNK};
-use xyg_engine::scene::{AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneDocument};
+use xyg_engine::scene::{
+    AxisScale, AxisSide, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText,
+    SceneDocument, TickDirection,
+};
 
 fn main() {
     divan::main();
@@ -356,11 +359,71 @@ fn scene_v4_browser_painter(bencher: Bencher, n: usize) {
     let document = browser_scene_document(n, false);
     let output = document.to_browser_painter(64 * 1024 * 1024).unwrap();
     assert_eq!(&output[..4], b"XYPB");
-    assert_eq!(u32::from_le_bytes(output[4..8].try_into().unwrap()), 2);
+    assert_eq!(u32::from_le_bytes(output[4..8].try_into().unwrap()), 4);
     assert!(u32::from_le_bytes(output[48..52].try_into().unwrap()) >= 3);
     assert!(u32::from_le_bytes(output[52..56].try_into().unwrap()) >= 3);
     assert!(output.len() > n * 16);
     bencher.bench(|| black_box(document.to_browser_painter(64 * 1024 * 1024).unwrap()));
+}
+
+fn authored_chrome_document(n: usize) -> SceneDocument {
+    let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
+    let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
+    let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
+    let x = uniform(n, 0x00A1_B2C3);
+    let y = uniform(n, 0x00D4_E5F6);
+    let mut chrome = SceneChromeStyle {
+        chart_background_rgba: [15, 23, 42, 255],
+        plot_background_rgba: [248, 250, 252, 255],
+        ..SceneChromeStyle::default()
+    };
+    chrome.x_axis.side = AxisSide::High;
+    chrome.x_axis.tick_sides = 0b11;
+    chrome.x_axis.tick_label_sides = 0b10;
+    chrome.x_axis.major_direction = TickDirection::InOut;
+    chrome.x_axis.minor_direction = TickDirection::In;
+    chrome.x_axis.tick_length = 8.0;
+    chrome.x_axis.minor_tick_length = 3.0;
+    chrome.x_axis.minor_grid_rgba = [148, 163, 184, 80];
+    chrome.x_major_ticks = Some((0..100).map(|index| f64::from(index) / 99.0).collect());
+    chrome.x_minor_ticks = (0..99)
+        .map(|index| (f64::from(index) + 0.5) / 99.0)
+        .collect();
+    let encoded = SceneBatch::new_with_chrome(
+        layout,
+        1,
+        2,
+        sx,
+        sy,
+        chrome,
+        SceneChromeText::default(),
+        &vec![0; n],
+        &vec![7; n],
+        &vec![0; n],
+        &[0x88; 4],
+        &[0x22; 4],
+        &[1.0],
+        &vec![6.0; n],
+        &vec![0; n],
+        &x,
+        &y,
+        &vec![0.0; n],
+        &vec![0.0; n],
+    )
+    .unwrap()
+    .encode();
+    SceneDocument::decode(&encoded).unwrap()
+}
+
+/// Scene v8's authored Cartesian chrome stays constant-space while mark work
+/// scales across the same small/medium/large workloads as the existing rows.
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_v8_authored_chrome_svg(bencher: Bencher, n: usize) {
+    let document = authored_chrome_document(n);
+    let output = document.to_svg();
+    assert!(output.contains("data-xy-chrome=\"chart-background\""));
+    assert!(output.contains("rgba(148,163,184,0.313725)"));
+    bencher.bench(|| black_box(document.to_svg()));
 }
 
 fn browser_scene_document(n: usize, fragmented: bool) -> SceneDocument {

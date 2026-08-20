@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -37,9 +38,9 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
         x1=fixture["x1"],
         y1=fixture["y1"],
     )
-    assert encoded.hex() == fixture["expected_hex"]
+    assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 7
+    assert int.from_bytes(encoded[4:8], "little") == 8
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -56,6 +57,37 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
         np.frombuffer(encoded, dtype="<f8", count=4, offset=rect + 16),
         [156.0, 142.0, 272.0, 318.0],
     )
+
+
+def test_python_scene_v8_authored_chrome_matches_node_fixture_bytes() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v3.json").read_text())
+    encoded = _native.scene_batch_encode(
+        viewport=(100, 80),
+        margins=(10, 10, 10, 10),
+        x_axis=(1, 0, 0, 1, 1, False),
+        y_axis=(2, 0, 0, 1, 1, False),
+        kinds=[0],
+        stable_ids=[9],
+        style_refs=[0],
+        fill_rgba=[1, 2, 3, 255],
+        stroke_rgba=[0, 0, 0, 0],
+        stroke_width=[0],
+        diameter=[6],
+        symbols=[0],
+        x0=[0.5],
+        y0=[0.5],
+        x1=[0],
+        y1=[0],
+        chrome_style=bytes.fromhex(fixture["authored_chrome_style_hex"]),
+        x_major_ticks=[0, 0.5, 1],
+        x_minor_ticks=[0.25, 0.75],
+        y_major_ticks=[],
+        y_minor_ticks=[0.5],
+    )
+    assert hashlib.sha256(encoded).hexdigest() == fixture["authored_chrome_sha256"]
+    svg = _native.scene_svg(encoded)
+    assert 'data-xy-chrome="chart-background"' in svg
+    assert 'stroke="rgba(23,24,25,1.000000)"' in svg
 
 
 def test_python_scene_v3_rejects_malformed_batches() -> None:
@@ -85,6 +117,8 @@ def test_python_scene_v3_rejects_malformed_batches() -> None:
         _native.scene_batch_encode(**(options | {"style_refs": [1]}))
     with np.testing.assert_raises_regex(ValueError, "invalid canonical scene batch"):
         _native.scene_batch_encode(**(options | {"margins": (60.0, 40.0, 10.0, 10.0)}))
+    with np.testing.assert_raises_regex(ValueError, "4,096 UTF-8 bytes"):
+        _native.scene_batch_encode(**(options | {"title": "x" * 4_097}))
 
 
 def test_python_scene_v3_rejects_unsigned_values_before_coercion() -> None:
@@ -287,7 +321,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 7
+    assert _native.scene_version() == 8
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

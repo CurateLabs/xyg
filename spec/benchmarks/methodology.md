@@ -248,7 +248,7 @@ authenticates to CodSpeed over OIDC (`id-token: write`); it does not read a
 wall time, so browser, install, and cross-library process benchmarks stay out of
 it — those live in `benchmark-refresh.yml`, and the workflow says so inline.
 
-`crates/xyg-engine/benches/kernels.rs` — **27 rows** — is the Rust half of the
+`crates/xyg-engine/benches/kernels.rs` — **30 rows** — is the Rust half of the
 same gate: divan benchmarks on the kernel entry points themselves (zone maps,
 `min_max`, offset-encoded f32, M4, viewport binning, density log-encode,
 uniform histogram, box selection, sorted-ingest predicate), parametrized over
@@ -256,7 +256,13 @@ the same 10k/100k/1M sizes the pytest modules use, with a deterministic
 SplitMix64 input so the rows are byte-identical run to run. They exist because
 the pytest rows measure kernels through ctypes and NumPy: a regression inside
 `kernels.rs` lands there mixed with host work, and the native rows say which
-kernel moved. `zone_map_threads` already forces the serial path under
+kernel moved. Three Scene v8 rows additionally measure the complete authored
+Cartesian chrome SVG lowering at 10k/100k/1M marks: opaque chart/plot
+backgrounds, a top axis, mirrored major ticks, 100 explicit major positions,
+and 99 explicit minor positions. The historical `scene_v4_*` row names remain
+stable for CodSpeed baseline continuity even though they consume the current
+versioned Scene.
+`zone_map_threads` already forces the serial path under
 `CODSPEED_ENV`, so the instruction count these report is the representative
 single-thread one (§22).
 
