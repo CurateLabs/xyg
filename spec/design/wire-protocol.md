@@ -27,6 +27,14 @@ u8 validity plane ([temporal.md](temporal.md), ABI 71). Hosts must not encode
 temporal samples as f64 milliseconds or JSON numbers on the product wire; timezone
 and precision travel as explicit metadata beside the i64 buffers.
 
+### Temporal coordination (#44)
+
+Linked-view scrubbing uses revisioned `CoordinationEvent` payloads
+([temporal-controller.md](temporal-controller.md), ABI 72): `group_id`,
+`source_instance`, `revision`, half-open `range_*`, `cursor`, and `window` as
+typed integers. Self-echo and stale revisions are rejected in Rust; unrelated
+groups never share state.
+
 The catalog does not vary by transport: where a host sends a given message, it
 has the shape specified here, byte for byte. What varies is *which* messages a
 host sends — the Reflex wrapper resolves `view_change` in the browser and never

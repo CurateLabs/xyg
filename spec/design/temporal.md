@@ -1,7 +1,8 @@
 # Temporal columns and interval indexes
 
-**Status:** foundation locked for M5 (#43). Controllers, graph timebar, and
-compositions land in #44–#46.
+**Status:** foundation locked for M5 (#43). Controllers land in
+[temporal-controller.md](temporal-controller.md) (#44); graph timebar and
+compositions land in #45–#46.
 
 **Authority:** design dossier §16 (time is i64 end-to-end). This document is the
 host-neutral contract for canonical storage, Arrow ingest, and visibility

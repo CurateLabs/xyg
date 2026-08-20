@@ -42,7 +42,7 @@ def test_abi_version_is_75() -> None:
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
-    assert any(item["name"] == "xyg_temporal_column_create" for item in manifest["symbols"])
+    assert any(item["name"] == "xyg_temporal_controller_create" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_scene_plot_layout" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_geo_column_new" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_pyramid_spill" for item in manifest["symbols"])

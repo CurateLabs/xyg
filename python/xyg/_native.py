@@ -85,6 +85,23 @@ class _TemporalIntervalDescriptor(ctypes.Structure):
     ]
 
 
+class _TemporalControllerDescriptor(ctypes.Structure):
+    _fields_ = [
+        ("instance_id", ctypes.c_uint64),
+        ("group_id", ctypes.c_uint64),
+        ("domain_start", ctypes.c_int64),
+        ("domain_end", ctypes.c_int64),
+        ("cursor", ctypes.c_int64),
+        ("window", ctypes.c_int64),
+        ("step", ctypes.c_int64),
+        ("direction", ctypes.c_int32),
+        ("rate_milli", ctypes.c_uint32),
+        ("loop_enabled", ctypes.c_uint32),
+        ("reduced_motion", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32),
+    ]
+
+
 class TemporalNativeError(ValueError):
     """Stable error returned by the Rust-owned temporal column/index seam."""
 
@@ -135,6 +152,8 @@ TEMPORAL_DISAMBIGUATION_PREFER_LATER = 2
 TEMPORAL_DST_UNIQUE = 0
 TEMPORAL_DST_GAP = 1
 TEMPORAL_DST_FOLD = 2
+TEMPORAL_DIRECTION_REVERSE = -1
+TEMPORAL_DIRECTION_FORWARD = 1
 
 
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
@@ -3754,6 +3773,233 @@ def temporal_events_in_range(
     if status != 0:
         raise TemporalNativeError(status)
     return out
+
+
+def temporal_controller_create(
+    *,
+    instance_id: int,
+    domain_start: int,
+    domain_end: int,
+    cursor: int | None = None,
+    window: int = 0,
+    step: int = 1,
+    direction: int = TEMPORAL_DIRECTION_FORWARD,
+    rate_milli: int = 1000,
+    loop_enabled: bool = False,
+    reduced_motion: bool = False,
+    group_id: int = 0,
+) -> int:
+    """Create a Rust-owned TemporalController (UTC microseconds)."""
+    if cursor is None:
+        cursor = domain_start
+    descriptor = _TemporalControllerDescriptor(
+        int(instance_id),
+        int(group_id),
+        int(domain_start),
+        int(domain_end),
+        int(cursor),
+        int(window),
+        int(step),
+        int(direction),
+        int(rate_milli),
+        int(bool(loop_enabled)),
+        int(bool(reduced_motion)),
+        0,
+    )
+    handle = ctypes.c_uint64()
+    status = _lib.xyg_temporal_controller_create(ctypes.byref(descriptor), ctypes.byref(handle))
+    if status != 0:
+        raise TemporalNativeError(status)
+    return int(handle.value)
+
+
+def temporal_controller_state(handle: int) -> dict[str, int | bool]:
+    """Read the full controller state snapshot."""
+    fields = {
+        "instance_id": ctypes.c_uint64(),
+        "group_id": ctypes.c_uint64(),
+        "domain_start": ctypes.c_int64(),
+        "domain_end": ctypes.c_int64(),
+        "range_start": ctypes.c_int64(),
+        "range_end": ctypes.c_int64(),
+        "cursor": ctypes.c_int64(),
+        "window": ctypes.c_int64(),
+        "step": ctypes.c_int64(),
+        "direction": ctypes.c_int32(),
+        "rate_milli": ctypes.c_uint32(),
+        "loop_enabled": ctypes.c_uint32(),
+        "playing": ctypes.c_uint32(),
+        "reduced_motion": ctypes.c_uint32(),
+        "revision": ctypes.c_uint64(),
+        "disposed": ctypes.c_uint32(),
+    }
+    status = _lib.xyg_temporal_controller_state(
+        ctypes.c_uint64(handle),
+        *(ctypes.byref(value) for value in fields.values()),
+    )
+    if status != 0:
+        raise TemporalNativeError(status)
+    return {
+        "instance_id": int(fields["instance_id"].value),
+        "group_id": int(fields["group_id"].value),
+        "domain_start": int(fields["domain_start"].value),
+        "domain_end": int(fields["domain_end"].value),
+        "range_start": int(fields["range_start"].value),
+        "range_end": int(fields["range_end"].value),
+        "cursor": int(fields["cursor"].value),
+        "window": int(fields["window"].value),
+        "step": int(fields["step"].value),
+        "direction": int(fields["direction"].value),
+        "rate_milli": int(fields["rate_milli"].value),
+        "loop_enabled": bool(fields["loop_enabled"].value),
+        "playing": bool(fields["playing"].value),
+        "reduced_motion": bool(fields["reduced_motion"].value),
+        "revision": int(fields["revision"].value),
+        "disposed": bool(fields["disposed"].value),
+    }
+
+
+def _temporal_controller_status(status: int) -> None:
+    if status != 0:
+        raise TemporalNativeError(status)
+
+
+def temporal_controller_set_range(handle: int, start: int, end: int) -> None:
+    _temporal_controller_status(
+        _lib.xyg_temporal_controller_set_range(
+            ctypes.c_uint64(handle), ctypes.c_int64(start), ctypes.c_int64(end)
+        )
+    )
+
+
+def temporal_controller_set_cursor(handle: int, cursor: int) -> None:
+    _temporal_controller_status(
+        _lib.xyg_temporal_controller_set_cursor(ctypes.c_uint64(handle), ctypes.c_int64(cursor))
+    )
+
+
+def temporal_controller_step(handle: int) -> None:
+    _temporal_controller_status(_lib.xyg_temporal_controller_step(ctypes.c_uint64(handle)))
+
+
+def temporal_controller_play(handle: int) -> None:
+    _temporal_controller_status(_lib.xyg_temporal_controller_play(ctypes.c_uint64(handle)))
+
+
+def temporal_controller_pause(handle: int) -> None:
+    _temporal_controller_status(_lib.xyg_temporal_controller_pause(ctypes.c_uint64(handle)))
+
+
+def temporal_controller_set_rate_milli(handle: int, rate_milli: int) -> None:
+    _temporal_controller_status(
+        _lib.xyg_temporal_controller_set_rate_milli(
+            ctypes.c_uint64(handle), ctypes.c_uint32(rate_milli)
+        )
+    )
+
+
+def temporal_controller_set_direction(handle: int, direction: int) -> None:
+    _temporal_controller_status(
+        _lib.xyg_temporal_controller_set_direction(
+            ctypes.c_uint64(handle), ctypes.c_int32(direction)
+        )
+    )
+
+
+def temporal_controller_set_loop(handle: int, enabled: bool) -> None:
+    _temporal_controller_status(
+        _lib.xyg_temporal_controller_set_loop(ctypes.c_uint64(handle), int(bool(enabled)))
+    )
+
+
+def temporal_controller_set_reduced_motion(handle: int, enabled: bool) -> None:
+    _temporal_controller_status(
+        _lib.xyg_temporal_controller_set_reduced_motion(ctypes.c_uint64(handle), int(bool(enabled)))
+    )
+
+
+def temporal_controller_tick(handle: int, dt_micros: int) -> bool:
+    advanced = ctypes.c_uint32()
+    status = _lib.xyg_temporal_controller_tick(
+        ctypes.c_uint64(handle), ctypes.c_int64(dt_micros), ctypes.byref(advanced)
+    )
+    _temporal_controller_status(status)
+    return bool(advanced.value)
+
+
+def temporal_controller_poll_event(handle: int) -> dict[str, int] | None:
+    has_event = ctypes.c_uint32()
+    group_id = ctypes.c_uint64()
+    source = ctypes.c_uint64()
+    revision = ctypes.c_uint64()
+    range_start = ctypes.c_int64()
+    range_end = ctypes.c_int64()
+    cursor = ctypes.c_int64()
+    window = ctypes.c_int64()
+    status = _lib.xyg_temporal_controller_poll_event(
+        ctypes.c_uint64(handle),
+        ctypes.byref(has_event),
+        ctypes.byref(group_id),
+        ctypes.byref(source),
+        ctypes.byref(revision),
+        ctypes.byref(range_start),
+        ctypes.byref(range_end),
+        ctypes.byref(cursor),
+        ctypes.byref(window),
+    )
+    _temporal_controller_status(status)
+    if not has_event.value:
+        return None
+    return {
+        "group_id": int(group_id.value),
+        "source_instance": int(source.value),
+        "revision": int(revision.value),
+        "range_start": int(range_start.value),
+        "range_end": int(range_end.value),
+        "cursor": int(cursor.value),
+        "window": int(window.value),
+    }
+
+
+def temporal_controller_apply_event(handle: int, event: dict[str, int]) -> bool:
+    applied = ctypes.c_uint32()
+    status = _lib.xyg_temporal_controller_apply_event(
+        ctypes.c_uint64(handle),
+        ctypes.c_uint64(event["group_id"]),
+        ctypes.c_uint64(event["source_instance"]),
+        ctypes.c_uint64(event["revision"]),
+        ctypes.c_int64(event["range_start"]),
+        ctypes.c_int64(event["range_end"]),
+        ctypes.c_int64(event["cursor"]),
+        ctypes.c_int64(event["window"]),
+        ctypes.byref(applied),
+    )
+    _temporal_controller_status(status)
+    return bool(applied.value)
+
+
+def temporal_coordinate_deliver(event: dict[str, int]) -> int:
+    applied = ctypes.c_uint32()
+    status = _lib.xyg_temporal_coordinate_deliver(
+        ctypes.c_uint64(event["group_id"]),
+        ctypes.c_uint64(event["source_instance"]),
+        ctypes.c_uint64(event["revision"]),
+        ctypes.c_int64(event["range_start"]),
+        ctypes.c_int64(event["range_end"]),
+        ctypes.c_int64(event["cursor"]),
+        ctypes.c_int64(event["window"]),
+        ctypes.byref(applied),
+    )
+    _temporal_controller_status(status)
+    return int(applied.value)
+
+
+def temporal_controller_dispose(handle: int) -> None:
+    _temporal_controller_status(_lib.xyg_temporal_controller_dispose(ctypes.c_uint64(handle)))
+
+
+def temporal_controller_destroy(handle: int) -> None:
+    _temporal_controller_status(_lib.xyg_temporal_controller_destroy(ctypes.c_uint64(handle)))
 
 
 def graph_force_create(

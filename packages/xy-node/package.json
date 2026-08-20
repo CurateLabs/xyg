@@ -11,8 +11,7 @@
     "./vscode": "./src/vscode.js"
   },
   "scripts": {
-    "test": "node --test test/graph.test.mjs test/composition.test.mjs test/marks.test.mjs test/coverage.test.mjs test/pyramid.test.mjs test/stream.test.mjs test/scene.test.mjs test/no_browser_globals.test.mjs test/native-path.test.mjs test/html.test.mjs test/vscode_contract.test.mjs test/temporal.test.mjs test/geo.test.mjs",
-    "golden:circle": "node scripts/circle_layout_golden.mjs",
+    "test": "node --test test/graph.test.mjs test/composition.test.mjs test/marks.test.mjs test/coverage.test.mjs test/pyramid.test.mjs test/stream.test.mjs test/scene.test.mjs test/no_browser_globals.test.mjs test/native-path.test.mjs test/html.test.mjs test/vscode_contract.test.mjs test/temporal.test.mjs test/temporal-controller.test.mjs test/geo.test.mjs",    "golden:circle": "node scripts/circle_layout_golden.mjs",
     "golden:marks": "node scripts/mark_parity_golden.mjs",
     "fixtures:marks": "python3 test/fixtures/write_mark_fixtures.py"
   },
