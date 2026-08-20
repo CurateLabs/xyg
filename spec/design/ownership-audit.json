@@ -430,7 +430,7 @@
       "policy": "rust-engine",
       "disposition": "keep-rust",
       "follow_up_issue": null,
-      "rationale": "Canonical i64 temporal columns and interval visibility are Rust-owned product policy (#43)."
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
       "path": "crates/xyg-engine/src/tiles.rs",
