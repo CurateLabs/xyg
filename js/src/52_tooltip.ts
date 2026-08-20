@@ -61,9 +61,6 @@ Object.assign(ChartView.prototype, {
       if (yKind !== undefined) row.y_kind = yKind;
       const norm = g._cpuHeatmap.grid[hit.index];
       row.color_value = this._denormalizeUnit(norm, g.trace.color && g.trace.color.domain);
-    } else if (g._cpuRibbon && Array.isArray(g.tooltipRows)) {
-      const semantic = g.tooltipRows[hit.index];
-      if (semantic && typeof semantic === "object") Object.assign(row, semantic);
     } else if (g._cpuRect) {
       const r = g._cpuRect;
       const x0 = this._decodeValue(r.x0, r.x0Meta, hit.index);
@@ -103,6 +100,18 @@ Object.assign(ChartView.prototype, {
       const size = g.trace.size;
       if (cpu.size && size && size.mode === "continuous") {
         row.size_value = this._denormalizeUnit(cpu.size[hit.index], size.domain);
+      }
+    }
+    // Semantic rows (Sankey bands, graph node/edge props, …) ride the wire as
+    // tooltip_rows. Merge after geometry so hosts can replace or enrich the
+    // coordinate readout — ribbon/graph edges often have no useful x/y.
+    if (Array.isArray(g.tooltipRows)) {
+      const semantic = g.tooltipRows[hit.index];
+      if (semantic && typeof semantic === "object") {
+        for (const [key, value] of Object.entries(semantic)) {
+          if (key === "trace" || key === "index") continue;
+          row[key] = value;
+        }
       }
     }
     this._applySharedTooltipFields(row);

@@ -1,0 +1,60 @@
+{
+  "title": "Org collaboration graph",
+  "layout": "forceatlas2",
+  "seed": 7,
+  "iterations": 800,
+  "nodes": [
+    {"id": "alice", "label": "Alice", "role": "Eng Manager", "team": "Platform", "weight": 18},
+    {"id": "bob", "label": "Bob", "role": "Staff Eng", "team": "Platform", "weight": 16},
+    {"id": "cara", "label": "Cara", "role": "Senior Eng", "team": "Platform", "weight": 12},
+    {"id": "devon", "label": "Devon", "role": "Eng", "team": "Platform", "weight": 9},
+    {"id": "eva", "label": "Eva", "role": "Product", "team": "Growth", "weight": 14},
+    {"id": "finn", "label": "Finn", "role": "Designer", "team": "Growth", "weight": 10},
+    {"id": "gina", "label": "Gina", "role": "Data Sci", "team": "Growth", "weight": 11},
+    {"id": "hugo", "label": "Hugo", "role": "SRE", "team": "Infra", "weight": 13},
+    {"id": "ivy", "label": "Ivy", "role": "Security", "team": "Infra", "weight": 10},
+    {"id": "jon", "label": "Jon", "role": "Support", "team": "Success", "weight": 8},
+    {"id": "kira", "label": "Kira", "role": "Sales Eng", "team": "Success", "weight": 9},
+    {"id": "leo", "label": "Leo", "role": "Founder", "team": "Leadership", "weight": 20}
+  ],
+  "edges": [
+    {"source": "leo", "target": "alice", "relation": "reports_to", "weight": 3},
+    {"source": "leo", "target": "eva", "relation": "reports_to", "weight": 3},
+    {"source": "leo", "target": "hugo", "relation": "reports_to", "weight": 2},
+    {"source": "alice", "target": "bob", "relation": "reports_to", "weight": 4},
+    {"source": "alice", "target": "cara", "relation": "reports_to", "weight": 3},
+    {"source": "bob", "target": "devon", "relation": "mentors", "weight": 2},
+    {"source": "cara", "target": "devon", "relation": "pairs_with", "weight": 5},
+    {"source": "eva", "target": "finn", "relation": "reports_to", "weight": 3},
+    {"source": "eva", "target": "gina", "relation": "reports_to", "weight": 3},
+    {"source": "bob", "target": "eva", "relation": "collaborates", "weight": 4},
+    {"source": "cara", "target": "gina", "relation": "collaborates", "weight": 3},
+    {"source": "hugo", "target": "ivy", "relation": "reports_to", "weight": 3},
+    {"source": "hugo", "target": "bob", "relation": "on_call_with", "weight": 2},
+    {"source": "ivy", "target": "cara", "relation": "reviews", "weight": 2},
+    {"source": "jon", "target": "kira", "relation": "pairs_with", "weight": 3},
+    {"source": "kira", "target": "eva", "relation": "escalates_to", "weight": 4},
+    {"source": "jon", "target": "hugo", "relation": "escalates_to", "weight": 2},
+    {"source": "finn", "target": "cara", "relation": "designs_with", "weight": 3},
+    {"source": "gina", "target": "devon", "relation": "collaborates", "weight": 2},
+    {"source": "leo", "target": "kira", "relation": "sponsors", "weight": 1}
+  ],
+  "team_colors": {
+    "Platform": "#1d4ed8",
+    "Growth": "#047857",
+    "Infra": "#b45309",
+    "Success": "#6d28d9",
+    "Leadership": "#b91c1c"
+  },
+  "relation_colors": {
+    "reports_to": "#64748b",
+    "mentors": "#0284c7",
+    "pairs_with": "#059669",
+    "collaborates": "#7c3aed",
+    "on_call_with": "#ea580c",
+    "reviews": "#db2777",
+    "escalates_to": "#dc2626",
+    "designs_with": "#0d9488",
+    "sponsors": "#ca8a04"
+  }
+}

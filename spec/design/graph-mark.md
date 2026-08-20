@@ -146,6 +146,23 @@ xy.graph_chart(
 
 Node hosts mirror the same option names (TypedArrays / arrays).
 
+**Encodings + hover (REQ-API-graph-channels):**
+
+| Option | Scope | Wire |
+|---|---|---|
+| `color` | nodes (CSS string, length-`n_nodes` CSS list, or continuous numeric array) | constant style, `direct_rgba`, or `continuous` (unit f32 + colormap) |
+| `size` | nodes (scalar px or length-`n_nodes` continuous values) | style.size or `size` continuous channel (`mode: continuous`, f32 unit buffer) |
+| `edge_color` / `edgeColor` | edges | style or color channel on the segments trace |
+| `edge_width` / `edgeWidth` | edges | style.width |
+| `tooltip_rows` (post-compose on traces) or Node `nodeTooltipRows` / `edgeTooltipRows` | per-node / per-edge semantic dicts | `tooltip_rows` on the scatter / segments entries; length must equal **render-graph** `n_points` / geometry count (after `nodeBudget`/`edgeBudget`); filtered with finite-row selection on Python |
+
+`tooltip_rows` are small-N JSON scalars (labels, ids, ranks, one numeric
+readout per row) — not geometry — and therefore ride the spec rather than §29
+buffers (same exception as Sankey in `chart-kind-contract.md`). Missing or
+sparse rows are ignored at hover time; a length mismatch raises before shipping.
+Encodings and tooltip rows are indexed in **render-graph** space, matching the
+emitted scatter/segments lengths.
+
 **Ingest (REQ-API-3):** xy-native sequences, NumPy, pandas/Arrow columns,
 edge lists, adjacency. `from_graphforge_tables()` / `fromGraphForgeTables()`
 accept table-like named columns without requiring Arrow at package import.

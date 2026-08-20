@@ -27,6 +27,7 @@ import {
   geometryOffset,
   m4Points,
   minMax,
+  normalizeF32,
   pinsOffsetToZero,
   shouldUseDensity,
 } from "./encode.js";
@@ -102,6 +103,18 @@ export class PayloadWriter {
       kind: col.kind,
     });
     return this._append(encoded, meta);
+  }
+
+  /**
+   * Raw f32 column already in final units (no offset) — size/color channels.
+   * @param {Float32Array|ArrayLike<number>} values
+   */
+  shipScalar(values) {
+    const enc =
+      values instanceof Float32Array
+        ? values
+        : Float32Array.from(values, (v) => Number(v));
+    return this._append(enc, {});
   }
 
   /**
@@ -227,6 +240,10 @@ export class Figure {
         style: { ...(opts.style ?? {}) },
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
+        ...(opts.color != null ? { color: opts.color } : {}),
+        ...(opts.sizeValues != null ? { sizeValues: opts.sizeValues } : {}),
+        ...(opts.sizeRange != null ? { sizeRange: opts.sizeRange } : {}),
+        ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
@@ -563,6 +580,8 @@ export class Figure {
       style: { ...(opts.style ?? {}) },
       x_axis: opts.xAxis ?? "x",
       y_axis: opts.yAxis ?? "y",
+      ...(opts.color != null ? { color: opts.color } : {}),
+      ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
     });
     return this;
   }
@@ -574,9 +593,21 @@ export class Figure {
     const composed = composeGraph(nodes, edges, opts);
     for (const t of composed.traces) {
       if (t.kind === "segments") {
-        this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
+        this.segments(t.x0, t.y0, t.x1, t.y1, {
+          name: t.name,
+          style: t.style,
+          color: t.color,
+          tooltip_rows: t.tooltip_rows,
+        });
       } else if (t.kind === "scatter") {
-        this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
+        this.scatter(t.x, t.y, {
+          name: t.name,
+          style: t.style,
+          color: t.color,
+          sizeValues: t.sizeValues,
+          tooltip_rows: t.tooltip_rows,
+          _composed: true,
+        });
       }
     }
     const meta = {
@@ -703,7 +734,7 @@ export class Figure {
     const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
     t._xCol = xCol;
     t._yCol = yCol;
-    return {
+    const entry = {
       id: t.id,
       kind: "scatter",
       name: t.name,
@@ -716,6 +747,25 @@ export class Figure {
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
+    const color = this._shipColor(t.color, pw);
+    if (color != null) entry.color = color;
+    if (t.sizeValues != null) {
+      const values = t.sizeValues instanceof Float64Array
+        ? t.sizeValues
+        : Float64Array.from(t.sizeValues, Number);
+      const mm = minMax(values) ?? [0, 1];
+      const lo = mm[0];
+      const hi = mm[0] === mm[1] ? mm[0] + 1 : mm[1];
+      const norm = normalizeF32(values, lo, hi);
+      entry.size = {
+        mode: "continuous",
+        range_px: t.sizeRange ?? [8, 22],
+        domain: [lo, hi],
+        buf: pw.shipScalar(norm),
+      };
+    }
+    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    return entry;
   }
 
   /**
@@ -860,7 +910,7 @@ export class Figure {
     const x1 = new Column(t.x1);
     const y0 = new Column(t.y0);
     const y1 = new Column(t.y1);
-    return {
+    const entry = {
       id: t.id,
       kind: t.kind ?? "segments",
       name: t.name,
@@ -875,6 +925,10 @@ export class Figure {
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
+    const color = this._shipColor(t.color, pw);
+    if (color != null) entry.color = color;
+    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    return entry;
   }
 
   _emitTriangleMesh(t, pw) {
@@ -992,6 +1046,17 @@ export class Figure {
         mode: "direct_rgba",
         buf: pw.shipU8(channel.rgba),
         n: Math.floor(channel.rgba.length / 4),
+      };
+    }
+    if (channel.mode === "continuous" && channel.values != null) {
+      const domain = channel.domain ?? minMax(channel.values) ?? [0, 1];
+      const lo = domain[0];
+      const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+      return {
+        mode: "continuous",
+        colormap: channel.colormap ?? "viridis",
+        domain: [lo, hi],
+        buf: pw.shipScalar(normalizeF32(channel.values, lo, hi)),
       };
     }
     if (channel.mode === "constant") {

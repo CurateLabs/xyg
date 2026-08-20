@@ -26,3 +26,7 @@ python/xy/static/standalone.js
 # local overrides.
 /bazel-*
 .bazelrc.user
+# Generated demo output (regenerate via demo/*_demo.py, demo/*_demo.mjs)
+demo/*_demo.html
+demo/*_demo.png
+demo/*_probe.png

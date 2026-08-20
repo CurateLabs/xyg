@@ -425,6 +425,18 @@ class PayloadMixin(_Host):
         return entry
 
     @staticmethod
+    def _attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray]) -> None:
+        """Ship optional semantic hover rows (Sankey / graph props), filtered with geometry."""
+        if t.tooltip_rows is None:
+            return
+        if len(t.tooltip_rows) != t.n_points:
+            raise ValueError(
+                f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
+            )
+        indices = range(len(t.tooltip_rows)) if sel is None else (int(i) for i in sel)
+        entry["tooltip_rows"] = [dict(t.tooltip_rows[i]) for i in indices]
+
+    @staticmethod
     def _finite_sel(t: Trace, xv: np.ndarray, yv: np.ndarray) -> np.ndarray | None:
         """Indices where both x and y are finite, or None if nothing to drop.
 
@@ -624,6 +636,7 @@ class PayloadMixin(_Host):
             self._transition_entry(entry, t, pw, sel)
         entry["color"], entry["size"] = self._ship_channels(t, sel, pw.ship_scalar, pw.ship_u8)
         self._ship_trace_styles(entry, t, sel, pw)
+        self._attach_tooltip_rows(entry, t, sel)
         t.shipped_sel = sel  # pick/selection translation (§17)
         return entry
 
@@ -802,6 +815,7 @@ class PayloadMixin(_Host):
         if t.color_ch is not None:
             entry["color"], _size = self._ship_channels(t, source_sel, pw.ship_scalar, pw.ship_u8)
         self._ship_trace_styles(entry, t, source_sel, pw)
+        self._attach_tooltip_rows(entry, t, source_sel)
         key_values = None
         if (
             tier == "direct"
@@ -867,14 +881,7 @@ class PayloadMixin(_Host):
             entry["color_target"] = channels.ship_color_channel(
                 t.color2_ch, sel_arg, pw.ship_scalar, pw.ship_u8
             )
-        if t.tooltip_rows is not None:
-            if len(t.tooltip_rows) != t.n_points:
-                raise ValueError(
-                    "ribbon tooltip rows must match ribbon geometry "
-                    f"({len(t.tooltip_rows)} != {t.n_points})"
-                )
-            indices = range(len(t.tooltip_rows)) if sel_arg is None else (int(i) for i in sel_arg)
-            entry["tooltip_rows"] = [dict(t.tooltip_rows[i]) for i in indices]
+        self._attach_tooltip_rows(entry, t, sel_arg)
         self._ship_trace_styles(entry, t, sel_arg, pw)
         return self._transition_entry(entry, t, pw, sel_arg)
 
