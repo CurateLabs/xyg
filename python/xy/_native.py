@@ -88,6 +88,38 @@ class TemporalNativeError(ValueError):
         super().__init__(f"native temporal failed with status {self.status}")
 
 
+class GeoNativeError(ValueError):
+    """Stable error returned by the Rust-owned geographic column seam (#47)."""
+
+    _MESSAGES = {
+        -1: "geographic descriptor is incomplete or inconsistent",
+        -2: "CRS is not in the certified EPSG:4326 / EPSG:3857 profile",
+        -3: "geometry kind does not match the supplied offset planes",
+        -4: "offset planes are malformed or disagree with vertex counts",
+        -5: "nested geometry parts cannot be null",
+        -6: "coordinate is non-finite",
+        -7: "coordinate is outside the declared CRS bounds",
+        -8: "polygon ring is too short or not closed",
+        -9: "geometry exceeds feature, vertex, or byte limits",
+        -10: "geographic column handle is stale or freed",
+    }
+
+    def __init__(self, status: int):
+        self.status = int(status)
+        message = self._MESSAGES.get(self.status, f"native geo failed with status {self.status}")
+        super().__init__(message)
+
+
+GEO_GEOMETRY_POINT = 1
+GEO_GEOMETRY_LINESTRING = 2
+GEO_GEOMETRY_POLYGON = 3
+GEO_GEOMETRY_MULTIPOINT = 4
+GEO_GEOMETRY_MULTILINESTRING = 5
+GEO_GEOMETRY_MULTIPOLYGON = 6
+GEO_CRS_EPSG_4326 = 4326
+GEO_CRS_EPSG_3857 = 3857
+
+
 TEMPORAL_PRECISION_SECOND = 0
 TEMPORAL_PRECISION_MILLISECOND = 1
 TEMPORAL_PRECISION_MICROSECOND = 2
@@ -3466,6 +3498,84 @@ def temporal_column_destroy(handle: int) -> None:
     status = _lib.xyg_temporal_column_destroy(ctypes.c_uint64(handle))
     if status != 0:
         raise TemporalNativeError(status)
+
+
+def geo_column_new(
+    *,
+    geometry: int,
+    crs: int,
+    xy: Any,
+    validity: Any,
+    feature_ids: Any | None = None,
+    offsets0: Any | None = None,
+    offsets1: Any | None = None,
+    offsets2: Any | None = None,
+) -> int:
+    """Create a Rust-owned geographic column from a typed host descriptor (#47)."""
+    coords = np.ascontiguousarray(xy, dtype=np.float64)
+    valid = np.ascontiguousarray(validity, dtype=np.uint8)
+    if coords.ndim != 1 or coords.size % 2 != 0:
+        raise ValueError("xy must be a 1-D interleaved [x0,y0,…] f64 array")
+    if valid.ndim != 1:
+        raise ValueError("validity must be a 1-D u8 array")
+    ids: npt.NDArray[np.uint64] | None = None
+    if feature_ids is not None:
+        ids = np.ascontiguousarray(feature_ids, dtype=np.uint64)
+        if ids.ndim != 1 or len(ids) != len(valid):
+            raise ValueError("feature_ids must match validity length")
+
+    def _offsets(values: Any | None) -> npt.NDArray[np.uint32]:
+        if values is None:
+            return np.empty(0, dtype=np.uint32)
+        arr = np.ascontiguousarray(values, dtype=np.uint32)
+        if arr.ndim != 1:
+            raise ValueError("offset planes must be 1-D u32 arrays")
+        return arr
+
+    o0, o1, o2 = _offsets(offsets0), _offsets(offsets1), _offsets(offsets2)
+    err = ctypes.c_int32(0)
+    handle = int(
+        _lib.xyg_geo_column_new(
+            ctypes.c_uint32(geometry),
+            ctypes.c_uint32(crs),
+            _ptr_f64(coords) if len(coords) else None,
+            len(coords),
+            valid.ctypes.data if len(valid) else None,
+            len(valid),
+            ids.ctypes.data if ids is not None and len(ids) else None,
+            o0.ctypes.data if len(o0) else None,
+            len(o0),
+            o1.ctypes.data if len(o1) else None,
+            len(o1),
+            o2.ctypes.data if len(o2) else None,
+            len(o2),
+            ctypes.byref(err),
+        )
+    )
+    if handle == 0:
+        raise GeoNativeError(int(err.value) or -1)
+    return handle
+
+
+def geo_column_meta(handle: int) -> tuple[int, int, int, int]:
+    """Return `(len, vertex_count, geometry, crs)` for a geographic column."""
+    h = ctypes.c_uint64(handle)
+    length = int(_lib.xyg_geo_column_len(h))
+    if length == _USIZE_MAX:
+        raise GeoNativeError(-10)
+    vertices = int(_lib.xyg_geo_column_vertex_count(h))
+    if vertices == _USIZE_MAX:
+        raise GeoNativeError(-10)
+    geometry = int(_lib.xyg_geo_column_geometry(h))
+    crs = int(_lib.xyg_geo_column_crs(h))
+    if geometry == 0 or crs == 0:
+        raise GeoNativeError(-10)
+    return length, vertices, geometry, crs
+
+
+def geo_column_free(handle: int) -> bool:
+    """Free a geographic column handle. Returns False when already stale."""
+    return _lib.xyg_geo_column_free(ctypes.c_uint64(handle)) == 1
 
 
 def temporal_interval_index_create(
