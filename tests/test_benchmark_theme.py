@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from benchmarks.plot_ux import build
 
-from xy._benchmark_theme import (
+from xyg._benchmark_theme import (
     BENCHMARK_CSS_VARIABLES,
     BENCHMARK_DARK_THEME,
     BENCHMARK_LIGHT_THEME,

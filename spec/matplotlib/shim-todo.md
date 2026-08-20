@@ -1,6 +1,6 @@
-# `xy.pyplot` compatibility audit and TODO
+# `xyg.pyplot` compatibility audit and TODO
 
-This document tracks the work required to make `xy.pyplot` a reliable
+This document tracks the work required to make `xyg.pyplot` a reliable
 Matplotlib-flavoured compatibility layer. It deliberately separates the
 shim's supported target from full Matplotlib parity: the former is achievable;
 the latter would require recreating systems that conflict with xy's small,
@@ -12,7 +12,7 @@ fast, browser-oriented design.
 - Upstream checkout: `ignore/matplotlib`.
 - Upstream revision: `bde111fb4e`, described by Git as
   `v3.11.0-348-gbde111fb4e` (2026-07-10).
-- Shim: `python/xy/pyplot/`.
+- Shim: `python/xyg/pyplot/`.
 - Contract test: `tests/pyplot/test_axes_charts.py::`
   `test_official_matplotlib_311_2d_plotting_surface_is_complete`.
 - Executable examples: `tests/pyplot/corpus/`.
@@ -25,7 +25,7 @@ and APIs deliberately outside xy's design are included in the upstream sets.
 
 ## Audit baseline (before completion work)
 
-| Surface | Present in `xy.pyplot` | Notes |
+| Surface | Present in `xyg.pyplot` | Notes |
 |---|---:|---|
 | Declared Matplotlib 3.11 2-D plotting-method contract | 66 / 66 (100%) | Name presence on both `Axes` and stateful `pyplot` |
 | Public upstream `pyplot` functions | 92 / 165 (56%) | 73 names absent; see appendix A |
@@ -108,7 +108,7 @@ The shim can be called complete for ordinary 2-D scripts when:
 
 - [x] Add a CI job with the pinned/reference-compatible Matplotlib installed so
       the seven skipped tests in `test_launch_compat.py` always run.
-- [x] Run every corpus script through both `xy.pyplot` and
+- [x] Run every corpus script through both `xyg.pyplot` and
       `matplotlib.pyplot`; isolate process-global pyplot state between cases.
       Scope: asserts crash-free execution per engine; outputs are not diffed.
 - [x] Record and compare semantic oracles per chart family. Cross-engine
@@ -151,7 +151,7 @@ The shim can be called complete for ordinary 2-D scripts when:
       Matplotlib-object interop from the dependency-free shim.
 - [x] Test every public method in an environment where importing `matplotlib`
       fails; calling an advertised method must not accidentally require it.
-- [x] Keep the existing lightweight-import boundary: importing `xy.pyplot`
+- [x] Keep the existing lightweight-import boundary: importing `xyg.pyplot`
       must not load Matplotlib, the widget stack, or browser machinery.
 
 ### Implement or reject current no-ops
@@ -430,7 +430,7 @@ method accepts the call.
 
 ## P6 — typing, documentation and maintenance
 
-- [x] Add a useful typed public surface for `xy.pyplot`, `Axes`, `Figure`,
+- [x] Add a useful typed public surface for `xyg.pyplot`, `Axes`, `Figure`,
       common Artists, containers and return tuples; reduce broad `Any` usage.
 - [x] Add API documentation generated from the supported compatibility matrix.
 - [x] Fix the stale `spec/api/chart-roadmap.md` rows that still call pie, vector
@@ -440,7 +440,7 @@ method accepts the call.
       visual approximation, accepted no-op, optional interop, and unsupported.
 - [x] Add a compatibility changelog tied to upstream Matplotlib releases.
 - [x] Re-run the source inventory whenever the pinned Matplotlib revision moves.
-- [x] Keep all shim code inside `python/xy/pyplot/` and preserve the one-way
+- [x] Keep all shim code inside `python/xyg/pyplot/` and preserve the one-way
       dependency boundary enforced by `tests/pyplot/test_boundaries.py`.
 
 ## Explicitly out of scope
@@ -493,7 +493,7 @@ This shim targets plotting calls and common script ergonomics. It does not aim
 to replace `matplotlib.artist`, `collections`, `patches`, `path`, `transforms`,
 `ticker`, `dates`, `units`, `tri`, `animation`, `widgets`, `backend_*`, or
 `toolkits` as import-compatible standalone modules. Small compatibility objects
-may be provided inside `xy.pyplot` when required by supported workflows.
+may be provided inside `xyg.pyplot` when required by supported workflows.
 
 ## Appendix A — missing public upstream `pyplot` functions
 
@@ -565,7 +565,7 @@ supxlabel supylabel text waitforbuttonpress
 ## Appendix D — supported 2-D plotting-method inventory
 
 These 66 names currently satisfy the documented name-presence contract on both
-the shim `Axes` and stateful `xy.pyplot` namespace. Their option-depth work is
+the shim `Axes` and stateful `xyg.pyplot` namespace. Their option-depth work is
 tracked above.
 
 ```text
@@ -697,5 +697,5 @@ none of this is claimed as full Matplotlib parity.
 
 - `matplotlib.sankey.Sankey`: deliberately NOT shimmed. Its API is a
   path-drawing toolkit (trunk/branch offsets in axes units), not a flow-data
-  API; `xy.sankey_chart(links)` is the supported spelling. Revisit only if
+  API; `xyg.sankey_chart(links)` is the supported spelling. Revisit only if
   corpus evidence shows real notebooks using mpl's Sankey.

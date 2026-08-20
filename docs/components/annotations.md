@@ -2,17 +2,17 @@
 title: Annotations in Python
 description: Add rules, bands, labels, markers, arrows, thresholds, and callouts.
 components:
-  - xy.vline
-  - xy.hline
-  - xy.x_band
-  - xy.y_band
-  - xy.threshold
-  - xy.threshold_zone
-  - xy.text
-  - xy.label
-  - xy.marker
-  - xy.arrow
-  - xy.callout
+  - xyg.vline
+  - xyg.hline
+  - xyg.x_band
+  - xyg.y_band
+  - xyg.threshold
+  - xyg.threshold_zone
+  - xyg.text
+  - xyg.label
+  - xyg.marker
+  - xyg.arrow
+  - xyg.callout
 ---
 
 # Annotations in Python
@@ -32,14 +32,14 @@ markers, arrows, and callouts draw attention to individual observations.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-chart = xy.line_chart(
-    xy.line([0, 1, 2, 3, 4], [38, 41, 43, 46, 52], color="#6e56cf"),
-    xy.threshold_zone(45, 60, text="target zone", color="#16a34a"),
-    xy.vline(3, text="launch", color="#2563eb"),
-    xy.marker(4, 52, text="v1", color="#2563eb"),
-    xy.callout(4, 52, "record", dx=-60, dy=-30),
+chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3, 4], [38, 41, 43, 46, 52], color="#6e56cf"),
+    xyg.threshold_zone(45, 60, text="target zone", color="#16a34a"),
+    xyg.vline(3, text="launch", color="#2563eb"),
+    xyg.marker(4, 52, text="v1", color="#2563eb"),
+    xyg.callout(4, 52, "record", dx=-60, dy=-30),
     title="Release progress",
 )
 
@@ -57,12 +57,12 @@ boundary on either axis.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-threshold_detail_chart = xy.column_chart(
-    xy.column(["A", "B", "C", "D"], [62, 74, 68, 83], color="#6e56cf"),
-    xy.threshold(70, axis="y", text="target", color="#16a34a", width=2),
-    xy.y_axis(label="score", domain=(0, 100)),
+threshold_detail_chart = xyg.column_chart(
+    xyg.column(["A", "B", "C", "D"], [62, 74, 68, 83], color="#6e56cf"),
+    xyg.threshold(70, axis="y", text="target", color="#16a34a", width=2),
+    xyg.y_axis(label="score", domain=(0, 100)),
     title="Target threshold",
 )
 
@@ -77,13 +77,13 @@ def threshold_demo():
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-horizontal_line_detail_chart = xy.line_chart(
-    xy.line([0, 1, 2, 3, 4], [42, 48, 51, 57, 63], color="#6e56cf"),
-    xy.hline(55, text="SLO", color="#2563eb", width=2),
-    xy.x_axis(label="release"),
-    xy.y_axis(label="requests"),
+horizontal_line_detail_chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3, 4], [42, 48, 51, 57, 63], color="#6e56cf"),
+    xyg.hline(55, text="SLO", color="#2563eb", width=2),
+    xyg.x_axis(label="release"),
+    xyg.y_axis(label="requests"),
     title="Horizontal reference",
 )
 
@@ -103,14 +103,14 @@ axis.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-bands_detail_chart = xy.line_chart(
-    xy.line([0, 1, 2, 3, 4, 5], [3, 5, 4, 7, 6, 8], color="#6e56cf"),
-    xy.x_band(1.5, 3.0, text="launch window", color="#f59e0b", opacity=0.16),
-    xy.y_band(6.5, 8.5, text="target range", color="#16a34a", opacity=0.12),
-    xy.x_axis(label="week"),
-    xy.y_axis(label="value"),
+bands_detail_chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3, 4, 5], [3, 5, 4, 7, 6, 8], color="#6e56cf"),
+    xyg.x_band(1.5, 3.0, text="launch window", color="#f59e0b", opacity=0.16),
+    xyg.y_band(6.5, 8.5, text="target range", color="#16a34a", opacity=0.12),
+    xyg.x_axis(label="week"),
+    xyg.y_axis(label="value"),
     title="Reference bands",
 )
 
@@ -140,13 +140,13 @@ and `dy` offsets.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-arrow_detail_chart = xy.line_chart(
-    xy.line([0, 1, 2, 3, 4], [2, 3, 4, 7, 8], color="#94a3b8"),
-    xy.arrow(1.5, 4.2, 3, 7, text="inflection", color="#e11d48", width=2),
-    xy.x_axis(label="period"),
-    xy.y_axis(label="value"),
+arrow_detail_chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3, 4], [2, 3, 4, 7, 8], color="#94a3b8"),
+    xyg.arrow(1.5, 4.2, 3, 7, text="inflection", color="#e11d48", width=2),
+    xyg.x_axis(label="period"),
+    xyg.y_axis(label="value"),
     title="Directional annotation",
 )
 
@@ -161,13 +161,13 @@ def arrow_demo():
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-label_detail_chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3, 4], [3, 6, 4, 8], color="#6e56cf", size=8),
-    xy.label(4, 8, "peak", dy=-16, anchor="middle", color="#6e56cf"),
-    xy.x_axis(label="period"),
-    xy.y_axis(label="value"),
+label_detail_chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3, 4], [3, 6, 4, 8], color="#6e56cf", size=8),
+    xyg.label(4, 8, "peak", dy=-16, anchor="middle", color="#6e56cf"),
+    xyg.x_axis(label="period"),
+    xyg.y_axis(label="value"),
     title="Point label",
 )
 
@@ -183,14 +183,14 @@ needed.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-text_detail_chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3, 4], [2, 5, 4, 7], color="#94a3b8", size=7),
-    xy.text(2, 5, "review", dx=10, dy=-14, color="#2563eb"),
-    xy.text(4, 7, "ship", dx=-8, dy=-16, anchor="end", color="#16a34a"),
-    xy.x_axis(label="milestone"),
-    xy.y_axis(label="value"),
+text_detail_chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3, 4], [2, 5, 4, 7], color="#94a3b8", size=7),
+    xyg.text(2, 5, "review", dx=10, dy=-14, color="#2563eb"),
+    xyg.text(4, 7, "ship", dx=-8, dy=-16, anchor="end", color="#16a34a"),
+    xyg.x_axis(label="milestone"),
+    xyg.y_axis(label="value"),
     title="Free-positioned text",
 )
 
@@ -242,25 +242,25 @@ controls their paint order. Exact signatures and defaults are in
 
 ### How do I add a horizontal line to a chart in Python?
 
-Add `xy.hline(y)` as a chart child, e.g.
-`xy.hline(55, text="SLO", color="#2563eb", width=2)`; `xy.vline(x)` is the
+Add `xyg.hline(y)` as a chart child, e.g.
+`xyg.hline(55, text="SLO", color="#2563eb", width=2)`; `xyg.vline(x)` is the
 vertical equivalent. For a reference boundary with semantic intent on either
-axis, use `xy.threshold(value, axis="y", text="target")` instead.
+axis, use `xyg.threshold(value, axis="y", text="target")` instead.
 
 ### How do I shade a region or band on a chart?
 
-Use `xy.x_band(x0, x1)` or `xy.y_band(y0, y1)` to shade an interval on the
+Use `xyg.x_band(x0, x1)` or `xyg.y_band(y0, y1)` to shade an interval on the
 corresponding axis, with `text`, `color`, and `opacity` to label and style it.
-`xy.threshold_zone(start, end, axis=...)` does the same for a semantic
+`xyg.threshold_zone(start, end, axis=...)` does the same for a semantic
 "acceptable range" style zone on either axis.
 
 ### How do I label a data point and draw an arrow to it on a chart?
 
-`xy.callout(x, y, "note", dx=-60, dy=-30)` pins explanatory text to a point
-with a connector, while `xy.arrow(x0, y0, x1, y1, text=...)` draws a
+`xyg.callout(x, y, "note", dx=-60, dy=-30)` pins explanatory text to a point
+with a connector, while `xyg.arrow(x0, y0, x1, y1, text=...)` draws a
 free-standing arrow between two coordinates. For text alone use
-`xy.label(x, y, "peak", dy=-16)` or `xy.text(x, y, "note")`, and
-`xy.marker(x, y, text=...)` adds a point symbol with an optional label.
+`xyg.label(x, y, "peak", dy=-16)` or `xyg.text(x, y, "note")`, and
+`xyg.marker(x, y, text=...)` adds a point symbol with an optional label.
 
 ### Why do my annotations stay aligned when I pan or zoom the chart?
 

@@ -8,10 +8,10 @@ from xml.etree import ElementTree
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy import _textblock
-from xy.pyplot._grid import _composite_rgba
-from xy.pyplot._mplfig import _measured_axis_chrome
+import xyg.pyplot as plt
+from xyg import _textblock
+from xyg.pyplot._grid import _composite_rgba
+from xyg.pyplot._mplfig import _measured_axis_chrome
 
 
 def test_set_aspect_accepts_positional_adjustable() -> None:
@@ -184,7 +184,7 @@ def test_constrained_layout_remeasures_final_rotated_category_labels() -> None:
 
     charts = fig._charts()
     spec, _blob = charts[0].figure().build_payload()
-    from xy import _svg
+    from xyg import _svg
 
     _width, height, _compact, plot = _svg.layout(spec)
     assert height - plot["y"] - plot["h"] > 80

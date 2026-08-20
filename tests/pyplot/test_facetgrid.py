@@ -11,8 +11,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot import FacetGrid
+import xyg.pyplot as plt
+from xyg.pyplot import FacetGrid
 
 
 def _tips(n: int = 120) -> dict[str, np.ndarray]:
@@ -98,8 +98,8 @@ def test_shared_domains_union_across_panels() -> None:
 def test_margin_title_ink_lands_right_of_the_plot() -> None:
     """The full chain: axes-fraction x>1 text reserves right padding, escapes
     the plot clip, and rasterizes rotated — ink must land in the margin."""
-    from xy import _raster
-    from xy._svg import layout
+    from xyg import _raster
+    from xyg._svg import layout
 
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1])

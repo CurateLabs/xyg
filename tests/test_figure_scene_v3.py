@@ -7,9 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from xy import _native, kernels
-from xy._figure import Figure
-from xy._scene_v3 import UnsupportedSceneV3
+from xyg import _native, kernels
+from xyg._figure import Figure
+from xyg._scene_v3 import UnsupportedSceneV3
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
 
@@ -147,7 +147,7 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
 
 
 def test_try_public_scene_helpers_select_migrated_subset() -> None:
-    from xy import _scene_v3
+    from xyg import _scene_v3
 
     figure = representative_figure()
     svg = _scene_v3.try_public_svg(figure)

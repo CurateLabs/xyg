@@ -2,7 +2,7 @@
 
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 fig, axes = plt.subplots(2, 2, figsize=(9, 7))
 

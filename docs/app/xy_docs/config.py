@@ -105,7 +105,7 @@ DOCS_SECTIONS = (
         (
             ("Reflex", "/integrations/reflex/"),
             ("Notebooks", "/integrations/notebooks/"),
-            ("Matplotlib (xy.pyplot)", "/integrations/matplotlib/"),
+            ("Matplotlib (xyg.pyplot)", "/integrations/matplotlib/"),
         ),
     ),
     (
@@ -140,7 +140,7 @@ DOCS_SECTIONS = (
         "/advanced/",
         "network",
         (
-            ("XY Architecture", "/advanced/"),
+            ("XYG Architecture", "/advanced/"),
             ("Custom Marks", "/advanced/custom-marks/"),
             (
                 "Runtime and Deployment",

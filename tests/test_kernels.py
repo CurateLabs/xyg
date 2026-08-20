@@ -12,8 +12,8 @@ import warnings
 import numpy as np
 import pytest
 
-from xy import kernels as k
-from xy.config import MAX_SCREEN_DIM
+from xyg import kernels as k
+from xyg.config import MAX_SCREEN_DIM
 
 BACKENDS = [pytest.param(k, id=f"dispatch[{k.BACKEND}]")]
 
@@ -692,7 +692,7 @@ def test_size_sentinel_detection_matches_platform_usize_width(monkeypatch):
     """
     import ctypes
 
-    from xy import _native
+    from xyg import _native
 
     assert ctypes.c_size_t(-1).value == _native._USIZE_MAX
     sentinel = 2**32 - 1
@@ -796,7 +796,7 @@ def test_bin_2d_indices_empty_and_validation(impl):
 
 
 def test_bin_2d_sample_range_matches_separate_kernels_and_retries(impl):
-    from xy import lod
+    from xyg import lod
 
     rng = np.random.default_rng(17)
     x = rng.uniform(-100.0, 100.0, 100_123)
@@ -855,7 +855,7 @@ def test_bin_2d_counted_stratified_sample_matches_separate_kernels(impl):
 def test_sample_mask_matches_numpy_hash_reference(impl):
     # lod.hash_row_ids is the pure-NumPy SplitMix64 reference; the fused native
     # mask must be bit-identical to hashing + thresholding through it.
-    from xy import lod
+    from xyg import lod
 
     rng = np.random.default_rng(11)
     ids = rng.integers(0, 2**63, size=100_000).astype(np.uint64)
@@ -868,7 +868,7 @@ def test_sample_mask_matches_numpy_hash_reference(impl):
 
 
 def test_sample_mask_u32_ids_match_widened_u64(impl):
-    from xy import lod
+    from xyg import lod
 
     rng = np.random.default_rng(13)
     ids32 = rng.integers(0, 2**32, size=100_000, dtype=np.uint64).astype(np.uint32)
@@ -907,7 +907,7 @@ def test_stratified_sample_mask_matches_numpy_reference(impl):
     # Direct port of the per-category NumPy loop the fused kernel replaced:
     # hash-threshold per category plus an argpartition floor fill. Distinct ids
     # can't tie on hashes (SplitMix64 is a bijection), so equality is exact.
-    from xy import lod
+    from xyg import lod
 
     rng = np.random.default_rng(3)
     n = 50_000
@@ -1207,7 +1207,7 @@ def test_density_rgba_validates_shape_and_domain():
 
 
 def test_native_svg_poly_path_format_and_validation():
-    from xy import _native
+    from xyg import _native
 
     assert _native.svg_poly_path([1.0, 2.345, -0.001], [4.5, 6.789, -0.0]) == (
         "M 1 4.5 L 2.35 6.79 L -0 -0"
@@ -1219,7 +1219,7 @@ def test_native_svg_poly_path_format_and_validation():
 
 
 def test_native_m4_points_matches_index_gather():
-    from xy import _native
+    from xyg import _native
 
     x = np.arange(10_000, dtype=np.float64)
     y = np.sin(x * 0.01)

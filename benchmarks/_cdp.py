@@ -321,6 +321,6 @@ class Page:
 
 def default_chromium() -> str | None:
     """Reuse the export-time discovery (env var, PATH, common installs)."""
-    from xy.export import find_chromium
+    from xyg.export import find_chromium
 
     return find_chromium(os.environ.get("XY_CHROMIUM"))

@@ -1,8 +1,8 @@
 ---
 title: Histogram in Python
-description: Histogram Python charts with xy — bin large datasets into a fast, interactive frequency distribution that pans, zooms, and refines smoothly at millions of values.
+description: Histogram Python charts with XYG — bin large datasets into a fast, interactive frequency distribution that pans, zooms, and refines smoothly at millions of values.
 components:
-  - xy.histogram_chart
+  - xyg.histogram_chart
 ---
 
 # Histograms in Python
@@ -25,15 +25,15 @@ This is the minimal Python histogram:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(3)
 latency = rng.gamma(shape=2.0, scale=40.0, size=100_000)
 
-chart = xy.histogram_chart(
-    xy.histogram(latency, bins=120, color="#6e56cf"),
-    xy.x_axis(label="latency (ms)"),
-    xy.y_axis(label="requests"),
+chart = xyg.histogram_chart(
+    xyg.histogram(latency, bins=120, color="#6e56cf"),
+    xyg.x_axis(label="latency (ms)"),
+    xyg.y_axis(label="requests"),
     title="Request latency",
 )
 
@@ -58,13 +58,13 @@ window with `range`, and soften the bars with `corner_radius` and `opacity`.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 density_rng = np.random.default_rng(9)
 response_times = density_rng.lognormal(mean=3.4, sigma=0.45, size=60_000)
 
-density_hist_chart = xy.histogram_chart(
-    xy.histogram(
+density_hist_chart = xyg.histogram_chart(
+    xyg.histogram(
         response_times,
         bins=80,
         range=(0.0, 120.0),
@@ -73,8 +73,8 @@ density_hist_chart = xy.histogram_chart(
         opacity=0.75,
         corner_radius=3.0,
     ),
-    xy.x_axis(label="response time (ms)"),
-    xy.y_axis(label="probability density"),
+    xyg.x_axis(label="response time (ms)"),
+    xyg.y_axis(label="probability density"),
     title="Response time density (0-120 ms window)",
 )
 
@@ -86,19 +86,19 @@ def density_histogram_demo():
 ### Overlay Two Distributions
 
 Stack two `histogram` marks in one chart with shared `bins` and `range`, name
-each with `name=`, lower `opacity` so both stay readable, and add `xy.legend()`.
+each with `name=`, lower `opacity` so both stay readable, and add `xyg.legend()`.
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 overlay_rng = np.random.default_rng(17)
 baseline_scores = overlay_rng.normal(64, 11, 40_000)
 variant_scores = overlay_rng.normal(71, 8, 40_000)
 
-overlay_hist_chart = xy.histogram_chart(
-    xy.histogram(
+overlay_hist_chart = xyg.histogram_chart(
+    xyg.histogram(
         baseline_scores,
         bins=90,
         range=(20.0, 110.0),
@@ -106,7 +106,7 @@ overlay_hist_chart = xy.histogram_chart(
         color="#6e56cf",
         opacity=0.55,
     ),
-    xy.histogram(
+    xyg.histogram(
         variant_scores,
         bins=90,
         range=(20.0, 110.0),
@@ -114,9 +114,9 @@ overlay_hist_chart = xy.histogram_chart(
         color="#e5484d",
         opacity=0.55,
     ),
-    xy.x_axis(label="score"),
-    xy.y_axis(label="samples"),
-    xy.legend(),
+    xyg.x_axis(label="score"),
+    xyg.y_axis(label="samples"),
+    xyg.legend(),
     title="Baseline vs variant scores",
 )
 
@@ -157,7 +157,7 @@ Pass a column name with `data=` instead of an array when your data is a table.
 
 ### How do I make a histogram in Python?
 
-Call `xy.histogram(values, bins=...)` inside `xy.histogram_chart(...)` and
+Call `xyg.histogram(values, bins=...)` inside `xyg.histogram_chart(...)` and
 render it. Binning, axes, pan, zoom, and hover are handled automatically.
 
 ### How many bins should a histogram use?

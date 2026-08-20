@@ -1,4 +1,4 @@
-"""Tests for the bundled ``xy[reflex]`` integration.
+"""Tests for the bundled ``xyg[reflex]`` integration.
 
 These run only when the optional framework dependency is installed
 (`uv sync --extra reflex --group dev`); plain `xy` must never require Reflex

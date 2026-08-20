@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy import chart, line, x_axis
+import xyg.pyplot as plt
+from xyg import chart, line, x_axis
 
 
 def _axis_domain(ax, which: str) -> tuple[float, float]:

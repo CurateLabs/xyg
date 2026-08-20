@@ -6,8 +6,8 @@ import re
 
 import pytest
 
-import xy
-from xy._figure import Figure
+import xyg
+from xyg._figure import Figure
 
 VALUES = [1.0, 2.0, 3.0, 4.0, 100.0]
 GROUPS = ["cohort"] * len(VALUES)
@@ -103,8 +103,8 @@ def test_unstyled_box_keeps_its_existing_trace_style_defaults() -> None:
 
 
 def test_box_component_routes_part_styles_to_the_figure() -> None:
-    chart = xy.box_chart(
-        xy.box(
+    chart = xyg.box_chart(
+        xyg.box(
             VALUES,
             group=GROUPS,
             style={"fill": "#dbeafe", "stroke": "#2563eb", "stroke-width": 2},

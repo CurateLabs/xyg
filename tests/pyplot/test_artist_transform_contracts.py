@@ -5,8 +5,8 @@ import builtins
 import numpy as np
 import pytest
 
-from xy import pyplot as plt
-from xy.pyplot._transforms import Affine2D, Bbox, IdentityTransform
+from xyg import pyplot as plt
+from xyg.pyplot._transforms import Affine2D, Bbox, IdentityTransform
 
 
 def test_owned_artist_views_children_and_removal_are_stable() -> None:

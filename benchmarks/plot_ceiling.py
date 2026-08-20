@@ -20,7 +20,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-import xy
+import xyg
 
 GIB = 2**30
 
@@ -41,8 +41,8 @@ DEFAULT_SIZES = [
 ]
 
 STYLE: dict[str, dict[str, Any]] = {
-    "xy": {"name": "XY (density, default)", "color": "#6E56CF", "width": 3.0},
-    "xy-exact": {"name": "XY (density off)", "color": "#A594E8", "width": 2.5},
+    "xy": {"name": "XYG (density, default)", "color": "#6E56CF", "width": 3.0},
+    "xy-exact": {"name": "XYG (density off)", "color": "#A594E8", "width": 2.5},
     "plotly": {"name": "Plotly scattergl", "color": "#B9BBC6", "width": 2.0},
     "matplotlib": {"name": "Matplotlib WebAgg", "color": "#8B8D98", "width": 2.0},
     "datashader": {"name": "Datashader (static image)", "color": "#7FB3A6", "width": 2.0},
@@ -93,7 +93,7 @@ def build_chart(
     *,
     width: int,
     height: int,
-) -> xy.Chart | None:
+) -> xyg.Chart | None:
     marks: list[Any] = []
     ends: list[Any] = []
     notes: list[Any] = []
@@ -105,9 +105,9 @@ def build_chart(
             continue
         top = max(top, max(values))
         marks.append(
-            xy.line(labels, values, name=style["name"], color=style["color"], width=style["width"])
+            xyg.line(labels, values, name=style["name"], color=style["color"], width=style["width"])
         )
-        ends.append(xy.marker(labels[-1], values[-1], size=7, color=style["color"]))
+        ends.append(xyg.marker(labels[-1], values[-1], size=7, color=style["color"]))
         unit = "GiB" if metric == "memory" else "s"
         text = f"{values[-1]:.2f} {unit}"
         # An arm that stopped short of the ladder end died; say so on the chart
@@ -115,7 +115,7 @@ def build_chart(
         if labels[-1] != label(sizes[-1]):
             text = f"× {text} — fails at {label(sizes[len(values)])}"  # noqa: RUF001
         notes.append(
-            xy.text(
+            xyg.text(
                 labels[-1],
                 values[-1],
                 text,
@@ -135,9 +135,9 @@ def build_chart(
         tick_labels[-1] = f"{ticks[-1]:g} GiB"
         # Every browser arm pays a headless-Chrome baseline before it draws
         # anything; without this line the low-N rows look like a real result.
-        notes.append(xy.hline(1.0, color="#8B8D98", opacity=0.3, width=1.5))
+        notes.append(xyg.hline(1.0, color="#8B8D98", opacity=0.3, width=1.5))
         notes.append(
-            xy.text(
+            xyg.text(
                 label(sizes[1]),
                 0.70,
                 "headless Chrome floor (~1 GiB) — every browser arm starts here",
@@ -151,19 +151,19 @@ def build_chart(
         ticks = [t for t in (0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64) if t <= top * 2.2]
         tick_labels = [f"{t:g}" for t in ticks]
         tick_labels[-1] = f"{ticks[-1]:g} s"
-        notes.append(xy.hline(1.0, color="#8B8D98", opacity=0.3, width=1.5))
-        notes.append(xy.text(label(sizes[2]), 1.16, "1 second", color="#8B8D98", anchor="start"))
+        notes.append(xyg.hline(1.0, color="#8B8D98", opacity=0.3, width=1.5))
+        notes.append(xyg.text(label(sizes[2]), 1.16, "1 second", color="#8B8D98", anchor="start"))
         domain = (0.1, max(2.0, top * 1.6))
 
-    return xy.line_chart(
+    return xyg.line_chart(
         *marks,
         *ends,
         *notes,
-        xy.legend(show=True, loc="upper left"),
-        xy.modebar(show=False),
-        xy.tooltip(format={"y": ".3f"}),
-        xy.x_axis(label="Points plotted", tick_label_anchor="center"),
-        xy.y_axis(
+        xyg.legend(show=True, loc="upper left"),
+        xyg.modebar(show=False),
+        xyg.tooltip(format={"y": ".3f"}),
+        xyg.x_axis(label="Points plotted", tick_label_anchor="center"),
+        xyg.y_axis(
             label=axis_label,
             type_="log",
             domain=domain,

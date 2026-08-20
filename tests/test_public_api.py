@@ -72,7 +72,7 @@ def test_fresh_import_budget_splits_third_party_and_xy_modules(
         return subprocess.CompletedProcess(
             args=[],
             returncode=0,
-            stdout=_fresh_import_stdout(eager=["numpy", "xy._figure", "xy.kernels"]),
+            stdout=_fresh_import_stdout(eager=["numpy", "xyg._figure", "xyg.kernels"]),
             stderr="",
         )
 
@@ -82,7 +82,7 @@ def test_fresh_import_budget_splits_third_party_and_xy_modules(
 
     assert any("third-party" in error and "numpy" in error for error in errors)
     assert any(
-        "xy submodules" in error and "xy._figure" in error and "xy.kernels" in error
+        "xyg submodules" in error and "xyg._figure" in error and "xyg.kernels" in error
         for error in errors
     )
 
@@ -189,8 +189,9 @@ def test_fresh_import_budget_probes_public_metadata(
     errors = check_public_api.check_fresh_import_budget()
 
     assert errors == []
-    assert "xy.__all__" in seen_code
-    assert "dir(xy)" in seen_code
+    assert "import xyg" in seen_code
+    assert "xyg.__all__" in seen_code
+    assert "dir(xyg)" in seen_code
 
 
 def test_fresh_import_budget_rejects_invalid_public_all(
@@ -228,11 +229,11 @@ def test_fresh_import_budget_rejects_dir_public_name_drift(
 
     errors = check_public_api.check_fresh_import_budget()
 
-    assert any("dir(xy)" in error and "scatter_chart" in error for error in errors)
+    assert any("dir(xyg)" in error and "scatter_chart" in error for error in errors)
 
 
 def test_public_api_checker_rejects_stale_all_entry() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__all__ = ["Figure", "__version__", "old_name"]
     fake._EXPORTS = {"Figure": ".figure"}
 
@@ -242,7 +243,7 @@ def test_public_api_checker_rejects_stale_all_entry() -> None:
 
 
 def test_public_api_checker_rejects_missing_all_entry() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__all__ = ["__version__"]
     fake._EXPORTS = {"Figure": ".figure"}
 
@@ -252,14 +253,14 @@ def test_public_api_checker_rejects_missing_all_entry() -> None:
 
 
 def test_public_api_checker_accepts_component_module_all() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake._EXPORTS = {
         "CHART_DOM_SLOTS": ".dom",
         "Chart": ".components",
         "scatter": ".components",
         "Figure": ".figure",
     }
-    fake_components = ModuleType("xy.components")
+    fake_components = ModuleType("xyg.components")
     fake_components.__all__ = ["CHART_DOM_SLOTS", "Chart", "scatter"]
     fake_components.CHART_DOM_SLOTS = ()
     fake_components.Chart = object()
@@ -271,11 +272,11 @@ def test_public_api_checker_accepts_component_module_all() -> None:
 
 
 def _fake_declarative_modules() -> tuple[ModuleType, ModuleType]:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__all__ = ["__version__", *check_public_api.DECLARATIVE_API_EXPORTS]
     fake._EXPORTS = {name: ".components" for name in check_public_api.DECLARATIVE_API_EXPORTS}
 
-    fake_components = ModuleType("xy.components")
+    fake_components = ModuleType("xyg.components")
     fake_components.__all__ = list(check_public_api.DECLARATIVE_API_EXPORTS)
     for name in check_public_api.DECLARATIVE_API_EXPORTS:
         setattr(fake_components, name, object())
@@ -307,9 +308,9 @@ def test_public_api_checker_rejects_missing_declarative_export() -> None:
 
     errors = check_public_api.validate_declarative_api_contract(fake, fake_components)
 
-    assert any("tooltip" in error and "xy.__all__" in error for error in errors)
+    assert any("tooltip" in error and "xyg.__all__" in error for error in errors)
     assert any("tooltip" in error and "'.components'" in error for error in errors)
-    assert any("tooltip" in error and "xy.components.__all__" in error for error in errors)
+    assert any("tooltip" in error and "xyg.components.__all__" in error for error in errors)
     assert any("tooltip" in error and "undefined" in error for error in errors)
     assert any("html" in error and "readout" in error for error in errors)
 
@@ -326,9 +327,9 @@ def test_public_api_checker_rejects_misrouted_declarative_export() -> None:
 
 
 def test_public_api_checker_rejects_stale_component_module_all() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake._EXPORTS = {"Chart": ".components", "scatter": ".components", "line": ".components"}
-    fake_components = ModuleType("xy.components")
+    fake_components = ModuleType("xyg.components")
     fake_components.__all__ = ["Chart", "scatter", "old_name", "missing_value"]
     fake_components.Chart = object()
     fake_components.scatter = object()
@@ -337,19 +338,19 @@ def test_public_api_checker_rejects_stale_component_module_all() -> None:
     errors = check_public_api.validate_component_public_api(fake, fake_components)
 
     assert any("line" in error and "missing root exports" in error for error in errors)
-    assert any("old_name" in error and "not exported from xy" in error for error in errors)
+    assert any("old_name" in error and "not exported from xyg" in error for error in errors)
     assert any("missing_value" in error and "undefined name" in error for error in errors)
 
 
 # The version reference is installed distribution metadata, not pyproject (which
 # no longer records one). These drive the check against a distribution that is
 # certainly installed wherever the suite runs — pytest itself — so they assert
-# the comparison rather than whatever version `xy` happens to be built at.
+# the comparison rather than whatever version `xyg` happens to be built at.
 REFERENCE_DISTRIBUTION = "pytest"
 
 
 def test_public_api_checker_accepts_version_matching_installed_metadata() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__version__ = importlib.metadata.version(REFERENCE_DISTRIBUTION)
 
     errors = check_public_api.validate_version_consistency(fake, REFERENCE_DISTRIBUTION)
@@ -358,7 +359,7 @@ def test_public_api_checker_accepts_version_matching_installed_metadata() -> Non
 
 
 def test_public_api_checker_rejects_version_mismatch() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__version__ = "1.2.3-definitely-not-the-installed-version"
 
     errors = check_public_api.validate_version_consistency(fake, REFERENCE_DISTRIBUTION)
@@ -367,7 +368,7 @@ def test_public_api_checker_rejects_version_mismatch() -> None:
 
 
 def test_public_api_checker_rejects_missing_public_version() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
 
     errors = check_public_api.validate_version_consistency(fake, REFERENCE_DISTRIBUTION)
 
@@ -375,10 +376,10 @@ def test_public_api_checker_rejects_missing_public_version() -> None:
 
 
 def test_public_api_checker_rejects_uninstalled_distribution() -> None:
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__version__ = "1.2.3"
 
-    errors = check_public_api.validate_version_consistency(fake, "xy-not-a-real-distribution")
+    errors = check_public_api.validate_version_consistency(fake, "xyg-not-a-real-distribution")
 
     assert any("is not installed" in error for error in errors)
 
@@ -420,13 +421,13 @@ if TYPE_CHECKING:
 """,
         encoding="utf-8",
     )
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__all__ = ["__version__", "Typed", "LazyOnly"]
 
     errors = check_public_api.validate_static_typing_surface(fake, init_path)
 
     assert errors == [
-        "xy public names have no static TYPE_CHECKING import or annotation: ['LazyOnly']"
+        "xyg public names have no static TYPE_CHECKING import or annotation: ['LazyOnly']"
     ]
 
 
@@ -449,12 +450,12 @@ else:
 """,
         encoding="utf-8",
     )
-    fake = ModuleType("xy")
+    fake = ModuleType("xyg")
     fake.__all__ = ["Typed", "FunctionOnly", "ClassOnly", "ElseOnly"]
 
     errors = check_public_api.validate_static_typing_surface(fake, init_path)
 
     assert errors == [
-        "xy public names have no static TYPE_CHECKING import or annotation: "
+        "xyg public names have no static TYPE_CHECKING import or annotation: "
         "['ClassOnly', 'ElseOnly', 'FunctionOnly']"
     ]

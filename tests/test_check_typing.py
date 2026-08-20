@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
-import xy
+import xyg
 
 
 def _load_check_typing_module():
@@ -62,17 +62,17 @@ def test_external_consumer_fixture_is_runtime_side_effect_free(monkeypatch) -> N
     path = Path(__file__).with_name("typing_pep561_consumer.py")
     namespace = runpy.run_path(str(path))
     check = namespace["check_root_typing_surface"]
-    before = xy.registered_marks()
+    before = xyg.registered_marks()
 
     def fail_if_called(*_args, **_kwargs):
         raise AssertionError("runtime consumer fixture called register_mark")
 
-    monkeypatch.setattr(xy, "register_mark", fail_if_called)
+    monkeypatch.setattr(xyg, "register_mark", fail_if_called)
 
     check()
     check()
 
-    assert xy.registered_marks() == before
+    assert xyg.registered_marks() == before
 
 
 def test_canonical_public_names_come_from_source_exports(tmp_path: Path) -> None:
@@ -93,7 +93,7 @@ def test_canonical_public_names_match_the_current_root_contract() -> None:
     names = check_typing._canonical_public_names()
 
     assert len(names) == 107
-    assert names == sorted(xy.__all__)
+    assert names == sorted(xyg.__all__)
 
 
 def test_public_name_drift_reports_missing_and_extra_exports() -> None:

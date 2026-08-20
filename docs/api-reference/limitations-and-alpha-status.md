@@ -1,11 +1,11 @@
 ---
 title: Limitations and Alpha Status
-description: Understand XY's supported contracts, experimental surfaces, and known limits.
+description: Understand XYG's supported contracts, experimental surfaces, and known limits.
 ---
 
 # Limitations and Alpha Status
 
-XY is early alpha. The declarative API, implemented 2D chart families,
+XYG is early alpha. The declarative API, implemented 2D chart families,
 notebook display, standalone HTML, native PNG, and SVG are usable today, but
 pre-1.0 releases can make breaking changes with migration notes.
 
@@ -15,7 +15,7 @@ pre-1.0 releases can make breaking changes with migration notes.
 | Standalone HTML, native PNG, and SVG | Stable alpha |
 | Required native Rust compute core | Stable alpha in published platform wheels |
 | Reflex adapter | Separate prototype/experimental package |
-| `xy.pyplot` compatibility | Experimental compatibility layer |
+| `xyg.pyplot` compatibility | Experimental compatibility layer |
 | Adaptive thresholds and drill protocol | Experimental implementation details |
 
 ## Data and Performance Boundaries
@@ -51,8 +51,8 @@ and [Benchmarks](/docs/xy/overview/benchmarks/) for scoped evidence.
 - Facets support display/export and shared domains but not `Chart` append,
   pick, or Python-side range-selection methods.
 - Polar interaction currently consists of hover plus opt-in radial zoom about a
-  fixed radial minimum. Zoom defaults to off (`xy.wind_rose()` excepted) and is
-  enabled per chart with `xy.interaction_config(zoom=True)` or a `zoom=True` chart
+  fixed radial minimum. Zoom defaults to off (`xyg.wind_rose()` excepted) and is
+  enabled per chart with `xyg.interaction_config(zoom=True)` or a `zoom=True` chart
   prop; reset is hidden unless zoom or an explicit `reset_axes` gives it axes to
   restore. `default_drag_action` accepts only `"auto"`/`"none"` on a polar chart.
   Authored sectors are supported; theta pan/rotation, interactive sector zoom, box
@@ -65,7 +65,7 @@ and [Benchmarks](/docs/xy/overview/benchmarks/) for scoped evidence.
 - Polar histograms, box plots, hexbin/density, generic segments, and meshes
   remain outside the mark allowlist. Polar LOD, facets/animation, and angular
   navigation/selection are also deferred.
-- Browser context limits matter on large dashboards. XY's context governor
+- Browser context limits matter on large dashboards. XYG's context governor
   defaults to 12 live contexts and reacquires off-screen charts as they return;
   more than that many simultaneously visible charts is not an unbounded
   guarantee.
@@ -74,7 +74,7 @@ and [Benchmarks](/docs/xy/overview/benchmarks/) for scoped evidence.
 
 The per-renderer inventory of what can be styled, and how far each mechanism
 travels, is the [Capability Matrix](/docs/xy/styling/capabilities/) — generated
-from `python/xy/styling/capabilities.py` and checked against the
+from `python/xyg/styling/capabilities.py` and checked against the
 implementation. The bullets below are the boundaries that page's rows imply.
 
 - Browser chrome accepts CSS and Tailwind classes through stable DOM slots.
@@ -93,7 +93,7 @@ implementation. The bullets below are the boundaries that page's rows imply.
   nothing in a file to paint, and `class_names={slot: "..."}` cannot apply in a
   file at all: a class selects a rule out of a stylesheet an exported file does
   not have. The native raster's baked atlas is one face, so PNG/JPEG/WebP honor
-  a slot's size and paint but not its typeface. `xy.colorbar(style=...)` still
+  a slot's size and paint but not its typeface. `xyg.colorbar(style=...)` still
   has no native channel — use the `colorbar_*` slots. The full matrix is
   [Static export §9](https://github.com/CurateLabs/xyg/blob/main/spec/api/export.md),
   pinned by `tests/test_export_style_survival.py`.
@@ -125,7 +125,7 @@ required by your application.
 
 ## Platform Boundary
 
-XY requires Python 3.11 or newer. Published native wheels include the Rust core
+XYG requires Python 3.11 or newer. Published native wheels include the Rust core
 and bundled browser client; source builds require a Rust toolchain. There is no
 silent NumPy compute fallback when the native core is unavailable.
 

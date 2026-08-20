@@ -94,8 +94,8 @@ def build_page(n: int, seed: int) -> tuple[str, dict[str, float]]:
     """Standalone-style page for N direct-mode points + Python-stage timings."""
     import numpy as np
 
-    import xy
-    from xy import export
+    import xyg
+    from xyg import export
 
     rng = np.random.default_rng(seed)
     # Shared-data methodology: generation is excluded from every timing.
@@ -108,8 +108,8 @@ def build_page(n: int, seed: int) -> tuple[str, dict[str, float]]:
         # density=False above the soft ceiling warns by design (§28); the
         # raw-mode benchmark opts in knowingly, once, not once per size.
         warnings.simplefilter("ignore", RuntimeWarning)
-        fig = xy.scatter_chart(
-            xy.scatter(x=x, y=y, size=1.0, opacity=0.15, density=False),
+        fig = xyg.scatter_chart(
+            xyg.scatter(x=x, y=y, size=1.0, opacity=0.15, density=False),
             width=VIEW_W,
             height=VIEW_H,
         ).figure()

@@ -93,7 +93,7 @@ served rides each update as `binning`:
 | Pan / zoom | single-digit ms | screen-bounded per viewport, independent of N |
 
 The `.xyzones` zone-map cache is a general `xy` out-of-core feature (see
-`python/xy/columns.py`): the first `figure()` over a memmapped column persists
+`python/xyg/columns.py`): the first `figure()` over a memmapped column persists
 its per-chunk statistics, and reopening validates the sidecar against the
 file's size/mtime before reusing it — so the 51 s domain scan is paid once, not
 on every restart.

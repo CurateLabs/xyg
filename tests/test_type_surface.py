@@ -8,10 +8,10 @@ from typing import Any, get_args, get_origin, get_type_hints
 import numpy as np
 import pytest
 
-import xy
-import xy._figure as figure_module
-import xy.components as components
-from xy.export import Engine
+import xyg
+import xyg._figure as figure_module
+import xyg.components as components
+from xyg.export import Engine
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -161,7 +161,7 @@ FIGURE_READOUTS = (
 
 
 def test_source_package_carries_pep561_marker() -> None:
-    marker = ROOT / "python" / "xy" / "py.typed"
+    marker = ROOT / "python" / "xyg" / "py.typed"
 
     assert marker.is_file()
     assert marker.read_bytes() == b""
@@ -180,13 +180,13 @@ def test_component_types_are_lazy_public_root_exports() -> None:
         "Legend",
         "Chart",
     ):
-        assert name in xy.__all__
-        assert getattr(xy, name) is getattr(components, name)
+        assert name in xyg.__all__
+        assert getattr(xyg, name) is getattr(components, name)
 
 
 def test_export_engine_is_lazy_public_enum() -> None:
-    assert "Engine" in xy.__all__
-    assert xy.Engine is Engine
+    assert "Engine" in xyg.__all__
+    assert xyg.Engine is Engine
     assert tuple(Engine) == (Engine.auto, Engine.default, Engine.chromium)
 
 
@@ -242,26 +242,26 @@ def test_chart_dom_slots_are_public_styling_contract() -> None:
         "annotation_label",
     )
 
-    assert xy.CHART_DOM_SLOTS is components.CHART_DOM_SLOTS
+    assert xyg.CHART_DOM_SLOTS is components.CHART_DOM_SLOTS
     assert expected == components.CHART_DOM_SLOTS
     assert len(components.CHART_DOM_SLOTS) == len(set(components.CHART_DOM_SLOTS))
     assert all(slot == slot.lower() and " " not in slot for slot in components.CHART_DOM_SLOTS)
 
 
 def test_chart_class_names_are_limited_to_public_dom_slots() -> None:
-    chart = xy.chart(
-        xy.scatter(x=[1.0], y=[2.0]),
-        class_names={slot: f"slot-{slot}" for slot in xy.CHART_DOM_SLOTS},
+    chart = xyg.chart(
+        xyg.scatter(x=[1.0], y=[2.0]),
+        class_names={slot: f"slot-{slot}" for slot in xyg.CHART_DOM_SLOTS},
     )
 
     assert chart.class_names["legend"] == "slot-legend"
     with pytest.raises(ValueError, match="unknown slot"):
-        xy.chart(xy.scatter(x=[1.0], y=[2.0]), class_names={"plot": "not-a-slot"})
+        xyg.chart(xyg.scatter(x=[1.0], y=[2.0]), class_names={"plot": "not-a-slot"})
 
 
 def test_components_module_all_matches_root_component_exports() -> None:
     component_exports = {
-        name for name, module_name in xy._EXPORTS.items() if module_name == ".components"
+        name for name, module_name in xyg._EXPORTS.items() if module_name == ".components"
     }
     component_reexports = {"CHART_DOM_SLOTS"}
 
@@ -279,9 +279,9 @@ def test_public_factories_are_typed_root_exports() -> None:
         *CHROME_FACTORIES,
         *CHART_FACTORIES,
     ):
-        root_fn = getattr(xy, name)
+        root_fn = getattr(xyg, name)
         component_fn = getattr(components, name)
-        assert name in xy.__all__
+        assert name in xyg.__all__
         assert root_fn is component_fn
         assert inspect.signature(root_fn) == inspect.signature(component_fn)
         assert get_type_hints(root_fn) == get_type_hints(component_fn)
@@ -297,10 +297,10 @@ def test_composition_alpha_contract_is_explicitly_exported() -> None:
     }
 
     for name in sorted(contract):
-        assert name in xy.__all__
+        assert name in xyg.__all__
         assert name in components.__all__
-        assert xy._EXPORTS[name] == ".components"
-        assert getattr(xy, name) is getattr(components, name)
+        assert xyg._EXPORTS[name] == ".components"
+        assert getattr(xyg, name) is getattr(components, name)
 
     for method in CHART_READOUTS:
         assert hasattr(components.Chart, method)

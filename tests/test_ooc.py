@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import numpy as np
 
-import xy
-from xy._ooc import MemmapF64Builder, is_memmapped, open_f64
-from xy.columns import ColumnStore
+import xyg
+from xyg._ooc import MemmapF64Builder, is_memmapped, open_f64
+from xyg.columns import ColumnStore
 
 
 def _build(tmp_path, name, values, capacity=None):
@@ -106,7 +106,7 @@ def test_scatter_density_screen_bounded_out_of_core(tmp_path):
     rng = np.random.default_rng(0)
     xcol = _build(tmp_path, "sx.f64", rng.normal(0, 1, n), capacity=n)
     ycol = _build(tmp_path, "sy.f64", rng.normal(0, 1, n), capacity=n)
-    fig = xy.chart(xy.scatter(x=xcol, y=ycol, density=True)).figure()
+    fig = xyg.chart(xyg.scatter(x=xcol, y=ycol, density=True)).figure()
 
     rep = fig.store.memory_report()
     assert rep["canonical_bytes"] == 0
@@ -128,8 +128,8 @@ def test_zone_map_cache_roundtrip_and_staleness(tmp_path):
     """A memmapped column persists its zone-map fold to a sidecar and reloads it
     bit-identically, so an out-of-core figure build never rescans the file twice
     (§22/§27); a changed source file invalidates the cache."""
-    from xy import columns
-    from xy.columns import _load_zone_cache, _zone_cache_path
+    from xyg import columns
+    from xyg.columns import _load_zone_cache, _zone_cache_path
 
     rng = np.random.default_rng(1)
     vals = rng.normal(0, 5, 200_000)

@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -115,7 +115,7 @@ def test_default_colorbar_ticks_are_dense_for_small_decimal_domains():
     assert all(f">{value:.2f}<" in svg for value in (0.02, 0.04, 0.06, 0.08, 0.12, 0.14))
     # A normal-height colorbar retains the dense eight-tick ceiling. Shorter
     # bars reduce their budget so labels do not collide.
-    from xy._svg import _colorbar_tick_target
+    from xyg._svg import _colorbar_tick_target
 
     assert _colorbar_tick_target(360) == 8
     assert _colorbar_tick_target(140) == 3
@@ -138,8 +138,8 @@ def test_explicit_colorbar_ticks_still_honored():
 
 
 def test_zero_value_heatmap_cell_is_opaque_colormap_floor():
-    from xy import kernels
-    from xy._svg import _colormap_stops
+    from xyg import kernels
+    from xyg._svg import _colormap_stops
 
     stops = np.asarray(_colormap_stops("viridis"), dtype=np.uint8)
     # value 0 -> opaque floor color; NaN (masked/missing) -> transparent.
@@ -153,7 +153,7 @@ def test_zero_value_heatmap_cell_is_opaque_colormap_floor():
 
 
 def test_imshow_reversed_cmap_and_post_hoc_clim_reach_the_heatmap():
-    from xy._svg import _colormap_stops
+    from xyg._svg import _colormap_stops
 
     grid = np.linspace(-3, 3, 100).reshape(10, 10)
     plt.imshow(grid, cmap="RdBu")

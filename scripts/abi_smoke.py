@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def _expected_abi_version() -> int:
     """Read ABI_VERSION from the generated ctypes declarations, stdlib-only."""
-    path = ROOT / "python" / "xy" / "_abi_generated.py"
+    path = ROOT / "python" / "xyg" / "_abi_generated.py"
     try:
         source = path.read_text(encoding="utf-8")
     except FileNotFoundError:

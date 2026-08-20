@@ -39,10 +39,10 @@ try {
     await micropip.install("emfs:/wheels/" + name);
   }
   const r = await py.runPythonAsync(`
-import xy.kernels as k
+import xyg.kernels as k
 import numpy as np
 mn, mx = k.min_max(np.array([3.0, 1.0, 2.0]))
-from xy import _native
+from xyg import _native
 abi = _native._lib.xyg_abi_version()
 f"{k.BACKEND}|{abi}|{mn}|{mx}"
 `);

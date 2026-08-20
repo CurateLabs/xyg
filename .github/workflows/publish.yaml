@@ -134,8 +134,8 @@ jobs:
         run: |
           uv venv smoke
           uv pip install -p smoke dist/*.whl numpy anywidget "reflex>=0.9.6"
-          ./smoke/bin/python -c "import importlib.metadata as m, reflex_xy, xy.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native', k.__file__)" \
-            || ./smoke/Scripts/python.exe -c "import importlib.metadata as m, reflex_xy, xy.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native')"
+          ./smoke/bin/python -c "import importlib.metadata as m, reflex_xy, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native', k.__file__)" \
+            || ./smoke/Scripts/python.exe -c "import importlib.metadata as m, reflex_xy, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native')"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ matrix.plat }}
@@ -245,11 +245,11 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xy
-          import xy.kernels as kernels
+          import xyg
+          import xyg.kernels as kernels
 
           version = metadata.version("xyg")
-          assert xy.__version__ == version
+          assert xyg.__version__ == version
           assert reflex_xy.__version__ == version
           assert kernels.BACKEND == "native", kernels.BACKEND
           print("sdist built and loaded the native Rust core")
@@ -265,13 +265,13 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xy
+          import xyg
 
           version = metadata.version("xyg")
-          assert xy.__version__ == version
+          assert xyg.__version__ == version
           assert reflex_xy.__version__ == version
           try:
-              import xy.kernels  # noqa: F401
+              import xyg.kernels  # noqa: F401
           except ImportError as err:
               msg = str(err)
               assert "native Rust core" in msg, msg

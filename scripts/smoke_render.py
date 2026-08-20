@@ -21,8 +21,8 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
-from xy.export import _bundled_js
+import xyg
+from xyg.export import _bundled_js
 
 CHROMIUM_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -51,9 +51,9 @@ def build_page() -> str:
     x = np.arange(n, dtype=np.float64)
     rng = np.random.default_rng(1)
     y = np.cumsum(rng.normal(size=n))
-    chart = xy.chart(
-        xy.line(x, y, name="walk"),
-        xy.scatter(x[::100], y[::100] + 20.0, name="pts", size=3.0),
+    chart = xyg.chart(
+        xyg.line(x, y, name="walk"),
+        xyg.scatter(x[::100], y[::100] + 20.0, name="pts", size=3.0),
         title="smoke",
     )
     spec, blob = chart.figure().build_payload()

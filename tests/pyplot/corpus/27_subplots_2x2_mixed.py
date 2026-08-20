@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 rng = np.random.default_rng(11)
 fig, axs = plt.subplots(2, 2, figsize=(8, 6))

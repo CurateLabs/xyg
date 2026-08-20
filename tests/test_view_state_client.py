@@ -14,16 +14,16 @@ from pathlib import Path
 
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 _RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
 
 
 def _chart_html(*children, **kwargs) -> str:
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
         *children,
         width=kwargs.pop("width", 480),
         height=kwargs.pop("height", 360),
@@ -494,7 +494,7 @@ _HISTORY_OFF_PROBE = """
 
 
 def test_history_switch_disables_buttons_and_snapshots(tmp_path: Path) -> None:
-    document = _chart_html(xy.interaction_config(history=False)).replace(
+    document = _chart_html(xyg.interaction_config(history=False)).replace(
         _RENDER_CALL, _HISTORY_OFF_PROBE
     )
     result = _run(tmp_path, document, "data-xy-history-off-probe", label="history-off probe")
@@ -761,8 +761,8 @@ _TAILWIND_LASSO_SLOT_PROBE = """
 def test_tailwind_selection_slot_styles_lasso_without_changing_box_behavior(
     tmp_path: Path,
 ) -> None:
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
         class_names={"selection": "fill-slate-900 pointer-events-none"},
         styles={"selection": {"stroke": "#f43f5e", "stroke_width": 3}},
         width=480,
@@ -884,8 +884,8 @@ def test_rectangular_selection_persists_with_range_borders(tmp_path: Path) -> No
 
 
 def _linked_chart_html() -> str:
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 4.0, 9.0, 16.0]),
         width=480,
         height=360,
     )
@@ -1216,11 +1216,11 @@ _REPUBLISH_STATE_PROBE = """
 def test_republish_hydrates_all_axis_ranges_and_selection_without_echo(
     tmp_path: Path,
 ) -> None:
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0, 2.0, 3.0], [0.0, 1.0, 4.0, 9.0]),
-        xy.scatter([0.0, 1.0, 2.0, 3.0], [0.0, 1.0, 4.0, 9.0], density=True),
-        xy.line([0.0, 1.0, 2.0, 3.0], [100.0, 106.0, 114.0, 120.0], y_axis="y2"),
-        xy.y_axis(id="y2", side="right"),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0, 2.0, 3.0], [0.0, 1.0, 4.0, 9.0]),
+        xyg.scatter([0.0, 1.0, 2.0, 3.0], [0.0, 1.0, 4.0, 9.0], density=True),
+        xyg.line([0.0, 1.0, 2.0, 3.0], [100.0, 106.0, 114.0, 120.0], y_axis="y2"),
+        xyg.y_axis(id="y2", side="right"),
         width=480,
         height=360,
     )
@@ -1354,7 +1354,7 @@ _ROWS_CLEAR_PROBE = """
 
 def test_rows_selection_clears_omitted_traces(tmp_path: Path) -> None:
     document = _chart_html(
-        xy.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [1.0, 3.0, 5.0, 7.0, 9.0]),
+        xyg.scatter([0.0, 1.0, 2.0, 3.0, 4.0], [1.0, 3.0, 5.0, 7.0, 9.0]),
     ).replace(_RENDER_CALL, _ROWS_CLEAR_PROBE)
     result = _run(tmp_path, document, "data-xy-rows-clear-probe", label="rows-clear probe")
     assert result == {key: True for key in result}
@@ -1619,7 +1619,7 @@ _AXIS_BAND_POLICY_PROBE = """
 
 
 def test_axis_band_respects_axis_policies(tmp_path: Path) -> None:
-    document = _chart_html(xy.interaction_config(pan_axes=("x", "y"), zoom_axes=("x",))).replace(
+    document = _chart_html(xyg.interaction_config(pan_axes=("x", "y"), zoom_axes=("x",))).replace(
         _RENDER_CALL, _AXIS_BAND_POLICY_PROBE
     )
     result = _run(
@@ -1694,7 +1694,7 @@ _AXIS_BAND_AUTHORED_CURSOR_PROBE = """
 
 def test_axis_band_restores_authored_cursor_after_drag(tmp_path: Path) -> None:
     document = _chart_html(
-        xy.interaction_config(pan_axes=("x", "y"), zoom_axes=("x",)),
+        xyg.interaction_config(pan_axes=("x", "y"), zoom_axes=("x",)),
         styles={"axis_band": {"cursor": "crosshair"}},
     ).replace(_RENDER_CALL, _AXIS_BAND_AUTHORED_CURSOR_PROBE)
     result = _run(
@@ -1731,7 +1731,7 @@ _AXIS_BAND_EXCLUDED_PROBE = """
 
 
 def test_axis_band_absent_for_excluded_axis(tmp_path: Path) -> None:
-    document = _chart_html(xy.interaction_config(pan_axes=("x",), zoom_axes=("x",))).replace(
+    document = _chart_html(xyg.interaction_config(pan_axes=("x",), zoom_axes=("x",))).replace(
         _RENDER_CALL, _AXIS_BAND_EXCLUDED_PROBE
     )
     result = _run(
@@ -1787,7 +1787,7 @@ _HOVER_PROBE = """
 
 
 def test_hover_payload_is_additive_and_axis_keyed(tmp_path: Path) -> None:
-    document = _chart_html(xy.interaction_config(hover=True)).replace(_RENDER_CALL, _HOVER_PROBE)
+    document = _chart_html(xyg.interaction_config(hover=True)).replace(_RENDER_CALL, _HOVER_PROBE)
     result = _run(tmp_path, document, "data-xy-hover-probe", label="hover payload probe")
     assert result == {key: True for key in result}
 
@@ -1852,7 +1852,7 @@ _MISSED_LEAVE_PROBE = """
 
 
 def test_missed_canvas_leave_backstop_clears_pointer_hover(tmp_path: Path) -> None:
-    document = _chart_html(xy.interaction_config(hover=True)).replace(
+    document = _chart_html(xyg.interaction_config(hover=True)).replace(
         _RENDER_CALL, _MISSED_LEAVE_PROBE
     )
     result = _run(tmp_path, document, "data-xy-missed-leave-probe", label="missed-leave probe")

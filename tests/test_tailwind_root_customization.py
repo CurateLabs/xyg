@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 ROOT = Path(__file__).resolve().parents[1]
 _RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
@@ -155,8 +155,8 @@ def test_tailwind_root_font_utilities_and_explicit_styles_follow_the_cascade(
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.line_chart(
-        xy.line([0.0, 1.0], [0.0, 1.0]),
+    chart = xyg.line_chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0]),
         class_name="xy-tailwind-root-font",
         width=420,
         height=280,
@@ -194,19 +194,19 @@ def test_every_granular_chrome_slot_receives_tailwind_and_yields_visual_defaults
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             [0.0, 1.0, 2.0],
             [1.0, 3.0, 2.0],
             color=[0.1, 0.5, 0.9],
             size=9,
         ),
-        xy.scatter([0.0, 1.0, 2.0], [2.0, 2.5, 3.0], y_axis="y2"),
-        xy.colorbar(title="Intensity", ticks=[0.1, 0.9]),
-        xy.x_axis(style={"tick_length": 6}),
-        xy.y_axis(style={"tick_length": 6}),
-        xy.y_axis(id="y2", style={"tick_length": 6}),
-        xy.vline(1.0, text="target"),
+        xyg.scatter([0.0, 1.0, 2.0], [2.0, 2.5, 3.0], y_axis="y2"),
+        xyg.colorbar(title="Intensity", ticks=[0.1, 0.9]),
+        xyg.x_axis(style={"tick_length": 6}),
+        xyg.y_axis(style={"tick_length": 6}),
+        xyg.y_axis(id="y2", style={"tick_length": 6}),
+        xyg.vline(1.0, text="target"),
         class_names=_GRANULAR_SLOT_CLASSES,
         width=560,
         height=360,
@@ -445,11 +445,11 @@ def test_legend_swatch_utilities_win_but_interaction_state_remains_owned(
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.chart(
-        xy.bar(["Q1", "Q2"], [3.0, 5.0], name="Actual", color="#2563eb"),
-        xy.scatter([0.0, 1.0], [2.0, 4.0], name="Plan", color=[0.1, 0.9]),
-        xy.line([0.0, 1.0], [1.0, 4.5], name="Forecast", color="#16a34a"),
-        xy.legend(),
+    chart = xyg.chart(
+        xyg.bar(["Q1", "Q2"], [3.0, 5.0], name="Actual", color="#2563eb"),
+        xyg.scatter([0.0, 1.0], [2.0, 4.0], name="Plan", color=[0.1, 0.9]),
+        xyg.line([0.0, 1.0], [1.0, 4.5], name="Forecast", color="#16a34a"),
+        xyg.legend(),
         class_names={
             "legend_swatch": "xy-tailwind-swatch fill-violet-500 stroke-cyan-400",
             "legend_item": "xy-tailwind-legend-state",
@@ -636,9 +636,9 @@ def test_custom_tooltip_state_does_not_override_utilities_or_explicit_styles(
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.scatter_chart(
-        xy.scatter([0.0, 1.0], [1.0, 2.0]),
-        xy.tooltip(),
+    chart = xyg.scatter_chart(
+        xyg.scatter([0.0, 1.0], [1.0, 2.0]),
+        xyg.tooltip(),
         class_names={"tooltip": "xy-tailwind-tooltip"},
         width=420,
         height=280,
@@ -751,9 +751,9 @@ def test_axis_title_weight_utility_wins_default_while_typed_style_stays_inline(
     if chromium is None:
         pytest.skip("Chromium unavailable")
 
-    chart = xy.line_chart(
-        xy.line([0.0, 1.0], [1.0, 2.0]),
-        xy.x_axis(
+    chart = xyg.line_chart(
+        xyg.line([0.0, 1.0], [1.0, 2.0]),
+        xyg.x_axis(
             label="Time",
             style={"label_color": "#0f766e", "label_size": 17},
         ),

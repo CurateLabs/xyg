@@ -1,16 +1,16 @@
 ---
-title: Matplotlib (xy.pyplot)
-description: Migrate common Matplotlib workflows through XY's pyplot compatibility layer.
+title: Matplotlib (xyg.pyplot)
+description: Migrate common Matplotlib workflows through XYG's pyplot compatibility layer.
 ---
 
-# Matplotlib (`xy.pyplot`)
+# Matplotlib (`xyg.pyplot`)
 
-For common 2D plotting code, import `xy.pyplot` in place of
+For common 2D plotting code, import `xyg.pyplot` in place of
 `matplotlib.pyplot`.
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(0, 10, 200)
 fig, ax = plt.subplots()
@@ -21,9 +21,9 @@ ax.legend()
 plt.show()
 ~~~
 
-The compatibility layer translates calls onto XY's declarative chart API. It
+The compatibility layer translates calls onto XYG's declarative chart API. It
 does not require Matplotlib at runtime and uses the same native compute,
-screen-bounded representations, notebook widget, and exporters as ordinary XY
+screen-bounded representations, notebook widget, and exporters as ordinary XYG
 charts.
 
 ## What Is Covered
@@ -32,7 +32,7 @@ The shim includes every method in Matplotlib 3.11.0's 2-D `Axes` **Plotting**
 inventory. A reviewed snapshot locks that surface, and CI checks it against the
 released `matplotlib==3.11.0` package. The shim also covers common stateful
 pyplot, multi-panel, ticks, scales, legends, colorbars, styles, and export
-workflows, plus XY-owned locator, formatter, date, colormap, `GridSpec`, and
+workflows, plus XYG-owned locator, formatter, date, colormap, `GridSpec`, and
 `FacetGrid` helpers.
 
 Coverage means that a plotting entry point exists and its supported contract
@@ -46,7 +46,7 @@ Create a polar axes with `plt.subplot()` or `Figure.add_subplot()`:
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 theta = np.linspace(0.0, 2.0 * np.pi, 361)
 radius = 1.0 + 0.25 * np.cos(4.0 * theta)
@@ -98,14 +98,14 @@ the shared coordinate system. Focused guides cover
 
 Three-dimensional, geographic, ternary, and custom projections; animations;
 GUI backends; arbitrary third-party Artist graphs; clipping/transform graphs;
-and material options that XY cannot honor fail with an actionable error
+and material options that XYG cannot honor fail with an actionable error
 instead of being silently ignored. Polar is the supported non-Cartesian
 projection, with the limits above.
 
 Consult the repository's
 [generated compatibility matrix](https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat-matrix.md)
 when a workflow depends on a specific option. Compatibility shims remain
-experimental and can change before XY 1.0.
+experimental and can change before XYG 1.0.
 
 ## Migration Path
 
@@ -118,5 +118,5 @@ experimental and can change before XY 1.0.
    containers and marks. The declarative API exposes data binding,
    interactions, and CSS/Tailwind hooks without pyplot's implicit state.
 
-Use `xy.pyplot` for migration and familiar scientific scripts; prefer the
+Use `xyg.pyplot` for migration and familiar scientific scripts; prefer the
 declarative API for new applications.

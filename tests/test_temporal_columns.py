@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import _native
+from xyg import _native
 
 SUB_MS_MICROS = 1_704_067_200_000_123
 

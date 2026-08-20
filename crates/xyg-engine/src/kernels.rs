@@ -4432,7 +4432,7 @@ const SPLITMIX_MUL_1: u64 = 0xBF58_476D_1CE4_E5B9;
 const SPLITMIX_MUL_2: u64 = 0x94D0_49BB_1331_11EB;
 
 /// SplitMix64 of `(row_id + seed)` — the deterministic sampling hash (§5/§17).
-/// Must stay bit-identical to `xy.lod.hash_row_ids` (wrapping u64
+/// Must stay bit-identical to `xyg.lod.hash_row_ids` (wrapping u64
 /// arithmetic on both sides); the Python parity test asserts this.
 #[inline(always)]
 fn splitmix64(id: u64, seed: u64) -> u64 {
@@ -5649,7 +5649,7 @@ pub fn range_indices_rows(
 /// the C ABI's error sentinel where panics unwind — the PyEmscripten wheel is
 /// built `-C panic=abort` (`.github/workflows/release.yml`) precisely so they
 /// cannot, and there an out-of-range id aborts the Pyodide instance instead of
-/// returning. `xy.kernels` is public API, so row ids are caller data. Same two
+/// returning. `xyg.kernels` is public API, so row ids are caller data. Same two
 /// bounds checks either way, so answering instead of aborting is free: a
 /// separate validating pass over `rows` was not — one serial sweep of 5M u32
 /// cost more than this entire parallel scan (1.0 ms -> 2.4 ms).

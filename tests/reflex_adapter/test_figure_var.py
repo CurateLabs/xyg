@@ -9,7 +9,7 @@ import pytest
 import reflex as rx
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.tokens import builder_of, parse_token
 
 from .conftest import make_router_data
@@ -22,16 +22,16 @@ class VarDemo(rx.State):
     _scale: float = 2.0
 
     @reflex_xy.figure
-    def chart(self) -> xy.Chart:
+    def chart(self) -> xyg.Chart:
         xs = np.linspace(0.0, 1.0, self.n)
-        return xy.scatter_chart(xy.scatter(xs, xs * self._scale), width=500, height=300)
+        return xyg.scatter_chart(xyg.scatter(xs, xs * self._scale), width=500, height=300)
 
     @reflex_xy.figure
     def maybe_chart(self):
         if self.n < 0:
             return None
         xs = np.linspace(0.0, 1.0, 4)
-        return xy.line_chart(xy.line(xs, xs), width=300, height=200)
+        return xyg.line_chart(xyg.line(xs, xs), width=300, height=200)
 
 
 def hydrated_substate(client_token: str) -> VarDemo:

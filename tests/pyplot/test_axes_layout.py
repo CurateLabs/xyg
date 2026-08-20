@@ -5,8 +5,8 @@ import builtins
 import pytest
 from tests.svg_test_utils import tick_label_positions
 
-import xy.pyplot as plt
-from xy._svg import layout
+import xyg.pyplot as plt
+from xyg._svg import layout
 
 
 @pytest.fixture(autouse=True)

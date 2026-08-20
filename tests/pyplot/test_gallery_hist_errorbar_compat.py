@@ -6,7 +6,7 @@ from io import BytesIO
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def test_hist_patch_styles_apply_per_dataset() -> None:

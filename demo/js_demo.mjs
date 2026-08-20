@@ -43,7 +43,7 @@ for (let i = 1; i < n - 1; i++) {
 const fig = createEngine({
   width: 960,
   height: 520,
-  title: "XY JavaScript demo — 200k-sample damped chirp (Node host, Rust core)",
+  title: "XYG JavaScript demo — 200k-sample damped chirp (Node host, Rust core)",
 });
 fig.area(x, envelope, {
   name: "envelope",

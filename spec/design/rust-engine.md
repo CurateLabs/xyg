@@ -8,7 +8,7 @@ sixteen domain modules) and the C ABI shell `crates/xyg-core` (extern "C"
 marshaling, panic shielding, opaque-handle runtime; ABI v59, one shipped
 cdylib `libxyg_core`; `png` is the one third-party crate, for static export).
 Two host bindings consume the same artifact: Python ctypes
-(`python/xy/_native.py`, dispatch in `kernels.py`) and Node koffi
+(`python/xyg/_native.py`, dispatch in `kernels.py`) and Node koffi
 (`packages/xy-node/src/native.js`). The native core is required — the Python
 `kernels.py` raises a clear ImportError when it can't load, with no
 pure-Python fallback, and the Node loader throws before binding anything else.
@@ -27,7 +27,7 @@ The exhaustive file-level placement contract is
 ergonomics only.** XYG serves dual Python+Node hosts (see
 [host-parity.md](host-parity.md)): any decision that changes buffers, layout,
 encodings, or recorded §28 LOD/layout outcomes is implemented in Rust so both
-bindings stay thin and bit-identical. (Upstream XY's "Python owns decisions"
+bindings stay thin and bit-identical. (Upstream XYG's "Python owns decisions"
 rule is historical; this document states the current model directly.)
 
 Precisely:
@@ -273,7 +273,7 @@ ordinary tick labels, where a box would be plainly wrong.
 
 A warning surfaced at the Python export boundary (where messages belong, §4)
 remains the complete fix and is not yet implemented. The documented escape for
-real coverage is `engine=xy.Engine.chromium` until `python/xyg/` ships (`xyg.Engine.chromium` is the future path), and the user-facing statement of
+real coverage is `engine=xyg.Engine.chromium`, and the user-facing statement of
 the same limitation lives in `spec/api/styling.md` §"Native text coverage" —
 these two must be amended together. The bound applies to the native raster
 formats only; the SVG and PDF export paths have their own text contracts.
@@ -291,7 +291,7 @@ formats only; the SVG and PDF export paths have their own text contracts.
 - **f64 in, f32 out** for geometry (offset-encoded, §16); **u64 for graph
   element indices**; u32 only for explicitly versioned non-graph contracts.
 - **Lockstep `ABI_VERSION`** originates in `crates/xyg-core/src/lib.rs` and is
-  generated into `python/xy/_abi_generated.py`,
+  generated into `python/xyg/_abi_generated.py`,
   `packages/xy-node/src/_abi_generated.js`, `spec/abi/xyg.h`, and the JSON
   contract. Both hosts call `xyg_abi_version()` immediately
   after loading the library, **before binding or calling any other symbol**,
@@ -437,9 +437,9 @@ ctypes/Koffi prototypes with deterministic generated artifacts:
   `crates/xyg-core/src/lib.rs` (ordered argument names, scalar widths, pointer
   const/mutable direction and depth, return types, buffer metadata, and
   `ABI_VERSION`) and writes `spec/abi/xyg-abi.json`, `spec/abi/xyg.h`,
-  `python/xy/_abi_generated.py`, and
+  `python/xyg/_abi_generated.py`, and
   `packages/xy-node/src/_abi_generated.js`.
-- `python/xy/_native.py` and `packages/xy-node/src/native.js` retain library
+- `python/xyg/_native.py` and `packages/xy-node/src/native.js` retain library
   discovery, version-first loading, pointer coercion, public errors, and
   ergonomic wrappers, but contain no function signatures.
 - `scripts/check_abi_parity.py` regenerates all four artifacts byte-for-byte,
@@ -490,7 +490,7 @@ Hosts stay thin: Python `Column.append` / `Figure.append` coerce ingest and
 hold the handle (plus sticky encode offsets); they do not own the growable
 f64 backing store. `ColumnStore` remains bookkeeping (ids, kinds, offsets,
 Arrow/NumPy coercion). Node binds the same symbols. Out-of-core memmap
-columns (`python/xy/_ooc.py`) cannot sit behind this first in-RAM handle and
+columns (`python/xyg/_ooc.py`) cannot sit behind this first in-RAM handle and
 stay host-owned — a follow-up, not Phase-4 disk spill (#8).
 
 **Historical (Phase-0, Python-side canonical):** `Column.append` grew an

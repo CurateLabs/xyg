@@ -1,4 +1,4 @@
-"""Validate route-level Markdown files in the XY production export."""
+"""Validate route-level Markdown files in the XYG production export."""
 
 from pathlib import Path
 

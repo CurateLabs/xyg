@@ -115,22 +115,22 @@ check-sdist:
 	OUT=$$(mktemp -d); \
 	echo "building sdist in $$OUT"; \
 	UV_CACHE_DIR="$(UV_CACHE_DIR)" uv build --sdist --out-dir "$$OUT"; \
-	$(PYTHON) scripts/verify_sdist.py "$$OUT"/xy-*.tar.gz
+	$(PYTHON) scripts/verify_sdist.py "$$OUT"/xyg-*.tar.gz
 
 check-wheel:
 	@set -e; \
 	OUT=$$(mktemp -d); \
 	echo "building wheel in $$OUT"; \
 	UV_CACHE_DIR="$(UV_CACHE_DIR)" uv build --wheel --out-dir "$$OUT"; \
-	$(PYTHON) scripts/verify_wheel.py "$$OUT"/xy-*.whl $(WHEEL_EXPECT)
+	$(PYTHON) scripts/verify_wheel.py "$$OUT"/xyg-*.whl $(WHEEL_EXPECT)
 
 check-artifacts:
 	@if [ -z "$(SDIST)" ]; then \
-		echo 'Set SDIST=/path/to/xy.tar.gz for artifact verification.' >&2; \
+		echo 'Set SDIST=/path/to/xyg.tar.gz for artifact verification.' >&2; \
 		exit 2; \
 	fi
 	@if [ -z "$(WHEEL)" ]; then \
-		echo 'Set WHEEL=/path/to/xy.whl for artifact verification.' >&2; \
+		echo 'Set WHEEL=/path/to/xyg.whl for artifact verification.' >&2; \
 		exit 2; \
 	fi
 	$(PYTHON) scripts/verify_local.py --packaging --sdist "$(SDIST)" --wheel "$(WHEEL)" $(WHEEL_EXPECT)

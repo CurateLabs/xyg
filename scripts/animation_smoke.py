@@ -218,7 +218,7 @@ def _bar_payload(rows: list[tuple[float, float, int]]) -> tuple[dict, bytes]:
 
 
 def main() -> None:
-    bundle = (ROOT / "python/xy/static/standalone.js").read_text()
+    bundle = (ROOT / "python/xyg/static/standalone.js").read_text()
     payloads = [
         _payload([(2, 3, 1), (12, 8, 2)]),
         _payload([(22, 18, 2), (7, 14, 1)]),

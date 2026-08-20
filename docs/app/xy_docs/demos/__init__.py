@@ -1,1 +1,1 @@
-"""Live examples used by the XY documentation site."""
+"""Live examples used by the XYG documentation site."""

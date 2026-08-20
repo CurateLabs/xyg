@@ -22,9 +22,9 @@ import inspect
 
 import pytest
 
-import xy
-from xy._figure import Figure
-from xy.components import _MARK_APPLIERS
+import xyg
+from xyg._figure import Figure
+from xyg.components import _MARK_APPLIERS
 
 # Props the composition layer owns that intentionally never reach the engine:
 # `data`/`key` are resolved into arrays before or after the engine call, and
@@ -62,28 +62,28 @@ MARK_PAIRS = [
 
 # One inline-data Mark per applier kind, used to exercise real forwarding.
 SAMPLE_MARKS = {
-    "scatter": lambda: xy.scatter(x=[1.0, 2.0], y=[3.0, 4.0]),
-    "ribbon": lambda: xy.ribbon([0.0], [1.0], [0.0], [0.4], [0.2], [0.6]),
-    "sankey": lambda: xy.sankey([("a", "b", 1.0)]),
-    "graph": lambda: xy.graph(["a", "b"], [("a", "b")], layout="circle"),
-    "line": lambda: xy.line(x=[1.0, 2.0], y=[3.0, 4.0]),
-    "area": lambda: xy.area(x=[1.0, 2.0], y=[3.0, 4.0]),
-    "histogram": lambda: xy.histogram(values=[1.0, 2.0, 3.0]),
-    "bar": lambda: xy.bar(x=["a", "b"], y=[1.0, 2.0]),
-    "column": lambda: xy.column(x=["a", "b"], y=[1.0, 2.0]),
-    "heatmap": lambda: xy.heatmap(z=[[1.0, 2.0], [3.0, 4.0]]),
-    "error_band": lambda: xy.error_band(x=[1.0, 2.0], lower=[2.0, 3.0], upper=[3.0, 4.0]),
-    "errorbar": lambda: xy.errorbar(x=[1.0, 2.0], y=[3.0, 4.0], yerr=[0.1, 0.2]),
-    "box": lambda: xy.box(values=[[1.0, 2.0], [2.0, 3.0]]),
-    "violin": lambda: xy.violin(values=[[1.0, 2.0], [2.0, 3.0]]),
-    "ecdf": lambda: xy.ecdf(values=[1.0, 2.0, 3.0]),
-    "hexbin": lambda: xy.hexbin(x=[1.0, 2.0], y=[3.0, 4.0]),
-    "contour": lambda: xy.contour(z=[[1.0, 2.0], [2.0, 3.0]]),
-    "step": lambda: xy.step(x=[1.0, 2.0], y=[3.0, 4.0]),
-    "stairs": lambda: xy.stairs(values=[1.0, 2.0], edges=[0.0, 1.0, 2.0]),
-    "stem": lambda: xy.stem(x=[1.0, 2.0], y=[3.0, 4.0]),
-    "segments": lambda: xy.segments(x0=[0.0, 1.0], y0=[0.0, 1.0], x1=[1.0, 2.0], y1=[1.0, 0.0]),
-    "triangle_mesh": lambda: xy.triangle_mesh(
+    "scatter": lambda: xyg.scatter(x=[1.0, 2.0], y=[3.0, 4.0]),
+    "ribbon": lambda: xyg.ribbon([0.0], [1.0], [0.0], [0.4], [0.2], [0.6]),
+    "sankey": lambda: xyg.sankey([("a", "b", 1.0)]),
+    "graph": lambda: xyg.graph(["a", "b"], [("a", "b")], layout="circle"),
+    "line": lambda: xyg.line(x=[1.0, 2.0], y=[3.0, 4.0]),
+    "area": lambda: xyg.area(x=[1.0, 2.0], y=[3.0, 4.0]),
+    "histogram": lambda: xyg.histogram(values=[1.0, 2.0, 3.0]),
+    "bar": lambda: xyg.bar(x=["a", "b"], y=[1.0, 2.0]),
+    "column": lambda: xyg.column(x=["a", "b"], y=[1.0, 2.0]),
+    "heatmap": lambda: xyg.heatmap(z=[[1.0, 2.0], [3.0, 4.0]]),
+    "error_band": lambda: xyg.error_band(x=[1.0, 2.0], lower=[2.0, 3.0], upper=[3.0, 4.0]),
+    "errorbar": lambda: xyg.errorbar(x=[1.0, 2.0], y=[3.0, 4.0], yerr=[0.1, 0.2]),
+    "box": lambda: xyg.box(values=[[1.0, 2.0], [2.0, 3.0]]),
+    "violin": lambda: xyg.violin(values=[[1.0, 2.0], [2.0, 3.0]]),
+    "ecdf": lambda: xyg.ecdf(values=[1.0, 2.0, 3.0]),
+    "hexbin": lambda: xyg.hexbin(x=[1.0, 2.0], y=[3.0, 4.0]),
+    "contour": lambda: xyg.contour(z=[[1.0, 2.0], [2.0, 3.0]]),
+    "step": lambda: xyg.step(x=[1.0, 2.0], y=[3.0, 4.0]),
+    "stairs": lambda: xyg.stairs(values=[1.0, 2.0], edges=[0.0, 1.0, 2.0]),
+    "stem": lambda: xyg.stem(x=[1.0, 2.0], y=[3.0, 4.0]),
+    "segments": lambda: xyg.segments(x0=[0.0, 1.0], y0=[0.0, 1.0], x1=[1.0, 2.0], y1=[1.0, 0.0]),
+    "triangle_mesh": lambda: xyg.triangle_mesh(
         x0=[0.0], y0=[0.0], x1=[1.0], y1=[0.0], x2=[0.5], y2=[1.0]
     ),
 }
@@ -103,11 +103,11 @@ def _keyword_only_names(fn) -> set[str]:
 
 @pytest.mark.parametrize(("factory_name", "method_name"), MARK_PAIRS)
 def test_factory_props_map_to_engine_parameters(factory_name, method_name):
-    factory = getattr(xy, factory_name)
+    factory = getattr(xyg, factory_name)
     method = getattr(Figure, method_name)
     unmapped = _param_names(factory) - _param_names(method) - COMPOSITION_ONLY
     assert not unmapped, (
-        f"xy.{factory_name} accepts {sorted(unmapped)} which map to no "
+        f"xyg.{factory_name} accepts {sorted(unmapped)} which map to no "
         f"Figure.{method_name} parameter; either add the engine parameter or "
         "list the prop in COMPOSITION_ONLY"
     )
@@ -115,11 +115,11 @@ def test_factory_props_map_to_engine_parameters(factory_name, method_name):
 
 @pytest.mark.parametrize(("factory_name", "method_name"), MARK_PAIRS)
 def test_engine_keywords_all_reachable_from_factory(factory_name, method_name):
-    factory = getattr(xy, factory_name)
+    factory = getattr(xyg, factory_name)
     method = getattr(Figure, method_name)
     missing = _param_names(method) - _param_names(factory)
     assert not missing, (
-        f"Figure.{method_name} gained {sorted(missing)} but xy.{factory_name} "
+        f"Figure.{method_name} gained {sorted(missing)} but xyg.{factory_name} "
         "does not expose them; thread the keyword through the factory and its "
         "_apply_* dispatcher"
     )
@@ -159,7 +159,7 @@ def test_fluent_methods_are_the_declarative_implementations():
     """The inversion guard: Figure's per-kind methods ARE the marks.py
     functions, so fluent output == declarative output by construction (one
     body, one signature, one set of defaults), not by sampling."""
-    from xy import marks
+    from xyg import marks
 
     for _factory_name, method_name in MARK_PAIRS:
         assert getattr(Figure, method_name) is getattr(marks, method_name)
@@ -171,7 +171,7 @@ def test_factory_defaults_match_engine_defaults(factory_name, method_name):
     make the data positionals optional for the data-key idiom); a default that
     drifts from the engine's silently changes what the declarative dialect
     renders. Compare values, not just names."""
-    factory_params = inspect.signature(getattr(xy, factory_name)).parameters
+    factory_params = inspect.signature(getattr(xyg, factory_name)).parameters
     engine_params = inspect.signature(getattr(Figure, method_name)).parameters
     for name, engine_param in engine_params.items():
         if name in COMPOSITION_ONLY or name not in factory_params:

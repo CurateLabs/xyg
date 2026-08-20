@@ -24,7 +24,7 @@ import socketio
 import uvicorn
 from reflex_base.utils import format as reflex_format
 
-import xy
+import xyg
 from reflex_xy.app import wire
 from reflex_xy.namespace import XYNamespace
 from reflex_xy.registry import registry
@@ -37,7 +37,7 @@ OTHER_TOKEN = "99999999-8888-4777-8666-555544443333"
 def make_figure(n: int = 64):
     xs = np.linspace(0.0, 1.0, n)
     ys = xs * 3.0
-    return xy.scatter_chart(xy.scatter(xs, ys), width=640, height=400).figure()
+    return xyg.scatter_chart(xyg.scatter(xs, ys), width=640, height=400).figure()
 
 
 def free_port() -> int:
@@ -298,8 +298,8 @@ def test_sub_over_attachment_limit_ships_single_blob(_fresh_registry):
 
     async def main():
         xs = np.linspace(0.0, 1.0, 64)
-        figure = xy.scatter_chart(
-            *[xy.scatter(xs, xs * k, color=xs, size=xs) for k in (1.0, 2.0, 3.0)],
+        figure = xyg.scatter_chart(
+            *[xyg.scatter(xs, xs * k, color=xs, size=xs) for k in (1.0, 2.0, 3.0)],
             width=640,
             height=400,
         ).figure()

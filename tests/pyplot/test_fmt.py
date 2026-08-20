@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from xy.pyplot._colors import is_color_like
-from xy.pyplot._fmt import parse_fmt
+from xyg.pyplot._colors import is_color_like
+from xyg.pyplot._fmt import parse_fmt
 
 
 @pytest.mark.parametrize(

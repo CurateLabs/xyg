@@ -12,8 +12,8 @@ from conftest import run_browser_probe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-import xy  # noqa: E402
-from xy.export import find_chromium  # noqa: E402
+import xyg  # noqa: E402
+from xyg.export import find_chromium  # noqa: E402
 
 _RENDER_CALLS = (
     'xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
@@ -69,8 +69,8 @@ def test_zoom_out_does_not_expand_less_zoomed_axis_past_home(tmp_path: Path) -> 
     if chromium is None:
         pytest.skip("no chromium available for the zoom precision probe")
 
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             x=[-2.0, -1.0, 0.0, 1.0, 2.0],
             y=[-1.0, 0.5, 0.0, -0.5, 1.0],
         ),

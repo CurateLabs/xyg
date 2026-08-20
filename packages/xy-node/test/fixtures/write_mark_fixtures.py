@@ -20,9 +20,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "python"))
 
-from xy import _native, kernels  # noqa: E402
-from xy.config import DECIMATION_THRESHOLD, PROTOCOL_VERSION  # noqa: E402
-from xy.lod import encode_f32_values  # noqa: E402
+from xyg import _native, kernels  # noqa: E402
+from xyg.config import DECIMATION_THRESHOLD, PROTOCOL_VERSION  # noqa: E402
+from xyg.lod import encode_f32_values  # noqa: E402
 
 OUT = Path(__file__).resolve().parent
 

@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from xy.pyplot._translate import check_unsupported, not_implemented
+from xyg.pyplot._translate import check_unsupported, not_implemented
 
-PACKAGE = Path(__file__).resolve().parents[2] / "python" / "xy"
+PACKAGE = Path(__file__).resolve().parents[2] / "python" / "xyg"
 SUPPORT_REQUEST_URL = "https://github.com/CurateLabs/xyg/issues"
 
 
@@ -30,7 +30,7 @@ def _run_fresh(code: str) -> None:
 
 
 def test_core_never_imports_the_shim() -> None:
-    """No module outside python/xy/pyplot/ may reference it."""
+    """No module outside python/xyg/pyplot/ may reference it."""
     offenders: list[str] = []
     for path in PACKAGE.rglob("*.py"):
         if "pyplot" in path.parts:
@@ -55,7 +55,7 @@ def test_importing_xy_does_not_load_the_shim() -> None:
     _run_fresh(
         """
         import sys
-        import xy
+        import xyg
         assert not any("pyplot" in name for name in sys.modules), [
             n for n in sys.modules if "pyplot" in n
         ]
@@ -68,9 +68,9 @@ def test_shim_import_stays_light() -> None:
     _run_fresh(
         """
         import sys
-        import xy.pyplot as plt
+        import xyg.pyplot as plt
         assert "matplotlib" not in sys.modules
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
         assert callable(plt.plot)
@@ -91,14 +91,14 @@ def test_shim_never_imports_real_matplotlib_statically() -> None:
 
 def test_unsupported_errors_link_to_support_requests() -> None:
     assert str(not_implemented("3-D charts")) == (
-        "xy.pyplot does not implement 3-D charts. See the compatibility table: "
+        "xyg.pyplot does not implement 3-D charts. See the compatibility table: "
         "https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat.md. "
         f"Request support: {SUPPORT_REQUEST_URL}"
     )
     with pytest.raises(TypeError) as exc_info:
         check_unsupported({"projection": "3d"}, "subplot()")
     assert str(exc_info.value) == (
-        "xy.pyplot subplot() got unsupported keyword(s): projection. "
+        "xyg.pyplot subplot() got unsupported keyword(s): projection. "
         "See the compatibility table: "
         "https://github.com/CurateLabs/xyg/blob/main/spec/matplotlib/compat.md. "
         f"Request support: {SUPPORT_REQUEST_URL}"
@@ -121,10 +121,10 @@ def test_complete_supported_corpus_runs_when_matplotlib_imports_fail() -> None:
             return real_import(name, *args, **kwargs)
         builtins.__import__ = blocked_import
 
-        import xy.pyplot as plt
+        import xyg.pyplot as plt
         for path in sorted(pathlib.Path({str(corpus)!r}).glob("[0-9][0-9]_*.py")):
             runpy.run_path(path, run_name="__main__")
-            for figure in tuple(__import__("xy.pyplot._state", fromlist=["all_figures"]).all_figures()):
+            for figure in tuple(__import__("xyg.pyplot._state", fromlist=["all_figures"]).all_figures()):
                 assert figure._repr_html_().startswith('<iframe class="xy-notebook-frame"')
             plt.close("all")
         """

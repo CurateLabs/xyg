@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from xy import _fontmetrics, _svg, _textblock
+from xyg import _fontmetrics, _svg, _textblock
 
 
 def test_text_box_width_uses_embedded_advances_with_unknown_glyph_fallback() -> None:

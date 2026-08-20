@@ -12,9 +12,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _graph, _native
-from xy import kernels as k
+import xyg
+from xyg import _graph, _native
+from xyg import kernels as k
 
 SMALL_N = 1_000
 MEDIUM_N = 10_000
@@ -77,19 +77,19 @@ def graphforge_tables() -> tuple[dict[str, object], dict[str, object]]:
 
 @pytest.fixture(scope="session", autouse=True)
 def warm_graph_stack() -> None:
-    figure = xy.graph_chart(
-        xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="circle"),
+    figure = xyg.graph_chart(
+        xyg.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="circle"),
         width=160,
         height=120,
     ).figure()
     figure.build_payload_split(64)
     figure.to_svg(width=160, height=120)
-    figure.to_png(engine=xy.Engine.default, scale=1.0)
+    figure.to_png(engine=xyg.Engine.default, scale=1.0)
 
 
 def test_graphforge_projection_ingest_medium(benchmark, graphforge_tables):
     nodes, edges = graphforge_tables
-    graph = benchmark(xy.from_graphforge_tables, nodes, edges)
+    graph = benchmark(xyg.from_graphforge_tables, nodes, edges)
     assert graph.n_nodes == MEDIUM_N
     assert graph.n_edges == MEDIUM_N
     assert graph.node_uuid_bytes.nbytes == MEDIUM_N * 16
@@ -159,7 +159,7 @@ def test_graph_payload_medium(benchmark):
     edges = list(zip(nodes, nodes[1:] + nodes[:1], strict=True))
 
     def build() -> tuple[dict[str, object], list[np.ndarray]]:
-        figure = xy.graph_chart(xy.graph(nodes, edges, layout="circle")).figure()
+        figure = xyg.graph_chart(xyg.graph(nodes, edges, layout="circle")).figure()
         return figure.build_payload_split(N_BUCKETS)
 
     spec, buffers = benchmark(build)
@@ -179,8 +179,8 @@ def test_graph_payload_medium(benchmark):
 def test_graph_static_export_small(benchmark, graph_data, kind):
     data = graph_data["small"]
     edges = list(zip(data.sources.tolist(), data.targets.tolist(), strict=True))
-    figure = xy.graph_chart(
-        xy.graph(data.ids, edges, layout="circle"), width=640, height=480
+    figure = xyg.graph_chart(
+        xyg.graph(data.ids, edges, layout="circle"), width=640, height=480
     ).figure()
     if kind == "svg":
         output = benchmark(figure.to_svg, width=640, height=480)
@@ -189,7 +189,7 @@ def test_graph_static_export_small(benchmark, graph_data, kind):
         assert output.count("<circle") == SMALL_N
         assert output.count("<line") >= SMALL_N
     else:
-        output = benchmark(figure.to_png, engine=xy.Engine.default, scale=1.0)
+        output = benchmark(figure.to_png, engine=xyg.Engine.default, scale=1.0)
         assert output.startswith(b"\x89PNG")
         from io import BytesIO
 

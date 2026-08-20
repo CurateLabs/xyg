@@ -2,13 +2,13 @@
 title: Colorbars in Python
 description: Author, orient, and style built-in continuous-scale colorbars or replace them in a custom adapter.
 components:
-  - xy.colorbar
+  - xyg.colorbar
 ---
 
 # Colorbars in Python
 
-A colorbar explains a continuous color scale. Add `xy.colorbar()` after a
-compatible continuous-color mark and XY derives the validated domain,
+A colorbar explains a continuous color scale. Add `xyg.colorbar()` after a
+compatible continuous-color mark and XYG derives the validated domain,
 colormap, and a useful title from that mark. The built-in colorbar renders in
 the browser, SVG, native PNG, and Chromium PNG.
 
@@ -20,16 +20,16 @@ chrome additionally exposes the class and slot styling shown here:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
-vertical_scale = xy.heatmap_chart(
-    xy.heatmap(
+vertical_scale = xyg.heatmap_chart(
+    xyg.heatmap(
         [[-2.0, 0.0], [2.0, 4.0]],
         name="temperature",
         colormap="coolwarm",
         domain=(-3, 5),
     ),
-    xy.colorbar(
+    xyg.colorbar(
         title="Temperature (°C)",
         ticks=[-3, 0, 5],
         class_name="rounded-lg bg-white/90",
@@ -42,15 +42,15 @@ vertical_scale = xy.heatmap_chart(
     title="Vertical scale",
 )
 
-horizontal_scale = xy.scatter_chart(
-    xy.scatter(
+horizontal_scale = xyg.scatter_chart(
+    xyg.scatter(
         [0, 1, 2, 3],
         [2, 5, 3, 8],
         color=[0.1, 0.4, 0.7, 1.0],
         colormap="viridis",
         size=12,
     ),
-    xy.colorbar(
+    xyg.colorbar(
         title="Confidence",
         orientation="horizontal",
         ticks=[0.1, 0.5, 1.0],
@@ -67,16 +67,16 @@ def colorbar_orientation_preview():
     )
 ~~~
 
-The last compatible continuous mark wins when a chart layers several scales. XY
+The last compatible continuous mark wins when a chart layers several scales. XYG
 derives colorbars for heatmaps, continuous scatter, hexbin, contour,
 continuous segments, and triangle meshes. A field or mark name supplies the
 default title; `title=` overrides it, `ticks=` supplies finite tick positions,
 and `orientation=` accepts `"vertical"` or `"horizontal"`.
 
-XY deliberately emits no built-in colorbar for constant or categorical color,
+XYG deliberately emits no built-in colorbar for constant or categorical color,
 RGB(A) heatmaps, or density-tier scatter whose per-row color channel is not
 resident in the browser. `colorbar(show=False)` removes an inferred scale.
-`xy.pyplot` has its own Matplotlib-shaped colorbar-authoring API.
+`xyg.pyplot` has its own Matplotlib-shaped colorbar-authoring API.
 
 ### Pinning the scale with a fixed domain
 
@@ -86,14 +86,14 @@ of the data extent, so the scale stays comparable across refreshes:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_load = np.random.default_rng(7)
 cpu_load = (rng_load.random((6, 6)) * 60 + 20).round(1)
 
-pinned_scale = xy.heatmap_chart(
-    xy.heatmap(cpu_load, name="load", colormap="magma", domain=(0, 100)),
-    xy.colorbar(title="Load (%)", ticks=[0, 25, 50, 75, 100]),
+pinned_scale = xyg.heatmap_chart(
+    xyg.heatmap(cpu_load, name="load", colormap="magma", domain=(0, 100)),
+    xyg.colorbar(title="Load (%)", ticks=[0, 25, 50, 75, 100]),
     title="Pinned 0–100 scale",
 )
 
@@ -113,29 +113,29 @@ viridis), not the heatmap beneath it:
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 rng_bins = np.random.default_rng(21)
-hexbin_density = xy.hexbin_chart(
-    xy.hexbin(
+hexbin_density = xyg.hexbin_chart(
+    xyg.hexbin(
         rng_bins.normal(0.0, 1.0, 400),
         rng_bins.normal(0.0, 1.0, 400),
         gridsize=12,
         colormap="plasma",
     ),
-    xy.colorbar(title="Points per bin", orientation="horizontal"),
+    xyg.colorbar(title="Points per bin", orientation="horizontal"),
     title="Horizontal hexbin scale",
 )
 
 rng_layers = np.random.default_rng(3)
-layered_scales = xy.heatmap_chart(
-    xy.heatmap(
+layered_scales = xyg.heatmap_chart(
+    xyg.heatmap(
         [[4.0, 9.0], [14.0, 22.0]],
         name="model grid",
         colormap="cividis",
         domain=(0, 25),
     ),
-    xy.scatter(
+    xyg.scatter(
         rng_layers.uniform(0.0, 1.0, 12),
         rng_layers.uniform(0.0, 1.0, 12),
         color=(rng_layers.random(12) * 40 + 10).round(1),
@@ -144,7 +144,7 @@ layered_scales = xy.heatmap_chart(
         size=12,
         name="stations",
     ),
-    xy.colorbar(title="Station PPM"),
+    xyg.colorbar(title="Station PPM"),
     title="Last compatible mark wins",
 )
 
@@ -163,7 +163,7 @@ def derived_scale_sources():
 
 ~~~python
 import reflex as rx
-import xy
+import xyg
 
 my_color_scale = rx.vstack(
     rx.text("Intensity", weight="bold"),
@@ -177,16 +177,16 @@ my_color_scale = rx.vstack(
     spacing="1",
 )
 
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4], color=[0.2, 0.8, 1.4]),
-    xy.colorbar(render=my_color_scale),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4], color=[0.2, 0.8, 1.4]),
+    xyg.colorbar(render=my_color_scale),
 )
 
 replacement = chart.chrome_components()["colorbar"]
 assert replacement is my_color_scale
 ~~~
 
-Core XY stores that object but does not mount it, and the shipped
+Core XYG stores that object but does not mount it, and the shipped
 `reflex_xy.chart` adapter does not currently mount custom chrome either. A
 custom adapter must read `chrome_components()` and place the returned component
 itself; standalone HTML, SVG, and PNG ignore the opaque replacement.
@@ -197,8 +197,8 @@ Seven chart slots target every visible part of built-in browser colorbar
 chrome: `colorbar`, `colorbar_bar`, `colorbar_tick`, `colorbar_title`,
 `colorbar_extension`, `colorbar_line`, and `colorbar_minor_tick`.
 
-The declarative `xy.colorbar()` API creates the container, gradient bar, major
-ticks, and title shown below. The Matplotlib-shaped `xy.pyplot` colorbar API can
+The declarative `xyg.colorbar()` API creates the container, gradient bar, major
+ticks, and title shown below. The Matplotlib-shaped `xyg.pyplot` colorbar API can
 add contour-line and minor-tick nodes. It creates separate
 `colorbar_extension` triangles only for an extended, line-only contour
 colorbar; filled-contour extensions are painted as part of `colorbar_bar`
@@ -207,9 +207,9 @@ present, but listing their classes on a plain declarative colorbar would not
 create them.
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4], color=[0.2, 0.8, 1.4]),
-    xy.colorbar(title="Intensity"),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4], color=[0.2, 0.8, 1.4]),
+    xyg.colorbar(title="Intensity"),
     class_names={
         "colorbar_title": "font-semibold",
     },
@@ -229,29 +229,29 @@ for the complete signature.
 
 ### How do I add a color scale to a chart in Python?
 
-Add `xy.colorbar()` as a chart child after a continuous-color mark such as a
-heatmap or a scatter with a numeric `color=` channel. XY derives the validated
+Add `xyg.colorbar()` as a chart child after a continuous-color mark such as a
+heatmap or a scatter with a numeric `color=` channel. XYG derives the validated
 domain, colormap, and a default title from that mark, and the built-in colorbar
 renders in the browser, SVG, native PNG, and Chromium PNG.
 
 ### How do I set custom ticks and a title on a colorbar?
 
-Pass them to the component: `xy.colorbar(title="Temperature (°C)", ticks=[-3, 0, 5])`.
+Pass them to the component: `xyg.colorbar(title="Temperature (°C)", ticks=[-3, 0, 5])`.
 `title=` overrides the default title derived from the field or mark name, and
 `ticks=` supplies explicit finite tick positions; both work in either
 orientation.
 
 ### Can I make the colorbar horizontal instead of vertical?
 
-Yes — `xy.colorbar(orientation="horizontal")`. The `orientation=` option
+Yes — `xyg.colorbar(orientation="horizontal")`. The `orientation=` option
 accepts `"vertical"` (the default) or `"horizontal"`, and both orientations
 share the same `title` and `ticks` API.
 
 ### Why is no colorbar showing on my chart?
 
-XY only derives colorbars for continuous-color marks: heatmaps, continuous
+XYG only derives colorbars for continuous-color marks: heatmaps, continuous
 scatter, hexbin, contour, continuous segments, and triangle meshes. Constant or
 categorical color, RGB(A) heatmaps, and density-tier scatter whose per-row
 color channel is not resident in the browser deliberately get no built-in
 colorbar. When several continuous scales are layered, the last compatible mark
-wins, and `xy.colorbar(show=False)` removes an inferred scale you don't want.
+wins, and `xyg.colorbar(show=False)` removes an inferred scale you don't want.

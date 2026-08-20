@@ -14,13 +14,13 @@ import threading
 import numpy as np
 import pytest
 
-import xy
+import xyg
 from reflex_xy.registry import FigureRegistry
 
 
 def make_figure(n: int = 16):
     xs = np.linspace(0.0, 1.0, n)
-    return xy.scatter_chart(xy.scatter(xs, xs * 2.0), width=400, height=300).figure()
+    return xyg.scatter_chart(xyg.scatter(xs, xs * 2.0), width=400, height=300).figure()
 
 
 def _wired(registry: FigureRegistry):

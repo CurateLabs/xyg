@@ -5,7 +5,7 @@ description: Configure domains, scale types, ticks, formatting, and named axes.
 
 # Axes and Scales
 
-Add `x_axis()` and `y_axis()` children to label and constrain a chart. XY
+Add `x_axis()` and `y_axis()` children to label and constrain a chart. XYG
 infers linear, time, and categorical scales from the bound columns.
 Datetime-like values select the time scale automatically, or you can make the
 contract explicit.
@@ -19,21 +19,21 @@ direction without changing the source values.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 x = np.logspace(0, 6, 240)
 rank = 96 - np.log10(x) * 11.5
 
-chart = xy.line_chart(
-    xy.line(x, rank),
-    xy.x_axis(
+chart = xyg.line_chart(
+    xyg.line(x, rank),
+    xyg.x_axis(
         label="Request volume",
         type_="log",
         domain=(1, 1_000_000),
         tick_values=[1, 10, 100, 1_000, 10_000, 100_000, 1_000_000],
         tick_labels=["1", "10", "100", "1k", "10k", "100k", "1M"],
     ),
-    xy.y_axis(label="Rank", domain=(0, 100), reverse=True, format=".0f"),
+    xyg.y_axis(label="Rank", domain=(0, 100), reverse=True, format=".0f"),
 )
 
 
@@ -43,7 +43,7 @@ def scale_type_and_domain_demo():
     return reflex_xy.chart(chart, height="360px")
 ~~~
 
-Log domains must be positive. Date and datetime values use XY's canonical
+Log domains must be positive. Date and datetime values use XYG's canonical
 milliseconds-since-epoch coordinate system while their ticks render as time.
 String categories preserve a stable category order and receive categorical
 positions.
@@ -54,18 +54,18 @@ Use `tick_count` as a target, or provide exact `tick_values` with optional
 `tick_labels`:
 
 ~~~python demo exec
-import xy
+import xyg
 
-axis = xy.y_axis(
+axis = xyg.y_axis(
     label="Conversion",
     domain=(0, 1),
     tick_values=[0, 0.25, 0.5, 0.75, 1],
     tick_labels=["0%", "25%", "50%", "75%", "100%"],
 )
 
-chart = xy.line_chart(
-    xy.line(["Jan", "Feb", "Mar", "Apr", "May"], [0.18, 0.34, 0.29, 0.57, 0.72]),
-    xy.x_axis(label="Month"),
+chart = xyg.line_chart(
+    xyg.line(["Jan", "Feb", "Mar", "Apr", "May"], [0.18, 0.34, 0.29, 0.57, 0.72]),
+    xyg.x_axis(label="Month"),
     axis,
 )
 
@@ -99,27 +99,27 @@ matching `id` on the axis component, and use `side="right"` or `side="top"`
 for an opposite-side axis:
 
 ~~~python demo exec
-import xy
+import xyg
 
-chart = xy.chart(
-    xy.line([1, 10, 100], [80, 70, 60], name="Rank"),
-    xy.line(
+chart = xyg.chart(
+    xyg.line([1, 10, 100], [80, 70, 60], name="Rank"),
+    xyg.line(
         [1, 10, 100],
         [0.08, 0.12, 0.19],
         y_axis="y2",
         name="Conversion",
         color="#dc2626",
     ),
-    xy.x_axis(type_="log", label="Requests", domain=(1, 100)),
-    xy.y_axis(label="Rank", domain=(0, 100)),
-    xy.y_axis(
+    xyg.x_axis(type_="log", label="Requests", domain=(1, 100)),
+    xyg.y_axis(label="Rank", domain=(0, 100)),
+    xyg.y_axis(
         id="y2",
         side="right",
         label="Conversion",
         domain=(0, 0.25),
         format=".0%",
     ),
-    xy.legend(),
+    xyg.legend(),
 )
 
 
@@ -138,9 +138,9 @@ negative values). Values remain in their original data units throughout hover,
 selection, pan/zoom callbacks, and linked views:
 
 ```python
-xy.chart(
-    xy.scatter(x=employees, y=pay),
-    xy.y_axis(type_="symlog", constant=1_000, format="$,.0f"),
+xyg.chart(
+    xyg.scatter(x=employees, y=pay),
+    xyg.y_axis(type_="symlog", constant=1_000, format="$,.0f"),
 )
 ```
 

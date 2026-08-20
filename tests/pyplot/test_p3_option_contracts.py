@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def test_plot_marker_styles_and_markevery_reach_marker_entry() -> None:
@@ -559,8 +559,8 @@ def test_contourf_dot_star_and_backslash_hatches_keep_their_geometry() -> None:
 
 
 def test_static_legend_hatches_use_filled_dots_and_stars() -> None:
-    from xy._raster import _SYMBOLS, _emit_legend_hatch
-    from xy._svg import _legend_hatch_svg
+    from xyg._raster import _SYMBOLS, _emit_legend_hatch
+    from xyg._svg import _legend_hatch_svg
 
     dots = _legend_hatch_svg(0.0, 20.0, 0.0, 20.0, ".", "#123456")
     star = _legend_hatch_svg(0.0, 20.0, 0.0, 20.0, "*", "#123456")

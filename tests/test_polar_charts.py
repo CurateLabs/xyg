@@ -18,10 +18,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-from xy import components
-from xy._svg import _PolarProjection, axis_ticks, layout, minor_axis_ticks
-from xy.config import POLAR_DIRECT_CEILING
+import xyg
+from xyg import components
+from xyg._svg import _PolarProjection, axis_ticks, layout, minor_axis_ticks
+from xyg.config import POLAR_DIRECT_CEILING
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -33,15 +33,15 @@ def _rose(n: int = 120):
 
 def _chart(**kwargs):
     theta, r = _rose()
-    children = kwargs.pop("children", None) or [xy.line(theta, r, color="#2563eb", width=2.0)]
-    return xy.polar_chart(*children, width=520, height=520, **kwargs)
+    children = kwargs.pop("children", None) or [xyg.line(theta, r, color="#2563eb", width=2.0)]
+    return xyg.polar_chart(*children, width=520, height=520, **kwargs)
 
 
 # -- wire ------------------------------------------------------------------
 
 
 def test_polar_spec_carries_coords_and_angular_descriptors() -> None:
-    spec, _ = _chart(children=[xy.line(*_rose())]).figure().build_payload_split()
+    spec, _ = _chart(children=[xyg.line(*_rose())]).figure().build_payload_split()
     assert spec["coords"] == "polar"
     assert spec["x_axis"]["theta_unit"] == "radians"
     assert spec["x_axis"]["theta_zero"] == "E"
@@ -50,14 +50,17 @@ def test_polar_spec_carries_coords_and_angular_descriptors() -> None:
 
 def test_cartesian_spec_omits_coords_entirely() -> None:
     """Existing specs must stay byte-identical when polar is not in play."""
-    spec, _ = xy.line_chart(xy.line([0, 1], [0, 1])).figure().build_payload_split()
+    spec, _ = xyg.line_chart(xyg.line([0, 1], [0, 1])).figure().build_payload_split()
     assert "coords" not in spec
     assert "theta_unit" not in spec["x_axis"]
 
 
 def test_theta_axis_options_reach_the_wire() -> None:
     chart = _chart(
-        children=[xy.line(*_rose()), xy.theta_axis(unit="degrees", zero="N", direction="clockwise")]
+        children=[
+            xyg.line(*_rose()),
+            xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
+        ]
     )
     spec, _ = chart.figure().build_payload_split()
     assert spec["x_axis"]["theta_unit"] == "degrees"
@@ -77,7 +80,7 @@ def test_radial_axis_starts_at_the_centre() -> None:
 
 
 def test_explicit_radial_domain_still_wins() -> None:
-    chart = _chart(children=[xy.line(*_rose()), xy.r_axis(domain=(0.5, 2.0))])
+    chart = _chart(children=[xyg.line(*_rose()), xyg.r_axis(domain=(0.5, 2.0))])
     spec, _ = chart.figure().build_payload_split()
     assert spec["y_axis"]["range"] == [0.5, 2.0]
 
@@ -92,7 +95,7 @@ def test_angular_axis_spans_a_full_turn(unit: str, expected: float) -> None:
     theta, r = _rose()
     if unit == "degrees":
         theta = np.degrees(theta)
-    chart = _chart(children=[xy.line(theta, r), xy.theta_axis(unit=unit)])
+    chart = _chart(children=[xyg.line(theta, r), xyg.theta_axis(unit=unit)])
     spec, _ = chart.figure().build_payload_split()
     assert spec["x_axis"]["range"] == pytest.approx([0.0, expected])
 
@@ -106,18 +109,18 @@ def test_unsupported_marks_are_refused_not_approximated(mark: str) -> None:
     under polar they draw chord-edged shapes where arcs belong. A plausible
     wrong picture is worse than an error (dossier §28)."""
     builders = {
-        "histogram": lambda: xy.hist(np.array([1.0, 2.0, 3.0])),
-        "box": lambda: xy.box(np.array([1.0, 2.0, 3.0, 4.0])),
-        "hexbin": lambda: xy.hexbin(np.array([1.0, 2.0]), np.array([1.0, 2.0])),
+        "histogram": lambda: xyg.hist(np.array([1.0, 2.0, 3.0])),
+        "box": lambda: xyg.box(np.array([1.0, 2.0, 3.0, 4.0])),
+        "hexbin": lambda: xyg.hexbin(np.array([1.0, 2.0]), np.array([1.0, 2.0])),
     }
-    chart = xy.polar_chart(builders[mark]())
+    chart = xyg.polar_chart(builders[mark]())
     with pytest.raises(ValueError, match=r"coords='polar' does not support"):
         chart.figure().build_payload_split()
 
 
 def test_refusal_names_the_supported_set() -> None:
     with pytest.raises(ValueError) as excinfo:
-        xy.polar_chart(xy.hist(np.array([1.0, 2.0]))).figure().build_payload_split()
+        xyg.polar_chart(xyg.hist(np.array([1.0, 2.0]))).figure().build_payload_split()
     message = str(excinfo.value)
     for supported in ("area", "bar", "column", "line", "scatter"):
         assert repr(supported) in message
@@ -126,16 +129,16 @@ def test_refusal_names_the_supported_set() -> None:
 def test_polar_forces_direct_tier() -> None:
     """M4 buckets on a monotonic screen-x column and density bins an
     axis-aligned grid; neither survives the polar transform."""
-    from xy.config import DECIMATION_THRESHOLD
+    from xyg.config import DECIMATION_THRESHOLD
 
     theta = np.linspace(0.0, 2.0 * math.pi, DECIMATION_THRESHOLD * 2)
-    spec, _ = _chart(children=[xy.line(theta, np.sin(theta) + 2.0)]).figure().build_payload_split()
+    spec, _ = _chart(children=[xyg.line(theta, np.sin(theta) + 2.0)]).figure().build_payload_split()
     assert spec["traces"][0]["tier"] == "direct"
 
 
 def test_theta_options_rejected_on_the_radial_axis() -> None:
     with pytest.raises(ValueError, match="belong on an x axis"):
-        xy.polar_chart(xy.line(*_rose())).figure().set_axis("y", theta_unit="degrees")
+        xyg.polar_chart(xyg.line(*_rose())).figure().set_axis("y", theta_unit="degrees")
 
 
 # -- renderers -------------------------------------------------------------
@@ -167,7 +170,7 @@ def test_svg_clips_marks_to_the_disc_but_not_the_legend() -> None:
 
 def test_polar_legend_survives_the_disc_clip() -> None:
     theta, r = _rose()
-    doc = _svg(_chart(children=[xy.line(theta, r, name="series one")]))
+    doc = _svg(_chart(children=[xyg.line(theta, r, name="series one")]))
     assert "series one" in doc
 
 
@@ -178,14 +181,14 @@ def test_svg_angular_labels_use_pi_notation() -> None:
 
 def test_svg_degree_labels_carry_the_degree_sign() -> None:
     theta, r = _rose()
-    doc = _svg(_chart(children=[xy.line(np.degrees(theta), r), xy.theta_axis(unit="degrees")]))
+    doc = _svg(_chart(children=[xyg.line(np.degrees(theta), r), xyg.theta_axis(unit="degrees")]))
     assert "°" in doc
 
 
 def test_svg_line_geometry_matches_the_shared_projection() -> None:
     """The rendered path must be the projection's output, not a lookalike."""
     theta, r = _rose(16)
-    chart = xy.polar_chart(xy.line(theta, r), width=520, height=520)
+    chart = xyg.polar_chart(xyg.line(theta, r), width=520, height=520)
     fig = chart.figure()
     spec, blob = fig.build_payload_split()
     _w, _h, _compact, plot = layout(spec)
@@ -215,9 +218,9 @@ def test_raster_and_svg_agree_on_where_the_data_lands() -> None:
     # mid-disc so the negative probe below samples genuinely empty canvas.
     theta = np.array([0.0, math.pi / 2, math.pi])
     r = np.array([1.0, 1.0, 1.0])
-    chart = xy.polar_chart(
-        xy.scatter(theta, r, size=9.0, color="#000000"),
-        xy.r_axis(domain=(0.0, 2.0)),
+    chart = xyg.polar_chart(
+        xyg.scatter(theta, r, size=9.0, color="#000000"),
+        xyg.r_axis(domain=(0.0, 2.0)),
         width=400,
         height=400,
     )
@@ -250,7 +253,7 @@ def test_raster_and_svg_agree_on_where_the_data_lands() -> None:
     # theta=pi, r=1 would sit far right on an x axis spanning [0, 2pi]; under
     # polar it belongs on the left. If this fires, the raster path ignored
     # `coords` and drew the columns as x/y.
-    from xy._svg import _Scale
+    from xyg._svg import _Scale
 
     cart_x = _Scale(spec["x_axis"], plot["x"], plot["x"] + plot["w"])(math.pi)
     cart_y = _Scale(spec["y_axis"], plot["y"] + plot["h"], plot["y"])(1.0)
@@ -264,14 +267,14 @@ def test_raster_and_svg_agree_on_where_the_data_lands() -> None:
 
 def test_area_renders_under_polar() -> None:
     theta, r = _rose(24)
-    doc = _svg(_chart(children=[xy.area(theta, r, color="#2563eb")]))
+    doc = _svg(_chart(children=[xyg.area(theta, r, color="#2563eb")]))
     assert "<path" in doc and "fill-opacity" in doc
 
 
 def test_radar_chart_closes_across_the_seam() -> None:
     """Closing with the first *angle* would sweep the final segment backwards
     through the whole circle; the closing sample sits at a full turn instead."""
-    chart = xy.radar_chart(["a", "b", "c", "d"], xy.area([1.0, 2.0, 3.0, 4.0]))
+    chart = xyg.radar_chart(["a", "b", "c", "d"], xyg.area([1.0, 2.0, 3.0, 4.0]))
     mark = next(c for c in chart.children if getattr(c, "kind", None) == "area")
     assert mark.x[-1] == pytest.approx(2.0 * math.pi)
     assert mark.x[0] == pytest.approx(0.0)
@@ -280,26 +283,28 @@ def test_radar_chart_closes_across_the_seam() -> None:
 
 def test_radar_chart_labels_spokes_with_the_categories() -> None:
     cats = ["speed", "power", "range", "agility"]
-    doc = xy.radar_chart(cats, xy.area([0.9, 0.7, 0.5, 0.8])).figure().to_image(format="svg")
+    doc = xyg.radar_chart(cats, xyg.area([0.9, 0.7, 0.5, 0.8])).figure().to_image(format="svg")
     text = doc.decode()
     for name in cats:
         assert name in text
 
 
 def test_radar_chart_authored_theta_axis_wins() -> None:
-    chart = xy.radar_chart(["a", "b", "c"], xy.area([1.0, 2.0, 3.0]), xy.theta_axis(label="custom"))
-    axes = [c for c in chart.children if isinstance(c, xy.Axis) and c.which == "x"]
+    chart = xyg.radar_chart(
+        ["a", "b", "c"], xyg.area([1.0, 2.0, 3.0]), xyg.theta_axis(label="custom")
+    )
+    axes = [c for c in chart.children if isinstance(c, xyg.Axis) and c.which == "x"]
     assert len(axes) == 1 and axes[0].label == "custom"
 
 
 def test_radar_chart_rejects_a_value_count_mismatch() -> None:
     with pytest.raises(ValueError, match="but there are 4 categories"):
-        xy.radar_chart(["a", "b", "c", "d"], xy.area([1.0, 2.0]))
+        xyg.radar_chart(["a", "b", "c", "d"], xyg.area([1.0, 2.0]))
 
 
 def test_radar_chart_needs_three_categories() -> None:
     with pytest.raises(ValueError, match="at least 3 categories"):
-        xy.radar_chart(["a", "b"], xy.area([1.0, 2.0]))
+        xyg.radar_chart(["a", "b"], xyg.area([1.0, 2.0]))
 
 
 def test_authored_tick_labels_beat_the_angle_format() -> None:
@@ -307,8 +312,8 @@ def test_authored_tick_labels_beat_the_angle_format() -> None:
     doc = _svg(
         _chart(
             children=[
-                xy.line(*_rose()),
-                xy.theta_axis(tick_values=[0.0, math.pi], tick_labels=["north", "south"]),
+                xyg.line(*_rose()),
+                xyg.theta_axis(tick_values=[0.0, math.pi], tick_labels=["north", "south"]),
             ]
         )
     )
@@ -323,8 +328,8 @@ def test_polar_bars_render_as_wedge_paths_in_svg() -> None:
 
     A 180-degree bar with chorded ends would read as a triangle.
     """
-    chart = xy.polar_bar_chart(
-        xy.bar([0.0, math.pi / 2, math.pi], [1.0, 2.0, 3.0], width=0.8),
+    chart = xyg.polar_bar_chart(
+        xyg.bar([0.0, math.pi / 2, math.pi], [1.0, 2.0, 3.0], width=0.8),
         width=420,
         height=420,
     )
@@ -334,7 +339,7 @@ def test_polar_bars_render_as_wedge_paths_in_svg() -> None:
 
 
 def test_polar_wedge_points_close_the_sector() -> None:
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     # A ring segment with a hole: both arcs, so 2*(steps+1) points.
@@ -347,7 +352,7 @@ def test_polar_wedge_points_close_the_sector() -> None:
 
 
 def test_polar_wedge_from_the_centre_is_a_fan() -> None:
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     poly = polar_wedge_points(project, 0.0, math.pi / 2, 0.0, 1.0, steps=8)
@@ -359,7 +364,7 @@ def test_wind_rose_counts_every_observation() -> None:
     rng = np.random.default_rng(3)
     directions = rng.uniform(0, 360, 500)
     speeds = rng.gamma(2.0, 2.0, 500)
-    chart = xy.wind_rose(directions, speeds, sectors=12)
+    chart = xyg.wind_rose(directions, speeds, sectors=12)
     bars = [c for c in chart.children if getattr(c, "kind", None) == "bar"]
     # `y` is each band's own count (a HEIGHT above its base), so the totals sum
     # directly. This assertion used to read `sum(y) - sum(base)`, which is what
@@ -370,7 +375,7 @@ def test_wind_rose_counts_every_observation() -> None:
 
 def test_wind_rose_bands_stack_without_gaps() -> None:
     rng = np.random.default_rng(4)
-    chart = xy.wind_rose(rng.uniform(0, 360, 300), rng.gamma(2.0, 2.0, 300), sectors=8)
+    chart = xyg.wind_rose(rng.uniform(0, 360, 300), rng.gamma(2.0, 2.0, 300), sectors=8)
     bars = [c for c in chart.children if getattr(c, "kind", None) == "bar"]
     for lower, upper in pairwise(bars):
         # A band starts where the one below it ENDS: base + height, since the
@@ -383,8 +388,8 @@ def test_wind_rose_uses_the_compass_convention() -> None:
     """0 degrees is north and angles increase clockwise, or the rose is a
     mirror image of the weather it describes."""
     rng = np.random.default_rng(5)
-    chart = xy.wind_rose(rng.uniform(0, 360, 100), rng.gamma(2.0, 2.0, 100))
-    axis = next(c for c in chart.children if isinstance(c, xy.Axis) and c.which == "x")
+    chart = xyg.wind_rose(rng.uniform(0, 360, 100), rng.gamma(2.0, 2.0, 100))
+    axis = next(c for c in chart.children if isinstance(c, xyg.Axis) and c.which == "x")
     assert axis.theta_zero == "N"
     assert axis.theta_direction == "clockwise"
     assert axis.theta_unit == "degrees"
@@ -393,7 +398,7 @@ def test_wind_rose_uses_the_compass_convention() -> None:
 def test_wind_rose_bins_bearings_centred_on_each_sector() -> None:
     """A bearing of exactly 0 belongs to the sector centred on north, not to
     the one starting there."""
-    chart = xy.wind_rose(np.array([0.0, 0.0, 90.0]), np.array([1.0, 1.0, 1.0]), sectors=4)
+    chart = xyg.wind_rose(np.array([0.0, 0.0, 90.0]), np.array([1.0, 1.0, 1.0]), sectors=4)
     bars = [c for c in chart.children if getattr(c, "kind", None) == "bar"]
     totals = np.zeros(4)
     for b in bars:
@@ -404,21 +409,21 @@ def test_wind_rose_bins_bearings_centred_on_each_sector() -> None:
 
 def test_wind_rose_rejects_mismatched_inputs() -> None:
     with pytest.raises(ValueError, match="same length"):
-        xy.wind_rose(np.array([0.0, 90.0]), np.array([1.0]))
+        xyg.wind_rose(np.array([0.0, 90.0]), np.array([1.0]))
 
 
 def test_wind_rose_band_labels_are_readable() -> None:
     """Raw quantiles make a legend like '<= 2.76651'."""
     rng = np.random.default_rng(6)
-    chart = xy.wind_rose(rng.uniform(0, 360, 400), rng.gamma(3.0, 2.0, 400))
+    chart = xyg.wind_rose(rng.uniform(0, 360, 400), rng.gamma(3.0, 2.0, 400))
     for bar_mark in [c for c in chart.children if getattr(c, "kind", None) == "bar"]:
         value = bar_mark.name.split()[-1]
         assert len(value.split(".")[-1]) <= 3, f"unreadable band label {bar_mark.name!r}"
 
 
 def test_polar_bars_reach_the_raster_export() -> None:
-    chart = xy.polar_bar_chart(
-        xy.bar([0.0, math.pi], [1.0, 1.0], width=1.0, color="#000000"),
+    chart = xyg.polar_bar_chart(
+        xyg.bar([0.0, math.pi], [1.0, 1.0], width=1.0, color="#000000"),
         width=400,
         height=400,
     )
@@ -447,10 +452,10 @@ def _styled(theta_style=None, r_style=None, **axis_kwargs):
     if r_style:
         r_kw = {**r_kw, "style": r_style}
     theta, r = _rose()
-    return xy.polar_chart(
-        xy.line(theta, r),
-        xy.theta_axis(**theta_kw),
-        xy.r_axis(**r_kw),
+    return xyg.polar_chart(
+        xyg.line(theta, r),
+        xyg.theta_axis(**theta_kw),
+        xyg.r_axis(**r_kw),
         width=400,
         height=400,
     )
@@ -540,9 +545,9 @@ def test_no_cartesian_tick_stubs_leak_into_polar_svg() -> None:
     """Edge-anchored tick marks have no polar geometry; they used to leak in
     from the cartesian emission loops (raster never drew them — divergence)."""
     theta, r = _rose()
-    chart = xy.polar_chart(
-        xy.line(theta, r),
-        xy.theta_axis(style={"tick_length": 8.0, "tick_color": "#ff00ff"}),
+    chart = xyg.polar_chart(
+        xyg.line(theta, r),
+        xyg.theta_axis(style={"tick_length": 8.0, "tick_color": "#ff00ff"}),
         width=400,
         height=400,
     )
@@ -553,8 +558,8 @@ def test_no_cartesian_tick_stubs_leak_into_polar_svg() -> None:
 
 def test_strategy_off_hides_polar_labels_but_keeps_grid() -> None:
     theta, r = _rose()
-    chart = xy.polar_chart(
-        xy.line(theta, r), xy.theta_axis(tick_label_strategy="off"), width=400, height=400
+    chart = xyg.polar_chart(
+        xyg.line(theta, r), xyg.theta_axis(tick_label_strategy="off"), width=400, height=400
     )
     doc = chart.figure().to_image(format="svg").decode()
     assert 'data-xy-tick="theta"' not in doc
@@ -564,8 +569,8 @@ def test_strategy_off_hides_polar_labels_but_keeps_grid() -> None:
 
 def test_tick_label_angle_rotates_polar_labels() -> None:
     theta, r = _rose()
-    chart = xy.polar_chart(
-        xy.line(theta, r), xy.theta_axis(tick_label_angle=45.0), width=400, height=400
+    chart = xyg.polar_chart(
+        xyg.line(theta, r), xyg.theta_axis(tick_label_angle=45.0), width=400, height=400
     )
     doc = chart.figure().to_image(format="svg").decode()
     rotated = re.findall(r'<text data-xy-tick="theta"[^>]*transform="rotate\(45 ', doc)
@@ -576,25 +581,27 @@ def test_theta_axis_title_stays_on_canvas() -> None:
     """The rect re-cut reclaims the bottom gutter — except when the theta axis
     has a title, which is drawn there and was pushed below the canvas edge."""
     theta, r = _rose()
-    chart = xy.polar_chart(xy.line(theta, r), xy.theta_axis(label="bearing"), width=400, height=400)
+    chart = xyg.polar_chart(
+        xyg.line(theta, r), xyg.theta_axis(label="bearing"), width=400, height=400
+    )
     doc = chart.figure().to_image(format="svg").decode()
     m = re.search(r'<text[^>]*y="(-?[\d.]+)"[^>]*>bearing</text>', doc)
     assert m is not None and 0 <= float(m.group(1)) <= 400
 
 
 def test_polar_point_ceiling_is_enforced() -> None:
-    from xy.config import POLAR_DIRECT_CEILING
+    from xyg.config import POLAR_DIRECT_CEILING
 
     theta = np.zeros(POLAR_DIRECT_CEILING + 1)
     with pytest.raises(ValueError, match="polar ceiling"):
-        xy.polar_chart(xy.scatter(theta, theta)).figure().build_payload_split()
+        xyg.polar_chart(xyg.scatter(theta, theta)).figure().build_payload_split()
 
 
 def test_radar_merges_categories_into_an_authored_theta_axis() -> None:
     """An authored theta axis customises the spokes; it must not silently
     replace the category labels with numeric angles."""
-    chart = xy.radar_chart(
-        ["speed", "power", "range"], xy.area([1.0, 2.0, 3.0]), xy.theta_axis(label="custom")
+    chart = xyg.radar_chart(
+        ["speed", "power", "range"], xyg.area([1.0, 2.0, 3.0]), xyg.theta_axis(label="custom")
     )
     doc = chart.figure().to_image(format="svg").decode()
     for name in ("speed", "power", "range", "custom"):
@@ -605,7 +612,7 @@ def test_polar_pdf_export_round_trips() -> None:
     """The PDF converter's clip subset was rect-only, so every polar chart
     raised. The disc clip now lands as four Bezier quarter-arcs."""
     theta, r = _rose()
-    pdf = _chart(children=[xy.line(theta, r)]).figure().to_image(format="pdf")
+    pdf = _chart(children=[xyg.line(theta, r)]).figure().to_image(format="pdf")
     assert pdf[:5] == b"%PDF-"
     assert len(pdf) > 800
 
@@ -617,8 +624,8 @@ def test_channel_styled_polar_scatter_stays_inside_the_disc() -> None:
     rng = np.random.default_rng(5)
     theta = rng.uniform(0, 2 * math.pi, 200)
     r = rng.uniform(0.2, 1.0, 200)
-    chart = xy.polar_chart(
-        xy.scatter(theta, r, color=r, colormap="viridis", size=6.0), width=400, height=400
+    chart = xyg.polar_chart(
+        xyg.scatter(theta, r, color=r, colormap="viridis", size=6.0), width=400, height=400
     )
     fig = chart.figure()
     spec, _ = fig.build_payload_split()
@@ -649,7 +656,7 @@ def test_disc_stays_inside_the_canvas_at_every_size(width: int, height: int) -> 
     """The cartesian rect has a 40px floor that can exceed a small canvas, and
     a disc centred in it then leaves the page (80x80 drew out to x=86)."""
     theta, r = _rose(30)
-    chart = xy.polar_chart(xy.line(theta, r), width=width, height=height)
+    chart = xyg.polar_chart(xyg.line(theta, r), width=width, height=height)
     spec, _ = chart.figure().build_payload_split()
     canvas_w, canvas_h, _compact, plot = layout(spec)
     project = _PolarProjection(spec["x_axis"], spec["y_axis"], plot)
@@ -666,9 +673,9 @@ def test_horizontal_colorbar_keeps_its_gutter() -> None:
     rng = np.random.default_rng(3)
     theta = rng.uniform(0, 2 * math.pi, 120)
     r = rng.uniform(0.1, 1.0, 120)
-    chart = xy.polar_chart(
-        xy.scatter(theta, r, color=r, colormap="viridis"),
-        xy.colorbar(orientation="horizontal"),
+    chart = xyg.polar_chart(
+        xyg.scatter(theta, r, color=r, colormap="viridis"),
+        xyg.colorbar(orientation="horizontal"),
         width=520,
         height=500,
     )
@@ -680,26 +687,26 @@ def test_horizontal_colorbar_keeps_its_gutter() -> None:
 def test_long_category_labels_reserve_measured_room() -> None:
     """A fixed 30px allowance hard-clipped authored radar category names."""
     cats = ["EAST-NORTH-EAST", "SOUTH-SOUTH-WEST", "NORTH-WEST", "SOUTH-EAST", "WEST"]
-    chart = xy.radar_chart(cats, xy.area([0.9, 0.6, 0.7, 0.5, 0.8]), width=600, height=560)
+    chart = xyg.radar_chart(cats, xyg.area([0.9, 0.6, 0.7, 0.5, 0.8]), width=600, height=560)
     doc = chart.figure().to_image(format="svg").decode()
     xs = [float(x) for x in re.findall(r'<text data-xy-tick="theta" x="(-?[\d.]+)"', doc)]
     assert xs and min(xs) >= 0 and max(xs) <= 600
 
 
 def test_radar_fill_false_outlines_instead_of_filling() -> None:
-    chart = xy.radar_chart(["a", "b", "c"], xy.area([1.0, 2.0, 3.0]), fill=False)
-    kinds = [c.kind for c in chart.children if isinstance(c, xy.Mark)]
+    chart = xyg.radar_chart(["a", "b", "c"], xyg.area([1.0, 2.0, 3.0]), fill=False)
+    kinds = [c.kind for c in chart.children if isinstance(c, xyg.Mark)]
     assert kinds == ["line"]
 
 
 def test_radar_rejects_marks_it_cannot_close() -> None:
     with pytest.raises(ValueError, match="supports area and line marks"):
-        xy.radar_chart(["a", "b", "c"], xy.scatter([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]))
+        xyg.radar_chart(["a", "b", "c"], xyg.scatter([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]))
 
 
 def test_radar_rejects_column_names_with_a_readable_error() -> None:
     with pytest.raises(ValueError, match="must carry values directly"):
-        xy.radar_chart(["a", "b", "c"], xy.area("speed"))
+        xyg.radar_chart(["a", "b", "c"], xyg.area("speed"))
 
 
 # -- radial clipping semantics ---------------------------------------------
@@ -711,9 +718,9 @@ def test_below_range_scatter_is_culled_not_mirrored() -> None:
     client shader NaN-culls the point; both exporters must drop the same row."""
     theta = np.array([0.0, math.pi / 2])
     r = np.array([0.2, 0.75])  # first point below r_lo
-    chart = xy.polar_chart(
-        xy.scatter(theta, r, size=9.0, color="#000000"),
-        xy.r_axis(domain=(0.5, 1.0)),
+    chart = xyg.polar_chart(
+        xyg.scatter(theta, r, size=9.0, color="#000000"),
+        xyg.r_axis(domain=(0.5, 1.0)),
         width=400,
         height=400,
     )
@@ -752,9 +759,9 @@ def test_below_range_scatter_is_culled_not_mirrored() -> None:
 def test_above_range_scatter_leaves_no_ink_beyond_the_ring() -> None:
     """The raster path has no disc clip, so an above-range point used to draw
     past the outer ring into the corner the disc does not cover."""
-    chart = xy.polar_chart(
-        xy.scatter(np.array([math.pi / 4]), np.array([1.3]), size=10.0, color="#000000"),
-        xy.r_axis(domain=(0.0, 1.0)),
+    chart = xyg.polar_chart(
+        xyg.scatter(np.array([math.pi / 4]), np.array([1.3]), size=10.0, color="#000000"),
+        xyg.r_axis(domain=(0.0, 1.0)),
         width=400,
         height=400,
     )
@@ -777,9 +784,9 @@ def test_line_vertices_outside_the_radial_range_split_the_path() -> None:
     position of the out-of-range vertex."""
     theta = np.array([0.0, math.pi / 4, math.pi / 2, 3 * math.pi / 4, math.pi])
     r = np.array([0.75, 0.8, 0.2, 0.8, 0.75])  # middle vertex below r_lo
-    chart = xy.polar_chart(
-        xy.line(theta, r, color="#2563eb"),
-        xy.r_axis(domain=(0.5, 1.0)),
+    chart = xyg.polar_chart(
+        xyg.line(theta, r, color="#2563eb"),
+        xyg.r_axis(domain=(0.5, 1.0)),
         width=400,
         height=400,
     )
@@ -792,10 +799,10 @@ def test_line_vertices_outside_the_radial_range_split_the_path() -> None:
 def test_full_turn_slice_draws_an_annulus_not_nothing() -> None:
     """Arc endpoints coincide at a full turn and SVG omits such segments, so a
     100% donut slice (a progress ring at 100%) rendered as nothing."""
-    chart = xy.polar_chart(
-        xy.bar([180.0], [1.0], base=0.5, width=360.0, color="#7c3aed"),
-        xy.theta_axis(unit="degrees"),
-        xy.r_axis(domain=(0.0, 1.0)),
+    chart = xyg.polar_chart(
+        xyg.bar([180.0], [1.0], base=0.5, width=360.0, color="#7c3aed"),
+        xyg.theta_axis(unit="degrees"),
+        xyg.r_axis(domain=(0.0, 1.0)),
         width=400,
         height=400,
     )
@@ -822,9 +829,9 @@ def test_fractional_degree_ticks_keep_their_precision() -> None:
     """`_fmt_angle` used a hardcoded step of 1, so an authored 22.5-degree grid
     labelled itself 22°/68° (round-half-even) instead of 22.5°/67.5°."""
     theta, r = _rose()
-    chart = xy.polar_chart(
-        xy.line(np.degrees(theta), r),
-        xy.theta_axis(unit="degrees", tick_values=[0.0, 22.5, 45.0, 67.5, 90.0]),
+    chart = xyg.polar_chart(
+        xyg.line(np.degrees(theta), r),
+        xyg.theta_axis(unit="degrees", tick_values=[0.0, 22.5, 45.0, 67.5, 90.0]),
         width=400,
         height=400,
     )
@@ -838,9 +845,9 @@ def test_area_fill_clamps_to_the_radial_range_rather_than_vanishing() -> None:
     disappear the moment zoom lifted the minimum above its baseline."""
     theta = np.linspace(0.0, 2.0 * math.pi, 24)
     values = np.full(24, 3.0)
-    chart = xy.polar_chart(
-        xy.area(theta, values, color="#2563eb"),
-        xy.r_axis(domain=(1.0, 2.0)),  # every value sits ABOVE the range
+    chart = xyg.polar_chart(
+        xyg.area(theta, values, color="#2563eb"),
+        xyg.r_axis(domain=(1.0, 2.0)),  # every value sits ABOVE the range
         width=400,
         height=400,
     )
@@ -851,7 +858,7 @@ def test_area_fill_clamps_to_the_radial_range_rather_than_vanishing() -> None:
 
 def test_wedge_beyond_the_outer_ring_clips_instead_of_disappearing() -> None:
     """A bar whose tip crosses the outer ring draws up to the ring."""
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     poly = polar_wedge_points(project, 0.0, math.pi / 4, 0.0, 5.0, steps=8)
@@ -861,7 +868,7 @@ def test_wedge_beyond_the_outer_ring_clips_instead_of_disappearing() -> None:
 
 
 def test_wedge_entirely_outside_the_range_draws_nothing() -> None:
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     assert polar_wedge_points(project, 0.0, math.pi / 4, 2.0, 5.0, steps=8) == []
@@ -870,7 +877,7 @@ def test_wedge_entirely_outside_the_range_draws_nothing() -> None:
 def test_bar_below_the_radial_minimum_is_clipped_not_mirrored() -> None:
     """A radius below the minimum normalizes negative, which would reflect the
     wedge through the centre into the opposite quadrant."""
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [2.0, 4.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     poly = polar_wedge_points(project, 0.0, math.pi / 4, 0.0, 3.0, steps=8)
@@ -889,14 +896,14 @@ def test_unequal_slice_widths_render_as_wedges_not_rectangles() -> None:
     four-edge rect path, which drew Cartesian rectangles inside polar chrome
     until that path learned sectors."""
     slices = [
-        xy.bar([45.0], [1.0], base=0.5, width=90.0, color="#7c3aed"),
-        xy.bar([200.0], [1.0], base=0.5, width=180.0, color="#0284c7"),
+        xyg.bar([45.0], [1.0], base=0.5, width=90.0, color="#7c3aed"),
+        xyg.bar([200.0], [1.0], base=0.5, width=180.0, color="#0284c7"),
     ]
     doc = (
-        xy.polar_chart(
+        xyg.polar_chart(
             *slices,
-            xy.theta_axis(unit="degrees"),
-            xy.r_axis(domain=(0.0, 1.0)),
+            xyg.theta_axis(unit="degrees"),
+            xyg.r_axis(domain=(0.0, 1.0)),
             width=420,
             height=420,
         )
@@ -912,11 +919,11 @@ def test_point_annotations_project_through_polar() -> None:
     """Centre text is `(any angle, r=0)`. The separable scales would put that
     at the bottom-left corner instead of the middle of the disc."""
     doc = (
-        xy.polar_chart(
-            xy.bar([45.0], [1.0], base=0.5, width=80.0),
-            xy.text(0.0, 0.0, "CENTRE", dx=0, dy=0, anchor="middle"),
-            xy.theta_axis(unit="degrees", show=False),
-            xy.r_axis(domain=(0.0, 1.0), show=False),
+        xyg.polar_chart(
+            xyg.bar([45.0], [1.0], base=0.5, width=80.0),
+            xyg.text(0.0, 0.0, "CENTRE", dx=0, dy=0, anchor="middle"),
+            xyg.theta_axis(unit="degrees", show=False),
+            xyg.r_axis(domain=(0.0, 1.0), show=False),
             width=400,
             height=400,
         )
@@ -941,9 +948,9 @@ def test_authored_padding_survives_the_polar_recut() -> None:
     same padding on a cartesian chart was honoured.
     """
     theta, r = _rose()
-    marks = [xy.line(theta, r), xy.theta_axis(show=False), xy.r_axis(show=False)]
-    plain = xy.polar_chart(*marks, width=400, height=420)
-    padded = xy.polar_chart(*marks, width=400, height=420, padding=[10, 10, 140, 10])
+    marks = [xyg.line(theta, r), xyg.theta_axis(show=False), xyg.r_axis(show=False)]
+    plain = xyg.polar_chart(*marks, width=400, height=420)
+    padded = xyg.polar_chart(*marks, width=400, height=420, padding=[10, 10, 140, 10])
 
     bottoms = []
     for chart in (plain, padded):
@@ -960,7 +967,7 @@ def test_polar_wedge_corner_radius_reaches_every_renderer() -> None:
     all three renderers — a silent approximation (§28). Rounding pulls the
     corners in, so a rounded wedge covers strictly less area than a square one.
     """
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection(
         {"theta_unit": "degrees"}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400}
@@ -983,7 +990,7 @@ def test_polar_wedge_corner_radius_reaches_every_renderer() -> None:
 
 def test_rounded_wedge_stays_within_the_square_wedge() -> None:
     """Rounding must inset the boundary, never bulge past it."""
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection(
         {"theta_unit": "degrees"}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400}
@@ -998,10 +1005,10 @@ def test_rounded_wedge_stays_within_the_square_wedge() -> None:
 
 def test_svg_rounded_slice_differs_from_a_square_one() -> None:
     def slice_path(corner_radius: float) -> str:
-        chart = xy.polar_chart(
-            xy.bar([45.0], [1.0], base=0.5, width=80.0, corner_radius=corner_radius),
-            xy.theta_axis(unit="degrees", show=False),
-            xy.r_axis(domain=(0.0, 1.0), show=False),
+        chart = xyg.polar_chart(
+            xyg.bar([45.0], [1.0], base=0.5, width=80.0, corner_radius=corner_radius),
+            xyg.theta_axis(unit="degrees", show=False),
+            xyg.r_axis(domain=(0.0, 1.0), show=False),
             width=400,
             height=400,
         )
@@ -1020,8 +1027,8 @@ def test_raster_polar_wedge_honours_a_gradient_fill() -> None:
     """
     from test_png_export import _decode_rgba
 
-    chart = xy.polar_chart(
-        xy.bar(
+    chart = xyg.polar_chart(
+        xyg.bar(
             [180.0],
             [1.0],
             base=0.4,
@@ -1029,8 +1036,8 @@ def test_raster_polar_wedge_honours_a_gradient_fill() -> None:
             color="#7c3aed",
             fill="linear-gradient(to top, #7c3aed, #34d399)",
         ),
-        xy.theta_axis(unit="degrees", show=False),
-        xy.r_axis(domain=(0.0, 1.0), show=False),
+        xyg.theta_axis(unit="degrees", show=False),
+        xyg.r_axis(domain=(0.0, 1.0), show=False),
         width=320,
         height=320,
     )
@@ -1079,9 +1086,9 @@ def test_reversed_radial_axis_keeps_wedges_in_static_exports() -> None:
     SVG/PNG while the shader (which min/maxes) kept drawing them."""
 
     def wedge_paths(**rkw) -> int:
-        chart = xy.polar_chart(
-            xy.bar([0.0, 1.0, 2.0], [3.0, 5.0, 4.0], width=0.5),
-            xy.r_axis(**rkw),
+        chart = xyg.polar_chart(
+            xyg.bar([0.0, 1.0, 2.0], [3.0, 5.0, 4.0], width=0.5),
+            xyg.r_axis(**rkw),
             width=360,
             height=340,
         )
@@ -1105,10 +1112,10 @@ def test_pdf_export_supports_hole_and_sector_clips(label, theta_kwargs, r_kwargs
     <path> clipPath, which the PDF converter refused — so the headline polar
     features crashed `to_image(format="pdf")`. The path clip now lowers to PDF
     ops with the SVG clip-rule mapped onto W/W*."""
-    chart = xy.polar_chart(
-        xy.bar([30.0, 70.0], [3.0, 5.0], width=8.0),
-        xy.theta_axis(unit="degrees", **theta_kwargs),
-        xy.r_axis(**r_kwargs),
+    chart = xyg.polar_chart(
+        xyg.bar([30.0, 70.0], [3.0, 5.0], width=8.0),
+        xyg.theta_axis(unit="degrees", **theta_kwargs),
+        xyg.r_axis(**r_kwargs),
         width=320,
         height=300,
     )
@@ -1121,7 +1128,7 @@ def test_constant_radius_series_still_starts_at_the_centre() -> None:
     constant-radius data resolved to a padded [4.75, 5.25] — a unit circle
     rendered as a ring floating mid-disc."""
     spec, _ = (
-        xy.polar_chart(xy.line([0.0, 1.0, 2.0, 3.0], [5.0] * 4), width=320, height=300)
+        xyg.polar_chart(xyg.line([0.0, 1.0, 2.0, 3.0], [5.0] * 4), width=320, height=300)
         .figure()
         .build_payload_split()
     )
@@ -1133,7 +1140,7 @@ def test_raster_polar_area_culls_vertices_outside_the_sector() -> None:
     position_mask) and the shader cull out-of-sector and NaN vertices. The PNG
     painted the full-turn polygon with chords across the sector boundary and
     let NaN reach the display list (§19)."""
-    from xy import _raster
+    from xyg import _raster
 
     captured: list[int] = []
     original_fill = _raster._Cmd.fill
@@ -1154,10 +1161,10 @@ def test_raster_polar_area_culls_vertices_outside_the_sector() -> None:
         r = 1 + 0.3 * np.sin(np.radians(theta) * 3)
         r_nan = r.copy()
         r_nan[20] = np.nan
-        chart = xy.polar_chart(
-            xy.area(theta, r_nan),
-            xy.theta_axis(unit="degrees", sector=(0.0, 90.0)),
-            xy.r_axis(domain=(0.0, 1.5)),
+        chart = xyg.polar_chart(
+            xyg.area(theta, r_nan),
+            xyg.theta_axis(unit="degrees", sector=(0.0, 90.0)),
+            xyg.r_axis(domain=(0.0, 1.5)),
             width=320,
             height=300,
         )
@@ -1180,7 +1187,7 @@ def test_raster_polar_area_culls_vertices_outside_the_sector() -> None:
 def test_pie_chart_slices_carry_category_value_and_share() -> None:
     # Counts, not shares: the value and the percentage are different numbers, so
     # both earn their place in the row.
-    chart = xy.pie_chart(["a", "b", "c"], [27.0, 21.0, 13.0], width=300, height=300)
+    chart = xyg.pie_chart(["a", "b", "c"], [27.0, 21.0, 13.0], width=300, height=300)
     spec, _ = chart.figure().build_payload()
     names = [t["name"] for t in spec["traces"]]
     assert names == ["a  27  (44%)", "b  21  (34%)", "c  13  (21%)"]
@@ -1200,7 +1207,7 @@ def test_pie_chart_never_prints_the_same_number_twice() -> None:
     "Direct  40  (40%)" — a legend row that reads as repeated text, and long
     enough to overflow the legend box that then grew a horizontal scrollbar.
     """
-    chart = xy.pie_chart(
+    chart = xyg.pie_chart(
         ["Direct", "Partner", "Organic", "Other"],
         [40.0, 30.0, 20.0, 10.0],
         width=300,
@@ -1214,7 +1221,7 @@ def test_pie_chart_never_prints_the_same_number_twice() -> None:
     # one row carries a bare value and the next does not is worse than either
     # consistent shape. 10.5 does not render as its 10% share, so every row keeps
     # its value even though the other three would have collided.
-    mixed = xy.pie_chart(["a", "b", "c", "d"], [40.0, 30.0, 20.0, 10.5], width=300, height=300)
+    mixed = xyg.pie_chart(["a", "b", "c", "d"], [40.0, 30.0, 20.0, 10.5], width=300, height=300)
     mixed_spec, _ = mixed.figure().build_payload()
     assert [t["name"] for t in mixed_spec["traces"]] == [
         "a  40  (40%)",
@@ -1224,19 +1231,21 @@ def test_pie_chart_never_prints_the_same_number_twice() -> None:
     ]
 
     # A zero slice draws no wedge and gets no row, so it cannot veto the choice.
-    zeroed = xy.pie_chart(["a", "b", "c", "d"], [40.0, 30.0, 30.0, 0.0], width=300, height=300)
+    zeroed = xyg.pie_chart(["a", "b", "c", "d"], [40.0, 30.0, 30.0, 0.0], width=300, height=300)
     zero_spec, _ = zeroed.figure().build_payload()
     assert [t["name"] for t in zero_spec["traces"]] == ["a  (40%)", "b  (30%)", "c  (30%)"]
 
     # Either switch alone is untouched: with no share to collide with, the value
     # is always shown.
-    values_only = xy.pie_chart(["a", "b"], [40.0, 60.0], show_percent=False, width=300, height=300)
+    values_only = xyg.pie_chart(["a", "b"], [40.0, 60.0], show_percent=False, width=300, height=300)
     values_spec, _ = values_only.figure().build_payload()
     assert [t["name"] for t in values_spec["traces"]] == ["a  40", "b  60"]
 
 
 def test_pie_chart_user_tooltip_wins() -> None:
-    chart = xy.pie_chart(["a", "b"], [1.0, 1.0], xy.tooltip(title="custom"), width=300, height=300)
+    chart = xyg.pie_chart(
+        ["a", "b"], [1.0, 1.0], xyg.tooltip(title="custom"), width=300, height=300
+    )
     spec, _ = chart.figure().build_payload()
     assert spec["tooltip"]["title"] == "custom"
 
@@ -1252,7 +1261,7 @@ def test_pie_chart_user_tooltip_wins() -> None:
 )
 def test_pie_chart_refusals(labels, values, message) -> None:
     with pytest.raises(ValueError, match=message):
-        xy.pie_chart(labels, values)
+        xyg.pie_chart(labels, values)
 
 
 def test_wind_rose_bands_are_their_own_count_not_the_cumulative_top() -> None:
@@ -1262,7 +1271,7 @@ def test_wind_rose_bands_are_their_own_count_not_the_cumulative_top() -> None:
     thick. The height is the band's count."""
     directions = np.array([0.0, 0.0, 0.0])
     speeds = np.array([1.0, 1.0, 9.0])
-    chart = xy.wind_rose(directions, speeds, sectors=4, speed_bins=[2.0, 10.0])
+    chart = xyg.wind_rose(directions, speeds, sectors=4, speed_bins=[2.0, 10.0])
     bars = [c for c in chart.children if getattr(c, "kind", None) == "bar"]
     heights = [float(np.asarray(b.y, dtype=float)[0]) for b in bars]
     bases = [float(np.asarray(b.props["base"], dtype=float)[0]) for b in bars]
@@ -1277,7 +1286,7 @@ def test_wind_rose_tooltip_reports_band_count_and_direction() -> None:
     bearing), so it names the direction row back in and pairs it with the
     band's own count rather than the cumulative stack radius."""
     rng = np.random.default_rng(7)
-    chart = xy.wind_rose(rng.uniform(0, 360, 120), rng.gamma(2.0, 2.0, 120), sectors=8)
+    chart = xyg.wind_rose(rng.uniform(0, 360, 120), rng.gamma(2.0, 2.0, 120), sectors=8)
     spec, _ = chart.figure().build_payload_split()
     tip = spec["tooltip"]
     assert tip["title"] == "{name}"
@@ -1291,7 +1300,7 @@ def test_wedge_gap_is_a_constant_width_not_a_constant_angle() -> None:
     nothing at the hole — the spacing visibly narrows toward the centre. The
     gap is a length: the angular inset grows as the radius shrinks, so the arc
     removed per edge is the same number of px at every radius."""
-    from xy._svg import _PolarProjection, polar_wedge_points
+    from xyg._svg import _PolarProjection, polar_wedge_points
 
     project = _PolarProjection(
         {"theta_unit": "degrees"}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400}
@@ -1320,7 +1329,7 @@ def test_wedge_gap_is_a_constant_width_not_a_constant_angle() -> None:
 def test_pie_chart_ships_true_shares_and_a_pixel_gap() -> None:
     """The gap is carved by the renderer, so `width` stays the slice's real
     share — which is what makes the hovered share exact."""
-    chart = xy.pie_chart(["a", "b", "c", "d"], [40.0, 30.0, 20.0, 10.0], pad=6.0)
+    chart = xyg.pie_chart(["a", "b", "c", "d"], [40.0, 30.0, 20.0, 10.0], pad=6.0)
     spec, _ = chart.figure().build_payload_split()
     widths = [t["bar"]["width"] for t in spec["traces"]]
     assert widths == pytest.approx([144.0, 108.0, 72.0, 36.0])
@@ -1337,8 +1346,8 @@ def test_radar_spokes_follow_the_authored_angular_unit(axis_kwargs, turn) -> Non
     axis declares. Hard-coded radians against an authored degrees axis put
     0..2pi samples inside a 0..360 frame, squeezing the whole radar into the
     first 6.28 degrees."""
-    chart = xy.radar_chart(
-        ["a", "b", "c", "d"], xy.area([1.0, 2.0, 3.0, 2.0]), xy.theta_axis(**axis_kwargs)
+    chart = xyg.radar_chart(
+        ["a", "b", "c", "d"], xyg.area([1.0, 2.0, 3.0, 2.0]), xyg.theta_axis(**axis_kwargs)
     )
     spec, _ = chart.figure().build_payload_split()
     assert spec["x_axis"]["range"][1] == pytest.approx(turn)
@@ -1352,18 +1361,18 @@ def test_radar_spokes_follow_the_authored_angular_unit(axis_kwargs, turn) -> Non
     [
         (
             "secondary radial",
-            lambda: xy.polar_chart(
-                xy.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
-                xy.line([0.0, 1.0, 2.0], [2.0, 4.0, 6.0], y_axis="y2"),
-                xy.r_axis(id="y2", domain=(0.0, 8.0)),
+            lambda: xyg.polar_chart(
+                xyg.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
+                xyg.line([0.0, 1.0, 2.0], [2.0, 4.0, 6.0], y_axis="y2"),
+                xyg.r_axis(id="y2", domain=(0.0, 8.0)),
             ),
         ),
         (
             "secondary angular",
-            lambda: xy.polar_chart(
-                xy.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
-                xy.line([0.0, 1.0, 2.0], [2.0, 4.0, 6.0], x_axis="x2"),
-                xy.x_axis(id="x2"),
+            lambda: xyg.polar_chart(
+                xyg.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
+                xyg.line([0.0, 1.0, 2.0], [2.0, 4.0, 6.0], x_axis="x2"),
+                xyg.x_axis(id="x2"),
             ),
         ),
     ],
@@ -1385,13 +1394,13 @@ def test_polar_refuses_a_non_linear_angular_axis(scale) -> None:
     exactly one renderer: the client scaled theta before projecting while the
     static exporters ignored the scale outright, so one figure pointed the same
     datum at opposite sides of the disc depending on where it was drawn."""
-    chart = xy.polar_chart(xy.line([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]), xy.theta_axis(type_=scale))
+    chart = xyg.polar_chart(xyg.line([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]), xyg.theta_axis(type_=scale))
     with pytest.raises(ValueError, match="angular axis"):
         chart.figure().build_payload_split()
 
     # A log *radial* axis stays supported — only the angle must be linear.
-    xy.polar_chart(
-        xy.line([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]), xy.r_axis(type_="log")
+    xyg.polar_chart(
+        xyg.line([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]), xyg.r_axis(type_="log")
     ).figure().build_payload_split()
 
 
@@ -1441,16 +1450,16 @@ def test_polar_refuses_reverse_on_the_angular_axis() -> None:
     idea as `direction`. It rode the wire as `"reverse": true` and every
     renderer ignored it, so the axis silently drew unreversed."""
     with pytest.raises(ValueError, match="reverse=True on the angular axis"):
-        xy.polar_chart(
-            xy.line([0.0, 1.0], [1.0, 2.0]), xy.theta_axis(reverse=True)
+        xyg.polar_chart(
+            xyg.line([0.0, 1.0], [1.0, 2.0]), xyg.theta_axis(reverse=True)
         ).figure().build_payload_split()
 
     # The switch that does work, and the radial flip, stay supported.
-    xy.polar_chart(
-        xy.line([0.0, 1.0], [1.0, 2.0]), xy.theta_axis(direction="clockwise")
+    xyg.polar_chart(
+        xyg.line([0.0, 1.0], [1.0, 2.0]), xyg.theta_axis(direction="clockwise")
     ).figure().build_payload_split()
-    xy.polar_chart(
-        xy.line([0.0, 1.0], [1.0, 2.0]), xy.r_axis(reverse=True)
+    xyg.polar_chart(
+        xyg.line([0.0, 1.0], [1.0, 2.0]), xyg.r_axis(reverse=True)
     ).figure().build_payload_split()
 
 
@@ -1458,8 +1467,8 @@ def test_wind_rose_names_a_fractional_sector_count() -> None:
     """A non-integer count reached np.bincount's `minlength` and surfaced as a
     raw NumPy TypeError naming neither the parameter nor the mistake."""
     with pytest.raises(ValueError, match="whole number"):
-        xy.wind_rose([10.0, 20.0], [1.0, 2.0], sectors=8.5)
-    xy.wind_rose([10.0, 20.0], [1.0, 2.0], sectors=8).figure().build_payload_split()
+        xyg.wind_rose([10.0, 20.0], [1.0, 2.0], sectors=8.5)
+    xyg.wind_rose([10.0, 20.0], [1.0, 2.0], sectors=8).figure().build_payload_split()
 
 
 @pytest.mark.parametrize(
@@ -1467,21 +1476,21 @@ def test_wind_rose_names_a_fractional_sector_count() -> None:
     [
         (
             "log radial annihilates every row",
-            lambda: xy.polar_chart(
-                xy.area([0.0, 90.0, 180.0], [1.0, 2.0, 3.0]),
-                xy.theta_axis(unit="degrees"),
-                xy.r_axis(type_="log"),
+            lambda: xyg.polar_chart(
+                xyg.area([0.0, 90.0, 180.0], [1.0, 2.0, 3.0]),
+                xyg.theta_axis(unit="degrees"),
+                xyg.r_axis(type_="log"),
             ),
         ),
         (
             "all-NaN radar polygon",
-            lambda: xy.radar_chart(["a", "b", "c"], xy.area([float("nan")] * 3)),
+            lambda: xyg.radar_chart(["a", "b", "c"], xyg.area([float("nan")] * 3)),
         ),
         (
             "area entirely outside the sector",
-            lambda: xy.polar_chart(
-                xy.area([200.0, 220.0, 240.0], [1.0, 2.0, 3.0]),
-                xy.theta_axis(unit="degrees", sector=(0.0, 90.0)),
+            lambda: xyg.polar_chart(
+                xyg.area([200.0, 220.0, 240.0], [1.0, 2.0, 3.0]),
+                xyg.theta_axis(unit="degrees", sector=(0.0, 90.0)),
             ),
         ),
     ],
@@ -1506,20 +1515,23 @@ def test_pie_chart_renders_a_zero_valued_slice() -> None:
     accepts it (values are validated finite and non-negative), but a zero span
     reached `bar(width=...)` and died as "bar width must be positive" — an
     error from a layer below naming neither pie_chart nor the label."""
-    doc = xy.pie_chart(["Direct", "Partner", "Organic"], [40.0, 0.0, 20.0]).figure().to_svg()
+    doc = xyg.pie_chart(["Direct", "Partner", "Organic"], [40.0, 0.0, 20.0]).figure().to_svg()
     assert "Direct" in doc and "Organic" in doc
     # The empty category draws no wedge rather than a zero-width one.
     assert "Partner" not in doc
-    xy.pie_chart(["a", "b"], [1.0, 0.0]).figure().to_image(format="pdf")
+    xyg.pie_chart(["a", "b"], [1.0, 0.0]).figure().to_image(format="pdf")
 
 
 @pytest.mark.parametrize(
     ("label", "build"),
     [
-        ("polar_chart", lambda **k: xy.polar_chart(xy.line([0.0, 1.0], [1.0, 2.0]), **k)),
-        ("pie_chart", lambda **k: xy.pie_chart(["a", "b"], [1.0, 2.0], **k)),
-        ("radar_chart", lambda **k: xy.radar_chart(["a", "b", "c"], xy.area([1.0, 2.0, 3.0]), **k)),
-        ("wind_rose", lambda **k: xy.wind_rose([10.0, 20.0], [1.0, 2.0], **k)),
+        ("polar_chart", lambda **k: xyg.polar_chart(xyg.line([0.0, 1.0], [1.0, 2.0]), **k)),
+        ("pie_chart", lambda **k: xyg.pie_chart(["a", "b"], [1.0, 2.0], **k)),
+        (
+            "radar_chart",
+            lambda **k: xyg.radar_chart(["a", "b", "c"], xyg.area([1.0, 2.0, 3.0]), **k),
+        ),
+        ("wind_rose", lambda **k: xyg.wind_rose([10.0, 20.0], [1.0, 2.0], **k)),
     ],
 )
 def test_polar_helpers_refuse_a_cartesian_coords_override(label, build) -> None:
@@ -1541,11 +1553,11 @@ def test_polar_refuses_a_time_angular_axis_by_resolved_kind() -> None:
     days = [datetime(2026, 1, 1, tzinfo=UTC) + timedelta(days=i) for i in range(6)]
     values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
     with pytest.raises(ValueError, match="time angular axis"):
-        xy.polar_chart(xy.line(days, values)).figure().build_payload_split()
+        xyg.polar_chart(xyg.line(days, values)).figure().build_payload_split()
 
     # A time *radial* axis stays supported, and cartesian time is untouched.
-    xy.polar_chart(xy.line(values, days)).figure().build_payload_split()
-    xy.line_chart(xy.line(days, values)).figure().build_payload_split()
+    xyg.polar_chart(xyg.line(values, days)).figure().build_payload_split()
+    xyg.line_chart(xyg.line(days, values)).figure().build_payload_split()
 
 
 @pytest.mark.parametrize("kind", ["bar", "column", "errorbar"])
@@ -1558,12 +1570,12 @@ def test_polar_direct_ceiling_covers_every_capped_mark(kind) -> None:
     theta = np.linspace(0.0, 360.0, n)
     values = np.ones(n)
     marks = {
-        "bar": lambda: xy.bar(theta, values),
-        "column": lambda: xy.column(theta, values),
-        "errorbar": lambda: xy.errorbar(theta, values, yerr=values * 0.1),
+        "bar": lambda: xyg.bar(theta, values),
+        "column": lambda: xyg.column(theta, values),
+        "errorbar": lambda: xyg.errorbar(theta, values, yerr=values * 0.1),
     }
     with pytest.raises(ValueError, match="polar ceiling"):
-        xy.polar_chart(marks[kind]()).figure().build_payload_split()
+        xyg.polar_chart(marks[kind]()).figure().build_payload_split()
 
 
 def _text_boxes(doc: str) -> list[tuple[float, float, str, float]]:
@@ -1607,10 +1619,10 @@ def test_radial_tick_labels_do_not_overlap(hole, size) -> None:
     request off the full plot height packed a height's worth of labels into that
     fifth, and the polar path skips the collision pass that would thin them.
     Not a narrow-viewport effect: the 700px case overlapped worse than 390px."""
-    chart = xy.polar_chart(
-        xy.line([0.0, 90.0, 180.0, 270.0], [10.0, 20.0, 30.0, 40.0]),
-        xy.theta_axis(unit="degrees"),
-        xy.r_axis(hole=hole, domain=(0.0, 60.0)),
+    chart = xyg.polar_chart(
+        xyg.line([0.0, 90.0, 180.0, 270.0], [10.0, 20.0, 30.0, 40.0]),
+        xyg.theta_axis(unit="degrees"),
+        xyg.r_axis(hole=hole, domain=(0.0, 60.0)),
         width=size,
         height=size,
     )
@@ -1628,7 +1640,9 @@ def test_negative_radial_autorange_keeps_its_pad() -> None:
 
     def radial_range(values):
         spec, _ = (
-            xy.polar_chart(xy.line(list(range(len(values))), values)).figure().build_payload_split()
+            xyg.polar_chart(xyg.line(list(range(len(values))), values))
+            .figure()
+            .build_payload_split()
         )
         return spec["y_axis"]["range"]
 
@@ -1645,7 +1659,7 @@ def test_get_theta_offset_matches_matplotlibs_zero_to_two_pi_mapping() -> None:
     getter returned the render tables' -pi/2 — the same angle, but a compat
     getter has to return matplotlib's number, and the negative breaks both
     `get_theta_offset() > 0` and a round-trip through `set_theta_offset`."""
-    from xy import pyplot as plt
+    from xyg import pyplot as plt
 
     expected = {
         "E": 0.0,
@@ -1682,13 +1696,13 @@ def test_polar_paths_keep_the_authored_angular_order() -> None:
 
     theta = [350.0, 10.0, 30.0, 5.0]
     radius = [1.0, 2.0, 3.0, 4.0]
-    for mark in (xy.line, xy.area):
-        chart = xy.polar_chart(mark(theta, radius), xy.theta_axis(unit="degrees"))
+    for mark in (xyg.line, xyg.area):
+        chart = xyg.polar_chart(mark(theta, radius), xyg.theta_axis(unit="degrees"))
         assert wire_order(chart) == theta, mark.__name__
         assert wire_order(chart, "y") == radius, mark.__name__
 
     # Cartesian keeps its sort — the LOD contract still needs it there.
-    assert wire_order(xy.line_chart(xy.line(theta, radius))) == sorted(theta)
+    assert wire_order(xyg.line_chart(xyg.line(theta, radius))) == sorted(theta)
 
 
 def test_wind_rose_refuses_bins_that_would_drop_an_observation() -> None:
@@ -1697,12 +1711,12 @@ def test_wind_rose_refuses_bins_that_would_drop_an_observation() -> None:
     counted 2 of 3 observations when one blew at 25 — the rose under-reported
     its own input silently."""
     with pytest.raises(ValueError, match="below the fastest observation"):
-        xy.wind_rose([10.0, 10.0, 10.0], [5.0, 15.0, 25.0], speed_bins=[10.0, 20.0])
+        xyg.wind_rose([10.0, 10.0, 10.0], [5.0, 15.0, 25.0], speed_bins=[10.0, 20.0])
     with pytest.raises(ValueError, match="must all be finite"):
-        xy.wind_rose([10.0], [5.0], speed_bins=[10.0, float("inf")])
+        xyg.wind_rose([10.0], [5.0], speed_bins=[10.0, float("inf")])
 
     # Edges that do cover the data still work, and count every observation.
-    chart = xy.wind_rose([10.0, 10.0, 10.0], [5.0, 15.0, 25.0], speed_bins=[10.0, 20.0, 30.0])
+    chart = xyg.wind_rose([10.0, 10.0, 10.0], [5.0, 15.0, 25.0], speed_bins=[10.0, 20.0, 30.0])
     counted = sum(
         float(np.nansum(np.asarray(child.y, dtype=float)))
         for child in chart.children
@@ -1718,7 +1732,7 @@ def test_polar_bar_segments_matches_the_client_on_a_degenerate_span(span) -> Non
     ValueError on NaN and OverflowError on infinity — the two renderers
     disagreed about what a degenerate wedge costs, one drawing it and the other
     crashing."""
-    from xy.config import POLAR_BAR_SEGMENTS, polar_bar_segments
+    from xyg.config import POLAR_BAR_SEGMENTS, polar_bar_segments
 
     result = polar_bar_segments(span, 360.0)
     assert result == POLAR_BAR_SEGMENTS
@@ -1726,10 +1740,10 @@ def test_polar_bar_segments_matches_the_client_on_a_degenerate_span(span) -> Non
 
 
 def test_every_polar_public_name_is_typed_for_static_analysis() -> None:
-    """The lazy `__getattr__` surface makes `from xy import polar_chart` resolve
+    """The lazy `__getattr__` surface makes `from xyg import polar_chart` resolve
     to `Any` unless the name is also in the TYPE_CHECKING import block, which
     silently drops signatures, completion and argument checking."""
-    source = (ROOT / "python/xy/__init__.py").read_text()
+    source = (ROOT / "python/xyg/__init__.py").read_text()
     start = source.index("    from .components import (")
     block = source[start : source.index(")", start)]
     for name in (
@@ -1752,13 +1766,13 @@ def test_time_radius_is_exempt_from_the_centre_origin_default() -> None:
     instant = datetime(2026, 1, 1, tzinfo=UTC)
     angles = [0.0, 1.0, 2.0]
 
-    polar, _ = xy.polar_chart(xy.line(angles, [instant] * 3)).figure().build_payload_split()
-    cartesian, _ = xy.line_chart(xy.line(angles, [instant] * 3)).figure().build_payload_split()
+    polar, _ = xyg.polar_chart(xyg.line(angles, [instant] * 3)).figure().build_payload_split()
+    cartesian, _ = xyg.line_chart(xyg.line(angles, [instant] * 3)).figure().build_payload_split()
     assert polar["y_axis"]["range"][0] != 0.0
     assert polar["y_axis"]["range"] == cartesian["y_axis"]["range"]
 
     # Numeric radii keep the centre-origin contract untouched.
-    numeric, _ = xy.polar_chart(xy.line(angles, [5.0, 5.0, 5.0])).figure().build_payload_split()
+    numeric, _ = xyg.polar_chart(xyg.line(angles, [5.0, 5.0, 5.0])).figure().build_payload_split()
     assert numeric["y_axis"]["range"] == [0.0, 5.0]
 
 
@@ -1770,15 +1784,15 @@ def _polar_zoom_flag(chart) -> object:
 @pytest.mark.parametrize(
     ("label", "build"),
     [
-        ("polar_chart", lambda *c, **k: xy.polar_chart(xy.line([0.0, 1.0], [1.0, 2.0]), *c, **k)),
+        ("polar_chart", lambda *c, **k: xyg.polar_chart(xyg.line([0.0, 1.0], [1.0, 2.0]), *c, **k)),
         (
             "polar_bar_chart",
-            lambda *c, **k: xy.polar_bar_chart(xy.bar([0.0], [1.0], width=1.0), *c, **k),
+            lambda *c, **k: xyg.polar_bar_chart(xyg.bar([0.0], [1.0], width=1.0), *c, **k),
         ),
-        ("pie_chart", lambda *c, **k: xy.pie_chart(["a", "b"], [1.0, 2.0], *c, **k)),
+        ("pie_chart", lambda *c, **k: xyg.pie_chart(["a", "b"], [1.0, 2.0], *c, **k)),
         (
             "radar_chart",
-            lambda *c, **k: xy.radar_chart(["a", "b", "c"], xy.area([1.0, 2.0, 3.0]), *c, **k),
+            lambda *c, **k: xyg.radar_chart(["a", "b", "c"], xyg.area([1.0, 2.0, 3.0]), *c, **k),
         ),
     ],
 )
@@ -1795,7 +1809,7 @@ def test_polar_ships_zoom_disabled_by_default(label, build) -> None:
     assert _polar_zoom_flag(build()) is False, label
     # Both opt-in spellings win over the default.
     assert _polar_zoom_flag(build(zoom=True)) is True, label
-    assert _polar_zoom_flag(build(xy.interaction_config(zoom=True))) is True, label
+    assert _polar_zoom_flag(build(xyg.interaction_config(zoom=True))) is True, label
 
 
 def test_wind_rose_is_the_polar_composition_that_keeps_zoom() -> None:
@@ -1806,17 +1820,17 @@ def test_wind_rose_is_the_polar_composition_that_keeps_zoom() -> None:
     still turn it off."""
     directions = [0.0, 45.0, 90.0, 180.0, 270.0]
     speeds = [1.0, 4.0, 9.0, 3.0, 6.0]
-    assert _polar_zoom_flag(xy.wind_rose(directions, speeds)) is True
-    assert _polar_zoom_flag(xy.wind_rose(directions, speeds, zoom=False)) is False
+    assert _polar_zoom_flag(xyg.wind_rose(directions, speeds)) is True
+    assert _polar_zoom_flag(xyg.wind_rose(directions, speeds, zoom=False)) is False
     assert (
-        _polar_zoom_flag(xy.wind_rose(directions, speeds, xy.interaction_config(zoom=False)))
+        _polar_zoom_flag(xyg.wind_rose(directions, speeds, xyg.interaction_config(zoom=False)))
         is False
     )
     # `None` is "unset" everywhere else in the interaction API, so it must keep
     # the rose's own default rather than fall through to the polar one. A wrapper
     # forwarding an `Optional[bool]` would otherwise turn zoom OFF by passing the
     # value that means "I have no opinion".
-    assert _polar_zoom_flag(xy.wind_rose(directions, speeds, zoom=None)) is True
+    assert _polar_zoom_flag(xyg.wind_rose(directions, speeds, zoom=None)) is True
 
 
 #: Every drag action polar refuses, derived from the public `DefaultDragAction`
@@ -1853,9 +1867,9 @@ def test_polar_refuses_every_inert_drag_action(action) -> None:
     `{"zoom": false, "default_drag_action": "zoom"}`.
     """
     for build in (
-        lambda **k: xy.polar_chart(xy.scatter([0.0, 1.0], [1.0, 2.0]), **k),
-        lambda **k: xy.pie_chart(["a", "b"], [1.0, 2.0], **k),
-        lambda **k: xy.wind_rose([10.0, 20.0, 30.0], [1.0, 2.0, 3.0], **k),
+        lambda **k: xyg.polar_chart(xyg.scatter([0.0, 1.0], [1.0, 2.0]), **k),
+        lambda **k: xyg.pie_chart(["a", "b"], [1.0, 2.0], **k),
+        lambda **k: xyg.wind_rose([10.0, 20.0, 30.0], [1.0, 2.0, 3.0], **k),
     ):
         with pytest.raises(ValueError, match="does not support default_drag_action"):
             build(default_drag_action=action).figure().build_payload_split()
@@ -1866,7 +1880,7 @@ def test_polar_refuses_every_inert_drag_action(action) -> None:
     # `auto` and `none` stay legal — they are what polar already resolves to.
     for legal in ("auto", "none"):
         spec, _ = (
-            xy.polar_chart(xy.line([0.0, 1.0], [1.0, 2.0]), default_drag_action=legal)
+            xyg.polar_chart(xyg.line([0.0, 1.0], [1.0, 2.0]), default_drag_action=legal)
             .figure()
             .build_payload_split()
         )
@@ -1877,7 +1891,7 @@ def test_cartesian_drag_action_validation_is_unchanged() -> None:
     """The polar refusal must not leak into Cartesian charts, whose drag tools
     are real; only a capability the config itself turned off still raises."""
     spec, _ = (
-        xy.line_chart(xy.line([0.0, 1.0], [1.0, 2.0]), default_drag_action="zoom")
+        xyg.line_chart(xyg.line([0.0, 1.0], [1.0, 2.0]), default_drag_action="zoom")
         .figure()
         .build_payload_split()
     )
@@ -1885,8 +1899,8 @@ def test_cartesian_drag_action_validation_is_unchanged() -> None:
     # Absent zoom stays absent on the wire for Cartesian (§5.2).
     assert "zoom" not in spec["interaction"]
     with pytest.raises(ValueError, match="requires navigation and pan"):
-        xy.line_chart(
-            xy.line([0.0, 1.0], [1.0, 2.0]), pan=False, default_drag_action="pan"
+        xyg.line_chart(
+            xyg.line([0.0, 1.0], [1.0, 2.0]), pan=False, default_drag_action="pan"
         ).figure().build_payload_split()
 
 
@@ -1902,7 +1916,7 @@ def test_explicit_reset_axes_still_grants_polar_reset_without_zoom() -> None:
     """
     theta, r = _rose()
     spec, _ = (
-        xy.polar_chart(xy.line(theta, r), xy.interaction_config(reset_axes=("y",)))
+        xyg.polar_chart(xyg.line(theta, r), xyg.interaction_config(reset_axes=("y",)))
         .figure()
         .build_payload_split()
     )
@@ -1914,26 +1928,26 @@ def test_interaction_config_opts_a_polar_chart_back_into_zoom() -> None:
     """The documented escape hatch: an `interaction_config` child is applied
     after chart props, so it is the last word on either side of the default."""
     theta, r = _rose()
-    assert _polar_zoom_flag(xy.polar_chart(xy.line(theta, r))) is False
+    assert _polar_zoom_flag(xyg.polar_chart(xyg.line(theta, r))) is False
     assert (
-        _polar_zoom_flag(xy.polar_chart(xy.line(theta, r), xy.interaction_config(zoom=True)))
+        _polar_zoom_flag(xyg.polar_chart(xyg.line(theta, r), xyg.interaction_config(zoom=True)))
         is True
     )
-    assert _polar_zoom_flag(xy.pie_chart(["a", "b"], [1.0, 2.0], zoom=True)) is True
+    assert _polar_zoom_flag(xyg.pie_chart(["a", "b"], [1.0, 2.0], zoom=True)) is True
     # A cartesian figure is untouched: its zoom stays absent so the client keeps
     # resolving the ordinary `True` default (pan-and-zoom-configuration §5.2).
-    assert _polar_zoom_flag(xy.line_chart(xy.line([0.0, 1.0], [1.0, 2.0]))) == "absent"
+    assert _polar_zoom_flag(xyg.line_chart(xyg.line([0.0, 1.0], [1.0, 2.0]))) == "absent"
 
 
 def test_pyplot_polar_projection_inherits_the_zoom_default() -> None:
     """`coords="polar"` carries the default, not the helper factories, so a
-    hand-built `xy.chart(coords="polar")` and the shim's `projection="polar"`
+    hand-built `xyg.chart(coords="polar")` and the shim's `projection="polar"`
     get it too — the rule belongs to the coordinate system, and there is one of
     it rather than one per factory."""
-    import xy.pyplot as plt
+    import xyg.pyplot as plt
 
     theta, r = _rose()
-    assert _polar_zoom_flag(xy.chart(xy.line(theta, r), coords="polar")) is False
+    assert _polar_zoom_flag(xyg.chart(xyg.line(theta, r), coords="polar")) is False
 
     figure, ax = plt.subplots(subplot_kw={"projection": "polar"})
     ax.plot([0.0, 1.0, 2.0], [1.0, 2.0, 3.0])

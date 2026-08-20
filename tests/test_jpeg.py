@@ -1,4 +1,4 @@
-"""Baseline JPEG encoder (`xy._jpeg`) — Pillow is the decode oracle."""
+"""Baseline JPEG encoder (`xyg._jpeg`) — Pillow is the decode oracle."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import io
 import numpy as np
 import pytest
 
-from xy import _jpeg
+from xyg import _jpeg
 
 Image = pytest.importorskip("PIL.Image")
 

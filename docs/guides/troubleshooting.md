@@ -5,7 +5,7 @@ description: Diagnose installation, display, export, validation, streaming, and 
 
 # Troubleshooting
 
-XY validates contracts at the boundary so a bad option fails close to the
+XYG validates contracts at the boundary so a bad option fails close to the
 chart call instead of producing a silently wrong visualization. Start with the
 exception text: public validation errors name the argument, unsupported value,
 or mismatched lengths involved.
@@ -13,12 +13,12 @@ or mismatched lengths involved.
 ## Installation and Native Core
 
 **The native library is missing or cannot load.** Install a published wheel for
-the current Python and platform. XY's native core is required; it does not
+the current Python and platform. XYG's native core is required; it does not
 silently fall back to a slower Python implementation. A source checkout or
 unsupported platform needs a Rust build toolchain.
 
-**The JavaScript client is missing.** Reinstall the XY wheel so its bundled
-`python/xy/static` copy of `@curatelabs/xyg` is present. In a development
+**The JavaScript client is missing.** Reinstall the XYG wheel so its bundled
+`python/xyg/static` copy of `@curatelabs/xyg` is present. In a development
 checkout, build the JS client with `npm ci && node js/build.mjs` (writes
 `packages/xy-client/dist` and copies into the Python tree) before using
 widgets or HTML export. JS/Node users should resolve `@curatelabs/xyg`, not
@@ -37,9 +37,9 @@ then display `chart.widget()` directly to isolate surrounding layout.
 **JupyterLite shows `Failed to load model class 'AnyModel' from module
 'anywidget'`.** The deployment's prebuilt frontend lacks the anywidget
 extension, and `%pip install anywidget` adds only the kernel-side package —
-frontend JavaScript cannot be installed at runtime. Current XY releases
+frontend JavaScript cannot be installed at runtime. Current XYG releases
 detect WASM kernels and display through the standalone-HTML host instead, so
-`chart.show()` renders without the widget comm; upgrade XY if you still see
+`chart.show()` renders without the widget comm; upgrade XYG if you still see
 this error. If the error persists on a current release, check for an explicit
 `XY_NOTEBOOK_DISPLAY=widget` or `show(display="widget")` override forcing the
 widget host — set those only in a self-built JupyterLite deployment that
@@ -48,7 +48,7 @@ this error: it bundles its own anywidget frontend and keeps live widgets. See
 [Notebooks](/docs/xy/integrations/notebooks/).
 
 **Only some charts in a large dashboard remain live.** Browsers limit WebGL
-contexts. Avoid keeping more than XY's default context budget of 12 charts
+contexts. Avoid keeping more than XYG's default context budget of 12 charts
 simultaneously visible; see
 [Dashboards and linked views](/docs/xy/guides/dashboards-and-linked-views/).
 
@@ -101,7 +101,7 @@ and use a host wrapper for nonce/hash-only policies.
 ## Reflex
 
 **Events do not reach the backend.** `reflex_xy.chart(chart)` with a direct
-`xy.Chart` is the static payload tier. For fixed data with backend events,
+`xyg.Chart` is the static payload tier. For fixed data with backend events,
 create `token = reflex_xy.inline(chart)` at module scope and render it with
 `reflex_xy.chart(token)`. Use an `@reflex_xy.figure` state var instead when the
 data depends on the current session. Only the live token tiers dispatch
@@ -112,12 +112,12 @@ callbacks such as `on_hover`, `on_brush`, and `on_select` are ordinary Python
 callables for the notebook widget. Put Reflex handlers on the outer component
 with `on_point_hover`, `on_point_click`, `on_select_end`, or `on_view_change`.
 The selection payloads also differ: notebook `on_select` receives an
-`xy.Selection`, while Reflex `on_select_end` receives a JSON-safe summary.
+`xyg.Selection`, while Reflex `on_select_end` receives a JSON-safe summary.
 
 **Different workers cannot resolve an inline token.** Register
 `reflex_xy.inline(chart)` at module scope so each backend worker creates the
 same content-addressed registration.
 
-When reporting a reproducible failure, include the XY version, Python version,
+When reporting a reproducible failure, include the XYG version, Python version,
 platform, output engine, chart dimensions, full exception, and a minimal chart
 constructor. `chart.memory_report()` is useful for memory or large-data cases.

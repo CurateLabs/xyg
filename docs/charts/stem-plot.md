@@ -1,8 +1,8 @@
 ---
 title: Stem Plot in Python
-description: Create a stem plot in Python with xy. Draw discrete values and impulses anchored to a baseline, interactive out of the box with pan, zoom, and hover.
+description: Create a stem plot in Python with xyg. Draw discrete values and impulses anchored to a baseline, interactive out of the box with pan, zoom, and hover.
 components:
-  - xy.stem_chart
+  - xyg.stem_chart
 ---
 
 # Stem Plots in Python
@@ -26,14 +26,14 @@ anchored to the baseline with a marker at its tip:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.arange(10)
 values = np.array([2, 5, 3, 7, 6, 9, 8, 11, 10, 13])
 
-chart = xy.chart(
-    xy.stem(x, values - 1.5, name="Events", color="#2563eb"),
-    xy.legend(),
+chart = xyg.chart(
+    xyg.stem(x, values - 1.5, name="Events", color="#2563eb"),
+    xyg.legend(),
 )
 
 
@@ -49,13 +49,13 @@ Values may swing above and below the baseline, and `width`, `opacity`,
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 n_taps = np.arange(24)
 impulse_response = 9.0 * np.sin(n_taps * 0.9) * 0.72**n_taps
 
-styled_stem_chart = xy.chart(
-    xy.stem(
+styled_stem_chart = xyg.chart(
+    xyg.stem(
         n_taps,
         impulse_response,
         color="#e5484d",
@@ -65,9 +65,9 @@ styled_stem_chart = xy.chart(
         symbol="diamond",
         name="h[n]",
     ),
-    xy.x_axis(label="sample n"),
-    xy.y_axis(label="amplitude"),
-    xy.legend(),
+    xyg.x_axis(label="sample n"),
+    xyg.y_axis(label="amplitude"),
+    xyg.legend(),
     title="Damped impulse response",
 )
 
@@ -85,7 +85,7 @@ for context:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_sig = np.random.default_rng(3)
 k = np.arange(16)
@@ -94,10 +94,10 @@ ideal_taps = 6.5 * 0.78**k
 envelope_x = np.linspace(0, 15, 120)
 envelope_y = 6.5 * 0.78**envelope_x
 
-stem_overlay_chart = xy.chart(
-    xy.line(envelope_x, envelope_y, color="#9ba1a6", width=1.5, dash="dashed", name="Envelope"),
-    xy.stem(k, ideal_taps, base=0.0, color="#2563eb", width=1.4, marker=False, name="Ideal"),
-    xy.stem(
+stem_overlay_chart = xyg.chart(
+    xyg.line(envelope_x, envelope_y, color="#9ba1a6", width=1.5, dash="dashed", name="Envelope"),
+    xyg.stem(k, ideal_taps, base=0.0, color="#2563eb", width=1.4, marker=False, name="Ideal"),
+    xyg.stem(
         k + 0.18,
         measured_taps,
         base=0.0,
@@ -106,9 +106,9 @@ stem_overlay_chart = xy.chart(
         marker_size=5.5,
         name="Measured",
     ),
-    xy.x_axis(label="tap k"),
-    xy.y_axis(label="coefficient"),
-    xy.legend(),
+    xyg.x_axis(label="tap k"),
+    xyg.y_axis(label="coefficient"),
+    xyg.legend(),
 )
 
 
@@ -148,7 +148,7 @@ table.
 
 ### How do I make a stem plot in Python?
 
-Call `xy.stem(x, values)` inside `xy.chart(...)` and render it. Each value is
+Call `xyg.stem(x, values)` inside `xyg.chart(...)` and render it. Each value is
 drawn as an impulse from the baseline to a marker, and pan, zoom, and hover are
 enabled automatically.
 
@@ -160,8 +160,8 @@ continuous trend that should be connected.
 
 ### How do I add a legend to a stem plot?
 
-Give the `stem` mark a `name` and add `xy.legend()` inside the same
-`xy.chart(...)`.
+Give the `stem` mark a `name` and add `xyg.legend()` inside the same
+`xyg.chart(...)`.
 
 ### Can I change the baseline the stems anchor to?
 

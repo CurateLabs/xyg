@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from xy import _native
-from xy._figure import Figure
+from xyg import _native
+from xyg._figure import Figure
 
 
 def test_direct_build_render_keeps_parallels_and_self_loops():

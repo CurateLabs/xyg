@@ -7,9 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-import xy.pyplot as plt
-from xy import _raster, _svg, marks
+import xyg
+import xyg.pyplot as plt
+from xyg import _raster, _svg, marks
 
 
 def teardown_function():
@@ -255,9 +255,9 @@ def test_constant_scatter_sizes_survive_automatic_legend_derivation(monkeypatch)
 
 
 def test_native_core_scatter_keeps_fixed_legend_swatch_semantics():
-    chart = xy.scatter_chart(
-        xy.scatter([], [], size=32, name="native"),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter([], [], size=32, name="native"),
+        xyg.legend(),
     )
     spec, _ = chart.figure().build_payload()
     [item] = _svg.legend_items(spec["traces"])

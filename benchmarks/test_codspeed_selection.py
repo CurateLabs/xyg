@@ -23,10 +23,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import channel
-from xy import kernels as k
-from xy._figure import Figure  # harness type annotations only
+import xyg
+from xyg import channel
+from xyg import kernels as k
+from xyg._figure import Figure  # harness type annotations only
 
 PX_WIDTH = 2048
 SELECT_N = 1_000_000
@@ -53,7 +53,7 @@ def warm_lazy_modules() -> None:
     """
     x = np.array([0.0, 1.0, 2.0, 3.0])
     y = np.array([0.0, 1.0, 0.0, 1.0])
-    fig = xy.chart(xy.scatter(x=x, y=y)).figure()
+    fig = xyg.chart(xyg.scatter(x=x, y=y)).figure()
     fig.build_payload_split(PX_WIDTH)
     fig.pick(0, 0)
     channel.handle_message(fig, {"type": "select", "x0": 0.0, "x1": 3.0, "y0": 0.0, "y1": 1.0})
@@ -66,7 +66,7 @@ def sorted_x_figure() -> Figure:
     rng = np.random.default_rng(61)
     x = np.arange(SELECT_N, dtype=np.float64)
     y = rng.normal(0.0, 1.0, SELECT_N)
-    fig = xy.chart(xy.scatter(x=x, y=y)).figure()
+    fig = xyg.chart(xyg.scatter(x=x, y=y)).figure()
     fig.build_payload_split(PX_WIDTH)
     return fig
 
@@ -77,7 +77,7 @@ def uniform_figure() -> Figure:
     rng = np.random.default_rng(67)
     x = rng.uniform(0.0, 100.0, SELECT_N).astype(np.float64, copy=False)
     y = rng.uniform(0.0, 100.0, SELECT_N).astype(np.float64, copy=False)
-    fig = xy.chart(xy.scatter(x=x, y=y)).figure()
+    fig = xyg.chart(xyg.scatter(x=x, y=y)).figure()
     fig.build_payload_split(PX_WIDTH)
     return fig
 
@@ -89,7 +89,7 @@ def pick_figure() -> Figure:
     x = np.arange(PICK_N, dtype=np.float64)
     y = rng.normal(0.0, 1.0, PICK_N)
     categories = np.asarray([f"group-{i % 24:02d}" for i in range(PICK_N)])
-    fig = xy.chart(xy.scatter(x=x, y=y, color=categories)).figure()
+    fig = xyg.chart(xyg.scatter(x=x, y=y, color=categories)).figure()
     fig.build_payload_split(PX_WIDTH)
     return fig
 
@@ -103,7 +103,7 @@ def crossfilter_figure() -> Figure:
     x = np.arange(CROSSFILTER_N, dtype=np.float64)
     y = rng.normal(0.0, 1.0, CROSSFILTER_N)
     y[::100] = np.nan
-    fig = xy.chart(xy.scatter(x=x, y=y)).figure()
+    fig = xyg.chart(xyg.scatter(x=x, y=y)).figure()
     fig.build_payload_split(PX_WIDTH)
     return fig
 

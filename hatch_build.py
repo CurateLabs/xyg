@@ -2,19 +2,19 @@
 
 Install ergonomics, by audience (design dossier §33):
 
-- **End users** run `pip install xy` and get a prebuilt platform wheel
+- **End users** run `pip install xyg` and get a prebuilt platform wheel
   from the CI matrix — the compiled core *and* the JS client are already inside
   it. **No Rust, no Node, no toolchain.** This is the front door.
 - **Source builds** (`pip install .` / `-e .` from a clone) compile the core if
   a Rust toolchain is present. **If Rust is absent, the build still succeeds**
   but produces a pure-Python install with no native core — and since there is no
   NumPy fallback, importing the compute layer then raises a clear, actionable
-  error (see `xy.kernels`). Install a Rust toolchain, or use a published
+  error (see `xyg.kernels`). Install a Rust toolchain, or use a published
   wheel, for a working compute backend.
 - The JS client is a **generated artifact, not committed to git** (§33). The
   canonical ship vehicle is the host-neutral `@curatelabs/xyg` package
   (`packages/xy-client/dist/{index,standalone}.js`); this hook *copies* those
-  bundles into `python/xy/static/` so the Python wheel still embeds the client
+  bundles into `python/xyg/static/` so the Python wheel still embeds the client
   for notebooks / `to_html()` / Reflex. `node js/build.mjs` writes the
   host-neutral dist first, then copies into the Python tree. The `artifacts`
   config in pyproject.toml carries the git-ignored bundles into both the wheel
@@ -140,12 +140,12 @@ def _cargo_target() -> Optional[str]:
 
 
 # The two render-client bundles `node js/build.mjs` emits into the host-neutral
-# `@curatelabs/xyg` dist, then copies into python/xy/static for the Python wheel.
+# `@curatelabs/xyg` dist, then copies into python/xyg/static for the Python wheel.
 _JS_BUNDLES = ("index.js", "standalone.js")
 
 
 def _static_dir(root: Path) -> Path:
-    return root / "python" / "xy" / "static"
+    return root / "python" / "xyg" / "static"
 
 
 def _client_dir(root: Path) -> Path:
@@ -188,7 +188,7 @@ class CustomBuildHook(BuildHookInterface):
             return
 
         lib_name = _lib_filename(_cargo_target())
-        dest_dir = root / "python" / "xy" / "_native_lib"
+        dest_dir = root / "python" / "xyg" / "_native_lib"
         dest = dest_dir / lib_name
         require = os.environ.get("XYG_REQUIRE_CARGO") == "1"
 
@@ -200,15 +200,15 @@ class CustomBuildHook(BuildHookInterface):
             build_data["pure_python"] = False
             build_data["tag"] = f"py3-none-{_platform_tag()}"
             build_data.setdefault("force_include", {})[str(native_src)] = (
-                f"xy/_native_lib/{lib_name}"
+                f"xyg/_native_lib/{lib_name}"
             )
         else:
             # No toolchain / build skipped: ship a pure-Python wheel (the JS
             # client is included via committed package data). There is no NumPy
             # fallback, so this install imports fine but raises a clear error the
-            # moment compute is needed (xy.kernels).
+            # moment compute is needed (xyg.kernels).
             print(
-                "xy: building WITHOUT the native Rust core (cargo not "
+                "xyg: building WITHOUT the native Rust core (cargo not "
                 "found or build skipped). This install has no compute backend "
                 "and will raise a clear error on first use. Install a prebuilt "
                 "wheel or a Rust toolchain (https://rustup.rs) for a working "
@@ -222,11 +222,11 @@ class CustomBuildHook(BuildHookInterface):
         """Return the Python-copy directory holding the render-client bundles.
 
         Canonical output is `@curatelabs/xyg` (`packages/xy-client/dist`).
-        The Python wheel *copies* those files into `python/xy/static` so
+        The Python wheel *copies* those files into `python/xyg/static` so
         notebooks / `to_html()` / Reflex need no Node. The rule is: **if either
         copy is already on disk, sync the other; otherwise build from `js/`.**
 
-        - A published wheel/sdist carries the Python copy, so `pip install xy`
+        - A published wheel/sdist carries the Python copy, so `pip install xyg`
           and `pip install <sdist>` are completely Node-free — this method
           returns immediately without touching Node or npm.
         - Building from a source checkout (a clone, an editable install, an
@@ -237,7 +237,7 @@ class CustomBuildHook(BuildHookInterface):
         A missing Python copy that cannot be built is a hard error by default
         (the client is required in every distribution); only XYG_SKIP_NODE=1
         downgrades that to a loud skip, in which case the widget/export path
-        raises a clear runtime error on first use (see `xy.widget`, `xy.export`).
+        raises a clear runtime error on first use (see `xyg.widget`, `xyg.export`).
         """
         static_dir = _static_dir(root)
         client_dir = _client_dir(root)
@@ -269,7 +269,7 @@ class CustomBuildHook(BuildHookInterface):
             return static_dir
         if require:
             raise RuntimeError(
-                "The render client is required in every xy wheel/sdist, but its "
+                "The render client is required in every xyg wheel/sdist, but its "
                 "bundles are missing and could not be built. Install Node "
                 "(https://nodejs.org) so the hook can run `npm ci && "
                 "node js/build.mjs`, install from a published wheel/sdist that "
@@ -277,7 +277,7 @@ class CustomBuildHook(BuildHookInterface):
                 "client (the widget and HTML export will then be unavailable)."
             )
         print(
-            "xy: building WITHOUT the JS render client (node not found or "
+            "xyg: building WITHOUT the JS render client (node not found or "
             "skipped, and no prebuilt bundle present). The notebook widget and "
             "standalone HTML export will raise a clear error until the client "
             "is built with `npm ci && node js/build.mjs`.",
@@ -319,7 +319,7 @@ class CustomBuildHook(BuildHookInterface):
     ) -> Optional[Path]:
         """Return a native library path to include in the wheel, if available.
 
-        Do not copy into `python/xy/_native_lib` during a normal build:
+        Do not copy into `python/xyg/_native_lib` during a normal build:
         force-include can place the built artifact at that wheel path directly,
         and generated platform binaries should not dirty the source tree.
         """

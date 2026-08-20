@@ -7,9 +7,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import kernels
-from xy._figure import SCATTER_DENSITY_THRESHOLD, Figure
-from xy.columns import ZONE_CHUNK, ColumnStore
+from xyg import kernels
+from xyg._figure import SCATTER_DENSITY_THRESHOLD, Figure
+from xyg.columns import ZONE_CHUNK, ColumnStore
 
 # --------------------------------------------------------------------------
 # Column.append — the data layer
@@ -230,8 +230,8 @@ def test_append_density_trace_rebins_with_new_points():
 
 
 def test_append_updates_pyramid_in_place_when_domain_is_stable():
-    from xy.config import PYRAMID_MIN_POINTS
-    from xy.interaction import _ensure_pyramid
+    from xyg.config import PYRAMID_MIN_POINTS
+    from xyg.interaction import _ensure_pyramid
 
     n = max(PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD + 1)
     rng = np.random.default_rng(31)
@@ -246,8 +246,8 @@ def test_append_updates_pyramid_in_place_when_domain_is_stable():
 
 
 def test_append_invalidates_pyramid_when_domain_grows():
-    from xy.config import PYRAMID_MIN_POINTS
-    from xy.interaction import _ensure_pyramid
+    from xyg.config import PYRAMID_MIN_POINTS
+    from xyg.interaction import _ensure_pyramid
 
     n = max(PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD + 1)
     rng = np.random.default_rng(32)
@@ -270,9 +270,9 @@ def test_pyramid_handle_freed_when_trace_is_garbage_collected():
     native pyramid in the process-lifetime registry."""
     import gc
 
-    from xy import kernels
-    from xy.config import PYRAMID_MIN_POINTS
-    from xy.interaction import _ensure_pyramid
+    from xyg import kernels
+    from xyg.config import PYRAMID_MIN_POINTS
+    from xyg.interaction import _ensure_pyramid
 
     n = max(PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD + 1)
     rng = np.random.default_rng(41)
@@ -291,9 +291,9 @@ def test_pyramid_handle_freed_when_trace_is_garbage_collected():
 def test_incremental_pyramid_keeps_gc_finalizer_armed():
     import gc
 
-    from xy import kernels
-    from xy.config import PYRAMID_MIN_POINTS
-    from xy.interaction import _ensure_pyramid
+    from xyg import kernels
+    from xyg.config import PYRAMID_MIN_POINTS
+    from xyg.interaction import _ensure_pyramid
 
     n = max(PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD + 1)
     rng = np.random.default_rng(43)
@@ -401,7 +401,7 @@ def test_ship_offset_recenters_when_stale_center_leaves_domain():
 
 
 def test_decimated_entries_record_their_px_width():
-    from xy.config import DECIMATION_THRESHOLD
+    from xyg.config import DECIMATION_THRESHOLD
 
     n = DECIMATION_THRESHOLD + 1
     fig = Figure().line(np.arange(float(n)), np.arange(float(n)))
@@ -415,8 +415,8 @@ def test_decimated_entries_record_their_px_width():
 
 
 def test_memory_report_itemizes_pyramid_bytes():
-    from xy.config import PYRAMID_MIN_POINTS
-    from xy.interaction import _pyramid_resident_bytes
+    from xyg.config import PYRAMID_MIN_POINTS
+    from xyg.interaction import _pyramid_resident_bytes
 
     n = max(PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD + 1)
     rng = np.random.default_rng(47)

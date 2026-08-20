@@ -1,6 +1,6 @@
 ---
 title: Palette Playground
-description: Explore how one editable color palette changes a grid of XY charts in real time.
+description: Explore how one editable color palette changes a grid of XYG charts in real time.
 ---
 
 # Palette Playground

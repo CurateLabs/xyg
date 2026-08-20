@@ -11,10 +11,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from xy import channels, kernels
-from xy._figure import Figure
-from xy.config import DEFAULT_PALETTE, PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD
-from xy.interaction import _decode_log_u8, _ensure_pyramid
+from xyg import channels, kernels
+from xyg._figure import Figure
+from xyg.config import DEFAULT_PALETTE, PYRAMID_MIN_POINTS, SCATTER_DENSITY_THRESHOLD
+from xyg.interaction import _decode_log_u8, _ensure_pyramid
 
 # sRGB <-> linear-light, float oracle (IEC 61966-2-1) — independent of the
 # kernel's integer tables so the test checks the law, not the implementation.
@@ -268,7 +268,7 @@ def test_physical_density_alpha_law():
     # alpha x style opacity folded inside the exponent; empty/invisible
     # cells stay 0; a_pt = 1 saturates any occupied cell; no window max
     # enters anywhere. This is the exporters' twin of the client upload law.
-    from xy._svg import _physical_density_alpha
+    from xyg._svg import _physical_density_alpha
 
     counts = np.asarray([0.0, 1.0, 3.0, 50.0, 2.0, 5.0])
     mean_a = np.asarray([255, 255, 255, 255, 0, 255], dtype=np.uint8)
@@ -472,7 +472,7 @@ def test_no_rescan_traces_resolve_without_retention(monkeypatch):
     # Past the no-rescan threshold every interactive reply composes prebuilt
     # pyramid planes, so retaining a per-row idx (1 GB at 1e9 rows) would be
     # resident cost with no consumer: resolve on demand, never store.
-    from xy import interaction
+    from xyg import interaction
 
     calls = _count_resolves(monkeypatch)
     n = SCATTER_DENSITY_THRESHOLD * 3
@@ -539,7 +539,7 @@ def test_truecolor_heatmap_shares_its_red_plane_with_the_grid() -> None:
     """
     import numpy as np
 
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
     rng = np.random.default_rng(2)
     rgb = rng.random((40, 60, 3))
@@ -559,7 +559,7 @@ def test_truecolor_heatmap_payload_is_unchanged_by_the_sharing() -> None:
     """Sharing the column must not change what the wire carries."""
     import numpy as np
 
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
     rng = np.random.default_rng(3)
     rgba = rng.random((24, 32, 4))

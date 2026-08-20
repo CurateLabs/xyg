@@ -1,9 +1,9 @@
 """Loopback transport benchmark for the transport-neutral channel dispatcher.
 
 This harness measures the current Reflex prototype shape (base64 buffers inside
-JSON) against xy's production versioned binary frame.
+JSON) against XYG's production versioned binary frame.
 
-Both HTTP endpoints call :func:`xy.channel.handle_message`; only their response
+Both HTTP endpoints call :func:`xyg.channel.handle_message`; only their response
 encoding differs.  The optional Chromium probe fetches and decodes both formats
 from the same loopback server and waits for the next animation frame after each
 decode.  It does not claim request-to-pixels or GPU-upload latency.
@@ -36,9 +36,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _browser import chromium_gl_flags, find_chromium  # noqa: E402
 from categories import BENCHMARK_CATEGORIES, categories_for  # noqa: E402
 from environment import SCHEMA_VERSION, collect_environment_metadata  # noqa: E402
-from xy._figure import Figure  # noqa: E402
-from xy.channel import Reply, decode_frame, encode_frame, handle_message  # noqa: E402
-from xy.widget import FigureWidget  # noqa: E402
+from xyg._figure import Figure  # noqa: E402
+from xyg.channel import Reply, decode_frame, encode_frame, handle_message  # noqa: E402
+from xyg.widget import FigureWidget  # noqa: E402
 
 _CATEGORY_IDS = ("payload_export_size", "streaming_updates", "interaction_smoothness")
 
@@ -220,7 +220,7 @@ class _TransportHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         if self.path == "/xy.js":
-            client = Path(__file__).resolve().parents[1] / "python" / "xy" / "static" / "index.js"
+            client = Path(__file__).resolve().parents[1] / "python" / "xyg" / "static" / "index.js"
             self._write(200, "text/javascript; charset=utf-8", client.read_bytes())
             return
         if self.path != "/":

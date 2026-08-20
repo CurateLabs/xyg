@@ -28,15 +28,15 @@ and `y_kind`. Depending on the mark's channels, they can also contain
 not DOM event objects or formatted tooltip strings.
 
 ~~~python
-import xy
+import xyg
 
 
-def selected(selection: xy.Selection) -> None:
+def selected(selection: xyg.Selection) -> None:
     print(len(selection), selection.per_trace)
 
 
-chart = xy.scatter_chart(
-    xy.scatter([0, 1, 2], [2, 4, 3]),
+chart = xyg.scatter_chart(
+    xyg.scatter([0, 1, 2], [2, 4, 3]),
     on_select=selected,
 )
 ~~~
@@ -70,7 +70,7 @@ Consumers that only need the canonical Python row should use `on_hover`.
 
 ## Reflex Integration Events
 
-The bundled `xy[reflex]` integration intentionally uses semantic component props:
+The bundled `xyg[reflex]` integration intentionally uses semantic component props:
 `on_point_hover`, `on_point_click`, `on_select_end`, and `on_view_change`.
 Those are adapter props, not aliases accepted by core `Chart`. See the
 [Reflex integration](/docs/xy/integrations/reflex/) for state-backed payloads.

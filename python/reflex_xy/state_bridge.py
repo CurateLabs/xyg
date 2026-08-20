@@ -23,7 +23,7 @@ from .registry import _figure_of
 from .tokens import ParsedToken, builder_of, parse_token
 
 if TYPE_CHECKING:
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
 __all__ = ["make_rebuild_hook", "rebuild_figure"]
 
@@ -44,7 +44,7 @@ async def rebuild_figure(app: Any, parsed: ParsedToken) -> Optional["Figure"]:
     """Re-run a figure var's builder against the session's stored state."""
     import reflex as rx
 
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
     try:
         state_cls = _resolve_state_cls(parsed.state_full_name)

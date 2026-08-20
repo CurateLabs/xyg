@@ -27,7 +27,7 @@ FIRST, LAST = 0x20, 0x7E
 # advance, no warning — while the same chart's SVG rendered it correctly.
 # Ranges, not a hand-typed string, so the coverage is auditable.
 _LATIN = "".join(chr(c) for c in [*range(0x00C0, 0x0180)] if chr(c).isalpha())
-# Currency beyond ASCII `$`. `xy.y_axis(format="€,.0f")` is a first-class
+# Currency beyond ASCII `$`. `xyg.y_axis(format="€,.0f")` is a first-class
 # feature, so its symbol has to survive to_png().
 _CURRENCY = "¢£¤¥₣₤₦₩₪₫€₭₮₱₲₴₹₺₽₿"
 # Extra codepoints for the pyplot shim's TeX-subset → unicode conversion
@@ -61,7 +61,7 @@ OUT = ROOT / "crates" / "xyg-engine" / "src" / "font.rs"
 # can reserve a gutter for it, and the rasterizer that draws it is the Rust
 # core. Emitting the same numbers from the same generator keeps the reservation
 # and the ink from drifting apart (there is no font library in either process).
-OUT_PY = ROOT / "python" / "xy" / "_fontmetrics.py"
+OUT_PY = ROOT / "python" / "xyg" / "_fontmetrics.py"
 
 
 def _load_face() -> ImageFont.FreeTypeFont:

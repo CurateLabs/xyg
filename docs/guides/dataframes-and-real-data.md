@@ -1,13 +1,13 @@
 ---
 title: DataFrames and Real Data
-description: Clean, aggregate, chart, and export a pandas DataFrame with public XY APIs.
+description: Clean, aggregate, chart, and export a pandas DataFrame with public XYG APIs.
 ---
 
 # DataFrames and Real Data
 
-XY accepts a pandas DataFrame anywhere its public mark API accepts `data=`.
+XYG accepts a pandas DataFrame anywhere its public mark API accepts `data=`.
 Column-name strings then resolve against that table. Keep cleaning, joins,
-grouping, and business calculations in the dataframe library; give XY the
+grouping, and business calculations in the dataframe library; give XYG the
 finished columns that should become marks.
 
 The workflow below is a complete script. It reads CSV data, validates the
@@ -29,7 +29,7 @@ from io import StringIO
 from pathlib import Path
 
 import pandas as pd
-import xy
+import xyg
 
 SAMPLE = """day,channel,revenue,orders
 2026-07-01,direct,1240.50,31
@@ -68,7 +68,7 @@ palette = {"direct": "#2563eb", "partner": "#16a34a"}
 lines = []
 for channel, rows in daily.groupby("channel", sort=True, observed=True):
     lines.append(
-        xy.line(
+        xyg.line(
             x="day",
             y="revenue",
             data=rows,
@@ -77,11 +77,11 @@ for channel, rows in daily.groupby("channel", sort=True, observed=True):
         )
     )
 
-chart = xy.line_chart(
+chart = xyg.line_chart(
     *lines,
-    xy.x_axis(label="day"),
-    xy.y_axis(label="revenue (USD)"),
-    xy.legend(),
+    xyg.x_axis(label="day"),
+    xyg.y_axis(label="revenue (USD)"),
+    xyg.legend(),
     title="Daily revenue by channel",
     width=900,
     height=420,
@@ -100,7 +100,7 @@ print("wrote", output / "daily-revenue.png")
 Run it as a script, then open `build/daily-revenue.html`. In a notebook, leave
 `chart` as the last expression in a cell instead of exporting it.
 
-The example groups explicitly because `xy.line(...)` draws one ordered series;
+The example groups explicitly because `xyg.line(...)` draws one ordered series;
 it does not silently interpret a categorical column as multiple lines. Doing
 the transformation first also makes row ordering, missing-value handling, and
 aggregation reviewable outside the renderer.
@@ -111,17 +111,17 @@ When one mark uses the whole table, pass the DataFrame once and refer to its
 columns by name:
 
 ~~~python
-scatter = xy.scatter_chart(
-    xy.scatter(
+scatter = xyg.scatter_chart(
+    xyg.scatter(
         x="orders",
         y="revenue",
         color="channel",
         size=8,
         data=daily,
     ),
-    xy.x_axis(label="orders"),
-    xy.y_axis(label="revenue (USD)"),
-    xy.legend(),
+    xyg.x_axis(label="orders"),
+    xyg.y_axis(label="revenue (USD)"),
+    xyg.legend(),
     title="Order value by channel and day",
 )
 ~~~
@@ -143,18 +143,18 @@ You do not need pandas when a simpler boundary is clearer:
   chance of avoiding a copy; nulls, chunks, integer or temporal conversion,
   and unsupported coordinate types can require materialization or rejection.
   See [Data and columns](/docs/xy/core-concepts/data/) for the exact boundary.
-- **Polars:** XY does not currently document a dedicated Polars DataFrame
+- **Polars:** XYG does not currently document a dedicated Polars DataFrame
   contract. Extract supported one-dimensional columns explicitly, for example
   `frame["x"].to_numpy()` and `frame["y"].to_numpy()`, then pass those arrays
   to a mark. Converting to pandas is also an application-level option when the
   extra dependency and copy are acceptable.
 - **SQL and DuckDB:** Execute filtering and aggregation in the query engine,
   then materialize only the result columns as pandas, Arrow, or NumPy values.
-  XY does not execute SQL or manage an out-of-core query plan.
+  XYG does not execute SQL or manage an out-of-core query plan.
 
 ## Production data checklist
 
-- Sort every ordered series before calling `xy.line`.
+- Sort every ordered series before calling `xyg.line`.
 - Make numeric conversion and missing-value policy explicit; do not rely on a
   renderer to repair business data.
 - Keep x, y, color, and size columns aligned after filtering.

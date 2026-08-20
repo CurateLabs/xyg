@@ -10,13 +10,13 @@ structure. Marks and axes remain declarative; appended rows extend an existing
 line or scatter trace.
 
 ~~~python
-import xy
+import xyg
 
-chart = xy.scatter_chart(
-    xy.scatter([0.0, 1.0, 2.0], [0.0, 2.0, 4.0], name="stream"),
-    xy.animation(match="append", duration=220),
-    xy.x_axis(label="time"),
-    xy.y_axis(label="value"),
+chart = xyg.scatter_chart(
+    xyg.scatter([0.0, 1.0, 2.0], [0.0, 2.0, 4.0], name="stream"),
+    xyg.animation(match="append", duration=220),
+    xyg.x_axis(label="time"),
+    xyg.y_axis(label="value"),
 )
 
 chart.append(0, [3.0, 4.0], [6.0, 8.0])

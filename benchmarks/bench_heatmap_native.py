@@ -24,10 +24,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import xy  # noqa: E402
+import xyg  # noqa: E402
 from categories import BENCHMARK_CATEGORIES, categories_for  # noqa: E402
 from environment import SCHEMA_VERSION, collect_environment_metadata  # noqa: E402
-from xy import _raster  # noqa: E402
+from xyg import _raster  # noqa: E402
 
 RENDER_W, RENDER_H = 900, 420
 CATEGORY_IDS = ("core_2d_chart_breadth", "static_export", "payload_export_size")
@@ -61,8 +61,8 @@ def _bench_side(side: int, requested_reps: int) -> dict[str, object]:
     fixture_ms = (time.perf_counter() - start) * 1e3
 
     start = time.perf_counter()
-    figure = xy.heatmap_chart(
-        xy.heatmap(values, domain=(0.0, float(max(1, cells - 1)))),
+    figure = xyg.heatmap_chart(
+        xyg.heatmap(values, domain=(0.0, float(max(1, cells - 1)))),
         width=RENDER_W,
         height=RENDER_H,
     ).figure()

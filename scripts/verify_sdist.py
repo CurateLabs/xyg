@@ -3,7 +3,7 @@
 
 An sdist is the escape hatch for users without a prebuilt wheel. It must carry
 the Rust source, the prebuilt render-client bundles (host-neutral `@curatelabs/xyg`
-plus the Python copy in `python/xy/static`, built into it by the hatch build
+plus the Python copy in `python/xyg/static`, built into it by the hatch build
 hook so a from-sdist install needs no Node; §33), the package typing marker,
 and the build hook, while never carrying generated caches or platform-native
 binaries from a local checkout. Stdlib-only so CI can run it before installing
@@ -72,30 +72,30 @@ REQUIRED_FILES = {
     "python/reflex_xy/state_bridge.py",
     "python/reflex_xy/tokens.py",
     "python/reflex_xy/vars.py",
-    "python/xy/__init__.py",
-    "python/xy/_abi_generated.py",
-    "python/xy/_framing.py",
-    "python/xy/_native.py",
-    "python/xy/channels.py",
-    "python/xy/columns.py",
-    "python/xy/components.py",
-    "python/xy/config.py",
-    "python/xy/export.py",
-    "python/xy/_figure.py",
-    "python/xy/channel.py",
-    "python/xy/interaction.py",
-    "python/xy/kernels.py",
-    "python/xy/lod.py",
-    "python/xy/plugins.py",
-    "python/xy/py.typed",
-    "python/xy/styling/__init__.py",
-    "python/xy/styling/capabilities.py",
-    "python/xy/static/index.js",
-    "python/xy/static/standalone.js",
+    "python/xyg/__init__.py",
+    "python/xyg/_abi_generated.py",
+    "python/xyg/_framing.py",
+    "python/xyg/_native.py",
+    "python/xyg/channels.py",
+    "python/xyg/columns.py",
+    "python/xyg/components.py",
+    "python/xyg/config.py",
+    "python/xyg/export.py",
+    "python/xyg/_figure.py",
+    "python/xyg/channel.py",
+    "python/xyg/interaction.py",
+    "python/xyg/kernels.py",
+    "python/xyg/lod.py",
+    "python/xyg/plugins.py",
+    "python/xyg/py.typed",
+    "python/xyg/styling/__init__.py",
+    "python/xyg/styling/capabilities.py",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js",
     "packages/xy-client/package.json",
     "packages/xy-client/dist/index.js",
     "packages/xy-client/dist/standalone.js",
-    "python/xy/widget.py",
+    "python/xyg/widget.py",
     "crates/xyg-core/Cargo.toml",
     "crates/xyg-core/src/lib.rs",
     "crates/xyg-engine/Cargo.toml",
@@ -277,7 +277,7 @@ def _forbidden_sdist_member(name: str) -> bool:
     parts = PurePosixPath(name).parts
     if parts[0] not in ALLOWED_TOP_LEVEL:
         return True
-    if parts[0] == "python" and parts[:2] not in {("python", "reflex_xy"), ("python", "xy")}:
+    if parts[0] == "python" and parts[:2] not in {("python", "reflex_xy"), ("python", "xyg")}:
         return True
     if parts[0] == "packages" and parts[:2] != ("packages", "xy-client"):
         return True
@@ -304,16 +304,16 @@ def verify_sdist(path: str) -> None:
             f"sdist contains repository-only/generated/native artifacts: {forbidden}"
         )
     _require_pkg_info(path, root)
-    _require_exact_file(path, root, "python/xy/py.typed", b"")
+    _require_exact_file(path, root, "python/xyg/py.typed", b"")
     _require_exact_file(path, root, "python/reflex_xy/py.typed", b"")
     # The bundle is minified (identifiers renamed), so the public surface is
     # checked through the export block rather than by name spelling.
     _require_esm_exports(path, root, "packages/xy-client/dist/index.js", _ESM_EXPORTS)
-    _require_esm_exports(path, root, "python/xy/static/index.js", _ESM_EXPORTS)
+    _require_esm_exports(path, root, "python/xyg/static/index.js", _ESM_EXPORTS)
     # Minified IIFE: a top-level `var xy` namespace (window.xy in the
     # classic <script> that to_html / Node toHtml emit) carrying the public surface.
     _require_file_contains(path, root, "packages/xy-client/dist/standalone.js", _IIFE_MARKERS)
-    _require_file_contains(path, root, "python/xy/static/standalone.js", _IIFE_MARKERS)
+    _require_file_contains(path, root, "python/xyg/static/standalone.js", _IIFE_MARKERS)
     _require_file_contains(
         path,
         root,

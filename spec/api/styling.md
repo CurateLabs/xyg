@@ -1,4 +1,4 @@
-# Styling XY
+# Styling XYG
 
 Each public chrome slot names a stable, CSS-addressable DOM surface. You can
 restyle those surfaces with plain CSS, attribute selectors, Tailwind, or
@@ -18,17 +18,17 @@ see [renderer-architecture.md](../design/renderer-architecture.md).
 
 | Mechanism | Scope | Where |
 | --- | --- | --- |
-| `class_names={slot: "..."}` | Add classes to a chrome slot (great for Tailwind) | `xy.chart(...)` |
-| `styles={slot: {...}}` | Inline CSS on a chrome slot | `xy.chart(...)` |
-| `style={...}` | Cross-renderer CSS appearance subset for a rendered mark | `xy.line(...)`, `xy.scatter(...)`, … |
+| `class_names={slot: "..."}` | Add classes to a chrome slot (great for Tailwind) | `xyg.chart(...)` |
+| `styles={slot: {...}}` | Inline CSS on a chrome slot | `xyg.chart(...)` |
+| `style={...}` | Cross-renderer CSS appearance subset for a rendered mark | `xyg.line(...)`, `xyg.scatter(...)`, … |
 | `class_name=` / `style=` | One annotation label; geometry still uses typed props | `.vline(...)`, `.text(...)`, … |
 | `custom_css="..."` | A raw author stylesheet in the exported document | `to_html(fig, custom_css=...)` |
 
 ```python
-import xy
+import xyg
 
-chart = xy.chart(
-    xy.scatter(
+chart = xyg.chart(
+    xyg.scatter(
         x=xs,
         y=ys,
         style={"fill": "var(--accent)", "stroke": "currentColor", "stroke-width": "1px"},
@@ -81,13 +81,13 @@ amber surface, large title, and shadow utilities are applied.](../assets/tailwin
 
 ## Rendered marks: standard CSS vocabulary
 
-WebGL and native-raster marks are not DOM elements, so XY compiles a deliberate
+WebGL and native-raster marks are not DOM elements, so XYG compiles a deliberate
 CSS subset instead of pretending every browser property can work. Property
 names are canonical CSS kebab-case; snake_case aliases remain accepted for
 Python compatibility. Unsupported properties raise before the figure mutates.
 
 ```python
-xy.line(
+xyg.line(
     x=x,
     y=y,
     style={
@@ -98,7 +98,7 @@ xy.line(
     },
 )
 
-xy.bar(
+xyg.bar(
     x=category,
     y=value,
     style={
@@ -163,7 +163,7 @@ client capped flat; both now cap round.](../assets/linecap-cross-renderer-before
 
 ![The three stroke-linecap values: butt, round, and square.](../assets/linecap-values.png)
 
-XY's default is `round`, deliberately not the CSS initial value `butt`. Before
+XYG's default is `round`, deliberately not the CSS initial value `butt`. Before
 this vocabulary existed the three renderers silently disagreed — the native
 rasterizer capped round from its clamped segment distance field
 (`crates/xyg-engine/src/raster.rs`), the WebGL client capped butt with a half-pixel bleed, and
@@ -187,7 +187,7 @@ disagreeing with the rasterizer at no benefit.
 `marker-shape` selects one of the 19 renderer-backed scatter symbols and is the
 CSS spelling of the existing `symbol=` argument — both resolve to the same
 `symbol` trace-style value, so the two spellings produce identical specs. It is
-an **XY vocabulary name, not a standard CSS property**: CSS has no shape keyword
+an **XYG vocabulary name, not a standard CSS property**: CSS has no shape keyword
 for a non-DOM point mark, and the alternative (a `-xy-` vendor prefix) would
 force an unusable `_xy_marker_shape` Python alias. The distinction is recorded
 per property rather than encoded in the name.
@@ -195,14 +195,14 @@ per property rather than encoded in the name.
 ### Reflex integration boundary
 
 Reflex owns reactive `Var` values, conditions, application state, event
-handlers, layouts, and themes. XY does not duplicate those facilities. The
+handlers, layouts, and themes. XYG does not duplicate those facilities. The
 integration resolves them into concrete `style`, `styles`, `class_name`, and
 `class_names` values and updates the renderer. CSS variables are the preferred
 bridge for design tokens and theme changes.
 
 ### Axis paint and geometry
 
-`xy.x_axis(style={...})` and `xy.y_axis(style={...})` accept a strict,
+`xyg.x_axis(style={...})` and `xyg.y_axis(style={...})` accept a strict,
 cross-renderer axis vocabulary. Unknown keys and invalid values raise when the
 axis component is created, before the chart or an export is rendered. Keys may
 use Python snake_case or CSS kebab-case; pixel geometry accepts a finite number
@@ -230,7 +230,7 @@ SVG, and native raster paths.
 
 `tick_label_strategy="preserve"` is the explicit-locator policy: every tick
 label is drawn even when its box overlaps another. It is used by
-`xy.pyplot` for Matplotlib categorical conversion, `FixedLocator`, and
+`xyg.pyplot` for Matplotlib categorical conversion, `FixedLocator`, and
 `set_*ticks`; ordinary composition axes remain on `"auto"` and retain
 collision-aware rotate/stagger/thinning behavior.
 
@@ -239,7 +239,7 @@ bottom/left and named extra y axes to the right. The same fallback applies to
 tick marks and tick labels, including a live spec update that clears `side`.
 
 ```python
-xy.x_axis(
+xyg.x_axis(
     label="time",
     style={
         "grid-color": "rgb(148 163 184 / 25%)",
@@ -271,7 +271,7 @@ whether the axis authored any tick geometry — `tick_length` or
   styles no ticks toward the spine. The per-side gaps are a layout contract:
   charts that author no tick styling render identically before and after
   `tick_padding` existed, in the browser client, SVG export, and native
-  raster alike. `_axis_tick_label_offset` in `python/xy/_svg.py` (shared with
+  raster alike. `_axis_tick_label_offset` in `python/xyg/_svg.py` (shared with
   `_raster.py`) and `tickLabelOffset` in `js/src/50_chartview.ts` are the two
   implementations, and each renderer passes its own historical per-side value.
 
@@ -310,9 +310,9 @@ named `labels`, which would read as a sibling of `tick_labels` (the label
 stay byte-identical.
 
 ```python
-xy.x_axis(show=False)                       # no axis chrome drawn
-xy.y_axis(show=False, grid=True)            # horizontal guides only
-xy.x_axis(line=False, ticks=False, style={"grid_color": "#1e293b"})
+xyg.x_axis(show=False)                       # no axis chrome drawn
+xyg.y_axis(show=False, grid=True)            # horizontal guides only
+xyg.x_axis(line=False, ticks=False, style={"grid_color": "#1e293b"})
 ```
 
 The switches control what is *painted*, not the layout: the plot rect is
@@ -321,7 +321,7 @@ sparkline is `show=False` **plus** `padding=0`.
 
 ### Plot rectangle and chrome reservations
 
-`xy.chart(..., padding=[top, right, bottom, left])` sets the gutters around the
+`xyg.chart(..., padding=[top, right, bottom, left])` sets the gutters around the
 plot rectangle in pixels. When omitted, the renderers pick label-aware defaults
 that leave room for ordinary tick and axis labels; those defaults are
 implementation-owned and may evolve with the text measurement and layout
@@ -339,9 +339,9 @@ supplying padding does not have to anticipate it:
 | Vertical colorbar and its label | to the right of the plot |
 | Horizontal colorbar and its label | below the plot |
 
-`xy._svg.layout()` is the single resolver for this in the Python exporters, and
+`xyg._svg.layout()` is the single resolver for this in the Python exporters, and
 the browser client's `ChartView._layout()` mirrors it exactly — the two must
-stay in step, because a caller that pins a plot rectangle (as `xy.pyplot` does
+stay in step, because a caller that pins a plot rectangle (as `xyg.pyplot` does
 to honor Matplotlib's `figure.subplot.*` frame) computes its padding by
 subtracting these reservations.
 
@@ -387,7 +387,7 @@ left ≥ 10 px inset + the full multiline title box
 with the title terms dropped when the axis has no title (or places it
 `inside_*`), and the tick terms dropped when its tick labels are hidden. The
 full title box includes its ascent, descent, and every additional line step.
-Widths come from the advance table in `python/xy/_fontmetrics.py`, generated by
+Widths come from the advance table in `python/xyg/_fontmetrics.py`, generated by
 `scripts/gen_font.py` from the same DejaVu Sans face `crates/xyg-engine/src/font.rs` bakes for the
 Rust rasterizer — the reservation is measured in the metrics of the font that
 will draw the ink, which is also Matplotlib's default face. Browser layout adds
@@ -449,7 +449,7 @@ Two asymmetries are deliberate, not oversights:
 The two color decisions that used to be unreachable from a host's design tokens
 are `theme(palette=...)` and `colormap=`.
 
-`xy.theme(palette=[...])` sets the chart's **categorical cycle**: the colors
+`xyg.theme(palette=[...])` sets the chart's **categorical cycle**: the colors
 unnamed series take in order, and the colors a categorical `color=` channel
 assigns to its categories. It must land before any mark applies — a trace bakes
 its color at build — and rides the spec as `palette`, the indexed fallback the
@@ -521,7 +521,7 @@ output at 200 ticks.
 | category | Every `ceil(visible / target)`-th category index in view. |
 | time | The smallest step in a fixed ladder from 1 ms through 14 days that covers the rough step. Above 14 days per tick, calendar ticks land on UTC month boundaries with a month step from `1, 2, 3, 6, 12, 24, 60, 120`. |
 
-`xy.x_axis(format=...)` and `xy.y_axis(format=...)` take a format string whose
+`xyg.x_axis(format=...)` and `xyg.y_axis(format=...)` take a format string whose
 grammar depends on the axis kind. Both are deliberately small subsets, not full
 d3-format or strftime, and neither raises on a spec it does not understand —
 but they fail differently, and only the numeric grammar falls back.
@@ -541,9 +541,9 @@ but they fail differently, and only the numeric grammar falls back.
   `"0"` takes `fmtLog` instead, which labels the decade from its own magnitude
   (`0.001`), because both the spec and the linear fallback collapse sub-unit
   decades to a bare `"0"`. The same grammar formats tooltip fields
-  (`xy.tooltip(format=...)`, `js/src/52_tooltip.ts`). The static exporters
+  (`xyg.tooltip(format=...)`, `js/src/52_tooltip.ts`). The static exporters
   consult `format` too: `_fmt_number_spec` / `_fmt_time_spec` / `_fmt_log` in
-  `python/xy/_svg.py` are ports of the same three functions, deliberately
+  `python/xyg/_svg.py` are ports of the same three functions, deliberately
   restricted to the same grammar so an axis cannot read `$1,000,000` in the
   browser and `1.0e6` in the exported PNG. Formatted labels are wider than
   automatic ones, so `layout()` measures them and widens the left gutter when
@@ -562,10 +562,10 @@ but they fail differently, and only the numeric grammar falls back.
 ### Colorbar placement and ticks
 
 The built-in colorbar's geometry rides the first-paint spec's `colorbar` object
-(`spec["colorbar"]`, written by `python/xy/_payload.py` from
+(`spec["colorbar"]`, written by `python/xyg/_payload.py` from
 `Figure.colorbar_options`) and is honored identically by the browser client
-(`js/src/50_chartview.ts`), SVG (`python/xy/_svg.py`), and native PNG
-(`python/xy/_raster.py`).
+(`js/src/50_chartview.ts`), SVG (`python/xyg/_svg.py`), and native PNG
+(`python/xyg/_raster.py`).
 
 | Colorbar option | Value | Default |
 | --- | --- | --- |
@@ -601,7 +601,7 @@ The built-in colorbar's geometry rides the first-paint spec's `colorbar` object
   surrounding text color (`currentColor` in the browser).
 
 `plt.colorbar()` / `fig.colorbar()` is the only authoring surface for `shrink`,
-`anchor`, and `minor_ticks` today; the declarative `xy.colorbar()` component
+`anchor`, and `minor_ticks` today; the declarative `xyg.colorbar()` component
 still exposes `title`, `orientation`, and `ticks` only. The shim also accepts
 Matplotlib's `location=` as a synonym for the side — `"right"` selects
 `orientation: "vertical"`, `"bottom"` selects `"horizontal"` — and `location`
@@ -625,12 +625,12 @@ placeholder.
 
 ### Legend placement — `loc` and `anchor`
 
-`xy.legend(loc=...)` places the legend against the plot rectangle by name
+`xyg.legend(loc=...)` places the legend against the plot rectangle by name
 (`"upper right"`, `"lower left"`, `"center"`, …). The box is inset 6 px from the
 named edge and kept inside the plot rectangle — static export clamps it there
 explicitly — so `loc` alone can never paint a legend outside the axes.
 
-`xy.legend(anchor=...)` replaces that bounded, name-only placement with explicit
+`xyg.legend(anchor=...)` replaces that bounded, name-only placement with explicit
 geometry, mirroring Matplotlib's `bbox_to_anchor`; the `pyplot` shim maps
 `legend(bbox_to_anchor=...)` — a sequence, or any object exposing `.bounds` —
 onto this same option. It accepts a sequence of **2 or 4 finite numbers**.
@@ -810,7 +810,7 @@ without a shim-only code path.
 | Glyph advance | `0.564` | 6.2 px | conservative width estimate for column sizing and ellipsis |
 
 This governs **every static legend**, not only pyplot's: the SVG exporter and
-the native rasterizer share one `_legend_layout` (`python/xy/_svg.py`), so a
+the native rasterizer share one `_legend_layout` (`python/xyg/_svg.py`), so a
 composed `scatter_chart`/`line_chart` legend and a pyplot one are laid out by
 the same code with the same defaults. The browser carries the three spacing
 factors as CSS (`padding` in `em`, `column-gap: 2em`, `row-gap: .5em`) and
@@ -830,7 +830,7 @@ entry at all renders neither frame nor title.
 ### Default colorbar label orientation
 
 The `colorbar_title` slot carries the colorbar's label (`title=` on the
-composition API, `Colorbar.set_label(...)` under `xy.pyplot`). By default its
+composition API, `Colorbar.set_label(...)` under `xyg.pyplot`). By default its
 orientation follows the bar, matching Matplotlib:
 
 | Orientation | Placement | Rotation |
@@ -858,7 +858,7 @@ titles, tick labels, legend entries, legend titles, colorbar titles, and text/
 label/callout annotations alike. This is Matplotlib's default and it is
 deliberate: `axes.titleweight`, `axes.labelweight`, and `font.weight` are all
 `normal` in Matplotlib 3.11, and its legend titles and colorbar labels are
-normal too, so a chart exported from `xy.pyplot` carries the same text weight as
+normal too, so a chart exported from `xyg.pyplot` carries the same text weight as
 the same script run under Matplotlib.
 
 The default is a **cross-renderer contract**, not a per-renderer choice. All
@@ -867,8 +867,8 @@ three renderers must agree:
 | Renderer | Where the default lives |
 | --- | --- |
 | Browser render client | `font-weight:400` on the low-priority text slot rules in `js/src/20_theme.ts`; `js/src/50_chartview.ts` keeps constructor defaults out of inline styles so Tailwind and author CSS can override them, while an explicit axis/slot weight remains inline |
-| SVG export | `python/xy/_svg.py` — the `font-weight` attribute on the title, axis-title, and legend-title `<text>` elements |
-| Native PNG export | `python/xy/_raster.py` — `_native_font_emphasis` maps a weight `>= 600` onto the baked atlas's bold face, so 400 emits a plain, unemphasized text record |
+| SVG export | `python/xyg/_svg.py` — the `font-weight` attribute on the title, axis-title, and legend-title `<text>` elements |
+| Native PNG export | `python/xyg/_raster.py` — `_native_font_emphasis` maps a weight `>= 600` onto the baked atlas's bold face, so 400 emits a plain, unemphasized text record |
 
 A renderer that drifts heavier is a bug; `tests/test_text_weight_defaults.py`
 asserts the emitted weight per element in the SVG output and in the native
@@ -880,8 +880,8 @@ from a fresh checkout).
 Heavier text is always opt-in, never a default:
 
 ```python
-xy.chart(..., styles={"title": {"font_weight": 600}})        # per-slot
-xy.x_axis(label="time", style={"label_font_weight": "bold"})  # per-axis
+xyg.chart(..., styles={"title": {"font_weight": 600}})        # per-slot
+xyg.x_axis(label="time", style={"label_font_weight": "bold"})  # per-axis
 ```
 
 Under the pyplot shim, Matplotlib's own knobs work too —
@@ -902,7 +902,7 @@ requested weight through verbatim.
 The pyplot shim accepts Matplotlib's ten anchored names — `upper right`,
 `upper left`, `lower left`, `lower right`, `right`, `center left`,
 `center right`, `lower center`, `upper center`, `center` — plus `"best"`.
-Validation stays in pyplot: core `xy.legend()` has its own existing vocabulary,
+Validation stays in pyplot: core `xyg.legend()` has its own existing vocabulary,
 including the documented `"top left"` spelling, and a Matplotlib compatibility
 change must not narrow that API.
 
@@ -1037,7 +1037,7 @@ to 16 adaptively simplified handles that can be dragged to refine the selected
 range or double-clicked to remove a vertex down to a three-vertex minimum;
 double-clicking the chart while any selection mode is active clears the active
 selection. The export menu defaults to PNG, SVG, and the chart's resident data as
-CSV. `xy.export_config(formats=[...])` governs which of `png`, `jpeg`, `webp`,
+CSV. `xyg.export_config(formats=[...])` governs which of `png`, `jpeg`, `webp`,
 `svg`, and `csv` appear and in what order; `pdf` and `html` are Python-side
 formats and are skipped in the client menu. An explicit empty list hides the
 download trigger while the toolbar surface remains draggable.
@@ -1051,7 +1051,7 @@ preserved in the downloaded image.
 self-contained document, so exported charts style identically to the widget:
 
 ```python
-from xy import to_html
+from xyg import to_html
 
 to_html(fig, "chart.html", custom_css="""
   .xy { --chart-text: #1f2937; font-family: 'Inter', system-ui; }
@@ -1211,7 +1211,7 @@ used these four symbols render at a corrected size or orientation for an
 unchanged `size`; the set of available symbols does not change.
 
 Interaction state belongs to the host framework. In Reflex, use Reflex state,
-event handlers, conditions, and ordinary CSS classes/styles; XY only emits the
+event handlers, conditions, and ordinary CSS classes/styles; XYG only emits the
 events and renders the resulting props. The component API deliberately does not
 define a parallel hover/selected/unselected styling language.
 
@@ -1314,7 +1314,7 @@ default, and the three defaults are *not* the same value: the browser uses
 `--chart-annotation-text` (falling back to `--chart-text`), the SVG exporter
 `#667085`, and the native rasterizer `rgba(32,32,32,.85)` (which composites to
 `rgb(65,65,65)` on white). A caller that needs one colour across all three must
-say so; `xy.pyplot` does, pinning `label_color` from
+say so; `xyg.pyplot` does, pinning `label_color` from
 `rcParams["text.color"]` on every text/annotate label.
 
 ### Per-slot styles in a file
@@ -1336,8 +1336,8 @@ baked face, and a silently substituted weight would be exactly the kind of
 invisible decision §28 forbids.
 
 ```python
-xy.chart(
-    xy.line(x=months, y=revenue),
+xyg.chart(
+    xyg.line(x=months, y=revenue),
     title="Quarterly performance",
     styles={
         "title": {"font_size": 22, "fill": "#7c3aed", "font_weight": 800},
@@ -1358,7 +1358,7 @@ select from. Where two surfaces name the same chrome the narrower selector
 wins — an axis's own `label_color` over `styles={"axis_title": ...}`.
 
 The legend's three spellings — `styles={"legend": ...}`,
-`xy.legend(style=...)`, and the `--chart-legend-bg` theme token — merge into one
+`xyg.legend(style=...)`, and the `--chart-legend-bg` theme token — merge into one
 declaration block before either native writer reads it, so what agrees in the
 browser agrees in a PNG. An explicit `background` paints opaque;
 `--xy-legend-frame-alpha` stays the knob for the default grey frame.
@@ -1368,12 +1368,12 @@ Full contract and enforcement: [export.md](export.md) § 9 and
 
 ### Legend placement
 
-`xy.legend(loc=...)` takes Matplotlib's vocabulary — `"upper right"`,
+`xyg.legend(loc=...)` takes Matplotlib's vocabulary — `"upper right"`,
 `"lower left"`, `"center"`, `"upper center"`, and so on — plus `"best"`.
 Spellings that are unambiguous are normalized rather than refused: case and
 whitespace are free, `-`/`_` work as separators, either word order is accepted,
 `"right"`/`"left"` alone mean the centered edges, and **`top`/`bottom` are
-accepted for `upper`/`lower`** — the CSS and Plotly spelling, and the one XY's
+accepted for `upper`/`lower`** — the CSS and Plotly spelling, and the one XYG's
 own docs use.
 
 Everything else is **refused**. The writers resolve a location by substring, so
@@ -1384,7 +1384,7 @@ an unrecognized string never failed; it landed somewhere. `"northeast"` and
 `"best"` scores each candidate box by the fraction of sampled marks inside it
 and keeps the least occupied, preferring the earlier candidate on a near-tie —
 Matplotlib's rule. It resolves **once, at payload-build time**
-(`xy._legendfit`), so the client and the two static writers all receive a
+(`xyg._legendfit`), so the client and the two static writers all receive a
 settled location and cannot disagree about it (§28).
 
 The sampling is normative, because a different stride would place the legend
@@ -1406,7 +1406,7 @@ contributes no occupancy, and a chart with no scorable series falls back to
 ## Static export
 
 `fig.to_image(format="png", *, width=, height=, scale=2.0, background=,
-engine=xy.Engine.auto, quality=, optimize=, custom_css=)` returns image bytes,
+engine=xyg.Engine.auto, quality=, optimize=, custom_css=)` returns image bytes,
 and `fig.write_image(path, *, format=None, ...)` writes them (format inferred
 from the path suffix when omitted). Both are mirrored on `Chart` and
 `FacetChart`. The five formats are `png`, `jpeg` (alias `jpg`), `webp`, `svg`,
@@ -1425,10 +1425,10 @@ below.
 formats. `background` accepts `"auto"` (per-format default), a CSS color, or
 `"transparent"`.
 
-`engine=xy.Engine.auto` — the default for `to_image`/`write_image` — resolves
+`engine=xyg.Engine.auto` — the default for `to_image`/`write_image` — resolves
 deterministically: the browser-free native path for every format, and Chromium
-only when `custom_css` requires a real CSS engine. `xy.Engine.default` pins the
-native path and `xy.Engine.chromium` pins the browser.
+only when `custom_css` requires a real CSS engine. `xyg.Engine.default` pins the
+native path and `xyg.Engine.chromium` pins the browser.
 
 `fig.to_svg(path?, width=, height=)` renders the same decimated payload the
 browser client consumes into a standalone, resolution-independent SVG — pure
@@ -1437,7 +1437,7 @@ file is **screen-bounded**: a 10M-point line exports in ~4 ms as a ~58 KB SVG.
 Density/heatmap tiers embed as compact rasters.
 
 `fig.to_png(path?, width=, height=, scale=)` defaults to
-`engine=xy.Engine.default`: the
+`engine=xyg.Engine.default`: the
 built-in **Rust rasterizer** paints that same decimated payload — no browser and
 millisecond export. Pass `optimize=True` to trade latency for indexed-palette
 PNG compression and smaller files. Text uses a baked bitmap font (the core has no FreeType),
@@ -1461,7 +1461,7 @@ correct; §28 asks that a decision the engine makes on the user's behalf be
 visible, and a box is the visible form of "this renderer cannot draw that".
 Zero-width and control characters are still dropped — they have nothing to
 show — and whitespace maps to a space rather than a box, because locale-aware
-number formatting emits NBSP and narrow NBSP as group separators. Use `engine=xy.Engine.chromium` for full Unicode text.
+number formatting emits NBSP and narrow NBSP as group separators. Use `engine=xyg.Engine.chromium` for full Unicode text.
 
 The atlas bounds the native **raster** formats (PNG, JPEG, WebP) only. The
 other two native formats carry their own text contracts: SVG emits real
@@ -1470,7 +1470,7 @@ fonts, while PDF sets text with the base-14 Helvetica family in WinAnsiEncoding
 and replaces any character outside WinAnsi with `?` — a deterministic,
 locale-independent substitution.
 
-For browser CSS, font, and WebGL fidelity, `engine=xy.Engine.chromium`
+For browser CSS, font, and WebGL fidelity, `engine=xyg.Engine.chromium`
 screenshots the standalone HTML with an installed Chrome, Chromium, Edge, or
 `chrome-headless-shell`. Set `XY_BROWSER` to an executable path to override
 automatic discovery. Pass `custom_css="..."` to inject an author stylesheet
@@ -1511,7 +1511,7 @@ constraint is already per element there.
 **The frame is sized to measured glyph advances.** A static legend column is as
 wide as its widest label actually sets, not as wide as its character count
 suggests. The advances are the bundled DejaVu Sans ones the native rasterizer
-already blits, mirrored Python-side into `python/xy/_fontmetrics.py` and
+already blits, mirrored Python-side into `python/xyg/_fontmetrics.py` and
 generated beside `crates/xyg-engine/src/font.rs` by `scripts/gen_font.py`, so the two cannot
 drift. A flat per-character average cannot bound a proportional face — `m` is
 over three times the width of `l`, so `"gamma"` sets 42.6 px at the 11 px legend

@@ -11,9 +11,9 @@ import struct
 
 import numpy as np
 
-import xy
-from xy import kernels
-from xy._spatial import SpatialIndex
+import xyg
+from xyg import kernels
+from xyg._spatial import SpatialIndex
 
 _MAGIC = b"XYSPIDX1"
 
@@ -100,7 +100,7 @@ def test_density_view_drills_to_crisp_points_then_grids(tmp_path):
     lon = np.clip(rng.normal(0, 3, n), -10, 9.999)
     lat = np.clip(rng.normal(0, 3, n), -10, 9.999)
     idx = SpatialIndex.load(_write_index(tmp_path, g, extent, lon, lat))
-    fig = xy.chart(xy.scatter(x=lon, y=lat, density=True)).figure()
+    fig = xyg.chart(xyg.scatter(x=lon, y=lat, density=True)).figure()
     fig.traces[0]._spatial_index = idx
 
     # Tight window: a handful of points → crisp drill (mode="points").

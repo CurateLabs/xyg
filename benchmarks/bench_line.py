@@ -45,7 +45,7 @@ def _series(n: int):
 
 def make_xy(x, y):
     try:
-        from xy import chart, line
+        from xyg import chart, line
     except ImportError:
         return None
 
@@ -104,7 +104,7 @@ ADAPTERS = {
 def _extrema_ok(x, y) -> bool:
     """M4 oracle: every populated pixel bucket must retain its y min and max."""
     try:
-        from xy import chart, line
+        from xyg import chart, line
     except ImportError:
         return False
     fig = chart(line(x=x, y=y), width=900, height=420).figure()

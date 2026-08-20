@@ -27,7 +27,7 @@ Bazel's fetch graph.
 The shared WebGL client is exercised outside the Bazel suite:
 
 ```bash
-npm ci && node js/build.mjs          # regenerate @curatelabs/xyg (packages/xy-client/dist) and copy into python/xy/static
+npm ci && node js/build.mjs          # regenerate @curatelabs/xyg (packages/xy-client/dist) and copy into python/xyg/static
 npm ci --prefix packages/xy-node     # koffi / Node host deps (root npm ci does not install them)
 node scripts/browser_client_smoke.mjs
 ```
@@ -55,9 +55,9 @@ that same workspace cache root so Bazel derives its output user root as
 
 Rust is pinned to **1.96.0** in the workflow (`dtolnay/rust-toolchain`)
 and `rust-toolchain.toml`. Node graph goldens default to the current
-`ABI_VERSION` in `python/xy/_abi_generated.py` (64 as of this revision);
+`ABI_VERSION` in `python/xyg/_abi_generated.py` (64 as of this revision);
 `tools/bazel/run_node_graph_tests.sh` exports `XYG_EXPECTED_ABI` from
-`python/xy/_abi_generated.py` when unset. If that generated constant is absent
+`python/xyg/_abi_generated.py` when unset. If that generated constant is absent
 or cannot be parsed, the wrapper falls back to the authoritative Rust constant
 instead of exporting an empty expected version.
 

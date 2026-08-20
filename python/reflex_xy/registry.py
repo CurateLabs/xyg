@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
 __all__ = ["FigureEntry", "FigureRegistry", "registry"]
 
@@ -747,7 +747,7 @@ def reset_registry_for_tests() -> FigureRegistry:
 
 
 def _figure_of(chart: Any) -> "Figure":
-    """Accept either a public `xy.Chart` or an internal Figure."""
+    """Accept either a public `xyg.Chart` or an internal Figure."""
     figure = getattr(chart, "figure", None)
     if callable(figure):
         return figure()

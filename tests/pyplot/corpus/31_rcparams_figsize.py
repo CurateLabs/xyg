@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 plt.rcParams["figure.figsize"] = (12, 4)
 plt.rcParams["lines.linewidth"] = 2.5

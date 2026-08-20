@@ -21,7 +21,7 @@ a buffer-affecting decision, the host-parity placement rule supersedes it.
 The exhaustive current file ownership and migration destinations are enforced
 by [design/ownership-audit.md](design/ownership-audit.md).
 
-The project began as a fork of `reflex-dev/xy`; XY names in this document are
+The project began as a fork of `reflex-dev/xy`; XYG names in this document are
 provenance and remain valid as the historical record. The canonical naming
 matrix and migration order live in
 [design/xyg-naming.md](design/xyg-naming.md).
@@ -286,9 +286,9 @@ deck.gl in production):
   between 10M–100M items during buffer creation for exactly this reason.
 
 **What ships today is count-only:** `tier = f(visible_count)`, hysteresis-guarded.
-`drill_decision` / `plan_view_lod` in `python/xy/lod.py` call Rust
+`drill_decision` / `plan_view_lod` in `python/xyg/lod.py` call Rust
 (`xy_drill_decision` / `xy_lod_plan`); hosts assemble wire mode strings only.
-Hysteresis uses `DRILL_EXIT_FACTOR = 1.15` (`python/xy/config.py`) so a trace that has drilled down to
+Hysteresis uses `DRILL_EXIT_FACTOR = 1.15` (`python/xyg/config.py`) so a trace that has drilled down to
 real points stays drilled until the count clearly exceeds the budget again. The client
 mirrors the same rule (`LOD_DIRECT_POINT_BUDGET`, `LOD_DRILL_EXIT_FACTOR` in
 `js/src/45_lod.ts`). Mark pixel area and overdraw do **not** enter the decision.
@@ -300,10 +300,10 @@ allocation cliff is structurally unreachable. Both remain the intended design; n
 exists in `js/src/` today.
 
 **Tier 0 — Direct.** Upload raw columns, draw with instancing. Simple, exact. The
-budget is channel-dependent: `Trace.use_density()` (`python/xy/_trace.py`) picks
+budget is channel-dependent: `Trace.use_density()` (`python/xyg/_trace.py`) picks
 `DIRECT_SOFT_CEILING = 2_000_000` when the trace carries a per-point color or size
 channel, and `SCATTER_DENSITY_THRESHOLD = 200_000` otherwise (both in
-`python/xy/config.py`). A plain scatter therefore aggregates at 200k — its whole win is
+`python/xyg/config.py`). A plain scatter therefore aggregates at 200k — its whole win is
 not drawing 10M dots — while a scatter whose per-point color/size aggregation would
 destroy stays direct up to 2M. `js/src/45_lod.ts` carries the matching 200k client
 budget.
@@ -339,9 +339,9 @@ describe that target, not current behavior; see the shipped subset after them:
 - Colormapping (including perceptual/log scaling and dynamic-range normalization)
   happens at *composite* time on the aggregate values, so restyling never re-bins.
 
-*Shipped today (`crates/xyg-engine/src/tiles.rs`, `python/xy/interaction.py`):* a **single square count
+*Shipped today (`crates/xyg-engine/src/tiles.rs`, `python/xyg/interaction.py`):* a **single square count
 pyramid**, not tiles. One trace-wide grid over the full data bounds whose finest level
-is `PYRAMID_BASE_DIM`² (2048², `python/xy/config.py`), each coarser level an exact 4→1
+is `PYRAMID_BASE_DIM`² (2048², `python/xyg/config.py`), each coarser level an exact 4→1
 u64 sum saturating to u32 down to 1². Built lazily on the first density view at
 ≥ `PYRAMID_MIN_POINTS` (2,000,000). There is no per-tile fetch entry point and no tile
 addressing — the C ABI is `xy_pyramid_build` / `_append` / `_count` / `_compose` /
@@ -359,7 +359,7 @@ Channel-bearing traces build mean-color planes alongside the counts
 `max_upsample`, both compose regimes; colored pyramids refuse `_append` and rebuild
 lazily), so pyramid-served views wear the data's own colors at any zoom.
 
-*Windowed-exact tier for out-of-core scatter (`python/xy/_spatial.py`):* the pyramid's
+*Windowed-exact tier for out-of-core scatter (`python/xyg/_spatial.py`):* the pyramid's
 upsampled floor is blocky at metro/city zoom (its finest cell is kilometres wide over a
 planet-scale extent). When a trace carries a **spatial index** — points pre-sorted on
 disk into a row-major grid of cells with a cumulative-offset header, built by
@@ -429,11 +429,11 @@ per-trace-kind rules live in the LOD/Tiling Contract (§28).
 Tier transitions are automatic and hysteresis-guarded (to avoid thrashing at the
 boundary), and every downsampling decision is logged so we never *silently* hide data.
 
-### 5.1 Tuning constants — `python/xy/config.py`
+### 5.1 Tuning constants — `python/xyg/config.py`
 
 Every tier/decimation threshold lives in one module (§28: no silent decisions). The
-table is the complete contents of `python/xy/config.py`; values are the ones shipped
-today. "Read by" lists the modules that *consume* the constant — `python/xy/_figure.py`
+table is the complete contents of `python/xyg/config.py`; values are the ones shipped
+today. "Read by" lists the modules that *consume* the constant — `python/xyg/_figure.py`
 re-exports several of them as a historic import path and is not listed for those.
 
 | Constant | Value | What it gates | Read by |
@@ -535,7 +535,7 @@ F3, still pending (above).
 ## 8. Compute & threading
 
 - The Rust core runs **natively inside the Python or Node host process**, loaded as a C-ABI cdylib
-  through `ctypes` (`python/xy/_native.py`; `Cargo.toml` `crate-type = ["cdylib",
+  through `ctypes` (`python/xyg/_native.py`; `Cargo.toml` `crate-type = ["cdylib",
   "rlib"]`) or Koffi. The shipped core is not yet compiled to WASM. Issue #59
   compiles the same safe engine for a Worker so direct-browser users need no
   Python/Node runtime; it does not run heavy compute on the browser main thread. Heavy
@@ -703,7 +703,7 @@ missing entirely.*
 | 12 | No bundle-size budget — a fat WASM blob forfeits a real Plotly pain point (3.5 MB+) | Moderate | Feature-gated modules + CI size budget (§23) |
 | 13 | Compat shim scope unquantified (~3,000 Plotly schema attributes) | Moderate | Generated conformance suite + explicit degradation contract (§24) |
 | 14 | Benchmarks measured throughput but not interaction latency; "60fps" undefined | Minor | Latency budgets + p99 framing added (§17, §12) |
-| 15 | No extensibility story (Plotly has custom traces) | Minor | **Shipped v0**: composition mark plugins, `xy.register_mark` (§24). Custom shaders still deferred. |
+| 15 | No extensibility story (Plotly has custom traces) | Minor | **Shipped v0**: composition mark plugins, `xyg.register_mark` (§24). Custom shaders still deferred. |
 
 ## 16. Numeric precision & deep zoom
 
@@ -960,7 +960,7 @@ Where it must run, and what each environment denies us:
 | Server / CI (native) | no display | headless native path (§8) |
 
 **Bundle size.** The shipped client is a single minified JS bundle —
-`@curatelabs/xyg` `dist/index.js` (copied to `python/xy/static/index.js` in the
+`@curatelabs/xyg` `dist/index.js` (copied to `python/xyg/static/index.js` in the
 Python wheel), ~277 KB minified / ~76 KB gzipped (vite/oxc; built from
 the TypeScript sources in `js/src`) — with no WASM payload and no lazily-loaded trace
 modules. It is a **generated artifact, not committed to git** (§33): the hatch build
@@ -989,8 +989,8 @@ partial-bundle pain). Neither exists today.
   (c) hover/a11y descriptors so §17/§20 work uncalled-for. Plotly's moat is breadth;
   a plugin API is how breadth arrives without the core team writing all 40 traces.
 
-  **Shipped (v0):** `xy.register_mark` / `xy.MarkPlugin` / `xy.mark` in
-  `python/xy/plugins.py`. It ships (a) and the composition half of (b); the
+  **Shipped (v0):** `xyg.register_mark` / `xyg.MarkPlugin` / `xyg.mark` in
+  `python/xyg/plugins.py`. It ships (a) and the composition half of (b); the
   shader half is deferred. `build` returns built-in `Mark` objects and cannot
   reach the `Figure`, the trace list, or the column store, so a plugin cannot
   draw anything the engine could not already draw — and its output being
@@ -1083,8 +1083,8 @@ Rules that make the mode targets in §2 real:
    these bytes under `canonical_mapped_bytes` (disk-backed, reclaimable), kept distinct
    from `canonical_bytes` (RAM-resident) — an all-RAM figure reports `mapped = 0`
    unchanged. Building a column too large for RAM is the one operation that needs a
-   dedicated path: `xy._ooc.MemmapF64Builder` streams canonical f64 to disk one batch
-   at a time (peak RAM = one batch), and `xy._ooc.open_f64` reopens a column from
+   dedicated path: `xyg._ooc.MemmapF64Builder` streams canonical f64 to disk one batch
+   at a time (peak RAM = one batch), and `xyg._ooc.open_f64` reopens a column from
    disk. `tests/test_ooc.py` pins the contract: a memmap column ingests with no RAM
    copy, flows through the ordinary `scatter(..., density=True)` API, and renders
    density first-paint with 0 RAM-resident canonical bytes. This is the native
@@ -1258,7 +1258,7 @@ columns — droppable at any time, never a second source of truth.
 
 **Spatial bucketing (shipped — the deep-zoom companion).** Points are
 pre-sorted into a row-major data-space cell grid with a cumulative-offset
-header (built by `osmium-rs`'s `osm-sort`); `xy._spatial.SpatialIndex` reads
+header (built by `osmium-rs`'s `osm-sort`); `xyg._spatial.SpatialIndex` reads
 only the cells a viewport overlaps — one contiguous memmap slice per grid row,
 O(points in window). It serves the zoomed-*in* regime where the pyramid's
 finest cell is blocky: crisp real points under the drill threshold, else an
@@ -1279,7 +1279,7 @@ disk tile store the kernel owns. The locked frame — full rationale in
   a version bump can swap in Arrow/Parquet later with zero migration burden,
   because spill files are always discardable and rebuilt (§27).
 - **Budget knob:** `PYRAMID_RESIDENT_BYTES` (default 512 MiB, process-wide
-  across all pyramids) in `python/xy/config.py` and the Node constants.
+  across all pyramids) in `python/xyg/config.py` and the Node constants.
   Accounting follows §27 rule 5's precedent: `pyramid_report_bytes` (the
   `memory_report()["pyramid_bytes"]` line) covers **all** RAM-resident tile
   bytes plus tile-directory metadata; on-disk bytes report separately as
@@ -1314,7 +1314,7 @@ disk tile store the kernel owns. The locked frame — full rationale in
 JS/Node front door.** They must not collapse into each other. Python exists
 only when the user is using Python. Embedding the paint client in the Python
 wheel for notebooks / `to_html()` / Reflex is required and stays — that copy
-is how Python users stay Node-free. The bug is treating `python/xy/static` as
+is how Python users stay Node-free. The bug is treating `python/xyg/static` as
 the *only* ship vehicle for JS users.
 
 For a Python user, `pip install` must still deliver three separately-hard
@@ -1335,7 +1335,7 @@ requiring a Rust toolchain — an instant adoption cliff.
    (`packages/xy-client/dist/{index,standalone}.js`). Those bundles are a
    **generated artifact, not committed to git**: the Hatchling build hook
    builds them with `node js/build.mjs` and **copies** them into
-   `python/xy/static/` so the wheel and sdist embed the client — Python end
+   `python/xyg/static/` so the wheel and sdist embed the client — Python end
    users of a published wheel need no Node, npm, or CDN. JS/Node users consume
    `@curatelabs/xyg` (in-repo until the `@curatelabs` npm org exists; #13)
    without a Python install. Direct browser engine execution is tracked by #59;
@@ -1386,7 +1386,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   `.binder/postBuild` installs the checkout with `XYG_REQUIRE_CARGO=1`, making a
   missing native core fail during image construction rather than later at
   notebook import; if the source build breaks, the fallback is
-  `pip install xy` (the published linux-64 wheel), losing only
+  `pip install xyg` (the published linux-64 wheel), losing only
   launched-ref fidelity. Playwright's browser download is disabled for this
   build-only Node install, and the checkout's `target` and `node_modules`
   build directories, cargo's crate-download cache, and npm's package cache are
@@ -1397,7 +1397,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   the config end to end.
 - **Install-size budget** joins the §23 bundle budget: wheel ≤ ~15 MB target
   (native core + JS client + assets), CI-enforced like every other number.
-- **Import-time budget**: `import xy` does no heavy work (< 200 ms); NumPy and
+- **Import-time budget**: `import xyg` does no heavy work (< 200 ms); NumPy and
   the native core initialize lazily when a chart-building API is first imported/used.
 - **Stdlib-import budget on the export path**: the lazily-imported export modules
   must not drag in the network or mail stacks. `xml.sax.saxutils` does exactly
@@ -1507,7 +1507,7 @@ container (size, border, background, layout) is ordinary too, and the canvas is
 transparent-capable so a page background shows through. This covers most of what "make
 the chart match my site" actually means — typography and chrome. The legend is also
 an interaction surface: hovering a row emphasizes its series by dimming the rest
-(default on, `xy.legend(highlight=False)` opts out; full contract in
+(default on, `xyg.legend(highlight=False)` opts out; full contract in
 `spec/api/interaction.md` §9). Clicking a row toggles the series/category —
 the first shipped §34 predicate: state syncs to the kernel (`legend_toggle`),
 direct tiers re-filter client-side (0 bytes, §37), density tiers re-bin
@@ -1610,8 +1610,8 @@ author expects.
   (`js/src/53_interaction.ts`) inlines the resolved `--chart-*` tokens and inherited text
   styles onto the detached clone before serializing, so the downloaded SVG/PNG matches
   the screen. *Kernel-side* export (`to_svg` / `to_png` / `write_image`, rendered by
-  `python/xy/_svg.py` and `python/xy/_raster.py`) has no CSS: it uses only the
-  Python-set theme (`xy.theme(...)`), so a chart themed purely through CSS custom
+  `python/xyg/_svg.py` and `python/xyg/_raster.py`) has no CSS: it uses only the
+  Python-set theme (`xyg.theme(...)`), so a chart themed purely through CSS custom
   properties exports with the Python theme, not the on-screen one.
   *Pending:* a **theme snapshot** — the client sending its resolved token values back
   over the comm channel on every theme change, so the kernel holds the effective theme.

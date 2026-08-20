@@ -28,7 +28,7 @@ WORKDIR /app
 
 RUN uv sync --project docs/app --frozen --no-dev && \
     docs/app/.venv/bin/python -c \
-      "import xy.kernels as kernels; assert kernels.BACKEND == 'native', kernels.BACKEND" && \
+      "import xyg.kernels as kernels; assert kernels.BACKEND == 'native', kernels.BACKEND" && \
     find target/release -mindepth 1 -maxdepth 1 ! -name 'libxyg_core.so' -exec rm -rf {} +
 
 FROM python:3.13-slim-bookworm

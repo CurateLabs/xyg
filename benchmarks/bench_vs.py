@@ -577,7 +577,7 @@ def make_hvplot_bokeh(x, y):
 
 def make_xy(x, y):
     try:
-        from xy import scatter, scatter_chart
+        from xyg import scatter, scatter_chart
     except ImportError:
         return None
 
@@ -810,7 +810,7 @@ def to_markdown(report: dict) -> str:
         ]
     env = []
     try:
-        import xy.kernels as k
+        import xyg.kernels as k
 
         env.append(f"xy backend: `{k.BACKEND}`")
     except Exception:

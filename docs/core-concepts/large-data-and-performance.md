@@ -5,7 +5,7 @@ description: Understand direct rendering, M4 decimation, density aggregation, dr
 
 # Large Data and Performance
 
-XY keeps exact canonical columns in the native engine and chooses a rendered
+XYG keeps exact canonical columns in the native engine and chooses a rendered
 representation for each trace. The goal is to keep transport and draw work
 bounded by what the viewport can distinguish while retaining exact rows for
 readout and refinement.
@@ -39,14 +39,14 @@ source ingest and validation still depend on the source grid.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(9)
 x = rng.normal(size=1_000_000)
 y = 0.4 * x + rng.normal(size=x.size)
 
-chart = xy.scatter_chart(
-    xy.scatter(x, y, density=None),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y, density=None),
     width=1000,
     height=500,
 )
@@ -60,7 +60,7 @@ def automatic_density_demo():
 
 - `density=None` chooses automatically and is the normal large-data setting.
 - `density=True` requests a density overview explicitly.
-- `density=False` forces direct points. Above the soft ceiling XY warns about
+- `density=False` forces direct points. Above the soft ceiling XYG warns about
   fill-rate and allocation risk, but honors the explicit opt-out.
 
 Density aggregation is computed by the native core and rendered as a compact
@@ -72,7 +72,7 @@ draws the result, while the source-row binning happens before that draw.
 Reduction changes visible geometry, not the canonical source store. Hover,
 selection, `pick()`, and drilldown resolve source rows when the active tier has
 an exact mapping. When a dense view cannot support exact per-marker semantics,
-XY exposes its aggregate/sample representation rather than pretending that a
+XYG exposes its aggregate/sample representation rather than pretending that a
 bin is an individual row.
 
 Line decimation preserves extrema for the visible buckets, but it does not

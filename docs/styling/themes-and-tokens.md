@@ -2,13 +2,13 @@
 title: Themes and Export
 description: Build reusable chart themes and keep colors, fonts, and chrome predictable across HTML, SVG, and PNG output.
 components:
-  - xy.theme
+  - xyg.theme
 ---
 
 # Themes and Export
 
 Use this page when a visual system must travel beyond one chart. Start with
-`xy.theme()` and reusable palette tokens, add light/dark host values, then pick
+`xyg.theme()` and reusable palette tokens, add light/dark host values, then pick
 an export path based on whether the output can run a browser CSS cascade.
 
 Use this page to:
@@ -35,7 +35,7 @@ facets, and renderer edge cases, continue to the
 
 ## Start with the theme component
 
-Use `xy.theme()` when the value belongs to the chart rather than one specific
+Use `xyg.theme()` when the value belongs to the chart rather than one specific
 mark. Its named arguments are readable aliases for the standard tokens: for
 example, `plot_background` writes `--chart-bg`, while `grid_color` writes
 `--chart-grid`.
@@ -46,10 +46,10 @@ revenue = [32, 45, 41, 58, 63, 74]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-chart = xy.area_chart(
-    xy.area(
+chart = xyg.area_chart(
+    xyg.area(
         months,
         revenue,
         name="Revenue",
@@ -59,10 +59,10 @@ chart = xy.area_chart(
         curve="smooth",
         line_width=2,
     ),
-    xy.legend(show=False),
-    xy.tooltip(title="{x}", format={"y": "$,.0fK"}),
+    xyg.legend(show=False),
+    xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
     # Keep horizontal guides only; omit axis chrome and tick text.
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -73,7 +73,7 @@ chart = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 80),
         style={
             "grid_width": 1,
@@ -87,7 +87,7 @@ chart = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--demo-surface, #ffffff)",
         grid_color="var(--demo-grid, #e5e7eb)",
         axis_color="var(--demo-axis, #d1d5db)",
@@ -112,7 +112,7 @@ def theme_component_preview():
 The preview separates two kinds of values:
 
 - `plot_background`, `grid_color`, `axis_color`, and `text_color` configure
-  standard XY chrome through `xy.theme()`.
+  standard XYG chrome through `xyg.theme()`.
 - The chart class supplies neutral light and dark hex values for the demo
   surface and chrome. The area keeps one saturated rose stroke and matching
   30%-to-transparent fade so the theme choices stay visually distinct.
@@ -122,7 +122,7 @@ The preview separates two kinds of values:
 Keep a mark's stroke and fade stops on the same vivid hue:
 
 ~~~python
-xy.area(
+xyg.area(
     x,
     y,
     color="#f43f5e",
@@ -152,10 +152,10 @@ series = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 columns = [
-    xy.column(
+    xyg.column(
         [center + offset for center in category_centers],
         values,
         name=name,
@@ -168,11 +168,11 @@ columns = [
     for name, values, color, offset in series
 ]
 
-palette_chart = xy.column_chart(
+palette_chart = xyg.column_chart(
     *columns,
-    xy.legend(loc="upper left", ncols=3),
-    xy.tooltip(title="Monthly totals", format={"y": ",.0fK"}),
-    xy.x_axis(
+    xyg.legend(loc="upper left", ncols=3),
+    xyg.tooltip(title="Monthly totals", format={"y": ",.0fK"}),
+    xyg.x_axis(
         domain=(-0.5, 3.5),
         tick_values=category_centers,
         tick_labels=months,
@@ -187,7 +187,7 @@ palette_chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -197,7 +197,7 @@ palette_chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--palette-surface, #ffffff)",
         grid_color="var(--palette-grid, #e5e7eb)",
         axis_color="#00000000",
@@ -230,7 +230,7 @@ Think from the narrowest styling surface to the broadest:
    annotation label.
 3. **Chart `styles={slot: ...}` and `class_names={slot: ...}`** apply a shared
    rule to that chrome slot.
-4. **`xy.theme()` and chart-root `style=`** define chart-wide tokens and root
+4. **`xyg.theme()` and chart-root `style=`** define chart-wide tokens and root
    appearance.
 5. **Host CSS** supplies inherited defaults, application tokens, and color-mode
    values in a browser.
@@ -244,7 +244,7 @@ declarations target the same property, use these concrete winner rules:
 | Mark paint | Mark `style={"fill"/"stroke": ...}` → typed paint prop such as `fill=`, `color=`, or `line_width=` → resolved token or palette default |
 | Axis paint | Axis `style={...}` → chart-local theme token → token inherited from host CSS → built-in default |
 | One DOM chrome component | Component `style=` → chart `styles={slot: ...}` → ordinary class/host rule → inherited theme token |
-| Chart-root token | Chart `style=` → last `xy.theme()` → earlier `xy.theme()` → token inherited from a host ancestor → built-in default |
+| Chart-root token | Chart `style=` → last `xyg.theme()` → earlier `xyg.theme()` → token inherited from a host ancestor → built-in default |
 
 Component `style=` and chart `styles=` become inline DOM styles. The component
 is merged last, so it wins for the same property. Classes and normal host CSS
@@ -257,15 +257,15 @@ For example, the mark is violet, the legend is compact, and the chart-root
 token is amber:
 
 ~~~python
-chart = xy.area_chart(
-    xy.area(
+chart = xyg.area_chart(
+    xyg.area(
         x,
         y,
         color="#2b7fff",                    # typed blue
         style={"stroke": "#8e51ff"},       # mark style wins: violet
     ),
-    xy.legend(style={"font_size": 12}),     # wins over the slot's 14px
-    xy.theme(style={"--series-primary": "#2b7fff"}),
+    xyg.legend(style={"font_size": 12}),     # wins over the slot's 14px
+    xyg.theme(style={"--series-primary": "#2b7fff"}),
     styles={"legend": {"font_size": 14}},
     style={"--series-primary": "#fe9a00"}, # chart root wins: amber
 )
@@ -279,7 +279,7 @@ move together across the whole chart.
 
 | Goal | Recommended location |
 | --- | --- |
-| Keep browser, SVG, and PNG exports consistent | `xy.theme(...)` or chart-root `style={...}` |
+| Keep browser, SVG, and PNG exports consistent | `xyg.theme(...)` or chart-root `style={...}` |
 | Share a palette across many browser charts | CSS variables on a common host ancestor |
 | Let Reflex state choose a palette | Resolve the state to a chart class or `style` mapping |
 | Change only one mark | Use the mark's `color`, `fill`, `stroke`, or `style` directly |
@@ -306,7 +306,7 @@ move together across the whole chart.
 | `--chart-focus` | Keyboard focus ring on the plot canvas, and on toolbar buttons unless `--chart-modebar-focus` is set | `#aa99ec` |
 
 You can define application-specific variables such as `--chart-accent` and use
-them from mark styles. XY validates the `var(...)` shape, then the browser
+them from mark styles. XYG validates the `var(...)` shape, then the browser
 resolves it against the chart root on each render.
 
 ## Cascading from host CSS
@@ -324,8 +324,8 @@ resolves it against the chart root on each render.
 ~~~
 
 ~~~python
-chart = xy.area_chart(
-    xy.area(
+chart = xyg.area_chart(
+    xyg.area(
         [0, 1, 2],
         [2, 5, 3],
         color="var(--chart-accent)",
@@ -336,7 +336,7 @@ chart = xy.area_chart(
 ~~~
 
 In Reflex, resolve reactive theme choices into ordinary classes, styles, or CSS
-variables. XY does not duplicate Reflex conditions or application state.
+variables. XYG does not duplicate Reflex conditions or application state.
 
 ## What survives each output
 
@@ -381,10 +381,10 @@ revenue = [3, 6, 4, 8, 7]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-font_chart = xy.column_chart(
-    xy.column(
+font_chart = xyg.column_chart(
+    xyg.column(
         quarters,
         revenue,
         name="Revenue",
@@ -394,9 +394,9 @@ font_chart = xy.column_chart(
         stroke_width=0,
         corner_radius=(6, 0),
     ),
-    xy.legend(),
-    xy.tooltip(),
-    xy.x_axis(
+    xyg.legend(),
+    xyg.tooltip(),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -407,7 +407,7 @@ font_chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -417,7 +417,7 @@ font_chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--font-surface, #ffffff)",
         grid_color="var(--font-grid, #e5e7eb)",
         axis_color="#00000000",
@@ -456,8 +456,8 @@ application's global stylesheet and use the same family on the chart:
 ~~~
 
 ~~~python
-chart = xy.area_chart(
-    xy.area(
+chart = xyg.area_chart(
+    xyg.area(
         [0, 1, 2],
         [2, 5, 3],
         fill="linear-gradient(currentColor, transparent)",
@@ -467,9 +467,9 @@ chart = xy.area_chart(
 ~~~
 
 Tailwind users can apply configured `font-*`, `text-*`, and `leading-*`
-utilities through `class_name` in the same way. XY's default root typography
+utilities through `class_name` in the same way. XYG's default root typography
 lives in the low-priority browser chrome stylesheet, so those utilities win
-through the normal cascade. XY does not download, register, or rewrite font
+through the normal cascade. XYG does not download, register, or rewrite font
 files itself.
 
 Standalone HTML and Chromium PNG accept the font declaration through
@@ -477,13 +477,13 @@ Standalone HTML and Chromium PNG accept the font declaration through
 portable; an ordinary URL still depends on that resource being reachable.
 
 Declare the face in `custom_css` and select it with
-`xy.theme(font_family=...)`. The theme writes explicit chart style as inline
+`xyg.theme(font_family=...)`. The theme writes explicit chart style as inline
 author intent, so it remains the most reliable option for portable exports and
 intentionally outranks a normal class.
 
 ~~~python
-from xy import Engine
-import xy
+from xyg import Engine
+import xyg
 
 font_css = """
   @font-face {
@@ -492,9 +492,9 @@ font_css = """
   }
 """
 
-chart = xy.line_chart(
-    xy.line([1, 2, 3], [2, 5, 3]),
-    xy.theme(font_family='"Acme Sans", system-ui, sans-serif'),
+chart = xyg.line_chart(
+    xyg.line([1, 2, 3], [2, 5, 3]),
+    xyg.theme(font_family='"Acme Sans", system-ui, sans-serif'),
 )
 
 chart.to_html("chart.html", custom_css=font_css)
@@ -512,8 +512,8 @@ chart.to_png(
 | Toolbar SVG | Preserves the computed family and font styles, but does not embed the font file. |
 | Standalone HTML | Supports `@font-face` and root `font-family` through `custom_css`. |
 | Chromium PNG | Supports the same browser CSS through `custom_css`. |
-| Native PNG | Uses XY's baked bitmap font; custom fonts are not supported. |
-| Python `to_svg()` | Uses XY's fixed system font stack and cannot embed a custom font. |
+| Native PNG | Uses XYG's baked bitmap font; custom fonts are not supported. |
+| Python `to_svg()` | Uses XYG's fixed system font stack and cannot embed a custom font. |
 
 ## Automatic dark mode for the toolbar
 

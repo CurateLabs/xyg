@@ -1,6 +1,6 @@
 ---
 title: Guides
-description: Display, export, stream, link, deploy, and troubleshoot XY charts.
+description: Display, export, stream, link, deploy, and troubleshoot XYG charts.
 ---
 
 # Guides

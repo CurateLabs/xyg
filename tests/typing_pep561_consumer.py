@@ -10,10 +10,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, assert_type
 
-import xy
+import xyg
 
 
-def _build_plugin(context: xy.MarkContext) -> Sequence[xy.Mark]:
+def _build_plugin(context: xyg.MarkContext) -> Sequence[xyg.Mark]:
     del context
     return ()
 
@@ -21,24 +21,24 @@ def _build_plugin(context: xy.MarkContext) -> Sequence[xy.Mark]:
 def check_root_typing_surface() -> None:
     """Type-check the public root without executing or mutating the registry."""
     if TYPE_CHECKING:
-        assert_type(xy.__version__, str)
+        assert_type(xyg.__version__, str)
 
-        assert_type(xy.Animation(), xy.Animation)
-        assert_type(xy.ExportConfig(), xy.ExportConfig)
-        assert_type(xy.Spring(), xy.Spring)
-        assert_type(xy.MarkContext(columns={}, options={}), xy.MarkContext)
-        assert_type(xy.MarkPlugin(name="consumer_fixture", build=_build_plugin), xy.MarkPlugin)
+        assert_type(xyg.Animation(), xyg.Animation)
+        assert_type(xyg.ExportConfig(), xyg.ExportConfig)
+        assert_type(xyg.Spring(), xyg.Spring)
+        assert_type(xyg.MarkContext(columns={}, options={}), xyg.MarkContext)
+        assert_type(xyg.MarkPlugin(name="consumer_fixture", build=_build_plugin), xyg.MarkPlugin)
 
-        assert_type(xy.animation(), xy.Animation)
-        assert_type(xy.export_config(), xy.ExportConfig)
-        assert_type(xy.mark("plugin"), xy.Mark)
-        assert_type(xy.segments(), xy.Mark)
-        assert_type(xy.segments_chart(), xy.Chart)
-        assert_type(xy.spring(), xy.Spring)
-        assert_type(xy.triangle_mesh(), xy.Mark)
-        assert_type(xy.triangle_mesh_chart(), xy.Chart)
+        assert_type(xyg.animation(), xyg.Animation)
+        assert_type(xyg.export_config(), xyg.ExportConfig)
+        assert_type(xyg.mark("plugin"), xyg.Mark)
+        assert_type(xyg.segments(), xyg.Mark)
+        assert_type(xyg.segments_chart(), xyg.Chart)
+        assert_type(xyg.spring(), xyg.Spring)
+        assert_type(xyg.triangle_mesh(), xyg.Mark)
+        assert_type(xyg.triangle_mesh_chart(), xyg.Chart)
 
-        plugin = xy.MarkPlugin(name="consumer_fixture", build=_build_plugin)
-        assert_type(xy.register_mark(plugin), xy.MarkPlugin)
-        assert_type(xy.registered_marks(), tuple[str, ...])
-        assert_type(xy.unregister_mark("consumer_fixture"), None)
+        plugin = xyg.MarkPlugin(name="consumer_fixture", build=_build_plugin)
+        assert_type(xyg.register_mark(plugin), xyg.MarkPlugin)
+        assert_type(xyg.registered_marks(), tuple[str, ...])
+        assert_type(xyg.unregister_mark("consumer_fixture"), None)

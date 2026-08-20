@@ -1,6 +1,6 @@
 ---
 title: Changelog
-description: Review migration notes and notable changes in the XY alpha series.
+description: Review migration notes and notable changes in the XYG alpha series.
 ---
 
 # Changelog
@@ -35,7 +35,7 @@ The current alpha line added the compact accessible toolbar and editable lasso
 selection, the versioned binary frame transport, declarative statistical and
 density families, facets, live `Chart.append()`/`pick()`/`select_range()`,
 browser-free native PNG, pure SVG export, CSS-compiled mark styling, and the
-experimental `xy.pyplot` compatibility layer.
+experimental `xyg.pyplot` compatibility layer.
 
 The Unreleased polar expansion adds heatmap, contour, and error-bar marks;
 partial sectors, holes/data-space origins, categorical theta, log/symlog

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def teardown_function():

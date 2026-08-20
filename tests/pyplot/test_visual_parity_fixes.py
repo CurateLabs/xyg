@@ -11,9 +11,9 @@ import io
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._axes import _marker_symbol
-from xy.pyplot._translate import MARKER_TO_SYMBOL
+import xyg.pyplot as plt
+from xyg.pyplot._axes import _marker_symbol
+from xyg.pyplot._translate import MARKER_TO_SYMBOL
 
 
 @pytest.fixture(autouse=True)
@@ -147,7 +147,7 @@ def test_pentagon_marker_reaches_render_without_square_fallback():
 
 
 def test_new_symbols_are_valid_scatter_symbols():
-    from xy import _validate
+    from xyg import _validate
 
     for symbol in (
         "pentagon",
@@ -202,7 +202,7 @@ def test_errorbar_ecolor_still_overrides_fmt_color():
     fig, ax = plt.subplots()
     ax.errorbar(x, np.sin(x), yerr=0.3, fmt=".k", ecolor="red")
     bars = [e for e in ax._entries if e.get("factory") == "errorbar"][-1]
-    from xy.pyplot._colors import resolve_color
+    from xyg.pyplot._colors import resolve_color
 
     assert bars["kwargs"]["color"] == resolve_color("red")
     assert bars["kwargs"]["color"] != "#000000"

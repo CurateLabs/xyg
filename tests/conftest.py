@@ -56,7 +56,7 @@ def density_category_chart(n: int = 400_000, seed: int = 7):
     mean-color plane. Returns ``(chart, cat, x, y)`` — the per-point code
     array and coordinates, for asserting masked counts and framing requests.
     """
-    import xy
+    import xyg
 
     rng = np.random.default_rng(seed)
     cat = rng.integers(0, 3, n)
@@ -64,9 +64,9 @@ def density_category_chart(n: int = 400_000, seed: int = 7):
     x = rng.normal(centers[cat, 0], 0.4)
     y = rng.normal(centers[cat, 1], 0.4)
     labels = np.array(["A", "B", "C"])[cat]
-    chart = xy.scatter_chart(
-        xy.scatter(x, y, color=labels, density=True),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x, y, color=labels, density=True),
+        xyg.legend(),
         width=520,
         height=340,
     )

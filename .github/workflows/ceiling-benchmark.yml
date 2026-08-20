@@ -111,7 +111,7 @@ jobs:
             psutil websocket-client pillow pandas tornado
 
       - name: Verify native backend is active
-        run: uv run python -c "import xy.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native')"
+        run: uv run python -c "import xyg.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native')"
 
       - name: Build render client
         # to_html embeds these bundles; a source checkout has no static/ dir.

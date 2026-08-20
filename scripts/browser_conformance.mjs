@@ -12,10 +12,10 @@ import { fileURLToPath } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const BUNDLE = join(ROOT, "python", "xy", "static", "standalone.js");
-const protocolSource = readFileSync(join(ROOT, "python", "xy", "config.py"), "utf8");
+const BUNDLE = join(ROOT, "python", "xyg", "static", "standalone.js");
+const protocolSource = readFileSync(join(ROOT, "python", "xyg", "config.py"), "utf8");
 const protocolMatch = protocolSource.match(/^PROTOCOL_VERSION\s*=\s*(\d+)\s*$/m);
-if (!protocolMatch) throw new Error("could not read PROTOCOL_VERSION from python/xy/config.py");
+if (!protocolMatch) throw new Error("could not read PROTOCOL_VERSION from python/xyg/config.py");
 const PROTOCOL_VERSION = Number(protocolMatch[1]);
 const ENGINES = { chromium, firefox, webkit };
 const headless = process.env.XY_CONFORMANCE_HEADFUL !== "1";

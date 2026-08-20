@@ -2,7 +2,7 @@
  * Graph host composition — normalize ids → dense u64, layout + render-graph
  * via the shared ABI, emit node positions / edge segment endpoints / meta.
  *
- * Mirrors python/xy/_graph.py + the segments/scatter emit in marks.graph().
+ * Mirrors python/xyg/_graph.py + the segments/scatter emit in marks.graph().
  * Layout, LOD, and encode decisions stay in Rust (host-parity.md).
  */
 
@@ -44,7 +44,7 @@ export const DEFAULT_LAYOUT = "force";
  */
 
 /**
- * Accept ids + edge pairs/columns (xy-native formats) → dense u64 GraphData.
+ * Accept ids + edge pairs/columns (xyg-native formats) → dense u64 GraphData.
  *
  * @param {Iterable|object} nodes — id list, or `{id: [...], ...attrs}`
  * @param {Iterable|object} edges — `(source,target)` pairs or `{source,target}`
@@ -556,7 +556,7 @@ export function looksLikeGraphForgeTables(nodes, edges, mapping = {}) {
 }
 
 /**
- * Resolve xy-native pairs, a ready GraphData object, or GraphForge tables.
+ * Resolve xyg-native pairs, a ready GraphData object, or GraphForge tables.
  * @param {unknown} nodes
  * @param {unknown} [edges]
  * @param {object} [opts]

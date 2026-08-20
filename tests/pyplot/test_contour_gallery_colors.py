@@ -4,7 +4,7 @@ import re
 
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def _gallery_field() -> tuple[np.ndarray, np.ndarray, np.ndarray]:

@@ -22,9 +22,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 _RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
 
@@ -117,10 +117,10 @@ def _density_html() -> str:
     x = rng.normal(0.0, 1.0, n)
     y = rng.normal(0.0, 1.0, n)
     c = np.hypot(x, y)
-    chart = xy.scatter_chart(
-        xy.scatter(x, y, color=c, colormap="viridis", opacity=0.72, density=True),
-        xy.x_axis(),
-        xy.y_axis(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x, y, color=c, colormap="viridis", opacity=0.72, density=True),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=480,
         height=360,
     )

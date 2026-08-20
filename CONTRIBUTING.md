@@ -16,11 +16,11 @@ make check-full   # full production gate (also needs Node 18+ and clippy)
 
 ## Check the active backend
 
-`import xy` is intentionally lightweight: it does not import NumPy or load the
-native core. Import `xy.kernels` to initialize the compute backend:
+`import xyg` is intentionally lightweight: it does not import NumPy or load the
+native core. Import `xyg.kernels` to initialize the compute backend:
 
 ```bash
-python -c "import xy.kernels as k; print(k.BACKEND)"
+python -c "import xyg.kernels as k; print(k.BACKEND)"
 ```
 
 `BACKEND` is always `native`; an unavailable native core raises `ImportError`

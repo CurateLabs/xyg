@@ -8,7 +8,7 @@ choice survives every renderer that claims to support it.
 
 ## Summary
 
-XY has a strong customization foundation:
+XYG has a strong customization foundation:
 
 - mark and axis styles use closed, validated cross-renderer vocabularies;
 - every browser chrome element has a stable DOM slot for CSS and Tailwind;
@@ -40,7 +40,7 @@ public API did not make them reachable.
 ## Implemented contract
 
 ```python
-xy.box(
+xyg.box(
     values,
     group=cohorts,
     style={

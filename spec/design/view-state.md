@@ -7,7 +7,7 @@ the wire messages; this document records the rationale and the §13
 implementation divergences. The implementation lives in
 `js/src/57_viewstate.ts` (state document, history, axis bands, hover payload)
 plus hooks in `50_chartview.ts`/`52_tooltip.ts`/`53_interaction.ts`/
-`54_kernel.ts`, `python/xy/_figure.py` (message builders, `view_state()`
+`54_kernel.ts`, `python/xyg/_figure.py` (message builders, `view_state()`
 cache), `widget.py`, `channel.py`, and
 `python/reflex_xy/` (registry push path, `on_hover`, tooltip
 mount). It builds directly on the per-axis
@@ -330,7 +330,7 @@ movement elsewhere must not dismiss them; `Escape` does.
   breaks every existing subscript access, so "keep a `row` key" is not
   compatibility. `on_point_hover` is documented as the narrow legacy form;
   new code uses `on_hover`.
-- `xy.tooltip(render=…)`: the adapter finally honors it. `reflex_xy.chart`
+- `xyg.tooltip(render=…)`: the adapter finally honors it. `reflex_xy.chart`
   reads `chart.chrome_components()`, mounts the supplied Reflex component
   into an overlay that the client positions with the built-in tooltip's
   placement logic (flip-at-edges included), and pipes the §7.1 payload in as

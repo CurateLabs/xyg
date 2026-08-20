@@ -1,4 +1,4 @@
-"""XY page breadcrumbs with the official mobile documentation drawer."""
+"""XYG page breadcrumbs with the official mobile documentation drawer."""
 
 import reflex as rx
 import reflex_components_internal as ui
@@ -57,11 +57,11 @@ def _breadcrumb_parts(page: DocsPage) -> tuple[tuple[str, str], ...]:
 
 
 def xy_docs_breadcrumb(page: DocsPage, sidebar: rx.Component) -> rx.Component:
-    """Render official-style XY breadcrumbs and the mobile sidebar drawer.
+    """Render official-style XYG breadcrumbs and the mobile sidebar drawer.
 
     Args:
         page: Current discovered documentation page.
-        sidebar: Complete memoized XY sidebar supplied by the shared layout.
+        sidebar: Complete memoized XYG sidebar supplied by the shared layout.
 
     Returns:
         Responsive breadcrumb row and drawer trigger.

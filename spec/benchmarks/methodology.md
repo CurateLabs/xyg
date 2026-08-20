@@ -15,7 +15,7 @@ are published.
    every row `direct | decimated | density | sampled`, preserving the result
    needed to compare and improve each path.
 2. **Same-work comparisons.** Each competitor renders the *same visual
-   contract*, not the same API call: if XY aggregates at 10M, the
+   contract*, not the same API call: if XYG aggregates at 10M, the
    fair Plotly comparison is Plotly failing/succeeding at raw markers AND
    Plotly+Datashader doing aggregation — both are reported. We never
    benchmark our fast path against a competitor's wrong tool.
@@ -113,7 +113,7 @@ reported).
   artifact are banned (existing policy, kept).
 - **Warm/cold discipline:** every timing reports which it is; first-run
   (cold cache) and steady-state are separate rows for TTFR and import.
-- **Losses ship.** The report has a standing "where XY loses" table
+- **Losses ship.** The report has a standing "where XYG loses" table
   (e.g., tiny-data static PNG export vs matplotlib; ecosystem breadth).
   Nothing buys credibility like published losses.
 
@@ -137,7 +137,7 @@ reported).
    regression). The 10M+ exact-hover oracle remains the larger
    browser/widget follow-up.
 6. `core_2d_payloads`: CodSpeed tracks native histogram, area, bar, heatmap,
-   and composed/layered `xy.chart(...)` payload prep;
+   and composed/layered `xyg.chart(...)` payload prep;
    `benchmarks/bench_2d_charts.py` stays the Plotly/Seaborn chart-to-pixels
    comparison.
 7. `dashboard_scale`: `benchmarks/bench_dashboard.py` attempts 10/20/50/60 mixed
@@ -208,7 +208,7 @@ hard-gates a browser:
   `--n` below 250000, so the gated fixture always exercises the density
   transport path rather than a direct-tier payload.
 - **Same-work arms.** Both arms dispatch the identical message through
-  `xy.channel.handle_message`; only the response encoding differs. `binary-frame-v1`
+  `xyg.channel.handle_message`; only the response encoding differs. `binary-frame-v1`
   is the production versioned frame (`encode_frame`); `base64-json-prototype` is
   the current Reflex prototype shape, base64 buffers inside JSON. This is rule 2
   of §0 applied to a wire format instead of a competitor library.
@@ -240,7 +240,7 @@ and tier discipline applies to them rather than a threshold.
 `.github/workflows/codspeed.yml` runs `cargo codspeed run --bench kernels` and
 `pytest benchmarks/test_codspeed_*.py --codspeed` under `CodSpeedHQ/action` in
 `simulation` mode on CodSpeed's dedicated `codspeed-macro` bare-metal runner,
-after asserting `xy.kernels.BACKEND == "native"`. The dedicated runner keeps
+after asserting `xyg.kernels.BACKEND == "native"`. The dedicated runner keeps
 base and head measurements on one stable runtime instead of comparing mixed
 Blacksmith CPU generations. The job
 authenticates to CodSpeed over OIDC (`id-token: write`); it does not read a
@@ -291,8 +291,8 @@ a direct graph; simulation rows make no request-to-pixels claim.
 
 **`benchmarks/test_codspeed_pyplot.py` — 14 rows, seven paired arms.** Each pair
 expresses one chart twice over the same input arrays: once through the
-declarative API (`xy.chart` + marks) and once through the identical
-matplotlib-style calls in `xy.pyplot`. Both arms end at the same terminal work —
+declarative API (`xyg.chart` + marks) and once through the identical
+matplotlib-style calls in `xyg.pyplot`. Both arms end at the same terminal work —
 `build_payload_split(2048)`, or PNG bytes for the export pair — so the gap
 between a `*_pyplot` row and its `*_raw` twin is exactly what the shim adds:
 matplotlib-call translation, fmt-string parsing, and figure-lifecycle
@@ -315,7 +315,7 @@ Fairness pins, all asserted in the module rather than assumed:
   oracle discipline applied to a shim-overhead measurement.
 - The histogram pair is exempt and documents why: `ax.hist` pre-bins with NumPy
   because it must return matplotlib's `(n, bins, patches)` tuple and then ships
-  bar geometry, while `xy.histogram` bins natively and ships rect columns. Its
+  bar geometry, while `xyg.histogram` bins natively and ships rect columns. Its
   assertion is instead that the payload stays bounded by bin count, never by
   observation count.
 - A session fixture warms both arms' lazily imported submodules (marks,
@@ -413,7 +413,7 @@ performance authority.
 
 ## 9. Shim gates and CI coverage
 
-Two `make` targets bound the `xy.pyplot` shim from opposite sides. Both appear
+Two `make` targets bound the `xyg.pyplot` shim from opposite sides. Both appear
 in the focused-gate table of `spec/process/production-readiness.md`.
 
 - **`make check-pyplot`** → `pytest tests/pyplot -q`. The correctness side: shim

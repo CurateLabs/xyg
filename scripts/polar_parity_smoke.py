@@ -38,7 +38,7 @@ from pathlib import Path
 from _protocol import PROTOCOL_VERSION
 
 ROOT = Path(__file__).resolve().parent.parent
-STATIC = ROOT / "python" / "xy" / "static"
+STATIC = ROOT / "python" / "xyg" / "static"
 FIXTURES = ROOT / "tests" / "fixtures" / "polar_transform.json"
 CHROMIUM_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",

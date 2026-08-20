@@ -4,7 +4,7 @@ One factory, three chart sources (spec/design/reflex-integration.md §5):
 
     reflex_xy.chart(Dash.chart)            # @reflex_xy.figure state var (live)
     reflex_xy.chart(some_token_string)     # register()/inline() token (live)
-    reflex_xy.chart(xy.scatter_chart(...)) # a Chart directly (static tier)
+    reflex_xy.chart(xyg.scatter_chart(...)) # a Chart directly (static tier)
 
 A live source compiles to the `token` prop and rides the shared-websocket
 data plane. A `xy` Chart (or internal Figure) passed directly is
@@ -42,7 +42,7 @@ from typing import Annotated, Any, Optional
 
 import reflex as rx
 
-from xy.facets import FacetGrid
+from xyg.facets import FacetGrid
 
 from .assets import WRAPPER_TAG, register
 from .payload_asset import payload_asset
@@ -119,7 +119,7 @@ def _component() -> Any:
 
 
 def _is_chart_like(source: Any) -> bool:
-    """A public `xy.Chart` (has .figure()) or an internal Figure."""
+    """A public `xyg.Chart` (has .figure()) or an internal Figure."""
     return callable(getattr(source, "figure", None)) or callable(
         getattr(source, "build_payload", None)
     )
@@ -129,7 +129,7 @@ def _tailwind_class_manifest(figure: Any) -> str:
     """Return every static-chart DOM class string as one scan-only literal.
 
     The inventory itself is core-Figure knowledge and lives on
-    :meth:`xy.Figure.dom_class_strings`; reading the built figure avoids a
+    :meth:`xyg.Figure.dom_class_strings`; reading the built figure avoids a
     second payload compilation (which can be expensive for large charts).
     """
     return " ".join(figure.dom_class_strings())
@@ -274,18 +274,18 @@ def chart(
     tailwind_classes: Optional[str | Iterable[str]] = None,
     **props: Any,
 ) -> Any:
-    """Place a xy chart.
+    """Place an xyg chart.
 
     `source` is a figure token (a `@reflex_xy.figure` state var, or a
     `register()`/`inline()` token string) for a live, kernel-backed chart —
-    or a `xy` Chart/Figure directly, which renders as a static
+    or an `xyg` Chart/Figure directly, which renders as a static
     payload asset with client-side interactivity only (see module doc).
 
     `tooltip=` mounts a Reflex component as the chart tooltip: the render
     client positions it with the built-in tooltip's placement logic (the
     built-in tooltip is suppressed while it is mounted) and the `on_hover`
     payload carries the data to show. A Chart source that declares
-    `xy.tooltip(render=...)` mounts that component automatically.
+    `xyg.tooltip(render=...)` mounts that component automatically.
 
     Sizing: the outer element defaults to `width: 100%` and a 420px height;
     pass `width=`/`height=` (or any style prop) to override. Charts built
@@ -332,7 +332,7 @@ def chart(
     else:
         msg = (
             "reflex_xy.chart() takes a figure token (state var or string) or a "
-            f"xy Chart/Figure, got {type(source).__name__}"
+            f"xyg Chart/Figure, got {type(source).__name__}"
         )
         raise TypeError(msg)
     if tooltip is not None:

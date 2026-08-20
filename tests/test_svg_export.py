@@ -16,10 +16,10 @@ import numpy as np
 import pytest
 from tests.svg_test_utils import tick_label_positions
 
-import xy
-from xy import channels
-from xy._figure import Figure
-from xy._svg import (
+import xyg
+from xyg import channels
+from xyg._figure import Figure
+from xyg._svg import (
     COLORMAP_STOPS,
     _axis_tick_label_layout,
     _colormap_stops,
@@ -45,9 +45,9 @@ def _text_element(root: ET.Element, value: str) -> ET.Element:
 
 
 def test_single_line_ticks_stay_direct_svg_text_while_multiline_uses_tspans() -> None:
-    chart = xy.chart(
-        xy.line([0.0, 1.0], [0.0, 1.0]),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0]),
+        xyg.x_axis(
             tick_values=(0.0, 1.0),
             tick_labels=("plain tick", "split\ntick"),
             tick_label_strategy="preserve",
@@ -100,9 +100,9 @@ def test_every_chart_kind_exports_wellformed_svg() -> None:
 
 
 def test_svg_paints_figure_and_plot_backgrounds() -> None:
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.theme(background="#000000", plot_background="#101418"),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.theme(background="#000000", plot_background="#101418"),
         width=300,
         height=200,
     )
@@ -111,9 +111,9 @@ def test_svg_paints_figure_and_plot_backgrounds() -> None:
     assert 'fill="#101418"' in svg  # plot rect
 
     # Browser-only paints (gradients) are omitted, never fallback-painted.
-    gradient = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.theme(style={"background": "linear-gradient(red, blue)"}),
+    gradient = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.theme(style={"background": "linear-gradient(red, blue)"}),
         width=300,
         height=200,
     )
@@ -121,10 +121,10 @@ def test_svg_paints_figure_and_plot_backgrounds() -> None:
 
 
 def test_svg_honors_tick_label_anchor() -> None:
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.x_axis(tick_label_anchor="right"),  # mpl `ha` alias -> "end"
-        xy.y_axis(tick_label_anchor="center"),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.x_axis(tick_label_anchor="right"),  # mpl `ha` alias -> "end"
+        xyg.y_axis(tick_label_anchor="center"),
         width=300,
         height=200,
     )
@@ -137,8 +137,8 @@ def test_svg_honors_tick_label_anchor() -> None:
 
     # Defaults reproduce the classic layout: x centered, y right edge at the
     # tick ("end" — labels sit left of the plot).
-    default = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+    default = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
         width=300,
         height=200,
     )
@@ -148,11 +148,11 @@ def test_svg_honors_tick_label_anchor() -> None:
 
 
 def test_svg_tick_padding_starts_after_the_outward_tick() -> None:
-    from xy import _svg
+    from xyg import _svg
 
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
-        xy.x_axis(
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0]),
+        xyg.x_axis(
             tick_values=(0.5,),
             tick_labels=("middle",),
             style={"tick_length": 6, "tick_padding": 5, "tick_label_size": 10},
@@ -219,9 +219,9 @@ def test_rotated_x_tick_labels_measure_their_outward_gutter(side, room_key) -> N
         "United States of America",
         "Papua New Guinea",
     ]
-    chart = xy.chart(
-        xy.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line([0.0, 1.0, 2.0], [1.0, 2.0, 3.0]),
+        xyg.x_axis(
             side=side,
             tick_values=[0.0, 1.0, 2.0],
             tick_labels=labels,
@@ -241,10 +241,10 @@ def test_rotated_x_tick_labels_measure_their_outward_gutter(side, room_key) -> N
 
 
 def test_svg_legend_text_honors_theme_text_color() -> None:
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0], name="walk"),
-        xy.legend(loc="upper right", title="models"),
-        xy.theme(text_color="#ffffff"),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0], name="walk"),
+        xyg.legend(loc="upper right", title="models"),
+        xyg.theme(text_color="#ffffff"),
         width=300,
         height=200,
     )
@@ -253,9 +253,9 @@ def test_svg_legend_text_honors_theme_text_color() -> None:
     assert re.search(r'<text[^>]*fill="#ffffff"[^>]*>models</text>', svg)
 
     # Without a theme the legend keeps the light-mode default text color.
-    plain = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[0.0, 1.0], name="walk"),
-        xy.legend(loc="upper right"),
+    plain = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[0.0, 1.0], name="walk"),
+        xyg.legend(loc="upper right"),
         width=300,
         height=200,
     )
@@ -353,15 +353,15 @@ def test_svg_axes_chrome_and_hiding() -> None:
 
 
 def test_svg_long_legend_is_clamped_and_ellipsized_inside_plot() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     names = [f"series-{index}-" + "very-long-operational-label-" * 2 for index in range(4)]
-    chart = xy.line_chart(
+    chart = xyg.line_chart(
         *(
-            xy.line([0.0, 1.0], [float(index), float(index + 1)], name=name)
+            xyg.line([0.0, 1.0], [float(index), float(index + 1)], name=name)
             for index, name in enumerate(names)
         ),
-        xy.legend(
+        xyg.legend(
             loc="upper right",
             ncols=2,
             title="Long operational series",
@@ -387,13 +387,13 @@ def test_svg_long_legend_is_clamped_and_ellipsized_inside_plot() -> None:
 
 
 def test_svg_secondary_y_axis_scales_trace_and_renders_right_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
-    chart = xy.chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb"),
-        xy.line([0.0, 1.0], [100.0, 200.0], color="#dc2626", y_axis="y2"),
-        xy.y_axis(label="Primary"),
-        xy.y_axis(
+    chart = xyg.chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], color="#2563eb"),
+        xyg.line([0.0, 1.0], [100.0, 200.0], color="#dc2626", y_axis="y2"),
+        xyg.y_axis(label="Primary"),
+        xyg.y_axis(
             id="y2",
             label="Secondary",
             side="right",
@@ -443,9 +443,9 @@ def test_svg_secondary_y_axis_scales_trace_and_renders_right_chrome() -> None:
 def test_svg_short_chart_with_titled_legend_emits_no_empty_legend_box() -> None:
     # A plot too short for even one legend row must not paint a floating
     # frame/title-only box.
-    chart = xy.line_chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], name="series-a"),
-        xy.legend(title="Legend title", style={"background": "#ff00ff"}),
+    chart = xyg.line_chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], name="series-a"),
+        xyg.legend(title="Legend title", style={"background": "#ff00ff"}),
         width=400,
         height=70,
     )
@@ -456,13 +456,13 @@ def test_svg_short_chart_with_titled_legend_emits_no_empty_legend_box() -> None:
 
 
 def test_svg_vertical_colorbar_clears_right_named_axis_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
-    chart = xy.chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], name="field", colormap="viridis"),
-        xy.line([0.0, 1.0], [100.0, 200.0], y_axis="y2"),
-        xy.y_axis(id="y2", label="Secondary", side="right", domain=(100.0, 200.0)),
-        xy.colorbar(title="Field"),
+    chart = xyg.chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], name="field", colormap="viridis"),
+        xyg.line([0.0, 1.0], [100.0, 200.0], y_axis="y2"),
+        xyg.y_axis(id="y2", label="Secondary", side="right", domain=(100.0, 200.0)),
+        xyg.colorbar(title="Field"),
         width=560,
         height=300,
     )
@@ -485,11 +485,11 @@ def test_svg_vertical_colorbar_label_is_rotated_beside_the_bar_inside_the_canvas
     """SVG places a vertical colorbar's label like Matplotlib — rotated 90° CCW,
     centered beside the bar, on canvas — and the native PNG exporter must agree
     on the baseline so the two static paths cannot drift apart."""
-    from xy import _raster, _svg
+    from xyg import _raster, _svg
 
-    chart = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
-        xy.colorbar(title="counts in bin"),
+    chart = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
+        xyg.colorbar(title="counts in bin"),
         width=560,
         height=320,
     )
@@ -532,12 +532,12 @@ def test_svg_vertical_colorbar_label_is_rotated_beside_the_bar_inside_the_canvas
 
 
 def test_svg_colorbar_clears_primary_right_axis_and_bottom_axis_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
-    vertical = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
-        xy.y_axis(label="Primary right", side="right"),
-        xy.colorbar(),
+    vertical = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
+        xyg.y_axis(label="Primary right", side="right"),
+        xyg.colorbar(),
         width=560,
         height=320,
     )
@@ -553,10 +553,10 @@ def test_svg_colorbar_clears_primary_right_axis_and_bottom_axis_chrome() -> None
     assert float(vertical_bar.get("x", "nan")) > float(right_title.get("x", "nan"))
     assert float(vertical_bar.get("x", "nan")) > vertical_plot["x"] + vertical_plot["w"] + 40
 
-    horizontal = xy.heatmap_chart(
-        xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
-        xy.x_axis(label="Bottom axis"),
-        xy.colorbar(orientation="horizontal", title="Intensity"),
+    horizontal = xyg.heatmap_chart(
+        xyg.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
+        xyg.x_axis(label="Bottom axis"),
+        xyg.colorbar(orientation="horizontal", title="Intensity"),
         width=560,
         height=320,
     )
@@ -576,13 +576,13 @@ def test_svg_colorbar_clears_primary_right_axis_and_bottom_axis_chrome() -> None
 
 
 def test_svg_secondary_x_axis_scales_trace_and_renders_top_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
-    chart = xy.chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb"),
-        xy.line([100.0, 200.0], [0.2, 0.8], color="#dc2626", x_axis="x2"),
-        xy.x_axis(label="Primary X"),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], color="#2563eb"),
+        xyg.line([100.0, 200.0], [0.2, 0.8], color="#dc2626", x_axis="x2"),
+        xyg.x_axis(label="Primary X"),
+        xyg.x_axis(
             id="x2",
             label="Secondary X",
             side="top",
@@ -631,11 +631,11 @@ def test_svg_secondary_x_axis_scales_trace_and_renders_top_chrome() -> None:
 def test_svg_mixed_primary_and_named_x_axis_kinds_render_independently() -> None:
     cases = (
         (
-            xy.chart(
-                xy.line(["Primary Alpha", "Primary Beta", "Primary Gamma"], [1.0, 2.0, 3.0]),
-                xy.line([100.0, 200.0, 300.0], [3.0, 2.0, 1.0], x_axis="x2"),
-                xy.x_axis(tick_label_strategy="rotate"),
-                xy.x_axis(
+            xyg.chart(
+                xyg.line(["Primary Alpha", "Primary Beta", "Primary Gamma"], [1.0, 2.0, 3.0]),
+                xyg.line([100.0, 200.0, 300.0], [3.0, 2.0, 1.0], x_axis="x2"),
+                xyg.x_axis(tick_label_strategy="rotate"),
+                xyg.x_axis(
                     id="x2",
                     side="top",
                     type_="linear",
@@ -649,16 +649,16 @@ def test_svg_mixed_primary_and_named_x_axis_kinds_render_independently() -> None
             {"Primary Alpha", "Primary Beta", "Primary Gamma", "N100", "N200", "N300"},
         ),
         (
-            xy.chart(
-                xy.line([10.0, 20.0, 30.0], [1.0, 2.0, 3.0]),
-                xy.line(["Named Red", "Named Green", "Named Blue"], [3.0, 2.0, 1.0], x_axis="x2"),
-                xy.x_axis(
+            xyg.chart(
+                xyg.line([10.0, 20.0, 30.0], [1.0, 2.0, 3.0]),
+                xyg.line(["Named Red", "Named Green", "Named Blue"], [3.0, 2.0, 1.0], x_axis="x2"),
+                xyg.x_axis(
                     type_="linear",
                     tick_values=(10.0, 20.0, 30.0),
                     tick_labels=("P10", "P20", "P30"),
                     tick_label_strategy="rotate",
                 ),
-                xy.x_axis(id="x2", side="top", tick_label_strategy="rotate"),
+                xyg.x_axis(id="x2", side="top", tick_label_strategy="rotate"),
                 width=560,
                 height=300,
             ),
@@ -687,9 +687,9 @@ def test_svg_rotated_x_tick_labels_anchor_away_from_plot(
     expected_anchor: str,
 ) -> None:
     axis_id = "x" if side == "bottom" else "x2"
-    chart = xy.chart(
-        xy.line([0, 1], [0, 1], x_axis=axis_id),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line([0, 1], [0, 1], x_axis=axis_id),
+        xyg.x_axis(
             id=axis_id,
             side=side,
             tick_values=(0, 1),
@@ -711,13 +711,13 @@ def test_svg_rotated_x_tick_labels_anchor_away_from_plot(
 
 
 def test_static_named_axes_handle_reverse_silence_and_tick_count() -> None:
-    from xy import _svg
+    from xyg import _svg
 
-    base = xy.chart(xy.line([0.0, 1.0], [0.0, 1.0]), width=400, height=240)
-    silent = xy.chart(
-        xy.line([0.0, 1.0], [0.0, 1.0]),
-        xy.x_axis(id="x2", side="top", tick_label_strategy="none"),
-        xy.y_axis(id="y2", side="right", tick_label_strategy="none"),
+    base = xyg.chart(xyg.line([0.0, 1.0], [0.0, 1.0]), width=400, height=240)
+    silent = xyg.chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0]),
+        xyg.x_axis(id="x2", side="top", tick_label_strategy="none"),
+        xyg.y_axis(id="y2", side="right", tick_label_strategy="none"),
         width=400,
         height=240,
     )
@@ -725,9 +725,9 @@ def test_static_named_axes_handle_reverse_silence_and_tick_count() -> None:
     silent_spec, _ = silent.figure().build_payload()
     assert _svg.layout(silent_spec)[3] == _svg.layout(base_spec)[3]
 
-    chart = xy.chart(
-        xy.line([100.0, 150.0, 200.0], [0.0, 1.0, 2.0], x_axis="x2"),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line([100.0, 150.0, 200.0], [0.0, 1.0, 2.0], x_axis="x2"),
+        xyg.x_axis(
             id="x2",
             side="top",
             domain=(100.0, 200.0),
@@ -735,7 +735,7 @@ def test_static_named_axes_handle_reverse_silence_and_tick_count() -> None:
             tick_values=(100.0, 150.0, 200.0),
             tick_labels=("low", "middle", "high"),
         ),
-        xy.y_axis(id="y2", side="right", domain=(0.0, 100.0), tick_count=2),
+        xyg.y_axis(id="y2", side="right", domain=(0.0, 100.0), tick_count=2),
         width=400,
         height=240,
     )
@@ -751,9 +751,9 @@ def test_static_named_axes_handle_reverse_silence_and_tick_count() -> None:
 def test_svg_named_axis_collision_and_title_placement_controls() -> None:
     values = list(range(30))
     tick_labels = [f"very-long-secondary-label-{value}" for value in values]
-    chart = xy.chart(
-        xy.line(values, values, x_axis="x2"),
-        xy.x_axis(
+    chart = xyg.chart(
+        xyg.line(values, values, x_axis="x2"),
+        xyg.x_axis(
             id="x2",
             side="top",
             label="Secondary positioned title",
@@ -769,7 +769,7 @@ def test_svg_named_axis_collision_and_title_placement_controls() -> None:
         height=240,
     )
     spec, _ = chart.figure().build_payload()
-    _width, _height, _compact, plot = xy._svg.layout(spec)
+    _width, _height, _compact, plot = xyg._svg.layout(spec)
     root = _parse(chart.to_svg())
 
     rendered_tick_labels = [node.text for node in root.iter() if node.text in tick_labels]
@@ -793,9 +793,9 @@ def test_svg_write_and_dimension_override(tmp_path: Path) -> None:
 
 
 def test_composition_chart_to_svg_parity() -> None:
-    chart = xy.line_chart(
-        xy.line(x=[0.0, 1.0], y=[1.0, 2.0], name="s"),
-        xy.x_axis(label="time"),
+    chart = xyg.line_chart(
+        xyg.line(x=[0.0, 1.0], y=[1.0, 2.0], name="s"),
+        xyg.x_axis(label="time"),
         title="comp",
     )
     svg = chart.to_svg(width=500, height=300)
@@ -840,7 +840,7 @@ def test_colormap_stops_stay_in_sync_with_js_client() -> None:
 
 
 def test_matplotlib_gallery_colormap_stops_and_reversal() -> None:
-    from xy.pyplot._colors import resolve_cmap
+    from xyg.pyplot._colors import resolve_cmap
 
     expected = {
         "reds": [
@@ -972,7 +972,7 @@ def test_matplotlib_gallery_colormap_stops_and_reversal() -> None:
 
 def test_flag_colormap_matches_matplotlib_lut_and_gray_aliases() -> None:
     """Gallery cmap names resolve without flattening flag's rapid color cycle."""
-    from xy.pyplot._colors import resolve_cmap
+    from xyg.pyplot._colors import resolve_cmap
 
     flag = COLORMAP_STOPS["flag"]
     assert len(flag) == 256
@@ -1064,12 +1064,12 @@ def test_segment_constant_translucent_color_applies_alpha_once() -> None:
     assert opaque_lines, "opaque constant color should pass through verbatim"
 
 
-def _geometry_chart(side_x: str = "bottom", side_y: str = "left", style=None) -> xy.Chart:
+def _geometry_chart(side_x: str = "bottom", side_y: str = "left", style=None) -> xyg.Chart:
     """A 3x3 tick grid with a pinned plot rect, so offsets are exact integers."""
-    return xy.chart(
-        xy.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5]),
-        xy.x_axis(domain=(0.0, 2.0), tick_values=[0.0, 1.0, 2.0], side=side_x, style=style),
-        xy.y_axis(domain=(0.0, 1.0), tick_values=[0.0, 0.5, 1.0], side=side_y, style=style),
+    return xyg.chart(
+        xyg.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5]),
+        xyg.x_axis(domain=(0.0, 2.0), tick_values=[0.0, 1.0, 2.0], side=side_x, style=style),
+        xyg.y_axis(domain=(0.0, 1.0), tick_values=[0.0, 0.5, 1.0], side=side_y, style=style),
         width=400,
         height=300,
         padding=(40, 50, 40, 50),
@@ -1237,9 +1237,9 @@ def _texts(svg: str) -> list[str]:
     ],
 )
 def test_axis_format_reaches_the_static_export(spec_format, values, expected) -> None:
-    chart = xy.line_chart(
-        xy.line([1, 2, 3], values),
-        xy.y_axis(format=spec_format),
+    chart = xyg.line_chart(
+        xyg.line([1, 2, 3], values),
+        xyg.y_axis(format=spec_format),
         width=640,
         height=380,
     )
@@ -1250,9 +1250,9 @@ def test_time_axis_format_reaches_the_static_export() -> None:
     import datetime as dt
 
     days = [dt.datetime(2024, month, 1) for month in (1, 3, 5)]
-    chart = xy.line_chart(
-        xy.line(days, [1, 2, 3]),
-        xy.x_axis(type_="time", format="%Y-%m"),
+    chart = xyg.line_chart(
+        xyg.line(days, [1, 2, 3]),
+        xyg.x_axis(type_="time", format="%Y-%m"),
         width=680,
         height=380,
     )
@@ -1260,7 +1260,7 @@ def test_time_axis_format_reaches_the_static_export() -> None:
 
 
 def test_an_unparseable_format_falls_back_instead_of_erroring() -> None:
-    chart = xy.line_chart(xy.line([1, 2, 3], [1, 2, 3]), xy.y_axis(format="nonsense"))
+    chart = xyg.line_chart(xyg.line([1, 2, 3], [1, 2, 3]), xyg.y_axis(format="nonsense"))
     assert "1.0" in _texts(chart.to_svg())
 
 
@@ -1269,9 +1269,9 @@ def test_log_decades_below_one_get_distinct_labels() -> None:
 
     A log axis steps multiplicatively, so precision taken from the tick step
     is meaningless below 1.0."""
-    chart = xy.line_chart(
-        xy.line([1, 2, 3], [0.001, 0.01, 1.0]),
-        xy.y_axis(type_="log"),
+    chart = xyg.line_chart(
+        xyg.line([1, 2, 3], [0.001, 0.01, 1.0]),
+        xyg.y_axis(type_="log"),
         width=560,
         height=340,
     )
@@ -1288,9 +1288,9 @@ def test_a_log_axis_survives_an_affixed_format(spec_format) -> None:
     taking the entire render down. The client's `Number("$0")` is `NaN`
     instead, so it shipped the collapsed label: two different wrong answers
     from the layer that exists to keep them identical."""
-    chart = xy.line_chart(
-        xy.line([1, 2, 3], [0.001, 0.01, 1.0]),
-        xy.y_axis(type_="log", format=spec_format),
+    chart = xyg.line_chart(
+        xyg.line([1, 2, 3], [0.001, 0.01, 1.0]),
+        xyg.y_axis(type_="log", format=spec_format),
         width=560,
         height=340,
     )
@@ -1302,9 +1302,9 @@ def test_a_log_axis_survives_an_affixed_format(spec_format) -> None:
 
 
 def test_formatted_labels_widen_the_gutter_instead_of_running_off_the_canvas() -> None:
-    wide = xy.line_chart(
-        xy.line([1, 2, 3], [1e9, 2e9, 3e9]),
-        xy.y_axis(format="$,.0f"),
+    wide = xyg.line_chart(
+        xyg.line([1, 2, 3], [1e9, 2e9, 3e9]),
+        xyg.y_axis(format="$,.0f"),
         width=640,
         height=380,
     )
@@ -1316,7 +1316,7 @@ def test_formatted_labels_widen_the_gutter_instead_of_running_off_the_canvas() -
 
 
 def test_an_ordinary_chart_keeps_its_historical_gutter() -> None:
-    svg = xy.line_chart(xy.line([1, 2, 3], [1, 2, 3]), width=640, height=380).to_svg()
+    svg = xyg.line_chart(xyg.line([1, 2, 3], [1, 2, 3]), width=640, height=380).to_svg()
     assert re.search(r'<rect x="62"', svg), "auto-sizing must only ever widen"
 
 
@@ -1325,9 +1325,9 @@ def test_a_categorical_color_channel_gets_one_legend_row_per_category() -> None:
     trace name and the trace's constant color — a legend that misdescribed the
     three colors printed beside it."""
     species = ["setosa"] * 4 + ["versicolor"] * 4 + ["virginica"] * 4
-    chart = xy.scatter_chart(
-        xy.scatter(list(range(12)), list(range(12)), color=species, name="iris"),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(list(range(12)), list(range(12)), color=species, name="iris"),
+        xyg.legend(),
         width=560,
         height=380,
     )
@@ -1338,10 +1338,10 @@ def test_a_categorical_color_channel_gets_one_legend_row_per_category() -> None:
 
 def test_categorical_legend_swatches_use_the_category_colors() -> None:
     species = ["a"] * 3 + ["b"] * 3
-    chart = xy.scatter_chart(
-        xy.scatter(list(range(6)), list(range(6)), color=species, name="s"),
-        xy.theme(palette=["#ff0000", "#0000ff"]),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(list(range(6)), list(range(6)), color=species, name="s"),
+        xyg.theme(palette=["#ff0000", "#0000ff"]),
+        xyg.legend(),
     )
     svg = chart.to_svg()
     assert "#ff0000" in svg and "#0000ff" in svg
@@ -1350,21 +1350,21 @@ def test_categorical_legend_swatches_use_the_category_colors() -> None:
 @pytest.mark.parametrize(
     ("annotation", "label"),
     [
-        (lambda: xy.hline(y=2, text="target"), "target"),
-        (lambda: xy.vline(x=2, text="launch"), "launch"),
-        (lambda: xy.x_band(x0=1.2, x1=1.8, text="window"), "window"),
-        (lambda: xy.marker(x=2, y=3, text="peak"), "peak"),
-        (lambda: xy.arrow(x0=1, y0=1, x1=2, y1=3, text="rise"), "rise"),
+        (lambda: xyg.hline(y=2, text="target"), "target"),
+        (lambda: xyg.vline(x=2, text="launch"), "launch"),
+        (lambda: xyg.x_band(x0=1.2, x1=1.8, text="window"), "window"),
+        (lambda: xyg.marker(x=2, y=3, text="peak"), "peak"),
+        (lambda: xyg.arrow(x0=1, y0=1, x1=2, y1=3, text="rise"), "rise"),
     ],
 )
 def test_annotation_text_reaches_the_static_export(annotation, label) -> None:
-    chart = xy.line_chart(xy.line([1, 2, 3], [1, 3, 2]), annotation(), width=680, height=400)
+    chart = xyg.line_chart(xyg.line([1, 2, 3], [1, 3, 2]), annotation(), width=680, height=400)
     assert label in _texts(chart.to_svg())
 
 
 def test_a_marker_annotation_draws_its_glyph_not_just_its_label() -> None:
-    plain = xy.line_chart(xy.line([1, 2, 3], [1, 3, 2]), width=680, height=400).to_svg()
-    marked = xy.line_chart(
-        xy.line([1, 2, 3], [1, 3, 2]), xy.marker(x=2, y=3), width=680, height=400
+    plain = xyg.line_chart(xyg.line([1, 2, 3], [1, 3, 2]), width=680, height=400).to_svg()
+    marked = xyg.line_chart(
+        xyg.line([1, 2, 3], [1, 3, 2]), xyg.marker(x=2, y=3), width=680, height=400
     ).to_svg()
     assert marked.count("<circle") == plain.count("<circle") + 1

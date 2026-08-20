@@ -5,9 +5,9 @@ from io import BytesIO
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot import _grid
-from xy.pyplot._mathtext import mathtext_italic_ranges
+import xyg.pyplot as plt
+from xyg.pyplot import _grid
+from xyg.pyplot._mathtext import mathtext_italic_ranges
 
 
 @pytest.fixture(autouse=True)

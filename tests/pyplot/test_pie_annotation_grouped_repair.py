@@ -8,12 +8,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 from conftest import probe_document, run_browser_probe
-from xy._arrowgeom import arrow_geometry, shaft_points
-from xy._svg import layout
-from xy.export import find_chromium
-from xy.pyplot._colors import resolve_color
+from xyg._arrowgeom import arrow_geometry, shaft_points
+from xyg._svg import layout
+from xyg.export import find_chromium
+from xyg.pyplot._colors import resolve_color
 
 
 @pytest.fixture(autouse=True)

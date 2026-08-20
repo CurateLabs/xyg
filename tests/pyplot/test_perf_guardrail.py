@@ -10,12 +10,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def test_theme_and_axis_components_are_shared() -> None:
     """CSS token validation must stay O(1) per process, not O(charts)."""
-    from xy.pyplot import _axes
+    from xyg.pyplot import _axes
 
     plt.close("all")
     _fig, ax = plt.subplots()

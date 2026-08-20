@@ -6,8 +6,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import kernels
-from xy._figure import Figure
+from xyg import kernels
+from xyg._figure import Figure
 
 
 def _per_edge_reference(

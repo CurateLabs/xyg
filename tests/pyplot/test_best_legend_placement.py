@@ -14,9 +14,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-import xy.pyplot as plt
-from xy._svg import _legend_layout
+import xyg
+import xyg.pyplot as plt
+from xyg._svg import _legend_layout
 
 
 def resolved_loc(ax) -> str:
@@ -229,7 +229,7 @@ def test_best_scores_the_measured_legend_box_not_a_linear_estimate():
 
     chart = ax._build_chart(1200, 400)
     spec, _ = chart.figure().build_payload()
-    from xy._svg import layout
+    from xyg._svg import layout
 
     _, _, _, plot = layout(spec)
     box = _legend_layout(
@@ -263,7 +263,7 @@ def test_longer_labels_grow_the_scored_footprint():
 
 def _legend_footprint_width(ax) -> float:
     spec, _ = ax._build_chart(640, 480).figure().build_payload()
-    from xy._svg import layout
+    from xyg._svg import layout
 
     _, _, _, plot = layout(spec)
     box = _legend_layout(
@@ -381,7 +381,7 @@ def test_best_is_resolved_before_the_wire():
     ax.legend(loc="best")
     spec, _ = ax._build_chart(640, 480).figure().build_payload()
     assert spec["legend"]["loc"] != "best"
-    assert spec["legend"]["loc"] in xy.pyplot._axes._LEGEND_LOC_ANCHORS
+    assert spec["legend"]["loc"] in xyg.pyplot._axes._LEGEND_LOC_ANCHORS
 
 
 def test_unlabeled_entries_do_not_crash_measurement():
@@ -389,7 +389,7 @@ def test_unlabeled_entries_do_not_crash_measurement():
     _, ax = plt.subplots()
     ax.plot([0, 1], [0, 1])
     ax.legend(loc="best")
-    assert resolved_loc(ax) in xy.pyplot._axes._LEGEND_LOC_ANCHORS
+    assert resolved_loc(ax) in xyg.pyplot._axes._LEGEND_LOC_ANCHORS
 
 
 # --------------------------------------------------------------------------
@@ -400,7 +400,7 @@ def test_unlabeled_entries_do_not_crash_measurement():
 def test_pyplot_legend_loc_rejects_misspelled_locations():
     """Matplotlib's location vocabulary belongs to the pyplot shim.
 
-    Core ``xy.legend`` intentionally has its own vocabulary (including the
+    Core ``xyg.legend`` intentionally has its own vocabulary (including the
     documented ``"top left"`` spelling), so validating this in the shared
     component is a core API regression rather than a pyplot compatibility fix.
     """
@@ -408,7 +408,7 @@ def test_pyplot_legend_loc_rejects_misspelled_locations():
     for bogus in ("uppper right", "top left", "", "middle"):
         with pytest.raises(ValueError, match="legend loc must be one of"):
             ax.legend(loc=bogus)
-    assert xy.legend(loc="top left").loc == "top left"
+    assert xyg.legend(loc="top left").loc == "top left"
 
 
 @pytest.mark.parametrize(
@@ -438,7 +438,7 @@ def test_every_matplotlib_loc_places_the_box_at_its_anchor():
     items = [{"name": "abc"}]
     plot = {"x": 40.0, "y": 20.0, "w": 400.0, "h": 300.0}
     inset = 6.0
-    for loc, (hx, vy) in xy.pyplot._axes._LEGEND_LOC_ANCHORS.items():
+    for loc, (hx, vy) in xyg.pyplot._axes._LEGEND_LOC_ANCHORS.items():
         box = _legend_layout(items, plot, {"loc": loc})
         want_x = plot["x"] + inset + hx * (plot["w"] - 2 * inset - box["box_w"])
         want_y = plot["y"] + inset + (1.0 - vy) * (plot["h"] - 2 * inset - box["box_h"])
@@ -448,7 +448,7 @@ def test_every_matplotlib_loc_places_the_box_at_its_anchor():
 
 def test_right_and_center_right_are_the_same_anchor():
     """Matplotlib resolves codes 5 and 7 to the same offsetbox corner."""
-    locations = xy.pyplot._axes._LEGEND_LOC_ANCHORS
+    locations = xyg.pyplot._axes._LEGEND_LOC_ANCHORS
     assert locations["right"] == locations["center right"]
     items = [{"name": "abc"}]
     plot = {"x": 0.0, "y": 0.0, "w": 400.0, "h": 300.0}
@@ -459,7 +459,7 @@ def test_right_and_center_right_are_the_same_anchor():
 
 def test_best_candidate_order_is_matplotlib_code_order():
     """The tie-break contract: Matplotlib prefers the lower location code."""
-    from xy.pyplot._axes import _BEST_LOC_ORDER
+    from xyg.pyplot._axes import _BEST_LOC_ORDER
 
     # Codes 1..10 with code 7 folded onto its identical code-5 "right" anchor.
     assert _BEST_LOC_ORDER == (
@@ -473,7 +473,7 @@ def test_best_candidate_order_is_matplotlib_code_order():
         "upper center",
         "center",
     )
-    assert set(_BEST_LOC_ORDER) <= set(xy.pyplot._axes._LEGEND_LOC_ANCHORS)
+    assert set(_BEST_LOC_ORDER) <= set(xyg.pyplot._axes._LEGEND_LOC_ANCHORS)
 
 
 def test_ties_keep_the_earliest_candidate():

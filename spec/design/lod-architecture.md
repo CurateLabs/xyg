@@ -2,8 +2,8 @@
 
 **Status:** design + implementation plan. Supersedes nothing — this refines
 dossier §5/§10/§16/§17/§22/§28 into a buildable spec, grounded in what already
-ships (`python/xy/lod.py`, `js/src/45_lod.ts`, `interaction.py`,
-kernels ABI v3). The whole XY claim rests on one sentence:
+ships (`python/xyg/lod.py`, `js/src/45_lod.ts`, `interaction.py`,
+kernels ABI v3). The whole XYG claim rests on one sentence:
 
 > **Large data stays truthful and interactive.**
 
@@ -17,13 +17,13 @@ Interactive means: pan/zoom stays inside the §17 frame budget at any N.
 
 A **tier is a property of a (trace, viewport) pair**, never of a dataset:
 what ships is count-only, `tier = f(visible_count)`, hysteresis-guarded (§5).
-`drill_decision` / `plan_view_lod` in `python/xy/lod.py` call Rust
+`drill_decision` / `plan_view_lod` in `python/xyg/lod.py` call Rust
 (`xy_drill_decision` / `xy_lod_plan` in `lod_plan.rs`); hosts only validate and
 map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
 for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`
 into the decision is dossier F3 — *specified, pending, not implemented*; no
-pixel-area or overdraw term exists in `python/xy/` or `js/src/` today.
+pixel-area or overdraw term exists in `python/xyg/` or `js/src/` today.
 
 | Tier | Name | Representation | Cost model | Status |
 |---|---|---|---|---|
@@ -60,7 +60,7 @@ lives there.
 ### Shared Python contract
 
 Tiered chart kinds must enter through the common LOD primitives in
-`python/xy/lod.py`:
+`python/xyg/lod.py`:
 
 - `ViewportRequest.from_client(...)` normalizes flipped ranges, rejects
   non-finite bounds, and clamps hostile/tiny screen dimensions before any
@@ -334,13 +334,13 @@ ever extrapolates.
   `bin_2d`, `range_indices`, and zone maps scan them straight from disk via the
   OS page cache, so building/serving the pyramid never requires the raw rows to
   be resident. Columns too large to build in RAM are streamed to disk by
-  `xy._ooc.MemmapF64Builder`; `tests/test_ooc.py` covers ingest-without-copy and
+  `xyg._ooc.MemmapF64Builder`; `tests/test_ooc.py` covers ingest-without-copy and
   screen-bounded density rendering over a memmap-backed scatter.
 - **Windowed-exact spatial index (landed).** A disk-backed companion to the
   pyramid for the zoomed-*in* regime, where the pyramid's upsampled floor is
   blocky (its finest cell is kilometres wide over a planet-scale extent).
   Points are pre-sorted into a row-major grid of cells with a cumulative-offset
-  header (`osmium-rs`'s `osm-sort`, dossier §32b); `xy._spatial.SpatialIndex`
+  header (`osmium-rs`'s `osm-sort`, dossier §32b); `xyg._spatial.SpatialIndex`
   reads only the cells a viewport overlaps — one contiguous memmap slice per
   grid row. Cost is O(points in window), so detail *sharpens and cheapens* with
   depth; the cheap offsets-only `window_count` (whole-cell overhang, an upper
@@ -703,7 +703,7 @@ contract entry before it lands.
 cache and dedicated 100M latency gate still open)**
 6. **Done (count + mean-color planes):** `crates/xyg-engine/src/tiles.rs` builds a square count
    pyramid over the trace's full data bounds — finest level is
-   `PYRAMID_BASE_DIM`² (2048², `python/xy/config.py`), each coarser level an
+   `PYRAMID_BASE_DIM`² (2048², `python/xyg/config.py`), each coarser level an
    exact 4→1 u64 sum saturating to u32, so every level conserves total count.
    Channel-bearing traces build the §4.1 mean-color planes alongside
    (`xyg_pyramid_build_color`, one fused scan — fan-out gated by the

@@ -1,6 +1,6 @@
 """A full-payload update re-homes to the new data, so a grown range expands.
 
-Section 4 of the XY Reflex showcase links two charts: zooming the overview's x
+Section 4 of the XYG Reflex showcase links two charts: zooming the overview's x
 range recomputes a *detail* histogram of only the points in view, and pushes it
 as a full ``payload`` (reflex-integration.md §4, "state-driven rebuild"). The
 client applies that in place via ``ChartView.updatePayload``.
@@ -29,9 +29,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 _RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
 
@@ -72,10 +72,10 @@ _PROBE_BODY = """
 """
 
 
-def _histogram_chart(values: np.ndarray) -> xy.Chart:
-    return xy.histogram_chart(
-        xy.histogram(values, bins=48, color="#7c3aed"),
-        xy.x_axis(label="value in view"),
+def _histogram_chart(values: np.ndarray) -> xyg.Chart:
+    return xyg.histogram_chart(
+        xyg.histogram(values, bins=48, color="#7c3aed"),
+        xyg.x_axis(label="value in view"),
         width=480,
         height=360,
     )

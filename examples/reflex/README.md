@@ -1,6 +1,6 @@
-# XY Reflex showcase
+# XYG Reflex showcase
 
-A [Reflex](https://reflex.dev) app built with the `xy[reflex]` integration.
+A [Reflex](https://reflex.dev) app built with the `xyg[reflex]` integration.
 One page walks through the ways to link chart data into a Reflex app, and each
 section carries a **Code** accordion showing its source via
 `inspect.getsource`.
@@ -20,7 +20,7 @@ binary columns; Reflex state holds only a token string per chart.
    `reflex_xy.append`.
 4. **Data computed from `on_view_change`** — pan/zoom an overview and a detail
    histogram recomputes from the points in the reported window.
-5. **Fixed data, two ways** — a `xy.Chart` passed straight to `reflex_xy.chart`
+5. **Fixed data, two ways** — a `xyg.Chart` passed straight to `reflex_xy.chart`
    (static payload tier) and a `reflex_xy.inline` token (fixed data served
    through the kernel).
 6. **The 100M drilldown, adapter-native** — the live drilldown scatter
@@ -40,7 +40,7 @@ uv run reflex run
 ```
 
 `uv run` resolves this directory's [`pyproject.toml`](pyproject.toml)
-(`xy[reflex]`) into a local environment. Open the URL Reflex prints (usually
+(`xyg[reflex]`) into a local environment. Open the URL Reflex prints (usually
 <http://localhost:3000>). Zoom into the cloud to drill density into exact
 points; box-select to cross-filter the histogram; press **go live** to stream.
 

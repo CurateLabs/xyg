@@ -10,7 +10,7 @@
 //! do not own the growable backing store. Out-of-core memmap columns remain
 //! host-owned (they cannot sit behind this first in-RAM handle).
 //!
-//! Safety contract (enforced by `python/xy/_native.py` and
+//! Safety contract (enforced by `python/xyg/_native.py` and
 //! `packages/xy-node/src/native.js`): non-empty inputs use non-null, properly
 //! aligned pointers sized as documented per function. Empty inputs are
 //! accepted without dereferencing their pointers; invalid pointer/argument
@@ -3274,7 +3274,7 @@ pub unsafe extern "C" fn xyg_normalize_f32(
 
 /// Deterministic sampling mask (§5/§17): `out[i] = 1` iff
 /// `splitmix64(ids[i] + seed) <= threshold`. Bit-identical to
-/// `xy.lod.hash_row_ids` thresholding, fused into one pass.
+/// `xyg.lod.hash_row_ids` thresholding, fused into one pass.
 /// Returns 1 on success (including the empty no-op), 0 on null arguments.
 ///
 /// # Safety
@@ -3458,7 +3458,7 @@ pub unsafe extern "C" fn xyg_stratified_sample_range_u8_counted(
 /// Category-stratified sampling mask (§5/§17): per-category keep fractions
 /// scale as `min(1, fraction * sqrt(len / count))` and every category keeps at
 /// least `min(min_count, count)` of its lowest-hash rows. Bit-identical to the
-/// per-category NumPy reference in `xy.lod` (parity-tested), fused
+/// per-category NumPy reference in `xyg.lod` (parity-tested), fused
 /// into one pass instead of O(len · n_groups) rescans.
 ///
 /// Returns 1 on success (including the empty no-op), 0 on null arguments, a

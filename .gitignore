@@ -14,12 +14,12 @@ node_modules/
 .web/
 **/assets/xy/*.xyf
 # Generated render-client bundles (§33): built by `node js/build.mjs` into
-# the host-neutral `@curatelabs/xyg` dist, copied into python/xy/static for
+# the host-neutral `@curatelabs/xyg` dist, copied into python/xyg/static for
 # the Python wheel, never committed. hatch_build.py force-includes both.
 packages/xy-client/dist/index.js
 packages/xy-client/dist/standalone.js
-python/xy/static/index.js
-python/xy/static/standalone.js
+python/xyg/static/index.js
+python/xyg/static/standalone.js
 # Exact-platform Node natives (#52): staged by release packaging next to
 # packages/xyg-node-*/index.js; never commit built cdylibs from a checkout.
 packages/xyg-node-*/libxyg_core.so

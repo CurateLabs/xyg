@@ -11,15 +11,15 @@ import pytest
 import reflex as rx
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.payload_asset import payload_asset
 from reflex_xy.tokens import parse_token
-from xy.channel import decode_frame
+from xyg.channel import decode_frame
 
 
 def make_chart(n: int = 32, seed: float = 1.0):
     xs = np.linspace(0.0, seed, n)
-    return xy.line_chart(xy.line(xs, xs * seed), width=400, height=200)
+    return xyg.line_chart(xyg.line(xs, xs * seed), width=400, height=200)
 
 
 @pytest.fixture

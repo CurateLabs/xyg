@@ -13,7 +13,7 @@ children share a table.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 hours = np.linspace(0, 24, 288, endpoint=False)
 temperature = (
@@ -23,8 +23,8 @@ temperature = (
 )
 feels_like = temperature - 1.1 + 0.5 * np.cos(hours * 2 * np.pi / 24)
 
-direct_array_chart = xy.line_chart(
-    xy.area(
+direct_array_chart = xyg.line_chart(
+    xyg.area(
         hours,
         temperature,
         base=10,
@@ -33,7 +33,7 @@ direct_array_chart = xy.line_chart(
         line_width=0,
         curve="smooth",
     ),
-    xy.line(
+    xyg.line(
         hours,
         temperature,
         name="Temperature",
@@ -41,7 +41,7 @@ direct_array_chart = xy.line_chart(
         width=2.5,
         curve="smooth",
     ),
-    xy.line(
+    xyg.line(
         hours,
         feels_like,
         name="Feels like",
@@ -50,9 +50,9 @@ direct_array_chart = xy.line_chart(
         dash="dashed",
         curve="smooth",
     ),
-    xy.x_axis(label="hour", domain=(0, 24), tick_count=7),
-    xy.y_axis(label="temperature (°C)", domain=(10, 26), tick_count=5),
-    xy.legend(loc="upper left"),
+    xyg.x_axis(label="hour", domain=(0, 24), tick_count=7),
+    xyg.y_axis(label="temperature (°C)", domain=(10, 26), tick_count=5),
+    xyg.legend(loc="upper left"),
     title="One day of five-minute readings",
 )
 
@@ -94,10 +94,10 @@ campaign_data = {
 }
 
 # --- chart ---
-import xy
+import xyg
 
-named_column_chart = xy.scatter_chart(
-    xy.scatter(
+named_column_chart = xyg.scatter_chart(
+    xyg.scatter(
         x="spend_k",
         y="qualified_leads",
         color="channel",
@@ -107,9 +107,9 @@ named_column_chart = xy.scatter_chart(
         stroke="#ffffff",
         stroke_width=1,
     ),
-    xy.x_axis(label="campaign spend ($k)", domain=(8, 84), tick_count=6),
-    xy.y_axis(label="qualified leads", domain=(60, 430), tick_count=6),
-    xy.tooltip(
+    xyg.x_axis(label="campaign spend ($k)", domain=(8, 84), tick_count=6),
+    xyg.y_axis(label="qualified leads", domain=(60, 430), tick_count=6),
+    xyg.tooltip(
         title="{channel} campaign",
         fields=["spend_k", "qualified_leads", "pipeline_k"],
         format={
@@ -118,7 +118,7 @@ named_column_chart = xy.scatter_chart(
             "pipeline_k": "$,.0fK",
         },
     ),
-    xy.legend(title="Channel", loc="upper left"),
+    xyg.legend(title="Channel", loc="upper left"),
     data=campaign_data,
     title="Campaign performance across 18 launches",
 )
@@ -139,7 +139,7 @@ categorical values use a discrete palette.
 
 ## The canonical column store
 
-XY converts numeric coordinates to contiguous float64 canonical columns owned
+XYG converts numeric coordinates to contiguous float64 canonical columns owned
 by the native engine (`xyg_stream_*` after a column grows). Hosts coerce ingest
 and hold opaque handles; Python may expose a NumPy view of that buffer.
 Derived float32, index, density, and decimated buffers are rendering
@@ -153,12 +153,12 @@ counts, and copies paid during ingest.
 
 ## Arrow input and zero-copy cases
 
-PyArrow is an optional input format, not an XY runtime dependency. Install it
+PyArrow is an optional input format, not an XYG runtime dependency. Install it
 separately (`uv add pyarrow` or `pip install pyarrow`) and pass an Array or
 ChunkedArray directly:
 
 ~~~python demo exec
-import xy
+import xyg
 
 try:
     import pyarrow as pa
@@ -184,8 +184,8 @@ throughput = (
     else throughput_values
 )
 
-arrow_chart = xy.line_chart(
-    xy.area(
+arrow_chart = xyg.line_chart(
+    xyg.area(
         batch_mb,
         throughput,
         color="#6e56cf",
@@ -193,14 +193,14 @@ arrow_chart = xy.line_chart(
         line_width=0,
         curve="smooth",
     ),
-    xy.line(
+    xyg.line(
         batch_mb,
         throughput,
         color="#6e56cf",
         width=2.5,
         curve="smooth",
     ),
-    xy.scatter(
+    xyg.scatter(
         batch_mb,
         throughput,
         color="#6e56cf",
@@ -209,8 +209,8 @@ arrow_chart = xy.line_chart(
         stroke="#ffffff",
         stroke_width=1.5,
     ),
-    xy.x_axis(label="batch size (MB)", domain=(0, 68), tick_count=7),
-    xy.y_axis(label="throughput (MB/s)", domain=(0, 700), tick_count=6),
+    xyg.x_axis(label="batch size (MB)", domain=(0, 68), tick_count=7),
+    xyg.y_axis(label="throughput (MB/s)", domain=(0, 700), tick_count=6),
     title="Throughput by batch size",
 )
 
@@ -238,7 +238,7 @@ end.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 dates = np.arange("2026-07-01", "2026-07-22", dtype="datetime64[D]")
 active_users = np.array(
@@ -250,8 +250,8 @@ active_users = np.array(
     dtype=float,
 )
 
-time_chart = xy.line_chart(
-    xy.area(
+time_chart = xyg.line_chart(
+    xyg.area(
         dates,
         active_users,
         base=1200,
@@ -260,14 +260,14 @@ time_chart = xy.line_chart(
         line_width=0,
         curve="smooth",
     ),
-    xy.line(
+    xyg.line(
         dates,
         active_users,
         color="#0284c7",
         width=2.5,
         curve="smooth",
     ),
-    xy.scatter(
+    xyg.scatter(
         dates,
         active_users,
         color="#38bdf8",
@@ -275,8 +275,8 @@ time_chart = xy.line_chart(
         stroke="#ffffff",
         stroke_width=1,
     ),
-    xy.x_axis(label="day", format="%b %d", tick_count=7),
-    xy.y_axis(label="daily active users", domain=(1200, 2400), tick_count=6),
+    xyg.x_axis(label="day", format="%b %d", tick_count=7),
+    xyg.y_axis(label="daily active users", domain=(1200, 2400), tick_count=6),
     title="Daily activity with a reporting gap",
 )
 

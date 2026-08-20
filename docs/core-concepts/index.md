@@ -1,11 +1,11 @@
 ---
 title: Composition Model
-description: Understand how XY containers, children, shared props, and chart methods fit together.
+description: Understand how XYG containers, children, shared props, and chart methods fit together.
 ---
 
 # Composition Model
 
-An XY chart starts with one container and a set of small Python specifications.
+An XYG chart starts with one container and a set of small Python specifications.
 The container creates the plotting surface. Marks turn data into visible
 geometry, while axes, annotations, legends, tooltips, themes, and interaction
 policies describe how that surface should behave.
@@ -20,7 +20,7 @@ This interactive example combines bars, a line, an annotation, axes, a legend,
 a shared tooltip, and crosshair behavior in one panel:
 
 ~~~python demo exec
-import xy
+import xyg
 
 pipeline_data = {
     "month": [
@@ -31,8 +31,8 @@ pipeline_data = {
     "target_k": [125, 135, 145, 155, 165, 175, 190, 205, 220, 235, 250, 265],
 }
 
-composition_chart = xy.chart(
-    xy.bar(
+composition_chart = xyg.chart(
+    xyg.bar(
         x="month",
         y="actual_k",
         name="Actual",
@@ -40,28 +40,28 @@ composition_chart = xy.chart(
         opacity=0.82,
         corner_radius=4,
     ),
-    xy.line(
+    xyg.line(
         x="month",
         y="target_k",
         name="Target",
         color="#6e56cf",
         width=2.5,
     ),
-    xy.vline("Oct", text="Product launch", color="#0ea5e9", width=2),
-    xy.x_axis(label="month"),
-    xy.y_axis(
+    xyg.vline("Oct", text="Product launch", color="#0ea5e9", width=2),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(
         label="qualified pipeline",
         domain=(0, 300),
         format="$,.0fK",
         tick_count=6,
     ),
-    xy.legend(loc="upper center", ncols=2),
-    xy.tooltip(
+    xyg.legend(loc="upper center", ncols=2),
+    xyg.tooltip(
         title="{month}",
         fields=["actual_k", "target_k"],
         format={"actual_k": "$,.0fK", "target_k": "$,.0fK"},
     ),
-    xy.interaction_config(hover=True, crosshair=True),
+    xyg.interaction_config(hover=True, crosshair=True),
     data=pipeline_data,
     title="Qualified pipeline vs target",
     padding=(10, 14, 42, 84),
@@ -82,7 +82,7 @@ adapter used to mount this documentation preview.
 
 | API role | In the example | Responsibility |
 | --- | --- | --- |
-| Container | `xy.chart(...)` | Creates one panel and allows mixed mark families |
+| Container | `xyg.chart(...)` | Creates one panel and allows mixed mark families |
 | Container props | `data=`, `title=` | Supply shared data and layout metadata |
 | Marks | `bar()`, `line()` | Turn columns into geometry, in declaration order |
 | Axes | `x_axis()`, `y_axis()` | Define scales, domains, ticks, labels, and formatting |
@@ -120,7 +120,7 @@ container:
 ~~~python demo exec
 import random
 
-import xy
+import xyg
 
 campaign_rng = random.Random(11)
 campaign_spend_k = [round(campaign_rng.uniform(8, 80), 1) for _ in range(60)]
@@ -133,8 +133,8 @@ campaign_data = {
     "qualified_leads": campaign_leads,
 }
 
-family_container_chart = xy.scatter_chart(
-    xy.scatter(
+family_container_chart = xyg.scatter_chart(
+    xyg.scatter(
         x="spend_k",
         y="qualified_leads",
         color="#6e56cf",
@@ -143,9 +143,9 @@ family_container_chart = xy.scatter_chart(
         stroke="#ffffff",
         stroke_width=1,
     ),
-    xy.x_axis(label="campaign spend ($k)", domain=(0, 85), tick_count=6),
-    xy.y_axis(label="qualified leads", domain=(0, 380), tick_count=6),
-    xy.tooltip(
+    xyg.x_axis(label="campaign spend ($k)", domain=(0, 85), tick_count=6),
+    xyg.y_axis(label="qualified leads", domain=(0, 380), tick_count=6),
+    xyg.tooltip(
         fields=["spend_k", "qualified_leads"],
         format={"spend_k": "$,.1fK", "qualified_leads": ",.0f"},
     ),

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-import xy.pyplot as plt
-from xy._figure import Figure
+import xyg.pyplot as plt
+from xyg._figure import Figure
 
 
 def test_stem_contributes_tip_and_baseline_to_autoscale() -> None:

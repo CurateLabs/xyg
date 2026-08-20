@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 from tests.pyplot.test_corpus import CORPUS
 
-import xy.pyplot as xyplt
+import xyg.pyplot as xyplt
 
 
 def _adapt_reference_source(path: pathlib.Path, source: str) -> str:
@@ -68,7 +68,7 @@ pytestmark = pytest.mark.skipif(
 def _run_engine(path: pathlib.Path, engine: str, artifact: pathlib.Path) -> None:
     source = path.read_text()
     if engine == "matplotlib":
-        source = source.replace("import xy.pyplot as plt", "import matplotlib.pyplot as plt")
+        source = source.replace("import xyg.pyplot as plt", "import matplotlib.pyplot as plt")
         source = _adapt_reference_source(path, source)
     bootstrap = ""
     if engine == "matplotlib":

@@ -1,14 +1,14 @@
 """A site-overview dashboard built from xy sparklines.
 
 Card chrome is plain HTML/CSS; every metric sparkline is a real composed
-xy chart — chrome-hidden, edge-to-edge (`padding=...`), gradient area
+XYG chart — chrome-hidden, edge-to-edge (`padding=...`), gradient area
 fills, and smooth curves. The client bundle is embedded once and each chart
 renders from its own spec + base64 blob into its card.
 
     uv run python examples/dashboard/site_overview.py       # writes site_overview.html
     uv run python examples/dashboard/site_overview.py --png  # also renders a PNG
 
-Showcases: `xy.chart(..., padding=...)`, `curve="smooth"`,
+Showcases: `xyg.chart(..., padding=...)`, `curve="smooth"`,
 `fill="linear-gradient(...)"`, `tick_label_strategy="none"`, and
 `width="100%"` responsive sizing.
 """
@@ -21,8 +21,8 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
-from xy.export import _STANDALONE_CSP, _bundled_js, _json_for_inline_script
+import xyg
+from xyg.export import _STANDALONE_CSP, _bundled_js, _json_for_inline_script
 
 HERE = Path(__file__).resolve().parent
 BLUE, PURPLE, ORANGE = "#2f6bff", "#8b5cf6", "#f97316"
@@ -35,7 +35,7 @@ def spark(kind: str, x, y, color: str, *, fill: bool = True, width: float = 2.4)
     ResizeObserver rather than overflowing at a fixed pixel width.
     """
     if kind == "area":
-        mark = xy.area(
+        mark = xyg.area(
             x,
             y,
             color=color,
@@ -45,18 +45,18 @@ def spark(kind: str, x, y, color: str, *, fill: bool = True, width: float = 2.4)
             fill="linear-gradient(currentColor, transparent)" if fill else None,
         )
     else:
-        mark = xy.line(x, y, color=color, curve="smooth", width=width)
+        mark = xyg.line(x, y, color=color, curve="smooth", width=width)
     hidden_axis = {
         "style": {"grid_color": "rgba(0,0,0,0)", "axis_color": "rgba(0,0,0,0)"},
         "tick_label_strategy": "none",
     }
-    chart = xy.chart(
+    chart = xyg.chart(
         mark,
-        xy.x_axis(**hidden_axis),
-        xy.y_axis(**hidden_axis),
-        xy.legend(show=False),
-        xy.tooltip(show=False),
-        xy.modebar(show=False),
+        xyg.x_axis(**hidden_axis),
+        xyg.y_axis(**hidden_axis),
+        xyg.legend(show=False),
+        xyg.tooltip(show=False),
+        xyg.modebar(show=False),
         width="100%",
         height=104,
         padding=[6, 1, 2, 1],
@@ -224,7 +224,7 @@ def main() -> None:
     out.write_text(doc, encoding="utf-8")
     print(f"wrote {out}")
     if "--png" in sys.argv:
-        from xy.export import html_to_png
+        from xyg.export import html_to_png
 
         png = HERE / "site_overview.png"
         png.write_bytes(html_to_png(doc, 1336, 340))

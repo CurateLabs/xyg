@@ -1,5 +1,5 @@
 """Ingest **every OpenStreetMap node** (~9 billion, from `planet-latest.osm.pbf`)
-into xy's out-of-core canonical store and render it as a density scatter.
+into XYG's out-of-core canonical store and render it as a density scatter.
 
 This is the end-to-end proof of the §27 "mmap (native)" canonical-store row and
 the §2 "100M+ / out-of-core — interactive via viewport tiling, bounded RAM"
@@ -8,7 +8,7 @@ density pyramid), not data-bounded (172 GB of lon/lat on disk).
 
 Pipeline:
   planet.pbf ──osm-nodes (native)──▶ osm_lon.f64 / osm_lat.f64 (disk f64)
-            ──▶ xy.scatter(density=True) ──▶ build_payload / density_view
+            ──▶ xyg.scatter(density=True) ──▶ build_payload / density_view
 
 Usage (from the repo root):
   python examples/osm/ingest.py \
@@ -35,8 +35,8 @@ import numpy as np
 _HERE = os.path.dirname(__file__)
 _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "python"))
-import xy  # noqa: E402
-from xy._ooc import open_f64  # noqa: E402
+import xyg  # noqa: E402
+from xyg._ooc import open_f64  # noqa: E402
 
 
 def _rss_gb() -> float:
@@ -73,7 +73,7 @@ def bench(xcol: np.memmap, ycol: np.memmap) -> None:
     print(f"\n=== rendering {n:,} points (out-of-core density scatter) ===", flush=True)
 
     t0 = time.perf_counter()
-    fig = xy.chart(xy.scatter(x=xcol, y=ycol, density=True)).figure()
+    fig = xyg.chart(xyg.scatter(x=xcol, y=ycol, density=True)).figure()
     print(
         f"figure build (ingest + zone maps, one disk scan): {time.perf_counter() - t0:.0f}s",
         flush=True,

@@ -13,7 +13,7 @@ instead of treating the implementation alone as authoritative.
 
 ## Product North Star
 
-XY is being built to outperform every competing charting library and become
+XYG is being built to outperform every competing charting library and become
 the best overall charting system for Python. That goal spans every chart type
 and every data scale, from a handful of values to billions of rows, across the
 two dimensions users should not have to trade off: performance and
@@ -22,7 +22,7 @@ customization.
 Treat every competitor lead as a concrete product gap. Work that affects a
 user-visible capability should:
 
-- compare XY with the relevant leaders, including Matplotlib, Seaborn, Plotly,
+- compare XYG with the relevant leaders, including Matplotlib, Seaborn, Plotly,
   Bokeh, Altair, Datashader, HoloViews/hvPlot, and emerging alternatives;
 - add or extend reproducible evidence across small, medium, large, and massive
   data, covering startup, build and render time, interaction, memory, payload
@@ -32,7 +32,7 @@ user-visible capability should:
 - commit the environment, raw results, output contracts, and reproduction
   commands needed to inspect the win and catch regressions.
 
-The goal is not to win one large-scatter benchmark. XY should become the
+The goal is not to win one large-scatter benchmark. XYG should become the
 library users choose for ordinary charts, massive data, every chart family,
 notebooks, applications, static output, performance, and complete design
 control.
@@ -49,7 +49,7 @@ control.
   `ABI_VERSION` in `crates/xyg-core/src/lib.rs` and run
   `python3 scripts/gen_abi_manifest.py --write`; never edit generated Python,
   Node, C-header, or JSON ABI declarations by hand.
-- `python/xy/` — package. `_native.py` (ctypes) binds the required
+- `python/xyg/` — package. `_native.py` (ctypes) binds the required
   Rust core; there is no NumPy fallback — `kernels.py` raises a clear
   ImportError if the native core can't load. `components.py`
   is the Reflex-flavored composition API (`scatter_chart`/`line_chart` + marks/
@@ -63,7 +63,7 @@ control.
   `channels.py` resolves scatter color/size encodings. `channel.py` (singular)
   is the transport-agnostic message dispatcher (widget comm today, Reflex
   routes later) — it must never import the widget stack.
-- `python/xy/pyplot/` — the matplotlib shim, fully contained
+- `python/xyg/pyplot/` — the matplotlib shim, fully contained
   (one-way dependency onto the public composition API; guardrails in
   `tests/pyplot/test_boundaries.py`). Corpus-defined compatibility:
   `tests/pyplot/corpus/` + `spec/matplotlib/compat.md`.
@@ -71,16 +71,16 @@ control.
   `reflex_xy`; design: `spec/design/reflex-integration.md`). Chart
   data rides the app's own websocket as a second socket.io namespace;
   figures live in a per-process registry rebuilt from Reflex state on miss.
-  The source ships in every `xy` artifact; the `xy[reflex]` extra selects the
+  The source ships in every `xy` artifact; the `xyg[reflex]` extra selects the
   supported Reflex floor while plain `xy` keeps no Reflex runtime dependency.
-  The core `python/xy` package must never import Reflex. The render client is
+  The core `python/xyg` package must never import Reflex. The render client is
   linked out of that package at app compile (no second copy to drift).
   Tests: `tests/reflex_adapter/` (skip unless Reflex is installed).
 - `packages/xy-node/` — Node host bindings (`@curatelabs/xyg-node`; koffi → same Rust C ABI). Covers
   server-side Node and VS Code extensions (VS Code is a consumer of these
   bindings, not a separate stack). Thin TypedArray loaders only; no
   browser-only APIs. `toHtml()` inlines the host-neutral paint client, not
-  `python/xy/static`. See `spec/design/host-parity.md` §0.
+  `python/xyg/static`. See `spec/design/host-parity.md` §0.
 - `js/src/*.ts` — the **browser client** as TypeScript ES modules (one module
   per former concat part; `60_entries.ts` is the entry and the only public
   export surface). WebGL2 paint/pick/gestures only — draws §29 buffers from
@@ -89,7 +89,7 @@ control.
   (`js/tsconfig.json`), lints the shaders, and has vite bundle + minify into
   the host-neutral `@curatelabs/xyg` artifact
   (`packages/xy-client/dist/index.js` ESM + `standalone.js` IIFE `window.xy`),
-  then **copies** those files into `python/xy/static/` so notebooks /
+  then **copies** those files into `python/xyg/static/` so notebooks /
   `to_html()` / Reflex stay Node-free. Bundles are a **generated artifact,
   git-ignored, not committed** (§33): `hatch_build.py` builds them and
   force-includes them into the wheel/sdist at packaging time (exactly as it

@@ -1,18 +1,18 @@
-# Python Data Science Handbook, chapter 4 — on `xy.pyplot`
+# Python Data Science Handbook, chapter 4 — on `xyg.pyplot`
 
 These notebooks are the matplotlib chapter of Jake VanderPlas's
 [Python Data Science Handbook](https://github.com/jakevdp/PythonDataScienceHandbook),
 with one systematic change: `import matplotlib.pyplot as plt` became
-`import xy.pyplot as plt`. They exist to answer, on popular real-world
+`import xyg.pyplot as plt`. They exist to answer, on popular real-world
 code, "can I just change the import?"
 
 ## Run the comparison in one notebook
 
 Every checked-in notebook contains both runs in the same file. Each Matplotlib
-code cell is immediately followed by the matching `xy.pyplot` code cell, so the
+code cell is immediately followed by the matching `xyg.pyplot` code cell, so the
 two outputs appear together instead of in separate sections or notebooks. The
 paired cells use distinct plotting aliases and are labeled in their first line.
-`xy.pyplot` provides the Jupyter end-of-cell figure flush itself, so the example
+`xyg.pyplot` provides the Jupyter end-of-cell figure flush itself, so the example
 cells do not need display workarounds.
 
 Open any original notebook, choose **Restart Kernel and Run All Cells**, and
@@ -47,7 +47,7 @@ matplotlib column is the identical code with the original import, on
 matplotlib 3.11 — it passes everything, so the xy column is pure shim
 signal. A "cell ok" also implies a non-empty `savefig` PNG export.
 
-| Notebook | matplotlib 3.11 | xy.pyplot |
+| Notebook | matplotlib 3.11 | xyg.pyplot |
 |---|---:|---:|
 | 04.00 Introduction | 8/8 | 8/8 |
 | 04.01 Simple Line Plots | 15/15 | 15/15 |

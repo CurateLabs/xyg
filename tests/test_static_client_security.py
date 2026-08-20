@@ -4,10 +4,10 @@ from pathlib import Path
 
 from scripts.js_exports import missing_esm_exports
 
-from xy.components import CHART_DOM_SLOTS
+from xyg.components import CHART_DOM_SLOTS
 
 ROOT = Path(__file__).resolve().parents[1]
-_STATIC = ROOT / "python" / "xy" / "static"
+_STATIC = ROOT / "python" / "xyg" / "static"
 _HOST_NEUTRAL = ROOT / "packages" / "xy-client" / "dist"
 
 
@@ -22,7 +22,7 @@ def _read(path: Path) -> str:
 # (label, text) pairs: the label only names the source in failure messages.
 #
 # The built bundles under packages/xy-client/dist (canonical `@curatelabs/xyg`)
-# and the Python wheel copy under python/xy/static are MINIFIED by vite
+# and the Python wheel copy under python/xyg/static are MINIFIED by vite
 # (identifiers renamed, whitespace collapsed), so exact source lines cannot be
 # asserted against them. Only string-literal / property-name invariants are (see
 # test_built_bundles_keep_minification_safe_invariants); every source-level
@@ -36,8 +36,8 @@ _CLIENT_SRC = (
 )
 _INDEX = ("packages/xy-client/dist/index.js", _read(_HOST_NEUTRAL / "index.js"))
 _STANDALONE = ("packages/xy-client/dist/standalone.js", _read(_HOST_NEUTRAL / "standalone.js"))
-_PY_INDEX = ("python/xy/static/index.js", _read(_STATIC / "index.js"))
-_PY_STANDALONE = ("python/xy/static/standalone.js", _read(_STATIC / "standalone.js"))
+_PY_INDEX = ("python/xyg/static/index.js", _read(_STATIC / "index.js"))
+_PY_STANDALONE = ("python/xyg/static/standalone.js", _read(_STATIC / "standalone.js"))
 
 CLIENT_FILES = (_CLIENT_SRC,)
 BUNDLES = (_INDEX, _STANDALONE, _PY_INDEX, _PY_STANDALONE)
@@ -102,7 +102,7 @@ def test_chrome_visual_defaults_are_a_defeatable_where_stylesheet() -> None:
     background/color that would beat a utility class)."""
     for path, text in THEME_FILES:
         assert "@layer base{" in text, (
-            f"{path} leaves XY defaults unlayered, which outranks Tailwind utilities"
+            f"{path} leaves XYG defaults unlayered, which outranks Tailwind utilities"
         )
         for rule in _CHROME_WHERE_RULES:
             assert rule in text, f"{path} missing defeatable chrome rule {rule!r}"
@@ -842,7 +842,7 @@ def test_python_static_copy_matches_host_neutral_artifact() -> None:
     for name in ("index.js", "standalone.js"):
         host = (_HOST_NEUTRAL / name).read_bytes()
         py = (_STATIC / name).read_bytes()
-        assert host == py, f"python/xy/static/{name} drifted from packages/xy-client/dist/{name}"
+        assert host == py, f"python/xyg/static/{name} drifted from packages/xy-client/dist/{name}"
 
 
 def test_annotation_labels_and_cursor_stay_css_defeatable() -> None:
@@ -975,7 +975,7 @@ def test_standalone_csp_allows_blob_workers_and_matches_smoke() -> None:
     """worker-src must be exactly blob: (the bundled re-bin worker) — no
     external worker scripts — and the render smoke must exercise the same
     policy string so its probes prove production behavior."""
-    from xy.export import _STANDALONE_CSP
+    from xyg.export import _STANDALONE_CSP
 
     assert "worker-src blob:; " in _STANDALONE_CSP
     smoke = (ROOT / "scripts" / "render_smoke_nonumpy.py").read_text(encoding="utf-8")
@@ -993,7 +993,7 @@ def test_standalone_csp_allows_data_url_fonts_only() -> None:
 
     `data:` and nothing else: a standalone file must stay self-contained, so no
     network origin may serve a face."""
-    from xy.export import _STANDALONE_CSP
+    from xyg.export import _STANDALONE_CSP
 
     directives = dict(
         part.strip().split(" ", 1) for part in _STANDALONE_CSP.split(";") if part.strip()

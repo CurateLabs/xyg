@@ -6,7 +6,7 @@ import numpy as np
 
 import reflex_xy
 from reflex_xy.registry import registry
-from xy._figure import Figure
+from xyg._figure import Figure
 
 
 def _event(token: str, selection: dict) -> dict:

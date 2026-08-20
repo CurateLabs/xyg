@@ -5,7 +5,7 @@
 //! grid so Python and Node stay bit-identical
 //! ([host-parity.md](../../spec/design/host-parity.md)).
 
-/// Cap matching `python/xy/config.py` `MAX_SCREEN_DIM`.
+/// Cap matching `python/xyg/config.py` `MAX_SCREEN_DIM`.
 pub const MAX_SCREEN_DIM: i32 = 4096;
 /// Floor matching `lod.screen_shape` — avoids zero-size aggregate grids.
 pub const MIN_SCREEN_DIM: i32 = 16;

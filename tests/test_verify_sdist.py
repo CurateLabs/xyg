@@ -85,12 +85,12 @@ def _write_sdist(
                 raw = replacements[name]
                 data = raw.encode("utf-8") if isinstance(raw, str) else raw
             elif name in {
-                "python/xy/static/index.js",
+                "python/xyg/static/index.js",
                 "packages/xy-client/dist/index.js",
             }:
                 data = INDEX_JS.encode("utf-8")
             elif name in {
-                "python/xy/static/standalone.js",
+                "python/xyg/static/standalone.js",
                 "packages/xy-client/dist/standalone.js",
             }:
                 data = STANDALONE_JS.encode("utf-8")
@@ -273,7 +273,7 @@ def test_verify_sdist_rejects_invalid_pkg_info(tmp_path: Path, pkg_info: str, ma
 
 def test_verify_sdist_rejects_missing_static_bundle(tmp_path: Path) -> None:
     sdist = tmp_path / "xyg-0.0.1.tar.gz"
-    _write_sdist(sdist, omit={"python/xy/static/standalone.js"})
+    _write_sdist(sdist, omit={"python/xyg/static/standalone.js"})
 
     with pytest.raises(AssertionError, match="missing required files"):
         verify_sdist.verify_sdist(str(sdist))
@@ -329,7 +329,7 @@ def test_verify_sdist_rejects_repository_only_content(tmp_path: Path, name: str)
 
 def test_verify_sdist_rejects_partial_type_marker(tmp_path: Path) -> None:
     sdist = tmp_path / "xyg-0.0.1.tar.gz"
-    _write_sdist(sdist, replacements={"python/xy/py.typed": "partial\n"})
+    _write_sdist(sdist, replacements={"python/xyg/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="full-package PEP 561 marker"):
         verify_sdist.verify_sdist(str(sdist))
@@ -353,7 +353,7 @@ def test_verify_sdist_rejects_partial_reflex_type_marker(tmp_path: Path) -> None
 
 def test_verify_sdist_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
     sdist = tmp_path / "xyg-0.0.1.tar.gz"
-    _write_sdist(sdist, replacements={"python/xy/static/index.js": "not the client"})
+    _write_sdist(sdist, replacements={"python/xyg/static/index.js": "not the client"})
 
     with pytest.raises(AssertionError, match=r"index\.js"):
         verify_sdist.verify_sdist(str(sdist))
@@ -378,7 +378,7 @@ def test_verify_sdist_rejects_corrupt_source_entry_bundle(tmp_path: Path) -> Non
 @pytest.mark.parametrize(
     "artifact",
     [
-        "python/xy/__pycache__/figure.pyc",
+        "python/xyg/__pycache__/figure.pyc",
         "examples/reflex/.web/package.json",
         "examples/reflex/.states/state.pkl",
         "examples/reflex/reflex.lock/package.json",

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy.pyplot._mplfig import Figure
+from xyg.pyplot._mplfig import Figure
 
 
 def test_figure_clear_clf_removes_axes_and_chrome() -> None:

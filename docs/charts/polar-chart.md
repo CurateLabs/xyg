@@ -1,10 +1,10 @@
 ---
 title: Polar Charts in Python
-description: Create polar charts and polar plots in Python with xy. Configure sectors, categorical angles, holes, log radii, and pyplot polar projections.
+description: Create polar charts and polar plots in Python with xyg. Configure sectors, categorical angles, holes, log radii, and pyplot polar projections.
 components:
-  - xy.polar_chart
-  - xy.theta_axis
-  - xy.r_axis
+  - xyg.polar_chart
+  - xyg.theta_axis
+  - xyg.r_axis
 ---
 
 # Polar Charts in Python
@@ -19,7 +19,7 @@ Jump to [a polar line chart](#create-a-polar-line-chart),
 [the angular axis](#configure-the-angular-axis), or
 [supported marks and limits](#supported-marks-and-current-limits).
 
-XY uses the same composition model as its Cartesian charts. Put `line`,
+XYG uses the same composition model as its Cartesian charts. Put `line`,
 `scatter`, `area`, `bar`, `column`, `heatmap`, `contour`, or `errorbar` marks
 inside `polar_chart()`. Focused helpers build
 [radar](/docs/xy/charts/radar-chart/),
@@ -34,14 +34,14 @@ by default:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 theta = np.linspace(0.0, 2.0 * np.pi, 361)
 radius = 1.0 + 0.28 * np.cos(5.0 * theta) + 0.12 * np.sin(2.0 * theta)
 
-polar_line = xy.polar_chart(
-    xy.line(theta, radius, color="#6e56cf", width=2.5),
-    xy.scatter(
+polar_line = xyg.polar_chart(
+    xyg.line(theta, radius, color="#6e56cf", width=2.5),
+    xyg.scatter(
         theta[::18],
         radius[::18],
         color="#2563eb",
@@ -49,8 +49,8 @@ polar_line = xy.polar_chart(
         stroke="#ffffff",
         stroke_width=1,
     ),
-    xy.theta_axis(unit="radians"),
-    xy.r_axis(label="relative magnitude", domain=(0.0, 1.5)),
+    xyg.theta_axis(unit="radians"),
+    xyg.r_axis(label="relative magnitude", domain=(0.0, 1.5)),
     title="Five-lobe response",
 )
 
@@ -75,7 +75,7 @@ import math
 
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 field_theta = np.linspace(0.0, 360.0, 24, endpoint=False)
 field_radius = np.geomspace(1.0, 100.0, 8)
@@ -89,15 +89,15 @@ field = np.array(
     ]
 )
 
-polar_field = xy.polar_chart(
-    xy.heatmap(
+polar_field = xyg.polar_chart(
+    xyg.heatmap(
         field,
         x=field_theta,
         y=field_radius,
         colormap="viridis",
         name="surface",
     ),
-    xy.contour(
+    xyg.contour(
         field,
         x=field_theta,
         y=field_radius,
@@ -106,9 +106,9 @@ polar_field = xy.polar_chart(
         width=1.4,
         name="isolines",
     ),
-    xy.colorbar(title="surface"),
-    xy.theta_axis(unit="degrees"),
-    xy.r_axis(type_="log", domain=(1.0, 100.0)),
+    xyg.colorbar(title="surface"),
+    xyg.theta_axis(unit="degrees"),
+    xyg.r_axis(type_="log", domain=(1.0, 100.0)),
     title="Polar field with isolines",
 )
 
@@ -162,7 +162,7 @@ formatting, and styling, plus five polar settings:
 | `grid_shape` | `"circular"` or `"linear"` | `"circular"` |
 
 The compass combination
-`xy.theta_axis(unit="degrees", zero="N", direction="clockwise")` makes 0° point
+`xyg.theta_axis(unit="degrees", zero="N", direction="clockwise")` makes 0° point
 north, 90° east, 180° south, and 270° west.
 
 A numeric `zero` is always an offset in radians counterclockwise from east,
@@ -212,13 +212,13 @@ clips the marks to a shared inner hole:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 error_theta = [-90.0, -45.0, 0.0, 45.0, 90.0]
 error_radius = [2.0, 3.0, 2.5, 4.0, 3.2]
 
-polar_uncertainty = xy.polar_chart(
-    xy.errorbar(
+polar_uncertainty = xyg.polar_chart(
+    xyg.errorbar(
         error_theta,
         error_radius,
         yerr=[0.3, 0.5, 0.4, 0.6, 0.3],
@@ -227,14 +227,14 @@ polar_uncertainty = xy.polar_chart(
         width=2.4,
         cap_size=8,
     ),
-    xy.scatter(error_theta, error_radius, color="#111827", size=7),
-    xy.theta_axis(
+    xyg.scatter(error_theta, error_radius, color="#111827", size=7),
+    xyg.theta_axis(
         unit="degrees",
         sector=(-110.0, 110.0),
         zero="N",
         direction="clockwise",
     ),
-    xy.r_axis(domain=(0.0, 5.0), hole=0.28),
+    xyg.r_axis(domain=(0.0, 5.0), hole=0.28),
     title="Directional uncertainty",
 )
 
@@ -251,7 +251,7 @@ Cartesian charts:
 - Hover reports the nearest point or field cell: its series name, radial value,
   and any color or size encoding. The numeric angle is left out — the cursor is
   already on it — while an authored spoke label survives and
-  `xy.tooltip(labels={"x": ...})` opts the angle back in. A hole or excluded
+  `xyg.tooltip(labels={"x": ...})` opts the angle back in. A hole or excluded
   part of a sector is not hit-testable.
 - **Zoom is off by default.** Polar charts ship without wheel zoom, modebar zoom
   controls, or the zoom percentage indicator. Reset follows by default: with
@@ -282,7 +282,7 @@ gauge, or radar sits on a fixed frame. Zooming those crops the rim while the
 geometry stays welded to the middle of the disc, which reads as a broken chart
 rather than as navigation.
 
-`xy.wind_rose()` keeps zoom enabled because its radius genuinely is data — a
+`xyg.wind_rose()` keeps zoom enabled because its radius genuinely is data — a
 frequency count per direction — so pulling the outer ring in magnifies the short
 sectors of a rose dominated by one prevailing direction.
 
@@ -291,7 +291,7 @@ scrolls normally when the cursor passes over a pie or gauge.
 
 ### Enable Zoom on a Polar Chart
 
-Add an `xy.interaction_config(zoom=True)` child when the radius is a measured
+Add an `xyg.interaction_config(zoom=True)` child when the radius is a measured
 quantity worth magnifying. Because the radial minimum stays pinned, zooming in
 enlarges the values nearest the center — which is what you want when a single
 large lobe squashes the rest of the pattern against the middle of the disc:
@@ -299,7 +299,7 @@ large lobe squashes the rest of the pattern against the middle of the disc:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 bearing = np.linspace(0.0, 360.0, 721)
 offset = (bearing + 180.0) % 360.0 - 180.0
@@ -308,11 +308,11 @@ offset = (bearing + 180.0) % 360.0 - 180.0
 # zoomed in.
 power = np.exp(-(offset / 16.0) ** 2) + 0.05 * np.abs(np.cos(np.radians(3.0 * bearing)))
 
-zoomable_polar = xy.polar_chart(
-    xy.line(bearing, power, color="#6e56cf", width=2.0),
-    xy.theta_axis(unit="degrees", zero="N", direction="clockwise"),
-    xy.r_axis(label="radiated power"),
-    xy.interaction_config(zoom=True),
+zoomable_polar = xyg.polar_chart(
+    xyg.line(bearing, power, color="#6e56cf", width=2.0),
+    xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
+    xyg.r_axis(label="radiated power"),
+    xyg.interaction_config(zoom=True),
     title="Antenna pattern — scroll to magnify the side lobes",
 )
 
@@ -322,7 +322,7 @@ def zoomable_polar_demo():
 ~~~
 
 The same flag is available directly on the chart for one-off cases
-(`xy.polar_chart(..., zoom=True)`), and `xy.interaction_config(zoom=False)` turns
+(`xyg.polar_chart(..., zoom=True)`), and `xyg.interaction_config(zoom=False)` turns
 zoom off on a wind rose. Related switches narrow the gesture further once zoom is
 enabled: `wheel_zoom=False` keeps the modebar controls but releases the wheel,
 `zoom_buttons=False` does the reverse, and `zoom_limits=(1.0, 8.0)` caps how far
@@ -355,14 +355,14 @@ and sector/annulus geometry instead of Cartesian lines and rectangles; using
 one on a polar chart raises at payload build instead of drawing a Cartesian
 approximation.
 
-## Use `xy.pyplot`
+## Use `xyg.pyplot`
 
 The Matplotlib-style compatibility layer routes a polar subplot through the
 same renderer:
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 theta = np.linspace(0.0, 2.0 * np.pi, 361)
 radius = 1.0 + 0.25 * np.cos(4.0 * theta)
@@ -458,9 +458,9 @@ displayed live or exported through the usual chart methods.
 
 ### How do I create a polar chart in Python?
 
-Put a supported mark such as `xy.line(theta, radius)`,
-`xy.heatmap(z, x=theta, y=radius)`, or
-`xy.errorbar(theta, radius, yerr=...)` inside `xy.polar_chart(...)`. Angles are
+Put a supported mark such as `xyg.line(theta, radius)`,
+`xyg.heatmap(z, x=theta, y=radius)`, or
+`xyg.errorbar(theta, radius, yerr=...)` inside `xyg.polar_chart(...)`. Angles are
 radians by default.
 
 ### How do I create a radar chart?
@@ -480,12 +480,12 @@ unequal-width sector compositions with center metrics and Reflex legends.
 
 ### How do I use degrees instead of radians?
 
-Add `xy.theta_axis(unit="degrees")`. The angle data and generated tick labels
+Add `xyg.theta_axis(unit="degrees")`. The angle data and generated tick labels
 will both use degrees.
 
 ### How do I make zero degrees point north?
 
-Use `xy.theta_axis(unit="degrees", zero="N", direction="clockwise")` for the
+Use `xyg.theta_axis(unit="degrees", zero="N", direction="clockwise")` for the
 standard compass convention. The
 [wind rose helper](/docs/xy/charts/wind-rose/) applies it automatically.
 

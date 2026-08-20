@@ -31,10 +31,10 @@ from conftest import density_category_chart, probe_document, run_browser_probe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-import xy  # noqa: E402
-from xy import channel  # noqa: E402
-from xy._figure import Figure  # noqa: E402
-from xy.export import find_chromium  # noqa: E402
+import xyg  # noqa: E402
+from xyg import channel  # noqa: E402
+from xyg._figure import Figure  # noqa: E402
+from xyg.export import find_chromium  # noqa: E402
 
 
 def _density_fig(n: int = 400_000) -> tuple[Figure, np.ndarray]:
@@ -168,12 +168,12 @@ def test_density_entry_ships_slim_categorical_spec() -> None:
 
 def test_legend_toggle_option() -> None:
     data = {"x": np.arange(8.0), "y": np.arange(8.0)}
-    disabled = xy.scatter_chart(xy.scatter("x", "y", data=data), xy.legend(toggle=False))
+    disabled = xyg.scatter_chart(xyg.scatter("x", "y", data=data), xyg.legend(toggle=False))
     assert disabled.figure().legend_options["toggle"] is False
-    default = xy.scatter_chart(xy.scatter("x", "y", data=data), xy.legend())
+    default = xyg.scatter_chart(xyg.scatter("x", "y", data=data), xyg.legend())
     assert "toggle" not in default.figure().legend_options
     with pytest.raises(ValueError):
-        xy.legend(toggle="yes")
+        xyg.legend(toggle="yes")
 
 
 _TOGGLE_PROBE = """
@@ -530,10 +530,10 @@ def test_browser_legend_click_toggles_series() -> None:
 
     codes = np.array(["A", "A", "A", "A", "A", "B", "B", "B"])
     data = {"x": np.arange(8.0), "y": np.arange(8.0)}
-    chart = xy.scatter_chart(
-        xy.scatter("x", "y", data=data, name="alpha"),
-        xy.scatter("x", "y", data=data, color=codes),
-        xy.legend(),
+    chart = xyg.scatter_chart(
+        xyg.scatter("x", "y", data=data, name="alpha"),
+        xyg.scatter("x", "y", data=data, color=codes),
+        xyg.legend(),
         width=520,
         height=340,
     )
@@ -577,7 +577,7 @@ def test_legend_vis_cache_is_dropped_when_nothing_is_hidden() -> None:
     for it at all, so keeping it is pure retention — and it was never dropped,
     never invalidated and never reported.
     """
-    from xy import interaction
+    from xyg import interaction
 
     fig, _ = _density_fig(200_000)
     trace = fig.traces[0]
@@ -610,7 +610,7 @@ def test_legend_vis_cache_is_dropped_when_nothing_is_hidden() -> None:
 def test_legend_vis_cache_survives_a_partial_unhide() -> None:
     """Only an empty hidden set releases it; with one category still hidden the
     cache is still live and must be re-keyed, not dropped."""
-    from xy import interaction
+    from xyg import interaction
 
     fig, _ = _density_fig(200_000)
     trace = fig.traces[0]
@@ -642,7 +642,7 @@ def test_legend_vis_cache_survives_a_partial_unhide() -> None:
 def test_whole_trace_hide_leaves_the_category_cache_alone() -> None:
     """`hidden=True` with no category is the trace-level switch; it shares
     nothing with the per-category predicate and must not drop its cache."""
-    from xy import interaction
+    from xyg import interaction
 
     fig, _ = _density_fig(200_000)
     trace = fig.traces[0]
@@ -659,7 +659,7 @@ def test_whole_trace_hide_leaves_the_category_cache_alone() -> None:
 
 def test_legend_vis_cache_bytes_is_counted_in_resident_total() -> None:
     """§27: if a number isn't in the report, it isn't real."""
-    from xy import interaction
+    from xyg import interaction
 
     fig, _ = _density_fig(200_000)
     channel.handle_message(

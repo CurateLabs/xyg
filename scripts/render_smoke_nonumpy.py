@@ -25,10 +25,10 @@ from pathlib import Path
 from _protocol import PROTOCOL_VERSION
 
 ROOT = Path(__file__).resolve().parent.parent
-STATIC = ROOT / "python" / "xy" / "static"
+STATIC = ROOT / "python" / "xyg" / "static"
 sys.path.insert(0, str(ROOT / "python"))
 
-from xy._chromium import ChromiumSession  # noqa: E402
+from xyg._chromium import ChromiumSession  # noqa: E402
 
 CHROMIUM_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -284,7 +284,7 @@ def main() -> None:
     assert len(blob) == sum(c["len"] for c in spec["columns"]) * 4
     struct.unpack_from("<f", blob, 0)  # decodes as little-endian f32
 
-    # Mirrors xy.export._STANDALONE_CSP (this script is stdlib-only by
+    # Mirrors xyg.export._STANDALONE_CSP (this script is stdlib-only by
     # design, so the string is inlined; a test asserts they stay identical) —
     # every probe below, including the blob-URL re-bin worker, runs under the
     # same policy a real to_html export ships.

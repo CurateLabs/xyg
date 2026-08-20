@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
+import xyg
 from _browser import chromium_gl_flags, find_chromium  # ty: ignore[unresolved-import]
 from _cdp import Browser  # ty: ignore[unresolved-import]
 
@@ -31,9 +31,9 @@ def _case(n: int) -> tuple[tuple[dict, bytes], tuple[dict, bytes]]:
     y1 = y0[order] + 0.3 * np.sin(x0[order] * 0.07)
 
     def payload(x, y, row_keys):
-        chart = xy.scatter_chart(
-            xy.scatter(x=x, y=y, key=row_keys, size=3),
-            xy.animation(enabled=True, match="key", duration=350, easing="linear"),
+        chart = xyg.scatter_chart(
+            xyg.scatter(x=x, y=y, key=row_keys, size=3),
+            xyg.animation(enabled=True, match="key", duration=350, easing="linear"),
             width=800,
             height=420,
         )
@@ -53,7 +53,7 @@ def _percentile(values: list[float], fraction: float) -> float | None:
 
 
 def measure(n: int, chrome: str) -> dict[str, object]:
-    bundle = (ROOT / "python/xy/static/standalone.js").read_text(encoding="utf-8")
+    bundle = (ROOT / "python/xyg/static/standalone.js").read_text(encoding="utf-8")
     first, second = _case(n)
     payloads = [
         {"spec": spec, "blob": base64.b64encode(blob).decode("ascii")}

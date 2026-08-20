@@ -2,7 +2,7 @@
 
 These examples cover the currently implemented 2D chart families. They are
 short on purpose: each one should be copyable into a notebook or script after
-`pip install xy`. The Python snippets in this file are executed by
+`pip install xyg`. The Python snippets in this file are executed by
 `tests/test_docs_examples.py`, so docs changes should fail fast if the public
 API drifts.
 
@@ -15,8 +15,8 @@ the later per-chart examples show the same APIs scaling up.
 xy has one public chart-building API: the declarative composition API.
 Charts are Reflex-shaped, declarative chart children — marks, axes,
 annotations, legend/tooltip chrome — composed inside a family container
-(`xy.line_chart(...)`, `xy.bar_chart(...)`, ...) or the neutral layering
-container `xy.chart(...)`. Marks accept arrays directly or column-name
+(`xyg.line_chart(...)`, `xyg.bar_chart(...)`, ...) or the neutral layering
+container `xyg.chart(...)`. Marks accept arrays directly or column-name
 resolution through `data=`, and charts take `on_hover` / `on_select` callbacks.
 The core composition contract is now stabilizing around lightweight Python
 children, layered marks, axes, annotations, built-in or custom legend/tooltip
@@ -52,44 +52,44 @@ resolving to a browser engine for SVG — by `engine=Engine.chromium` or by
 
 | Chart family | Composition API |
 |---|---|
-| Line | `xy.line_chart(xy.line(...))` |
-| Scatter | `xy.scatter_chart(xy.scatter(...))` |
-| Area | `xy.area_chart(xy.area(...))` |
-| Histogram | `xy.histogram_chart(xy.histogram(...))` or `xy.hist(...)` |
-| Bar | `xy.bar_chart(xy.bar(...))` |
-| Column | `xy.column_chart(xy.column(...))` |
-| Grouped bars | `xy.bar_chart(xy.bar(..., mode="grouped"))` |
-| Stacked bars | `xy.bar_chart(xy.bar(..., mode="stacked"))` |
-| Normalized bars | `xy.bar_chart(xy.bar(..., mode="normalized"))` |
-| Horizontal bars | `xy.bar_chart(xy.bar(..., orientation="horizontal"))` |
-| Heatmap | `xy.heatmap_chart(xy.heatmap(...))` |
-| Error bars/bands | `xy.errorbar_chart(xy.errorbar(...))` and `xy.error_band_chart(xy.error_band(...))` |
-| Box | `xy.box_chart(xy.box(...))` |
-| Violin | `xy.violin_chart(xy.violin(...))` |
-| ECDF | `xy.ecdf_chart(xy.ecdf(...))` |
-| Hexbin | `xy.hexbin_chart(xy.hexbin(...))` |
-| Contour | `xy.contour_chart(xy.contour(...))` |
-| Step/stairs/stem | `xy.step_chart(xy.step(...))`, `xy.stairs_chart(xy.stairs(...))`, `xy.stem_chart(xy.stem(...))` |
-| Independent segments | `xy.segments_chart(xy.segments(x0=..., y0=..., x1=..., y1=...))` |
-| Triangle mesh | `xy.triangle_mesh_chart(xy.triangle_mesh(...))` |
-| Facets | `xy.facet_chart(xy.scatter(...), by="group", data=data)` |
+| Line | `xyg.line_chart(xyg.line(...))` |
+| Scatter | `xyg.scatter_chart(xyg.scatter(...))` |
+| Area | `xyg.area_chart(xyg.area(...))` |
+| Histogram | `xyg.histogram_chart(xyg.histogram(...))` or `xyg.hist(...)` |
+| Bar | `xyg.bar_chart(xyg.bar(...))` |
+| Column | `xyg.column_chart(xyg.column(...))` |
+| Grouped bars | `xyg.bar_chart(xyg.bar(..., mode="grouped"))` |
+| Stacked bars | `xyg.bar_chart(xyg.bar(..., mode="stacked"))` |
+| Normalized bars | `xyg.bar_chart(xyg.bar(..., mode="normalized"))` |
+| Horizontal bars | `xyg.bar_chart(xyg.bar(..., orientation="horizontal"))` |
+| Heatmap | `xyg.heatmap_chart(xyg.heatmap(...))` |
+| Error bars/bands | `xyg.errorbar_chart(xyg.errorbar(...))` and `xyg.error_band_chart(xyg.error_band(...))` |
+| Box | `xyg.box_chart(xyg.box(...))` |
+| Violin | `xyg.violin_chart(xyg.violin(...))` |
+| ECDF | `xyg.ecdf_chart(xyg.ecdf(...))` |
+| Hexbin | `xyg.hexbin_chart(xyg.hexbin(...))` |
+| Contour | `xyg.contour_chart(xyg.contour(...))` |
+| Step/stairs/stem | `xyg.step_chart(xyg.step(...))`, `xyg.stairs_chart(xyg.stairs(...))`, `xyg.stem_chart(xyg.stem(...))` |
+| Independent segments | `xyg.segments_chart(xyg.segments(x0=..., y0=..., x1=..., y1=...))` |
+| Triangle mesh | `xyg.triangle_mesh_chart(xyg.triangle_mesh(...))` |
+| Facets | `xyg.facet_chart(xyg.scatter(...), by="group", data=data)` |
 
 ## Axes And Scales
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 x = np.logspace(0, 6, 240)
 rank = 96 - np.log10(x) * 11.5
 conversion = 0.08 + np.log10(x) * 0.035
 
-chart = xy.chart(
-    xy.line(x=x, y=rank, name="rank", color="#2563eb"),
-    xy.line(x=x, y=conversion, y_axis="y2", name="conversion", color="#dc2626"),
-    xy.x_axis(label="request volume", type_="log", domain=(1, 1_000_000), format=",.0f"),
-    xy.y_axis(label="rank (reversed)", domain=(0, 100), reverse=True, format=".0f"),
-    xy.y_axis(id="y2", label="conversion", side="right", domain=(0, 0.35), format=".0%"),
+chart = xyg.chart(
+    xyg.line(x=x, y=rank, name="rank", color="#2563eb"),
+    xyg.line(x=x, y=conversion, y_axis="y2", name="conversion", color="#dc2626"),
+    xyg.x_axis(label="request volume", type_="log", domain=(1, 1_000_000), format=",.0f"),
+    xyg.y_axis(label="rank (reversed)", domain=(0, 100), reverse=True, format=".0f"),
+    xyg.y_axis(id="y2", label="conversion", side="right", domain=(0, 0.35), format=".0%"),
     title="Axes and scales",
 )
 chart
@@ -98,17 +98,17 @@ chart
 ## Small Business Chart
 
 ```python
-import xy
+import xyg
 
 month_number = [1, 2, 3, 4, 5, 6]
 revenue = [42, 45, 48, 51, 55, 59]
 pipeline = [35, 38, 42, 40, 46, 50]
 
-chart = xy.line_chart(
-    xy.line(month_number, revenue, name="revenue", color="#2563eb", width=2.0),
-    xy.line(month_number, pipeline, name="pipeline", color="#16a34a", width=2.0),
-    xy.x_axis(label="month number"),
-    xy.y_axis(label="USD thousands"),
+chart = xyg.line_chart(
+    xyg.line(month_number, revenue, name="revenue", color="#2563eb", width=2.0),
+    xyg.line(month_number, pipeline, name="pipeline", color="#16a34a", width=2.0),
+    xyg.x_axis(label="month number"),
+    xyg.y_axis(label="USD thousands"),
     title="Revenue vs pipeline",
 )
 chart
@@ -118,16 +118,16 @@ chart
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(0)
 x = np.arange(1_000_000, dtype=np.float64)
 y = np.cumsum(rng.normal(size=len(x)))
 
-chart = xy.line_chart(
-    xy.line(x, y, name="walk"),
-    xy.x_axis(label="sample"),
-    xy.y_axis(label="value"),
+chart = xyg.line_chart(
+    xyg.line(x, y, name="walk"),
+    xyg.x_axis(label="sample"),
+    xyg.y_axis(label="value"),
     title="Random walk",
 )
 chart
@@ -137,14 +137,14 @@ chart
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(1)
 x = rng.normal(size=500_000)
 y = 0.5 * x + rng.normal(scale=0.6, size=len(x))
 
-xy.scatter_chart(
-    xy.scatter(
+xyg.scatter_chart(
+    xyg.scatter(
         x,
         y,
         color=y,
@@ -160,13 +160,13 @@ xy.scatter_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 x = np.linspace(0, 10, 100_000)
 y = np.sin(x) + 0.15 * x
 
-xy.area_chart(
-    xy.area(x, y, base=0.0, name="signal", opacity=0.35),
+xyg.area_chart(
+    xyg.area(x, y, base=0.0, name="signal", opacity=0.35),
     title="Area",
 )
 ```
@@ -175,15 +175,15 @@ xy.area_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(2)
 values = np.concatenate(
     [rng.normal(-1.2, 0.45, 300_000), rng.normal(1.4, 0.6, 200_000)]
 )
 
-xy.histogram_chart(
-    xy.histogram(values, bins=240, name="samples"),
+xyg.histogram_chart(
+    xyg.histogram(values, bins=240, name="samples"),
     title="Distribution",
 )
 ```
@@ -193,15 +193,15 @@ Pass `cumulative=True` to accumulate bins left-to-right. Combined with
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(3)
 latency_ms = rng.gamma(shape=2.0, scale=40.0, size=100_000)
 
-xy.histogram_chart(
-    xy.hist(latency_ms, bins=200, density=True, cumulative=True, name="p(x)"),
-    xy.x_axis(label="ms"),
-    xy.y_axis(label="fraction"),
+xyg.histogram_chart(
+    xyg.hist(latency_ms, bins=200, density=True, cumulative=True, name="p(x)"),
+    xyg.x_axis(label="ms"),
+    xyg.y_axis(label="fraction"),
     title="Latency CDF",
 )
 ```
@@ -209,15 +209,15 @@ xy.histogram_chart(
 ## Bar
 
 ```python
-import xy
+import xyg
 
 channels = ["Search", "Ads", "Email", "Direct", "Partner", "Social"]
 conversions = [120, 94, 72, 66, 43, 31]
 
-xy.bar_chart(
-    xy.bar(channels, conversions, name="Desktop"),
-    xy.x_axis(label="channel"),
-    xy.y_axis(label="count"),
+xyg.bar_chart(
+    xyg.bar(channels, conversions, name="Desktop"),
+    xyg.x_axis(label="channel"),
+    xyg.y_axis(label="count"),
     title="Conversions",
 )
 ```
@@ -225,15 +225,15 @@ xy.bar_chart(
 ## Column
 
 ```python
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 revenue = [42, 47, 51, 58]
 
-xy.column_chart(
-    xy.column(quarters, revenue, name="Revenue"),
-    xy.x_axis(label="quarter"),
-    xy.y_axis(label="revenue"),
+xyg.column_chart(
+    xyg.column(quarters, revenue, name="Revenue"),
+    xyg.x_axis(label="quarter"),
+    xyg.y_axis(label="revenue"),
     title="Quarterly revenue",
 )
 ```
@@ -242,7 +242,7 @@ xy.column_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 channels = ["Search", "Ads", "Email", "Direct", "Partner", "Social"]
 values = np.array(
@@ -257,8 +257,8 @@ values = np.array(
     dtype=float,
 )
 
-xy.bar_chart(
-    xy.bar(
+xyg.bar_chart(
+    xyg.bar(
         channels,
         values,
         mode="grouped",
@@ -272,7 +272,7 @@ xy.bar_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 values = np.array(
@@ -285,8 +285,8 @@ values = np.array(
     dtype=float,
 )
 
-xy.bar_chart(
-    xy.bar(
+xyg.bar_chart(
+    xyg.bar(
         quarters,
         values,
         mode="stacked",
@@ -303,7 +303,7 @@ category renders the series' share of the whole (segments sum to 1):
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 values = np.array(
@@ -316,14 +316,14 @@ values = np.array(
     dtype=float,
 ).T
 
-xy.bar_chart(
-    xy.bar(
+xyg.bar_chart(
+    xyg.bar(
         quarters,
         values,
         mode="normalized",
         series=["Product", "Services", "Partners"],
     ),
-    xy.y_axis(label="share"),
+    xyg.y_axis(label="share"),
     title="Revenue mix",
 )
 ```
@@ -331,13 +331,13 @@ xy.bar_chart(
 ## Horizontal Bars
 
 ```python
-import xy
+import xyg
 
 teams = ["Platform", "Growth", "Data", "Support"]
 latency_ms = [42, 56, 31, 73]
 
-xy.bar_chart(
-    xy.bar(
+xyg.bar_chart(
+    xyg.bar(
         teams,
         latency_ms,
         orientation="horizontal",
@@ -351,17 +351,17 @@ xy.bar_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 x = np.linspace(-3, 3, 160)
 y = np.linspace(-2, 2, 120)
 xx, yy = np.meshgrid(x, y)
 z = np.exp(-(xx**2 + yy**2)) + 0.3 * np.exp(-((xx - 1.5) ** 2 + (yy + 0.8) ** 2))
 
-xy.heatmap_chart(
-    xy.heatmap(z, x=x, y=y),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+xyg.heatmap_chart(
+    xyg.heatmap(z, x=x, y=y),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Heatmap",
 )
 ```
@@ -372,7 +372,7 @@ The statistical marks keep their source arrays in the canonical column store,
 then ship compact segment, rectangle, or occupied-bin geometry:
 
 ```python
-import xy
+import xyg
 
 x = [0, 1, 2, 3]
 lower = [0.8, 1.1, 1.4, 1.9]
@@ -382,14 +382,14 @@ stderr = [0.1, 0.15, 0.12, 0.2]
 control = [0.8, 1.0, 1.1, 1.3]
 treatment = [1.1, 1.4, 1.6, 1.9]
 
-chart = xy.chart(
-    xy.error_band(x, lower, upper, name="confidence"),
-    xy.errorbar(x, y, yerr=stderr, name="estimate"),
-    xy.box(values=[control, treatment], x=["control", "treatment"]),
-    xy.violin(values=[control, treatment], x=["control", "treatment"]),
-    xy.ecdf(values=control, bins=256),
-    xy.x_axis(label="group"),
-    xy.y_axis(label="value"),
+chart = xyg.chart(
+    xyg.error_band(x, lower, upper, name="confidence"),
+    xyg.errorbar(x, y, yerr=stderr, name="estimate"),
+    xyg.box(values=[control, treatment], x=["control", "treatment"]),
+    xyg.violin(values=[control, treatment], x=["control", "treatment"]),
+    xyg.ecdf(values=control, bins=256),
+    xyg.x_axis(label="group"),
+    xyg.y_axis(label="value"),
 )
 chart
 ```
@@ -403,7 +403,7 @@ Small multiples repeat a composition over a table column and share domains by
 default:
 
 ```python
-import xy
+import xyg
 
 data = {
     "x": [0, 1, 2, 0, 1, 2],
@@ -411,8 +411,8 @@ data = {
     "region": ["west", "west", "west", "east", "east", "east"],
 }
 
-grid = xy.facet_chart(
-    xy.scatter(x="x", y="y", density=None),
+grid = xyg.facet_chart(
+    xyg.scatter(x="x", y="y", density=None),
     by="region",
     data=data,
     cols=3,
@@ -431,18 +431,18 @@ Marks resolve column names through `data=`, so charts can bind straight to a
 dict, DataFrame, or any mapping of columns:
 
 ```python
-import xy
+import xyg
 
 data = {
     "channel": ["Search", "Ads", "Email", "Direct"],
     "desktop": [120, 94, 72, 66],
 }
 
-chart = xy.bar_chart(
-    xy.bar(x="channel", y="desktop", data=data, name="Desktop"),
-    xy.x_axis(label="channel"),
-    xy.y_axis(label="conversions"),
-    xy.legend(),
+chart = xyg.bar_chart(
+    xyg.bar(x="channel", y="desktop", data=data, name="Desktop"),
+    xyg.x_axis(label="channel"),
+    xyg.y_axis(label="conversions"),
+    xyg.legend(),
     title="Composed bar chart",
 )
 chart
@@ -459,12 +459,12 @@ bundles its own anywidget frontend and keeps the widget host
 `to_image(format="png", ...)` returns bytes and `write_image(path, ...)` writes
 one file atomically with the format inferred from its extension; together they
 are the unified export surface across PNG/JPEG/WebP/SVG/PDF (and standalone
-HTML for `write_image`). `xy.write_images(figs, paths)` is the batch form: it
+HTML for `write_image`). `xyg.write_images(figs, paths)` is the batch form: it
 accepts composed charts directly and shares one persistent Chromium session
 across every browser-resolved file instead of paying browser startup per
 figure.
 
-Export defaults travel with the chart. `xy.export_config(...)` is a chart child
+Export defaults travel with the chart. `xyg.export_config(...)` is a chart child
 taking `formats`, `filename`, `width`, `height`, `scale`, `background`, and
 `quality`; it sets the browser modebar's download menu (the client-safe subset
 png/jpeg/webp/svg/csv, in the given order — an empty list hides the menu) and
@@ -479,12 +479,12 @@ or selections from Python. Structure stays declarative: adding marks, axes,
 or annotations means composing a new chart.
 
 ```python
-import xy
+import xyg
 
-chart = xy.scatter_chart(
-    xy.scatter(x=[0.0, 1.0, 2.0, 3.0], y=[0.0, 2.0, 4.0, 6.0], name="stream"),
-    xy.x_axis(label="t"),
-    xy.y_axis(label="value"),
+chart = xyg.scatter_chart(
+    xyg.scatter(x=[0.0, 1.0, 2.0, 3.0], y=[0.0, 2.0, 4.0, 6.0], name="stream"),
+    xyg.x_axis(label="t"),
+    xyg.y_axis(label="value"),
 )
 
 # Streaming append: extends the trace in place. With a live widget the
@@ -505,12 +505,12 @@ chart
 
 ## Layered Composition And Annotations
 
-Use the neutral `xy.chart(...)` container when marks need to share a panel.
+Use the neutral `xyg.chart(...)` container when marks need to share a panel.
 Children are painted in order, and rules, bands, and text annotations live in
 the chart chrome instead of becoming data traces.
 
 ```python
-import xy
+import xyg
 
 data = {
     "month": ["Jan", "Feb", "Mar", "Apr"],
@@ -519,41 +519,41 @@ data = {
     "sample": [13, 19, 15, 23],
 }
 
-chart = xy.chart(
-    xy.bar(x="month", y="actual", data=data, name="actual", color="#f59e0b"),
-    xy.scatter(x="month", y="sample", data=data, name="samples", color="#2563eb", size=8),
-    xy.line(x="month", y="target", data=data, name="target", color="#dc2626", width=2),
-    xy.x_band("Feb", "Apr", text="campaign", color="#7c3aed", opacity=0.12),
-    xy.vline("Mar", text="release", color="#7c3aed"),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="pipeline"),
-    xy.tooltip(
+chart = xyg.chart(
+    xyg.bar(x="month", y="actual", data=data, name="actual", color="#f59e0b"),
+    xyg.scatter(x="month", y="sample", data=data, name="samples", color="#2563eb", size=8),
+    xyg.line(x="month", y="target", data=data, name="target", color="#dc2626", width=2),
+    xyg.x_band("Feb", "Apr", text="campaign", color="#7c3aed", opacity=0.12),
+    xyg.vline("Mar", text="release", color="#7c3aed"),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="pipeline"),
+    xyg.tooltip(
         fields=["month", "actual", "sample", "target"],
         title="{month}",
         format={"actual": ".1f", "sample": ".1f", "target": ".1f"},
     ),
-    xy.legend(),
+    xyg.legend(),
     title="Layered pipeline",
 )
 chart
 ```
 
 ```python
-import xy
+import xyg
 
 z = [
     [0.2, 0.4, 0.5],
     [0.5, 0.7, 0.9],
 ]
 
-chart = xy.chart(
-    xy.heatmap(z=z, x=["Mon", "Tue", "Wed"], y=["AM", "PM"], name="load"),
-    xy.hline("PM", text="busy threshold", color="#dc2626", width=2),
-    xy.text("Wed", "PM", "peak", dx=8, dy=-8, color="#111827"),
-    xy.arrow("Mon", "AM", "Tue", "PM", text="ramp", color="#7c3aed"),
-    xy.callout("Wed", "PM", "ops review", dx=-72, dy=-26, color="#0f172a"),
-    xy.x_axis(label="day"),
-    xy.y_axis(label="shift"),
+chart = xyg.chart(
+    xyg.heatmap(z=z, x=["Mon", "Tue", "Wed"], y=["AM", "PM"], name="load"),
+    xyg.hline("PM", text="busy threshold", color="#dc2626", width=2),
+    xyg.text("Wed", "PM", "peak", dx=8, dy=-8, color="#111827"),
+    xyg.arrow("Mon", "AM", "Tue", "PM", text="ramp", color="#7c3aed"),
+    xyg.callout("Wed", "PM", "ops review", dx=-72, dy=-26, color="#0f172a"),
+    xyg.x_axis(label="day"),
+    xyg.y_axis(label="shift"),
     title="Annotated heatmap",
 )
 chart
@@ -566,7 +566,7 @@ without making `xy` depend on that framework. The objects are kept on
 the Python `Chart` and never serialized into standalone HTML.
 
 ```python
-import xy
+import xyg
 
 # In a Reflex app these could be rx.box(...), rx.vstack(...), etc.
 class FrameworkComponent:
@@ -577,10 +577,10 @@ data = {"x": [1.0, 2.0], "y": [2.0, 3.0], "segment": ["enterprise", "growth"]}
 custom_legend = FrameworkComponent()
 custom_tooltip = FrameworkComponent()
 
-chart = xy.chart(
-    xy.scatter(x="x", y="y", color="segment", data=data),
-    xy.legend(custom_legend, show=False),
-    xy.tooltip(custom_tooltip, show=False, fields=["x", "y", "segment"]),
+chart = xyg.chart(
+    xyg.scatter(x="x", y="y", color="segment", data=data),
+    xyg.legend(custom_legend, show=False),
+    xyg.tooltip(custom_tooltip, show=False, fields=["x", "y", "segment"]),
 )
 
 chrome = chart.chrome_components()

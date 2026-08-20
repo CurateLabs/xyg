@@ -10,7 +10,7 @@ xy is early alpha. The goal is Plotly-class chart breadth with a
 screen-bounded performance core, but the stable commitments today are narrower:
 
 - Python 3.11+ only.
-- `import xy` stays lightweight and does not import NumPy or load the
+- `import xyg` stays lightweight and does not import NumPy or load the
   native core. The public API
   gate verifies this in fresh interpreters and keeps package import under a
   200 ms budget. Chart-building APIs are the compute import boundary; notebook
@@ -112,13 +112,13 @@ These must pass before publishing.
 |---|---|---|
 | Python floor | `pyproject.toml`, Ruff, docs, syntax, and annotations stay on the Python 3.11+ floor | `python scripts/check_python_floor.py` |
 | Public API | `__all__`, lazy exports, `__version__`, the source `py.typed` marker, focused type-surface tests, and fresh-process import-time budget stay coherent | `make check-api` |
-| Import-time budget | `xy.__init__`, `dir(xy)`, export helpers, chart construction, and `.widget()` keep their lazy import boundaries | `make check-import` |
+| Import-time budget | `xyg.__init__`, `dir(xy)`, export helpers, chart construction, and `.widget()` keep their lazy import boundaries | `make check-import` |
 | CI/release workflows | Hard gates, non-blocking benchmarks, best-effort benchmark artifact upload/download, trusted publishing, and no-Rust clear-error jobs stay wired | `make check-ci` |
 | GitHub Actions token scope | CI, release, and manual benchmark workflows declare an explicit least-privilege `GITHUB_TOKEN` default; privileged jobs use narrow job-level overrides | GitHub code scanning (`actions/missing-workflow-permissions`) |
 | HTML export safety | Inline JSON/script escaping, atomic path writes, hostile user strings, and browser client text-node insertion stay protected | `make check-security` |
 | Python tests | Native backend passes | `pytest -q` |
 | Python style | Library, tests, scripts, and benchmarks lint clean | `ruff check .` and `ruff format --check .` |
-| Matplotlib reference | The reviewed compatibility snapshot matches the pinned released matplotlib reference, and the `xy.pyplot` shim passes its interoperability and dual-engine corpus suites | `python scripts/sync_matplotlib_compat.py --check` and `pytest tests/pyplot` |
+| Matplotlib reference | The reviewed compatibility snapshot matches the pinned released matplotlib reference, and the `xyg.pyplot` shim passes its interoperability and dual-engine corpus suites | `python scripts/sync_matplotlib_compat.py --check` and `pytest tests/pyplot` |
 | Rust core | Native kernels pass and lint clean | `cargo test --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` |
 | Native ABI | C ABI can be loaded from the built core | `python scripts/abi_smoke.py` |
 | JavaScript | Render client builds cleanly from source | `node js/build.mjs` |
@@ -186,16 +186,16 @@ production-facing push:
 | `spec/api/api-examples.md`, Reflex chart registry/assets | `make check-examples` |
 | Public validation, error messages, builder rollback, LOD/drill mutation boundaries, chart/widget caching | `make check-errors` |
 | Public exports, lazy import mappings, component factories, public annotations | `make check-api` |
-| Import-time budget, `xy.__init__`, dependency boundaries, widget/export/backend import boundaries | `make check-import` |
-| `xy.pyplot` shim behavior, matplotlib interoperability, reference corpus | `make check-pyplot` |
+| Import-time budget, `xyg.__init__`, dependency boundaries, widget/export/backend import boundaries | `make check-import` |
+| `xyg.pyplot` shim behavior, matplotlib interoperability, reference corpus | `make check-pyplot` |
 | Reviewed matplotlib compatibility snapshot (`spec/matplotlib/compat-matrix.md`) | `python scripts/sync_matplotlib_compat.py --check` |
-| `xy.pyplot` speed margin against matplotlib | `make check-pyplot-speed` |
+| `xyg.pyplot` speed margin against matplotlib | `make check-pyplot-speed` |
 | Standalone HTML export, path writes, user text, tooltips, legends, browser DOM insertion | `make check-security` |
 | Benchmark harness code, environment metadata, report schema, regressions | `make check-benchmark-harness` |
 | Generated benchmark JSON artifacts | `make check-benchmark-report BENCHMARK_JSON=benchmark.json BENCHMARK_KIND=scatter-vs` |
 | CI/release workflows, artifact upload/download, no-Rust clear-error jobs | `make check-ci` |
 | Source distributions and wheels | `make check-sdist` and `make check-wheel` |
-| Existing release artifacts | `make check-artifacts SDIST=/path/to/xy.tar.gz WHEEL=/path/to/xy.whl` |
+| Existing release artifacts | `make check-artifacts SDIST=/path/to/xyg.tar.gz WHEEL=/path/to/xyg.whl` |
 | Browser render/lifecycle/interaction smoke | `make check-browser CHROMIUM=/path/to/chrome` |
 | Production-facing PR | `make check-full` |
 
@@ -259,7 +259,7 @@ Use this when release automation has already produced artifacts and you need to
 verify those exact files rather than rebuilding locally:
 
 ```bash
-make check-artifacts SDIST=/path/to/xy.tar.gz WHEEL=/path/to/xy.whl
+make check-artifacts SDIST=/path/to/xyg.tar.gz WHEEL=/path/to/xyg.whl
 ```
 
 Use this after editing `spec/api/api-examples.md` or the Reflex dashboard chart
@@ -291,7 +291,7 @@ factories, or public type annotations:
 make check-api
 ```
 
-Use this after changing `xy.__init__`, lazy import boundaries,
+Use this after changing `xyg.__init__`, lazy import boundaries,
 dependency boundaries, widget/export boundaries, or backend import setup:
 
 ```bash
@@ -380,8 +380,8 @@ final release.
 The repository has one release line: the `xyg` distribution, including its
 bundled `reflex_xy` integration, ships from `xyg-vX.Y.Z` tags through
 `publish.yaml`. The `xyg[reflex]` extra is dependency metadata in those same
-artifacts, not another package or release. Python import remains `import xy`
-until the staged `python/xyg/` cutover in [xyg-naming.md](../design/xyg-naming.md).
+artifacts, not another package or release. The Python package and distribution
+share the canonical `xyg` identity; no `xy` compatibility import ships.
 
 ### Fork release posture (CurateLabs/xyg, issue #13)
 
@@ -439,11 +439,10 @@ run via `python3 scripts/verify_node_packages.py` (CI Test job; `--require-nativ
 after staging; `--sbom` emits a CycloneDX-lite document from local manifests).
 Never publish `@xy/node`.
 
-Python import `xy` / `python/xy/` is still the in-tree namespace; the
-distribution name and `importlib.metadata` lookups are `xyg`. The clean-break
-`import xyg` / `python/xyg/` cutover is tracked by GitHub #51 with the checklist
-in [xyg-naming.md](../design/xyg-naming.md) §5; `reflex_xy` stays for that
-issue. `tests/test_xyg_package_identity.py` locks the pre-cutover split.
+Python import `xyg` / `python/xyg/`, the distribution name, and
+`importlib.metadata` lookups all use `xyg`. The clean break intentionally ships
+no `xy` compatibility package; `reflex_xy` remains the separate integration
+namespace. `tests/test_xyg_package_identity.py` locks this identity.
 
 Before tagging an `xyg-v*` release:
 
@@ -482,13 +481,13 @@ Before tagging an `xyg-v*` release:
 - Confirm the no-Rust install job passed (it must build, install, and then
   raise a clear ImportError on first compute — never a silent fallback).
 - Confirm the sdist verifier passed and the build-input-only source archive
-  contains `xy`, bundled `reflex_xy`, the JSX/render-client bundles, complete
+  contains `xyg`, bundled `reflex_xy`, the JSX/render-client bundles, complete
   JS/Rust build sources, and the expected `PKG-INFO` package name, Python floor,
   runtime dependencies, and Reflex extra. It must exclude repository-only
   docs, tests, scripts, benchmarks, examples, native binaries, and generated
   caches.
 - Confirm each platform wheel passes `scripts/verify_wheel.py --expect-native`
-  and its install smoke loads `xy.kernels.BACKEND == "native"`. Confirm the
+  and its install smoke loads `xyg.kernels.BACKEND == "native"`. Confirm the
   fallback `py3-none-any` wheel passes `--expect-pure` and fails compute with
   the documented native-core error. Wheel
   `METADATA` must keep `Name: xyg`, `Requires-Python: >=3.11`,
@@ -502,12 +501,12 @@ Before tagging an `xyg-v*` release:
 - Confirm `spec/api/api-examples.md` runs against the tagged API.
 ### Bundled Reflex integration
 
-Every `xy` release carries the `reflex_xy` Python package and JSX wrapper. The
+Every `xyg` release carries the `reflex_xy` Python package and JSX wrapper. The
 wrapper links to the render client in the same installed distribution, so
-client, kernel, and framework bridge share one version. Plain `xy` must not
-install Reflex; `xy[reflex]` must install the declared supported floor.
+client, kernel, and framework bridge share one version. Plain `xyg` must not
+install Reflex; `xyg[reflex]` must install the declared supported floor.
 Release smoke tests install Reflex, import `reflex_xy`, and assert that its
-reported version matches the `xy` distribution version.
+reported version matches the `xyg` distribution version.
 
 ## Hardening Backlog
 

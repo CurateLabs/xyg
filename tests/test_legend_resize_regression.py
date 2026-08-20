@@ -22,8 +22,8 @@ from conftest import run_browser_probe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-import xy  # noqa: E402
-from xy.export import find_chromium  # noqa: E402
+import xyg  # noqa: E402
+from xyg.export import find_chromium  # noqa: E402
 
 # Capture the standalone render call's return value so the probe can drive the
 # view directly (the same swap the visual-regression smoke uses).
@@ -451,9 +451,9 @@ def test_core_legend_top_and_bottom_aliases_reach_browser_edges() -> None:
     if not chromium:
         pytest.skip("no chromium available for the legend loc alias probe")
 
-    chart = xy.chart(
-        xy.line([0, 1, 2], [1, 2, 1], name="series"),
-        xy.legend(loc="top left"),
+    chart = xyg.chart(
+        xyg.line([0, 1, 2], [1, 2, 1], name="series"),
+        xyg.legend(loc="top left"),
         width=480,
         height=320,
     )
@@ -487,10 +487,10 @@ def test_snake_case_legend_max_height_survives_resize() -> None:
     if not chromium:
         pytest.skip("no chromium available for the resize regression probe")
 
-    fig = xy.chart(
-        xy.line(x=[0, 1, 2, 3], y=[0, 1, 0, 1], name="alpha"),
-        xy.line(x=[0, 1, 2, 3], y=[1, 0, 1, 0], name="beta"),
-        xy.legend(),
+    fig = xyg.chart(
+        xyg.line(x=[0, 1, 2, 3], y=[0, 1, 0, 1], name="alpha"),
+        xyg.line(x=[0, 1, 2, 3], y=[1, 0, 1, 0], name="beta"),
+        xyg.legend(),
         # snake_case is the documented Python API form; it must reach the client
         # AND be honored by the responsive-cap guard on resize.
         styles={"legend": {"max_height": 50}},
@@ -524,8 +524,8 @@ def test_narrow_fluid_resize_stays_painted_and_preserves_plot_space() -> None:
     if not chromium:
         pytest.skip("no chromium available for the resize regression probe")
 
-    chart = xy.heatmap_chart(
-        xy.heatmap(
+    chart = xyg.heatmap_chart(
+        xyg.heatmap(
             [
                 [1.00, 0.72, 0.61, 0.55],
                 [1.00, 0.74, 0.64, 0.58],
@@ -536,7 +536,7 @@ def test_narrow_fluid_resize_stays_painted_and_preserves_plot_space() -> None:
             colormap="viridis",
             domain=(0, 1),
         ),
-        xy.colorbar(title="Users retained", ticks=[0, 0.25, 0.5, 0.75, 1.0]),
+        xyg.colorbar(title="Users retained", ticks=[0, 0.25, 0.5, 0.75, 1.0]),
         width="100%",
         height=500,
         padding=[72, 106, 70, 92],
@@ -592,7 +592,7 @@ def test_long_legend_and_edge_tooltip_stay_inside_narrow_chart() -> None:
         "#be123c",
     )
     children = [
-        xy.line(
+        xyg.line(
             [0, 1, 2],
             [2 + index * 0.35, 4 + index * 0.2, 1.5 + index * 0.25],
             name=f"Service {index + 1}: reconciliation and settlement pipeline",
@@ -611,7 +611,7 @@ def test_long_legend_and_edge_tooltip_stay_inside_narrow_chart() -> None:
         "requests_per_minute": [1_200, 4_800, 12_400],
     }
     children.append(
-        xy.scatter(
+        xyg.scatter(
             x="sample",
             y="latency_ms",
             color="service_tier",
@@ -620,15 +620,15 @@ def test_long_legend_and_edge_tooltip_stay_inside_narrow_chart() -> None:
             name="Interactive incident samples with resident tooltip fields",
         )
     )
-    chart = xy.chart(
+    chart = xyg.chart(
         *children,
-        xy.legend(loc="upper center", ncols=2, title="Long operational series"),
-        xy.tooltip(
+        xyg.legend(loc="upper center", ncols=2, title="Long operational series"),
+        xyg.tooltip(
             fields=["sample", "latency_ms", "service_tier", "requests_per_minute"],
             title="{service_tier}",
             format={"latency_ms": ".1f", "requests_per_minute": ",.0f"},
         ),
-        xy.interaction_config(
+        xyg.interaction_config(
             hover=True,
             click=True,
             crosshair=True,
@@ -678,12 +678,12 @@ def test_midpoint_annotation_labels_are_visually_centered() -> None:
     if not chromium:
         pytest.skip("no chromium available for the annotation alignment probe")
 
-    chart = xy.chart(
-        xy.line([0, 1, 2, 3, 4], [0, 1, 2, 3, 4]),
-        xy.x_band(2, 4, text="band-center"),
-        xy.arrow(0, 0, 2, 2, text="arrow-center"),
-        xy.x_axis(domain=(-0.5, 4.5)),
-        xy.y_axis(domain=(-0.5, 4.5)),
+    chart = xyg.chart(
+        xyg.line([0, 1, 2, 3, 4], [0, 1, 2, 3, 4]),
+        xyg.x_band(2, 4, text="band-center"),
+        xyg.arrow(0, 0, 2, 2, text="arrow-center"),
+        xyg.x_axis(domain=(-0.5, 4.5)),
+        xyg.y_axis(domain=(-0.5, 4.5)),
         width=520,
         height=320,
     )
@@ -729,11 +729,11 @@ def test_browser_named_axis_category_state_and_tick_chrome_are_independent(
         pytest.skip("no chromium available for the named-axis category probe")
 
     if primary_is_category:
-        chart = xy.chart(
-            xy.line(["Alpha", "Beta", "Gamma"], [1.0, 2.0, 3.0]),
-            xy.line([100.0, 200.0, 300.0], [3.0, 2.0, 1.0], x_axis="x2"),
-            xy.x_axis(tick_label_strategy="rotate"),
-            xy.x_axis(
+        chart = xyg.chart(
+            xyg.line(["Alpha", "Beta", "Gamma"], [1.0, 2.0, 3.0]),
+            xyg.line([100.0, 200.0, 300.0], [3.0, 2.0, 1.0], x_axis="x2"),
+            xyg.x_axis(tick_label_strategy="rotate"),
+            xyg.x_axis(
                 id="x2",
                 side="top",
                 type_="linear",
@@ -753,16 +753,16 @@ def test_browser_named_axis_category_state_and_tick_chrome_are_independent(
             "x2": {"kind": "linear", "categories": [], "labels": ["N100", "N200", "N300"]},
         }
     else:
-        chart = xy.chart(
-            xy.line([10.0, 20.0, 30.0], [1.0, 2.0, 3.0]),
-            xy.line(["Red", "Green", "Blue"], [3.0, 2.0, 1.0], x_axis="x2"),
-            xy.x_axis(
+        chart = xyg.chart(
+            xyg.line([10.0, 20.0, 30.0], [1.0, 2.0, 3.0]),
+            xyg.line(["Red", "Green", "Blue"], [3.0, 2.0, 1.0], x_axis="x2"),
+            xyg.x_axis(
                 type_="linear",
                 tick_values=(10.0, 20.0, 30.0),
                 tick_labels=("P10", "P20", "P30"),
                 tick_label_strategy="rotate",
             ),
-            xy.x_axis(id="x2", side="top", tick_label_strategy="rotate"),
+            xyg.x_axis(id="x2", side="top", tick_label_strategy="rotate"),
             width=560,
             height=300,
         )

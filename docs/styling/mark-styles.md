@@ -1,11 +1,11 @@
 ---
 title: Mark Styles
-description: Style WebGL, SVG, and native-raster marks with XY's validated CSS subset.
+description: Style WebGL, SVG, and native-raster marks with XYG's validated CSS subset.
 ---
 
 # Mark Styles
 
-Data marks are not DOM nodes. XY accepts familiar CSS property names through a
+Data marks are not DOM nodes. XYG accepts familiar CSS property names through a
 mark's `style=` mapping, validates them, and compiles them into a renderer-neutral
 trace style. Unsupported properties raise before data is ingested, so one
 renderer cannot silently ignore a declaration that another honors.
@@ -30,9 +30,9 @@ Use canonical CSS kebab-case when sharing styles with web code; Python
 snake_case aliases remain accepted.
 
 ~~~python
-import xy
+import xyg
 
-line = xy.line(
+line = xyg.line(
     [0, 1, 2, 3],
     [2, 5, 3, 8],
     style={
@@ -43,7 +43,7 @@ line = xy.line(
     },
 )
 
-bars = xy.column(
+bars = xyg.column(
     ["A", "B", "C"],
     [4, 7, 5],
     style={
@@ -68,7 +68,7 @@ A box plot is one public mark composed from four renderer traces. Its main
 validated vocabularies as the built-in segment and scatter marks:
 
 ~~~python
-xy.box(
+xyg.box(
     values,
     group=cohorts,
     style={
@@ -104,12 +104,12 @@ and each dash end. It is polyline geometry, so only the line family accepts it â
 a `bar` or a `scatter` raises rather than accepting a declaration no renderer
 can draw.
 
-XY defaults to `round`, **not** to the CSS initial value `butt`: the native
+XYG defaults to `round`, **not** to the CSS initial value `butt`: the native
 rasterizer has always drawn round caps and it is the reference for static
 export. Set the property to opt into the CSS initial value.
 
 ~~~python
-xy.line(x, y, style={"stroke-width": "6px", "stroke-linecap": "butt"})
+xyg.line(x, y, style={"stroke-width": "6px", "stroke-linecap": "butt"})
 ~~~
 
 Joins are always round and are not selectable.
@@ -120,12 +120,12 @@ Joins are always round and are not selectable.
 `square`, `diamond`, `triangle`, `cross`, `hexagon`, `pentagon`, `star`,
 `triangle_down`, `triangle_left`, `triangle_right`, `x`, `point`, `pixel`,
 `thin_diamond`, `plus_line`, `x_line`, `horizontal_line`, `vertical_line` â€” and
-is the CSS spelling of the existing `symbol=` argument. It is an XY vocabulary
+is the CSS spelling of the existing `symbol=` argument. It is an XYG vocabulary
 name rather than a standard CSS property: CSS has no shape keyword for a non-DOM
 point mark.
 
 ~~~python
-xy.scatter(x, y, size=12, style={"marker-shape": "diamond", "fill": "#22c55e"})
+xyg.scatter(x, y, size=12, style={"marker-shape": "diamond", "fill": "#22c55e"})
 ~~~
 
 ## Combine mark styles
@@ -135,13 +135,13 @@ dashed line, bordered diamond markers, and explicitly styled axes.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 x = [0, 1, 2, 3, 4, 5]
 y = [2, 4, 3, 6, 5, 8]
 
-styled_marks = xy.chart(
-    xy.area(
+styled_marks = xyg.chart(
+    xyg.area(
         x,
         y,
         style={
@@ -152,7 +152,7 @@ styled_marks = xy.chart(
         },
         color="#8e51ff",
     ),
-    xy.line(
+    xyg.line(
         x,
         y,
         style={
@@ -161,7 +161,7 @@ styled_marks = xy.chart(
             "stroke-dasharray": "7px 4px",
         },
     ),
-    xy.scatter(
+    xyg.scatter(
         x,
         y,
         symbol="diamond",
@@ -172,7 +172,7 @@ styled_marks = xy.chart(
             "stroke-width": 2,
         },
     ),
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -183,7 +183,7 @@ styled_marks = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -248,7 +248,7 @@ colors or sizes. Tick marks use `tick_*`, tick text uses `tick_label_*`, and the
 axis title uses `label_*`:
 
 ~~~python
-xy.x_axis(
+xyg.x_axis(
     label="month",
     style={
         "axis_color": "#475569",
@@ -264,7 +264,7 @@ xy.x_axis(
     },
 )
 
-xy.y_axis(
+xyg.y_axis(
     label="revenue",
     style={
         "grid_color": "rgb(148 163 184 / 25%)",
@@ -286,7 +286,7 @@ than a CSS selector.
 
 ## Validation
 
-XY's native CSS grammar validates colors, gradients, numeric ranges, lengths,
+XYG's native CSS grammar validates colors, gradients, numeric ranges, lengths,
 and declaration safety at chart-build time:
 
 - malformed closed forms such as `#3b82zz`, unknown color names, and `12parsecs`
@@ -302,7 +302,7 @@ and declaration safety at chart-build time:
 
 CSS selectors cannot target individual canvas points, bars, line segments, or
 annotation shapes. A mark `class_name` does not turn its geometry into a DOM
-element. XY preserves it as trace metadata, but browser, Reflex, SVG, and
+element. XYG preserves it as trace metadata, but browser, Reflex, SVG, and
 native renderers do not interpret it as a paint selector. Use
 mark props, channels, and the compiled `style=` subset for data geometry.
 
@@ -311,6 +311,6 @@ canvas-painted; use their `color`, `stroke_color`, `stroke_width`, and
 `opacity` props. Annotation labels are DOM and can use the `annotation_label`
 slot or a per-annotation `class_name`/`style`.
 
-XY does not define a parallel hover/selected/unselected mark-style language.
+XYG does not define a parallel hover/selected/unselected mark-style language.
 Application state belongs to the notebook or host framework, which can update
 the chart's ordinary props and CSS variables.

@@ -10,9 +10,9 @@ that one governs the rationale. Where another spec describes an interaction as
 "free" or "always on" (e.g. [chart-kind-contract.md](chart-kind-contract.md)
 §"What you get for free"), this document governs.
 
-Implementation: `python/xy/components.py` (`interaction_config`, `Chart`,
-`FacetChart`), `python/xy/_figure.py` (`set_interaction`,
-`_interaction_spec`), `python/xy/channel.py` (kernel-side dispatch),
+Implementation: `python/xyg/components.py` (`interaction_config`, `Chart`,
+`FacetChart`), `python/xyg/_figure.py` (`set_interaction`,
+`_interaction_spec`), `python/xyg/channel.py` (kernel-side dispatch),
 `js/src/53_interaction.ts` (gestures, modebar, view state machine),
 `js/src/50_chartview.ts` (flag resolution, link channel),
 `python/reflex_xy/` (Reflex event props).
@@ -34,14 +34,14 @@ and are absent otherwise; the client fills their defaults (all declared axes,
 malformed policy fails before it reaches the wire (§2.1).
 
 `Chart` writes the interaction dict in three passes: chart-level keyword
-arguments, then any `xy.interaction_config(...)` children in order, then a
+arguments, then any `xyg.interaction_config(...)` children in order, then a
 final pass derived from the attached handlers (`components.py:2736-2740`).
 That last pass is not a defaulting step — it overwrites. Passing `on_hover=`
 together with `hover=False` yields `hover=True`.
 
-## 2. `xy.interaction_config(...)`
+## 2. `xyg.interaction_config(...)`
 
-`python/xy/components.py:2437`. The boolean switches below are `Optional[bool]`
+`python/xyg/components.py:2437`. The boolean switches below are `Optional[bool]`
 and default to `None` (leave unset). "Default" is the client-side behavior when
 the switch is never set. The non-boolean viewport keys — `default_drag_action`,
 `pan_axes`, `zoom_axes`, `zoom_limits`, and `reset_axes` — are in §2.1.
@@ -209,7 +209,7 @@ Those nine are the whole `xy:` surface — every one goes through
 `_dispatchChartEvent` (`50_chartview.ts:451`), and there is no other
 `CustomEvent` dispatch in `js/src/`.
 
-Kernel-side callbacks (`python/xy/channel.py`), wired through
+Kernel-side callbacks (`python/xyg/channel.py`), wired through
 `Chart(on_hover=…, on_click=…, on_brush=…, on_select=…, on_view_change=…)`:
 
 - `on_hover(row)` / `on_click(row)` — the picked row dict resolved by
@@ -356,7 +356,7 @@ gestures keep working without it.
 
 ## 6. Facet-level linking
 
-`facet_chart(..., link=…, link_select=…)` (`python/xy/components.py:4480`; normalization in `FacetChart.__init__`,
+`facet_chart(..., link=…, link_select=…)` (`python/xyg/components.py:4480`; normalization in `FacetChart.__init__`,
 `components.py:3514`).
 `link` accepts `True` (normalized to `"both"`), `False`/`None`, `"x"`, `"y"`,
 or `"both"`; anything else raises. `link_select` is a strict bool.
@@ -415,7 +415,7 @@ series drops to 20% of its computed opacity (`LEGEND_DIM_OPACITY`,
 no kernel message, no view change — and the redraw runs with `keepPick`
 because only the color pass changes (dossier §17).
 
-Gating: `xy.legend(highlight=False)`. This is legend chrome, not an
+Gating: `xyg.legend(highlight=False)`. This is legend chrome, not an
 `interaction_config` switch: it rides `legend.highlight` in the spec's legend
 options, is **on by default**, and only the opt-out (`false`) crosses the
 wire. Hard-disabled rows: entries of `extra_legends` (manual Legend artists
@@ -465,7 +465,7 @@ Click-to-toggle (hiding a series) is a separate contract: §10.
 Clicking a legend row hides — click again, shows — what the row stands for.
 This is the first shipped §34 filter predicate: a hidden series is out of
 *every* pipeline (drawing, picking, selections, decimation, aggregation),
-not merely transparent. Gating: `xy.legend(toggle=False)`; on by default,
+not merely transparent. Gating: `xyg.legend(toggle=False)`; on by default,
 opt-out only on the wire. `extra_legends` rows stay inert (no trace
 linkage). A toggled-off row fades (35%, grayscale, `data-xy-legend-off`
 attribute for author styling) and is inert for §9 hover emphasis. The DOM

@@ -20,13 +20,13 @@ Create `build_report.py`:
 ~~~python
 from pathlib import Path
 
-import xy
+import xyg
 
-chart = xy.line_chart(
-    xy.line([1, 2, 3, 4], [12, 18, 15, 23], name="orders", color="#2563eb"),
-    xy.x_axis(label="week"),
-    xy.y_axis(label="orders"),
-    xy.legend(),
+chart = xyg.line_chart(
+    xyg.line([1, 2, 3, 4], [12, 18, 15, 23], name="orders", color="#2563eb"),
+    xyg.x_axis(label="week"),
+    xyg.y_axis(label="orders"),
+    xyg.legend(),
     title="Weekly orders",
     width=900,
     height=420,
@@ -46,7 +46,7 @@ python -m http.server 8000 --directory site
 ~~~
 
 Open `http://127.0.0.1:8000/charts/weekly-orders.html`. Upload the `site/`
-directory to an ordinary static host to publish it. The HTML contains the XY
+directory to an ordinary static host to publish it. The HTML contains the XYG
 client, chart specification, and data needed for hover, pan, zoom, selection,
 and built-in controls; it does not call a Python process after export.
 
@@ -67,7 +67,7 @@ chart.to_svg(assets / "weekly-orders.svg", width=1200, height=630)
 ~~~
 
 The default PNG path is the browser-free native renderer bundled with a
-compatible XY wheel. Use explicit dimensions for repeatable report, social,
+compatible XYG wheel. Use explicit dimensions for repeatable report, social,
 and test output. Use Chromium export only when browser fonts, injected CSS, or
 WebGL fidelity is a requirement; see
 [Display and export](/docs/xy/guides/display-and-export/) for that optional
@@ -84,7 +84,7 @@ FROM python:3.11-slim
 ARG XY_VERSION=0.0.1
 
 WORKDIR /app
-RUN python -m pip install --no-cache-dir "xy==${XY_VERSION}"
+RUN python -m pip install --no-cache-dir "xyg==${XY_VERSION}"
 
 COPY build_report.py /app/build_report.py
 
@@ -106,14 +106,14 @@ silently changing the target platform.
 ## Prepare an air-gapped wheelhouse
 
 On a connected machine that matches the target Python, operating system, and
-architecture, download XY and all of its Python dependencies:
+architecture, download XYG and all of its Python dependencies:
 
 ~~~bash
 mkdir -p wheelhouse
 python -m pip download \
   --only-binary=:all: \
   --dest wheelhouse \
-  "xy==0.0.1"
+  "xyg==0.0.1"
 ~~~
 
 Transfer the complete `wheelhouse/` directory through the approved channel.
@@ -123,10 +123,10 @@ Inside the disconnected environment:
 python -m pip install \
   --no-index \
   --find-links wheelhouse \
-  "xy==0.0.1"
+  "xyg==0.0.1"
 
 python -m pip check
-python -c "import xy, xy.kernels as k; print(xy.__version__, k.BACKEND)"
+python -c "import xyg, xyg.kernels as k; print(xyg.__version__, k.BACKEND)"
 ~~~
 
 Use an internal package index instead of a directory when that is your
@@ -147,7 +147,7 @@ That means there are two distinct deployment choices:
 
 1. Serve the standalone document as its own page under the policy it emits.
 2. If the host requires nonce- or hash-only scripts and styles, build an
-   application wrapper that serves the XY client separately and injects data
+   application wrapper that serves the XYG client separately and injects data
    through the host's approved path.
 
 Do not iframe or paste the standalone document into a stricter application and
@@ -160,13 +160,13 @@ headers rather than only opening the file locally.
 
 The [Reflex integration path](/docs/xy/integrations/reflex/) describes fixed,
 live-token, and state-backed application tiers. Install the bundled integration
-with `uv add "xy[reflex]"` or `python -m pip install "xy[reflex]"`. It remains
+with `uv add "xyg[reflex]"` or `python -m pip install "xyg[reflex]"`. It remains
 experimental; the import namespace is `reflex_xy`.
 
 For production automation, commit the resolved uv lockfile or pin compatible
-`xy[reflex]` and Reflex versions in your requirements, test their documented
+`xyg[reflex]` and Reflex versions in your requirements, test their documented
 compatibility, and follow the live deployment boundary in the integration
-guide. XY's standalone HTML, PNG, and SVG outputs remain available when a live
+guide. XYG's standalone HTML, PNG, and SVG outputs remain available when a live
 Reflex application is not required.
 
 For the capability-level decision, see

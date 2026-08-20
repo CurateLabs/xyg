@@ -147,14 +147,14 @@ def figure(
             n: int = 100_000
 
             @reflex_xy.figure
-            def chart(self) -> xy.Chart:
+            def chart(self) -> xyg.Chart:
                 x, y = self._points(self.n)
-                return xy.scatter_chart(xy.scatter(x, y))
+                return xyg.scatter_chart(xyg.scatter(x, y))
 
             @reflex_xy.figure
-            async def remote(self) -> xy.Chart:
+            async def remote(self) -> xyg.Chart:
                 rows = await fetch_rows(self.query)     # db / http / store
-                return xy.line_chart(xy.line(rows.t, rows.value))
+                return xyg.line_chart(xyg.line(rows.t, rows.value))
 
         # in the page:  reflex_xy.chart(Dash.chart, height="480px")
 

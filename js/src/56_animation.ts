@@ -101,7 +101,7 @@ Object.assign(ChartView.prototype, {
     g._transitionGrow = 1;
     if (phase === "exit") {
       // Removed items drop immediately rather than fading the retained old
-      // trace; XY never cross-fades during data animation.
+      // trace; XYG never cross-fades during data animation.
       g._transitionOpacity = 0;
       return;
     }

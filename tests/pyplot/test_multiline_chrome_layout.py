@@ -9,11 +9,11 @@ from xml.etree import ElementTree
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy import _raster, _svg, _textblock, export
-from xy.pyplot import _mplfig
-from xy.pyplot._grid import _suptitle_baseline
-from xy.pyplot._mplfig import _panel_chrome
+import xyg.pyplot as plt
+from xyg import _raster, _svg, _textblock, export
+from xyg.pyplot import _mplfig
+from xyg.pyplot._grid import _suptitle_baseline
+from xyg.pyplot._mplfig import _panel_chrome
 
 
 @pytest.fixture(autouse=True)

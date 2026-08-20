@@ -1,4 +1,4 @@
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 months = ["January", "February", "March", "April", "May", "June"]
 values = [3, 7, 4, 9, 2, 6]

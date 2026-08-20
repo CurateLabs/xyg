@@ -12,8 +12,8 @@ import re
 import numpy as np
 import pytest
 
-import xy
-from xy import _legendfit
+import xyg
+from xyg import _legendfit
 
 
 def _loc(figure) -> str:
@@ -51,7 +51,7 @@ def _legend_label_xy(svg: str, name: str) -> tuple[float, float]:
     ],
 )
 def test_locations_normalize(spelling: str, expected: str) -> None:
-    assert xy.legend(loc=spelling).loc == expected
+    assert xyg.legend(loc=spelling).loc == expected
 
 
 @pytest.mark.parametrize(
@@ -62,7 +62,7 @@ def test_an_unknown_location_raises_instead_of_landing_somewhere(spelling: str) 
     # does not fail — it lands somewhere. Spellings that are unambiguous are
     # normalized above; anything left is refused rather than guessed at.
     with pytest.raises(ValueError, match="is not a legend location"):
-        xy.legend(loc=spelling)
+        xyg.legend(loc=spelling)
 
 
 @pytest.mark.parametrize(
@@ -74,7 +74,9 @@ def test_an_alias_lands_where_it_reads(alias: str, canonical: str) -> None:
     # value reaches the wire in the caller's own spelling; what must match is
     # the geometry the writers derive from it.
     def svg(loc: str) -> str:
-        return xy.line_chart(xy.line([0.0, 1.0], [0.0, 1.0], name="a"), xy.legend(loc=loc)).to_svg()
+        return xyg.line_chart(
+            xyg.line([0.0, 1.0], [0.0, 1.0], name="a"), xyg.legend(loc=loc)
+        ).to_svg()
 
     assert _legend_label_xy(svg(alias), "a") == _legend_label_xy(svg(canonical), "a")
 
@@ -83,11 +85,11 @@ def test_an_alias_lands_where_it_reads(alias: str, canonical: str) -> None:
 
 
 def test_best_avoids_the_corner_the_data_occupies() -> None:
-    rising = xy.line_chart(
-        xy.line([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], name="a"), xy.legend(loc="best")
+    rising = xyg.line_chart(
+        xyg.line([0.0, 1.0, 2.0], [0.0, 1.0, 2.0], name="a"), xyg.legend(loc="best")
     ).figure()
-    falling = xy.line_chart(
-        xy.line([0.0, 1.0, 2.0], [2.0, 1.0, 0.0], name="a"), xy.legend(loc="best")
+    falling = xyg.line_chart(
+        xyg.line([0.0, 1.0, 2.0], [2.0, 1.0, 0.0], name="a"), xyg.legend(loc="best")
     ).figure()
 
     assert _loc(rising) == "upper left"
@@ -96,8 +98,8 @@ def test_best_avoids_the_corner_the_data_occupies() -> None:
 
 def test_best_resolves_before_the_wire_so_no_renderer_sees_it() -> None:
     # The whole point of resolving at build time: three renderers, one decision.
-    figure = xy.line_chart(
-        xy.line([0.0, 1.0], [0.0, 1.0], name="a"), xy.legend(loc="best")
+    figure = xyg.line_chart(
+        xyg.line([0.0, 1.0], [0.0, 1.0], name="a"), xyg.legend(loc="best")
     ).figure()
     spec, _blob = figure.build_payload()
     assert spec["legend"]["loc"] != "best"
@@ -107,8 +109,8 @@ def test_best_resolves_before_the_wire_so_no_renderer_sees_it() -> None:
 def test_best_moves_the_legend_off_the_data_in_the_svg() -> None:
     months = list(range(6))
     revenue = [12.0, 19.0, 15.0, 27.0, 24.0, 33.0]
-    chart = xy.line_chart(xy.line(months, revenue, name="Revenue"), xy.legend(loc="best"))
-    centered = xy.line_chart(xy.line(months, revenue, name="Revenue"), xy.legend(loc="center"))
+    chart = xyg.line_chart(xyg.line(months, revenue, name="Revenue"), xyg.legend(loc="best"))
+    centered = xyg.line_chart(xyg.line(months, revenue, name="Revenue"), xyg.legend(loc="center"))
     assert _legend_label_xy(chart.to_svg(), "Revenue") != _legend_label_xy(
         centered.to_svg(), "Revenue"
     )
@@ -117,9 +119,9 @@ def test_best_moves_the_legend_off_the_data_in_the_svg() -> None:
 def test_best_falls_back_when_there_is_nothing_to_score() -> None:
     # An all-NaN series has no finite pair; placement must still be a real
     # location rather than an exception or a None on the wire.
-    figure = xy.line_chart(
-        xy.line([0.0, 1.0], [float("nan"), float("nan")], name="a"),
-        xy.legend(loc="best"),
+    figure = xyg.line_chart(
+        xyg.line([0.0, 1.0], [float("nan"), float("nan")], name="a"),
+        xyg.legend(loc="best"),
     ).figure()
     assert _loc(figure) == "upper right"
 
@@ -129,7 +131,7 @@ def test_best_scores_a_large_series_without_a_full_scan() -> None:
     # the empty corner, not a fallback.
     n = 500_000
     x = np.linspace(0.0, 1.0, n)
-    figure = xy.line_chart(xy.line(x, x, name="a"), xy.legend(loc="best")).figure()
+    figure = xyg.line_chart(xyg.line(x, x, name="a"), xyg.legend(loc="best")).figure()
     assert _loc(figure) == "upper left"
 
 
@@ -147,7 +149,7 @@ def test_sparse_finite_points_survive_the_stride() -> None:
 def test_the_core_and_the_pyplot_shim_agree() -> None:
     # Two copies of this scoring exist (see xy/_legendfit.py's module docstring).
     # Pin them to the same answer so folding one onto the other stays safe.
-    from xy import pyplot as plt
+    from xyg import pyplot as plt
 
     xs = [0.0, 1.0, 2.0, 3.0]
     ys = [0.0, 1.0, 2.0, 3.0]
@@ -158,7 +160,7 @@ def test_the_core_and_the_pyplot_shim_agree() -> None:
     axes.legend(loc="best")
     shim_loc = axes._best_legend_loc()
 
-    core = xy.line_chart(xy.line(xs, ys, name="a"), xy.legend(loc="best")).figure()
+    core = xyg.line_chart(xyg.line(xs, ys, name="a"), xyg.legend(loc="best")).figure()
     assert _loc(core) == shim_loc
 
 
@@ -176,11 +178,11 @@ _LOG_Y = [7000.0, 4.0, 8000.0, 3600.0, 2000.0]
 
 
 def test_best_scores_a_log_axis_in_display_space() -> None:
-    figure = xy.scatter_chart(
-        xy.scatter(x=_LOG_X, y=_LOG_Y, name="a"),
-        xy.x_axis(type_="log", domain=(1.0, 10000.0)),
-        xy.y_axis(type_="log", domain=(1.0, 10000.0)),
-        xy.legend(loc="best"),
+    figure = xyg.scatter_chart(
+        xyg.scatter(x=_LOG_X, y=_LOG_Y, name="a"),
+        xyg.x_axis(type_="log", domain=(1.0, 10000.0)),
+        xyg.y_axis(type_="log", domain=(1.0, 10000.0)),
+        xyg.legend(loc="best"),
     ).figure()
     assert _loc(figure) == "lower left"
 
@@ -246,9 +248,9 @@ def test_a_fixed_domain_frees_the_corner_the_clipped_marks_left() -> None:
     # The tail sits above the domain, so it is clipped away and upper-right is
     # empty on screen even though the raw data reaches it.
     xs = [0.0, 1.0, 2.0, 3.0]
-    figure = xy.line_chart(
-        xy.line(xs, [0.0, 0.1, 0.2, 99.0], name="a"),
-        xy.y_axis(domain=(0.0, 1.0)),
-        xy.legend(loc="best"),
+    figure = xyg.line_chart(
+        xyg.line(xs, [0.0, 0.1, 0.2, 99.0], name="a"),
+        xyg.y_axis(domain=(0.0, 1.0)),
+        xyg.legend(loc="best"),
     ).figure()
     assert _loc(figure) in {"upper right", "upper left", "upper center"}

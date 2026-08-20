@@ -740,7 +740,7 @@ void main() {
 }`;
 
 // Polylines: one instanced quad per segment. `u_cap` is the compiled
-// stroke-linecap value (see LINE_CAP_MODES); XY defaults it to round, which is
+// stroke-linecap value (see LINE_CAP_MODES); XYG defaults it to round, which is
 // what the native rasterizer's clamped segment distance field draws
 // (src/raster.rs), so all three renderers agree.
 export const LINE_VS = `#version 300 es
@@ -845,7 +845,7 @@ void main() {
 }`;
 
 // Wire spellings of stroke-linecap → the u_cap int LINE_FS switches on. A
-// trace omits the key at XY's default (round), so an unset style must resolve
+// trace omits the key at XYG's default (round), so an unset style must resolve
 // to `round`, not to the CSS initial value `butt`.
 export const LINE_CAP_MODES = { butt: 0, round: 1, square: 2 };
 

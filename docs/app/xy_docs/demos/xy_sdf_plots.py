@@ -11,7 +11,7 @@ import reflex as rx
 from PIL import Image, ImageDraw, ImageFont
 
 import reflex_xy
-import xy
+import xyg
 
 
 @dataclass(frozen=True)
@@ -76,13 +76,13 @@ class SDFPalette:
 class SDFPlots:
     """The four charts in documentation reading order."""
 
-    bins_scatter: xy.Chart
-    heatmap: xy.Chart
-    contours: xy.Chart
-    million_scatter: xy.Chart
+    bins_scatter: xyg.Chart
+    heatmap: xyg.Chart
+    contours: xyg.Chart
+    million_scatter: xyg.Chart
 
     @property
-    def reading_order(self) -> tuple[xy.Chart, ...]:
+    def reading_order(self) -> tuple[xyg.Chart, ...]:
         """Return bins/scatter, heatmap, contours, then one-million scatter."""
         return (
             self.bins_scatter,
@@ -353,18 +353,18 @@ def _heatmap_colors(pdf: np.ndarray, config: SDFPlotConfig, palette: SDFPalette)
 
 
 def _chart(
-    *marks: xy.Mark,
+    *marks: xyg.Mark,
     model: _Model,
     config: SDFPlotConfig,
-) -> xy.Chart:
+) -> xyg.Chart:
     x_span = model.xlim[1] - model.xlim[0]
     y_span = model.ylim[1] - model.ylim[0]
     width = round(config.chart_height * x_span / y_span)
-    return xy.chart(
+    return xyg.chart(
         *marks,
-        xy.x_axis(domain=model.xlim, tick_label_strategy="none"),
-        xy.y_axis(domain=model.ylim, tick_label_strategy="none"),
-        xy.legend(show=False),
+        xyg.x_axis(domain=model.xlim, tick_label_strategy="none"),
+        xyg.y_axis(domain=model.ylim, tick_label_strategy="none"),
+        xyg.legend(show=False),
         width=width,
         height=config.chart_height,
         padding=(0, 0, 0, 0),
@@ -399,7 +399,7 @@ def build_sdf_plots(
     counts = np.histogram2d(x[sample_slice], y[sample_slice], bins=(x_edges, y_edges))[0].T
     visible_counts = np.where(counts >= config.bin_min_count, counts, np.nan)
     bins_scatter = _chart(
-        xy.scatter(
+        xyg.scatter(
             x[sample_slice],
             y[sample_slice],
             size=1.65,
@@ -407,7 +407,7 @@ def build_sdf_plots(
             opacity=0.48,
             density=False,
         ),
-        xy.heatmap(
+        xyg.heatmap(
             _bin_colors(visible_counts, config, palette),
             x=(x_edges[:-1] + x_edges[1:]) / 2,
             y=(y_edges[:-1] + y_edges[1:]) / 2,
@@ -418,7 +418,7 @@ def build_sdf_plots(
 
     heatmap_pdf, heatmap_x, heatmap_y = _grid(model, config.heatmap_stride)
     heatmap = _chart(
-        xy.heatmap(
+        xyg.heatmap(
             _heatmap_colors(heatmap_pdf, config, palette),
             x=heatmap_x,
             y=heatmap_y,
@@ -442,7 +442,7 @@ def build_sdf_plots(
     )
     contours = _chart(
         *(
-            xy.contour(
+            xyg.contour(
                 contour_pdf,
                 x=contour_x,
                 y=contour_y,
@@ -461,7 +461,7 @@ def build_sdf_plots(
     display_pdf = sampled_pdf[display_slice]
     sizes = config.density_size_offset + config.density_size_scale * np.clip(display_pdf, 0, 1)
     million_scatter = _chart(
-        xy.scatter(
+        xyg.scatter(
             x[display_slice],
             y[display_slice],
             size=sizes,
@@ -476,7 +476,7 @@ def build_sdf_plots(
     return SDFPlots(bins_scatter, heatmap, contours, million_scatter)
 
 
-def _responsive_chart(chart: xy.Chart, background: str) -> rx.Component:
+def _responsive_chart(chart: xyg.Chart, background: str) -> rx.Component:
     return reflex_xy.chart(
         chart,
         width="100%",

@@ -1,4 +1,4 @@
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 plt.figure(1)
 plt.plot([1, 2, 3])

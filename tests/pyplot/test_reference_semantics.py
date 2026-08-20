@@ -7,7 +7,7 @@ from io import BytesIO
 import numpy as np
 import pytest
 
-import xy.pyplot as xyplt
+import xyg.pyplot as xyplt
 
 mpl = pytest.importorskip("matplotlib")
 mpl.use("Agg")

@@ -5,10 +5,10 @@ description: Choose between CSS/Tailwind chrome hooks, mark styles, theme tokens
 
 # Styling Overview
 
-XY has two rendering surfaces. Chart chrome—titles, axis labels, legends,
+XYG has two rendering surfaces. Chart chrome—titles, axis labels, legends,
 tooltips, controls, and annotation labels—is DOM and participates in the normal
 CSS cascade. Data marks are painted by WebGL, SVG, or the native rasterizer, so
-XY compiles a deliberate CSS-property subset for them instead of claiming that
+XYG compiles a deliberate CSS-property subset for them instead of claiming that
 arbitrary browser selectors can reach a canvas.
 
 ~~~python demo exec toggle preview-code id=styling-overview-area-demo
@@ -21,10 +21,10 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-overview_area = xy.area_chart(
-    xy.area(
+overview_area = xyg.area_chart(
+    xyg.area(
         months,
         solar_panels,
         name="Solar panels",
@@ -34,7 +34,7 @@ overview_area = xy.area_chart(
         curve="linear",
         line_width=2,
     ),
-    xy.area(
+    xyg.area(
         months,
         inverters,
         name="Inverters",
@@ -44,10 +44,10 @@ overview_area = xy.area_chart(
         curve="linear",
         line_width=2,
     ),
-    xy.tooltip(title="{x}", format={"y": "$,.0f"}),
-    xy.legend(show=False),
-    xy.modebar(show=False),
-    xy.x_axis(
+    xyg.tooltip(title="{x}", format={"y": "$,.0f"}),
+    xyg.legend(show=False),
+    xyg.modebar(show=False),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -58,7 +58,7 @@ overview_area = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 4200),
         format="$,.0f",
         style={
@@ -70,7 +70,7 @@ overview_area = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--overview-surface, #ffffff)",
         grid_color="var(--overview-grid, #e5e7eb)",
         text_color="var(--overview-text, #52525b)",
@@ -117,19 +117,19 @@ section that owns it.
 ## Choose the styling surface
 
 Start with the thing you want to change. DOM chrome can use classes or arbitrary
-safe DOM declarations; rendered geometry must use XY's validated mark or axis
+safe DOM declarations; rendered geometry must use XYG's validated mark or axis
 vocabulary.
 
 | Mechanism | Small example | Best for |
 | --- | --- | --- |
 | Chart root class | `class_name="rounded-xl border"` | Host layout, card chrome, and Tailwind utilities on one chart |
 | Chart root style | `style={"--brand": "#6e56cf"}` | Root CSS declarations and custom variables |
-| Theme component | `xy.theme(grid_color="#e2e8f0")` | Portable chart tokens shared by chrome and exports |
+| Theme component | `xyg.theme(grid_color="#e2e8f0")` | Portable chart tokens shared by chrome and exports |
 | Slot classes | `class_names={"tooltip": "rounded-lg"}` | Tailwind utilities or existing classes on stable DOM slots |
 | Slot styles | `styles={"title": {"font_size": 18}}` | Computed inline DOM styles on stable slots |
-| Component-local style | `xy.legend(class_name="text-xs")` | Keeping one legend, tooltip, colorbar, or modebar configuration self-contained |
-| Mark style | `xy.line(..., style={"stroke-width": 3})` | Cross-renderer paint for lines, points, areas, bars, and grids |
-| Annotation style | `xy.hline(5, style={"label_color": "red"})` | Annotation geometry and its DOM label |
+| Component-local style | `xyg.legend(class_name="text-xs")` | Keeping one legend, tooltip, colorbar, or modebar configuration self-contained |
+| Mark style | `xyg.line(..., style={"stroke-width": 3})` | Cross-renderer paint for lines, points, areas, bars, and grids |
+| Annotation style | `xyg.hline(5, style={"label_color": "red"})` | Annotation geometry and its DOM label |
 | Export CSS | `chart.to_html(custom_css="...")` | Raw author CSS and attribute selectors in one browser export |
 
 If you are unsure, use this shortcut:
@@ -139,7 +139,7 @@ If you are unsure, use this shortcut:
 - Styling a title, legend, tooltip, control, tick label, or annotation label?
   Use a slot class/style or the component's local class/style.
 - Styling the chart as a whole or defining reusable colors? Use chart
-  `class_name`/`style` or `xy.theme()`.
+  `class_name`/`style` or `xyg.theme()`.
 - Styling only a self-contained HTML or Chromium export? Use `custom_css`.
 
 ~~~python demo exec toggle preview-code id=styling-overview-columns-demo
@@ -154,23 +154,23 @@ enterprise_base = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-chart = xy.column_chart(
-    xy.column(
+chart = xyg.column_chart(
+    xyg.column(
         months,
         core,
         name="Core",
         color="#7c3aed",
     ),
-    xy.column(
+    xyg.column(
         months,
         growth,
         base=core,
         name="Growth",
         color="#db2777",
     ),
-    xy.column(
+    xyg.column(
         months,
         enterprise,
         base=enterprise_base,
@@ -178,8 +178,8 @@ chart = xy.column_chart(
         color="#fb7185",
         corner_radius=(6, 0),
     ),
-    xy.tooltip(title="{x}", format={"y": "$,.0fK"}),
-    xy.x_axis(
+    xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -190,7 +190,7 @@ chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 100),
         style={
             "axis_width": 0,
@@ -201,7 +201,7 @@ chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.legend(loc="upper left"),
+    xyg.legend(loc="upper left"),
     class_name="bg-white text-slate-900 dark:bg-black dark:text-zinc-100",
     class_names={
         "tooltip": "rounded-lg bg-zinc-900/90 text-white shadow-xl",
@@ -222,13 +222,13 @@ def styling_overview_preview():
 
 ## What “your styles win” means
 
-XY's built-in **visual** chrome rules live in the low-priority `base` cascade
+XYG's built-in **visual** chrome rules live in the low-priority `base` cascade
 layer and use `:where(...)`, which has zero CSS specificity. A later utility
 layer or ordinary unlayered author selector therefore overrides the default
 background, color, padding, border, font, shadow, or cursor without
 `!important`.
 
-The promise is scoped to built-in visual defaults. XY still applies structural
+The promise is scoped to built-in visual defaults. XYG still applies structural
 inline layout—position, size, z-index, and interaction state—and an explicit
 inline `styles[slot]` or per-annotation style naturally outranks a class. Marks
 follow their compiled style contract rather than the DOM cascade.
@@ -246,8 +246,8 @@ other canvas geometry through typed props or mark `style=`.
 | A custom font silently falls back | `font-family` names a face the browser has not loaded. | Register it in host CSS with `@font-face`, then apply the family to the chart root; see [Custom fonts and export limitations](/docs/xy/styling/themes-and-tokens/#custom-fonts-and-export-limitations). |
 | A class changes the legend but not a line or point | Marks are WebGL/canvas geometry, not DOM nodes. | Use the mark's typed paint props or supported `style=` declarations from [Customize Each Part](/docs/xy/styling/customize/). |
 | Standalone HTML looks different from the application | The exported document cannot inherit the host page's stylesheet or design-system variables. | Put essential tokens on the chart and pass author rules with `to_html(custom_css=...)`. |
-| Native PNG ignores CSS or a custom font | The native renderer does not run a browser cascade and uses XY's baked bitmap font. | Use `engine=Engine.chromium` with `custom_css` when browser CSS/font fidelity is required. |
-| Axis titles or annotation labels are clipped | `overflow-hidden` is applied to the XY root or a tight ancestor. | Leave the chart root visible; apply intentional clipping to an outer wrapper and provide enough padding. |
+| Native PNG ignores CSS or a custom font | The native renderer does not run a browser cascade and uses XYG's baked bitmap font. | Use `engine=Engine.chromium` with `custom_css` when browser CSS/font fidelity is required. |
+| Axis titles or annotation labels are clipped | `overflow-hidden` is applied to the XYG root or a tight ancestor. | Leave the chart root visible; apply intentional clipping to an outer wrapper and provide enough padding. |
 | A responsive chart is blank or collapsed | `height="100%"` has no ancestor with a defined height, or the container initially measures zero. | Give the chart/component an explicit height; `width="100%"` can remain fluid. |
 | A class loses to another declaration | Inline `styles`, component-local styles, or later author rules win through the normal cascade. | Remove the competing declaration or move the intended value to the same/higher-priority styling surface instead of adding `!important`. |
 

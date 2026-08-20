@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-import xy.pyplot as plt
-from xy._figure import Figure
+import xyg.pyplot as plt
+from xyg._figure import Figure
 
 
 def teardown_function() -> None:

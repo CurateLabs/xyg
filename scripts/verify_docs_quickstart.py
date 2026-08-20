@@ -1,6 +1,6 @@
-"""Run the public docs quickstarts against the checked-out XY package.
+"""Run the public docs quickstarts against the checked-out XYG package.
 
-CI runs this script inside the docs environment, where ``xy`` is installed
+CI runs this script inside the docs environment, where ``xyg`` is installed
 editable from the current checkout.
 """
 
@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_PACKAGE = (REPO_ROOT / "python" / "xy").resolve()
+SOURCE_PACKAGE = (REPO_ROOT / "python" / "xyg").resolve()
 QUICKSTART_PAGES = (("first-chart page", REPO_ROOT / "docs" / "overview" / "first-chart.md"),)
 PYTHON_FENCE_RE = re.compile(
     r"^~~~python[^\n]*\n(?P<code>.*?)^~~~\s*$",
@@ -89,7 +89,7 @@ class StandaloneHtmlProbe(HTMLParser):
 
 
 def extract_quickstart(page: Path, label: str) -> str:
-    """Return the single exportable XY quickstart fenced on ``page``.
+    """Return the single exportable XYG quickstart fenced on ``page``.
 
     The quickstart is the beginner script that exports ``scatter.html``; other
     exportable showcase fences on the page (for example the large-data demo)
@@ -99,7 +99,7 @@ def extract_quickstart(page: Path, label: str) -> str:
     candidates = [
         match.group("code").strip()
         for match in PYTHON_FENCE_RE.finditer(text)
-        if "xy.scatter_chart(" in match.group("code")
+        if "xyg.scatter_chart(" in match.group("code")
         and 'chart.to_html("scatter.html")' in match.group("code")
     ]
     require(
@@ -111,14 +111,16 @@ def extract_quickstart(page: Path, label: str) -> str:
 
 
 def verify_checkout_import(xy_module: ModuleType, label: str) -> None:
-    """Ensure the snippet imported XY from the checkout under test."""
+    """Ensure the snippet imported XYG from the checkout under test."""
     module_file = getattr(xy_module, "__file__", None)
-    require(module_file is not None, f"{label} imported an XY module without a filesystem path")
+    require(module_file is not None, f"{label} imported an XYG module without a filesystem path")
     imported_path = Path(module_file).resolve()
     try:
         imported_path.relative_to(SOURCE_PACKAGE)
     except ValueError:
-        fail(f"{label} imported XY from {imported_path}, expected the checkout at {SOURCE_PACKAGE}")
+        fail(
+            f"{label} imported XYG from {imported_path}, expected the checkout at {SOURCE_PACKAGE}"
+        )
 
 
 def verify_standalone_html(html_path: Path, label: str) -> None:
@@ -147,7 +149,7 @@ def verify_standalone_html(html_path: Path, label: str) -> None:
 
 def run_quickstart(source: str, label: str) -> None:
     """Execute one docs snippet and validate its exported HTML."""
-    with TemporaryDirectory(prefix="xy-docs-quickstart-") as temp_dir:
+    with TemporaryDirectory(prefix="xyg-docs-quickstart-") as temp_dir:
         output_dir = Path(temp_dir)
         namespace: dict[str, object] = {"__name__": "__main__"}
         try:
@@ -158,9 +160,9 @@ def run_quickstart(source: str, label: str) -> None:
         except Exception as exc:
             fail(f"{label} did not run against the checkout: {type(exc).__name__}: {exc}")
 
-        xy_module = namespace.get("xy")
-        require(isinstance(xy_module, ModuleType), f"{label} did not import the xy package")
-        verify_checkout_import(xy_module, label)
+        xyg_module = namespace.get("xyg")
+        require(isinstance(xyg_module, ModuleType), f"{label} did not import the xyg package")
+        verify_checkout_import(xyg_module, label)
 
         html_files = list(output_dir.glob("*.html"))
         require(

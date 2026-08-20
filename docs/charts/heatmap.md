@@ -1,8 +1,8 @@
 ---
 title: Heatmap in Python
-description: Heatmap python made easy with xy. Render a matrix as an interactive colored grid, pick a colormap, set the value domain, and add a colorbar scale.
+description: Heatmap python made easy with xyg. Render a matrix as an interactive colored grid, pick a colormap, set the value domain, and add a colorbar scale.
 components:
-  - xy.heatmap_chart
+  - xyg.heatmap_chart
 ---
 
 # Heatmaps in Python
@@ -25,15 +25,15 @@ for the grid edges. This is the minimal Python heatmap:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.linspace(-3, 3, 80)
 y = np.linspace(-2, 2, 60)
 xx, yy = np.meshgrid(x, y)
 z = np.exp(-(xx**2 + yy**2))
 
-chart = xy.heatmap_chart(
-    xy.heatmap(z, x=x, y=y, colormap="viridis"),
+chart = xyg.heatmap_chart(
+    xyg.heatmap(z, x=x, y=y, colormap="viridis"),
 )
 
 
@@ -44,24 +44,24 @@ def heatmap_chart_demo():
 ## Diverging Colormap with a Fixed Domain
 
 A signed field reads best with a diverging `colormap`, an explicit
-`domain=(min, max)` pinned symmetrically around zero, and an `xy.colorbar()` so
+`domain=(min, max)` pinned symmetrically around zero, and an `xyg.colorbar()` so
 the scale is visible:
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 wave_x = np.linspace(0, 4 * np.pi, 120)
 wave_y = np.linspace(0, 2 * np.pi, 80)
 wave_xx, wave_yy = np.meshgrid(wave_x, wave_y)
 wave_z = np.sin(wave_xx) * np.cos(wave_yy)
 
-heatmap_scale_chart = xy.heatmap_chart(
-    xy.heatmap(wave_z, x=wave_x, y=wave_y, colormap="coolwarm", domain=(-1, 1)),
-    xy.colorbar(title="amplitude"),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+heatmap_scale_chart = xyg.heatmap_chart(
+    xyg.heatmap(wave_z, x=wave_x, y=wave_y, colormap="coolwarm", domain=(-1, 1)),
+    xyg.colorbar(title="amplitude"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Standing wave, fixed domain",
 )
 
@@ -79,7 +79,7 @@ coordinates for `x` and `y`, relabel the ticks with feature names, fix
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 corr_rng = np.random.default_rng(3)
 factors = corr_rng.normal(size=(300, 2))
@@ -89,8 +89,8 @@ corr = np.corrcoef(signals, rowvar=False)
 feature_labels = ["open", "high", "low", "close", "volume", "spread"]
 feature_positions = np.arange(len(feature_labels), dtype=float)
 
-corr_matrix_chart = xy.heatmap_chart(
-    xy.heatmap(
+corr_matrix_chart = xyg.heatmap_chart(
+    xyg.heatmap(
         corr,
         x=feature_positions,
         y=feature_positions,
@@ -98,13 +98,13 @@ corr_matrix_chart = xy.heatmap_chart(
         domain=(-1, 1),
         opacity=1.0,
     ),
-    xy.colorbar(title="correlation", ticks=[-1, -0.5, 0, 0.5, 1]),
-    xy.x_axis(
+    xyg.colorbar(title="correlation", ticks=[-1, -0.5, 0, 0.5, 1]),
+    xyg.x_axis(
         tick_values=feature_positions,
         tick_labels=feature_labels,
         tick_label_angle=-40,
     ),
-    xy.y_axis(tick_values=feature_positions, tick_labels=feature_labels),
+    xyg.y_axis(tick_values=feature_positions, tick_labels=feature_labels),
     title="Feature correlation matrix",
 )
 
@@ -123,7 +123,7 @@ heatmaps stay comparable instead of each rescaling to its own min and max.
 ## Add a Colorbar Scale
 
 A heatmap is only readable with a legend for its colors. Add an
-[`xy.colorbar()`](/docs/xy/components/colorbars/) to draw a visible scale that
+[`xyg.colorbar()`](/docs/xy/components/colorbars/) to draw a visible scale that
 ties each color back to a value. Use `opacity` to blend the grid over other
 marks when you overlay a heatmap on additional context.
 
@@ -135,7 +135,7 @@ marks when you overlay a heatmap on additional context.
 | `domain` | `(min, max)` value range the colors span; fixes the scale across charts. |
 | `opacity` | Grid opacity from 0 to 1, for overlaying on other marks. |
 
-Add [`xy.colorbar()`](/docs/xy/components/colorbars/) to show the value-to-color
+Add [`xyg.colorbar()`](/docs/xy/components/colorbars/) to show the value-to-color
 scale. Pass column names with `data=` instead of arrays when your data is a
 table.
 
@@ -155,7 +155,7 @@ table.
 
 ### How do I make a heatmap in Python?
 
-Pass a 2D array to `xy.heatmap(z, x=x, y=y)` inside `xy.heatmap_chart(...)` and
+Pass a 2D array to `xyg.heatmap(z, x=x, y=y)` inside `xyg.heatmap_chart(...)` and
 render it. The rendered heatmap graph pans, zooms, and hovers without extra
 configuration.
 
@@ -166,7 +166,7 @@ suit magnitudes; diverging maps read better around a midpoint.
 
 ### How do I add a color scale legend to a heatmap?
 
-Add [`xy.colorbar()`](/docs/xy/components/colorbars/) to the chart to draw a
+Add [`xyg.colorbar()`](/docs/xy/components/colorbars/) to the chart to draw a
 visible scale tying each color back to a value.
 
 ### How do I keep two heatmaps on the same color scale?

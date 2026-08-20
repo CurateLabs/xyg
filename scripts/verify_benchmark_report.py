@@ -855,7 +855,7 @@ def _validate_pyplot_vs_matplotlib(report: dict[str, Any], errors: list[str]) ->
         if isinstance(row, dict):
             key = (row.get("family"), row.get("case"))
             case_libraries.setdefault(key, set()).add(row.get("library"))
-    expected_libraries = {"xy.pyplot", "matplotlib"}
+    expected_libraries = {"xyg.pyplot", "matplotlib"}
     for key, libraries in case_libraries.items():
         if libraries != expected_libraries:
             errors.append(
@@ -910,16 +910,16 @@ def _validate_pyplot_vs_matplotlib_row(
     _require_string_value(row.get("case"), f"{path}.case", errors)
     _require_string_value(row.get("unit"), f"{path}.unit", errors)
     _require_positive_number(row, "work_units", path, errors)
-    if row.get("library") not in {"xy.pyplot", "matplotlib"}:
-        errors.append(f"{path}.library must be 'xy.pyplot' or 'matplotlib'")
+    if row.get("library") not in {"xyg.pyplot", "matplotlib"}:
+        errors.append(f"{path}.library must be 'xyg.pyplot' or 'matplotlib'")
     if row.get("status") != "ok":
         errors.append(f"{path}.status must be 'ok'")
     if row.get("render_target") != "png":
         errors.append(f"{path}.render_target must be 'png'")
-    expected_mode = "native-raster" if row.get("library") == "xy.pyplot" else "agg"
+    expected_mode = "native-raster" if row.get("library") == "xyg.pyplot" else "agg"
     if row.get("mode") != expected_mode:
         errors.append(f"{path}.mode must be {expected_mode!r}")
-    if row.get("library") == "xy.pyplot":
+    if row.get("library") == "xyg.pyplot":
         tier = row.get("render_tier")
         parts = tier.split("+") if isinstance(tier, str) and tier else []
         if not parts or any(part not in {"direct", "decimated", "density"} for part in parts):
@@ -999,8 +999,8 @@ def _validate_pyplot_vs_matplotlib_comparison(
         _require_positive_number(comparison, key, path, errors)
     if not isinstance(comparison.get("meets_target"), bool):
         errors.append(f"{path}.meets_target must be a boolean")
-    if comparison.get("winner_total") not in {"xy.pyplot", "matplotlib"}:
-        errors.append(f"{path}.winner_total must be 'xy.pyplot' or 'matplotlib'")
+    if comparison.get("winner_total") not in {"xyg.pyplot", "matplotlib"}:
+        errors.append(f"{path}.winner_total must be 'xyg.pyplot' or 'matplotlib'")
 
 
 def _validate_scatter_native(report: dict[str, Any], errors: list[str]) -> None:

@@ -9,8 +9,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-import xy
-from xy import export
+import xyg
+from xyg import export
 
 SLOT_CLASSES = {
     "annotation_layer": "tw-annotation-layer",
@@ -143,19 +143,19 @@ body { display: grid; place-items: center; }
 """
 
 
-def audit_chart(label: str) -> xy.Chart:
+def audit_chart(label: str) -> xyg.Chart:
     """One chart containing every visible surface needed by the comparison."""
     x = list(range(9))
     y = [2.0, 3.4, 2.8, 5.1, 4.7, 6.3, 5.8, 7.4, 8.2]
     confidence = [0.08, 0.18, 0.31, 0.44, 0.57, 0.68, 0.76, 0.9, 1.0]
-    return xy.chart(
-        xy.line(
+    return xyg.chart(
+        xyg.line(
             x,
             y,
             name="Signal",
             style={"stroke": "#60a5fa", "stroke-width": 2.5},
         ),
-        xy.scatter(
+        xyg.scatter(
             x,
             y,
             name="Confidence",
@@ -164,9 +164,9 @@ def audit_chart(label: str) -> xy.Chart:
             size=9,
             style={"stroke": "#f8fafc", "stroke-width": 1.2},
         ),
-        xy.colorbar(title="Confidence", ticks=[0.08, 0.5, 1.0]),
-        xy.legend(title="Series", loc="upper right"),
-        xy.x_axis(
+        xyg.colorbar(title="Confidence", ticks=[0.08, 0.5, 1.0]),
+        xyg.legend(title="Series", loc="upper right"),
+        xyg.x_axis(
             label="Release",
             style={
                 "axis_color": "#64748b",
@@ -175,7 +175,7 @@ def audit_chart(label: str) -> xy.Chart:
                 "tick_width": 1.5,
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             label="Score",
             style={
                 "axis_color": "#64748b",
@@ -184,8 +184,8 @@ def audit_chart(label: str) -> xy.Chart:
                 "tick_width": 1.5,
             },
         ),
-        xy.vline(5, text="ship", color="#fb7185", width=3),
-        xy.callout(
+        xyg.vline(5, text="ship", color="#fb7185", width=3),
+        xyg.callout(
             7,
             7.4,
             "target",
@@ -201,7 +201,7 @@ def audit_chart(label: str) -> xy.Chart:
             },
         ),
         title=f"CSS & Tailwind surface audit — {label}",
-        # The fixture owns a dark chart surface, so opt into XY's documented
+        # The fixture owns a dark chart surface, so opt into XYG's documented
         # scheme-aware modebar palette instead of leaving the light fallback.
         class_name="evidence dark",
         class_names=SLOT_CLASSES,

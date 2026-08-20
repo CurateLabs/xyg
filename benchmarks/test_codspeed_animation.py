@@ -17,9 +17,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import kernels as k
-from xy.components import _encode_transition_keys, _fixed_transition_key_values
+import xyg
+from xyg import kernels as k
+from xyg.components import _encode_transition_keys, _fixed_transition_key_values
 
 N = 100_000
 
@@ -43,10 +43,10 @@ def warm_lazy_modules() -> None:
     """
     x = np.array([0.0, 1.0, 2.0, 3.0])
     y = np.array([0.0, 1.0, 0.0, 1.0])
-    xy.scatter_chart(xy.scatter(x=x, y=y)).figure().build_payload_split()
-    xy.scatter_chart(
-        xy.scatter(x=x, y=y, key=["a", "b", "c", "d"]),
-        xy.animation(match="key", duration=250),
+    xyg.scatter_chart(xyg.scatter(x=x, y=y)).figure().build_payload_split()
+    xyg.scatter_chart(
+        xyg.scatter(x=x, y=y, key=["a", "b", "c", "d"]),
+        xyg.animation(match="key", duration=250),
     ).figure().build_payload_split()
 
 
@@ -61,10 +61,10 @@ def animation_data() -> tuple[np.ndarray, np.ndarray, list[str]]:
 @pytest.fixture(scope="module")
 def payload_figures(animation_data):
     x, y, keys = animation_data
-    plain = xy.scatter_chart(xy.scatter(x=x, y=y)).figure()
-    animated = xy.scatter_chart(
-        xy.scatter(x=x, y=y, key=keys),
-        xy.animation(match="key", duration=250),
+    plain = xyg.scatter_chart(xyg.scatter(x=x, y=y)).figure()
+    animated = xyg.scatter_chart(
+        xyg.scatter(x=x, y=y, key=keys),
+        xyg.animation(match="key", duration=250),
     ).figure()
     return plain, animated
 

@@ -1,11 +1,11 @@
 ---
 title: Contributing
-description: Set up XY development, run the right gates, and prepare a focused change.
+description: Set up XYG development, run the right gates, and prepare a focused change.
 ---
 
 # Contributing
 
-XY welcomes focused bug fixes, documentation improvements, tests, and chart
+XYG welcomes focused bug fixes, documentation improvements, tests, and chart
 surface work. The canonical contributor guide is
 [CONTRIBUTING.md](https://github.com/CurateLabs/xyg/blob/main/CONTRIBUTING.md);
 the internal [contributor specification](https://github.com/CurateLabs/xyg/blob/main/spec/process/contributing.md)
@@ -26,7 +26,7 @@ core, and Node 18+ for bundle checks. Confirm the active compute backend
 explicitly:
 
 ~~~bash
-python -c "import xy.kernels as k; print(k.BACKEND)"
+python -c "import xyg.kernels as k; print(k.BACKEND)"
 ~~~
 
 The supported value is `native`. An unavailable core should raise a clear
@@ -60,7 +60,7 @@ A complete chart-family contribution normally spans:
    honest and reproducible.
 
 Keep generated assets derived from their source generator, preserve lazy
-`import xy` behavior, and include new public symbols in `xy.__all__` with type
+`import xyg` behavior, and include new public symbols in `xyg.__all__` with type
 surface tests.
 
 Before opening a pull request, read the relevant architecture material in the

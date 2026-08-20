@@ -156,21 +156,21 @@ def _write_wheel(
     with zipfile.ZipFile(path, "w") as zf:
         for name in sorted(verify_wheel.REQUIRED_FILES - omit):
             data: bytes | str = replacements.get(name, "")
-            if name == "xy/__init__.py" and name not in replacements:
+            if name == "xyg/__init__.py" and name not in replacements:
                 data = INIT_PY
-            elif name == "xy/_figure.py" and name not in replacements:
+            elif name == "xyg/_figure.py" and name not in replacements:
                 data = FIGURE_PY
-            elif name == "xy/marks.py" and name not in replacements:
+            elif name == "xyg/marks.py" and name not in replacements:
                 data = MARKS_PY
-            elif name == "xy/components.py" and name not in replacements:
+            elif name == "xyg/components.py" and name not in replacements:
                 data = COMPONENTS_PY
-            elif name == "xy/export.py" and name not in replacements:
+            elif name == "xyg/export.py" and name not in replacements:
                 data = EXPORT_PY
-            elif name == "xy/kernels.py" and name not in replacements:
+            elif name == "xyg/kernels.py" and name not in replacements:
                 data = KERNELS_PY
-            elif name == "xy/static/index.js" and name not in replacements:
+            elif name == "xyg/static/index.js" and name not in replacements:
                 data = INDEX_JS
-            elif name == "xy/static/standalone.js" and name not in replacements:
+            elif name == "xyg/static/standalone.js" and name not in replacements:
                 data = STANDALONE_JS
             elif name == "reflex_xy/__init__.py" and name not in replacements:
                 data = REFLEX_INIT_PY
@@ -178,7 +178,7 @@ def _write_wheel(
                 data = REFLEX_COMPONENT_JS
             write(zf, name, data)
         if native:
-            write(zf, "xy/_native_lib/libxyg_core.dylib", b"native")
+            write(zf, "xyg/_native_lib/libxyg_core.dylib", b"native")
         for name, data in extra.items():
             write(zf, name, data)
         wheel_name = "xyg-0.0.1.dist-info/WHEEL"
@@ -381,7 +381,7 @@ def test_verify_wheel_rejects_invalid_metadata(tmp_path: Path, metadata: str, ma
 
 def test_verify_wheel_rejects_missing_type_marker(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, omit={"xy/py.typed"})
+    _write_wheel(whl, omit={"xyg/py.typed"})
 
     with pytest.raises(AssertionError, match="py\\.typed"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -405,7 +405,7 @@ def test_verify_wheel_rejects_missing_reflex_type_marker(tmp_path: Path) -> None
 
 def test_verify_wheel_rejects_partial_type_marker(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, replacements={"xy/py.typed": "partial\n"})
+    _write_wheel(whl, replacements={"xyg/py.typed": "partial\n"})
 
     with pytest.raises(AssertionError, match="full-package PEP 561 marker"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -421,7 +421,7 @@ def test_verify_wheel_rejects_partial_reflex_type_marker(tmp_path: Path) -> None
 
 def test_verify_wheel_rejects_corrupt_python_module(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, replacements={"xy/__init__.py": ""})
+    _write_wheel(whl, replacements={"xyg/__init__.py": ""})
 
     with pytest.raises(AssertionError, match=r"__init__\.py"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -432,7 +432,7 @@ def test_verify_wheel_rejects_stale_figure_export_surface(tmp_path: Path) -> Non
     _write_wheel(
         whl,
         replacements={
-            "xy/_figure.py": """
+            "xyg/_figure.py": """
 from . import marks as _marks
 class Figure:
     line = _marks.line
@@ -451,7 +451,7 @@ def test_verify_wheel_rejects_stale_marks_export_surface(tmp_path: Path) -> None
     _write_wheel(
         whl,
         replacements={
-            "xy/marks.py": """
+            "xyg/marks.py": """
 def line(self, x, y): ...
 """
         },
@@ -466,7 +466,7 @@ def test_verify_wheel_rejects_stale_component_export_surface(tmp_path: Path) -> 
     _write_wheel(
         whl,
         replacements={
-            "xy/components.py": """
+            "xyg/components.py": """
 from typing import Any
 class Chart:
     props: dict[str, Any]
@@ -484,7 +484,7 @@ def test_verify_wheel_rejects_stale_html_export_safety_surface(tmp_path: Path) -
     _write_wheel(
         whl,
         replacements={
-            "xy/export.py": """
+            "xyg/export.py": """
 XY_CHROMIUM = "XY_CHROMIUM"
 def _json_for_inline_script(value): ...
 def html_to_png(html, width, height): ...
@@ -499,7 +499,7 @@ def to_png(fig): ...
 
 def test_verify_wheel_rejects_missing_static_bundle(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, omit={"xy/static/standalone.js"})
+    _write_wheel(whl, omit={"xyg/static/standalone.js"})
 
     with pytest.raises(AssertionError, match="required package files"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -507,7 +507,7 @@ def test_verify_wheel_rejects_missing_static_bundle(tmp_path: Path) -> None:
 
 def test_verify_wheel_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, replacements={"xy/static/standalone.js": "not the client"})
+    _write_wheel(whl, replacements={"xyg/static/standalone.js": "not the client"})
 
     with pytest.raises(AssertionError, match=r"standalone\.js"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -515,7 +515,7 @@ def test_verify_wheel_rejects_corrupt_static_bundle(tmp_path: Path) -> None:
 
 def test_verify_wheel_rejects_unexpected_native_artifact(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, extra={"xy/bad_extension.so": b"native"})
+    _write_wheel(whl, extra={"xyg/bad_extension.so": b"native"})
 
     with pytest.raises(AssertionError, match="unexpected native artifacts"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -573,7 +573,7 @@ def test_verify_wheel_rejects_empty_record(tmp_path: Path) -> None:
 
 def test_verify_wheel_rejects_incomplete_record(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, record_omit={"xy/widget.py"})
+    _write_wheel(whl, record_omit={"xyg/widget.py"})
 
     with pytest.raises(AssertionError, match="does not match archive files"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -581,7 +581,7 @@ def test_verify_wheel_rejects_incomplete_record(tmp_path: Path) -> None:
 
 def test_verify_wheel_rejects_record_hash_mismatch(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
-    _write_wheel(whl, record_overrides={"xy/widget.py": ("sha256=bad", "6559")})
+    _write_wheel(whl, record_overrides={"xyg/widget.py": ("sha256=bad", "6559")})
 
     with pytest.raises(AssertionError, match="hash mismatch"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -590,7 +590,7 @@ def test_verify_wheel_rejects_record_hash_mismatch(tmp_path: Path) -> None:
 def test_verify_wheel_rejects_record_size_mismatch(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     init_hash = f"sha256={_record_hash(INIT_PY.encode('utf-8'))}"
-    _write_wheel(whl, record_overrides={"xy/__init__.py": (init_hash, "1")})
+    _write_wheel(whl, record_overrides={"xyg/__init__.py": (init_hash, "1")})
 
     with pytest.raises(AssertionError, match="size mismatch"):
         verify_wheel.verify_wheel(whl, expect_native=True)
@@ -599,7 +599,7 @@ def test_verify_wheel_rejects_record_size_mismatch(tmp_path: Path) -> None:
 def test_verify_wheel_rejects_duplicate_archive_entries(tmp_path: Path) -> None:
     whl = tmp_path / "xyg-0.0.1-py3-none-macosx_11_0_arm64.whl"
     with pytest.warns(UserWarning, match="Duplicate name"):
-        _write_wheel(whl, extra={"xy/widget.py": b"duplicate"})
+        _write_wheel(whl, extra={"xyg/widget.py": b"duplicate"})
 
     with pytest.raises(AssertionError, match="duplicate archive entries"):
         verify_wheel.verify_wheel(whl, expect_native=True)

@@ -22,8 +22,8 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
-from xy.export import _bundled_js
+import xyg
+from xyg.export import _bundled_js
 
 CHROMIUM_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -54,7 +54,7 @@ def build_page() -> str:
     x = np.arange(n, dtype=np.float64)
     rng = np.random.default_rng(7)
     y = np.cumsum(rng.normal(size=n))
-    chart = xy.chart(xy.step(x, y, name="steps", where="post"), title="step tier smoke")
+    chart = xyg.chart(xyg.step(x, y, name="steps", where="post"), title="step tier smoke")
     spec, blob = chart.figure().build_payload()
     assert spec["traces"][0]["tier"] == "decimated", spec["traces"][0]["tier"]
     assert spec["traces"][0]["style"].get("step") == "post"

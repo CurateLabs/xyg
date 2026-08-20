@@ -35,18 +35,18 @@ import numpy as np
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-import xy
+import xyg
 
 # The live drilldown server probes the engine directly (density_view, pick),
 # so it works on the internal figure compiled from the public composition API
 # via `Chart.figure()`.
-from xy._figure import Figure
+from xyg._figure import Figure
 
 # `encode_frame` builds the XYBF binary transport frame (wire-protocol.md §7)
 # the browser decodes with the bundled `xy.decodeFrame`; it is re-exported from
 # the transport-neutral channel module, the same seam the Reflex adapter uses.
-from xy.channel import encode_frame
-from xy.widget import bundled_js
+from xyg.channel import encode_frame
+from xyg.widget import bundled_js
 
 _DEFAULT_LIVE_POINTS = 100_000_000
 
@@ -120,13 +120,13 @@ def colored_scatter_chart(
     title: str | None = None,
     width: Union[str, int] = "100%",
     height: int = 430,
-) -> xy.Chart:
+) -> xyg.Chart:
     title = title or f"{_point_label(n)} live drilldown scatter"
     x, y, color, size = colored_scatter_data(n)
-    return xy.scatter_chart(
-        xy.scatter(x, y, color=color, size=size, colormap="viridis", opacity=0.72, density=True),
-        xy.x_axis(label="feature A"),
-        xy.y_axis(label="feature B"),
+    return xyg.scatter_chart(
+        xyg.scatter(x, y, color=color, size=size, colormap="viridis", opacity=0.72, density=True),
+        xyg.x_axis(label="feature A"),
+        xyg.y_axis(label="feature B"),
         title=title,
         width=width,
         height=height,
@@ -327,6 +327,9 @@ const comm = {{
   onMessage: (cb) => callbacks.push(cb),
 }};
 
+// The standalone bundle intentionally retains the compatibility global
+// `window.xy` until the browser-branding stage (#14). Python's public import
+// is `xyg`, but browser runtime identifiers are a separate protocol surface.
 const view = new xy.ChartView(
   document.getElementById("chart"),
   spec,

@@ -3,7 +3,7 @@
 matplotlib draws every annotation arrow from the text patch CENTER (relpos
 default (0.5, 0.5)), clipped at the patch edge plus the 2pt shrink. The
 shim's arrows carry that as two shape-style keys resolved by the shared
-geometry (python/xy/_arrowgeom.py + js/src/51_annotations.ts):
+geometry (python/xyg/_arrowgeom.py + js/src/51_annotations.ts):
 ``start_offset`` (anchor → text-box center, px) and ``label_clear`` (the
 box extents around that center).
 
@@ -17,10 +17,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy._arrowgeom import arrow_geometry
-from xy._svg import layout
-from xy.pyplot._axes import _label_attach_styles
+import xyg.pyplot as plt
+from xyg._arrowgeom import arrow_geometry
+from xyg._svg import layout
+from xyg.pyplot._axes import _label_attach_styles
 
 
 @pytest.fixture(autouse=True)

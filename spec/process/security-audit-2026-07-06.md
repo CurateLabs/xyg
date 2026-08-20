@@ -1,6 +1,6 @@
 # Security Audit - 2026-07-06
 
-Scope: XY Python package, standalone/browser client, Rust native core,
+Scope: XYG Python package, standalone/browser client, Rust native core,
 HTML/PNG export paths, example app dependency manifests, CI/release workflows,
 and packaging verifiers.
 
@@ -37,7 +37,7 @@ a separate asset.
 2026-07-08 in commit b353dea ("Standalone density re-bin in a Web Worker"), so
 the standalone density re-bin worker can boot from a Blob URL of its own
 bundled source. No external worker script can load under that directive. The
-shipped policy is `_STANDALONE_CSP` in `python/xy/export.py`; every other
+shipped policy is `_STANDALONE_CSP` in `python/xyg/export.py`; every other
 directive listed above is unchanged. `tests/test_static_client_security.py`
 asserts the directive is exactly `worker-src blob:`, and
 `docs/guides/serving-csp-and-offline-use.md` documents it for host operators.
@@ -259,10 +259,10 @@ sandbox enabled" is caller-side advice that the library does not enforce end to
 end, and unsandboxed launches are not confined to CI smoke scripts: since commit
 8cda831 the public export path downgrades itself automatically. `html_to_png`
 re-runs with `--no-sandbox` inserted when the sandboxed launch produces no
-screenshot (`python/xy/export.py:509-526`, the retry itself at `:511-519` and
+screenshot (`python/xyg/export.py:509-526`, the retry itself at `:511-519` and
 the two-attempt error assembly through `:526`), and `_browser_session` retries
 `ChromiumSession(..., sandbox=False)` on `ChromiumError`
-(`python/xy/export.py:926-931`). Neither path emits a warning, so the downgrade
+(`python/xyg/export.py:926-931`). Neither path emits a warning, so the downgrade
 is silent. See [the 2026-07-20 status note under
 XY-SEC-2026-03](#status-as-of-2026-07-20-xy-sec-2026-03) above and
 `spec/api/export.md` §7.

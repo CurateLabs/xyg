@@ -1,4 +1,4 @@
-"""Visual chart-type gallery for the XY documentation landing pages."""
+"""Visual chart-type gallery for the XYG documentation landing pages."""
 
 from __future__ import annotations
 

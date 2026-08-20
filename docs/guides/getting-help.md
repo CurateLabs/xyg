@@ -1,12 +1,12 @@
 ---
 title: Getting Help
-description: Report XY bugs, request features, disclose vulnerabilities, and provide useful environment details.
+description: Report XYG bugs, request features, disclose vulnerabilities, and provide useful environment details.
 ---
 
 # Getting Help
 
-A useful starting point is a small reproducible case with the installed XY
-version and the output environment. XY is early alpha and does not publish a
+A useful starting point is a small reproducible case with the installed XYG
+version and the output environment. XYG is early alpha and does not publish a
 general response-time or resolution SLA, so an issue is a project report rather
 than a promise of a fix or delivery date.
 
@@ -20,7 +20,7 @@ than a promise of a fix or delivery date.
 | Reproducible regression | Open an [XYG issue](https://github.com/CurateLabs/xyg/issues/new) with the last working and first failing versions |
 | Suspected vulnerability | Use [GitHub private vulnerability reporting](https://github.com/CurateLabs/xyg/security/advisories/new); do not open a public issue |
 
-The issue tracker is the repository's public, XY-specific project channel. Do
+The issue tracker is the repository's public, XYG-specific project channel. Do
 not send secrets, credentials, private datasets, or embargoed vulnerability
 details through a public issue.
 
@@ -33,26 +33,26 @@ python - <<'PY'
 import platform
 import sys
 
-import xy
+import xyg
 
-print("xy:", xy.__version__)
+print("xyg:", xyg.__version__)
 print("python:", sys.version.replace("\n", " "))
 print("platform:", platform.platform())
 print("machine:", platform.machine())
 
 try:
-    import xy.kernels as kernels
+    import xyg.kernels as kernels
 
     print("backend:", kernels.BACKEND)
 except Exception as error:
     print("backend import failed:", repr(error))
 PY
 
-python -m pip show xy
+python -m pip show xyg
 python -m pip check
 ~~~
 
-Include whether XY came from PyPI, a Git commit, a local editable checkout, or
+Include whether XYG came from PyPI, a Git commit, a local editable checkout, or
 an internal mirror. For a Git install, include the full commit SHA. “Latest” is
 not a version and can refer to different code by the time someone investigates.
 
@@ -61,10 +61,10 @@ not a version and can refer to different code by the time someone investigates.
 Remove application code until the failure still occurs with a small chart:
 
 ~~~python
-import xy
+import xyg
 
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4]),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4]),
     width=640,
     height=360,
 )
@@ -97,7 +97,7 @@ values in the issue body; an image alone cannot be executed or searched.
 The source documentation can describe work that has not reached the installed
 wheel. Before reporting an unknown argument or missing method:
 
-1. Print `xy.__version__` from the failing environment.
+1. Print `xyg.__version__` from the failing environment.
 2. Check the [Changelog](/docs/xy/api-reference/changelog/) and the release or
    commit from which the docs were built.
 3. Reproduce against the version you actually intend to deploy.
@@ -118,7 +118,7 @@ when uncertain, start privately and let the maintainers triage it.
 
 ## Roadmap and support expectations
 
-XY does not promise a public release cadence, feature-delivery date, or general
+XYG does not promise a public release cadence, feature-delivery date, or general
 support response time. Open issues and pull requests show active work, not a
 commitment that a feature will ship in a particular release. The
 [Changelog](/docs/xy/api-reference/changelog/) is the record of released and

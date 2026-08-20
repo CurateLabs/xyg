@@ -13,7 +13,7 @@ import hashlib
 import numpy as np
 import pytest
 
-import xy
+import xyg
 
 DENSITY_N = 250_000  # comfortably over SCATTER_DENSITY_THRESHOLD (200k)
 
@@ -25,9 +25,9 @@ def _density_data(seed: int = 7, n: int = DENSITY_N) -> tuple[np.ndarray, np.nda
     return x, y
 
 
-def _figure(**kwargs: object) -> xy.Figure:
+def _figure(**kwargs: object) -> xyg.Figure:
     x, y = _density_data()
-    return xy.scatter_chart(xy.scatter(x=x, y=y, **kwargs), width=900, height=420).figure()
+    return xyg.scatter_chart(xyg.scatter(x=x, y=y, **kwargs), width=900, height=420).figure()
 
 
 def test_wire_payload_still_ships_the_overlay() -> None:
@@ -78,10 +78,10 @@ def test_raster_grid_bytes_match_the_wire_grid() -> None:
 def test_png_bytes_unchanged_by_scale_and_size(n: int, scale: int) -> None:
     """The deliverable is what matters: identical PNG at both raster scales."""
     x, y = _density_data(n=n)
-    fig = xy.scatter_chart(xy.scatter(x=x, y=y), width=900, height=420).figure()
-    png = fig.to_png(width=900, height=420, scale=scale, engine=xy.Engine.default)
+    fig = xyg.scatter_chart(xyg.scatter(x=x, y=y), width=900, height=420).figure()
+    png = fig.to_png(width=900, height=420, scale=scale, engine=xyg.Engine.default)
     # Stable across runs: the density path is deterministic.
-    again = fig.to_png(width=900, height=420, scale=scale, engine=xy.Engine.default)
+    again = fig.to_png(width=900, height=420, scale=scale, engine=xyg.Engine.default)
     assert hashlib.sha256(png).hexdigest() == hashlib.sha256(again).hexdigest()
     assert len(png) > 1000
 
@@ -90,7 +90,7 @@ def test_direct_tier_untouched() -> None:
     """Below the density threshold nothing about this change applies."""
     rng = np.random.default_rng(3)
     x, y = rng.standard_normal(10_000), rng.standard_normal(10_000)
-    fig = xy.scatter_chart(xy.scatter(x=x, y=y), width=900, height=420).figure()
+    fig = xyg.scatter_chart(xyg.scatter(x=x, y=y), width=900, height=420).figure()
     spec, _blob, _ = fig._build_raster_payload()
     assert spec["traces"][0]["tier"] == "direct"
 
@@ -106,7 +106,7 @@ def test_categorical_density_paths_omit_overlay() -> None:
     x, y = _density_data(n=n)
     labels = np.array(["a", "b", "c", "d", "e"])[np.arange(n) % 5]
     with pytest.warns(RuntimeWarning, match="soft ceiling"):
-        fig = xy.scatter_chart(xy.scatter(x=x, y=y, color=labels), width=900, height=420).figure()
+        fig = xyg.scatter_chart(xyg.scatter(x=x, y=y, color=labels), width=900, height=420).figure()
     assert fig.traces[0].use_density()
     wire_spec, _ = fig.build_payload()
     rast_spec, _, _ = fig._build_raster_payload()
@@ -117,8 +117,8 @@ def test_categorical_density_paths_omit_overlay() -> None:
 def test_clipped_domain_keeps_visible_count() -> None:
     """The non-full-identity branch still needs bin_2d_indices for `visible`."""
     x, y = _density_data()
-    fig = xy.scatter_chart(
-        xy.scatter(x=x, y=y), xy.x_axis(domain=(-1.0, 1.0)), width=900, height=420
+    fig = xyg.scatter_chart(
+        xyg.scatter(x=x, y=y), xyg.x_axis(domain=(-1.0, 1.0)), width=900, height=420
     ).figure()
     wire_spec, _ = fig.build_payload()
     rast_spec, _, _ = fig._build_raster_payload()

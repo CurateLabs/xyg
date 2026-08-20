@@ -1,12 +1,12 @@
 ---
 title: API Reference
-description: Find XY chart factories, components, methods, callbacks, types, and status.
+description: Find XYG chart factories, components, methods, callbacks, types, and status.
 ---
 
 # API Reference
 
-XY exports its supported declarative surface from `import xy`. Prefer
-lowercase factories such as `xy.scatter()` and `xy.x_axis()`; public node types
+XYG exports its supported declarative surface from `import xyg`. Prefer
+lowercase factories such as `xyg.scatter()` and `xyg.x_axis()`; public node types
 are primarily useful for inspection and annotations.
 
 - [Chart factories](/docs/xy/api-reference/chart-factories/) lists containers
@@ -27,5 +27,5 @@ are primarily useful for inspection and annotations.
 - [Contributing](/docs/xy/api-reference/contributing/) provides the development
   quick start and required checks.
 
-Generated tables read the installed XY signatures, so parameter names, types,
+Generated tables read the installed XYG signatures, so parameter names, types,
 and defaults remain aligned with the package used to build this site.

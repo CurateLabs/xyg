@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Live xy chart host for the UX benchmark: production client, production wire.
+"""Live XYG chart host for the UX benchmark: production client, production wire.
 
 Runs as a child process. Serves one page whose JS imports `ChartView` from the
 shipped ESM bundle and connects it to this process over a real WebSocket. The
 bridge is `channel.handle_message` — the same dispatcher the widget and Reflex
 adapters use — so deep zoom drills to exact rows exactly as a live chart does.
-This is the interactive xy chart; the standalone HTML export is not measured.
+This is the interactive XYG chart; the standalone HTML export is not measured.
 
 Wire framing (binary, both directions where buffers ride):
     u32le json_len | json bytes | buffer bytes concatenated
@@ -13,7 +13,7 @@ Wire framing (binary, both directions where buffers ride):
 Client -> server messages are plain JSON text (inbound carries no buffers).
 
 Also serves:
-    /static/*   the installed xy client bundle
+    /static/*   the installed XYG client bundle
     /oracle     ?x0=&x1=&y0=&y1= -> {"count": rows in window}  (ground truth
                 for the drill check, computed on the exact source arrays)
 
@@ -36,8 +36,8 @@ import tornado.netutil
 import tornado.web
 import tornado.websocket
 
-import xy
-from xy.channel import handle_message
+import xyg
+from xyg.channel import handle_message
 
 SEED = 20260713
 # Sentinels sit in the far Gaussian tail: guaranteed sparse (drillable), and
@@ -168,11 +168,11 @@ def main() -> None:
     args = parser.parse_args()
 
     x, y = make_data(args.n)
-    mark = xy.scatter(x=x, y=y, density=False) if args.density == "off" else xy.scatter(x=x, y=y)
-    fig = xy.scatter_chart(mark, width=900, height=420).figure()
+    mark = xyg.scatter(x=x, y=y, density=False) if args.density == "off" else xyg.scatter(x=x, y=y)
+    fig = xyg.scatter_chart(mark, width=900, height=420).figure()
     spec, bufs = fig.build_payload_split()
 
-    static_dir = Path(xy.__file__).resolve().parent / "static"
+    static_dir = Path(xyg.__file__).resolve().parent / "static"
 
     class PageHandler(tornado.web.RequestHandler):
         def get(self) -> None:

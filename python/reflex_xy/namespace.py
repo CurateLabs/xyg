@@ -43,13 +43,13 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from socketio import AsyncNamespace
 
-from xy.channel import handle_message
+from xyg.channel import handle_message
 
 from .registry import FigureEntry, FigureRegistry
 from .tokens import parse_token
 
 if TYPE_CHECKING:
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
 __all__ = ["XY_NAMESPACE", "XYNamespace"]
 

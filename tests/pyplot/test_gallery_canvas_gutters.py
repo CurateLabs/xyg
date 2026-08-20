@@ -20,8 +20,8 @@ from xml.etree import ElementTree
 
 import pytest
 
-import xy.pyplot as plt
-from xy import _fontmetrics, _svg
+import xyg.pyplot as plt
+from xyg import _fontmetrics, _svg
 
 _ASCENT = _fontmetrics.ASCENT / _fontmetrics.BASE_PX
 _DESCENT = _fontmetrics.DESCENT / _fontmetrics.BASE_PX

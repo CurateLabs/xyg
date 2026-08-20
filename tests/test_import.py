@@ -15,17 +15,17 @@ HEAVY_MODULES = {
     "reflex_base",
     "reflex_core",
     "traitlets",
-    "xy.channels",
-    "xy.channel",
-    "xy.columns",
-    "xy.components",
-    "xy._figure",
-    "xy.interaction",
-    "xy.marks",
-    "xy.kernels",
-    "xy.lod",
-    "xy._native",
-    "xy.widget",
+    "xyg.channels",
+    "xyg.channel",
+    "xyg.columns",
+    "xyg.components",
+    "xyg._figure",
+    "xyg.interaction",
+    "xyg.marks",
+    "xyg.kernels",
+    "xyg.lod",
+    "xyg._native",
+    "xyg.widget",
 }
 
 
@@ -50,18 +50,18 @@ def test_package_import_is_lazy_and_light() -> None:
         import time
 
         t0 = time.perf_counter()
-        import xy
+        import xyg
         elapsed_ms = (time.perf_counter() - t0) * 1000
 
         heavy = {sorted(HEAVY_MODULES)!r}
         eager = [
             name
             for name in sys.modules
-            if name in heavy or name.startswith("xy.")
+            if name in heavy or name.startswith("xyg.")
         ]
         assert eager == [], eager
         assert elapsed_ms < 200, elapsed_ms
-        assert xy.__version__
+        assert xyg.__version__
         print(f"{{elapsed_ms:.3f}}")
         """
     )
@@ -73,20 +73,20 @@ def test_public_metadata_and_dir_are_lazy() -> None:
         f"""
         import sys
 
-        import xy
+        import xyg
 
-        names = dir(xy)
-        assert "__version__" in xy.__all__
+        names = dir(xyg)
+        assert "__version__" in xyg.__all__
         assert "Figure" not in names
-        assert "Figure" not in xy.__all__
+        assert "Figure" not in xyg.__all__
         assert "scatter_chart" in names
-        assert xy.__version__
+        assert xyg.__version__
 
         heavy = {sorted(HEAVY_MODULES)!r}
         eager = [
             name
             for name in sys.modules
-            if name in heavy or name.startswith("xy.")
+            if name in heavy or name.startswith("xyg.")
         ]
         assert eager == [], eager
         """
@@ -105,9 +105,9 @@ def test_reflex_integration_import_is_lazy_and_light() -> None:
         assert "chart" in reflex_xy.__all__
         assert "reflex" not in sys.modules
         assert "numpy" not in sys.modules
-        assert "xy.channels" not in sys.modules
-        assert "xy.kernels" not in sys.modules
-        assert "xy._native" not in sys.modules
+        assert "xyg.channels" not in sys.modules
+        assert "xyg.kernels" not in sys.modules
+        assert "xyg._native" not in sys.modules
         assert not any(name.startswith("reflex_xy.") for name in sys.modules)
         """
     )
@@ -132,7 +132,7 @@ def test_export_helpers_do_not_load_widget_numpy_or_kernels() -> None:
         f"""
         import sys
 
-        from xy.export import _json_for_inline_script
+        from xyg.export import _json_for_inline_script
 
         assert _json_for_inline_script({{"x": "</script>&"}}) == '{{"x":"\\\\u003c/script\\\\u003e\\\\u0026"}}'
         heavy = {sorted(HEAVY_MODULES)!r}
@@ -140,12 +140,12 @@ def test_export_helpers_do_not_load_widget_numpy_or_kernels() -> None:
             name
             for name in sys.modules
             if name in heavy or (
-                name.startswith("xy.")
-                and name not in {{"xy.export"}}
+                name.startswith("xyg.")
+                and name not in {{"xyg.export"}}
             )
         ]
         assert eager == [], eager
-        assert "xy.export" in sys.modules
+        assert "xyg.export" in sys.modules
         """,
     )
 
@@ -153,19 +153,19 @@ def test_export_helpers_do_not_load_widget_numpy_or_kernels() -> None:
 def test_star_import_matches_public_all() -> None:
     _run_fresh(
         """
-        import xy
+        import xyg
 
         ns = {}
-        exec("from xy import *", ns)
+        exec("from xyg import *", ns)
 
-        exported = sorted(name for name in ns if name in xy.__all__)
+        exported = sorted(name for name in ns if name in xyg.__all__)
         extras = sorted(
-            name for name in ns if not name.startswith("__") and name not in xy.__all__
+            name for name in ns if not name.startswith("__") and name not in xyg.__all__
         )
-        assert exported == sorted(xy.__all__)
+        assert exported == sorted(xyg.__all__)
         assert extras == []
         assert "Figure" not in ns
-        assert ns["scatter_chart"] is xy.scatter_chart
+        assert ns["scatter_chart"] is xyg.scatter_chart
         """
     )
 
@@ -175,22 +175,22 @@ def test_lazy_public_exports_still_work() -> None:
         f"""
         import sys
 
-        import xy
+        import xyg
         assert "numpy" not in sys.modules
 
-        from xy import Column, scatter, scatter_chart
+        from xyg import Column, scatter, scatter_chart
 
-        assert Column is xy.Column
+        assert Column is xyg.Column
         assert callable(scatter)
         assert callable(scatter_chart)
-        assert callable(xy.column)
-        assert xy.column(x=["a"], y=[1]).kind == "column"
-        assert "xy._figure" in sys.modules
+        assert callable(xyg.column)
+        assert xyg.column(x=["a"], y=[1]).kind == "column"
+        assert "xyg._figure" in sys.modules
         assert "numpy" in sys.modules
 
         heavy = {sorted(HEAVY_MODULES)!r}
         loaded = sorted(name for name in sys.modules if name in heavy)
-        assert "xy._native" in loaded
+        assert "xyg._native" in loaded
         """
     )
 
@@ -202,21 +202,21 @@ def test_figure_is_not_public_and_denial_stays_light() -> None:
         """
         import sys
 
-        import xy
+        import xyg
         assert "numpy" not in sys.modules
 
         try:
-            xy.Figure
+            xyg.Figure
         except AttributeError:
             pass
         else:
-            raise AssertionError("xy.Figure must not be public")
+            raise AssertionError("xyg.Figure must not be public")
 
-        assert "Figure" not in xy.__all__
+        assert "Figure" not in xyg.__all__
         assert "numpy" not in sys.modules
-        assert "xy._figure" not in sys.modules
-        assert "xy.kernels" not in sys.modules
-        assert "xy.widget" not in sys.modules
+        assert "xyg._figure" not in sys.modules
+        assert "xyg.kernels" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         """
     )
@@ -227,17 +227,17 @@ def test_composition_api_loads_compute_without_widget_stack() -> None:
         """
         import sys
 
-        import xy
+        import xyg
         assert "numpy" not in sys.modules
 
-        scatter = xy.scatter
+        scatter = xyg.scatter
 
         assert callable(scatter)
-        assert "xy.components" in sys.modules
-        assert "xy._figure" in sys.modules
-        assert "xy.kernels" in sys.modules
+        assert "xyg.components" in sys.modules
+        assert "xyg._figure" in sys.modules
+        assert "xyg.kernels" in sys.modules
         assert "numpy" in sys.modules
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
         assert not any(
@@ -253,17 +253,17 @@ def test_dom_slot_contract_loads_without_compute_or_widget_stack() -> None:
         """
         import sys
 
-        import xy
+        import xyg
 
-        slots = xy.CHART_DOM_SLOTS
+        slots = xyg.CHART_DOM_SLOTS
 
         assert slots[0] == "root"
         assert "tooltip" in slots
-        assert "xy.dom" in sys.modules
-        assert "xy.components" not in sys.modules
-        assert "xy._figure" not in sys.modules
-        assert "xy.kernels" not in sys.modules
-        assert "xy.widget" not in sys.modules
+        assert "xyg.dom" in sys.modules
+        assert "xyg.components" not in sys.modules
+        assert "xyg._figure" not in sys.modules
+        assert "xyg.kernels" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "numpy" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
@@ -276,17 +276,17 @@ def test_html_export_does_not_load_widget_stack() -> None:
         """
         import sys
 
-        import xy
+        import xyg
 
-        chart = xy.line_chart(xy.line(x=[0, 1], y=[1, 2]), title="lazy boundary")
-        assert "xy.widget" not in sys.modules
+        chart = xyg.line_chart(xyg.line(x=[0, 1], y=[1, 2]), title="lazy boundary")
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
 
         html = chart.to_html()
 
         assert "lazy boundary" in html
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
         """
@@ -298,18 +298,18 @@ def test_declarative_html_exports_do_not_load_widget_stack() -> None:
         """
         import sys
 
-        import xy
+        import xyg
 
-        chart = xy.chart(
-            xy.scatter(x=[0, 1, 2], y=[1, 3, 2], name="points"),
-            xy.line(x=[0, 1, 2], y=[1, 2, 2.5], name="trend"),
-            xy.x_axis(label="x"),
-            xy.y_axis(label="y"),
-            xy.legend(),
-            xy.tooltip(fields=["x", "y"]),
+        chart = xyg.chart(
+            xyg.scatter(x=[0, 1, 2], y=[1, 3, 2], name="points"),
+            xyg.line(x=[0, 1, 2], y=[1, 2, 2.5], name="trend"),
+            xyg.x_axis(label="x"),
+            xyg.y_axis(label="y"),
+            xyg.legend(),
+            xyg.tooltip(fields=["x", "y"]),
             title="declarative lazy boundary",
         )
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
         assert not any(
@@ -327,7 +327,7 @@ def test_declarative_html_exports_do_not_load_widget_stack() -> None:
         assert html.startswith("<!doctype html>")
         assert alias.startswith("<!doctype html>")
         assert repr_html.startswith('<iframe class="xy-notebook-frame"')
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
         assert not any(
@@ -343,18 +343,18 @@ def test_widget_method_is_the_widget_import_boundary() -> None:
         """
         import sys
 
-        import xy
+        import xyg
 
-        chart = xy.line_chart(xy.line(x=[0, 1], y=[1, 2]), title="widget boundary")
+        chart = xyg.line_chart(xyg.line(x=[0, 1], y=[1, 2]), title="widget boundary")
         chart.to_html()
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
 
         widget = chart.widget()
 
         assert widget is chart.widget()
-        assert "xy.widget" in sys.modules
+        assert "xyg.widget" in sys.modules
         assert "anywidget" in sys.modules
         assert "traitlets" in sys.modules
         """
@@ -366,18 +366,18 @@ def test_column_factory_does_not_shadow_columns_submodule() -> None:
         """
         import importlib
 
-        import xy
+        import xyg
 
-        columns = importlib.import_module("xy.columns")
-        assert columns.Column is xy.Column
-        assert xy.column(x=["a"], y=[1]).kind == "column"
+        columns = importlib.import_module("xyg.columns")
+        assert columns.Column is xyg.Column
+        assert xyg.column(x=["a"], y=[1]).kind == "column"
 
         try:
-            importlib.import_module("xy.column")
+            importlib.import_module("xyg.column")
         except ModuleNotFoundError:
             pass
         else:
-            raise AssertionError("xy.column must stay the public factory, not a submodule")
+            raise AssertionError("xyg.column must stay the public factory, not a submodule")
         """
     )
 
@@ -389,11 +389,11 @@ def test_channel_dispatcher_loads_without_widget_stack() -> None:
         """
         import sys
 
-        from xy.channel import ChannelCallbacks, handle_message
+        from xyg.channel import ChannelCallbacks, handle_message
 
         assert callable(handle_message)
         assert ChannelCallbacks() == ChannelCallbacks()
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
         """
@@ -407,13 +407,13 @@ def test_chart_headless_append_does_not_load_widget_stack() -> None:
         """
         import sys
 
-        import xy
+        import xyg
 
-        chart = xy.scatter_chart(xy.scatter(x=[0.0, 1.0], y=[0.0, 1.0]))
+        chart = xyg.scatter_chart(xyg.scatter(x=[0.0, 1.0], y=[0.0, 1.0]))
         chart.append(0, [2.0], [3.0])
 
         assert len(chart.figure().traces[0].x.values) == 3
-        assert "xy.widget" not in sys.modules
+        assert "xyg.widget" not in sys.modules
         assert "anywidget" not in sys.modules
         assert "traitlets" not in sys.modules
         """

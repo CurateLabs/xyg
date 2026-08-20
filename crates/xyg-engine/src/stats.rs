@@ -86,7 +86,7 @@ fn quantile_sorted(sorted: &[f64], p: f64) -> f64 {
 /// Tukey hinges: Q1/median/Q3, whiskers at extreme observations inside the
 /// 1.5·IQR fences, and outliers beyond those whiskers.
 ///
-/// Matches `python/xy/marks._distribution_stats` (prior NumPy percentile path).
+/// Matches `python/xyg/marks._distribution_stats` (prior NumPy percentile path).
 pub fn box_stats(data: &[f64]) -> BoxStats {
     let mut finite: Vec<f64> = data.iter().copied().filter(|v| v.is_finite()).collect();
     if finite.is_empty() {
@@ -319,7 +319,7 @@ pub struct WindRoseBins {
 ///
 /// When `speed_edges` is `None`, quartile upper edges are derived from the
 /// finite speeds (3-significant-figure rounding, top edge ceiled to cover the
-/// fastest observation — matching the Python `xy.wind_rose` factory). When
+/// fastest observation — matching the Python `xyg.wind_rose` factory). When
 /// `Some`, edges are uniqued/sorted and must be finite with the top edge at
 /// least the fastest finite speed. Directions use north-zero, clockwise sector
 /// centres: a bearing of 0 belongs to the sector centred on north.

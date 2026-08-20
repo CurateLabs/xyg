@@ -25,12 +25,12 @@ in the README).
 - Host-neutral paint client as in-repo npm package `@curatelabs/xyg`
   (`packages/xy-client`; #23, parent #24). `js/build.mjs` writes
   `packages/xy-client/dist/{index,standalone}.js`; the Python wheel **copies**
-  those files into `python/xy/static/` so notebooks / `to_html()` / Reflex
+  those files into `python/xyg/static/` so notebooks / `to_html()` / Reflex
   still need no Node. Node `toHtml()` inlines the host-neutral standalone
   client, not the Python tree. Registry publish waits on the `@curatelabs`
   npm org (#13).
 - Python distribution name is `xyg` (`pip install xyg`, wheel/sdist `Name:
-  xyg`). Import remains `import xy` until the staged `python/xyg/` cutover
+  xyg`). Import remains `import xyg` until the staged `python/xyg/` cutover
   (#13 / #18). GitHub Actions environment `pypi` plus workflow
   `publish.yaml` match the pending PyPI trusted publisher.
 
@@ -58,12 +58,12 @@ in the README).
   wheel and sdist, while the extra adds the supported `reflex>=0.9.6` floor;
   plain `xy` still has no Reflex dependency. The separate `reflex-xy`
   distribution, version line, and release workflow have been removed.
-- Completed the phase-6/7 polar depth surface: `xy.polar_chart` now admits
+- Completed the phase-6/7 polar depth surface: `xyg.polar_chart` now admits
   heatmap, contour, and error-bar traces alongside line/scatter/area/bar; the
   heatmap uses a fragment-stage polar inverse in the browser and the matching
   bounded inverse raster for static export. Polar axes add partial-sector
   layout, `hole`/radial origin, categorical theta, log/symlog radius, and
-  polygonal `grid_shape="linear"` rings. `xy.pyplot` exposes degree-based
+  polygonal `grid_shape="linear"` rings. `xyg.pyplot` exposes degree-based
   `set/get_thetamin`, `set/get_thetamax`, and radial
   `set/get_rorigin`. Generic segment/mesh marks, polar rule/band annotations,
   LOD, facets/animation, and angular navigation/selection remain deferred.
@@ -141,7 +141,7 @@ in the README).
   no longer spans every row on the GPU — which is what a streaming tail append
   leaves behind — is skipped rather than repaired in place, so the existing
   append-time rebuild still does the renormalizing for it.
-- `xy.pie_chart` appears in the generated chart-factory API reference alongside
+- `xyg.pie_chart` appears in the generated chart-factory API reference alongside
   the other polar compositions.
 - A legend row too wide for its box wraps instead of growing a horizontal
   scrollbar. The box is capped at `--xy-legend-max-width`, but its grid columns
@@ -150,7 +150,7 @@ in the README).
   Columns are now `minmax(0, max-content)` and the inline axis never scrolls.
   Vertical scrolling is unchanged, and rows carry their full name in
   `title`/ARIA for the ones the height cap clips.
-- `xy.pie_chart` no longer prints the same number twice. Values that already sum
+- `xyg.pie_chart` no longer prints the same number twice. Values that already sum
   to 100 — how most pie data arrives — made `show_values` and `show_percent`
   collide, so `[40, 30, 20, 10]` rendered `Direct  40  (40%)`: a legend row that
   reads as repeated text, and long enough to overflow the box. The share keeps
@@ -178,13 +178,13 @@ in the README).
   flattening bound while a 16-sector wind-rose bar costs 14 vertices instead of
   194 — the fixed full-turn count made ~50k polar bars build ~9.7M vertices a
   frame. A full-turn wedge still uses 96.
-- `xy.theta_axis`/`xy.r_axis` now refuse the Cartesian axis keywords no polar
+- `xyg.theta_axis`/`xyg.r_axis` now refuse the Cartesian axis keywords no polar
   renderer implements — `minor_tick_values`, `minor_style`,
   `tick_label_min_gap`, `tick_label_anchor`, and the collision spellings of
   `tick_label_strategy` (`auto`, `hide`, `rotate`, `stagger`, `preserve`) — each
   with a pointer to the control that does work. They previously rode the wire and
   were dropped by all three renderers, so the documented axis surface advertised
-  options that did nothing. `off` and `none` remain honoured. `xy.pyplot`'s
+  options that did nothing. `off` and `none` remain honoured. `xyg.pyplot`'s
   `projection="polar"` drops the same keywords instead of refusing, because every
   matplotlib Axes carries an rcParam-derived minor style it never authored; that
   drop is recorded in `spec/matplotlib/compat.md`.
@@ -242,21 +242,21 @@ in the README).
   prebuilt frontends cannot load the anywidget extension `%pip` installs
   kernel-side ("Failed to load model class 'AnyModel' from module
   'anywidget'"). Marimo's WASM build keeps the live widget host, and
-  `show(display="html")` returns an `xy.export.HtmlView` rich-repr handle.
-- `xy.box(...)` exposes its four visible parts without a parallel styling
+  `show(display="html")` returns an `xyg.export.HtmlView` rich-repr handle.
+- `xyg.box(...)` exposes its four visible parts without a parallel styling
   language: the main `style=` now controls body fill and border, while
   `whisker_style=`, `median_style=`, and `outlier_style=` reuse the validated
   segment/scatter CSS vocabularies. Contrasting borders, emphasized medians,
   muted whiskers, and independently shaped/bordered outliers survive WebGL,
   SVG/PDF, and native raster output.
-- `xy.tooltip(labels={...})` gives source columns readable display names
+- `xyg.tooltip(labels={...})` gives source columns readable display names
   without changing lookup, formatting keys, title placeholders, or hover-event
   payloads; without `fields=`, labels rename matching default channel rows.
   Built-in tooltips now expose `tooltip_title`, `tooltip_row`,
   `tooltip_label`, and `tooltip_value` DOM slots for independent typography
   and layout; legends likewise expose `legend_title` and `legend_label`.
   User-provided labels remain text-only and are never parsed as HTML.
-- `xy.theme(palette=...)` also accepts a **`{category: color}` mapping**, which
+- `xyg.theme(palette=...)` also accepts a **`{category: color}` mapping**, which
   pins colors to category *labels* rather than positions. A positional cycle can
   only ever say "the first category is blue", so the same category changes color
   whenever the set of categories does — most visibly across facet panels, where
@@ -275,7 +275,7 @@ in the README).
   `hsl()`, named) and must be opaque; `var()`/`oklch()`/`color-mix()` and
   translucent stops raise with that reason rather than painting one ramp on
   screen and a different one in `to_png()`.
-- `xy.theme(palette=[...])` sets a chart's **categorical color cycle** — the
+- `xyg.theme(palette=[...])` sets a chart's **categorical color cycle** — the
   colors unnamed series take in order, and the colors a categorical `color=`
   channel assigns to its categories. Previously the built-in eight-slot palette
   was the only option for a categorical channel. Entries follow the same
@@ -286,17 +286,17 @@ in the README).
   with a warning, as the built-in one already did.
 - `x_axis`/`y_axis` take `show`, `line`, `ticks`, `grid`, and `text` switches.
   Hiding axis chrome no longer needs seven transparent-color and zero-width
-  style properties per axis: `xy.x_axis(show=False)` is the whole edit, and
-  `xy.y_axis(show=False, grid=True)` leaves only the grid. They compile to the
+  style properties per axis: `xyg.x_axis(show=False)` is the whole edit, and
+  `xyg.y_axis(show=False, grid=True)` leaves only the grid. They compile to the
   same validated style properties, so an explicit `style=` still wins and specs
   that don't use them are byte-identical.
 
 ### Fixed
 - Improved Matplotlib compatibility for pie and vector-field plots, multiline
   layout, authored styles, axes helpers/autoscaling, and browser Y-axis titles.
-- A mark-level `animation=xy.animation(...)` no longer resets the chart-level
+- A mark-level `animation=xyg.animation(...)` no longer resets the chart-level
   policy fields it does not mention. It was a complete spec spread over the
-  chart's, so `xy.animation(duration=90)` on a mark silently reset `match`,
+  chart's, so `xyg.animation(duration=90)` on a mark silently reset `match`,
   `easing`, `enter`, `update`, and `interpolate` to their defaults — turning
   off a chart-level `match="key"` with no error and no fallback, and
   suppressing the `match='key' requires key=` validation entirely. Mark
@@ -312,7 +312,7 @@ in the README).
   the profile and why `panic` stays unwinding).
 - Stable animation `key=` identity planes are now retained and shipped only
   when the resolved animation spec can actually key-match. `match` defaults to
-  `"index"`, so `key=` combined with a bare `xy.animation(...)`, with
+  `"index"`, so `key=` combined with a bare `xyg.animation(...)`, with
   `enabled=False`, or with no animation at all previously put two dead `u32`
   columns in the payload — 8 B/row held for the widget lifetime and 8 B/row on
   the wire (400 KB at 50k rows) that no client code read. Encoding still runs
@@ -407,7 +407,7 @@ in the README).
   Costs ~48 KB of baked coverage (+4% on the core dylib).
 - **The categorical palette cycled per trace instead of per series.** A box is
   four traces and a stem is two, so four box series under a four-color
-  `xy.theme(palette=...)` all wore `palette[0]`, and eight box series drew two
+  `xyg.theme(palette=...)` all wore `palette[0]`, and eight box series drew two
   colors out of the built-in eight. Adding an outlier to one series repainted a
   different one, because it changed the trace count. Marks now take one slot per
   logical series (`Figure.next_series_color`), a mark given an explicit `color=`
@@ -426,7 +426,7 @@ in the README).
   printed beside it. Both exporters now expand categories the way the client
   does.
 - **`text=` on `hline`/`vline`/bands/`threshold`/`arrow` was silently dropped by
-  the static exporters, and `xy.marker()` drew nothing at all.** Labels were
+  the static exporters, and `xyg.marker()` drew nothing at all.** Labels were
   emitted for `text`/`callout` annotations only, and `marker` had no geometry
   branch. Placement is now one shared helper ported from the client's
   `_drawAnnotationLabels`, so the badge lands in the same place in all three
@@ -480,8 +480,8 @@ in the README).
   `<next>.devN+<commit>`, which PyPI rejects by design — only a tag produces an
   uploadable version. The docs-deploy CalVer tags (`2026.WW.N`) are excluded by
   the `v` prefix the derivation matches on.
-- `xy.__version__` now reports the installed distribution's version instead of a
-  hardcoded string, resolved lazily on first access so `import xy` keeps its
+- `xyg.__version__` now reports the installed distribution's version instead of a
+  hardcoded string, resolved lazily on first access so `import xyg` keeps its
   import-time budget. An uninstalled source tree reports `0.0.0`.
 - The release gate (`scripts/check_release_version.py`) checks the tag against
   `CHANGELOG.md` only; the tag-vs-pyproject leg is gone with the drift it
@@ -506,9 +506,9 @@ in the README).
 
 ### Removed
 - **The fluent `Figure` API is removed from the public surface.**
-  `xy.Figure` is no longer exported; `figure.py` is internalized as
-  `xy/_figure.py`. The declarative composition API (`xy.chart(...)`,
-  `xy.line_chart(...)`, `xy.scatter_chart(...)`, marks, axes, annotations,
+  `xyg.Figure` is no longer exported; `figure.py` is internalized as
+  `xy/_figure.py`. The declarative composition API (`xyg.chart(...)`,
+  `xyg.line_chart(...)`, `xyg.scatter_chart(...)`, marks, axes, annotations,
   chrome) is now the single public chart-building API. `Selection` stays
   public, composed `Chart` objects keep the full readout surface
   (`to_html`/`to_png`/`to_svg`/`widget`/`show`/`append`/`pick`/`select_range`/
@@ -669,15 +669,15 @@ in the README).
   `Engine.chromium` adds browser-fidelity JPEG/WebP (CDP screenshots) and
   PDF (`printToPDF`). A shared background policy spans every format
   ("auto"/CSS color/"transparent", JPEG rejects transparent instead of
-  silently flattening). `xy.write_images(figures=..., files=...)` batches
+  silently flattening). `xyg.write_images(figures=..., files=...)` batches
   mixed formats through one reused browser session with atomic per-file
-  writes. `xy.export_config()` declares formats/filename/dimensions/
+  writes. `xyg.export_config()` declares formats/filename/dimensions/
   scale/background/quality on the chart itself, governing both Python
   defaults and the modebar's download menu, which now offers PNG, JPEG,
   WebP, SVG, and CSV (client-safe subset) with the same filename and
   background semantics — including in standalone HTML with no kernel and
   in Reflex apps.
-- **Declarative continuous colorbars.** `xy.colorbar()` derives the domain,
+- **Declarative continuous colorbars.** `xyg.colorbar()` derives the domain,
   colormap, and default title from the last compatible heatmap, continuous
   scatter, hexbin, contour, segment, or triangle-mesh mark, with explicit
   `title`, `orientation`, and `ticks`. Constant/categorical colors, truecolor
@@ -699,7 +699,7 @@ in the README).
   RDP handles for range adjustment, and client SVG/PNG export snapshots the
   chart's computed theme tokens and typography so host light/dark themes carry
   into downloaded images.
-- `xy.pyplot.FacetGrid`: a seaborn-shaped row/column facet grid running
+- `xyg.pyplot.FacetGrid`: a seaborn-shaped row/column facet grid running
   entirely on the shim (seaborn's `map` contract: subset → activate panel →
   call the pyplot function), with shared domains, edge-only axis labels,
   top-row column titles, and rotated `margin_titles`. Text annotations are now
@@ -716,7 +716,7 @@ in the README).
   (`bgocc`) so it cannot regress silently. Modebar icons color from
   `--chart-text` instead of `--chart-axis`, staying visible when a style sets
   white axis edges.
-- **Production binary HTTP frame v1.** `xy.channel` now exposes a
+- **Production binary HTTP frame v1.** `xyg.channel` now exposes a
   framework-free, little-endian `XYBF` codec with separate transport
   versioning, strict JSON metadata, 8-byte-aligned buffers, zero padding,
   explicit total length, configurable resource caps, scatter/gather encoding,
@@ -738,10 +738,10 @@ in the README).
   metrics are hard regression gates; the refreshed density baseline reflects
   the current screen-bounded ~264–266 KB payload instead of the stale ~854 KB
   values.
-- `xy.pyplot`: a matplotlib-flavored shim over the composition
-  API (`import xy.pyplot as plt`). Corpus-defined compatibility —
+- `xyg.pyplot`: a matplotlib-flavored shim over the composition
+  API (`import xyg.pyplot as plt`). Corpus-defined compatibility —
   see `spec/matplotlib/compat.md`; fully contained in
-  `python/xy/pyplot/` with boundary guardrails.
+  `python/xyg/pyplot/` with boundary guardrails.
 - **Statistical and density chart breadth.** Added first-class `errorbar`/
   `error_band`, `box`, `violin`, `ecdf`, `hexbin`, and `contour` marks plus
   `step`, `stairs`, and `stem` variants. Segment marks share one instanced
@@ -812,7 +812,7 @@ in the README).
   of running `isfinite` over every point of every legended series — the
   scoring was already sample-based; the full-array pass was pure O(n)
   per-build cost.
-- **`xy.pyplot` no longer pays an O(n) dataless-axis scan on every build.**
+- **`xyg.pyplot` no longer pays an O(n) dataless-axis scan on every build.**
   The empty-view pin in `_build_chart` materialized and finite-filtered every
   entry's full data for both axes just to ask "is this axis empty?", adding a
   data-proportional cost to each shim figure build (~3x the raw declarative
@@ -849,7 +849,7 @@ in the README).
   every workload (10k/1M line, 100k scatter, 200-bin histogram, 1k-category
   bars, a chrome-heavy styled panel, and static PNG export) is built twice
   from the same arrays — once through the raw declarative API and once
-  through the identical `xy.pyplot` calls — ending in the same split wire
+  through the identical `xyg.pyplot` calls — ending in the same split wire
   payload or PNG bytes, so the `*_pyplot` minus `*_raw` gap in CodSpeed is
   exactly the shim's translation cost. Collected automatically by the
   existing `benchmarks/test_codspeed_*.py` CI glob.
@@ -982,9 +982,9 @@ in the README).
 
 ### Added
 - Cumulative histogram mode: `Figure.histogram(..., cumulative=True)` and
-  `xy.histogram(cumulative=...)`; combined with `density=True` it yields the
+  `xyg.histogram(cumulative=...)`; combined with `density=True` it yields the
   empirical CDF.
-- Normalized stacked bars: `mode="normalized"` on `Figure.bar` / `xy.bar`.
+- Normalized stacked bars: `mode="normalized"` on `Figure.bar` / `xyg.bar`.
 - Fluent/composition API parity guard test, preventing the two public
   surfaces from drifting apart.
 - Prebuilt-wheel coverage expanded to a pydantic-class platform matrix:
@@ -1006,7 +1006,7 @@ in the README).
 - The native Rust core is now **required**: the NumPy fallback backend was
   removed. On platforms with no wheel and no local Rust build, importing the
   compute layer raises a clear, actionable `ImportError` instead of silently
-  degrading. `import xy` remains lightweight.
+  degrading. `import xyg` remains lightweight.
 - The example apps were restructured. `examples/reflex/` is now a pure
   `reflex-xy` showcase (figure-var drilldown with hover/click/select events, a
   slider-driven and cross-filtered histogram, a streaming line, an

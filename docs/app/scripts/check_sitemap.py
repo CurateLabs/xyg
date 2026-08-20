@@ -1,4 +1,4 @@
-"""Validate the generated XY documentation sitemap."""
+"""Validate the generated XYG documentation sitemap."""
 
 from pathlib import Path
 from xml.etree import ElementTree

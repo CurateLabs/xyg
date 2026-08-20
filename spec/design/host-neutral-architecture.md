@@ -21,7 +21,7 @@ host / identity / store / client-packaging graph.
 | User | What they install | What they must not need |
 | --- | --- | --- |
 | Python (notebooks, pyplot, Reflex, `to_html`) | Python distribution (`pip install`; name in #13/#18) | Node, npm, or a CDN at install/export time |
-| JS / browser | `@curatelabs/xyg` | Python runtime or `python/xy/` as the ship vehicle |
+| JS / browser | `@curatelabs/xyg` | Python runtime or `python/xyg/` as the ship vehicle |
 | Node / VS Code | `@curatelabs/xyg-node` (loads the same `libxyg_core`) plus the paint client for HTML/webview | Python package tree |
 
 Three **runtime surfaces** remain ([host-parity.md](host-parity.md) §0). The
@@ -30,10 +30,10 @@ or the native engine.
 
 ### What stays Python forever
 
-- Composition API (`python/xy/components.py`) and the matplotlib shim
-  (`python/xy/pyplot/`).
+- Composition API (`python/xyg/components.py`) and the matplotlib shim
+  (`python/xyg/pyplot/`).
 - Reflex integration (`python/reflex_xy/`) — may keep linking
-  `xy/static/index.js` from the *installed Python package*.
+  `xyg/static/index.js` from the *installed Python package*.
 - Notebook / anywidget / `Chart.to_html()` embedding a **copy** of the paint
   client inside the wheel.
 - Host ergonomics: ingest coercion, error-message text, transport attach.
@@ -65,8 +65,8 @@ chose: **Curate Labs** and **XYG**.
 | Node host (npm) | **`@curatelabs/xyg-node`** | #13 / #18 (identity); #52 (exact-platform optional natives); #23 (toHtml consumes `@curatelabs/xyg`, does not own native `.so` lookup) | Replaces in-tree `"name": "@xy/node"`; never publish `@xy/node`. Thin koffi host; must not import browser APIs. Optional exact-platform packages: `@curatelabs/xyg-node-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}` (Windows arm64 unsupported). |
 | Safe Rust crate | `xyg-engine` | #18 | Algorithms and deterministic policy. |
 | C ABI crate / artifact | `xyg-core` / `libxyg_core` | #18 | One cdylib for Python and Node. |
-| Python distribution | **`xyg`** | #13 / #18 | `pip install xyg`. Not upstream `xy`. Import remains `xy` until the staged `python/xyg/` cutover. |
-| Python import | `xy` or `xyg` | #13 / #18 open question | Time-bounded alias vs clean break; does not change the product name XYG. |
+| Python distribution | **`xyg`** | #13 / #18 | `pip install xyg`. Not upstream `xy`. |
+| Python import | **`xyg`** | #51 | Clean break: `import xyg`; no `xy` compatibility alias. |
 
 **Why two npm packages.** Isolation in host-parity §0: the Node package must
 not import `window` / WebGL / DOM; the browser client must not import
@@ -83,9 +83,10 @@ Node-shaped host (native ABI + composition), the owned replacement for
 own the npm scope `@curatelabs` before a real publish. Record that under #13;
 do not invent `@xy/*` as a fallback.
 
-In-repo directories (`packages/xy-node`, `js/src`, `python/xy/`) may keep
-current paths until #18’s mechanical rename; **published** `package.json`
-`name` fields must use the table above.
+The compatibility paths `packages/xy-node`, `/docs/xy`, and `xy-*` browser
+protocol/DOM identifiers remain separately governed surfaces; they are not the
+Python package or current product brand. Published `package.json` names use
+the table above.
 
 ---
 
@@ -98,7 +99,7 @@ related, not the same acceptance criteria.
 | --- | --- | --- |
 | Identity / crate split | **#18** | XYG name, `xyg-engine` / `xyg-core`, one ABI, Node `.so`/`.dylib`/`.dll` lookup |
 | Publish identity | **#13** (parent #12) | PyPI/npm names, tag line, publish guards (guards already in #20). **Names** here; **shipping packages** in #18/#23 |
-| Docs / branding links | **#14** (parent #12) | Retarget `reflex-dev/xy` URLs. Overlaps README with #23’s npm door — different job |
+| Docs / branding links | **#14** (parent #12) | Preserve `reflex-dev/xy` only as upstream provenance; current links and branding use XYG. |
 | Canonical store | **#22** | Rust `stream.rs` + `xyg_stream_*`. Not npm, not crate split, not tile spill |
 | Host-neutral client | **#23** | Paint-client artifact + npm `@curatelabs/xyg` + Node `toHtml` + spec/README doors |
 | Ownership enforcement | **#56** | Exhaustive file ledger + stdlib-only CI gate; no language-ratio target |
@@ -195,7 +196,7 @@ the npm `@curatelabs` org. Do not publish `@xy/node`.
 
 1. **#23** — host-neutral paint client: `js/build.mjs` writes a non-Python
    artifact; Python wheel *copies* it; Node `toHtml` + demos + VS Code
-   contract stop reading `python/xy/static`; README/`docs/overview/installation.md`
+   contract stop reading `python/xyg/static`; README/`docs/overview/installation.md`
    document `npm install @curatelabs/xyg` beside `pip install`. Package
    `name` is `@curatelabs/xyg` even before a registry publish.
 2. **#18** — crate split + XYG identity, including renaming

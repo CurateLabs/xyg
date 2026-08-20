@@ -18,8 +18,8 @@ from typing import Any
 
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._state import all_figures
+import xyg.pyplot as plt
+from xyg.pyplot._state import all_figures
 
 CORPUS_DIR = pathlib.Path(__file__).resolve().parent / "corpus"
 CORPUS = sorted(CORPUS_DIR.glob("[0-9][0-9]_*.py"))

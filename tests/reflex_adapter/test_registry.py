@@ -7,13 +7,13 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pytest
 
-import xy
+import xyg
 from reflex_xy.registry import FigureRegistry
 
 
 def make_figure(n: int = 16):
     xs = np.linspace(0.0, 1.0, n)
-    return xy.scatter_chart(xy.scatter(xs, xs * 2.0), width=400, height=300).figure()
+    return xyg.scatter_chart(xyg.scatter(xs, xs * 2.0), width=400, height=300).figure()
 
 
 def test_register_release_roundtrip(_fresh_registry):
@@ -303,7 +303,7 @@ def test_broadcast_noop_before_setup(_fresh_registry):
 def test_figure_accepts_chart_or_figure(_fresh_registry):
     registry = _fresh_registry
     xs = np.linspace(0.0, 1.0, 8)
-    chart = xy.scatter_chart(xy.scatter(xs, xs), width=300, height=200)
+    chart = xyg.scatter_chart(xyg.scatter(xs, xs), width=300, height=200)
     token_from_chart = registry.register(chart.figure())
     assert registry.get(token_from_chart) is not None
 

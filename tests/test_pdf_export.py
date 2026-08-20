@@ -16,9 +16,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-from xy._figure import Figure
-from xy._pdf import svg_to_pdf
+import xyg
+from xyg._figure import Figure
+from xyg._pdf import svg_to_pdf
 
 
 def _basic_figure() -> Figure:
@@ -179,7 +179,7 @@ def test_facet_grid_converts_with_clipped_panels() -> None:
         "y": np.concatenate([np.sin(x), np.cos(x), np.sin(2 * x)]),
         "g": np.repeat(["a", "b", "c"], 50),
     }
-    chart = xy.facet_chart(xy.line(x="x", y="y"), by="g", cols=2, title="grid", data=data)
+    chart = xyg.facet_chart(xyg.line(x="x", y="y"), by="g", cols=2, title="grid", data=data)
     svg = chart.to_svg()
     panels = svg.count("<svg") - 1  # nested panel viewports
     assert panels > 1

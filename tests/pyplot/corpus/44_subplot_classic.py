@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(0, 3, 60)
 ax_top = plt.subplot(2, 1, 1)

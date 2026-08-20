@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""Fail if current-product files still use retired XY native identity.
+"""Fail if current-product files still use retired XYG/XYG identities.
 
-Enforces spec/design/xyg-naming.md for the crate-split identifiers that
-have already landed: libxyg_core, XYG_* env vars, @curatelabs/xyg-node,
-and crates/xyg-core/src/lib.rs as the ABI location. Historical audits,
-the naming matrix (old column), and provenance scripts are allowlisted.
+Enforces spec/design/xyg-naming.md, including the clean Python ``xyg``
+namespace cutover. Historical audits, the naming matrix's old column, and the
+one-way provenance migration script are file-allowlisted. Individual
+intentional compatibility references use ``xyg-stale-name: allow``.
 Stdlib only.
 """
 
 from __future__ import annotations
 
 import argparse
+import ast
+import io
 import re
 import sys
+import tokenize
 from pathlib import Path
 from typing import Optional
 
@@ -24,6 +27,7 @@ SKIP_PARTS = {
     ".pytest_cache",
     ".ruff_cache",
     ".venv",
+    ".web",
     "__pycache__",
     "dist",
     "node_modules",
@@ -60,16 +64,55 @@ SCAN_SUFFIXES = {
 ALLOWLIST_FILES = {
     Path("spec/design/xyg-naming.md"),
     Path("CHANGELOG.md"),
-    Path("spec/process/perf-audit-2026-07-22.md"),
-    Path("spec/process/security-audit-2026-07-06.md"),
     Path("scripts/rename_fc_to_xy.py"),
     Path("scripts/check_stale_names.py"),
-    Path("tests/test_stale_names.py"),
 }
 
 # Retired current-product identity. XYG_* names must not match these.
 _ENV = r"(?<![A-Z0-9_])"
+LINE_ALLOW_MARKER = "xyg-stale-name: allow"
 NEEDLES = (
+    ("python/xy package path", re.compile(r"python/xy(?:/|\b)")),
+    ("xy wheel artifact", re.compile(r"(?<![A-Za-z0-9_])xy\.(?:whl|tar\.gz)\b")),
+    ("xy artifact glob", re.compile(r"(?<![A-Za-z0-9_])xy-\*\.(?:whl|tar\.gz)\b")),
+    ("pip show xy", re.compile(r"\bpip\s+show\s+xy\b")),
+    (
+        "backticked xy product noun",
+        re.compile(r"`xy`\s+(?:release|content|distribution)\b", re.IGNORECASE),
+    ),
+    ("corrupted upstream XYG", re.compile(r"(?:upstream\s+XYG|reflex-dev/XYG)")),
+    ("xy-native product wording", re.compile(r"(?<![A-Za-z0-9_])xy-native\b", re.IGNORECASE)),
+    (
+        "retired xy product description",
+        re.compile(
+            r"(?<![A-Za-z0-9_])(?:an?\s+)?xy(?=\s+(?:chart|package|wheel|dependency|distribution|install|engine|README)\b|\s*—\s*)",
+            re.IGNORECASE,
+        ),
+    ),
+    ("retired xy.pyplot label", re.compile(r"Matplotlib\s*\(xy\.pyplot\)")),
+    ("retired xy benchmark target", re.compile(r"--packages\s+xy(?:,|\s|$)")),
+    (
+        "retired xy distribution constraint",
+        re.compile(r"(?<![A-Za-z0-9_])xy(?:\[(?:reflex|dev)\]|==)"),
+    ),
+    ("user-facing xyg alias", re.compile(r"(?:^|[;])\s*import\s+xyg\s+as\s+xy\b")),
+    (
+        "premature xyg browser global",
+        re.compile(r"(?<![A-Za-z0-9_])xyg\.(?:renderStandalone|decodeFrame|ChartView|markOf)\b"),
+    ),
+    ("current product XY brand", re.compile(r"(?<![A-Za-z0-9_])XY(?![A-Za-z0-9_])")),
+    (
+        "backticked xy Python API",
+        re.compile(r"`xy\.(?!renderStandalone\b|decodeFrame\b)"),
+    ),
+    (
+        "import xy",
+        re.compile(r"(?:^|[\"';,])\s*(?:import|from)\s+xy(?:\s|\.|$)"),
+    ),
+    (
+        "xy Python module reference",
+        re.compile(r"(?<![A-Za-z0-9_])xy\.(?:kernels|widget|export)(?![A-Za-z0-9_])"),
+    ),
     ("libxy_core", re.compile(r"libxy_core")),
     ("xy_core.dll", re.compile(r"(?<![A-Za-z0-9_])xy_core\.dll")),
     ("XY_NATIVE_LIB", re.compile(_ENV + r"XY_NATIVE_LIB\b")),
@@ -88,6 +131,59 @@ NEEDLES = (
     ("src/lib.rs ABI", re.compile(r"src/lib\.rs")),
 )
 
+_PYTHON_TEXT_XY = re.compile(r"(?<![A-Za-z0-9_])xy\.[A-Za-z_]")
+_BROWSER_GLOBALS = ("xy.renderStandalone", "xy.decodeFrame")
+_PRODUCT_DESCRIPTION_XY = re.compile(r"(?<![A-Za-z0-9_])xy(?=\.| chart\b| wheel\b| package\b|'s\b)")
+
+
+def _python_text_errors(path: Path, rel: str, text: str, *, repository_scan: bool) -> list[str]:
+    """Reject retired public Python names in comments, docstrings, and errors."""
+    if path.suffix != ".py":
+        return []
+    if repository_scan and not rel.startswith(("python/xyg/", "python/reflex_xy/")):
+        return []
+    errors: list[str] = []
+    try:
+        tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+        for token in tokens:
+            if token.type not in {tokenize.COMMENT, tokenize.STRING}:
+                continue
+            value = token.string
+            if LINE_ALLOW_MARKER in value:
+                continue
+            for match in _PYTHON_TEXT_XY.finditer(value):
+                if value.startswith(_BROWSER_GLOBALS, match.start()):
+                    continue
+                errors.append(
+                    f"{rel}:{token.start[0]}: stale xy Python public reference: {value.strip()}"
+                )
+                break
+    except (IndentationError, SyntaxError, tokenize.TokenError):
+        pass
+    return errors
+
+
+def _module_description_errors(path: Path, rel: str, text: str) -> list[str]:
+    """Reject ambiguous XYG product/API wording in current developer surfaces."""
+    if path.suffix != ".py" or not rel.startswith(("scripts/", "benchmarks/", "examples/")):
+        return []
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    doc = ast.get_docstring(tree, clean=False)
+    if not doc or LINE_ALLOW_MARKER in doc:
+        return []
+    matches = [
+        match
+        for match in _PRODUCT_DESCRIPTION_XY.finditer(doc)
+        if not doc.startswith(_BROWSER_GLOBALS, match.start())
+    ]
+    if not matches:
+        return []
+    lineno = tree.body[0].lineno if tree.body else 1
+    return [f"{rel}:{lineno}: stale XYG product/API wording in module description"]
+
 
 def _skip(path: Path) -> bool:
     return any(part in SKIP_PARTS for part in path.parts)
@@ -95,6 +191,9 @@ def _skip(path: Path) -> bool:
 
 def _should_scan(path: Path) -> bool:
     if _skip(path) or not path.is_file():
+        return False
+    rel = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else path.as_posix()
+    if rel.startswith(("assets/external/", "docs/app/assets/external/", "python/xyg/static/")):
         return False
     if path.name in SCAN_NAMES:
         return True
@@ -118,6 +217,52 @@ def _allowed_xy_node(line: str) -> bool:
     return "never publish" in line.lower()
 
 
+def _allowed_provenance_xy(line: str) -> bool:
+    """Allow only explicit upstream/history identifiers, never current branding."""
+    return bool(
+        "XY-vs-XYG" in line
+        or "upstream XY" in line
+        or ("reflex-dev/" + "xy") in line
+        or re.search(r"\bXY-(?:SEC|CI|PERF)-", line)
+    )
+
+
+_HISTORICAL_IDENTITY_ALLOWLIST = {
+    ("spec/process/perf-audit-2026-07-22.md", "libxy_core"),
+    ("spec/process/security-audit-2026-07-06.md", "XY_REQUIRE_CARGO"),
+    ("spec/process/security-audit-2026-07-06.md", "XY_NATIVE_LIB"),
+}
+
+_NEGATIVE_TEST_LINE_FRAGMENTS = (
+    "libxy_core",
+    "XY_NATIVE_LIB",
+    "import xy",
+    "python/xy",
+    "xy Python module reference",
+    "xy.whl",
+    "xy wheel artifact",
+    "`xy.legend",
+    "backticked xy Python API",
+    "xy-*.whl",
+    "xy-*.tar.gz",
+    "pip show xy",
+    "upstream XYG",
+    "reflex-dev/XYG",
+    "corrupted upstream XYG",
+    "xy-native",
+    "xy package",
+    "xy dependency",
+    "--packages xy",
+    "xy[reflex]",
+    "retired xy distribution constraint",
+    "Build an XY chart",
+    "import xyg as xy",
+    "current product XY brand",
+    "src/lib.rs ABI",
+    "ABI_VERSION in src/lib.rs",
+)
+
+
 def iter_scan_files(root: Path) -> list[Path]:
     files = []
     for path in root.rglob("*"):
@@ -132,18 +277,34 @@ def iter_scan_files(root: Path) -> list[Path]:
 
 def check_stale_names(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
+    repository_scan = root.resolve() == ROOT.resolve()
     for path in iter_scan_files(root):
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
         rel = path.relative_to(root).as_posix()
+        errors.extend(_python_text_errors(path, rel, text, repository_scan=repository_scan))
+        if repository_scan:
+            errors.extend(_module_description_errors(path, rel, text))
         for lineno, line in enumerate(text.splitlines(), 1):
+            if LINE_ALLOW_MARKER in line:
+                continue
+            if rel == "tests/test_stale_names.py" and any(
+                fragment in line for fragment in _NEGATIVE_TEST_LINE_FRAGMENTS
+            ):
+                continue
             for label, pattern in NEEDLES:
                 for match in pattern.finditer(line):
                     if label == "src/lib.rs ABI" and _allowed_src_lib_rs(line, match.start()):
                         continue
                     if label == "@xy/node" and _allowed_xy_node(line):
+                        continue
+                    if (rel, label) in _HISTORICAL_IDENTITY_ALLOWLIST:
+                        continue
+                    if label == "current product XY brand" and (
+                        _allowed_provenance_xy(line) or "f64 XY" in line
+                    ):
                         continue
                     errors.append(f"{rel}:{lineno}: stale {label}: {line.strip()}")
     return errors

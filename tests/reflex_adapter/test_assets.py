@@ -1,4 +1,4 @@
-"""Shipped frontend assets: client sourced from the xy install + wrapper contract."""
+"""Shipped frontend assets: client sourced from the xyg install + wrapper contract."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import pathlib
 from scripts.js_exports import missing_esm_exports
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.assets import _client_source, _link_client
 
 ADAPTER_ASSETS = pathlib.Path(reflex_xy.__file__).parent / "assets"
@@ -23,7 +23,7 @@ def test_client_is_not_packaged():
 
 def test_client_source_is_the_installed_bundle():
     source = _client_source()
-    assert source == pathlib.Path(xy.__file__).resolve().parent / "static" / "index.js"
+    assert source == pathlib.Path(xyg.__file__).resolve().parent / "static" / "index.js"
     text = source.read_text(encoding="utf-8")
     # The bundle is minified, so verify the ESM export surface rather than
     # implementation spellings the minifier rewrites. Exactly what the wrapper
@@ -312,7 +312,7 @@ def test_wrapper_sizes_static_and_live_charts_to_the_reflex_mount():
 
 
 def test_wrapper_feeds_hover_payload_to_custom_tooltip_children():
-    """xy.tooltip(render=...) children must receive the live §7.1 payload as
+    """xyg.tooltip(render=...) children must receive the live §7.1 payload as
     props client-side (Recharts-style cloneElement) — a statically rendered
     slot would show frozen content and defeat the whole contract."""
     jsx = (ADAPTER_ASSETS / "XYChart.jsx").read_text(encoding="utf-8")

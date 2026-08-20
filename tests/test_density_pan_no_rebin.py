@@ -22,9 +22,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 _RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
 
@@ -110,10 +110,10 @@ def _density_html() -> str:
     # density=True forces the density tier (overview grid + retained sample)
     # regardless of point count, so the export exercises the standalone re-bin
     # path deterministically and cheaply.
-    chart = xy.scatter_chart(
-        xy.scatter(x, y, density=True),
-        xy.x_axis(),
-        xy.y_axis(),
+    chart = xyg.scatter_chart(
+        xyg.scatter(x, y, density=True),
+        xyg.x_axis(),
+        xyg.y_axis(),
         width=480,
         height=360,
     )

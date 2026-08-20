@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _graph, _native
-from xy._figure import Figure
+import xyg
+from xyg import _graph, _native
+from xyg._figure import Figure
 
 
 def test_graph_layout_circle_deterministic():
@@ -81,8 +81,8 @@ def test_tiny_force_golden_stable():
 
 
 def test_graph_chart_emits_segments_scatter_and_meta():
-    chart = xy.graph_chart(
-        xy.graph(["n0", "n1", "n2"], [("n0", "n1"), ("n1", "n2")], layout="grid"),
+    chart = xyg.graph_chart(
+        xyg.graph(["n0", "n1", "n2"], [("n0", "n1"), ("n1", "n2")], layout="grid"),
         width=400,
         height=300,
     )
@@ -147,10 +147,10 @@ def test_cluster_aggregate_records_tier_and_centroids():
 
 
 def test_graph_exports_public():
-    assert hasattr(xy, "graph")
-    assert hasattr(xy, "graph_chart")
-    assert callable(xy.graph)
-    assert callable(xy.graph_chart)
+    assert hasattr(xyg, "graph")
+    assert hasattr(xyg, "graph_chart")
+    assert callable(xyg.graph)
+    assert callable(xyg.graph_chart)
 
 
 def test_from_graphforge_tables():
@@ -194,7 +194,7 @@ def test_from_graphforge_tables_uses_native_dense_mapping_and_parents():
         "src_uuid": ["00000000-0000-0000-0000-000000000001"],
         "dst_uuid": ["00000000-0000-0000-0000-000000000002"],
     }
-    data = xy.from_graphforge_tables(nodes, edges, directed=False)
+    data = xyg.from_graphforge_tables(nodes, edges, directed=False)
     np.testing.assert_array_equal(data.sources, [1])
     np.testing.assert_array_equal(data.targets, [0])
     np.testing.assert_array_equal(data.parent_indices, [0, 0])

@@ -1,11 +1,11 @@
 ---
 title: Marks and Components
-description: Generated signatures for XY marks, axes, annotations, chrome, themes, and behavior.
+description: Generated signatures for XYG marks, axes, annotations, chrome, themes, and behavior.
 ---
 
 # Marks and Components
 
-These tables are generated from XY's public Python signatures and docstrings.
+These tables are generated from XYG's public Python signatures and docstrings.
 Use the [Components guides](/docs/xy/components/) for composition patterns,
 then return here for exact parameter names, types, and defaults.
 

@@ -40,10 +40,10 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | Shipped cdylib artifact | `libxy_core.so` / `libxy_core.dylib` / `xy_core.dll` | **`libxyg_core.so` / `libxyg_core.dylib` / `xyg_core.dll`** (one artifact per platform; wasm target packs as `libxyg_core.so`) | decided |
 | C ABI symbol prefix | `xy_*` (e.g. `xy_abi_version`) | **`xyg_*`** (e.g. `xyg_abi_version`); prefix change ships with the ABI 58 bump, so an old wrapper can never half-bind a new library | decided |
 | ABI contract | — (declarations duplicated by hand) | **`spec/abi/xyg-abi.json` + `xyg.h`**, generated with Python ctypes and Node Koffi declarations from `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`; byte-for-byte checked by `scripts/check_abi_parity.py` | landed (#57) |
-| Python distribution | `xy` | **`xyg`** | landed (`pyproject.toml` / wheels / `pip install xyg`; import still `xy`) |
-| Python import namespace | `import xy` (`python/xy/`) | **`import xyg`** (`python/xyg/`) | in progress (#51); distribution already `xyg` |
-| Bundled Reflex adapter | `reflex_xy` (`python/reflex_xy/`) | **`reflex_xyg`** (`python/reflex_xyg/`); extra spelled `xyg[reflex]` | decided (owner, 2026-08-11) |
-| Paint client (npm) | (Python `python/xy/static` only) | **`@curatelabs/xyg`** (owned by #23; listed so the matrix is complete) | decided |
+| Python distribution | `xy` | **`xyg`** | landed (`pyproject.toml` / wheels / `pip install xyg`) |
+| Python import namespace | `import xy` (`python/xy/`) | **`import xyg`** (`python/xyg/`) | landed (#51); no compatibility alias |
+| Bundled Reflex adapter | **`reflex_xy`** (`python/reflex_xy/`) | unchanged; extra spelled `xyg[reflex]` | retained by #51 product decision |
+| Paint client (npm) | (Python `python/xyg/static` only) | **`@curatelabs/xyg`** (owned by #23; listed so the matrix is complete) | decided |
 | Node package | `@xy/node` (`packages/xy-node/`) | **`@curatelabs/xyg-node`** (in-tree directory stays `packages/xy-node`; never publish `@xy/node`) | decided (owner; npm scope locked with #24/#23) |
 | Node exact-platform natives | (none; repo/`_native_lib` only) | **`@curatelabs/xyg-node-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}`** as optionalDependencies of the facade; Windows arm64 unsupported; inventory/hashes/budgets via `scripts/verify_node_packages.py` | in progress (#52) |
 | Native-lib override env var | `XY_NATIVE_LIB` | **`XYG_NATIVE_LIB`** (both hosts + Bazel wrappers; packaged paths otherwise — never a broadened system search) | decided |
@@ -72,13 +72,21 @@ stage lands. Proposed targets are recorded so the later rename is mechanical.
 | Browser standalone global | `window.xy` (IIFE bundle name in `js/build.mjs`) | `window.xyg` | browser/branding stage (#14) — changes every embedding example and smoke |
 | Root DOM class / CSS namespace | `class="xy"` (`js/src/50_chartview.ts`) | `class="xyg"` | browser/branding stage (#14) — public styling surface, coordinate with docs |
 | Wire-protocol constants | `XY_FRAME_MAGIC`, `XY_FRAME_VERSION`, `XY_PAYLOAD_MAGIC`, … (Python + TS) | `XYG_*` with a protocol-version bump | wire-protocol stage — byte-level magic changes need migration evidence (`spec/design/wire-protocol.md`) |
-| Widget/anywidget module + static bundle names | `python/xy/static/{index,standalone}.js` internals | unchanged paths until `import xyg`; internal names follow browser stage | browser/branding stage (#14) |
+| Widget/anywidget module + static bundle names | `python/xyg/static/{index,standalone}.js` internals | unchanged paths until `import xyg`; internal names follow browser stage | browser/branding stage (#14) |
 | Dev/test/bench env knobs | `XY_BROWSER`, `XY_CHROMIUM`, `XY_LIVE_POINTS`, `XY_CONTEXT_GOVERNOR`, `XY_NOTEBOOK_DISPLAY`, `XY_SHARED_WEBGL`, `XY_POLAR_AA`, and other dev-only `XY_*` knobs | `XYG_*` sweep | branding stage (#14) — dev-only, no product artifact depends on them |
 | Python-internal constant prefixes | `XY_OK`, `XY_ERROR`, `XY_VERSION`, … (module-level constants) | `XYG_*` | with the wire/branding stages that own each constant |
 | README, user docs, branding sweep | README branding, docs-app copy | — | #14 (explicitly out of scope here) |
 | Historical repository slugs | `graphforge-xy`, `reflex-dev/xy` | permitted only in provenance/evidence contexts (old URLs redirect); current-product references use `CurateLabs/xyg` | policy (gate-enforced) |
 | Public documentation origin | inherited `https://reflex.dev/docs/xy` | explicit CurateLabs-owned `XY_DOCS_PUBLIC_URL` deployment configuration | unset in preview/source builds; canonical, sitemap, social, and absolute public agent URLs are omitted rather than invented; generated Markdown retains only its truthful host-relative `/docs/xy/llms.txt` discovery link |
 | Upstream-inherited corpus/fixtures | `scripts/rename_fc_to_xy.py`, matplotlib compat corpus labels | permitted historical evidence | never (provenance) |
+
+The host-relative `/docs/xy/` route, `xy-*` DOM/event/CSS prefixes,
+`xy_client.js` asset name, and `packages/xy-node/` source directory are
+compatibility or protocol surfaces rather than the Python product identity.
+They remain unchanged in #51 and must never be presented as the current
+package, import namespace, or product brand. The browser compatibility global
+likewise remains only `window.xy`, `xy.renderStandalone`, and `xy.decodeFrame`
+until its separately versioned migration.
 
 ## 3. Migration order (no mixed intermediate artifact)
 
@@ -105,12 +113,12 @@ one reviewed PR on `main` before any release tag:
    Bazel, CI, benchmark and smoke scripts all locate `libxyg_core`.
 5. **Host namespace renames** — Node package.json becomes `@curatelabs/xyg-node`
    with this crate split (directory stays `packages/xy-node`). Python
-   `import xyg` / `python/xyg/` / `reflex_xyg` is decided (§1) but **staged
-   after** the crate split, native artifact, and Node lookup so Python package
-   churn cannot block `libxyg_core`. The **distribution** name `xyg` (wheels,
+   `import xyg` / `python/xyg/` lands after the crate split, native artifact,
+   and Node lookup; the `reflex_xy` integration namespace remains stable. The
+   **distribution** name `xyg` (wheels,
    sdists, `pip install xyg`, `importlib.metadata.version("xyg")`) lands with
    the crate-split PR so PyPI trusted publishing can claim project `xyg`.
-   Until the import cutover, hosts still `import xy` from `python/xy/`.
+   The old `xy` import is intentionally absent after the clean cutover.
 6. **Stale-name gate** — `scripts/check_stale_names.py` turns the policy in
    §0/§2 into a repository-wide check.
 
@@ -135,23 +143,23 @@ artifact can exist.
 
 ## 5. Python import cutover checklist (#51)
 
-**Current locked split (pre-cutover):**
+**Landed identity:**
 
 | Fact | Value |
 |---|---|
 | Distribution / PyPI project | `xyg` (`pyproject.toml` `name`, wheels, `pip install xyg`) |
-| Import namespace | `import xy` from `python/xy/` |
-| Reflex adapter | `reflex_xy` — **retained** for #51 (issue Non-Goal); matrix target `reflex_xyg` is a later branding slice |
-| Compatibility alias | **None** — when `import xyg` ships, `import xy` must fail |
+| Import namespace | `import xyg` from `python/xyg/` |
+| Reflex adapter | `reflex_xy` — **retained** for #51 |
+| Compatibility alias | **None** — `import xy` fails |
 
-**Mechanical cutover steps (single coherent change or tightly sequenced PRs; no published mixed artifact):**
+**Completed cutover steps (one coherent change; no published mixed artifact):**
 
 1. `git mv python/xy python/xyg` (and update hatch `packages` / sdist includes / artifacts to `python/xyg/**`).
 2. Rewrite every product `import xy` / `from xy…` to `xyg` (tests, examples, docs, scripts, benches, and Reflex adapter imports of the chart package — adapter package name stays `reflex_xy`).
 3. Update `hatch_build.py` destinations (`python/xyg/_native_lib`, `python/xyg/static`).
 4. Update `scripts/verify_wheel.py` / `verify_sdist.py` expected paths (`xyg/_native_lib/…`, `xyg/static/…`).
 5. Keep `python/reflex_xy` / `import reflex_xy`; extra remains `xyg[reflex]`.
-6. Refresh this matrix status to **landed**, clear stale allowlist entries that existed only for the `python/xy` tree, and update host-parity / production-readiness wording.
+6. Refresh this matrix status to **landed**, clear stale allowlist entries that existed only for the old Python tree, and update host-parity / production-readiness wording.
 7. Prove BDD: clean `pip install` of wheel/sdist → `import xyg` renders; `import xy` raises `ModuleNotFoundError`.
 
-**Guardrail today:** `tests/test_xyg_package_identity.py` locks the pre-cutover split so the distribution cannot silently regress to `xy` and so the missing `import xyg` surface stays explicit until the mechanical rename lands.
+**Guardrail:** `tests/test_xyg_package_identity.py` locks the landed distribution/import identity, absence of the old namespace, and retained `reflex_xy` adapter.

@@ -55,20 +55,20 @@ Then proceed with the user's request.
 When you need to compile, run, reload, or debug a Reflex application, follow the **reflex-process-management** skill for the correct sequence and error investigation steps.
 <!-- reflex managed end -->
 
-# XY Documentation App
+# XYG Documentation App
 
-This nested project is the public XY documentation site. It is a Reflex app
+This nested project is the public XYG documentation site. It is a Reflex app
 mounted at `/docs/xy` and intentionally follows the official Reflex docs
 structure and presentation.
 
 ## Project layout
 
 ```text
-xy_docs/                 # App entry point and XY-specific site composition
+xy_docs/                 # App entry point and XYG-specific site composition
   config.py              # Public Markdown discovery and navigation order
-  navbar.py              # XY branding using the shared docs shell
-  sidebar.py             # Memoized XY navigation
-  footer.py              # XY wrapper around the shared Reflex footer
+  navbar.py              # XYG branding using the shared docs shell
+  sidebar.py             # Memoized XYG navigation
+  footer.py              # XYG wrapper around the shared Reflex footer
 scripts/                 # Post-build sitemap, Markdown, and HTML validators
 tests/                   # Docs, links, live-preview, and integration tests
 ../                      # Public Markdown sources
@@ -101,7 +101,7 @@ repository root.
   routes and sidebar order to `DOCS_NAVIGATION`; do not add ordering
   frontmatter to individual files.
 - Leaf pages that own public callable APIs declare them in ordered
-  `components:` frontmatter, using exported `xy.*` or `reflex_xy.*` names. The
+  `components:` frontmatter, using exported `xyg.*` or `reflex_xy.*` names. The
   docs app appends the same generated API Reference to HTML, per-page Markdown,
   and `llms-full.txt`; do not author that section manually. Invalid, duplicate,
   private, or non-callable entries fail docs compilation. Overview and general
@@ -116,9 +116,9 @@ repository root.
 - Preserve `/docs/xy` in internal links, canonical URLs, generated Markdown
   aliases, and sitemap entries.
 - Reuse `reflex-site-shared` for the docs shell, Markdown renderer, styles,
-  Inkeep search, breadcrumbs, footer, and responsive drawers. Keep XY branding,
+  Inkeep search, breadcrumbs, footer, and responsive drawers. Keep XYG branding,
   navigation data, `rxconfig.py`, and small consumer-specific wrappers local.
-- Preserve `rx.memo` boundaries on the shared and XY sidebar components so
+- Preserve `rx.memo` boundaries on the shared and XYG sidebar components so
   large navigation trees compile once.
 - Generated `.web/`, `assets/external/`, and `assets/xy/` content is local
   build output and must not be committed.

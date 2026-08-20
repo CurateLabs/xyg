@@ -71,7 +71,7 @@ export const TRACE_GPU_BUFFERS = [
 ];
 
 // HTTP binary frame v1 (spec/design/wire-protocol.md §7; Python side in
-// python/xy/_framing.py). The chart spec's PROTOCOL
+// python/xyg/_framing.py). The chart spec's PROTOCOL
 // above versions renderer semantics; this separately versions the transport
 // envelope so either layer can fail loudly without coupling their evolution.
 const XY_FRAME_MAGIC = [0x58, 0x59, 0x42, 0x46]; // "XYBF"

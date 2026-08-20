@@ -1,10 +1,10 @@
 # Real-world large-data notebooks
 
-These six notebooks use public datasets large enough to exercise XY's density,
+These six notebooks use public datasets large enough to exercise XYG's density,
 decimation, and faceting paths with recognizable scientific and operational
 data:
 
-| Notebook | Dataset | Default workload | XY path |
+| Notebook | Dataset | Default workload | XYG path |
 | --- | --- | ---: | --- |
 | `01_gaia_hr_diagram.ipynb` | [ESA Gaia DR3](https://www.cosmos.esa.int/web/gaia-users/archive/programmatic-access) | 1M stars | scatter density |
 | `02_gnomad_allele_frequency.ipynb` | [gnomAD v4.1 genomes](https://gnomad.broadinstitute.org/news/2024-04-gnomad-v4-1/) | up to 3.52M variants | scatter density + log axis |
@@ -21,28 +21,28 @@ its working rows from the linked public source into the git-ignored cache.
 
 ### 1. Gaia DR3 — Hertzsprung–Russell diagram
 
-![Gaia DR3 stellar color versus absolute magnitude rendered as an XY scatter-density chart.](assets/01-gaia-hr-diagram.png)
+![Gaia DR3 stellar color versus absolute magnitude rendered as an XYG scatter-density chart.](assets/01-gaia-hr-diagram.png)
 
 **Theme:** Cosmic observatory · scatter density of stellar color versus
 absolute magnitude
 
 ### 2. gnomAD v4.1 — allele frequency across the genome
 
-![gnomAD allele frequency by chromosome rendered as an XY scatter-density chart with a logarithmic axis.](assets/02-gnomad-allele-frequency.png)
+![gnomAD allele frequency by chromosome rendered as an XYG scatter-density chart with a logarithmic axis.](assets/02-gnomad-allele-frequency.png)
 
 **Theme:** Clinical genomic atlas · scatter density of genomic position versus
 allele frequency
 
 ### 3. Pan-UKBB — standing-height Manhattan plot
 
-![Pan-UKBB standing-height associations across all autosomes rendered as an XY Manhattan plot.](assets/03-pan-ukbb-manhattan.png)
+![Pan-UKBB standing-height associations across all autosomes rendered as an XYG Manhattan plot.](assets/03-pan-ukbb-manhattan.png)
 
 **Theme:** Warm biobank editorial · scatter density of genomic position versus
 −log10 p-value
 
 ### 4. Dukascopy — EUR/USD tick history
 
-![Dukascopy EUR/USD midpoint quotes rendered as an XY decimated line chart.](assets/04-dukascopy-fx-ticks.png)
+![Dukascopy EUR/USD midpoint quotes rendered as an XYG decimated line chart.](assets/04-dukascopy-fx-ticks.png)
 
 **Theme:** Trading terminal · M4 line decimation of UTC time versus EUR/USD
 midpoint
@@ -67,7 +67,7 @@ scatter density and 24 hourly facets.
 From a Python 3.11+ environment:
 
 ```bash
-python -m pip install xy jupyter numpy requests pysam h5py gwosc
+python -m pip install xyg jupyter numpy requests pysam h5py gwosc
 jupyter lab
 ```
 

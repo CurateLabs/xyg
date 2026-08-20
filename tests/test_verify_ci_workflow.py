@@ -1093,6 +1093,19 @@ def test_ci_workflow_rejects_missing_install_benchmark_verification(tmp_path: Pa
     assert any("benchmark" in error and "install-footprint" in error for error in errors)
 
 
+def test_ci_workflow_rejects_stale_no_rust_import_identity(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace("          assert xyg.__version__\n", "          assert xy.__version__\n"),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow(path)
+
+    assert any("no-Rust" in error and "assert xyg.__version__" in error for error in errors)
+
+
 def test_ci_workflow_rejects_benchmark_job_without_native_backend_assertion(
     tmp_path: Path,
 ) -> None:
@@ -1101,7 +1114,7 @@ def test_ci_workflow_rejects_benchmark_job_without_native_backend_assertion(
         "      - name: Verify native benchmark backend\n"
         "        run: |\n"
         "          .venv/bin/python - <<'PY'\n"
-        "          import xy.kernels as k\n"
+        "          import xyg.kernels as k\n"
         '          assert k.BACKEND == "native", f"benchmark job requires native backend, got {k.BACKEND!r}"\n'
         "          PY\n"
     )
@@ -1142,7 +1155,7 @@ def test_codspeed_workflow_rejects_missing_native_backend_assertion(tmp_path: Pa
         "      - name: Verify native benchmark backend\n"
         "        run: |\n"
         "          .venv/bin/python - <<'PY'\n"
-        "          import xy.kernels as k\n"
+        "          import xyg.kernels as k\n"
         '          assert k.BACKEND == "native", f"CodSpeed requires native backend, got {k.BACKEND!r}"\n'
         "          PY\n\n"
     )

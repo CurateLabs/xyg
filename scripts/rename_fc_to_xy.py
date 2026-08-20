@@ -74,7 +74,7 @@ RULES: list[tuple[str, str]] = [
     # module alias: drop it, then rewrite attribute access on it
     (r"\bimport xy as fc\b", "import xy"),
     (r"\bfc\\\.", r"xy\\."),  # regex-escaped form inside test match patterns
-    (r"\bfc\.", "xy."),
+    (r"\bfc\.", "xyg."),
     (r"\b(getattr|hasattr)\(\s*fc\s*,", r"\1(xy,"),
 ]
 
@@ -95,7 +95,7 @@ MAX_LINE = 2000
 # - "fc"/fc= is matplotlib's facecolor alias (quotes may be JSON-escaped in .ipynb)
 # - Fc is matplotlib's center-frequency parameter (psd/*_spectrum signatures)
 MPL_PATHS = (
-    "python/xy/pyplot/",
+    "python/xyg/pyplot/",
     "tests/pyplot/",
     "examples/pdsh/",
     "spec/matplotlib/compat.md",

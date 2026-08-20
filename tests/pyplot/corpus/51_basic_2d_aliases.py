@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 fig, axes = plt.subplots(2, 2, figsize=(8, 6))
 axes[0, 0].loglog([1, 10, 100], [1, 5, 50], "o-")

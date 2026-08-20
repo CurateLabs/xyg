@@ -109,7 +109,10 @@ def test_fastapi_app_serves_live_charts_and_code() -> None:
     assert "def line_walk" in code.text  # live source, not a saved string
 
     assert client.get("/healthz").status_code == 200
-    assert client.get("/drilldown").status_code == 200
+    drilldown_page = client.get("/drilldown")
+    assert drilldown_page.status_code == 200
+    assert "new xy.ChartView(" in drilldown_page.text
+    assert "new xyg.ChartView(" not in drilldown_page.text  # xyg-stale-name: allow - negative
 
     drill = client.post(
         "/api/xy/drilldown",
@@ -131,7 +134,7 @@ def test_fastapi_app_serves_live_charts_and_code() -> None:
     # same seam the browser's xy.decodeFrame uses; density grids ride as raw
     # buffers beside the compact JSON metadata.
     assert drill.headers["content-type"] == "application/octet-stream"
-    from xy.channel import decode_frame
+    from xyg.channel import decode_frame
 
     frame = decode_frame(drill.content)
     assert frame.message["type"] == "density_update"

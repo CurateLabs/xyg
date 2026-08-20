@@ -10,15 +10,15 @@ They describe data geometry, coordinate systems, annotations, and browser
 chrome; they do not render independently.
 
 ~~~python
-import xy
+import xyg
 
-chart = xy.line_chart(
-    xy.line([0, 1, 2, 3], [2, 5, 3, 8], name="observed"),
-    xy.x_axis(label="sample"),
-    xy.y_axis(label="value"),
-    xy.hline(6, text="target"),
-    xy.legend(title="Series"),
-    xy.tooltip(fields=["x", "y"]),
+chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3], [2, 5, 3, 8], name="observed"),
+    xyg.x_axis(label="sample"),
+    xyg.y_axis(label="value"),
+    xyg.hline(6, text="target"),
+    xyg.legend(title="Series"),
+    xyg.tooltip(fields=["x", "y"]),
 )
 ~~~
 

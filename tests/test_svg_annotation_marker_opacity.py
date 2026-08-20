@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
-import xy
+import xyg
 
 
 def _marker_shape(opacity: float) -> ET.Element:
     svg = (
-        xy.chart(
-            xy.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
-            xy.marker(
+        xyg.chart(
+            xyg.scatter(x=[0.0, 1.0], y=[0.0, 1.0]),
+            xyg.marker(
                 0.5,
                 0.5,
                 color="#2563eb",

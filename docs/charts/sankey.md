@@ -1,8 +1,8 @@
 ---
 title: Sankey Diagram in Python
-description: Create interactive Sankey diagrams in Python with xy. Show weighted flows between stages with automatic layout, colored nodes, and gradient ribbons.
+description: Create interactive Sankey diagrams in Python with xyg. Show weighted flows between stages with automatic layout, colored nodes, and gradient ribbons.
 components:
-  - xy.sankey_chart
+  - xyg.sankey_chart
 ---
 
 # Sankey Diagrams in Python
@@ -12,7 +12,7 @@ Node height represents total flow, and each connecting ribbon is proportional
 to its value. Use one for budgets, energy transfer, conversion funnels, supply
 chains, or any directed flow where the size of each path matters.
 
-With `xy`, pass `(source, target, value)` triples to `sankey_chart`. XY assigns
+With `xy`, pass `(source, target, value)` triples to `sankey_chart`. XYG assigns
 layers, minimizes crossings, sizes the nodes, stacks the ribbon endpoints, and
 uses each link's source and target colors to paint its gradient.
 
@@ -27,7 +27,7 @@ This example follows an investment inflow through allocations and outcomes:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 investment_flows = [
     ("Inflow", "Equities", 78_000),
@@ -40,7 +40,7 @@ investment_flows = [
     ("Cash", "Reserve", 24_000),
 ]
 
-investment_sankey = xy.sankey_chart(
+investment_sankey = xyg.sankey_chart(
     investment_flows,
     colors=[
         "#6e56cf",
@@ -67,7 +67,7 @@ stable ordering independent of the input rows, pass every name through
 `nodes=`:
 
 ~~~python
-chart = xy.sankey_chart(
+chart = xyg.sankey_chart(
     links,
     nodes=["Inflow", "Equities", "Bonds", "Cash", "Growth", "Income", "Reserve"],
 )
@@ -85,7 +85,7 @@ color to its target node color:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 energy_flows = [
     ("Grid supply", "Homes", 48),
@@ -126,7 +126,7 @@ energy_nodes = [
     "Losses",
 ]
 
-energy_sankey = xy.sankey_chart(
+energy_sankey = xyg.sankey_chart(
     energy_flows,
     nodes=energy_nodes,
     colors=[
@@ -171,7 +171,7 @@ edge. Compare the position of **Direct purchase**:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 conversion_flows = [
     ("Visitors", "Browse", 820),
@@ -192,7 +192,7 @@ conversion_colors = [
     "#fb7185",
 ]
 
-left_aligned_sankey = xy.sankey_chart(
+left_aligned_sankey = xyg.sankey_chart(
     conversion_flows,
     colors=conversion_colors,
     align="left",
@@ -200,7 +200,7 @@ left_aligned_sankey = xy.sankey_chart(
     title="Natural graph layers",
 )
 
-justified_sankey = xy.sankey_chart(
+justified_sankey = xyg.sankey_chart(
     conversion_flows,
     colors=conversion_colors,
     align="justify",
@@ -224,7 +224,7 @@ For a single-column mobile layout, place the two chart components in an
 
 ## Style the Ribbon Layer
 
-Use the `xy.sankey` mark directly when you want mark-level styling. The `style`
+Use the `xyg.sankey` mark directly when you want mark-level styling. The `style`
 mapping below adds a subtle purple outline, while high-opacity links preserve
 the intended lavender-to-violet gradient without competing with the solid node
 bars. Composing the mark yourself also means supplying the hidden unit-box axes
@@ -232,7 +232,7 @@ that `sankey_chart` normally adds for you:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 material_flows = [
     ("Virgin material", "Manufacturing", 72),
@@ -242,8 +242,8 @@ material_flows = [
     ("Manufacturing", "Process waste", 12),
 ]
 
-material_sankey = xy.chart(
-    xy.sankey(
+material_sankey = xyg.chart(
+    xyg.sankey(
         material_flows,
         colors=[
             "#c4b5fd",  # Virgin material — left
@@ -263,8 +263,8 @@ material_sankey = xy.chart(
             "stroke-opacity": 0.35,
         },
     ),
-    xy.x_axis(domain=(-0.09, 1.09), show=False),
-    xy.y_axis(domain=(-0.05, 1.05), reverse=True, show=False),
+    xyg.x_axis(domain=(-0.09, 1.09), show=False),
+    xyg.y_axis(domain=(-0.05, 1.05), reverse=True, show=False),
     title="Material recovery",
     styles={
         "annotation_label": {
@@ -293,7 +293,7 @@ the chart has room for larger text.
 ## Layout and Flow Rules
 
 Sankey links form a directed acyclic graph: every path moves from an earlier
-stage to a later stage. XY rejects cycles and names the nodes involved instead
+stage to a later stage. XYG rejects cycles and names the nodes involved instead
 of drawing a misleading backward flow.
 
 Each `(source, target)` pair must appear once. Aggregate repeated pairs before
@@ -357,12 +357,12 @@ implemented yet.
 
 ### How do I create a Sankey diagram in Python?
 
-Pass `(source, target, value)` triples to `xy.sankey_chart(...)`. XY computes
+Pass `(source, target, value)` triples to `xyg.sankey_chart(...)`. XYG computes
 the node layers, sizes, ordering, and ribbon endpoints automatically.
 
 ### Can a Sankey diagram contain cycles?
 
-No. A Sankey flows from earlier stages to later stages. XY raises an error that
+No. A Sankey flows from earlier stages to later stages. XYG raises an error that
 names the nodes in a cycle so you can break or aggregate that loop explicitly.
 
 ### How do I control Sankey colors?
