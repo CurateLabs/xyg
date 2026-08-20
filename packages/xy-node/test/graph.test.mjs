@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   abiVersion,
+  composeGraph,
+  figure,
   fromGraphForgeTables,
   graphBuildCsr,
   graphBuildRender,
@@ -13,6 +15,8 @@ import {
   graphLayout,
   graphLodDecision,
   graphSampleEdges,
+  looksLikeGraphForgeTables,
+  resolveGraphData,
   sankeyLayout,
 } from "../src/index.js";
 
@@ -213,4 +217,106 @@ test("10M / 100M / 1B-class LOD decisions stay screen-bounded", () => {
     assert.ok(d.tier >= 1, `class n=${n} should leave Direct`);
     assert.ok(Number(d.edgesKept) <= edgeBudget);
   }
+});
+
+const AIRPORTS_NODES = {
+  node_uuid: [
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000003",
+  ],
+  labels: ["Airport", "Airport", "City"],
+  rank: [1, 2, 3],
+  provenance_row: [10n, 11n, 12n],
+};
+const AIRPORTS_EDGES = {
+  edge_uuid: [
+    "10000000-0000-0000-0000-000000000001",
+    "10000000-0000-0000-0000-000000000002",
+    "10000000-0000-0000-0000-000000000003",
+    "10000000-0000-0000-0000-000000000004",
+  ],
+  src_uuid: [
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000003",
+  ],
+  dst_uuid: [
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000003",
+    "00000000-0000-0000-0000-000000000003",
+  ],
+  relationship_type: ["ROUTE", "ROUTE", "SERVES", "SELF"],
+  weight: [1.5, 2.5, 3.0, 0.1],
+  provenance_row: [100n, 101n, 102n, 103n],
+};
+
+test("looksLikeGraphForgeTables detects canonical UUID columns", () => {
+  assert.equal(looksLikeGraphForgeTables(AIRPORTS_NODES, AIRPORTS_EDGES), true);
+  assert.equal(looksLikeGraphForgeTables(["a", "b"], [["a", "b"]]), false);
+});
+
+test("composeGraph GraphForge tables preserve edge identity and node tooltips", () => {
+  const composed = composeGraph(AIRPORTS_NODES, AIRPORTS_EDGES, { layout: "grid", seed: 1 });
+  assert.equal(composed.traces[0].kind, "segments");
+  assert.equal(composed.traces[1].kind, "scatter");
+  assert.equal(composed.traces[1].tooltip_rows.length, 3);
+  assert.equal(composed.traces[1].tooltip_rows[0].labels, "Airport");
+  assert.deepEqual(composed.graphMeta.edge_ids, AIRPORTS_EDGES.edge_uuid);
+  assert.equal(new Set(composed.graphMeta.edge_ids).size, 4);
+  assert.deepEqual(composed.graphMeta.node_provenance_rows, [10, 11, 12]);
+  if (composed.traces[0].tooltip_rows == null) {
+    assert.equal(composed.graphMeta.edge_tooltip_rows.length, 4);
+    assert.equal(composed.graphMeta.edge_tooltip_rows[3].relationship_type, "SELF");
+  }
+});
+
+test("figure.graph GraphForge tables ship continuous size from column name", () => {
+  const fig = figure({ width: 400, height: 300 });
+  fig.graph(AIRPORTS_NODES, AIRPORTS_EDGES, { layout: "circle", seed: 2, size: "rank" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[1].size.mode, "continuous");
+  assert.ok(Array.isArray(spec.traces[1].tooltip_rows));
+});
+
+test("fromGraphForgeTables rejects duplicate edge uuid before paint", () => {
+  assert.throws(
+    () =>
+      fromGraphForgeTables(AIRPORTS_NODES, {
+        edge_uuid: [
+          "10000000-0000-0000-0000-000000000001",
+          "10000000-0000-0000-0000-000000000001",
+        ],
+        src_uuid: [
+          "00000000-0000-0000-0000-000000000001",
+          "00000000-0000-0000-0000-000000000002",
+        ],
+        dst_uuid: [
+          "00000000-0000-0000-0000-000000000002",
+          "00000000-0000-0000-0000-000000000003",
+        ],
+      }),
+    /GF_GRAPH_EDGE_DUPLICATE/,
+  );
+});
+
+test("fromGraphForgeTables rejects missing endpoint before paint", () => {
+  assert.throws(
+    () =>
+      fromGraphForgeTables(AIRPORTS_NODES, {
+        edge_uuid: ["10000000-0000-0000-0000-000000000099"],
+        src_uuid: ["00000000-0000-0000-0000-000000000001"],
+        dst_uuid: ["00000000-0000-0000-0000-000000000099"],
+      }),
+    /GF_GRAPH_ENDPOINT_MISSING/,
+  );
+});
+
+test("resolveGraphData accepts GraphData passthrough", () => {
+  const data = fromGraphForgeTables(AIRPORTS_NODES, AIRPORTS_EDGES);
+  const again = resolveGraphData(data);
+  assert.equal(again.ids.length, 3);
+  assert.equal(again.sources.length, 4);
 });

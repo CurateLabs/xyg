@@ -82,7 +82,10 @@ export {
 export {
   DEFAULT_LAYOUT,
   fromGraphForgeTables,
+  looksLikeGraphForgeTables,
   normalizeGraphInputs,
+  projectionTooltipRows,
+  resolveGraphData,
   runLayout,
   edgeSegmentsFromPositions,
   composeGraph,

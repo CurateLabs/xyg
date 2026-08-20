@@ -678,7 +678,7 @@ def sankey(
 def graph(
     self: "Figure",
     nodes: Any,
-    edges: Any,
+    edges: Any = None,
     *,
     x: Any = None,
     y: Any = None,
@@ -695,16 +695,25 @@ def graph(
     name: Optional[str] = None,
     opacity: Any = 1.0,
     style: styles.StyleMapping | None = None,
+    mapping: dict[str, str] | None = None,
 ) -> "Figure":
     """Add a node–link graph: Rust layout, then segments (edges) + scatter (nodes).
 
     See ``spec/design/graph-mark.md``. Analysis stays in GraphForge; this mark
     only positions and draws. ``layout=`` selects the algorithm (default
     ``\"force\"``).
+
+    ``nodes``/``edges`` may be xy-native sequences, a ready ``GraphData`` from
+    ``from_graphforge_tables`` (pass ``GraphData`` as ``nodes`` and omit
+    ``edges``), or canonical GraphForge tables with ``node_uuid`` /
+    ``edge_uuid`` columns.
     """
     from . import _graph, _native
 
-    data = _graph.normalize_graph_inputs(nodes, edges, x=x, y=y, directed=directed)
+    data = _graph.resolve_graph_data(nodes, edges, x=x, y=y, directed=directed, mapping=mapping)
+    color = _graph.resolve_encoding_values(data, color, where="node")
+    size = _graph.resolve_encoding_values(data, size, where="node")
+    edge_color = _graph.resolve_encoding_values(data, edge_color, where="edge")
     px, py, meta = _graph.run_layout(data, layout=layout, seed=seed, iterations=iterations)
     # Emit ONLY the Rust render-graph buffers (no second edge sample).
     tier = meta["lod_tier"]
@@ -738,6 +747,14 @@ def graph(
         symbol=symbol,
         style=style,
     )
+    # Attach GraphForge semantic rows when render LOD kept a 1:1 mapping.
+    # build_render collapses multi-edges and skips self-loops for paint; identity
+    # still rides graph meta (`edge_ids`, provenance, optional source tooltip tables).
+    node_tooltips, edge_tooltips = _graph.projection_tooltip_rows(data)
+    if node_tooltips is not None and len(px) == data.n_nodes:
+        self.traces[-1].tooltip_rows = node_tooltips
+    if edge_tooltips is not None and len(sources) == data.n_edges:
+        self.traces[-2].tooltip_rows = edge_tooltips
     # CSR matches the *render* node index space (scatter), not raw source V.
     offsets, neighbors = _native.graph_build_csr(len(px), sources, targets, directed=bool(directed))
     # §28 recorded layout/LOD decision for hosts/clients.
@@ -763,6 +780,17 @@ def graph(
         "node_trace": len(self.traces) - 1,
         "edge_trace": len(self.traces) - 2,
     }
+    if data.edge_ids:
+        graph_meta["edge_ids"] = [str(edge_id) for edge_id in data.edge_ids]
+    if data.node_provenance_rows is not None:
+        graph_meta["node_provenance_rows"] = [int(v) for v in data.node_provenance_rows.tolist()]
+    if data.edge_provenance_rows is not None:
+        graph_meta["edge_provenance_rows"] = [int(v) for v in data.edge_provenance_rows.tolist()]
+    if edge_tooltips is not None and len(sources) != data.n_edges:
+        # Source-indexed semantic table when paint collapsed multi-edges/loops.
+        graph_meta["edge_tooltip_rows"] = edge_tooltips
+    if node_tooltips is not None and len(px) != data.n_nodes:
+        graph_meta["node_tooltip_rows"] = node_tooltips
     existing = getattr(self, "_graph_meta", None)
     if existing is None:
         self._graph_meta = [graph_meta]

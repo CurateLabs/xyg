@@ -523,26 +523,173 @@ export function edgeSegmentsFromPositions(x, y, sources, targets) {
 }
 
 /**
+ * True when both tables expose canonical GraphForge UUID columns.
+ * @param {unknown} nodes
+ * @param {unknown} edges
+ */
+export function looksLikeGraphForgeTables(nodes, edges) {
+  try {
+    const nodeNames = new Set(tableColumnNames(nodes));
+    const edgeNames = new Set(tableColumnNames(edges));
+    return nodeNames.has("node_uuid") && edgeNames.has("edge_uuid");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve xy-native pairs, a ready GraphData object, or GraphForge tables.
+ * @param {unknown} nodes
+ * @param {unknown} [edges]
+ * @param {object} [opts]
+ */
+export function resolveGraphData(nodes, edges = undefined, opts = {}) {
+  if (nodes != null && typeof nodes === "object" && Array.isArray(nodes.ids) && nodes.sources != null) {
+    if (edges != null) {
+      throw new TypeError(
+        "when nodes is GraphData, edges must be omitted (pass GraphData alone or table/sequence pairs)",
+      );
+    }
+    return nodes;
+  }
+  if (edges == null) {
+    throw new TypeError("graph edges are required unless nodes is GraphData");
+  }
+  if (looksLikeGraphForgeTables(nodes, edges)) {
+    const data = fromGraphForgeTables(nodes, edges, opts);
+    if (opts.x != null || opts.y != null) {
+      if ((opts.x == null) !== (opts.y == null)) {
+        throw new Error("x and y must both be provided or both omitted");
+      }
+      data.x = Float64Array.from(opts.x, Number);
+      data.y = Float64Array.from(opts.y, Number);
+      if (data.x.length !== data.ids.length) {
+        throw new Error("x/y must match node count");
+      }
+    }
+    return data;
+  }
+  return normalizeGraphInputs(nodes, edges, opts);
+}
+
+function jsonScalar(value) {
+  if (value == null) return null;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") {
+    return value;
+  }
+  return String(value);
+}
+
+/**
+ * Build node/edge semantic hover rows from a validated projection.
+ * @param {object} data
+ * @returns {[object[]|null, object[]|null]}
+ */
+export function projectionTooltipRows(data) {
+  const hasProjection =
+    data.nodeUuidBytes != null ||
+    data.edgeUuidBytes != null ||
+    (data.nodeAttrs && Object.keys(data.nodeAttrs).length > 0) ||
+    (data.edgeAttrs && Object.keys(data.edgeAttrs).length > 0) ||
+    data.nodeProvenanceRows != null ||
+    data.edgeProvenanceRows != null;
+  if (!hasProjection) return [null, null];
+
+  const nodeRows = [];
+  for (let i = 0; i < data.ids.length; i += 1) {
+    const row = { id: String(data.ids[i]) };
+    if (data.nodeProvenanceRows != null) {
+      row.provenance_row = Number(data.nodeProvenanceRows[i]);
+    }
+    for (const [key, col] of Object.entries(data.nodeAttrs ?? {})) {
+      const values = Array.isArray(col) || ArrayBuffer.isView(col) ? col : [...col];
+      row[key] = jsonScalar(values[i]);
+    }
+    nodeRows.push(row);
+  }
+
+  const edgeRows = [];
+  for (let i = 0; i < data.sources.length; i += 1) {
+    const src = Number(data.sources[i]);
+    const tgt = Number(data.targets[i]);
+    const row = {
+      source: String(data.ids[src]),
+      target: String(data.ids[tgt]),
+    };
+    if (data.edgeIds?.length) row.edge_id = String(data.edgeIds[i]);
+    if (data.edgeProvenanceRows != null) {
+      row.provenance_row = Number(data.edgeProvenanceRows[i]);
+    }
+    for (const [key, col] of Object.entries(data.edgeAttrs ?? {})) {
+      const values = Array.isArray(col) || ArrayBuffer.isView(col) ? col : [...col];
+      row[key] = jsonScalar(values[i]);
+    }
+    edgeRows.push(row);
+  }
+  return [nodeRows, edgeRows];
+}
+
+function resolveEncodingValues(data, values, where = "node") {
+  if (typeof values !== "string") return values;
+  const attrs = where === "node" ? data.nodeAttrs : data.edgeAttrs;
+  if (attrs && Object.prototype.hasOwnProperty.call(attrs, values)) {
+    return attrs[values];
+  }
+  return values;
+}
+
+/**
  * Compose a graph into figure traces + graph meta (conceptual parity with
  * Python `Figure.graph` / `marks.graph`).
  *
  * @param {Iterable|object} nodes
- * @param {Iterable|object} edges
+ * @param {Iterable|object} [edges]
  * @param {object} [opts]
  */
 export function composeGraph(nodes, edges, opts = {}) {
-  const data = normalizeGraphInputs(nodes, edges, {
-    x: opts.x,
-    y: opts.y,
-    directed: opts.directed,
+  let resolvedOpts = opts;
+  let resolvedEdges = edges;
+  // Allow composeGraph(graphData, { layout }) when the second arg is options.
+  if (
+    nodes != null &&
+    typeof nodes === "object" &&
+    Array.isArray(nodes.ids) &&
+    nodes.sources != null &&
+    edges != null &&
+    typeof edges === "object" &&
+    !Array.isArray(edges) &&
+    edges.source == null &&
+    edges.target == null &&
+    edges.edge_uuid == null &&
+    (edges.layout != null ||
+      edges.seed != null ||
+      edges.directed != null ||
+      edges.color != null ||
+      edges.mapping != null)
+  ) {
+    resolvedOpts = edges;
+    resolvedEdges = undefined;
+  } else if (edges == null) {
+    resolvedEdges = undefined;
+  }
+  const data = resolveGraphData(nodes, resolvedEdges, {
+    x: resolvedOpts.x,
+    y: resolvedOpts.y,
+    directed: resolvedOpts.directed,
+    mapping: resolvedOpts.mapping,
   });
-  const { nodePositions, edgeSegments, meta } = runLayout(data, opts);
-  const name = opts.name ?? null;
+  const nodeColor = resolveEncodingValues(data, resolvedOpts.color, "node");
+  const edgeColor = resolveEncodingValues(
+    data,
+    resolvedOpts.edgeColor ?? resolvedOpts.edge_color,
+    "edge",
+  );
+  const sizeOpt = resolveEncodingValues(data, resolvedOpts.size, "node");
+  const { nodePositions, edgeSegments, meta } = runLayout(data, resolvedOpts);
+  const name = resolvedOpts.name ?? null;
   const nNodes = nodePositions.x.length;
   const nEdges = edgeSegments.x0.length;
-  const nodeColor = opts.color;
-  const edgeColor = opts.edgeColor ?? opts.edge_color;
-  const sizeOpt = opts.size;
   let sizeValues = null;
   let styleSize = 8.0;
   if (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt)) {
@@ -559,8 +706,19 @@ export function composeGraph(nodes, edges, opts = {}) {
   } else if (sizeOpt != null) {
     styleSize = Number(sizeOpt);
   }
-  const nodeTooltipRows = opts.nodeTooltipRows ?? opts.tooltipRows ?? opts.tooltip_rows ?? null;
-  const edgeTooltipRows = opts.edgeTooltipRows ?? opts.edge_tooltip_rows ?? null;
+  let [nodeTooltipRows, edgeTooltipRows] = projectionTooltipRows(data);
+  const nodesOneToOne = nNodes === data.ids.length;
+  const edgesOneToOne = nEdges === data.sources.length;
+  if (!(nodeTooltipRows != null && nodesOneToOne)) {
+    nodeTooltipRows =
+      resolvedOpts.nodeTooltipRows ?? resolvedOpts.tooltipRows ?? resolvedOpts.tooltip_rows ?? null;
+  }
+  if (!(edgeTooltipRows != null && edgesOneToOne)) {
+    edgeTooltipRows =
+      resolvedOpts.edgeTooltipRows ?? resolvedOpts.edge_tooltip_rows ?? null;
+  }
+  // Keep auto-built projection rows for meta even when paint collapsed edges.
+  const [sourceNodeTooltips, sourceEdgeTooltips] = projectionTooltipRows(data);
   if (nodeTooltipRows != null && nodeTooltipRows.length !== nNodes) {
     throw new RangeError(
       `graph node tooltip rows must match geometry (${nodeTooltipRows.length} != ${nNodes})`,
@@ -570,8 +728,7 @@ export function composeGraph(nodes, edges, opts = {}) {
     throw new RangeError(
       `graph edge tooltip rows must match geometry (${edgeTooltipRows.length} != ${nEdges})`,
     );
-  }
-  const traces = [
+  }  const traces = [
     {
       kind: "segments",
       name: name == null ? null : `${name}:edges`,
@@ -581,8 +738,8 @@ export function composeGraph(nodes, edges, opts = {}) {
       y1: edgeSegments.y1,
       style: {
         color: typeof edgeColor === "string" ? edgeColor : "#888888",
-        width: opts.edgeWidth ?? opts.edge_width ?? 1.2,
-        ...(opts.style ?? {}),
+        width: resolvedOpts.edgeWidth ?? resolvedOpts.edge_width ?? 1.2,
+        ...(resolvedOpts.style ?? {}),
       },
       ...(edgeColor != null && typeof edgeColor !== "string"
         ? { color: resolveColorChannel(edgeColor, nEdges, "#888888") }
@@ -597,8 +754,8 @@ export function composeGraph(nodes, edges, opts = {}) {
       style: {
         color: typeof nodeColor === "string" ? nodeColor : "#3987e5",
         size: styleSize,
-        symbol: opts.symbol ?? "circle",
-        ...(opts.style ?? {}),
+        symbol: resolvedOpts.symbol ?? "circle",
+        ...(resolvedOpts.style ?? {}),
       },
       ...(nodeColor != null && typeof nodeColor !== "string"
         ? { color: resolveColorChannel(nodeColor, nNodes, "#3987e5") }
@@ -615,7 +772,7 @@ export function composeGraph(nodes, edges, opts = {}) {
       ),
     ),
     directed: Boolean(data.directed),
-    ids: meta.ids,
+    ids: meta.ids ?? data.ids.map(String),
     sources: [...meta.render_sources].map(Number),
     targets: [...meta.render_targets].map(Number),
     member_of: [...meta.member_of].map(Number),
@@ -623,12 +780,27 @@ export function composeGraph(nodes, edges, opts = {}) {
     source_n_edges: meta.source_n_edges,
     csr_offsets: meta.csr_offsets ? [...meta.csr_offsets].map(Number) : undefined,
     csr_neighbors: meta.csr_neighbors ? [...meta.csr_neighbors].map(Number) : undefined,
-    node_symbol: typeof opts.symbol === "string" ? opts.symbol : "circle",
-    edge_curve: String(opts.edgeCurve ?? "straight").trim().toLowerCase(),
+    node_symbol: typeof resolvedOpts.symbol === "string" ? resolvedOpts.symbol : "circle",
+    edge_curve: String(resolvedOpts.edgeCurve ?? "straight").trim().toLowerCase(),
     tier_name: ["direct", "edge_sample", "aggregate"][Math.min(Number(meta.lod_tier), 2)],
     node_trace: 1,
     edge_trace: 0,
   };
+  if (data.edgeIds?.length) {
+    graphMeta.edge_ids = data.edgeIds.map(String);
+  }
+  if (data.nodeProvenanceRows != null) {
+    graphMeta.node_provenance_rows = [...data.nodeProvenanceRows].map(Number);
+  }
+  if (data.edgeProvenanceRows != null) {
+    graphMeta.edge_provenance_rows = [...data.edgeProvenanceRows].map(Number);
+  }
+  if (sourceEdgeTooltips != null && !edgesOneToOne) {
+    graphMeta.edge_tooltip_rows = sourceEdgeTooltips;
+  }
+  if (sourceNodeTooltips != null && !nodesOneToOne) {
+    graphMeta.node_tooltip_rows = sourceNodeTooltips;
+  }
 
   return {
     traces,
