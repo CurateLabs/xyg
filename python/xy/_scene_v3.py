@@ -59,22 +59,22 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel is None:
         return str(trace.style.get("color", fallback))
     if channel.mode != "constant" or channel.constant is None:
-        raise UnsupportedSceneV3("Scene v5 does not yet support data-driven paint channels")
+        raise UnsupportedSceneV3("Scene v6 does not yet support data-driven paint channels")
     return channel.constant
 
 
 def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:
     fill = style.get("fill")
     if isinstance(fill, dict):
-        raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} gradient fills")
+        raise UnsupportedSceneV3(f"Scene v6 does not yet encode {kind} gradient fills")
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)):
         if any(float(value) != 0.0 for value in radius):
-            raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} corner_radius")
+            raise UnsupportedSceneV3(f"Scene v6 does not yet encode {kind} corner_radius")
     elif float(radius) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} corner_radius")
+        raise UnsupportedSceneV3(f"Scene v6 does not yet encode {kind} corner_radius")
     if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} wedge_gap")
+        raise UnsupportedSceneV3(f"Scene v6 does not yet encode {kind} wedge_gap")
 
 
 def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray, np.ndarray]:
@@ -99,21 +99,21 @@ def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray
 
 def _rect_columns(trace: Any) -> list[np.ndarray]:
     if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v5 compilation requires four rectangle columns")
+        raise ValueError(f"{trace.kind} Scene v6 compilation requires four rectangle columns")
     arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
     lengths = {len(column) for column in arrays}
     if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v5 {trace.kind} rectangle columns must have equal length")
+        raise UnsupportedSceneV3(f"Scene v6 {trace.kind} rectangle columns must have equal length")
     return arrays
 
 
 def _segment_columns(trace: Any) -> list[np.ndarray]:
     if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v5 compilation requires four endpoint columns")
+        raise ValueError(f"{trace.kind} Scene v6 compilation requires four endpoint columns")
     arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
     lengths = {len(column) for column in arrays}
     if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v5 {trace.kind} endpoint columns must have equal length")
+        raise UnsupportedSceneV3(f"Scene v6 {trace.kind} endpoint columns must have equal length")
     return arrays
 
 
@@ -169,11 +169,11 @@ def figure_scene(
     coordinates: list[list[float]] = [[], [], [], []]
     for trace in figure.traces:
         if trace.x_axis != "x" or trace.y_axis != "y":
-            raise UnsupportedSceneV3("Scene v5 currently supports only the primary x/y axes")
+            raise UnsupportedSceneV3("Scene v6 currently supports only the primary x/y axes")
         if trace.name and figure.show_legend:
-            raise UnsupportedSceneV3("Scene v5 does not yet encode legends")
+            raise UnsupportedSceneV3("Scene v6 does not yet encode legends")
         if trace.hidden or trace.has_per_item_channels():
-            raise UnsupportedSceneV3("Scene v5 does not yet encode hidden or per-item styled marks")
+            raise UnsupportedSceneV3("Scene v6 does not yet encode hidden or per-item styled marks")
         if trace.kind == "scatter" and trace.use_density():
             raise UnsupportedSceneV3("Scene v6 does not yet encode density-tier scatter")
         style = trace.style
@@ -238,7 +238,7 @@ def figure_scene(
             arrays = _rect_columns(trace)
             if any(not np.isfinite(source).all() for source in arrays):
                 raise UnsupportedSceneV3(
-                    "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
+                    "Scene v6 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             for index in range(len(arrays[0])):
                 kinds.append(kind_code)
@@ -254,7 +254,7 @@ def figure_scene(
             arrays = _segment_columns(trace)
             if any(not np.isfinite(source).all() for source in arrays):
                 raise UnsupportedSceneV3(
-                    "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
+                    "Scene v6 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             x0s, y0s, x1s, y1s = arrays
             for index in range(len(x0s)):
@@ -280,13 +280,13 @@ def figure_scene(
         where = style.get("step")
         if where is not None:
             if trace.kind != "line":
-                raise UnsupportedSceneV3("Scene v5 step expansion applies only to line traces")
+                raise UnsupportedSceneV3("Scene v6 step expansion applies only to line traces")
             if where not in {"pre", "post", "mid"}:
-                raise UnsupportedSceneV3(f"Scene v5 does not support step mode {where!r}")
+                raise UnsupportedSceneV3(f"Scene v6 does not support step mode {where!r}")
             xv, yv = _step_arrays(xv, yv, where)
         if not np.isfinite(xv).all() or not np.isfinite(yv).all():
             raise UnsupportedSceneV3(
-                "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
+                "Scene v6 does not yet encode missing-data breaks or nonfinite coordinates"
             )
         for index in range(len(xv)):
             kinds.append(kind_code)

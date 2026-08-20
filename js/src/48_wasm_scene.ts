@@ -55,6 +55,7 @@ function compilePainter(painter: ArrayBuffer) {
     } else if (kind === 3) {
       if (symbol !== 0 || diameter !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust band descriptor is invalid");
       const x1 = column(descriptor, 16, count), y1 = column(descriptor, 20, count);
+      // Area paint uses one x with a y-base; Rust rejects unequal band x pairs.
       trace = { kind: "area", x, y, base: y1, style: { color: fill, fill, stroke, stroke_width: strokeWidth, opacity: 1 } };
       void x1;
     } else throw new XygWasmError("XYG_WASM_UNSUPPORTED", `unsupported Rust painter trace ${kind}`);

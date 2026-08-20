@@ -1671,8 +1671,15 @@ impl SceneDocument {
                             0
                         }
                     }
-                    // Worst-case one vertex of a band fill (shared across the run).
-                    SceneRecordKind::Band => 20,
+                    // Worst-case per-sample share of a closed Band fill (and optional
+                    // stroke): a two-sample run emits 41 fill bytes, so reserve 21 each.
+                    SceneRecordKind::Band => {
+                        21 + if styles[style_ref].stroke_width > 0.0 {
+                            26
+                        } else {
+                            0
+                        }
+                    }
                 };
                 raster_mark_capacity = raster_mark_capacity.saturating_add(record_capacity);
             }
@@ -2217,6 +2224,23 @@ impl SceneDocument {
                             push_raster_f32(out, point.coordinates[3], scale)?;
                         }
                         out.extend_from_slice(&style.fill);
+                        if style.stroke_width > 0.0 {
+                            out.push(3); // OP_STROKE
+                            out.extend_from_slice(&count.to_le_bytes());
+                            for point in run {
+                                push_raster_f32(out, point.coordinates[0], scale)?;
+                                push_raster_f32(out, point.coordinates[1], scale)?;
+                            }
+                            for point in run.iter().rev() {
+                                push_raster_f32(out, point.coordinates[2], scale)?;
+                                push_raster_f32(out, point.coordinates[3], scale)?;
+                            }
+                            push_raster_f32(out, style.stroke_width, scale)?;
+                            out.extend_from_slice(&style.stroke);
+                            out.push(1); // closed
+                            out.extend_from_slice(&0u32.to_le_bytes());
+                            out.push(1);
+                        }
                     }
                 }
                 SceneRecordKind::Polyline => {
@@ -2393,6 +2417,9 @@ impl SceneDocument {
                     }
                 }
                 SceneRecordKind::Band => {
+                    if record.coordinates[0] != record.coordinates[2] {
+                        return Err(SceneError::Length);
+                    }
                     while index < self.records.len() {
                         let next = self.records[index];
                         if !next.visible
@@ -2401,6 +2428,11 @@ impl SceneDocument {
                             || next.style_ref != record.style_ref
                         {
                             break;
+                        }
+                        // Browser area paint uses one x column with a y-base; reject
+                        // bands whose base x differs from the top sample.
+                        if next.coordinates[0] != next.coordinates[2] {
+                            return Err(SceneError::Length);
                         }
                         index += 1;
                     }
@@ -3994,7 +4026,11 @@ mod tests {
         let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
         assert!(svg.contains("<path d=\"M "));
         assert!(svg.contains(" Z\""));
-        assert!(svg.contains("fill=\"rgba(57,99,235,0.706)\"") || svg.contains("fill=\"rgb(57,99,235)\"") || svg.contains("fill=\"#"));
+        let commands = SceneDocument::decode(&encoded)
+            .unwrap()
+            .to_raster_commands(1.0)
+            .unwrap();
+        assert!(commands.contains(&1), "band fill poly opcode missing");
     }
 
     #[test]
