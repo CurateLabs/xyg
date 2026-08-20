@@ -157,7 +157,7 @@ class Artist:
     def set_clip_on(self, enabled: bool) -> None:
         if not enabled:
             raise NotImplementedError(
-                f"{type(self).__name__} unclipped rendering is not supported by xy.pyplot"
+                f"{type(self).__name__} unclipped rendering is not supported by xyg.pyplot"
             )
         self._clip_on = bool(enabled)
         self._touch()
@@ -235,7 +235,7 @@ class Artist:
     def set_rasterized(self, rasterized: bool) -> None:
         if rasterized:
             raise NotImplementedError(
-                f"{type(self).__name__} selective rasterization is not supported by xy.pyplot; "
+                f"{type(self).__name__} selective rasterization is not supported by xyg.pyplot; "
                 "PNG export rasterizes everything already"
             )
         self._rasterized = bool(rasterized)

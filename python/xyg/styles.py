@@ -74,7 +74,7 @@ _AXIS_DIRECTIONS = frozenset({"in", "out", "inout"})
 # declaration one renderer silently ignores is exactly what this module exists
 # to prevent, so the property waits for the client. The gap — including the
 # joins the three renderers already disagree on by default — is a row in
-# `xy.styling.capabilities`.
+# `xyg.styling.capabilities`.
 LINE_CAPS = frozenset({"butt", "round", "square"})
 DEFAULT_LINE_CAP = "round"
 

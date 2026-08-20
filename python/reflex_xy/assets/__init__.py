@@ -1,13 +1,13 @@
 """Frontend assets for the Reflex component.
 
-One wrapper file ships in the ``xy`` distribution:
+One wrapper file ships in the ``xyg`` distribution:
 
 - ``XYChart.jsx`` — the React wrapper (multiplexes the `/_xy` namespace onto
   the app's existing websocket and drives ChartView).
 
 The render client itself (``xy_client.js``) is deliberately NOT packaged
-here: `register()` links it out of the **installed ``xy`` distribution**
-(``xy/static/index.js``, the same ESM bundle notebooks load), landing it
+here: `register()` links it out of the **installed ``xyg`` distribution**
+(``xyg/static/index.js``, the same ESM bundle notebooks load), landing it
 beside the wrapper so the wrapper's relative ``./xy_client.js`` import
 resolves. Sourcing from the install makes client/kernel drift structurally
 impossible — the JS that renders a payload is always the build that shipped
@@ -32,13 +32,13 @@ _CLIENT_NAME = "xy_client.js"
 
 
 def _client_source() -> Path:
-    """The canonical render client inside the installed xy package."""
+    """The canonical render client inside the installed xyg package."""
     import xyg as xy
 
     source = Path(xy.__file__).resolve().parent / "static" / "index.js"
     if not source.exists():
         msg = (
-            f"{source} missing — the xy install has no bundled JS client. "
+            f"{source} missing — the xyg install has no bundled JS client. "
             "Dev checkout: run `node js/build.mjs`; otherwise reinstall xyg."
         )
         raise FileNotFoundError(msg)
@@ -49,7 +49,7 @@ def _link_client(asset_root: Path) -> None:
     """Symlink the installed client beside the wrapper (repairing stale links).
 
     Unlike rx.asset's shared files (which live at a fixed path next to their
-    module), the client's location moves whenever the ``xy`` install
+    module), the client's location moves whenever the ``xyg`` install
     does — so an existing link pointing at the wrong target is replaced, not
     trusted.
     """

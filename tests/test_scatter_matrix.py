@@ -475,6 +475,6 @@ def test_to_html_roundtrips_for_every_tier():
         Figure().line(np.arange(20000.0), np.sin(np.arange(20000.0))),  # decimated
     ):
         html = fig.to_html()
-        assert "xyg.renderStandalone" in html
+        assert "xy.renderStandalone" in html
         assert '<div id="chart">' in html
         assert len(html) > 1000

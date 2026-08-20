@@ -3,7 +3,7 @@
 Real seaborn's ``FacetGrid.map`` drives matplotlib's implicit pyplot state:
 it activates each facet's axes with ``plt.sca`` and then calls the mapped
 function with no ``ax=``. That contract cannot interoperate across engines —
-mapping an ``xy.pyplot`` function over a seaborn grid draws into a phantom
+mapping an ``xyg.pyplot`` function over a seaborn grid draws into a phantom
 xy figure while the seaborn grid stays empty. This class reproduces the
 faceting contract natively (subset → activate panel → call ``func``), so the
 corpus pattern ``FacetGrid(df, row=..., col=...).map(plt.hist, ...)`` renders

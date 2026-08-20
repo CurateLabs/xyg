@@ -747,7 +747,7 @@ def reset_registry_for_tests() -> FigureRegistry:
 
 
 def _figure_of(chart: Any) -> "Figure":
-    """Accept either a public `xy.Chart` or an internal Figure."""
+    """Accept either a public `xyg.Chart` or an internal Figure."""
     figure = getattr(chart, "figure", None)
     if callable(figure):
         return figure()

@@ -88,7 +88,7 @@ class Locator:
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return f"<xy.pyplot.{type(self).__name__}>"
+        return f"<xyg.pyplot.{type(self).__name__}>"
 
 
 class NullLocator(Locator):
@@ -229,7 +229,7 @@ class AutoMinorLocator(Locator):
     """Evenly subdivide the live major-tick interval.
 
     Like Matplotlib's locator, this needs the resolved major locations and is
-    therefore materialized by :class:`~xy.pyplot.Axes` rather than through the
+    therefore materialized by :class:`~xyg.pyplot.Axes` rather than through the
     ordinary ``tick_values(vmin, vmax)`` protocol.
     """
 
@@ -481,7 +481,7 @@ class Formatter:
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return f"<xy.pyplot.{type(self).__name__}>"
+        return f"<xyg.pyplot.{type(self).__name__}>"
 
 
 class ScalarFormatter(Formatter):

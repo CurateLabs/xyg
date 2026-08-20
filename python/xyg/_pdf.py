@@ -1,6 +1,6 @@
 """Native vector PDF export — a converter for xy's OWN generated SVG.
 
-`svg_to_pdf` turns the output of `xy._svg.to_svg` (and the `FacetGrid.to_svg`
+`svg_to_pdf` turns the output of `xyg._svg.to_svg` (and the `FacetGrid.to_svg`
 composition wrapper) into a single-page vector PDF with no browser and no
 external dependencies (stdlib + numpy only).
 
@@ -422,7 +422,7 @@ def _parse_points(points: str) -> list[tuple[float, float]]:
 
 
 # ---------------------------------------------------------------------------
-# Embedded PNG decode (xy._png output: truecolor RGBA8 or indexed+tRNS)
+# Embedded PNG decode (xyg._png output: truecolor RGBA8 or indexed+tRNS)
 # ---------------------------------------------------------------------------
 
 
@@ -1314,7 +1314,7 @@ def svg_to_pdf(svg: str) -> bytes:
     """Convert an xy-generated SVG document into a single-page vector PDF.
 
     Raises ``ValueError("unsupported SVG feature: ...")`` for any element,
-    attribute, or value outside the closed subset `xy._svg` emits.
+    attribute, or value outside the closed subset `xyg._svg` emits.
     """
     try:
         root = ET.fromstring(svg)

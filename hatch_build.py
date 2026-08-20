@@ -9,7 +9,7 @@ Install ergonomics, by audience (design dossier §33):
   a Rust toolchain is present. **If Rust is absent, the build still succeeds**
   but produces a pure-Python install with no native core — and since there is no
   NumPy fallback, importing the compute layer then raises a clear, actionable
-  error (see `xy.kernels`). Install a Rust toolchain, or use a published
+  error (see `xyg.kernels`). Install a Rust toolchain, or use a published
   wheel, for a working compute backend.
 - The JS client is a **generated artifact, not committed to git** (§33). The
   canonical ship vehicle is the host-neutral `@curatelabs/xyg` package
@@ -206,9 +206,9 @@ class CustomBuildHook(BuildHookInterface):
             # No toolchain / build skipped: ship a pure-Python wheel (the JS
             # client is included via committed package data). There is no NumPy
             # fallback, so this install imports fine but raises a clear error the
-            # moment compute is needed (xy.kernels).
+            # moment compute is needed (xyg.kernels).
             print(
-                "xy: building WITHOUT the native Rust core (cargo not "
+                "xyg: building WITHOUT the native Rust core (cargo not "
                 "found or build skipped). This install has no compute backend "
                 "and will raise a clear error on first use. Install a prebuilt "
                 "wheel or a Rust toolchain (https://rustup.rs) for a working "
@@ -237,7 +237,7 @@ class CustomBuildHook(BuildHookInterface):
         A missing Python copy that cannot be built is a hard error by default
         (the client is required in every distribution); only XYG_SKIP_NODE=1
         downgrades that to a loud skip, in which case the widget/export path
-        raises a clear runtime error on first use (see `xy.widget`, `xy.export`).
+        raises a clear runtime error on first use (see `xyg.widget`, `xyg.export`).
         """
         static_dir = _static_dir(root)
         client_dir = _client_dir(root)
@@ -269,7 +269,7 @@ class CustomBuildHook(BuildHookInterface):
             return static_dir
         if require:
             raise RuntimeError(
-                "The render client is required in every xy wheel/sdist, but its "
+                "The render client is required in every xyg wheel/sdist, but its "
                 "bundles are missing and could not be built. Install Node "
                 "(https://nodejs.org) so the hook can run `npm ci && "
                 "node js/build.mjs`, install from a published wheel/sdist that "
@@ -277,7 +277,7 @@ class CustomBuildHook(BuildHookInterface):
                 "client (the widget and HTML export will then be unavailable)."
             )
         print(
-            "xy: building WITHOUT the JS render client (node not found or "
+            "xyg: building WITHOUT the JS render client (node not found or "
             "skipped, and no prebuilt bundle present). The notebook widget and "
             "standalone HTML export will raise a clear error until the client "
             "is built with `npm ci && node js/build.mjs`.",

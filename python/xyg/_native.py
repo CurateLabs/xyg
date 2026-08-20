@@ -5,7 +5,7 @@ directly — zero copies across the Python/Rust boundary (§4: one
 physical copy of every value; §29: in-process transport is 0-copy).
 
 This module raises ImportError if the library is missing or ABI-mismatched;
-`xy.kernels` re-raises that with remediation guidance. There is no
+`xyg.kernels` re-raises that with remediation guidance. There is no
 pure-Python fallback — the native core is required (§33: no-wheel behavior is
 defined, and it is a loud failure, never a silent degrade).
 """
@@ -2712,7 +2712,7 @@ def stratified_sample_mask(
 
     Per-category keep fractions scale as `min(1, fraction * sqrt(n / count))`
     with a `min_count` lowest-hash floor per category. Bit-identical to the
-    per-category NumPy reference in `xy.lod` (asserted by the parity
+    per-category NumPy reference in `xyg.lod` (asserted by the parity
     test), fused into one native pass instead of O(n · n_groups) rescans.
     uint32 ids dispatch to the in-register widening entry point.
     """

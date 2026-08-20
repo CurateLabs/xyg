@@ -142,7 +142,7 @@ def optional_text(value: Any, label: str) -> Optional[str]:
 
 
 #: Legend placements, in Matplotlib's vocabulary. `best` is resolved to one of
-#: the others at payload-build time (`xy._legendfit`).
+#: the others at payload-build time (`xyg._legendfit`).
 LEGEND_LOCATIONS: tuple[str, ...] = (
     "best",
     "upper right",

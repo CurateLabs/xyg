@@ -106,8 +106,8 @@ def test_component_api_is_present_in_every_agent_markdown_export() -> None:
 
     for content in (page_markdown, published_markdown, llms_full):
         assert f"## {API_REFERENCE_HEADING}" in content
-        assert "### xy.x_axis" in content
-        assert "### xy.y_axis" in content
+        assert "### xyg.x_axis" in content
+        assert "### xyg.y_axis" in content
         assert "| Prop | Type | Description |" in content
 
     assert _markdown_directive().endswith(

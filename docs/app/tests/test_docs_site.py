@@ -392,7 +392,7 @@ def test_component_styling_matrix_covers_public_chrome_boundaries() -> None:
     assert not missing
     assert "button_class_name=" in content
     assert "button_style=" in content
-    assert "built-in `reflex_xy.chart` adapter mounts `xy.tooltip(render=...)`" in content
+    assert "built-in `reflex_xy.chart` adapter mounts `xyg.tooltip(render=...)`" in content
     assert "Legend and colorbar replacements remain framework-owned siblings" in " ".join(
         content.split()
     )
@@ -527,7 +527,7 @@ def test_demo_data_tabs_require_more_than_ten_nonblank_lines() -> None:
     """Keep short literals with Code and reserve Data tabs for long datasets."""
     short_data = "\n".join(f"row_{index} = {index}" for index in range(10))
     long_data = "\n".join(f"row_{index} = {index}" for index in range(11))
-    chart_code = "chart = xy.line_chart(xy.line([0, 1], [0, 1]))"
+    chart_code = "chart = xyg.line_chart(xyg.line([0, 1], [0, 1]))"
 
     short_tab, short_code = _split_demo_data(f"{short_data}\n\n# --- chart ---\n{chart_code}")
     long_tab, long_code = _split_demo_data(f"{long_data}\n\n# --- chart ---\n{chart_code}")
@@ -588,11 +588,11 @@ def test_palette_playground_drives_a_reactive_chart_grid() -> None:
         assert f"set_{role.lower()}_color" in rendered_page
     assert state_source.count('self.preset = "Custom"') == 3
     assert "self.primary, self.secondary, self.accent = BERRY_PALETTE" in state_source
-    assert state_source.count("xyg.theme(palette=") == 6
+    assert state_source.count("xy.theme(palette=") == 6
     assert "_HIDDEN_AXIS_STYLE" not in state_source
     assert '"axis_color": "#00000000"' not in state_source
-    assert "xyg.x_axis(tick_count=6, show=False)" in state_source
-    assert "xyg.y_axis(domain=(0, 80), show=False, grid=True)" in state_source
+    assert "xy.x_axis(tick_count=6, show=False)" in state_source
+    assert "xy.y_axis(domain=(0, 80), show=False, grid=True)" in state_source
     for handler, value, role in (
         (ChartPlaygroundState.set_primary_color, "#123456", "primary"),
         (ChartPlaygroundState.set_secondary_color, "#abcdef", "secondary"),
@@ -631,7 +631,7 @@ def test_custom_color_docs_require_literal_palette_entries() -> None:
         )
     ]
 
-    assert "not as a colormap stop or an `xy.theme(palette=...)` entry" in colormap_rule
+    assert "not as a colormap stop or an `xyg.theme(palette=...)` entry" in colormap_rule
     assert "indexed color lookups used by static renderers" in colormap_rule
 
 
@@ -896,7 +896,7 @@ def test_public_docs_use_the_xy_namespace_without_the_legacy_alias() -> None:
     """Keep examples, generated references, and docs tests on the public name."""
     legacy_alias = "".join(("f", "c"))
     forbidden = (
-        f"import xy as {legacy_alias}",
+        f"import xy as {legacy_alias}",  # xyg-stale-name: allow - rejected legacy import
         f"{legacy_alias}.",
         f"data-{legacy_alias}-",
         f".{legacy_alias}-",
@@ -2570,7 +2570,7 @@ def test_component_api_html_and_markdown_share_cached_metadata() -> None:
     rendered_html = str(component_page_api(references))
     rendered_markdown = component_api_markdown(references)
     assert rendered_markdown.startswith(f"## {API_REFERENCE_HEADING}\n")
-    assert "### xy.x_axis" in rendered_markdown
+    assert "### xyg.x_axis" in rendered_markdown
     assert "| Prop | Type | Description |" in rendered_markdown
     for parameter in references[0].parameters:
         assert parameter.name in rendered_html

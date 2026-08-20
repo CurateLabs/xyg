@@ -12,7 +12,7 @@ sampled marks that land inside it and keep the least occupied, preferring the
 earlier candidate on a near-tie so a symmetric series lands where Matplotlib
 puts it.
 
-`xy.pyplot._axes.Axes._best_legend_loc` carries a second copy of this scoring
+`xyg.pyplot._axes.Axes._best_legend_loc` carries a second copy of this scoring
 that runs against the shim's own entry arrays. The two are pinned to agree by
 `tests/test_legend_best_placement.py`; folding the shim onto this module is a
 follow-up held back only because the compat stack is rewriting that method.

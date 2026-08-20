@@ -92,7 +92,7 @@ function nonblank(gl) {
 
 def xy_probe_html(fig: Any) -> str:
     html = fig.to_html()
-    needle = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
+    needle = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     replacement = (
         'window.__benchView=xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     )

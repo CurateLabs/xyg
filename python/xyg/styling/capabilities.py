@@ -246,7 +246,7 @@ KNOWN_RENDERER_DIVERGENCES: tuple[RendererDivergence, ...] = (
 
 #: What each slot's `styles={slot: ...}` reaches in the two native writers.
 #: The writers now read a defined text/box subset for the slots that name
-#: chrome a static file actually contains (`xy._svg.STATIC_STYLED_SLOTS`);
+#: chrome a static file actually contains (`xyg._svg.STATIC_STYLED_SLOTS`);
 #: everything else is live-only chrome — a tooltip, a modebar, a crosshair —
 #: and has nothing in a file to style.
 _SLOT_SUBSET_NOTE = (
@@ -264,7 +264,7 @@ _SLOT_EXCEPTIONS: dict[str, tuple[str, str, str]] = {
 }
 _SLOT_EXCEPTIONS["legend"] = (
     "partial",
-    "styles={'legend': ...} / xy.legend(style=...) / --chart-legend-bg",
+    "styles={'legend': ...} / xyg.legend(style=...) / --chart-legend-bg",
     "The frame box. Both spellings and the theme token now converge on one "
     "merged declaration block before the writers see it, so what agrees in the "
     "browser agrees in a PNG. `background`, `boxShadow`, `borderRadius`, "
@@ -297,13 +297,13 @@ CHART_SLOTS: tuple[SlotCapability, ...] = tuple(
 
 
 #: Ways to add behavior the core does not ship. This is the leg XY lost
-#: outright before `xy.register_mark` existed, and the honest entry is still
+#: outright before `xyg.register_mark` existed, and the honest entry is still
 #: narrower than Matplotlib's custom `Artist`.
 EXTENSION_POINTS: tuple[ExtensionPoint, ...] = (
     ExtensionPoint(
         id="mark_plugin_composition",
         status="shipped",
-        entry_point="xyg.register_mark / xy.MarkPlugin / xy.mark",
+        entry_point="xyg.register_mark / xyg.MarkPlugin / xyg.mark",
         notes=(
             "A calc over declared columns plus a build that returns built-in "
             "marks. Its output is ordinary traces, so it reuses the built-in "

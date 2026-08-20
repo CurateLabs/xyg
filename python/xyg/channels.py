@@ -166,7 +166,7 @@ class ColorChannel:
     codes: Optional[npt.NDArray[np.uint8] | npt.NDArray[np.uint32]] = None
     categories: Optional[list[str]] = None
     # The categorical color cycle this channel was resolved against — the
-    # chart's `xy.theme(palette=...)`, else config.DEFAULT_PALETTE. Kept on the
+    # chart's `xyg.theme(palette=...)`, else config.DEFAULT_PALETTE. Kept on the
     # channel so every consumer (ship, re-bin, legend, export) reads one source
     # instead of reaching for the module default.
     palette: Optional[list[str]] = None
@@ -554,7 +554,7 @@ def resolve_color(
 
     `domain` pins the continuous normalization window (matplotlib's
     vmin/vmax); values outside clip to the colormap ends. `palette` is the
-    categorical color cycle (the chart's `xy.theme(palette=...)`, else the
+    categorical color cycle (the chart's `xyg.theme(palette=...)`, else the
     built-in CVD-safe default).
 
     `default_constant` may be a callable, invoked only on the branch that
@@ -630,7 +630,7 @@ def resolve_color(
             # The default palette is deliberately eight slots (its adjacency
             # order is the CVD-safety gate; see config.DEFAULT_PALETTE), so
             # category colors repeat modulo its length — as does any shorter
-            # `xy.theme(palette=...)`. Allowed, never silent (§28).
+            # `xyg.theme(palette=...)`. Allowed, never silent (§28).
             warnings.warn(
                 f"categorical color has {len(cats)} categories but the palette "
                 f"has {len(cycle)} colors; colors repeat every {len(cycle)} "

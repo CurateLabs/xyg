@@ -22,19 +22,19 @@ system and can wait until something real needs one.
 
     def _build(ctx):
         return [
-            xy.segments(
+            xyg.segments(
                 x0=ctx.columns["t"], x1=ctx.columns["t"],
                 y0=ctx.columns["low"], y1=ctx.columns["high"],
                 style=ctx.style,
             ),
-            xy.scatter(x=ctx.columns["t"], y=ctx.columns["mid"], size=4),
+            xyg.scatter(x=ctx.columns["t"], y=ctx.columns["mid"], size=4),
         ]
 
-    xy.register_mark(
-        xy.MarkPlugin(name="hilo", columns=("t", "low", "high"), calc=_calc, build=_build)
+    xyg.register_mark(
+        xyg.MarkPlugin(name="hilo", columns=("t", "low", "high"), calc=_calc, build=_build)
     )
 
-    chart = xy.chart(xy.mark("hilo", t=ts, low=lows, high=highs, data=frame))
+    chart = xyg.chart(xyg.mark("hilo", t=ts, low=lows, high=highs, data=frame))
 
 A plugin's `build` returns built-in `Mark` objects and nothing else; it never
 sees the `Figure`, the trace list, or the column store. `tests/test_mark_plugins.py`
@@ -73,7 +73,7 @@ class MarkContext:
 class MarkPlugin:
     """A mark kind contributed from outside the core.
 
-    `columns` names the fields `xy.mark(...)` will resolve against `data=`;
+    `columns` names the fields `xyg.mark(...)` will resolve against `data=`;
     everything else a caller passes lands in `MarkContext.options` untouched.
     `calc` runs once over the resolved columns and returns the columns `build`
     sees — this is §24's "calc function over columns → columns", running in
@@ -87,7 +87,7 @@ class MarkPlugin:
     doc: str = ""
 
 
-#: `xy.mark()` binds these itself, so a column with one of these names could
+#: `xyg.mark()` binds these itself, so a column with one of these names could
 #: never be passed: the caller's value would land on the `mark()` parameter and
 #: the column would silently resolve to None. Rejecting the schema at
 #: registration turns a confusing runtime result into an import-time error.

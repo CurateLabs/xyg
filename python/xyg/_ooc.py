@@ -8,7 +8,7 @@ mmap case for ingest.
 The load-bearing observation: a NumPy ``memmap`` is a *transparent* ``ndarray``.
 A canonical column backed by one
 
-- satisfies the :class:`~xy.columns.ColumnStore` dedup key
+- satisfies the :class:`~xyg.columns.ColumnStore` dedup key
   (``id(base)``, ``data_ptr``, ``nbytes`` — see ``ColumnStore._array_key``),
 - passes straight to the ctypes kernels, which take the raw buffer address
   (``arr.ctypes.data``; see ``_native._ptr_f64``) — the OS then pages the file
@@ -84,7 +84,7 @@ class MemmapF64Builder:
         """Flush, truncate to the written length, and return a read-only view.
 
         The returned array is a canonical f64 column: contiguous, single-copy,
-        disk-backed. Hand it to :meth:`xy.Figure.scatter` /
+        disk-backed. Hand it to :meth:`xyg.Figure.scatter` /
         ``ColumnStore.ingest`` exactly like an in-RAM array.
 
         An empty column truncates the file to **0 bytes** and returns a plain

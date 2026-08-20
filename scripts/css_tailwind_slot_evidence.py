@@ -238,7 +238,7 @@ def _replace_bundle(document: str, bundle: Path | None) -> str:
 
 
 def _instrument(document: str) -> str:
-    render_call = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
+    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     if render_call not in document:
         raise RuntimeError("standalone render call changed; update the evidence script")
     instrumented = """

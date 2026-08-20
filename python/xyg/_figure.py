@@ -26,7 +26,7 @@ from .columns import Column, ColumnStore, ColumnStoreCheckpoint
 
 # Tier/tuning constants live in config.py (shared with interaction/export/
 # _payload); several are re-exported here — this module is their historic
-# import path and tests import them from `xy._figure` (F401 kept for
+# import path and tests import them from `xyg._figure` (F401 kept for
 # the re-exports; DIRECT_SOFT_CEILING/DEFAULT_PALETTE are also used below).
 from .config import (  # noqa: E402, F401
     DECIMATION_THRESHOLD,
@@ -146,7 +146,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
         # pyplot sets an explicit Matplotlib-style spine list.
         self.frame_sides: Optional[list[str]] = None
         self.colorbar_options: Optional[dict[str, Any]] = None
-        # Declarative export defaults (xy.export_config): governs the client
+        # Declarative export defaults (xyg.export_config): governs the client
         # modebar's format menu + filename and the Python export defaults.
         self.export_options: Optional[dict[str, Any]] = None
         self.show_modebar = True
@@ -162,7 +162,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
         self.animation_options: Optional[dict[str, Any]] = None
         self.mark_style: dict[str, dict[str, str | int | float]] = {}
         # Categorical color cycle for this chart: unnamed series colors AND
-        # categorical color channels. `xy.theme(palette=[...])` replaces it;
+        # categorical color channels. `xyg.theme(palette=[...])` replaces it;
         # None means the built-in CVD-safe default (config.DEFAULT_PALETTE).
         # Set before any mark is applied — a trace bakes its color at build.
         # A list is a positional cycle; a `{category: color}` mapping pins
@@ -330,12 +330,12 @@ class Figure(AnnotationsMixin, PayloadMixin):
         ):
             raise ValueError(
                 f"{axis_id} axis: theta options describe the angular "
-                "axis and belong on an x axis (xy.theta_axis); the radial axis is the y axis"
+                "axis and belong on an x axis (xyg.theta_axis); the radial axis is the y axis"
             )
         if axis_dim == "x" and any(option is not None for option in (hole, r_origin)):
             raise ValueError(
                 f"{axis_id} axis: hole/r_origin describe the radial axis and belong on a "
-                "y axis (xy.r_axis); the angular axis is the x axis"
+                "y axis (xyg.r_axis); the angular axis is the x axis"
             )
         if type_ == "log" and r_origin is not None and r_origin <= 0:
             raise ValueError(f"{axis_id} log axis r_origin must be positive")
@@ -1781,7 +1781,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
             # navigation. A composition whose RADIUS is a measured quantity
             # (`wind_rose`, where it is a frequency count) opts back in by
             # shipping `zoom=True`, as does any author via
-            # `xy.interaction_config(zoom=True)`; an ordinary `polar_chart` whose
+            # `xyg.interaction_config(zoom=True)`; an ordinary `polar_chart` whose
             # radius IS data is expected to do the same.
             #
             # Resolved HERE and shipped explicitly, against §5.2's "unspecified

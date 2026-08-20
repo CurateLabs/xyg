@@ -73,7 +73,7 @@ def build_html() -> str:
         f"<script>{bundle}</script><script>"
         f"const spec={json.dumps(spec)};"
         f'const bytes=Uint8Array.from(atob("{b64}"),c=>c.charCodeAt(0));'
-        'xyg.renderStandalone(document.getElementById("chart"),spec,bytes.buffer);'
+        'xy.renderStandalone(document.getElementById("chart"),spec,bytes.buffer);'
         "</script></body></html>"
     )
 

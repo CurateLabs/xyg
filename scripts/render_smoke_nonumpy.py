@@ -284,7 +284,7 @@ def main() -> None:
     assert len(blob) == sum(c["len"] for c in spec["columns"]) * 4
     struct.unpack_from("<f", blob, 0)  # decodes as little-endian f32
 
-    # Mirrors xy.export._STANDALONE_CSP (this script is stdlib-only by
+    # Mirrors xyg.export._STANDALONE_CSP (this script is stdlib-only by
     # design, so the string is inlined; a test asserts they stay identical) —
     # every probe below, including the blob-URL re-bin worker, runs under the
     # same policy a real to_html export ships.

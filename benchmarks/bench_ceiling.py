@@ -188,7 +188,7 @@ async function waitVisibleComplete(sample) {
 def xy_probe_html(fig: Any, steps: int) -> str:
     """xy standalone HTML with a first-render probe and a gesture sweep."""
     html = fig.to_html()
-    needle = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
+    needle = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     replacement = (
         'window.__benchView=xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     )

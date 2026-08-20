@@ -57,7 +57,7 @@ wheel) is the shared renderer for:
 
 - Python notebooks via **anywidget** (`index.js` as `_esm` from the wheel copy);
 - **HTML export** / notebook HTML fallback (`Figure.to_html` / Node `toHtml`
-  inline `standalone.js` + `xyg.renderStandalone`);
+  inline `standalone.js` + browser-global `xy.renderStandalone`);
 - Node-served pages and embed hosts that load `window.xy`;
 - VS Code webviews that host the same standalone or ESM bundle from
   `@curatelabs/xyg`, not from the Python package tree.

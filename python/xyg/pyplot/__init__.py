@@ -7,7 +7,7 @@
     ax.legend()
     plt.savefig("chart.png")
 
-Every call translates onto the public declarative API (`xy.chart`
+Every call translates onto the public declarative API (`xyg.chart`
 and friends); the engine never knows this module exists. Coverage is
 corpus-defined — see spec/matplotlib/compat.md for the supported surface
 and the loud `NotImplementedError` list.

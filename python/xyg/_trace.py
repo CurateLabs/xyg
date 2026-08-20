@@ -125,7 +125,7 @@ class Trace:
     _pyr_colored: bool = field(default=False, init=False, repr=False, compare=False)
     _pyr_finalizer: Optional[Any] = field(default=None, init=False, repr=False, compare=False)
     _pyr_base_dim: int = field(default=0, init=False, repr=False, compare=False)
-    # Optional Tier-3 spatial index (xy._spatial.SpatialIndex) for O(window)
+    # Optional Tier-3 spatial index (xyg._spatial.SpatialIndex) for O(window)
     # exact deep-zoom density; attached out-of-band, duck-typed in interaction.
     _spatial_index: Any = field(default=None, init=False, repr=False, compare=False)
 

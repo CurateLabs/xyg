@@ -305,7 +305,7 @@ def _export_rows(n: int, reps: int, chromium: str | None) -> list[dict[str, Any]
             "export_html_decimated_line",
             lambda fig: fig.to_html(),
             lambda _fig, value: _require_oracle(
-                isinstance(value, str) and "xyg.renderStandalone" in value,
+                isinstance(value, str) and "xy.renderStandalone" in value,
                 "invalid standalone HTML export",
             ),
         ),

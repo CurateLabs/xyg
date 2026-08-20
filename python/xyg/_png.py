@@ -17,7 +17,7 @@ objects and their join), and compressing the buffer directly drops a third
 (`tobytes`).
 
 This balanced/indexed path stays pure Python/stdlib. The separate latency-first
-`xy.pyplot` path fuses rasterization with the Rust PNG encoder.
+`xyg.pyplot` path fuses rasterization with the Rust PNG encoder.
 """
 
 from __future__ import annotations

@@ -306,7 +306,7 @@ class PayloadMixin(_Host):
         if self.coords != "cartesian":
             spec["coords"] = self.coords
         if self.palette is not None:
-            # Chart-level categorical cycle (`xy.theme(palette=...)`). Every
+            # Chart-level categorical cycle (`xyg.theme(palette=...)`). Every
             # trace already bakes its own color and every categorical channel
             # ships its own resolved `palette`, so this is only the indexed
             # fallback the STATIC exporters use for a trace that carries no
@@ -518,7 +518,7 @@ class PayloadMixin(_Host):
     def _default_styled(self, t: Trace) -> dict[str, Any]:
         """Trace style dict with the per-trace palette default when no color
         was given — the one place this rule lives (was copy-pasted per kind).
-        Cycles the figure's palette (`xy.theme(palette=...)`), which defaults
+        Cycles the figure's palette (`xyg.theme(palette=...)`), which defaults
         to config.DEFAULT_PALETTE."""
         style = dict(t.style)
         if style.get("color") is None:

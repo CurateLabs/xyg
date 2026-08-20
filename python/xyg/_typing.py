@@ -6,7 +6,7 @@ type checker can verify calls against them — and each one is documented
 here so no matplotlib (or NumPy) background is assumed.
 
 Only the engine-agnostic vocabulary lives here; CSS-flavored style types
-stay in `xy.styles` (``StyleValue``/``StyleMapping``) and the pyplot shim
+stay in `xyg.styles` (``StyleValue``/``StyleMapping``) and the pyplot shim
 re-uses these same names so both API layers read alike.
 """
 

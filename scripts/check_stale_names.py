@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Fail if current-product files still use retired XY native identity.
+"""Fail if current-product files still use retired XY/XYG identities.
 
-Enforces spec/design/xyg-naming.md for the crate-split identifiers that
-have already landed: libxyg_core, XYG_* env vars, @curatelabs/xyg-node,
-and crates/xyg-core/src/lib.rs as the ABI location. Historical audits,
-the naming matrix (old column), and provenance scripts are allowlisted.
+Enforces spec/design/xyg-naming.md, including the clean Python ``xyg``
+namespace cutover. Historical audits, the naming matrix's old column, and the
+one-way provenance migration script are file-allowlisted. Individual
+intentional compatibility references use ``xyg-stale-name: allow``.
 Stdlib only.
 """
 
 from __future__ import annotations
 
 import argparse
+import io
 import re
 import sys
+import tokenize
 from pathlib import Path
 from typing import Optional
 
@@ -69,7 +71,17 @@ ALLOWLIST_FILES = {
 
 # Retired current-product identity. XYG_* names must not match these.
 _ENV = r"(?<![A-Z0-9_])"
+LINE_ALLOW_MARKER = "xyg-stale-name: allow"
 NEEDLES = (
+    ("python/xy package path", re.compile(r"python/xy(?:/|\b)")),
+    (
+        "import xy",
+        re.compile(r"(?:^|[\"';,])\s*(?:import|from)\s+xy(?:\s|\.|$)"),
+    ),
+    (
+        "xy Python module reference",
+        re.compile(r"(?<![A-Za-z0-9_])xy\.(?:kernels|widget|export)(?![A-Za-z0-9_])"),
+    ),
     ("libxy_core", re.compile(r"libxy_core")),
     ("xy_core.dll", re.compile(r"(?<![A-Za-z0-9_])xy_core\.dll")),
     ("XY_NATIVE_LIB", re.compile(_ENV + r"XY_NATIVE_LIB\b")),
@@ -87,6 +99,36 @@ NEEDLES = (
     ("_lib.xy_ FFI", re.compile(r"_lib\.xy_[a-z]")),
     ("src/lib.rs ABI", re.compile(r"src/lib\.rs")),
 )
+
+_PYTHON_TEXT_XY = re.compile(r"(?<![A-Za-z0-9_])xy\.[A-Za-z_]")
+_BROWSER_GLOBALS = ("xy.renderStandalone", "xy.decodeFrame")
+
+
+def _python_text_errors(path: Path, rel: str, text: str, *, repository_scan: bool) -> list[str]:
+    """Reject retired public Python names in comments, docstrings, and errors."""
+    if path.suffix != ".py":
+        return []
+    if repository_scan and not rel.startswith(("python/xyg/", "python/reflex_xy/")):
+        return []
+    errors: list[str] = []
+    try:
+        tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+        for token in tokens:
+            if token.type not in {tokenize.COMMENT, tokenize.STRING}:
+                continue
+            value = token.string
+            if LINE_ALLOW_MARKER in value:
+                continue
+            for match in _PYTHON_TEXT_XY.finditer(value):
+                if value.startswith(_BROWSER_GLOBALS, match.start()):
+                    continue
+                errors.append(
+                    f"{rel}:{token.start[0]}: stale xy Python public reference: {value.strip()}"
+                )
+                break
+    except (IndentationError, SyntaxError, tokenize.TokenError):
+        pass
+    return errors
 
 
 def _skip(path: Path) -> bool:
@@ -132,13 +174,17 @@ def iter_scan_files(root: Path) -> list[Path]:
 
 def check_stale_names(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
+    repository_scan = root.resolve() == ROOT.resolve()
     for path in iter_scan_files(root):
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
         rel = path.relative_to(root).as_posix()
+        errors.extend(_python_text_errors(path, rel, text, repository_scan=repository_scan))
         for lineno, line in enumerate(text.splitlines(), 1):
+            if LINE_ALLOW_MARKER in line:
+                continue
             for label, pattern in NEEDLES:
                 for match in pattern.finditer(line):
                     if label == "src/lib.rs ABI" and _allowed_src_lib_rs(line, match.start()):

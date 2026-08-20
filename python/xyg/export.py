@@ -444,7 +444,7 @@ class HtmlView:
         return self._html
 
     def __repr__(self) -> str:
-        return f"<xy.export.HtmlView ({len(self._html)} chars; rich display renders it)>"
+        return f"<xyg.export.HtmlView ({len(self._html)} chars; rich display renders it)>"
 
 
 def notebook_display_mode(display: Optional[str] = None) -> str:

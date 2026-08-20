@@ -4,7 +4,7 @@ One factory, three chart sources (spec/design/reflex-integration.md §5):
 
     reflex_xy.chart(Dash.chart)            # @reflex_xy.figure state var (live)
     reflex_xy.chart(some_token_string)     # register()/inline() token (live)
-    reflex_xy.chart(xy.scatter_chart(...)) # a Chart directly (static tier)
+    reflex_xy.chart(xyg.scatter_chart(...)) # a Chart directly (static tier)
 
 A live source compiles to the `token` prop and rides the shared-websocket
 data plane. A `xy` Chart (or internal Figure) passed directly is
@@ -119,7 +119,7 @@ def _component() -> Any:
 
 
 def _is_chart_like(source: Any) -> bool:
-    """A public `xy.Chart` (has .figure()) or an internal Figure."""
+    """A public `xyg.Chart` (has .figure()) or an internal Figure."""
     return callable(getattr(source, "figure", None)) or callable(
         getattr(source, "build_payload", None)
     )
@@ -129,7 +129,7 @@ def _tailwind_class_manifest(figure: Any) -> str:
     """Return every static-chart DOM class string as one scan-only literal.
 
     The inventory itself is core-Figure knowledge and lives on
-    :meth:`xy.Figure.dom_class_strings`; reading the built figure avoids a
+    :meth:`xyg.Figure.dom_class_strings`; reading the built figure avoids a
     second payload compilation (which can be expensive for large charts).
     """
     return " ".join(figure.dom_class_strings())
@@ -285,7 +285,7 @@ def chart(
     client positions it with the built-in tooltip's placement logic (the
     built-in tooltip is suppressed while it is mounted) and the `on_hover`
     payload carries the data to show. A Chart source that declares
-    `xy.tooltip(render=...)` mounts that component automatically.
+    `xyg.tooltip(render=...)` mounts that component automatically.
 
     Sizing: the outer element defaults to `width: 100%` and a 420px height;
     pass `width=`/`height=` (or any style prop) to override. Charts built

@@ -305,7 +305,7 @@ def test_svg_explicit_colorbar_ticks_preserve_authored_precision() -> None:
 
 
 def _browser_colorbar_probe(chromium: str, document: str, page: Path) -> dict:
-    render_call = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
+    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     assert render_call in document
     probe = """
   const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);

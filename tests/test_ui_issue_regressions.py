@@ -74,7 +74,7 @@ def _probe(chart: xy.Chart, script: str, tmp_path: Path, name: str) -> dict:
     if chromium is None:
         pytest.skip("Chromium unavailable")
     document = chart.to_html()
-    render_call = document.rfind("xyg.renderStandalone(")
+    render_call = document.rfind("xy.renderStandalone(")
     assert render_call >= 0
     document = document[:render_call] + "window.__xyIssueView = " + document[render_call:]
     document = document.replace("</body>", f"<script>{script}</script>\n</body>", 1)

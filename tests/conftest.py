@@ -23,8 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
 # into. Exported so probe tests assert against one list instead of each keeping
 # its own copy in sync with the exporter.
 RENDER_CALLS = (
-    'xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
-    'xyg.renderStandalone(document.getElementById("chart"), spec, buf);',
+    'xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
+    'xy.renderStandalone(document.getElementById("chart"), spec, buf);',
 )
 
 
@@ -41,7 +41,7 @@ def probe_document(chart, probe: str, *, head: str = "") -> str:
     document = document.replace(
         render_call,
         render_call.replace(
-            "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
         ),
         1,
     )

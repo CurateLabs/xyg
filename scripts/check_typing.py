@@ -47,7 +47,7 @@ def _canonical_public_names(init_path: Path = SOURCE_INIT) -> list[str]:
     try:
         tree = ast.parse(init_path.read_text(encoding="utf-8"), filename=str(init_path))
     except (OSError, SyntaxError) as exc:
-        raise RuntimeError(f"cannot inspect canonical xy exports in {init_path}: {exc}") from exc
+        raise RuntimeError(f"cannot inspect canonical xyg exports in {init_path}: {exc}") from exc
 
     for statement in tree.body:
         if not (
@@ -75,7 +75,7 @@ def _canonical_public_names(init_path: Path = SOURCE_INIT) -> list[str]:
 
 
 def _installed_public_names(python: Path, *, cwd: Path) -> list[str]:
-    code = "import json, xy; print(json.dumps(xy.__all__))"
+    code = "import json, xyg; print(json.dumps(xyg.__all__))"
     proc = subprocess.run(
         [str(python), "-c", code],
         cwd=cwd,
@@ -86,17 +86,17 @@ def _installed_public_names(python: Path, *, cwd: Path) -> list[str]:
     )
     if proc.returncode != 0:
         detail = (proc.stderr or proc.stdout).strip()
-        raise RuntimeError(f"cannot import installed xy with {python}: {detail}")
+        raise RuntimeError(f"cannot import installed xyg with {python}: {detail}")
     try:
         value = json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
-        raise RuntimeError(f"installed xy.__all__ probe returned invalid JSON: {exc}") from exc
+        raise RuntimeError(f"installed xyg.__all__ probe returned invalid JSON: {exc}") from exc
     if not isinstance(value, list) or any(
         not isinstance(name, str) or not name.isidentifier() for name in value
     ):
-        raise RuntimeError(f"installed xy.__all__ must be a list of identifiers, got {value!r}")
+        raise RuntimeError(f"installed xyg.__all__ must be a list of identifiers, got {value!r}")
     if len(value) != len(set(value)):
-        raise RuntimeError("installed xy.__all__ contains duplicate names")
+        raise RuntimeError("installed xyg.__all__ contains duplicate names")
     return sorted(value)
 
 
@@ -123,19 +123,19 @@ def _dynamic_root_names(revealed: dict[str, str]) -> list[str]:
 
 
 def _run_installed_consumer_check(python: Path, ty: Path) -> bool:
-    with tempfile.TemporaryDirectory(prefix="xy-typing-consumer-") as raw_tmp:
+    with tempfile.TemporaryDirectory(prefix="xyg-typing-consumer-") as raw_tmp:
         tmp = Path(raw_tmp)
         names = _canonical_public_names()
         installed_names = _installed_public_names(python, cwd=tmp)
         missing_exports, extra_exports = _public_name_drift(names, installed_names)
         if missing_exports:
             print(
-                f"installed xy.__all__ is missing canonical exports: {missing_exports}",
+                f"installed xyg.__all__ is missing canonical exports: {missing_exports}",
                 file=sys.stderr,
             )
         if extra_exports:
             print(
-                f"installed xy.__all__ contains unexpected exports: {extra_exports}",
+                f"installed xyg.__all__ contains unexpected exports: {extra_exports}",
                 file=sys.stderr,
             )
         if missing_exports or extra_exports:
@@ -144,14 +144,14 @@ def _run_installed_consumer_check(python: Path, ty: Path) -> bool:
         lines = ["from typing import reveal_type", "", "import xyg", ""]
         line_names: dict[int, str] = {}
         for name in names:
-            lines.append(f"reveal_type(xy.{name})")
+            lines.append(f"reveal_type(xyg.{name})")
             line_names[len(lines)] = name
         consumer = tmp / "consumer.py"
         consumer.write_text("\n".join(lines) + "\n", encoding="utf-8")
         (tmp / "pyproject.toml").write_text(
             """\
 [project]
-name = "xy-typing-consumer"
+name = "xyg-typing-consumer"
 version = "0"
 requires-python = ">=3.11"
 """,
@@ -192,7 +192,7 @@ requires-python = ">=3.11"
         if missing:
             print(f"installed consumer did not reveal types for: {missing}", file=sys.stderr)
         if dynamic:
-            print(f"installed xy root exports resolve dynamically: {dynamic}", file=sys.stderr)
+            print(f"installed xyg root exports resolve dynamically: {dynamic}", file=sys.stderr)
         if missing or dynamic:
             print(output, file=sys.stderr)
             return False
@@ -210,7 +210,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
     parser.add_argument(
         "--python-executable",
-        help="Python environment containing the xy installation to inspect",
+        help="Python environment containing the xyg installation to inspect",
     )
     parser.add_argument("--ty-executable", help="ty executable used for both checks")
     args = parser.parse_args(argv)

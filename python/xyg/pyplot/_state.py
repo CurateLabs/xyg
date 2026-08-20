@@ -142,7 +142,7 @@ def all_figures() -> list[Figure]:
     # A few official gallery helpers (notably JoinStyle.demo/CapStyle.demo)
     # construct Matplotlib artists internally even after the pyplot import is
     # swapped.  When Matplotlib is already loaded, adapt those line/text-only
-    # figures at this boundary so the strict gallery script still exports via xy.
+    # figures at this boundary so the strict gallery script still exports via xyg.
     import sys
 
     mpl = sys.modules.get("matplotlib.pyplot")

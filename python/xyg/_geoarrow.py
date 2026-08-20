@@ -2,7 +2,7 @@
 
 ``pyarrow`` is an optional *input* format only — never a runtime dependency of
 ``xy``. Callers that already hold decoded buffers should use
-``xy._native.geo_column_new`` directly. This module never imports Arrow at
+``xyg._native.geo_column_new`` directly. This module never imports Arrow at
 module load; ``ingest_geoarrow`` raises ``ImportError`` when pyarrow is absent.
 """
 

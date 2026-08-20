@@ -1,9 +1,9 @@
 """Static payload assets: the zero-backend chart tier.
 
-`reflex_xy.chart(xy.scatter_chart(...))` — passing a chart object instead of
+`reflex_xy.chart(xyg.scatter_chart(...))` — passing a chart object instead of
 a token — lands here: the figure compiles once to its first-paint payload,
 which is written into the app's ``assets/`` tree as one binary XYBF frame
-(``xy.channel`` §3.2 framing) and served as an ordinary static file.
+(``xyg.channel`` §3.2 framing) and served as an ordinary static file.
 The wrapper fetches it and runs the render client in standalone mode: no
 registry entry, no socket subscription, no state — the same interactivity
 tier as ``Figure.to_html()`` exports (client-side hover from retained

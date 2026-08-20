@@ -107,7 +107,7 @@ def test_out_of_range_row_is_an_error_not_a_read() -> None:
     indexing panic: `ffi_guard` turns a panic into the sentinel only where
     panics unwind, and the PyEmscripten wheel is built `-C panic=abort` (see
     `.github/workflows/publish.yaml`) precisely so they cannot. There the panic
-    aborted the Pyodide instance — and `xy.kernels` is public API, so the row
+    aborted the Pyodide instance — and `xyg.kernels` is public API, so the row
     array is caller data.
     """
     x = np.zeros(4)

@@ -18,7 +18,7 @@ import xyg as xy
 from conftest import run_browser_probe
 from xyg.export import find_chromium
 
-_RENDER_CALL = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
+_RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
 
 
 def _chart_html(*children, **kwargs) -> str:

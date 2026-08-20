@@ -1,7 +1,7 @@
 """The shim Axes: matplotlib's per-panel API translated onto composition marks.
 
 An Axes accumulates *entries* — light spec dicts, one per plotted thing —
-plus axis/chrome state, and materializes a single `xy.chart(...)` lazily.
+plus axis/chrome state, and materializes a single `xyg.chart(...)` lazily.
 Mutation (artists, labels, limits) invalidates the cached chart; the next
 render rebuilds. Build cost is therefore the declarative API's build cost
 plus dict bookkeeping — that closeness is asserted by the perf guardrail
@@ -25,6 +25,7 @@ from typing import Any, Literal, Optional
 
 import numpy as np
 
+import xyg
 import xyg as xy
 
 from .. import _textblock
@@ -919,7 +920,7 @@ class SecondaryAxis:
         if positions.shape != secondary_values.shape or not np.all(np.isfinite(positions)):
             raise ValueError("secondary axis functions must return matching finite values")
         labels = self._tick_labels or [f"{value:g}" for value in secondary_values]
-        factory = xy.x_axis if self._axis == "x" else xy.y_axis
+        factory = xyg.x_axis if self._axis == "x" else xyg.y_axis
         axis_domain = (float(domain[0]), float(domain[1]))
         return factory(
             id=f"{self._axis}s{index}",
@@ -1082,7 +1083,7 @@ def _cached_theme(grid: bool, tokens: dict[str, Any], style: dict[str, Any]) -> 
     if made is None:
         applied = dict(tokens)
         applied["grid_color"] = _MPL_GRID_COLOR if grid else "transparent"
-        made = _component_cache[key] = xy.theme(style=style, **applied)
+        made = _component_cache[key] = xyg.theme(style=style, **applied)
     return made
 
 
@@ -1090,7 +1091,7 @@ def _cached_modebar(show: bool) -> Any:
     key = ("modebar", show)
     made = _component_cache.get(key)
     if made is None:
-        made = _component_cache[key] = xy.modebar(show=show)
+        made = _component_cache[key] = xyg.modebar(show=show)
     return made
 
 
@@ -1112,7 +1113,7 @@ def _cached_axis(which: str, props: dict) -> Any:
             direction = angular.pop("theta_direction", None)
             sector = angular.pop("sector", None)
             grid_shape = angular.pop("grid_shape", None)
-            return xy.theta_axis(
+            return xyg.theta_axis(
                 unit=unit,
                 zero=zero,
                 direction=direction,
@@ -1124,13 +1125,13 @@ def _cached_axis(which: str, props: dict) -> Any:
             radial = _polar_axis_kwargs(props)
             hole = radial.pop("hole", None)
             origin = radial.pop("r_origin", None)
-            return xy.r_axis(hole=hole, origin=origin, **radial)
-        factory = xy.x_axis if which == "x" else xy.y_axis
+            return xyg.r_axis(hole=hole, origin=origin, **radial)
+        factory = xyg.x_axis if which == "x" else xyg.y_axis
         return factory(**props)
     key = ("axis", which)
     made = _component_cache.get(key)
     if made is None:
-        made = _component_cache[key] = (xy.x_axis if which == "x" else xy.y_axis)()
+        made = _component_cache[key] = (xyg.x_axis if which == "x" else xyg.y_axis)()
     return made
 
 
@@ -4447,7 +4448,7 @@ class Axes(PlotTypeMixin):
                     "triangle_mesh": (0, 2, 4) if axis == "x" else (1, 3, 5),
                     "stem": (0,) if axis == "x" else (1,),
                     "area": (0,) if axis == "x" else (1,),
-                    # xy.stairs(values, edges) is compact and deliberately
+                    # xyg.stairs(values, edges) is compact and deliberately
                     # reverses the ordinary x/y argument order.
                     "stairs": (1,) if axis == "x" else (0,),
                     "step": (0,) if axis == "x" else (1,),
@@ -7344,12 +7345,12 @@ class Axes(PlotTypeMixin):
                 )
                 # Every renderer already uses round caps for dashed lines.
                 # ``Line2D.set_dash_capstyle("round")`` records the public
-                # Matplotlib state, but it is not a core ``xy.line`` keyword.
+                # Matplotlib state, but it is not a core ``xyg.line`` keyword.
                 kw.pop("dash_capstyle", None)
                 gapcolor = kw.pop("_gapcolor", None)
                 if gapcolor is not None and kw.get("dash"):
                     children.append(
-                        xy.line(
+                        xyg.line(
                             x=e["x"],
                             y=e["y"],
                             color=gapcolor,
@@ -7358,7 +7359,7 @@ class Axes(PlotTypeMixin):
                             **axis_kw,
                         )
                     )
-                children.append(xy.line(x=e["x"], y=e["y"], **kw, **axis_kw))
+                children.append(xyg.line(x=e["x"], y=e["y"], **kw, **axis_kw))
             elif kind == "@axline":
                 kw = dict(kw)
                 kw["width"] = (
@@ -7375,7 +7376,7 @@ class Axes(PlotTypeMixin):
                     continue
                 if gapcolor is not None and kw.get("dash"):
                     children.append(
-                        xy.line(
+                        xyg.line(
                             x=x,
                             y=y,
                             color=gapcolor,
@@ -7384,7 +7385,7 @@ class Axes(PlotTypeMixin):
                             **axis_kw,
                         )
                     )
-                children.append(xy.line(x=x, y=y, **kw, **axis_kw))
+                children.append(xyg.line(x=x, y=y, **kw, **axis_kw))
             elif kind == "scatter":
                 kw = dict(kw)
                 if "_mpl_line_marker_path_points" in e:
@@ -7418,9 +7419,9 @@ class Axes(PlotTypeMixin):
                     domain = dom
                 if domain is not None:
                     kw["color_domain"] = (float(domain[0]), float(domain[1]))
-                children.append(xy.scatter(x=e["x"], y=e["y"], **kw, **axis_kw))
+                children.append(xyg.scatter(x=e["x"], y=e["y"], **kw, **axis_kw))
             elif kind == "bar":
-                children.append(xy.bar(x=e["x"], y=e["y"], **kw, **axis_kw))
+                children.append(xyg.bar(x=e["x"], y=e["y"], **kw, **axis_kw))
                 patch_labels = e.get("patch_labels")
                 if patch_labels is not None:
                     colors = resolve_rgba_array(
@@ -7436,7 +7437,7 @@ class Axes(PlotTypeMixin):
                         # correctly colored swatch per labeled patch while the
                         # actual bars remain a single vectorized trace.
                         children.append(
-                            xy.bar(
+                            xyg.bar(
                                 x=np.empty(0, dtype=np.float64),
                                 y=np.empty(0, dtype=np.float64),
                                 name=str(label),
@@ -7447,9 +7448,9 @@ class Axes(PlotTypeMixin):
                             )
                         )
             elif kind == "area":
-                children.append(xy.area(x=e["x"], y=e["y"], **kw, **axis_kw))
+                children.append(xyg.area(x=e["x"], y=e["y"], **kw, **axis_kw))
             elif kind == "histogram":
-                children.append(xy.histogram(values=e["values"], **kw, **axis_kw))
+                children.append(xyg.histogram(values=e["values"], **kw, **axis_kw))
             elif kind == "heatmap":
                 z = e["z"]
                 levels = e.get("discrete_levels")
@@ -7467,12 +7468,12 @@ class Axes(PlotTypeMixin):
                             )
                         z = _quantize_to_levels(zarr, dom, int(levels))
                         kw["domain"] = (float(dom[0]), float(dom[1]))
-                children.append(xy.heatmap(z=z, **kw, **axis_kw))
+                children.append(xyg.heatmap(z=z, **kw, **axis_kw))
             elif kind == "@mark":
                 if e["factory"] == "step":
                     kw = dict(kw)
                     # ``Line2D.set_dash_capstyle()`` mutates the deferred
-                    # pyplot entry, but core ``xy.step`` has fixed round caps
+                    # pyplot entry, but core ``xyg.step`` has fixed round caps
                     # and does not accept the Matplotlib-only keyword.
                     kw.pop("dash_capstyle", None)
                 children.append(getattr(xy, e["factory"])(*e["args"], **kw, **axis_kw))
@@ -7523,7 +7524,7 @@ class Axes(PlotTypeMixin):
                 if geometry.get("border"):
                     box_style["border"] = geometry["border"]
                 children.append(
-                    xy.text(
+                    xyg.text(
                         center_x,
                         center_y,
                         " ",
@@ -7549,7 +7550,7 @@ class Axes(PlotTypeMixin):
                     or "black",
                 }
                 children.append(
-                    xy.text(
+                    xyg.text(
                         text_x,
                         center_y,
                         str(e["args"][2]),
@@ -7562,7 +7563,7 @@ class Axes(PlotTypeMixin):
                     )
                 )
             elif kind == "@hline":
-                children.append(xy.hline(*e["args"], **kw))
+                children.append(xyg.hline(*e["args"], **kw))
                 if e.get("endpoint_marker"):
                     x_domain = (
                         (resolved_domains or {}).get("x")
@@ -7574,16 +7575,16 @@ class Axes(PlotTypeMixin):
                     end = float(span.get("span_end", 1.0))
                     x0, x1 = map(float, x_domain)
                     children.append(
-                        xy.scatter(
+                        xyg.scatter(
                             x=[x0 + start * (x1 - x0), x0 + end * (x1 - x0)],
                             y=[float(e["args"][0]), float(e["args"][0])],
                             **e["endpoint_marker"],
                         )
                     )
             elif kind == "@arrow":
-                children.append(xy.arrow(*e["args"], **kw))
+                children.append(xyg.arrow(*e["args"], **kw))
             elif kind == "@vline":
-                children.append(xy.vline(*e["args"], **kw))
+                children.append(xyg.vline(*e["args"], **kw))
                 if e.get("endpoint_marker"):
                     y_domain = (
                         (resolved_domains or {}).get("y")
@@ -7595,16 +7596,16 @@ class Axes(PlotTypeMixin):
                     end = float(span.get("span_end", 1.0))
                     y0, y1 = map(float, y_domain)
                     children.append(
-                        xy.scatter(
+                        xyg.scatter(
                             x=[float(e["args"][0]), float(e["args"][0])],
                             y=[y0 + start * (y1 - y0), y0 + end * (y1 - y0)],
                             **e["endpoint_marker"],
                         )
                     )
             elif kind == "@x_band":
-                children.append(xy.x_band(*e["args"], **kw))
+                children.append(xyg.x_band(*e["args"], **kw))
             elif kind == "@y_band":
-                children.append(xy.y_band(*e["args"], **kw))
+                children.append(xyg.y_band(*e["args"], **kw))
             elif kind == "@text":
                 opacity = kw.get("opacity")
                 if opacity is not None and float(opacity) == 0.0:
@@ -7688,7 +7689,7 @@ class Axes(PlotTypeMixin):
                         or "black",
                     )
                     children.append(
-                        xy.callout(
+                        xyg.callout(
                             x,
                             y,
                             value,
@@ -7717,7 +7718,7 @@ class Axes(PlotTypeMixin):
                         or "black",
                         **(text_kw.get("style") or {}),
                     }
-                    children.append(xy.text(x, y, *e["args"][2:], **text_kw))
+                    children.append(xyg.text(x, y, *e["args"][2:], **text_kw))
         return children
 
     def _apply_legend_handle_styles(
@@ -8058,7 +8059,7 @@ class Axes(PlotTypeMixin):
                 if len(args) >= 4:
                     x_values, y_values = (args[0], args[2]), (args[1], args[3])
             elif kind == "@mark" and entry.get("factory") == "stairs":
-                # ``xy.stairs`` stores ``(values, edges)``, while Matplotlib's
+                # ``xyg.stairs`` stores ``(values, edges)``, while Matplotlib's
                 # StepPatch contributes the expanded edge/value path to
                 # Legend._auto_legend_data(). Feeding the compact arguments to
                 # the generic (x, y) path reverses the axes and makes the
@@ -8656,10 +8657,10 @@ class Axes(PlotTypeMixin):
             ):
                 twin_domains["y"] = tuple(y2_props.get("domain") or self._twin._auto_domain("y"))
             children.extend(self._twin._chart_children(resolved_domains=twin_domains))
-            children.append(xy.y_axis(id="y2", side="right", **y2_props))
+            children.append(xyg.y_axis(id="y2", side="right", **y2_props))
         legend_needs_best = False
         if self._legend and self._legend_artist is not None:
-            children.append(xy.legend(show=False))
+            children.append(xyg.legend(show=False))
         elif self._legend:
             legend_options = dict(self._legend_options)
             if legend_options.get("loc") in (None, "best"):
@@ -8677,11 +8678,11 @@ class Axes(PlotTypeMixin):
             component_legend_options.pop("handleheight", None)
             component_legend_options.pop("handlelength", None)
             component_legend_options.pop("handletextpad", None)
-            children.append(xy.legend(**component_legend_options))
+            children.append(xyg.legend(**component_legend_options))
         elif not any(entry.get("kwargs", {}).get("name") for entry in self._entries):
             # Core XY can auto-create a continuous-color "value" legend.
             # An unlabeled Matplotlib collection must not acquire one.
-            children.append(xy.legend(show=False))
+            children.append(xyg.legend(show=False))
         if not self.figure._show_toolbar():
             children.append(_cached_modebar(False))
         theme_tokens = self._theme_tokens
@@ -8689,13 +8690,13 @@ class Axes(PlotTypeMixin):
             if self._grid_axis != "both":
                 tokens = dict(theme_tokens)
                 tokens["grid_color"] = "transparent"
-                children.append(xy.theme(style=self._theme_style, **tokens))
+                children.append(xyg.theme(style=self._theme_style, **tokens))
             elif self._grid_color == _MPL_GRID_COLOR:
                 children.append(_cached_theme(self._grid, theme_tokens, self._theme_style))
             else:
                 tokens = dict(theme_tokens)
                 tokens["grid_color"] = self._grid_color if self._grid else "transparent"
-                children.append(xy.theme(style=self._theme_style, **tokens))
+                children.append(xyg.theme(style=self._theme_style, **tokens))
         chrome_styles = self._chrome_styles
         if self._title_style:
             chrome_styles = {
@@ -8705,7 +8706,7 @@ class Axes(PlotTypeMixin):
                     **self._title_style,
                 },
             }
-        self._chart = xy.chart(
+        self._chart = xyg.chart(
             *children,
             title=self._title,
             width=width,

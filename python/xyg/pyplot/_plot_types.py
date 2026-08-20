@@ -1,6 +1,6 @@
 """Matplotlib plot-type adapters.
 
-This module is deliberately inside :mod:`xy.pyplot`: signatures, return
+This module is deliberately inside :mod:`xyg.pyplot`: signatures, return
 containers, implicit defaults, and Matplotlib vocabulary never enter the core
 package.  Each method emits a small adapter entry that materializes through a
 generic public ``xy`` mark.  Expensive 2-D binning is dispatched to the native

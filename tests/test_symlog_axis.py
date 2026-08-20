@@ -213,7 +213,7 @@ def test_client_number_format_accepts_literal_affixes(tmp_path) -> None:
         height=360,
     )
     html = chart.to_html()
-    render_call = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
+    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     assert render_call in html
     probe = """
   const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);

@@ -31,7 +31,7 @@ def test_hatch_packages_only_python_xyg() -> None:
     data = _pyproject()
     packages = data["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"]
     assert "python/xyg" in packages
-    assert "python/xy" not in packages
+    assert "python/xy" not in packages  # xyg-stale-name: allow - rejected legacy path
     assert (ROOT / "python" / "xyg").is_dir()
     assert not (ROOT / "python" / "xy").exists()
 

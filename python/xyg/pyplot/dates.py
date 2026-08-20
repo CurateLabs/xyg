@@ -5,7 +5,7 @@ registry; the shim has no registry — datetime data is canonicalized once to
 f64 ms since epoch (columns.py) and every axis quantity stays in that space.
 These locators and formatters therefore speak ms directly, so they compose
 with the same ``set_major_locator``/``set_major_formatter`` contract as
-``xy.pyplot``'s numeric tickers.
+``xyg.pyplot``'s numeric tickers.
 """
 
 from __future__ import annotations

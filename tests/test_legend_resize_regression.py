@@ -28,8 +28,8 @@ from xyg.export import find_chromium  # noqa: E402
 # Capture the standalone render call's return value so the probe can drive the
 # view directly (the same swap the visual-regression smoke uses).
 _RENDER_CALLS = (
-    'xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
-    'xyg.renderStandalone(document.getElementById("chart"), spec, buf);',
+    'xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
+    'xy.renderStandalone(document.getElementById("chart"), spec, buf);',
 )
 
 # Async probe: wait for the legend, record its computed max-height, force a
@@ -463,7 +463,7 @@ def test_core_legend_top_and_bottom_aliases_reach_browser_edges() -> None:
     document = document.replace(
         render_call,
         render_call.replace(
-            "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
         ),
         1,
     )
@@ -502,7 +502,7 @@ def test_snake_case_legend_max_height_survives_resize() -> None:
     render_call = next((call for call in _RENDER_CALLS if call in document), None)
     assert render_call is not None, "to_html render call shape changed; update the probe swap"
     capture_call = render_call.replace(
-        "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+        "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
     )
     document = document.replace(render_call, capture_call, 1)
     document = document.replace("</body>", _PROBE + "\n</body>", 1)
@@ -548,7 +548,7 @@ def test_narrow_fluid_resize_stays_painted_and_preserves_plot_space() -> None:
     document = document.replace(
         render_call,
         render_call.replace(
-            "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
         ),
         1,
     )
@@ -646,7 +646,7 @@ def test_long_legend_and_edge_tooltip_stay_inside_narrow_chart() -> None:
     document = document.replace(
         render_call,
         render_call.replace(
-            "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
         ),
         1,
     )
@@ -694,7 +694,7 @@ def test_midpoint_annotation_labels_are_visually_centered() -> None:
     document = document.replace(
         render_call,
         render_call.replace(
-            "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
         ),
         1,
     )
@@ -781,7 +781,7 @@ def test_browser_named_axis_category_state_and_tick_chrome_are_independent(
     document = document.replace(
         render_call,
         render_call.replace(
-            "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
         ),
         1,
     )

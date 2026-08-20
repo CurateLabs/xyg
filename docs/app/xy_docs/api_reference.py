@@ -24,7 +24,7 @@ COMPONENT_API_METADATA_KEY = "components"
 API_REFERENCE_HEADING = "API Reference"
 _COMPONENT_API_NAMESPACES = {
     "reflex_xy": reflex_xy,
-    "xy": xy,
+    "xyg": xy,
 }
 _COMPONENT_API_COLUMN_WIDTHS = ("w-[20%]", "w-[25%]", "w-[55%]")
 _NON_ID_CHARACTER = re.compile(r"[^a-z0-9]+")
@@ -581,7 +581,7 @@ def chart_factories_api() -> rx.Component:
                     size="5",
                     class_name="mb-2 mt-8 scroll-mt-24",
                 ),
-                callable_api_group(*factories, namespace="xy"),
+                callable_api_group(*factories, namespace="xyg"),
                 class_name="w-full",
             )
             for group_name, factories in CHART_FACTORY_GROUPS
@@ -615,7 +615,7 @@ def marks_api() -> rx.Component:
     Returns:
         Generated mark reference.
     """
-    return callable_api_group(*MARKS, namespace="xy")
+    return callable_api_group(*MARKS, namespace="xyg")
 
 
 def axes_and_annotations_api() -> rx.Component:
@@ -624,7 +624,7 @@ def axes_and_annotations_api() -> rx.Component:
     Returns:
         Generated axis and annotation reference.
     """
-    return callable_api_group(*AXES_AND_ANNOTATIONS, namespace="xy")
+    return callable_api_group(*AXES_AND_ANNOTATIONS, namespace="xyg")
 
 
 def chrome_and_behavior_api() -> rx.Component:
@@ -633,7 +633,7 @@ def chrome_and_behavior_api() -> rx.Component:
     Returns:
         Generated chrome and behavior reference.
     """
-    return callable_api_group(*CHROME_AND_BEHAVIOR, namespace="xy")
+    return callable_api_group(*CHROME_AND_BEHAVIOR, namespace="xyg")
 
 
 __all__ = [

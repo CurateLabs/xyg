@@ -7,11 +7,11 @@ on Reflex. It's the same ergonomics on top of the xy engine (`Figure`):
 
     import xyg as xy
 
-    xy.scatter_chart(
-        xy.scatter(x="sepal_w", y="sepal_l", color="species", size="petal_l", data=df),
-        xy.x_axis(label="sepal width"),
-        xy.y_axis(label="sepal length"),
-        xy.legend(),
+    xyg.scatter_chart(
+        xyg.scatter(x="sepal_w", y="sepal_l", color="species", size="petal_l", data=df),
+        xyg.x_axis(label="sepal width"),
+        xyg.y_axis(label="sepal length"),
+        xyg.legend(),
         title="Iris",
         on_hover=lambda row: print(row),
         on_select=lambda sel: print(len(sel.index), "points"),
@@ -543,7 +543,7 @@ def animation(
     """Configure entrance and data-update motion without per-frame callbacks.
 
     A mark-level `animation=` cascades over the chart-level one: only the
-    arguments passed here override it, so `xy.animation(duration=90)` on a mark
+    arguments passed here override it, so `xyg.animation(duration=90)` on a mark
     keeps the chart's `match`, `easing`, and the rest.
 
     Args:
@@ -1038,7 +1038,7 @@ def ribbon(
 ) -> Mark:
     """Flow bands: a vertical span at `x0` joined to one at `x1` by a cubic.
 
-    The primitive behind `xy.sankey_chart` — and behind alluvial and chord
+    The primitive behind `xyg.sankey_chart` — and behind alluvial and chord
     diagrams later. Each band may carry a different colour at each end
     (`color` at the source, `color_target` at the target); the gradient runs
     along the flow. Omitting `color_target` paints the band flat.
@@ -1107,7 +1107,7 @@ def sankey(
     Layout — layering, crossing minimisation, value-proportional heights and
     endpoint stacking — happens in Python at build time, the way `hist` owns
     its binning; the renderers only ever see `ribbon` geometry. Prefer
-    `xy.sankey_chart(...)`, which also hides the axes.
+    `xyg.sankey_chart(...)`, which also hides the axes.
 
     Args:
         links: ``(source, target, value)`` triples; endpoints are node names.
@@ -1171,7 +1171,7 @@ def graph(
 ) -> Mark:
     """A node–link graph: Rust layout, edges as segments, nodes as scatter.
 
-    Prefer ``xy.graph_chart(...)``. See ``spec/design/graph-mark.md``.
+    Prefer ``xyg.graph_chart(...)``. See ``spec/design/graph-mark.md``.
 
     Args:
         nodes: Node ids, a GraphForge table with ``node_uuid``, or ``GraphData``.
@@ -2880,7 +2880,7 @@ def y_axis(
 #: documentation was advertising controls that did nothing.
 #:
 #: Refused HERE, on the documented polar surface, rather than at payload build:
-#: `xy.pyplot`'s polar projection forwards rcParam-derived axis props (a
+#: `xyg.pyplot`'s polar projection forwards rcParam-derived axis props (a
 #: `minor_style` for every Axes, `minorticks_on()` values, a `ha=` anchor) into
 #: the same figure, and refusing there would turn `projection="polar"` into an
 #: error. `_polar_axis_kwargs` strips them for that adapter instead, which is
@@ -2937,7 +2937,7 @@ def _polar_axis_kwargs(props: Mapping[str, Any]) -> dict[str, Any]:
     """`props` with the keywords `theta_axis`/`r_axis` refuse removed.
 
     For adapters that build a polar axis out of a general axis-property bag they
-    do not fully control — `xy.pyplot`, whose polar Axes carries an rcParam
+    do not fully control — `xyg.pyplot`, whose polar Axes carries an rcParam
     `minor_style` and whatever `minorticks_on()`/`ha=` left behind. Dropping is
     what all three renderers already do with these values; the point of the
     refusal is that a *hand-authored* polar axis hears about it.
@@ -2961,7 +2961,7 @@ def theta_axis(
     grid_shape: Optional[str] = None,
     **kwargs: Any,
 ) -> Axis:
-    """Configure the angular axis of an `xy.polar_chart`.
+    """Configure the angular axis of an `xyg.polar_chart`.
 
     Delegates to `x_axis` — the angular axis *is* the x axis under
     ``coords="polar"`` — so the `x_axis` keywords listed below apply here too and
@@ -3039,13 +3039,13 @@ def r_axis(
     origin: Optional[float] = None,
     **kwargs: Any,
 ) -> Axis:
-    """Configure the radial axis of an `xy.polar_chart`.
+    """Configure the radial axis of an `xyg.polar_chart`.
 
     Delegates to `y_axis` — the radial axis *is* the y axis under
     ``coords="polar"`` — so the `y_axis` keywords apply. Provided so polar
     compositions read in polar vocabulary rather than mixing x/y with theta/r.
 
-    The same four keywords `xy.theta_axis` refuses are refused here, and for the
+    The same four keywords `xyg.theta_axis` refuses are refused here, and for the
     same reason — no minor rings, no rim collision pass, no edge-relative label
     anchor. ``reverse=True``, ``type_="log"``, ``type_="symlog"`` and a
     time-valued radial column are all supported on the radius.
@@ -3688,7 +3688,7 @@ class Chart(Component):
             link_axes: Axes synchronized within the link group.
             coords: Coordinate system, ``"cartesian"`` (default) or ``"polar"``.
                 Under ``"polar"`` each mark's first channel is the angle and its
-                second is the radius. Prefer ``xy.polar_chart(...)``, which sets
+                second is the radius. Prefer ``xyg.polar_chart(...)``, which sets
                 this for you.
         """
         self.kind = kind
@@ -4088,7 +4088,7 @@ class Chart(Component):
 
         Core xy does not import or serialize framework components. The
         objects returned here are the exact Python objects passed to
-        `xy.legend(...)` / `xy.tooltip(...)` / `xy.colorbar(...)`, so an adapter can mount them while
+        `xyg.legend(...)` / `xyg.tooltip(...)` / `xyg.colorbar(...)`, so an adapter can mount them while
         standalone HTML keeps using the built-in safe DOM fallback.
         """
         result: dict[str, Any] = {}
@@ -4812,7 +4812,7 @@ def _apply_mark_transition_metadata(
     elif isinstance(override, Animation):
         mark_override = override.to_override_spec()
     else:
-        raise ValueError(f"{mark.kind} animation must be xy.animation(...), bool, or None")
+        raise ValueError(f"{mark.kind} animation must be xyg.animation(...), bool, or None")
     # Cascade, do not replace. The mark contributes only the fields it set;
     # defaults sit underneath so a mark-level spec with no chart-level one is
     # still complete. Resolving here once is also what lets the client keep a
@@ -4826,7 +4826,7 @@ def _apply_mark_transition_metadata(
     ):
         raise ValueError(f"{mark.kind} animation match='key' requires key=")
     keys: np.ndarray | None = None
-    # `match` defaults to "index", so a bare `xy.animation(...)` — or no
+    # `match` defaults to "index", so a bare `xyg.animation(...)` — or no
     # animation at all — never key-matches. Encoding still runs for its
     # uniqueness and typing contract, but the identity planes are dead weight
     # nothing reads: 8 B/row retained for the widget lifetime and 8 B/row on
@@ -5651,7 +5651,7 @@ def _mark_axis_ids(mark: Mark, axes: dict[str, Axis]) -> tuple[str, str]:
     for axis_id, factory in ((x_axis_id, "x_axis"), (y_axis_id, "y_axis")):
         if axis_id in {"x", "y"} or axis_id in axes:
             continue
-        raise ValueError(f"{mark.kind} {axis_id!r} has no matching xy.{factory}(id={axis_id!r})")
+        raise ValueError(f"{mark.kind} {axis_id!r} has no matching xyg.{factory}(id={axis_id!r})")
     return x_axis_id, y_axis_id
 
 
@@ -6422,7 +6422,7 @@ def mark(
     y_axis: str = "y",
     **fields: Any,
 ) -> Mark:
-    """A mark contributed by a registered plugin (`xy.register_mark`).
+    """A mark contributed by a registered plugin (`xyg.register_mark`).
 
     `kind` names the plugin. Fields it declared in `MarkPlugin.columns` accept a
     column name resolved from ``data`` or values directly, exactly like a
@@ -6489,7 +6489,7 @@ def _require_polar_coords(props: dict) -> None:
     if coords != "polar":
         raise ValueError(
             f"this chart is polar; coords={coords!r} is not supported. "
-            "Use xy.chart(...) or xy.bar_chart(...) for a cartesian figure."
+            "Use xyg.chart(...) or xyg.bar_chart(...) for a cartesian figure."
         )
     props["coords"] = "polar"
 
@@ -6498,25 +6498,25 @@ def polar_chart(*children: Component, **props: Any) -> Chart:
     """A polar chart: the same marks, rendered through polar coordinates.
 
     Each mark's first channel is the angle and its second is the radius, so
-    `xy.line`, `xy.scatter`, `xy.area`, `xy.bar`, and `xy.column` are reused
+    `xyg.line`, `xyg.scatter`, `xyg.area`, `xyg.bar`, and `xyg.column` are reused
     rather than replaced by polar-specific marks. Configure the angular axis
-    with `xy.theta_axis` and the radial axis with `xy.r_axis`.
+    with `xyg.theta_axis` and the radial axis with `xyg.r_axis`.
 
-        xy.polar_chart(
-            xy.line(angle, gain, name="measured"),
-            xy.theta_axis(unit="degrees", zero="N", direction="clockwise"),
-            xy.r_axis(label="gain (dBi)"),
+        xyg.polar_chart(
+            xyg.line(angle, gain, name="measured"),
+            xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
+            xyg.r_axis(label="gain (dBi)"),
         )
 
-    Supported mark kinds are listed in `xy.config.POLAR_MARK_KINDS`; anything
+    Supported mark kinds are listed in `xyg.config.POLAR_MARK_KINDS`; anything
     outside that set is refused at build time rather than approximated. Prefer
-    `xy.radar_chart` for categorical spider plots, `xy.polar_bar_chart`
-    for radial bars, and `xy.wind_rose` for directional distributions. Other
+    `xyg.radar_chart` for categorical spider plots, `xyg.polar_bar_chart`
+    for radial bars, and `xyg.wind_rose` for directional distributions. Other
     details and deferred geometry are tracked in spec/design/polar-axes.md.
 
-    Zoom is off by default on every polar chart but `xy.wind_rose` (the centre is
+    Zoom is off by default on every polar chart but `xyg.wind_rose` (the centre is
     a fixed point of the transform, so zooming crops the rim rather than
-    navigating). Add `xy.interaction_config(zoom=True)` when the radius is a
+    navigating). Add `xyg.interaction_config(zoom=True)` when the radius is a
     measured quantity worth magnifying.
     """
     _require_polar_coords(props)
@@ -6536,10 +6536,10 @@ def radar_chart(
     `Scatterpolar`. This wraps that composition: evenly spaced spokes labelled
     with `categories`, and each series closed back to its first value.
 
-        xy.radar_chart(
+        xyg.radar_chart(
             ["speed", "power", "range", "agility"],
-            xy.area([0.9, 0.7, 0.55, 0.85], name="model A"),
-            xy.area([0.6, 0.8, 0.7, 0.5], name="model B"),
+            xyg.area([0.9, 0.7, 0.55, 0.85], name="model A"),
+            xyg.area([0.6, 0.8, 0.7, 0.5], name="model B"),
         )
 
     Each mark child supplies **values only**, one per category, in the same
@@ -6592,7 +6592,7 @@ def radar_chart(
             rebuilt.append(child)
     # An authored theta axis customises the spokes, it does not opt out of
     # them: category labels merge into it unless it authored its own ticks.
-    # Dropping the injection outright made `xy.theta_axis(label=...)` silently
+    # Dropping the injection outright made `xyg.theta_axis(label=...)` silently
     # replace the category spokes with numeric angles.
     merged = False
     for index, child in enumerate(rebuilt):
@@ -6643,7 +6643,7 @@ def _radar_outline(mark: "Mark", angles: list[float], values: list[float]) -> "M
 def _radar_values(mark: "Mark", count: int) -> list[float]:
     """The one value-per-category column a radar mark carries.
 
-    A radar mark is written `xy.area(values)`, so the single positional
+    A radar mark is written `xyg.area(values)`, so the single positional
     argument lands in `x`; `y` is accepted too for callers who spell it out.
     """
     raw = mark.y if mark.y is not None else mark.x
@@ -6673,9 +6673,9 @@ def polar_bar_chart(*children: Component, **props: Any) -> Chart:
     per-bar width sequence creates unequal sectors for pie/donut composition.
     `base` sets the inner radius, so a positive base opens an annular hole.
 
-        xy.polar_bar_chart(
-            xy.bar(directions, counts, width=30.0),
-            xy.theta_axis(unit="degrees", zero="N", direction="clockwise"),
+        xyg.polar_bar_chart(
+            xyg.bar(directions, counts, width=30.0),
+            xyg.theta_axis(unit="degrees", zero="N", direction="clockwise"),
         )
 
     Args:
@@ -6703,7 +6703,7 @@ def pie_chart(
 ) -> Chart:
     """A pie or donut: one slice per label, sized by value.
 
-        xy.pie_chart(
+        xyg.pie_chart(
             ["Skyline", "Datawell", "Cloudpeak"],
             [27, 21, 13],
         )
@@ -6714,7 +6714,7 @@ def pie_chart(
     print for a slice — theta is layout and the radius is the constant rim —
     so this composition owns its tooltip: hovering a slice shows its
     category and value (and share), nothing else. A user-supplied
-    `xy.tooltip(...)` child still wins.
+    `xyg.tooltip(...)` child still wins.
 
     Args:
         labels: One category name per slice.
@@ -6839,7 +6839,7 @@ def wind_rose(
 
     Args:
         directions: Bearings in degrees, one per observation.
-        children_in: Extra components — an `xy.legend`, or an `xy.tooltip` to
+        children_in: Extra components — an `xyg.legend`, or an `xyg.tooltip` to
             replace the default direction/count readout.
         speeds: Speeds, one per observation.
         sectors: Number of angular bins around the circle.
@@ -6929,7 +6929,7 @@ def wind_rose(
     # around: its radius is a FREQUENCY COUNT, so scaling the outer ring against
     # a pinned zero is exactly the useful gesture (it magnifies the short
     # sectors of a rose dominated by one prevailing direction). An author's own
-    # `zoom=` — or an `xy.interaction_config(zoom=False)` child, which is applied
+    # `zoom=` — or an `xyg.interaction_config(zoom=False)` child, which is applied
     # after chart props — still wins. `None` is "unset" everywhere else in this
     # API, so it must keep the rose's default rather than fall through to the
     # polar one: a wrapper forwarding an `Optional[bool]` would otherwise turn
@@ -7026,13 +7026,13 @@ def sankey_chart(
 ) -> Chart:
     """A Sankey diagram chart: flow layout, gradient ribbons, hidden axes.
 
-        xy.sankey_chart([
+        xyg.sankey_chart([
             ("Inflow", "Equities", 78000),
             ("Inflow", "Bonds", 46000),
             ("Equities", "Growth", 61000),
         ])
 
-    Keyword arguments that belong to `xy.sankey` (``nodes``, ``colors``,
+    Keyword arguments that belong to `xyg.sankey` (``nodes``, ``colors``,
     ``node_width``, ``link_opacity``, ``labels``, …) are forwarded there;
     everything else (``width``, ``height``, ``title``, …) styles the chart.
     The diagram lives in a unit box with a small margin, y inverted so flow
@@ -7062,11 +7062,11 @@ def sankey_chart(
 def graph_chart(*children: Component, **props: Any) -> Chart:
     """A node–link graph chart: Rust layout, pan/zoom, axes hidden by default.
 
-        xy.graph_chart(
-            xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force"),
+        xyg.graph_chart(
+            xyg.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force"),
         )
 
-    Or pass ``nodes`` / ``edges`` (and other ``xy.graph`` kwargs) on the chart
+    Or pass ``nodes`` / ``edges`` (and other ``xyg.graph`` kwargs) on the chart
     itself. Remaining kwargs (``width``, ``height``, ``title``, …) style the chart.
     """
     mark_keys = (

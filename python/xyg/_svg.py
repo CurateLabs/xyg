@@ -1312,7 +1312,7 @@ def slot_styles(spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return out
 
 
-#: `styles={"legend": ...}` is CSS; `xy.legend(style=...)` reaches the writers
+#: `styles={"legend": ...}` is CSS; `xyg.legend(style=...)` reaches the writers
 #: under the browser's camelCase property spelling. Same declaration, two
 #: spellings — the writers key on the second, so the first is translated.
 _LEGEND_SLOT_ALIASES: dict[str, str] = {
@@ -1328,7 +1328,7 @@ def legend_options_with_slot(spec: dict[str, Any], options: dict[str, Any]) -> d
     spelling that agrees in the browser also agrees in a file.
 
     Three sources, widest first: the `--chart-legend-bg` theme token, the
-    `styles={"legend": ...}` slot, then `xy.legend(style=...)` — the narrowest
+    `styles={"legend": ...}` slot, then `xyg.legend(style=...)` — the narrowest
     selector and the winner.
     """
     slot = slot_styles(spec).get("legend") or {}
@@ -1346,7 +1346,7 @@ def legend_options_with_slot(spec: dict[str, Any], options: dict[str, Any]) -> d
         # so the token is the frame's paint, at full strength.
         folded["background"] = token
     folded.update(canonical(slot))
-    # `xy.legend(style=...)` is canonicalized too. It happens to reach the
+    # `xyg.legend(style=...)` is canonicalized too. It happens to reach the
     # writers through `chrome_styles` as well today, but a legend built without
     # that mirror — an extra legend, or an adapter — would otherwise lose its
     # kebab-case declarations here.
@@ -4010,7 +4010,7 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
 
     # -- marks --------------------------------------------------------------
     marks: list[str] = []
-    # The chart's categorical cycle (`xy.theme(palette=...)`), else the
+    # The chart's categorical cycle (`xyg.theme(palette=...)`), else the
     # built-in default. Traces normally carry a baked style color; this is the
     # fallback for specs that do not.
     spec_palette: Sequence[str] = spec.get("palette") or DEFAULT_PALETTE

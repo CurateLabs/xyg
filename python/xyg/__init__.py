@@ -8,10 +8,10 @@ One declarative API over one engine — Reflex-flavored composition with
 `on_*` event props:
 
       import xyg as xy
-      xy.scatter_chart(
-          xy.scatter(x="gdp", y="life", color="continent", size="pop", data=df),
-          xy.x_axis(label="GDP"), xy.y_axis(label="life expectancy"),
-          xy.legend(),
+      xyg.scatter_chart(
+          xyg.scatter(x="gdp", y="life", color="continent", size="pop", data=df),
+          xyg.x_axis(label="GDP"), xyg.y_axis(label="life expectancy"),
+          xyg.legend(),
           on_select=lambda sel: print(len(sel), "points"),
       )
 
