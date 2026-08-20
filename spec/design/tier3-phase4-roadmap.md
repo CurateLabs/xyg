@@ -1,7 +1,7 @@
 # Tier-3 Phase 4 — disk-resident tile spill roadmap
 
 **Status:** design **locked** (WP0 complete); WP1 Rust tile store **landed**
-(ABI 71: `xyg_pyramid_spill` / `xyg_tile_store_*` in `crates/xyg-engine` +
+(ABI 73: `xyg_pyramid_spill` / `xyg_tile_store_*` in `crates/xyg-engine` +
 `crates/xyg-core`). Host engagement is WP2. Phase-3 square pyramid is **productized**
 on Python and Node ([lod-architecture.md](lod-architecture.md) §4 /
 Phase 3; [tier3-testing.md](tier3-testing.md);
@@ -218,7 +218,7 @@ inside this frame; changing any of it means editing this section first.
 
 - [x] `xyg_pyramid_spill` / `xyg_tile_store_fetch` / `xyg_tile_store_compose` /
   `_compose_color` / `_append` / `_stats` / `xyg_tile_budget_set` /
-  `xyg_tile_store_free` — ABI 71 in `crates/xyg-core`; regenerate via
+  `xyg_tile_store_free` — ABI 73 in `crates/xyg-core`; regenerate via
   `python3 scripts/gen_abi_manifest.py --write`; `scripts/abi_smoke.py` covers
   spill→fetch→compose goldens.
 - [x] LRU under process-wide `PYRAMID_RESIDENT_BYTES` default (512 MiB) per D2–D3;

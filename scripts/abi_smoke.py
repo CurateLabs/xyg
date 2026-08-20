@@ -2209,7 +2209,7 @@ def main() -> None:
     ok(lib.xyg_pyramid_free(ctypes.c_uint64(handle)) == 1, "pyramid free")
     ok(lib.xyg_pyramid_free(ctypes.c_uint64(handle)) == 0, "double free is an error code")
 
-    # Phase-4 tile store (roadmap D1-D7, ABI 71): spill -> fetch -> compose
+    # Phase-4 tile store (roadmap D1-D7, ABI 73): spill -> fetch -> compose
     # golden vs the in-RAM pyramid, dirty-tile append, residency stats, and
     # handle lifecycle — all through the real ABI, MB-scale fixtures only.
     lib.xyg_pyramid_spill.restype = ctypes.c_uint64

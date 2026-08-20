@@ -237,7 +237,7 @@ pyramid replaces per-view scans with per-view *tile composition*.
 > `crates/xyg-engine/src/tiles.rs` still stores each level as **one contiguous
 > grid** (`levels: Vec<Vec<u32>>` plus optional `[u16; 4]` mean-color planes).
 > Phase-4 WP1 adds a parallel disk tile store (`tile_store.rs`) with
-> `(level, tx, ty)` spill/fetch/compose ABI 71 (`xyg_pyramid_spill` /
+> `(level, tx, ty)` spill/fetch/compose ABI 73 (`xyg_pyramid_spill` /
 > `xyg_tile_store_*` in `spec/abi/xyg-abi.json`); hosts do not engage it until
 > WP2. The 256²-tile decomposition here is that layout
 > ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) D1,
