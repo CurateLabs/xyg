@@ -17,7 +17,7 @@ the current Python and platform. XY's native core is required; it does not
 silently fall back to a slower Python implementation. A source checkout or
 unsupported platform needs a Rust build toolchain.
 
-**The JavaScript client is missing.** Reinstall the XY wheel so its bundled
+**The JavaScript client is missing.** Reinstall the XYG wheel so its bundled
 `python/xyg/static` copy of `@curatelabs/xyg` is present. In a development
 checkout, build the JS client with `npm ci && node js/build.mjs` (writes
 `packages/xy-client/dist` and copies into the Python tree) before using

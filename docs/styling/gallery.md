@@ -714,6 +714,6 @@ For a fixed chart, a simpler host-owned key can sit next to
 - Tailwind class names remain in the exported markup, but Tailwind's compiled
   rules are not bundled automatically.
 - Host-owned Reflex components and interaction state are application UI, not
-  serializable XY chart content.
+  serializable XYG chart content.
 - Compare live HTML with `to_svg()` and both native and Chromium `to_png()`
   when exact renderer parity matters.

@@ -328,7 +328,7 @@ def test_a_palette_map_survives_a_panel_that_is_missing_a_category():
 def test_categories_outside_the_palette_map_take_unused_defaults_and_warn():
     x, y = _xy()
     cats = np.array(["a", "b", "c"])[np.arange(len(x)) % 3]
-    with pytest.warns(RuntimeWarning, match="not in the xy.theme"):
+    with pytest.warns(RuntimeWarning, match="not in the xyg.theme"):
         chart = xy.scatter_chart(xy.scatter(x, y, color=cats), xy.theme(palette={"a": "#ff0000"}))
         spec, _ = chart.figure().build_payload()
     palette = spec["traces"][0]["color"]["palette"]

@@ -11,7 +11,7 @@ Build node–link graphs with `xyg.graph` / `xyg.graph_chart`, or the Node
 `figure().graph(...)` / `composeGraph(...)` helpers. Layout, LOD, and encode
 decisions stay in Rust; hosts only coerce inputs.
 
-## xy-native inputs
+## xyg-native inputs
 
 ```python
 import xyg

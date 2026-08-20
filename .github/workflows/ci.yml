@@ -611,7 +611,7 @@ jobs:
         run: .venv/bin/python benchmarks/bench_install.py --json install.json | tee -a docs/benchmark_ci.md
       - name: Fresh-environment footprint (xy vs Plotly)
         run: |
-          .venv/bin/python benchmarks/bench_install.py --packages xy,plotly \
+          .venv/bin/python benchmarks/bench_install.py --packages xyg,plotly \
             --repeat 3 --fresh-venv --json install-fresh.json | tee -a docs/benchmark_ci.md
       - name: Ingestion, streaming, and export workflows
         run: |

@@ -1,6 +1,6 @@
 ---
 title: Chart Factories
-description: Reference XY chart containers, shared props, and facet construction.
+description: Reference XYG chart containers, shared props, and facet construction.
 ---
 
 # Chart Factories

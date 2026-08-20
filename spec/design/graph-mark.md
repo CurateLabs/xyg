@@ -163,7 +163,7 @@ sparse rows are ignored at hover time; a length mismatch raises before shipping.
 Encodings and tooltip rows are indexed in **render-graph** space, matching the
 emitted scatter/segments lengths.
 
-**Ingest (REQ-API-3):** xy-native sequences, NumPy, pandas/Arrow columns,
+**Ingest (REQ-API-3):** xyg-native sequences, NumPy, pandas/Arrow columns,
 edge lists, adjacency. `from_graphforge_tables()` / `fromGraphForgeTables()`
 accept table-like named columns without requiring Arrow at package import.
 Canonical GraphForge fields: `node_uuid`, `edge_uuid`, `src_uuid`/`source_uuid`,

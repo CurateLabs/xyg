@@ -553,7 +553,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
 
     def _ingest_xy(self, x: Any, y: Any, kind: str) -> tuple[Column, Column]:
         """Ingest an (x, y) pair into the column store with the equal-length
-        contract every xy chart shares (line/scatter/area/bar/…)."""
+        contract every xyg chart shares (line/scatter/area/bar/…)."""
         checkpoint = self.store.checkpoint()
         try:
             try:

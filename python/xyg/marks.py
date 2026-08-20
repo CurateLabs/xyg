@@ -703,7 +703,7 @@ def graph(
     only positions and draws. ``layout=`` selects the algorithm (default
     ``\"force\"``).
 
-    ``nodes``/``edges`` may be xy-native sequences, a ready ``GraphData`` from
+    ``nodes``/``edges`` may be xyg-native sequences, a ready ``GraphData`` from
     ``from_graphforge_tables`` (pass ``GraphData`` as ``nodes`` and omit
     ``edges``), or canonical GraphForge tables with ``node_uuid`` /
     ``edge_uuid`` columns.

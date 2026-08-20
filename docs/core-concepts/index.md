@@ -5,7 +5,7 @@ description: Understand how XY containers, children, shared props, and chart met
 
 # Composition Model
 
-An XY chart starts with one container and a set of small Python specifications.
+An XYG chart starts with one container and a set of small Python specifications.
 The container creates the plotting surface. Marks turn data into visible
 geometry, while axes, annotations, legends, tooltips, themes, and interaction
 policies describe how that surface should behave.

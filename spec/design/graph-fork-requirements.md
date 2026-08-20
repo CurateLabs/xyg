@@ -43,7 +43,7 @@ draws. Analysis algorithms stay in GraphForge (and peers).
 | Pan, zoom, fit, hover, select, neighborhood highlight | Context menus, investigation workflows |
 | Drag nodes to adjust a layout for reading | Collaborative editing, undo stacks |
 | LOD so large graphs remain readable | Guaranteeing “millions of elements” without aggregation |
-| `graph_chart(...)` with **xy-native** column/sequence inputs *and* GraphForge/NX helpers | Replacing GraphForge algorithm stacks; dropping list/NumPy/pandas paths |
+| `graph_chart(...)` with **xyg-native** column/sequence inputs *and* GraphForge/NX helpers | Replacing GraphForge algorithm stacks; dropping list/NumPy/pandas paths |
 
 ---
 
@@ -137,7 +137,7 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 | Extra shapes / groups | packages | yes | DIY | yes | no | **S** |
 | Curved edges | package | yes | DIY | yes | no | **S** |
 | Box select | app | yes | DIY | yes | Dash | **S** |
-| xy-native sequence/array/column ingest | n/a | limited | DIY | n/a | recipe | **M** (never drop) |
+| xyg-native sequence/array/column ingest | n/a | limited | DIY | n/a | recipe | **M** (never drop) |
 | Edge-list / table / NX / GraphForge helpers | n/a | via PyVis | n/a | n/a | recipe | **M** (GF primary OK) |
 | Python + Node same layout/render buffers | partial | wrap | no | ext | split | **M** |
 | Native PNG/SVG/HTML export | no | no | no | limited | kaleido | **M** |
@@ -161,7 +161,7 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
   element indices are **`u64`** (not `u32`) end-to-end in the graph ABI and
   buffers — `u32` has already proven too small for GraphForge-class scale and
   for xy’s own large-row paths; do not reintroduce that ceiling for graphs.
-- **REQ-API-3 (MUST).** Ingest for plotting keeps **xy-native input formats
+- **REQ-API-3 (MUST).** Ingest for plotting keeps **xyg-native input formats
   first-class** — the same kinds of values existing marks already accept for
   columns (Python sequences, NumPy arrays, pandas Series / DataFrame columns,
   Arrow-backed columns where xy already does). Graph marks MUST accept at
@@ -172,8 +172,8 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 - **REQ-API-3b (MUST).** Optional GraphForge-oriented helpers (Arrow table /
   subgraph → `graph_chart`) MAY be the **documented primary** path for
   GraphForge users, but MUST compile into the same mark/buffer path as
-  xy-native inputs. Shipping GraphForge helpers MUST NOT remove, gate, or
-  degrade the xy-native formats in REQ-API-3. For now the helper is **thin
+  xyg-native inputs. Shipping GraphForge helpers MUST NOT remove, gate, or
+  degrade the xyg-native formats in REQ-API-3. For now the helper is **thin
   only**; this charting work is built **independently first** so the extension
   framework can be designed against a real target later — do not invent a
   heavy extension framework in this requirements pass.

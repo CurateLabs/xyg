@@ -77,6 +77,16 @@ LINE_ALLOW_MARKER = "xyg-stale-name: allow"
 NEEDLES = (
     ("python/xy package path", re.compile(r"python/xy(?:/|\b)")),
     ("xy wheel artifact", re.compile(r"(?<![A-Za-z0-9_])xy\.(?:whl|tar\.gz)\b")),
+    ("xy-native product wording", re.compile(r"(?<![A-Za-z0-9_])xy-native\b", re.IGNORECASE)),
+    (
+        "retired xy product description",
+        re.compile(
+            r"(?<![A-Za-z0-9_])(?:an?\s+)?xy(?=\s+(?:chart|package|wheel|dependency)\b)",
+            re.IGNORECASE,
+        ),
+    ),
+    ("retired xy.pyplot label", re.compile(r"Matplotlib\s*\(xy\.pyplot\)")),
+    ("retired xy benchmark target", re.compile(r"--packages\s+xy(?:,|\s|$)")),
     (
         "backticked xy Python API",
         re.compile(r"`xy\.(?!renderStandalone\b|decodeFrame\b)"),
@@ -167,6 +177,9 @@ def _skip(path: Path) -> bool:
 
 def _should_scan(path: Path) -> bool:
     if _skip(path) or not path.is_file():
+        return False
+    rel = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else path.as_posix()
+    if rel.startswith(("assets/external/", "docs/app/assets/external/", "python/xyg/static/")):
         return False
     if path.name in SCAN_NAMES:
         return True

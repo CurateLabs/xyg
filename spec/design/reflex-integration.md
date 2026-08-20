@@ -31,7 +31,7 @@ state, wrong for data buffers. The integration splits every chart into:
   `on_select_end(event)`, `on_view_change(event)`, `on_point_click(event)`.
   These go through normal Reflex event handlers, so app code composes the
   usual way. Rows and summaries are small by construction — never buffers.
-- **Data plane (xy-native, high-frequency, binary).** First paint,
+- **Data plane (xyg-native, high-frequency, binary).** First paint,
   `view`/`density_view`/`pick`/`select` round-trips, streaming `append`
   pushes, and full-payload refreshes — on a dedicated socket.io namespace
   (`/_xy`) **carried by the same physical websocket** as the control plane.

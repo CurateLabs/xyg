@@ -67,7 +67,7 @@ chart.to_svg(assets / "weekly-orders.svg", width=1200, height=630)
 ~~~
 
 The default PNG path is the browser-free native renderer bundled with a
-compatible XY wheel. Use explicit dimensions for repeatable report, social,
+compatible XYG wheel. Use explicit dimensions for repeatable report, social,
 and test output. Use Chromium export only when browser fonts, injected CSS, or
 WebGL fidelity is a requirement; see
 [Display and export](/docs/xy/guides/display-and-export/) for that optional

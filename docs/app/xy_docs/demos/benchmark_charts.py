@@ -1,4 +1,4 @@
-"""Live XY chart for the public interactive-UX benchmark documentation."""
+"""Live XYG chart for the public interactive-UX benchmark documentation."""
 
 from __future__ import annotations
 

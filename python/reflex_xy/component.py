@@ -274,11 +274,11 @@ def chart(
     tailwind_classes: Optional[str | Iterable[str]] = None,
     **props: Any,
 ) -> Any:
-    """Place a xy chart.
+    """Place an xyg chart.
 
     `source` is a figure token (a `@reflex_xy.figure` state var, or a
     `register()`/`inline()` token string) for a live, kernel-backed chart —
-    or a `xy` Chart/Figure directly, which renders as a static
+    or an `xyg` Chart/Figure directly, which renders as a static
     payload asset with client-side interactivity only (see module doc).
 
     `tooltip=` mounts a Reflex component as the chart tooltip: the render
@@ -332,7 +332,7 @@ def chart(
     else:
         msg = (
             "reflex_xy.chart() takes a figure token (state var or string) or a "
-            f"xy Chart/Figure, got {type(source).__name__}"
+            f"xyg Chart/Figure, got {type(source).__name__}"
         )
         raise TypeError(msg)
     if tooltip is not None:

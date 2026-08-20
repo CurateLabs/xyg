@@ -2129,7 +2129,7 @@ def test_dual_axis_component_payload_binds_traces_to_secondary_axis():
     assert spec["axes"]["y2"]["format"] == ",.1f"
     assert [trace["y_axis"] for trace in spec["traces"]] == ["y", "y2"]
 
-    with pytest.raises(ValueError, match=r"matching xy\.y_axis"):
+    with pytest.raises(ValueError, match=r"matching xyg\.y_axis"):
         xy.chart(
             xy.line(x=np.arange(3.0), y=np.arange(3.0), y_axis="y2"),
         ).figure()

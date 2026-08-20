@@ -212,7 +212,7 @@ For the environment, methodology, per-size videos, and raw results, see the
 
 ## Embed XY in a Reflex app
 
-The Reflex integration bundled with `xy` turns any XY chart into a regular
+The Reflex integration bundled with `xyg` turns any XYG chart into a regular
 Reflex component, with no JavaScript, iframe, or separate chart service.
 Install the `reflex` extra to select a compatible framework version:
 

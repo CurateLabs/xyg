@@ -57,6 +57,23 @@ def test_flags_retired_artifact_and_backticked_api_docs(tmp_path: Path) -> None:
     assert "backticked xy Python API" in joined
 
 
+def test_flags_product_wording_across_runtime_docs_and_workflows(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "graph.md").write_text("## xy-native inputs\n", encoding="utf-8")
+    (tmp_path / "runtime.ts").write_text(
+        'throw new Error("Update the xy package");\n', encoding="utf-8"
+    )
+    (tmp_path / "workflow.yml").write_text(
+        "# build the editable xy dependency\nrun: bench --packages xy,plotly\n",
+        encoding="utf-8",
+    )
+    errors = check_stale_names.check_stale_names(tmp_path)
+    joined = "\n".join(errors)
+    assert "xy-native product wording" in joined
+    assert joined.count("retired xy product description") == 2
+    assert "retired xy benchmark target" in joined
+
+
 def test_explicit_line_allow_marker_preserves_compatibility_probe(tmp_path: Path) -> None:
     (tmp_path / "compat.py").write_text(
         "import xy  # xyg-stale-name: allow - rejected legacy import\n",

@@ -105,7 +105,7 @@ DOCS_SECTIONS = (
         (
             ("Reflex", "/integrations/reflex/"),
             ("Notebooks", "/integrations/notebooks/"),
-            ("Matplotlib (xy.pyplot)", "/integrations/matplotlib/"),
+            ("Matplotlib (xyg.pyplot)", "/integrations/matplotlib/"),
         ),
     ),
     (

@@ -5,7 +5,7 @@ description: Display interactive XY charts in Jupyter, VS Code, Colab, and Marim
 
 # Notebooks
 
-An XY chart displays interactively when it is the final expression in a
+An XYG chart displays interactively when it is the final expression in a
 Jupyter, JupyterLab, VS Code, Colab, or Marimo cell.
 
 ~~~python
@@ -33,7 +33,7 @@ XY uses one `anywidget` implementation across the supported notebook hosts.
 The chart spec travels as small JSON metadata and numeric columns travel as
 binary comm frames instead of JSON number arrays.
 
-The JavaScript/WebGL client is bundled in the installed XY wheel. Notebook
+The JavaScript/WebGL client is bundled in the installed XYG wheel. Notebook
 display does not fetch a client from a CDN, so it also works in an air-gapped
 runtime once the Python packages are installed.
 

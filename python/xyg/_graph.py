@@ -1,7 +1,7 @@
 """Graph ingest helpers — id maps and thin adapters (graph-mark.md).
 
 Layout math lives in the Rust ABI (`_native.graph_layout`); this module only
-coerces xy-native inputs and optional NetworkX / GraphForge tables into dense
+coerces xyg-native inputs and optional NetworkX / GraphForge tables into dense
 u64 indices + columns.
 """
 
@@ -144,11 +144,11 @@ def resolve_graph_data(
     directed: bool = True,
     mapping: Mapping[str, str] | None = None,
 ) -> GraphData:
-    """Resolve xy-native pairs, a ready ``GraphData``, or GraphForge tables.
+    """Resolve xyg-native pairs, a ready ``GraphData``, or GraphForge tables.
 
     GraphForge tables (canonical ``node_uuid`` / ``edge_uuid`` columns, or the
     same fields via ``mapping``) route through Rust identity validation.
-    Generic id/source/target inputs keep the xy-native path (REQ-API-3).
+    Generic id/source/target inputs keep the xyg-native path (REQ-API-3).
     """
     if isinstance(nodes, GraphData):
         if edges is not None:
@@ -202,7 +202,7 @@ def projection_tooltip_rows(
 ) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
     """Build node/edge semantic hover rows from a validated projection.
 
-    Returns ``(None, None)`` for generic xy-native graphs with no attrs. Rows
+    Returns ``(None, None)`` for generic xyg-native graphs with no attrs. Rows
     are source-indexed; callers attach them only when render LOD did not drop
     nodes/edges.
     """
@@ -391,7 +391,7 @@ def normalize_graph_inputs(
     y: Any = None,
     directed: bool = True,
 ) -> GraphData:
-    """Accept ids + edge pairs/columns (xy-native formats)."""
+    """Accept ids + edge pairs/columns (xyg-native formats)."""
     if isinstance(nodes, Mapping) and "id" in nodes:
         ids = list(_as_1d(nodes["id"], "nodes.id"))
         attrs = {

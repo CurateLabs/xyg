@@ -1,6 +1,6 @@
 ---
 title: API Reference
-description: Find XY chart factories, components, methods, callbacks, types, and status.
+description: Find XYG chart factories, components, methods, callbacks, types, and status.
 ---
 
 # API Reference

@@ -1,6 +1,6 @@
 ---
 title: Your First Chart
-description: Create an interactive XY chart in a Python script or notebook, then choose where to go next.
+description: Create an interactive XYG chart in a Python script or notebook, then choose where to go next.
 ---
 
 # Your First Chart

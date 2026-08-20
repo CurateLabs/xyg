@@ -317,7 +317,7 @@ These commands match the non-blocking GitHub Actions measurement lane:
   --chromium "$CHROME" --json dashboard.json
 .venv/bin/python benchmarks/bench_workflows.py --profile standard --reps 5 \
   --chromium "$CHROME" --json workflows.json
-.venv/bin/python benchmarks/bench_install.py --packages xy,plotly \
+.venv/bin/python benchmarks/bench_install.py --packages xyg,plotly \
   --repeat 3 --fresh-venv --json install-fresh.json
 ```
 

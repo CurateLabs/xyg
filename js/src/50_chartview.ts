@@ -480,7 +480,7 @@ export class ChartView {
     if (spec.protocol !== PROTOCOL) {
       el.textContent =
         `xy: protocol mismatch (client speaks ${PROTOCOL}, kernel sent ${spec.protocol}). ` +
-        "Update the xy package and restart the kernel.";
+        "Update the xyg package and restart the kernel.";
       throw new Error("protocol mismatch");
     }
     this.spec = spec;

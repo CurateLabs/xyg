@@ -696,7 +696,7 @@ sector lengths are worth magnifying — see
 [why zoom is off by default](/docs/xy/charts/polar-chart/#why-zoom-is-off-by-default).
 
 Reflex-composed center values, rails, statistics, and custom legends are browser
-UI. The radial sectors themselves remain part of the XY chart and are preserved
+UI. The radial sectors themselves remain part of the XYG chart and are preserved
 in SVG and native raster exports.
 
 See the [polar overview](/docs/xy/charts/polar-chart/) for shared axes,

@@ -10,7 +10,7 @@ components:
 
 # Reflex
 
-The experimental Reflex integration bundled with `xy` renders an XY chart as a
+The experimental Reflex integration bundled with `xyg` renders an XYG chart as a
 first-class Reflex component. The core stays framework-neutral at runtime:
 application state and events remain in Reflex while XY owns chart data,
 rendering, and interaction math.
