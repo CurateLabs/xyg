@@ -21,7 +21,11 @@ __all__ = [
     "GraphProjectionError",
     "from_graphforge_tables",
     "from_networkx",
+    "looks_like_graphforge_tables",
     "normalize_graph_inputs",
+    "projection_tooltip_rows",
+    "resolve_encoding_values",
+    "resolve_graph_data",
 ]
 
 DEFAULT_LAYOUT = "force"
@@ -109,6 +113,150 @@ class GraphProjectionError(ValueError):
             )
         )
         super().__init__(f"{code}:{context} {message}".strip())
+
+
+def looks_like_graphforge_tables(
+    nodes: Any,
+    edges: Any,
+    mapping: Mapping[str, str] | None = None,
+) -> bool:
+    """True when both tables expose GraphForge UUID identity columns.
+
+    Honors the same ``mapping`` overrides as ``from_graphforge_tables``.
+    """
+    try:
+        node_names = set(_table_column_names(nodes))
+        edge_names = set(_table_column_names(edges))
+    except (GraphProjectionError, TypeError, ValueError, AttributeError):
+        return False
+    mapping = mapping or {}
+    node_id_field = mapping.get("node_uuid", "node_uuid")
+    edge_id_field = mapping.get("edge_uuid", "edge_uuid")
+    return node_id_field in node_names and edge_id_field in edge_names
+
+
+def resolve_graph_data(
+    nodes: Any,
+    edges: Any = None,
+    *,
+    x: Any = None,
+    y: Any = None,
+    directed: bool = True,
+    mapping: Mapping[str, str] | None = None,
+) -> GraphData:
+    """Resolve xy-native pairs, a ready ``GraphData``, or GraphForge tables.
+
+    GraphForge tables (canonical ``node_uuid`` / ``edge_uuid`` columns, or the
+    same fields via ``mapping``) route through Rust identity validation.
+    Generic id/source/target inputs keep the xy-native path (REQ-API-3).
+    """
+    if isinstance(nodes, GraphData):
+        if edges is not None:
+            raise TypeError(
+                "when nodes is GraphData, edges must be omitted "
+                "(pass GraphData alone or pass table/sequence pairs)"
+            )
+        return nodes
+    if edges is None:
+        raise TypeError("graph edges are required unless nodes is GraphData")
+    if looks_like_graphforge_tables(nodes, edges, mapping):
+        data = from_graphforge_tables(nodes, edges, mapping=mapping, directed=directed)
+        if x is not None or y is not None:
+            xs = None if x is None else np.ascontiguousarray(_as_1d(x, "x"), dtype=np.float64)
+            ys = None if y is None else np.ascontiguousarray(_as_1d(y, "y"), dtype=np.float64)
+            if (xs is None) ^ (ys is None):
+                raise ValueError("x and y must both be provided or both omitted")
+            if xs is not None and (
+                len(xs) != data.n_nodes or (ys is not None and len(ys) != data.n_nodes)
+            ):
+                raise ValueError("x/y must match node count")
+            data.x = xs
+            data.y = ys
+        return data
+    return normalize_graph_inputs(nodes, edges, x=x, y=y, directed=directed)
+
+
+def _json_scalar(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int):
+        # Preserve integers beyond JSON/JS safe range as decimal strings.
+        if abs(value) > (2**53 - 1):
+            return str(value)
+        return value
+    if isinstance(value, float):
+        return value
+    return str(value)
+
+
+def projection_tooltip_rows(
+    data: GraphData,
+) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
+    """Build node/edge semantic hover rows from a validated projection.
+
+    Returns ``(None, None)`` for generic xy-native graphs with no attrs. Rows
+    are source-indexed; callers attach them only when render LOD did not drop
+    nodes/edges.
+    """
+    has_projection = (
+        data.node_uuid_bytes is not None
+        or data.edge_uuid_bytes is not None
+        or bool(data.node_attrs)
+        or bool(data.edge_attrs)
+        or data.node_provenance_rows is not None
+        or data.edge_provenance_rows is not None
+    )
+    if not has_projection:
+        return None, None
+
+    node_rows: list[dict[str, Any]] = []
+    for i in range(data.n_nodes):
+        row: dict[str, Any] = {"id": str(data.ids[i])}
+        if data.node_provenance_rows is not None:
+            row["provenance_row"] = int(data.node_provenance_rows[i])
+        for key, col in data.node_attrs.items():
+            row[str(key)] = _json_scalar(col[i])
+        node_rows.append(row)
+
+    edge_rows: list[dict[str, Any]] = []
+    for i in range(data.n_edges):
+        src = int(data.sources[i])
+        tgt = int(data.targets[i])
+        row = {
+            "source": str(data.ids[src]),
+            "target": str(data.ids[tgt]),
+        }
+        if data.edge_ids:
+            row["edge_id"] = str(data.edge_ids[i])
+        if data.edge_provenance_rows is not None:
+            row["provenance_row"] = int(data.edge_provenance_rows[i])
+        for key, col in data.edge_attrs.items():
+            row[str(key)] = _json_scalar(col[i])
+        edge_rows.append(row)
+    return node_rows, edge_rows
+
+
+def resolve_encoding_values(
+    data: GraphData,
+    values: Any,
+    *,
+    where: str = "node",
+) -> Any:
+    """Resolve ``color=`` / ``size=`` when the value names a projection column."""
+    if not isinstance(values, str):
+        return values
+    attrs = data.node_attrs if where == "node" else data.edge_attrs
+    if values in attrs:
+        return attrs[values]
+    return values
 
 
 def _as_1d(values: Any, name: str) -> np.ndarray:

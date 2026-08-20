@@ -166,11 +166,22 @@ emitted scatter/segments lengths.
 **Ingest (REQ-API-3):** xy-native sequences, NumPy, pandas/Arrow columns,
 edge lists, adjacency. `from_graphforge_tables()` / `fromGraphForgeTables()`
 accept table-like named columns without requiring Arrow at package import.
+Canonical GraphForge fields: `node_uuid`, `edge_uuid`, `src_uuid`/`source_uuid`,
+`dst_uuid`/`target_uuid`, optional `parent_uuid`, `provenance_row`, plus leftover
+typed columns (`labels`, `relationship_type`, properties).
+
 For the GraphForge path, Rust owns canonical 16-byte node and edge UUIDs,
-deterministic dense `u64` endpoints, directedness, and optional parent mapping.
-Hosts retain typed attribute columns, relationship labels, and provenance rows;
-they never reconstruct those columns as JSON objects. Generic graph ingest and
-`from_networkx()` remain available and compile to the same render pipeline.
+deterministic dense `u64` endpoints, directedness, and optional parent mapping
+(opaque `GraphProjection` handle). Hosts coerce tables → packed UUID buffers,
+then retain validated typed attribute columns and provenance on `GraphData`.
+`graph()` / `composeGraph()` accept GraphForge tables or a ready `GraphData`
+and attach `tooltip_rows` plus source-indexed `source_edge_ids` / provenance
+meta. When render LOD keeps a 1:1 edge mapping, `edge_ids` mirrors
+`source_edge_ids` and is render-aligned. `color=` / `size=` / `edge_color=` may
+name projection columns. Generic graph ingest and `from_networkx()` remain
+available and
+compile to the same render pipeline. Browser/WASM identity round-trip for the
+same projection handle remains under #59.
 
 **Compile target:** one logical `graph` mark expands to a Rust-emitted
 **render graph** whose leaf geometry is wire traces `segments` (edges) +

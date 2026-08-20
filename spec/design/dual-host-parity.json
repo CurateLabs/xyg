@@ -86,10 +86,10 @@
   "pipeline_layers": [
     {
       "layer": "GraphForge / canonical ingest helpers",
-      "python": "design",
-      "node": "design",
+      "python": "ready",
+      "node": "ready",
       "shared_artifact": "Same mark buffers",
-      "notes": "Optional; never the only path (REQ-API-3)"
+      "notes": "Optional; never the only path (REQ-API-3). GraphForge tables compile through graph()/composeGraph with tooltip_rows + identity meta."
     },
     {
       "layer": "Dense u64 indices + f64 columns",

@@ -1167,23 +1167,25 @@ def graph(
     opacity: Any = 1.0,
     style: Optional[dict[str, StyleValue]] = None,
     class_name: Optional[str] = None,
+    mapping: Optional[dict[str, str]] = None,
 ) -> Mark:
     """A node–link graph: Rust layout, edges as segments, nodes as scatter.
 
     Prefer ``xy.graph_chart(...)``. See ``spec/design/graph-mark.md``.
 
     Args:
-        nodes: Node ids, or a table/mapping with an ``id`` column.
-        edges: ``(source, target)`` pairs or a table with source/target columns.
+        nodes: Node ids, a GraphForge table with ``node_uuid``, or ``GraphData``.
+        edges: ``(source, target)`` pairs, a GraphForge edge table, or omit when
+            ``nodes`` is already ``GraphData``.
         x: Optional preset x positions (required with ``y`` for ``layout=\"preset\"``).
         y: Optional preset y positions.
         layout: Layout algorithm name (default ``\"force\"``).
         directed: Whether edges are directed (affects CSR neighborhood).
         seed: RNG seed for force layout.
         iterations: Force-layout tick count.
-        color: Node colour encoding.
-        size: Node size encoding.
-        edge_color: Edge colour.
+        color: Node colour encoding (constant, array, or GraphForge column name).
+        size: Node size encoding (constant, array, or GraphForge column name).
+        edge_color: Edge colour (constant, array, or GraphForge column name).
         edge_width: Edge width in pixels.
         symbol: Node marker symbol (scatter symbols).
         edge_curve: ``\"straight\"`` (MVP draw) or ``\"curve\"`` (meta for clients).
@@ -1191,6 +1193,7 @@ def graph(
         opacity: Shared opacity.
         style: Mark style overrides.
         class_name: Adapter-only trace metadata.
+        mapping: Optional GraphForge column-name overrides.
     """
     return Mark(
         kind="graph",
@@ -1202,7 +1205,7 @@ def graph(
         style=_mark_style_dict(style, "graph style"),
         props={
             "nodes": [] if nodes is None else nodes,
-            "edges": [] if edges is None else edges,
+            "edges": None if edges is None else edges,
             "layout": layout,
             "directed": directed,
             "seed": seed,
@@ -1214,6 +1217,7 @@ def graph(
             "symbol": symbol,
             "edge_curve": edge_curve,
             "opacity": opacity,
+            "mapping": mapping,
         },
     )
 
@@ -5906,7 +5910,7 @@ def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
     del data
     fig.graph(
         m.props["nodes"],
-        m.props["edges"],
+        m.props.get("edges"),
         x=m.x,
         y=m.y,
         layout=m.props["layout"],
@@ -5922,6 +5926,7 @@ def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
         name=m.name,
         opacity=m.props["opacity"],
         style=m.style,
+        mapping=m.props.get("mapping"),
     )
 
 

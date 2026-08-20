@@ -70,6 +70,7 @@ CHART_FACTORY_GROUPS = (
             xy.stem_chart,
             xy.segments_chart,
             xy.sankey_chart,
+            xy.graph_chart,
             xy.triangle_mesh_chart,
         ),
     ),
