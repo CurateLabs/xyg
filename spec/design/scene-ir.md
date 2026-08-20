@@ -222,6 +222,9 @@ Worker. Rust validates and lowers them through
 `SceneDocument::to_browser_painter` into checked f32 geometry and split-u64
 stable-ID columns plus the default numeric ticks and formatted UTF-8 labels.
 Painter contract v2 carries fixed trace and tick descriptors with exact bounds.
+Browser tick tables serialize every `AxisTicks::ticks` position (so log minor
+grid lines match SVG/raster) and attach formatted labels only for
+`AxisTicks::labeled`; unlabeled minor ticks carry empty UTF-8 labels.
 The TypeScript adapter creates views over transferred columns and supplies the
 Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,

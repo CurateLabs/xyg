@@ -70,6 +70,10 @@ cancellation, the start of another prepare, any failed prepare, and disposal
 clear it; the Worker copies a successful output into one transferable
 ArrayBuffer before resetting the arena. A prior success can therefore never be
 observed after a later failure or non-paint operation.
+`prepareScene` clears the staging arena after a successful `SceneDocument`
+decode and before painter lowering, so staging bytes and painter output never
+both retain the per-instance byte budget at once. The combined live staging
+plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 

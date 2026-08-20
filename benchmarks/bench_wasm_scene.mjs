@@ -16,8 +16,14 @@ const server = createServer(async (request, response) => {
     return;
   }
   if (!allowed.has(path)) { response.statusCode = 404; response.end("not found"); return; }
-  response.setHeader("Content-Type", extname(path) === ".wasm" ? "application/wasm" : "text/javascript");
-  response.end(await readFile(join(root, path)));
+  try {
+    const body = await readFile(join(root, path));
+    response.setHeader("Content-Type", extname(path) === ".wasm" ? "application/wasm" : "text/javascript");
+    response.end(body);
+  } catch (cause) {
+    response.statusCode = 500;
+    response.end(`could not read ${path}: ${cause instanceof Error ? cause.message : String(cause)}`);
+  }
 });
 
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));

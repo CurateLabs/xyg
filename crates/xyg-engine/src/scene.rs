@@ -1670,16 +1670,21 @@ impl SceneDocument {
                 .then_some(value)
                 .ok_or(SceneError::NonFinite)
         };
+        // Serialize every AxisTicks::ticks position so log minor grid lines
+        // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
+        // (empty UTF-8 for unlabeled minor ticks).
         let browser_ticks = |scale: AxisScale, length: f64, is_x: bool| {
-            let ticks = scale.ticks(length, is_x)?;
-            ticks
-                .labeled
-                .into_iter()
+            let axis = scale.ticks(length, is_x)?;
+            axis.ticks
+                .iter()
+                .copied()
                 .map(|value| {
-                    Ok((
-                        f32_value(scale.pixel(value))?,
-                        format_tick(value, ticks.step, scale.kind),
-                    ))
+                    let label = if axis.labeled.iter().any(|&labeled| labeled == value) {
+                        format_tick(value, axis.step, scale.kind)
+                    } else {
+                        String::new()
+                    };
+                    Ok((f32_value(scale.pixel(value))?, label))
                 })
                 .collect::<Result<Vec<_>, SceneError>>()
         };
