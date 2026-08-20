@@ -1048,6 +1048,17 @@ export class Figure {
         n: Math.floor(channel.rgba.length / 4),
       };
     }
+    if (channel.mode === "continuous" && channel.values != null) {
+      const domain = channel.domain ?? minMax(channel.values) ?? [0, 1];
+      const lo = domain[0];
+      const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+      return {
+        mode: "continuous",
+        colormap: channel.colormap ?? "viridis",
+        domain: [lo, hi],
+        buf: pw.shipScalar(normalizeF32(channel.values, lo, hi)),
+      };
+    }
     if (channel.mode === "constant") {
       return { mode: "constant", color: channel.color };
     }

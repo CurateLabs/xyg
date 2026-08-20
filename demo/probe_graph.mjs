@@ -3,7 +3,12 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const file = process.argv[2] || "python_graph_demo.html";
+const rawArg = process.argv[2] || "python_graph_demo.html";
+const file = path.basename(rawArg);
+if (file !== rawArg || !/\.html$/i.test(file)) {
+  console.error(`probe_graph: expected a .html basename under demo/, got ${JSON.stringify(rawArg)}`);
+  process.exit(2);
+}
 const url = "file://" + path.join(here, file);
 
 const browser = await chromium.launch();
@@ -83,5 +88,27 @@ const result = await page.evaluate(() => {
 });
 
 console.log(JSON.stringify({ file, clickTargets, logs: logs.slice(0, 40), result }, null, 2));
-await page.screenshot({ path: path.join(here, file.replace(".html", "_probe.png")) });
+const shotName = file.replace(/\.html$/i, "_probe.png");
+await page.screenshot({ path: path.join(here, shotName) });
 await browser.close();
+
+const pageErrors = logs.filter((line) => line.startsWith("[pageerror]") || line.startsWith("[error]"));
+const ok =
+  result.canvasOk &&
+  result.hoverCount > 0 &&
+  pageErrors.length === 0;
+if (!ok) {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        canvasOk: result.canvasOk,
+        hoverCount: result.hoverCount,
+        pageErrors,
+      },
+      null,
+      2,
+    ),
+  );
+  process.exit(1);
+}

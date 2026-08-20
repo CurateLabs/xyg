@@ -84,7 +84,7 @@ test("graph ships tooltip_rows plus continuous size and color channels", () => {
       layout: "circle",
       seed: 1,
       size: [10, 20, 30],
-      color: ["#ff0000", "#00ff00", "#0000ff"],
+      color: [0.1, 0.5, 0.9],
       nodeTooltipRows: [{ id: "a" }, { id: "b" }, { id: "c" }],
       edgeTooltipRows: [{ e: 0 }, { e: 1 }],
     },
@@ -99,8 +99,24 @@ test("graph ships tooltip_rows plus continuous size and color channels", () => {
   assert.equal(nodes.size.mode, "continuous");
   assert.deepEqual(nodes.size.domain, [10, 30]);
   assert.equal(typeof nodes.size.buf, "number");
-  assert.equal(nodes.color.mode, "direct_rgba");
+  assert.equal(nodes.color.mode, "continuous");
+  assert.deepEqual(nodes.color.domain, [0.1, 0.9]);
+  assert.equal(nodes.color.colormap, "viridis");
   assert.equal(typeof nodes.color.buf, "number");
+});
+
+test("graph ships CSS color lists as direct_rgba", () => {
+  const fig = figure({ width: 400, height: 300 });
+  fig.graph(
+    ["a", "b"],
+    [["a", "b"]],
+    {
+      layout: "grid",
+      color: ["#ff0000", "#00ff00"],
+    },
+  );
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[1].color.mode, "direct_rgba");
 });
 
 test("composeGraph rejects tooltip_rows length mismatch", () => {

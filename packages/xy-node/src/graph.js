@@ -550,7 +550,11 @@ export function composeGraph(nodes, edges, opts = {}) {
       ? sizeOpt
       : Float64Array.from(sizeOpt, Number);
     if (sizeValues.length !== nNodes) {
-      throw new RangeError(`graph size length ${sizeValues.length} != n_nodes=${nNodes}`);
+      throw new RangeError(
+        `graph size length ${sizeValues.length} != render n_nodes=${nNodes} ` +
+          `(encodings are render-graph indexed after nodeBudget/edgeBudget; ` +
+          `source_n_nodes=${meta.source_n_nodes ?? "?"})`,
+      );
     }
   } else if (sizeOpt != null) {
     styleSize = Number(sizeOpt);

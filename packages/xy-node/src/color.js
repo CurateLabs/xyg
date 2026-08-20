@@ -1,6 +1,7 @@
 /**
- * Minimal CSS color helpers for Node host composition (ribbon / sankey paints).
- * Ships constant CSS strings or packed RGBA8 for direct_rgba channels.
+ * Minimal CSS / numeric color helpers for Node host composition.
+ * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
+ * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
 
 /**
@@ -73,13 +74,19 @@ export function cssColorsToRgba8(colors) {
   return out;
 }
 
+function looksLikeCssColor(value) {
+  if (typeof value !== "string") return false;
+  const s = value.trim();
+  return s.startsWith("#") || /^rgba?\(/i.test(s) || /^[a-zA-Z][a-zA-Z0-9-]*$/.test(s);
+}
+
 /**
  * Resolve a color encoding to a wire color channel for the Node figure MVP.
  *
- * @param {string|string[]|null|undefined} color
+ * @param {string|string[]|number[]|TypedArray|null|undefined} color
  * @param {number} n
  * @param {string} [fallback]
- * @returns {{mode: string, color?: string, rgba?: Uint8Array}|null}
+ * @returns {{mode: string, color?: string, rgba?: Uint8Array, values?: Float64Array, domain?: number[], colormap?: string}|null}
  */
 export function resolveColorChannel(color, n, fallback = "#3987e5") {
   if (color == null) {
@@ -88,15 +95,45 @@ export function resolveColorChannel(color, n, fallback = "#3987e5") {
   if (typeof color === "string") {
     return { mode: "constant", color };
   }
+  if (typeof color === "number") {
+    if (!Number.isFinite(color)) {
+      throw new RangeError("color scalar must be finite");
+    }
+    return {
+      mode: "continuous",
+      values: Float64Array.from({ length: n }, () => color),
+      domain: [color, color === 0 ? 1 : color * 1.000001 || 1],
+      colormap: "viridis",
+    };
+  }
   if (Array.isArray(color) || ArrayBuffer.isView(color)) {
-    const list = [...color].map(String);
-    if (list.length === 1) {
-      return { mode: "constant", color: list[0] };
+    const raw = [...color];
+    if (raw.length === 1) {
+      const only = raw[0];
+      if (looksLikeCssColor(only) || typeof only === "string") {
+        return { mode: "constant", color: String(only) };
+      }
     }
-    if (list.length !== n) {
-      throw new RangeError(`color length ${list.length} != n=${n}`);
+    if (raw.length !== n) {
+      throw new RangeError(`color length ${raw.length} != n=${n}`);
     }
-    return { mode: "direct_rgba", rgba: cssColorsToRgba8(list) };
+    const numeric = raw.every((v) => !looksLikeCssColor(v) && Number.isFinite(Number(v)));
+    if (numeric) {
+      const values = Float64Array.from(raw, Number);
+      let lo = Number.POSITIVE_INFINITY;
+      let hi = Number.NEGATIVE_INFINITY;
+      for (const v of values) {
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+      if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+        lo = 0;
+        hi = 1;
+      }
+      if (lo === hi) hi = lo + 1;
+      return { mode: "continuous", values, domain: [lo, hi], colormap: "viridis" };
+    }
+    return { mode: "direct_rgba", rgba: cssColorsToRgba8(raw.map(String)) };
   }
   return { mode: "constant", color: String(color) };
 }
