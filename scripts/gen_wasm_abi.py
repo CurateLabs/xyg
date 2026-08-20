@@ -17,6 +17,10 @@ OUTPUT = ROOT / "js" / "src" / "wasm_abi_generated.ts"
 def render(manifest: dict[str, object]) -> str:
     abi_version = int(manifest["abi_version"])
     scene_version = int(manifest["scene_version"])
+    painter_version = int(manifest["painter_version"])
+    painter_header_bytes = int(manifest["painter_header_bytes"])
+    painter_trace_bytes = int(manifest["painter_trace_bytes"])
+    painter_tick_bytes = int(manifest["painter_tick_bytes"])
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if not isinstance(statuses, dict) or not isinstance(exports, list):
@@ -28,6 +32,10 @@ def render(manifest: dict[str, object]) -> str:
         "",
         f"export const XYG_WASM_ABI_VERSION = {abi_version} as const;",
         f"export const XYG_WASM_SCENE_VERSION = {scene_version} as const;",
+        f"export const XYG_WASM_PAINTER_VERSION = {painter_version} as const;",
+        f"export const XYG_WASM_PAINTER_HEADER_BYTES = {painter_header_bytes} as const;",
+        f"export const XYG_WASM_PAINTER_TRACE_BYTES = {painter_trace_bytes} as const;",
+        f"export const XYG_WASM_PAINTER_TICK_BYTES = {painter_tick_bytes} as const;",
         "export const XYG_WASM_STATUS = {",
     ]
     for name, value in statuses.items():
@@ -111,6 +119,17 @@ def verify_rust(manifest: dict[str, object]) -> None:
     scene_match = re.search(r"pub const SCENE_VERSION: u32 = (\d+);", engine)
     if not scene_match or int(scene_match.group(1)) != constants["SCENE_VERSION"]:
         raise SystemExit("xyg-engine SCENE_VERSION differs from spec/wasm/abi.json")
+    painter_match = re.search(r"pub const BROWSER_PAINTER_VERSION: u32 = (\d+);", engine)
+    if not painter_match or int(painter_match.group(1)) != int(manifest["painter_version"]):
+        raise SystemExit("xyg-engine BROWSER_PAINTER_VERSION differs from spec/wasm/abi.json")
+    for rust_name, manifest_name in (
+        ("BROWSER_PAINTER_HEADER_BYTES", "painter_header_bytes"),
+        ("BROWSER_PAINTER_TRACE_BYTES", "painter_trace_bytes"),
+        ("BROWSER_PAINTER_TICK_BYTES", "painter_tick_bytes"),
+    ):
+        match = re.search(rf"pub const {rust_name}: usize = (\d+);", engine)
+        if not match or int(match.group(1)) != int(manifest[manifest_name]):
+            raise SystemExit(f"xyg-engine {rust_name} differs from spec/wasm/abi.json")
     for name, value in manifest["statuses"].items():
         match = re.search(rf"pub const STATUS_{re.escape(str(name))}: i32 = (\d+);", source)
         if not match or int(match.group(1)) != int(value):

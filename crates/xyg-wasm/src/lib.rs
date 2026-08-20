@@ -8,7 +8,7 @@
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 1;
+pub const WASM_ABI_VERSION: u32 = 2;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -27,6 +27,7 @@ const MAX_GENERATION: u32 = u32::MAX >> HANDLE_SLOT_BITS;
 #[derive(Debug)]
 struct Instance {
     arena: Vec<u8>,
+    output: Vec<u8>,
     max_arena_bytes: usize,
     last_error: String,
     latest_sequence: u32,
@@ -86,6 +87,7 @@ impl Registry {
             generation,
             instance: Some(Instance {
                 arena: Vec::new(),
+                output: Vec::new(),
                 max_arena_bytes,
                 last_error: String::new(),
                 latest_sequence: 0,
@@ -166,6 +168,7 @@ pub extern "C" fn xyg_wasm_instance_dispose(handle: u32) -> i32 {
 #[no_mangle]
 pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
     with_instance_mut(handle, |instance| {
+        instance.output.clear();
         if length > instance.max_arena_bytes {
             return fail(
                 instance,
@@ -209,6 +212,7 @@ pub extern "C" fn xyg_wasm_arena_len(handle: u32) -> usize {
 #[no_mangle]
 pub extern "C" fn xyg_wasm_cancel(handle: u32, sequence: u32) -> i32 {
     with_instance_mut(handle, |instance| {
+        instance.output.clear();
         if sequence == 0 {
             return fail(
                 instance,
@@ -231,6 +235,7 @@ pub extern "C" fn xyg_wasm_scene_validate(
     length: usize,
 ) -> i32 {
     with_instance_mut(handle, |instance| {
+        instance.output.clear();
         if sequence == 0 {
             return fail(
                 instance,
@@ -281,6 +286,89 @@ pub extern "C" fn xyg_wasm_scene_validate(
         }
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Validate and lower one canonical Scene batch to engine-owned painter-ready
+/// columns and descriptors. The output remains owned by this instance until
+/// the next operation or disposal.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_prepare(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        instance.output.clear();
+        if sequence == 0 {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "sequence zero is reserved",
+            );
+        }
+        if sequence <= instance.cancelled_through {
+            return fail(instance, STATUS_CANCELLED, "request was cancelled");
+        }
+        if sequence <= instance.latest_sequence {
+            return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
+        }
+        let Some(end) = offset.checked_add(length) else {
+            return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
+        };
+        if end > instance.arena.len() {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "staging range lies outside the arena",
+            );
+        }
+        // Decode owns the scene; end the arena borrow before clearing staging so
+        // staging and painter output never both retain the full byte budget.
+        let decoded = scene::SceneDocument::decode(&instance.arena[offset..end]);
+        instance.arena.clear();
+        let result = decoded.and_then(|document| {
+            let counts = (document.record_count(), document.style_count());
+            let output = document.to_browser_painter(instance.max_arena_bytes)?;
+            Ok((counts, output))
+        });
+        instance.latest_sequence = sequence;
+        match result {
+            Ok(((records, styles), output)) if output.len() <= instance.max_arena_bytes => {
+                instance.last_scene_records = records;
+                instance.last_scene_styles = styles;
+                instance.output = output;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Ok(_) | Err(SceneError::Limit) => fail(
+                instance,
+                STATUS_RESOURCE_LIMIT,
+                "canonical scene output exceeds the instance byte budget",
+            ),
+            Err(SceneError::Version) => fail(
+                instance,
+                STATUS_SCENE_VERSION,
+                "canonical scene version is incompatible",
+            ),
+            Err(_) => fail(
+                instance,
+                STATUS_MALFORMED_SCENE,
+                "canonical scene batch cannot be lowered for browser paint",
+            ),
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+#[no_mangle]
+pub extern "C" fn xyg_wasm_output_ptr(handle: u32) -> usize {
+    with_instance_mut(handle, |instance| instance.output.as_ptr() as usize).unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "C" fn xyg_wasm_output_len(handle: u32) -> usize {
+    with_instance_mut(handle, |instance| instance.output.len()).unwrap_or(0)
 }
 
 #[no_mangle]
@@ -418,6 +506,95 @@ mod tests {
             xyg_wasm_scene_validate(handle, 2, 0, bytes.len()),
             STATUS_MALFORMED_SCENE
         );
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn scene_paint_uses_engine_checked_f32_output() {
+        let bytes = valid_scene();
+        let handle = xyg_wasm_instance_new(4096);
+        write_arena(handle, &bytes);
+        assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_OK);
+        assert_ne!(xyg_wasm_output_ptr(handle), 0);
+        assert_eq!(xyg_wasm_output_len(handle), 258);
+        assert_eq!(xyg_wasm_last_scene_records(handle), 1);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYPB");
+            assert_eq!(
+                u32::from_le_bytes(instance.output[4..8].try_into().unwrap()),
+                2
+            );
+            assert_eq!(
+                u32::from_le_bytes(instance.output[20..24].try_into().unwrap()),
+                1
+            );
+            assert_eq!(
+                u32::from_le_bytes(instance.output[136..140].try_into().unwrap()),
+                7
+            );
+            assert_eq!(
+                u32::from_le_bytes(instance.output[140..144].try_into().unwrap()),
+                0
+            );
+            assert_eq!(
+                u32::from_le_bytes(instance.output[48..52].try_into().unwrap()),
+                3
+            );
+            assert_eq!(
+                u32::from_le_bytes(instance.output[52..56].try_into().unwrap()),
+                3
+            );
+            let strings = u32::from_le_bytes(instance.output[60..64].try_into().unwrap()) as usize;
+            assert!(strings < instance.output.len());
+            assert!(std::str::from_utf8(&instance.output[strings..]).is_ok());
+        })
+        .unwrap();
+
+        // prepare clears staging after decode; restage before the next call.
+        write_arena(handle, &bytes);
+        assert_eq!(
+            xyg_wasm_scene_validate(handle, 2, 0, bytes.len()),
+            STATUS_OK
+        );
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+
+        write_arena(handle, &bytes);
+        assert_eq!(xyg_wasm_scene_prepare(handle, 3, 0, bytes.len()), STATUS_OK);
+        assert!(xyg_wasm_output_len(handle) > 0);
+
+        write_arena(handle, &bytes);
+        assert_eq!(
+            xyg_wasm_scene_prepare(handle, 4, bytes.len(), 1),
+            STATUS_INVALID_ARGUMENT
+        );
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+        write_arena(handle, &bytes);
+        assert_eq!(xyg_wasm_scene_prepare(handle, 5, 0, bytes.len()), STATUS_OK);
+        assert!(xyg_wasm_output_len(handle) > 0);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+    }
+
+    #[test]
+    fn prepare_releases_staging_before_painter_budget() {
+        let bytes = valid_scene();
+        // Budget large enough for staging or painter alone, but not both if
+        // staging were retained through lowering.
+        let painter_len = {
+            let document = scene::SceneDocument::decode(&bytes).unwrap();
+            document.to_browser_painter(64 * 1024).unwrap().len()
+        };
+        let budget = bytes.len().max(painter_len);
+        let handle = xyg_wasm_instance_new(budget);
+        write_arena(handle, &bytes);
+        assert_eq!(xyg_wasm_arena_len(handle), bytes.len());
+        assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_OK);
+        assert_eq!(xyg_wasm_arena_len(handle), 0);
+        assert_eq!(xyg_wasm_output_len(handle), painter_len);
+        with_instance_mut(handle, |instance| {
+            assert!(instance.arena.len() + instance.output.len() <= instance.max_arena_bytes);
+        })
+        .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 }

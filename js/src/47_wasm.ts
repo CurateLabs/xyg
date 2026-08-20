@@ -18,6 +18,7 @@ export interface XygWasmDiagnostics {
   abiVersion: number;
   sceneVersion: number;
   arenaBytes: number;
+  memoryBytes: number;
   copyCount: number;
   copyBytesLo: number;
   copyBytesHi: number;
@@ -27,6 +28,11 @@ export interface XygWasmDiagnostics {
 
 export interface XygWasmSceneValidation extends XygWasmDiagnostics {
   sequence: number;
+}
+
+export interface XygWasmScenePaint extends XygWasmSceneValidation {
+  /** Rust-authored, checked-f32 painter columns and trace descriptors. */
+  painter: ArrayBuffer;
 }
 
 export interface XygWasmTask<T> {
@@ -175,6 +181,21 @@ export class XygWasmWorker {
     scene: ArrayBuffer | Uint8Array,
     options: { sequence?: number; transfer?: boolean } = {},
   ): XygWasmTask<XygWasmSceneValidation> {
+    return this.sceneTask("scene.validate", scene, options);
+  }
+
+  prepareScene(
+    scene: ArrayBuffer | Uint8Array,
+    options: { sequence?: number; transfer?: boolean } = {},
+  ): XygWasmTask<XygWasmScenePaint> {
+    return this.sceneTask("scene.paint", scene, options);
+  }
+
+  private sceneTask<T extends XygWasmSceneValidation>(
+    type: "scene.validate" | "scene.paint",
+    scene: ArrayBuffer | Uint8Array,
+    options: { sequence?: number; transfer?: boolean },
+  ): XygWasmTask<T> {
     this.assertLive();
     const requestId = this.allocateRequest();
     const sequence = options.sequence ?? this.nextSequence++;
@@ -183,10 +204,10 @@ export class XygWasmWorker {
     }
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const payload = sceneMessage(scene, options.transfer !== false);
-    const result = this.promiseFor<XygWasmSceneValidation>(requestId);
+    const result = this.promiseFor<T>(requestId);
     try {
       this.worker.postMessage(
-        { type: "scene.validate", requestId, sequence, scene: payload.buffer },
+        { type, requestId, sequence, scene: payload.buffer },
         payload.transfer,
       );
     } catch (cause) {

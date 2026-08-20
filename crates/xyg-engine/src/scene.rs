@@ -15,6 +15,10 @@ pub const MAX_SCENE_STYLES: usize = 65_536;
 pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
 pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
+pub const BROWSER_PAINTER_VERSION: u32 = 2;
+pub const BROWSER_PAINTER_HEADER_BYTES: usize = 64;
+pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
+pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AxisTicks {
@@ -955,8 +959,10 @@ impl SceneDocument {
                     .expect("bounded header"),
             )
         };
-        if u32_at(4) != SCENE_VERSION
-            || u32_at(8) as usize != SCENE_BATCH_HEADER_BYTES
+        if u32_at(4) != SCENE_VERSION {
+            return Err(SceneError::Version);
+        }
+        if u32_at(8) as usize != SCENE_BATCH_HEADER_BYTES
             || u32_at(12) as usize != SCENE_BATCH_RECORD_BYTES
         {
             return Err(SceneError::Length);
@@ -1176,6 +1182,14 @@ impl SceneDocument {
             records,
             raster_mark_capacity,
         })
+    }
+
+    pub fn record_count(&self) -> usize {
+        self.records.len()
+    }
+
+    pub fn style_count(&self) -> usize {
+        self.styles.len()
     }
 
     pub fn to_svg(&self) -> String {
@@ -1629,6 +1643,249 @@ impl SceneDocument {
         if out.len() > reserved_capacity {
             return Err(SceneError::Limit);
         }
+        Ok(out)
+    }
+
+    /// Lower Scene v3 to the existing browser painter's column model.
+    ///
+    /// The fixed descriptor table is O(trace runs); all O(record) coordinate
+    /// and stable-id work happens here in Rust and lands directly in packed
+    /// little-endian f32/u32 columns. TypeScript only creates descriptor-sized
+    /// views and never decodes or re-encodes individual Scene records.
+    pub fn to_browser_painter(&self, max_bytes: usize) -> Result<Vec<u8>, SceneError> {
+        #[derive(Clone, Copy)]
+        struct Group {
+            start: usize,
+            end: usize,
+            kind: SceneRecordKind,
+            style_ref: usize,
+            symbol: u8,
+            diameter: f64,
+        }
+
+        let f32_value = |value: f64| -> Result<f32, SceneError> {
+            let value = value as f32;
+            value
+                .is_finite()
+                .then_some(value)
+                .ok_or(SceneError::NonFinite)
+        };
+        // Serialize every AxisTicks::ticks position so log minor grid lines
+        // match SVG/raster consumers. Labels attach only for AxisTicks::labeled
+        // (empty UTF-8 for unlabeled minor ticks).
+        let browser_ticks = |scale: AxisScale, length: f64, is_x: bool| {
+            let axis = scale.ticks(length, is_x)?;
+            axis.ticks
+                .iter()
+                .copied()
+                .map(|value| {
+                    let label = if axis.labeled.contains(&value) {
+                        format_tick(value, axis.step, scale.kind)
+                    } else {
+                        String::new()
+                    };
+                    Ok((f32_value(scale.pixel(value))?, label))
+                })
+                .collect::<Result<Vec<_>, SceneError>>()
+        };
+        let x_ticks = browser_ticks(self.x_scale, self.layout.right - self.layout.left, true)?;
+        let y_ticks = browser_ticks(self.y_scale, self.layout.bottom - self.layout.top, false)?;
+
+        let mut groups = Vec::new();
+        let mut index = 0;
+        while index < self.records.len() {
+            let record = self.records[index];
+            if !record.visible {
+                index += 1;
+                continue;
+            }
+            let start = index;
+            index += 1;
+            match record.kind {
+                SceneRecordKind::Polyline => {
+                    while index < self.records.len() {
+                        let next = self.records[index];
+                        if !next.visible
+                            || next.kind != SceneRecordKind::Polyline
+                            || next.stable_id != record.stable_id
+                            || next.style_ref != record.style_ref
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                }
+                SceneRecordKind::Scatter => {
+                    while index < self.records.len() {
+                        let next = self.records[index];
+                        if !next.visible
+                            || next.kind != SceneRecordKind::Scatter
+                            || next.style_ref != record.style_ref
+                            || next.symbol != record.symbol
+                            || next.diameter.to_bits() != record.diameter.to_bits()
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                }
+                SceneRecordKind::Rect => {
+                    while index < self.records.len() {
+                        let next = self.records[index];
+                        if !next.visible
+                            || next.kind != SceneRecordKind::Rect
+                            || next.style_ref != record.style_ref
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                }
+            }
+            groups.push(Group {
+                start,
+                end: index,
+                kind: record.kind,
+                style_ref: record.style_ref,
+                symbol: record.symbol,
+                diameter: record.diameter,
+            });
+        }
+
+        let descriptors = groups
+            .len()
+            .checked_mul(BROWSER_PAINTER_TRACE_BYTES)
+            .ok_or(SceneError::Limit)?;
+        let mut required = BROWSER_PAINTER_HEADER_BYTES
+            .checked_add(descriptors)
+            .ok_or(SceneError::Limit)?;
+        for group in &groups {
+            let columns = if group.kind == SceneRecordKind::Rect {
+                6
+            } else {
+                4
+            };
+            required = required
+                .checked_add(
+                    (group.end - group.start)
+                        .checked_mul(columns * 4)
+                        .ok_or(SceneError::Limit)?,
+                )
+                .ok_or(SceneError::Limit)?;
+        }
+        let tick_count = x_ticks
+            .len()
+            .checked_add(y_ticks.len())
+            .ok_or(SceneError::Limit)?;
+        required = required
+            .checked_add(
+                tick_count
+                    .checked_mul(BROWSER_PAINTER_TICK_BYTES)
+                    .ok_or(SceneError::Limit)?,
+            )
+            .ok_or(SceneError::Limit)?;
+        for (_, label) in x_ticks.iter().chain(&y_ticks) {
+            required = required.checked_add(label.len()).ok_or(SceneError::Limit)?;
+        }
+        if required > max_bytes {
+            return Err(SceneError::Limit);
+        }
+        let mut out = Vec::with_capacity(required);
+        out.resize(BROWSER_PAINTER_HEADER_BYTES + descriptors, 0);
+        out[0..4].copy_from_slice(b"XYPB");
+        out[4..8].copy_from_slice(&BROWSER_PAINTER_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&SCENE_VERSION.to_le_bytes());
+        out[12..16].copy_from_slice(&(BROWSER_PAINTER_HEADER_BYTES as u32).to_le_bytes());
+        out[16..20].copy_from_slice(&(BROWSER_PAINTER_TRACE_BYTES as u32).to_le_bytes());
+        out[20..24].copy_from_slice(&(groups.len() as u32).to_le_bytes());
+        for (slot, value) in [
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+            self.layout.left,
+            self.layout.top,
+            self.layout.right,
+            self.layout.bottom,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            out[24 + slot * 4..28 + slot * 4].copy_from_slice(&f32_value(value)?.to_le_bytes());
+        }
+        out[48..52].copy_from_slice(&(x_ticks.len() as u32).to_le_bytes());
+        out[52..56].copy_from_slice(&(y_ticks.len() as u32).to_le_bytes());
+
+        for (group_index, group) in groups.iter().enumerate() {
+            let descriptor =
+                BROWSER_PAINTER_HEADER_BYTES + group_index * BROWSER_PAINTER_TRACE_BYTES;
+            out[descriptor] = group.kind as u8;
+            out[descriptor + 1] = group.symbol;
+            let count = group.end - group.start;
+            out[descriptor + 4..descriptor + 8].copy_from_slice(&(count as u32).to_le_bytes());
+            let coordinate_columns = if group.kind == SceneRecordKind::Rect {
+                4
+            } else {
+                2
+            };
+            for column in 0..coordinate_columns {
+                let column_offset = out.len();
+                out[descriptor + 8 + column * 4..descriptor + 12 + column * 4]
+                    .copy_from_slice(&(column_offset as u32).to_le_bytes());
+                for record in &self.records[group.start..group.end] {
+                    out.extend_from_slice(&f32_value(record.coordinates[column])?.to_le_bytes());
+                }
+            }
+            for (column, high) in [false, true].into_iter().enumerate() {
+                let column_offset = out.len();
+                out[descriptor + 24 + column * 4..descriptor + 28 + column * 4]
+                    .copy_from_slice(&(column_offset as u32).to_le_bytes());
+                for record in &self.records[group.start..group.end] {
+                    let word = if high {
+                        (record.stable_id >> 32) as u32
+                    } else {
+                        record.stable_id as u32
+                    };
+                    out.extend_from_slice(&word.to_le_bytes());
+                }
+            }
+            let style = self.styles[group.style_ref];
+            out[descriptor + 32..descriptor + 36].copy_from_slice(&style.fill);
+            out[descriptor + 36..descriptor + 40].copy_from_slice(&style.stroke);
+            let stroke_width = if group.kind == SceneRecordKind::Scatter {
+                MarkerGeometry::new(
+                    ScatterSymbol::from_code(group.symbol),
+                    group.diameter,
+                    style.stroke_width,
+                )
+                .stroke_width
+            } else {
+                style.stroke_width
+            };
+            out[descriptor + 40..descriptor + 44]
+                .copy_from_slice(&f32_value(stroke_width)?.to_le_bytes());
+            out[descriptor + 44..descriptor + 48]
+                .copy_from_slice(&f32_value(group.diameter)?.to_le_bytes());
+        }
+        let tick_offset = out.len();
+        let tick_bytes = tick_count
+            .checked_mul(BROWSER_PAINTER_TICK_BYTES)
+            .ok_or(SceneError::Limit)?;
+        let string_offset = tick_offset
+            .checked_add(tick_bytes)
+            .ok_or(SceneError::Limit)?;
+        out[56..60].copy_from_slice(&(tick_offset as u32).to_le_bytes());
+        out[60..64].copy_from_slice(&(string_offset as u32).to_le_bytes());
+        out.resize(string_offset, 0);
+        for (tick_index, (position, label)) in x_ticks.iter().chain(&y_ticks).enumerate() {
+            let descriptor = tick_offset + tick_index * BROWSER_PAINTER_TICK_BYTES;
+            let label_offset = out.len();
+            out[descriptor..descriptor + 4].copy_from_slice(&position.to_le_bytes());
+            out[descriptor + 4..descriptor + 8]
+                .copy_from_slice(&(label_offset as u32).to_le_bytes());
+            out[descriptor + 8..descriptor + 12]
+                .copy_from_slice(&(label.len() as u32).to_le_bytes());
+            out.extend_from_slice(label.as_bytes());
+        }
+        debug_assert_eq!(out.len(), required);
         Ok(out)
     }
 }
@@ -2188,6 +2445,29 @@ mod tests {
             200,
             &mut vec![0; 240 * 200 * 4]
         ));
+        let painter = document.to_browser_painter(4096).unwrap();
+        let painter_len = painter.len();
+        assert_eq!(&painter[..4], b"XYPB");
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 3);
+        assert_eq!([painter[64], painter[128], painter[192]], [0, 1, 2]);
+        assert_eq!(
+            u32::from_le_bytes(painter[264..268].try_into().unwrap()),
+            10
+        );
+        assert_eq!(
+            u32::from_le_bytes(painter[288..292].try_into().unwrap()),
+            20
+        );
+        assert_eq!(
+            u32::from_le_bytes(painter[320..324].try_into().unwrap()),
+            30
+        );
+        assert!(u32::from_le_bytes(painter[48..52].try_into().unwrap()) >= 3);
+        assert!(u32::from_le_bytes(painter[52..56].try_into().unwrap()) >= 3);
+        assert_eq!(
+            document.to_browser_painter(painter_len - 1),
+            Err(SceneError::Limit)
+        );
 
         let mut malformed = encoded;
         malformed[4] = 99;
