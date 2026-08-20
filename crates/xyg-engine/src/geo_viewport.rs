@@ -191,7 +191,15 @@ impl GeoViewport {
         }
         let (mx, my) = self.screen_to_mercator(screen_x, screen_y);
         match self.crs {
-            GeoCrs::Epsg4326 => Ok(mercator_to_lonlat(mx, my)),
+            GeoCrs::Epsg4326 => {
+                let mx = if self.world_wrap {
+                    let world_m = 2.0 * WEB_MERCATOR_MAX;
+                    (mx + WEB_MERCATOR_MAX).rem_euclid(world_m) - WEB_MERCATOR_MAX
+                } else {
+                    mx
+                };
+                Ok(mercator_to_lonlat(mx, my))
+            }
             GeoCrs::Epsg3857 => Ok((
                 mx.clamp(-WEB_MERCATOR_MAX, WEB_MERCATOR_MAX),
                 my.clamp(-WEB_MERCATOR_MAX, WEB_MERCATOR_MAX),
@@ -203,10 +211,7 @@ impl GeoViewport {
     ///
     /// Returns interleaved `[sx0,sy0,…]` plus the f64 encode origin used so
     /// deep zoom stays precise (§4/§16). Non-finite inputs fail before output.
-    pub fn project_offset_f32(
-        &self,
-        xy: &[f64],
-    ) -> Result<(Vec<f32>, f64, f64), GeoError> {
+    pub fn project_offset_f32(&self, xy: &[f64]) -> Result<(Vec<f32>, f64, f64), GeoError> {
         if !xy.len().is_multiple_of(2) {
             return Err(GeoError::InvalidArgument);
         }
@@ -269,8 +274,14 @@ impl GeoViewport {
                 if max_y < min_y {
                     return Err(GeoError::InvalidArgument);
                 }
-                let (x0, y0) = lonlat_to_mercator(west, min_y);
-                let (x1, y1) = lonlat_to_mercator(east, max_y);
+                // `east` may intentionally exceed 180 degrees so a
+                // dateline-crossing interval remains the short interval.
+                // The general converter normalizes longitude and would turn
+                // 170..190 into the incorrect 340-degree span here.
+                let x0 = EARTH_RADIUS_M * west.to_radians();
+                let x1 = EARTH_RADIUS_M * east.to_radians();
+                let (_, y0) = lonlat_to_mercator(0.0, min_y);
+                let (_, y1) = lonlat_to_mercator(0.0, max_y);
                 (x0.min(x1), y0.min(y1), x0.max(x1), y0.max(y1))
             }
             GeoCrs::Epsg3857 => {
@@ -314,31 +325,45 @@ impl GeoViewport {
 
     /// Pan so `center` becomes the camera center (source CRS units).
     pub fn set_center(&mut self, x: f64, y: f64) -> Result<(), GeoError> {
-        self.center_x = x;
-        self.center_y = y;
-        if self.crs == GeoCrs::Epsg4326 && self.world_wrap {
-            self.center_x = normalize_lon(self.center_x);
+        let mut next = *self;
+        next.center_x = x;
+        next.center_y = y;
+        if next.crs == GeoCrs::Epsg4326 && next.world_wrap {
+            next.center_x = normalize_lon(next.center_x);
         }
-        self.validate()
+        next.validate()?;
+        *self = next;
+        Ok(())
     }
 
     /// Set MapLibre-style zoom.
     pub fn set_zoom(&mut self, zoom: f64) -> Result<(), GeoError> {
-        self.zoom = zoom;
-        self.validate()
+        let mut next = *self;
+        next.zoom = zoom;
+        next.validate()?;
+        *self = next;
+        Ok(())
     }
 
     /// Resize the CSS pixel viewport.
     pub fn resize(&mut self, width: f64, height: f64) -> Result<(), GeoError> {
-        self.width = width;
-        self.height = height;
-        self.validate()
+        let mut next = *self;
+        next.width = width;
+        next.height = height;
+        next.validate()?;
+        *self = next;
+        Ok(())
     }
 
     fn mercator_to_screen(&self, mx: f64, my: f64) -> (f64, f64) {
         let (cx, cy) = self.center_mercator();
         let scale = 1.0 / self.metres_per_pixel();
-        let mut dx = (mx - cx) * scale;
+        let mut dx_m = mx - cx;
+        if self.crs == GeoCrs::Epsg4326 && self.world_wrap {
+            let world_m = 2.0 * WEB_MERCATOR_MAX;
+            dx_m -= (dx_m / world_m).round() * world_m;
+        }
+        let mut dx = dx_m * scale;
         let mut dy = (cy - my) * scale; // screen +y is down
         if self.bearing_deg != 0.0 {
             let rad = self.bearing_deg.to_radians();
@@ -393,7 +418,10 @@ pub fn lonlat_to_mercator(lon_deg: f64, lat_deg: f64) -> (f64, f64) {
     let lon = normalize_lon(lon_deg);
     let lat = clamp_lat(lat_deg);
     let x = EARTH_RADIUS_M * lon.to_radians();
-    let y = EARTH_RADIUS_M * (std::f64::consts::FRAC_PI_4 + lat.to_radians() / 2.0).tan().ln();
+    let y = EARTH_RADIUS_M
+        * (std::f64::consts::FRAC_PI_4 + lat.to_radians() / 2.0)
+            .tan()
+            .ln();
     (
         x.clamp(-WEB_MERCATOR_MAX, WEB_MERCATOR_MAX),
         y.clamp(-WEB_MERCATOR_MAX, WEB_MERCATOR_MAX),
@@ -514,9 +542,49 @@ mod tests {
         let mut vp = denver();
         // Dateline-crossing bbox: 170E .. 170W (= -170)
         vp.fit_bounds(170.0, -10.0, -170.0, 10.0, 20.0).unwrap();
-        assert!(vp.center_x.abs() > 170.0 || vp.center_x.abs() < 10.0);
-        // World-wrap path should yield a finite, in-range camera.
-        vp.validate().unwrap();
+        assert_eq!(vp.center_x, 180.0);
+        assert!(vp.zoom > 3.0, "20-degree span must not fit as 340 degrees");
+        let (west_x, _) = vp.project(170.0, 0.0).unwrap();
+        let (east_x, _) = vp.project(-170.0, 0.0).unwrap();
+        assert!(west_x >= 20.0 - 1.0);
+        assert!(east_x <= vp.width - 20.0 + 1.0);
+        assert!(west_x < east_x);
+    }
+
+    #[test]
+    fn world_wrap_projects_across_dateline_by_shortest_path() {
+        let vp = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            179.0,
+            0.0,
+            5.0,
+            800.0,
+            600.0,
+            0.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        let (sx, _) = vp.project(-179.0, 0.0).unwrap();
+        assert!(sx > 400.0 && sx < 600.0);
+        let (lon, lat) = vp.unproject(sx, 300.0).unwrap();
+        assert!((lon - -179.0).abs() < tolerances::LONLAT_DEG);
+        assert!(lat.abs() < tolerances::LONLAT_DEG);
+    }
+
+    #[test]
+    fn rejected_mutations_leave_camera_valid_and_unchanged() {
+        let mut vp = denver();
+        let original = vp;
+        assert_eq!(
+            vp.set_center(f64::NAN, 0.0),
+            Err(GeoError::NonFiniteCoordinate)
+        );
+        assert_eq!(vp, original);
+        assert_eq!(vp.set_zoom(25.0), Err(GeoError::InvalidArgument));
+        assert_eq!(vp, original);
+        assert_eq!(vp.resize(0.0, 600.0), Err(GeoError::InvalidArgument));
+        assert_eq!(vp, original);
     }
 
     #[test]
@@ -535,18 +603,8 @@ mod tests {
     #[test]
     fn rejects_non_finite_and_bad_size() {
         assert_eq!(
-            GeoViewport::new(
-                GeoCrs::Epsg4326,
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                100.0,
-                0.0,
-                0.0,
-                false
-            )
-            .unwrap_err(),
+            GeoViewport::new(GeoCrs::Epsg4326, 0.0, 0.0, 1.0, 0.0, 100.0, 0.0, 0.0, false)
+                .unwrap_err(),
             GeoError::InvalidArgument
         );
         let vp = denver();
@@ -559,18 +617,8 @@ mod tests {
     #[test]
     fn epsg3857_center_round_trips_through_screen() {
         let (mx, my) = lonlat_to_mercator(-104.9903, 39.7392);
-        let vp = GeoViewport::new(
-            GeoCrs::Epsg3857,
-            mx,
-            my,
-            8.0,
-            640.0,
-            480.0,
-            0.0,
-            0.0,
-            false,
-        )
-        .unwrap();
+        let vp =
+            GeoViewport::new(GeoCrs::Epsg3857, mx, my, 8.0, 640.0, 480.0, 0.0, 0.0, false).unwrap();
         let (sx, sy) = vp.project(mx + 1000.0, my - 500.0).unwrap();
         let (x2, y2) = vp.unproject(sx, sy).unwrap();
         assert!((x2 - (mx + 1000.0)).abs() < tolerances::MERCATOR_M);
