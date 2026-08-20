@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Build a self-contained "Bad Apple" animation player powered by xy.
+"""Build a self-contained "Bad Apple" animation player powered by XYG.
 
 Every frame of the source video is downsampled to a small grid, thresholded to
-1 bit per cell, and the *ink* cells become points in an xy scatter. The player
-drives xy's real streaming-append render path (``ChartView._applyAppend``) once
+1 bit per cell, and the *ink* cells become points in an XYG scatter. The player
+drives XYG's real streaming-append render path (``ChartView._applyAppend``) once
 per frame, so what you see is the production WebGL2 renderer redrawing a fresh
 scatter ~20 times a second — the same code path a live dashboard uses (§5/§29).
 
 Transport is deliberately tiny: frames ship as a gzipped bit-packed mask
 (one bit per grid cell), inflated in the browser via ``DecompressionStream`` and
-turned back into xy payload buffers client-side. A 3.5-minute clip at 120x90 /
+turned back into XYG payload buffers client-side. A 3.5-minute clip at 120x90 /
 20 fps is a couple of MB, not tens.
 
 The soundtrack (extracted from the same clip) is embedded and acts as the
@@ -246,7 +246,7 @@ def main() -> None:
         "fps": args.fps,
         "bytes_per_frame": bytes_per_frame,
         "max_ink": max_ink,
-        # decode metadata the client needs to rebuild xy payload buffers:
+        # decode metadata the client needs to rebuild XYG payload buffers:
         "x_offset": cols[0]["offset"],
         "x_scale": cols[0]["scale"],
         "y_offset": cols[1]["offset"],

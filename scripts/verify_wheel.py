@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify xy wheel artifacts before upload/install smoke tests.
+"""Verify xyg wheel artifacts before upload/install smoke tests.
 
 The source checkout can pass every test while the wheel is still broken: missing
 static JS, no `py.typed`, a native build tagged pure, or generated junk bundled

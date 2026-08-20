@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Verify the lazy public API surface is coherent.
 
-`xy.__init__` intentionally hand-maintains two things:
+`xyg.__init__` intentionally hand-maintains two things:
 
-- `__all__`, the names users can import from `xy`
+- `__all__`, the names users can import from `xyg`
 - `_EXPORTS`, the lazy export map that keeps `import xyg` lightweight
 
 That is a good shape for import-time performance, but it is easy to forget one
@@ -295,7 +295,7 @@ def validate_version_consistency(pkg: ModuleType, distribution: str = "xyg") -> 
 
     pyproject holds no version to compare against — it is derived from the git
     tag at build time — so installed metadata is the reference. The check that
-    remains is worth keeping: `xy.__version__` is resolved lazily through
+    remains is worth keeping: `xyg.__version__` is resolved lazily through
     ``__getattr__``, and this is what catches it resolving to something other
     than the version pip actually installed (a stale editable install shadowing
     a wheel, say), rather than merely to *some* non-empty string.
@@ -307,7 +307,7 @@ def validate_version_consistency(pkg: ModuleType, distribution: str = "xyg") -> 
         installed_version = distribution_version(distribution)
     except PackageNotFoundError:
         return [
-            f"distribution {distribution!r} is not installed, so xy.__version__ "
+            f"distribution {distribution!r} is not installed, so xyg.__version__ "
             "cannot be checked — run this against an installed package"
         ]
 
@@ -516,7 +516,7 @@ def check_fresh_import_budget(
             f"{label} import xyg took {elapsed_ms:.1f} ms; budget is {IMPORT_BUDGET_MS:.0f} ms"
         )
     if not result.get("version"):
-        errors.append(f"{label} fresh import-budget probe did not expose xy.__version__")
+        errors.append(f"{label} fresh import-budget probe did not expose xyg.__version__")
     return errors
 
 

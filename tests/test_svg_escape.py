@@ -1,6 +1,6 @@
 """The vendored XML escaper must never drift from the stdlib it replaced.
 
-`xy._svg.escape` is a local copy of `xml.sax.saxutils.escape` (see the docstring
+`xyg._svg.escape` is a local copy of `xml.sax.saxutils.escape` (see the docstring
 there for why). These tests are the drift guard: they import the stdlib version
 *inside the test* — never at module import of xy — and compare outputs.
 """

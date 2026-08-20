@@ -1,9 +1,9 @@
-"""CodSpeed benchmarks for ``xy.pyplot`` shim overhead versus the raw API.
+"""CodSpeed benchmarks for ``xyg.pyplot`` shim overhead versus the raw API.
 
 Every workload here is one chart expressed twice over the same input arrays
 and ending in the same terminal work: once through the public declarative API
-(``xy.chart`` + marks) and once through the identical Matplotlib-style calls
-in ``xy.pyplot``. Both arms finish at the engine's split wire payload (or PNG
+(``xyg.chart`` + marks) and once through the identical Matplotlib-style calls
+in ``xyg.pyplot``. Both arms finish at the engine's split wire payload (or PNG
 bytes for the export pair), so the gap between a ``*_pyplot`` row and its
 ``*_raw`` twin is exactly what the shim adds — Matplotlib-call translation,
 fmt-string parsing, and figure-lifecycle bookkeeping. Everything below the
@@ -326,7 +326,7 @@ def test_build_histogram_pyplot(benchmark, hist_values):
     """Same histogram via ax.hist, including its return-tuple construction.
 
     ax.hist pre-bins with NumPy (it must return matplotlib's (n, bins,
-    patches) tuple) and ships bar geometry, while xy.histogram bins natively
+    patches) tuple) and ships bar geometry, while xyg.histogram bins natively
     and ships rect columns — so the two arms' payload layouts differ. Both
     must stay bounded by bin count, never by the observation count.
     """

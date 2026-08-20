@@ -1,4 +1,4 @@
-"""Steady-state ``xy.pyplot`` versus Matplotlib/Agg benchmark.
+"""Steady-state ``xyg.pyplot`` versus Matplotlib/Agg benchmark.
 
 This is the apples-to-apples companion to the broader cross-library harnesses.
 Every case uses the same Matplotlib-style calls, the same already-generated
@@ -510,7 +510,7 @@ def _fmt_bytes(value: int) -> str:
 def to_markdown(report: dict[str, Any]) -> str:
     rows = {(row["family"], row["case"], row["library"]): row for row in report["rows"]}
     lines = [
-        "# xy.pyplot vs Matplotlib performance",
+        "# xyg.pyplot vs Matplotlib performance",
         "",
         f"Profile: `{report['profile']}`; repetitions: `{report['reps']}`; warm-ups: "
         f"`{report['warmups']}`; target: `{report['pixel_target']['width']} x "

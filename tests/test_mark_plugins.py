@@ -200,7 +200,7 @@ def test_a_plugin_cannot_reach_the_figure(hilo) -> None:
 
 
 def test_a_plugin_cannot_claim_a_name_that_xy_mark_binds_itself() -> None:
-    # `xy.mark(name=...)` is the series label, so a plugin column called `name`
+    # `xyg.mark(name=...)` is the series label, so a plugin column called `name`
     # could never be passed — the value would bind to the parameter and the
     # column would resolve to None. Reject the schema, not the call site.
     for reserved in ("name", "style", "data", "x_axis", "key"):

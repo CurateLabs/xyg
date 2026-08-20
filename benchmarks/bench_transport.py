@@ -1,9 +1,9 @@
 """Loopback transport benchmark for the transport-neutral channel dispatcher.
 
 This harness measures the current Reflex prototype shape (base64 buffers inside
-JSON) against xy's production versioned binary frame.
+JSON) against XYG's production versioned binary frame.
 
-Both HTTP endpoints call :func:`xy.channel.handle_message`; only their response
+Both HTTP endpoints call :func:`xyg.channel.handle_message`; only their response
 encoding differs.  The optional Chromium probe fetches and decodes both formats
 from the same loopback server and waits for the next animation frame after each
 decode.  It does not claim request-to-pixels or GPU-upload latency.

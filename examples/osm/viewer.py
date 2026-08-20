@@ -1,6 +1,6 @@
 """Interactive browser viewer for an out-of-core OSM node scatter.
 
-Serves xy's real WebGL render client (`python/xyg/static/index.js`) against a
+Serves XYG's real WebGL render client (`python/xyg/static/index.js`) against a
 disk-backed density-scatter Figure. Pan/zoom drive the same kernel protocol the
 notebook widget uses (`channel.handle_message`), so every viewport is
 re-aggregated from the density pyramid — screen-bounded, at 1B+ points.

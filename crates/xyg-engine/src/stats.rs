@@ -319,7 +319,7 @@ pub struct WindRoseBins {
 ///
 /// When `speed_edges` is `None`, quartile upper edges are derived from the
 /// finite speeds (3-significant-figure rounding, top edge ceiled to cover the
-/// fastest observation — matching the Python `xy.wind_rose` factory). When
+/// fastest observation — matching the Python `xyg.wind_rose` factory). When
 /// `Some`, edges are uniqued/sorted and must be finite with the top edge at
 /// least the fastest finite speed. Directions use north-zero, clockwise sector
 /// centres: a bearing of 0 belongs to the sector centred on north.

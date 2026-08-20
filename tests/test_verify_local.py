@@ -614,8 +614,8 @@ def test_makefile_exposes_prebuilt_artifact_verification_shortcut() -> None:
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
 
     assert "check-artifacts:" in makefile
-    assert "Set SDIST=/path/to/xy.tar.gz" in makefile
-    assert "Set WHEEL=/path/to/xy.whl" in makefile
+    assert "Set SDIST=/path/to/xyg.tar.gz" in makefile
+    assert "Set WHEEL=/path/to/xyg.whl" in makefile
     assert "scripts/verify_local.py --packaging" in makefile
     assert "--sdist" in makefile
     assert "--wheel" in makefile

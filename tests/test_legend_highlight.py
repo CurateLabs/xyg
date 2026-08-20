@@ -1,7 +1,7 @@
 """Legend entry labels and hover-highlight emphasis.
 
 Python side: a continuous color encoding built from a column name carries that
-name onto the wire (`color.label`); `xy.legend(highlight=...)` gates the hover
+name onto the wire (`color.label`); `xyg.legend(highlight=...)` gates the hover
 behavior. There is no generic fallback label — a trace with neither a name nor
 a label renders no legend row (matching the static exporters).
 

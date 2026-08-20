@@ -14,7 +14,7 @@ via `inspect.getsource`.
    ``reflex_xy.append``.
 4. **Data computed from ``on_view_change``.** Pan/zoom an overview scatter; a
    detail figure recomputes from the window the view-change event reports.
-5. **Fixed data, two ways.** A ``xy.Chart`` passed straight to
+5. **Fixed data, two ways.** A ``xyg.Chart`` passed straight to
    ``reflex_xy.chart`` (static payload tier) and a ``reflex_xy.inline`` token
    (fixed data served through the kernel).
 6. **The drilldown, adapter-native.** The 100M-point live drilldown
@@ -46,6 +46,7 @@ import numpy as np
 import reflex as rx
 
 import reflex_xy
+import xyg
 import xyg as xy
 from reflex_xy.tokens import BUILDER_ATTR
 
@@ -87,7 +88,7 @@ async def _magnitudes() -> tuple[np.ndarray, np.ndarray]:
 # --- fixed-data charts (module scope) ---------------------------------------
 
 
-def sparkline_chart() -> xy.Chart:
+def sparkline_chart() -> xyg.Chart:
     """A fixed chart passed directly to ``reflex_xy.chart``, which compiles it
     to a static payload asset."""
     t = np.linspace(0.0, 6.0 * np.pi, 4000)
@@ -102,7 +103,7 @@ def sparkline_chart() -> xy.Chart:
     )
 
 
-def orbits_chart() -> xy.Chart:
+def orbits_chart() -> xyg.Chart:
     """Fixed data registered with ``reflex_xy.inline`` and served through the
     kernel for hover/pick under a content-addressed token."""
     rng = np.random.default_rng(3)
@@ -127,11 +128,11 @@ ORBITS_TOKEN = reflex_xy.inline(orbits_chart())
 # --- legend interactivity (§7) ----------------------------------------------
 
 
-def legend_series_chart() -> xy.Chart:
+def legend_series_chart() -> xyg.Chart:
     """Three named series on the direct tier. Hovering a legend row dims the
     other series; clicking a row hides its series — a pure client hide (0 wire
     bytes), so both work even on this static-payload chart. Defaults are on;
-    ``xy.legend(highlight=False)`` / ``xy.legend(toggle=False)`` opt out."""
+    ``xyg.legend(highlight=False)`` / ``xyg.legend(toggle=False)`` opt out."""
     rng = np.random.default_rng(7)
     marks = [
         xy.scatter(
@@ -148,7 +149,7 @@ def legend_series_chart() -> xy.Chart:
     ]
     return xy.scatter_chart(
         *marks,
-        xy.legend(),
+        xyg.legend(),
         xy.x_axis(label="x"),
         xy.y_axis(label="y"),
         title="named series — hover dims, click hides",
@@ -157,7 +158,7 @@ def legend_series_chart() -> xy.Chart:
     )
 
 
-def legend_category_chart() -> xy.Chart:
+def legend_category_chart() -> xyg.Chart:
     """One categorical density scatter: a legend row per category. Clicking a
     row sends ``legend_toggle`` over the app websocket; the kernel drops that
     category before re-binning the density surface (§34 — the reply's binning
@@ -172,7 +173,7 @@ def legend_category_chart() -> xy.Chart:
     labels = np.array(["sensor A", "sensor B", "sensor C"])[cat]
     return xy.scatter_chart(
         xy.scatter(x, y, color=labels, opacity=0.7, density=True),
-        xy.legend(),
+        xyg.legend(),
         xy.x_axis(label="x"),
         xy.y_axis(label="y"),
         title="categorical density — click a row to mask & re-bin",
@@ -221,7 +222,7 @@ def _point_label(n: int) -> str:
     return f"{n:,}"
 
 
-def drilldown_chart(n: int = DRILLDOWN_POINTS) -> xy.Chart:
+def drilldown_chart(n: int = DRILLDOWN_POINTS) -> xyg.Chart:
     """The ``examples/fastapi`` live-drilldown scatter: same seed, same chunked
     generation, same mark config. That app wires the chart through its own
     HTTP transport (a Starlette endpoint plus a comm bridge); here the
@@ -292,7 +293,7 @@ class Demo(rx.State):
     visible: int = 0
 
     @reflex_xy.figure
-    def cloud(self) -> xy.Chart:
+    def cloud(self) -> xyg.Chart:
         x, y, mag = _cloud(POINTS)
         return xy.scatter_chart(
             xy.scatter(x, y, color=mag, colormap="viridis", opacity=0.8, density=True),
@@ -310,7 +311,7 @@ class Demo(rx.State):
         )
 
     @reflex_xy.figure
-    async def histogram(self) -> xy.Chart:
+    async def histogram(self) -> xyg.Chart:
         # Reads `bins` and the selection window; changing either re-publishes
         # the figure. The async builder may await a data source.
         x, mag = await _magnitudes()
@@ -326,7 +327,7 @@ class Demo(rx.State):
         )
 
     @reflex_xy.figure
-    def live(self) -> xy.Chart:
+    def live(self) -> xyg.Chart:
         return xy.line_chart(
             xy.line(np.array([0.0]), np.array([0.0])),
             title="live stream",
@@ -335,7 +336,7 @@ class Demo(rx.State):
         )
 
     @reflex_xy.figure
-    def overview(self) -> xy.Chart:
+    def overview(self) -> xyg.Chart:
         x, y = _scan(120_000)
         return xy.scatter_chart(
             xy.scatter(x, y, opacity=0.5, density=True),
@@ -348,7 +349,7 @@ class Demo(rx.State):
         )
 
     @reflex_xy.figure
-    def detail(self) -> xy.Chart:
+    def detail(self) -> xyg.Chart:
         # Recomputed from the window the overview last reported through
         # `on_view_change`: a histogram of only the y-values currently in view.
         x, y = _scan(120_000)
@@ -681,7 +682,7 @@ def index() -> rx.Component:
             ),
             section(
                 "5 · Fixed data, two ways",
-                "Left: a xy.Chart passed straight to reflex_xy.chart, compiled to "
+                "Left: a xyg.Chart passed straight to reflex_xy.chart, compiled to "
                 "a static payload asset. Right: a reflex_xy.inline token, whose "
                 "fixed data answers hover/pick from the kernel.",
                 fixed_view(),
@@ -705,7 +706,7 @@ def index() -> rx.Component:
                 "scatter served by the kernel — a category click sends "
                 "legend_toggle over the app websocket and the surface is "
                 "re-binned with the category masked out (§34). Both default "
-                "on: xy.legend(highlight=False) / xy.legend(toggle=False) "
+                "on: xyg.legend(highlight=False) / xyg.legend(toggle=False) "
                 "opt out.",
                 legend_view(),
                 code_accordion(legend_series_chart, legend_category_chart, legend_view),

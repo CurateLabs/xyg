@@ -1,4 +1,4 @@
-"""Many-chart dashboard benchmark for xy.
+"""Many-chart dashboard benchmark for XYG.
 
 Single-chart performance does not predict dashboard performance: pages can fail
 because the total JS/data payload is too heavy or because too many canvases

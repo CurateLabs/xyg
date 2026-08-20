@@ -1927,7 +1927,7 @@ def test_interaction_config_opts_a_polar_chart_back_into_zoom() -> None:
 
 def test_pyplot_polar_projection_inherits_the_zoom_default() -> None:
     """`coords="polar"` carries the default, not the helper factories, so a
-    hand-built `xy.chart(coords="polar")` and the shim's `projection="polar"`
+    hand-built `xyg.chart(coords="polar")` and the shim's `projection="polar"`
     get it too — the rule belongs to the coordinate system, and there is one of
     it rather than one per factory."""
     import xyg.pyplot as plt

@@ -27,7 +27,7 @@ FIRST, LAST = 0x20, 0x7E
 # advance, no warning — while the same chart's SVG rendered it correctly.
 # Ranges, not a hand-typed string, so the coverage is auditable.
 _LATIN = "".join(chr(c) for c in [*range(0x00C0, 0x0180)] if chr(c).isalpha())
-# Currency beyond ASCII `$`. `xy.y_axis(format="€,.0f")` is a first-class
+# Currency beyond ASCII `$`. `xyg.y_axis(format="€,.0f")` is a first-class
 # feature, so its symbol has to survive to_png().
 _CURRENCY = "¢£¤¥₣₤₦₩₪₫€₭₮₱₲₴₹₺₽₿"
 # Extra codepoints for the pyplot shim's TeX-subset → unicode conversion

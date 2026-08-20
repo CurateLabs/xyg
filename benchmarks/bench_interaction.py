@@ -1,4 +1,4 @@
-"""Browser interaction benchmark for xy.
+"""Browser interaction benchmark for XYG.
 
 This is intentionally opt-in instead of part of the core CodSpeed suite:
 headless Chromium is useful for user-visible latency, but too heavyweight and

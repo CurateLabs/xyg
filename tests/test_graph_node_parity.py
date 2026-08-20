@@ -1,7 +1,7 @@
 """Bit-identical 4-node circle layout parity: Python host vs @curatelabs/xyg-node.
 
 Shells ``node packages/xy-node/scripts/circle_layout_golden.mjs`` and compares
-f64 positions (and §29 f32 encodings) against ``xy._graph.run_layout``.
+f64 positions (and §29 f32 encodings) against ``xyg._graph.run_layout``.
 
 Run::
 

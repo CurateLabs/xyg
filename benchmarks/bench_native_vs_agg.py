@@ -1,19 +1,19 @@
-"""Apples-to-apples static-PNG raster: xy native Rust rasterizer vs Matplotlib Agg.
+"""Apples-to-apples static-PNG raster: XYG native Rust rasterizer vs Matplotlib Agg.
 
 The WebGL export path pays a browser tax (HTML parse + upload) that Matplotlib
 never does, so ``xy-webgl 15 s vs matplotlib 5.6 s`` at 100M compares different
-pipelines. THIS benchmark removes the browser from both sides: xy's built-in
+pipelines. THIS benchmark removes the browser from both sides: XYG's built-in
 Rust rasterizer (``to_png(engine=Engine.default)``) against Matplotlib's Agg backend —
 both go numpy array → CPU rasterize → PNG bytes, in one process, no browser.
 
 Fairness controls:
 - Data generation is shared and EXCLUDED from every timing.
-- Identical canvas: 900x420 px (Matplotlib figsize 9x4.2 @ DPI 100; xy scale=1).
+- Identical canvas: 900x420 px (Matplotlib figsize 9x4.2 @ DPI 100; XYG scale=1).
 - Matched marker: ~1 px, opacity 0.15 (the raw-points-study marker).
-- xy runs in DIRECT mode (``density=False``): all N points hit the rasterizer,
+- XYG runs in DIRECT mode (``density=False``): all N points hit the rasterizer,
   no density/LOD substitution — validated by asserting the scatter trace stays
   direct with a column length of exactly N.
-- Three raster arms measured: xy-native, mpl-scatter (PathCollection, what
+- Three raster arms measured: xyg-native, mpl-scatter (PathCollection, what
   ``bench_vs.py`` uses), mpl-plot (``plot(',')`` pixel marker — Matplotlib's
   fastest raw path). Reporting all three avoids cherry-picking Matplotlib.
 - Each (engine, size) runs in its own subprocess, so an OOM/segfault at one
@@ -21,7 +21,7 @@ Fairness controls:
 
 Usage:
   uv run python benchmarks/bench_native_vs_agg.py --sizes 1e6,5e6,10e6,25e6,100e6
-  uv run python benchmarks/bench_native_vs_agg.py --one xy-native 25000000
+  uv run python benchmarks/bench_native_vs_agg.py --one xyg-native 25000000
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 W, H, DPI, SEED = 900, 420, 100, 11
 MARKER_PX = 1.0
 OPACITY = 0.15
-ENGINES = ("xy-native", "mpl-scatter", "mpl-plot")
+ENGINES = ("xyg-native", "mpl-scatter", "mpl-plot")
 
 
 def _painted_fraction(png: bytes) -> float:
@@ -156,7 +156,7 @@ def _run_mpl(n: int, mode: str) -> dict[str, object]:
 
 
 def run_one(engine: str, n: int) -> dict[str, object]:
-    if engine == "xy-native":
+    if engine == "xyg-native":
         return run_xy_native(n)
     if engine == "mpl-scatter":
         return _run_mpl(n, "scatter")

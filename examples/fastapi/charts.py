@@ -1,6 +1,6 @@
 """Chart builders for the FastAPI example.
 
-Each builder is a plain ``() -> xy.Chart`` function. The app renders them with
+Each builder is a plain ``() -> xyg.Chart`` function. The app renders them with
 ``chart.to_html()`` and shows each builder's :func:`inspect.getsource` output
 in a code panel; the browser smokes import the same builders. ``GALLERY`` lists
 the builders with their display copy, and ``BY_ID`` indexes them by id.
@@ -13,10 +13,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
+import xyg
 import xyg as xy
 
 
-def line_walk() -> xy.Chart:
+def line_walk() -> xyg.Chart:
     rng = np.random.default_rng(7)
     n = 120_000
     x = np.arange(n, dtype=np.float64)
@@ -31,7 +32,7 @@ def line_walk() -> xy.Chart:
     )
 
 
-def area() -> xy.Chart:
+def area() -> xyg.Chart:
     rng = np.random.default_rng(13)
     n = 80_000
     x = np.arange(n, dtype=np.float64)
@@ -49,7 +50,7 @@ def area() -> xy.Chart:
     )
 
 
-def density_scatter() -> xy.Chart:
+def density_scatter() -> xyg.Chart:
     rng = np.random.default_rng(23)
     n = 10_000_000
     centers = np.array([[-1.4, -0.9], [-0.2, 0.8], [1.0, -0.2], [1.8, 1.1]])
@@ -66,7 +67,7 @@ def density_scatter() -> xy.Chart:
     )
 
 
-def histogram() -> xy.Chart:
+def histogram() -> xyg.Chart:
     rng = np.random.default_rng(41)
     values = np.concatenate([rng.normal(-1.2, 0.55, 250_000), rng.normal(1.4, 0.8, 250_000)])
     return xy.histogram_chart(
@@ -79,7 +80,7 @@ def histogram() -> xy.Chart:
     )
 
 
-def histogram_x_zoom() -> xy.Chart:
+def histogram_x_zoom() -> xyg.Chart:
     rng = np.random.default_rng(73)
     values = rng.lognormal(mean=4.25, sigma=0.48, size=250_000)
     return xy.histogram_chart(
@@ -93,7 +94,7 @@ def histogram_x_zoom() -> xy.Chart:
     )
 
 
-def box_zoom_drag() -> xy.Chart:
+def box_zoom_drag() -> xyg.Chart:
     rng = np.random.default_rng(107)
     values = np.concatenate([rng.normal(38, 7, 140_000), rng.normal(72, 12, 110_000)])
     return xy.histogram_chart(
@@ -107,7 +108,7 @@ def box_zoom_drag() -> xy.Chart:
     )
 
 
-def grouped_bars() -> xy.Chart:
+def grouped_bars() -> xyg.Chart:
     categories = ["Search", "Ads", "Email", "Direct", "Partner", "Social"]
     values = np.array(
         [
@@ -132,7 +133,7 @@ def grouped_bars() -> xy.Chart:
     )
 
 
-def stacked_bars() -> xy.Chart:
+def stacked_bars() -> xyg.Chart:
     quarters = ["Q1", "Q2", "Q3", "Q4"]
     values = np.array(
         [[42.0, 48.0, 54.0, 61.0], [28.0, 34.0, 37.0, 42.0], [16.0, 19.0, 24.0, 29.0]]
@@ -153,7 +154,7 @@ def stacked_bars() -> xy.Chart:
     )
 
 
-def horizontal_bars() -> xy.Chart:
+def horizontal_bars() -> xyg.Chart:
     regions = ["NA", "EU", "APAC", "LATAM", "MEA"]
     values = np.array([142.0, 128.0, 116.0, 74.0, 52.0])
     return xy.bar_chart(
@@ -166,7 +167,7 @@ def horizontal_bars() -> xy.Chart:
     )
 
 
-def normalized_bars() -> xy.Chart:
+def normalized_bars() -> xyg.Chart:
     channels = ["Organic", "Paid", "Partner", "Lifecycle", "Events"]
     values = np.array(
         [
@@ -196,7 +197,7 @@ def normalized_bars() -> xy.Chart:
     )
 
 
-def diverging_bars() -> xy.Chart:
+def diverging_bars() -> xyg.Chart:
     products = ["Core", "Cloud", "Data", "Mobile", "Support", "Labs"]
     changes = [0.34, 0.21, 0.12, -0.08, -0.17, 0.27]
     return xy.bar_chart(
@@ -232,7 +233,7 @@ def diverging_bars() -> xy.Chart:
     )
 
 
-def rounded_goal_bars() -> xy.Chart:
+def rounded_goal_bars() -> xyg.Chart:
     teams = ["Platform", "Growth", "Data", "Success", "Security"]
     completion = [92.0, 84.0, 78.0, 71.0, 63.0]
     fills = [
@@ -271,7 +272,7 @@ def rounded_goal_bars() -> xy.Chart:
     )
 
 
-def heatmap() -> xy.Chart:
+def heatmap() -> xyg.Chart:
     cols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     rows = ["00", "04", "08", "12", "16", "20"]
     z = np.array(
@@ -294,7 +295,7 @@ def heatmap() -> xy.Chart:
     )
 
 
-def composed_layers() -> xy.Chart:
+def composed_layers() -> xyg.Chart:
     data = {
         "month": np.array(["Jan", "Feb", "Mar", "Apr", "May", "Jun"]),
         "bookings": np.array([42.0, 45.0, 48.0, 52.0, 58.0, 63.0]),
@@ -332,7 +333,7 @@ def composed_layers() -> xy.Chart:
     )
 
 
-def annotated_heatmap() -> xy.Chart:
+def annotated_heatmap() -> xyg.Chart:
     rows = ["Low", "Medium", "High", "Critical"]
     cols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     risk = np.array(
@@ -386,7 +387,7 @@ def annotated_heatmap() -> xy.Chart:
     )
 
 
-def axes_scales() -> xy.Chart:
+def axes_scales() -> xyg.Chart:
     x = np.logspace(0.0, 6.0, 240)
     lx = np.log10(x)
     rank = 96.0 - lx * 11.5 + np.sin(lx * 3.0) * 3.0
@@ -412,7 +413,7 @@ def axes_scales() -> xy.Chart:
     )
 
 
-def interaction_basics() -> xy.Chart:
+def interaction_basics() -> xyg.Chart:
     x = np.linspace(0.0, 12.0, 180)
     actual = np.sin(x) + x * 0.08
     trend = x * 0.08
@@ -437,7 +438,7 @@ def interaction_basics() -> xy.Chart:
     )
 
 
-def business_overview() -> xy.Chart:
+def business_overview() -> xyg.Chart:
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
     values = np.array([[42.0, 45.0, 48.0, 51.0, 55.0, 59.0], [35.0, 38.0, 42.0, 40.0, 46.0, 50.0]])
     return xy.column_chart(
@@ -456,7 +457,7 @@ def business_overview() -> xy.Chart:
     )
 
 
-def retention_cohort() -> xy.Chart:
+def retention_cohort() -> xyg.Chart:
     cohorts = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
     weeks = ["W0", "W1", "W2", "W3", "W4", "W5"]
     retention = np.array(
@@ -486,7 +487,7 @@ class ChartInfo:
     id: str
     title: str
     subtitle: str
-    builder: Callable[[], xy.Chart]
+    builder: Callable[[], xyg.Chart]
 
 
 GALLERY: tuple[ChartInfo, ...] = (

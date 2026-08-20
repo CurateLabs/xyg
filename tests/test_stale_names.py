@@ -46,6 +46,17 @@ def test_flags_retired_python_import_path_and_public_modules(tmp_path: Path) -> 
     assert "xy Python module reference" in joined
 
 
+def test_flags_retired_artifact_and_backticked_api_docs(tmp_path: Path) -> None:
+    (tmp_path / "Makefile").write_text(
+        "WHEEL=/tmp/xy.whl\n# call `xy.legend()`\n",
+        encoding="utf-8",
+    )
+    errors = check_stale_names.check_stale_names(tmp_path)
+    joined = "\n".join(errors)
+    assert "xy wheel artifact" in joined
+    assert "backticked xy Python API" in joined
+
+
 def test_explicit_line_allow_marker_preserves_compatibility_probe(tmp_path: Path) -> None:
     (tmp_path / "compat.py").write_text(
         "import xy  # xyg-stale-name: allow - rejected legacy import\n",
@@ -69,6 +80,18 @@ def test_allows_deferred_browser_global_in_python_template(tmp_path: Path) -> No
         encoding="utf-8",
     )
     assert check_stale_names.check_stale_names(tmp_path) == []
+
+
+def test_repository_module_descriptions_reject_ambiguous_xy_product_wording(
+    tmp_path: Path,
+) -> None:
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "bench.py").write_text('"""Benchmark for the xy package."""\n', encoding="utf-8")
+    errors = check_stale_names._module_description_errors(
+        scripts / "bench.py", "scripts/bench.py", (scripts / "bench.py").read_text()
+    )
+    assert any("product/API wording" in error for error in errors)
 
 
 def test_allows_never_publish_warning_and_crate_abi_path(tmp_path: Path) -> None:

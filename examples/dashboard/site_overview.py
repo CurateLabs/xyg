@@ -1,14 +1,14 @@
 """A site-overview dashboard built from xy sparklines.
 
 Card chrome is plain HTML/CSS; every metric sparkline is a real composed
-xy chart — chrome-hidden, edge-to-edge (`padding=...`), gradient area
+XYG chart — chrome-hidden, edge-to-edge (`padding=...`), gradient area
 fills, and smooth curves. The client bundle is embedded once and each chart
 renders from its own spec + base64 blob into its card.
 
     uv run python examples/dashboard/site_overview.py       # writes site_overview.html
     uv run python examples/dashboard/site_overview.py --png  # also renders a PNG
 
-Showcases: `xy.chart(..., padding=...)`, `curve="smooth"`,
+Showcases: `xyg.chart(..., padding=...)`, `curve="smooth"`,
 `fill="linear-gradient(...)"`, `tick_label_strategy="none"`, and
 `width="100%"` responsive sizing.
 """

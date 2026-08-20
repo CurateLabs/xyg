@@ -391,7 +391,7 @@ Object.assign(ChartView.prototype, {
     // "name" is a pseudo-field: the hovered trace's series name. Rows carry
     // only a trace id, but compositions whose category lives in the mark name
     // (a pie slice, a wind-rose band) need the tooltip template to reach it —
-    // `xy.tooltip(title="{name}")` is how a pie shows category + value and
+    // `xyg.tooltip(title="{name}")` is how a pie shows category + value and
     // nothing else.
     if (field === "name") {
       const name = this._tooltipSeriesName(row);

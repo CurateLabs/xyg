@@ -1,4 +1,4 @@
-"""`xy.theme()`'s token vocabulary, and the tokens that reach a static file.
+"""`xyg.theme()`'s token vocabulary, and the tokens that reach a static file.
 
 `**tokens` used to pass any keyword straight through as a CSS declaration, so a
 typo emitted a property no renderer reads and changed nothing, silently. The

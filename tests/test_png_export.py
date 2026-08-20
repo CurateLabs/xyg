@@ -1212,7 +1212,7 @@ def test_raster_uniform_anchor_legends_keep_their_whole_frame_clip_decision(
 
 def test_the_raster_exporter_draws_annotation_labels_and_marker_glyphs() -> None:
     """The PNG path had the same gap as SVG: rule/band/arrow/marker labels were
-    never emitted, and `xy.marker()` drew nothing at all."""
+    never emitted, and `xyg.marker()` drew nothing at all."""
     import xyg._raster as raster
 
     chart = xy.line_chart(

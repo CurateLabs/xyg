@@ -126,8 +126,8 @@ def build(notebook: dict) -> dict:
             "# Cell-by-cell Matplotlib ↔ xy comparison\n",
             "\n",
             "Run all cells from the top. Every Matplotlib example is immediately followed "
-            "by its matching xy.pyplot example, using distinct plotting aliases so the two "
-            "engines do not replace one another. xy.pyplot itself flushes open figures at "
+            "by its matching xyg.pyplot example, using distinct plotting aliases so the two "
+            "engines do not replace one another. xyg.pyplot itself flushes open figures at "
             "the end of each Jupyter cell.\n",
         ],
     }

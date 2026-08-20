@@ -11,6 +11,7 @@ Stdlib only.
 from __future__ import annotations
 
 import argparse
+import ast
 import io
 import re
 import sys
@@ -26,6 +27,7 @@ SKIP_PARTS = {
     ".pytest_cache",
     ".ruff_cache",
     ".venv",
+    ".web",
     "__pycache__",
     "dist",
     "node_modules",
@@ -74,6 +76,11 @@ _ENV = r"(?<![A-Z0-9_])"
 LINE_ALLOW_MARKER = "xyg-stale-name: allow"
 NEEDLES = (
     ("python/xy package path", re.compile(r"python/xy(?:/|\b)")),
+    ("xy wheel artifact", re.compile(r"(?<![A-Za-z0-9_])xy\.(?:whl|tar\.gz)\b")),
+    (
+        "backticked xy Python API",
+        re.compile(r"`xy\.(?!renderStandalone\b|decodeFrame\b)"),
+    ),
     (
         "import xy",
         re.compile(r"(?:^|[\"';,])\s*(?:import|from)\s+xy(?:\s|\.|$)"),
@@ -102,6 +109,7 @@ NEEDLES = (
 
 _PYTHON_TEXT_XY = re.compile(r"(?<![A-Za-z0-9_])xy\.[A-Za-z_]")
 _BROWSER_GLOBALS = ("xy.renderStandalone", "xy.decodeFrame")
+_PRODUCT_DESCRIPTION_XY = re.compile(r"(?<![A-Za-z0-9_])xy(?=\.| chart\b| wheel\b| package\b|'s\b)")
 
 
 def _python_text_errors(path: Path, rel: str, text: str, *, repository_scan: bool) -> list[str]:
@@ -129,6 +137,28 @@ def _python_text_errors(path: Path, rel: str, text: str, *, repository_scan: boo
     except (IndentationError, SyntaxError, tokenize.TokenError):
         pass
     return errors
+
+
+def _module_description_errors(path: Path, rel: str, text: str) -> list[str]:
+    """Reject ambiguous XY product/API wording in current developer surfaces."""
+    if path.suffix != ".py" or not rel.startswith(("scripts/", "benchmarks/", "examples/")):
+        return []
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    doc = ast.get_docstring(tree, clean=False)
+    if not doc or LINE_ALLOW_MARKER in doc:
+        return []
+    matches = [
+        match
+        for match in _PRODUCT_DESCRIPTION_XY.finditer(doc)
+        if not doc.startswith(_BROWSER_GLOBALS, match.start())
+    ]
+    if not matches:
+        return []
+    lineno = tree.body[0].lineno if tree.body else 1
+    return [f"{rel}:{lineno}: stale XY product/API wording in module description"]
 
 
 def _skip(path: Path) -> bool:
@@ -182,6 +212,8 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
             continue
         rel = path.relative_to(root).as_posix()
         errors.extend(_python_text_errors(path, rel, text, repository_scan=repository_scan))
+        if repository_scan:
+            errors.extend(_module_description_errors(path, rel, text))
         for lineno, line in enumerate(text.splitlines(), 1):
             if LINE_ALLOW_MARKER in line:
                 continue

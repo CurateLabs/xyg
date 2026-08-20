@@ -400,7 +400,7 @@ def test_unlabeled_entries_do_not_crash_measurement():
 def test_pyplot_legend_loc_rejects_misspelled_locations():
     """Matplotlib's location vocabulary belongs to the pyplot shim.
 
-    Core ``xy.legend`` intentionally has its own vocabulary (including the
+    Core ``xyg.legend`` intentionally has its own vocabulary (including the
     documented ``"top left"`` spelling), so validating this in the shared
     component is a core API regression rather than a pyplot compatibility fix.
     """

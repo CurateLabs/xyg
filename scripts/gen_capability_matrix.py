@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate `spec/api/capability-matrix.md` from `xy.styling.capabilities`.
+"""Generate `spec/api/capability-matrix.md` from `xyg.styling.capabilities`.
 
 The committed table is an artifact, never hand-edited. `--check` fails when it
 has fallen behind the registry, and `tests/test_capability_registry.py` runs

@@ -1,1 +1,1 @@
-"""Benchmark entrypoints for xy."""
+"""Benchmark entrypoints for XYG."""

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Live xy chart host for the UX benchmark: production client, production wire.
+"""Live XYG chart host for the UX benchmark: production client, production wire.
 
 Runs as a child process. Serves one page whose JS imports `ChartView` from the
 shipped ESM bundle and connects it to this process over a real WebSocket. The
 bridge is `channel.handle_message` — the same dispatcher the widget and Reflex
 adapters use — so deep zoom drills to exact rows exactly as a live chart does.
-This is the interactive xy chart; the standalone HTML export is not measured.
+This is the interactive XYG chart; the standalone HTML export is not measured.
 
 Wire framing (binary, both directions where buffers ride):
     u32le json_len | json bytes | buffer bytes concatenated
@@ -13,7 +13,7 @@ Wire framing (binary, both directions where buffers ride):
 Client -> server messages are plain JSON text (inbound carries no buffers).
 
 Also serves:
-    /static/*   the installed xy client bundle
+    /static/*   the installed XYG client bundle
     /oracle     ?x0=&x1=&y0=&y1= -> {"count": rows in window}  (ground truth
                 for the drill check, computed on the exact source arrays)
 
