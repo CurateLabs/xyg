@@ -2,10 +2,10 @@
 
 The *feel* is Reflex's (reflex.dev) chart components — a chart container with
 mark and axis children, snake_case keyword props, `data=` + column-name
-resolution, and `on_*` event props — but xy does **not** import or depend
-on Reflex. It's the same ergonomics on top of the xy engine (`Figure`):
+resolution, and `on_*` event props — but xyg does **not** import or depend
+on Reflex. It's the same ergonomics on top of the xyg engine (`Figure`):
 
-    import xyg as xy
+    import xyg
 
     xyg.scatter_chart(
         xyg.scatter(x="sepal_w", y="sepal_l", color="species", size="petal_l", data=df),

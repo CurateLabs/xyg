@@ -55,3 +55,19 @@ def test_reflex_adapter_namespace_unchanged_for_this_slice() -> None:
     import reflex_xy
 
     assert reflex_xy.__name__ == "reflex_xy"
+
+
+def test_package_examples_bind_the_namespace_they_reference() -> None:
+    import xyg
+    import xyg.components
+    import xyg.plugins
+
+    for module in (xyg, xyg.components, xyg.plugins):
+        doc = module.__doc__ or ""
+        namespace: dict[str, object] = {}
+        exec("import xyg", namespace)
+        assert namespace["xyg"] is xyg
+        for public_name in set(re.findall(r"\bxyg\.([A-Za-z_]\w*)", doc)):
+            assert hasattr(xyg, public_name), (
+                f"{module.__name__} documents missing xyg.{public_name}"
+            )

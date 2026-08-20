@@ -7,7 +7,7 @@ density aggregation, and a WebGL2 render client. See spec/design-dossier.md.
 One declarative API over one engine — Reflex-flavored composition with
 `on_*` event props:
 
-      import xyg as xy
+      import xyg
       xyg.scatter_chart(
           xyg.scatter(x="gdp", y="life", color="continent", size="pop", data=df),
           xyg.x_axis(label="GDP"), xyg.y_axis(label="life expectancy"),

@@ -14,7 +14,7 @@ carrying its own shader would reuse none of that, so shaders are a second
 system and can wait until something real needs one.
 
     import numpy as np
-    import xyg as xy
+    import xyg
 
     def _calc(columns):
         low, high = columns["low"], columns["high"]

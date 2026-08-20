@@ -1,6 +1,6 @@
-"""Run the public docs quickstarts against the checked-out XY package.
+"""Run the public docs quickstarts against the checked-out XYG package.
 
-CI runs this script inside the docs environment, where ``xy`` is installed
+CI runs this script inside the docs environment, where ``xyg`` is installed
 editable from the current checkout.
 """
 
@@ -147,7 +147,7 @@ def verify_standalone_html(html_path: Path, label: str) -> None:
 
 def run_quickstart(source: str, label: str) -> None:
     """Execute one docs snippet and validate its exported HTML."""
-    with TemporaryDirectory(prefix="xy-docs-quickstart-") as temp_dir:
+    with TemporaryDirectory(prefix="xyg-docs-quickstart-") as temp_dir:
         output_dir = Path(temp_dir)
         namespace: dict[str, object] = {"__name__": "__main__"}
         try:
@@ -158,9 +158,9 @@ def run_quickstart(source: str, label: str) -> None:
         except Exception as exc:
             fail(f"{label} did not run against the checkout: {type(exc).__name__}: {exc}")
 
-        xy_module = namespace.get("xy")
-        require(isinstance(xy_module, ModuleType), f"{label} did not import the xy package")
-        verify_checkout_import(xy_module, label)
+        xyg_module = namespace.get("xyg")
+        require(isinstance(xyg_module, ModuleType), f"{label} did not import the xyg package")
+        verify_checkout_import(xyg_module, label)
 
         html_files = list(output_dir.glob("*.html"))
         require(
