@@ -296,24 +296,24 @@ mod tests {
         out[88..96].copy_from_slice(&1u64.to_le_bytes());
         out[96..104].copy_from_slice(&2u64.to_le_bytes());
         out.extend_from_slice(&[0]); // kind scatter
-        while out.len() % 8 != 0 {
+        while !out.len().is_multiple_of(8) {
             out.push(0);
         }
         out.extend_from_slice(&7u64.to_le_bytes());
         out.extend_from_slice(&0u32.to_le_bytes());
-        while out.len() % 8 != 0 {
+        while !out.len().is_multiple_of(8) {
             out.push(0);
         }
         out.extend_from_slice(&8.0f64.to_le_bytes());
         out.push(0);
-        while out.len() % 8 != 0 {
+        while !out.len().is_multiple_of(8) {
             out.push(0);
         }
         for value in [0.5f64, 0.5, 0.0, 0.0] {
             out.extend_from_slice(&value.to_le_bytes());
         }
         out.extend_from_slice(&[37, 99, 235, 255, 0, 0, 0, 0]);
-        while out.len() % 8 != 0 {
+        while !out.len().is_multiple_of(8) {
             out.push(0);
         }
         out.extend_from_slice(&0.0f64.to_le_bytes());
