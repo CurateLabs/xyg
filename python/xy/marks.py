@@ -719,21 +719,47 @@ def graph(
     tier = meta["lod_tier"]
     sources = np.asarray(meta["render_sources"], dtype=np.uint64)
     targets = np.asarray(meta["render_targets"], dtype=np.uint64)
-    x0 = px[sources.astype(np.intp)]
-    y0 = py[sources.astype(np.intp)]
-    x1 = px[targets.astype(np.intp)]
-    y1 = py[targets.astype(np.intp)]
+    # Rust-owned multigraph routing: parallel offsets, self-loops, arrowheads (#33).
+    arrow_size = 0.12 if directed else 0.0
+    x0, y0, x1, y1, render_edge_index = _native.graph_edge_route_segments(
+        px,
+        py,
+        sources,
+        targets,
+        directed=bool(directed),
+        separation=0.08,
+        loop_radius=0.35,
+        arrow_size=arrow_size,
+    )
     edge_name = None if name is None else f"{name}:edges"
     node_name = None if name is None else f"{name}:nodes"
     curve = str(edge_curve or "straight").strip().lower()
+
+    def _expand_edge_values(values, label: str):
+        if values is None or np.isscalar(values) or isinstance(values, str):
+            return values
+        arr = np.asarray(values)
+        if arr.ndim == 0:
+            return values
+        if len(arr) == len(sources):
+            return arr[render_edge_index.astype(np.intp)]
+        if len(arr) == len(x0):
+            return arr
+        raise ValueError(
+            f"graph {label} length {len(arr)} must match render edges "
+            f"{len(sources)} or routed segments {len(x0)}"
+        )
+
+    edge_color_paint = _expand_edge_values(edge_color, "edge_color")
+    edge_width_paint = _expand_edge_values(edge_width, "edge_width")
     self.segments(
         x0,
         y0,
         x1,
         y1,
         name=edge_name,
-        color=edge_color,
-        width=edge_width,
+        color=edge_color_paint,
+        width=edge_width_paint,
         opacity=opacity,
         style=style,
     )
@@ -748,13 +774,13 @@ def graph(
         style=style,
     )
     # Attach GraphForge semantic rows when render LOD kept a 1:1 mapping.
-    # build_render collapses multi-edges and skips self-loops for paint; identity
-    # still rides graph meta (`source_edge_ids`, provenance, optional source tooltip tables).
+    # Direct tier preserves parallels/self-loops; routing may expand loops/arrows
+    # into multiple segments — expand tooltip rows by render_edge_index (#33).
     node_tooltips, edge_tooltips = _graph.projection_tooltip_rows(data)
     if node_tooltips is not None and len(px) == data.n_nodes:
         self.traces[-1].tooltip_rows = node_tooltips
     if edge_tooltips is not None and len(sources) == data.n_edges:
-        self.traces[-2].tooltip_rows = edge_tooltips
+        self.traces[-2].tooltip_rows = [edge_tooltips[int(i)] for i in render_edge_index.tolist()]
     # CSR matches the *render* node index space (scatter), not raw source V.
     offsets, neighbors = _native.graph_build_csr(len(px), sources, targets, directed=bool(directed))
     # §28 recorded layout/LOD decision for hosts/clients.
@@ -769,6 +795,7 @@ def graph(
         "ids": [str(i) for i in data.ids],
         "sources": sources.astype(np.uint64).tolist(),
         "targets": targets.astype(np.uint64).tolist(),
+        "render_edge_index": [int(i) for i in render_edge_index.tolist()],
         "member_of": member_of.astype(np.uint64).tolist(),
         "source_n_nodes": int(meta["source_n_nodes"]),
         "source_n_edges": int(meta["source_n_edges"]),
@@ -781,7 +808,7 @@ def graph(
         "edge_trace": len(self.traces) - 2,
     }
     if data.edge_ids:
-        # Source-indexed identity; render LOD may collapse multi-edges/self-loops.
+        # Source-indexed identity; Aggregate LOD may collapse multi-edges/self-loops.
         source_edge_ids = [str(edge_id) for edge_id in data.edge_ids]
         graph_meta["source_edge_ids"] = source_edge_ids
         if len(sources) == data.n_edges:
@@ -791,7 +818,7 @@ def graph(
     if data.edge_provenance_rows is not None:
         graph_meta["edge_provenance_rows"] = [int(v) for v in data.edge_provenance_rows.tolist()]
     if edge_tooltips is not None and len(sources) != data.n_edges:
-        # Source-indexed semantic table when paint collapsed multi-edges/loops.
+        # Source-indexed semantic table when Aggregate LOD collapsed multi-edges/loops.
         graph_meta["edge_tooltip_rows"] = edge_tooltips
     if node_tooltips is not None and len(px) != data.n_nodes:
         graph_meta["node_tooltip_rows"] = node_tooltips

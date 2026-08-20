@@ -92,7 +92,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 73;
+pub const ABI_VERSION: u32 = 74;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5581,8 +5581,9 @@ pub unsafe extern "C" fn xyg_graph_cluster_aggregate(
 /// Build a perceptually bounded render graph (§1 / graph-mark.md).
 ///
 /// Writes reduced node centroids, per-source `out_member_of`, and edges in
-/// **cluster index space** (multi-edges collapsed), all within
-/// `node_budget` / `edge_budget`. Optional viewport when `viewport_enabled != 0`.
+/// **cluster index space** (Aggregate collapses multi-edges; Direct preserves
+/// parallels/self-loops), all within `node_budget` / `edge_budget`. Optional
+/// viewport when `viewport_enabled != 0`.
 /// Records §28 tier into `out_tier` / `out_edges_kept`. Returns 0 on success.
 ///
 /// # Safety
@@ -5724,6 +5725,133 @@ pub unsafe extern "C" fn xyg_graph_build_render(
             Some(d) => {
                 *out_tier = d.tier as u32;
                 *out_edges_kept = d.edges_kept;
+                0
+            }
+            None => -1,
+        }
+    })
+}
+
+
+/// Route render-graph edges into paint segments (#33).
+///
+/// Emits deterministic parallel/reciprocal offsets, triangular self-loops, and
+/// optional directed arrowheads. `out_*` buffers must hold
+/// `n_edges * EDGE_ROUTE_SEGMENTS_PER_EDGE` slots. Writes the segment count into
+/// `out_n_segments` and returns 0 on success.
+///
+/// # Safety
+/// Non-empty input/output pointers must be valid for the documented lengths.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_edge_route_segments(
+    n_nodes: u64,
+    n_edges: u64,
+    x: *const f64,
+    y: *const f64,
+    sources: *const u64,
+    targets: *const u64,
+    directed: i32,
+    separation: f64,
+    loop_radius: f64,
+    arrow_size: f64,
+    out_x0: *mut f64,
+    out_y0: *mut f64,
+    out_x1: *mut f64,
+    out_y1: *mut f64,
+    out_edge_index: *mut u64,
+    out_n_segments: *mut u64,
+) -> i32 {
+    if n_nodes > (usize::MAX as u64)
+        || n_edges > (usize::MAX as u64)
+        || out_n_segments.is_null()
+    {
+        return -1;
+    }
+    let n = n_nodes as usize;
+    let e = n_edges as usize;
+    let Some(cap) = e.checked_mul(xyg_engine::edge_route::EDGE_ROUTE_SEGMENTS_PER_EDGE) else {
+        return -1;
+    };
+    if n > 0 && (x.is_null() || y.is_null()) {
+        return -1;
+    }
+    if e > 0 && (sources.is_null() || targets.is_null()) {
+        return -1;
+    }
+    if cap > 0
+        && (out_x0.is_null()
+            || out_y0.is_null()
+            || out_x1.is_null()
+            || out_y1.is_null()
+            || out_edge_index.is_null())
+    {
+        return -1;
+    }
+    let x = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(x, n)
+    };
+    let y = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(y, n)
+    };
+    let sources = if e == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(sources, e)
+    };
+    let targets = if e == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(targets, e)
+    };
+    let out_x0 = if cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_x0, cap)
+    };
+    let out_y0 = if cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_y0, cap)
+    };
+    let out_x1 = if cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_x1, cap)
+    };
+    let out_y1 = if cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_y1, cap)
+    };
+    let out_edge_index = if cap == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out_edge_index, cap)
+    };
+
+    ffi_guard(-1, || {
+        match xyg_engine::edge_route::edge_route_segments(
+            n_nodes,
+            x,
+            y,
+            sources,
+            targets,
+            directed != 0,
+            separation,
+            loop_radius,
+            arrow_size,
+            out_x0,
+            out_y0,
+            out_x1,
+            out_y1,
+            out_edge_index,
+        ) {
+            Some(n_seg) => {
+                *out_n_segments = n_seg;
                 0
             }
             None => -1,

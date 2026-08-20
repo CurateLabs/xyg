@@ -8,6 +8,7 @@ import {
   fromGraphForgeTables,
   graphBuildCsr,
   graphBuildRender,
+  graphEdgeRouteSegments,
   graphClusterAggregate,
   graphForceCreate,
   graphForceDestroy,
@@ -21,7 +22,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 71);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 74);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -259,6 +260,24 @@ test("looksLikeGraphForgeTables detects canonical UUID columns", () => {
   assert.equal(looksLikeGraphForgeTables(["a", "b"], [["a", "b"]]), false);
 });
 
+
+test("graphEdgeRouteSegments separates parallels and keeps source indices", () => {
+  const x = new Float64Array([0, 2, 4]);
+  const y = new Float64Array([0, 0, 0]);
+  const sources = BigUint64Array.from([0n, 0n, 2n]);
+  const targets = BigUint64Array.from([1n, 1n, 2n]);
+  const routed = graphEdgeRouteSegments(x, y, sources, targets, {
+    directed: true,
+    separation: 0.2,
+    loopRadius: 0.5,
+    arrowSize: 0.15,
+  });
+  assert.equal(routed.x0.length, 9);
+  assert.notEqual(routed.y0[0], routed.y0[3]);
+  const loopCount = [...routed.edgeIndex].filter((v) => Number(v) === 2).length;
+  assert.equal(loopCount, 3);
+});
+
 test("composeGraph GraphForge tables preserve edge identity and node tooltips", () => {
   const composed = composeGraph(AIRPORTS_NODES, AIRPORTS_EDGES, { layout: "grid", seed: 1 });
   assert.equal(composed.traces[0].kind, "segments");
@@ -267,16 +286,16 @@ test("composeGraph GraphForge tables preserve edge identity and node tooltips", 
   assert.equal(composed.traces[1].tooltip_rows[0].labels, "Airport");
   assert.deepEqual(composed.graphMeta.source_edge_ids, AIRPORTS_EDGES.edge_uuid);
   assert.equal(new Set(composed.graphMeta.source_edge_ids).size, 4);
-  if (composed.graphMeta.sources.length === AIRPORTS_EDGES.edge_uuid.length) {
-    assert.deepEqual(composed.graphMeta.edge_ids, AIRPORTS_EDGES.edge_uuid);
-  } else {
-    assert.equal(composed.graphMeta.edge_ids, undefined);
-  }
+  assert.equal(composed.graphMeta.sources.length, 4);
+  assert.deepEqual(composed.graphMeta.edge_ids, AIRPORTS_EDGES.edge_uuid);
   assert.deepEqual(composed.graphMeta.node_provenance_rows, [10, 11, 12]);
-  if (composed.traces[0].tooltip_rows == null) {
-    assert.equal(composed.graphMeta.edge_tooltip_rows.length, 4);
-    assert.equal(composed.graphMeta.edge_tooltip_rows[3].relationship_type, "SELF");
-  }
+  assert.ok(Array.isArray(composed.graphMeta.render_edge_index));
+  assert.equal(composed.traces[0].tooltip_rows.length, composed.graphMeta.render_edge_index.length);
+  assert.equal(
+    new Set(composed.traces[0].tooltip_rows.map((r) => r.edge_id)).size,
+    4,
+  );
+  assert.ok(composed.traces[0].tooltip_rows.some((r) => r.relationship_type === "SELF"));
 });
 
 test("figure.graph GraphForge tables ship continuous size from column name", () => {

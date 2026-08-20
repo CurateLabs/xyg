@@ -277,7 +277,7 @@ the zoom story in §1.4:
 |---|---|
 | Direct | Draw all nodes/edges under budget — sole tier that may expose per-element V/E to WebGL |
 | Edge sample | Rust samples edges when edge count E is over budget; record §28 |
-| Cluster / aggregate | Rust `xyg_graph_build_render` (and `xyg_graph_cluster_aggregate`) write centroids / reps when node count V exceeds `node_budget`, collapse multi-edges into cluster index space, and record §28; hosts keep `member_of` for drill / hover |
+| Cluster / aggregate | Rust `xyg_graph_build_render` (and `xyg_graph_cluster_aggregate`) write centroids / reps when node count V exceeds `node_budget`, collapse multi-edges into cluster index space at Aggregate tier only, and record §28; Direct / EdgeSample keep parallels and self-loops; hosts keep `member_of` for drill / hover |
 | Labels | Hide below zoom / over label budget |
 
 Budgets and tier choice live in Rust decision helpers (render-graph emission);
@@ -304,12 +304,17 @@ aggregates (§1.3).
 - Node shapes: via scatter `symbol=` (circle / square / …); no separate graph
   glyph ABI for MVP.
 - `edge_curve` meta (`straight` default): recorded on graph meta for client
-  follow-up; MVP geometry stays straight segments.
+  follow-up. Rust `xyg_graph_edge_route_segments` owns Direct-tier paint
+  geometry: deterministic parallel/reciprocal offsets, triangular self-loops,
+  and optional directed arrowheads (`render_edge_index` maps each paint
+  segment back to a render-graph edge). Bezier-class `curve` routing remains
+  a follow-up; hosts must not invent offsets.
 
 Interactive path is primary; export must not reshape the hot path (§8).
 Geometry remains segments + scatter buffers from the render graph; the client
-draws uploaded buffers only (MVP keeps straight segments regardless of
-`edge_curve` meta).
+draws uploaded buffers only. Edge routing expands some edges into multiple
+segments (loops / arrow wings) while preserving source edge identity via
+`render_edge_index`.
 
 ---
 

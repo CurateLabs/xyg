@@ -9,6 +9,7 @@
 import {
   graphBuildCsr,
   graphBuildRender,
+  graphEdgeRouteSegments,
   graphForceCreate,
   graphForceDestroy,
   graphForceTick,
@@ -458,7 +459,19 @@ export function runLayout(data, opts = {}) {
   const ry = render.y;
   const edgeS = render.edgeSources;
   const edgeT = render.edgeTargets;
-  const edgeSegments = edgeSegmentsFromPositions(rx, ry, edgeS, edgeT);
+  const routed = graphEdgeRouteSegments(rx, ry, edgeS, edgeT, {
+    directed: Boolean(data.directed),
+    separation: opts.edgeSeparation ?? 0.08,
+    loopRadius: opts.loopRadius ?? 0.35,
+    arrowSize: opts.arrowSize ?? (data.directed ? 0.12 : 0),
+  });
+  const edgeSegments = {
+    x0: routed.x0,
+    y0: routed.y0,
+    x1: routed.x1,
+    y1: routed.y1,
+  };
+  const renderEdgeIndex = routed.edgeIndex;
 
   const meta = {
     layout: layoutName,
@@ -473,6 +486,7 @@ export function runLayout(data, opts = {}) {
     member_of: render.memberOf,
     render_sources: edgeS,
     render_targets: edgeT,
+    render_edge_index: Array.from(renderEdgeIndex, (v) => Number(v)),
     node_budget: nodeBudget,
     edge_budget: edgeBudget,
     directed: Boolean(data.directed),
@@ -727,7 +741,9 @@ export function composeGraph(nodes, edges, opts = {}) {
   }
   let [nodeTooltipRows, edgeTooltipRows] = projectionTooltipRows(data);
   const nodesOneToOne = nNodes === data.ids.length;
-  const edgesOneToOne = nEdges === data.sources.length;
+  // Identity is 1:1 against render-graph edges (before loop/arrow expansion).
+  const renderEdgeCount = meta.render_sources?.length ?? meta.n_edges ?? 0;
+  const edgesOneToOne = renderEdgeCount === data.sources.length;
   if (!(nodeTooltipRows != null && nodesOneToOne)) {
     nodeTooltipRows =
       resolvedOpts.nodeTooltipRows ?? resolvedOpts.tooltipRows ?? resolvedOpts.tooltip_rows ?? null;
@@ -736,7 +752,18 @@ export function composeGraph(nodes, edges, opts = {}) {
     edgeTooltipRows =
       resolvedOpts.edgeTooltipRows ?? resolvedOpts.edge_tooltip_rows ?? null;
   }
-  // Keep auto-built projection rows for meta even when paint collapsed edges.
+  // Expand source-edge tooltips across routed segments (loops / arrow wings).
+  const renderEdgeIndex = meta.render_edge_index;
+  if (
+    edgeTooltipRows != null &&
+    edgesOneToOne &&
+    Array.isArray(renderEdgeIndex) &&
+    renderEdgeIndex.length === nEdges &&
+    edgeTooltipRows.length === renderEdgeCount
+  ) {
+    edgeTooltipRows = renderEdgeIndex.map((i) => edgeTooltipRows[Number(i)]);
+  }
+  // Keep auto-built projection rows for meta even when Aggregate collapses edges.
   const [sourceNodeTooltips, sourceEdgeTooltips] = projectionTooltipRows(data);
   if (nodeTooltipRows != null && nodeTooltipRows.length !== nNodes) {
     throw new RangeError(
@@ -806,7 +833,7 @@ export function composeGraph(nodes, edges, opts = {}) {
     edge_trace: 0,
   };
   if (data.edgeIds?.length) {
-    // Source-indexed identity; render LOD may collapse multi-edges/self-loops.
+    // Source-indexed identity; Aggregate LOD may collapse multi-edges/self-loops.
     graphMeta.source_edge_ids = data.edgeIds.map(String);
     if (edgesOneToOne) {
       graphMeta.edge_ids = graphMeta.source_edge_ids;

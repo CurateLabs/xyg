@@ -23,6 +23,7 @@ import {
   xyAbiVersion,
   xyGraphBuildCsr,
   xyGraphBuildRender,
+  xyGraphEdgeRouteSegments,
   xyGraphClusterAggregate,
   xyGraphForceCreate,
   xyGraphForceDestroy,
@@ -779,6 +780,58 @@ export function graphBuildRender(x, y, sources, targets, opts = {}) {
     edgeTargets: edgeT.subarray(0, eOut),
     tier: tier[0],
     edgesKept: edgesKept[0],
+  };
+}
+
+
+export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
+  const xArray = asF64Array(x, "x");
+  const yArray = asF64Array(y, "y");
+  requireEqualLength(xArray, yArray, "x", "y");
+  const sourceArray = asU64Array(sources, "sources");
+  const targetArray = asU64Array(targets, "targets");
+  requireEqualLength(sourceArray, targetArray, "sources", "targets");
+  const nNodes = xArray.length;
+  const nEdges = sourceArray.length;
+  const cap = nEdges * 5;
+  const outX0 = new Float64Array(cap);
+  const outY0 = new Float64Array(cap);
+  const outX1 = new Float64Array(cap);
+  const outY1 = new Float64Array(cap);
+  const outEdgeIndex = new BigUint64Array(cap);
+  const outN = new BigUint64Array(1);
+  const directed = opts.directed === false ? 0 : 1;
+  const separation = Number(opts.separation ?? 0.08);
+  const loopRadius = Number(opts.loopRadius ?? 0.35);
+  const arrowSize = Number(opts.arrowSize ?? 0.12);
+  const code = xyGraphEdgeRouteSegments(
+    toU64(nNodes, "nNodes"),
+    toU64(nEdges, "nEdges"),
+    f64Ptr(xArray),
+    f64Ptr(yArray),
+    u64Ptr(sourceArray),
+    u64Ptr(targetArray),
+    directed,
+    separation,
+    loopRadius,
+    arrowSize,
+    f64Ptr(outX0),
+    f64Ptr(outY0),
+    f64Ptr(outX1),
+    f64Ptr(outY1),
+    u64Ptr(outEdgeIndex),
+    u64Ptr(outN),
+  );
+  if (code !== 0) {
+    throw new Error(`xyg_graph_edge_route_segments failed with code ${code}`);
+  }
+  const nSeg = Number(outN[0]);
+  return {
+    x0: outX0.subarray(0, nSeg),
+    y0: outY0.subarray(0, nSeg),
+    x1: outX1.subarray(0, nSeg),
+    y1: outY1.subarray(0, nSeg),
+    edgeIndex: outEdgeIndex.subarray(0, nSeg),
   };
 }
 

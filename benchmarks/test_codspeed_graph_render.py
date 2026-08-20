@@ -168,10 +168,11 @@ def test_graph_payload_medium(benchmark):
     assert spec["graph"][0]["n_nodes"] == MEDIUM_N
     assert spec["graph"][0]["n_edges"] == MEDIUM_N
     assert [(trace["kind"], trace["n_marks"]) for trace in spec["traces"]] == [
-        ("segments", MEDIUM_N),
+        # Directed routing expands each edge into shaft + two arrow wings.
+        ("segments", MEDIUM_N * 3),
         ("scatter", MEDIUM_N),
     ]
-    assert 0 < payload_bytes < MEDIUM_N * 64
+    assert 0 < payload_bytes < MEDIUM_N * 160
 
 
 @pytest.mark.parametrize("kind", ["svg", "png"])

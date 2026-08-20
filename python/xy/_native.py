@@ -3924,6 +3924,74 @@ def graph_build_render(
     )
 
 
+EDGE_ROUTE_SEGMENTS_PER_EDGE = 5
+
+
+def graph_edge_route_segments(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    sources: npt.NDArray[np.uint64],
+    targets: npt.NDArray[np.uint64],
+    *,
+    directed: bool = True,
+    separation: float = 0.08,
+    loop_radius: float = 0.35,
+    arrow_size: float = 0.12,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint64],
+]:
+    """Route render-graph edges into paint segments (parallels, loops, arrows)."""
+    x_arr = _as_f64(x, "x")
+    y_arr = _as_f64(y, "y")
+    if len(x_arr) != len(y_arr):
+        raise ValueError("x and y must have equal length")
+    sources = _as_u64(sources, "sources")
+    targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
+    n_nodes = len(x_arr)
+    n_edges = len(sources)
+    cap = n_edges * EDGE_ROUTE_SEGMENTS_PER_EDGE
+    out_x0 = np.empty(cap, dtype=np.float64)
+    out_y0 = np.empty(cap, dtype=np.float64)
+    out_x1 = np.empty(cap, dtype=np.float64)
+    out_y1 = np.empty(cap, dtype=np.float64)
+    out_edge_index = np.empty(cap, dtype=np.uint64)
+    out_n = ctypes.c_uint64(0)
+    ok = _lib.xyg_graph_edge_route_segments(
+        ctypes.c_uint64(n_nodes),
+        ctypes.c_uint64(n_edges),
+        x_arr.ctypes.data if n_nodes else None,
+        y_arr.ctypes.data if n_nodes else None,
+        sources.ctypes.data if n_edges else None,
+        targets.ctypes.data if n_edges else None,
+        ctypes.c_int32(1 if directed else 0),
+        ctypes.c_double(float(separation)),
+        ctypes.c_double(float(loop_radius)),
+        ctypes.c_double(float(arrow_size)),
+        out_x0.ctypes.data if cap else None,
+        out_y0.ctypes.data if cap else None,
+        out_x1.ctypes.data if cap else None,
+        out_y1.ctypes.data if cap else None,
+        out_edge_index.ctypes.data if cap else None,
+        ctypes.byref(out_n),
+    )
+    if ok != 0:
+        raise ValueError("native graph_edge_route_segments failed")
+    n_seg = int(out_n.value)
+    return (
+        out_x0[:n_seg],
+        out_y0[:n_seg],
+        out_x1[:n_seg],
+        out_y1[:n_seg],
+        out_edge_index[:n_seg],
+    )
+
+
 def graph_cluster_positions(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],

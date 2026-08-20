@@ -1229,8 +1229,10 @@ pub fn cluster_aggregate(
 /// - `out_node_x` / `out_node_y`: centroids (aggregate) or direct positions
 /// - `out_member_of`: cluster index per **source** node (`u64::MAX` if the
 ///   node is outside an optional viewport and therefore not in the render set)
-/// - `out_edge_sources` / `out_edge_targets`: edges in **cluster index space**,
-///   with multi-edges between the same cluster pair collapsed to one
+/// - `out_edge_sources` / `out_edge_targets`: edges in **cluster index space**.
+///   Aggregate tiers collapse multi-edges between the same cluster pair and
+///   drop same-cluster loops; Direct / EdgeSample preserve parallels, reciprocal
+///   pairs, and self-loops (then stride-sample when over `edge_budget`).
 /// - `out_n_nodes` / `out_n_edges`: sizes of the reduced graph (`|V'|`, `|E'|`)
 /// - recorded §28 [`LodDecision`] (`tier` / `edges_kept` = `|E'|`)
 ///
@@ -1370,22 +1372,39 @@ pub fn build_render(
         out_member_of[src] = tmp_member[local];
     }
 
-    // Aggregate edges into cluster index space (collapse multi-edges).
-    // Directed key (cs, ct); skip loops and endpoints outside the render set.
-    let mut edge_set: HashMap<(u64, u64), ()> = HashMap::new();
+    // Map source edges into render (cluster) index space.
+    // Aggregate tiers collapse multi-edges and drop same-cluster loops; Direct
+    // / EdgeSample preserve parallel edges, reciprocal pairs, and self-loops so
+    // GraphForge edge identity can stay 1:1 with paint when under budget (#33).
+    let clustered = cluster_count < n_active_u64 || n_active_u64 > node_budget;
     let mut aggregated: Vec<(u64, u64)> = Vec::new();
-    for (&s, &t) in sources.iter().zip(targets.iter()) {
-        if s >= n_nodes || t >= n_nodes {
-            return None;
+    if clustered {
+        let mut edge_set: HashMap<(u64, u64), ()> = HashMap::new();
+        for (&s, &t) in sources.iter().zip(targets.iter()) {
+            if s >= n_nodes || t >= n_nodes {
+                return None;
+            }
+            let cs = out_member_of[s as usize];
+            let ct = out_member_of[t as usize];
+            if cs == u64::MAX || ct == u64::MAX || cs == ct {
+                continue;
+            }
+            let key = (cs, ct);
+            if edge_set.insert(key, ()).is_none() {
+                aggregated.push(key);
+            }
         }
-        let cs = out_member_of[s as usize];
-        let ct = out_member_of[t as usize];
-        if cs == u64::MAX || ct == u64::MAX || cs == ct {
-            continue;
-        }
-        let key = (cs, ct);
-        if edge_set.insert(key, ()).is_none() {
-            aggregated.push(key);
+    } else {
+        for (&s, &t) in sources.iter().zip(targets.iter()) {
+            if s >= n_nodes || t >= n_nodes {
+                return None;
+            }
+            let cs = out_member_of[s as usize];
+            let ct = out_member_of[t as usize];
+            if cs == u64::MAX || ct == u64::MAX {
+                continue;
+            }
+            aggregated.push((cs, ct));
         }
     }
 
@@ -1402,7 +1421,6 @@ pub fn build_render(
     *out_n_edges = kept;
 
     // Record §28 decision against the *source* graph sizes; edges_kept = |E'|.
-    let clustered = cluster_count < n_active_u64 || n_active_u64 > node_budget;
     let tier = if clustered {
         LodTier::Aggregate
     } else if kept < n_edges {
@@ -1908,6 +1926,45 @@ mod tests {
         assert_eq!(&out_x[..3], &x);
         assert_eq!(&edge_s[..2], &sources);
         assert_eq!(&edge_t[..2], &targets);
+    }
+
+    #[test]
+    fn build_render_direct_keeps_parallels_and_self_loops() {
+        let x = [0.0, 1.0, 2.0];
+        let y = [0.0, 0.0, 0.0];
+        // Two parallel 0→1, one 1→2, one self-loop on 2.
+        let sources = [0u64, 0, 1, 2];
+        let targets = [1u64, 1, 2, 2];
+        let mut out_x = [0.0; 3];
+        let mut out_y = [0.0; 3];
+        let mut member_of = [u64::MAX; 3];
+        let mut edge_s = [0u64; 4];
+        let mut edge_t = [0u64; 4];
+        let mut n_out = 0u64;
+        let mut e_out = 0u64;
+        let d = build_render(
+            3,
+            &x,
+            &y,
+            &sources,
+            &targets,
+            100,
+            100,
+            None,
+            &mut out_x,
+            &mut out_y,
+            &mut member_of,
+            &mut edge_s,
+            &mut edge_t,
+            &mut n_out,
+            &mut e_out,
+        )
+        .expect("direct multigraph");
+        assert_eq!(d.tier, LodTier::Direct);
+        assert_eq!(e_out, 4);
+        assert_eq!(&edge_s[..4], &sources);
+        assert_eq!(&edge_t[..4], &targets);
+        assert_eq!(d.edges_kept, 4);
     }
 
     #[test]

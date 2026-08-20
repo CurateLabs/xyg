@@ -54,12 +54,13 @@ def test_graphforge_ipc_preserves_parallel_edge_identity_and_node_tooltips():
         assert "edge_ids" not in meta
     assert meta["node_provenance_rows"] == [10, 11, 12]
     assert meta["edge_provenance_rows"] == [100, 101, 102, 103]
-    # Paint may collapse multi-edges/self-loops; source semantics stay on meta.
-    if edge_trace.tooltip_rows is None:
-        assert meta["edge_tooltip_rows"] is not None
-        edge_ids = [row["edge_id"] for row in meta["edge_tooltip_rows"]]
-        assert len(edge_ids) == len(set(edge_ids)) == 4
-        assert meta["edge_tooltip_rows"][3]["relationship_type"] == "SELF"
+    # Direct tier keeps all four GraphForge edges; routing expands loops/arrows.
+    assert len(meta["sources"]) == 4
+    assert meta["edge_ids"] == meta["source_edge_ids"]
+    assert edge_trace.tooltip_rows is not None
+    assert len(edge_trace.tooltip_rows) == len(meta["render_edge_index"])
+    assert {row["edge_id"] for row in edge_trace.tooltip_rows} == set(meta["source_edge_ids"])
+    assert any(row["relationship_type"] == "SELF" for row in edge_trace.tooltip_rows)
     spec, blob = fig.build_payload()
     assert "tooltip_rows" in spec["traces"][1]
     assert isinstance(blob, (bytes, memoryview, bytearray))
@@ -94,9 +95,12 @@ def test_graphforge_simple_path_ships_edge_tooltips_on_trace():
     }
     fig = Figure().graph(nodes, edges, layout="grid", seed=1)
     edge_trace = fig.traces[0]
+    meta = fig._graph_meta[0]
     assert edge_trace.tooltip_rows is not None
-    assert len(edge_trace.tooltip_rows) == 2
+    # Directed routing expands each edge into shaft + arrow wings.
+    assert len(edge_trace.tooltip_rows) == len(meta["render_edge_index"]) == 6
     assert edge_trace.tooltip_rows[0]["relationship_type"] == "ROUTE"
+    assert {row["edge_id"] for row in edge_trace.tooltip_rows} == set(meta["edge_ids"])
 
 
 def test_graphforge_graphdata_passthrough_and_column_encoding():
