@@ -942,7 +942,7 @@ jobs:
           ./smoke/bin/python - <<'PY'
           import xyg  # lazy top-level import still succeeds
 
-          assert xy.__version__
+          assert xyg.__version__
           try:
               import xyg.kernels  # noqa: F401
           except ImportError as err:

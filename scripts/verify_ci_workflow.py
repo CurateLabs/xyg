@@ -1402,6 +1402,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "Remove preinstalled Rust",
         "scripts/verify_wheel.py",
         "--expect-pure",
+        "assert xyg.__version__",
         "native Rust core",
     )
     return errors
