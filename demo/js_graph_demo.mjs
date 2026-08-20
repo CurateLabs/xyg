@@ -1,6 +1,6 @@
 // JavaScript force-directed org graph — same data/style as the Python demo.
 //
-//   XY_NATIVE_LIB=$PWD/target/release/libxy_core.dylib node demo/js_graph_demo.mjs
+//   XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.dylib node demo/js_graph_demo.mjs
 
 import fs from "node:fs";
 import path from "node:path";
