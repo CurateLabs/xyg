@@ -27,6 +27,7 @@ Machine-readable twin: [`dual-host-parity.json`](dual-host-parity.json)
 | Categorical / flow | bar, column, pie, sankey (ribbon), funnel* | `barChart` / `sankeyChart` / polar |
 | Polar | polar, radar, wind_rose | `polarChart` / `radarChart` / `windRoseChart` |
 | Graph | graph | `graphChart` / `composeGraph` |
+| GraphForge canonical graph | `from_graphforge_tables` | `fromGraphForgeTables`; ABI 60 UUID/topology/parent parity |
 | Layout | facet | `facetChart` |
 
 \*Funnel: Python ready; Node may compose via bar/ribbon helpers — track in

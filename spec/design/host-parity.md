@@ -151,6 +151,12 @@ client must not grow a parallel “JS layout/LOD” product path.
   XYG-native column/sequence formats from
   [graph-fork-requirements.md](graph-fork-requirements.md) REQ-API-3 remain
   available with the same semantics on Python and Node.
+- **REQ-HOSTPARITY-2d (MUST).** Python `from_graphforge_tables()` and Node
+  `fromGraphForgeTables()` pass canonical UUID buffers through the same ABI 60
+  `GraphProjection` handle. Rust alone validates identity/topology and maps
+  endpoints/parents to dense `u64`; hosts retain typed attributes and
+  provenance, and the browser never imports Arrow or receives UUIDs as JSON
+  numbers.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment. The same `js/src` → `@curatelabs/xyg`
   (`packages/xy-client/dist/{index,standalone}.js`) client serves Python

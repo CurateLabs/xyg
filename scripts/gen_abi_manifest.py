@@ -112,6 +112,7 @@ _POINTER_C: dict[str, str] = {
     "*mut u64": "uint64_t *",
     "*mut usize": "size_t *",
     "*mut ZoneMap": "void *",
+    "*const XygGraphProjectionDescriptor": "const void *",
     "*const *const f64": "const double *const *",
     "*const *const u8": "const uint8_t *const *",
     "*mut *const f64": "const double **",

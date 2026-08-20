@@ -8,6 +8,18 @@ the anywidget comm (`python/xy/widget.py`), the `/_xy` socket.io namespace
 ([reflex-integration.md](reflex-integration.md) §2), and the `XYBF` binary
 frame (`python/xy/_framing.py`, versioned in §7 below).
 
+### Canonical graph identity
+
+GraphForge ingestion is a host/native boundary, not a browser Arrow feature.
+Python and Node pass contiguous 16-byte UUID columns to ABI 60's opaque
+`GraphProjection` handle. Scene graph metadata names its graph instance and
+render revision and refers to binary identity and membership attachments by
+buffer index. Exact tiers carry exact node/edge membership; reduced tiers carry
+deterministic aggregate membership. UUIDs, dense `u64` endpoints, provenance
+rows, and numeric property columns are never encoded as JSON numbers. The
+browser receives only bounded paint buffers and identity references needed for
+picking; it does not import Arrow or rebuild topology.
+
 The catalog does not vary by transport: where a host sends a given message, it
 has the shape specified here, byte for byte. What varies is *which* messages a
 host sends — the Reflex wrapper resolves `view_change` in the browser and never

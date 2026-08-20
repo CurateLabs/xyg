@@ -21,9 +21,9 @@ GraphForge (and peers); this stack plots their outputs.
 
 ```text
 GraphForge / canonical graph
-        │  (ids, edges, optional attrs / preset x,y — analysis stays upstream)
+        │  (opaque node/edge UUIDs, typed attrs, provenance, optional parents)
         ▼
-Host ingest (Python or Node)  →  dense u64 indices + f64 columns
+Host Arrow adapter (Python or Node) → typed buffers/descriptors only
         ▼
 Rust C ABI (`xyg_graph_*`)
   · layout (preset / grid / circle / force / …)
@@ -147,8 +147,13 @@ xy.graph_chart(
 Node hosts mirror the same option names (TypedArrays / arrays).
 
 **Ingest (REQ-API-3):** xy-native sequences, NumPy, pandas/Arrow columns,
-edge lists, adjacency. Optional thin `from_graphforge(...)` / `from_networkx`
-helpers compile to the same buffers — never the only path.
+edge lists, adjacency. `from_graphforge_tables()` / `fromGraphForgeTables()`
+accept table-like named columns without requiring Arrow at package import.
+For the GraphForge path, Rust owns canonical 16-byte node and edge UUIDs,
+deterministic dense `u64` endpoints, directedness, and optional parent mapping.
+Hosts retain typed attribute columns, relationship labels, and provenance rows;
+they never reconstruct those columns as JSON objects. Generic graph ingest and
+`from_networkx()` remain available and compile to the same render pipeline.
 
 **Compile target:** one logical `graph` mark expands to a Rust-emitted
 **render graph** whose leaf geometry is wire traces `segments` (edges) +
@@ -301,6 +306,7 @@ draws uploaded buffers only (MVP keeps straight segments regardless of
 | `xyg_graph_lod_decision` | Recorded tier decision (§28) / render-graph inputs |
 | `xyg_graph_cluster_aggregate` | LOD node centroid clusters + node→cluster membership + recorded tier |
 | `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28 |
+| `xyg_graph_projection_create` / `counts` / `copy_*` / `destroy` | Opaque canonical GraphForge identity/topology handle; validates UUID uniqueness, endpoints, optional parents, and resource bounds |
 
 Element counts and indices are `u64` / `uint64_t`.
 

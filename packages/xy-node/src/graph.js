@@ -14,6 +14,9 @@ import {
   graphForceTick,
   graphIsProgressiveForce,
   graphLayout,
+  graphProjectionCreate,
+  graphProjectionDestroy,
+  graphProjectionRead,
 } from "./abi.js";
 
 /** Default layout name — matches Python `_graph.DEFAULT_LAYOUT`. */
@@ -27,6 +30,12 @@ export const DEFAULT_LAYOUT = "force";
  * @property {Float64Array|null} x
  * @property {Float64Array|null} y
  * @property {Record<string, unknown>} nodeAttrs
+ * @property {Array<string>} edgeIds
+ * @property {Record<string, unknown>} edgeAttrs
+ * @property {Uint8Array|null} nodeUuidBytes
+ * @property {Uint8Array|null} edgeUuidBytes
+ * @property {BigUint64Array|null} nodeProvenanceRows
+ * @property {BigUint64Array|null} edgeProvenanceRows
  * @property {boolean} directed
  * @property {number} nNodes
  * @property {number} nEdges
@@ -125,11 +134,17 @@ export function normalizeGraphInputs(nodes, edges, opts = {}) {
 
   return {
     ids,
+    edgeIds: [],
     sources,
     targets,
     x,
     y,
     nodeAttrs,
+    edgeAttrs: {},
+    nodeUuidBytes: null,
+    edgeUuidBytes: null,
+    nodeProvenanceRows: null,
+    edgeProvenanceRows: null,
     directed: Boolean(directed),
     get nNodes() {
       return this.ids.length;
@@ -137,6 +152,239 @@ export function normalizeGraphInputs(nodes, edges, opts = {}) {
     get nEdges() {
       return this.sources.length;
     },
+  };
+}
+
+function tableColumnNames(table) {
+  if (table == null || typeof table !== "object") {
+    throw graphProjectionError("GF_GRAPH_TABLE", "expected an Arrow/table-like object");
+  }
+  if (table.schema?.fields) return table.schema.fields.map((field) => String(field.name));
+  if (Array.isArray(table.columnNames)) return table.columnNames.map(String);
+  return Object.keys(table).filter((key) => typeof table[key] !== "function");
+}
+
+function tableColumn(table, name) {
+  let column;
+  if (typeof table.getChild === "function") column = table.getChild(name);
+  if (column == null && name in table) column = table[name];
+  if (column == null) {
+    throw graphProjectionError(
+      "GF_GRAPH_FIELD_MISSING",
+      `required column ${JSON.stringify(name)} is absent`,
+      { field: name },
+    );
+  }
+  if (typeof column.toArray === "function") return column.toArray();
+  if (typeof column.toJSON === "function") return column.toJSON();
+  if (typeof column[Symbol.iterator] === "function") return [...column];
+  if (Number.isInteger(column.length)) return Array.from(column);
+  throw graphProjectionError(
+    "GF_GRAPH_COLUMN_SHAPE",
+    `column ${JSON.stringify(name)} is not one-dimensional`,
+    { field: name },
+  );
+}
+
+function graphProjectionError(code, message, context = {}) {
+  const error = new Error(`${code}: ${message}`);
+  error.code = code;
+  if (context.field != null) error.field = context.field;
+  if (context.row != null) error.row = context.row;
+  return error;
+}
+
+function parseUuid(value, field, row) {
+  if (value == null) {
+    throw graphProjectionError("GF_GRAPH_UUID_NULL", "UUID values cannot be null", { field, row });
+  }
+  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
+    const bytes = value instanceof ArrayBuffer
+      ? new Uint8Array(value)
+      : new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+    if (bytes.byteLength !== 16) {
+      throw graphProjectionError("GF_GRAPH_UUID_INVALID", "binary UUID must contain 16 bytes", { field, row });
+    }
+    const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    return {
+      text: `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`,
+      bytes: Uint8Array.from(bytes),
+    };
+  }
+  const text = String(value).toLowerCase();
+  const match = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/.exec(text);
+  if (!match) {
+    throw graphProjectionError("GF_GRAPH_UUID_INVALID", `invalid UUID ${JSON.stringify(text)}`, { field, row });
+  }
+  const hex = match.slice(1).join("");
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < 16; i += 1) bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  if (bytes.every((byte) => byte === 0)) {
+    throw graphProjectionError("GF_GRAPH_UUID_INVALID", "nil UUID is not a graph identity", { field, row });
+  }
+  return { text, bytes };
+}
+
+function uuidColumn(values, field) {
+  const rows = [...values];
+  const ids = new Array(rows.length);
+  const bytes = new Uint8Array(rows.length * 16);
+  for (let row = 0; row < rows.length; row += 1) {
+    const parsed = parseUuid(rows[row], field, row);
+    ids[row] = parsed.text;
+    bytes.set(parsed.bytes, row * 16);
+  }
+  return { ids, bytes };
+}
+
+function resolveColumn(names, explicit, candidates, semantic) {
+  if (explicit != null) {
+    if (!names.includes(explicit)) {
+      throw graphProjectionError(
+        "GF_GRAPH_FIELD_MISSING",
+        `configured ${semantic} column ${JSON.stringify(explicit)} is absent`,
+        { field: explicit },
+      );
+    }
+    return explicit;
+  }
+  const matches = candidates.filter((candidate) => names.includes(candidate));
+  if (matches.length === 1) return matches[0];
+  if (matches.length === 0) {
+    throw graphProjectionError(
+      "GF_GRAPH_FIELD_MISSING",
+      `no ${semantic} column found; expected one of ${candidates.join(", ")}`,
+    );
+  }
+  throw graphProjectionError(
+    "GF_GRAPH_FIELD_AMBIGUOUS",
+    `multiple ${semantic} columns are present: ${matches.join(", ")}; provide mapping`,
+  );
+}
+
+function attributeColumns(table, names, excluded, expected) {
+  const attrs = {};
+  for (const name of names) {
+    if (excluded.has(name)) continue;
+    const column = tableColumn(table, name);
+    if (column.length !== expected) {
+      throw graphProjectionError(
+        "GF_GRAPH_COLUMN_SHAPE",
+        `attribute columns must contain ${expected} rows`,
+        { field: name },
+      );
+    }
+    attrs[name] = column;
+  }
+  return attrs;
+}
+
+/**
+ * Build identity-preserving graph data from canonical GraphForge Arrow tables.
+ * Arrow is a Node-host concern; the browser paint client never imports it.
+ */
+export function fromGraphForgeTables(nodes, edges, opts = {}) {
+  const mapping = opts.mapping ?? {};
+  const nodeNames = tableColumnNames(nodes);
+  const edgeNames = tableColumnNames(edges);
+  const nodeIdField = resolveColumn(nodeNames, mapping.node_uuid, ["node_uuid"], "node UUID");
+  const edgeIdField = resolveColumn(edgeNames, mapping.edge_uuid, ["edge_uuid"], "edge UUID");
+  const sourceField = resolveColumn(
+    edgeNames,
+    mapping.source_uuid,
+    ["src_uuid", "source_uuid"],
+    "edge source UUID",
+  );
+  const targetField = resolveColumn(
+    edgeNames,
+    mapping.target_uuid,
+    ["dst_uuid", "target_uuid"],
+    "edge target UUID",
+  );
+  const nodeUuid = uuidColumn(tableColumn(nodes, nodeIdField), nodeIdField);
+  const edgeUuid = uuidColumn(tableColumn(edges, edgeIdField), edgeIdField);
+  const sourceUuid = uuidColumn(tableColumn(edges, sourceField), sourceField);
+  const targetUuid = uuidColumn(tableColumn(edges, targetField), targetField);
+  if (sourceUuid.ids.length !== targetUuid.ids.length || sourceUuid.ids.length !== edgeUuid.ids.length) {
+    throw graphProjectionError("GF_GRAPH_EDGE_LENGTH", "edge UUID/source/target column lengths differ");
+  }
+  const parentField = mapping.parent_uuid ?? "parent_uuid";
+  let parentIds = null;
+  let parentValidity = null;
+  if (nodeNames.includes(parentField)) {
+    const rawParents = [...tableColumn(nodes, parentField)];
+    if (rawParents.length !== nodeUuid.ids.length) {
+      throw graphProjectionError("GF_GRAPH_COLUMN_SHAPE", "parent UUID column length differs from nodes", { field: parentField });
+    }
+    parentIds = new Uint8Array(nodeUuid.ids.length * 16);
+    parentValidity = new Uint8Array(nodeUuid.ids.length);
+    for (let row = 0; row < rawParents.length; row += 1) {
+      if (rawParents[row] == null) continue;
+      const parsed = parseUuid(rawParents[row], parentField, row);
+      parentIds.set(parsed.bytes, row * 16);
+      parentValidity[row] = 1;
+    }
+  }
+  let projection;
+  try {
+    const handle = graphProjectionCreate({
+      nodeIds: nodeUuid.bytes, edgeIds: edgeUuid.bytes,
+      sourceIds: sourceUuid.bytes, targetIds: targetUuid.bytes,
+      parentIds, parentValidity, directed: opts.directed ?? true,
+    });
+    try {
+      projection = graphProjectionRead(handle);
+    } finally {
+      graphProjectionDestroy(handle);
+    }
+  } catch (error) {
+    if (error?.nativeCode === -4) throw graphProjectionError("GF_GRAPH_NODE_DUPLICATE", "node UUIDs must be unique");
+    if (error?.nativeCode === -5) throw graphProjectionError("GF_GRAPH_EDGE_DUPLICATE", "edge UUIDs must be unique");
+    if (error?.nativeCode === -6) throw graphProjectionError("GF_GRAPH_ENDPOINT_MISSING", "edge endpoint or parent UUID is absent from nodes");
+    throw error;
+  }
+  const nodeProvenanceField = mapping.node_provenance_row ?? "provenance_row";
+  const edgeProvenanceField = mapping.edge_provenance_row ?? "provenance_row";
+  const nodeProvenanceRows = nodeNames.includes(nodeProvenanceField)
+    ? BigUint64Array.from(tableColumn(nodes, nodeProvenanceField), BigInt)
+    : BigUint64Array.from({ length: nodeUuid.ids.length }, (_, index) => BigInt(index));
+  const edgeProvenanceRows = edgeNames.includes(edgeProvenanceField)
+    ? BigUint64Array.from(tableColumn(edges, edgeProvenanceField), BigInt)
+    : BigUint64Array.from({ length: edgeUuid.ids.length }, (_, index) => BigInt(index));
+  if (nodeProvenanceRows.length !== nodeUuid.ids.length || edgeProvenanceRows.length !== edgeUuid.ids.length) {
+    throw graphProjectionError(
+      "GF_GRAPH_PROVENANCE_LENGTH",
+      "provenance columns must match their table row counts",
+    );
+  }
+  return {
+    ids: nodeUuid.ids,
+    edgeIds: edgeUuid.ids,
+    sources: projection.sources,
+    targets: projection.targets,
+    x: null,
+    y: null,
+    nodeAttrs: attributeColumns(
+      nodes,
+      nodeNames,
+      new Set([nodeIdField, parentField, nodeProvenanceField]),
+      nodeUuid.ids.length,
+    ),
+    edgeAttrs: attributeColumns(
+      edges,
+      edgeNames,
+      new Set([edgeIdField, sourceField, targetField, edgeProvenanceField]),
+      edgeUuid.ids.length,
+    ),
+    nodeUuidBytes: nodeUuid.bytes,
+    edgeUuidBytes: edgeUuid.bytes,
+    nodeProvenanceRows,
+    edgeProvenanceRows,
+    parentIndices: projection.parents,
+    parentValidity: projection.parentValidity,
+    directed: projection.directed,
+    get nNodes() { return this.ids.length; },
+    get nEdges() { return this.sources.length; },
   };
 }
 

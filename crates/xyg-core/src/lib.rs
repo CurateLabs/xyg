@@ -26,6 +26,7 @@ use xyg_engine::hexbin;
 use xyg_engine::kernels;
 use xyg_engine::kernels::ZoneMap;
 use xyg_engine::lod_plan;
+use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
@@ -88,7 +89,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 65;
+pub const ABI_VERSION: u32 = 66;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4062,6 +4063,269 @@ pub unsafe extern "C" fn xyg_stream_zone_maps(
 // Graph display layouts / force ticks / CSR / LOD (graph-mark.md). Indices u64.
 // ---------------------------------------------------------------------------
 
+/// Descriptor for a canonical GraphForge graph projection. Every UUID buffer
+/// is tightly packed `count * 16` bytes. Parent buffers are optional as a
+/// pair; `parent_validity[i]` is zero or one. All input is copied into Rust.
+#[repr(C)]
+pub struct XygGraphProjectionDescriptor {
+    pub node_ids: *const u8,
+    pub node_count: u64,
+    pub edge_ids: *const u8,
+    pub edge_count: u64,
+    pub source_ids: *const u8,
+    pub target_ids: *const u8,
+    pub parent_ids: *const u8,
+    pub parent_validity: *const u8,
+    pub directed: u32,
+    pub reserved: u32,
+}
+
+unsafe fn projection_uuid_slice<'a>(
+    ptr: *const u8,
+    count: u64,
+) -> Result<&'a [projection::Uuid], projection::ProjectionError> {
+    let count =
+        usize::try_from(count).map_err(|_| projection::ProjectionError::CapacityExceeded)?;
+    if count == 0 {
+        return Ok(&[]);
+    }
+    if ptr.is_null() {
+        return Err(projection::ProjectionError::InvalidArgument);
+    }
+    // `[u8; 16]` has alignment one, so any readable packed Arrow fixed-size
+    // binary buffer is valid without host-side copying or alignment repair.
+    Ok(std::slice::from_raw_parts(
+        ptr.cast::<projection::Uuid>(),
+        count,
+    ))
+}
+
+/// Create a Rust-owned canonical projection handle. Status codes are stable:
+/// 0 success; -1 bad arguments; -2 capacity overflow; -3 nil/malformed UUID;
+/// -4 duplicate node; -5 duplicate edge; -6 missing endpoint; -7 stale
+/// handle; -8 undersized output buffer.
+///
+/// # Safety
+/// `descriptor` and `out_handle` must be valid for reads/writes. Every
+/// non-empty descriptor buffer must cover its declared count (UUID buffers
+/// contain `count * 16` bytes); optional parent pointers are both null or both
+/// valid for `node_count` entries.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_projection_create(
+    descriptor: *const XygGraphProjectionDescriptor,
+    out_handle: *mut u64,
+) -> i32 {
+    if descriptor.is_null() || out_handle.is_null() {
+        return projection::ProjectionError::InvalidArgument as i32;
+    }
+    *out_handle = 0;
+    ffi_guard(projection::ProjectionError::InvalidArgument as i32, || {
+        let descriptor = &*descriptor;
+        if descriptor.reserved != 0 || descriptor.directed > 1 {
+            return projection::ProjectionError::InvalidArgument as i32;
+        }
+        let node_ids = match projection_uuid_slice(descriptor.node_ids, descriptor.node_count) {
+            Ok(value) => value,
+            Err(error) => return error as i32,
+        };
+        let edge_ids = match projection_uuid_slice(descriptor.edge_ids, descriptor.edge_count) {
+            Ok(value) => value,
+            Err(error) => return error as i32,
+        };
+        let source_ids = match projection_uuid_slice(descriptor.source_ids, descriptor.edge_count) {
+            Ok(value) => value,
+            Err(error) => return error as i32,
+        };
+        let target_ids = match projection_uuid_slice(descriptor.target_ids, descriptor.edge_count) {
+            Ok(value) => value,
+            Err(error) => return error as i32,
+        };
+        let parents = if descriptor.parent_ids.is_null() && descriptor.parent_validity.is_null() {
+            None
+        } else if descriptor.parent_ids.is_null() || descriptor.parent_validity.is_null() {
+            return projection::ProjectionError::InvalidArgument as i32;
+        } else {
+            let ids = match projection_uuid_slice(descriptor.parent_ids, descriptor.node_count) {
+                Ok(value) => value,
+                Err(error) => return error as i32,
+            };
+            let count = match usize::try_from(descriptor.node_count) {
+                Ok(value) => value,
+                Err(_) => return projection::ProjectionError::CapacityExceeded as i32,
+            };
+            Some((
+                ids,
+                std::slice::from_raw_parts(descriptor.parent_validity, count),
+            ))
+        };
+        match projection::GraphProjection::new(
+            node_ids,
+            edge_ids,
+            source_ids,
+            target_ids,
+            parents,
+            descriptor.directed == 1,
+        ) {
+            Ok(value) => {
+                *out_handle = projection::reg_insert(value);
+                0
+            }
+            Err(error) => error as i32,
+        }
+    })
+}
+
+/// Read projection counts and directedness.
+///
+/// # Safety
+/// All output pointers must be non-null and valid for one value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_projection_counts(
+    handle: u64,
+    out_nodes: *mut u64,
+    out_edges: *mut u64,
+    out_directed: *mut u32,
+) -> i32 {
+    if out_nodes.is_null() || out_edges.is_null() || out_directed.is_null() {
+        return projection::ProjectionError::InvalidArgument as i32;
+    }
+    ffi_guard(projection::ProjectionError::InvalidArgument as i32, || {
+        projection::reg_with(handle, |value| {
+            *out_nodes = value.node_ids().len() as u64;
+            *out_edges = value.edge_ids().len() as u64;
+            *out_directed = u32::from(value.directed());
+        })
+        .map_or(projection::ProjectionError::StaleHandle as i32, |_| 0)
+    })
+}
+
+unsafe fn projection_copy_ids(handle: u64, output: *mut u8, capacity: u64, nodes: bool) -> i32 {
+    ffi_guard(projection::ProjectionError::InvalidArgument as i32, || {
+        projection::reg_with(handle, |value| {
+            let ids = if nodes {
+                value.node_ids()
+            } else {
+                value.edge_ids()
+            };
+            if capacity < ids.len() as u64 {
+                return projection::ProjectionError::OutputCapacity as i32;
+            }
+            if !ids.is_empty() && output.is_null() {
+                return projection::ProjectionError::InvalidArgument as i32;
+            }
+            if !ids.is_empty() {
+                std::ptr::copy_nonoverlapping(ids.as_ptr().cast::<u8>(), output, ids.len() * 16);
+            }
+            0
+        })
+        .unwrap_or(projection::ProjectionError::StaleHandle as i32)
+    })
+}
+
+/// Copy canonical node UUID bytes.
+///
+/// # Safety
+/// For a non-empty projection, `output` must cover `capacity * 16` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_projection_copy_node_ids(
+    handle: u64,
+    output: *mut u8,
+    capacity: u64,
+) -> i32 {
+    projection_copy_ids(handle, output, capacity, true)
+}
+
+/// Copy canonical edge UUID bytes.
+///
+/// # Safety
+/// For a non-empty projection, `output` must cover `capacity * 16` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_projection_copy_edge_ids(
+    handle: u64,
+    output: *mut u8,
+    capacity: u64,
+) -> i32 {
+    projection_copy_ids(handle, output, capacity, false)
+}
+
+/// Copy dense source and target indices.
+///
+/// # Safety
+/// For non-empty edges, both output pointers must each cover `capacity`
+/// `u64` values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_projection_copy_endpoints(
+    handle: u64,
+    out_sources: *mut u64,
+    out_targets: *mut u64,
+    capacity: u64,
+) -> i32 {
+    ffi_guard(projection::ProjectionError::InvalidArgument as i32, || {
+        projection::reg_with(handle, |value| {
+            let len = value.sources().len();
+            if capacity < len as u64 {
+                return projection::ProjectionError::OutputCapacity as i32;
+            }
+            if len != 0 && (out_sources.is_null() || out_targets.is_null()) {
+                return projection::ProjectionError::InvalidArgument as i32;
+            }
+            if len != 0 {
+                std::ptr::copy_nonoverlapping(value.sources().as_ptr(), out_sources, len);
+                std::ptr::copy_nonoverlapping(value.targets().as_ptr(), out_targets, len);
+            }
+            0
+        })
+        .unwrap_or(projection::ProjectionError::StaleHandle as i32)
+    })
+}
+
+/// Copy dense parent indices and their byte validity plane.
+///
+/// # Safety
+/// For non-empty nodes, `out_parents` must cover `capacity` `u64` values and
+/// `out_validity` must cover `capacity` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_projection_copy_parents(
+    handle: u64,
+    out_parents: *mut u64,
+    out_validity: *mut u8,
+    capacity: u64,
+) -> i32 {
+    ffi_guard(projection::ProjectionError::InvalidArgument as i32, || {
+        projection::reg_with(handle, |value| {
+            let len = value.parents().len();
+            if capacity < len as u64 {
+                return projection::ProjectionError::OutputCapacity as i32;
+            }
+            if len != 0 && (out_parents.is_null() || out_validity.is_null()) {
+                return projection::ProjectionError::InvalidArgument as i32;
+            }
+            if len != 0 {
+                std::ptr::copy_nonoverlapping(value.parents().as_ptr(), out_parents, len);
+                std::ptr::copy_nonoverlapping(value.parent_validity().as_ptr(), out_validity, len);
+            }
+            0
+        })
+        .unwrap_or(projection::ProjectionError::StaleHandle as i32)
+    })
+}
+
+/// Destroy a projection handle.
+///
+/// # Safety
+/// The caller must serialize use of this handle so no other call uses it after
+/// destruction. Stale handles are rejected without dereferencing host memory.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_projection_destroy(handle: u64) -> i32 {
+    ffi_guard(projection::ProjectionError::InvalidArgument as i32, || {
+        if projection::reg_remove(handle) {
+            0
+        } else {
+            projection::ProjectionError::StaleHandle as i32
+        }
+    })
+}
+
 /// One-shot graph layout. `layout` is LAYOUT_* from `graph`. Returns 0 on
 /// success, -1 on invalid args. `preset` requires `in_x`/`in_y`; others may
 /// pass null. `roots` is optional for breadthfirst/radial (null → default).
@@ -6004,5 +6268,87 @@ mod tests {
                 -1
             );
         }
+    }
+
+    #[test]
+    fn graph_projection_abi_roundtrip_and_stable_errors() {
+        let nodes = [[1u8; 16], [2u8; 16]];
+        let edges = [[3u8; 16], [4u8; 16]];
+        let sources = [[1u8; 16], [1u8; 16]];
+        let targets = [[2u8; 16], [2u8; 16]];
+        let descriptor = XygGraphProjectionDescriptor {
+            node_ids: nodes.as_ptr().cast(),
+            node_count: 2,
+            edge_ids: edges.as_ptr().cast(),
+            edge_count: 2,
+            source_ids: sources.as_ptr().cast(),
+            target_ids: targets.as_ptr().cast(),
+            parent_ids: std::ptr::null(),
+            parent_validity: std::ptr::null(),
+            directed: 1,
+            reserved: 0,
+        };
+        let mut handle = 0;
+        unsafe {
+            assert_eq!(xyg_graph_projection_create(&descriptor, &mut handle), 0);
+            let (mut n, mut e, mut directed) = (0, 0, 0);
+            assert_eq!(
+                xyg_graph_projection_counts(handle, &mut n, &mut e, &mut directed),
+                0
+            );
+            assert_eq!((n, e, directed), (2, 2, 1));
+            let (mut dense_sources, mut dense_targets) = ([u64::MAX; 2], [u64::MAX; 2]);
+            assert_eq!(
+                xyg_graph_projection_copy_endpoints(
+                    handle,
+                    dense_sources.as_mut_ptr(),
+                    dense_targets.as_mut_ptr(),
+                    2
+                ),
+                0
+            );
+            assert_eq!(dense_sources, [0, 0]);
+            assert_eq!(dense_targets, [1, 1]);
+            assert_eq!(
+                xyg_graph_projection_copy_endpoints(
+                    handle,
+                    dense_sources.as_mut_ptr(),
+                    dense_targets.as_mut_ptr(),
+                    1
+                ),
+                -8
+            );
+            assert_eq!(xyg_graph_projection_destroy(handle), 0);
+            assert_eq!(xyg_graph_projection_destroy(handle), -7);
+            assert_eq!(
+                xyg_graph_projection_counts(handle, &mut n, &mut e, &mut directed),
+                -7
+            );
+        }
+    }
+
+    #[test]
+    fn graph_projection_abi_rejects_missing_endpoint() {
+        let nodes = [[1u8; 16]];
+        let edges = [[2u8; 16]];
+        let sources = [[1u8; 16]];
+        let targets = [[9u8; 16]];
+        let descriptor = XygGraphProjectionDescriptor {
+            node_ids: nodes.as_ptr().cast(),
+            node_count: 1,
+            edge_ids: edges.as_ptr().cast(),
+            edge_count: 1,
+            source_ids: sources.as_ptr().cast(),
+            target_ids: targets.as_ptr().cast(),
+            parent_ids: std::ptr::null(),
+            parent_validity: std::ptr::null(),
+            directed: 0,
+            reserved: 0,
+        };
+        let mut handle = 0;
+        unsafe {
+            assert_eq!(xyg_graph_projection_create(&descriptor, &mut handle), -6);
+        }
+        assert_eq!(handle, 0);
     }
 }
