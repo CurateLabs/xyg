@@ -35,6 +35,11 @@ export interface XygWasmScenePaint extends XygWasmSceneValidation {
   painter: ArrayBuffer;
 }
 
+export interface XygWasmCompiledScene extends XygWasmSceneValidation {
+  /** Canonical Scene batch bytes produced by Rust from typed columns. */
+  scene: ArrayBuffer;
+}
+
 export interface XygWasmTask<T> {
   requestId: number;
   sequence: number;
@@ -114,10 +119,9 @@ function sceneMessage(scene: ArrayBuffer | Uint8Array, transfer: boolean) {
 /**
  * Thin lifecycle proxy for the direct-browser Rust worker foundation.
  *
- * This API does not compile chart specifications yet. It proves explicit
- * static asset loading, bounded JS→WASM copies, exact Scene v4 compatibility,
- * cancellation/stale handling, traps, and deterministic disposal. Unsupported
- * browser chart work fails; it never falls back to JavaScript algorithms.
+ * Callers provide explicit static assets. Scene validate/prepare and typed
+ * column compile/paint run in the Worker; unsupported work fails closed with
+ * no JavaScript algorithm fallback.
  */
 export class XygWasmWorker {
   private worker: Worker;
@@ -191,8 +195,24 @@ export class XygWasmWorker {
     return this.sceneTask("scene.paint", scene, options);
   }
 
+  /** Compile a packed `XYCC` typed-column request into canonical Scene bytes. */
+  compileScene(
+    request: ArrayBuffer | Uint8Array,
+    options: { sequence?: number; transfer?: boolean } = {},
+  ): XygWasmTask<XygWasmCompiledScene> {
+    return this.sceneTask("scene.compile", request, options);
+  }
+
+  /** Compile packed typed columns and lower the Scene for browser paint. */
+  compilePrepareScene(
+    request: ArrayBuffer | Uint8Array,
+    options: { sequence?: number; transfer?: boolean } = {},
+  ): XygWasmTask<XygWasmScenePaint> {
+    return this.sceneTask("scene.compile_paint", request, options);
+  }
+
   private sceneTask<T extends XygWasmSceneValidation>(
-    type: "scene.validate" | "scene.paint",
+    type: "scene.validate" | "scene.paint" | "scene.compile" | "scene.compile_paint",
     scene: ArrayBuffer | Uint8Array,
     options: { sequence?: number; transfer?: boolean },
   ): XygWasmTask<T> {

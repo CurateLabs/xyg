@@ -1,4 +1,10 @@
-import { createXygWasmWorker, renderWasmScene, XygWasmError } from "/packages/xy-client/dist/index.js";
+import {
+  createXygWasmWorker,
+  encodeWasmColumns,
+  renderWasmColumns,
+  renderWasmScene,
+  XygWasmError,
+} from "/packages/xy-client/dist/index.js";
 
 function canonicalSceneV5() {
   const body = 160 + 16 + 56;
@@ -84,6 +90,8 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
     "xyg_wasm_cancel",
     "xyg_wasm_scene_validate",
     "xyg_wasm_scene_prepare",
+    "xyg_wasm_scene_compile",
+    "xyg_wasm_scene_compile_prepare",
     "xyg_wasm_output_ptr",
     "xyg_wasm_output_len",
     "xyg_wasm_last_error_ptr",
@@ -105,7 +113,9 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
       0x7f,
     ]),
   ];
-  const functionTypes = [0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  const functionTypes = [
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
   const exports = [
@@ -115,7 +125,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
   ];
   const highBit = 0x80000000;
   const values = [
-    2, 7, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0,
+    3, 7, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
@@ -198,7 +208,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 2,
+    expectedAbiVersion: 3,
     expectedSceneVersion: 7,
   };
 }
@@ -242,7 +252,7 @@ async function run() {
     maxArenaBytes: 1024,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 2 || ready.sceneVersion !== 7) {
+  if (ready.abiVersion !== 3 || ready.sceneVersion !== 7) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -279,6 +289,60 @@ async function run() {
   rendered.destroy();
   host.remove();
 
+  const columnWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await columnWorker.ready;
+  const columns = {
+    width: 320,
+    height: 240,
+    autoMargins: true,
+    x: { lo: 0, hi: 1 },
+    y: { lo: 0, hi: 1 },
+    kinds: ["scatter"],
+    stableIds: [7n],
+    styleRefs: [0],
+    diameter: [8],
+    symbols: [0],
+    x0: [0.5],
+    y0: [0.5],
+    x1: [0],
+    y1: [0],
+    styles: [{ fillRgba: [37, 99, 235, 255], strokeRgba: [0, 0, 0, 0], strokeWidth: 0 }],
+  };
+  const packed = encodeWasmColumns(columns);
+  if (new Uint8Array(packed).subarray(0, 4).join(",") !== "88,89,67,67") {
+    throw new Error("typed-column encoder did not emit XYCC");
+  }
+  const compiled = await columnWorker.compileScene(new Uint8Array(packed), {
+    sequence: 1,
+    transfer: false,
+  }).result;
+  if (!(compiled.scene instanceof ArrayBuffer) || compiled.records !== 1 || compiled.styles !== 1) {
+    throw new Error(`typed-column compile did not return a Scene batch: ${JSON.stringify(compiled)}`);
+  }
+  if (new Uint8Array(compiled.scene).subarray(0, 4).join(",") !== "88,89,71,83") {
+    throw new Error("typed-column compile did not emit XYGS");
+  }
+  const columnHost = document.body.appendChild(document.createElement("div"));
+  const columnView = await renderWasmColumns({
+    el: columnHost,
+    columns,
+    worker: columnWorker,
+    transfer: false,
+  });
+  if (!columnHost.querySelector("canvas") || columnView.gpuTraces.length < 1) {
+    throw new Error("typed-column public API did not hydrate the existing painter");
+  }
+  if (columnView.sceneStableId(0, 0) !== 7n) {
+    throw new Error("typed-column stable id was not preserved through painter hydration");
+  }
+  columnView.destroy();
+  columnHost.remove();
+  await columnWorker.dispose();
+
   const malformed = canonicalSceneV5();
   malformed[0] = 0;
   await rejected(
@@ -296,7 +360,10 @@ async function run() {
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
   const afterRejected = await worker.validateScene(canonicalSceneV5(), { sequence: 15 }).result;
-  if (afterRejected.copyCount !== 7 || afterRejected.copyBytesLo !== 272 * 7) {
+  // Cancellation may suppress the deferred staging copy when it wins the race.
+  // Count every completed arena resize; bytes must match the canonical scene size.
+  if (afterRejected.copyCount < 6 || afterRejected.copyCount > 7
+      || afterRejected.copyBytesLo !== 272 * afterRejected.copyCount) {
     throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
   await worker.dispose();

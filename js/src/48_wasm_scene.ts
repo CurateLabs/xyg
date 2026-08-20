@@ -107,19 +107,27 @@ export interface XygWasmSceneView extends ChartView {
   wasmMetrics: { workerPrepareMs: number; hydrateUploadMs: number; painterBytes: number; wasmMemoryBytes: number };
 }
 
-/** Validate/lower in Rust, then hydrate the existing WebGL painter. */
-export async function renderWasmScene(options: RenderWasmSceneOptions): Promise<XygWasmSceneView> {
-  if (!options?.el || !(options.worker instanceof XygWasmWorker)) throw new TypeError("el and an XygWasmWorker are required");
-  await options.worker.ready;
-  const started = performance.now();
-  const prepared: XygWasmScenePaint = await options.worker.prepareScene(options.scene, { transfer: options.transfer }).result;
+/** Hydrate painter-ready WASM output into the existing WebGL client. */
+export function hydrateWasmPainter(
+  el: HTMLElement,
+  prepared: XygWasmScenePaint,
+  timing: { workerPrepareMs: number } = { workerPrepareMs: 0 },
+): XygWasmSceneView {
   const preparedAt = performance.now();
   const compiled = compilePainter(prepared.painter);
-  const view = new ChartView(options.el, compiled.spec, compiled.payload, null);
-  (view as any).wasmMetrics = { workerPrepareMs: preparedAt - started, hydrateUploadMs: performance.now() - preparedAt, painterBytes: prepared.painter.byteLength, wasmMemoryBytes: prepared.memoryBytes };
+  const view = new ChartView(el, compiled.spec, compiled.payload, null);
+  (view as any).wasmMetrics = {
+    workerPrepareMs: timing.workerPrepareMs,
+    hydrateUploadMs: performance.now() - preparedAt,
+    painterBytes: prepared.painter.byteLength,
+    wasmMemoryBytes: prepared.memoryBytes,
+  };
   for (const trace of view.gpuTraces) {
     const ids = trace.trace.scene_ids;
-    trace._sceneIds = { lo: view._columnView(compiled.payload, compiled.spec.columns[ids.lo]), hi: view._columnView(compiled.payload, compiled.spec.columns[ids.hi]) };
+    trace._sceneIds = {
+      lo: view._columnView(compiled.payload, compiled.spec.columns[ids.lo]),
+      hi: view._columnView(compiled.payload, compiled.spec.columns[ids.hi]),
+    };
   }
   (view as any).sceneStableId = (traceIndex: number, rowIndex: number) => {
     const ids = view.gpuTraces[traceIndex]?._sceneIds;
@@ -127,4 +135,13 @@ export async function renderWasmScene(options: RenderWasmSceneOptions): Promise<
     return (BigInt(ids.hi[rowIndex]) << 32n) | BigInt(ids.lo[rowIndex]);
   };
   return view as XygWasmSceneView;
+}
+
+/** Validate/lower in Rust, then hydrate the existing WebGL painter. */
+export async function renderWasmScene(options: RenderWasmSceneOptions): Promise<XygWasmSceneView> {
+  if (!options?.el || !(options.worker instanceof XygWasmWorker)) throw new TypeError("el and an XygWasmWorker are required");
+  await options.worker.ready;
+  const started = performance.now();
+  const prepared: XygWasmScenePaint = await options.worker.prepareScene(options.scene, { transfer: options.transfer }).result;
+  return hydrateWasmPainter(options.el, prepared, { workerPrepareMs: performance.now() - started });
 }

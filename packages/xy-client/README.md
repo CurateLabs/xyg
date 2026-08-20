@@ -27,8 +27,9 @@ The direct-browser foundation requires callers to provide both an explicit
 static worker URL and an explicit local WASM URL, `WebAssembly.Module`, or byte
 buffer. It never creates a Blob worker, guesses an asset path, imports from a
 CDN, or silently runs chart algorithms in JavaScript. The worker currently
-proves bounded memory/lifecycle handling and exact canonical Scene v4
-compatibility; complete browser-side chart compilation remains tracked by
+proves bounded memory/lifecycle handling, Scene validate/paint, and packed
+typed-column (`XYCC`) compile for scatter/polyline/rect/band; remaining
+chart-spec ergonomics and density replacement stay tracked by
 [#59](https://github.com/CurateLabs/xyg/issues/59).
 
 The Node host (`packages/xy-node`, published later as `@curatelabs/xyg-node`)
