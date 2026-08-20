@@ -93,10 +93,11 @@ The exhaustive per-file application of these rules is
 
 | Layer | Shared across Python and Node |
 |---|---|
-| Rust viz `cdylib` C ABI | All kernels (existing marks + `xyg_graph_*`); **u64** graph element indices |
+| Rust viz `cdylib` C ABI | All kernels (existing marks + `xyg_graph_*` + `xyg_temporal_*`); **u64** graph element indices; **i64** UTC micros for temporal columns |
 | Wire / §29 buffers | Identical binary payloads for the same figure spec |
 | JS render client | One bundled WebGL client (`@curatelabs/xyg`: `index.js` / `standalone.js`); Python copies into the wheel |
 | Public chart semantics | Same mark kinds, options, defaults, layout/LOD decisions |
+| Temporal foundation (#43) | Same `TemporalColumn` / interval visibility for identical Arrow-like fixtures ([temporal.md](temporal.md)) |
 
 Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
 notebook/Reflex vs Node embed / VS Code webview attach). Names and defaults
@@ -108,9 +109,9 @@ match.
 
 | Lives in | Examples |
 |---|---|
-| **XYG Rust (shared)** | Display layouts (including today’s Python-only ones such as Sankey), graph adjacency/position buffers, channel resolution, decimation, LOD aggregates, layout/LOD **decisions**, thresholds that change buffers, progressive layout ticks |
+| **XYG Rust (shared)** | Display layouts (including today’s Python-only ones such as Sankey), graph adjacency/position buffers, channel resolution, decimation, LOD aggregates, layout/LOD **decisions**, thresholds that change buffers, progressive layout ticks, canonical temporal columns and interval/event visibility |
 | **Host (Python *or* Node)** | Public API shapes, idiomatic ingest coercion (list/NumPy/TypedArray → pointers), error message text, transport attach — **no** second layout/algorithm/encode/decision path |
-| **Browser client** | WebGL draw, hit-test, pan/zoom/select/drag gestures applying uploaded buffers |
+| **Browser client** | WebGL draw, hit-test, pan/zoom/select/drag gestures applying uploaded buffers; playback clocks submit revisioned temporal commands to Rust (#44+) |
 
 Graph **analysis algorithms** (paths, centrality, communities, Cypher, …) are
 not owned here — they live in GraphForge (and similar peers). This charting

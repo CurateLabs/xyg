@@ -25,5 +25,6 @@ pub mod scene;
 pub mod stats;
 pub mod stream;
 pub mod svg;
+pub mod temporal;
 pub mod tiles;
 pub mod transition;

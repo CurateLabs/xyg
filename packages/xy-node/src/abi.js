@@ -38,6 +38,16 @@ import {
   xyGraphProjectionDestroy,
   xyGraphSampleEdges,
   xySankeyLayout,
+  xyTemporalColumnCopy,
+  xyTemporalColumnCreate,
+  xyTemporalColumnDestroy,
+  xyTemporalColumnMeta,
+  xyTemporalColumnTimezone,
+  xyTemporalEventsInRange,
+  xyTemporalIntervalIndexCreate,
+  xyTemporalIntervalIndexDestroy,
+  xyTemporalIntervalIndexLen,
+  xyTemporalIntervalVisibilityAt,
 } from "./native.js";
 
 export { nativeLibraryPath };
@@ -130,6 +140,57 @@ const GraphProjectionDescriptor = koffi.struct("XygGraphProjectionDescriptor", {
   reserved: "uint32_t",
 });
 
+const TemporalColumnDescriptor = koffi.struct("XygTemporalColumnDescriptor", {
+  values: "const void *",
+  validity: "const void *",
+  len: "uint64_t",
+  unit: "uint32_t",
+  timezone: "const void *",
+  timezone_len: "uint32_t",
+  naive: "uint32_t",
+  disambiguation: "uint32_t",
+  dst_status: "const void *",
+  offset_seconds: "const void *",
+  fold_later_offset_seconds: "const void *",
+  reserved: "uint32_t",
+});
+
+const TemporalIntervalDescriptor = koffi.struct("XygTemporalIntervalDescriptor", {
+  starts: "const void *",
+  start_valid: "const void *",
+  ends: "const void *",
+  end_valid: "const void *",
+  len: "uint64_t",
+  reserved: "uint32_t",
+});
+
+export const TEMPORAL_PRECISION = Object.freeze({
+  second: 0,
+  millisecond: 1,
+  microsecond: 2,
+  nanosecond: 3,
+});
+
+export const TEMPORAL_DISAMBIGUATION = Object.freeze({
+  reject: 0,
+  preferEarlier: 1,
+  preferLater: 2,
+});
+
+export const TEMPORAL_DST = Object.freeze({
+  unique: 0,
+  gap: 1,
+  fold: 2,
+});
+
+export class TemporalNativeError extends Error {
+  constructor(code, message) {
+    super(message ?? `native temporal failed with status ${code}`);
+    this.name = "TemporalNativeError";
+    this.nativeCode = code;
+  }
+}
+
 export function abiVersion() {
   return xyAbiVersion();
 }
@@ -195,6 +256,198 @@ export function graphProjectionRead(handle) {
 
 export function graphProjectionDestroy(handle) {
   return xyGraphProjectionDestroy(toU64(handle, "handle")) === 0;
+}
+
+/** Create a Rust-owned temporal column (UTC microseconds). */
+export function temporalColumnCreate({
+  values,
+  validity,
+  timezone,
+  unit = TEMPORAL_PRECISION.microsecond,
+  naive = false,
+  disambiguation = TEMPORAL_DISAMBIGUATION.reject,
+  dstStatus = null,
+  offsetSeconds = null,
+  foldLaterOffsetSeconds = null,
+}) {
+  if (typeof timezone !== "string" || timezone.length === 0) {
+    throw new TypeError("timezone is required");
+  }
+  const valueArray = asI64Array(values, "values");
+  const validityArray = asU8Array(validity, "validity");
+  if (valueArray.length !== validityArray.length) {
+    throw new RangeError("values and validity must have equal length");
+  }
+  let dst = null;
+  let offsets = null;
+  let foldLater = null;
+  if (naive) {
+    if (dstStatus == null || offsetSeconds == null || foldLaterOffsetSeconds == null) {
+      throw new TypeError("naive ingest requires dstStatus and offset planes");
+    }
+    dst = asU8Array(dstStatus, "dstStatus");
+    offsets = asI32Array(offsetSeconds, "offsetSeconds");
+    foldLater = asI32Array(foldLaterOffsetSeconds, "foldLaterOffsetSeconds");
+    if (
+      dst.length !== valueArray.length
+      || offsets.length !== valueArray.length
+      || foldLater.length !== valueArray.length
+    ) {
+      throw new RangeError("naive DST planes must match values length");
+    }
+  }
+  const tz = Buffer.from(timezone, "utf8");
+  const outHandle = new BigUint64Array(1);
+  const encoded = Buffer.alloc(koffi.sizeof(TemporalColumnDescriptor));
+  koffi.encode(encoded, TemporalColumnDescriptor, {
+    values: pointer(valueArray, "int64_t *"),
+    validity: pointer(validityArray, "uint8_t *"),
+    len: BigInt(valueArray.length),
+    unit,
+    timezone: pointer(tz, "uint8_t *"),
+    timezone_len: tz.byteLength,
+    naive: naive ? 1 : 0,
+    disambiguation,
+    dst_status: pointer(dst, "uint8_t *"),
+    offset_seconds: pointer(offsets, "int32_t *"),
+    fold_later_offset_seconds: pointer(foldLater, "int32_t *"),
+    reserved: 0,
+  });
+  const code = xyTemporalColumnCreate(koffi.as(encoded, "const void *"), u64Ptr(outHandle));
+  if (code !== 0 || outHandle[0] === 0n) {
+    throw new TemporalNativeError(code);
+  }
+  return outHandle[0];
+}
+
+export function temporalColumnRead(handle) {
+  const length = new BigUint64Array(1);
+  const precision = new Uint32Array(1);
+  const tzLen = new Uint32Array(1);
+  let code = xyTemporalColumnMeta(
+    toU64(handle, "handle"),
+    u64Ptr(length),
+    u32Ptr(precision),
+    u32Ptr(tzLen),
+  );
+  if (code !== 0) throw new TemporalNativeError(code);
+  const n = toLength(length[0], "length");
+  const values = new BigInt64Array(n);
+  const validity = new Uint8Array(n);
+  code = xyTemporalColumnCopy(
+    toU64(handle, "handle"),
+    pointer(values, "int64_t *"),
+    pointer(validity, "uint8_t *"),
+    BigInt(n),
+  );
+  if (code !== 0) throw new TemporalNativeError(code);
+  const tz = Buffer.alloc(tzLen[0]);
+  code = xyTemporalColumnTimezone(
+    toU64(handle, "handle"),
+    pointer(tz, "uint8_t *"),
+    tzLen[0],
+  );
+  if (code !== 0) throw new TemporalNativeError(code);
+  return {
+    values,
+    validity,
+    timezone: tz.toString("utf8"),
+    precision: precision[0],
+  };
+}
+
+export function temporalColumnDestroy(handle) {
+  const code = xyTemporalColumnDestroy(toU64(handle, "handle"));
+  if (code !== 0) throw new TemporalNativeError(code);
+  return true;
+}
+
+export function temporalIntervalIndexCreate({ starts, startValid, ends, endValid }) {
+  const startValues = asI64Array(starts, "starts");
+  const startBits = asU8Array(startValid, "startValid");
+  const endValues = asI64Array(ends, "ends");
+  const endBits = asU8Array(endValid, "endValid");
+  const n = startValues.length;
+  if (startBits.length !== n || endValues.length !== n || endBits.length !== n) {
+    throw new RangeError("interval endpoint arrays must have equal length");
+  }
+  const outHandle = new BigUint64Array(1);
+  const encoded = Buffer.alloc(koffi.sizeof(TemporalIntervalDescriptor));
+  koffi.encode(encoded, TemporalIntervalDescriptor, {
+    starts: pointer(startValues, "int64_t *"),
+    start_valid: pointer(startBits, "uint8_t *"),
+    ends: pointer(endValues, "int64_t *"),
+    end_valid: pointer(endBits, "uint8_t *"),
+    len: BigInt(n),
+    reserved: 0,
+  });
+  const code = xyTemporalIntervalIndexCreate(koffi.as(encoded, "const void *"), u64Ptr(outHandle));
+  if (code !== 0 || outHandle[0] === 0n) {
+    throw new TemporalNativeError(code);
+  }
+  return outHandle[0];
+}
+
+export function temporalIntervalVisibilityAt(handle, instantMicros, opts = {}) {
+  const length = new BigUint64Array(1);
+  let code = xyTemporalIntervalIndexLen(toU64(handle, "handle"), u64Ptr(length));
+  if (code !== 0) throw new TemporalNativeError(code);
+  const n = toLength(length[0], "length");
+  const budget = opts.budget == null ? n : toLength(opts.budget, "budget");
+  if (budget < n) throw new RangeError("budget must be at least index length");
+  const out = new Uint8Array(n);
+  const cancel = new Uint32Array([opts.cancelFlag ? 1 : 0]);
+  code = xyTemporalIntervalVisibilityAt(
+    toU64(handle, "handle"),
+    BigInt(instantMicros),
+    pointer(out, "uint8_t *"),
+    BigInt(n),
+    BigInt(budget),
+    u32Ptr(cancel),
+  );
+  if (code !== 0) throw new TemporalNativeError(code);
+  return out;
+}
+
+export function temporalIntervalIndexDestroy(handle) {
+  const code = xyTemporalIntervalIndexDestroy(toU64(handle, "handle"));
+  if (code !== 0) throw new TemporalNativeError(code);
+  return true;
+}
+
+export function temporalEventsInRange({
+  eventMicros,
+  eventValid,
+  rangeStart = null,
+  rangeEnd = null,
+  budget = null,
+  cancelFlag = 0,
+}) {
+  const events = asI64Array(eventMicros, "eventMicros");
+  const valid = asU8Array(eventValid, "eventValid");
+  if (events.length !== valid.length) {
+    throw new RangeError("eventMicros and eventValid must have equal length");
+  }
+  const n = events.length;
+  const rowBudget = budget == null ? n : toLength(budget, "budget");
+  if (rowBudget < n) throw new RangeError("budget must be at least event length");
+  const out = new Uint8Array(n);
+  const cancel = new Uint32Array([cancelFlag ? 1 : 0]);
+  const code = xyTemporalEventsInRange(
+    pointer(events, "int64_t *"),
+    pointer(valid, "uint8_t *"),
+    BigInt(n),
+    BigInt(rangeStart == null ? 0 : rangeStart),
+    rangeStart == null ? 0 : 1,
+    BigInt(rangeEnd == null ? 0 : rangeEnd),
+    rangeEnd == null ? 0 : 1,
+    pointer(out, "uint8_t *"),
+    BigInt(n),
+    BigInt(rowBudget),
+    u32Ptr(cancel),
+  );
+  if (code !== 0) throw new TemporalNativeError(code);
+  return out;
 }
 
 export function graphLayout(layout, nNodes, sources, targets, opts = {}) {
@@ -566,6 +819,56 @@ function asU64Array(value, name) {
     return new BigUint64Array(0);
   }
   return BigUint64Array.from(value, (item) => toU64(item, name));
+}
+
+function asI64Array(value, name) {
+  if (value instanceof BigInt64Array) {
+    return value;
+  }
+  if (value == null) {
+    return new BigInt64Array(0);
+  }
+  return BigInt64Array.from(value, (item) => {
+    if (typeof item === "bigint") {
+      return item;
+    }
+    if (!Number.isInteger(item) || !Number.isSafeInteger(item)) {
+      throw new RangeError(`${name} must contain safe integers or bigints`);
+    }
+    return BigInt(item);
+  });
+}
+
+function asI32Array(value, name) {
+  if (value instanceof Int32Array) {
+    return value;
+  }
+  if (value == null) {
+    return new Int32Array(0);
+  }
+  return Int32Array.from(value, (item) => {
+    const number = Number(item);
+    if (!Number.isInteger(number) || number < -2147483648 || number > 2147483647) {
+      throw new RangeError(`${name} must contain int32 values`);
+    }
+    return number;
+  });
+}
+
+function asU8Array(value, name) {
+  if (value instanceof Uint8Array) {
+    return value;
+  }
+  if (value == null) {
+    return new Uint8Array(0);
+  }
+  return Uint8Array.from(value, (item) => {
+    const number = Number(item);
+    if (!Number.isInteger(number) || number < 0 || number > 255) {
+      throw new RangeError(`${name} must contain uint8 values`);
+    }
+    return number;
+  });
 }
 
 function asF64Array(value, name) {

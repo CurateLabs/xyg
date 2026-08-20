@@ -52,6 +52,54 @@ class GraphProjectionNativeError(ValueError):
         super().__init__(f"native graph projection failed with status {self.status}")
 
 
+class _TemporalColumnDescriptor(ctypes.Structure):
+    _fields_ = [
+        ("values", ctypes.c_void_p),
+        ("validity", ctypes.c_void_p),
+        ("len", ctypes.c_uint64),
+        ("unit", ctypes.c_uint32),
+        ("timezone", ctypes.c_void_p),
+        ("timezone_len", ctypes.c_uint32),
+        ("naive", ctypes.c_uint32),
+        ("disambiguation", ctypes.c_uint32),
+        ("dst_status", ctypes.c_void_p),
+        ("offset_seconds", ctypes.c_void_p),
+        ("fold_later_offset_seconds", ctypes.c_void_p),
+        ("reserved", ctypes.c_uint32),
+    ]
+
+
+class _TemporalIntervalDescriptor(ctypes.Structure):
+    _fields_ = [
+        ("starts", ctypes.c_void_p),
+        ("start_valid", ctypes.c_void_p),
+        ("ends", ctypes.c_void_p),
+        ("end_valid", ctypes.c_void_p),
+        ("len", ctypes.c_uint64),
+        ("reserved", ctypes.c_uint32),
+    ]
+
+
+class TemporalNativeError(ValueError):
+    """Stable error returned by the Rust-owned temporal column/index seam."""
+
+    def __init__(self, status: int):
+        self.status = int(status)
+        super().__init__(f"native temporal failed with status {self.status}")
+
+
+TEMPORAL_PRECISION_SECOND = 0
+TEMPORAL_PRECISION_MILLISECOND = 1
+TEMPORAL_PRECISION_MICROSECOND = 2
+TEMPORAL_PRECISION_NANOSECOND = 3
+TEMPORAL_DISAMBIGUATION_REJECT = 0
+TEMPORAL_DISAMBIGUATION_PREFER_EARLIER = 1
+TEMPORAL_DISAMBIGUATION_PREFER_LATER = 2
+TEMPORAL_DST_UNIQUE = 0
+TEMPORAL_DST_GAP = 1
+TEMPORAL_DST_FOLD = 2
+
+
 # Rust reports invalid arguments (and, via the ffi_guard panic shield, any
 # internal panic) by returning `usize::MAX` from size-returning entry points.
 # `usize` is `c_size_t`, whose width is platform-dependent — 32 bits on
@@ -3321,6 +3369,214 @@ def graph_projection_destroy(handle: int) -> None:
     status = _lib.xyg_graph_projection_destroy(ctypes.c_uint64(handle))
     if status != 0:
         raise GraphProjectionNativeError(status)
+
+
+def temporal_column_create(
+    values: Any,
+    validity: Any,
+    *,
+    timezone: str,
+    unit: int = TEMPORAL_PRECISION_MICROSECOND,
+    naive: bool = False,
+    disambiguation: int = TEMPORAL_DISAMBIGUATION_REJECT,
+    dst_status: Any | None = None,
+    offset_seconds: Any | None = None,
+    fold_later_offset_seconds: Any | None = None,
+) -> int:
+    """Create a Rust-owned canonical temporal column (UTC microseconds)."""
+    if not isinstance(timezone, str) or not timezone:
+        raise ValueError("timezone is required")
+    tz = timezone.encode("utf-8")
+    vals = np.ascontiguousarray(values, dtype=np.int64)
+    valid = np.ascontiguousarray(validity, dtype=np.uint8)
+    if vals.ndim != 1 or valid.ndim != 1 or len(vals) != len(valid):
+        raise ValueError("values and validity must be equal-length 1-D arrays")
+    dst: npt.NDArray[np.uint8] | None = None
+    offsets: npt.NDArray[np.int32] | None = None
+    fold_later: npt.NDArray[np.int32] | None = None
+    if naive:
+        if dst_status is None or offset_seconds is None or fold_later_offset_seconds is None:
+            raise ValueError("naive ingest requires dst_status and offset planes")
+        dst = np.ascontiguousarray(dst_status, dtype=np.uint8)
+        offsets = np.ascontiguousarray(offset_seconds, dtype=np.int32)
+        fold_later = np.ascontiguousarray(fold_later_offset_seconds, dtype=np.int32)
+        if len(dst) != len(vals) or len(offsets) != len(vals) or len(fold_later) != len(vals):
+            raise ValueError("naive DST planes must match values length")
+    tz_buf = ctypes.create_string_buffer(tz)
+    descriptor = _TemporalColumnDescriptor(
+        vals.ctypes.data if len(vals) else None,
+        valid.ctypes.data if len(valid) else None,
+        len(vals),
+        int(unit),
+        ctypes.addressof(tz_buf),
+        len(tz),
+        int(bool(naive)),
+        int(disambiguation),
+        dst.ctypes.data if dst is not None and len(dst) else None,
+        offsets.ctypes.data if offsets is not None and len(offsets) else None,
+        fold_later.ctypes.data if fold_later is not None and len(fold_later) else None,
+        0,
+    )
+    handle = ctypes.c_uint64()
+    status = _lib.xyg_temporal_column_create(ctypes.byref(descriptor), ctypes.byref(handle))
+    if status != 0:
+        raise TemporalNativeError(status)
+    return int(handle.value)
+
+
+def temporal_column_read(
+    handle: int,
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.uint8], str, int]:
+    """Copy UTC micros, validity, timezone, and source precision from Rust."""
+    length = ctypes.c_uint64()
+    precision = ctypes.c_uint32()
+    tz_len = ctypes.c_uint32()
+    status = _lib.xyg_temporal_column_meta(
+        ctypes.c_uint64(handle),
+        ctypes.byref(length),
+        ctypes.byref(precision),
+        ctypes.byref(tz_len),
+    )
+    if status != 0:
+        raise TemporalNativeError(status)
+    n = int(length.value)
+    values = np.empty(n, dtype=np.int64)
+    validity = np.empty(n, dtype=np.uint8)
+    status = _lib.xyg_temporal_column_copy(
+        ctypes.c_uint64(handle),
+        values.ctypes.data if n else None,
+        validity.ctypes.data if n else None,
+        n,
+    )
+    if status != 0:
+        raise TemporalNativeError(status)
+    tz_buf = (ctypes.c_uint8 * int(tz_len.value))()
+    status = _lib.xyg_temporal_column_timezone(
+        ctypes.c_uint64(handle),
+        ctypes.cast(tz_buf, ctypes.c_void_p) if tz_len.value else None,
+        tz_len.value,
+    )
+    if status != 0:
+        raise TemporalNativeError(status)
+    timezone = bytes(tz_buf).decode("utf-8")
+    return values, validity, timezone, int(precision.value)
+
+
+def temporal_column_destroy(handle: int) -> None:
+    status = _lib.xyg_temporal_column_destroy(ctypes.c_uint64(handle))
+    if status != 0:
+        raise TemporalNativeError(status)
+
+
+def temporal_interval_index_create(
+    starts: Any,
+    start_valid: Any,
+    ends: Any,
+    end_valid: Any,
+) -> int:
+    """Build a Rust-owned half-open interval index."""
+    start_vals = np.ascontiguousarray(starts, dtype=np.int64)
+    start_bits = np.ascontiguousarray(start_valid, dtype=np.uint8)
+    end_vals = np.ascontiguousarray(ends, dtype=np.int64)
+    end_bits = np.ascontiguousarray(end_valid, dtype=np.uint8)
+    n = len(start_vals)
+    if not (
+        start_bits.shape == (n,)
+        and end_vals.shape == (n,)
+        and end_bits.shape == (n,)
+        and start_vals.ndim == 1
+    ):
+        raise ValueError("interval endpoint arrays must be equal-length 1-D")
+    descriptor = _TemporalIntervalDescriptor(
+        start_vals.ctypes.data if n else None,
+        start_bits.ctypes.data if n else None,
+        end_vals.ctypes.data if n else None,
+        end_bits.ctypes.data if n else None,
+        n,
+        0,
+    )
+    handle = ctypes.c_uint64()
+    status = _lib.xyg_temporal_interval_index_create(ctypes.byref(descriptor), ctypes.byref(handle))
+    if status != 0:
+        raise TemporalNativeError(status)
+    return int(handle.value)
+
+
+def temporal_interval_visibility_at(
+    handle: int,
+    instant_micros: int,
+    *,
+    budget: int | None = None,
+    cancel_flag: int = 0,
+) -> npt.NDArray[np.uint8]:
+    """Return a 0/1 visibility plane for half-open interval membership."""
+    length = ctypes.c_uint64()
+    status = _lib.xyg_temporal_interval_index_len(ctypes.c_uint64(handle), ctypes.byref(length))
+    if status != 0:
+        raise TemporalNativeError(status)
+    n = int(length.value)
+    if budget is None:
+        budget = n
+    if budget < n:
+        raise ValueError("budget must be at least index length")
+    out = np.zeros(n, dtype=np.uint8)
+    cancel = ctypes.c_uint32(int(cancel_flag))
+    status = _lib.xyg_temporal_interval_visibility_at(
+        ctypes.c_uint64(handle),
+        ctypes.c_int64(instant_micros),
+        out.ctypes.data if n else None,
+        n,
+        int(budget),
+        ctypes.byref(cancel),
+    )
+    if status != 0:
+        raise TemporalNativeError(status)
+    return out
+
+
+def temporal_interval_index_destroy(handle: int) -> None:
+    status = _lib.xyg_temporal_interval_index_destroy(ctypes.c_uint64(handle))
+    if status != 0:
+        raise TemporalNativeError(status)
+
+
+def temporal_events_in_range(
+    event_micros: Any,
+    event_valid: Any,
+    *,
+    range_start: int | None = None,
+    range_end: int | None = None,
+    budget: int | None = None,
+    cancel_flag: int = 0,
+) -> npt.NDArray[np.uint8]:
+    """Filter event instants into a half-open `[start, end)` window."""
+    events = np.ascontiguousarray(event_micros, dtype=np.int64)
+    valid = np.ascontiguousarray(event_valid, dtype=np.uint8)
+    if events.ndim != 1 or valid.ndim != 1 or len(events) != len(valid):
+        raise ValueError("event_micros and event_valid must be equal-length 1-D")
+    n = len(events)
+    if budget is None:
+        budget = n
+    if budget < n:
+        raise ValueError("budget must be at least event length")
+    out = np.zeros(n, dtype=np.uint8)
+    cancel = ctypes.c_uint32(int(cancel_flag))
+    status = _lib.xyg_temporal_events_in_range(
+        events.ctypes.data if n else None,
+        valid.ctypes.data if n else None,
+        n,
+        ctypes.c_int64(0 if range_start is None else range_start),
+        0 if range_start is None else 1,
+        ctypes.c_int64(0 if range_end is None else range_end),
+        0 if range_end is None else 1,
+        out.ctypes.data if n else None,
+        n,
+        int(budget),
+        ctypes.byref(cancel),
+    )
+    if status != 0:
+        raise TemporalNativeError(status)
+    return out
 
 
 def graph_force_create(

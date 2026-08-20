@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 70;
-export const SIGNATURE_SHA256 = "0011376dbea04f6331b468369b1381aa7b44cc38dba4c3a6db72bca85eceac2b";
+export const ABI_VERSION = 71;
+export const SIGNATURE_SHA256 = "0b8a702c55845be9eeb007a0527f174495988c7add9987c2a26cab835cf6fc25";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -113,6 +113,16 @@ export let xyStreamSeal;
 export let xyStreamZoneMaps;
 export let xyStreamlines;
 export let xySvgPolyPath;
+export let xyTemporalColumnCopy;
+export let xyTemporalColumnCreate;
+export let xyTemporalColumnDestroy;
+export let xyTemporalColumnMeta;
+export let xyTemporalColumnTimezone;
+export let xyTemporalEventsInRange;
+export let xyTemporalIntervalIndexCreate;
+export let xyTemporalIntervalIndexDestroy;
+export let xyTemporalIntervalIndexLen;
+export let xyTemporalIntervalVisibilityAt;
 export let xyTransitionKeysFixed;
 export let xyTriangleEdges;
 export let xyValidIndicesF64;
@@ -231,6 +241,16 @@ export function bindGeneratedAbi(lib) {
   xyStreamZoneMaps = lib.func("size_t xyg_stream_zone_maps(uint64_t handle, double * out_min, double * out_max, uint64_t * out_count, uint64_t * out_null_count, double * out_sum, double * out_sum_sq, double * out_positive_min, double * out_positive_max)");
   xyStreamlines = lib.func("size_t xyg_streamlines(const double * x_coords, size_t cols, const double * y_coords, size_t rows, const double * u, const double * v, double density, size_t max_steps, double * out_x0, double * out_x1, double * out_y0, double * out_y1, size_t capacity)");
   xySvgPolyPath = lib.func("size_t xyg_svg_poly_path(const double * x, const double * y, size_t len, uint8_t * out, size_t out_cap)");
+  xyTemporalColumnCopy = lib.func("int32_t xyg_temporal_column_copy(uint64_t handle, int64_t * out_values, uint8_t * out_validity, uint64_t capacity)");
+  xyTemporalColumnCreate = lib.func("int32_t xyg_temporal_column_create(const void * descriptor, uint64_t * out_handle)");
+  xyTemporalColumnDestroy = lib.func("int32_t xyg_temporal_column_destroy(uint64_t handle)");
+  xyTemporalColumnMeta = lib.func("int32_t xyg_temporal_column_meta(uint64_t handle, uint64_t * out_len, uint32_t * out_precision, uint32_t * out_timezone_len)");
+  xyTemporalColumnTimezone = lib.func("int32_t xyg_temporal_column_timezone(uint64_t handle, uint8_t * out_timezone, uint32_t capacity)");
+  xyTemporalEventsInRange = lib.func("int32_t xyg_temporal_events_in_range(const int64_t * event_micros, const uint8_t * event_valid, uint64_t event_len, int64_t range_start, uint32_t range_start_valid, int64_t range_end, uint32_t range_end_valid, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)");
+  xyTemporalIntervalIndexCreate = lib.func("int32_t xyg_temporal_interval_index_create(const void * descriptor, uint64_t * out_handle)");
+  xyTemporalIntervalIndexDestroy = lib.func("int32_t xyg_temporal_interval_index_destroy(uint64_t handle)");
+  xyTemporalIntervalIndexLen = lib.func("int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len)");
+  xyTemporalIntervalVisibilityAt = lib.func("int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)");
   xyTransitionKeysFixed = lib.func("int32_t xyg_transition_keys_fixed(const uint8_t * data, size_t len, size_t width, uint32_t kind, int32_t swap_endian, uint32_t * out_lo, uint32_t * out_hi, size_t * out_error_first, size_t * out_error_index)");
   xyTriangleEdges = lib.func("size_t xyg_triangle_edges(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, double * out_x0, double * out_x1, double * out_y0, double * out_y1)");
   xyValidIndicesF64 = lib.func("size_t xyg_valid_indices_f64(const double *const * columns, size_t n_columns, size_t len, uint64_t positive_mask, uint32_t * out, size_t capacity)");
