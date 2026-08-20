@@ -18,6 +18,7 @@ import {
   graphProjectionDestroy,
   graphProjectionRead,
 } from "./abi.js";
+import { resolveColorChannel } from "./color.js";
 
 /** Default layout name — matches Python `_graph.DEFAULT_LAYOUT`. */
 export const DEFAULT_LAYOUT = "force";
@@ -537,6 +538,35 @@ export function composeGraph(nodes, edges, opts = {}) {
   });
   const { nodePositions, edgeSegments, meta } = runLayout(data, opts);
   const name = opts.name ?? null;
+  const nNodes = nodePositions.x.length;
+  const nEdges = edgeSegments.x0.length;
+  const nodeColor = opts.color;
+  const edgeColor = opts.edgeColor ?? opts.edge_color;
+  const sizeOpt = opts.size;
+  let sizeValues = null;
+  let styleSize = 8.0;
+  if (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt)) {
+    sizeValues = sizeOpt instanceof Float64Array
+      ? sizeOpt
+      : Float64Array.from(sizeOpt, Number);
+    if (sizeValues.length !== nNodes) {
+      throw new RangeError(`graph size length ${sizeValues.length} != n_nodes=${nNodes}`);
+    }
+  } else if (sizeOpt != null) {
+    styleSize = Number(sizeOpt);
+  }
+  const nodeTooltipRows = opts.nodeTooltipRows ?? opts.tooltipRows ?? opts.tooltip_rows ?? null;
+  const edgeTooltipRows = opts.edgeTooltipRows ?? opts.edge_tooltip_rows ?? null;
+  if (nodeTooltipRows != null && nodeTooltipRows.length !== nNodes) {
+    throw new RangeError(
+      `graph node tooltip rows must match geometry (${nodeTooltipRows.length} != ${nNodes})`,
+    );
+  }
+  if (edgeTooltipRows != null && edgeTooltipRows.length !== nEdges) {
+    throw new RangeError(
+      `graph edge tooltip rows must match geometry (${edgeTooltipRows.length} != ${nEdges})`,
+    );
+  }
   const traces = [
     {
       kind: "segments",
@@ -546,10 +576,14 @@ export function composeGraph(nodes, edges, opts = {}) {
       x1: edgeSegments.x1,
       y1: edgeSegments.y1,
       style: {
-        color: opts.edgeColor ?? "#888888",
-        width: opts.edgeWidth ?? 1.2,
+        color: typeof edgeColor === "string" ? edgeColor : "#888888",
+        width: opts.edgeWidth ?? opts.edge_width ?? 1.2,
         ...(opts.style ?? {}),
       },
+      ...(edgeColor != null && typeof edgeColor !== "string"
+        ? { color: resolveColorChannel(edgeColor, nEdges, "#888888") }
+        : {}),
+      ...(edgeTooltipRows != null ? { tooltip_rows: edgeTooltipRows } : {}),
     },
     {
       kind: "scatter",
@@ -557,11 +591,16 @@ export function composeGraph(nodes, edges, opts = {}) {
       x: nodePositions.x,
       y: nodePositions.y,
       style: {
-        color: opts.color ?? "#3987e5",
-        size: opts.size ?? 8.0,
+        color: typeof nodeColor === "string" ? nodeColor : "#3987e5",
+        size: styleSize,
         symbol: opts.symbol ?? "circle",
         ...(opts.style ?? {}),
       },
+      ...(nodeColor != null && typeof nodeColor !== "string"
+        ? { color: resolveColorChannel(nodeColor, nNodes, "#3987e5") }
+        : {}),
+      ...(sizeValues != null ? { sizeValues } : {}),
+      ...(nodeTooltipRows != null ? { tooltip_rows: nodeTooltipRows } : {}),
     },
   ];
 

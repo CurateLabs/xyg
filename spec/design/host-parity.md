@@ -157,6 +157,11 @@ client must not grow a parallel “JS layout/LOD” product path.
   endpoints/parents to dense `u64`; hosts retain typed attributes and
   provenance, and the browser never imports Arrow or receives UUIDs as JSON
   numbers.
+- **REQ-HOSTPARITY-2e (MUST).** Graph node/edge `tooltip_rows` and continuous
+  size/color channels ship with the same wire shape on Python and Node
+  (`tooltip_rows` length-checked against geometry; Node `shipScalar` mirrors
+  Python `_ship_channels` continuous size). See
+  [graph-mark.md](graph-mark.md) encodings table.
 - **REQ-HOSTPARITY-3 (MUST).** The browser client is shared; hosts only differ
   in transport attachment. The same `js/src` → `@curatelabs/xyg`
   (`packages/xy-client/dist/{index,standalone}.js`) client serves Python

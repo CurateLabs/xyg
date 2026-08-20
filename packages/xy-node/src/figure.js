@@ -240,6 +240,10 @@ export class Figure {
         style: { ...(opts.style ?? {}) },
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
+        ...(opts.color != null ? { color: opts.color } : {}),
+        ...(opts.sizeValues != null ? { sizeValues: opts.sizeValues } : {}),
+        ...(opts.sizeRange != null ? { sizeRange: opts.sizeRange } : {}),
+        ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
@@ -576,6 +580,8 @@ export class Figure {
       style: { ...(opts.style ?? {}) },
       x_axis: opts.xAxis ?? "x",
       y_axis: opts.yAxis ?? "y",
+      ...(opts.color != null ? { color: opts.color } : {}),
+      ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
     });
     return this;
   }
@@ -587,9 +593,21 @@ export class Figure {
     const composed = composeGraph(nodes, edges, opts);
     for (const t of composed.traces) {
       if (t.kind === "segments") {
-        this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
+        this.segments(t.x0, t.y0, t.x1, t.y1, {
+          name: t.name,
+          style: t.style,
+          color: t.color,
+          tooltip_rows: t.tooltip_rows,
+        });
       } else if (t.kind === "scatter") {
-        this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
+        this.scatter(t.x, t.y, {
+          name: t.name,
+          style: t.style,
+          color: t.color,
+          sizeValues: t.sizeValues,
+          tooltip_rows: t.tooltip_rows,
+          _composed: true,
+        });
       }
     }
     const meta = {
