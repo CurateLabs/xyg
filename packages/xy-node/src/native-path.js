@@ -105,7 +105,9 @@ export function tryResolvePlatformPackageLibrary({
   } catch (err) {
     if (
       err &&
-      (err.code === "MODULE_NOT_FOUND" || err.code === "ERR_MODULE_NOT_FOUND")
+      (err.code === "MODULE_NOT_FOUND" ||
+        err.code === "ERR_MODULE_NOT_FOUND" ||
+        err.code === "ERR_PACKAGE_PATH_NOT_EXPORTED")
     ) {
       return null;
     }
