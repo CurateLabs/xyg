@@ -182,10 +182,10 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
         }
     };
     let Some(margins) = ffi_guard(None, || {
-        scene::cartesian_scene_margins(
+        scene::cartesian_scene_margins(scene::CartesianLayoutRequest {
             viewport_width,
             viewport_height,
-            padding,
+            authored_padding: padding,
             title,
             x_label,
             y_label,
@@ -193,13 +193,13 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
             x_lo,
             x_hi,
             x_constant,
-            x_mask_nonpositive != 0,
+            x_mask_nonpositive: x_mask_nonpositive != 0,
             y_kind,
             y_lo,
             y_hi,
             y_constant,
-            y_mask_nonpositive != 0,
-        )
+            y_mask_nonpositive: y_mask_nonpositive != 0,
+        })
         .ok()
     }) else {
         return usize::MAX;

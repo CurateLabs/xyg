@@ -2821,6 +2821,27 @@ const AXIS_TEXT_EDGE_PAD: f64 = 4.0;
 const Y_TITLE_TICK_GAP: f64 = 0.4;
 const LABEL_FONT_PX: f64 = 12.0;
 
+/// Inputs for [`cartesian_scene_margins`].
+#[derive(Clone, Copy, Debug)]
+pub struct CartesianLayoutRequest<'a> {
+    pub viewport_width: f64,
+    pub viewport_height: f64,
+    pub authored_padding: Option<[f64; 4]>,
+    pub title: &'a str,
+    pub x_label: &'a str,
+    pub y_label: &'a str,
+    pub x_kind: ScaleKind,
+    pub x_lo: f64,
+    pub x_hi: f64,
+    pub x_constant: f64,
+    pub x_mask_nonpositive: bool,
+    pub y_kind: ScaleKind,
+    pub y_lo: f64,
+    pub y_hi: f64,
+    pub y_constant: f64,
+    pub y_mask_nonpositive: bool,
+}
+
 /// Cartesian default gutters for the Scene-eligible export subset.
 ///
 /// Mirrors `_svg.layout()` for primary x/y, default sides, no colorbar, and
@@ -2828,23 +2849,26 @@ const LABEL_FONT_PX: f64 = 12.0;
 /// left)` padding, title band, measured default tick labels, and outside
 /// axis-title rooms. Hosts must not invent Scene margins once this lands.
 pub fn cartesian_scene_margins(
-    viewport_width: f64,
-    viewport_height: f64,
-    authored_padding: Option<[f64; 4]>,
-    title: &str,
-    x_label: &str,
-    y_label: &str,
-    x_kind: ScaleKind,
-    x_lo: f64,
-    x_hi: f64,
-    x_constant: f64,
-    x_mask_nonpositive: bool,
-    y_kind: ScaleKind,
-    y_lo: f64,
-    y_hi: f64,
-    y_constant: f64,
-    y_mask_nonpositive: bool,
+    request: CartesianLayoutRequest<'_>,
 ) -> Result<(f64, f64, f64, f64), SceneError> {
+    let CartesianLayoutRequest {
+        viewport_width,
+        viewport_height,
+        authored_padding,
+        title,
+        x_label,
+        y_label,
+        x_kind,
+        x_lo,
+        x_hi,
+        x_constant,
+        x_mask_nonpositive,
+        y_kind,
+        y_lo,
+        y_hi,
+        y_constant,
+        y_mask_nonpositive,
+    } = request;
     if ![viewport_width, viewport_height]
         .iter()
         .all(|value| value.is_finite() && *value > 0.0)
@@ -3012,24 +3036,24 @@ mod tests {
 
     #[test]
     fn cartesian_scene_margins_match_compact_defaults() {
-        let (left, right, top, bottom) = cartesian_scene_margins(
-            320.0,
-            240.0,
-            None,
-            "",
-            "",
-            "",
-            ScaleKind::Linear,
-            0.0,
-            4.0,
-            1.0,
-            false,
-            ScaleKind::Linear,
-            0.0,
-            5.0,
-            1.0,
-            false,
-        )
+        let (left, right, top, bottom) = cartesian_scene_margins(CartesianLayoutRequest {
+            viewport_width: 320.0,
+            viewport_height: 240.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 0.0,
+            x_hi: 4.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            y_kind: ScaleKind::Linear,
+            y_lo: 0.0,
+            y_hi: 5.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+        })
         .unwrap();
         assert!(left >= 46.0, "left={left}");
         assert!(right >= 8.0, "right={right}");
