@@ -17,10 +17,23 @@ from .marks import _SYMBOL_CODES
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
 # x0/y0/x1/y1 columns on the Trace; Scene does not recompute bar stacking.
-_RECT_KINDS = frozenset({"bar", "column", "histogram"})
+_RECT_KINDS = frozenset({"bar", "column", "histogram", "violin"})
+# Endpoint pairs that lower to disconnected Scene Polyline runs (kind 1).
+_SEGMENT_KINDS = frozenset({"segments", "errorbar", "stem"})
 _POINT_KINDS = frozenset({"scatter", "line"})
-_SUPPORTED_KINDS = _POINT_KINDS | _RECT_KINDS
-_KIND_CODES = {"scatter": 0, "line": 1, "bar": 2, "column": 2, "histogram": 2}
+_SUPPORTED_KINDS = _POINT_KINDS | _RECT_KINDS | _SEGMENT_KINDS
+_STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
+_KIND_CODES = {
+    "scatter": 0,
+    "line": 1,
+    "segments": 1,
+    "errorbar": 1,
+    "stem": 1,
+    "bar": 2,
+    "column": 2,
+    "histogram": 2,
+    "violin": 2,
+}
 
 
 class UnsupportedSceneV3(ValueError):
@@ -56,6 +69,46 @@ def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:
         raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} wedge_gap")
 
 
+def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray, np.ndarray]:
+    """Expand compact step samples into polyline corners (parity with `_svg`)."""
+    if len(xv) < 2:
+        return xv, yv
+    xs = [float(xv[0])]
+    ys = [float(yv[0])]
+    for index in range(1, len(xv)):
+        if where == "pre":
+            xs.extend((float(xv[index - 1]), float(xv[index])))
+            ys.extend((float(yv[index]), float(yv[index])))
+        elif where == "mid":
+            mid = (float(xv[index - 1]) + float(xv[index])) * 0.5
+            xs.extend((mid, mid, float(xv[index])))
+            ys.extend((float(yv[index - 1]), float(yv[index]), float(yv[index])))
+        else:
+            xs.extend((float(xv[index]), float(xv[index])))
+            ys.extend((float(yv[index - 1]), float(yv[index])))
+    return np.asarray(xs), np.asarray(ys)
+
+
+def _rect_columns(trace: Any) -> list[np.ndarray]:
+    if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
+        raise ValueError(f"{trace.kind} Scene v5 compilation requires four rectangle columns")
+    arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
+    lengths = {len(column) for column in arrays}
+    if len(lengths) != 1:
+        raise UnsupportedSceneV3(f"Scene v5 {trace.kind} rectangle columns must have equal length")
+    return arrays
+
+
+def _segment_columns(trace: Any) -> list[np.ndarray]:
+    if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
+        raise ValueError(f"{trace.kind} Scene v5 compilation requires four endpoint columns")
+    arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
+    lengths = {len(column) for column in arrays}
+    if len(lengths) != 1:
+        raise UnsupportedSceneV3(f"Scene v5 {trace.kind} endpoint columns must have equal length")
+    return arrays
+
+
 def figure_scene(
     figure: Any,
     *,
@@ -63,7 +116,7 @@ def figure_scene(
     height: int | None = None,
     margins: tuple[float, float, float, float] | None = None,
 ) -> bytes:
-    """Compile cartesian scatter/line/bar/column/histogram plus x/y axes to Scene v5."""
+    """Compile migrated cartesian marks plus x/y axes to Scene v5."""
     if figure.coords != "cartesian":
         raise UnsupportedSceneV3("Scene v5 figure compilation currently supports cartesian only")
     if set(figure.axis_options) != {"x", "y"}:
@@ -115,43 +168,20 @@ def figure_scene(
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
         color = _constant_color(trace, "#3987e5")
-        fill_value = style.get("fill", color)
+        fill_default = "transparent" if trace.kind in _SEGMENT_KINDS else color
+        fill_value = style.get("fill", fill_default)
         if not isinstance(fill_value, str):
             raise UnsupportedSceneV3(f"Scene v5 does not yet encode {trace.kind} non-CSS fills")
         fill = _rgba(fill_value, opacity)
-        stroke_default = color if trace.kind == "line" else "transparent"
+        stroke_default = color if trace.kind in _STROKE_KINDS else "transparent"
         stroke = _rgba(str(style.get("stroke", stroke_default)), opacity)
         width_value = style.get(
-            "stroke_width", style.get("width", 1.5 if trace.kind == "line" else 0.0)
+            "stroke_width",
+            style.get("width", 1.5 if trace.kind in _STROKE_KINDS else 0.0),
         )
         stroke_width = float(width_value)
         styles.append((fill, stroke, stroke_width))
         style_ref = len(styles) - 1
-        if trace.kind in _RECT_KINDS:
-            if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-                raise ValueError(
-                    f"{trace.kind} Scene v5 compilation requires four rectangle columns"
-                )
-            arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
-            lengths = {len(column) for column in arrays}
-            if len(lengths) != 1:
-                raise UnsupportedSceneV3(
-                    f"Scene v5 {trace.kind} rectangle columns must have equal length"
-                )
-            count = len(arrays[0])
-        else:
-            arrays = [
-                trace.x.values,
-                trace.y.values,
-                np.zeros(len(trace.x)),
-                np.zeros(len(trace.x)),
-            ]
-            count = len(trace.x)
-        finite_cols = 4 if trace.kind in _RECT_KINDS else 2
-        if any(not np.isfinite(source).all() for source in arrays[:finite_cols]):
-            raise UnsupportedSceneV3(
-                "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
-            )
         symbol_name = str(style.get("symbol", "circle"))
         if symbol_name not in _SYMBOL_CODES:
             raise UnsupportedSceneV3(f"Scene v5 does not support scatter symbol {symbol_name!r}")
@@ -161,14 +191,71 @@ def figure_scene(
             else float(style.get("size", 4.0))
         )
         kind_code = _KIND_CODES[trace.kind]
-        for index in range(count):
+
+        if trace.kind in _RECT_KINDS:
+            arrays = _rect_columns(trace)
+            if any(not np.isfinite(source).all() for source in arrays):
+                raise UnsupportedSceneV3(
+                    "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
+                )
+            for index in range(len(arrays[0])):
+                kinds.append(kind_code)
+                stable_ids.append(int(trace.id))
+                style_refs.append(style_ref)
+                diameters.append(0.0)
+                symbols.append(0)
+                for destination, source in zip(coordinates, arrays, strict=True):
+                    destination.append(float(source[index]))
+            continue
+
+        if trace.kind in _SEGMENT_KINDS:
+            arrays = _segment_columns(trace)
+            if any(not np.isfinite(source).all() for source in arrays):
+                raise UnsupportedSceneV3(
+                    "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
+                )
+            x0s, y0s, x1s, y1s = arrays
+            for index in range(len(x0s)):
+                # Unique stable id per segment so polyline runs stay disconnected.
+                stable_id = (int(trace.id) << 32) | index
+                for x_value, y_value in (
+                    (float(x0s[index]), float(y0s[index])),
+                    (float(x1s[index]), float(y1s[index])),
+                ):
+                    kinds.append(1)
+                    stable_ids.append(stable_id)
+                    style_refs.append(style_ref)
+                    diameters.append(0.0)
+                    symbols.append(0)
+                    coordinates[0].append(x_value)
+                    coordinates[1].append(y_value)
+                    coordinates[2].append(0.0)
+                    coordinates[3].append(0.0)
+            continue
+
+        xv = np.asarray(trace.x.values, dtype=np.float64)
+        yv = np.asarray(trace.y.values, dtype=np.float64)
+        where = style.get("step")
+        if where is not None:
+            if trace.kind != "line":
+                raise UnsupportedSceneV3("Scene v5 step expansion applies only to line traces")
+            if where not in {"pre", "post", "mid"}:
+                raise UnsupportedSceneV3(f"Scene v5 does not support step mode {where!r}")
+            xv, yv = _step_arrays(xv, yv, where)
+        if not np.isfinite(xv).all() or not np.isfinite(yv).all():
+            raise UnsupportedSceneV3(
+                "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
+            )
+        for index in range(len(xv)):
             kinds.append(kind_code)
             stable_ids.append(int(trace.id))
             style_refs.append(style_ref)
             diameters.append(diameter if trace.kind == "scatter" else 0.0)
             symbols.append(_SYMBOL_CODES[symbol_name] if trace.kind == "scatter" else 0)
-            for destination, source in zip(coordinates, arrays, strict=True):
-                destination.append(float(source[index]))
+            coordinates[0].append(float(xv[index]))
+            coordinates[1].append(float(yv[index]))
+            coordinates[2].append(0.0)
+            coordinates[3].append(0.0)
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)

@@ -221,3 +221,41 @@ def test_python_scene_rejects_unequal_rect_columns() -> None:
     figure.traces[0].x1 = figure.store.ingest([0.5])  # length mismatch vs x0
     with pytest.raises(UnsupportedSceneV3, match="equal length"):
         figure.to_scene()
+
+
+def test_python_scene_compiles_segments_and_step_lines() -> None:
+    segments = Figure(width=240, height=160)
+    segments.axis_options["x"]["domain"] = (0.0, 2.0)
+    segments.axis_options["y"]["domain"] = (0.0, 2.0)
+    segments.segments([0.0, 1.0], [0.0, 0.0], [1.0, 2.0], [1.0, 1.0], color="#ef4444", width=2.0)
+    svg = _native.scene_svg(segments.to_scene())
+    assert svg.count("<polyline ") == 2
+
+    stepped = Figure(width=240, height=160)
+    stepped.axis_options["x"]["domain"] = (0.0, 2.0)
+    stepped.axis_options["y"]["domain"] = (0.0, 3.0)
+    stepped.step([0.0, 1.0, 2.0], [1.0, 2.0, 1.0], where="post", color="#3987e5")
+    svg_step = _native.scene_svg(stepped.to_scene())
+    assert svg_step.count("<polyline ") == 1
+
+
+def test_python_scene_compiles_stem_errorbar_and_violin() -> None:
+    stem = Figure(width=240, height=160)
+    stem.axis_options["x"]["domain"] = (-0.5, 1.5)
+    stem.axis_options["y"]["domain"] = (0.0, 3.0)
+    stem.stem([0.0, 1.0], [1.0, 2.0], color="#22c55e")
+    svg = _native.scene_svg(stem.to_scene())
+    assert svg.count("<polyline ") == 2
+    assert "<circle " in svg or "<path " in svg  # stem markers
+
+    errors = Figure(width=240, height=160)
+    errors.axis_options["x"]["domain"] = (-0.5, 1.5)
+    errors.axis_options["y"]["domain"] = (0.0, 3.0)
+    errors.errorbar([0.0, 1.0], [1.0, 2.0], yerr=0.2, color="#ef4444")
+    assert "<polyline " in _native.scene_svg(errors.to_scene())
+
+    violin = Figure(width=240, height=160)
+    violin.axis_options["x"]["domain"] = (-1.0, 2.0)
+    violin.axis_options["y"]["domain"] = (0.0, 5.0)
+    violin.violin([[1.0, 2.0, 2.5, 3.0, 2.0]])
+    assert _native.scene_svg(violin.to_scene()).count("<rect ") >= 2
