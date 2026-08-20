@@ -311,9 +311,22 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const styleRef = styles.length - 1;
     const id = trace.id;
     const isRect = RECT_KINDS.has(trace.kind);
-    const count = isRect ? trace.x0.length : trace.x.length;
-    const coordinateColumns = isRect ? [trace.x0, trace.y0, trace.x1, trace.y1] : [trace.x, trace.y];
-    if (coordinateColumns.some((column) => column == null || column.length !== count || Array.from(column).some((value) => !Number.isFinite(value)))) {
+    let count;
+    let coordinateColumns;
+    if (isRect) {
+      coordinateColumns = [trace.x0, trace.y0, trace.x1, trace.y1];
+      if (coordinateColumns.some((column) => column == null)) {
+        throw new RangeError(`${trace.kind} Scene v5 compilation requires four rectangle columns`);
+      }
+      count = coordinateColumns[0].length;
+      if (coordinateColumns.some((column) => column.length !== count)) {
+        throw new RangeError(`Scene v5 ${trace.kind} rectangle columns must have equal length`);
+      }
+    } else {
+      coordinateColumns = [trace.x, trace.y];
+      count = trace.x.length;
+    }
+    if (coordinateColumns.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
       throw new RangeError("Scene v5 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     const kindCode = trace.kind === "scatter" ? 0 : trace.kind === "line" ? 1 : 2;

@@ -211,3 +211,13 @@ def test_python_scene_rejects_rect_corner_radius_and_density() -> None:
     with pytest.raises(UnsupportedSceneV3, match="density-tier"):
         density.to_scene()
     assert "<svg" in density.to_svg()
+
+
+def test_python_scene_rejects_unequal_rect_columns() -> None:
+    figure = Figure(width=200, height=120)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.bar([0, 1], [1, 2])
+    figure.traces[0].x1 = figure.store.ingest([0.5])  # length mismatch vs x0
+    with pytest.raises(UnsupportedSceneV3, match="equal length"):
+        figure.to_scene()

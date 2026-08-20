@@ -300,3 +300,35 @@ test("Node Scene rejects corner_radius and density-tier scatter", () => {
   });
   assert.throws(() => density.toScene(), /density-tier/);
 });
+
+test("Node Scene rejects missing or unequal rectangle columns", () => {
+  const missing = new Figure({ width: 200, height: 120 });
+  missing.traces.push({
+    id: 1,
+    kind: "column",
+    name: null,
+    x0: new Float64Array([0, 1]),
+    y0: new Float64Array([0, 0]),
+    x1: null,
+    y1: new Float64Array([1, 2]),
+    style: { color: "#22c55e" },
+    x_axis: "x",
+    y_axis: "y",
+  });
+  assert.throws(() => missing.toScene(), /four rectangle columns/);
+
+  const unequal = new Figure({ width: 200, height: 120 });
+  unequal.traces.push({
+    id: 1,
+    kind: "histogram",
+    name: null,
+    x0: new Float64Array([0, 1]),
+    y0: new Float64Array([0, 0]),
+    x1: new Float64Array([0.5]),
+    y1: new Float64Array([1, 2]),
+    style: { color: "#22c55e" },
+    x_axis: "x",
+    y_axis: "y",
+  });
+  assert.throws(() => unequal.toScene(), /equal length/);
+});

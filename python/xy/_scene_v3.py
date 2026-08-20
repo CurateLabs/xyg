@@ -133,6 +133,11 @@ def figure_scene(
                     f"{trace.kind} Scene v5 compilation requires four rectangle columns"
                 )
             arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
+            lengths = {len(column) for column in arrays}
+            if len(lengths) != 1:
+                raise UnsupportedSceneV3(
+                    f"Scene v5 {trace.kind} rectangle columns must have equal length"
+                )
             count = len(arrays[0])
         else:
             arrays = [
