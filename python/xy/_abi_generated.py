@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 70
-SIGNATURE_SHA256 = "0011376dbea04f6331b468369b1381aa7b44cc38dba4c3a6db72bca85eceac2b"
+ABI_VERSION = 71
+SIGNATURE_SHA256 = "0b8a702c55845be9eeb007a0527f174495988c7add9987c2a26cab835cf6fc25"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -442,6 +442,46 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_svg_poly_path
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_temporal_column_copy(uint64_t handle, int64_t * out_values, uint8_t * out_validity, uint64_t capacity)
+    function = lib.xyg_temporal_column_copy
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_temporal_column_create(const void * descriptor, uint64_t * out_handle)
+    function = lib.xyg_temporal_column_create
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_temporal_column_destroy(uint64_t handle)
+    function = lib.xyg_temporal_column_destroy
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_column_meta(uint64_t handle, uint64_t * out_len, uint32_t * out_precision, uint32_t * out_timezone_len)
+    function = lib.xyg_temporal_column_meta
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_temporal_column_timezone(uint64_t handle, uint8_t * out_timezone, uint32_t capacity)
+    function = lib.xyg_temporal_column_timezone
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint32]
+    # int32_t xyg_temporal_events_in_range(const int64_t * event_micros, const uint8_t * event_valid, uint64_t event_len, int64_t range_start, uint32_t range_start_valid, int64_t range_end, uint32_t range_end_valid, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)
+    function = lib.xyg_temporal_events_in_range
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_int64, ctypes.c_uint32, ctypes.c_int64, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_temporal_interval_index_create(const void * descriptor, uint64_t * out_handle)
+    function = lib.xyg_temporal_interval_index_create
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_temporal_interval_index_destroy(uint64_t handle)
+    function = lib.xyg_temporal_interval_index_destroy
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len)
+    function = lib.xyg_temporal_interval_index_len
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)
+    function = lib.xyg_temporal_interval_visibility_at
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_int64, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_transition_keys_fixed(const uint8_t * data, size_t len, size_t width, uint32_t kind, int32_t swap_endian, uint32_t * out_lo, uint32_t * out_hi, size_t * out_error_first, size_t * out_error_index)
     function = lib.xyg_transition_keys_fixed
     function.restype = ctypes.c_int32

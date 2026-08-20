@@ -20,6 +20,13 @@ rows, and numeric property columns are never encoded as JSON numbers. The
 browser receives only bounded paint buffers and identity references needed for
 picking; it does not import Arrow or rebuild topology.
 
+### Canonical temporal values
+
+Temporal instants and interval endpoints are signed i64 UTC microseconds with a
+u8 validity plane ([temporal.md](temporal.md), ABI 71). Hosts must not encode
+temporal samples as f64 milliseconds or JSON numbers on the product wire; timezone
+and precision travel as explicit metadata beside the i64 buffers.
+
 The catalog does not vary by transport: where a host sends a given message, it
 has the shape specified here, byte for byte. What varies is *which* messages a
 host sends — the Reflex wrapper resolves `view_change` in the browser and never

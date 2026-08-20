@@ -63,6 +63,10 @@ export {
   GRAPH_PROGRESSIVE_FORCE,
   SANKEY_ALIGN_IDS,
   SankeyLayoutError,
+  TEMPORAL_PRECISION,
+  TEMPORAL_DISAMBIGUATION,
+  TEMPORAL_DST,
+  TemporalNativeError,
   abiVersion,
   graphLayout,
   graphForceCreate,
@@ -77,6 +81,13 @@ export {
   sankeyLayout,
   graphLayoutId,
   sankeyAlignId,
+  temporalColumnCreate,
+  temporalColumnRead,
+  temporalColumnDestroy,
+  temporalIntervalIndexCreate,
+  temporalIntervalVisibilityAt,
+  temporalIntervalIndexDestroy,
+  temporalEventsInRange,
 } from "./abi.js";
 
 export {

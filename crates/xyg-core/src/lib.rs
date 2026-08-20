@@ -33,6 +33,7 @@ use xyg_engine::scene;
 use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
+use xyg_engine::temporal;
 use xyg_engine::tiles;
 use xyg_engine::transition;
 
@@ -89,7 +90,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 70;
+pub const ABI_VERSION: u32 = 71;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4489,6 +4490,448 @@ pub unsafe extern "C" fn xyg_graph_projection_destroy(handle: u64) -> i32 {
             0
         } else {
             projection::ProjectionError::StaleHandle as i32
+        }
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Temporal columns / interval indexes (#43). Instants are signed UTC micros.
+// ---------------------------------------------------------------------------
+
+/// Descriptor for a Rust-owned temporal column. `values` are unit-scaled i64
+/// instants (see `unit`); `validity[i]` is 0 or 1. `timezone` is required
+/// UTF-8 without NUL, length `timezone_len`. When `naive` is 1, hosts must
+/// supply DST status/offset planes; when 0, values are already UTC.
+#[repr(C)]
+pub struct XygTemporalColumnDescriptor {
+    pub values: *const i64,
+    pub validity: *const u8,
+    pub len: u64,
+    pub unit: u32,
+    pub timezone: *const u8,
+    pub timezone_len: u32,
+    pub naive: u32,
+    pub disambiguation: u32,
+    pub dst_status: *const u8,
+    pub offset_seconds: *const i32,
+    pub fold_later_offset_seconds: *const i32,
+    pub reserved: u32,
+}
+
+/// Create a temporal column handle. Status codes: 0 success; negative
+/// [`temporal::TemporalError`] values otherwise.
+///
+/// # Safety
+/// `descriptor` / `out_handle` must be valid. Non-empty buffers must cover
+/// `len` entries; timezone bytes must cover `timezone_len`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_column_create(
+    descriptor: *const XygTemporalColumnDescriptor,
+    out_handle: *mut u64,
+) -> i32 {
+    if descriptor.is_null() || out_handle.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    *out_handle = 0;
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let descriptor = &*descriptor;
+        if descriptor.reserved != 0 || descriptor.naive > 1 {
+            return temporal::TemporalError::InvalidArgument as i32;
+        }
+        let Some(unit) = temporal::TemporalPrecision::from_u32(descriptor.unit) else {
+            return temporal::TemporalError::UnitUnsupported as i32;
+        };
+        let len = match usize::try_from(descriptor.len) {
+            Ok(value) => value,
+            Err(_) => return temporal::TemporalError::CapacityExceeded as i32,
+        };
+        let tz_len = match usize::try_from(descriptor.timezone_len) {
+            Ok(value) => value,
+            Err(_) => return temporal::TemporalError::InvalidArgument as i32,
+        };
+        if tz_len == 0 || descriptor.timezone.is_null() {
+            return temporal::TemporalError::TimezoneRequired as i32;
+        }
+        let timezone =
+            match std::str::from_utf8(std::slice::from_raw_parts(descriptor.timezone, tz_len)) {
+                Ok(value) => value,
+                Err(_) => return temporal::TemporalError::InvalidArgument as i32,
+            };
+        if len == 0 {
+            return match temporal::TemporalColumn::from_utc_micros(&[], &[], timezone, unit) {
+                Ok(column) => {
+                    *out_handle = temporal::column_insert(column);
+                    0
+                }
+                Err(error) => error as i32,
+            };
+        }
+        if descriptor.values.is_null() || descriptor.validity.is_null() {
+            return temporal::TemporalError::InvalidArgument as i32;
+        }
+        let values = std::slice::from_raw_parts(descriptor.values, len);
+        let validity = std::slice::from_raw_parts(descriptor.validity, len);
+        let result = if descriptor.naive == 0 {
+            temporal::TemporalColumn::from_utc_unit(values, validity, timezone, unit)
+        } else {
+            let Some(policy) = temporal::DisambiguationPolicy::from_u32(descriptor.disambiguation)
+            else {
+                return temporal::TemporalError::InvalidArgument as i32;
+            };
+            if descriptor.dst_status.is_null()
+                || descriptor.offset_seconds.is_null()
+                || descriptor.fold_later_offset_seconds.is_null()
+            {
+                return temporal::TemporalError::InvalidArgument as i32;
+            }
+            temporal::TemporalColumn::from_naive_local_unit(
+                values,
+                validity,
+                timezone,
+                unit,
+                std::slice::from_raw_parts(descriptor.dst_status, len),
+                std::slice::from_raw_parts(descriptor.offset_seconds, len),
+                std::slice::from_raw_parts(descriptor.fold_later_offset_seconds, len),
+                policy,
+            )
+        };
+        match result {
+            Ok(column) => {
+                *out_handle = temporal::column_insert(column);
+                0
+            }
+            Err(error) => error as i32,
+        }
+    })
+}
+
+/// Read temporal column length / precision.
+///
+/// # Safety
+/// Output pointers must be valid for one value each.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_column_meta(
+    handle: u64,
+    out_len: *mut u64,
+    out_precision: *mut u32,
+    out_timezone_len: *mut u32,
+) -> i32 {
+    if out_len.is_null() || out_precision.is_null() || out_timezone_len.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal::column_with(handle, |column| {
+            *out_len = column.len() as u64;
+            *out_precision = column.precision() as u32;
+            *out_timezone_len = column.timezone().len() as u32;
+        })
+        .map_or(temporal::TemporalError::StaleHandle as i32, |_| 0)
+    })
+}
+
+/// Copy timezone UTF-8 bytes (no NUL terminator).
+///
+/// # Safety
+/// `out_timezone` must cover `capacity` bytes when capacity > 0.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_column_timezone(
+    handle: u64,
+    out_timezone: *mut u8,
+    capacity: u32,
+) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal::column_with(handle, |column| {
+            let bytes = column.timezone().as_bytes();
+            if capacity < bytes.len() as u32 {
+                return temporal::TemporalError::OutputCapacity as i32;
+            }
+            if !bytes.is_empty() {
+                if out_timezone.is_null() {
+                    return temporal::TemporalError::InvalidArgument as i32;
+                }
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_timezone, bytes.len());
+            }
+            0
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Copy UTC microsecond values and the validity plane.
+///
+/// # Safety
+/// Non-empty outputs must cover `capacity` entries.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_column_copy(
+    handle: u64,
+    out_values: *mut i64,
+    out_validity: *mut u8,
+    capacity: u64,
+) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal::column_with(handle, |column| {
+            let len = column.len() as u64;
+            if capacity < len {
+                return temporal::TemporalError::OutputCapacity as i32;
+            }
+            if len != 0 && (out_values.is_null() || out_validity.is_null()) {
+                return temporal::TemporalError::InvalidArgument as i32;
+            }
+            if len != 0 {
+                std::ptr::copy_nonoverlapping(column.values().as_ptr(), out_values, column.len());
+                std::ptr::copy_nonoverlapping(
+                    column.validity().as_ptr(),
+                    out_validity,
+                    column.len(),
+                );
+            }
+            0
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Destroy a temporal column handle.
+///
+/// # Safety
+/// Callers must not use the handle after destruction.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_column_destroy(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        if temporal::column_remove(handle) {
+            0
+        } else {
+            temporal::TemporalError::StaleHandle as i32
+        }
+    })
+}
+
+/// Descriptor for half-open interval endpoints. Null validity bits mark
+/// unbounded endpoints; reversed finite intervals fail at build.
+#[repr(C)]
+pub struct XygTemporalIntervalDescriptor {
+    pub starts: *const i64,
+    pub start_valid: *const u8,
+    pub ends: *const i64,
+    pub end_valid: *const u8,
+    pub len: u64,
+    pub reserved: u32,
+}
+
+/// Build a deterministic interval index handle.
+///
+/// # Safety
+/// Descriptor buffers must cover `len` entries when len > 0.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_interval_index_create(
+    descriptor: *const XygTemporalIntervalDescriptor,
+    out_handle: *mut u64,
+) -> i32 {
+    if descriptor.is_null() || out_handle.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    *out_handle = 0;
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let descriptor = &*descriptor;
+        if descriptor.reserved != 0 {
+            return temporal::TemporalError::InvalidArgument as i32;
+        }
+        let len = match usize::try_from(descriptor.len) {
+            Ok(value) => value,
+            Err(_) => return temporal::TemporalError::CapacityExceeded as i32,
+        };
+        if len == 0 {
+            return match temporal::IntervalIndex::build(temporal::IntervalEndpoints {
+                starts: &[],
+                start_valid: &[],
+                ends: &[],
+                end_valid: &[],
+            }) {
+                Ok(index) => {
+                    *out_handle = temporal::index_insert(index);
+                    0
+                }
+                Err(error) => error as i32,
+            };
+        }
+        if descriptor.starts.is_null()
+            || descriptor.start_valid.is_null()
+            || descriptor.ends.is_null()
+            || descriptor.end_valid.is_null()
+        {
+            return temporal::TemporalError::InvalidArgument as i32;
+        }
+        match temporal::IntervalIndex::build(temporal::IntervalEndpoints {
+            starts: std::slice::from_raw_parts(descriptor.starts, len),
+            start_valid: std::slice::from_raw_parts(descriptor.start_valid, len),
+            ends: std::slice::from_raw_parts(descriptor.ends, len),
+            end_valid: std::slice::from_raw_parts(descriptor.end_valid, len),
+        }) {
+            Ok(index) => {
+                *out_handle = temporal::index_insert(index);
+                0
+            }
+            Err(error) => error as i32,
+        }
+    })
+}
+
+/// Read interval index row count.
+///
+/// # Safety
+/// `out_len` must be valid for one `u64`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_interval_index_len(handle: u64, out_len: *mut u64) -> i32 {
+    if out_len.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal::index_with(handle, |index| {
+            *out_len = index.len() as u64;
+        })
+        .map_or(temporal::TemporalError::StaleHandle as i32, |_| 0)
+    })
+}
+
+/// Emit visibility at an instant into a host byte plane (0/1 per row).
+///
+/// # Safety
+/// `out_visibility` must cover `capacity` bytes. `cancel_flag` may be null
+/// (never cancelled) or point to a `u32` that becomes non-zero when cancelled.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_interval_visibility_at(
+    handle: u64,
+    instant_micros: i64,
+    out_visibility: *mut u8,
+    capacity: u64,
+    budget: u64,
+    cancel_flag: *const u32,
+) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal::index_with(handle, |index| {
+            let len = index.len() as u64;
+            if capacity < len {
+                return temporal::TemporalError::OutputCapacity as i32;
+            }
+            if len != 0 && out_visibility.is_null() {
+                return temporal::TemporalError::InvalidArgument as i32;
+            }
+            let cancel = temporal::CancelFlag::new();
+            if !cancel_flag.is_null() && *cancel_flag != 0 {
+                cancel.cancel();
+            }
+            let budget = match usize::try_from(budget) {
+                Ok(value) => value,
+                Err(_) => return temporal::TemporalError::BudgetExceeded as i32,
+            };
+            let out = if len == 0 {
+                &mut [][..]
+            } else {
+                std::slice::from_raw_parts_mut(out_visibility, index.len())
+            };
+            match index.visibility_at(instant_micros, out, &cancel, budget) {
+                Ok(()) => 0,
+                Err(error) => error as i32,
+            }
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Filter event instants into a half-open `[range_start, range_end)` window.
+/// Pass `range_start_valid`/`range_end_valid` as 0 for unbounded sides.
+///
+/// # Safety
+/// Event buffers and `out_visibility` must cover `event_len` / `capacity`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_events_in_range(
+    event_micros: *const i64,
+    event_valid: *const u8,
+    event_len: u64,
+    range_start: i64,
+    range_start_valid: u32,
+    range_end: i64,
+    range_end_valid: u32,
+    out_visibility: *mut u8,
+    capacity: u64,
+    budget: u64,
+    cancel_flag: *const u32,
+) -> i32 {
+    if range_start_valid > 1 || range_end_valid > 1 {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let len = match usize::try_from(event_len) {
+            Ok(value) => value,
+            Err(_) => return temporal::TemporalError::CapacityExceeded as i32,
+        };
+        if capacity < event_len {
+            return temporal::TemporalError::OutputCapacity as i32;
+        }
+        if len != 0 && (event_micros.is_null() || event_valid.is_null() || out_visibility.is_null())
+        {
+            return temporal::TemporalError::InvalidArgument as i32;
+        }
+        let cancel = temporal::CancelFlag::new();
+        if !cancel_flag.is_null() && *cancel_flag != 0 {
+            cancel.cancel();
+        }
+        let budget = match usize::try_from(budget) {
+            Ok(value) => value,
+            Err(_) => return temporal::TemporalError::BudgetExceeded as i32,
+        };
+        let events = if len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(event_micros, len)
+        };
+        let valid = if len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(event_valid, len)
+        };
+        let out = if len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out_visibility, len)
+        };
+        let start = if range_start_valid == 0 {
+            None
+        } else {
+            Some(range_start)
+        };
+        let end = if range_end_valid == 0 {
+            None
+        } else {
+            Some(range_end)
+        };
+        let probe = match temporal::IntervalIndex::build(temporal::IntervalEndpoints {
+            starts: &[],
+            start_valid: &[],
+            ends: &[],
+            end_valid: &[],
+        }) {
+            Ok(value) => value,
+            Err(error) => return error as i32,
+        };
+        match probe.events_in_range(events, valid, start, end, out, &cancel, budget) {
+            Ok(()) => 0,
+            Err(error) => error as i32,
+        }
+    })
+}
+
+/// Destroy an interval index handle.
+///
+/// # Safety
+/// Callers must not use the handle after destruction.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_interval_index_destroy(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        if temporal::index_remove(handle) {
+            0
+        } else {
+            temporal::TemporalError::StaleHandle as i32
         }
     })
 }
