@@ -92,9 +92,11 @@ ABI and Node exports land; do not claim `ready` without a shared Rust path.
 | box / violin / ecdf / hexbin / heatmap / ribbon | ready | ready (heatmap categorical axes partial) | box/violin/hexbin/heatmap kernels | Node marks + goldens |
 
 **LOD utilization (all surfaces):** Tier-1 direct + Tier-2 density/aggregate/render-graph
-are ready on Python and Node. **Tier-3 Phase-3 pyramid** (build + compose) is
-ready on both hosts with §28 `binning: pyramid-L*`; Phase-4 disk tile spill
-remains design. Testing contract: [`tier3-testing.md`](tier3-testing.md).
+are ready on Python and Node. **Tier-3 Phase-3 pyramid** (build + compose) and
+**Phase-4 disk tile spill** (WP1 ABI + WP2 host engagement) are ready on both
+hosts with §28 `binning: pyramid-L*` / `pyramid-L*-tiles`. Optional client tile
+cache (#10) and WP4 evidence (#11) remain. Testing contract:
+[`tier3-testing.md`](tier3-testing.md).
 Scale evidence uses screen-bounded compose + LOD decisions (10M / 100M / 1B),
 not raw billion-point allocation in CI. See [`xy-coverage.md`](xy-coverage.md).
 

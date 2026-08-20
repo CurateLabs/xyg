@@ -231,12 +231,14 @@ inside this frame; changing any of it means editing this section first.
   MVP uses closed-form slab offsets; zone-map rebuild wiring remains available
   via existing `xyg_zone_maps_*` for WP2/WP4 dirty rebuilds.
 
-### WP2 — Hosts ([#9](https://github.com/CurateLabs/graphforge-xy/issues/9))
+### WP2 — Hosts ([#9](https://github.com/CurateLabs/xyg/issues/9))
 
-- Python: wire spill behind `no_rescan` / memmap / `n > PYRAMID_NO_RESCAN_ROWS`
-  or an explicit `pyramid_spill=True`.
-- Node: mirror in `packages/xy-node/src/pyramid.js`.
-- First paint + `density_view` prefer spilled tiles when the resident pyramid
+- [x] Python: wire spill behind `no_rescan` / memmap / `n > PYRAMID_NO_RESCAN_ROWS`
+  or the public scatter option `pyramid_spill=True`; `None` retains automatic
+  policy and invalid non-booleans fail before ingest.
+- [x] Node: mirror the option as `pyramidSpill` (with `pyramid_spill` accepted
+  at the host boundary) in `packages/xy-node/src/pyramid.js`.
+- [x] First paint + `density_view` prefer spilled tiles when the resident pyramid
   would exceed budget.
 
 ### WP3 — Client (optional follow-on, [#10](https://github.com/CurateLabs/graphforge-xy/issues/10))

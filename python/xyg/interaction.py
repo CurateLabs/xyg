@@ -31,6 +31,7 @@ from .config import (
     PYRAMID_MAX_DIM,
     PYRAMID_MIN_POINTS,
     PYRAMID_NO_RESCAN_ROWS,
+    PYRAMID_RESIDENT_BYTES,
     SCATTER_DENSITY_THRESHOLD,
     SPATIAL_EXACT_MAX_POINTS,
 )
@@ -43,6 +44,18 @@ if TYPE_CHECKING:
 # upsampled instead of refusing (Rust saturating-multiplies, so this never
 # overflows); every practical zoom then stays O(visible tiles).
 _PYRAMID_UNBOUNDED_UPSAMPLE = 1 << 30
+
+# Mirror config into the process-wide tile LRU (roadmap D2). Hosts own the
+# knob; Rust enforces it. Re-call after tests monkeypatch the constant.
+kernels.tile_budget_set(PYRAMID_RESIDENT_BYTES)
+
+
+def sync_tile_budget(bytes_: int | None = None) -> None:
+    """Push ``PYRAMID_RESIDENT_BYTES`` (or an override) into the native budget."""
+    budget = PYRAMID_RESIDENT_BYTES if bytes_ is None else _integer_id(bytes_, "tile budget bytes")
+    if budget < 0:
+        raise ValueError("tile budget bytes must be a non-negative integer")
+    kernels.tile_budget_set(budget)
 
 
 def _integer_id(value: int, label: str) -> int:
@@ -613,7 +626,15 @@ def _ensure_pyramid(t: Trace) -> int | None:
     (LOD doc §2) so pyramid-served zoom-outs keep the mean point color; those
     pyramids refuse native appends and are invalidated + lazily rebuilt
     instead (the appended rows' colors and a possibly moved channel domain
-    both require a rescan)."""
+    both require a rescan).
+
+    Phase-4: when spill engages (explicit ``pyramid_spill`` / no-rescan or
+    memmap eligibility with a pyramid that would exceed
+    ``PYRAMID_RESIDENT_BYTES``), the pyramid is snapshotted to a tile store,
+    the in-RAM handle is freed, and compose uses the store instead.
+    """
+    if getattr(t, "_tile_store", None):
+        return None
     handle = getattr(t, "_pyr_handle", None)
     if handle is not None:
         return handle or None
@@ -656,15 +677,78 @@ def _ensure_pyramid(t: Trace) -> int | None:
         # cell-re-run pattern) frees it instead of leaking it in the
         # process-lifetime registry.
         t._pyr_finalizer = weakref.finalize(t, kernels.pyramid_free, handle)
+        if _wants_pyramid_spill(t, base_dim, colored=t._pyr_colored):
+            _spill_pyramid(t, handle)
+            return None
     return handle or None
 
 
-def _free_pyramid(t: Trace) -> None:
-    """Free the trace's pyramid now and disarm its GC finalizer.
+def _wants_pyramid_spill(t: Trace, base_dim: int, *, colored: bool) -> bool:
+    """Whether to snapshot the pyramid into the Phase-4 tile store."""
+    force = bool(getattr(t, "pyramid_spill", None) or (t.style or {}).get("pyramid_spill"))
+    if force:
+        return True
+    eligible = (
+        is_memmapped(t.x.values) or is_memmapped(t.y.values) or len(t.x) > PYRAMID_NO_RESCAN_ROWS
+    )
+    if not eligible:
+        return False
+    return _pyramid_resident_bytes(base_dim, colored=colored) > PYRAMID_RESIDENT_BYTES
 
-    Resets the handle to None ("never tried") so the next far-out view
+
+def _spill_pyramid(t: Trace, handle: int) -> int | None:
+    """Spill ``handle`` to a tile store and free the in-RAM pyramid."""
+    store = kernels.pyramid_spill(handle)
+    if not store:
+        return None
+    fin = getattr(t, "_pyr_finalizer", None)
+    if fin is not None:
+        fin()
+        t._pyr_finalizer = None
+    else:
+        kernels.pyramid_free(handle)
+    # 0 = built-then-spilled (do not rebuild until invalidated).
+    t._pyr_handle = 0
+    t._tile_store = store
+    t._tile_finalizer = weakref.finalize(t, kernels.tile_store_free, store)
+    return store
+
+
+def _tile_store_of(t: Trace) -> int | None:
+    store = getattr(t, "_tile_store", None)
+    return int(store) if store else None
+
+
+def _tiles_stats_dict(store: int) -> dict[str, int | bool] | None:
+    stats = kernels.tile_store_stats(store)
+    if stats is None:
+        return None
+    hit, miss, resident, spilled, budget, over = stats
+    return {
+        "hit": hit,
+        "miss": miss,
+        "resident_bytes": resident,
+        "spilled_bytes": spilled,
+        "budget_bytes": budget,
+        "over_budget": over,
+    }
+
+
+def _free_pyramid(t: Trace) -> None:
+    """Free the trace's pyramid / tile store now and disarm GC finalizers.
+
+    Resets handles to None ("never tried") so the next far-out view
     rebuilds lazily; safe to call when no pyramid was ever built.
     """
+    fin_tile = getattr(t, "_tile_finalizer", None)
+    if fin_tile is not None:
+        fin_tile()
+        t._tile_finalizer = None
+    else:
+        store = _tile_store_of(t)
+        if store is not None:
+            kernels.tile_store_free(store)
+    t._tile_store = None
     fin = getattr(t, "_pyr_finalizer", None)
     if fin is not None:
         fin()  # runs pyramid_free exactly once; later GC becomes a no-op
@@ -689,16 +773,40 @@ def _pyramid_resident_bytes(base_dim: int = PYRAMID_BASE_DIM, *, colored: bool =
 
 def pyramid_report_bytes(fig: Any) -> int:
     """Memory-report line (design dossier §27): native bytes held by live
-    trace pyramids, at each trace's actual (possibly adaptive) base dim,
-    including the mean-color planes of colored pyramids."""
-    return sum(
-        _pyramid_resident_bytes(
-            getattr(t, "_pyr_base_dim", None) or PYRAMID_BASE_DIM,
-            colored=bool(getattr(t, "_pyr_colored", False)),
-        )
-        for t in fig.traces
-        if getattr(t, "_pyr_handle", 0)
-    )
+    in-RAM pyramids plus process-wide resident tile bytes when any Phase-4
+    store is live (D2 — the budget pool is shared)."""
+    total = 0
+    saw_store = False
+    store_resident = 0
+    for t in fig.traces:
+        store = getattr(t, "_tile_store", None)
+        if store:
+            saw_store = True
+            stats = kernels.tile_store_stats(store)
+            if stats is not None:
+                store_resident = int(stats[2])
+            continue
+        if getattr(t, "_pyr_handle", 0):
+            total += _pyramid_resident_bytes(
+                getattr(t, "_pyr_base_dim", None) or PYRAMID_BASE_DIM,
+                colored=bool(getattr(t, "_pyr_colored", False)),
+            )
+    if saw_store:
+        total += store_resident
+    return total
+
+
+def pyramid_spilled_bytes(fig: Any) -> int:
+    """Disk-backed spill-file bytes across live tile stores (D2 companion)."""
+    total = 0
+    for t in fig.traces:
+        store = getattr(t, "_tile_store", None)
+        if not store:
+            continue
+        stats = kernels.tile_store_stats(store)
+        if stats is not None:
+            total += int(stats[3])
+    return total
 
 
 def _encode_log_u8(grid: np.ndarray) -> tuple[bytes, float]:
@@ -950,13 +1058,47 @@ def density_view(
     no_rescan = is_memmapped(xv) or len(xv) > PYRAMID_NO_RESCAN_ROWS
     max_upsample = _PYRAMID_UNBOUNDED_UPSAMPLE if no_rescan else 2
     est = None
+    tiles_meta: dict[str, int | bool] | None = None
     # Nonlinear axes can't compose from the raw-space pyramid (see above) → no
     # pyramid, exact scan instead. A hidden-category mask also bypasses it:
     # the pyramid holds UNFILTERED counts, and §34's whole point is that a
     # static aggregate is wrong under any dynamic predicate — the masked view
     # takes the honest Tier-B re-bin below, recorded via the binning label.
     pyr = None if (nonlinear or vis_rows is not None) else _ensure_pyramid(t)
-    if pyr is not None:
+    store = None if (nonlinear or vis_rows is not None) else _tile_store_of(t)
+    if store is not None:
+        # Spilled path: no pyramid_count; treat like no-rescan for the serve
+        # gate (compose is the cheap O(tiles) answer).
+        plan = lod.plan_view_lod(
+            request,
+            SCATTER_DENSITY_THRESHOLD * 2,
+            SCATTER_DENSITY_THRESHOLD,
+            False,
+            aggregate_reduction="pyramid-count",
+        )
+        gw, gh = plan.grid_w, plan.grid_h
+        source = _pyramid_source_shape(t, lo_x, hi_x, lo_y, hi_y)
+        if source is not None:
+            gw = max(16, min(gw, source[0]))
+            gh = max(16, min(gh, source[1]))
+        tile_upsample = _PYRAMID_UNBOUNDED_UPSAMPLE if (no_rescan or store) else max_upsample
+        if getattr(t, "_pyr_colored", False):
+            res_color = kernels.tile_store_compose_color(
+                store, lo_x, hi_x, lo_y, hi_y, gw, gh, tile_upsample
+            )
+            res = (res_color[0], res_color[2]) if res_color is not None else None
+            rgba_grid = res_color[1] if res_color is not None else None
+        else:
+            res = kernels.tile_store_compose(store, lo_x, hi_x, lo_y, hi_y, gw, gh, tile_upsample)
+        if res is not None:
+            grid, level = res
+            visible = plan.visible
+            w, h = gw, gh
+            upsampled = no_rescan and level == 0
+            binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
+            tiles_meta = _tiles_stats_dict(store)
+            lod.exit_drill(t)
+    elif pyr is not None:
         est = kernels.pyramid_count(pyr, lo_x, hi_x, lo_y, hi_y)
         # Serve from the pyramid when the window is clearly aggregate territory,
         # or unconditionally for no-rescan traces (drilling to exact points is
@@ -1138,6 +1280,9 @@ def density_view(
         "binning": binning if vis_rows is None else binning + "-masked",
         "density": density,
     }
+    if tiles_meta is not None:
+        entry["tiles"] = tiles_meta
+        density["tiles"] = tiles_meta
     if vis_rows is not None:
         entry["filter"] = _legend_filter_spec(t)
     return {"traces": [entry]}, writer.buffers
@@ -1436,8 +1581,16 @@ def append_data(
             channel.values = np.concatenate((channel.values, tail), axis=0)
 
     pyramid = getattr(t, "_pyr_handle", None)
+    store = getattr(t, "_tile_store", None)
     pyramid_update = "none"
-    if t.kind == "scatter" and pyramid:
+    if t.kind == "scatter" and store:
+        applied = kernels.tile_store_append(store, ax, ay)
+        if applied:
+            pyramid_update = "dirty-tiles"
+        else:
+            _free_pyramid(t)
+            pyramid_update = "invalidate"
+    elif t.kind == "scatter" and pyramid:
         x_stream = getattr(t.x, "_stream", None)
         y_stream = getattr(t.y, "_stream", None)
         if x_stream and y_stream:
@@ -1449,7 +1602,7 @@ def append_data(
         else:
             _free_pyramid(t)
             pyramid_update = "invalidate"
-    elif pyramid == 0 and len(t.x) >= PYRAMID_MIN_POINTS:
+    elif pyramid == 0 and not store and len(t.x) >= PYRAMID_MIN_POINTS:
         # The trace crossed the lazy-index threshold after an earlier
         # "not applicable" result; let the next wide view build it.
         t._pyr_handle = None

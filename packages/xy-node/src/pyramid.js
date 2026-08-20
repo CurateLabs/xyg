@@ -5,8 +5,9 @@
  * build once over the full data bounds, then compose any viewport in
  * O(grid cells). Records §28 `binning: "pyramid-L<l>[-upsampled]"`.
  *
- * Phase-4 disk-resident 256² tile spill remains a separate residency layer;
- * this module is the shippable serve path on both hosts.
+ * Phase-4: when spill engages, snapshot via `xyg_pyramid_spill` and serve
+ * compose-from-tiles with `binning: "pyramid-L<l>-tiles[-upsampled]"` plus
+ * residency stats (lod-architecture item 10 / roadmap WP2).
  */
 
 import {
@@ -14,6 +15,7 @@ import {
   PYRAMID_MAX_DIM,
   PYRAMID_MIN_POINTS,
   PYRAMID_NO_RESCAN_ROWS,
+  PYRAMID_RESIDENT_BYTES,
   asF64Array,
   f64Ptr,
   f32Ptr,
@@ -21,6 +23,7 @@ import {
   u8Ptr,
 } from "./encode.js";
 import {
+  pointer,
   xyPyramidAppend,
   xyPyramidAppendFromStream,
   xyPyramidBuild,
@@ -30,7 +33,25 @@ import {
   xyPyramidComposeColor,
   xyPyramidCount,
   xyPyramidFree,
+  xyPyramidSpill,
+  xyTileBudgetSet,
+  xyTileStoreAppend,
+  xyTileStoreCompose,
+  xyTileStoreComposeColor,
+  xyTileStoreFree,
+  xyTileStoreStats,
 } from "./native.js";
+
+/** Sync host config into the process-wide tile LRU (roadmap D2). */
+xyTileBudgetSet(BigInt(PYRAMID_RESIDENT_BYTES));
+
+export function tileBudgetSet(bytes = PYRAMID_RESIDENT_BYTES) {
+  const n = Number(bytes);
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new RangeError("tile budget bytes must be a non-negative integer");
+  }
+  return xyTileBudgetSet(BigInt(n)) === 1;
+}
 
 function pyramidBaseDim(baseDim) {
   let d = Math.floor(Number(baseDim));
@@ -66,6 +87,17 @@ export function shouldUsePyramid(nPoints, { forcePyramid = false, forceBin2d = f
   if (forceBin2d) return false;
   if (forcePyramid) return true;
   return Number(nPoints) >= PYRAMID_MIN_POINTS;
+}
+
+export function pyramidResidentBytes(baseDim = PYRAMID_BASE_DIM, { colored = false } = {}) {
+  const perCell = 4 + (colored ? 8 : 0);
+  let total = 0;
+  let dim = pyramidBaseDim(baseDim);
+  while (true) {
+    total += dim * dim * perCell;
+    if (dim === 1) return total;
+    dim >>= 1;
+  }
 }
 
 /**
@@ -237,51 +269,151 @@ export function pyramidFree(handle) {
   return xyPyramidFree(BigInt(handle)) === 1;
 }
 
+export function pyramidSpill(handle) {
+  return BigInt(xyPyramidSpill(BigInt(handle)));
+}
+
+export function tileStoreCompose(
+  store,
+  loX,
+  hiX,
+  loY,
+  hiY,
+  w,
+  h,
+  { maxUpsample = 2, noRescan = false } = {},
+) {
+  const ww = Math.max(1, Math.floor(Number(w)));
+  const hh = Math.max(1, Math.floor(Number(h)));
+  const up = Math.max(1, Math.floor(Number(maxUpsample)));
+  const out = new Float32Array(ww * hh);
+  const level = xyTileStoreCompose(
+    BigInt(store),
+    Number(loX),
+    Number(hiX),
+    Number(loY),
+    Number(hiY),
+    BigInt(ww),
+    BigInt(hh),
+    BigInt(up),
+    f32Ptr(out),
+  );
+  if (level < 0) return null;
+  const upsampled = Boolean(noRescan && level === 0);
+  return {
+    grid: out,
+    level,
+    binning: `pyramid-L${level}-tiles${upsampled ? "-upsampled" : ""}`,
+  };
+}
+
+export function tileStoreComposeColor(
+  store,
+  loX,
+  hiX,
+  loY,
+  hiY,
+  w,
+  h,
+  { maxUpsample = 2, noRescan = false } = {},
+) {
+  const ww = Math.max(1, Math.floor(Number(w)));
+  const hh = Math.max(1, Math.floor(Number(h)));
+  const up = Math.max(1, Math.floor(Number(maxUpsample)));
+  const out = new Float32Array(ww * hh);
+  const rgba = new Uint8Array(ww * hh * 4);
+  const level = xyTileStoreComposeColor(
+    BigInt(store),
+    Number(loX),
+    Number(hiX),
+    Number(loY),
+    Number(hiY),
+    BigInt(ww),
+    BigInt(hh),
+    BigInt(up),
+    f32Ptr(out),
+    u8Ptr(rgba),
+  );
+  if (level < 0) return null;
+  const upsampled = Boolean(noRescan && level === 0);
+  return {
+    grid: out,
+    rgba,
+    level,
+    binning: `pyramid-L${level}-tiles${upsampled ? "-upsampled" : ""}`,
+  };
+}
+
+export function tileStoreAppend(store, x, y) {
+  const xa = asF64Array(x, "x");
+  const ya = asF64Array(y, "y");
+  if (xa.length !== ya.length) throw new RangeError("tile store append x/y length mismatch");
+  return xyTileStoreAppend(BigInt(store), f64Ptr(xa), f64Ptr(ya), BigInt(xa.length)) === 1;
+}
+
+export function tileStoreStats(store) {
+  const out = new BigUint64Array(6);
+  const ok = xyTileStoreStats(BigInt(store), pointer(out, "uint64_t *"));
+  if (ok !== 1) return null;
+  return {
+    hit: Number(out[0]),
+    miss: Number(out[1]),
+    resident_bytes: Number(out[2]),
+    spilled_bytes: Number(out[3]),
+    budget_bytes: Number(out[4]),
+    over_budget: out[5] !== 0n,
+  };
+}
+
+export function tileStoreFree(store) {
+  return xyTileStoreFree(BigInt(store)) === 1;
+}
+
 /**
  * Estimate resident pyramid bytes (u32 counts + optional color planes).
  */
 export function pyramidReportBytes(baseDim = PYRAMID_BASE_DIM, { colored = false } = {}) {
-  const perCell = 4 + (colored ? 8 : 0);
-  let total = 0;
-  let dim = pyramidBaseDim(baseDim);
-  while (true) {
-    total += dim * dim * perCell;
-    if (dim === 1) return total;
-    dim >>= 1;
-  }
+  return pyramidResidentBytes(baseDim, { colored });
+}
+
+function wantsSpill(nPoints, baseDim, { colored = false, noRescan = false, forceSpill = false } = {}) {
+  if (forceSpill) return true;
+  if (!noRescan && !(Number(nPoints) > PYRAMID_NO_RESCAN_ROWS)) return false;
+  return pyramidResidentBytes(baseDim, { colored }) > PYRAMID_RESIDENT_BYTES;
 }
 
 /**
- * Lazy per-trace pyramid cache for Node figure / densityView.
+ * Lazy per-trace pyramid / tile-store cache for Node figure / densityView.
  */
 export class PyramidCache {
   constructor() {
     this.handle = 0n;
+    this.store = 0n;
     this.baseDim = PYRAMID_BASE_DIM;
     this.colored = false;
     this.tried = false;
   }
 
-  ensure(x, y, { force = false, noRescan = false, coloredRgba = null } = {}) {
-    if (this.handle !== 0n) return this.handle;
-    if (this.tried && !force) return 0n;
+  ensure(x, y, { force = false, noRescan = false, forceSpill = false, coloredRgba = null } = {}) {
+    if (this.store !== 0n) return { kind: "tiles", handle: this.store };
+    if (this.handle !== 0n) return { kind: "pyramid", handle: this.handle };
+    if (this.tried && !force) return { kind: "none", handle: 0n };
     const xa = asF64Array(x, "x");
     const ya = asF64Array(y, "y");
     if (!shouldUsePyramid(xa.length, { forcePyramid: force })) {
       this.tried = true;
-      return 0n;
+      return { kind: "none", handle: 0n };
     }
     const xmm = minMax(xa);
     const ymm = minMax(ya);
     if (xmm == null || ymm == null || !(xmm[1] > xmm[0] && ymm[1] > ymm[0])) {
       this.tried = true;
-      return 0n;
+      return { kind: "none", handle: 0n };
     }
     const x1 = xmm[1] + (xmm[1] - xmm[0]) * 1e-9;
     const y1 = ymm[1] + (ymm[1] - ymm[0]) * 1e-9;
-    const dim = pyramidBaseDimFor(xa.length, {
-      noRescan: noRescan || xa.length > PYRAMID_NO_RESCAN_ROWS,
-    });
+    const autoNoRescan = noRescan || xa.length > PYRAMID_NO_RESCAN_ROWS;
+    const dim = pyramidBaseDimFor(xa.length, { noRescan: autoNoRescan });
     let handle;
     if (coloredRgba != null) {
       handle = pyramidBuildColor(xa, ya, xmm[0], x1, ymm[0], y1, dim, { rgba: coloredRgba });
@@ -290,13 +422,36 @@ export class PyramidCache {
       handle = pyramidBuild(xa, ya, xmm[0], x1, ymm[0], y1, dim);
       this.colored = false;
     }
-    this.handle = handle;
     this.baseDim = dim;
     this.tried = true;
-    return handle;
+    if (handle === 0n) {
+      this.handle = 0n;
+      return { kind: "none", handle: 0n };
+    }
+    if (
+      wantsSpill(xa.length, dim, {
+        colored: this.colored,
+        noRescan: autoNoRescan,
+        forceSpill,
+      })
+    ) {
+      const store = pyramidSpill(handle);
+      if (store !== 0n) {
+        pyramidFree(handle);
+        this.handle = 0n;
+        this.store = store;
+        return { kind: "tiles", handle: store };
+      }
+    }
+    this.handle = handle;
+    return { kind: "pyramid", handle };
   }
 
   free() {
+    if (this.store !== 0n) {
+      tileStoreFree(this.store);
+      this.store = 0n;
+    }
     if (this.handle !== 0n) {
       pyramidFree(this.handle);
       this.handle = 0n;
@@ -306,7 +461,7 @@ export class PyramidCache {
 }
 
 /**
- * Serve a density viewport from a pyramid when eligible; else null (caller bin2d).
+ * Serve a density viewport from a pyramid / tile store when eligible; else null.
  */
 export function densityViewFromPyramid(
   cache,
@@ -318,24 +473,39 @@ export function densityViewFromPyramid(
   hiY,
   w,
   h,
-  { force = false, noRescan = false } = {},
+  { force = false, noRescan = false, forceSpill = false } = {},
 ) {
   const n = asF64Array(x).length;
   const autoNoRescan = noRescan || n > PYRAMID_NO_RESCAN_ROWS;
-  const handle = cache.ensure(x, y, { force, noRescan: autoNoRescan });
-  if (handle === 0n) return null;
-  const maxUpsample = autoNoRescan ? 1_000_000 : 2;
-  const composed = pyramidCompose(handle, loX, hiX, loY, hiY, w, h, {
-    maxUpsample,
-    noRescan: autoNoRescan,
-  });
+  const ensured = cache.ensure(x, y, { force, noRescan: autoNoRescan, forceSpill });
+  if (ensured.kind === "none") return null;
+  const maxUpsample = autoNoRescan || ensured.kind === "tiles" ? 1_000_000 : 2;
+  let composed;
+  let tiles = null;
+  if (ensured.kind === "tiles") {
+    composed = tileStoreCompose(ensured.handle, loX, hiX, loY, hiY, w, h, {
+      maxUpsample,
+      noRescan: autoNoRescan,
+    });
+    tiles = tileStoreStats(ensured.handle);
+  } else {
+    composed = pyramidCompose(ensured.handle, loX, hiX, loY, hiY, w, h, {
+      maxUpsample,
+      noRescan: autoNoRescan,
+    });
+  }
   if (composed == null) return null;
+  const residentBytes =
+    ensured.kind === "tiles" && tiles != null
+      ? tiles.resident_bytes
+      : pyramidReportBytes(cache.baseDim, { colored: cache.colored });
   return {
     ...composed,
     reduction: "pyramid-count",
     tier: "density",
-    handle,
-    residentBytes: pyramidReportBytes(cache.baseDim, { colored: cache.colored }),
+    handle: ensured.handle,
+    tiles,
+    residentBytes,
   };
 }
 
@@ -344,4 +514,5 @@ export {
   PYRAMID_MAX_DIM,
   PYRAMID_MIN_POINTS,
   PYRAMID_NO_RESCAN_ROWS,
+  PYRAMID_RESIDENT_BYTES,
 };

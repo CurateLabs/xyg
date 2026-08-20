@@ -241,6 +241,12 @@ PYRAMID_NO_RESCAN_ROWS = 200_000_000
 # capped here (16384² u32 ≈ 1 GB + 1/3 pyramid overhead). Normal traces keep
 # PYRAMID_BASE_DIM, so their memory is unchanged.
 PYRAMID_MAX_DIM = 16384
+# Phase-4 disk tile spill (roadmap D2): process-wide RAM budget for resident
+# 256² tiles. Hosts mirror this into `xyg_tile_budget_set`; an adaptive
+# PYRAMID_MAX_DIM base that would exceed it spills and serves compose-from-tiles
+# instead of keeping the full pyramid resident (§27 / lod-architecture item 10).
+PYRAMID_RESIDENT_BYTES = 512 * (1 << 20)
+
 # When a trace carries a spatial index (`_spatial.SpatialIndex`), a zoomed-in
 # window the pyramid can only serve blurry is re-binned *exactly* from just its
 # in-window points — but only when that count is affordable to read/bin at
