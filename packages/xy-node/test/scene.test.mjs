@@ -42,13 +42,24 @@ test("Node figure defaults match Python Scene bytes and canonical values", () =>
   assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
 });
 
-test("Node Scene v6 whole-scene consumers reject malformed and unsupported input", () => {
+test("Node Scene v7 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
   const figure = new Figure().heatmap([[0, 1], [1, 0]]);
   assert.throws(() => figure.toScene(), /does not yet support heatmap/);
 });
 
-test("Node Scene v6 compiles area bands", () => {
+test("Node Scene v7 compiles ribbon and triangle_mesh", () => {
+  const ribbon = new Figure({ width: 320, height: 200 });
+  ribbon.setAxisDomain("x", [0, 1]); ribbon.setAxisDomain("y", [0, 1]);
+  ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], { color: "#7c3aed", name: null });
+  assert.match(sceneSvg(ribbon.toScene()), /<path d="M /);
+  const mesh = new Figure({ width: 240, height: 160 });
+  mesh.setAxisDomain("x", [0, 1]); mesh.setAxisDomain("y", [0, 1]);
+  mesh.triangleMesh([0], [0], [1], [0], [0.5], [1], { color: "#22c55e", name: null });
+  assert.match(sceneSvg(mesh.toScene()), /<path d="M /);
+});
+
+test("Node Scene v7 compiles area bands", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 3]);
   figure.area([0, 1, 2], [1, 2, 1.5], { base: 0, color: "#3987e5", opacity: 0.5 });
@@ -246,7 +257,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 6);
+  assert.equal(sceneVersion(), 7);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -287,7 +298,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 6);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 7);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

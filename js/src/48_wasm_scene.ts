@@ -58,9 +58,25 @@ function compilePainter(painter: ArrayBuffer) {
       // Area paint uses one x with a y-base; Rust rejects unequal band x pairs.
       trace = { kind: "area", x, y, base: y1, style: { color: fill, fill, stroke, stroke_width: strokeWidth, opacity: 1 } };
       void x1;
+    } else if (kind === 4) {
+      if (symbol !== 0 || diameter !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust polyfill descriptor is invalid");
+      if (count !== 3) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust polyfill browser paint currently requires three vertices");
+      const at = (colIndex: number, i: number) => {
+        const source = columns[colIndex];
+        const index = columns.length;
+        columns.push({ byte_offset: source.byte_offset + i * 4, len: 1 });
+        return index;
+      };
+      trace = {
+        kind: "triangle_mesh",
+        x0: at(x, 0), y0: at(y, 0), x1: at(x, 1), y1: at(y, 1), x2: at(x, 2), y2: at(y, 2),
+        color: { mode: "constant", color: fill },
+        style: { color: fill, stroke, stroke_width: strokeWidth },
+      };
     } else throw new XygWasmError("XYG_WASM_UNSUPPORTED", `unsupported Rust painter trace ${kind}`);
     trace.scene_ids = { lo: column(descriptor, 24, count, "u32"), hi: column(descriptor, 28, count, "u32") };
-    Object.assign(trace, { id: index, name: null, tier: "direct", n_points: count, n_marks: count, x_axis: "x", y_axis: "y" });
+    const markCount = kind === 4 ? 1 : count;
+    Object.assign(trace, { id: index, name: null, tier: "direct", n_points: markCount, n_marks: markCount, x_axis: "x", y_axis: "y" });
     traces.push(trace);
   }
   const xTickCount = u32(48), yTickCount = u32(52), tickOffset = u32(56), stringOffset = u32(60);

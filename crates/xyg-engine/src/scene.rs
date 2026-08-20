@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 6;
+pub const SCENE_VERSION: u32 = 7;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -951,6 +951,11 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     return Err(SceneError::Length);
                 }
             }
+            SceneRecordKind::PolyFill => {
+                if symbol != 0 || diameter != 0.0 || coords[2] != 0.0 || coords[3] != 0.0 {
+                    return Err(SceneError::Length);
+                }
+            }
         }
     }
 
@@ -1011,6 +1016,10 @@ pub enum SceneRecordKind {
     /// Filled band: each record is one (top, base) sample; consecutive same
     /// stable-id/style_ref runs form a closed polygon (tops forward, bases reverse).
     Band = 3,
+    /// Filled polygon vertex: consecutive same stable-id/style_ref runs with
+    /// at least three vertices form one closed fill (triangle mesh hosts emit
+    /// one three-vertex run per triangle).
+    PolyFill = 4,
 }
 
 impl SceneRecordKind {
@@ -1020,6 +1029,7 @@ impl SceneRecordKind {
             1 => Ok(Self::Polyline),
             2 => Ok(Self::Rect),
             3 => Ok(Self::Band),
+            4 => Ok(Self::PolyFill),
             _ => Err(SceneError::Length),
         }
     }
@@ -1240,7 +1250,7 @@ impl<'a> SceneBatch<'a> {
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
             let mapped = match kind {
-                SceneRecordKind::Scatter | SceneRecordKind::Polyline => [
+                SceneRecordKind::Scatter | SceneRecordKind::Polyline | SceneRecordKind::PolyFill => [
                     self.x_scale.pixel(self.x0[index]),
                     self.y_scale.pixel(self.y0[index]),
                     0.0,
@@ -1255,7 +1265,7 @@ impl<'a> SceneBatch<'a> {
             };
             let visible = mapped.iter().all(|value| value.is_finite())
                 && match kind {
-                    SceneRecordKind::Polyline | SceneRecordKind::Band => true,
+                    SceneRecordKind::Polyline | SceneRecordKind::Band | SceneRecordKind::PolyFill => true,
                     SceneRecordKind::Scatter => {
                         let style = self.style_refs[index] as usize;
                         let geometry = MarkerGeometry::new(
@@ -1285,9 +1295,9 @@ impl<'a> SceneBatch<'a> {
                 [0.0; 4]
             } else {
                 match kind {
-                    SceneRecordKind::Scatter | SceneRecordKind::Polyline => {
-                        [mapped[0], mapped[1], 0.0, 0.0]
-                    }
+                    SceneRecordKind::Scatter
+                    | SceneRecordKind::Polyline
+                    | SceneRecordKind::PolyFill => [mapped[0], mapped[1], 0.0, 0.0],
                     SceneRecordKind::Rect => [
                         mapped[0].min(mapped[2]),
                         mapped[1].min(mapped[3]),
@@ -1651,8 +1661,10 @@ impl SceneDocument {
                 || !diameter.is_finite()
                 || diameter < 0.0
                 || (kind != SceneRecordKind::Scatter && diameter != 0.0)
-                || (matches!(kind, SceneRecordKind::Scatter | SceneRecordKind::Polyline)
-                    && coordinates[2..] != [0.0, 0.0])
+                || (matches!(
+                    kind,
+                    SceneRecordKind::Scatter | SceneRecordKind::Polyline | SceneRecordKind::PolyFill
+                ) && coordinates[2..] != [0.0, 0.0])
                 || (visible
                     && kind == SceneRecordKind::Rect
                     && (coordinates[0] > coordinates[2] || coordinates[1] > coordinates[3]))
@@ -1676,6 +1688,14 @@ impl SceneDocument {
                     SceneRecordKind::Band => {
                         21 + if styles[style_ref].stroke_width > 0.0 {
                             26
+                        } else {
+                            0
+                        }
+                    }
+                    // Three-vertex fill is 33 bytes; reserve 11 per vertex (+stroke share).
+                    SceneRecordKind::PolyFill => {
+                        11 + if styles[style_ref].stroke_width > 0.0 {
+                            18
                         } else {
                             0
                         }
@@ -1857,6 +1877,46 @@ impl SceneDocument {
                             push_num(&mut out, point.coordinates[2]);
                             out.push(' ');
                             push_num(&mut out, point.coordinates[3]);
+                        }
+                        out.push_str(" Z\"");
+                        push_paint(&mut out, "fill", style.fill, None);
+                        if style.stroke_width > 0.0 {
+                            push_paint(&mut out, "stroke", style.stroke, None);
+                            out.push_str(" stroke-width=\"");
+                            push_num(&mut out, style.stroke_width);
+                            out.push('"');
+                        } else {
+                            out.push_str(" stroke=\"none\"");
+                        }
+                        out.push_str("/>");
+                    }
+                }
+                SceneRecordKind::PolyFill => {
+                    let id = record.stable_id;
+                    let style_ref = record.style_ref;
+                    let start = index;
+                    while index < self.records.len() {
+                        let point = self.records[index];
+                        if point.kind != SceneRecordKind::PolyFill
+                            || point.stable_id != id
+                            || point.style_ref != style_ref
+                            || !point.visible
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                    let run = &self.records[start..index];
+                    if run.len() >= 3 {
+                        out.push_str("<path d=\"M ");
+                        push_num(&mut out, run[0].coordinates[0]);
+                        out.push(' ');
+                        push_num(&mut out, run[0].coordinates[1]);
+                        for point in &run[1..] {
+                            out.push_str(" L ");
+                            push_num(&mut out, point.coordinates[0]);
+                            out.push(' ');
+                            push_num(&mut out, point.coordinates[1]);
                         }
                         out.push_str(" Z\"");
                         push_paint(&mut out, "fill", style.fill, None);
@@ -2243,6 +2303,46 @@ impl SceneDocument {
                         }
                     }
                 }
+                SceneRecordKind::PolyFill => {
+                    let start = index;
+                    let id = record.stable_id;
+                    let style_ref = record.style_ref;
+                    while index < self.records.len() {
+                        let point = self.records[index];
+                        if point.kind != SceneRecordKind::PolyFill
+                            || point.stable_id != id
+                            || point.style_ref != style_ref
+                            || !point.visible
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                    let run = &self.records[start..index];
+                    if run.len() >= 3 {
+                        let count = run.len() as u32;
+                        out.push(1); // OP_FILL_POLY
+                        out.extend_from_slice(&count.to_le_bytes());
+                        for point in run {
+                            push_raster_f32(out, point.coordinates[0], scale)?;
+                            push_raster_f32(out, point.coordinates[1], scale)?;
+                        }
+                        out.extend_from_slice(&style.fill);
+                        if style.stroke_width > 0.0 {
+                            out.push(3); // OP_STROKE
+                            out.extend_from_slice(&count.to_le_bytes());
+                            for point in run {
+                                push_raster_f32(out, point.coordinates[0], scale)?;
+                                push_raster_f32(out, point.coordinates[1], scale)?;
+                            }
+                            push_raster_f32(out, style.stroke_width, scale)?;
+                            out.extend_from_slice(&style.stroke);
+                            out.push(1); // closed
+                            out.extend_from_slice(&0u32.to_le_bytes());
+                            out.push(1);
+                        }
+                    }
+                }
                 SceneRecordKind::Polyline => {
                     let start = index;
                     let id = record.stable_id;
@@ -2435,6 +2535,22 @@ impl SceneDocument {
                             return Err(SceneError::Length);
                         }
                         index += 1;
+                    }
+                }
+                SceneRecordKind::PolyFill => {
+                    while index < self.records.len() {
+                        let next = self.records[index];
+                        if !next.visible
+                            || next.kind != SceneRecordKind::PolyFill
+                            || next.stable_id != record.stable_id
+                            || next.style_ref != record.style_ref
+                        {
+                            break;
+                        }
+                        index += 1;
+                    }
+                    if index - start < 3 {
+                        return Err(SceneError::Length);
                     }
                 }
             }
@@ -3216,7 +3332,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 6);
+        assert_eq!(SCENE_VERSION, 7);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -4031,6 +4147,46 @@ mod tests {
             .to_raster_commands(1.0)
             .unwrap();
         assert!(commands.contains(&1), "band fill poly opcode missing");
+    }
+
+    #[test]
+    fn scene_v7_polyfill_closes_triangle_path() {
+        let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let batch = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &[4, 4, 4],
+            &[9, 9, 9],
+            &[0, 0, 0],
+            &[34, 197, 94, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[0.0, 0.0, 0.0],
+            &[0, 0, 0],
+            &[0.0, 1.0, 0.5],
+            &[0.0, 0.0, 1.0],
+            &[0.0, 0.0, 0.0],
+            &[0.0, 0.0, 0.0],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            SCENE_VERSION
+        );
+        let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
+        assert!(svg.contains("<path d=\"M "));
+        assert!(svg.contains(" Z\""));
+        let commands = SceneDocument::decode(&encoded)
+            .unwrap()
+            .to_raster_commands(1.0)
+            .unwrap();
+        assert!(commands.contains(&1));
     }
 
     #[test]
