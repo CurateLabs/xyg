@@ -1849,7 +1849,7 @@ def test_inline_svg_gallery_validator_requires_every_styled_preview(tmp_path: Pa
         preview * 33 + "gallery-preview-surface aspect-[320/232] shadow-large",
         encoding="utf-8",
     )
-    with pytest.raises(RuntimeError, match="34 previews, expected 35"):
+    with pytest.raises(RuntimeError, match="33 previews, expected 35"):
         check_html_routes.validate_inline_svg_gallery("/overview/gallery/", module_path)
 
 
