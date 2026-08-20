@@ -21,6 +21,7 @@
 #![allow(clippy::too_many_arguments)] // C ABI entry points; arity is the contract
 
 use xyg_engine::css;
+use xyg_engine::geo;
 use xyg_engine::graph;
 use xyg_engine::hexbin;
 use xyg_engine::kernels;
@@ -90,7 +91,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 71;
+pub const ABI_VERSION: u32 = 72;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6249,6 +6250,208 @@ pub unsafe extern "C" fn xyg_contourf_bands(
     })
 }
 
+
+// -- geographic columns (#47): opaque u64 handles over GeoColumn ------------
+
+fn geo_slice_f64<'a>(ptr: *const f64, len: usize) -> Option<&'a [f64]> {
+    if len == 0 {
+        Some(&[])
+    } else if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(ptr, len) })
+    }
+}
+
+fn geo_slice_u8<'a>(ptr: *const u8, len: usize) -> Option<&'a [u8]> {
+    if len == 0 {
+        Some(&[])
+    } else if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(ptr, len) })
+    }
+}
+
+fn geo_slice_u32<'a>(ptr: *const u32, len: usize) -> Option<&'a [u32]> {
+    if len == 0 {
+        Some(&[])
+    } else if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(ptr, len) })
+    }
+}
+
+fn geo_slice_u64<'a>(ptr: *const u64, len: usize) -> Option<&'a [u64]> {
+    if len == 0 {
+        Some(&[])
+    } else if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(ptr, len) })
+    }
+}
+
+fn write_geo_error(out_error: *mut i32, err: geo::GeoError) {
+    if !out_error.is_null() {
+        unsafe {
+            *out_error = err as i32;
+        }
+    }
+}
+
+/// Validate and retain a geographic column from a typed host descriptor.
+///
+/// `geometry` is `1..=6` (`point`…`multipolygon`). `crs` is `4326` or `3857`.
+/// `xy_len` is the interleaved f64 length (`2 * vertex_count`). `validity_len`
+/// is the feature count. `feature_ids` may be null to assign dense `0..n`.
+/// Offset planes follow `spec/design/geospatial.md`; unused planes pass
+/// null/`0`. On failure returns `0` and writes a negative `GeoError` code to
+/// `out_error` (or leaves it untouched when null).
+///
+/// # Safety
+/// Non-empty pointer/len pairs must address readable arrays of that length.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_new(
+    geometry: u32,
+    crs: u32,
+    xy: *const f64,
+    xy_len: usize,
+    validity: *const u8,
+    validity_len: usize,
+    feature_ids: *const u64,
+    offsets0: *const u32,
+    offsets0_len: usize,
+    offsets1: *const u32,
+    offsets1_len: usize,
+    offsets2: *const u32,
+    offsets2_len: usize,
+    out_error: *mut i32,
+) -> u64 {
+    ffi_guard(0, || {
+        let Some(geometry) = geo::GeoGeometry::from_u32(geometry) else {
+            write_geo_error(out_error, geo::GeoError::InvalidArgument);
+            return 0;
+        };
+        let Some(crs) = geo::GeoCrs::from_u32(crs) else {
+            write_geo_error(out_error, geo::GeoError::UnsupportedCrs);
+            return 0;
+        };
+        let Some(xy) = geo_slice_f64(xy, xy_len) else {
+            write_geo_error(out_error, geo::GeoError::InvalidArgument);
+            return 0;
+        };
+        let Some(validity) = geo_slice_u8(validity, validity_len) else {
+            write_geo_error(out_error, geo::GeoError::InvalidArgument);
+            return 0;
+        };
+        let feature_ids = if feature_ids.is_null() {
+            None
+        } else {
+            match geo_slice_u64(feature_ids, validity_len) {
+                Some(ids) => Some(ids),
+                None => {
+                    write_geo_error(out_error, geo::GeoError::InvalidArgument);
+                    return 0;
+                }
+            }
+        };
+        let Some(offsets0) = geo_slice_u32(offsets0, offsets0_len) else {
+            write_geo_error(out_error, geo::GeoError::InvalidArgument);
+            return 0;
+        };
+        let Some(offsets1) = geo_slice_u32(offsets1, offsets1_len) else {
+            write_geo_error(out_error, geo::GeoError::InvalidArgument);
+            return 0;
+        };
+        let Some(offsets2) = geo_slice_u32(offsets2, offsets2_len) else {
+            write_geo_error(out_error, geo::GeoError::InvalidArgument);
+            return 0;
+        };
+        let desc = geo::GeoDescriptor {
+            geometry,
+            crs,
+            xy,
+            validity,
+            feature_ids,
+            offsets0,
+            offsets1,
+            offsets2,
+            limits: geo::GeoLimits::default(),
+        };
+        match geo::GeoColumn::from_descriptor(desc) {
+            Ok(col) => {
+                if !out_error.is_null() {
+                    *out_error = 0;
+                }
+                geo::reg_insert(col)
+            }
+            Err(err) => {
+                write_geo_error(out_error, err);
+                0
+            }
+        }
+    })
+}
+
+/// Free a geographic column handle. Returns 1 if it existed, 0 if stale.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_free(handle: u64) -> i32 {
+    ffi_guard(0, || {
+        if geo::reg_free(handle).is_ok() {
+            1
+        } else {
+            0
+        }
+    })
+}
+
+/// Feature count (including nulls). `usize::MAX` on a stale handle.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_len(handle: u64) -> usize {
+    ffi_guard(usize::MAX, || {
+        geo::reg_with(handle, |c| c.len()).unwrap_or(usize::MAX)
+    })
+}
+
+/// Retained vertex count. `usize::MAX` on a stale handle.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_vertex_count(handle: u64) -> usize {
+    ffi_guard(usize::MAX, || {
+        geo::reg_with(handle, |c| c.vertex_count()).unwrap_or(usize::MAX)
+    })
+}
+
+/// Geometry kind (`1..=6`). `0` on a stale handle.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_geometry(handle: u64) -> u32 {
+    ffi_guard(0, || {
+        geo::reg_with(handle, |c| c.geometry() as u32).unwrap_or(0)
+    })
+}
+
+/// CRS authority code (`4326` or `3857`). `0` on a stale handle.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geo_column_crs(handle: u64) -> u32 {
+    ffi_guard(0, || geo::reg_with(handle, |c| c.crs() as u32).unwrap_or(0))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -6972,5 +7175,60 @@ mod tests {
             assert_eq!(xyg_graph_projection_create(&descriptor, &mut handle), -6);
         }
         assert_eq!(handle, 0);
+    }
+
+    #[test]
+    fn geo_column_abi_round_trips_point() {
+        let xy = [-104.9903_f64, 39.7392];
+        let validity = [1_u8];
+        let mut err = 0_i32;
+        let handle = unsafe {
+            xyg_geo_column_new(
+                1,
+                4326,
+                xy.as_ptr(),
+                xy.len(),
+                validity.as_ptr(),
+                validity.len(),
+                std::ptr::null(),
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                &mut err,
+            )
+        };
+        assert_eq!(err, 0);
+        assert_ne!(handle, 0);
+        unsafe {
+            assert_eq!(xyg_geo_column_len(handle), 1);
+            assert_eq!(xyg_geo_column_vertex_count(handle), 1);
+            assert_eq!(xyg_geo_column_geometry(handle), 1);
+            assert_eq!(xyg_geo_column_crs(handle), 4326);
+            assert_eq!(xyg_geo_column_free(handle), 1);
+            assert_eq!(xyg_geo_column_free(handle), 0);
+        }
+        let bad = unsafe {
+            xyg_geo_column_new(
+                1,
+                9999,
+                xy.as_ptr(),
+                xy.len(),
+                validity.as_ptr(),
+                validity.len(),
+                std::ptr::null(),
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                &mut err,
+            )
+        };
+        assert_eq!(bad, 0);
+        assert_eq!(err, -2);
     }
 }

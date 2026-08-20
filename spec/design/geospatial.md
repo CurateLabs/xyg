@@ -103,8 +103,12 @@ Failures are atomic: no partial column is retained.
 
 - Implementation: `crates/xyg-engine/src/geo.rs` (`GeoColumn`,
   `GeoDescriptor`, opaque handle registry).
-- Next: C ABI + generated Python/Node/WASM descriptor bindings; headless
-  GeoViewport (#48); geographic layer programs (#49); LOD/export (#50).
+- C ABI (v71+): `xyg_geo_column_new` / `_free` / `_len` / `_vertex_count` /
+  `_geometry` / `_crs` in `crates/xyg-core`, generated into Python/Node ABI
+  modules. Hosts decode GeoArrow and pass the typed descriptor buffers.
+- Next: ergonomic Python/Node wrappers over the generated ABI; WASM
+  descriptor parity (#59); headless GeoViewport (#48); geographic layer
+  programs (#49); LOD/export (#50).
 
 ## Related
 
