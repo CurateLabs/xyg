@@ -303,19 +303,31 @@ def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
 
 
 def test_public_svg_scatter_routes_builtin_symbols_through_rust(monkeypatch) -> None:
-    original = _native.scene_svg
+    original = _native.scene_scatter_svg
     calls: list[int] = []
 
-    def record(encoded: bytes) -> str:
-        calls.append(len(encoded))
-        return original(encoded)
+    def record(*args, **kwargs):
+        calls.append(len(args[0]))
+        return original(*args, **kwargs)
 
-    monkeypatch.setattr(_native, "scene_svg", record)
+    monkeypatch.setattr(_native, "scene_scatter_svg", record)
     svg = Figure().scatter([0.0, 1.0], [1.0, 0.0], symbol="diamond").to_svg()
 
-    assert len(calls) == 1 and calls[0] > 160
-    assert 'data-xy-chrome="grid"' in svg
-    assert "<path " in svg or "<polygon " in svg
+    assert calls == [2]
+    assert '<path d="M ' in svg
+    assert 'fill="#3987e5"' in svg
+
+
+def test_scene_plot_layout_owns_cartesian_gutters() -> None:
+    left, right, top, bottom = _native.scene_plot_layout(
+        viewport=(320, 240),
+        x_axis=(0, 0.0, 4.0, 1.0, False),
+        y_axis=(0, 0.0, 5.0, 1.0, False),
+    )
+    assert left >= 46.0 and right >= 8.0 and top >= 6.0 and bottom >= 36.0
+    scene = Figure(width=320, height=240).scatter([1.0], [2.0]).to_scene()
+    view = memoryview(scene)
+    assert float(np.frombuffer(view[48:56], dtype="<f8")[0]) == left
 
 
 def test_scene_rejects_malformed_host_arrays() -> None:

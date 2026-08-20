@@ -2241,9 +2241,9 @@ class Figure(AnnotationsMixin, PayloadMixin):
     def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:
         """Compile the migrated scatter/line/bar subset to canonical Scene v5.
 
-        Unsupported marks or customization raise explicitly. Public SVG/PNG/PDF
-        select this path when compilation succeeds; otherwise they retain the
-        established compatibility renderer.
+        Unsupported marks or customization raise explicitly; ordinary SVG and
+        raster exports retain their established renderer as the compatibility
+        fallback until public Scene selection covers remaining chrome.
         """
         from . import _scene_v3
 

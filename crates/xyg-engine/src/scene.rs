@@ -2792,27 +2792,29 @@ fn push_regular_polygon(
     out.push_str(" Z\"");
 }
 
+/// DejaVu Sans advances at BASE_PX=16 for printable ASCII (matches
+/// `python/xy/_fontmetrics.py` / `font.rs` so native and WASM gutters agree
+/// without pulling the raster coverage atlas into the browser adapter).
+const ASCII_ADVANCES: [i32; 95] = [
+    5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    5, 5, 13, 13, 13, 8, 16, 11, 11, 11, 12, 10, 9, 12, 12, 5, 5, 10, 9, 14, 12, 13, 10, 13, 11,
+    10, 10, 12, 11, 16, 11, 10, 11, 6, 5, 6, 13, 8, 8, 10, 10, 9, 10, 10, 6, 10, 10, 4, 4, 9, 4,
+    16, 10, 10, 10, 10, 7, 8, 6, 10, 9, 13, 9, 9, 8, 10, 5, 10, 13,
+];
+const FONT_BASE_PX: f64 = 16.0;
+const MISSING_ADVANCE: i32 = 16; // U+FFFD width at BASE_PX
+
 fn text_advance(text: &str, font_size: f64) -> f64 {
-    use crate::font::{self, EXTRA_CODEPOINTS, GLYPHS};
     let mut units = 0_i32;
-    let ascii = (font::LAST - font::FIRST + 1) as usize;
-    let missing = EXTRA_CODEPOINTS
-        .binary_search(&0xFFFD)
-        .map(|index| ascii + index)
-        .unwrap_or(0);
     for ch in text.chars() {
         let code = ch as u32;
-        let index = if (font::FIRST as u32..=font::LAST as u32).contains(&code) {
-            (code - font::FIRST as u32) as usize
+        units += if (32..=126).contains(&code) {
+            ASCII_ADVANCES[(code - 32) as usize]
         } else {
-            match EXTRA_CODEPOINTS.binary_search(&code) {
-                Ok(extra) => ascii + extra,
-                Err(_) => missing,
-            }
+            MISSING_ADVANCE
         };
-        units += GLYPHS[index].0;
     }
-    font_size * f64::from(units) / f64::from(font::BASE_PX)
+    font_size * f64::from(units) / FONT_BASE_PX
 }
 
 const AXIS_TEXT_EDGE_PAD: f64 = 4.0;
