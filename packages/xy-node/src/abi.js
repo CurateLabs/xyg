@@ -48,6 +48,12 @@ import {
   xyTemporalIntervalIndexDestroy,
   xyTemporalIntervalIndexLen,
   xyTemporalIntervalVisibilityAt,
+  xyGeoColumnCrs,
+  xyGeoColumnFree,
+  xyGeoColumnGeometry,
+  xyGeoColumnLen,
+  xyGeoColumnNew,
+  xyGeoColumnVertexCount,
 } from "./native.js";
 
 export { nativeLibraryPath };
@@ -187,6 +193,41 @@ export class TemporalNativeError extends Error {
   constructor(code, message) {
     super(message ?? `native temporal failed with status ${code}`);
     this.name = "TemporalNativeError";
+    this.nativeCode = code;
+  }
+}
+
+export const GEO_GEOMETRY = Object.freeze({
+  point: 1,
+  linestring: 2,
+  polygon: 3,
+  multipoint: 4,
+  multilinestring: 5,
+  multipolygon: 6,
+});
+
+export const GEO_CRS = Object.freeze({
+  epsg4326: 4326,
+  epsg3857: 3857,
+});
+
+const GEO_MESSAGES = Object.freeze({
+  [-1]: "geographic descriptor is incomplete or inconsistent",
+  [-2]: "CRS is not in the certified EPSG:4326 / EPSG:3857 profile",
+  [-3]: "geometry kind does not match the supplied offset planes",
+  [-4]: "offset planes are malformed or disagree with vertex counts",
+  [-5]: "nested geometry parts cannot be null",
+  [-6]: "coordinate is non-finite",
+  [-7]: "coordinate is outside the declared CRS bounds",
+  [-8]: "polygon ring is too short or not closed",
+  [-9]: "geometry exceeds feature, vertex, or byte limits",
+  [-10]: "geographic column handle is stale or freed",
+});
+
+export class GeoNativeError extends Error {
+  constructor(code, message) {
+    super(message ?? GEO_MESSAGES[code] ?? `native geo failed with status ${code}`);
+    this.name = "GeoNativeError";
     this.nativeCode = code;
   }
 }
@@ -360,6 +401,73 @@ export function temporalColumnDestroy(handle) {
   const code = xyTemporalColumnDestroy(toU64(handle, "handle"));
   if (code !== 0) throw new TemporalNativeError(code);
   return true;
+}
+
+/** Create a Rust-owned geographic column from a typed host descriptor (#47). */
+export function geoColumnNew({
+  geometry,
+  crs,
+  xy,
+  validity,
+  featureIds = null,
+  offsets0 = null,
+  offsets1 = null,
+  offsets2 = null,
+}) {
+  const coords = asF64Array(xy, "xy");
+  const valid = asU8Array(validity, "validity");
+  if (coords.length % 2 !== 0) {
+    throw new RangeError("xy must be interleaved [x0,y0,…]");
+  }
+  const ids = featureIds == null ? null : asU64Array(featureIds, "featureIds");
+  if (ids != null && ids.length !== valid.length) {
+    throw new RangeError("featureIds must match validity length");
+  }
+  const o0 = offsets0 == null ? new Uint32Array(0) : asU32Array(offsets0, "offsets0");
+  const o1 = offsets1 == null ? new Uint32Array(0) : asU32Array(offsets1, "offsets1");
+  const o2 = offsets2 == null ? new Uint32Array(0) : asU32Array(offsets2, "offsets2");
+  const err = new Int32Array(1);
+  const handle = xyGeoColumnNew(
+    geometry >>> 0,
+    crs >>> 0,
+    pointer(coords, "double *"),
+    BigInt(coords.length),
+    pointer(valid, "uint8_t *"),
+    BigInt(valid.length),
+    pointer(ids, "uint64_t *"),
+    pointer(o0, "uint32_t *"),
+    BigInt(o0.length),
+    pointer(o1, "uint32_t *"),
+    BigInt(o1.length),
+    pointer(o2, "uint32_t *"),
+    BigInt(o2.length),
+    i32Ptr(err),
+  );
+  if (handle === 0n || handle === 0) {
+    throw new GeoNativeError(err[0] || -1);
+  }
+  return handle;
+}
+
+export function geoColumnMeta(handle) {
+  const h = toU64(handle, "handle");
+  const length = Number(xyGeoColumnLen(h));
+  const vertices = Number(xyGeoColumnVertexCount(h));
+  if (!Number.isFinite(length) || !Number.isFinite(vertices) || length < 0 || vertices < 0) {
+    throw new GeoNativeError(-10);
+  }
+  // Rust returns usize::MAX on stale handles; treat huge sentinels as errors.
+  if (length === Number.MAX_SAFE_INTEGER || vertices === Number.MAX_SAFE_INTEGER) {
+    throw new GeoNativeError(-10);
+  }
+  const geometry = xyGeoColumnGeometry(h) >>> 0;
+  const crs = xyGeoColumnCrs(h) >>> 0;
+  if (geometry === 0 || crs === 0) throw new GeoNativeError(-10);
+  return { length, vertexCount: vertices, geometry, crs };
+}
+
+export function geoColumnFree(handle) {
+  return xyGeoColumnFree(toU64(handle, "handle")) === 1;
 }
 
 export function temporalIntervalIndexCreate({ starts, startValid, ends, endValid }) {
@@ -871,6 +979,22 @@ function asU8Array(value, name) {
   });
 }
 
+function asU32Array(value, name) {
+  if (value instanceof Uint32Array) {
+    return value;
+  }
+  if (value == null) {
+    return new Uint32Array(0);
+  }
+  return Uint32Array.from(value, (item) => {
+    const number = Number(item);
+    if (!Number.isInteger(number) || number < 0 || number > 0xffffffff) {
+      throw new RangeError(`${name} must contain uint32 values`);
+    }
+    return number;
+  });
+}
+
 function asF64Array(value, name) {
   if (value instanceof Float64Array) {
     return value;
@@ -921,6 +1045,10 @@ function u64Ptr(view) {
 
 function u32Ptr(view) {
   return pointer(view, "uint32_t *");
+}
+
+function i32Ptr(view) {
+  return pointer(view, "int32_t *");
 }
 
 function f64Ptr(view) {

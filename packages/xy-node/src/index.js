@@ -67,6 +67,9 @@ export {
   TEMPORAL_DISAMBIGUATION,
   TEMPORAL_DST,
   TemporalNativeError,
+  GEO_GEOMETRY,
+  GEO_CRS,
+  GeoNativeError,
   abiVersion,
   graphLayout,
   graphForceCreate,
@@ -88,6 +91,9 @@ export {
   temporalIntervalVisibilityAt,
   temporalIntervalIndexDestroy,
   temporalEventsInRange,
+  geoColumnNew,
+  geoColumnMeta,
+  geoColumnFree,
 } from "./abi.js";
 
 export {

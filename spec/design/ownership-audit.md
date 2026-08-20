@@ -336,6 +336,7 @@ Forbidden:
 | `python/xy/_figure.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_fontmetrics.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_framing.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xy/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xy/_graph.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xy/_hosts.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xy/_jpeg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
