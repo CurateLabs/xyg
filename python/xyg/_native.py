@@ -1783,16 +1783,15 @@ def scene_batch_encode(
     chrome_array = np.frombuffer(chrome_style, dtype=np.uint8)
     if len(chrome_array) != 200:
         raise ValueError("scene chrome_style must be exactly 200 bytes")
-    tick_arrays = [
-        None
-        if x_major_ticks is None
-        else _as_f64(np.asarray(x_major_ticks), "scene x major ticks"),
-        _as_f64(np.asarray(x_minor_ticks), "scene x minor ticks"),
-        None
-        if y_major_ticks is None
-        else _as_f64(np.asarray(y_major_ticks), "scene y major ticks"),
-        _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks"),
-    ]
+    x_major = (
+        None if x_major_ticks is None else _as_f64(np.asarray(x_major_ticks), "scene x major ticks")
+    )
+    x_minor = _as_f64(np.asarray(x_minor_ticks), "scene x minor ticks")
+    y_major = (
+        None if y_major_ticks is None else _as_f64(np.asarray(y_major_ticks), "scene y major ticks")
+    )
+    y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
+    tick_arrays = (x_major, x_minor, y_major, y_minor)
     if any(value is not None and len(value) > 200 for value in tick_arrays):
         raise ValueError("scene axis tick lists are limited to 200 values")
     capacity = (
@@ -1815,16 +1814,16 @@ def scene_batch_encode(
             *y_axis,
             _ptr_u8(chrome_array),
             len(chrome_array),
-            _ptr_f64(tick_arrays[0]) if tick_arrays[0] is not None and len(tick_arrays[0]) else 0,
-            0 if tick_arrays[0] is None else len(tick_arrays[0]),
-            1 if tick_arrays[0] is None else 0,
-            _ptr_f64(tick_arrays[1]) if len(tick_arrays[1]) else 0,
-            len(tick_arrays[1]),
-            _ptr_f64(tick_arrays[2]) if tick_arrays[2] is not None and len(tick_arrays[2]) else 0,
-            0 if tick_arrays[2] is None else len(tick_arrays[2]),
-            1 if tick_arrays[2] is None else 0,
-            _ptr_f64(tick_arrays[3]) if len(tick_arrays[3]) else 0,
-            len(tick_arrays[3]),
+            _ptr_f64(x_major) if x_major is not None and len(x_major) else 0,
+            0 if x_major is None else len(x_major),
+            1 if x_major is None else 0,
+            _ptr_f64(x_minor) if len(x_minor) else 0,
+            len(x_minor),
+            _ptr_f64(y_major) if y_major is not None and len(y_major) else 0,
+            0 if y_major is None else len(y_major),
+            1 if y_major is None else 0,
+            _ptr_f64(y_minor) if len(y_minor) else 0,
+            len(y_minor),
             kind_array.ctypes.data if n else 0,
             ids.ctypes.data if n else 0,
             styles.ctypes.data if n else 0,
