@@ -45,9 +45,13 @@ def test_graphforge_ipc_preserves_parallel_edge_identity_and_node_tooltips():
     assert node_trace.tooltip_rows[0]["labels"] == "Airport"
     assert node_trace.tooltip_rows[0]["provenance_row"] == 10
     meta = fig._graph_meta[0]
-    assert meta["edge_ids"] is not None
-    assert len(meta["edge_ids"]) == 4
-    assert len(set(meta["edge_ids"])) == 4
+    assert meta["source_edge_ids"] is not None
+    assert len(meta["source_edge_ids"]) == 4
+    assert len(set(meta["source_edge_ids"])) == 4
+    if len(meta["sources"]) == data.n_edges:
+        assert meta["edge_ids"] == meta["source_edge_ids"]
+    else:
+        assert "edge_ids" not in meta
     assert meta["node_provenance_rows"] == [10, 11, 12]
     assert meta["edge_provenance_rows"] == [100, 101, 102, 103]
     # Paint may collapse multi-edges/self-loops; source semantics stay on meta.
@@ -151,3 +155,59 @@ def test_looks_like_graphforge_tables():
     nodes, edges = _airports_tables()
     assert _graph.looks_like_graphforge_tables(nodes, edges)
     assert not _graph.looks_like_graphforge_tables(["a", "b"], [("a", "b")])
+    mapped_nodes = {
+        "id": [
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+        ],
+    }
+    mapped_edges = {
+        "eid": ["10000000-0000-0000-0000-000000000001"],
+        "src": ["00000000-0000-0000-0000-000000000001"],
+        "dst": ["00000000-0000-0000-0000-000000000002"],
+    }
+    mapping = {
+        "node_uuid": "id",
+        "edge_uuid": "eid",
+        "source_uuid": "src",
+        "target_uuid": "dst",
+    }
+    assert _graph.looks_like_graphforge_tables(mapped_nodes, mapped_edges, mapping)
+    data = _graph.resolve_graph_data(mapped_nodes, mapped_edges, mapping=mapping)
+    assert data.n_nodes == 2
+    assert data.n_edges == 1
+
+
+def test_projection_tooltip_rows_preserve_large_integers_as_strings():
+    nodes = {
+        "node_uuid": [
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+        ],
+        "big": [9_007_199_254_740_993, 1],
+    }
+    edges = {
+        "edge_uuid": ["10000000-0000-0000-0000-000000000001"],
+        "src_uuid": ["00000000-0000-0000-0000-000000000001"],
+        "dst_uuid": ["00000000-0000-0000-0000-000000000002"],
+    }
+    data = xy.from_graphforge_tables(nodes, edges)
+    node_rows, _edge_rows = _graph.projection_tooltip_rows(data)
+    assert node_rows is not None
+    assert node_rows[0]["big"] == "9007199254740993"
+
+
+def test_resolve_graph_data_rejects_mismatched_preset_y():
+    nodes = {
+        "node_uuid": [
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+        ],
+    }
+    edges = {
+        "edge_uuid": ["10000000-0000-0000-0000-000000000001"],
+        "src_uuid": ["00000000-0000-0000-0000-000000000001"],
+        "dst_uuid": ["00000000-0000-0000-0000-000000000002"],
+    }
+    with pytest.raises(ValueError, match="x/y must match node count"):
+        _graph.resolve_graph_data(nodes, edges, x=[0.0, 1.0], y=[0.0])

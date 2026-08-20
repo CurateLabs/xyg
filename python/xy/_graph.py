@@ -115,14 +115,24 @@ class GraphProjectionError(ValueError):
         super().__init__(f"{code}:{context} {message}".strip())
 
 
-def looks_like_graphforge_tables(nodes: Any, edges: Any) -> bool:
-    """True when both tables expose canonical GraphForge UUID columns."""
+def looks_like_graphforge_tables(
+    nodes: Any,
+    edges: Any,
+    mapping: Mapping[str, str] | None = None,
+) -> bool:
+    """True when both tables expose GraphForge UUID identity columns.
+
+    Honors the same ``mapping`` overrides as ``from_graphforge_tables``.
+    """
     try:
         node_names = set(_table_column_names(nodes))
         edge_names = set(_table_column_names(edges))
     except (GraphProjectionError, TypeError, ValueError, AttributeError):
         return False
-    return "node_uuid" in node_names and "edge_uuid" in edge_names
+    mapping = mapping or {}
+    node_id_field = mapping.get("node_uuid", "node_uuid")
+    edge_id_field = mapping.get("edge_uuid", "edge_uuid")
+    return node_id_field in node_names and edge_id_field in edge_names
 
 
 def resolve_graph_data(
@@ -136,9 +146,9 @@ def resolve_graph_data(
 ) -> GraphData:
     """Resolve xy-native pairs, a ready ``GraphData``, or GraphForge tables.
 
-    GraphForge tables (canonical ``node_uuid`` / ``edge_uuid`` columns) route
-    through Rust identity validation. Generic id/source/target inputs keep the
-    xy-native path (REQ-API-3).
+    GraphForge tables (canonical ``node_uuid`` / ``edge_uuid`` columns, or the
+    same fields via ``mapping``) route through Rust identity validation.
+    Generic id/source/target inputs keep the xy-native path (REQ-API-3).
     """
     if isinstance(nodes, GraphData):
         if edges is not None:
@@ -149,14 +159,16 @@ def resolve_graph_data(
         return nodes
     if edges is None:
         raise TypeError("graph edges are required unless nodes is GraphData")
-    if looks_like_graphforge_tables(nodes, edges):
+    if looks_like_graphforge_tables(nodes, edges, mapping):
         data = from_graphforge_tables(nodes, edges, mapping=mapping, directed=directed)
         if x is not None or y is not None:
             xs = None if x is None else np.ascontiguousarray(_as_1d(x, "x"), dtype=np.float64)
             ys = None if y is None else np.ascontiguousarray(_as_1d(y, "y"), dtype=np.float64)
             if (xs is None) ^ (ys is None):
                 raise ValueError("x and y must both be provided or both omitted")
-            if xs is not None and len(xs) != data.n_nodes:
+            if xs is not None and (
+                len(xs) != data.n_nodes or (ys is not None and len(ys) != data.n_nodes)
+            ):
                 raise ValueError("x/y must match node count")
             data.x = xs
             data.y = ys
@@ -171,9 +183,16 @@ def _json_scalar(value: Any) -> Any:
         value = value.item()
     if isinstance(value, (bytes, bytearray)):
         return value.decode("utf-8", errors="replace")
-    if isinstance(value, (str, bool)):
+    if isinstance(value, bool):
         return value
-    if isinstance(value, (int, float)):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int):
+        # Preserve integers beyond JSON/JS safe range as decimal strings.
+        if abs(value) > (2**53 - 1):
+            return str(value)
+        return value
+    if isinstance(value, float):
         return value
     return str(value)
 

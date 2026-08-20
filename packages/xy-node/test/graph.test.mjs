@@ -16,6 +16,7 @@ import {
   graphLodDecision,
   graphSampleEdges,
   looksLikeGraphForgeTables,
+  projectionTooltipRows,
   resolveGraphData,
   sankeyLayout,
 } from "../src/index.js";
@@ -264,8 +265,13 @@ test("composeGraph GraphForge tables preserve edge identity and node tooltips", 
   assert.equal(composed.traces[1].kind, "scatter");
   assert.equal(composed.traces[1].tooltip_rows.length, 3);
   assert.equal(composed.traces[1].tooltip_rows[0].labels, "Airport");
-  assert.deepEqual(composed.graphMeta.edge_ids, AIRPORTS_EDGES.edge_uuid);
-  assert.equal(new Set(composed.graphMeta.edge_ids).size, 4);
+  assert.deepEqual(composed.graphMeta.source_edge_ids, AIRPORTS_EDGES.edge_uuid);
+  assert.equal(new Set(composed.graphMeta.source_edge_ids).size, 4);
+  if (composed.graphMeta.sources.length === AIRPORTS_EDGES.edge_uuid.length) {
+    assert.deepEqual(composed.graphMeta.edge_ids, AIRPORTS_EDGES.edge_uuid);
+  } else {
+    assert.equal(composed.graphMeta.edge_ids, undefined);
+  }
   assert.deepEqual(composed.graphMeta.node_provenance_rows, [10, 11, 12]);
   if (composed.traces[0].tooltip_rows == null) {
     assert.equal(composed.graphMeta.edge_tooltip_rows.length, 4);
@@ -319,4 +325,65 @@ test("resolveGraphData accepts GraphData passthrough", () => {
   const again = resolveGraphData(data);
   assert.equal(again.ids.length, 3);
   assert.equal(again.sources.length, 4);
+});
+
+test("looksLikeGraphForgeTables honors mapping overrides", () => {
+  const nodes = {
+    id: [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000002",
+    ],
+  };
+  const edges = {
+    eid: ["10000000-0000-0000-0000-000000000001"],
+    src: ["00000000-0000-0000-0000-000000000001"],
+    dst: ["00000000-0000-0000-0000-000000000002"],
+  };
+  const mapping = {
+    node_uuid: "id",
+    edge_uuid: "eid",
+    source_uuid: "src",
+    target_uuid: "dst",
+  };
+  assert.equal(looksLikeGraphForgeTables(nodes, edges, mapping), true);
+  const data = resolveGraphData(nodes, edges, { mapping });
+  assert.equal(data.ids.length, 2);
+  assert.equal(data.sources.length, 1);
+});
+
+test("composeGraph accepts GraphData with size option object", () => {
+  const data = fromGraphForgeTables(AIRPORTS_NODES, AIRPORTS_EDGES);
+  const composed = composeGraph(data, { layout: "grid", seed: 1, size: "rank" });
+  assert.equal(composed.traces[1].kind, "scatter");
+  assert.ok(composed.traces[1].sizeValues);
+});
+
+test("resolveGraphData rejects mismatched preset y length", () => {
+  assert.throws(
+    () =>
+      resolveGraphData(AIRPORTS_NODES, AIRPORTS_EDGES, {
+        x: [0, 1, 2],
+        y: [0, 1],
+      }),
+    /x\/y must match node count/,
+  );
+});
+
+test("projectionTooltipRows preserves bigint attributes as strings", () => {
+  const data = fromGraphForgeTables(
+    {
+      node_uuid: [
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000002",
+      ],
+      big: [9007199254740993n, 1n],
+    },
+    {
+      edge_uuid: ["10000000-0000-0000-0000-000000000001"],
+      src_uuid: ["00000000-0000-0000-0000-000000000001"],
+      dst_uuid: ["00000000-0000-0000-0000-000000000002"],
+    },
+  );
+  const [nodeRows] = projectionTooltipRows(data);
+  assert.equal(nodeRows[0].big, "9007199254740993");
 });

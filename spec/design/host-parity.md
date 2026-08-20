@@ -153,12 +153,13 @@ client must not grow a parallel “JS layout/LOD” product path.
   available with the same semantics on Python and Node.
 - **REQ-HOSTPARITY-2d (MUST).** Python `from_graphforge_tables()` and Node
   `fromGraphForgeTables()` pass canonical UUID buffers through the same ABI
-  `GraphProjection` handle. Rust alone validates identity/topology and maps
-  endpoints/parents to dense `u64`; hosts retain typed attributes and
-  provenance on `GraphData`. `graph()` / `composeGraph()` accept GraphForge
-  tables or a ready `GraphData` and attach `tooltip_rows` / identity meta for
-  hover, encodings, and export. The browser never imports Arrow or receives
-  UUIDs as JSON numbers. Native-vs-WASM projection parity is covered with #59.
+  `GraphProjection` handle. Hosts validate UUID representation before creation;
+  Rust validates duplicate identities, topology, and dense endpoint/parent
+  mapping to `u64`. Hosts retain typed attributes and provenance on
+  `GraphData`. `graph()` / `composeGraph()` accept GraphForge tables or a ready
+  `GraphData` and attach `tooltip_rows` / identity meta for hover, encodings,
+  and export. The browser never imports Arrow or receives UUIDs as JSON
+  numbers. Native-vs-WASM projection parity is covered with #59.
 - **REQ-HOSTPARITY-2e (MUST).** Graph node/edge `tooltip_rows` and continuous
   size/color channels ship with the same wire shape on Python and Node
   (`tooltip_rows` length-checked against geometry; Node `shipScalar` mirrors

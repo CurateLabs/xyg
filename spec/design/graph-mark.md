@@ -175,9 +175,11 @@ deterministic dense `u64` endpoints, directedness, and optional parent mapping
 (opaque `GraphProjection` handle). Hosts coerce tables → packed UUID buffers,
 then retain validated typed attribute columns and provenance on `GraphData`.
 `graph()` / `composeGraph()` accept GraphForge tables or a ready `GraphData`
-and attach `tooltip_rows` plus `edge_ids` / provenance meta when render LOD
-keeps a 1:1 mapping. `color=` / `size=` / `edge_color=` may name projection
-columns. Generic graph ingest and `from_networkx()` remain available and
+and attach `tooltip_rows` plus source-indexed `source_edge_ids` / provenance
+meta. When render LOD keeps a 1:1 edge mapping, `edge_ids` mirrors
+`source_edge_ids` and is render-aligned. `color=` / `size=` / `edge_color=` may
+name projection columns. Generic graph ingest and `from_networkx()` remain
+available and
 compile to the same render pipeline. Browser/WASM identity round-trip for the
 same projection handle remains under #59.
 

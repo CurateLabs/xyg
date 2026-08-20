@@ -523,15 +523,19 @@ export function edgeSegmentsFromPositions(x, y, sources, targets) {
 }
 
 /**
- * True when both tables expose canonical GraphForge UUID columns.
+ * True when both tables expose GraphForge UUID identity columns.
+ * Honors the same `mapping` overrides as `fromGraphForgeTables`.
  * @param {unknown} nodes
  * @param {unknown} edges
+ * @param {object} [mapping]
  */
-export function looksLikeGraphForgeTables(nodes, edges) {
+export function looksLikeGraphForgeTables(nodes, edges, mapping = {}) {
   try {
     const nodeNames = new Set(tableColumnNames(nodes));
     const edgeNames = new Set(tableColumnNames(edges));
-    return nodeNames.has("node_uuid") && edgeNames.has("edge_uuid");
+    const nodeIdField = mapping.node_uuid ?? "node_uuid";
+    const edgeIdField = mapping.edge_uuid ?? "edge_uuid";
+    return nodeNames.has(nodeIdField) && edgeNames.has(edgeIdField);
   } catch {
     return false;
   }
@@ -555,7 +559,7 @@ export function resolveGraphData(nodes, edges = undefined, opts = {}) {
   if (edges == null) {
     throw new TypeError("graph edges are required unless nodes is GraphData");
   }
-  if (looksLikeGraphForgeTables(nodes, edges)) {
+  if (looksLikeGraphForgeTables(nodes, edges, opts.mapping ?? {})) {
     const data = fromGraphForgeTables(nodes, edges, opts);
     if (opts.x != null || opts.y != null) {
       if ((opts.x == null) !== (opts.y == null)) {
@@ -563,7 +567,7 @@ export function resolveGraphData(nodes, edges = undefined, opts = {}) {
       }
       data.x = Float64Array.from(opts.x, Number);
       data.y = Float64Array.from(opts.y, Number);
-      if (data.x.length !== data.ids.length) {
+      if (data.x.length !== data.ids.length || data.y.length !== data.ids.length) {
         throw new Error("x/y must match node count");
       }
     }
@@ -574,8 +578,16 @@ export function resolveGraphData(nodes, edges = undefined, opts = {}) {
 
 function jsonScalar(value) {
   if (value == null) return null;
-  if (typeof value === "bigint") return Number(value);
-  if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") {
+  // Keep integers beyond Number.MAX_SAFE_INTEGER as decimal strings so hover
+  // / meta JSON cannot silently change provenance or typed attrs.
+  if (typeof value === "bigint") return value.toString();
+  if (typeof value === "number") {
+    if (Number.isInteger(value) && Math.abs(value) > Number.MAX_SAFE_INTEGER) {
+      return String(value);
+    }
+    return value;
+  }
+  if (typeof value === "string" || typeof value === "boolean") {
     return value;
   }
   return String(value);
@@ -650,26 +662,33 @@ function resolveEncodingValues(data, values, where = "node") {
 export function composeGraph(nodes, edges, opts = {}) {
   let resolvedOpts = opts;
   let resolvedEdges = edges;
-  // Allow composeGraph(graphData, { layout }) when the second arg is options.
+  // Allow composeGraph(graphData, { layout / size / ... }) when the second arg
+  // is a plain options object rather than an edges table.
   if (
     nodes != null &&
     typeof nodes === "object" &&
     Array.isArray(nodes.ids) &&
-    nodes.sources != null &&
-    edges != null &&
-    typeof edges === "object" &&
-    !Array.isArray(edges) &&
-    edges.source == null &&
-    edges.target == null &&
-    edges.edge_uuid == null &&
-    (edges.layout != null ||
-      edges.seed != null ||
-      edges.directed != null ||
-      edges.color != null ||
-      edges.mapping != null)
+    nodes.sources != null
   ) {
-    resolvedOpts = edges;
-    resolvedEdges = undefined;
+    if (edges != null) {
+      if (
+        typeof edges !== "object" ||
+        Array.isArray(edges) ||
+        edges.source != null ||
+        edges.target != null ||
+        edges.edge_uuid != null ||
+        edges.src_uuid != null ||
+        edges.dst_uuid != null
+      ) {
+        throw new TypeError(
+          "when nodes is GraphData, edges must be omitted (pass GraphData alone or table/sequence pairs)",
+        );
+      }
+      resolvedOpts = edges;
+      resolvedEdges = undefined;
+    } else {
+      resolvedEdges = undefined;
+    }
   } else if (edges == null) {
     resolvedEdges = undefined;
   }
@@ -787,7 +806,11 @@ export function composeGraph(nodes, edges, opts = {}) {
     edge_trace: 0,
   };
   if (data.edgeIds?.length) {
-    graphMeta.edge_ids = data.edgeIds.map(String);
+    // Source-indexed identity; render LOD may collapse multi-edges/self-loops.
+    graphMeta.source_edge_ids = data.edgeIds.map(String);
+    if (edgesOneToOne) {
+      graphMeta.edge_ids = graphMeta.source_edge_ids;
+    }
   }
   if (data.nodeProvenanceRows != null) {
     graphMeta.node_provenance_rows = [...data.nodeProvenanceRows].map(Number);

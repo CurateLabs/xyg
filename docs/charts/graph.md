@@ -35,6 +35,7 @@ import xy
 nodes = {
     "node_uuid": ["…", "…"],
     "labels": ["Airport", "City"],
+    "rank": [1.0, 2.0],
     "provenance_row": [10, 11],
 }
 edges = {

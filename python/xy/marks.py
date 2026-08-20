@@ -749,7 +749,7 @@ def graph(
     )
     # Attach GraphForge semantic rows when render LOD kept a 1:1 mapping.
     # build_render collapses multi-edges and skips self-loops for paint; identity
-    # still rides graph meta (`edge_ids`, provenance, optional source tooltip tables).
+    # still rides graph meta (`source_edge_ids`, provenance, optional source tooltip tables).
     node_tooltips, edge_tooltips = _graph.projection_tooltip_rows(data)
     if node_tooltips is not None and len(px) == data.n_nodes:
         self.traces[-1].tooltip_rows = node_tooltips
@@ -781,7 +781,11 @@ def graph(
         "edge_trace": len(self.traces) - 2,
     }
     if data.edge_ids:
-        graph_meta["edge_ids"] = [str(edge_id) for edge_id in data.edge_ids]
+        # Source-indexed identity; render LOD may collapse multi-edges/self-loops.
+        source_edge_ids = [str(edge_id) for edge_id in data.edge_ids]
+        graph_meta["source_edge_ids"] = source_edge_ids
+        if len(sources) == data.n_edges:
+            graph_meta["edge_ids"] = source_edge_ids
     if data.node_provenance_rows is not None:
         graph_meta["node_provenance_rows"] = [int(v) for v in data.node_provenance_rows.tolist()]
     if data.edge_provenance_rows is not None:
