@@ -110,7 +110,9 @@ ticks or consumes bounded authored major/minor positions, formats major labels,
 maps positions to painter coordinates, and emits fixed 16-byte records whose
 last u32 distinguishes major from minor. TypeScript validates the three chrome
 texts and supplies them to the existing title, axis-title, and accessibility
-surfaces. It creates descriptor-sized views and hands
+surfaces. Figure-title paint is the authored label RGBA and its size is the
+authored label font size plus two pixels, matching Rust SVG and raster output.
+It creates descriptor-sized views and hands
 those painter-ready values to the existing canvas/DOM chrome surfaces; it does
 not generate ticks, format labels, or choose layout. Reserved fields, exact
 offsets, finite geometry, known kinds and symbols, valid UTF-8, and exact final

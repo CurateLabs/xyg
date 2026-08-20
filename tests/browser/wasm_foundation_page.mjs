@@ -66,6 +66,8 @@ function canonicalSceneV8({ authored = false } = {}) {
   if (authored) {
     bytes.set([240, 248, 255, 255], body);
     bytes.set([248, 250, 252, 255], body + 4);
+    bytes.set([211, 47, 47, 255], body + 8);
+    view.setFloat64(body + 16, 17, true);
     bytes.set([1, 3, 2, 2, 1], body + 24);
     bytes.set([94, 129, 172, 255], body + 24 + 20);
     view.setFloat64(body + 24 + 80, 3, true);
@@ -375,8 +377,13 @@ async function run() {
   if (!authoredHost.querySelector('[data-xy-tick-kind="minor"]')) {
     throw new Error("Rust-authored minor tick was not consumed by the browser painter");
   }
-  if (authoredHost.querySelector('[data-xy-slot="title"]')?.textContent !== "Authored Cartesian chrome") {
+  const authoredTitle = authoredHost.querySelector('[data-xy-slot="title"]');
+  if (authoredTitle?.textContent !== "Authored Cartesian chrome") {
     throw new Error("Rust-authored figure title was not consumed by the browser DOM");
+  }
+  const authoredTitleStyle = getComputedStyle(authoredTitle);
+  if (authoredTitleStyle.color !== "rgb(211, 47, 47)" || authoredTitleStyle.fontSize !== "19px") {
+    throw new Error(`Rust-authored title paint was not consumed by the browser DOM: ${authoredTitleStyle.color}/${authoredTitleStyle.fontSize}`);
   }
   const axisTitles = [...authoredHost.querySelectorAll('[data-xy-label-kind="label"]')]
     .map((node) => node.textContent);
