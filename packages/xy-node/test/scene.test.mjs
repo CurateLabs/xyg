@@ -271,3 +271,32 @@ test("Node maps Rust scene validation failures to a stable host error", () => {
     /invalid canonical scatter scene/,
   );
 });
+
+test("Node Scene compiles column and histogram as Rect records", () => {
+  const column = new Figure({ width: 240, height: 160 });
+  column.setAxisDomain("x", [0, 4]);
+  column.setAxisDomain("y", [0, 5]);
+  column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
+  const columnScene = column.toScene();
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 5);
+  assert.match(sceneSvg(columnScene), /<rect /);
+
+  const hist = new Figure({ width: 240, height: 160 });
+  hist.setAxisDomain("x", [0, 4]);
+  hist.setAxisDomain("y", [0, 5]);
+  hist.histogram([1, 1.5, 2, 2.5, 3], { bins: 4, range: [0, 4], color: "#22c55e", name: null });
+  assert.match(sceneSvg(hist.toScene()), /<rect /);
+});
+
+test("Node Scene rejects corner_radius and density-tier scatter", () => {
+  const rounded = new Figure({ width: 200, height: 120 });
+  rounded.bar([0, 1], [1, 2], { style: { corner_radius: 4 }, name: null });
+  assert.throws(() => rounded.toScene(), /corner_radius/);
+
+  const density = new Figure({ width: 200, height: 120 });
+  density.scatter(new Float64Array(200_000), new Float64Array(200_000), {
+    forceDensity: true,
+    name: null,
+  });
+  assert.throws(() => density.toScene(), /density-tier/);
+});

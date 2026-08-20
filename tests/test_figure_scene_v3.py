@@ -183,3 +183,31 @@ def test_python_scene_still_rejects_annotations() -> None:
     figure.annotations.append({"kind": "text", "x": 1, "y": 2, "text": "note"})
     with pytest.raises(UnsupportedSceneV3, match="annotations"):
         figure.to_scene()
+
+
+@pytest.mark.parametrize("kind", ["column", "histogram"])
+def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    if kind == "column":
+        figure.column([1, 2], [3, 2], color="#22c55e", opacity=0.85)
+    else:
+        figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
+    scene = figure.to_scene()
+    assert scene[4:8] == (5).to_bytes(4, "little")  # SCENE_VERSION
+    svg = _native.scene_svg(scene)
+    assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
+    assert 'clip-path="url(#xy-scene-plot)"' in svg
+
+
+def test_python_scene_rejects_rect_corner_radius_and_density() -> None:
+    rounded = Figure()
+    rounded.bar([0, 1], [1, 2], corner_radius=4.0)
+    with pytest.raises(UnsupportedSceneV3, match="corner_radius"):
+        rounded.to_scene()
+    density = Figure()
+    density.scatter([0.0] * 200_000, [0.0] * 200_000, density=True)
+    with pytest.raises(UnsupportedSceneV3, match="density-tier"):
+        density.to_scene()
+    assert "<svg" in density.to_svg()

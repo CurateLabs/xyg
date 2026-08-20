@@ -1286,17 +1286,17 @@ export class Figure {
     return toHtml(this, path, opts);
   }
 
-  /** Canonical Rust-owned Scene v4 for the supported scatter/line/bar subset. */
+  /** Canonical Rust-owned Scene v5 for scatter/line/bar/column/histogram. */
   toScene(opts = {}) {
     return figureSceneV3(this, opts);
   }
 
-  /** Whole-scene SVG rendered from the canonical Scene v4 document. */
+  /** Whole-scene SVG rendered from the canonical Scene v5 document. */
   toSceneSvg(opts = {}) {
     return sceneSvg(this.toScene(opts));
   }
 
-  /** Existing native-raster display list compiled from Scene v4. */
+  /** Existing native-raster display list compiled from Scene v5. */
   toSceneRasterCommands(opts = {}) {
     return sceneRasterCommands(this.toScene(opts), opts.scale ?? 1);
   }
