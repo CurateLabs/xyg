@@ -28,6 +28,7 @@ import numpy.typing as npt
 from ._abi_generated import ABI_VERSION, bind_abi_version, bind_generated_abi
 from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 
+
 class _GraphProjectionDescriptor(ctypes.Structure):
     _fields_ = [
         ("node_ids", ctypes.c_void_p),
