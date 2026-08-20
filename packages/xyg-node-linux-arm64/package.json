@@ -1,0 +1,18 @@
+{
+  "name": "@curatelabs/xyg-node-linux-arm64",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Exact-platform native libxyg_core.so for linux/arm64 (optional dependency of @curatelabs/xyg-node).",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "files": [
+    "index.js",
+    "libxyg_core.so",
+    "README.md"
+  ]
+}
