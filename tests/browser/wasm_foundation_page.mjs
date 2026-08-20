@@ -254,7 +254,7 @@ async function run() {
   if (valid.records !== 1 || valid.styles !== 1 || valid.copyCount !== 1) {
     throw new Error(`unexpected diagnostics ${JSON.stringify(valid)}`);
   }
-  if (valid.copyBytesLo !== 232 || valid.copyBytesHi !== 0 || valid.arenaBytes !== 0) {
+  if (valid.copyBytesLo !== 272 || valid.copyBytesHi !== 0 || valid.arenaBytes !== 0) {
     throw new Error(`unexpected copy or arena diagnostics ${JSON.stringify(valid)}`);
   }
 
@@ -296,7 +296,7 @@ async function run() {
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
   const afterRejected = await worker.validateScene(canonicalSceneV5(), { sequence: 15 }).result;
-  if (afterRejected.copyCount !== 7 || afterRejected.copyBytesLo !== 232 * 7) {
+  if (afterRejected.copyCount !== 7 || afterRejected.copyBytesLo !== 272 * 7) {
     throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
   await worker.dispose();
