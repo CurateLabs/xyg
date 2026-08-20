@@ -211,7 +211,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
 
 
 def test_scene_v8_axis_line_visibility_does_not_hide_independent_ticks() -> None:
-    from xy import _scene_v3
+    from xyg import _scene_v3
 
     figure = default_style_figure("scatter")
     figure.set_axis("x", style={"axis_width": 0, "axis_color": "#00000000"})
