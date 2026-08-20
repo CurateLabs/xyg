@@ -31,7 +31,7 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel is None:
         return str(trace.style.get("color", fallback))
     if channel.mode != "constant" or channel.constant is None:
-        raise UnsupportedSceneV3("Scene v4 does not yet support data-driven paint channels")
+        raise UnsupportedSceneV3("Scene v5 does not yet support data-driven paint channels")
     return channel.constant
 
 
@@ -42,29 +42,29 @@ def figure_scene(
     height: int | None = None,
     margins: tuple[float, float, float, float] = (50.0, 20.0, 20.0, 40.0),
 ) -> bytes:
-    """Compile representative scatter/line/bar plus x/y axes to Scene v4."""
+    """Compile representative scatter/line/bar plus x/y axes to Scene v5."""
     if figure.coords != "cartesian":
-        raise UnsupportedSceneV3("Scene v4 figure compilation currently supports cartesian only")
+        raise UnsupportedSceneV3("Scene v5 figure compilation currently supports cartesian only")
     if set(figure.axis_options) != {"x", "y"}:
-        raise UnsupportedSceneV3("Scene v4 figure compilation currently supports exactly x/y axes")
+        raise UnsupportedSceneV3("Scene v5 figure compilation currently supports exactly x/y axes")
     for axis_id, options in figure.axis_options.items():
         expected_side = "bottom" if axis_id == "x" else "left"
         if options.get("side", expected_side) != expected_side:
-            raise UnsupportedSceneV3("Scene v4 does not yet encode customized axis sides")
+            raise UnsupportedSceneV3("Scene v5 does not yet encode customized axis sides")
         supported_axis_keys = {"type", "constant", "domain", "nonpositive", "label", "side"}
         if any(
             key not in supported_axis_keys and value not in (None, False, [], {})
             for key, value in options.items()
         ):
-            raise UnsupportedSceneV3("Scene v4 does not yet encode tick, grid, or axis styling")
-    if figure.title or figure.x_label or figure.y_label or figure.annotations:
-        raise UnsupportedSceneV3("Scene v4 does not yet encode titles, labels, or annotations")
+            raise UnsupportedSceneV3("Scene v5 does not yet encode tick, grid, or axis styling")
+    if figure.annotations:
+        raise UnsupportedSceneV3("Scene v5 does not yet encode annotations")
     if figure.colorbar_options or figure.extra_legends:
-        raise UnsupportedSceneV3("Scene v4 does not yet encode colorbars or extra legends")
+        raise UnsupportedSceneV3("Scene v5 does not yet encode colorbars or extra legends")
     supported = {"scatter", "line", "bar"}
     unsupported = next((trace.kind for trace in figure.traces if trace.kind not in supported), None)
     if unsupported is not None:
-        raise UnsupportedSceneV3(f"Scene v4 figure compilation does not yet support {unsupported}")
+        raise UnsupportedSceneV3(f"Scene v5 figure compilation does not yet support {unsupported}")
 
     kinds: list[int] = []
     stable_ids: list[int] = []
@@ -75,15 +75,15 @@ def figure_scene(
     coordinates: list[list[float]] = [[], [], [], []]
     for trace in figure.traces:
         if trace.x_axis != "x" or trace.y_axis != "y":
-            raise UnsupportedSceneV3("Scene v4 currently supports only the primary x/y axes")
+            raise UnsupportedSceneV3("Scene v5 currently supports only the primary x/y axes")
         if trace.name and figure.show_legend:
-            raise UnsupportedSceneV3("Scene v4 does not yet encode legends")
+            raise UnsupportedSceneV3("Scene v5 does not yet encode legends")
         if trace.hidden or trace.has_per_item_channels():
-            raise UnsupportedSceneV3("Scene v4 does not yet encode hidden or per-item styled marks")
+            raise UnsupportedSceneV3("Scene v5 does not yet encode hidden or per-item styled marks")
         style = trace.style
         if any(key in style for key in ("dash", "curve", "linecap", "marker_path", "marker_glyph")):
             raise UnsupportedSceneV3(
-                "Scene v4 does not yet encode dashed, curved, or authored markers"
+                "Scene v5 does not yet encode dashed, curved, or authored markers"
             )
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
@@ -100,7 +100,7 @@ def figure_scene(
         style_ref = len(styles) - 1
         if trace.kind == "bar":
             if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-                raise ValueError("bar Scene v4 compilation requires four rectangle columns")
+                raise ValueError("bar Scene v5 compilation requires four rectangle columns")
             arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
             count = len(arrays[0])
         else:
@@ -115,11 +115,11 @@ def figure_scene(
             not np.isfinite(source).all() for source in arrays[: 4 if trace.kind == "bar" else 2]
         ):
             raise UnsupportedSceneV3(
-                "Scene v4 does not yet encode missing-data breaks or nonfinite coordinates"
+                "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
             )
         symbol_name = str(style.get("symbol", "circle"))
         if symbol_name not in _SYMBOL_CODES:
-            raise UnsupportedSceneV3(f"Scene v4 does not support scatter symbol {symbol_name!r}")
+            raise UnsupportedSceneV3(f"Scene v5 does not support scatter symbol {symbol_name!r}")
         diameter = (
             float(trace.size_ch.constant)
             if trace.kind == "scatter" and trace.size_ch is not None
@@ -170,6 +170,9 @@ def figure_scene(
         y0=coordinates[1],
         x1=coordinates[2],
         y1=coordinates[3],
+        title=str(figure.title or ""),
+        x_label=str(figure.x_label or figure.axis_options.get("x", {}).get("label") or ""),
+        y_label=str(figure.y_label or figure.axis_options.get("y", {}).get("label") or ""),
     )
 
 

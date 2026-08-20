@@ -1,10 +1,11 @@
 import { createXygWasmWorker, renderWasmScene } from "/packages/xy-client/dist/index.js";
 
 function coreScene(count) {
-  const bytes = new Uint8Array(160 + 3 * 16 + count * 56);
+  const body = 160 + 3 * 16 + count * 56;
+  const bytes = new Uint8Array(body + 40);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83]);
-  view.setUint32(4, 4, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 5, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 3n, true);
   [800, 600, 60, 20, 780, 550].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -27,6 +28,8 @@ function coreScene(count) {
       view.setFloat64(record + 40, 22 + ((index * 37) % 991) / 990 * 528, true);
     }
   }
+  bytes.set([32, 32, 32, 36, 32, 32, 32, 140, 32, 32, 32, 217], body);
+  view.setFloat64(body + 16, 12, true);
   return bytes;
 }
 
@@ -49,7 +52,7 @@ async function run() {
     if (chromeLabels < 2 || chromeRules < 2) throw new Error(`expected Rust-authored chrome, got ${chromeLabels} labels and ${chromeRules} rules`);
     const heapAfter = performance.memory?.usedJSHeapSize ?? null;
     const lastTrace = view.gpuTraces.length - 1;
-    rows.push({ count, sceneBytes: 160 + 3 * 16 + count * 56, traces: view.gpuTraces.length, chromeLabels, chromeRules, ...view.wasmMetrics,
+    rows.push({ count, sceneBytes: 160 + 3 * 16 + count * 56 + 40, traces: view.gpuTraces.length, chromeLabels, chromeRules, ...view.wasmMetrics,
       firstPaintMs: performance.now() - started,
       retainedJsHeapDelta: heapBefore === null ? null : Math.max(0, heapAfter - heapBefore),
       stableIdTail: String(view.sceneStableId(lastTrace, view.gpuTraces[lastTrace]._sceneIds.lo.length - 1)) });

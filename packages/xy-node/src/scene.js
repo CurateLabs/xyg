@@ -169,8 +169,11 @@ function axisDescriptor(axis, name) {
   return [asU64(id, `${name}.id`), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
 }
 
-/** Encode the shared backend-neutral Scene v4 typed batch. */
-export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1 }) {
+/** Encode the shared backend-neutral Scene v5 typed batch. */
+export function sceneBatchEncode({
+  viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
+  title = "", xLabel = "", yLabel = "",
+}) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
   }
@@ -196,7 +199,10 @@ export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stabl
   for (const [value, name] of [[ids, "stableIds"], [styleRefArray, "styleRefs"], [diameters, "diameter"], [symbolCodes, "symbols"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
   const xd = axisDescriptor(xAxis, "xAxis");
   const yd = axisDescriptor(yAxis, "yAxis");
-  let capacity = 160 + widths.length * 16 + length * 56;
+  const titleBytes = new TextEncoder().encode(String(title ?? ""));
+  const xLabelBytes = new TextEncoder().encode(String(xLabel ?? ""));
+  const yLabelBytes = new TextEncoder().encode(String(yLabel ?? ""));
+  let capacity = 160 + widths.length * 16 + length * 56 + 40 + titleBytes.length + xLabelBytes.length + yLabelBytes.length;
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
@@ -204,7 +210,11 @@ export function sceneBatchEncode({ viewport, margins, xAxis, yAxis, kinds, stabl
       u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
       u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
       f64Ptr(diameters), u8Ptr(symbolCodes),
-      ...coordinates.map(f64Ptr), BigInt(length), u8Ptr(output), BigInt(capacity),
+      ...coordinates.map(f64Ptr), BigInt(length),
+      titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
+      xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
+      yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
+      u8Ptr(output), BigInt(capacity),
     );
     if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical scene batch");
     const written = Number(rawWritten);
@@ -245,20 +255,20 @@ function rgba8(css, opacity, name) {
   return parsed.map((value, index) => Math.round(value * (index === 3 ? opacity : 1) * 255));
 }
 
-/** Compile the representative cartesian scatter/line/bar subset to Scene v4. */
+/** Compile the representative cartesian scatter/line/bar subset to Scene v5. */
 export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
-  if (figure.coords !== "cartesian") throw new RangeError("Scene v4 figure compilation currently supports cartesian coordinates only");
-  if (figure.title != null) throw new RangeError("Scene v4 does not yet encode titles");
+  if (figure.coords !== "cartesian") throw new RangeError("Scene v5 figure compilation currently supports cartesian coordinates only");
+  if (figure.annotations?.length) throw new RangeError("Scene v5 does not yet encode annotations");
   const supported = new Set(["scatter", "line", "bar"]);
   const unsupported = figure.traces.find((trace) => !supported.has(trace.kind));
-  if (unsupported) throw new RangeError(`Scene v4 figure compilation does not yet support ${unsupported.kind}`);
+  if (unsupported) throw new RangeError(`Scene v5 figure compilation does not yet support ${unsupported.kind}`);
   const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [];
   for (const trace of figure.traces) {
-    if (trace.name != null) throw new RangeError("Scene v4 does not yet encode legends");
-    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v4 currently supports only the primary x/y axes");
+    if (trace.name != null) throw new RangeError("Scene v5 does not yet encode legends");
+    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v5 currently supports only the primary x/y axes");
     const style = trace.style ?? {};
     for (const key of ["color_channel", "size_channel", "stroke_channel", "dash", "curve", "smooth", "linecap", "marker_path", "marker_glyph"]) {
-      if (style[key] != null) throw new RangeError(`Scene v4 figure compilation does not yet support ${key}`);
+      if (style[key] != null) throw new RangeError(`Scene v5 figure compilation does not yet support ${key}`);
     }
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
@@ -271,7 +281,7 @@ export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
     const count = trace.kind === "bar" ? trace.x0.length : trace.x.length;
     const coordinateColumns = trace.kind === "bar" ? [trace.x0, trace.y0, trace.x1, trace.y1] : [trace.x, trace.y];
     if (coordinateColumns.some((column) => column == null || column.length !== count || Array.from(column).some((value) => !Number.isFinite(value)))) {
-      throw new RangeError("Scene v4 does not yet encode missing-data breaks or nonfinite coordinates");
+      throw new RangeError("Scene v5 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     for (let index = 0; index < count; index += 1) {
       kinds.push(trace.kind === "scatter" ? 0 : trace.kind === "line" ? 1 : 2);
@@ -284,7 +294,9 @@ export function figureSceneV3(figure, { margins = [50, 20, 20, 40] } = {}) {
   }
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins,
     xAxis: { id: 1, domain: figure._range("x") }, yAxis: { id: 2, domain: figure._range("y") },
-    kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1 });
+    kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
+    title: figure.title ?? "", xLabel: figure.xLabel ?? figure.x_label ?? "", yLabel: figure.yLabel ?? figure.y_label ?? "",
+  });
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

@@ -1,8 +1,17 @@
 {
-  "viewport": [320, 240],
-  "x_domain": [0, 4],
-  "y_domain": [0, 5],
-  "expected_sha256": "25555abdebef5e37e9b7126beadceabbbd262934570a921e1f47f7411bb60ff6",
-  "default_scatter_sha256": "8294798e9e8666d0650b875b43defac992a86fca1fe617d2b78f602755134293",
-  "default_line_sha256": "68833d34e7ba73828fe252dda8e2bc406640baf6d29c51c6dfdc3efc0862c6bc"
+  "viewport": [
+    320,
+    240
+  ],
+  "x_domain": [
+    0,
+    4
+  ],
+  "y_domain": [
+    0,
+    5
+  ],
+  "expected_sha256": "8724c3437415803b35ecdcd9cb67b4dc16c4bb9d7ed80b1746ada5158fcc608e",
+  "default_scatter_sha256": "90015209e7a816911c85df8b334690561ae184054c0e23fe3294f497b34c9417",
+  "default_line_sha256": "98ae7671d464bc6a97347e97a838cd4608d55dee0638b71b7e014c07e52d5e87"
 }
