@@ -85,6 +85,9 @@ jobs:
       - name: Install Node host bindings
         run: npm ci --prefix packages/xy-node
 
+      - name: Node exact-platform package inventory (#52)
+        run: python3 scripts/verify_node_packages.py
+
       - name: Rust unit tests
         run: cargo test --workspace
 
