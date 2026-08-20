@@ -7,11 +7,11 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 4 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 5 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 4, so additive emission is not safe.
+bitmap or schema negotiation in version 5, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
@@ -203,11 +203,37 @@ bounded default chrome layer from the two encoded axis scales in both consumers:
 
 Default paints match the established static exporter: `rgba(32,32,32,0.14)`
 grid, `rgba(32,32,32,0.55)` axis, and `rgba(32,32,32,0.85)` 12px labels.
-Version 4 does not encode titles, axis titles, custom tick values/text, custom
-sides, minor ticks, or authored chrome styles. Hosts reject those features from
-explicit Scene compilation, and public exports retain compatibility routing.
-Canonical layout/gutter selection and authored text/style records must land
-before public SVG/PNG/PDF selection can be exact.
+Version 4 derived default numeric chrome only. Version 5 adds authored chrome
+paints and title/axis-label text in the trailer. Custom tick values/text,
+custom sides, minor ticks, legends, and annotations remain rejected from
+explicit Scene compilation; public exports retain compatibility routing until
+canonical layout/gutter selection lands.
+
+## Version 5: authored chrome paints and title/axis labels
+
+Version 5 keeps the version-4 header and mark/style byte widths. After the mark
+records it appends a fixed 40-byte chrome trailer plus optional UTF-8 payloads:
+
+| Trailer offset | Bytes | Field |
+| ---: | ---: | --- |
+| 0 | 4 | grid RGBA8 |
+| 4 | 4 | axis/spine RGBA8 |
+| 8 | 4 | label RGBA8 |
+| 12 | 4 | reserved zeros |
+| 16 | 8 | label font size f64 |
+| 24 | 4 | title UTF-8 length u32 |
+| 28 | 4 | x-label UTF-8 length u32 |
+| 32 | 4 | y-label UTF-8 length u32 |
+| 36 | 4 | reserved zeros |
+| 40 | … | title, then x-label, then y-label UTF-8 bytes |
+
+Default paints match the previous hard-coded chrome. Whole-scene SVG and raster
+consumers paint grid/axis/labels from the trailer and place title / x-label /
+y-label with deterministic margin-relative anchors. Hosts may now compile
+figure titles and axis labels into the explicit Scene path; annotations,
+legends, custom sides, and authored tick geometry remain rejected until later
+slices. Public SVG/PNG/PDF still use the compatibility renderers until layout
+gutters and remaining chrome records land.
 
 ## Evidence and extension order
 
@@ -230,9 +256,9 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add authored text/chrome styles, remaining mark families, and
-legend/annotation records. Category, angular, and time/calendar tick ladders
-already move through `xyg_scene_axis_ticks` kinds 2–5 so Python/Node SVG
-exporters and Node `axisTicks` share the same Rust policy. Browser DOM
-measurement and WebGL paint remain environment-specific consumers with
-documented layout tolerances (§7 and §21).
+Next slices add remaining mark families, legend/annotation records, and
+canonical layout/gutter selection so public SVG/PNG/PDF can select the Scene
+path. Category, angular, and time/calendar tick ladders already move through
+`xyg_scene_axis_ticks` kinds 2–5, and Scene v5 carries authored chrome paints
+plus title/axis-label UTF-8. Browser DOM measurement and WebGL paint remain
+environment-specific consumers with documented layout tolerances (§7 and §21).

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "abi_version": 2,
-  "scene_version": 4,
+  "scene_version": 5,
   "painter_version": 2,
   "painter_header_bytes": 64,
   "painter_trace_bytes": 64,
@@ -17,25 +17,147 @@
     "STALE_SEQUENCE": 7
   },
   "exports": [
-    { "name": "xyg_wasm_abi_version", "params": [], "result": "u32" },
-    { "name": "xyg_wasm_scene_version", "params": [], "result": "u32" },
-    { "name": "xyg_wasm_max_arena_bytes", "params": [], "result": "usize" },
-    { "name": "xyg_wasm_instance_new", "params": ["usize"], "result": "u32" },
-    { "name": "xyg_wasm_instance_dispose", "params": ["u32"], "result": "i32" },
-    { "name": "xyg_wasm_arena_resize", "params": ["u32", "usize"], "result": "i32" },
-    { "name": "xyg_wasm_arena_ptr", "params": ["u32"], "result": "usize" },
-    { "name": "xyg_wasm_arena_len", "params": ["u32"], "result": "usize" },
-    { "name": "xyg_wasm_cancel", "params": ["u32", "u32"], "result": "i32" },
-    { "name": "xyg_wasm_scene_validate", "params": ["u32", "u32", "usize", "usize"], "result": "i32" },
-    { "name": "xyg_wasm_scene_prepare", "params": ["u32", "u32", "usize", "usize"], "result": "i32" },
-    { "name": "xyg_wasm_output_ptr", "params": ["u32"], "result": "usize" },
-    { "name": "xyg_wasm_output_len", "params": ["u32"], "result": "usize" },
-    { "name": "xyg_wasm_last_error_ptr", "params": ["u32"], "result": "usize" },
-    { "name": "xyg_wasm_last_error_len", "params": ["u32"], "result": "usize" },
-    { "name": "xyg_wasm_copy_count", "params": ["u32"], "result": "u32" },
-    { "name": "xyg_wasm_copy_bytes_lo", "params": ["u32"], "result": "u32" },
-    { "name": "xyg_wasm_copy_bytes_hi", "params": ["u32"], "result": "u32" },
-    { "name": "xyg_wasm_last_scene_records", "params": ["u32"], "result": "usize" },
-    { "name": "xyg_wasm_last_scene_styles", "params": ["u32"], "result": "usize" }
+    {
+      "name": "xyg_wasm_abi_version",
+      "params": [],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_scene_version",
+      "params": [],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_max_arena_bytes",
+      "params": [],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_instance_new",
+      "params": [
+        "usize"
+      ],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_instance_dispose",
+      "params": [
+        "u32"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_arena_resize",
+      "params": [
+        "u32",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_arena_ptr",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_arena_len",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_cancel",
+      "params": [
+        "u32",
+        "u32"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_validate",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_prepare",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_output_ptr",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_output_len",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_last_error_ptr",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_last_error_len",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_copy_count",
+      "params": [
+        "u32"
+      ],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_copy_bytes_lo",
+      "params": [
+        "u32"
+      ],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_copy_bytes_hi",
+      "params": [
+        "u32"
+      ],
+      "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_last_scene_records",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_last_scene_styles",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
+    }
   ]
 }

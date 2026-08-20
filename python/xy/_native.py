@@ -1559,8 +1559,11 @@ def scene_batch_encode(
     y0: npt.ArrayLike,
     x1: npt.ArrayLike,
     y1: npt.ArrayLike,
+    title: str = "",
+    x_label: str = "",
+    y_label: str = "",
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v4 typed batch."""
+    """Encode the bounded backend-neutral Scene v5 typed batch."""
 
     def scene_uint(
         value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
@@ -1611,7 +1614,12 @@ def scene_batch_encode(
         raise ValueError("scene batch arrays must have equal length")
     if len(fills) != len(widths) * 4 or len(strokes) != len(widths) * 4:
         raise ValueError("scene style table must have one fill and stroke RGBA per style")
-    capacity = 160 + len(widths) * 16 + n * 56
+    title_b = title.encode("utf-8")
+    xlabel_b = x_label.encode("utf-8")
+    ylabel_b = y_label.encode("utf-8")
+    capacity = (
+        160 + len(widths) * 16 + n * 56 + 40 + len(title_b) + len(xlabel_b) + len(ylabel_b)
+    )
     while True:
         out = ctypes.create_string_buffer(capacity)
         written = _lib.xyg_scene_batch_encode(
@@ -1631,6 +1639,12 @@ def scene_batch_encode(
             _ptr_u8(symbol_codes) if n else 0,
             *(_ptr_f64(value) if n else 0 for value in coordinates),
             n,
+            ctypes.c_char_p(title_b) if title_b else None,
+            len(title_b),
+            ctypes.c_char_p(xlabel_b) if xlabel_b else None,
+            len(xlabel_b),
+            ctypes.c_char_p(ylabel_b) if ylabel_b else None,
+            len(ylabel_b),
             out,
             capacity,
         )

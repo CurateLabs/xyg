@@ -68,8 +68,11 @@ test("Node Scene v4 raster rejects nonrepresentable f32 commands", () => {
   assert.throws(() => sceneRasterCommands(hugeWidth), /invalid canonical scene/);
 });
 
-test("Node figure Scene v4 rejects the same incomplete customization as Python", () => {
-  assert.throws(() => new Figure({ title: "Not encoded" }).scatter([1], [1]).toScene(), /titles/);
+test("Node figure Scene v5 encodes titles and still rejects incomplete customization", () => {
+  const titled = new Figure({ title: "Encoded title" }).scatter([1], [1]);
+  const svg = titled.toSceneSvg();
+  assert.match(svg, /data-xy-chrome="title"/);
+  assert.match(svg, /Encoded title/);
   for (const key of ["marker_path", "marker_glyph"]) {
     const figure = new Figure();
     figure.scatter([1], [1], { _composed: true, style: { [key]: "M0 0" } });
@@ -234,7 +237,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 4);
+  assert.equal(sceneVersion(), 5);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],

@@ -162,3 +162,24 @@ def test_python_scene_rejects_missing_coordinates_until_break_records_exist(kind
     with pytest.raises(UnsupportedSceneV3, match="missing-data breaks"):
         figure.to_scene()
     assert "<svg" in figure.to_svg()
+
+
+def test_python_scene_encodes_title_and_axis_labels() -> None:
+    figure = representative_figure()
+    figure.title = "Peak days"
+    figure.x_label = "day"
+    figure.y_label = "count"
+    scene = figure.to_scene()
+    assert scene.endswith(b"Peak daysdaycount") or b"Peak days" in scene
+    svg = _native.scene_svg(scene)
+    assert 'data-xy-chrome="title"' in svg
+    assert 'data-xy-chrome="x-label"' in svg
+    assert 'data-xy-chrome="y-label"' in svg
+    assert "Peak days" in svg and ">day<" in svg and ">count<" in svg
+
+
+def test_python_scene_still_rejects_annotations() -> None:
+    figure = representative_figure()
+    figure.annotations.append({"kind": "text", "x": 1, "y": 2, "text": "note"})
+    with pytest.raises(UnsupportedSceneV3, match="annotations"):
+        figure.to_scene()

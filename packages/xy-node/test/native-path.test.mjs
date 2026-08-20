@@ -62,7 +62,7 @@ test("lookup uses packaged and cargo paths, not system directories", () => {
 });
 
 test("ABI mismatch fails before other symbols are usable", () => {
-  assert.equal(ABI_VERSION, 68);
+  assert.equal(ABI_VERSION, 69);
   assert.doesNotThrow(() => assertAbiVersion(62, 62));
   assert.throws(
     () => assertAbiVersion(59, 60),

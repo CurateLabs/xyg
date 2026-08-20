@@ -89,7 +89,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 68;
+pub const ABI_VERSION: u32 = 69;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -219,13 +219,16 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
     })
 }
 
-/// Encode a bounded backend-neutral Scene v4 batch. Record kinds are scatter
+/// Encode a bounded backend-neutral Scene v5 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
-/// typed binary, never JSON. Returns required bytes or `usize::MAX` on error.
+/// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
+/// null when the corresponding length is zero. Returns required bytes or
+/// `usize::MAX` on error.
 ///
 /// # Safety
-/// Every input array must address `len` readable elements. If capacity is
-/// sufficient, `out` must address `out_cap` writable bytes.
+/// Every input array must address `len` readable elements. Text pointers must
+/// address `*_len` readable bytes when non-zero. If capacity is sufficient,
+/// `out` must address `out_cap` writable bytes.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn xyg_scene_batch_encode(
@@ -261,6 +264,12 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     x1: *const f64,
     y1: *const f64,
     len: usize,
+    title: *const u8,
+    title_len: usize,
+    x_label: *const u8,
+    x_label_len: usize,
+    y_label: *const u8,
+    y_label_len: usize,
     out: *mut u8,
     out_cap: usize,
 ) -> usize {
@@ -268,6 +277,9 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || style_count > scene::MAX_SCENE_STYLES
         || !matches!(x_mask_nonpositive, 0 | 1)
         || !matches!(y_mask_nonpositive, 0 | 1)
+        || title_len > scene::MAX_SCENE_TEXT_BYTES
+        || x_label_len > scene::MAX_SCENE_TEXT_BYTES
+        || y_label_len > scene::MAX_SCENE_TEXT_BYTES
         || (len > 0
             && (kinds.is_null()
                 || stable_ids.is_null()
@@ -280,6 +292,9 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
                 || y1.is_null()))
         || (style_count > 0
             && (fill_rgba.is_null() || stroke_rgba.is_null() || stroke_width.is_null()))
+        || (title_len > 0 && title.is_null())
+        || (x_label_len > 0 && x_label.is_null())
+        || (y_label_len > 0 && y_label.is_null())
     {
         return usize::MAX;
     }
@@ -369,12 +384,30 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
                 std::slice::from_raw_parts(pointer, len)
             }
         };
-        scene::SceneBatch::new(
+        let title = if title_len == 0 {
+            ""
+        } else {
+            std::str::from_utf8(std::slice::from_raw_parts(title, title_len)).ok()?
+        };
+        let x_label = if x_label_len == 0 {
+            ""
+        } else {
+            std::str::from_utf8(std::slice::from_raw_parts(x_label, x_label_len)).ok()?
+        };
+        let y_label = if y_label_len == 0 {
+            ""
+        } else {
+            std::str::from_utf8(std::slice::from_raw_parts(y_label, y_label_len)).ok()?
+        };
+        let text = scene::SceneChromeText::from_parts(title, x_label, y_label).ok()?;
+        scene::SceneBatch::new_with_chrome(
             layout,
             x_axis_id,
             y_axis_id,
             x_scale,
             y_scale,
+            scene::SceneChromeStyle::default(),
+            text,
             kinds,
             stable_ids,
             style_refs,
@@ -5832,7 +5865,7 @@ mod tests {
         let diameter = [8.0f64];
         let symbols = [2u8];
         let values = [0.5f64];
-        let mut output = [0u8; 232];
+        let mut output = [0u8; 272];
         let mut call = |kind, mask, len, kinds_ptr| unsafe {
             xyg_scene_batch_encode(
                 100.0,
@@ -5867,11 +5900,17 @@ mod tests {
                 values.as_ptr(),
                 values.as_ptr(),
                 len,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
                 output.as_mut_ptr(),
                 output.len(),
             )
         };
-        assert_eq!(call(0, 0, 1, kinds.as_ptr()), 232);
+        assert_eq!(call(0, 0, 1, kinds.as_ptr()), 272);
         assert_eq!(call(99, 0, 1, kinds.as_ptr()), usize::MAX);
         assert_eq!(call(0, 2, 1, kinds.as_ptr()), usize::MAX);
         assert_eq!(call(0, 0, 1, std::ptr::null()), usize::MAX);
@@ -5890,7 +5929,7 @@ mod tests {
         let reserved_or_corner = [0.0f64; 4];
         let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
         let log_symbols = [0u8; 4];
-        let mut log_output = [0u8; 400];
+        let mut log_output = [0u8; 440];
         assert_eq!(
             unsafe {
                 xyg_scene_batch_encode(
@@ -5926,6 +5965,12 @@ mod tests {
                     reserved_or_corner.as_ptr(),
                     reserved_or_corner.as_ptr(),
                     4,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
                     log_output.as_mut_ptr(),
                     log_output.len(),
                 )

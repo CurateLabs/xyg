@@ -8,17 +8,84 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 4;
+pub const SCENE_VERSION: u32 = 5;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
+pub const MAX_SCENE_TEXT_BYTES: usize = 4_096;
 pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
 pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
+/// Fixed chrome trailer before UTF-8 title/axis-label payloads (Scene v5).
+pub const SCENE_CHROME_TRAILER_BYTES: usize = 40;
 pub const BROWSER_PAINTER_VERSION: u32 = 2;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
+
+/// Authored chrome paints and label size carried in the Scene v5 trailer.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SceneChromeStyle {
+    pub grid_rgba: [u8; 4],
+    pub axis_rgba: [u8; 4],
+    pub label_rgba: [u8; 4],
+    pub label_font_size: f64,
+}
+
+impl SceneChromeStyle {
+    pub const fn default_style() -> Self {
+        Self {
+            // Matches the historical static exporter: rgba(32,32,32,α).
+            grid_rgba: [32, 32, 32, 36],   // ≈ 0.14
+            axis_rgba: [32, 32, 32, 140],  // ≈ 0.55
+            label_rgba: [32, 32, 32, 217], // ≈ 0.85
+            label_font_size: 12.0,
+        }
+    }
+
+    pub fn validated(self) -> Result<Self, SceneError> {
+        if !self.label_font_size.is_finite() || self.label_font_size <= 0.0 {
+            return Err(SceneError::NonFinite);
+        }
+        Ok(self)
+    }
+}
+
+impl Default for SceneChromeStyle {
+    fn default() -> Self {
+        Self::default_style()
+    }
+}
+
+/// Optional figure title and axis labels owned by the Scene v5 trailer.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct SceneChromeText {
+    pub title: String,
+    pub x_label: String,
+    pub y_label: String,
+}
+
+impl SceneChromeText {
+    pub fn from_parts(title: &str, x_label: &str, y_label: &str) -> Result<Self, SceneError> {
+        for value in [title, x_label, y_label] {
+            if value.len() > MAX_SCENE_TEXT_BYTES || value.contains('\0') {
+                return Err(SceneError::Limit);
+            }
+        }
+        Ok(Self {
+            title: title.to_owned(),
+            x_label: x_label.to_owned(),
+            y_label: y_label.to_owned(),
+        })
+    }
+
+    fn encoded_bytes(&self) -> usize {
+        SCENE_CHROME_TRAILER_BYTES
+            + self.title.len()
+            + self.x_label.len()
+            + self.y_label.len()
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AxisTicks {
@@ -666,7 +733,73 @@ fn batch_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
     Ok(f64::from_le_bytes(raw))
 }
 
-/// Validate a serialized canonical Scene v4 batch without allocating.
+fn read_chrome_trailer(
+    bytes: &[u8],
+    body_end: usize,
+) -> Result<(SceneChromeStyle, SceneChromeText, usize), SceneError> {
+    let trailer = bytes
+        .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
+        .ok_or(SceneError::Length)?;
+    if trailer[12..16] != [0; 4] || trailer[36..40] != [0; 4] {
+        return Err(SceneError::Length);
+    }
+    let label_font_size = f64::from_le_bytes(trailer[16..24].try_into().unwrap());
+    let chrome = SceneChromeStyle {
+        grid_rgba: trailer[0..4].try_into().unwrap(),
+        axis_rgba: trailer[4..8].try_into().unwrap(),
+        label_rgba: trailer[8..12].try_into().unwrap(),
+        label_font_size,
+    }
+    .validated()?;
+    let title_len = u32::from_le_bytes(trailer[24..28].try_into().unwrap()) as usize;
+    let xlabel_len = u32::from_le_bytes(trailer[28..32].try_into().unwrap()) as usize;
+    let ylabel_len = u32::from_le_bytes(trailer[32..36].try_into().unwrap()) as usize;
+    if title_len > MAX_SCENE_TEXT_BYTES
+        || xlabel_len > MAX_SCENE_TEXT_BYTES
+        || ylabel_len > MAX_SCENE_TEXT_BYTES
+    {
+        return Err(SceneError::Limit);
+    }
+    let text_start = body_end + SCENE_CHROME_TRAILER_BYTES;
+    let total = text_start
+        .checked_add(title_len)
+        .and_then(|value| value.checked_add(xlabel_len))
+        .and_then(|value| value.checked_add(ylabel_len))
+        .ok_or(SceneError::Limit)?;
+    if bytes.len() < total {
+        return Err(SceneError::Length);
+    }
+    let title_bytes = &bytes[text_start..text_start + title_len];
+    let xlabel_bytes = &bytes[text_start + title_len..text_start + title_len + xlabel_len];
+    let ylabel_bytes =
+        &bytes[text_start + title_len + xlabel_len..text_start + title_len + xlabel_len + ylabel_len];
+    if title_bytes.contains(&0) || xlabel_bytes.contains(&0) || ylabel_bytes.contains(&0) {
+        return Err(SceneError::Length);
+    }
+    let text = SceneChromeText {
+        title: String::from_utf8(title_bytes.to_vec()).map_err(|_| SceneError::Length)?,
+        x_label: String::from_utf8(xlabel_bytes.to_vec()).map_err(|_| SceneError::Length)?,
+        y_label: String::from_utf8(ylabel_bytes.to_vec()).map_err(|_| SceneError::Length)?,
+    };
+    Ok((chrome, text, total))
+}
+
+fn write_chrome_trailer(out: &mut Vec<u8>, chrome: &SceneChromeStyle, text: &SceneChromeText) {
+    out.extend_from_slice(&chrome.grid_rgba);
+    out.extend_from_slice(&chrome.axis_rgba);
+    out.extend_from_slice(&chrome.label_rgba);
+    out.extend_from_slice(&[0; 4]);
+    out.extend_from_slice(&chrome.label_font_size.to_le_bytes());
+    out.extend_from_slice(&(text.title.len() as u32).to_le_bytes());
+    out.extend_from_slice(&(text.x_label.len() as u32).to_le_bytes());
+    out.extend_from_slice(&(text.y_label.len() as u32).to_le_bytes());
+    out.extend_from_slice(&[0; 4]);
+    out.extend_from_slice(text.title.as_bytes());
+    out.extend_from_slice(text.x_label.as_bytes());
+    out.extend_from_slice(text.y_label.as_bytes());
+}
+
+/// Validate a serialized canonical Scene v5 batch without allocating.
 ///
 /// The direct-browser adapter uses this decoder as its first exact scene seam:
 /// TypeScript does not guess record offsets or accept a provisional browser
@@ -689,7 +822,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
     if records > MAX_SCENE_MARKS || styles > MAX_SCENE_STYLES {
         return Err(SceneError::Limit);
     }
-    let expected = SCENE_BATCH_HEADER_BYTES
+    let body = SCENE_BATCH_HEADER_BYTES
         .checked_add(
             styles
                 .checked_mul(SCENE_STYLE_RECORD_BYTES)
@@ -701,7 +834,8 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 .and_then(|record_bytes| value.checked_add(record_bytes))
         })
         .ok_or(SceneError::Limit)?;
-    if bytes.len() != expected {
+    let (_chrome, _text, total) = read_chrome_trailer(bytes, body)?;
+    if bytes.len() != total {
         return Err(SceneError::Length);
     }
 
@@ -888,6 +1022,8 @@ pub struct SceneBatch<'a> {
     y_axis_id: u64,
     x_scale: AxisScale,
     y_scale: AxisScale,
+    chrome: SceneChromeStyle,
+    text: SceneChromeText,
     kinds: &'a [u8],
     stable_ids: &'a [u64],
     style_refs: &'a [u32],
@@ -923,6 +1059,52 @@ impl<'a> SceneBatch<'a> {
         x1: &'a [f64],
         y1: &'a [f64],
     ) -> Result<Self, SceneError> {
+        Self::new_with_chrome(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_chrome(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        chrome: SceneChromeStyle,
+        text: SceneChromeText,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        let chrome = chrome.validated()?;
         let len = kinds.len();
         if len > MAX_SCENE_MARKS {
             return Err(SceneError::Limit);
@@ -981,6 +1163,8 @@ impl<'a> SceneBatch<'a> {
             y_axis_id,
             x_scale,
             y_scale,
+            chrome,
+            text,
             kinds,
             stable_ids,
             style_refs,
@@ -1000,7 +1184,8 @@ impl<'a> SceneBatch<'a> {
         let mut out = Vec::with_capacity(
             SCENE_BATCH_HEADER_BYTES
                 + self.stroke_width.len() * SCENE_STYLE_RECORD_BYTES
-                + self.kinds.len() * SCENE_BATCH_RECORD_BYTES,
+                + self.kinds.len() * SCENE_BATCH_RECORD_BYTES
+                + self.text.encoded_bytes(),
         );
         out.extend_from_slice(b"XYGS");
         out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
@@ -1105,6 +1290,7 @@ impl<'a> SceneBatch<'a> {
             }
             out.extend_from_slice(&self.diameter[index].to_le_bytes());
         }
+        write_chrome_trailer(&mut out, &self.chrome, &self.text);
         out
     }
 }
@@ -1169,12 +1355,75 @@ fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &s
     out.push_str("\" stroke-width=\"1\"/>");
 }
 
-/// Validated, owned Scene v4 document consumed identically by vector and
+fn rgba_css(rgba: [u8; 4]) -> String {
+    format!(
+        "rgba({},{},{},{:.6})",
+        rgba[0],
+        rgba[1],
+        rgba[2],
+        f64::from(rgba[3]) / 255.0
+    )
+}
+
+fn push_svg_chrome_text(out: &mut String, document: &SceneDocument) {
+    let chrome = &document.chrome;
+    let text = &document.text;
+    let layout = &document.layout;
+    if !text.title.is_empty() {
+        out.push_str("<g data-xy-chrome=\"title\"><text x=\"");
+        push_num(out, 0.5 * (layout.left + layout.right));
+        out.push_str("\" y=\"");
+        push_num(out, (layout.top * 0.55).max(chrome.label_font_size));
+        out.push_str("\" fill=\"");
+        out.push_str(&rgba_css(chrome.label_rgba));
+        out.push_str("\" font-size=\"");
+        push_num(out, chrome.label_font_size + 2.0);
+        out.push_str("\" text-anchor=\"middle\">");
+        push_escaped_attribute(out, &text.title);
+        out.push_str("</text></g>");
+    }
+    if !text.x_label.is_empty() {
+        out.push_str("<g data-xy-chrome=\"x-label\"><text x=\"");
+        push_num(out, 0.5 * (layout.left + layout.right));
+        out.push_str("\" y=\"");
+        push_num(out, layout.viewport_height - 6.0);
+        out.push_str("\" fill=\"");
+        out.push_str(&rgba_css(chrome.label_rgba));
+        out.push_str("\" font-size=\"");
+        push_num(out, chrome.label_font_size);
+        out.push_str("\" text-anchor=\"middle\">");
+        push_escaped_attribute(out, &text.x_label);
+        out.push_str("</text></g>");
+    }
+    if !text.y_label.is_empty() {
+        let x = (layout.left * 0.35).max(chrome.label_font_size);
+        let y = 0.5 * (layout.top + layout.bottom);
+        out.push_str("<g data-xy-chrome=\"y-label\"><text x=\"");
+        push_num(out, x);
+        out.push_str("\" y=\"");
+        push_num(out, y);
+        out.push_str("\" fill=\"");
+        out.push_str(&rgba_css(chrome.label_rgba));
+        out.push_str("\" font-size=\"");
+        push_num(out, chrome.label_font_size);
+        out.push_str("\" text-anchor=\"middle\" transform=\"rotate(-90 ");
+        push_num(out, x);
+        out.push(' ');
+        push_num(out, y);
+        out.push_str(")\">");
+        push_escaped_attribute(out, &text.y_label);
+        out.push_str("</text></g>");
+    }
+}
+
+/// Validated, owned Scene v5 document consumed identically by vector and
 /// raster export. Hosts never reinterpret record geometry after encoding.
 pub struct SceneDocument {
     layout: PlotLayout,
     x_scale: AxisScale,
     y_scale: AxisScale,
+    chrome: SceneChromeStyle,
+    text: SceneChromeText,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
@@ -1219,7 +1468,7 @@ impl SceneDocument {
         if record_count > MAX_SCENE_MARKS || style_count > MAX_SCENE_STYLES {
             return Err(SceneError::Limit);
         }
-        let required = SCENE_BATCH_HEADER_BYTES
+        let body = SCENE_BATCH_HEADER_BYTES
             .checked_add(
                 style_count
                     .checked_mul(SCENE_STYLE_RECORD_BYTES)
@@ -1229,7 +1478,8 @@ impl SceneDocument {
                 value.checked_add(record_count.checked_mul(SCENE_BATCH_RECORD_BYTES)?)
             })
             .ok_or(SceneError::Limit)?;
-        if bytes.len() != required {
+        let (chrome, text, total) = read_chrome_trailer(bytes, body)?;
+        if bytes.len() != total {
             return Err(SceneError::Length);
         }
         let viewport_width = f64_at(32);
@@ -1425,6 +1675,8 @@ impl SceneDocument {
             layout,
             x_scale,
             y_scale,
+            chrome,
+            text,
             styles,
             records,
             raster_mark_capacity,
@@ -1482,7 +1734,7 @@ impl SceneDocument {
                 self.layout.top,
                 x,
                 self.layout.bottom,
-                "rgba(32,32,32,0.14)",
+                &rgba_css(self.chrome.grid_rgba),
             );
         }
         for value in &y_ticks.ticks {
@@ -1493,7 +1745,7 @@ impl SceneDocument {
                 y,
                 self.layout.right,
                 y,
-                "rgba(32,32,32,0.14)",
+                &rgba_css(self.chrome.grid_rgba),
             );
         }
         out.push_str("</g><g clip-path=\"url(#xy-scene-plot)\">");
@@ -1588,15 +1840,17 @@ impl SceneDocument {
                 self.layout.bottom,
                 x,
                 self.layout.bottom + 4.0,
-                "rgba(32,32,32,0.55)",
+                &rgba_css(self.chrome.axis_rgba),
             );
             out.push_str("<text x=\"");
             push_num(&mut out, x);
             out.push_str("\" y=\"");
             push_num(&mut out, self.layout.bottom + 16.0);
-            out.push_str(
-                "\" fill=\"rgba(32,32,32,0.85)\" font-size=\"12\" text-anchor=\"middle\">",
-            );
+            out.push_str("\" fill=\"");
+            out.push_str(&rgba_css(self.chrome.label_rgba));
+            out.push_str("\" font-size=\"");
+            push_num(&mut out, self.chrome.label_font_size);
+            out.push_str("\" text-anchor=\"middle\">");
             out.push_str(&format_tick(*value, x_ticks.step, self.x_scale.kind));
             out.push_str("</text>");
         }
@@ -1608,33 +1862,39 @@ impl SceneDocument {
                 y,
                 self.layout.left,
                 y,
-                "rgba(32,32,32,0.55)",
+                &rgba_css(self.chrome.axis_rgba),
             );
             out.push_str("<text x=\"");
             push_num(&mut out, self.layout.left - 8.0);
             out.push_str("\" y=\"");
             push_num(&mut out, y + 4.0);
-            out.push_str("\" fill=\"rgba(32,32,32,0.85)\" font-size=\"12\" text-anchor=\"end\">");
+            out.push_str("\" fill=\"");
+            out.push_str(&rgba_css(self.chrome.label_rgba));
+            out.push_str("\" font-size=\"");
+            push_num(&mut out, self.chrome.label_font_size);
+            out.push_str("\" text-anchor=\"end\">");
             out.push_str(&format_tick(*value, y_ticks.step, self.y_scale.kind));
             out.push_str("</text>");
         }
-        out.push_str(
-            "<path fill=\"none\" stroke=\"rgba(32,32,32,0.55)\" stroke-width=\"1\" d=\"M ",
-        );
+        out.push_str("<path fill=\"none\" stroke=\"");
+        out.push_str(&rgba_css(self.chrome.axis_rgba));
+        out.push_str("\" stroke-width=\"1\" d=\"M ");
         push_num(&mut out, self.layout.left);
         out.push(' ');
         push_num(&mut out, self.layout.bottom);
         out.push_str(" H ");
         push_num(&mut out, self.layout.right);
-        out.push_str(
-            "\"/><path fill=\"none\" stroke=\"rgba(32,32,32,0.55)\" stroke-width=\"1\" d=\"M ",
-        );
+        out.push_str("\"/><path fill=\"none\" stroke=\"");
+        out.push_str(&rgba_css(self.chrome.axis_rgba));
+        out.push_str("\" stroke-width=\"1\" d=\"M ");
         push_num(&mut out, self.layout.left);
         out.push(' ');
         push_num(&mut out, self.layout.top);
         out.push_str(" V ");
         push_num(&mut out, self.layout.bottom);
-        out.push_str("\"/></g></svg>");
+        out.push_str("\"/></g>");
+        push_svg_chrome_text(&mut out, self);
+        out.push_str("</svg>");
         out
     }
 
@@ -1652,7 +1912,7 @@ impl SceneDocument {
                 out,
                 [(x, self.layout.top), (x, self.layout.bottom)],
                 1.0,
-                [32, 32, 32, 36],
+                self.chrome.grid_rgba,
                 scale,
             )?;
         }
@@ -1662,7 +1922,7 @@ impl SceneDocument {
                 out,
                 [(self.layout.left, y), (self.layout.right, y)],
                 1.0,
-                [32, 32, 32, 36],
+                self.chrome.grid_rgba,
                 scale,
             )?;
         }
@@ -1696,7 +1956,7 @@ impl SceneDocument {
                 (self.layout.left, self.layout.bottom),
             ],
         ] {
-            push_raster_stroke(out, points, 1.0, [32, 32, 32, 140], scale)?;
+            push_raster_stroke(out, points, 1.0, self.chrome.axis_rgba, scale)?;
         }
         for (is_x, ticks) in [(true, x_ticks), (false, y_ticks)] {
             for value in &ticks.labeled {
@@ -1717,7 +1977,7 @@ impl SceneDocument {
                         [(self.layout.left - 4.0, y), (self.layout.left, y)],
                     )
                 };
-                push_raster_stroke(out, segment, 1.0, [32, 32, 32, 140], scale)?;
+                push_raster_stroke(out, segment, 1.0, self.chrome.axis_rgba, scale)?;
                 let text = format_tick(
                     *value,
                     ticks.step,
@@ -1731,12 +1991,63 @@ impl SceneDocument {
                 push_raster_f32(out, x, scale)?;
                 push_raster_f32(out, y, scale)?;
                 out.push(anchor);
-                push_raster_f32(out, 12.0, scale)?;
-                out.extend_from_slice(&[32, 32, 32, 217]);
+                push_raster_f32(out, self.chrome.label_font_size, scale)?;
+                out.extend_from_slice(&self.chrome.label_rgba);
                 out.extend_from_slice(&(text.len() as u32).to_le_bytes());
                 out.extend_from_slice(text.as_bytes());
             }
         }
+        self.append_raster_chrome_text(out, scale)?;
+        Ok(())
+    }
+
+    #[inline(never)]
+    fn append_raster_chrome_text(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+        let push_label = |out: &mut Vec<u8>,
+                          x: f64,
+                          y: f64,
+                          anchor: u8,
+                          size: f64,
+                          label: &str|
+         -> Result<(), SceneError> {
+            if label.is_empty() {
+                return Ok(());
+            }
+            out.push(6);
+            push_raster_f32(out, x, scale)?;
+            push_raster_f32(out, y, scale)?;
+            out.push(anchor);
+            push_raster_f32(out, size, scale)?;
+            out.extend_from_slice(&self.chrome.label_rgba);
+            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            out.extend_from_slice(label.as_bytes());
+            Ok(())
+        };
+        push_label(
+            out,
+            0.5 * (self.layout.left + self.layout.right),
+            (self.layout.top * 0.55).max(self.chrome.label_font_size),
+            1,
+            self.chrome.label_font_size + 2.0,
+            &self.text.title,
+        )?;
+        push_label(
+            out,
+            0.5 * (self.layout.left + self.layout.right),
+            self.layout.viewport_height - 6.0,
+            1,
+            self.chrome.label_font_size,
+            &self.text.x_label,
+        )?;
+        // Anchor 0x81 = middle + 90° CCW for y-axis titles.
+        push_label(
+            out,
+            (self.layout.left * 0.35).max(self.chrome.label_font_size),
+            0.5 * (self.layout.top + self.layout.bottom),
+            0x81,
+            self.chrome.label_font_size,
+            &self.text.y_label,
+        )?;
         Ok(())
     }
 
@@ -2537,7 +2848,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 4);
+        assert_eq!(SCENE_VERSION, 5);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -2573,11 +2884,14 @@ mod tests {
         .unwrap();
         let encoded = batch.encode();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 4);
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 5);
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
-            SCENE_BATCH_HEADER_BYTES + 4 * SCENE_STYLE_RECORD_BYTES + 4 * SCENE_BATCH_RECORD_BYTES
+            SCENE_BATCH_HEADER_BYTES
+                + 4 * SCENE_STYLE_RECORD_BYTES
+                + 4 * SCENE_BATCH_RECORD_BYTES
+                + SCENE_CHROME_TRAILER_BYTES
         );
         assert_eq!(u64::from_le_bytes(encoded[24..32].try_into().unwrap()), 4);
         assert_eq!(u64::from_le_bytes(encoded[80..88].try_into().unwrap()), 11);
@@ -3309,6 +3623,44 @@ mod tests {
         );
         assert_eq!(utc_year_month0_from_ms(lo), (2020, 0));
         assert_eq!(utc_year_month0_from_ms(hi), (2022, 0));
+    }
+
+    #[test]
+    fn scene_v5_encodes_authored_chrome_text() {
+        let layout = PlotLayout::new(200.0, 120.0, 40.0, 20.0, 20.0, 30.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let text = SceneChromeText::from_parts("Hello", "x", "y").unwrap();
+        let batch = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            SceneChromeStyle::default(),
+            text,
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap();
+        let encoded = batch.encode();
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 5);
+        assert!(encoded.ends_with(b"Helloxy"));
+        let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
+        assert!(svg.contains("data-xy-chrome=\"title\""));
+        assert!(svg.contains("Hello"));
+        assert!(svg.contains("data-xy-chrome=\"x-label\""));
+        assert!(svg.contains("data-xy-chrome=\"y-label\""));
     }
 
     #[test]
