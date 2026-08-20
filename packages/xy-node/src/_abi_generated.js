@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 72;
-export const SIGNATURE_SHA256 = "9ae897b5cec8594c7bdec3751847df29eaf703a9891895b98bd8b93ca0b36310";
+export const ABI_VERSION = 73;
+export const SIGNATURE_SHA256 = "494bee2c1e1ba457de4e40f5a83a6bf095c5681ee2b016609bc651385bd95346";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -77,6 +77,7 @@ export let xyPyramidCompose;
 export let xyPyramidComposeColor;
 export let xyPyramidCount;
 export let xyPyramidFree;
+export let xyPyramidSpill;
 export let xyQuadMeshTriangles;
 export let xyQuantiles;
 export let xyRangeIndices;
@@ -129,6 +130,13 @@ export let xyTemporalIntervalIndexCreate;
 export let xyTemporalIntervalIndexDestroy;
 export let xyTemporalIntervalIndexLen;
 export let xyTemporalIntervalVisibilityAt;
+export let xyTileBudgetSet;
+export let xyTileStoreAppend;
+export let xyTileStoreCompose;
+export let xyTileStoreComposeColor;
+export let xyTileStoreFetch;
+export let xyTileStoreFree;
+export let xyTileStoreStats;
 export let xyTransitionKeysFixed;
 export let xyTriangleEdges;
 export let xyValidIndicesF64;
@@ -211,6 +219,7 @@ export function bindGeneratedAbi(lib) {
   xyPyramidComposeColor = lib.func("int32_t xyg_pyramid_compose_color(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, uint8_t * out_rgba)");
   xyPyramidCount = lib.func("int32_t xyg_pyramid_count(uint64_t handle, double lo_x, double hi_x, double lo_y, double hi_y, double * out_count)");
   xyPyramidFree = lib.func("int32_t xyg_pyramid_free(uint64_t handle)");
+  xyPyramidSpill = lib.func("uint64_t xyg_pyramid_spill(uint64_t handle)");
   xyQuadMeshTriangles = lib.func("size_t xyg_quad_mesh_triangles(const double * x, size_t x_len, const double * y, size_t y_len, const double * values, size_t cell_rows, size_t cell_cols, uint32_t layout, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_values)");
   xyQuantiles = lib.func("size_t xyg_quantiles(const double * data, size_t len, const double * probs, size_t n_probs, double * out)");
   xyRangeIndices = lib.func("size_t xyg_range_indices(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, uint32_t * out)");
@@ -263,6 +272,13 @@ export function bindGeneratedAbi(lib) {
   xyTemporalIntervalIndexDestroy = lib.func("int32_t xyg_temporal_interval_index_destroy(uint64_t handle)");
   xyTemporalIntervalIndexLen = lib.func("int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len)");
   xyTemporalIntervalVisibilityAt = lib.func("int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)");
+  xyTileBudgetSet = lib.func("int32_t xyg_tile_budget_set(uint64_t bytes)");
+  xyTileStoreAppend = lib.func("int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len)");
+  xyTileStoreCompose = lib.func("int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out)");
+  xyTileStoreComposeColor = lib.func("int32_t xyg_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, uint8_t * out_rgba)");
+  xyTileStoreFetch = lib.func("int32_t xyg_tile_store_fetch(uint64_t store, uint32_t level, uint32_t tx, uint32_t ty, uint32_t * out_counts, uint16_t * out_color)");
+  xyTileStoreFree = lib.func("int32_t xyg_tile_store_free(uint64_t store)");
+  xyTileStoreStats = lib.func("int32_t xyg_tile_store_stats(uint64_t store, uint64_t * out)");
   xyTransitionKeysFixed = lib.func("int32_t xyg_transition_keys_fixed(const uint8_t * data, size_t len, size_t width, uint32_t kind, int32_t swap_endian, uint32_t * out_lo, uint32_t * out_hi, size_t * out_error_first, size_t * out_error_index)");
   xyTriangleEdges = lib.func("size_t xyg_triangle_edges(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, double * out_x0, double * out_x1, double * out_y0, double * out_y1)");
   xyValidIndicesF64 = lib.func("size_t xyg_valid_indices_f64(const double *const * columns, size_t n_columns, size_t len, uint64_t positive_mask, uint32_t * out, size_t capacity)");
