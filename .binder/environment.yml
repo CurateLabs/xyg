@@ -6,7 +6,7 @@ dependencies:
   # Loose version pins on purpose — exact conda build strings are
   # arch-specific (mybinder.org also schedules aarch64 nodes) and conda-forge
   # rebuilds retire them, which would quietly make this file unsolvable.
-  - rust=1.88.*
+  - rust=1.96.*
   - nodejs=22.*
   # repo2docker's default kernel env resolves to Python 3.10 (observed
   # 3.10.19 on mybinder and in CI), below xy's requires-python >=3.11, which

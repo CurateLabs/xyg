@@ -53,7 +53,7 @@ stage and gives uv a writable, run-scoped location. `XDG_CACHE_HOME` is set to
 that same workspace cache root so Bazel derives its output user root as
 `.cache/bazel` instead of the unwritable `~/.cache/bazel` mount.
 
-Rust is pinned to **1.88.0** in the workflow (`dtolnay/rust-toolchain`)
+Rust is pinned to **1.96.0** in the workflow (`dtolnay/rust-toolchain`)
 and `rust-toolchain.toml`. Node graph goldens default to the current
 `ABI_VERSION` in `python/xy/_abi_generated.py` (64 as of this revision);
 `tools/bazel/run_node_graph_tests.sh` exports `XYG_EXPECTED_ABI` from
