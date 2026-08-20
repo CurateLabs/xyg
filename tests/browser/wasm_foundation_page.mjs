@@ -263,6 +263,14 @@ async function run() {
   if (!host.querySelector("canvas") || rendered.gpuTraces.length < 1) {
     throw new Error("public WASM Scene API did not hydrate the existing painter");
   }
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const labels = [...host.querySelectorAll('[data-xy-label-kind="tick"]')].map((node) => node.textContent);
+  if (labels.length < 6 || !labels.includes("0.0") || !labels.includes("0.5") || !labels.includes("1.0")) {
+    throw new Error(`Rust-authored Scene v4 chrome labels were not painted: ${JSON.stringify(labels)}`);
+  }
+  if (host.querySelectorAll('[data-xy-axis-side="bottom"], [data-xy-axis-side="left"]').length < 2) {
+    throw new Error("Rust-authored Scene v4 axis chrome was not painted");
+  }
   if (rendered.sceneStableId(0, 0) !== 7n) throw new Error("canonical stable id was not preserved through painter hydration");
   rendered.destroy();
   host.remove();

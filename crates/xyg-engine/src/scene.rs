@@ -1683,16 +1683,8 @@ impl SceneDocument {
                 })
                 .collect::<Result<Vec<_>, SceneError>>()
         };
-        let x_ticks = browser_ticks(
-            self.x_scale,
-            self.layout.right - self.layout.left,
-            true,
-        )?;
-        let y_ticks = browser_ticks(
-            self.y_scale,
-            self.layout.bottom - self.layout.top,
-            false,
-        )?;
+        let x_ticks = browser_ticks(self.x_scale, self.layout.right - self.layout.left, true)?;
+        let y_ticks = browser_ticks(self.y_scale, self.layout.bottom - self.layout.top, false)?;
 
         let mut groups = Vec::new();
         let mut index = 0;
@@ -1788,9 +1780,7 @@ impl SceneDocument {
             )
             .ok_or(SceneError::Limit)?;
         for (_, label) in x_ticks.iter().chain(&y_ticks) {
-            required = required
-                .checked_add(label.len())
-                .ok_or(SceneError::Limit)?;
+            required = required.checked_add(label.len()).ok_or(SceneError::Limit)?;
         }
         if required > max_bytes {
             return Err(SceneError::Limit);
@@ -1874,7 +1864,9 @@ impl SceneDocument {
         let tick_bytes = tick_count
             .checked_mul(BROWSER_PAINTER_TICK_BYTES)
             .ok_or(SceneError::Limit)?;
-        let string_offset = tick_offset.checked_add(tick_bytes).ok_or(SceneError::Limit)?;
+        let string_offset = tick_offset
+            .checked_add(tick_bytes)
+            .ok_or(SceneError::Limit)?;
         out[56..60].copy_from_slice(&(tick_offset as u32).to_le_bytes());
         out[60..64].copy_from_slice(&(string_offset as u32).to_le_bytes());
         out.resize(string_offset, 0);

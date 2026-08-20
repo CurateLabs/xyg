@@ -513,26 +513,37 @@ mod tests {
         write_arena(handle, &bytes);
         assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_OK);
         assert_ne!(xyg_wasm_output_ptr(handle), 0);
-        assert_eq!(xyg_wasm_output_len(handle), 128);
+        assert_eq!(xyg_wasm_output_len(handle), 258);
         assert_eq!(xyg_wasm_last_scene_records(handle), 1);
         with_instance_mut(handle, |instance| {
             assert_eq!(&instance.output[..4], b"XYPB");
             assert_eq!(
                 u32::from_le_bytes(instance.output[4..8].try_into().unwrap()),
-                1
+                2
             );
             assert_eq!(
                 u32::from_le_bytes(instance.output[20..24].try_into().unwrap()),
                 1
             );
             assert_eq!(
-                u32::from_le_bytes(instance.output[120..124].try_into().unwrap()),
+                u32::from_le_bytes(instance.output[136..140].try_into().unwrap()),
                 7
             );
             assert_eq!(
-                u32::from_le_bytes(instance.output[124..128].try_into().unwrap()),
+                u32::from_le_bytes(instance.output[140..144].try_into().unwrap()),
                 0
             );
+            assert_eq!(
+                u32::from_le_bytes(instance.output[48..52].try_into().unwrap()),
+                3
+            );
+            assert_eq!(
+                u32::from_le_bytes(instance.output[52..56].try_into().unwrap()),
+                3
+            );
+            let strings = u32::from_le_bytes(instance.output[60..64].try_into().unwrap()) as usize;
+            assert!(strings < instance.output.len());
+            assert!(std::str::from_utf8(&instance.output[strings..]).is_ok());
         })
         .unwrap();
 
