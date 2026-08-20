@@ -45,6 +45,7 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | Bundled Reflex adapter | `reflex_xy` (`python/reflex_xy/`) | **`reflex_xyg`** (`python/reflex_xyg/`); extra spelled `xyg[reflex]` | decided (owner, 2026-08-11) |
 | Paint client (npm) | (Python `python/xy/static` only) | **`@curatelabs/xyg`** (owned by #23; listed so the matrix is complete) | decided |
 | Node package | `@xy/node` (`packages/xy-node/`) | **`@curatelabs/xyg-node`** (in-tree directory stays `packages/xy-node`; never publish `@xy/node`) | decided (owner; npm scope locked with #24/#23) |
+| Node exact-platform natives | (none; repo/`_native_lib` only) | **`@curatelabs/xyg-node-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}`** as optionalDependencies of the facade; Windows arm64 unsupported | in progress (#52) |
 | Native-lib override env var | `XY_NATIVE_LIB` | **`XYG_NATIVE_LIB`** (both hosts + Bazel wrappers; packaged paths otherwise — never a broadened system search) | decided |
 | Build-hook env switches | `XY_SKIP_CARGO`, `XY_REQUIRE_CARGO`, `XY_SKIP_NODE`, `XY_CARGO_TARGET`, `XY_WHEEL_PLATFORM` | **`XYG_SKIP_CARGO`, `XYG_REQUIRE_CARGO`, `XYG_SKIP_NODE`, `XYG_CARGO_TARGET`, `XYG_WHEEL_PLATFORM`** | decided |
 | Release publish guard | `XY_ALLOW_PYPI_PUBLISH` (#13) | **`XYG_ALLOW_PYPI_PUBLISH`** | decided |

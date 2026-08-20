@@ -20,6 +20,12 @@ packages/xy-client/dist/index.js
 packages/xy-client/dist/standalone.js
 python/xy/static/index.js
 python/xy/static/standalone.js
+# Exact-platform Node natives (#52): staged by release packaging next to
+# packages/xyg-node-*/index.js; never commit built cdylibs from a checkout.
+packages/xyg-node-*/libxyg_core.so
+packages/xyg-node-*/libxyg_core.dylib
+packages/xyg-node-*/xyg_core.dll
+packages/xy-node/_native_lib/
 **/assets/external/
 # Bazel (cargo-wrapping graph MVP). Keep MODULE.bazel / BUILD.bazel /
 # .bazelrc / .bazelversion / .bazelignore tracked; ignore outputs and

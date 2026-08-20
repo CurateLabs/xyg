@@ -18,5 +18,12 @@
   },
   "dependencies": {
     "koffi": "^3.1.4"
+  },
+  "optionalDependencies": {
+    "@curatelabs/xyg-node-darwin-arm64": "file:../xyg-node-darwin-arm64",
+    "@curatelabs/xyg-node-darwin-x64": "file:../xyg-node-darwin-x64",
+    "@curatelabs/xyg-node-linux-arm64": "file:../xyg-node-linux-arm64",
+    "@curatelabs/xyg-node-linux-x64": "file:../xyg-node-linux-x64",
+    "@curatelabs/xyg-node-win32-x64": "file:../xyg-node-win32-x64"
   }
 }

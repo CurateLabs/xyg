@@ -62,7 +62,7 @@ chose: **Curate Labs** and **XYG**.
 | Surface | Public name | Owner issue | Notes |
 | --- | --- | --- | --- |
 | Paint client (npm) | **`@curatelabs/xyg`** | #23 (publish the artifact); #13 (npm org / registry) | JS/browser front door: `npm install @curatelabs/xyg`. ESM `render` + IIFE `standalone.js` / `window.xy` (global rename is #18 if the product global becomes `xyg`). |
-| Node host (npm) | **`@curatelabs/xyg-node`** | #13 / #18 (identity + native packaging); #23 (toHtml consumes `@curatelabs/xyg`, does not own native `.so` lookup) | Replaces in-tree `"name": "@xy/node"`; never publish `@xy/node`. Thin koffi host; must not import browser APIs. |
+| Node host (npm) | **`@curatelabs/xyg-node`** | #13 / #18 (identity); #52 (exact-platform optional natives); #23 (toHtml consumes `@curatelabs/xyg`, does not own native `.so` lookup) | Replaces in-tree `"name": "@xy/node"`; never publish `@xy/node`. Thin koffi host; must not import browser APIs. Optional exact-platform packages: `@curatelabs/xyg-node-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}` (Windows arm64 unsupported). |
 | Safe Rust crate | `xyg-engine` | #18 | Algorithms and deterministic policy. |
 | C ABI crate / artifact | `xyg-core` / `libxyg_core` | #18 | One cdylib for Python and Node. |
 | Python distribution | **`xyg`** | #13 / #18 | `pip install xyg`. Not upstream `xy`. Import remains `xy` until the staged `python/xyg/` cutover. |

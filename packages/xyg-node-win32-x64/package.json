@@ -1,0 +1,23 @@
+{
+  "name": "@curatelabs/xyg-node-win32-x64",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Exact-platform native xyg_core.dll for win32/x64 (optional dependency of @curatelabs/xyg-node).",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "index.js",
+    "xyg_core.dll",
+    "README.md"
+  ]
+}
