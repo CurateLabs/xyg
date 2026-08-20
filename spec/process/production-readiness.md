@@ -460,7 +460,7 @@ Before tagging an `xyg-v*` release:
   (x86-64, aarch64, armv7), macOS (x86-64, Apple Silicon), and Windows (x86, x64,
   arm64).
 - Confirm the Pyodide/Emscripten wheel passes its runtime load gate, not only
-  its structural wheel check. The tested toolchain is Rust 1.97.0 with
+  its structural wheel check. The tested toolchain is Rust 1.96.0 with
   `panic=abort`, Emscripten 5.0.3, cibuildwheel 4.1.0, the PEP 783
   `pyemscripten_2026_0` wheel ABI, and Pyodide 314.0.0. The abort strategy keeps
   Rust panics from unwinding across the Python/`ctypes` C ABI boundary.

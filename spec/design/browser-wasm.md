@@ -171,7 +171,7 @@ and that an invalid source is rejected before a Worker is allocated.
 
 ## Build and evidence
 
-The repository pins Rust 1.88.0 and CI installs the
+The repository pins Rust 1.96.0 and CI installs the
 `wasm32-unknown-unknown` target explicitly:
 
 ```bash

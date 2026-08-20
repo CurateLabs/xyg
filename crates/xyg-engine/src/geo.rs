@@ -239,7 +239,7 @@ impl GeoColumn {
         if n_features > desc.limits.max_features {
             return Err(GeoError::ResourceLimit);
         }
-        if desc.xy.len() % 2 != 0 {
+        if !desc.xy.len().is_multiple_of(2) {
             return Err(GeoError::InvalidArgument);
         }
         let n_vertices = desc.xy.len() / 2;

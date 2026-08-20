@@ -1,4 +1,4 @@
-FROM rust:1.97.0-slim-bookworm AS rust-toolchain
+FROM rust:1.96.0-slim-bookworm AS rust-toolchain
 
 FROM python:3.13-slim-bookworm AS builder
 
