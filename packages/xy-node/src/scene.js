@@ -256,8 +256,12 @@ function rgba8(css, opacity, name) {
   return parsed.map((value, index) => Math.round(value * (index === 3 ? opacity : 1) * 255));
 }
 
-const RECT_KINDS = new Set(["bar", "column", "histogram"]);
-const SUPPORTED_KINDS = new Set(["scatter", "line", "bar", "column", "histogram"]);
+const RECT_KINDS = new Set(["bar", "column", "histogram", "violin"]);
+const SEGMENT_KINDS = new Set(["segments", "errorbar", "stem"]);
+const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem"]);
+const SUPPORTED_KINDS = new Set([
+  "scatter", "line", "bar", "column", "histogram", "violin", "segments", "errorbar", "stem",
+]);
 
 function rejectRectExtras(style, kind) {
   if (style.fill != null && typeof style.fill === "object") {
@@ -276,7 +280,41 @@ function rejectRectExtras(style, kind) {
   }
 }
 
-/** Compile cartesian scatter/line/bar/column/histogram to Scene v5. */
+function stepArrays(xv, yv, where) {
+  if (xv.length < 2) return { x: xv, y: yv };
+  const xs = [Number(xv[0])];
+  const ys = [Number(yv[0])];
+  for (let index = 1; index < xv.length; index += 1) {
+    if (where === "pre") {
+      xs.push(Number(xv[index - 1]), Number(xv[index]));
+      ys.push(Number(yv[index]), Number(yv[index]));
+    } else if (where === "mid") {
+      const mid = (Number(xv[index - 1]) + Number(xv[index])) * 0.5;
+      xs.push(mid, mid, Number(xv[index]));
+      ys.push(Number(yv[index - 1]), Number(yv[index]), Number(yv[index]));
+    } else {
+      xs.push(Number(xv[index]), Number(xv[index]));
+      ys.push(Number(yv[index - 1]), Number(yv[index]));
+    }
+  }
+  return { x: xs, y: ys };
+}
+
+function requireEqualColumns(columns, kind, label) {
+  if (columns.some((column) => column == null)) {
+    throw new RangeError(`${kind} Scene v5 compilation requires four ${label} columns`);
+  }
+  const count = columns[0].length;
+  if (columns.some((column) => column.length !== count)) {
+    throw new RangeError(`Scene v5 ${kind} ${label} columns must have equal length`);
+  }
+  if (columns.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
+    throw new RangeError("Scene v5 does not yet encode missing-data breaks or nonfinite coordinates");
+  }
+  return count;
+}
+
+/** Compile migrated cartesian marks to Scene v5. */
 export function figureSceneV3(figure, { margins = null } = {}) {
   if (figure.coords !== "cartesian") throw new RangeError("Scene v5 figure compilation currently supports cartesian coordinates only");
   if (figure.annotations?.length) throw new RangeError("Scene v5 does not yet encode annotations");
@@ -303,40 +341,64 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (RECT_KINDS.has(trace.kind)) rejectRectExtras(style, trace.kind);
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
-    const fillCss = style.fill ?? style.color ?? "#3987e5";
+    const color = style.color ?? "#3987e5";
+    const fillDefault = SEGMENT_KINDS.has(trace.kind) ? "#00000000" : color;
+    const fillCss = style.fill ?? fillDefault;
     if (typeof fillCss !== "string") throw new RangeError(`Scene v5 does not yet encode ${trace.kind} non-CSS fills`);
-    const strokeCss = style.stroke ?? (trace.kind === "line" ? style.color ?? "#3987e5" : "#00000000");
-    const width = Number(style.stroke_width ?? style.width ?? style.line_width ?? (trace.kind === "line" ? 1.5 : 0));
+    const strokeCss = style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000");
+    const width = Number(
+      style.stroke_width ?? style.width ?? style.line_width ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
+    );
     styles.push({ fillRgba: rgba8(fillCss, opacity, "fill"), strokeRgba: rgba8(strokeCss, opacity, "stroke"), strokeWidth: width });
     const styleRef = styles.length - 1;
-    const id = trace.id;
-    const isRect = RECT_KINDS.has(trace.kind);
-    let count;
-    let coordinateColumns;
-    if (isRect) {
-      coordinateColumns = [trace.x0, trace.y0, trace.x1, trace.y1];
-      if (coordinateColumns.some((column) => column == null)) {
-        throw new RangeError(`${trace.kind} Scene v5 compilation requires four rectangle columns`);
+    const id = Number(trace.id);
+
+    if (RECT_KINDS.has(trace.kind)) {
+      const count = requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "rectangle");
+      for (let index = 0; index < count; index += 1) {
+        kinds.push(2); stableIds.push(id); styleRefs.push(styleRef);
+        diameter.push(0); symbols.push(0);
+        x0.push(trace.x0[index]); y0.push(trace.y0[index]); x1.push(trace.x1[index]); y1.push(trace.y1[index]);
       }
-      count = coordinateColumns[0].length;
-      if (coordinateColumns.some((column) => column.length !== count)) {
-        throw new RangeError(`Scene v5 ${trace.kind} rectangle columns must have equal length`);
-      }
-    } else {
-      coordinateColumns = [trace.x, trace.y];
-      count = trace.x.length;
+      continue;
     }
-    if (coordinateColumns.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
+
+    if (SEGMENT_KINDS.has(trace.kind)) {
+      const count = requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "endpoint");
+      for (let index = 0; index < count; index += 1) {
+        const stableId = (BigInt(id) << 32n) | BigInt(index);
+        for (const [px, py] of [[trace.x0[index], trace.y0[index]], [trace.x1[index], trace.y1[index]]]) {
+          kinds.push(1); stableIds.push(stableId); styleRefs.push(styleRef);
+          diameter.push(0); symbols.push(0);
+          x0.push(px); y0.push(py); x1.push(0); y1.push(0);
+        }
+      }
+      continue;
+    }
+
+    let xv = trace.x;
+    let yv = trace.y;
+    const where = style.step;
+    if (where != null) {
+      if (trace.kind !== "line") throw new RangeError("Scene v5 step expansion applies only to line traces");
+      if (!["pre", "post", "mid"].includes(where)) {
+        throw new RangeError(`Scene v5 does not support step mode ${JSON.stringify(where)}`);
+      }
+      const stepped = stepArrays(xv, yv, where);
+      xv = stepped.x; yv = stepped.y;
+    }
+    if (xv == null || yv == null || xv.length !== yv.length) {
       throw new RangeError("Scene v5 does not yet encode missing-data breaks or nonfinite coordinates");
     }
-    const kindCode = trace.kind === "scatter" ? 0 : trace.kind === "line" ? 1 : 2;
-    for (let index = 0; index < count; index += 1) {
-      kinds.push(kindCode);
-      stableIds.push(id); styleRefs.push(styleRef);
+    if (Array.from(xv).some((value) => !Number.isFinite(value)) || Array.from(yv).some((value) => !Number.isFinite(value))) {
+      throw new RangeError("Scene v5 does not yet encode missing-data breaks or nonfinite coordinates");
+    }
+    const kindCode = trace.kind === "scatter" ? 0 : 1;
+    for (let index = 0; index < xv.length; index += 1) {
+      kinds.push(kindCode); stableIds.push(id); styleRefs.push(styleRef);
       diameter.push(trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 4) : 0);
       symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
-      if (isRect) { x0.push(trace.x0[index]); y0.push(trace.y0[index]); x1.push(trace.x1[index]); y1.push(trace.y1[index]); }
-      else { x0.push(trace.x[index]); y0.push(trace.y[index]); x1.push(0); y1.push(0); }
+      x0.push(xv[index]); y0.push(yv[index]); x1.push(0); y1.push(0);
     }
   }
   const title = figure.title ?? "";

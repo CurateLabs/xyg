@@ -2239,11 +2239,13 @@ class Figure(AnnotationsMixin, PayloadMixin):
         return _svg.to_svg(self, path, width=width, height=height)
 
     def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:
-        """Compile the migrated scatter/line/bar/column/histogram subset to Scene v5.
+        """Compile the migrated Scene v5 mark subset for this figure.
 
-        Unsupported marks or customization raise explicitly; ordinary SVG and
-        raster exports retain their established renderer as the compatibility
-        fallback until public Scene selection covers remaining chrome.
+        Supports cartesian scatter/line (including step), bar/column/histogram/
+        violin rects, and segments/errorbar/stem polylines. Unsupported marks
+        or customization raise explicitly; ordinary SVG and raster exports
+        retain their established renderer as the compatibility fallback until
+        public Scene selection covers remaining chrome.
         """
         from . import _scene_v3
 

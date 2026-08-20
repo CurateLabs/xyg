@@ -332,3 +332,25 @@ test("Node Scene rejects missing or unequal rectangle columns", () => {
   });
   assert.throws(() => unequal.toScene(), /equal length/);
 });
+
+test("Node Scene compiles segments, step lines, and stem", () => {
+  const segments = new Figure({ width: 240, height: 160 });
+  segments.setAxisDomain("x", [0, 2]);
+  segments.setAxisDomain("y", [0, 2]);
+  segments.segments([0, 1], [0, 0], [1, 2], [1, 1], { color: "#ef4444", name: null });
+  const segmentSvg = sceneSvg(segments.toScene());
+  assert.equal((segmentSvg.match(/<polyline /g) ?? []).length, 2);
+
+  const stepped = new Figure({ width: 240, height: 160 });
+  stepped.setAxisDomain("x", [0, 2]);
+  stepped.setAxisDomain("y", [0, 3]);
+  stepped.step([0, 1, 2], [1, 2, 1], { step: "post", color: "#3987e5", name: null });
+  assert.equal((sceneSvg(stepped.toScene()).match(/<polyline /g) ?? []).length, 1);
+
+  const stem = new Figure({ width: 240, height: 160 });
+  stem.setAxisDomain("x", [-0.5, 1.5]);
+  stem.setAxisDomain("y", [0, 3]);
+  stem.stem([0, 1], [1, 2], { color: "#22c55e", name: null });
+  const stemSvg = sceneSvg(stem.toScene());
+  assert.equal((stemSvg.match(/<polyline /g) ?? []).length, 2);
+});

@@ -1286,7 +1286,7 @@ export class Figure {
     return toHtml(this, path, opts);
   }
 
-  /** Canonical Rust-owned Scene v5 for scatter/line/bar/column/histogram. */
+  /** Canonical Rust-owned Scene v5 for the migrated mark subset. */
   toScene(opts = {}) {
     return figureSceneV3(this, opts);
   }
