@@ -1454,9 +1454,17 @@ def scene_version() -> int:
 
 
 def scene_axis_ticks(
-    kind: int, lo: float, hi: float, target: int
+    kind: int,
+    lo: float,
+    hi: float,
+    target: int,
+    aux: float = 0.0,
 ) -> tuple[list[float], list[float], float]:
-    """Build bounded canonical linear/log ticks in Rust."""
+    """Build bounded canonical axis ticks in Rust.
+
+    ``kind`` is ``0`` linear, ``1`` log, ``2`` category (``aux`` = category
+    count), ``3`` angular degrees, or ``4`` angular radians.
+    """
     capacity = 200
     ticks = np.empty(capacity, dtype=np.float64)
     labeled = np.empty(capacity, dtype=np.float64)
@@ -1467,6 +1475,7 @@ def scene_axis_ticks(
         lo,
         hi,
         target,
+        float(aux),
         _ptr_f64(ticks),
         _ptr_f64(labeled),
         ctypes.byref(labeled_len),

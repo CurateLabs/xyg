@@ -230,6 +230,9 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add time/category/angular ticks, authored text/chrome styles,
-remaining mark families, and legend/annotation records. Browser DOM measurement and WebGL paint remain
+Next slices add time ticks (including calendar steps), authored text/chrome
+styles, remaining mark families, and legend/annotation records. Category and
+angular tick ladders already move through `xyg_scene_axis_ticks` kinds 2–4 so
+Python/Node SVG exporters and Node `axisTicks` share the same Rust policy.
+Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

@@ -1,9 +1,9 @@
 {
-  "abi_version": 66,
+  "abi_version": 67,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "4b875e3b46174d31bd577a9e4b0fb9f6a8d44e8baf9f48f669ee7bfd4a36b822",
+  "signature_sha256": "e4e19e9ba86eff3283e936eb8c0feeae1beb5c816ab58bc0225d5dae889a815e",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -11593,7 +11593,7 @@
     {
       "name": "xyg_scene_axis_ticks",
       "node_name": "xySceneAxisTicks",
-      "nargs": 9,
+      "nargs": 10,
       "arguments": [
         {
           "name": "kind",
@@ -11650,6 +11650,21 @@
             "kind": "scalar",
             "bits": "pointer",
             "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "aux",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
             "pointer_depth": 0,
             "direction": "value",
             "nullable": false
@@ -11747,7 +11762,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "size_t xyg_scene_axis_ticks(uint32_t kind, double lo, double hi, size_t target, double * out_ticks, double * out_labeled, size_t * out_labeled_len, double * out_step, size_t out_cap)"
+      "c_signature": "size_t xyg_scene_axis_ticks(uint32_t kind, double lo, double hi, size_t target, double aux, double * out_ticks, double * out_labeled, size_t * out_labeled_len, double * out_step, size_t out_cap)"
     },
     {
       "name": "xyg_scene_batch_encode",
