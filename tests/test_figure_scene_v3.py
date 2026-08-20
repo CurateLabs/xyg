@@ -146,30 +146,20 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
 
 
-def test_public_exports_select_scene_for_migrated_subset(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_try_public_scene_helpers_select_migrated_subset() -> None:
+    from xy import _scene_v3
+
     figure = representative_figure()
-    calls: list[str] = []
-
-    real_scene_svg = _native.scene_svg
-    real_scene_raster = _native.scene_raster_commands
-
-    def track_svg(encoded: bytes) -> str:
-        calls.append("svg")
-        return real_scene_svg(encoded)
-
-    def track_raster(encoded: bytes, scale: float = 1.0) -> bytes:
-        calls.append("raster")
-        return real_scene_raster(encoded, scale)
-
-    monkeypatch.setattr(_native, "scene_svg", track_svg)
-    monkeypatch.setattr(_native, "scene_raster_commands", track_raster)
-    svg = figure.to_svg()
+    svg = _scene_v3.try_public_svg(figure)
+    assert svg is not None
     assert 'clip-path="url(#xy-scene-plot)"' in svg
-    assert "svg" in calls
-    assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
-    assert "raster" in calls
-    pdf = figure.to_image(format="pdf")
-    assert pdf.startswith(b"%PDF-")
+    png = _scene_v3.try_public_png(figure, scale=1)
+    assert png is not None and png.startswith(b"\x89PNG\r\n\x1a\n")
+    pdf = _scene_v3.try_public_pdf(figure)
+    assert pdf is not None and pdf.startswith(b"%PDF-")
+    styled = representative_figure()
+    styled.set_axis("x", style={"grid_color": "#123456"})
+    assert _scene_v3.try_public_svg(styled) is None
 
 
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:

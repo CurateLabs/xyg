@@ -563,9 +563,9 @@ def figure_raster_commands(figure: Any, *, scale: float = 1.0, **options: Any) -
 def try_public_svg(figure: Any, **options: Any) -> str | None:
     """Return Scene SVG when the figure is in the migrated subset, else ``None``.
 
-    Public exporters call this before the compatibility ``_svg`` / ``_raster``
-    paths so Scene-capable cartesian figures share Rust layout without forcing
-    incomplete chrome (legends, density, polar, styled axes) onto Scene.
+    Public exporters keep the compatibility ``_svg`` / ``_raster`` paths until
+    Scene chrome and CSS-spelling parity land; callers may opt into these
+    helpers for explicit Scene selection.
     """
     try:
         return figure_svg(figure, **options)
@@ -587,7 +587,7 @@ def try_public_png(
     try:
         scene = figure_scene(figure, width=width, height=height, **options)
         commands = _native.scene_raster_commands(scene, scale)
-    except UnsupportedSceneV3:
+    except (UnsupportedSceneV3, ValueError):
         return None
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)

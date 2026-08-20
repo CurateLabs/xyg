@@ -822,15 +822,9 @@ def to_png(
     if resolved_engine == "native":
         if custom_css is not None:
             raise ValueError("custom_css requires engine=Engine.chromium")
-        from . import _raster, _scene_v3
+        from . import _raster
 
-        scene_png = (
-            None if optimize else _scene_v3.try_public_png(fig, scale=scale, width=w, height=h)
-        )
-        if scene_png is not None:
-            data = scene_png
-        else:
-            data = _raster.to_png(fig, None, width=w, height=h, scale=scale, fast=not optimize)
+        data = _raster.to_png(fig, None, width=w, height=h, scale=scale, fast=not optimize)
     else:
         doc = to_html(fig, custom_css=custom_css, animation_progress=1.0)
         data = html_to_png(
@@ -1068,13 +1062,9 @@ def _native_image(
     quality: Optional[int],
     optimize: bool,
 ) -> bytes:
-    from . import _raster, _scene_v3
+    from . import _raster
 
     if fmt == "png":
-        if background is None and not optimize:
-            scene_png = _scene_v3.try_public_png(fig, scale=scale, width=width, height=height)
-            if scene_png is not None:
-                return scene_png
         return _raster.to_png(
             fig,
             None,
@@ -1085,19 +1075,11 @@ def _native_image(
             background=background,
         )
     if fmt == "svg":
-        if background is None:
-            scene_svg = _scene_v3.try_public_svg(fig, width=width, height=height)
-            if scene_svg is not None:
-                return scene_svg.encode("utf-8")
         from . import _svg
 
         svg = _svg.to_svg(fig, None, width=width, height=height, background=background)
         return svg.encode("utf-8")
     if fmt == "pdf":
-        if background is None:
-            scene_pdf = _scene_v3.try_public_pdf(fig, width=width, height=height)
-            if scene_pdf is not None:
-                return scene_pdf
         from . import _pdf, _svg
 
         svg = _svg.to_svg(fig, None, width=width, height=height, background=background)

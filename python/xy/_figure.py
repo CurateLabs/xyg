@@ -2230,20 +2230,17 @@ class Figure(AnnotationsMixin, PayloadMixin):
         width: Optional[int] = None,
         height: Optional[int] = None,
     ) -> str:
-        """Static SVG export.
+        """Static SVG (_svg.py): a pure-Python render of the same decimated
+        payload the browser client consumes — resolution-independent, tiny
+        (screen-bounded regardless of source size), and dependency-free.
+        `width`/`height` override the figure's pixel size.
 
-        Scene-capable cartesian figures use the Rust Scene SVG consumer; figures
-        outside the migrated subset keep the compatibility ``_svg.py`` path
-        (legends, density, polar, styled axes, and other incomplete chrome).
-        `width`/`height` override the figure's pixel size."""
-        from . import _scene_v3, _svg
+        Scene SVG is available via ``_scene_v3.try_public_svg`` / explicit
+        ``to_scene()`` consumers; public auto-selection waits on chrome and
+        CSS-spelling parity with ``_svg.py``.
+        """
+        from . import _svg
 
-        scene_svg = _scene_v3.try_public_svg(self, width=width, height=height)
-        if scene_svg is not None:
-            if path is not None:
-                with open(path, "w", encoding="utf-8") as handle:
-                    handle.write(scene_svg)
-            return scene_svg
         return _svg.to_svg(self, path, width=width, height=height)
 
     def to_scene(self, *, width: Optional[int] = None, height: Optional[int] = None) -> bytes:
@@ -2252,8 +2249,9 @@ class Figure(AnnotationsMixin, PayloadMixin):
         Supports cartesian scatter/line (including step), bar/column/histogram/
         violin rects, segments/errorbar/stem polylines, area/error_band/ribbon
         bands, triangle_mesh polyfills, and unlabeled rule/band annotations.
-        Unsupported marks or customization raise explicitly. Public SVG/PNG/PDF
-        select this subset when compilation succeeds and otherwise fall back.
+        Unsupported marks or customization raise explicitly; ordinary SVG and
+        raster exports retain their established renderer until public Scene
+        auto-selection covers remaining chrome and CSS-spelling parity.
         """
         from . import _scene_v3
 

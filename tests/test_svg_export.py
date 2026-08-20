@@ -1051,33 +1051,17 @@ def test_segment_constant_translucent_color_applies_alpha_once() -> None:
     """A translucent constant segment color must not appear verbatim in
     stroke= while its alpha also feeds stroke-opacity (double application)."""
     svg = Figure().segments([0.2], [0.2], [0.8], [0.8], color="rgba(255,0,0,0.5)").to_svg()
-    if 'clip-path="url(#xy-scene-plot)"' in svg:
-        marks = [el for el in re.findall(r"<polyline[^>]*/?>", svg) if "255,0,0" in el]
-        assert marks, "segment polyline missing from Scene SVG"
-        (mark,) = marks
-        assert 'stroke="rgb(255,0,0)"' in mark
-        assert 'stroke-opacity="0.5"' in mark
-        assert "rgba(255,0,0,0.5)" not in mark
-    else:
-        data_lines = [line for line in re.findall(r"<line[^>]*/>", svg) if "255,0,0" in line]
-        assert data_lines, "segment line missing from SVG"
-        (line,) = data_lines
-        assert 'stroke="rgb(255,0,0)"' in line
-        assert 'stroke-opacity="0.5"' in line
+    data_lines = [line for line in re.findall(r"<line[^>]*/>", svg) if "255,0,0" in line]
+    assert data_lines, "segment line missing from SVG"
+    (line,) = data_lines
+    assert 'stroke="rgb(255,0,0)"' in line
+    assert 'stroke-opacity="0.5"' in line
 
     opaque = Figure().segments([0.2], [0.2], [0.8], [0.8], color="red").to_svg()
-    if 'clip-path="url(#xy-scene-plot)"' in opaque:
-        marks = [
-            el
-            for el in re.findall(r"<polyline[^>]*/?>", opaque)
-            if "255,0,0" in el or 'stroke="red"' in el
-        ]
-        assert marks, "opaque segment polyline missing from Scene SVG"
-    else:
-        opaque_lines = [
-            entry for entry in re.findall(r"<line[^>]*/>", opaque) if 'stroke="red"' in entry
-        ]
-        assert opaque_lines, "opaque constant color should pass through verbatim"
+    opaque_lines = [
+        entry for entry in re.findall(r"<line[^>]*/>", opaque) if 'stroke="red"' in entry
+    ]
+    assert opaque_lines, "opaque constant color should pass through verbatim"
 
 
 def _geometry_chart(side_x: str = "bottom", side_y: str = "left", style=None) -> xy.Chart:
