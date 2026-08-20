@@ -1,10 +1,10 @@
 ---
 title: Area Charts in Python
-description: Fill trends to a baseline with area charts, and show piecewise-constant states with step and stairs charts in Python using xy.
+description: Fill trends to a baseline with area charts, and show piecewise-constant states with step and stairs charts in Python using xyg.
 components:
-  - xy.area_chart
-  - xy.step_chart
-  - xy.stairs_chart
+  - xyg.area_chart
+  - xyg.step_chart
+  - xyg.stairs_chart
 ---
 
 # Area, Step, and Stairs Charts in Python
@@ -26,14 +26,14 @@ use a [stem plot](/docs/xy/charts/stem-plot/).
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.linspace(0, 12, 240)
 plan = 48 + 1.8 * x
 actual = plan + 7 * np.sin(x * 0.9)
 
-chart = xy.chart(
-    xy.area(
+chart = xyg.chart(
+    xyg.area(
         x,
         actual,
         name="Actual",
@@ -42,10 +42,10 @@ chart = xy.chart(
         opacity=0.42,
         curve="smooth",
     ),
-    xy.line(x, plan, name="Plan", color="#2563eb", dash="dashed"),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="revenue"),
-    xy.legend(),
+    xyg.line(x, plan, name="Plan", color="#2563eb", dash="dashed"),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="revenue"),
+    xyg.legend(),
 )
 
 
@@ -69,10 +69,10 @@ support `where="pre"`, `"mid"`, or `"post"` to control where transitions occur.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-chart = xy.chart(
-    xy.step(
+chart = xyg.chart(
+    xyg.step(
         [0, 1, 2, 3, 4, 5],
         [3.0, 4.5, 3.8, 5.4, 4.7, 6.2],
         where="post",
@@ -80,7 +80,7 @@ chart = xy.chart(
         color="#6e56cf",
         width=2.5,
     ),
-    xy.stairs(
+    xyg.stairs(
         values=[1.0, 2.2, 1.5, 2.8, 2.1],
         edges=[0, 1, 2, 3, 4, 5],
         name="Binned level",
@@ -88,9 +88,9 @@ chart = xy.chart(
         width=2.5,
         dash="dashed",
     ),
-    xy.x_axis(label="time"),
-    xy.y_axis(label="value"),
-    xy.legend(),
+    xyg.x_axis(label="time"),
+    xyg.y_axis(label="value"),
+    xyg.legend(),
     title="Step and stairs",
 )
 
@@ -108,15 +108,15 @@ boundary readable:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_stack = np.random.default_rng(5)
 months = np.arange(0, 12, dtype=float)
 mobile = 20 + 1.6 * months + rng_stack.normal(0.0, 1.0, months.size)
 desktop = 34 + 0.7 * months + rng_stack.normal(0.0, 1.2, months.size)
 
-stacked_area_chart = xy.chart(
-    xy.area(
+stacked_area_chart = xyg.chart(
+    xyg.area(
         months,
         mobile,
         name="Mobile",
@@ -125,7 +125,7 @@ stacked_area_chart = xy.chart(
         stroke_perimeter=True,
         line_width=1.5,
     ),
-    xy.area(
+    xyg.area(
         months,
         mobile + desktop,
         base=mobile,
@@ -135,9 +135,9 @@ stacked_area_chart = xy.chart(
         stroke_perimeter=True,
         line_width=1.5,
     ),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="sessions (k)"),
-    xy.legend(),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="sessions (k)"),
+    xyg.legend(),
     title="Traffic by platform",
 )
 
@@ -175,7 +175,7 @@ when the viewport changes.
 
 ### How do I make an area chart in Python?
 
-Call `xy.area(x, y)` inside a chart and render it; set `base` to fill from a
+Call `xyg.area(x, y)` inside a chart and render it; set `base` to fill from a
 non-zero baseline and `fill` for a gradient.
 
 ### What is the difference between a step chart and a stairs chart?
@@ -186,10 +186,10 @@ transitions.
 
 ### How do I fill the area under a line in Python?
 
-Use an `xy.area` mark instead of (or beneath) `xy.line`; its `fill` accepts a
+Use an `xyg.area` mark instead of (or beneath) `xyg.line`; its `fill` accepts a
 solid color or a gradient such as `linear-gradient(currentColor, transparent)`.
 
 ### How do I show a plan-versus-actual comparison?
 
 Layer an `area` for the actual values with a dashed `line` (`dash="dashed"`) for
-the plan, and add `xy.legend()` to label them.
+the plan, and add `xyg.legend()` to label them.

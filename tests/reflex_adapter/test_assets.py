@@ -7,7 +7,7 @@ import pathlib
 from scripts.js_exports import missing_esm_exports
 
 import reflex_xy
-import xy
+import xyg as xy
 from reflex_xy.assets import _client_source, _link_client
 
 ADAPTER_ASSETS = pathlib.Path(reflex_xy.__file__).parent / "assets"
@@ -312,7 +312,7 @@ def test_wrapper_sizes_static_and_live_charts_to_the_reflex_mount():
 
 
 def test_wrapper_feeds_hover_payload_to_custom_tooltip_children():
-    """xy.tooltip(render=...) children must receive the live §7.1 payload as
+    """xyg.tooltip(render=...) children must receive the live §7.1 payload as
     props client-side (Recharts-style cloneElement) — a statically rendered
     slot would show frozen content and defeat the whole contract."""
     jsx = (ADAPTER_ASSETS / "XYChart.jsx").read_text(encoding="utf-8")

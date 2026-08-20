@@ -9,7 +9,7 @@ XY's declarative chart API keeps configuration local to a chart. It has no
 public mutable global-settings object: compose configuration components or pass
 props where the behavior is used. This keeps notebooks, exports, and multiple
 charts in one process from changing one another implicitly. The separate
-`xy.pyplot` compatibility API retains Matplotlib-style mutable settings.
+`xyg.pyplot` compatibility API retains Matplotlib-style mutable settings.
 
 ## Configuration stays local
 
@@ -17,39 +17,39 @@ The same data can use defaults in one chart and a chart-local theme,
 interaction policy, axes, and layout in another:
 
 ~~~python demo exec
-import xy
+import xyg
 
 traffic = {
     "hour": list(range(8, 20)),
     "requests": [28, 35, 42, 39, 56, 63, 59, 71, 68, 74, 82, 77],
 }
 
-default_chart = xy.line_chart(
-    xy.line(x="hour", y="requests"),
+default_chart = xyg.line_chart(
+    xyg.line(x="hour", y="requests"),
     data=traffic,
     title="Defaults",
 )
 
-configured_chart = xy.area_chart(
-    xy.area(
+configured_chart = xyg.area_chart(
+    xyg.area(
         x="hour",
         y="requests",
         color="#8b5cf6",
         opacity=0.28,
         line_width=2,
     ),
-    xy.scatter(x="hour", y="requests", color="#c4b5fd", size=7),
-    xy.x_axis(label="hour", domain=(7.5, 19.5), tick_count=6),
-    xy.y_axis(label="requests / min", domain=(20, 90), tick_count=5),
-    xy.tooltip(fields=["hour", "requests"]),
-    xy.interaction_config(
+    xyg.scatter(x="hour", y="requests", color="#c4b5fd", size=7),
+    xyg.x_axis(label="hour", domain=(7.5, 19.5), tick_count=6),
+    xyg.y_axis(label="requests / min", domain=(20, 90), tick_count=5),
+    xyg.tooltip(fields=["hour", "requests"]),
+    xyg.interaction_config(
         hover=True,
         crosshair=True,
         select=True,
         brush=True,
         default_drag_action="select",
     ),
-    xy.theme(
+    xyg.theme(
         background="#111827",
         plot_background="#0f172a",
         grid_color="#334155",
@@ -102,17 +102,17 @@ a file at chart construction time. Hover the chart, then open its Export menu
 to see the configured PNG, SVG, and CSV options:
 
 ~~~python demo exec
-import xy
-from xy import Engine
+import xyg
+from xyg import Engine
 
 days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 signups = [320, 460, 510, 620, 780, 690, 540]
 
-export_chart = xy.column_chart(
-    xy.column(days, signups, color="#6e56cf"),
-    xy.x_axis(label="day"),
-    xy.y_axis(label="signups", domain=(0, 900)),
-    xy.export_config(
+export_chart = xyg.column_chart(
+    xyg.column(days, signups, color="#6e56cf"),
+    xyg.x_axis(label="day"),
+    xyg.y_axis(label="signups", domain=(0, 900)),
+    xyg.export_config(
         formats=["png", "svg", "csv"],
         filename="weekly-signups",
         width=1200,
@@ -120,7 +120,7 @@ export_chart = xy.column_chart(
         scale=1,
         background="#f8fafc",
     ),
-    xy.modebar(show=True),
+    xyg.modebar(show=True),
     title="Weekly signups",
 )
 

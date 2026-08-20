@@ -2,7 +2,7 @@ import sys
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def teardown_function():

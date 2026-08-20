@@ -126,8 +126,8 @@ Paint-only: the shared host never runs layout, LOD policy, or force.
 ## 2. Public API
 
 ```python
-xy.graph_chart(
-    xy.graph(
+xyg.graph_chart(
+    xyg.graph(
         nodes,              # ids, or table with id column
         edges,              # (source, target) pairs / columns
         *,
@@ -350,7 +350,7 @@ Element counts and indices are `u64` / `uint64_t`.
 ```
 src/graph/
   mod.rs       # public layout + force + csr + lod + render-graph decisions
-python/xy/
+python/xyg/
   _graph.py    # ingest helpers, id map, from_networkx thin
   marks.py     # graph() → layout/LOD ABI → segments + scatter
 packages/xy-node/

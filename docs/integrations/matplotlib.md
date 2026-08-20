@@ -1,16 +1,16 @@
 ---
-title: Matplotlib (xy.pyplot)
+title: Matplotlib (xyg.pyplot)
 description: Migrate common Matplotlib workflows through XY's pyplot compatibility layer.
 ---
 
-# Matplotlib (`xy.pyplot`)
+# Matplotlib (`xyg.pyplot`)
 
-For common 2D plotting code, import `xy.pyplot` in place of
+For common 2D plotting code, import `xyg.pyplot` in place of
 `matplotlib.pyplot`.
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(0, 10, 200)
 fig, ax = plt.subplots()
@@ -46,7 +46,7 @@ Create a polar axes with `plt.subplot()` or `Figure.add_subplot()`:
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 theta = np.linspace(0.0, 2.0 * np.pi, 361)
 radius = 1.0 + 0.25 * np.cos(4.0 * theta)
@@ -118,5 +118,5 @@ experimental and can change before XY 1.0.
    containers and marks. The declarative API exposes data binding,
    interactions, and CSS/Tailwind hooks without pyplot's implicit state.
 
-Use `xy.pyplot` for migration and familiar scientific scripts; prefer the
+Use `xyg.pyplot` for migration and familiar scientific scripts; prefer the
 declarative API for new applications.

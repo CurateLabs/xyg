@@ -86,7 +86,7 @@ fn quantile_sorted(sorted: &[f64], p: f64) -> f64 {
 /// Tukey hinges: Q1/median/Q3, whiskers at extreme observations inside the
 /// 1.5·IQR fences, and outliers beyond those whiskers.
 ///
-/// Matches `python/xy/marks._distribution_stats` (prior NumPy percentile path).
+/// Matches `python/xyg/marks._distribution_stats` (prior NumPy percentile path).
 pub fn box_stats(data: &[f64]) -> BoxStats {
     let mut finite: Vec<f64> = data.iter().copied().filter(|v| v.is_finite()).collect();
     if finite.is_empty() {

@@ -106,7 +106,7 @@ CodSpeed is native-only and intentionally focused on hot paths that should not
 regress between commits. The CodSpeed job runs
 `pytest benchmarks/test_codspeed_*.py --codspeed`
 (`.github/workflows/codspeed.yml`), so every `test_codspeed_*` module is in
-scope, not the kernels module alone. The suite asserts `xy.kernels.BACKEND ==
+scope, not the kernels module alone. The suite asserts `xyg.kernels.BACKEND ==
 "native"` before timing anything. It tracks:
 
 - Rust kernels for f32 encoding, min/max, zone maps, M4 decimation, density
@@ -125,7 +125,7 @@ scope, not the kernels module alone. The suite asserts `xy.kernels.BACKEND ==
   `test_first_payload_bar_core_2d`,
   `test_first_payload_heatmap_core_2d`, and
   `test_first_payload_composed_layered_core_2d` for the public
-  `xy.chart(...)` layered API.
+  `xyg.chart(...)` layered API.
 - Native static export rows include exact and categorical scatter, stroked
   triangle meshes, and heatmaps. The mesh row protects batched fill+stroke;
   the heatmap row protects the direct external arena sampler rather than only
@@ -141,7 +141,7 @@ scope, not the kernels module alone. The suite asserts `xy.kernels.BACKEND ==
   ~10-100× on the 100M FastAPI drilldown demo (measured 1.3-7 s/reply against
   0.02-0.45 s with the trace-cached resolution on a 4-core host, and
   223 ms → 99 ms for the 2.1M benchmark cycle itself).
-- The `xy.pyplot` shim suite (`benchmarks/test_codspeed_pyplot.py`): paired
+- The `xyg.pyplot` shim suite (`benchmarks/test_codspeed_pyplot.py`): paired
   raw-versus-shim rows for line, scatter, histogram, categorical bar, and
   styled-panel builds, plus matched PNG export
   (`test_png_export_line_raw` / `test_png_export_line_pyplot`), so shim overhead
@@ -217,14 +217,14 @@ compile or link work during steady redraw. Partial rows retain their timing and 
 updates, and separate HTML/SVG/native-PNG/Chromium-PNG export rows. All three emit schema-versioned JSON with
 environment metadata and benchmark category IDs.
 
-## `xy.pyplot` versus Matplotlib/Agg
+## `xyg.pyplot` versus Matplotlib/Agg
 
 `benchmarks/bench_pyplot_vs_matplotlib.py` runs the same Matplotlib-style calls
-against `xy.pyplot` and Matplotlib, then requires both arms to produce a
+against `xyg.pyplot` and Matplotlib, then requires both arms to produce a
 nonblank PNG at the same 1800×840 pixel size. Data generation, imports, and
 warm-up renders are excluded; library order alternates between repetitions. The
 headline metric is median total chart-to-compressed-PNG time. Build time alone
-is diagnostic because `xy.pyplot` deliberately defers most work until export.
+is diagnostic because `xyg.pyplot` deliberately defers most work until export.
 
 Every row also discloses the xy render tier (§28: tier decisions are never
 silent): `direct` paints every mark exactly as Matplotlib does, `decimated` is
@@ -839,7 +839,7 @@ fails. Re-bless the baseline from a CI run with
 
 `benchmarks/bench_transport.py` (report kind `transport-loopback`) is the third
 gated input. It measures the transport-neutral channel dispatcher: two HTTP
-endpoints both call `xy.channel.handle_message` and differ only in response
+endpoints both call `xyg.channel.handle_message` and differ only in response
 encoding — the Reflex prototype shape (base64 buffers inside JSON) versus xy's
 production versioned binary frame. It also records append diagnostics
 (single-trace, two-trace, and unaffected-trace wire bytes) and an optional

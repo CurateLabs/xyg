@@ -21,8 +21,8 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
-from xy.export import _STANDALONE_CSP, _bundled_js, _json_for_inline_script
+import xyg as xy
+from xyg.export import _STANDALONE_CSP, _bundled_js, _json_for_inline_script
 
 HERE = Path(__file__).resolve().parent
 BLUE, PURPLE, ORANGE = "#2f6bff", "#8b5cf6", "#f97316"
@@ -224,7 +224,7 @@ def main() -> None:
     out.write_text(doc, encoding="utf-8")
     print(f"wrote {out}")
     if "--png" in sys.argv:
-        from xy.export import html_to_png
+        from xyg.export import html_to_png
 
         png = HERE / "site_overview.png"
         png.write_bytes(html_to_png(doc, 1336, 340))

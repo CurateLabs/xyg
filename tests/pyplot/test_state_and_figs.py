@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 @pytest.fixture(autouse=True)
@@ -131,7 +131,7 @@ def test_grid_html_has_panels() -> None:
     assert html.count("position:absolute") >= 4
     # One document, one client: every panel hydrates through the same WebGL
     # context governor (panel-per-iframe rendered only the first ~12 panels).
-    assert html.count("xy.renderStandalone(") == 1  # single hydrate loop
+    assert html.count("xyg.renderStandalone(") == 1  # single hydrate loop
     assert '"spec":' in html and '"chunks":' in html
     assert "<iframe" not in html
     assert "Content-Security-Policy" in html

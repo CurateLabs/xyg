@@ -18,7 +18,7 @@ VERIFY = _module()
 
 
 def _fixture(tmp_path: Path, *, source: str = "pass\n") -> tuple[Path, set[str]]:
-    path = "python/xy/example.py"
+    path = "python/xyg/example.py"
     source_path = tmp_path / path
     source_path.parent.mkdir(parents=True)
     source_path.write_text(source, encoding="utf-8")
@@ -45,7 +45,10 @@ def _fixture(tmp_path: Path, *, source: str = "pass\n") -> tuple[Path, set[str]]
     manifest = {
         "schema_version": 1,
         "human_audit": "spec/design/ownership-audit.md",
-        "scope": {"tracked_only": True, "roots": [{"prefix": "python/xy/", "extensions": [".py"]}]},
+        "scope": {
+            "tracked_only": True,
+            "roots": [{"prefix": "python/xyg/", "extensions": [".py"]}],
+        },
         "policies": {"host": policy},
         "files": [
             {
@@ -76,10 +79,10 @@ def test_real_repository_ownership_audit_is_complete() -> None:
 
 def test_missing_production_file_is_named(tmp_path: Path) -> None:
     _fixture(tmp_path)
-    tracked = {"python/xy/example.py", "python/xy/new_algorithm.py"}
+    tracked = {"python/xyg/example.py", "python/xyg/new_algorithm.py"}
     errors = _errors(tmp_path, tracked)
     assert any(
-        "unclassified production source: python/xy/new_algorithm.py" in error for error in errors
+        "unclassified production source: python/xyg/new_algorithm.py" in error for error in errors
     )
 
 
@@ -89,7 +92,7 @@ def test_duplicate_classification_is_named(tmp_path: Path) -> None:
     data["files"].append(dict(data["files"][0]))
     manifest_path.write_text(json.dumps(data), encoding="utf-8")
     assert any(
-        "duplicate classification: python/xy/example.py" in error
+        "duplicate classification: python/xyg/example.py" in error
         for error in _errors(tmp_path, tracked)
     )
 
@@ -97,7 +100,7 @@ def test_duplicate_classification_is_named(tmp_path: Path) -> None:
 def test_stale_classification_is_named(tmp_path: Path) -> None:
     _fixture(tmp_path)
     assert any(
-        "stale classification: python/xy/example.py" in error for error in _errors(tmp_path, set())
+        "stale classification: python/xyg/example.py" in error for error in _errors(tmp_path, set())
     )
 
 
@@ -110,9 +113,9 @@ def test_malformed_manifest_is_actionable(tmp_path: Path) -> None:
 
 def test_forbidden_host_behavior_is_rejected(tmp_path: Path) -> None:
     _fixture(tmp_path, source="FORBIDDEN = 'parallel layout'\n")
-    errors = _errors(tmp_path, {"python/xy/example.py"})
+    errors = _errors(tmp_path, {"python/xyg/example.py"})
     assert any(
-        "boundary violation: python/xy/example.py" in error and "Move it to Rust" in error
+        "boundary violation: python/xyg/example.py" in error and "Move it to Rust" in error
         for error in errors
     )
 
@@ -123,5 +126,7 @@ def test_human_ledger_cannot_silently_drift(tmp_path: Path) -> None:
     human.write_text(
         "<!-- xyg-ownership-schema: 1 -->\n## File ledger\n## Contributor rule\n", encoding="utf-8"
     )
-    errors = _errors(tmp_path, {"python/xy/example.py"})
-    assert any("human audit stale" in error and "python/xy/example.py" in error for error in errors)
+    errors = _errors(tmp_path, {"python/xyg/example.py"})
+    assert any(
+        "human audit stale" in error and "python/xyg/example.py" in error for error in errors
+    )

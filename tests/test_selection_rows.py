@@ -6,8 +6,8 @@ import json
 
 import numpy as np
 
-from xy._figure import Figure, Selection
-from xy.channel import (
+from xyg._figure import Figure, Selection
+from xyg.channel import (
     SELECTION_EVENT_ID_LIMIT,
     SELECTION_EVENT_ROW_LIMIT,
     handle_message,

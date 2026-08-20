@@ -1,8 +1,8 @@
 ---
 title: Pie and Donut Charts in Python
-description: Create pie charts and donut charts in Python with xy. Build pie plots, progress rings, and gauge blocks with values, percentages, and custom colors.
+description: Create pie charts and donut charts in Python with xyg. Build pie plots, progress rings, and gauge blocks with values, percentages, and custom colors.
 components:
-  - xy.pie_chart
+  - xyg.pie_chart
 ---
 
 # Pie and Donut Charts in Python
@@ -12,7 +12,7 @@ angular span. A donut uses the same sectors
 with a positive inner radius, leaving room for a total, status, or supporting
 label. In XY, both are compositions of unequal-width bars inside
 `polar_bar_chart()`. For the standard composition, use
-`xy.pie_chart(labels, values, hole=...)`; the examples below use the lower-level
+`xyg.pie_chart(labels, values, hole=...)`; the examples below use the lower-level
 bars directly to demonstrate custom sector geometry and dashboard layouts.
 
 Jump to [a basic pie chart](#basic-pie-chart),
@@ -40,7 +40,7 @@ value to an angular width, and `base=0` makes every sector reach the center:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 PIE_DATA = [
     ("Direct", 40),
@@ -57,9 +57,9 @@ angles = [
     for index, width in enumerate(widths)
 ]
 
-pie = xy.polar_bar_chart(
+pie = xyg.polar_bar_chart(
     *(
-        xy.bar(
+        xyg.bar(
             [angle],
             [1],
             base=0,
@@ -76,10 +76,10 @@ pie = xy.polar_bar_chart(
             strict=True,
         )
     ),
-    xy.theta_axis(unit="degrees", zero="N", show=False, tick_label_strategy="none"),
-    xy.r_axis(show=False, tick_label_strategy="none"),
-    xy.legend(loc="left"),
-    xy.modebar(show=False),
+    xyg.theta_axis(unit="degrees", zero="N", show=False, tick_label_strategy="none"),
+    xyg.r_axis(show=False, tick_label_strategy="none"),
+    xyg.legend(loc="left"),
+    xyg.modebar(show=False),
 )
 
 
@@ -100,7 +100,7 @@ values without crowding the ring:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 MARKET_SERIES = [
     ("Skyline", 27, "#0a0a0a"),
@@ -125,9 +125,9 @@ market_angles, market_widths = sector_layout(
     [value for _label, value, _color in reversed(MARKET_SERIES)],
 )
 
-market_share = xy.polar_bar_chart(
+market_share = xyg.polar_bar_chart(
     *(
-        xy.bar(
+        xyg.bar(
             [angle],
             [0.42],
             base=0.52,
@@ -146,7 +146,7 @@ market_share = xy.polar_bar_chart(
         )
     ),
     *(
-        xy.text(
+        xyg.text(
             angle,
             0.73,
             f"{value}%",
@@ -162,21 +162,21 @@ market_share = xy.polar_bar_chart(
             strict=True,
         )
     ),
-    xy.theta_axis(
+    xyg.theta_axis(
         unit="degrees",
         zero="N",
         direction="counterclockwise",
         show=False,
         tick_label_strategy="none",
     ),
-    xy.r_axis(
+    xyg.r_axis(
         domain=(0.0, 1.0),
         show=False,
         tick_label_strategy="none",
     ),
-    xy.legend(show=False),
-    xy.modebar(show=False),
-    xy.theme(plot_background="#ffffff", text_color="#171717"),
+    xyg.legend(show=False),
+    xyg.modebar(show=False),
+    xyg.theme(plot_background="#ffffff", text_color="#171717"),
     width="100%",
     height=243,
     padding=(0, 0, 0, 0),
@@ -251,7 +251,7 @@ rounded dashes gives the display a lighter rhythm than one continuous arc:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 PROGRESS_STATS = [
     (48, "Additional support requests from users."),
@@ -264,8 +264,8 @@ def progress_ring(value):
     filled = round(dots * value / 100)
     active = [228 / 255, 56 / 255, 97 / 255]
     track = [212 / 255, 212 / 255, 212 / 255]
-    return xy.polar_bar_chart(
-        xy.bar(
+    return xyg.polar_bar_chart(
+        xyg.bar(
             [index * 9.0 for index in range(dots)],
             [0.07] * dots,
             base=0.85,
@@ -277,21 +277,21 @@ def progress_ring(value):
             opacity=1,
             corner_radius=6,
         ),
-        xy.theta_axis(
+        xyg.theta_axis(
             unit="degrees",
             zero="N",
             direction="counterclockwise",
             show=False,
             tick_label_strategy="none",
         ),
-        xy.r_axis(
+        xyg.r_axis(
             domain=(0.0, 1.0),
             show=False,
             tick_label_strategy="none",
         ),
-        xy.legend(show=False),
-        xy.modebar(show=False),
-        xy.theme(plot_background="#ffffff"),
+        xyg.legend(show=False),
+        xyg.modebar(show=False),
+        xyg.theme(plot_background="#ffffff"),
         width="100%",
         height=265,
         padding=(0, 0, 0, 0),
@@ -365,7 +365,7 @@ answers the primary question while the aligned legend supports exact lookup:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 REVENUE_SERIES = [
     ("Direct", 52_400, "#7c3aed", "#a855f7"),
@@ -388,9 +388,9 @@ revenue_angles, revenue_widths = sector_layout(
     [value for _label, value, _start, _end in REVENUE_SERIES],
 )
 
-revenue_mix = xy.polar_bar_chart(
+revenue_mix = xyg.polar_bar_chart(
     *(
-        xy.bar(
+        xyg.bar(
             [angle],
             [0.30],
             base=0.62,
@@ -412,21 +412,21 @@ revenue_mix = xy.polar_bar_chart(
             strict=True,
         )
     ),
-    xy.theta_axis(
+    xyg.theta_axis(
         unit="degrees",
         zero="N",
         direction="counterclockwise",
         show=False,
         tick_label_strategy="none",
     ),
-    xy.r_axis(
+    xyg.r_axis(
         domain=(0.0, 1.0),
         show=False,
         tick_label_strategy="none",
     ),
-    xy.legend(show=False),
-    xy.modebar(show=False),
-    xy.theme(plot_background="#ffffff"),
+    xyg.legend(show=False),
+    xyg.modebar(show=False),
+    xyg.theme(plot_background="#ffffff"),
     width="100%",
     height=280,
     padding=(0, 0, 0, 0),
@@ -500,7 +500,7 @@ for exact threshold lookup:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 RELIABILITY_BANDS = [
     ("At risk", 450, "#e11d48"),
@@ -526,9 +526,9 @@ gauge_angles, gauge_widths = gauge_layout(
     [value for _label, value, _color in reversed(RELIABILITY_BANDS)],
 )
 
-reliability_gauge = xy.polar_bar_chart(
+reliability_gauge = xyg.polar_bar_chart(
     *(
-        xy.bar(
+        xyg.bar(
             [angle],
             [0.20],
             base=0.74,
@@ -547,21 +547,21 @@ reliability_gauge = xy.polar_bar_chart(
             strict=True,
         )
     ),
-    xy.theta_axis(
+    xyg.theta_axis(
         unit="degrees",
         zero="N",
         direction="counterclockwise",
         show=False,
         tick_label_strategy="none",
     ),
-    xy.r_axis(
+    xyg.r_axis(
         domain=(0.0, 1.0),
         show=False,
         tick_label_strategy="none",
     ),
-    xy.legend(show=False),
-    xy.modebar(show=False),
-    xy.theme(plot_background="#ffffff"),
+    xyg.legend(show=False),
+    xyg.modebar(show=False),
+    xyg.theme(plot_background="#ffffff"),
     width="100%",
     height=200,
     padding=(0, 0, 0, 0),
@@ -673,7 +673,7 @@ bar mark per category.
 ## Interaction and Export
 
 Pie blocks use the shared polar renderer. These examples set
-`xy.modebar(show=False)` to keep the presentation clean. The underlying
+`xyg.modebar(show=False)` to keep the presentation clean. The underlying
 interactions and APIs remain intact: sector hover works, and
 browser/static exports remain available. A hovered slice reads its own label and
 value; the layout angle and the constant rim radius stay out of the readout.
@@ -685,13 +685,13 @@ and leaving the wheel free means a page scrolls normally over the chart. With
 nothing to move the view, there is nothing to restore either: unless `reset_axes`
 is authored, double-click reset does nothing and the reset controls drop out of the
 modebar. An authored `reset_axes` grants both back on its own, whatever the zoom
-switch says. Add `xy.interaction_config(zoom=True)` to restore the wheel and
+switch says. Add `xyg.interaction_config(zoom=True)` to restore the wheel and
 double-click reset; these examples also hide the modebar with
-`xy.modebar(show=False)`, so drop that child too if you want the visible zoom and
+`xyg.modebar(show=False)`, so drop that child too if you want the visible zoom and
 reset buttons. See
 [why zoom is off by default](/docs/xy/charts/polar-chart/#why-zoom-is-off-by-default).
 Center labels and legends composed in Reflex are browser UI; annotations placed
-with `xy.text()` are part of the chart and are preserved in SVG and native
+with `xyg.text()` are part of the chart and are preserved in SVG and native
 raster exports.
 
 See [Radial bar charts](/docs/xy/charts/radial-bar-chart/) for width, base,
@@ -712,8 +712,8 @@ corner-radius, clipping, and partial-sector details.
 
 ### Does XY have a dedicated pie mark?
 
-No. Every pie plot and donut plot on this page is composed from `xy.bar()`
-marks inside `xy.polar_bar_chart()`. This keeps sector styling and export
+No. Every pie plot and donut plot on this page is composed from `xyg.bar()`
+marks inside `xyg.polar_bar_chart()`. This keeps sector styling and export
 behavior on the same renderer as radial bars.
 
 ### How do I add space between slices?

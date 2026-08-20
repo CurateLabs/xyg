@@ -1,6 +1,6 @@
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def teardown_function():
@@ -116,7 +116,7 @@ def test_legend_frameoff_maps_to_transparent_style():
 def test_second_legend_via_add_artist_renders_own_box_with_dash_handles():
     import numpy as np
 
-    from xy.pyplot import Legend
+    from xyg.pyplot import Legend
 
     _, ax = plt.subplots()
     x = np.linspace(0, 10, 200)
@@ -150,7 +150,7 @@ def test_second_legend_via_add_artist_renders_own_box_with_dash_handles():
 
 
 def test_standalone_extra_legend_survives_primary_legend_suppression():
-    from xy.pyplot import Legend
+    from xyg.pyplot import Legend
 
     _, ax = plt.subplots()
     line = ax.plot([0, 1], [0, 1], "--", color="red")[0]
@@ -162,7 +162,7 @@ def test_standalone_extra_legend_survives_primary_legend_suppression():
 
 
 def test_standalone_legend_unwraps_errorbar_container():
-    from xy.pyplot import Legend
+    from xyg.pyplot import Legend
 
     _, ax = plt.subplots()
     errorbar = ax.errorbar([0, 1], [1, 2], yerr=[0.1, 0.2], fmt="none", color="red")
@@ -183,7 +183,7 @@ def test_standalone_legend_unwraps_errorbar_container():
 
 
 def test_standalone_legend_preserves_rule_annotation_dash():
-    from xy.pyplot import Legend
+    from xyg.pyplot import Legend
 
     _, ax = plt.subplots()
     rule = ax.axvline(0.5, linestyle="--", linewidth=2, color="red")

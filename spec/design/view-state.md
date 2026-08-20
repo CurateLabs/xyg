@@ -7,7 +7,7 @@ the wire messages; this document records the rationale and the §13
 implementation divergences. The implementation lives in
 `js/src/57_viewstate.ts` (state document, history, axis bands, hover payload)
 plus hooks in `50_chartview.ts`/`52_tooltip.ts`/`53_interaction.ts`/
-`54_kernel.ts`, `python/xy/_figure.py` (message builders, `view_state()`
+`54_kernel.ts`, `python/xyg/_figure.py` (message builders, `view_state()`
 cache), `widget.py`, `channel.py`, and
 `python/reflex_xy/` (registry push path, `on_hover`, tooltip
 mount). It builds directly on the per-axis
@@ -248,8 +248,8 @@ mechanism, no special cases.
 
 Zero-backend charts (static payload tier, standalone HTML) have no Python
 side, but the client-side controller from §3 exists there too. The mount
-exposes it as a JS handle on the chart root (`root.xy.applyState(patch)`,
-`root.xy.state()`, `root.xy.back()`, `root.xy.forward()`), which is the
+exposes it as a JS handle on the chart root (`root.xyg.applyState(patch)`,
+`root.xyg.state()`, `root.xyg.back()`, `root.xyg.forward()`), which is the
 whole public JS control surface — one object, same patch semantics. This
 handle and the modebar are the *only* history-navigation surfaces (§4). This is what makes "shareable
 view" utilities possible on exported files without any server.
@@ -330,7 +330,7 @@ movement elsewhere must not dismiss them; `Escape` does.
   breaks every existing subscript access, so "keep a `row` key" is not
   compatibility. `on_point_hover` is documented as the narrow legacy form;
   new code uses `on_hover`.
-- `xy.tooltip(render=…)`: the adapter finally honors it. `reflex_xy.chart`
+- `xyg.tooltip(render=…)`: the adapter finally honors it. `reflex_xy.chart`
   reads `chart.chrome_components()`, mounts the supplied Reflex component
   into an overlay that the client positions with the built-in tooltip's
   placement logic (flip-at-edges included), and pipes the §7.1 payload in as

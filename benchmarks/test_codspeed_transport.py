@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from xy.channel import decode_frame, encode_frame, encode_frame_parts
+from xyg.channel import decode_frame, encode_frame, encode_frame_parts
 
 DENSITY_BYTES = 128 * 1024
 DIRECT_BYTES = 800 * 1024

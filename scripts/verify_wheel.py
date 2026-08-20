@@ -47,28 +47,28 @@ REQUIRED_FILES = {
     "reflex_xy/state_bridge.py",
     "reflex_xy/tokens.py",
     "reflex_xy/vars.py",
-    "xy/__init__.py",
-    "xy/_abi_generated.py",
-    "xy/_native.py",
-    "xy/_framing.py",
-    "xy/channels.py",
-    "xy/channel.py",
-    "xy/columns.py",
-    "xy/components.py",
-    "xy/config.py",
-    "xy/export.py",
-    "xy/_figure.py",
-    "xy/marks.py",
-    "xy/interaction.py",
-    "xy/kernels.py",
-    "xy/lod.py",
-    "xy/py.typed",
-    "xy/static/index.js",
-    "xy/static/standalone.js",
-    "xy/widget.py",
+    "xyg/__init__.py",
+    "xyg/_abi_generated.py",
+    "xyg/_native.py",
+    "xyg/_framing.py",
+    "xyg/channels.py",
+    "xyg/channel.py",
+    "xyg/columns.py",
+    "xyg/components.py",
+    "xyg/config.py",
+    "xyg/export.py",
+    "xyg/_figure.py",
+    "xyg/marks.py",
+    "xyg/interaction.py",
+    "xyg/kernels.py",
+    "xyg/lod.py",
+    "xyg/py.typed",
+    "xyg/static/index.js",
+    "xyg/static/standalone.js",
+    "xyg/widget.py",
 }
 
-NATIVE_LIB_RE = re.compile(r"^xy/_native_lib/(?:libxyg_core\.(?:so|dylib)|xyg_core\.dll)$")
+NATIVE_LIB_RE = re.compile(r"^xyg/_native_lib/(?:libxyg_core\.(?:so|dylib)|xyg_core\.dll)$")
 NATIVE_ARTIFACT_SUFFIXES = (".dll", ".dylib", ".pyd", ".so")
 FORBIDDEN_PARTS = {"__pycache__", "target", "node_modules", ".pytest_cache", ".ruff_cache"}
 FORBIDDEN_SUFFIXES = {".pyc", ".pyo"}
@@ -113,7 +113,7 @@ def _require_only_shippable_roots(names: set[str]) -> None:
         for name in names
         if name.rstrip("/")
         and not (
-            name.startswith(("reflex_xy/", "xy/")) or name.split("/", 1)[0].endswith(".dist-info")
+            name.startswith(("reflex_xy/", "xyg/")) or name.split("/", 1)[0].endswith(".dist-info")
         )
     )
     if unexpected:
@@ -224,7 +224,7 @@ def _require_text_markers(name: str, data: bytes, needles: set[str]) -> None:
         raise AssertionError(f"{name} missing expected markers: {missing}")
 
 
-def _require_py_typed_marker(data: bytes, name: str = "xy/py.typed") -> None:
+def _require_py_typed_marker(data: bytes, name: str = "xyg/py.typed") -> None:
     if data != b"":
         raise AssertionError(f"{name} must be an empty full-package PEP 561 marker")
 
@@ -308,8 +308,8 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
 
     with zipfile.ZipFile(path) as zf:
         _require_text_markers(
-            "xy/__init__.py",
-            zf.read("xy/__init__.py"),
+            "xyg/__init__.py",
+            zf.read("xyg/__init__.py"),
             {"__version__", "__all__", "_EXPORTS", "__getattr__"},
         )
         _require_text_markers(
@@ -323,8 +323,8 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
             {"XYChart", "xy_client.js"},
         )
         _require_text_markers(
-            "xy/_figure.py",
-            zf.read("xy/_figure.py"),
+            "xyg/_figure.py",
+            zf.read("xyg/_figure.py"),
             {
                 "class Figure",
                 "scatter = _marks.scatter",
@@ -334,18 +334,18 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
             },
         )
         _require_text_markers(
-            "xy/marks.py",
-            zf.read("xy/marks.py"),
+            "xyg/marks.py",
+            zf.read("xyg/marks.py"),
             {"def scatter(", "def line(", "def heatmap("},
         )
         _require_text_markers(
-            "xy/components.py",
-            zf.read("xy/components.py"),
+            "xyg/components.py",
+            zf.read("xyg/components.py"),
             {"class Chart", "def to_html(", "def to_png(", "dict[str, Any]"},
         )
         _require_text_markers(
-            "xy/export.py",
-            zf.read("xy/export.py"),
+            "xyg/export.py",
+            zf.read("xyg/export.py"),
             {
                 "_bundled_js",
                 "_json_for_inline_script",
@@ -356,21 +356,21 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
             },
         )
         _require_text_markers(
-            "xy/kernels.py",
-            zf.read("xy/kernels.py"),
+            "xyg/kernels.py",
+            zf.read("xyg/kernels.py"),
             {"BACKEND", "_native", "ImportError"},
         )
-        _require_py_typed_marker(zf.read("xy/py.typed"))
+        _require_py_typed_marker(zf.read("xyg/py.typed"))
         _require_py_typed_marker(zf.read("reflex_xy/py.typed"), "reflex_xy/py.typed")
         _require_static_esm_exports(
-            "xy/static/index.js",
-            zf.read("xy/static/index.js"),
+            "xyg/static/index.js",
+            zf.read("xyg/static/index.js"),
             # Minified bundle: assert the exported public surface, not source lines.
             {"render", "renderStandalone", "decodeFrame", "ChartView"},
         )
         _require_static_bundle(
-            "xy/static/standalone.js",
-            zf.read("xy/static/standalone.js"),
+            "xyg/static/standalone.js",
+            zf.read("xyg/static/standalone.js"),
             # Minified IIFE namespace: `var xy` is window.xy in a classic script.
             {"var xy=", ".renderStandalone=", ".decodeFrame=", ".ChartView="},
         )

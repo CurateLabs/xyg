@@ -13,7 +13,7 @@ handlers run.
   semantic events, and streaming through the bundled `xy[reflex]` integration.
 - [Notebooks](/docs/xy/integrations/notebooks/) covers Jupyter, JupyterLab,
   VS Code, Colab, and Marimo through one bundled `anywidget` implementation.
-- [Matplotlib (`xy.pyplot`)](/docs/xy/integrations/matplotlib/) covers the
+- [Matplotlib (`xyg.pyplot`)](/docs/xy/integrations/matplotlib/) covers the
   compatibility boundary and a gradual migration to XY's declarative API.
 
 All three surfaces use the same chart engine. The differences are transport

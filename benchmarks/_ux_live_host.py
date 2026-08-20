@@ -36,8 +36,8 @@ import tornado.netutil
 import tornado.web
 import tornado.websocket
 
-import xy
-from xy.channel import handle_message
+import xyg as xy
+from xyg.channel import handle_message
 
 SEED = 20260713
 # Sentinels sit in the far Gaussian tail: guaranteed sparse (drillable), and

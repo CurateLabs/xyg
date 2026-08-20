@@ -23,8 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
 # into. Exported so probe tests assert against one list instead of each keeping
 # its own copy in sync with the exporter.
 RENDER_CALLS = (
-    'xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
-    'xy.renderStandalone(document.getElementById("chart"), spec, buf);',
+    'xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
+    'xyg.renderStandalone(document.getElementById("chart"), spec, buf);',
 )
 
 
@@ -41,7 +41,7 @@ def probe_document(chart, probe: str, *, head: str = "") -> str:
     document = document.replace(
         render_call,
         render_call.replace(
-            "xy.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
+            "xyg.renderStandalone(", "window.__fcProbeView = xy.renderStandalone(", 1
         ),
         1,
     )
@@ -56,7 +56,7 @@ def density_category_chart(n: int = 400_000, seed: int = 7):
     mean-color plane. Returns ``(chart, cat, x, y)`` — the per-point code
     array and coordinates, for asserting masked counts and framing requests.
     """
-    import xy
+    import xyg as xy
 
     rng = np.random.default_rng(seed)
     cat = rng.integers(0, 3, n)

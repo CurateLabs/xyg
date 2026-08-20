@@ -124,7 +124,7 @@ See [Custom Marks](/docs/xy/advanced/custom-marks/) for the worked example.
 
 | extension point | status | entry point | limits |
 |---|---|---|---|
-| mark_plugin_composition | shipped | `xy.register_mark / xy.MarkPlugin / xy.mark` | composes built-in marks only, one level deep; cannot reach the Figure, the trace list, or the column store; cannot add a GPU primitive |
+| mark_plugin_composition | shipped | `xyg.register_mark / xy.MarkPlugin / xy.mark` | composes built-in marks only, one level deep; cannot reach the Figure, the trace list, or the column store; cannot add a GPU primitive |
 | mark_plugin_shader | planned | `—` | — |
 | custom_renderer | planned | `—` | — |
 

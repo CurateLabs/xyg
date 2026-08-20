@@ -120,17 +120,17 @@ class used by Reflex's manual color-mode switch. Omit that option when the
 application intentionally wants Tailwind's default OS
 `prefers-color-scheme` behavior instead.
 
-For a fixed `xy.Chart` or `xy.Figure` passed directly to `reflex_xy.chart(...)`,
+For a fixed `xyg.Chart` or `xyg.Figure` passed directly to `reflex_xy.chart(...)`,
 Reflex includes the chart's literal class strings in Tailwind's default scan
 paths. The complete utility names below therefore work without adding the
 original Python or Markdown file to Tailwind's source configuration.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-chart = xy.area_chart(
-    xy.area(
+chart = xyg.area_chart(
+    xyg.area(
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
         [32, 45, 41, 58, 63, 74],
         name="Signal",
@@ -140,14 +140,14 @@ chart = xy.area_chart(
         curve="smooth",
         line_width=2,
     ),
-    xy.x_axis(show=False),
-    xy.y_axis(
+    xyg.x_axis(show=False),
+    xyg.y_axis(
         domain=(0, 80),
         show=False,
         grid=True,
         style={"grid_color": "#e2e8f0"},
     ),
-    xy.legend(),
+    xyg.legend(),
     class_name="text-slate-900 dark:text-zinc-100",
     class_names={
         "legend": "bg-transparent text-xs text-slate-600 dark:text-slate-300",
@@ -239,8 +239,8 @@ intentionally want normal CSS cascade precedence.
 Use `class_names` when the host already provides utilities or reusable classes:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4]),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4]),
     class_names={
         "tooltip": (
             "rounded-lg border border-zinc-700 bg-zinc-950 "
@@ -253,8 +253,8 @@ chart = xy.scatter_chart(
 Use `styles` for values computed in Python or when no stylesheet is involved:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4]),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4]),
     styles={
         "tooltip": {
             "background": "#09090b",
@@ -290,8 +290,8 @@ tooltip_css = """
 }
 """
 
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4]),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4]),
     class_name="analytics",
 )
 chart.to_html("analytics.html", custom_css=tooltip_css)
@@ -307,8 +307,8 @@ Use `styles` when values are computed in Python or when no stylesheet is
 appropriate:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter([1, 2], [3, 5]),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2], [3, 5]),
     styles={
         "title": {"font_size": 18, "letter_spacing": "0.02em"},
         "tooltip": {
@@ -337,8 +337,8 @@ css = """
 .analytics [data-xy-slot="canvas"] { cursor: cell; }
 """
 
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4]),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4]),
     class_name="analytics",
 )
 chart.to_html("analytics.html", custom_css=css)
@@ -361,8 +361,8 @@ apply it with. Rather than leave that to be discovered, it is a contract:
 | `styles={slot: {...}}` | yes, all 48 slots | text subset, 9 slots | text subset, 9 slots |
 | `class_names={slot: "..."}` | yes, all 48 slots | dropped | dropped |
 | `custom_css=` | yes | raises | raises |
-| `xy.legend(style=...)` | yes | 6 keys | 6 keys |
-| `xy.colorbar(style=...)` | yes | dropped | dropped |
+| `xyg.legend(style=...)` | yes | 6 keys | 6 keys |
+| `xyg.colorbar(style=...)` | yes | dropped | dropped |
 
 A per-slot `styles=` block reaches a file for the nine slots that name chrome a
 file actually contains — `title`, `axis_title`, `tick_label`, the three legend

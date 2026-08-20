@@ -12,17 +12,17 @@ routing contract.
 
 | Entry point | Location | Notes |
 |---|---|---|
-| `Figure.to_image(format="png", ...)` | `python/xy/_figure.py:1310` | bytes |
-| `Figure.write_image(path, format=None, ...)` | `python/xy/_figure.py:1346` | atomic write, extension-inferred |
-| `xy.export.to_image(fig, ...)` | `python/xy/export.py:1006` | the implementation both methods delegate to |
-| `xy.export.write_image(fig, path, ...)` | `python/xy/export.py:1069` | |
-| `xy.write_images(figs, paths, ...)` | `python/xy/export.py:533` | batch, §8 |
-| `xy.export_config(...)` | `python/xy/components.py:2301` | declarative defaults, no I/O |
-| `xy.Engine` | `python/xy/export.py:27` | §3 |
+| `Figure.to_image(format="png", ...)` | `python/xyg/_figure.py:1310` | bytes |
+| `Figure.write_image(path, format=None, ...)` | `python/xyg/_figure.py:1346` | atomic write, extension-inferred |
+| `xyg.export.to_image(fig, ...)` | `python/xyg/export.py:1006` | the implementation both methods delegate to |
+| `xyg.export.write_image(fig, path, ...)` | `python/xyg/export.py:1069` | |
+| `xyg.write_images(figs, paths, ...)` | `python/xyg/export.py:533` | batch, §8 |
+| `xyg.export_config(...)` | `python/xyg/components.py:2301` | declarative defaults, no I/O |
+| `xyg.Engine` | `python/xyg/export.py:27` | §3 |
 
 `to_image` / `write_image` are **methods**, not package-level functions:
-`xy.__init__` re-exports only `Engine`, `export_config`, and `write_images`
-from the export module. Reach the free functions as `xy.export.to_image(fig,
+`xyg.__init__` re-exports only `Engine`, `export_config`, and `write_images`
+from the export module. Reach the free functions as `xyg.export.to_image(fig,
 ...)`.
 
 `Chart` mirrors both methods (`components.py:3014`, `components.py:3054`) and
@@ -178,7 +178,7 @@ sequence counters, and a `source` label. None of them carries style.
 The consequence is concrete. When a theme comes from the host page (an app
 stylesheet, a `.dark` class on an ancestor, a `prefers-color-scheme` flip) the
 kernel does not know about it, and `fig.to_image(...)` exports the Python-declared
-theme, not what the user is looking at. Themes declared through `xy.theme(...)`
+theme, not what the user is looking at. Themes declared through `xyg.theme(...)`
 or the chart's own `style` do export faithfully, and the *client-side* modebar
 download does match the screen — it snapshots the computed `--chart-*` tokens
 (`styling.md` § Standalone HTML). Do not read the client-side match as
@@ -251,8 +251,8 @@ vector** (`_svg.to_svg`, and `_pdf.svg_to_pdf` on top of it).
 | `styles={slot: {...}}` (per-slot inline) | yes, all 48 slots | text subset, 9 slots | text subset, 9 slots | `_svg.STATIC_STYLED_SLOTS`; the rest is live-only chrome |
 | `class_names={slot: "..."}` | yes, all 48 slots | **dropped** | **dropped** | silent — the SVG writer emits no `class` at all |
 | `custom_css="..."` | yes (HTML + Chromium capture) | **raises** | **raises** | `_resolve_image_engine`, `export.py:812` |
-| `xy.legend(style=...)` | yes | 6 keys | 6 keys | merged with the slot and the theme token before the writers see it |
-| `xy.colorbar(style=...)` | yes | **dropped** | **dropped** | no native channel; use `styles={"colorbar_title"/"colorbar_tick": ...}` |
+| `xyg.legend(style=...)` | yes | 6 keys | 6 keys | merged with the slot and the theme token before the writers see it |
+| `xyg.colorbar(style=...)` | yes | **dropped** | **dropped** | no native channel; use `styles={"colorbar_title"/"colorbar_tick": ...}` |
 
 ### Why two of those rows are silent, and why that is the right default
 
@@ -291,7 +291,7 @@ chart-wide default.
 
 ### The legend's three spellings
 
-`styles={"legend": ...}`, `xy.legend(style=...)`, and the `--chart-legend-bg`
+`styles={"legend": ...}`, `xyg.legend(style=...)`, and the `--chart-legend-bg`
 theme token all target the legend frame. They are merged into one declaration
 block — token, then slot, then component, narrowest last — before either native
 writer sees it (`_svg.legend_options_with_slot`), so spellings that agree in the

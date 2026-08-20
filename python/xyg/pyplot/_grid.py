@@ -227,7 +227,7 @@ def _compose_canvas(
     bottom-origin like matplotlib; document order stacks later axes above
     earlier ones, as matplotlib draws.
     """
-    from xy import _raster
+    from xyg import _raster
 
     background = np.asarray(_raster._parse_color(facecolor), dtype=np.uint8)
     canvas = np.empty(
@@ -272,7 +272,7 @@ def compose_html(
     fixed-size canvas instead — the add_axes/subplots_adjust layout path.
     Document order stacks later axes above earlier ones, as matplotlib draws.
     """
-    from xy import export
+    from xyg import export
 
     absolute = positions is not None and canvas_size is not None
     panels = []
@@ -394,7 +394,7 @@ def compose_svg(
     figure fractions, bottom-origin) and ``canvas_size`` px they are placed
     absolutely on a fixed canvas — the add_axes/subplots_adjust layout path.
     """
-    from xy import _svg
+    from xyg import _svg
 
     figures = [chart.figure() for chart in charts]
     if not figures:
@@ -501,7 +501,7 @@ def stitch_png(
     bbox_tight: bool = False,
     pad_pixels: int = 0,
 ) -> bytes:
-    from xy import _png, _raster  # sanctioned escape hatch (see module doc)
+    from xyg import _png, _raster  # sanctioned escape hatch (see module doc)
 
     # pyplot charts are already built at ``figsize * dpi`` logical pixels.
     # Rasterizing those pixels at the core exporter's 2x quality default made
@@ -602,7 +602,7 @@ def stitch_png(
             title_h=title_h,
         )
     if colorbar:
-        from xy._svg import _lut
+        from xyg._svg import _lut
 
         x0, x1 = int(canvas.shape[1] * 0.15), int(canvas.shape[1] * 0.85)
         y0 = title_h + sum(row_heights) + 12
@@ -640,7 +640,7 @@ def _blend_raster_suptitle(
     absolute: bool = False,
 ) -> None:
     """Draw a figure suptitle onto either grid or absolute-position PNGs."""
-    from xy import _raster, kernels
+    from xyg import _raster, kernels
 
     resolved = style or {}
     cmd = _raster._Cmd(scale)
@@ -678,7 +678,7 @@ def _blend_raster_figure_decorations(
     """Paint figure-fraction labels and the figure legend on one overlay."""
     if not labels and not legend:
         return
-    from xy import _raster, kernels
+    from xyg import _raster, kernels
 
     cmd = _raster._Cmd(scale)
     logical_w = canvas.shape[1] / scale

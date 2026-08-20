@@ -5,7 +5,7 @@ description: Inventory XY's root-exported declarative, output, selection, and co
 
 # Public Types
 
-The supported root surface is available from `import xy`. Most users
+The supported root surface is available from `import xyg`. Most users
 construct lowercase factory results and only name these types in annotations.
 
 ## Declarative Types
@@ -63,8 +63,8 @@ high-level data-frame API, and their internals may evolve during alpha.
 
 The old fluent `Figure` class is not root-exported. `Chart.figure()` returns an
 internal engine object as an advanced escape hatch; do not import
-`xy._figure.Figure` as an application API.
+`xyg._figure.Figure` as an application API.
 
 XY ships a package-wide `py.typed` marker. The authoritative runtime inventory
-is `xy.__all__`, and [Marks and components](/docs/xy/api-reference/marks-and-components/)
+is `xyg.__all__`, and [Marks and components](/docs/xy/api-reference/marks-and-components/)
 contains generated callable signatures.

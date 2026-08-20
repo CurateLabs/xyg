@@ -58,7 +58,7 @@ swatches, and tooltip use independent styling surfaces.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 data = {
     "month": [1, 2, 3, 4, 5, 6],
@@ -66,8 +66,8 @@ data = {
     "plan": [40_000, 44_000, 48_000, 52_000, 56_000, 60_000],
 }
 
-legend_tooltip_chart = xy.area_chart(
-    xy.area(
+legend_tooltip_chart = xyg.area_chart(
+    xyg.area(
         x="month",
         y="actual",
         data=data,
@@ -77,7 +77,7 @@ legend_tooltip_chart = xy.area_chart(
         line_width=2,
         curve="smooth",
     ),
-    xy.area(
+    xyg.area(
         x="month",
         y="plan",
         data=data,
@@ -87,7 +87,7 @@ legend_tooltip_chart = xy.area_chart(
         line_width=2,
         curve="smooth",
     ),
-    xy.legend(
+    xyg.legend(
         loc="upper right",
         ncols=2,
         style={
@@ -98,7 +98,7 @@ legend_tooltip_chart = xy.area_chart(
             "box-shadow": "0 4px 12px #11182714",
         },
     ),
-    xy.tooltip(
+    xyg.tooltip(
         fields=["month", "actual", "plan"],
         title="Month {month}",
         format={"actual": ",.0f", "plan": ",.0f"},
@@ -112,7 +112,7 @@ legend_tooltip_chart = xy.area_chart(
             "box-shadow": "0 8px 24px #00000029",
         },
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={
             "axis_width": 0,
@@ -122,7 +122,7 @@ legend_tooltip_chart = xy.area_chart(
             "tick_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         format=",.0f",
         tick_label_strategy="none",
         style={
@@ -132,7 +132,7 @@ legend_tooltip_chart = xy.area_chart(
             "tick_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--demo-surface, #ffffff)",
         grid_color="var(--demo-grid, #e5e7eb)",
         axis_color="var(--demo-axis, #d1d5db)",
@@ -180,15 +180,15 @@ annotation style when that label should also be translucent.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-annotation_chart = xy.line_chart(
-    xy.line(
+annotation_chart = xyg.line_chart(
+    xyg.line(
         [0, 1, 2, 3, 4, 5],
         [3, 5, 4, 7, 6, 9],
         style={"stroke": "#6a7282", "stroke-width": 2},
     ),
-    xy.text(
+    xyg.text(
         0,
         3,
         "text",
@@ -198,7 +198,7 @@ annotation_chart = xy.line_chart(
         color="var(--demo-text, #6a7282)",
         class_name="font-medium",
     ),
-    xy.label(
+    xyg.label(
         1,
         5,
         "label alias",
@@ -211,7 +211,7 @@ annotation_chart = xy.line_chart(
             "padding": "2px 5px",
         },
     ),
-    xy.marker(
+    xyg.marker(
         2,
         4,
         text="marker",
@@ -224,7 +224,7 @@ annotation_chart = xy.line_chart(
         dy=20,
         anchor="middle",
     ),
-    xy.arrow(
+    xyg.arrow(
         2.2,
         5.0,
         3,
@@ -240,7 +240,7 @@ annotation_chart = xy.line_chart(
             "font_weight": 600,
         },
     ),
-    xy.threshold(
+    xyg.threshold(
         8,
         axis="y",
         text="threshold",
@@ -252,7 +252,7 @@ annotation_chart = xy.line_chart(
             "padding": "2px 5px",
         },
     ),
-    xy.threshold_zone(
+    xyg.threshold_zone(
         3.5,
         4.5,
         axis="x",
@@ -267,7 +267,7 @@ annotation_chart = xy.line_chart(
             "padding": "1px 4px",
         },
     ),
-    xy.callout(
+    xyg.callout(
         5,
         9,
         "callout",
@@ -284,7 +284,7 @@ annotation_chart = xy.line_chart(
             "padding": "3px 6px",
         },
     ),
-    xy.x_axis(
+    xyg.x_axis(
         domain=(-0.35, 5.35),
         tick_label_strategy="none",
         style={
@@ -295,7 +295,7 @@ annotation_chart = xy.line_chart(
             "tick_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(2, 10),
         tick_label_strategy="none",
         style={
@@ -305,7 +305,7 @@ annotation_chart = xy.line_chart(
             "tick_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--demo-surface, #ffffff)",
         grid_color="var(--demo-grid, #e5e7eb)",
         axis_color="var(--demo-axis, #d1d5db)",
@@ -344,17 +344,17 @@ selection rectangle.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
-interaction_chart = xy.scatter_chart(
-    xy.scatter(
+interaction_chart = xyg.scatter_chart(
+    xyg.scatter(
         [0, 1, 2, 3, 4, 5, 6, 7],
         [2, 5, 3, 7, 6, 9, 8, 11],
         size=10,
         style={"fill": "#00b8db", "stroke": "#ffffff", "stroke-width": 1.5},
     ),
-    xy.interaction_config(crosshair=True, select=True, brush=True),
-    xy.modebar(
+    xyg.interaction_config(crosshair=True, select=True, brush=True),
+    xyg.modebar(
         class_name=(
             "rounded-lg border border-[#e5e7eb] bg-[#fffffff2] shadow-md "
             "dark:border-[#3f3f46] dark:bg-[#18181ff2]"
@@ -365,7 +365,7 @@ interaction_chart = xy.scatter_chart(
         style={"padding": 4},
         button_style={"color": "var(--chart-text)"},
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--demo-surface, #ffffff)",
         grid_color="var(--demo-grid, #e5e7eb)",
         axis_color="var(--demo-axis, #d1d5db)",
@@ -374,7 +374,7 @@ interaction_chart = xy.scatter_chart(
         selection_color="#8e51ff",
         selection_fill="#8e51ff29",
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={
             "axis_width": 0,
@@ -384,7 +384,7 @@ interaction_chart = xy.scatter_chart(
             "tick_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={
             "axis_width": 0,
@@ -517,7 +517,7 @@ There are three different meanings of “custom”:
    above. This works in browser and Reflex charts, standalone HTML, and
    Chromium export.
 2. **Replace the tooltip with a Reflex component.** For a Chart source, the
-   built-in `reflex_xy.chart` adapter mounts `xy.tooltip(render=...)`
+   built-in `reflex_xy.chart` adapter mounts `xyg.tooltip(render=...)`
    automatically; for a live figure token, pass `tooltip=` to
    `reflex_xy.chart(...)`. Standalone exports cannot include the
    framework-owned component.
@@ -532,10 +532,10 @@ XY's built-in legend:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
-custom_legend_chart = xy.line_chart(
-    xy.line(
+custom_legend_chart = xyg.line_chart(
+    xyg.line(
         [0, 1, 2, 3],
         [2, 5, 3, 7],
         name="Actual",
@@ -543,7 +543,7 @@ custom_legend_chart = xy.line_chart(
         width=2,
         curve="smooth",
     ),
-    xy.line(
+    xyg.line(
         [0, 1, 2, 3],
         [1, 3, 4, 6],
         name="Plan",
@@ -551,8 +551,8 @@ custom_legend_chart = xy.line_chart(
         width=2,
         curve="smooth",
     ),
-    xy.legend(show=False),
-    xy.x_axis(
+    xyg.legend(show=False),
+    xyg.x_axis(
         tick_label_strategy="none",
         style={
             "axis_width": 0,
@@ -562,7 +562,7 @@ custom_legend_chart = xy.line_chart(
             "tick_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={
             "axis_width": 0,
@@ -571,7 +571,7 @@ custom_legend_chart = xy.line_chart(
             "tick_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--custom-surface, #ffffff)",
         grid_color="var(--custom-grid, #e5e7eb)",
         axis_color="var(--custom-axis, #d1d5db)",
@@ -623,8 +623,8 @@ small examples commonly have no `badge` element to style. Configure both the
 container and item slots up front when a dashboard may cross that threshold:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter(x, y),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y),
     class_names={"badge": "gap-1", "badge_item": "font-mono text-[10px]"},
     styles={"badge_item": {"border": "1px solid rgb(148 163 184 / 35%)"}},
 )

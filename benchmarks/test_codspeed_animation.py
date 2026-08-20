@@ -17,9 +17,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import kernels as k
-from xy.components import _encode_transition_keys, _fixed_transition_key_values
+import xyg as xy
+from xyg import kernels as k
+from xyg.components import _encode_transition_keys, _fixed_transition_key_values
 
 N = 100_000
 

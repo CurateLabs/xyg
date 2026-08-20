@@ -101,7 +101,7 @@ repository root.
   routes and sidebar order to `DOCS_NAVIGATION`; do not add ordering
   frontmatter to individual files.
 - Leaf pages that own public callable APIs declare them in ordered
-  `components:` frontmatter, using exported `xy.*` or `reflex_xy.*` names. The
+  `components:` frontmatter, using exported `xyg.*` or `reflex_xy.*` names. The
   docs app appends the same generated API Reference to HTML, per-page Markdown,
   and `llms-full.txt`; do not author that section manually. Invalid, duplicate,
   private, or non-callable entries fail docs compilation. Overview and general

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-import xy.pyplot as plt
-from xy.pyplot._transforms import Affine2D
+import xyg.pyplot as plt
+from xyg.pyplot._transforms import Affine2D
 
 
 def test_boxplot_notches_bootstrap_overrides_and_custom_whiskers() -> None:

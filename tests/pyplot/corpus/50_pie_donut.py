@@ -1,4 +1,4 @@
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 axes[0].pie([2, 3, 5], labels=["A", "B", "C"], autopct="%.0f%%", startangle=90)

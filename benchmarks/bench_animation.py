@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
+import xyg as xy
 from _browser import chromium_gl_flags, find_chromium  # ty: ignore[unresolved-import]
 from _cdp import Browser  # ty: ignore[unresolved-import]
 
@@ -53,7 +53,7 @@ def _percentile(values: list[float], fraction: float) -> float | None:
 
 
 def measure(n: int, chrome: str) -> dict[str, object]:
-    bundle = (ROOT / "python/xy/static/standalone.js").read_text(encoding="utf-8")
+    bundle = (ROOT / "python/xyg/static/standalone.js").read_text(encoding="utf-8")
     first, second = _case(n)
     payloads = [
         {"spec": spec, "blob": base64.b64encode(blob).decode("ascii")}

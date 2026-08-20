@@ -8,12 +8,12 @@ import json
 import numpy as np
 import pytest
 
-from xy import channels as ch
-from xy import interaction
-from xy._figure import DENSITY_GRID, SCATTER_DENSITY_THRESHOLD, Figure
-from xy.columns import ZONE_CHUNK
-from xy.config import DENSITY_SAMPLE_TARGET, MAX_SCREEN_DIM
-from xy.interaction import _decode_log_u8
+from xyg import channels as ch
+from xyg import interaction
+from xyg._figure import DENSITY_GRID, SCATTER_DENSITY_THRESHOLD, Figure
+from xyg.columns import ZONE_CHUNK
+from xyg.config import DENSITY_SAMPLE_TARGET, MAX_SCREEN_DIM
+from xyg.interaction import _decode_log_u8
 
 
 def _factorize_forcing(labels, use_native):
@@ -506,7 +506,7 @@ def test_density_payload_includes_deterministic_sample_overlay():
 
 
 def test_full_view_density_fusion_is_payload_byte_exact(monkeypatch):
-    from xy import kernels, lod
+    from xyg import kernels, lod
 
     n = SCATTER_DENSITY_THRESHOLD + 12_345
     rng = np.random.default_rng(2031)
@@ -526,7 +526,7 @@ def test_full_view_density_fusion_is_payload_byte_exact(monkeypatch):
 
 
 def test_full_view_categorical_density_fusion_is_payload_byte_exact(monkeypatch):
-    from xy import kernels, lod
+    from xyg import kernels, lod
 
     n = SCATTER_DENSITY_THRESHOLD + 12_345
     rng = np.random.default_rng(2032)
@@ -554,7 +554,7 @@ def test_full_domain_density_avoids_materialized_visible_indices(monkeypatch):
     def unexpected_fused_scan(*_args, **_kwargs):
         raise AssertionError("clean full-domain density should use implicit identity rows")
 
-    monkeypatch.setattr("xy._payload.kernels.bin_2d_indices", unexpected_fused_scan)
+    monkeypatch.setattr("xyg._payload.kernels.bin_2d_indices", unexpected_fused_scan)
     spec, _blob = Figure().scatter(x, y, density=True).build_payload()
 
     trace = spec["traces"][0]
@@ -573,8 +573,8 @@ def test_full_domain_categorical_density_uses_implicit_stratified_rows(monkeypat
     def unexpected_source_sized_path(*_args, **_kwargs):
         raise AssertionError("full-domain compact categories should use implicit rows")
 
-    monkeypatch.setattr("xy._payload.kernels.bin_2d_indices", unexpected_source_sized_path)
-    monkeypatch.setattr("xy._payload.lod.sample_rows_for_target", unexpected_source_sized_path)
+    monkeypatch.setattr("xyg._payload.kernels.bin_2d_indices", unexpected_source_sized_path)
+    monkeypatch.setattr("xyg._payload.lod.sample_rows_for_target", unexpected_source_sized_path)
     spec, blob = Figure().scatter(x, y, color=color, density=True).build_payload()
 
     trace = spec["traces"][0]
@@ -857,7 +857,7 @@ def test_density_view_rejects_bad_inputs_without_mutating_drill_state():
 
 
 def test_density_view_clamps_huge_frontend_screen_shape(monkeypatch):
-    from xy import interaction
+    from xyg import interaction
 
     n = SCATTER_DENSITY_THRESHOLD + 1
     x = np.linspace(0.0, 100.0, n)
@@ -927,7 +927,7 @@ def test_drill_seq_guards_stale_picks():
 
     # The history is bounded: churning past DRILL_HISTORY_KEEP subsets expires
     # the oldest, whose picks then drop instead of translating.
-    from xy.config import DRILL_HISTORY_KEEP
+    from xyg.config import DRILL_HISTORY_KEEP
 
     for i in range(DRILL_HISTORY_KEEP + 1):
         lo = 5.0 * (i % 8)
@@ -994,7 +994,7 @@ def test_drill_hysteresis_holds_points_mode_near_boundary():
 
 
 def test_huge_scatter_with_color_channel_warns_and_aggregates_mean_color():
-    from xy._figure import DIRECT_SOFT_CEILING
+    from xyg._figure import DIRECT_SOFT_CEILING
 
     n = DIRECT_SOFT_CEILING + 1
     x = np.zeros(n)
@@ -1013,7 +1013,7 @@ def test_huge_scatter_with_color_channel_warns_and_aggregates_mean_color():
 
 
 def test_huge_scatter_with_size_channel_warns_and_drops():
-    from xy._figure import DIRECT_SOFT_CEILING
+    from xyg._figure import DIRECT_SOFT_CEILING
 
     n = DIRECT_SOFT_CEILING + 1
     x = np.zeros(n)
@@ -1242,7 +1242,7 @@ def test_density_false_is_honored():
 
 
 def test_density_false_above_ceiling_warns():
-    from xy._figure import DIRECT_SOFT_CEILING
+    from xyg._figure import DIRECT_SOFT_CEILING
 
     n = DIRECT_SOFT_CEILING + 1
     x = np.zeros(n)

@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pytest
 
-import xy
+import xyg as xy
 from reflex_xy.registry import FigureRegistry
 
 

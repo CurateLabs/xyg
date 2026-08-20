@@ -85,14 +85,14 @@ produces a 600×400 raster.
 
 ## Declarative Export Defaults
 
-`xy.export_config` describes export behavior as part of the chart — no I/O
+`xyg.export_config` describes export behavior as part of the chart — no I/O
 happens at build time. It governs the modebar's download menu and provides
 defaults for the Python export calls:
 
 ~~~python
-xy.chart(
-    xy.line("date", "revenue", data=frame),
-    xy.export_config(
+xyg.chart(
+    xyg.line("date", "revenue", data=frame),
+    xyg.export_config(
         formats=["png", "webp", "svg", "csv"],  # menu availability + order
         filename="revenue",
         width=1200,
@@ -137,7 +137,7 @@ before placing it inside a stricter application policy.
 signatures:
 
 ~~~python
-from xy import Engine
+from xyg import Engine
 
 chart.to_png("chart.png", width=1200, height=630, scale=2)
 chart.to_png(
@@ -163,9 +163,9 @@ Use one batch call instead of exporting in a loop — formats can be mixed, and
 every Chromium-resolved file in the batch shares a single browser session:
 
 ~~~python
-import xy
+import xyg
 
-xy.write_images(
+xyg.write_images(
     figures=[overview, detail],
     files=["overview.svg", "detail.pdf"],
 )
@@ -180,7 +180,7 @@ millisecond-fast browser-free renderers.
 Facet grids support the same format matrix as single charts:
 
 ~~~python
-grid = xy.facet_chart(xy.scatter("x", "y"), data=frame, by="region")
+grid = xyg.facet_chart(xyg.scatter("x", "y"), data=frame, by="region")
 grid.write_image("regions.pdf")   # vector panels, composed natively
 grid.to_image("webp", background="transparent")
 ~~~
@@ -197,7 +197,7 @@ the full HTML grid.
 | `fig.to_image(format="png", scale=2)` | `chart.to_image("png", scale=2)` |
 | `fig.write_image("out.webp")` | `chart.write_image("out.webp")` |
 | `fig.write_html("out.html")` | `chart.to_html("out.html")` |
-| `pio.write_images(figs, files)` | `xy.write_images(figures=..., files=...)` |
+| `pio.write_images(figs, files)` | `xyg.write_images(figures=..., files=...)` |
 | Kaleido/Chrome required for static export | browser-free by default; `Engine.chromium` opt-in |
 | EPS | not supported (dropped by modern Plotly/Kaleido as well) |
 

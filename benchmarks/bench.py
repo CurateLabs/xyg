@@ -15,9 +15,9 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import xy
+import xyg as xy
 from categories import categories_for  # noqa: E402
-from xy import kernels as k
+from xyg import kernels as k
 
 BENCH_CATEGORY_IDS = ("huge_line_time_series", "payload_export_size")
 

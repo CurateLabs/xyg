@@ -73,7 +73,7 @@ MARKER_TO_SYMBOL = {
 def not_implemented(name: str, alternative: Optional[str] = None) -> "NotImplementedError":
     hint = f" Try {alternative} instead." if alternative else ""
     return NotImplementedError(
-        f"xy.pyplot does not implement {name}.{hint} See the compatibility table: {COMPAT_URL}. "
+        f"xyg.pyplot does not implement {name}.{hint} See the compatibility table: {COMPAT_URL}. "
         f"Request support: {SUPPORT_REQUEST_URL}"
     )
 
@@ -138,7 +138,7 @@ def check_unsupported(kwargs: dict[str, Any], where: str) -> None:
     if kwargs:
         names = ", ".join(sorted(kwargs))
         raise TypeError(
-            f"xy.pyplot {where} got unsupported keyword(s): {names}. "
+            f"xyg.pyplot {where} got unsupported keyword(s): {names}. "
             f"See the compatibility table: {COMPAT_URL}. "
             f"Request support: {SUPPORT_REQUEST_URL}"
         )

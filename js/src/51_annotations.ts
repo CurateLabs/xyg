@@ -39,7 +39,7 @@ const XY_ANNOTATION_SHAPE_STYLE_KEYS = new Set([
 ]);
 
 // Arrow path geometry shared by every arrow/callout draw (mirrored by the
-// static exporters in python/xy/_arrowgeom.py — keep the two in sync):
+// static exporters in python/xyg/_arrowgeom.py — keep the two in sync):
 // an optional quadratic control point from `curve` (matplotlib arc3 rad,
 // bulge as a fraction of chord length) or `angle_a`/`angle_b` (matplotlib
 // angle3/angle departure/arrival angles in degrees, y-up screen space —

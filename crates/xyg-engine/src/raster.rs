@@ -14,7 +14,7 @@
 use crate::font;
 use std::io::Cursor;
 
-// ---- command opcodes (must match python/xy/_raster.py) --------------
+// ---- command opcodes (must match python/xyg/_raster.py) --------------
 const OP_CLIP: u8 = 0;
 const OP_FILL_POLY: u8 = 1;
 const OP_FILL_POLY_GRAD: u8 = 2;
@@ -620,7 +620,7 @@ fn fill_poly(
 
 type StrokeSegment = ((f32, f32), (f32, f32));
 
-// stroke-linecap, in the wire order python/xy/styles.py compiles:
+// stroke-linecap, in the wire order python/xyg/styles.py compiles:
 // butt/round/square. XY's default is round, which is what the clamped segment
 // distance field below has always drawn, so `stroke` stays the fast path and
 // byte-for-byte unchanged; the other two route through `stroke_shaped`.

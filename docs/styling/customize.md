@@ -14,7 +14,7 @@ slot styles.
 | --- | --- |
 | Area, line, point, or bar paint | Typed mark props or mark `style=` |
 | Grid, axis line, ticks, or tick text | `x_axis(...)` / `y_axis(...)` |
-| Continuous color scale and colorbar | Mark `colormap=` / `domain=`, then `xy.colorbar(...)` |
+| Continuous color scale and colorbar | Mark `colormap=` / `domain=`, then `xyg.colorbar(...)` |
 | Built-in legend or tooltip | The component's `class_name` / `style`, or chart slots |
 | Rules, bands, arrows, and callouts | Annotation geometry props plus label `style` |
 | Crosshair, selection, and toolbar | `interaction_config`, `modebar`, theme tokens, or slots |
@@ -32,12 +32,12 @@ y = [22, 31, 29, 44, 51, 63]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_mark_paint_preview():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             x,
             y,
             name="Revenue",
@@ -50,9 +50,9 @@ def customize_mark_paint_preview():
             opacity=1,
             curve="smooth",
         ),
-        xy.tooltip(title="Period {x}", format={"y": "$,.0fK"}),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.tooltip(title="Period {x}", format={"y": "$,.0fK"}),
+        xyg.legend(show=False),
+        xyg.x_axis(
             style={
                 "axis_width": 0,
                 "axis_color": "#00000000",
@@ -63,7 +63,7 @@ def customize_mark_paint_preview():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 70),
             style={
                 "axis_width": 0,
@@ -74,7 +74,7 @@ def customize_mark_paint_preview():
                 "label_color": "#00000000",
             },
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
             grid_color="var(--custom-grid, #e5e7eb)",
             text_color="var(--custom-text, #6a7282)",
@@ -106,8 +106,8 @@ export. `marker-shape` is the CSS spelling of `symbol=` and takes any of the 17
 built-in marker names.
 
 ~~~python
-xy.line(x, y, style={"stroke-width": "6px", "stroke-linecap": "butt"})
-xy.scatter(x, y, size=12, style={"marker-shape": "diamond"})
+xyg.line(x, y, style={"stroke-width": "6px", "stroke-linecap": "butt"})
+xyg.scatter(x, y, size=12, style={"marker-shape": "diamond"})
 ~~~
 
 ## Axes, grid, and ticks
@@ -130,12 +130,12 @@ revenue = [38, 46, 43, 57, 54, 65, 72]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_horizontal_grid_preview():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             months,
             revenue,
             name="Revenue",
@@ -145,7 +145,7 @@ def customize_horizontal_grid_preview():
             line_width=2,
             curve="smooth",
         ),
-        xy.x_axis(
+        xyg.x_axis(
             tick_label_strategy="none",
             style={
                 "grid_opacity": 0,
@@ -155,7 +155,7 @@ def customize_horizontal_grid_preview():
                 "tick_width": 0,
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             tick_label_strategy="off",
             style={
                 "grid_color": "var(--axis-grid, #e5e7eb)",
@@ -169,9 +169,9 @@ def customize_horizontal_grid_preview():
                 "tick_label_color": "#00000000",
             },
         ),
-        xy.legend(show=False),
-        xy.tooltip(title="{x}", format={"y": "$,.0fK"}),
-        xy.theme(plot_background="var(--custom-surface, #ffffff)"),
+        xyg.legend(show=False),
+        xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
+        xyg.theme(plot_background="var(--custom-surface, #ffffff)"),
         class_name=(
             "bg-[#ffffff] [--custom-surface:#ffffff] [--axis-grid:#e5e7eb] "
             "dark:bg-[#000000] dark:[--custom-surface:#000000] "
@@ -200,12 +200,12 @@ orders = [32, 47, 41, 58, 54, 68]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_axis_details_preview():
-    chart = xy.column_chart(
-        xy.column(
+    chart = xyg.column_chart(
+        xyg.column(
             months,
             orders,
             name="Orders",
@@ -213,7 +213,7 @@ def customize_axis_details_preview():
             corner_radius=(5, 0),
             stroke_width=0,
         ),
-        xy.x_axis(
+        xyg.x_axis(
             style={
                 "grid_opacity": 0,
                 "axis_color": "var(--axis-accent, #00bc7d)",
@@ -224,7 +224,7 @@ def customize_axis_details_preview():
                 "tick_label_color": "var(--axis-text, #4b5563)",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             tick_label_strategy="none",
             style={
                 "grid_color": "var(--axis-grid, #e5e7eb)",
@@ -235,9 +235,9 @@ def customize_axis_details_preview():
                 "tick_width": 0,
             },
         ),
-        xy.legend(show=False),
-        xy.tooltip(title="{x}", format={"y": ",.0f"}),
-        xy.theme(plot_background="var(--custom-surface, #ffffff)"),
+        xyg.legend(show=False),
+        xyg.tooltip(title="{x}", format={"y": ",.0f"}),
+        xyg.theme(plot_background="var(--custom-surface, #ffffff)"),
         class_name=(
             "bg-[#ffffff] [--custom-surface:#ffffff] [--axis-grid:#e5e7eb] "
             "[--axis-accent:#00bc7d] [--axis-text:#4b5563] dark:bg-[#000000] "
@@ -268,12 +268,12 @@ partner = [22, 28, 34, 31, 39, 44, 53, 61]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_clean_dashboard_axis_preview():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             months,
             direct,
             name="Direct",
@@ -283,7 +283,7 @@ def customize_clean_dashboard_axis_preview():
             line_width=2,
             curve="smooth",
         ),
-        xy.area(
+        xyg.area(
             months,
             partner,
             name="Partner",
@@ -293,7 +293,7 @@ def customize_clean_dashboard_axis_preview():
             line_width=2,
             curve="smooth",
         ),
-        xy.x_axis(
+        xyg.x_axis(
             tick_label_strategy="none",
             style={
                 "grid_opacity": 0,
@@ -303,7 +303,7 @@ def customize_clean_dashboard_axis_preview():
                 "tick_width": 0,
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             tick_label_strategy="none",
             style={
                 "grid_color": "var(--axis-grid, #e5e7eb)",
@@ -314,13 +314,13 @@ def customize_clean_dashboard_axis_preview():
                 "tick_width": 0,
             },
         ),
-        xy.legend(
+        xyg.legend(
             loc="upper right",
             ncols=2,
             style={"background": "transparent", "border": 0, "box-shadow": "none"},
         ),
-        xy.tooltip(title="{x}", format={"y": ",.0f"}),
-        xy.theme(
+        xyg.tooltip(title="{x}", format={"y": ",.0f"}),
+        xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
             grid_color="var(--axis-grid, #e5e7eb)",
         ),
@@ -352,27 +352,27 @@ overrides `show`, so the reporting look above is two lines.
 
 | Want | Write |
 | --- | --- |
-| No axis chrome at all | `xy.x_axis(show=False)` |
-| Horizontal guides only | `xy.y_axis(show=False, grid=True)` |
-| Labels, but no baseline or ticks | `xy.x_axis(line=False, ticks=False)` |
-| Everything except the grid | `xy.x_axis(grid=False)` |
+| No axis chrome at all | `xyg.x_axis(show=False)` |
+| Horizontal guides only | `xyg.y_axis(show=False, grid=True)` |
+| Labels, but no baseline or ticks | `xyg.x_axis(line=False, ticks=False)` |
+| Everything except the grid | `xyg.x_axis(grid=False)` |
 
 ~~~python
-chart = xy.area_chart(
-    xy.area(months, revenue, name="Revenue", color="#00b8db", curve="smooth"),
-    xy.x_axis(show=False),
-    xy.y_axis(show=False, grid=True, style={"grid_color": "#e5e7eb"}),
+chart = xyg.area_chart(
+    xyg.area(months, revenue, name="Revenue", color="#00b8db", curve="smooth"),
+    xyg.x_axis(show=False),
+    xyg.y_axis(show=False, grid=True, style={"grid_color": "#e5e7eb"}),
 )
 ~~~
 
 An explicit `style=` property still wins, so you can switch a part off and then
-bring one property back — `xy.x_axis(show=False, style={"grid_color": "#eee",
+bring one property back — `xyg.x_axis(show=False, style={"grid_color": "#eee",
 "grid_opacity": 1})` — without writing the other six.
 
 ## Color scales and colorbars
 
 Set a continuous mark's `colormap=` and `domain=` together when colors must
-have a stable meaning across charts. Add `xy.colorbar(...)` to explain that
+have a stable meaning across charts. Add `xyg.colorbar(...)` to explain that
 scale, then style its container, gradient, ticks, and title through the
 `colorbar`, `colorbar_bar`, `colorbar_tick`, `colorbar_title`,
 `colorbar_extension`, `colorbar_line`, and `colorbar_minor_tick` slots.
@@ -393,9 +393,9 @@ opaque: use the mark's `opacity`/`fill-opacity` for transparency rather than a
 translucent stop, which XY refuses instead of silently flattening to black.
 
 ~~~python
-chart = xy.hexbin_chart(
-    xy.hexbin(throughput, latency, gridsize=54, colormap=BRAND_RAMP),
-    xy.colorbar(title="Requests"),
+chart = xyg.hexbin_chart(
+    xyg.hexbin(throughput, latency, gridsize=54, colormap=BRAND_RAMP),
+    xyg.colorbar(title="Requests"),
 )
 ~~~
 
@@ -407,7 +407,7 @@ swatch of the ramp; the static legend draws a solid handle, as it always has.
 One rule follows from that: colormap stops must be colors XY can resolve
 without a browser — hex, `rgb()`, `hsl()`, or a named color. `var(--brand)`,
 `oklch(...)`, and `color-mix(...)` are fine on an individual `color=`, `stroke`,
-or `fill`, but not as a colormap stop or an `xy.theme(palette=...)` entry. Both
+or `fill`, but not as a colormap stop or an `xyg.theme(palette=...)` entry. Both
 are indexed color lookups used by static renderers that have no cascade to
 resolve browser-only colors. Resolve the token to a literal in Python and pass
 that.
@@ -415,15 +415,15 @@ that.
 ### Recolor categories with a chart palette
 
 A categorical `color=` channel and unnamed series both draw from the chart's
-palette. `xy.theme(palette=[...])` replaces it for the whole chart, so a set of
+palette. `xyg.theme(palette=[...])` replaces it for the whole chart, so a set of
 brand swatches colors every series and every category at once:
 
 ~~~python
 BRAND = ["#38bdf8", "#e879f9", "#fbbf24", "#34d399", "#a78bfa", "#fb7185"]
 
-chart = xy.scatter_chart(
-    xy.scatter(x, y, color=stage_labels, size=2.2, opacity=0.7),
-    xy.theme(palette=BRAND),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y, color=stage_labels, size=2.2, opacity=0.7),
+    xyg.theme(palette=BRAND),
 )
 ~~~
 
@@ -438,9 +438,9 @@ To pin specific categories to specific colors, pass a mapping instead of a
 list:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter(x, y, color=species),
-    xy.theme(palette={"setosa": "#4c72b0", "versicolor": "#dd8452"}),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y, color=species),
+    xyg.theme(palette={"setosa": "#4c72b0", "versicolor": "#dd8452"}),
 )
 ~~~
 
@@ -474,21 +474,21 @@ throughput = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-palette_chart = xy.line_chart(
+palette_chart = xyg.line_chart(
     *[
-        xy.line(months, values, name=stage, width=2, curve="smooth")
+        xyg.line(months, values, name=stage, width=2, curve="smooth")
         for stage, values in zip(stages, throughput, strict=True)
     ],
-    xy.theme(
+    xyg.theme(
         palette=[
             "#0ea5e9", "#d946ef", "#f59e0b", "#10b981", "#8b5cf6", "#f43f5e",
         ],
     ),
-    xy.x_axis(line=False, ticks=False),
-    xy.y_axis(show=False, grid=True, style={"grid_color": "#e2e8f0"}),
-    xy.legend(loc="upper left", ncols=3),
+    xyg.x_axis(line=False, ticks=False),
+    xyg.y_axis(show=False, grid=True, style={"grid_color": "#e2e8f0"}),
+    xyg.legend(loc="upper left", ncols=3),
     class_name="text-slate-600 dark:text-zinc-300",
     width="100%",
     height=320,
@@ -509,19 +509,19 @@ conversion = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_colorbar_preview():
-    chart = xy.heatmap_chart(
-        xy.heatmap(
+    chart = xyg.heatmap_chart(
+        xyg.heatmap(
             conversion,
             name="Conversion rate",
             colormap="purples",
             domain=(0, 1),
             opacity=0.94,
         ),
-        xy.colorbar(
+        xyg.colorbar(
             title="Conversion rate",
             ticks=[0, 0.5, 1],
             orientation="horizontal",
@@ -533,15 +533,15 @@ def customize_colorbar_preview():
                 "padding": "8px 10px",
             },
         ),
-        xy.x_axis(
+        xyg.x_axis(
             tick_label_strategy="none",
             style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             tick_label_strategy="none",
             style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
             text_color="var(--colorbar-text, #4b5563)",
         ),
@@ -570,7 +570,7 @@ orientation, inferred scales, and custom-component boundaries.
 
 ## Legend
 
-Configure legend content and layout with `xy.legend(...)`. Style the component
+Configure legend content and layout with `xyg.legend(...)`. Style the component
 directly, or use the chart's `legend`, `legend_title`, `legend_item`,
 `legend_swatch`, and `legend_label` slots when one rule should cover several
 charts. Complete literal Tailwind utilities work through `class_name` /
@@ -583,12 +583,12 @@ mobile = [22, 27, 32, 29, 38, 42, 49, 57]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_legend_preview():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             periods,
             desktop,
             name="Desktop",
@@ -598,7 +598,7 @@ def customize_legend_preview():
             line_width=2,
             curve="smooth",
         ),
-        xy.area(
+        xyg.area(
             periods,
             mobile,
             name="Mobile",
@@ -608,7 +608,7 @@ def customize_legend_preview():
             line_width=2,
             curve="smooth",
         ),
-        xy.legend(
+        xyg.legend(
             loc="upper right",
             ncols=2,
             style={
@@ -618,13 +618,13 @@ def customize_legend_preview():
                 "box-shadow": "none",
             },
         ),
-        xy.tooltip(show=False),
-        xy.modebar(show=False),
-        xy.x_axis(
+        xyg.tooltip(show=False),
+        xyg.modebar(show=False),
+        xyg.x_axis(
             tick_label_strategy="none",
             style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             tick_label_strategy="off",
             style={
                 "grid_color": "var(--custom-grid, #e5e7eb)",
@@ -638,7 +638,7 @@ def customize_legend_preview():
                 "label_color": "#00000000",
             },
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
             grid_color="var(--custom-grid, #e5e7eb)",
         ),
@@ -664,7 +664,7 @@ def customize_legend_preview():
 A short, rounded swatch makes an area-series legend read like its visible
 stroke instead of a generic color chip. A genuinely custom host legend is
 ordinary Reflex UI: hide the built-in legend
-with `xy.legend(show=False)`, keep the chart in state, and render the controls
+with `xyg.legend(show=False)`, keep the chart in state, and render the controls
 beside it. Host-owned UI is not included in standalone XY exports.
 
 ## Tooltip
@@ -683,12 +683,12 @@ data = {
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_tooltip_preview():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             x="period",
             y="revenue",
             data=data,
@@ -698,8 +698,8 @@ def customize_tooltip_preview():
             line_width=2,
             curve="smooth",
         ),
-        xy.legend(show=False),
-        xy.tooltip(
+        xyg.legend(show=False),
+        xyg.tooltip(
             fields=["revenue"],
             title="{period}",
             format={"revenue": "$,.0f"},
@@ -713,11 +713,11 @@ def customize_tooltip_preview():
                 "padding": "8px 10px",
             },
         ),
-        xy.x_axis(
+        xyg.x_axis(
             tick_label_strategy="none",
             style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 80_000),
             tick_label_strategy="off",
             style={
@@ -732,7 +732,7 @@ def customize_tooltip_preview():
                 "label_color": "#00000000",
             },
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
             grid_color="var(--custom-grid, #e5e7eb)",
         ),
@@ -763,7 +763,7 @@ def customize_tooltip_preview():
     return reflex_xy.chart(chart, height="410px")
 ~~~
 
-For a host-owned tooltip, set `xy.tooltip(show=False)`, handle
+For a host-owned tooltip, set `xyg.tooltip(show=False)`, handle
 `on_point_hover`, and render ordinary framework UI from the received row. The
 built-in tooltip remains the right choice when it must track the pointer or
 survive a standalone export.
@@ -780,12 +780,12 @@ y = [3, 5, 4, 7, 6, 9]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_annotations_preview():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             x,
             y,
             color="#2b7fff",
@@ -794,7 +794,7 @@ def customize_annotations_preview():
             curve="smooth",
             line_width=2,
         ),
-        xy.hline(
+        xyg.hline(
             6,
             text="Target",
             color="#fe9a00",
@@ -805,7 +805,7 @@ def customize_annotations_preview():
                 "padding": "2px 5px",
             },
         ),
-        xy.x_band(
+        xyg.x_band(
             2.5,
             3.5,
             text="Launch",
@@ -817,7 +817,7 @@ def customize_annotations_preview():
                 "padding": "2px 5px",
             },
         ),
-        xy.callout(
+        xyg.callout(
             5,
             9,
             "Peak",
@@ -834,11 +834,11 @@ def customize_annotations_preview():
                 "padding": "3px 6px",
             },
         ),
-        xy.x_axis(
+        xyg.x_axis(
             tick_label_strategy="none",
             style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 12),
             tick_values=[0, 3, 6, 9, 12],
             tick_label_strategy="off",
@@ -854,7 +854,7 @@ def customize_annotations_preview():
                 "label_color": "#00000000",
             },
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
             grid_color="var(--custom-grid, #e5e7eb)",
             text_color="var(--custom-text, #6a7282)",
@@ -877,7 +877,7 @@ geometry; only their labels respond to DOM slot styles.
 ## Interaction chrome
 
 Crosshairs, selections, and the modebar are configured independently from data
-marks. Interaction colors belong in `xy.theme(...)`; DOM pieces can also use
+marks. Interaction colors belong in `xyg.theme(...)`; DOM pieces can also use
 the `crosshair_x`, `crosshair_y`, `selection`, `modebar`, and `modebar_button`
 slots. The remaining `modebar_*` slots reach the draggable grip, control group,
 separators, icons, zoom value, indicators, selection icon, menus, menu content,
@@ -889,12 +889,12 @@ y = [2, 5, 3, 7, 6, 9, 8, 11]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_interaction_preview():
-    chart = xy.scatter_chart(
-        xy.scatter(
+    chart = xyg.scatter_chart(
+        xyg.scatter(
             x,
             y,
             size=10,
@@ -904,8 +904,8 @@ def customize_interaction_preview():
                 "stroke-width": 1.5,
             },
         ),
-        xy.interaction_config(crosshair=True, select=True, brush=True),
-        xy.modebar(
+        xyg.interaction_config(crosshair=True, select=True, brush=True),
+        xyg.modebar(
             class_name=(
                 "rounded-lg border border-[#e5e7eb] bg-[#fffffff2] shadow-md "
                 "dark:border-[#3f3f46] dark:bg-[#18181ff2]"
@@ -914,11 +914,11 @@ def customize_interaction_preview():
                 "rounded-md hover:bg-[#8e51ff1a] focus:ring-2 focus:ring-[#8e51ff]"
             ),
         ),
-        xy.x_axis(
+        xyg.x_axis(
             tick_label_strategy="none",
             style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 12),
             tick_values=[0, 3, 6, 9, 12],
             tick_label_strategy="off",
@@ -934,7 +934,7 @@ def customize_interaction_preview():
                 "label_color": "#00000000",
             },
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--custom-surface, #ffffff)",
             grid_color="var(--custom-grid, #e5e7eb)",
             text_color="var(--custom-text, #6a7282)",

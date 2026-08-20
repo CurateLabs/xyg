@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(0, 10, 100)
 fig, axs = plt.subplots(1, 3, sharex=True, figsize=(9, 3))

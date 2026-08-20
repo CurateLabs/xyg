@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from scripts.js_exports import missing_esm_exports
 
-from xy.channel import (
+from xyg.channel import (
     FRAME_ALIGNMENT,
     FRAME_HEADER_SIZE,
     FRAME_MAGIC,
@@ -23,7 +23,7 @@ from xy.channel import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-CLIENT = ROOT / "python" / "xy" / "static" / "index.js"
+CLIENT = ROOT / "python" / "xyg" / "static" / "index.js"
 HEADER = struct.Struct("<4sBBHIIQ")
 U64 = struct.Struct("<Q")
 

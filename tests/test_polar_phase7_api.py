@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-import xy.pyplot as plt
-from xy.config import POLAR_MARK_KINDS, PROTOCOL_VERSION
+import xyg as xy
+import xyg.pyplot as plt
+from xyg.config import POLAR_MARK_KINDS, PROTOCOL_VERSION
 
 
 @pytest.fixture(autouse=True)

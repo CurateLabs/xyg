@@ -1,7 +1,7 @@
 # Large-Data Performance & Memory Audit - 2026-07-22
 
 Scope: the full large-N data path — Rust core (`src/`), Python layer
-(`python/xy/`), and the TypeScript render client (`js/src/`) — audited
+(`python/xyg/`), and the TypeScript render client (`js/src/`) — audited
 for time and resident-memory costs that scale with point count, against the
 §2/§27 targets. This was a source audit plus measured kernel work; browser
 measurements were not run in this pass (the audit sandbox has no npm/PyPI

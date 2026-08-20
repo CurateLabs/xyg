@@ -18,7 +18,7 @@ from typing import Optional
 import _ty_tools
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_INIT = ROOT / "python" / "xy" / "__init__.py"
+SOURCE_INIT = ROOT / "python" / "xyg" / "__init__.py"
 SOURCE_PATHS = ("python", "tests/typing_pep561_consumer.py")
 REVEAL_RE = re.compile(
     r"consumer\.py:(?P<line>\d+):\d+: info\[revealed-type\] "
@@ -141,7 +141,7 @@ def _run_installed_consumer_check(python: Path, ty: Path) -> bool:
         if missing_exports or extra_exports:
             return False
 
-        lines = ["from typing import reveal_type", "", "import xy", ""]
+        lines = ["from typing import reveal_type", "", "import xyg", ""]
         line_names: dict[int, str] = {}
         for name in names:
             lines.append(f"reveal_type(xy.{name})")

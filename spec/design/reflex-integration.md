@@ -53,11 +53,11 @@ proved it — but each piece costs something the socket gets free: reverse
 proxies must be taught each route; every `/msg` pays request setup + headers;
 SSE is a second long-lived connection per chart with its own reconnect
 logic; and none of it inherits app-plane auth. The XYBF binary frame format
-(`python/xy/_framing.py`; versioning in [wire-protocol.md](wire-protocol.md)
+(`python/xyg/_framing.py`; versioning in [wire-protocol.md](wire-protocol.md)
 §7) exists because HTTP bodies need framing — socket.io attachments
 already carry length-delimited binary, so on this transport the framing
-layer disappears too. XYBF remains in `python/xy/_framing.py` (re-exported
-from `xy.channel`) for HTTP/export hosts; the namespace does not use it.
+layer disappears too. XYBF remains in `python/xyg/_framing.py` (re-exported
+from `xyg.channel`) for HTTP/export hosts; the namespace does not use it.
 
 ### The cost we accept (recorded, §28 spirit)
 
@@ -144,7 +144,7 @@ in `spec/design/wire-protocol.md`.
 client -> server (namespace /_xy)
   sub     {fig, px?, mid?}      subscribe; join figure room; reply `payload`
   unsub   {fig}                 leave the room
-  msg     {fig, v?, mid?, m}    one xy.channel.handle_message dispatch
+  msg     {fig, v?, mid?, m}    one xyg.channel.handle_message dispatch
 
 server -> client
   payload {fig, version, spec, buffers, mid?}   first paint / full refresh
@@ -158,7 +158,7 @@ and other mounts ignore the addressed envelope. Pushes and full-payload
 broadcasts remain unaddressed and room-wide. This prevents M same-token mounts
 from each applying all M direct subscription responses after a resync. The
 kernel dispatch is byte-for-byte the notebook dispatch —
-`xy.channel.handle_message` (§3.1 of the old draft, now shipped), run off the
+`xyg.channel.handle_message` (§3.1 of the old draft, now shipped), run off the
 event loop via a worker thread (the Rust kernels release the GIL) under a
 per-figure lock. Namespace payload builds and interaction dispatches take the
 generation's async lock and then its synchronous figure lock, the same order as
@@ -193,7 +193,7 @@ extended to the transport.
 ### 2.1 Message catalog (specified in wire-protocol.md)
 
 The envelope above is transport; the `m` object it carries is the kernel
-protocol, dispatched by `xy.channel.handle_message`. Every request type, every
+protocol, dispatched by `xyg.channel.handle_message`. Every request type, every
 reply shape, and the `seq` / `_pickSeq` / `drill_seq` staleness rules are
 specified in [wire-protocol.md](wire-protocol.md), which is the sole authority
 for all of it. Unknown types and malformed fields return no reply at all (§2's
@@ -223,14 +223,14 @@ class Dash(rx.State):
     points: int = 1_000_000
 
     @reflex_xy.figure
-    def cloud(self) -> xy.Chart:
+    def cloud(self) -> xyg.Chart:
         x, y, mag = load(self.points)
-        return xy.scatter_chart(xy.scatter(x, y, color=mag), width="100%", height=460)
+        return xyg.scatter_chart(xyg.scatter(x, y, color=mag), width="100%", height=460)
 
     @reflex_xy.figure
-    async def remote(self) -> xy.Chart:
+    async def remote(self) -> xyg.Chart:
         rows = await fetch_rows(self.query)      # db / http / dataframe store
-        return xy.line_chart(xy.line(rows.t, rows.value), width="100%", height=220)
+        return xyg.line_chart(xyg.line(rows.t, rows.value), width="100%", height=220)
 ```
 
 `@reflex_xy.figure` is a computed var whose **value is only the token
@@ -317,7 +317,7 @@ Not every chart derives from state. Two tiers cover fixed data, chosen by
 whether the kernel still matters:
 
 **Static payload tier — pass the Chart straight to the component.**
-`reflex_xy.chart(xy.scatter_chart(...))` compiles the figure to its
+`reflex_xy.chart(xyg.scatter_chart(...))` compiles the figure to its
 first-paint payload at page build, writes it into the app's `assets/xy/` as
 one content-addressed XYBF frame (`<digest>.xyf` — the `_framing.py`
 envelope's natural home), and hands the wrapper a `src` URL instead of a
@@ -337,7 +337,7 @@ correct for free. What this tier gives up, deliberately: kernel round-trips
 (deep drilldown past the shipped tiers, exact server picks, streaming) and
 semantic events.
 
-`xy.facet_chart(...)` follows the same static tier, but preserves the core
+`xyg.facet_chart(...)` follows the same static tier, but preserves the core
 facet contract: because a `FacetGrid` is a composition of independent Figures
 rather than one Figure with a combined wire payload, the adapter emits a
 responsive CSS grid containing one content-addressed static `XYChart` per
@@ -466,7 +466,7 @@ reflex_xy.chart(
     height="460px",
 )
 
-reflex_xy.chart(xy.line_chart(...))  # …or a Chart directly: static tier (§3.4)
+reflex_xy.chart(xyg.line_chart(...))  # …or a Chart directly: static tier (§3.4)
 ```
 
 One factory, dispatched on the source: tokens (state vars or strings)
@@ -721,7 +721,7 @@ tests/reflex_adapter/        token/registry/var/bridge/payload-asset units,
 `inline()` (content-addressed pinned tokens, §3.4) lives in the package
 root beside `register()`/`release()`.
 
-The core `python/xy` package itself stays Reflex-free (CLAUDE.md rule).
+The core `python/xyg` package itself stays Reflex-free (CLAUDE.md rule).
 `xy[reflex]` adds full `reflex>=0.9.6` for now — the `reflex-base` split covers
 components/vars but not yet App/state-manager access; revisit when a smaller
 supported surface exists.
@@ -735,10 +735,10 @@ creating another distribution or release pipeline.
 
 The previous revision of this document specified `GET /_xy/{token}/payload`,
 `POST /_xy/{token}/msg`, an SSE `/events` invalidation stream, and the XYBF
-binary frame (`python/xy/_framing.py`). What survives: `handle_message`
+binary frame (`python/xyg/_framing.py`). What survives: `handle_message`
 extraction (shipped as
-`xy.channel`), the XYBF frame helpers (still in `python/xy/_framing.py`,
-re-exported from `xy.channel`, for HTTP/export hosts), the registry API
+`xyg.channel`), the XYBF frame helpers (still in `python/xyg/_framing.py`,
+re-exported from `xyg.channel`, for HTTP/export hosts), the registry API
 shape, and the two-planes analysis. What
 changed: transport (§1–§2) and the multi-worker story — the old draft called
 the registry's process-locality "the honest hard problem" and sketched a

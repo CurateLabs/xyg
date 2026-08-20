@@ -1,8 +1,8 @@
 ---
 title: Line Chart in Python
-description: Create interactive line charts in Python with xy. Plot smooth curves, multiple series, and millions of points with real-time pan and zoom — no lag.
+description: Create interactive line charts in Python with xyg. Plot smooth curves, multiple series, and millions of points with real-time pan and zoom — no lag.
 components:
-  - xy.line_chart
+  - xyg.line_chart
 ---
 
 # Line Charts in Python
@@ -25,15 +25,15 @@ chart:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 month = np.arange(12)
 revenue = np.array([12, 15, 14, 19, 22, 21, 27, 30, 29, 34, 38, 41])
 
-chart = xy.chart(
-    xy.line(month, revenue, color="#6e56cf", width=2.5),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="revenue ($k)"),
+chart = xyg.chart(
+    xyg.line(month, revenue, color="#6e56cf", width=2.5),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="revenue ($k)"),
     title="Monthly revenue",
 )
 
@@ -58,18 +58,18 @@ forecast comparisons.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.linspace(0, 12, 240)
 plan = 48 + 1.8 * x
 actual = plan + 7 * np.sin(x * 0.9)
 
-chart = xy.chart(
-    xy.line(x, plan, name="Plan", color="#2563eb", dash="dashed"),
-    xy.line(x, actual, name="Actual", color="#6e56cf", width=2.5, curve="smooth"),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="revenue"),
-    xy.legend(),
+chart = xyg.chart(
+    xyg.line(x, plan, name="Plan", color="#2563eb", dash="dashed"),
+    xyg.line(x, actual, name="Actual", color="#6e56cf", width=2.5, curve="smooth"),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="revenue"),
+    xyg.legend(),
     title="Plan vs. actual",
 )
 
@@ -96,16 +96,16 @@ and for the performance model see
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(0)
 t = np.linspace(0, 100, 200_000)
 signal = np.sin(t) + rng.normal(0, 0.1, t.size)
 
-chart = xy.chart(
-    xy.line(t, signal, color="#6e56cf"),
-    xy.x_axis(label="time (s)"),
-    xy.y_axis(label="signal"),
+chart = xyg.chart(
+    xyg.line(t, signal, color="#6e56cf"),
+    xyg.x_axis(label="time (s)"),
+    xyg.y_axis(label="signal"),
     title="200,000-point line",
 )
 
@@ -140,7 +140,7 @@ instead of arrays when your data is a table.
 
 ### How do I make an interactive line chart in Python?
 
-Call `xy.line(x, y)` inside `xy.chart(...)` and render it. Pan, zoom, and hover
+Call `xyg.line(x, y)` inside `xyg.chart(...)` and render it. Pan, zoom, and hover
 are enabled automatically — no callbacks or extra libraries required.
 
 ### How many points can a line chart plot?
@@ -151,8 +151,8 @@ page.
 
 ### How do I plot multiple lines on one chart?
 
-Add one named `line` mark per series inside the same `xy.chart(...)` and include
-`xy.legend()`.
+Add one named `line` mark per series inside the same `xyg.chart(...)` and include
+`xyg.legend()`.
 
 ### How do I draw a smooth line instead of straight segments?
 

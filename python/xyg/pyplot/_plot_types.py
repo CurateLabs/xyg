@@ -1199,7 +1199,7 @@ def _triangulation_inputs(
                 triangles = rest[0]
                 rest = rest[1:]
         if triangles is None:
-            from xy import kernels
+            from xyg import kernels
 
             if len(x) > 10_000:
                 raise ValueError(
@@ -1585,7 +1585,7 @@ class PlotTypeMixin:
             if mask.shape != yv.shape:
                 raise ValueError("fill_betweenx where must match y")
             valid &= mask
-        from xy import kernels
+        from xyg import kernels
 
         mark_kwargs: dict[str, Any] = {
             "color": resolve_color(color) if color is not None else self._next_patch_color(),
@@ -1666,7 +1666,7 @@ class PlotTypeMixin:
                     positional_color = args[index]
                 index += 1
             groups.append((x_values, y_values, positional_color))
-        from xy import kernels
+        from xyg import kernels
 
         result: list[PolyCollection] = []
         for x_values, y_values, positional_color in groups:
@@ -1778,7 +1778,7 @@ class PlotTypeMixin:
         elif head_width is not None:
             length = float(np.hypot(dx, dy))
             ratio = 0.0 if length == 0 else min(1.0, float(head_width) / length)
-        from xy import kernels
+        from xyg import kernels
 
         x0, x1, y0, y1 = kernels.vector_segments(
             np.array([x]),
@@ -1899,7 +1899,7 @@ class PlotTypeMixin:
             raise ValueError("magnitude_spectrum scale must be 'linear' or 'dB'")
         values = np.asarray(_from_data(x, data), dtype=np.float64)
         nfft = len(values) if pad_to is None else int(pad_to)
-        from xy import kernels
+        from xyg import kernels
 
         frequency, real, imag = kernels.rfft(values, nfft=nfft, sample_rate=float(Fs))
         magnitude = np.hypot(real, imag) / max(1.0, nfft * 0.5)
@@ -1933,7 +1933,7 @@ class PlotTypeMixin:
         _reject_spectral_options("angle_spectrum()", window=window, sides=sides)
         values = np.asarray(_from_data(x, data), dtype=np.float64)
         nfft = len(values) if pad_to is None else int(pad_to)
-        from xy import kernels
+        from xyg import kernels
 
         frequency, real, imag = kernels.rfft(values, nfft=nfft, sample_rate=float(Fs))
         angle = np.arctan2(imag, real)
@@ -1962,7 +1962,7 @@ class PlotTypeMixin:
         _reject_spectral_options("phase_spectrum()", window=window, sides=sides)
         values = np.asarray(_from_data(x, data), dtype=np.float64)
         nfft = len(values) if pad_to is None else int(pad_to)
-        from xy import kernels
+        from xyg import kernels
 
         frequency, real, imag = kernels.rfft(values, nfft=nfft, sample_rate=float(Fs))
         phase = np.unwrap(np.arctan2(imag, real))
@@ -2196,7 +2196,7 @@ class PlotTypeMixin:
             scale_by_freq=scale_by_freq,
         )
         values = np.asarray(_from_data(x, data), dtype=np.float64)
-        from xy import kernels
+        from xyg import kernels
 
         frequency, pxx, _pyy, _cross_real, _cross_imag = kernels.welch_spectra(
             values, nfft=int(NFFT), noverlap=int(noverlap), sample_rate=float(Fs)
@@ -2242,7 +2242,7 @@ class PlotTypeMixin:
         )
         xv = np.asarray(_from_data(x, data), dtype=np.float64)
         yv = np.asarray(_from_data(y, data), dtype=np.float64)
-        from xy import kernels
+        from xyg import kernels
 
         frequency, _pxx, _pyy, real, imag = kernels.welch_spectra(
             xv, yv, nfft=int(NFFT), noverlap=int(noverlap), sample_rate=float(Fs)
@@ -2287,7 +2287,7 @@ class PlotTypeMixin:
         )
         xv = np.asarray(_from_data(x, data), dtype=np.float64)
         yv = np.asarray(_from_data(y, data), dtype=np.float64)
-        from xy import kernels
+        from xyg import kernels
 
         frequency, pxx, pyy, real, imag = kernels.welch_spectra(
             xv, yv, nfft=int(NFFT), noverlap=int(noverlap), sample_rate=float(Fs)
@@ -2338,7 +2338,7 @@ class PlotTypeMixin:
             scale=scale,
         )
         values = np.asarray(_from_data(x, data), dtype=np.float64)
-        from xy import kernels
+        from xyg import kernels
 
         power, frequency, time = kernels.spectrogram(
             values, nfft=int(NFFT), noverlap=int(noverlap), sample_rate=float(Fs)
@@ -2395,7 +2395,7 @@ class PlotTypeMixin:
             yv = np.asarray(detrend(yv), dtype=np.float64)
             if xv.shape != yv.shape or xv.ndim != 1:
                 raise ValueError("xcorr detrend must preserve the 1-D input shape")
-        from xy import kernels
+        from xyg import kernels
 
         lag, correlation = kernels.correlation(
             xv, yv, max_lags=None if maxlags is None else int(maxlags), normalize=bool(normed)
@@ -2854,7 +2854,7 @@ class PlotTypeMixin:
         )
         if len(weight_values) != len(values) or np.any(weight_values < 0):
             raise ValueError("ecdf weights must be nonnegative and match x")
-        from xy import kernels
+        from xyg import kernels
 
         unique, cumulative = kernels.weighted_ecdf(values, weight_values)
         if complementary:
@@ -3937,7 +3937,7 @@ class PlotTypeMixin:
             source["kwargs"].get("levels", public_levels), dtype=np.float64
         ).reshape(-1)
 
-        from xy import kernels
+        from xyg import kernels
 
         x0, x1, y0, y1, segment_levels = kernels.marching_squares(
             grid, x_values, y_values, rendered_levels
@@ -4216,7 +4216,7 @@ class PlotTypeMixin:
             ),
             dtype=np.float64,
         )
-        from xy import kernels
+        from xyg import kernels
 
         def style(
             props: Any, fallback: Any = None
@@ -4566,7 +4566,7 @@ class PlotTypeMixin:
             else _cycled_colors(linecolor, len(stats), "violin linecolor")
         )
         body_opacity = 0.3 if facecolor is None else 1.0
-        from xy import kernels
+        from xyg import kernels
 
         bodies: list[PolyCollection] = []
         center_segments: dict[str, list[tuple[float, float, float, float]]] = {
@@ -4714,7 +4714,7 @@ class PlotTypeMixin:
             weight_values = np.asarray(_from_data(weights, data), dtype=np.float64)
             if weight_values.ndim != 1 or len(weight_values) != len(x):
                 raise ValueError("hist2d weights must have the same length as x and y")
-        from xy import kernels
+        from xyg import kernels
 
         finite = np.isfinite(x) & np.isfinite(y)
         xv, yv = x[finite], y[finite]
@@ -4952,7 +4952,7 @@ class PlotTypeMixin:
         values = np.vstack(resolved).astype(np.float64, copy=False)
         if values.ndim != 2 or values.shape[1] != len(x):
             raise ValueError("stackplot y series must all have the same length as x")
-        from xy import kernels
+        from xyg import kernels
 
         lower, upper = kernels.stacked_bounds(values, baseline)
         label_values = (
@@ -5124,7 +5124,7 @@ class PlotTypeMixin:
             )
             return finish(entry)
 
-        from xy import kernels
+        from xyg import kernels
 
         if rasterized:
             raise not_implemented(
@@ -5418,7 +5418,7 @@ class PlotTypeMixin:
                     key: value for key, value in shadow_options.items() if key in supported_shadow
                 }
         inner_radius = 0.0 if width is None else max(0.0, float(radius) - float(width))
-        from xy import kernels
+        from xyg import kernels
 
         x0, y0, x1, y1, x2, y2, sectors = kernels.sector_triangles(
             values,
@@ -5970,7 +5970,7 @@ class PlotTypeMixin:
             vmax = getattr(norm, "vmax", None)
         _reject_non_default("tripcolor", "antialiased", kwargs.pop("antialiased", None), False)
         check_unsupported(kwargs, "tripcolor()")
-        from xy import kernels
+        from xyg import kernels
 
         x0, y0, x1, y1, x2, y2, scalar = kernels.indexed_triangles(
             x, y, topology, values, values_at=values_at
@@ -6027,7 +6027,7 @@ class PlotTypeMixin:
             raise not_implemented("triplot(dashes=...)")
         pattern = _dash_segment_pattern("triplot", dash_value)
         check_unsupported(kwargs, "triplot()")
-        from xy import kernels
+        from xyg import kernels
 
         x0, x1, y0, y1 = kernels.triangle_edges(x, y, topology)
         if pattern is not None:
@@ -6112,7 +6112,7 @@ class PlotTypeMixin:
             explicit_color = resolve_color(
                 colors if isinstance(colors, str) else next(iter(colors))
             )
-        from xy import kernels
+        from xyg import kernels
 
         if filled:
             x0, y0, x1, y1, x2, y2, scalar = kernels.indexed_triangles(
@@ -7292,7 +7292,7 @@ class PlotTypeMixin:
         elif not native_fast_path:
             seeds = automatic_seeds()
         if native_fast_path:
-            from xy import kernels
+            from xyg import kernels
 
             kx0, kx1, ky0, ky1 = kernels.streamlines(
                 x_values,

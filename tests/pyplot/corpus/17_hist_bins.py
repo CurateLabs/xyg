@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 data = np.random.default_rng(1).normal(loc=100, scale=15, size=500)
 plt.hist(data, bins=30)

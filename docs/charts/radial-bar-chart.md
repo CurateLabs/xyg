@@ -1,8 +1,8 @@
 ---
 title: Radial Bar Charts in Python
-description: Create radial bar charts in Python with xy. Build radial bar plots, progress rings, gauge charts, and semicircular capacity blocks.
+description: Create radial bar charts in Python with xyg. Build radial bar plots, progress rings, gauge charts, and semicircular capacity blocks.
 components:
-  - xy.polar_bar_chart
+  - xyg.polar_bar_chart
 ---
 
 # Radial Bar Charts in Python
@@ -36,7 +36,7 @@ shade from the purple palette used throughout these docs:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 RADIAL_DATA = [
     ("Direct", 0, 6, "#5b3cc4"),
@@ -47,9 +47,9 @@ RADIAL_DATA = [
     ("Other", 300, 5, "#b8afea"),
 ]
 
-radial_bars = xy.polar_bar_chart(
+radial_bars = xyg.polar_bar_chart(
     *(
-        xy.bar(
+        xyg.bar(
             [angle],
             [value],
             width=48,
@@ -58,19 +58,19 @@ radial_bars = xy.polar_bar_chart(
         )
         for label, angle, value, color in RADIAL_DATA
     ),
-    xy.theta_axis(
+    xyg.theta_axis(
         unit="degrees",
         zero="N",
         direction="clockwise",
         tick_values=[0, 60, 120, 180, 240, 300],
     ),
-    xy.r_axis(
+    xyg.r_axis(
         label="value",
         domain=(0, 12),
         tick_values=[0, 4, 8, 12],
     ),
-    xy.legend(loc="right"),
-    xy.modebar(show=False),
+    xyg.legend(loc="right"),
+    xyg.modebar(show=False),
 )
 
 
@@ -93,7 +93,7 @@ table repeats the values for exact lookup:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 ALLOCATION_DATA = [
     ("Platform", 44, 880_000, "#6e56cf"),
@@ -106,8 +106,8 @@ ALLOCATION_DATA = [
 
 def allocation_ring_chart(label, percent, color):
     span = percent / 100 * 360.0
-    return xy.polar_bar_chart(
-        xy.bar(
+    return xyg.polar_bar_chart(
+        xyg.bar(
             [180.0],
             [0.12],
             base=0.72,
@@ -115,7 +115,7 @@ def allocation_ring_chart(label, percent, color):
             color="#eeecf6",
             opacity=1,
         ),
-        xy.bar(
+        xyg.bar(
             [span / 2.0],
             [0.12],
             base=0.72,
@@ -125,21 +125,21 @@ def allocation_ring_chart(label, percent, color):
             corner_radius=8,
             name=f"{label} · {percent}%",
         ),
-        xy.theta_axis(
+        xyg.theta_axis(
             unit="degrees",
             zero="N",
             direction="clockwise",
             show=False,
             tick_label_strategy="none",
         ),
-        xy.r_axis(
+        xyg.r_axis(
             domain=(0.0, 1.0),
             show=False,
             tick_label_strategy="none",
         ),
-        xy.legend(show=False),
-        xy.modebar(show=False),
-        xy.theme(plot_background="#ffffff"),
+        xyg.legend(show=False),
+        xyg.modebar(show=False),
+        xyg.theme(plot_background="#ffffff"),
         width="100%",
         height=92,
         padding=(0, 0, 0, 0),
@@ -250,7 +250,7 @@ measurements and the narrow side column preserves quick operational context:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 TRAINING_METRICS = [
     ("Elevation", 312, "m", 68, "#6e56cf"),
@@ -266,8 +266,8 @@ TRAINING_STATS = [
 
 def training_ring_chart(label, percent, color):
     span = percent / 100 * 360.0
-    return xy.polar_bar_chart(
-        xy.bar(
+    return xyg.polar_bar_chart(
+        xyg.bar(
             [180.0],
             [0.13],
             base=0.70,
@@ -275,7 +275,7 @@ def training_ring_chart(label, percent, color):
             color="#f0eef7",
             opacity=1,
         ),
-        xy.bar(
+        xyg.bar(
             [span / 2.0],
             [0.13],
             base=0.70,
@@ -285,21 +285,21 @@ def training_ring_chart(label, percent, color):
             corner_radius=9,
             name=f"{label} · {percent}%",
         ),
-        xy.theta_axis(
+        xyg.theta_axis(
             unit="degrees",
             zero="N",
             direction="clockwise",
             show=False,
             tick_label_strategy="none",
         ),
-        xy.r_axis(
+        xyg.r_axis(
             domain=(0.0, 1.0),
             show=False,
             tick_label_strategy="none",
         ),
-        xy.legend(show=False),
-        xy.modebar(show=False),
-        xy.theme(plot_background="#ffffff"),
+        xyg.legend(show=False),
+        xyg.modebar(show=False),
+        xyg.theme(plot_background="#ffffff"),
         width="100%",
         height=118,
         padding=(0, 0, 0, 0),
@@ -427,7 +427,7 @@ used fraction of the shared 180-degree track:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 CACHE_TIERS = [
     ("Memory", 610, 1_000, "#6e56cf", "#9d8df1"),
@@ -443,9 +443,9 @@ CACHE_STATS = [
     ("Purges", "72"),
 ]
 
-cache_tiers = xy.polar_bar_chart(
+cache_tiers = xyg.polar_bar_chart(
     *(
-        xy.bar(
+        xyg.bar(
             [0.0],
             [0.09],
             base=base,
@@ -457,7 +457,7 @@ cache_tiers = xy.polar_bar_chart(
         for base in CACHE_BASES
     ),
     *(
-        xy.bar(
+        xyg.bar(
             [-90.0 + (used / capacity * 180.0) / 2.0],
             [0.09],
             base=base,
@@ -475,7 +475,7 @@ cache_tiers = xy.polar_bar_chart(
             strict=True,
         )
     ),
-    xy.theta_axis(
+    xyg.theta_axis(
         unit="degrees",
         sector=(-90.0, 90.0),
         zero="N",
@@ -483,14 +483,14 @@ cache_tiers = xy.polar_bar_chart(
         show=False,
         tick_label_strategy="none",
     ),
-    xy.r_axis(
+    xyg.r_axis(
         domain=(0.0, 1.0),
         show=False,
         tick_label_strategy="none",
     ),
-    xy.legend(show=False),
-    xy.modebar(show=False),
-    xy.theme(plot_background="#ffffff"),
+    xyg.legend(show=False),
+    xyg.modebar(show=False),
+    xyg.theme(plot_background="#ffffff"),
     width="100%",
     height=210,
     padding=(4, 4, 0, 4),
@@ -600,15 +600,15 @@ scalar base opens the same hole beneath every bar; a sequence can give each bar
 its own starting radius:
 
 ~~~python
-rings = xy.polar_bar_chart(
-    xy.bar(
+rings = xyg.polar_bar_chart(
+    xyg.bar(
         [0, 90, 180, 270],
         [0.30, 0.42, 0.24, 0.36],
         base=0.40,
         width=72,
     ),
-    xy.theta_axis(unit="degrees"),
-    xy.r_axis(domain=(0.0, 1.0)),
+    xyg.theta_axis(unit="degrees"),
+    xyg.r_axis(domain=(0.0, 1.0)),
 )
 ~~~
 
@@ -632,8 +632,8 @@ fill the plot box. Rounded sectors, background-colored strokes, gradients, and
 explicit padding work the same way on a partial layout:
 
 ~~~python
-partial_gauge = xy.polar_bar_chart(
-    xy.bar(
+partial_gauge = xyg.polar_bar_chart(
+    xyg.bar(
         [0.0],
         [0.18],
         base=0.70,
@@ -641,7 +641,7 @@ partial_gauge = xy.polar_bar_chart(
         color="#e5e7eb",
         corner_radius=10,
     ),
-    xy.bar(
+    xyg.bar(
         [-30.0],
         [0.18],
         base=0.70,
@@ -651,14 +651,14 @@ partial_gauge = xy.polar_bar_chart(
         stroke="#ffffff",
         stroke_width=1.5,
     ),
-    xy.theta_axis(
+    xyg.theta_axis(
         unit="degrees",
         sector=(-120.0, 120.0),
         zero="N",
         direction="clockwise",
         show=False,
     ),
-    xy.r_axis(domain=(0.0, 1.0), show=False),
+    xyg.r_axis(domain=(0.0, 1.0), show=False),
     padding=(18, 18, 36, 18),
 )
 ~~~
@@ -671,7 +671,7 @@ stable caption or legend band can be reserved without shifting the arc.
 
 ## Angular Convention
 
-Use `xy.theta_axis(unit="degrees")` when positions and widths are expressed in
+Use `xyg.theta_axis(unit="degrees")` when positions and widths are expressed in
 degrees. Add `zero="N", direction="clockwise"` for compass bearings. With the
 default radian axis, both the center angles and widths must be radians.
 
@@ -681,7 +681,7 @@ own bounding box.
 
 ## Interaction and Export
 
-All live blocks on this page set `xy.modebar(show=False)` to keep the
+All live blocks on this page set `xyg.modebar(show=False)` to keep the
 presentation quiet. Sector hover and browser/static exports remain available
 through the shared polar renderer.
 
@@ -691,7 +691,7 @@ zooming crops the sectors rather than revealing detail. With no gesture able to
 move the view, reset has nothing to restore either: unless `reset_axes` is
 authored, double-click is inert and the reset controls drop out of the modebar. An
 authored `reset_axes` grants both back on its own, whatever the zoom switch says.
-Add `xy.interaction_config(zoom=True)` to turn radial zoom (and reset) on when the
+Add `xyg.interaction_config(zoom=True)` to turn radial zoom (and reset) on when the
 sector lengths are worth magnifying — see
 [why zoom is off by default](/docs/xy/charts/polar-chart/#why-zoom-is-off-by-default).
 

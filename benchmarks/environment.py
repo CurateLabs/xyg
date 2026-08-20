@@ -103,7 +103,7 @@ def _package_versions(package_names: Iterable[str]) -> dict[str, str | None]:
 
 def _xy_backend() -> str | None:
     try:
-        import xy.kernels as kernels
+        import xyg.kernels as kernels
     except Exception:
         return None
     return str(getattr(kernels, "BACKEND", None))

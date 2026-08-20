@@ -93,7 +93,7 @@ def test_component_api_is_present_in_every_agent_markdown_export() -> None:
     pages = {page.route: page for page in discover_docs(DOCS_CONFIG)}
     page = pages["/components/axes/"]
     component_paths = component_api_paths(page.metadata)
-    assert component_paths == ("xy.x_axis", "xy.y_axis")
+    assert component_paths == ("xyg.x_axis", "xyg.y_axis")
 
     page_markdown = page_markdown_with_api_reference(page)
     published_assets = dict(XyDocsMarkdownPlugin(docs=DOCS_CONFIG).get_static_assets())

@@ -85,7 +85,7 @@ Documented soft ceiling: `IntervalIndex::MAX_ROWS = 50_000_000`.
 
 ## Host surfaces
 
-- Python: `xy._native.temporal_column_*` / `temporal_interval_*` /
+- Python: `xyg._native.temporal_column_*` / `temporal_interval_*` /
   `temporal_events_in_range` (ctypes over the same cdylib).
 - Node: `packages/xy-node/src/abi.js` `temporalColumn*` /
   `temporalInterval*` / `temporalEventsInRange` (koffi).

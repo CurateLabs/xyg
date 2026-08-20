@@ -1,8 +1,8 @@
 ---
 title: Radar Charts in Python
-description: Create filled or outlined radar and spider charts in Python with xy. Compare several measurements across a shared set of categories.
+description: Create filled or outlined radar and spider charts in Python with xyg. Compare several measurements across a shared set of categories.
 components:
-  - xy.radar_chart
+  - xyg.radar_chart
 ---
 
 # Radar Charts in Python
@@ -28,29 +28,29 @@ series. Each mark supplies exactly one value per category:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 capabilities = ["Speed", "Range", "Payload", "Efficiency", "Comfort"]
 
-radar = xy.radar_chart(
+radar = xyg.radar_chart(
     capabilities,
-    xy.area(
+    xyg.area(
         [0.92, 0.70, 0.58, 0.82, 0.64],
         name="Model A",
         color="#6e56cf",
         line_color="#6e56cf",
         opacity=0.28,
     ),
-    xy.area(
+    xyg.area(
         [0.68, 0.88, 0.76, 0.61, 0.86],
         name="Model B",
         color="#2563eb",
         line_color="#2563eb",
         opacity=0.24,
     ),
-    xy.theta_axis(grid_shape="linear"),
-    xy.r_axis(domain=(0.0, 1.0)),
-    xy.legend(loc="right"),
+    xyg.theta_axis(grid_shape="linear"),
+    xyg.r_axis(domain=(0.0, 1.0)),
+    xyg.legend(loc="right"),
     title="Vehicle comparison",
 )
 
@@ -65,17 +65,17 @@ value at the end of a series.
 
 ## Choose Filled Areas or Outlines
 
-Use `xy.area(values)` for a filled profile or `xy.line(values)` for an outline.
+Use `xyg.area(values)` for a filled profile or `xyg.line(values)` for an outline.
 When an existing composition already uses area marks, set `fill=False` on the
 chart to turn every area into an outline without rewriting the series:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-outline = xy.radar_chart(
+outline = xyg.radar_chart(
     ["Reliability", "Speed", "Efficiency", "Comfort"],
-    xy.area(
+    xyg.area(
         [0.90, 0.72, 0.84, 0.66],
         name="Current",
         color="#8b5cf6",
@@ -83,7 +83,7 @@ outline = xy.radar_chart(
         line_width=3,
         line_opacity=0.8,
     ),
-    xy.area(
+    xyg.area(
         [0.78, 0.88, 0.71, 0.81],
         name="Candidate",
         color="#38bdf8",
@@ -91,9 +91,9 @@ outline = xy.radar_chart(
         line_width=3,
         line_opacity=0.8,
     ),
-    xy.theta_axis(grid_shape="linear"),
-    xy.r_axis(domain=(0.0, 1.0)),
-    xy.legend(loc="right"),
+    xyg.theta_axis(grid_shape="linear"),
+    xyg.r_axis(domain=(0.0, 1.0)),
+    xyg.legend(loc="right"),
     fill=False,
     title="Outline comparison",
 )
@@ -108,7 +108,7 @@ When `fill=False` rebuilds an area as a line, the outline inherits
 `line_color` is omitted, it falls back to the area's `color`.
 
 Filled profiles work best with some transparency so overlapping series remain
-readable. Give each series a `name` and add `xy.legend()` when the chart
+readable. Give each series a `name` and add `xyg.legend()` when the chart
 contains more than one profile.
 
 ## Follow the Radar Data Contract
@@ -126,12 +126,12 @@ dropping a dimension or drawing a malformed polygon.
 
 ## Configure the Scale
 
-Add `xy.r_axis(domain=(minimum, maximum))` when several charts need a common
+Add `xyg.r_axis(domain=(minimum, maximum))` when several charts need a common
 comparison scale. The default radial range begins at zero and extends to the
 largest value. Use `tick_values=` for exact rings and `label=` when the score
 has a named unit.
 
-The category list owns the theta labels. An authored `xy.theta_axis()` can
+The category list owns the theta labels. An authored `xyg.theta_axis()` can
 customize their style; `grid_shape="linear"` joins the spokes into polygonal
 rings, as in the live example. General `polar_chart()` compositions also
 accept category strings directly. `radar_chart()` additionally validates that
@@ -140,41 +140,41 @@ each series matches the shared category count and closes profiles for you.
 ## Compare Three Profiles on a Fixed Scale
 
 Overlay one mark per candidate, pin the radial domain and its rings with
-`xy.r_axis()`, and rotate the first category to the top with `xy.theta_axis()`
+`xyg.r_axis()`, and rotate the first category to the top with `xyg.theta_axis()`
 so repeated benchmarks stay directly comparable:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 benchmark_axes = ["Latency", "Throughput", "Accuracy", "Cost", "Memory", "Setup"]
 
-radar_scaled = xy.radar_chart(
+radar_scaled = xyg.radar_chart(
     benchmark_axes,
-    xy.area(
+    xyg.area(
         [78, 92, 88, 61, 74, 95],
         name="Engine A",
         color="#6e56cf",
         line_color="#6e56cf",
         opacity=0.25,
     ),
-    xy.area(
+    xyg.area(
         [64, 55, 90, 72, 58, 80],
         name="Engine B",
         color="#2563eb",
         line_color="#2563eb",
         opacity=0.22,
     ),
-    xy.area(
+    xyg.area(
         [52, 48, 76, 88, 83, 66],
         name="Engine C",
         color="#f97316",
         line_color="#f97316",
         opacity=0.22,
     ),
-    xy.theta_axis(grid_shape="linear", zero="N", direction="clockwise"),
-    xy.r_axis(domain=(0.0, 100.0), tick_values=[25, 50, 75, 100], label="score"),
-    xy.legend(loc="right", title="Engine"),
+    xyg.theta_axis(grid_shape="linear", zero="N", direction="clockwise"),
+    xyg.r_axis(domain=(0.0, 100.0), tick_values=[25, 50, 75, 100], label="score"),
+    xyg.legend(loc="right", title="Engine"),
     title="Benchmark profile (0-100)",
 )
 
@@ -192,7 +192,7 @@ geometry.
 
 A radar profile is read against a fixed frame of spokes, and zoom scales the
 outer ring about a fixed center, so it crops that frame instead of magnifying the
-comparison. Add `xy.interaction_config(zoom=True)` (or `zoom=True` on the chart)
+comparison. Add `xyg.interaction_config(zoom=True)` (or `zoom=True` on the chart)
 to enable radial-only zoom when the shared scale is worth magnifying; reset comes
 with it, since only then does a gesture exist to undo. An explicit `reset_axes`
 grants reset by itself for a chart driven from application state.
@@ -219,14 +219,14 @@ radii.
 
 ### How do I build a spider chart in Python?
 
-Call `xy.radar_chart(categories, ...)` with one `xy.area()` or `xy.line()` mark
+Call `xyg.radar_chart(categories, ...)` with one `xyg.area()` or `xyg.line()` mark
 per series and render it:
 
 ~~~python
-spider = xy.radar_chart(
+spider = xyg.radar_chart(
     ["Speed", "Range", "Payload", "Efficiency"],
-    xy.area([0.9, 0.7, 0.6, 0.8], name="Model A", color="#6e56cf"),
-    xy.legend(),
+    xyg.area([0.9, 0.7, 0.6, 0.8], name="Model A", color="#6e56cf"),
+    xyg.legend(),
 )
 ~~~
 
@@ -235,8 +235,8 @@ math and no repeated closing value.
 
 ### How do I draw an unfilled spider chart?
 
-Use `xy.line(values)` for each series, or pass `fill=False` to
-`xy.radar_chart()` when the children are area marks.
+Use `xyg.line(values)` for each series, or pass `fill=False` to
+`xyg.radar_chart()` when the children are area marks.
 
 ### Why does my radar chart raise a value-count error?
 

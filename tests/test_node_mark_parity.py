@@ -27,9 +27,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from xy import _native, kernels
-from xy.config import DECIMATION_THRESHOLD, PROTOCOL_VERSION
-from xy.lod import encode_f32_values
+from xyg import _native, kernels
+from xyg.config import DECIMATION_THRESHOLD, PROTOCOL_VERSION
+from xyg.lod import encode_f32_values
 
 ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "mark_parity_golden.mjs"

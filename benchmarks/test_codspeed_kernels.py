@@ -15,11 +15,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _native
-from xy import channels as ch
-from xy import kernels as k
-from xy._figure import Figure  # harness type annotations only
+import xyg as xy
+from xyg import _native
+from xyg import channels as ch
+from xyg import kernels as k
+from xyg._figure import Figure  # harness type annotations only
 
 # Small/medium/large sizes keep CodSpeed honest across normal dashboard charts,
 # exact WebGL workloads, and screen-bounded large-data paths without turning it

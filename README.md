@@ -60,9 +60,9 @@ A chart is a container plus the marks inside it. Any sequence works; NumPy is
 optional.
 
 ```python
-import xy
+import xyg
 
-chart = xy.line_chart(xy.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]))
+chart = xyg.line_chart(xyg.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]))
 # chart.to_html("chart.html")
 # chart.to_png("chart.png")
 # chart.to_svg("chart.svg")
@@ -81,7 +81,7 @@ The same API scales to a hundred million points as a density surface:
 ```python
 import numpy as np
 
-import xy
+import xyg
 
 rng = np.random.default_rng(7)
 n = 100_000_000
@@ -89,8 +89,8 @@ n = 100_000_000
 r = 6.0 * rng.beta(1.2, 3.0, n)
 theta = 2.9 * np.log1p(r) + rng.integers(0, 4, n) * (np.pi / 2) + rng.normal(0, 0.045 + 0.016 * r, n)
 
-chart = xy.scatter_chart(
-    xy.scatter(
+chart = xyg.scatter_chart(
+    xyg.scatter(
         r * np.cos(theta),
         r * np.sin(theta),
         color=np.exp(-r / 2.2),
@@ -102,7 +102,7 @@ chart = xy.scatter_chart(
         zoom_size_factor=2.6,
         zoom_opacity=0.95,
     ),
-    xy.theme(
+    xyg.theme(
         background="#ffffff", plot_background="#ffffff", grid_color="#e6e6e1",
         axis_color="#c3c2b7", text_color="#0b0b0b",
     ),
@@ -117,7 +117,7 @@ For common pyplot workflows, change the import and keep the plotting code:
 
 ```python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(0, 10, 200)
 fig, ax = plt.subplots()
@@ -143,8 +143,8 @@ Use Python to control the chart, from marks and axes to interactions and layout.
   themes.
 
 ```python
-chart = xy.line_chart(
-    xy.line(x, y, color="#7c3aed", width=3),
+chart = xyg.line_chart(
+    xyg.line(x, y, color="#7c3aed", width=3),
     class_name="rounded-xl bg-white",
     class_names={"tooltip": "rounded-lg bg-zinc-900 text-white"},
 )
@@ -241,10 +241,10 @@ Then add a chart anywhere in the component tree:
 ```python
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
-signups = xy.line_chart(
-    xy.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]),
+signups = xyg.line_chart(
+    xyg.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]),
     title="Weekly signups",
 )
 
@@ -311,8 +311,8 @@ next, no dates implied:
 - **Categorical distributions:** strip, swarm, beeswarm, boxen, rug
 - **Regression diagnostics:** trendline, residual, QQ, PP
 - **Scatter matrix and joint plots:** SPLOM, pair grid, marginal histograms
-- **Pie / donut:** `xy.pie_chart(labels, values, hole=...)` ships over
-  unequal-width core polar bars, with Matplotlib-shaped helpers in `xy.pyplot`;
+- **Pie / donut:** `xyg.pie_chart(labels, values, hole=...)` ships over
+  unequal-width core polar bars, with Matplotlib-shaped helpers in `xyg.pyplot`;
   nested donuts and variable-radius composition remain
 - **Candlestick / OHLC and finance overlays:** SMA, VWAP, Bollinger, RSI, MACD; prototyped, awaiting a fresh landing
 - **Waterfall and funnel**

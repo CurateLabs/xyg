@@ -3,8 +3,8 @@
 Matplotlib 3.11's `axes.titleweight`, `axes.labelweight` and `font.weight` all
 default to `normal`, and its legend titles and colorbar labels are normal too.
 So every xy chrome text default is 400, and the three renderers — the browser
-render client (`js/src/`), the SVG exporter (`python/xy/_svg.py`) and the native
-raster exporter (`python/xy/_raster.py`) — must agree on it. A renderer that
+render client (`js/src/`), the SVG exporter (`python/xyg/_svg.py`) and the native
+raster exporter (`python/xyg/_raster.py`) — must agree on it. A renderer that
 quietly drifts heavier is the bug these tests exist to catch.
 
 The TypeScript source guard is a source-level assertion on purpose: the render
@@ -20,13 +20,13 @@ from pathlib import Path
 
 import pytest
 
-import xy
-from xy import _raster
+import xyg as xy
+from xyg import _raster
 
 _ROOT = Path(__file__).resolve().parents[1]
 _JS = _ROOT / "js" / "src"
 
-# Native text-record header sizes, from `_Cmd.text` in python/xy/_raster.py.
+# Native text-record header sizes, from `_Cmd.text` in python/xyg/_raster.py.
 # Both records end with `u32 byte_length` + UTF-8 payload, so a unique payload
 # is an unambiguous anchor to walk back from.
 #   _TEXT_OP     : op(1) x(4) y(4) anchor(1) size(4) rgba(4) len(4)      = 22

@@ -92,7 +92,7 @@ class Affine2D:
 
     def __add__(self, other: Any) -> "Affine2D":
         if not isinstance(other, Affine2D):
-            raise TypeError("xy.pyplot only composes affine transforms with affine transforms")
+            raise TypeError("xyg.pyplot only composes affine transforms with affine transforms")
         return Affine2D(other._matrix @ self._matrix, coordinate_space=other.coordinate_space)
 
 

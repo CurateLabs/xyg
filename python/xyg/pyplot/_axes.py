@@ -25,7 +25,7 @@ from typing import Any, Literal, Optional
 
 import numpy as np
 
-import xy
+import xyg as xy
 
 from .. import _textblock
 from .._typing import ArrayLike, ColorLike, ColorsLike, LimitsLike, Scalar
@@ -461,7 +461,7 @@ def _heatmap_span(entry: dict[str, Any], axis: str) -> Optional[np.ndarray]:
     beyond the first and last center, which is what recovers the original
     ``hist2d`` bin edges from its centers.
     """
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
     args = entry.get("args", ())
     if not args:
@@ -499,7 +499,7 @@ def _box_spans(entry: dict[str, Any], axis: str) -> Iterator[np.ndarray]:
     Matplotlib's ``manage_ticks=True`` contract, which reserves position +/-
     0.5 regardless of the drawn box width.
     """
-    from xy.marks import _distribution_stats
+    from xyg.marks import _distribution_stats
 
     args = entry.get("args", ())
     if not args:
@@ -848,7 +848,7 @@ class SecondaryAxis:
             if not np.isfinite(value):
                 raise ValueError("secondary axis location must be finite")
             raise NotImplementedError(
-                "xy.pyplot secondary axes currently support named edge locations only"
+                "xyg.pyplot secondary axes currently support named edge locations only"
             )
         if functions is None:
             self._forward = self._inverse = lambda values: np.asarray(values, dtype=float)
@@ -1293,7 +1293,7 @@ def _rings_are_nested(outline: list[np.ndarray]) -> bool:
     the intersection unpainted, which errs on the side of painting what each
     ring alone would have painted.
     """
-    from xy import kernels
+    from xyg import kernels
 
     if len(outline) < 2:
         return False
@@ -1999,7 +1999,7 @@ class Axes(PlotTypeMixin):
             has_gaps = finite_pairs is not None and not bool(np.all(finite_pairs))
             if not has_gaps:
                 finite_pairs = None
-            from xy import kernels
+            from xyg import kernels
 
             # Native sortedness instead of an astype copy + diff + compare —
             # this runs on every plot() call, and O(n) temporaries here are
@@ -2617,7 +2617,7 @@ class Axes(PlotTypeMixin):
             # so a native NaN-skipping min/max scan replaces the filtered
             # concatenated copy. numpy applies its own defaults/expansion to
             # the range exactly as it would to data-derived outer edges.
-            from xy import kernels
+            from xyg import kernels
 
             if range is None:
                 spans = [span for span in map(kernels.min_max, datasets) if span is not None]
@@ -3336,7 +3336,7 @@ class Axes(PlotTypeMixin):
             rgba[..., 3] = np.where(mask, 0.0, rgba[..., 3])
             grid, truecolor = rgba, True
         if not truecolor and has_extremes:
-            from xy._svg import _lut
+            from xyg._svg import _lut
 
             finite = grid[np.isfinite(grid)]
             lo = float(vmin) if vmin is not None else float(finite.min())
@@ -3375,7 +3375,7 @@ class Axes(PlotTypeMixin):
                     grid = np.dstack((grid, np.ones(grid.shape[:2], dtype=float)))
                 grid[..., 3] *= alpha_array
             else:
-                from xy._svg import _lut
+                from xyg._svg import _lut
 
                 finite = grid[np.isfinite(grid)]
                 lo = float(vmin) if vmin is not None else float(finite.min())
@@ -3668,7 +3668,7 @@ class Axes(PlotTypeMixin):
             value is not None
             for value in (marker, marker_size, marker_face, marker_edge, marker_edge_width)
         ):
-            raise TypeError(f"xy.pyplot ax{kind}() does not accept line marker keywords")
+            raise TypeError(f"xyg.pyplot ax{kind}() does not accept line marker keywords")
         if kind == "hline":
             span_start = kwargs.pop("xmin", 0.0)
             span_end = kwargs.pop("xmax", 1.0)
@@ -4315,7 +4315,7 @@ class Axes(PlotTypeMixin):
         self._invalidate()
 
     def _axis_holds_datetimes(self, axis: str) -> bool:
-        from xy.components import _is_datetime_like
+        from xyg.components import _is_datetime_like
 
         key = "x" if axis == "x" else "y"
         return any(key in entry and _is_datetime_like(entry[key]) for entry in self._entries)
@@ -4345,7 +4345,7 @@ class Axes(PlotTypeMixin):
 
     def _iter_entry_arrays(self, axis: str) -> Iterator[tuple[np.ndarray, bool]]:
         """Yield each (array, needs_finite_filter) an entry contributes to *axis*."""
-        from xy.channels import category_label
+        from xyg.channels import category_label
 
         host = self._y2_of or self
         y_axis = "y2" if self._y2_of is not None else "y"
@@ -5370,11 +5370,11 @@ class Axes(PlotTypeMixin):
         elif len(args) == 2 and args[0] == "color":
             colors = args[1]
         elif len(args) > 0:
-            raise NotImplementedError("xy.pyplot set_prop_cycle() only supports color cycles")
+            raise NotImplementedError("xyg.pyplot set_prop_cycle() only supports color cycles")
         elif kwargs:
             unsupported = set(kwargs) - {"color"}
             if unsupported:
-                raise NotImplementedError("xy.pyplot set_prop_cycle() only supports color cycles")
+                raise NotImplementedError("xyg.pyplot set_prop_cycle() only supports color cycles")
             colors = kwargs.get("color")
         if colors is None:
             self._prop_cycle = None
@@ -5856,7 +5856,7 @@ class Axes(PlotTypeMixin):
                 label=getattr(patch, "get_label", lambda: None)(),
                 **({"color": color} if color is not None else {}),
             )
-        from xy import kernels
+        from xyg import kernels
 
         canvas = rc_figsize_px(self.figure._figsize, self.figure._dpi)
         outline = _patch_outline(patch, pixels=float(max(canvas)))
@@ -6760,7 +6760,7 @@ class Axes(PlotTypeMixin):
                 dtype=float,
             )
         # Auto-ticked axes report the same nice locations the exporters draw.
-        from xy._svg import _linear_ticks, _log_ticks
+        from xyg._svg import _linear_ticks, _log_ticks
 
         lo, hi = sorted(self.get_xlim() if axis == "x" else self.get_ylim())
         if not (np.isfinite(lo) and np.isfinite(hi)) or lo == hi:

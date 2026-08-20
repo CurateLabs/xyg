@@ -193,8 +193,8 @@ def make_cases(profile: str) -> tuple[list[Case], Any, Any]:
     matplotlib.use("Agg", force=True)
     import matplotlib.pyplot as matplotlib_plt
 
-    import xy.pyplot as xy_plt
-    from xy import kernels
+    import xyg.pyplot as xy_plt
+    from xyg import kernels
 
     if kernels.BACKEND != "native":
         raise SystemExit(f"benchmark requires xy native backend, got {kernels.BACKEND!r}")
@@ -381,7 +381,7 @@ def _compare(
         "png_size_ratio_matplotlib_over_xy": (
             matplotlib_row["output_bytes_median"] / xy_row["output_bytes_median"]
         ),
-        "winner_total": "xy.pyplot" if total_speedup >= 1.0 else "matplotlib",
+        "winner_total": "xyg.pyplot" if total_speedup >= 1.0 else "matplotlib",
         "xy_render_tier": xy_row.get("render_tier", "unknown"),
     }
 
@@ -399,37 +399,39 @@ def run(*, profile: str, reps: int, warmups: int, target_speedup: float = 10.0) 
 
     for case in cases:
         adapters = {
-            "xy.pyplot": Adapter("xy.pyplot", case.xy_build, _xy_render, xy_plt.close),
+            "xyg.pyplot": Adapter("xyg.pyplot", case.xy_build, _xy_render, xy_plt.close),
             "matplotlib": Adapter(
                 "matplotlib", case.matplotlib_build, _matplotlib_render, matplotlib_plt.close
             ),
         }
         for _ in range(warmups):
-            for library in ("xy.pyplot", "matplotlib"):
+            for library in ("xyg.pyplot", "matplotlib"):
                 _sample(adapters[library])
 
         samples: dict[str, list[dict[str, float | int]]] = {
-            "xy.pyplot": [],
+            "xyg.pyplot": [],
             "matplotlib": [],
         }
         latest_png: dict[str, bytes] = {}
         for repetition in range(reps):
             order = (
-                ("xy.pyplot", "matplotlib") if repetition % 2 == 0 else ("matplotlib", "xy.pyplot")
+                ("xyg.pyplot", "matplotlib")
+                if repetition % 2 == 0
+                else ("matplotlib", "xyg.pyplot")
             )
             for library in order:
                 sample, png = _sample(adapters[library])
                 samples[library].append(sample)
                 latest_png[library] = png
 
-        tier_fig = adapters["xy.pyplot"].build()
+        tier_fig = adapters["xyg.pyplot"].build()
         try:
             xy_tier = _xy_render_tier(tier_fig)
         finally:
-            adapters["xy.pyplot"].close(tier_fig)
+            adapters["xyg.pyplot"].close(tier_fig)
 
         case_rows: dict[str, dict[str, Any]] = {}
-        for library in ("xy.pyplot", "matplotlib"):
+        for library in ("xyg.pyplot", "matplotlib"):
             summary = _summary(samples[library])
             lit_pixels = _lit_pixels(latest_png[library])
             if lit_pixels < 1_000:
@@ -444,7 +446,7 @@ def run(*, profile: str, reps: int, warmups: int, target_speedup: float = 10.0) 
                 "library": library,
                 "status": "ok",
                 "render_target": "png",
-                "mode": "native-raster" if library == "xy.pyplot" else "agg",
+                "mode": "native-raster" if library == "xyg.pyplot" else "agg",
                 "oracle_status": "pass",
                 "oracle_kind": "same-pixel-dimensions-and-nonblank",
                 "png_width": PNG_W,
@@ -454,14 +456,14 @@ def run(*, profile: str, reps: int, warmups: int, target_speedup: float = 10.0) 
                 "samples": samples[library],
                 **summary,
             }
-            if library == "xy.pyplot":
+            if library == "xyg.pyplot":
                 row["render_tier"] = xy_tier
             rows.append(row)
             case_rows[library] = row
         comparisons.append(
             _compare(
                 case,
-                case_rows["xy.pyplot"],
+                case_rows["xyg.pyplot"],
                 case_rows["matplotlib"],
                 target_speedup=target_speedup,
             )
@@ -519,7 +521,7 @@ def to_markdown(report: dict[str, Any]) -> str:
     ]
     for comparison in report["comparisons"]:
         key = (comparison["family"], comparison["case"])
-        xy_row = rows[(*key, "xy.pyplot")]
+        xy_row = rows[(*key, "xyg.pyplot")]
         mpl_row = rows[(*key, "matplotlib")]
         lines.append(
             "| {family} | {case} | {tier} | {xy_total} | {mpl_total} | {speedup} | {target} | {winner} | "

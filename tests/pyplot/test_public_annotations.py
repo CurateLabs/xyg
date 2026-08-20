@@ -10,9 +10,9 @@ from __future__ import annotations
 import inspect
 import typing
 
-import xy.pyplot as plt
-from xy import components
-from xy.pyplot import Line2D
+import xyg.pyplot as plt
+from xyg import components
+from xyg.pyplot import Line2D
 
 
 def test_every_exported_pyplot_callable_has_resolvable_annotations() -> None:

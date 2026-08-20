@@ -13,11 +13,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy.export as export_module
-from xy._figure import DECIMATION_THRESHOLD, PROTOCOL_VERSION, Figure
-from xy.columns import ColumnStore
-from xy.config import MAX_SCREEN_DIM
-from xy.export import _javascript_for_inline_script, _json_for_inline_script
+import xyg.export as export_module
+from xyg._figure import DECIMATION_THRESHOLD, PROTOCOL_VERSION, Figure
+from xyg.columns import ColumnStore
+from xyg.config import MAX_SCREEN_DIM
+from xyg.export import _javascript_for_inline_script, _json_for_inline_script
 
 
 def _payload_col(spec, blob, ref):
@@ -879,7 +879,7 @@ def test_heatmap_constant_values_auto_expands_domain():
 
 
 def test_heatmap_reuses_or_defers_grid_zone_scan(monkeypatch):
-    from xy import kernels
+    from xyg import kernels
 
     values = np.arange(600, dtype=np.float64).reshape(20, 30)
     values[0, 0] = np.nan
@@ -1442,7 +1442,7 @@ def test_column_store_dedup():
 
 
 def test_new_xy_columns_use_paired_zone_maps_and_preserve_dedup(monkeypatch):
-    from xy import kernels
+    from xyg import kernels
 
     real_pair = kernels.zone_maps_pair
     calls: list[int] = []
@@ -1462,7 +1462,7 @@ def test_new_xy_columns_use_paired_zone_maps_and_preserve_dedup(monkeypatch):
 
 
 def test_failed_xy_length_check_runs_before_zone_maps(monkeypatch):
-    from xy import kernels
+    from xyg import kernels
 
     def unexpected(*_args, **_kwargs):
         raise AssertionError("unequal columns must fail before statistics")
@@ -1651,7 +1651,7 @@ def test_decimate_view_rejects_invalid_windows_and_screen_width():
 
 
 def test_decimate_view_clamps_huge_frontend_pixel_width(monkeypatch):
-    from xy import interaction
+    from xyg import interaction
 
     n = DECIMATION_THRESHOLD * 3
     x = np.arange(n, dtype=np.float64)
@@ -1802,7 +1802,7 @@ def test_to_png_full_path(tmp_path):
     # End-to-end browser Figure.to_png: skip cleanly without a supported
     # installed browser (the mechanism is also covered dependency-free by the
     # PNG smoke).
-    from xy import export
+    from xyg import export
 
     browser = export.find_browser()
     if browser is None:
@@ -1820,7 +1820,7 @@ def test_to_png_full_path(tmp_path):
 
 
 def test_find_browser_checks_standard_macos_app_paths(monkeypatch):
-    from xy import export
+    from xyg import export
 
     chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     monkeypatch.delenv("XY_BROWSER", raising=False)
@@ -1833,7 +1833,7 @@ def test_find_browser_checks_standard_macos_app_paths(monkeypatch):
 
 
 def test_find_browser_explicit_missing_path_does_not_fall_back(monkeypatch):
-    from xy import export
+    from xyg import export
 
     monkeypatch.setattr(
         export.shutil,
@@ -1846,7 +1846,7 @@ def test_find_browser_explicit_missing_path_does_not_fall_back(monkeypatch):
 
 
 def test_find_browser_prefers_new_environment_variable(monkeypatch):
-    from xy import export
+    from xyg import export
 
     monkeypatch.setenv("XY_BROWSER", "/new/browser")
     monkeypatch.setenv("XY_CHROMIUM", "/legacy/browser")
@@ -1856,7 +1856,7 @@ def test_find_browser_prefers_new_environment_variable(monkeypatch):
 
 
 def test_find_browser_discovers_edge_on_path(monkeypatch):
-    from xy import export
+    from xyg import export
 
     monkeypatch.delenv("XY_BROWSER", raising=False)
     monkeypatch.delenv("XY_CHROMIUM", raising=False)
@@ -1871,7 +1871,7 @@ def test_find_browser_discovers_edge_on_path(monkeypatch):
 
 
 def test_default_engine_never_looks_for_a_browser(monkeypatch):
-    from xy import export
+    from xyg import export
 
     def fail_lookup(explicit=None):
         del explicit
@@ -1886,7 +1886,7 @@ def test_default_engine_never_looks_for_a_browser(monkeypatch):
 def test_to_png_missing_browser_is_clear(monkeypatch):
     # Browser mode never silently falls back to native. The default native
     # engine needs no installed browser at all.
-    from xy import export
+    from xyg import export
 
     monkeypatch.setattr(export, "find_browser", lambda explicit=None: None)
     fig = Figure(width=200, height=150).scatter(np.arange(5.0), np.arange(5.0))
@@ -1895,7 +1895,7 @@ def test_to_png_missing_browser_is_clear(monkeypatch):
 
 
 def test_to_png_string_engine_is_deprecated_alias(monkeypatch):
-    from xy import export
+    from xyg import export
 
     seen = {}
 
@@ -1913,7 +1913,7 @@ def test_to_png_string_engine_is_deprecated_alias(monkeypatch):
 
 
 def test_to_png_chromium_threads_custom_css_into_standalone_html(monkeypatch):
-    from xy import export
+    from xyg import export
 
     seen = {}
 
@@ -1932,7 +1932,7 @@ def test_to_png_chromium_threads_custom_css_into_standalone_html(monkeypatch):
 
 
 def test_to_png_native_rejects_browser_only_custom_css():
-    from xy import export
+    from xyg import export
 
     fig = Figure(width=200, height=150).line([0.0, 1.0], [1.0, 2.0])
     with pytest.raises(ValueError, match=r"custom_css requires engine=Engine.chromium"):
@@ -1940,7 +1940,7 @@ def test_to_png_native_rejects_browser_only_custom_css():
 
 
 def test_to_png_rejects_bad_export_geometry_before_browser_lookup(monkeypatch):
-    from xy import export
+    from xyg import export
 
     def fail_lookup(explicit=None):
         del explicit
@@ -1965,7 +1965,7 @@ def test_to_png_rejects_bad_export_geometry_before_browser_lookup(monkeypatch):
 
 
 def test_html_to_png_rejects_bad_mechanism_options_before_browser_lookup(monkeypatch):
-    from xy import export
+    from xyg import export
 
     def fail_lookup(explicit=None):
         del explicit
@@ -1987,7 +1987,7 @@ def test_html_to_png_rejects_bad_mechanism_options_before_browser_lookup(monkeyp
 
 
 def test_html_to_png_uses_browser_sandbox_by_default(monkeypatch):
-    from xy import export
+    from xyg import export
 
     seen = []
 
@@ -2012,7 +2012,7 @@ def test_html_to_png_uses_browser_sandbox_by_default(monkeypatch):
 
 
 def test_html_to_png_retries_without_sandbox_when_browser_crashes(monkeypatch):
-    from xy import export
+    from xyg import export
 
     seen = []
 

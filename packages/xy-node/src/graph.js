@@ -2,7 +2,7 @@
  * Graph host composition — normalize ids → dense u64, layout + render-graph
  * via the shared ABI, emit node positions / edge segment endpoints / meta.
  *
- * Mirrors python/xy/_graph.py + the segments/scatter emit in marks.graph().
+ * Mirrors python/xyg/_graph.py + the segments/scatter emit in marks.graph().
  * Layout, LOD, and encode decisions stay in Rust (host-parity.md).
  */
 

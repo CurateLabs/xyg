@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import kernels
-from xy.marks import _distribution_stats
+from xyg import kernels
+from xyg.marks import _distribution_stats
 
 
 def _legacy_distribution_stats(group: np.ndarray):

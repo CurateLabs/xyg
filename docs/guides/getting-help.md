@@ -33,15 +33,15 @@ python - <<'PY'
 import platform
 import sys
 
-import xy
+import xyg
 
-print("xy:", xy.__version__)
+print("xy:", xyg.__version__)
 print("python:", sys.version.replace("\n", " "))
 print("platform:", platform.platform())
 print("machine:", platform.machine())
 
 try:
-    import xy.kernels as kernels
+    import xyg.kernels as kernels
 
     print("backend:", kernels.BACKEND)
 except Exception as error:
@@ -61,10 +61,10 @@ not a version and can refer to different code by the time someone investigates.
 Remove application code until the failure still occurs with a small chart:
 
 ~~~python
-import xy
+import xyg
 
-chart = xy.scatter_chart(
-    xy.scatter([1, 2, 3], [3, 5, 4]),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2, 3], [3, 5, 4]),
     width=640,
     height=360,
 )
@@ -97,7 +97,7 @@ values in the issue body; an image alone cannot be executed or searched.
 The source documentation can describe work that has not reached the installed
 wheel. Before reporting an unknown argument or missing method:
 
-1. Print `xy.__version__` from the failing environment.
+1. Print `xyg.__version__` from the failing environment.
 2. Check the [Changelog](/docs/xy/api-reference/changelog/) and the release or
    commit from which the docs were built.
 3. Reproduce against the version you actually intend to deploy.

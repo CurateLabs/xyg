@@ -19,7 +19,7 @@ bubble and wind-rose charts are composed. Neither ships a "radar renderer".
 
 So `xy` adds a coordinate system and lets the existing mark registry render
 through it. `MARK_KINDS` (`js/src/55_marks.ts`) gains no entries, and no
-`_emit_<K>` in `python/xy/_payload.py` is rewritten. This follows the standing
+`_emit_<K>` in `python/xyg/_payload.py` is rewritten. This follows the standing
 rule in [`../api/chart-kind-contract.md`](../api/chart-kind-contract.md):
 organize by primitive, not by chart name.
 
@@ -183,7 +183,7 @@ xyAxisCoord(...)          →  apply the scale (log / symlog / linear)
 ```
 
 and in Python, `_Scale.coord()` then `_Scale.__call__()` in
-`python/xy/_svg.py` do the same two steps.
+`python/xyg/_svg.py` do the same two steps.
 
 **Polar replaces only the last step**, and replaces it with a *joint* map over
 both axes. Decode and scale are untouched. After `xyAxisCoord` yields θ and r
@@ -271,7 +271,7 @@ Three consumers must agree with that file:
    transform test.
 
 This is deliberately stronger than the existing tick-math arrangement, where
-`js/src/30_ticks.ts` and its hand port in `python/xy/_svg.py` are bound by
+`js/src/30_ticks.ts` and its hand port in `python/xyg/_svg.py` are bound by
 nothing executable. Polar does not repeat that gap.
 
 ## 5. Chord versus arc
@@ -407,7 +407,7 @@ are DOM `<div>`s with a background colour**, which can express a rectangle and
 nothing else. The polar frame circle and its radial ticks therefore move to the
 2D chrome canvas.
 
-### Exporters (`python/xy/_svg.py`, `python/xy/_raster.py`)
+### Exporters (`python/xyg/_svg.py`, `python/xyg/_raster.py`)
 
 The raster exporter imports ~45 symbols from `_svg` — including `_Scale`,
 `_axis_scales`, `layout` and `axis_ticks` — precisely so the two static outputs
@@ -438,14 +438,14 @@ grid blits will silently project through a straight-line map.
 
 **Legal under `coords="polar"`:** `line`, `scatter`, `area`, `bar`, `column`,
 `heatmap`, `contour`, and `errorbar` (`POLAR_MARK_KINDS`,
-`python/xy/config.py`).
+`python/xyg/config.py`).
 
 `area` uses chord-bounded fill geometry, which supports the categorical
-composition built by `xy.radar_chart(...)`. Each radar series closes at a full
+composition built by `xyg.radar_chart(...)`. Each radar series closes at a full
 turn rather than by repeating its first angle, which would sweep the closing
 segment backwards through the circle. `bar` and `column` use annular sectors;
-`xy.polar_bar_chart(...)` makes that composition explicit, and
-`xy.wind_rose(...)` bins directional observations into stacked sector marks
+`xyg.polar_bar_chart(...)` makes that composition explicit, and
+`xyg.wind_rose(...)` bins directional observations into stacked sector marks
 using compass convention `zero="N"` plus clockwise angles — sector ×
 speed-band counts come from `xy_wind_rose_bins` in the native core; the host
 only assembles polar bars. The client subdivides
@@ -470,10 +470,10 @@ the dossier requires that such a decision ship as a recorded refusal rather
 than a silent approximation.
 
 On top of the mark kinds, three compositions are public API rather than
-renderers: `xy.radar_chart(categories, ...)` (evenly spaced spokes labelled
+renderers: `xyg.radar_chart(categories, ...)` (evenly spaced spokes labelled
 with the categories; each series closed at a **full turn**, never by repeating
 the first angle, which would sweep the closing segment backwards through the
-whole circle), `xy.polar_bar_chart(...)`, and `xy.wind_rose(directions,
+whole circle), `xyg.polar_bar_chart(...)`, and `xyg.wind_rose(directions,
 speeds)` (Python-side binning like `hist`, stacked bars, compass convention
 `zero="N"` + clockwise).
 
@@ -553,7 +553,7 @@ modebar reset remains available.
   `zoom=True`: its radius is a frequency count, so scaling the outer ring
   against a pinned zero magnifies the short sectors of a rose dominated by one
   prevailing direction. Any author opts in or out the same way, with
-  `xy.interaction_config(zoom=True)` or a `zoom=` chart prop.
+  `xyg.interaction_config(zoom=True)` or a `zoom=` chart prop.
 
   The decision is made in Python (`Figure._interaction_spec`) rather than
   inferred by the renderers, for a reason that is structural: `Chart.kind` never
@@ -621,7 +621,7 @@ The Plotly-parity and axis-depth increments are shipped:
 | pyplot `projection="polar"` | Factories plus theta/r controls and the allowlisted mark families route into the same core polar figure. |
 | Angular tick text | `theta_axis(format=...)` wins over the built-in degree/radian text in all three renderers. It used to lose — the angular branch ran first and overwrote the authored spec — so a `format=` on a polar angular axis was accepted and ignored. Authored `tick_labels` still win over both, and a categorical θ axis keeps its category names. |
 | Legend beside the disc | A polar figure with a legend reserves a gutter and places the legend in it (§3, layout). Zero-width wedges are legal at the mark layer, so a 0% pie/gauge slice draws nothing instead of raising. |
-| Radial zoom default | `coords="polar"` ships `zoom=False` and no zoom/reset modebar controls; `wind_rose` (radius = a count) ships `zoom=True`. `xy.interaction_config(zoom=…)` or a `zoom=` chart prop overrides either direction, and an authored `reset_axes` grants reset on its own. §8. |
+| Radial zoom default | `coords="polar"` ships `zoom=False` and no zoom/reset modebar controls; `wind_rose` (radius = a count) ships `zoom=True`. `xyg.interaction_config(zoom=…)` or a `zoom=` chart prop overrides either direction, and an authored `reset_axes` grants reset on its own. §8. |
 | Polar `default_drag_action` | Only `"auto"`/`"none"` are accepted; `"pan"`, `"zoom"`, and `select*` raise, because polar resolves `pan_axes` to `[]` and forces `box_zoom`/`select`/`brush` off, leaving no drag tool for them to name. §8. |
 
 The remaining work stays explicitly disabled or direct-only:
@@ -633,13 +633,13 @@ The remaining work stays explicitly disabled or direct-only:
 | Non-linear θ scale | The angle must be linear. `theta_axis(type_="log"/"symlog")` was accepted and honoured by exactly one renderer — the client scaled θ before projecting while the static exporters ignored the scale outright — so one figure pointed the same datum at opposite sides of the disc depending on where it was drawn. A log or symlog **radial** scale is supported (§3) and unaffected. |
 | `reverse` on the angular axis | The Cartesian flip switch has no polar meaning; the angular axis spells direction of travel as `theta_axis(direction=...)`. `reverse=True` rode the wire and every renderer ignored it, so payload build rejects it. `r_axis(reverse=True)` is honoured. |
 | Time angular axis | An instant has no angle. Datetime theta was pinned to a fixed 0..2pi range regardless of the data, so consecutive days wrapped the disc billions of times under radian spoke labels. Payload build refuses on the *resolved* column kind, not just a declared `type_="time"`. A time **radial** axis is supported, and autoranges per §2.1 rather than from epoch zero. |
-| Minor ticks (`minor_tick_values`, `minor_style`) | Neither axis draws minor rings or minor spokes: the client skips the whole minor pass under polar (`!hideX && !polarGeom`) and so do both exporters (`if polar is not None: break`). The values and their style rode the wire and were dropped by all three. `xy.theta_axis`/`xy.r_axis` refuse them and point at `tick_values`. Finer rings are real geometry work, not a formatting toggle. |
+| Minor ticks (`minor_tick_values`, `minor_style`) | Neither axis draws minor rings or minor spokes: the client skips the whole minor pass under polar (`!hideX && !polarGeom`) and so do both exporters (`if polar is not None: break`). The values and their style rode the wire and were dropped by all three. `xyg.theta_axis`/`xyg.r_axis` refuse them and point at `tick_values`. Finer rings are real geometry work, not a formatting toggle. |
 | Rim label collision controls (`tick_label_min_gap`, `tick_label_strategy` in `auto`/`hide`/`rotate`/`stagger`/`preserve`) | The collision pass is edge-relative — it thins a ladder of labels along one side — and a rim has no side. Angular labels ring the disc and radial labels are stride-thinned to what the `POLAR_RLABEL_DEG` spoke holds, so a minimum gap and a collision strategy had nothing to feed. Refused; `off` (hide the labels) and `none` (hide the axis) are honoured, and `tick_count`/`tick_values` remain the deliberate way to thin. |
 | `tick_label_anchor` | Polar labels anchor radially: outward around the rim, outward along the label spoke. An edge-relative anchor had nothing to act on. Refused; `tick_label_angle` rotates the text and is honoured. |
 
 The four rows above are refused **on the documented polar surface**
-(`xy.theta_axis` / `xy.r_axis`), not at payload build, and that placement is
-deliberate. `xy.pyplot`'s polar projection assembles its axis out of a property
+(`xyg.theta_axis` / `xyg.r_axis`), not at payload build, and that placement is
+deliberate. `xyg.pyplot`'s polar projection assembles its axis out of a property
 bag it does not fully own: every Axes carries an rcParam-derived `minor_style`,
 and `minorticks_on()` / `tick_params(ha=)` add more. Refusing at payload build
 would turn `projection="polar"` into an error over defaults nobody authored, so

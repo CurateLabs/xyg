@@ -1367,7 +1367,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "uv pip install --no-cache",
         '"reflex>=0.9.6"',
         "import reflex_xy",
-        "import xy.kernels as kernels",
+        "import xyg.kernels as kernels",
         'kernels.BACKEND == "native"',
     )
     _require_step_contains(
@@ -1634,7 +1634,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "uv pip install --no-cache",
         '"reflex>=0.9.6"',
         "import reflex_xy",
-        "import xy.kernels as kernels",
+        "import xyg.kernels as kernels",
         'kernels.BACKEND == "native"',
     )
     _require_step_contains(

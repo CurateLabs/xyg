@@ -16,20 +16,20 @@ and overlays; this one defines the public API shape and styling contract.
 XY should expose a small framework-agnostic component model:
 
 ```python
-import xy
+import xyg
 
-chart = xy.chart(
-    xy.scatter(
+chart = xyg.chart(
+    xyg.scatter(
         x="feature_a",
         y="feature_b",
         color="segment",
         data=df,
         opacity=0.7,
     ),
-    xy.line(x=fit_x, y=fit_y, color="var(--brand-accent)", width=2),
-    xy.x_axis(label="feature A"),
-    xy.y_axis(label="feature B"),
-    xy.legend(),
+    xyg.line(x=fit_x, y=fit_y, color="var(--brand-accent)", width=2),
+    xyg.x_axis(label="feature A"),
+    xyg.y_axis(label="feature B"),
+    xyg.legend(),
     title="Customer clusters",
     width="100%",
     height=420,
@@ -51,7 +51,7 @@ html = chart.to_html()       # standalone HTML
 chart.to_html("chart.html")  # shareable file
 chart._repr_html_()          # standalone HTML repr fallback
 chart.to_png("chart.png")    # fast browser-free native PNG
-chart.to_png("browser.png", engine=xy.Engine.chromium)  # browser CSS/WebGL fidelity
+chart.to_png("browser.png", engine=xyg.Engine.chromium)  # browser CSS/WebGL fidelity
 ```
 
 The tree is not a Reflex tree. It is a pure XY Python object graph that
@@ -59,7 +59,7 @@ can be rendered by notebooks, static HTML export, and future adapters:
 
 ```mermaid
 flowchart LR
-  USER["Python API<br/>xy.chart(...children)"]
+  USER["Python API<br/>xyg.chart(...children)"]
   TREE["Framework-free<br/>component tree"]
   FIG["Internal figure compiler<br/>ColumnStore + traces"]
   SPEC["Wire spec + buffers"]
@@ -103,8 +103,8 @@ sources of state and composition semantics.
 - **Declarative by default.** Component construction records intent. Rendering
   happens when the user calls `.show()`, `widget()`, `to_html(...)`,
   `to_png(...)`, or when an adapter mounts it.
-- **One chart vocabulary.** Every mark factory (`xy.scatter(...)`,
-  `xy.line(...)`, ...) resolves to the single mark implementation in
+- **One chart vocabulary.** Every mark factory (`xyg.scatter(...)`,
+  `xyg.line(...)`, ...) resolves to the single mark implementation in
   `marks.py`, so mark names, channel names, defaults, and validation rules
   cannot fork.
 - **CSS vocabulary styles chrome and marks.** DOM chrome receives the normal
@@ -124,12 +124,12 @@ sources of state and composition semantics.
 Every public node is a plain Python object with `props` and `children`.
 
 ```python
-xy.chart(
-    xy.scatter(...),
-    xy.line(...),
-    xy.x_axis(...),
-    xy.y_axis(...),
-    xy.legend(...),
+xyg.chart(
+    xyg.scatter(...),
+    xyg.line(...),
+    xyg.x_axis(...),
+    xyg.y_axis(...),
+    xyg.legend(...),
     title="...",
 )
 ```
@@ -164,7 +164,7 @@ Props should follow Reflex-style Python naming:
   `on_view_change`.
 
 ```python
-xy.scatter(
+xyg.scatter(
     x="date",
     y="latency_ms",
     color="region",
@@ -181,7 +181,7 @@ readouts and adapters. It cannot directly style already-rastered WebGL pixels.
 Mark appearance uses the cross-renderer CSS subset:
 
 ```python
-xy.line(
+xyg.line(
     x="t",
     y="p95",
     data=df,
@@ -278,8 +278,8 @@ color is written as `var(--chart-accent)`.
 Example:
 
 ```python
-xy.chart(
-    xy.line(x="date", y="revenue", data=df, color="var(--chart-accent)"),
+xyg.chart(
+    xyg.line(x="date", y="revenue", data=df, color="var(--chart-accent)"),
     class_name="text-slate-900 dark:text-slate-50",
     style={
         "--chart-bg": "transparent",
@@ -362,7 +362,7 @@ later layer, unlayered author CSS, and inline `chrome_styles` therefore win
 over the built-in look without needing `!important`. In the standalone
 `to_html(...)` export — which has no host page to inherit Tailwind from — pass
 `custom_css="…"` to inject the stylesheet that defines those utility classes.
-The canonical slot tuple is exported as `xy.CHART_DOM_SLOTS` so adapters
+The canonical slot tuple is exported as `xyg.CHART_DOM_SLOTS` so adapters
 and tests do not have to copy this table by hand. That root export resolves
 through the lightweight DOM contract module, so framework adapters can inspect
 the styling surface without importing NumPy, the chart engine, or widget stack.
@@ -374,8 +374,8 @@ internal `_figure.Figure` export path, so mutating `fig.class_names` or
 Tailwind example:
 
 ```python
-xy.chart(
-    xy.histogram(values="latency", data=df, bins=200),
+xyg.chart(
+    xyg.histogram(values="latency", data=df, bins=200),
     title="Latency distribution",
     class_name="h-[360px] w-full rounded-md border border-zinc-200 bg-white text-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50",
     class_names={
@@ -406,12 +406,12 @@ individual WebGL points/bars/lines after they are rasterized. For marks, use
 props that resolve CSS colors:
 
 ```python
-xy.scatter(x="x", y="y", data=df, color="var(--chart-accent)")
+xyg.scatter(x="x", y="y", data=df, color="var(--chart-accent)")
 ```
 
 This keeps Tailwind useful without pretending CSS can reach GPU buffers.
 
-The Reflex adapter mirrors class strings from a fixed `xy.Chart` (or an
+The Reflex adapter mirrors class strings from a fixed `xyg.Chart` (or an
 internal `Figure`) into generated JSX so Tailwind can discover them at compile
 time; the inventory comes from `Figure.dom_class_strings()`. A live token or
 Var figure does not exist until runtime, so `reflex_xy.chart(...,
@@ -441,9 +441,9 @@ users expect customization.
 Target API:
 
 ```python
-xy.chart(
-    xy.scatter(x="x", y="y", color="segment", data=df),
-    xy.tooltip(
+xyg.chart(
+    xyg.scatter(x="x", y="y", color="segment", data=df),
+    xyg.tooltip(
         fields=["x", "y", "segment"],
         title="{segment}",
         format={
@@ -467,11 +467,11 @@ Design rules:
 Implemented adapter hook:
 
 ```python
-chart = xy.chart(
-    xy.scatter(x="x", y="y", color="segment", data=df),
-    xy.legend(rx.vstack(...), show=False),
-    xy.tooltip(rx.box(...), show=False, fields=["x", "y", "segment"]),
-    xy.colorbar(rx.vstack(...), show=False),
+chart = xyg.chart(
+    xyg.scatter(x="x", y="y", color="segment", data=df),
+    xyg.legend(rx.vstack(...), show=False),
+    xyg.tooltip(rx.box(...), show=False, fields=["x", "y", "segment"]),
+    xyg.colorbar(rx.vstack(...), show=False),
 )
 
 chart.chrome_components()
@@ -485,7 +485,7 @@ suppresses the built-in DOM chrome when an adapter is replacing it; leaving
 Potential future advanced API:
 
 ```python
-xy.tooltip(render="compact_metric")  # named client-side template
+xyg.tooltip(render="compact_metric")  # named client-side template
 ```
 
 Avoid accepting arbitrary JS callbacks in standalone HTML. Notebook callbacks
@@ -497,11 +497,11 @@ Events should be semantic, small, and transport-independent.
 
 ```python
 def hover(row: dict): ...
-def selected(selection: xy.Selection): ...
+def selected(selection: xyg.Selection): ...
 def view_changed(view: dict): ...
 
-xy.chart(
-    xy.scatter(x="x", y="y", data=df),
+xyg.chart(
+    xyg.scatter(x="x", y="y", data=df),
     on_hover=hover,
     on_select=selected,
     on_view_change=view_changed,
@@ -513,7 +513,7 @@ Event payloads:
 | Event | Payload |
 |---|---|
 | `on_hover` | One row/readout dict |
-| `on_select` | An `xy.Selection`: `.per_trace` (trace id to index array), `.index` (concatenated indices), `len()`, and `.xy(trace_id)` for the selected `(x, y)` arrays |
+| `on_select` | An `xyg.Selection`: `.per_trace` (trace id to index array), `.index` (concatenated indices), `len()`, and `.xy(trace_id)` for the selected `(x, y)` arrays |
 | `on_view_change` | `{ranges, source, axes, phase, interaction_id}` — the per-axis view (`ranges` map) plus the gesture label, the axes that changed, the phase, and the gesture id, with `x0`/`x1`/`y0`/`y1` aliases for the primary axes (`channel.py:217-258`). No pixel shape. |
 
 Render target behavior:
@@ -546,8 +546,8 @@ package.
 XY core:
 
 ```python
-chart = xy.chart(
-    xy.scatter(x="x", y="y", data=df),
+chart = xyg.chart(
+    xyg.scatter(x="x", y="y", data=df),
     class_name="h-full w-full",
 )
 ```
@@ -562,7 +562,7 @@ class State(rx.State):
     chart_token: str = ""
 
     def load(self):
-        chart = xy.chart(xy.scatter(x="x", y="y", data=df))
+        chart = xyg.chart(xyg.scatter(x="x", y="y", data=df))
         self.chart_token = rfc.register(chart)
 
 def index():
@@ -587,12 +587,12 @@ In every case, importing plain `xy` remains Reflex-free.
 Dependency rule:
 
 ```text
-pip install xy                 # never installs Reflex
+pip install xyg                 # never installs Reflex
 pip install "xy[reflex]"       # adds the supported full-Reflex floor
 ```
 
 The integration can assume it is running inside a Reflex app when the user
-imports `reflex_xy` from app code. Keeping that namespace out of `xy.__init__`
+imports `reflex_xy` from app code. Keeping that namespace out of `xyg.__init__`
 means ordinary charting installs do not eagerly import the Reflex application
 stack.
 
@@ -609,7 +609,7 @@ still works like today's notebook-friendly XY objects.
 ```python
 import numpy as np
 import pandas as pd
-import xy
+import xyg
 
 rng = np.random.default_rng(7)
 df = pd.DataFrame(
@@ -620,8 +620,8 @@ df = pd.DataFrame(
     }
 )
 
-chart = xy.chart(
-    xy.scatter(
+chart = xyg.chart(
+    xyg.scatter(
         x="x",
         y="y",
         color="segment",
@@ -629,9 +629,9 @@ chart = xy.chart(
         opacity=0.55,
         name="accounts",
     ),
-    xy.x_axis(label="activation score"),
-    xy.y_axis(label="retention score"),
-    xy.legend(),
+    xyg.x_axis(label="activation score"),
+    xyg.y_axis(label="retention score"),
+    xyg.legend(),
     title="Account clusters",
     width="100%",
     height=420,
@@ -656,10 +656,10 @@ This example shows the styling contract: Tailwind classes style the wrapper and
 DOM chrome, while marks use props and CSS variables that the renderer resolves.
 
 ```python
-import xy
+import xyg
 
-chart = xy.chart(
-    xy.histogram(
+chart = xyg.chart(
+    xyg.histogram(
         values="latency_ms",
         data=requests,
         bins=240,
@@ -667,8 +667,8 @@ chart = xy.chart(
         color="var(--chart-accent)",
         name="latency",
     ),
-    xy.rule(y=0.95, color="var(--chart-critical)", dash=True),
-    xy.tooltip(
+    xyg.rule(y=0.95, color="var(--chart-critical)", dash=True),
+    xyg.tooltip(
         fields=["latency_ms", "count"],
         title="Latency",
         format={"latency_ms": ".1f", "count": ",.0f"},
@@ -708,7 +708,7 @@ charting package depends on Reflex.
 
 ```python
 import reflex as rx
-import xy
+import xyg
 import reflex_xy as rfc
 
 
@@ -717,8 +717,8 @@ class Dashboard(rx.State):
     hovered: dict = {}
 
     def load(self):
-        chart = xy.chart(
-            xy.scatter(x="x", y="y", color="segment", data=load_big_frame()),
+        chart = xyg.chart(
+            xyg.scatter(x="x", y="y", color="segment", data=load_big_frame()),
             title="Live customer map",
             class_name="h-[520px] w-full",
         )
@@ -757,9 +757,9 @@ Must keep:
 
 Now part of the core alpha contract:
 
-- Neutral `xy.chart(...)`.
-- `xy.tooltip(...)`, `xy.modebar(...)`, `xy.theme(...)`.
-- `xy.colorbar(...)` with inferred built-in continuous-scale chrome, the same
+- Neutral `xyg.chart(...)`.
+- `xyg.tooltip(...)`, `xyg.modebar(...)`, `xyg.theme(...)`.
+- `xyg.colorbar(...)` with inferred built-in continuous-scale chrome, the same
   CSS slots, and an opaque adapter-render replacement contract.
 - `class_name`, `class_names`, and `style` props.
 - DOM `CustomEvent`s for standalone host integration (see Phase 4 for the
@@ -794,8 +794,8 @@ Should avoid:
 
 ### Phase 2: Neutral Container And Tooltip Node
 
-- Add `xy.chart(...)` as a kind-neutral alias.
-- Add `xy.tooltip(...)` node compiling to safe tooltip readout spec.
+- Add `xyg.chart(...)` as a kind-neutral alias.
+- Add `xyg.tooltip(...)` node compiling to safe tooltip readout spec.
 - Keep existing `*_chart(...)` helpers as ergonomic aliases.
 
 ### Phase 3: CSS Variable Expansion
@@ -828,7 +828,7 @@ Should avoid:
   export.
 - The chart root and chrome can be styled with Tailwind classes.
 - Mark colors can be driven by CSS variables.
-- `pip install xy` does not install Reflex.
+- `pip install xyg` does not install Reflex.
 - Installing the adapter does not pull full Reflex unless that dependency is
   proven necessary and isolated behind an extra or clearly documented package.
 - Security tests still prove text is never inserted via HTML parser sinks.

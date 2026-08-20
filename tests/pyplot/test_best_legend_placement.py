@@ -14,9 +14,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-import xy.pyplot as plt
-from xy._svg import _legend_layout
+import xyg as xy
+import xyg.pyplot as plt
+from xyg._svg import _legend_layout
 
 
 def resolved_loc(ax) -> str:
@@ -229,7 +229,7 @@ def test_best_scores_the_measured_legend_box_not_a_linear_estimate():
 
     chart = ax._build_chart(1200, 400)
     spec, _ = chart.figure().build_payload()
-    from xy._svg import layout
+    from xyg._svg import layout
 
     _, _, _, plot = layout(spec)
     box = _legend_layout(
@@ -263,7 +263,7 @@ def test_longer_labels_grow_the_scored_footprint():
 
 def _legend_footprint_width(ax) -> float:
     spec, _ = ax._build_chart(640, 480).figure().build_payload()
-    from xy._svg import layout
+    from xyg._svg import layout
 
     _, _, _, plot = layout(spec)
     box = _legend_layout(
@@ -459,7 +459,7 @@ def test_right_and_center_right_are_the_same_anchor():
 
 def test_best_candidate_order_is_matplotlib_code_order():
     """The tie-break contract: Matplotlib prefers the lower location code."""
-    from xy.pyplot._axes import _BEST_LOC_ORDER
+    from xyg.pyplot._axes import _BEST_LOC_ORDER
 
     # Codes 1..10 with code 7 folded onto its identical code-5 "right" anchor.
     assert _BEST_LOC_ORDER == (

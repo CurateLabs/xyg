@@ -92,7 +92,7 @@ function nonblank(gl) {
 
 def xy_probe_html(fig: Any) -> str:
     html = fig.to_html()
-    needle = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
+    needle = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
     replacement = (
         'window.__benchView=xy.renderStandalone(document.getElementById("chart"), spec, buf);'
     )
@@ -143,7 +143,7 @@ def child_run(library: str, n: int, artifact: Path | None) -> dict[str, Any]:
     # arrays ready, matching the existing exact-render benchmark and normal
     # repeated plotting work. Their resident memory remains included.
     if library == "xy":
-        from xy import scatter, scatter_chart
+        from xyg import scatter, scatter_chart
     elif library == "plotly":
         import plotly.express as px
     elif library == "matplotlib":

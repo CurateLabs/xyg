@@ -10,7 +10,7 @@
 //! do not own the growable backing store. Out-of-core memmap columns remain
 //! host-owned (they cannot sit behind this first in-RAM handle).
 //!
-//! Safety contract (enforced by `python/xy/_native.py` and
+//! Safety contract (enforced by `python/xyg/_native.py` and
 //! `packages/xy-node/src/native.js`): non-empty inputs use non-null, properly
 //! aligned pointers sized as documented per function. Empty inputs are
 //! accepted without dereferencing their pointers; invalid pointer/argument

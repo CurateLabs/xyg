@@ -67,7 +67,7 @@ scatter density and 24 hourly facets.
 From a Python 3.11+ environment:
 
 ```bash
-python -m pip install xy jupyter numpy requests pysam h5py gwosc
+python -m pip install xyg jupyter numpy requests pysam h5py gwosc
 jupyter lab
 ```
 

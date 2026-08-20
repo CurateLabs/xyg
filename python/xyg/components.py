@@ -5,7 +5,7 @@ mark and axis children, snake_case keyword props, `data=` + column-name
 resolution, and `on_*` event props — but xy does **not** import or depend
 on Reflex. It's the same ergonomics on top of the xy engine (`Figure`):
 
-    import xy
+    import xyg as xy
 
     xy.scatter_chart(
         xy.scatter(x="sepal_w", y="sepal_l", color="species", size="petal_l", data=df),

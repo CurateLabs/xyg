@@ -1,9 +1,9 @@
 ---
 title: Bar Chart in Python
-description: Create interactive bar and column charts in Python with xy. Compare categories with grouped, stacked, normalized, horizontal, and vertical bars.
+description: Create interactive bar and column charts in Python with xyg. Compare categories with grouped, stacked, normalized, horizontal, and vertical bars.
 components:
-  - xy.bar_chart
-  - xy.column_chart
+  - xyg.bar_chart
+  - xyg.column_chart
 ---
 
 # Bar Charts in Python
@@ -30,15 +30,15 @@ Python bar chart:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 channels = ["Email", "Social", "Search", "Direct", "Referral"]
 sessions = np.array([38, 27, 21, 14, 9])
 
-chart = xy.bar_chart(
-    xy.bar(channels, sessions, color="#6e56cf", orientation="horizontal", corner_radius=4),
-    xy.x_axis(label="sessions (k)"),
-    xy.y_axis(label="channel"),
+chart = xyg.bar_chart(
+    xyg.bar(channels, sessions, color="#6e56cf", orientation="horizontal", corner_radius=4),
+    xyg.x_axis(label="sessions (k)"),
+    xyg.y_axis(label="channel"),
     title="Sessions by channel",
 )
 
@@ -57,18 +57,18 @@ off to place bars side by side.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 teams = ["Alpha", "Beta", "Gamma", "Delta"]
 open_ = np.array([12, 9, 15, 7])
 closed = np.array([28, 22, 19, 31])
 
-chart = xy.bar_chart(
-    xy.bar(teams, open_, name="Open", color="#6e56cf", orientation="horizontal"),
-    xy.bar(teams, closed, base=open_, name="Closed", color="#c4b5fd", orientation="horizontal"),
-    xy.x_axis(label="tickets"),
-    xy.y_axis(label="team"),
-    xy.legend(),
+chart = xyg.bar_chart(
+    xyg.bar(teams, open_, name="Open", color="#6e56cf", orientation="horizontal"),
+    xyg.bar(teams, closed, base=open_, name="Closed", color="#c4b5fd", orientation="horizontal"),
+    xyg.x_axis(label="tickets"),
+    xyg.y_axis(label="team"),
+    xyg.legend(),
     title="Ticket status by team",
 )
 
@@ -88,15 +88,15 @@ series.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 signups = np.array([120, 145, 138, 172, 190, 210])
 
-chart = xy.column_chart(
-    xy.column(months, signups, color="#6e56cf", corner_radius=4),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="signups"),
+chart = xyg.column_chart(
+    xyg.column(months, signups, color="#6e56cf", corner_radius=4),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="signups"),
     title="Monthly signups",
 )
 
@@ -111,7 +111,7 @@ Stack several `column` marks the same way as bars — pass a pair to
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 values = np.array([
@@ -121,10 +121,10 @@ values = np.array([
     [58, 27, 16],
 ])
 
-chart = xy.column_chart(
-    xy.column(quarters, values[:, 0], name="Core", color="#6e56cf"),
-    xy.column(quarters, values[:, 1], base=values[:, 0], name="Growth", color="#8e7cc3"),
-    xy.column(
+chart = xyg.column_chart(
+    xyg.column(quarters, values[:, 0], name="Core", color="#6e56cf"),
+    xyg.column(quarters, values[:, 1], base=values[:, 0], name="Growth", color="#8e7cc3"),
+    xyg.column(
         quarters,
         values[:, 2],
         base=values[:, 0] + values[:, 1],
@@ -132,7 +132,7 @@ chart = xy.column_chart(
         color="#c4b5fd",
         corner_radius=(5, 0),
     ),
-    xy.legend(),
+    xyg.legend(),
     title="Quarterly product mix",
 )
 
@@ -176,8 +176,8 @@ horizontal category comparison and `column` for vertical.
 
 ### How do I make a horizontal bar chart in Python?
 
-Call `xy.bar(categories, values, orientation="horizontal")` inside
-`xy.bar_chart(...)` and render it. The resulting bar plot pans, zooms, and
+Call `xyg.bar(categories, values, orientation="horizontal")` inside
+`xyg.bar_chart(...)` and render it. The resulting bar plot pans, zooms, and
 hovers automatically.
 
 ### What is the difference between a bar chart and a column chart in xy?
@@ -189,7 +189,7 @@ best in your app.
 ### How do I stack bars in a Python bar chart?
 
 Add one named `bar` mark per series and set `base` on each stacked series to the
-running total of the series below it, then add `xy.legend()`.
+running total of the series below it, then add `xyg.legend()`.
 
 ### How do I sort bars by value?
 

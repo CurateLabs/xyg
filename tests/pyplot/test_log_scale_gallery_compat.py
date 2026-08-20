@@ -7,8 +7,8 @@ import re
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy import _raster, _svg
+import xyg.pyplot as plt
+from xyg import _raster, _svg
 
 
 def teardown_function() -> None:

@@ -7,8 +7,8 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._axes import _locator_tick_values
+import xyg.pyplot as plt
+from xyg.pyplot._axes import _locator_tick_values
 
 
 def test_set_ticklabels_matches_fixed_locator_and_empty_label_semantics() -> None:

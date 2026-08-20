@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
-import xy
+import xyg as xy
 
 
 def _marker_shape(opacity: float) -> ET.Element:

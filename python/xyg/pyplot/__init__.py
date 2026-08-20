@@ -1,6 +1,6 @@
-"""xy.pyplot — a matplotlib-flavored shim over the composition API.
+"""xyg.pyplot — a matplotlib-flavored shim over the composition API.
 
-    import xy.pyplot as plt
+    import xyg.pyplot as plt
 
     fig, ax = plt.subplots()
     ax.plot(x, y, "r--o", label="trend")
@@ -597,7 +597,7 @@ def imsave(fname: Any, arr: ArrayLike, **kwargs: Any) -> None:
             image = np.concatenate((image, alpha), axis=2)
         elif image.ndim != 3 or image.shape[2] != 4:
             raise ValueError("imsave() expects a 2-D grayscale, RGB, or RGBA array")
-    from xy._png import encode
+    from xyg._png import encode
 
     data = encode(np.ascontiguousarray(image, dtype=np.uint8))
     if hasattr(fname, "write"):

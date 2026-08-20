@@ -48,7 +48,7 @@ through the host's nonce- or hash-aware path.
 
 ## Reflex Deployment
 
-A fixed `xy.Chart` passed directly as `reflex_xy.chart(chart)` compiles to local
+A fixed `xyg.Chart` passed directly as `reflex_xy.chart(chart)` compiles to local
 static client and binary payload assets and works with `reflex export`. This is
 the static tier.
 

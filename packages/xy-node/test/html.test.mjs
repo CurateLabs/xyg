@@ -13,7 +13,7 @@ const clientPath = path.join(root, "..", "xy-client", "dist", "standalone.js");
 
 test("toHtml inlines the host-neutral standalone client", () => {
   assert.equal(
-    htmlSrc.includes("python/xy/static"),
+    htmlSrc.includes("python/xyg/static"),
     false,
     "toHtml must not read the Python wheel copy",
   );

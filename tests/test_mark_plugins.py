@@ -14,7 +14,7 @@ import re
 import numpy as np
 import pytest
 
-import xy
+import xyg as xy
 
 
 def _hilo_plugin(name: str = "hilo") -> xy.MarkPlugin:
@@ -98,7 +98,7 @@ def test_plugin_traces_reach_every_renderer(hilo) -> None:
     ).figure()
 
     assert "#ff0000" in fig.to_svg()
-    from xy import _raster
+    from xyg import _raster
 
     image = _raster.render_raster(*fig.build_payload(), scale=1)
     assert np.any(image[:, :, 0] > image[:, :, 2])
@@ -204,7 +204,7 @@ def test_a_plugin_cannot_claim_a_name_that_xy_mark_binds_itself() -> None:
     # could never be passed — the value would bind to the parameter and the
     # column would resolve to None. Reject the schema, not the call site.
     for reserved in ("name", "style", "data", "x_axis", "key"):
-        with pytest.raises(ValueError, match=re.escape("xy.mark() binds itself")):
+        with pytest.raises(ValueError, match=re.escape("xyg.mark() binds itself")):
             xy.register_mark(
                 xy.MarkPlugin(name="clashing", columns=(reserved,), build=lambda ctx: [])
             )

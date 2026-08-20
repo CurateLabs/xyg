@@ -114,7 +114,7 @@ export function cssColor([r, g, b, a]: any) {
 // `axes.labelweight` and `font.weight` all default to "normal", and its legend
 // title and colorbar label are normal too, so 400 is the parity default for
 // title, axis titles, annotations, legend titles and colorbar titles alike.
-// The SVG (`python/xy/_svg.py`) and native raster (`python/xy/_raster.py`)
+// The SVG (`python/xyg/_svg.py`) and native raster (`python/xyg/_raster.py`)
 // exporters carry the same 400 default — the three renderers must not
 // disagree; tests/test_text_weight_defaults.py guards all three. A heavier
 // weight is opt-in, via `styles[slot]`, a mark/axis text style, or the pyplot

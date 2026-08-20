@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
-import xy
+import xyg as xy
 
 
 def _load_check_typing_module():

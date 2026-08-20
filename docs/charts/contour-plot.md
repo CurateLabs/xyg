@@ -1,8 +1,8 @@
 ---
 title: Contour Plot in Python
-description: Contour plot python made easy with xy. Draw filled or line iso-value contours over a 2D field, set levels and a colormap, and pan and zoom smoothly.
+description: Contour plot python made easy with xyg. Draw filled or line iso-value contours over a 2D field, set levels and a colormap, and pan and zoom smoothly.
 components:
-  - xy.contour_chart
+  - xyg.contour_chart
 ---
 
 # Contour Plots in Python
@@ -25,7 +25,7 @@ shade between them:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 contour_x = np.linspace(-3, 3, 100)
 contour_y = np.linspace(-2.5, 2.5, 90)
@@ -35,8 +35,8 @@ contour_z = (
     + 0.7 * np.exp(-((contour_xx + 1.1) ** 2 + (contour_yy - 0.5) ** 2))
 )
 
-contour_detail_chart = xy.contour_chart(
-    xy.contour(
+contour_detail_chart = xyg.contour_chart(
+    xyg.contour(
         contour_z,
         x=contour_x,
         y=contour_y,
@@ -44,8 +44,8 @@ contour_detail_chart = xy.contour_chart(
         filled=True,
         colormap="viridis",
     ),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Density contours",
 )
 
@@ -63,7 +63,7 @@ place contours at exact values — useful when specific thresholds matter — wi
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 ridge_x = np.linspace(-3, 3, 110)
 ridge_y = np.linspace(-2.5, 2.5, 90)
@@ -72,8 +72,8 @@ ridge_z = np.exp(-(ridge_xx**2 + ridge_yy**2) / 2.4) * (
     1.0 + 0.35 * np.sin(3.0 * ridge_xx)
 )
 
-contour_lines_chart = xy.contour_chart(
-    xy.contour(
+contour_lines_chart = xyg.contour_chart(
+    xyg.contour(
         ridge_z,
         x=ridge_x,
         y=ridge_y,
@@ -82,8 +82,8 @@ contour_lines_chart = xy.contour_chart(
         colormap="plasma",
         width=2.0,
     ),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Line contours at explicit levels",
 )
 
@@ -96,12 +96,12 @@ def contour_lines_demo():
 
 For a field that crosses zero, set `dash_negative=True` so negative contours
 are dashed, use more `levels` to resolve the structure, and add an
-`xy.colorbar()` to tie levels back to values:
+`xyg.colorbar()` to tie levels back to values:
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 dipole_x = np.linspace(-3, 3, 120)
 dipole_y = np.linspace(-3, 3, 120)
@@ -110,8 +110,8 @@ dipole_z = np.exp(-((dipole_xx - 1) ** 2 + dipole_yy**2)) - np.exp(
     -((dipole_xx + 1) ** 2 + dipole_yy**2)
 )
 
-contour_signed_chart = xy.contour_chart(
-    xy.contour(
+contour_signed_chart = xyg.contour_chart(
+    xyg.contour(
         dipole_z,
         x=dipole_x,
         y=dipole_y,
@@ -121,9 +121,9 @@ contour_signed_chart = xy.contour_chart(
         width=1.6,
         dash_negative=True,
     ),
-    xy.colorbar(title="field strength"),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+    xyg.colorbar(title="field strength"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Dipole field, dashed negatives",
 )
 
@@ -150,7 +150,7 @@ distinguish contours below zero, which is handy for signed fields.
 | `opacity` | Contour opacity from 0 to 1. |
 | `dash_negative` | Dash contours with negative values to distinguish sign. |
 
-Add [`xy.colorbar()`](/docs/xy/components/colorbars/) to show the level-to-color
+Add [`xyg.colorbar()`](/docs/xy/components/colorbars/) to show the level-to-color
 scale. Pass column names with `data=` instead of arrays when your data is a
 table.
 
@@ -169,7 +169,7 @@ table.
 
 ### How do I make a contour plot in Python?
 
-Pass a 2D array to `xy.contour(z, x=x, y=y)` inside `xy.contour_chart(...)` and
+Pass a 2D array to `xyg.contour(z, x=x, y=y)` inside `xyg.contour_chart(...)` and
 render it. The contour chart supports pan, zoom, and hover out of the box.
 
 ### What is the difference between a filled and a line contour?
@@ -189,14 +189,14 @@ sign of a signed field easy to read.
 
 ### I use a MATLAB contour plot or matplotlib. What is the equivalent?
 
-Matplotlib users can often start by changing the import because `xy.pyplot`
+Matplotlib users can often start by changing the import because `xyg.pyplot`
 accepts the familiar `contour()` and `contourf()` calls, although unsupported
 options may still require changes. For MATLAB, translate the workflow to the
 equivalent Python/NumPy syntax shown here:
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(-3, 3, 100)
 y = np.linspace(-2.5, 2.5, 90)

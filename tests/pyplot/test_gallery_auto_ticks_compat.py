@@ -5,8 +5,8 @@ import warnings
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._ticker import AutoLocator, MaxNLocator
+import xyg.pyplot as plt
+from xyg.pyplot._ticker import AutoLocator, MaxNLocator
 
 
 def _auto_ticks_data() -> tuple[np.ndarray, np.ndarray]:

@@ -18,8 +18,8 @@ import types
 
 import pytest
 
-import xy
-from xy import export
+import xyg as xy
+from xyg import export
 
 
 @pytest.fixture(autouse=True)
@@ -124,7 +124,7 @@ def test_show_auto_uses_html_host_on_emscripten(monkeypatch: pytest.MonkeyPatch)
 
 def test_show_widget_override_wins_on_emscripten(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "platform", "emscripten")
-    monkeypatch.setattr("xy.widget.FigureWidget", _StubWidget)
+    monkeypatch.setattr("xyg.widget.FigureWidget", _StubWidget)
     chart = _chart()
     assert chart.show(display="widget") is chart.widget()
 
@@ -164,7 +164,7 @@ def test_ipython_display_keeps_widget_host_by_default(
 
     displayed: list[object] = []
     monkeypatch.setattr(IPython.display, "display", lambda value, **kw: displayed.append(value))
-    monkeypatch.setattr("xy.widget.FigureWidget", _StubWidget)
+    monkeypatch.setattr("xyg.widget.FigureWidget", _StubWidget)
 
     chart = _chart()
     chart._ipython_display_()

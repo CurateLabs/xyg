@@ -136,9 +136,9 @@ native↔WASM goldens (#59).
 - C ABI (v72+): `xyg_geo_column_new` / `_free` / `_len` / `_vertex_count` /
   `_geometry` / `_crs` in `crates/xyg-core`, generated into Python/Node ABI
   modules. Hosts decode GeoArrow and pass the typed descriptor buffers.
-- Host wrappers: `xy._native.geo_column_*` and Node `geoColumnNew` /
+- Host wrappers: `xyg._native.geo_column_*` and Node `geoColumnNew` /
   `geoColumnMeta` / `geoColumnFree` over the generated ABI.
-- Python GeoArrow adapter: `xy._geoarrow.ingest_geoarrow` (optional pyarrow
+- Python GeoArrow adapter: `xyg._geoarrow.ingest_geoarrow` (optional pyarrow
   input format) flattens extension arrays into the typed descriptor and
   publishes a Rust `GeoColumn` handle.
 - GeoViewport: `crates/xyg-engine/src/geo_viewport.rs` (camera foundation;

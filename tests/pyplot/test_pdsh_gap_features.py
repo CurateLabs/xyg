@@ -13,7 +13,7 @@ import re
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 @pytest.fixture(autouse=True)
@@ -315,7 +315,7 @@ def test_colorbar_set_label_renders_rotated_beside_the_bar_in_both_exports(
     """PDSH ch. 4.05 (`hist2d`/`hexbin`/`imshow` + `set_label`) expects
     Matplotlib's rotated label alongside a vertical colorbar. It used to render
     horizontally above the bar, clipped off the top of the native PNG canvas."""
-    from xy import _raster
+    from xyg import _raster
 
     plt.subplots()
     plt.hist2d(*np.random.default_rng(0).normal(size=(2, 200)), bins=10)

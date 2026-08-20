@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 from write_graph_page import write_graph_page
 
-from xy._figure import Figure
+from xyg._figure import Figure
 
 ROOT = Path(__file__).resolve().parent
 DATA = json.loads((ROOT / "org_graph_data.json").read_text(encoding="utf-8"))

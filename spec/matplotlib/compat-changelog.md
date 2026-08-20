@@ -6,7 +6,7 @@ which covers user-visible releases across the whole package.
 
 ## Patch bodies and geometry — 2026-07-30 (Matplotlib 3.11.1 reference)
 
-- `xy.pyplot.Axes.add_patch` now fills a patch instead of drawing only its
+- `xyg.pyplot.Axes.add_patch` now fills a patch instead of drawing only its
   outline. Each ring gets a triangle mesh in the patch's own face color, with
   triangle joins marked as a single fill so browser, PNG, and SVG output
   suppress internal seams. Patches that report `fill=False`, a `"none"` face
@@ -84,7 +84,7 @@ which covers user-visible releases across the whole package.
   tick-label collision strategies are now recorded as **dropped** on a polar
   Axes rather than left undocumented. No renderer draws minor rings or spokes,
   and rim labels have neither an edge-relative collision pass nor an anchor.
-  A hand-authored `xy.theta_axis`/`xy.r_axis` refuses them; the shim drops them,
+  A hand-authored `xyg.theta_axis`/`xyg.r_axis` refuses them; the shim drops them,
   because every Axes carries an rcParam-derived minor style and refusing would
   break `projection="polar"` over a default nobody authored.
 - A polar radial axis carrying datetimes now autoranges from its data instead of
@@ -94,19 +94,19 @@ which covers user-visible releases across the whole package.
 
 ## Box and violin default geometry — 2026-07-26 (Matplotlib 3.11.1 reference)
 
-- `xy.pyplot.boxplot` no longer routes its default call through the native
+- `xyg.pyplot.boxplot` no longer routes its default call through the native
   opinionated box mark. It now draws Matplotlib's unfilled line geometry and
   returns one box, median, and flier handle plus two whisker and cap handles per
   group. Fliers stay centered on their group even when several groups are
   present, and empty groups of fliers still have the expected handle.
-- `xy.pyplot.violinplot` now uses the same Gaussian-KDE path for its default
+- `xyg.pyplot.violinplot` now uses the same Gaussian-KDE path for its default
   Scott bandwidth as it does for explicit Scott, Silverman, scalar, and
   callable bandwidths. It returns one body per group, with triangle joins
   marked as a single fill so browser, PNG, and SVG output suppress internal
   seams.
 - The public composition API keeps its independent native `box` and `violin`
   marks and their opinionated styling; this compatibility correction is
-  contained inside `xy.pyplot`.
+  contained inside `xyg.pyplot`.
 
 ## Histogram and spectral numeric semantics — 2026-07-26 (Matplotlib 3.11.1 reference)
 
@@ -407,7 +407,7 @@ colorbar domains) fully cleared.
   output are unchanged — both already had the correct default orientation.
   This clears the three loud-free but visually wrong PDSH ch. 04.05 cells
   (`hist2d`, `hexbin`, and `imshow` colorbars with labels).
-- Non-pyplot (composition API) colorbars built with `xy.colorbar(title=...)`
+- Non-pyplot (composition API) colorbars built with `xyg.colorbar(title=...)`
   share the same renderer, so their vertical labels change in PNG export the
   same way. Horizontal colorbar labels are untouched in every renderer.
 - Matplotlib's `Colorbar.set_label` customization keywords (`loc`, `labelpad`,

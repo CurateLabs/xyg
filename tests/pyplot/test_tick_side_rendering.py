@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-import xy
-import xy.pyplot as plt
-from xy import _raster, _svg
-from xy.config import PROTOCOL_VERSION
+import xyg as xy
+import xyg.pyplot as plt
+from xyg import _raster, _svg
+from xyg.config import PROTOCOL_VERSION
 
 ROOT = Path(__file__).resolve().parents[2]
 TICK_COLOR = "#123456"

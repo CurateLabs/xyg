@@ -44,7 +44,7 @@ def test_pdsh_notebooks_contain_fresh_matplotlib_and_xy_sections() -> None:
             if cell.get("metadata", {}).get("xy_pdsh_engine") == "xy"
             and cell.get("cell_type") == "code"
         )
-        assert "xy.pyplot" not in mpl_code
+        assert "xyg.pyplot" not in mpl_code
         assert "matplotlib" in mpl_code
-        assert "xy.pyplot" in xy_code
+        assert "xyg.pyplot" in xy_code
         assert "xy_plt.show()" not in xy_code

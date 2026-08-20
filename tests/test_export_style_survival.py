@@ -14,10 +14,10 @@ import re
 
 import pytest
 
-import xy
-from xy import Engine, _raster
-from xy._svg import STATIC_STYLED_SLOTS
-from xy.dom import CHART_DOM_SLOTS
+import xyg as xy
+from xyg import Engine, _raster
+from xyg._svg import STATIC_STYLED_SLOTS
+from xyg.dom import CHART_DOM_SLOTS
 
 
 def _styled_chart() -> xy.Chart:
@@ -207,7 +207,7 @@ def test_an_extra_legend_is_styled_like_the_main_one_in_both_writers() -> None:
 
 
 def test_the_raster_property_subset_is_a_subset_of_the_vector_one() -> None:
-    from xy._svg import SLOT_RASTER_PROPS, SLOT_TEXT_PROPS
+    from xyg._svg import SLOT_RASTER_PROPS, SLOT_TEXT_PROPS
 
     assert set(SLOT_RASTER_PROPS) < set(SLOT_TEXT_PROPS)
     # The atlas has no family axis, no per-glyph advance control and no alpha

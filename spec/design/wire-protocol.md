@@ -1,12 +1,12 @@
 # Wire protocol — client ↔ Python
 
 Status: **shipped**. This document specifies the message catalog dispatched by
-`xy.channel.handle_message` (`python/xy/channel.py`) and consumed by
+`xyg.channel.handle_message` (`python/xyg/channel.py`) and consumed by
 `js/src/54_kernel.ts`, plus the first-paint buffer layouts and the version
 handshake. The transport envelopes that carry these messages are separate:
-the anywidget comm (`python/xy/widget.py`), the `/_xy` socket.io namespace
+the anywidget comm (`python/xyg/widget.py`), the `/_xy` socket.io namespace
 ([reflex-integration.md](reflex-integration.md) §2), and the `XYBF` binary
-frame (`python/xy/_framing.py`, versioned in §7 below).
+frame (`python/xyg/_framing.py`, versioned in §7 below).
 
 ### Canonical graph identity
 
@@ -380,7 +380,7 @@ spec's `columns` table is the addressing scheme, and it comes in two layouts:
   a `u8` column is folded into that column's own buffer, and `len` still
   counts only real values, so split is a byte-identical repack of packed. This
   is what both live hosts ship at first paint — `FigureWidget`
-  (`python/xy/widget.py`) and the `/_xy` namespace
+  (`python/xyg/widget.py`) and the `/_xy` namespace
   (`python/reflex_xy/namespace.py`) — and on streaming append (§4),
   with no join copy anywhere on a live path.
 
@@ -425,7 +425,7 @@ that progress and starts no animation clock.
 ## 6. Chunked base64 (standalone export only)
 
 The comm and socket.io transports carry binary attachments natively and never
-base64. Standalone HTML export has no binary channel, so `xy.export` embeds
+base64. Standalone HTML export has no binary channel, so `xyg.export` embeds
 the packed blob as chunked base64:
 
 - The blob is sliced into `_B64_CHUNK_BYTES` = 48 MiB pieces. That size is
@@ -450,7 +450,7 @@ The reassembled bytes are identical to the source blob, which is what keeps
 
 Two independent version constants:
 
-- **Renderer/spec protocol.** `PROTOCOL_VERSION = 12` (`python/xy/config.py`)
+- **Renderer/spec protocol.** `PROTOCOL_VERSION = 12` (`python/xyg/config.py`)
   rides every first-paint spec as `spec["protocol"]`; the client's
   `PROTOCOL = 12` (`js/src/00_header.ts`) is checked in the `ChartView`
   constructor. A mismatch replaces the chart element with "update the xy
@@ -506,7 +506,7 @@ Two independent version constants:
 
 Compatibility is structural rather than negotiated: the client is versioned
 with the producing host. Python wheels embed a **copy** of `@curatelabs/xyg`
-at `python/xy/static/index.js` so the JS that renders a payload is the build
+at `python/xyg/static/index.js` so the JS that renders a payload is the build
 that shipped with the Python that produced it; `reflex_xy` deliberately does
 not package its own copy — `assets.register()` symlinks the client out of the
 installed `xy` distribution, repairing a stale link if the install moved.

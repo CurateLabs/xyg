@@ -33,13 +33,13 @@ _CLIENT_NAME = "xy_client.js"
 
 def _client_source() -> Path:
     """The canonical render client inside the installed xy package."""
-    import xy
+    import xyg as xy
 
     source = Path(xy.__file__).resolve().parent / "static" / "index.js"
     if not source.exists():
         msg = (
             f"{source} missing — the xy install has no bundled JS client. "
-            "Dev checkout: run `node js/build.mjs`; otherwise reinstall xy."
+            "Dev checkout: run `node js/build.mjs`; otherwise reinstall xyg."
         )
         raise FileNotFoundError(msg)
     return source

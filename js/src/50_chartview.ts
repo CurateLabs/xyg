@@ -21,7 +21,7 @@ export interface ChartView {
 
 const MARGIN = { l: 62, r: 14, t: 10, b: 42 };
 // Subdivisions across one polar bar's angular span. Mirrored by
-// POLAR_BAR_SEGMENTS in python/xy/config.py so the raster exporter flattens the
+// POLAR_BAR_SEGMENTS in python/xyg/config.py so the raster exporter flattens the
 // same arc; the SVG exporter draws a true `A` arc and needs no count. Sized so
 // a full-turn wedge's chord sagitta stays under the XY_POLAR_AA expansion on a
 // ~1400-device-px disc — the fragment SDF then trims the strip to an exactly
@@ -32,7 +32,7 @@ const POLAR_BAR_SEGMENTS = 96;
 const POLAR_BAR_SEGMENTS_MIN = 2;
 
 // Subdivisions for one wedge of angular width `span` out of `turn`. Mirrors
-// `polar_bar_segments` in python/xy/config.py.
+// `polar_bar_segments` in python/xyg/config.py.
 //
 // The count used to be a flat POLAR_BAR_SEGMENTS per wedge, sized for the worst
 // case of a wedge sweeping the whole circle. Almost no wedge does: a 16-sector
@@ -52,16 +52,16 @@ function xyPolarBarSegments(span, turn) {
   return Math.max(POLAR_BAR_SEGMENTS_MIN, Math.min(POLAR_BAR_SEGMENTS, scaled));
 }
 // Uniform room outside the outer ring for angular tick labels. Mirrored by
-// _POLAR_LABEL_ROOM in python/xy/_svg.py.
+// _POLAR_LABEL_ROOM in python/xyg/_svg.py.
 const POLAR_LABEL_ROOM = 30;
 // Radial tick labels run along a spoke this many degrees off theta zero, and
 // angular labels sit this many px outside the rim. Mirrored by
-// _POLAR_RLABEL_DEG / _POLAR_TICK_GAP in python/xy/_svg.py.
+// _POLAR_RLABEL_DEG / _POLAR_TICK_GAP in python/xyg/_svg.py.
 const POLAR_LABEL_ROOM_MAX = 90;
 const POLAR_RLABEL_DEG = 22.5;
 const POLAR_TICK_GAP = 8;
 // Direction theta=0 points, in radians ccw from east. Mirrored by THETA_ZERO in
-// python/xy/_svg.py; the wire carries the letters so one table serves all
+// python/xyg/_svg.py; the wire carries the letters so one table serves all
 // renderers.
 const THETA_ZERO = { E: 0, N: Math.PI / 2, W: Math.PI, S: -Math.PI / 2 };
 // Gutter reserved for a legend beside a disc. A cartesian legend overlays the
@@ -78,7 +78,7 @@ const THETA_ZERO = { E: 0, N: Math.PI / 2, W: Math.PI, S: -Math.PI / 2 };
 // ordinary pie slice's default name, while being a fifth of a phone canvas and a
 // fifteenth of a wide one. A label still wider than the gutter ellipsizes with
 // its full text in `title`/ARIA.
-// Mirrored by `_polar_legend_room` in python/xy/_svg.py.
+// Mirrored by `_polar_legend_room` in python/xyg/_svg.py.
 const POLAR_LEGEND_ROOM_FRACTION = 0.22;
 const POLAR_LEGEND_ROOM_MIN = 120;
 const POLAR_LEGEND_ROOM_MAX = 200;
@@ -91,7 +91,7 @@ function xyPolarLegendRoom(width) {
 }
 
 const POLAR_LEGEND_BAND = 64;
-// DejaVu Sans advances at 16 px, generated beside python/xy/_fontmetrics.py
+// DejaVu Sans advances at 16 px, generated beside python/xyg/_fontmetrics.py
 // and the native rasterizer. Layout must retain proportional glyph metrics:
 // character count makes "WWWW" and "iiii" reserve the same (wrong) width.
 const XY_FONT_BASE_PX = 16;
@@ -111,7 +111,7 @@ const XY_MISSING_ADVANCE = 16;
 const Y_TITLE_MEASURE_SAFETY_PX = 2;
 
 // Greedy word wrap of already newline-split lines. Mirrors `wrap_lines` in
-// python/xy/_textblock.py, and matches what CSS `white-space: pre-line` does to
+// python/xyg/_textblock.py, and matches what CSS `white-space: pre-line` does to
 // the same string: authored newlines are hard breaks, runs of other whitespace
 // collapse to one space, breaks are only taken at a space, and a word wider than
 // the limit keeps its own line and overflows (no `overflow-wrap` is set).
@@ -698,7 +698,7 @@ export class ChartView {
     // (`baseRight`, before colorbar and right-axis room) rather than the final
     // plot rect, because the measured left gutter depends on the plot height,
     // which depends on the title band — wrapping at the final width would be
-    // circular. Mirrors `_title_wrap_width` in python/xy/_svg.py.
+    // circular. Mirrors `_title_wrap_width` in python/xyg/_svg.py.
     //
     // The title DIV wraps whether or not layout accounts for it (white-space is
     // `pre-line`), so measuring one line and drawing two put the first line
@@ -779,7 +779,7 @@ export class ChartView {
   // plot-relative placement the author owns), or an authored 4-tuple `padding`
   // (which already states the box the plot should occupy, and is the documented
   // way to hand-reserve a caption band).
-  // Mirrors `_polar_legend_reserve` in python/xy/_svg.py.
+  // Mirrors `_polar_legend_reserve` in python/xyg/_svg.py.
   _polarLegendReserve(compact) {
     const s = this.spec || {};
     if (s.coords !== "polar" || s.show_legend === false) return null;
@@ -800,7 +800,7 @@ export class ChartView {
   }
 
   // Re-cut the plot rect for a disc. Mirrors `_recut_polar_plot` in
-  // python/xy/_svg.py; the two must agree or the same chart renders at a
+  // python/xyg/_svg.py; the two must agree or the same chart renders at a
   // different size and centre in the browser than in an export.
   //
   // Cartesian tick-label gutters hold labels hugging the left and bottom edges.
@@ -810,7 +810,7 @@ export class ChartView {
   // Room outside the ring for the angular tick labels. Measured rather than
   // fixed: authored category names are far wider than an angle, and a constant
   // allowance hard-clipped them. Mirrors `_polar_label_room` in
-  // python/xy/_svg.py — including the ceiling, past which a pathological label
+  // python/xyg/_svg.py — including the ceiling, past which a pathological label
   // truncates instead of shrinking the disc away.
   _polarLabelRoom(axis) {
     // A category axis carries its authored names in `categories` and usually
@@ -871,7 +871,7 @@ export class ChartView {
     // occupy — usually to reserve a band under the disc for a legend or
     // caption. Reclaiming those gutters below would throw that away, so an
     // authored box is only inset by the uniform label room. Mirrors the same
-    // early return in `_recut_polar_plot` (python/xy/_svg.py).
+    // early return in `_recut_polar_plot` (python/xyg/_svg.py).
     if (Array.isArray(this.spec.padding) && this.spec.padding.length === 4) {
       const boxW = p.w - 2 * room;
       const boxH = p.h - 2 * room;
@@ -1285,7 +1285,7 @@ export class ChartView {
   // worth of labels packed into it and overlapped, the polar path skipping the
   // collision pass that would otherwise thin them. Grid rings come from the
   // same tick list and must keep full density, so only the labels are thinned.
-  // Mirrored by _polar_thin_radial_labels in python/xy/_svg.py.
+  // Mirrored by _polar_thin_radial_labels in python/xyg/_svg.py.
   _polarThinRadialLabels(labels, geom) {
     if (!geom || !Array.isArray(labels)) return labels;
     const span = geom.radius * (1 - (geom.hole || 0));
@@ -4700,7 +4700,7 @@ export class ChartView {
   // expands here instead of on the wire. Vertices stay in the centers'
   // encoded space: stored = (value - offset) * scale, so a data-space delta
   // scales by meta.scale and the center columns' metas serve every vertex.
-  // The ring must match HEX_RING in python/xy/_svg.py.
+  // The ring must match HEX_RING in python/xyg/_svg.py.
   _buildHexbinMark(g, t, buffer) {
     const cx = this._columnView(buffer, this.spec.columns[t.x]);
     const cy = this._columnView(buffer, this.spec.columns[t.y]);
@@ -6509,7 +6509,7 @@ export class ChartView {
   // centre, at any angle — as the bottom-left corner, and strings a set of
   // labels out in a horizontal row in theta order. Mirrors the `point()`
   // helper in `_annotation_svg` and the `marker` branch of
-  // `annotation_label_placement` (python/xy/_svg.py), which the two exporters
+  // `annotation_label_placement` (python/xyg/_svg.py), which the two exporters
   // already share; without this the browser and the exports disagree about
   // where every annotation on a polar chart belongs.
   //
@@ -6608,7 +6608,7 @@ export class ChartView {
 
   // `maxWidth` word-wraps the block before measuring, so `h` is the height the
   // wrapped text actually occupies. Mirrors `_textblock.measure(max_width=...)`
-  // in python/xy/_textblock.py, including the wrap rule in `xyWrapLines`.
+  // in python/xyg/_textblock.py, including the wrap rule in `xyWrapLines`.
   _estimateTickLabel(text, fontSize, maxWidth = null) {
     let lines = String(text ?? "").replace(/\r\n?/g, "\n").split("\n");
     const context = typeof document !== "undefined"
@@ -7390,7 +7390,7 @@ export class ChartView {
     };
     if (polarGeom) {
       // Angular labels around the rim, radial labels along the 22.5-degree
-      // spoke. Mirrors _polar_tick_labels in python/xy/_svg.py; the cartesian
+      // spoke. Mirrors _polar_tick_labels in python/xyg/_svg.py; the cartesian
       // label machinery is edge-relative and neither concept survives a disc.
       const RLABEL = (POLAR_RLABEL_DEG * Math.PI) / 180;
       const GAP = POLAR_TICK_GAP;

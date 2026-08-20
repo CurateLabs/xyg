@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _svg
-from xy._figure import Figure
+import xyg as xy
+from xyg import _svg
+from xyg._figure import Figure
 
 
 def test_symlog_component_emits_original_domain_and_constant() -> None:
@@ -113,7 +113,7 @@ def test_symlog_density_grid_bins_in_scale_coordinates() -> None:
 
 
 def test_symlog_density_view_rebins_in_scale_coordinates(monkeypatch) -> None:
-    from xy import interaction
+    from xyg import interaction
 
     monkeypatch.setattr(interaction, "SCATTER_DENSITY_THRESHOLD", 50)
     n = 400
@@ -177,7 +177,7 @@ def test_symlog_wire_protocol_is_bumped_in_lockstep() -> None:
     # must refuse the spec loudly instead of rendering it as linear.
     from pathlib import Path
 
-    from xy.config import PROTOCOL_VERSION
+    from xyg.config import PROTOCOL_VERSION
 
     assert PROTOCOL_VERSION >= 5
     header = Path(__file__).resolve().parents[1] / "js" / "src" / "00_header.ts"
@@ -201,7 +201,7 @@ def test_client_number_format_accepts_literal_affixes(tmp_path) -> None:
     import pytest
 
     from conftest import run_browser_probe
-    from xy.export import find_chromium
+    from xyg.export import find_chromium
 
     chromium = find_chromium()
     if chromium is None:
@@ -213,7 +213,7 @@ def test_client_number_format_accepts_literal_affixes(tmp_path) -> None:
         height=360,
     )
     html = chart.to_html()
-    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
+    render_call = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
     assert render_call in html
     probe = """
   const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);

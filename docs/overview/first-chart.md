@@ -18,16 +18,16 @@ Save this as `first_chart.py`:
 ~~~python
 import random
 
-import xy
+import xyg
 
 rng = random.Random(7)
 x = [rng.random() for _ in range(200)]
 y = [rng.random() for _ in x]
 
-chart = xy.scatter_chart(
-    xy.scatter(x, y, color="#6e56cf", size=7, opacity=0.65),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y, color="#6e56cf", size=7, opacity=0.65),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="200 random points",
 )
 
@@ -46,16 +46,16 @@ This is the chart it produces, live:
 import random
 
 import reflex_xy
-import xy
+import xyg
 
 rng = random.Random(7)
 x = [rng.random() for _ in range(200)]
 y = [rng.random() for _ in x]
 
-first_chart = xy.scatter_chart(
-    xy.scatter(x, y, color="#6e56cf", size=7, opacity=0.65),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+first_chart = xyg.scatter_chart(
+    xyg.scatter(x, y, color="#6e56cf", size=7, opacity=0.65),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="200 random points",
 )
 
@@ -77,16 +77,16 @@ compatible anywidget frontend:
 ~~~python
 import random
 
-import xy
+import xyg
 
 rng = random.Random(7)
 x = [rng.random() for _ in range(200)]
 y = [rng.random() for _ in x]
 
-chart = xy.scatter_chart(
-    xy.scatter(x, y, color="#6e56cf", size=7, opacity=0.65),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y, color="#6e56cf", size=7, opacity=0.65),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="200 random points",
 )
 
@@ -115,14 +115,14 @@ to a screen-bounded density view and keeps pan, zoom, and hover smooth.
 
 ~~~python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(0)
 x = rng.normal(size=2_500_000)
 y = x * 0.6 + rng.normal(scale=0.8, size=x.size)
 
-chart = xy.scatter_chart(
-    xy.scatter(x, y, size=4),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y, size=4),
     title="2.5 million points",
 )
 
@@ -132,14 +132,14 @@ chart.to_html("big_scatter.html")
 ~~~python demo-only exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 big_rng = np.random.default_rng(0)
 big_x = big_rng.normal(size=2_500_000)
 big_y = big_x * 0.6 + big_rng.normal(scale=0.8, size=big_x.size)
 
-million_point_chart = xy.scatter_chart(
-    xy.scatter(big_x, big_y, size=4),
+million_point_chart = xyg.scatter_chart(
+    xyg.scatter(big_x, big_y, size=4),
     title="2.5 million points",
 )
 

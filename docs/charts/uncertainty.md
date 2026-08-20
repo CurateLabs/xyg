@@ -2,8 +2,8 @@
 title: Error Bar and Band Charts in Python
 description: Show uncertainty in Python with xy — draw error bars for point estimates and shaded error bands for confidence and forecast intervals.
 components:
-  - xy.error_band_chart
-  - xy.errorbar_chart
+  - xyg.error_band_chart
+  - xyg.errorbar_chart
 ---
 
 # Error Bar and Band Charts in Python
@@ -20,23 +20,23 @@ the region between lower and upper bounds and layers naturally with a line.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.arange(12, dtype=float)
 estimate = 30 + 2.2 * x + 3 * np.sin(x)
 error = 1.5 + 0.15 * x
 
-chart = xy.chart(
-    xy.error_band(
+chart = xyg.chart(
+    xyg.error_band(
         x,
         estimate - error,
         estimate + error,
         color="#6e56cf",
         name="95% interval",
     ),
-    xy.line(x, estimate, color="#6e56cf", width=2, name="Estimate"),
-    xy.errorbar(x[::2], estimate[::2], yerr=error[::2], color="#1b212a"),
-    xy.legend(),
+    xyg.line(x, estimate, color="#6e56cf", width=2, name="Estimate"),
+    xyg.errorbar(x[::2], estimate[::2], yerr=error[::2], color="#1b212a"),
+    xyg.legend(),
 )
 
 
@@ -52,7 +52,7 @@ either axis, and use `cap_size` to draw end caps:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_dose = np.random.default_rng(7)
 dose = np.array([1.0, 2.0, 4.0, 8.0, 16.0])
@@ -61,8 +61,8 @@ dose_lower = dose * 0.18
 dose_upper = dose * 0.42
 response_err = 2.0 + rng_dose.uniform(0.0, 2.5, dose.size)
 
-asymmetric_errorbar_chart = xy.chart(
-    xy.errorbar(
+asymmetric_errorbar_chart = xyg.chart(
+    xyg.errorbar(
         dose,
         response,
         xerr=(dose_lower, dose_upper),
@@ -72,9 +72,9 @@ asymmetric_errorbar_chart = xy.chart(
         color="#e5484d",
         name="Measured response",
     ),
-    xy.x_axis(label="dose (mg)"),
-    xy.y_axis(label="response"),
-    xy.legend(),
+    xyg.x_axis(label="dose (mg)"),
+    xyg.y_axis(label="response"),
+    xyg.legend(),
 )
 
 
@@ -90,7 +90,7 @@ intervals that widen with distance from the last observation:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_fan = np.random.default_rng(11)
 history_x = np.arange(24, dtype=float)
@@ -101,8 +101,8 @@ future_x = np.arange(23, 36, dtype=float)
 forecast = history_y[-1] + 1.4 * (future_x - future_x[0])
 spread = 1.0 + 1.9 * np.sqrt(future_x - future_x[0])
 
-forecast_fan_chart = xy.chart(
-    xy.error_band(
+forecast_fan_chart = xyg.chart(
+    xyg.error_band(
         future_x,
         forecast - 2.0 * spread,
         forecast + 2.0 * spread,
@@ -110,7 +110,7 @@ forecast_fan_chart = xy.chart(
         opacity=0.14,
         name="90% interval",
     ),
-    xy.error_band(
+    xyg.error_band(
         future_x,
         forecast - spread,
         forecast + spread,
@@ -118,11 +118,11 @@ forecast_fan_chart = xy.chart(
         opacity=0.30,
         name="50% interval",
     ),
-    xy.line(history_x, history_y, color="#1b212a", width=2, name="History"),
-    xy.line(future_x, forecast, color="#6e56cf", width=2, dash="dashed", name="Forecast"),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="demand"),
-    xy.legend(),
+    xyg.line(history_x, history_y, color="#1b212a", width=2, name="History"),
+    xyg.line(future_x, forecast, color="#6e56cf", width=2, dash="dashed", name="Forecast"),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="demand"),
+    xyg.legend(),
 )
 
 
@@ -143,7 +143,7 @@ Use `errorbar` for uncertainty attached to individual observations. It supports
 x or y uncertainty and symmetric or asymmetric values.
 
 `errorbar` is also supported inside
-[`xy.polar_chart()`](/docs/xy/charts/polar-chart/#combine-a-sector-hole-and-error-bars),
+[`xyg.polar_chart()`](/docs/xy/charts/polar-chart/#combine-a-sector-hole-and-error-bars),
 where `xerr` is angular uncertainty and `yerr` is radial uncertainty.
 `error_band` remains Cartesian-only.
 
@@ -169,7 +169,7 @@ named columns resolved through `data=`.
 
 ### How do I add error bars to a chart in Python?
 
-Add an `xy.errorbar(x, y, yerr=...)` mark (use `xerr` for horizontal error) to
+Add an `xyg.errorbar(x, y, yerr=...)` mark (use `xerr` for horizontal error) to
 turn any chart into an error bar graph; it supports symmetric or asymmetric
 values and optional caps.
 
@@ -181,7 +181,7 @@ or forecast intervals.
 
 ### How do I draw a confidence interval band in Python?
 
-Use `xy.error_band(x, lower, upper)` and layer `xy.line(x, estimate)` on top so
+Use `xyg.error_band(x, lower, upper)` and layer `xyg.line(x, estimate)` on top so
 the shaded interval sits behind the trend line.
 
 ### Can error bars be asymmetric?

@@ -1,23 +1,23 @@
 ---
 title: Graph Charts and GraphForge Ingest
-description: Build node-link graphs in Python and Node with xy. Ingest GraphForge Arrow projections with stable UUID identity, tooltips, and host-parity marks.
+description: Build node-link graphs in Python and Node with xyg. Ingest GraphForge Arrow projections with stable UUID identity, tooltips, and host-parity marks.
 components:
-  - xy.graph_chart
+  - xyg.graph_chart
 ---
 
 # Graph charts and GraphForge ingest
 
-Build node–link graphs with `xy.graph` / `xy.graph_chart`, or the Node
+Build node–link graphs with `xyg.graph` / `xyg.graph_chart`, or the Node
 `figure().graph(...)` / `composeGraph(...)` helpers. Layout, LOD, and encode
 decisions stay in Rust; hosts only coerce inputs.
 
 ## xy-native inputs
 
 ```python
-import xy
+import xyg
 
-chart = xy.graph_chart(
-    xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force", seed=1),
+chart = xyg.graph_chart(
+    xyg.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force", seed=1),
     width=640,
     height=400,
 )
@@ -30,7 +30,7 @@ required. Python accepts `pyarrow.Table` (optional) or plain column mappings;
 Node accepts Arrow JS tables or plain `{ column: values }` objects.
 
 ```python
-import xy
+import xyg
 
 nodes = {
     "node_uuid": ["…", "…"],
@@ -48,14 +48,14 @@ edges = {
 
 # Directly into the mark — Rust validates identity, then the mark attaches
 # tooltip_rows from labels / relationship_type / provenance.
-fig = xy.Figure().graph(nodes, edges, layout="grid", size="rank")
+fig = xyg.Figure().graph(nodes, edges, layout="grid", size="rank")
 ```
 
 Or validate once and reuse `GraphData`:
 
 ```python
-data = xy.from_graphforge_tables(nodes, edges)
-fig = xy.Figure().graph(data, layout="circle")
+data = xyg.from_graphforge_tables(nodes, edges)
+fig = xyg.Figure().graph(data, layout="circle")
 ```
 
 Node mirror:

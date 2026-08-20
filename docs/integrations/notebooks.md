@@ -10,13 +10,13 @@ Jupyter, JupyterLab, VS Code, Colab, or Marimo cell.
 
 ~~~python
 import numpy as np
-import xy
+import xyg
 
 x = np.linspace(0, 8, 400)
-chart = xy.line_chart(
-    xy.line(x, np.sin(x), name="signal"),
-    xy.x_axis(label="time"),
-    xy.y_axis(label="value"),
+chart = xyg.line_chart(
+    xyg.line(x, np.sin(x), name="signal"),
+    xyg.x_axis(label="time"),
+    xyg.y_axis(label="value"),
 )
 
 chart
@@ -78,25 +78,25 @@ chart container. Supplying a callback enables the corresponding interaction
 and routes its semantic payload to Python.
 
 ~~~python
-import xy
+import xyg
 
 
 def selected(selection):
     print(len(selection), "rows")
 
 
-chart = xy.scatter_chart(
-    xy.scatter([0, 1, 2], [2, 4, 3]),
+chart = xyg.scatter_chart(
+    xyg.scatter([0, 1, 2], [2, 4, 3]),
     on_select=selected,
 )
 chart
 ~~~
 
-These are core `xy.Chart` callback keywords for the live notebook widget.
+These are core `xyg.Chart` callback keywords for the live notebook widget.
 They are not Reflex component props: the Reflex adapter instead accepts
 `on_point_hover`, `on_point_click`, `on_select_end`, and `on_view_change` on
 the outer `reflex_xy.chart(...)` component. Notebook `on_select` receives an
-`xy.Selection` with canonical row indices; Reflex `on_select_end` receives a
+`xyg.Selection` with canonical row indices; Reflex `on_select_end` receives a
 small JSON-safe selection summary. See
 [Interactions and selections](/docs/xy/core-concepts/interactions/) for the
 full mapping.

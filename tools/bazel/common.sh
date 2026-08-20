@@ -89,7 +89,7 @@ run_python() {
 
 expected_abi_from_source() {
   local root="${1}"
-  local generated_py="${root}/python/xy/_abi_generated.py"
+  local generated_py="${root}/python/xyg/_abi_generated.py"
   if [[ -f "${generated_py}" ]]; then
     local generated_abi
     generated_abi="$(sed -n 's/^ABI_VERSION = \([0-9]*\)$/\1/p' "${generated_py}" | head -n 1)"

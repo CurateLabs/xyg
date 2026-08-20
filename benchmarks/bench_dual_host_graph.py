@@ -24,7 +24,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
-from xy import _native  # noqa: E402
+from xyg import _native  # noqa: E402
 
 # Soft ceilings (ms) — catastrophic regression only, not tight SLOs.
 # ~10–20× of warm release timings on a mid-range CI CPU (ABI 53 / Barnes–Hut).

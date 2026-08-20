@@ -1,8 +1,8 @@
 ---
 title: Box Plot in Python
-description: Boxplot Python charts with xy. Compare distributions across groups with quartiles, whiskers, and outliers in a fast, interactive box and whisker plot.
+description: Boxplot Python charts with xyg. Compare distributions across groups with quartiles, whiskers, and outliers in a fast, interactive box and whisker plot.
 components:
-  - xy.box_chart
+  - xyg.box_chart
 ---
 
 # Box Plots in Python
@@ -24,7 +24,7 @@ Pass a list of arrays — one per group — to `box`, and label each group with
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 box_rng = np.random.default_rng(23)
 box_groups = [
@@ -32,16 +32,16 @@ box_groups = [
     box_rng.normal(57, 9, 800),
 ]
 
-box_detail_chart = xy.box_chart(
-    xy.box(
+box_detail_chart = xyg.box_chart(
+    xyg.box(
         box_groups,
         x=["Control", "Treatment"],
         color="#6e56cf",
         width=0.5,
         show_outliers=True,
     ),
-    xy.x_axis(label="cohort"),
-    xy.y_axis(label="score"),
+    xyg.x_axis(label="cohort"),
+    xyg.y_axis(label="score"),
     title="Cohort score distribution",
 )
 
@@ -64,7 +64,7 @@ remaining geometry. Every mapping uses the same validated CSS vocabulary as
 ordinary XY marks and survives interactive and static renderers.
 
 ~~~python
-custom_box = xy.box(
+custom_box = xyg.box(
     service_latency,
     x=["checkout", "search", "payments"],
     style={
@@ -96,7 +96,7 @@ enlarge the flagged points with `show_outliers` plus `outlier_size`.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 latency_rng = np.random.default_rng(5)
 service_latency = [
@@ -111,8 +111,8 @@ service_latency = [
     ),
 ]
 
-horizontal_box_chart = xy.box_chart(
-    xy.box(
+horizontal_box_chart = xyg.box_chart(
+    xyg.box(
         service_latency,
         x=["checkout", "search", "payments"],
         orientation="horizontal",
@@ -121,8 +121,8 @@ horizontal_box_chart = xy.box_chart(
         show_outliers=True,
         outlier_size=6.0,
     ),
-    xy.x_axis(label="latency (ms)"),
-    xy.y_axis(label="service"),
+    xyg.x_axis(label="latency (ms)"),
+    xyg.y_axis(label="service"),
     title="Service latency, outliers highlighted",
 )
 
@@ -146,7 +146,7 @@ When observations arrive as one long array, pass a matching label array to
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 plant_rng = np.random.default_rng(77)
 site_names = ["North", "East", "South", "West", "Central"]
@@ -155,8 +155,8 @@ yield_values = np.concatenate(
 )
 site_labels = np.repeat(site_names, 300)
 
-grouped_box_chart = xy.box_chart(
-    xy.box(
+grouped_box_chart = xyg.box_chart(
+    xyg.box(
         yield_values,
         group=site_labels,
         color="#6e56cf",
@@ -164,8 +164,8 @@ grouped_box_chart = xy.box_chart(
         show_outliers=True,
         outlier_size=4.5,
     ),
-    xy.x_axis(label="site"),
-    xy.y_axis(label="yield (bushels)"),
+    xyg.x_axis(label="site"),
+    xyg.y_axis(label="yield (bushels)"),
     title="Yield by site from long-form records",
 )
 
@@ -203,8 +203,8 @@ Pass column names with `data=` instead of arrays when your data is a table.
 
 ### How do I make a box plot in Python?
 
-Pass a list of arrays to `xy.box(...)`, one per group, inside
-`xy.box_chart(...)` and render it. That is all a Python box and whisker plot
+Pass a list of arrays to `xyg.box(...)`, one per group, inside
+`xyg.box_chart(...)` and render it. That is all a Python box and whisker plot
 needs: quartiles, whiskers, and axes are computed for the whole box chart
 automatically.
 

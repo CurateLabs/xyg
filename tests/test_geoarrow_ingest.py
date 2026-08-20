@@ -8,7 +8,7 @@ import pytest
 
 pa = pytest.importorskip("pyarrow")
 
-from xy import _geoarrow, _native  # noqa: E402
+from xyg import _geoarrow, _native  # noqa: E402
 
 
 def _point_field(crs: str = "EPSG:4326") -> pa.Field:

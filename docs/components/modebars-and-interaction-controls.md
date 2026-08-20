@@ -2,8 +2,8 @@
 title: Modebars & Controls in Python
 description: Configure XY's toolbar, gestures, selection, exports, and linked viewports.
 components:
-  - xy.modebar
-  - xy.interaction_config
+  - xyg.modebar
+  - xyg.interaction_config
 ---
 
 # Modebars & Controls in Python
@@ -24,7 +24,7 @@ disable automatically at the ends of the history, remain open while stepping
 through views, and a new navigation after going Back clears the forward stack.
 
 Polar charts use a narrower control contract: hover and export remain available,
-and zoom is off by default — `xy.wind_rose()` is the one polar chart that ships
+and zoom is off by default — `xyg.wind_rose()` is the one polar chart that ships
 with it on. By default a polar chart without zoom shows no zoom menu at all: no
 zoom percentage, no Zoom In/Out, no Fit Data or Reset View, and no Back/Next
 history, because no local viewport control is enabled. An explicit `reset_axes`
@@ -32,7 +32,7 @@ still exposes Fit Data and Reset View on their own. When reset, history, or
 another view control keeps this menu available while `zoom=False`, its trigger
 shows a view-controls icon instead of a zoom percentage because local zoom
 cannot change that number. Add
-`xy.interaction_config(zoom=True)` and the whole menu returns, including radial
+`xyg.interaction_config(zoom=True)` and the whole menu returns, including radial
 wheel/button zoom, which scales `r_max` about
 a fixed `r_min` while preserving an authored `hole` or `origin`. Authored angular sectors render
 normally, but Pan/theta rotation, interactive sector zoom, box zoom, selection,
@@ -50,13 +50,13 @@ corner of this chart to see the pan, zoom, reset, and export controls:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_signal = np.random.default_rng(11)
 signal_walk = np.cumsum(rng_signal.normal(0.0, 1.0, 60)).round(2)
 
-default_toolbar_chart = xy.line_chart(
-    xy.line(list(range(60)), signal_walk, name="signal"),
+default_toolbar_chart = xyg.line_chart(
+    xyg.line(list(range(60)), signal_walk, name="signal"),
     title="Default modebar",
 )
 
@@ -68,11 +68,11 @@ def default_toolbar_demo():
 Use `modebar()` to hide or style the toolbar:
 
 ~~~python
-import xy
+import xyg
 
-chart = xy.scatter_chart(
-    xy.scatter([0, 1, 2, 3], [1, 3, 2, 5]),
-    xy.modebar(
+chart = xyg.scatter_chart(
+    xyg.scatter([0, 1, 2, 3], [1, 3, 2, 5]),
+    xyg.modebar(
         button_class_name="rounded-md",
         button_style={"border": "1px solid #d0d5dd"},
     ),
@@ -106,8 +106,8 @@ For example, Tailwind can now style the grip and menu contents without a
 private descendant selector:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter([0, 1, 2, 3], [1, 3, 2, 5]),
+chart = xyg.scatter_chart(
+    xyg.scatter([0, 1, 2, 3], [1, 3, 2, 5]),
     class_names={
         "modebar_drag_handle": "rounded-full bg-pink-500",
         "modebar_control_group": "gap-1",
@@ -139,18 +139,18 @@ chart removes the toolbar entirely with `modebar(show=False)`:
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 rng_pair = np.random.default_rng(5)
 toolbar_x = list(range(30))
 
-styled_toolbar = xy.line_chart(
-    xy.line(
+styled_toolbar = xyg.line_chart(
+    xyg.line(
         toolbar_x,
         np.cumsum(rng_pair.normal(0.0, 1.0, 30)).round(2),
         name="styled",
     ),
-    xy.modebar(
+    xyg.modebar(
         style={"background": "#f8fafc", "border_radius": 8},
         button_class_name="rounded-md",
         button_style={"border": "1px solid #d0d5dd"},
@@ -158,14 +158,14 @@ styled_toolbar = xy.line_chart(
     title="Styled toolbar",
 )
 
-hidden_toolbar = xy.line_chart(
-    xy.line(
+hidden_toolbar = xyg.line_chart(
+    xyg.line(
         toolbar_x,
         np.cumsum(rng_pair.normal(0.0, 1.0, 30)).round(2),
         name="hidden",
         color="#b45309",
     ),
-    xy.modebar(show=False),
+    xyg.modebar(show=False),
     title="modebar(show=False)",
 )
 
@@ -183,9 +183,9 @@ def toolbar_visibility_demo():
 Configure behavior as chart props or with an `interaction_config()` child:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter([0, 1, 2, 3], [1, 3, 2, 5]),
-    xy.interaction_config(
+chart = xyg.scatter_chart(
+    xyg.scatter([0, 1, 2, 3], [1, 3, 2, 5]),
+    xyg.interaction_config(
         hover=True,
         click=True,
         select=True,
@@ -206,9 +206,9 @@ The zoom policy applies consistently to wheel zoom, modebar zoom-in/out, and box
 zoom:
 
 ~~~python
-chart = xy.line_chart(
-    xy.line([0, 1, 2, 3], [1, 3, 2, 5]),
-    xy.interaction_config(zoom_axes=("x",)),
+chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3], [1, 3, 2, 5]),
+    xyg.interaction_config(zoom_axes=("x",)),
 )
 ~~~
 
@@ -242,7 +242,7 @@ axis bounds and renderer precision. A tuple applies to all zoom axes; a mapping 
 set independent limits:
 
 ~~~python
-xy.interaction_config(
+xyg.interaction_config(
     default_drag_action="zoom",
     pan_axes=("x", "y2"),
     zoom_axes=("x", "y2"),
@@ -265,15 +265,15 @@ double-click reset, while the right chart disables all local navigation with
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 rng_nav = np.random.default_rng(17)
 nav_x = rng_nav.uniform(0.0, 10.0, 80)
 nav_y = rng_nav.uniform(0.0, 4.0, 80)
 
-x_zoom_only = xy.scatter_chart(
-    xy.scatter(nav_x, nav_y, size=6, color="#2563eb"),
-    xy.interaction_config(
+x_zoom_only = xyg.scatter_chart(
+    xyg.scatter(nav_x, nav_y, size=6, color="#2563eb"),
+    xyg.interaction_config(
         default_drag_action="zoom",
         zoom_axes=("x",),
         zoom_limits={"x": (1.0, 16.0)},
@@ -283,9 +283,9 @@ x_zoom_only = xy.scatter_chart(
     title="X-only box zoom, max 16x",
 )
 
-locked_viewport = xy.scatter_chart(
-    xy.scatter(nav_x, nav_y, size=6, color="#64748b"),
-    xy.interaction_config(navigation=False),
+locked_viewport = xyg.scatter_chart(
+    xyg.scatter(nav_x, nav_y, size=6, color="#64748b"),
+    xyg.interaction_config(navigation=False),
     title="navigation=False",
 )
 
@@ -314,7 +314,7 @@ Charts with the same non-empty `link_group` synchronize the axes named by
 `link_axes`:
 
 ~~~python
-shared = xy.interaction_config(
+shared = xyg.interaction_config(
     link_group="dashboard-time",
     link_axes=("x",),
 )
@@ -335,7 +335,7 @@ For callback payloads, see
 
 ### How do I disable zoom and pan on a chart?
 
-Add `xy.interaction_config(navigation=False)` — it is the master switch that
+Add `xyg.interaction_config(navigation=False)` — it is the master switch that
 blocks all local pan, zoom, and reset input (linked and application-driven
 ranges can still update the chart). To disable selectively, use `pan=False`,
 `zoom=False`, or `wheel_zoom=False`, or restrict an action to specific axes
@@ -351,13 +351,13 @@ axis, and reset does not clear an active selection.
 
 ### How do I hide or customize the chart toolbar?
 
-Add `xy.modebar(show=False)` to remove the toolbar entirely. To restyle it,
+Add `xyg.modebar(show=False)` to remove the toolbar entirely. To restyle it,
 `class_name` and `style` target the toolbar while `button_class_name` and
 `button_style` target every control (the `modebar` and `modebar_button` chart
 slots expose the same surfaces). The granular `modebar_*` slots independently
 target its drag handle, control group, separators, icons, zoom value,
 indicators, selection icon, menus, menu icons/labels, and history controls.
-`zoom_buttons=` in `xy.interaction_config()` controls whether the Zoom In and
+`zoom_buttons=` in `xyg.interaction_config()` controls whether the Zoom In and
 Zoom Out commands appear.
 
 ### Can users export a chart as PNG, SVG, or CSV from the toolbar?

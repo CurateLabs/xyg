@@ -10,7 +10,7 @@ from io import BytesIO
 import numpy as np
 import pytest
 
-from xy import _webp
+from xyg import _webp
 
 Image = pytest.importorskip("PIL.Image")
 

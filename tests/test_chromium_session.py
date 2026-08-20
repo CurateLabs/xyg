@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from xy import _chromium
+from xyg import _chromium
 
 
 class _FakeProcess:

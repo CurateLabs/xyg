@@ -12,12 +12,12 @@ from conftest import run_browser_probe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-import xy  # noqa: E402
-from xy.export import find_chromium  # noqa: E402
+import xyg as xy  # noqa: E402
+from xyg.export import find_chromium  # noqa: E402
 
 _RENDER_CALLS = (
-    'xy.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
-    'xy.renderStandalone(document.getElementById("chart"), spec, buf);',
+    'xyg.renderStandalone(document.getElementById("chart"), spec, bytes.buffer);',
+    'xyg.renderStandalone(document.getElementById("chart"), spec, buf);',
 )
 
 _PROBE = """
@@ -83,7 +83,7 @@ def test_zoom_out_does_not_expand_less_zoomed_axis_past_home(tmp_path: Path) -> 
     document = document.replace(
         render_call,
         render_call.replace(
-            "xy.renderStandalone(", "window.__xyZoomProbeView = xy.renderStandalone(", 1
+            "xyg.renderStandalone(", "window.__xyZoomProbeView = xy.renderStandalone(", 1
         ),
         1,
     )

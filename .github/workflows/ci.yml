@@ -104,8 +104,8 @@ jobs:
         run: |
           node -e "import('./packages/xy-client/dist/index.js').then(m => { if (!m.default.render) throw new Error('no render export'); })"
           node --check packages/xy-client/dist/standalone.js
-          node -e "import('./python/xy/static/index.js').then(m => { if (!m.default.render) throw new Error('no render export'); })"
-          node --check python/xy/static/standalone.js
+          node -e "import('./python/xyg/static/index.js').then(m => { if (!m.default.render) throw new Error('no render export'); })"
+          node --check python/xyg/static/standalone.js
 
       - name: Python 3.11 floor syntax check
         run: python3 scripts/check_python_floor.py
@@ -517,7 +517,7 @@ jobs:
         if: matrix.xy
         run: |
           .venv/bin/python - <<'PY'
-          import xy.kernels as k
+          import xyg.kernels as k
           assert k.BACKEND == "native", f"benchmark job requires native backend, got {k.BACKEND!r}"
           PY
       - name: Install Chromium (Playwright)
@@ -592,7 +592,7 @@ jobs:
       - name: Verify native benchmark backend
         run: |
           .venv/bin/python - <<'PY'
-          import xy.kernels as k
+          import xyg.kernels as k
           assert k.BACKEND == "native", f"benchmark job requires native backend, got {k.BACKEND!r}"
           PY
       # Playwright Chromium for the time-to-first-render (browser paint) pass.
@@ -756,8 +756,8 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xy
-          import xy.kernels as kernels
+          import xyg as xy
+          import xyg.kernels as kernels
 
           version = metadata.version("xyg")
           assert xy.__version__ == version
@@ -777,13 +777,13 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xy
+          import xyg as xy
 
           version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           try:
-              import xy.kernels  # noqa: F401
+              import xyg.kernels  # noqa: F401
           except ImportError as err:
               msg = str(err)
               assert "native Rust core" in msg, msg
@@ -866,8 +866,8 @@ jobs:
         run: |
           uv venv smoke
           uv pip install -p smoke dist/*.whl numpy anywidget
-          ./smoke/bin/python -c "import xy, xy.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native core loaded')" \
-            || ./smoke/Scripts/python.exe -c "import xy, xy.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native core loaded')"
+          ./smoke/bin/python -c "import xyg, xyg.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native core loaded')" \
+            || ./smoke/Scripts/python.exe -c "import xyg, xyg.kernels as k; assert k.BACKEND == 'native', k.BACKEND; print('native core loaded')"
 
       - name: Typecheck installed-wheel public surface
         shell: bash
@@ -940,11 +940,11 @@ jobs:
           uv venv smoke
           uv pip install -p smoke dist/*.whl numpy anywidget
           ./smoke/bin/python - <<'PY'
-          import xy  # lazy top-level import still succeeds
+          import xyg  # lazy top-level import still succeeds
 
           assert xy.__version__
           try:
-              import xy.kernels  # noqa: F401
+              import xyg.kernels  # noqa: F401
           except ImportError as err:
               msg = str(err)
               assert "native Rust core" in msg, msg

@@ -36,7 +36,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
+import xyg as xy
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_VIDEO = HERE / "badapple.mp4"

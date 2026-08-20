@@ -303,7 +303,7 @@ EXTENSION_POINTS: tuple[ExtensionPoint, ...] = (
     ExtensionPoint(
         id="mark_plugin_composition",
         status="shipped",
-        entry_point="xy.register_mark / xy.MarkPlugin / xy.mark",
+        entry_point="xyg.register_mark / xy.MarkPlugin / xy.mark",
         notes=(
             "A calc over declared columns plus a build that returns built-in "
             "marks. Its output is ordinary traces, so it reuses the built-in "

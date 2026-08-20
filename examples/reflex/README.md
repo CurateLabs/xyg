@@ -20,7 +20,7 @@ binary columns; Reflex state holds only a token string per chart.
    `reflex_xy.append`.
 4. **Data computed from `on_view_change`** — pan/zoom an overview and a detail
    histogram recomputes from the points in the reported window.
-5. **Fixed data, two ways** — a `xy.Chart` passed straight to `reflex_xy.chart`
+5. **Fixed data, two ways** — a `xyg.Chart` passed straight to `reflex_xy.chart`
    (static payload tier) and a `reflex_xy.inline` token (fixed data served
    through the kernel).
 6. **The 100M drilldown, adapter-native** — the live drilldown scatter

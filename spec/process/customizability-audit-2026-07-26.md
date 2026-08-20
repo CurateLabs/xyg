@@ -40,7 +40,7 @@ public API did not make them reachable.
 ## Implemented contract
 
 ```python
-xy.box(
+xyg.box(
     values,
     group=cohorts,
     style={

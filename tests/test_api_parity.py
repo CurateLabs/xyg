@@ -22,9 +22,9 @@ import inspect
 
 import pytest
 
-import xy
-from xy._figure import Figure
-from xy.components import _MARK_APPLIERS
+import xyg as xy
+from xyg._figure import Figure
+from xyg.components import _MARK_APPLIERS
 
 # Props the composition layer owns that intentionally never reach the engine:
 # `data`/`key` are resolved into arrays before or after the engine call, and
@@ -107,7 +107,7 @@ def test_factory_props_map_to_engine_parameters(factory_name, method_name):
     method = getattr(Figure, method_name)
     unmapped = _param_names(factory) - _param_names(method) - COMPOSITION_ONLY
     assert not unmapped, (
-        f"xy.{factory_name} accepts {sorted(unmapped)} which map to no "
+        f"xyg.{factory_name} accepts {sorted(unmapped)} which map to no "
         f"Figure.{method_name} parameter; either add the engine parameter or "
         "list the prop in COMPOSITION_ONLY"
     )
@@ -159,7 +159,7 @@ def test_fluent_methods_are_the_declarative_implementations():
     """The inversion guard: Figure's per-kind methods ARE the marks.py
     functions, so fluent output == declarative output by construction (one
     body, one signature, one set of defaults), not by sampling."""
-    from xy import marks
+    from xyg import marks
 
     for _factory_name, method_name in MARK_PAIRS:
         assert getattr(Figure, method_name) is getattr(marks, method_name)

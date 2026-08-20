@@ -12,9 +12,9 @@ Machine-readable twin: [`dual-host-parity.json`](dual-host-parity.json)
 
 | Surface | Composition API | Scale path |
 | --- | --- | --- |
-| Python | `python/xy/components.py` + `marks.py` → `Figure.build_payload` | Density / M4 / hexbin / graph render-graph / LOD plan |
+| Python | `python/xyg/components.py` + `marks.py` → `Figure.build_payload` | Density / M4 / hexbin / graph render-graph / LOD plan |
 | Node | `packages/xy-node` `charts.js` + `marks/*` → `Figure.buildPayload` | Same Rust ABI: density, M4, hist, graph LOD, lodPlan |
-| Browser | `js/src` → `@curatelabs/xyg` (`packages/xy-client/dist`); Python copies into `python/xy/static/` | Paint / pick only on §29 buffers (`55_marks.ts` kind table) |
+| Browser | `js/src` → `@curatelabs/xyg` (`packages/xy-client/dist`); Python copies into `python/xyg/static/` | Paint / pick only on §29 buffers (`55_marks.ts` kind table) |
 
 ## Chart classifications (must ship on every host)
 

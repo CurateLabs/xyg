@@ -46,7 +46,7 @@ import numpy as np
 import reflex as rx
 
 import reflex_xy
-import xy
+import xyg as xy
 from reflex_xy.tokens import BUILDER_ATTR
 
 POINTS = 1_000_000

@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-import xy
+import xyg as xy
 
 
 def line_walk() -> xy.Chart:

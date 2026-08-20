@@ -15,15 +15,15 @@ IMPORT_REPLACEMENTS = {
     # xy.pyplot serves as both `plt` and `mpl` (it carries the `dates` module
     # etc.); the reference engine needs the real top-level package for `mpl`.
     # Ordered before the generic rule so it wins for the `mpl` alias.
-    "import xy.pyplot as mpl\n": "import matplotlib as mpl\n",
-    "import xy.pyplot as ": "import matplotlib.pyplot as ",
-    "from xy.pyplot import LinearSegmentedColormap": (
+    "import xyg.pyplot as mpl\n": "import matplotlib as mpl\n",
+    "import xyg.pyplot as ": "import matplotlib.pyplot as ",
+    "from xyg.pyplot import LinearSegmentedColormap": (
         "from matplotlib.colors import LinearSegmentedColormap"
     ),
-    "from xy.pyplot import Legend": "from matplotlib.legend import Legend",
-    "from xy.pyplot import Triangulation": "from matplotlib.tri import Triangulation",
-    "from xy.pyplot import cycler": "from matplotlib import cycler",
-    "from xy.pyplot import FacetGrid": "from seaborn import FacetGrid",
+    "from xyg.pyplot import Legend": "from matplotlib.legend import Legend",
+    "from xyg.pyplot import Triangulation": "from matplotlib.tri import Triangulation",
+    "from xyg.pyplot import cycler": "from matplotlib import cycler",
+    "from xyg.pyplot import FacetGrid": "from seaborn import FacetGrid",
 }
 ENGINE_NAMES = (
     "plt",
@@ -71,7 +71,7 @@ def _xy_cells(notebook: dict) -> list[dict]:
             metadata = cell.setdefault("metadata", {})
             cell["id"] = metadata.get("xy_pdsh_source_id", cell["id"])
             if cell.get("cell_type") == "code":
-                if cell.get("source", [None])[0] == "# xy.pyplot\n":
+                while cell.get("source", [None])[0] == "# xyg.pyplot\n":
                     cell["source"] = cell["source"][1:]
                 if metadata.get("xy_pdsh_auto_show") is True:
                     cell["source"] = cell["source"][:-3]
@@ -109,7 +109,7 @@ def _engine_cell(cell: dict, engine: str) -> dict:
         for name in ENGINE_NAMES[2:]:
             line = line.replace(f" import {prefix}_{name}", f" import {name} as {prefix}_{name}")
         replaced.append(line)
-    title = "Matplotlib reference" if engine == "matplotlib" else "xy.pyplot"
+    title = "Matplotlib reference" if engine == "matplotlib" else "xyg.pyplot"
     made["source"] = [f"# {title}\n", *replaced]
     made["execution_count"] = None
     made["outputs"] = []

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from _browser import chromium_gl_flags, find_chromium
-from xy import export as _xy_export
+from xyg import export as _xy_export
 
 
 def json_bytes(obj: Any) -> int:
@@ -30,7 +30,7 @@ def inline_json(obj: Any) -> str:
 
 
 def _standalone_js() -> str:
-    import xy
+    import xyg as xy
 
     path = Path(xy.__file__).resolve().parent / "static" / "standalone.js"
     return path.read_text(encoding="utf-8")

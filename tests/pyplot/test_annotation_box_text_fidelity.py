@@ -23,8 +23,8 @@ from xml.etree import ElementTree
 
 import pytest
 
-import xy.pyplot as plt
-from xy import _raster
+import xyg.pyplot as plt
+from xyg import _raster
 
 
 @pytest.fixture(autouse=True)

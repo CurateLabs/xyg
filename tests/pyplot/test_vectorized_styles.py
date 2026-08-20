@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy._figure import Figure
+import xyg.pyplot as plt
+from xyg._figure import Figure
 
 
 @pytest.fixture(autouse=True)

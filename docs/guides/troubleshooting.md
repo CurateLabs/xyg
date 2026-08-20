@@ -18,7 +18,7 @@ silently fall back to a slower Python implementation. A source checkout or
 unsupported platform needs a Rust build toolchain.
 
 **The JavaScript client is missing.** Reinstall the XY wheel so its bundled
-`python/xy/static` copy of `@curatelabs/xyg` is present. In a development
+`python/xyg/static` copy of `@curatelabs/xyg` is present. In a development
 checkout, build the JS client with `npm ci && node js/build.mjs` (writes
 `packages/xy-client/dist` and copies into the Python tree) before using
 widgets or HTML export. JS/Node users should resolve `@curatelabs/xyg`, not
@@ -101,7 +101,7 @@ and use a host wrapper for nonce/hash-only policies.
 ## Reflex
 
 **Events do not reach the backend.** `reflex_xy.chart(chart)` with a direct
-`xy.Chart` is the static payload tier. For fixed data with backend events,
+`xyg.Chart` is the static payload tier. For fixed data with backend events,
 create `token = reflex_xy.inline(chart)` at module scope and render it with
 `reflex_xy.chart(token)`. Use an `@reflex_xy.figure` state var instead when the
 data depends on the current session. Only the live token tiers dispatch
@@ -112,7 +112,7 @@ callbacks such as `on_hover`, `on_brush`, and `on_select` are ordinary Python
 callables for the notebook widget. Put Reflex handlers on the outer component
 with `on_point_hover`, `on_point_click`, `on_select_end`, or `on_view_change`.
 The selection payloads also differ: notebook `on_select` receives an
-`xy.Selection`, while Reflex `on_select_end` receives a JSON-safe summary.
+`xyg.Selection`, while Reflex `on_select_end` receives a JSON-safe summary.
 
 **Different workers cannot resolve an inline token.** Register
 `reflex_xy.inline(chart)` at module scope so each backend worker creates the

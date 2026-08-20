@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_PACKAGE = (REPO_ROOT / "python" / "xy").resolve()
+SOURCE_PACKAGE = (REPO_ROOT / "python" / "xyg").resolve()
 QUICKSTART_PAGES = (("first-chart page", REPO_ROOT / "docs" / "overview" / "first-chart.md"),)
 PYTHON_FENCE_RE = re.compile(
     r"^~~~python[^\n]*\n(?P<code>.*?)^~~~\s*$",
@@ -99,7 +99,7 @@ def extract_quickstart(page: Path, label: str) -> str:
     candidates = [
         match.group("code").strip()
         for match in PYTHON_FENCE_RE.finditer(text)
-        if "xy.scatter_chart(" in match.group("code")
+        if "xyg.scatter_chart(" in match.group("code")
         and 'chart.to_html("scatter.html")' in match.group("code")
     ]
     require(

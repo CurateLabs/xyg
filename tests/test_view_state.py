@@ -16,8 +16,8 @@ import math
 import numpy as np
 import pytest
 
-import xy
-from xy.channel import ChannelCallbacks, handle_message
+import xyg as xy
+from xyg.channel import ChannelCallbacks, handle_message
 
 
 def _figure(**chart_kwargs):
@@ -238,7 +238,7 @@ def test_view_state_reports_rows_marker_not_indices() -> None:
     # §2: an arbitrary per-trace index set can be arbitrarily large; the
     # cache records only the opaque marker.
     pytest.importorskip("anywidget")
-    from xy.widget import FigureWidget
+    from xyg.widget import FigureWidget
 
     fig = _figure()
     widget = FigureWidget(fig)
@@ -276,7 +276,7 @@ def test_programmatic_geometric_select_orders_brush_before_select() -> None:
 
 def test_widget_set_view_sends_state_patch() -> None:
     pytest.importorskip("anywidget")
-    from xy.widget import FigureWidget
+    from xyg.widget import FigureWidget
 
     fig = _figure()
     widget = FigureWidget(fig)

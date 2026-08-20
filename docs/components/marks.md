@@ -2,27 +2,27 @@
 title: Marks in Python
 description: Bind data to XY marks, channels, axes, styles, and layers.
 components:
-  - xy.line
-  - xy.scatter
-  - xy.area
-  - xy.bar
-  - xy.column
-  - xy.histogram
-  - xy.box
-  - xy.violin
-  - xy.ecdf
-  - xy.heatmap
-  - xy.hexbin
-  - xy.contour
-  - xy.errorbar
-  - xy.error_band
-  - xy.step
-  - xy.stairs
-  - xy.stem
-  - xy.segments
-  - xy.ribbon
-  - xy.sankey
-  - xy.triangle_mesh
+  - xyg.line
+  - xyg.scatter
+  - xyg.area
+  - xyg.bar
+  - xyg.column
+  - xyg.histogram
+  - xyg.box
+  - xyg.violin
+  - xyg.ecdf
+  - xyg.heatmap
+  - xyg.hexbin
+  - xyg.contour
+  - xyg.errorbar
+  - xyg.error_band
+  - xyg.step
+  - xyg.stairs
+  - xyg.stem
+  - xyg.segments
+  - xyg.ribbon
+  - xyg.sankey
+  - xyg.triangle_mesh
 ---
 
 # Marks in Python
@@ -37,10 +37,10 @@ Pass arrays directly for small, local examples:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-signal_chart = xy.line_chart(
-    xy.line([0, 1, 2, 3], [2, 5, 3, 8], name="signal"),
+signal_chart = xyg.line_chart(
+    xyg.line([0, 1, 2, 3], [2, 5, 3, 8], name="signal"),
 )
 
 
@@ -58,9 +58,9 @@ data = {
     "plan": [40, 44, 48, 52],
 }
 
-chart = xy.line_chart(
-    xy.line("month", "actual", name="Actual"),
-    xy.line("month", "plan", name="Plan"),
+chart = xyg.line_chart(
+    xyg.line("month", "actual", name="Actual"),
+    xyg.line("month", "plan", name="Plan"),
     data=data,
 )
 ~~~
@@ -89,25 +89,25 @@ family-specific choices.
 
 ## Layer Marks in Declaration Order
 
-Families mix freely inside one neutral `xy.chart(...)`; children draw in
+Families mix freely inside one neutral `xyg.chart(...)`; children draw in
 declaration order, so the bars below come first and the trend line paints over
 them:
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 layer_month = np.arange(1, 9)
 layer_volume = np.array([32, 38, 35, 44, 41, 52, 49, 57])
 layer_trend = np.array([30, 34, 37, 41, 44, 48, 51, 55])
 
-layered_chart = xy.chart(
-    xy.bar(layer_month, layer_volume, name="Volume", color="#c4b5fd", opacity=0.7),
-    xy.line(layer_month, layer_trend, name="Trend", color="#6e56cf", width=2.5),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="orders"),
-    xy.legend(),
+layered_chart = xyg.chart(
+    xyg.bar(layer_month, layer_volume, name="Volume", color="#c4b5fd", opacity=0.7),
+    xyg.line(layer_month, layer_trend, name="Trend", color="#6e56cf", width=2.5),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="orders"),
+    xyg.legend(),
     title="Bars first, line on top",
 )
 
@@ -128,8 +128,8 @@ def marks_layer_demo():
 - Children draw in declaration order, so broad fills normally come before
   lines and points.
 - `key=` supplies stable row identity for keyed browser data transitions, and
-  mark-level `animation=` cascades over the chart's `xy.animation()` policy
-  field by field — `xy.animation(duration=90)` on a mark changes only the
+  mark-level `animation=` cascades over the chart's `xyg.animation()` policy
+  field by field — `xyg.animation(duration=90)` on a mark changes only the
   duration — or disables that mark with `animation=False`. See
   [Animations and data transitions](/docs/xy/styling/animations/).
 
@@ -147,15 +147,15 @@ mark uses plain paint options — `name=`, `color=`, `dash=`, and `opacity=`:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 style_rng = np.random.default_rng(7)
 style_x = style_rng.uniform(0, 10, 60)
 style_y = style_x * 0.8 + style_rng.normal(0, 1.2, 60)
 style_depth = style_rng.uniform(0, 1, 60)
 
-styled_chart = xy.chart(
-    xy.scatter(
+styled_chart = xyg.chart(
+    xyg.scatter(
         style_x,
         style_y,
         color=style_depth,
@@ -165,12 +165,12 @@ styled_chart = xy.chart(
         name="Samples",
         opacity=0.85,
     ),
-    xy.line(
+    xyg.line(
         [0, 10], [0, 8], name="Fit", color="#f43f5e", dash="dashed", width=2, opacity=0.9
     ),
-    xy.x_axis(label="input"),
-    xy.y_axis(label="response"),
-    xy.legend(),
+    xyg.x_axis(label="input"),
+    xyg.y_axis(label="response"),
+    xyg.legend(),
     title="Per-mark channels and paint",
 )
 
@@ -188,7 +188,7 @@ rates binds to a named right-hand axis:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 compose_rng = np.random.default_rng(11)
 compose_day = np.arange(1, 31)
@@ -196,8 +196,8 @@ compose_sessions = 120 + compose_day * 4 + compose_rng.normal(0, 9, 30).round(1)
 compose_band = compose_sessions * 0.15
 compose_conv = 0.032 + 0.0009 * compose_day + compose_rng.normal(0, 0.002, 30)
 
-composed_chart = xy.chart(
-    xy.area(
+composed_chart = xyg.chart(
+    xyg.area(
         compose_day,
         compose_sessions + compose_band,
         base=compose_sessions - compose_band,
@@ -205,14 +205,14 @@ composed_chart = xy.chart(
         color="#93c5fd",
         opacity=0.3,
     ),
-    xy.line(compose_day, compose_sessions, name="Sessions", color="#2563eb", width=2.2),
-    xy.scatter(
+    xyg.line(compose_day, compose_sessions, name="Sessions", color="#2563eb", width=2.2),
+    xyg.scatter(
         compose_day, compose_conv, y_axis="y2", name="Conversion", color="#f59e0b", size=5
     ),
-    xy.x_axis(label="day"),
-    xy.y_axis(label="sessions"),
-    xy.y_axis(id="y2", side="right", label="conversion", domain=(0, 0.08), format=".1%"),
-    xy.legend(),
+    xyg.x_axis(label="day"),
+    xyg.y_axis(label="sessions"),
+    xyg.y_axis(id="y2", side="right", label="conversion", domain=(0, 0.08), format=".1%"),
+    xyg.legend(),
     title="Composite figure with a named axis",
 )
 
@@ -237,19 +237,19 @@ for signatures and defaults.
 ### How do I combine multiple marks in one chart in Python?
 
 Pass several mark factories as children of one chart container, e.g.
-`xy.line_chart(xy.area(...), xy.line(...), xy.scatter(...))`. Give each mark a
+`xyg.line_chart(xyg.area(...), xyg.line(...), xyg.scatter(...))`. Give each mark a
 `name=` for the legend, and pass `data=` once on the chart to share a table
 across marks (a mark-level `data=` overrides it).
 
 ### How do I control which mark draws on top of another?
 
 Marks render in declaration order: later children paint over earlier ones. Put
-broad fills such as `xy.area()` first and overlays such as `xy.line()` or
-`xy.scatter()` after them.
+broad fills such as `xyg.area()` first and overlays such as `xyg.line()` or
+`xyg.scatter()` after them.
 
 ### How do I style each series differently in one chart?
 
-Every mark takes its own paint options — for example `xy.line(..., color=...)`
+Every mark takes its own paint options — for example `xyg.line(..., color=...)`
 or a `style=` dict of CSS declarations compiled for WebGL, SVG, and native
 raster output. CSS selectors, Tailwind classes, and `class_name=` cannot paint
 canvas or WebGL geometry, so per-series styling always goes through the mark
@@ -258,6 +258,6 @@ itself.
 ### Can I plot a mark against a second y-axis?
 
 Yes — bind the mark with `y_axis="y2"` (or `x_axis=` for x) and add a matching
-`xy.y_axis(id="y2", side="right")` component to the chart. X-axis identifiers
+`xyg.y_axis(id="y2", side="right")` component to the chart. X-axis identifiers
 must start with `x` and y-axis identifiers with `y`, and every named binding
 needs a matching axis component.

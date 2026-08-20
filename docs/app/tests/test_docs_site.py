@@ -93,8 +93,8 @@ from xy_docs.sidebar import (
 from xy_docs.xy_docs import _CHART_STYLE, _DOCS_ROUTES, app
 
 import reflex_xy
-import xy
-from xy.components import _MARK_APPLIERS, _POLAR_INERT_AXIS_KEYWORDS
+import xyg as xy
+from xyg.components import _MARK_APPLIERS, _POLAR_INERT_AXIS_KEYWORDS
 
 SITEMAP_NAMESPACE = {"sitemap": "https://www.sitemaps.org/schemas/sitemap/0.9"}
 DOCS_APP_ROOT = Path(__file__).resolve().parent.parent
@@ -314,7 +314,7 @@ def test_docs_app_configures_the_reflex_xy_adapter() -> None:
 def test_benchmark_demo_uses_the_shared_theme() -> None:
     from xy_docs.demos import benchmark_charts
 
-    from xy._benchmark_theme import (
+    from xyg._benchmark_theme import (
         benchmark_chart_class,
         benchmark_live_theme,
     )
@@ -458,7 +458,7 @@ def test_styling_gallery_covers_retained_advanced_surfaces() -> None:
         "reduction badge",
         "facet_chart",
         "to_html(custom_css=",
-        "xy.tooltip(",
+        "xyg.tooltip(",
     }
     assert all(surface in content for surface in required_surfaces)
     assert "colorbar_bar" in content
@@ -482,12 +482,14 @@ def test_chart_examples_are_wide_copyable_demos_without_a_toc() -> None:
     assert all("reflex_xy.chart" in block.content for block in demos)
     assert all('"grid_opacity": 0' in block.content for block in demos)
     assert all('"axis_color": "#00000000"' in block.content for block in demos)
-    assert all("xy.vline(" not in block.content for block in demos)
-    assert sum("xy.area(" in block.content for block in demos) >= 2
-    assert sum("xy.bar(" in block.content or "xy.column(" in block.content for block in demos) >= 4
+    assert all("xyg.vline(" not in block.content for block in demos)
+    assert sum("xyg.area(" in block.content for block in demos) >= 2
+    assert (
+        sum("xyg.bar(" in block.content or "xyg.column(" in block.content for block in demos) >= 4
+    )
 
     stacked_demo = next(block for block in demos if "def stacked_product_mix" in block.content)
-    assert stacked_demo.content.count("xy.column(") == 3
+    assert stacked_demo.content.count("xyg.column(") == 3
     assert stacked_demo.content.count("corner_radius=(6, 0)") == 1
     assert "base=growth_base" in stacked_demo.content
     assert "base=enterprise_base" in stacked_demo.content
@@ -586,11 +588,11 @@ def test_palette_playground_drives_a_reactive_chart_grid() -> None:
         assert f"set_{role.lower()}_color" in rendered_page
     assert state_source.count('self.preset = "Custom"') == 3
     assert "self.primary, self.secondary, self.accent = BERRY_PALETTE" in state_source
-    assert state_source.count("xy.theme(palette=") == 6
+    assert state_source.count("xyg.theme(palette=") == 6
     assert "_HIDDEN_AXIS_STYLE" not in state_source
     assert '"axis_color": "#00000000"' not in state_source
-    assert "xy.x_axis(tick_count=6, show=False)" in state_source
-    assert "xy.y_axis(domain=(0, 80), show=False, grid=True)" in state_source
+    assert "xyg.x_axis(tick_count=6, show=False)" in state_source
+    assert "xyg.y_axis(domain=(0, 80), show=False, grid=True)" in state_source
     for handler, value, role in (
         (ChartPlaygroundState.set_primary_color, "#123456", "primary"),
         (ChartPlaygroundState.set_secondary_color, "#abcdef", "secondary"),
@@ -697,7 +699,7 @@ def test_theme_component_demo_uses_site_color_mode_tokens() -> None:
         "--demo-grid:#e5e7eb",
         'color="#f43f5e"',
         'fill="linear-gradient(#f43f5e4d 5%, #f43f5e00 95%)"',
-        "xy.legend(show=False)",
+        "xyg.legend(show=False)",
         '"grid_opacity": 0',
     ):
         assert token in demo
@@ -1483,54 +1485,54 @@ def test_chart_gallery_cards_link_to_family_pages_with_live_demo_anchors() -> No
     line_and_area = pages["/charts/area-chart/"]
     assert "### Step and Stairs" in line_and_area.content
     assert "def step_and_stairs_demo():" in line_and_area.content
-    assert "xy.step(" in line_and_area.content
-    assert "xy.stairs(" in line_and_area.content
+    assert "xyg.step(" in line_and_area.content
+    assert "xyg.stairs(" in line_and_area.content
     assert 'id:"step-and-stairs"' in str(render_xy_markdown_page(line_and_area))
 
     # Every chart type now has its own dedicated, SEO-focused page carrying its
     # mark's live demo.
     standalone_chart_marks = {
-        "/charts/line-chart/": "xy.line(",
-        "/charts/polar-chart/": "xy.polar_chart(",
-        "/charts/radar-chart/": "xy.radar_chart(",
-        "/charts/radial-bar-chart/": "xy.polar_bar_chart(",
-        "/charts/pie-chart/": "xy.polar_bar_chart(",
-        "/charts/wind-rose/": "xy.wind_rose(",
-        "/charts/bar-chart/": "xy.bar(",
-        "/charts/histogram/": "xy.histogram(",
-        "/charts/ecdf/": "xy.ecdf(",
-        "/charts/box-plot/": "xy.box(",
-        "/charts/violin-plot/": "xy.violin(",
-        "/charts/heatmap/": "xy.heatmap(",
-        "/charts/hexbin/": "xy.hexbin(",
-        "/charts/contour-plot/": "xy.contour(",
-        "/charts/stem-plot/": "xy.stem(",
-        "/charts/segments/": "xy.segments(",
-        "/charts/sankey/": "xy.sankey_chart(",
-        "/charts/graph/": "xy.graph_chart(",
-        "/components/triangle-mesh/": "xy.triangle_mesh(",
+        "/charts/line-chart/": "xyg.line(",
+        "/charts/polar-chart/": "xyg.polar_chart(",
+        "/charts/radar-chart/": "xyg.radar_chart(",
+        "/charts/radial-bar-chart/": "xyg.polar_bar_chart(",
+        "/charts/pie-chart/": "xyg.polar_bar_chart(",
+        "/charts/wind-rose/": "xyg.wind_rose(",
+        "/charts/bar-chart/": "xyg.bar(",
+        "/charts/histogram/": "xyg.histogram(",
+        "/charts/ecdf/": "xyg.ecdf(",
+        "/charts/box-plot/": "xyg.box(",
+        "/charts/violin-plot/": "xyg.violin(",
+        "/charts/heatmap/": "xyg.heatmap(",
+        "/charts/hexbin/": "xyg.hexbin(",
+        "/charts/contour-plot/": "xyg.contour(",
+        "/charts/stem-plot/": "xyg.stem(",
+        "/charts/segments/": "xyg.segments(",
+        "/charts/sankey/": "xyg.sankey_chart(",
+        "/charts/graph/": "xyg.graph_chart(",
+        "/components/triangle-mesh/": "xyg.triangle_mesh(",
     }
     for route, mark in standalone_chart_marks.items():
         assert route in pages, route
         assert mark in pages[route].content, route
-    assert "xy.pie_chart(" in pages["/charts/pie-chart/"].content
+    assert "xyg.pie_chart(" in pages["/charts/pie-chart/"].content
 
     # Bar and column share one page: the bar page carries the column chart as a
     # subsidiary section.
-    assert "xy.column(" in pages["/charts/bar-chart/"].content
+    assert "xyg.column(" in pages["/charts/bar-chart/"].content
     assert "/charts/column-chart/" not in pages
 
     dedicated_pages = {
         "/components/annotations/": {
-            "threshold": ("def threshold_demo():", "xy.threshold("),
-            "horizontal-line": ("def horizontal_line_demo():", "xy.hline("),
-            "bands": ("def bands_demo():", "xy.x_band("),
-            "arrow": ("def arrow_demo():", "xy.arrow("),
-            "label": ("def label_demo():", "xy.label("),
-            "text": ("def text_demo():", "xy.text("),
+            "threshold": ("def threshold_demo():", "xyg.threshold("),
+            "horizontal-line": ("def horizontal_line_demo():", "xyg.hline("),
+            "bands": ("def bands_demo():", "xyg.x_band("),
+            "arrow": ("def arrow_demo():", "xyg.arrow("),
+            "label": ("def label_demo():", "xyg.label("),
+            "text": ("def text_demo():", "xyg.text("),
         },
         "/components/facets-and-layers/": {
-            "facet-chart": ("def facet_chart_demo():", "xy.facet_chart("),
+            "facet-chart": ("def facet_chart_demo():", "xyg.facet_chart("),
         },
     }
     for route, examples in dedicated_pages.items():
@@ -1624,7 +1626,7 @@ def test_polar_guides_track_the_current_coordinate_system_contract() -> None:
         # with zoom still off, and `default_drag_action` is narrowed under polar.
         "An explicit `reset_axes` also grants reset",
         'accepts only `"auto"` and `"none"` here',
-        "xy.interaction_config(zoom=True)",
+        "xyg.interaction_config(zoom=True)",
         "def zoomable_polar_demo():",
         "authored fractional degree",
         "splits a line into visible runs",
@@ -1681,8 +1683,8 @@ def test_polar_guides_track_the_current_coordinate_system_contract() -> None:
     assert radial_bar.index("## Basic Radial Bar Chart") < radial_bar.index(
         "## Allocation Overview"
     )
-    assert radial_bar.count("xy.modebar(show=False),") == 4
-    assert 'xy.legend(loc="right")' in radial_bar
+    assert radial_bar.count("xyg.modebar(show=False),") == 4
+    assert 'xyg.legend(loc="right")' in radial_bar
     assert '("Direct", 0, 6, "#5b3cc4")' in radial_bar
 
     for fragment in (
@@ -1695,7 +1697,7 @@ def test_polar_guides_track_the_current_coordinate_system_contract() -> None:
         "PROGRESS_STATS",
         "REVENUE_SERIES",
         "RELIABILITY_BANDS",
-        "xy.polar_bar_chart(",
+        "xyg.polar_bar_chart(",
         "background-colored stroke",
         "corner_radius=12",
         "GAUGE_SPAN = 240.0",
@@ -1706,8 +1708,8 @@ def test_polar_guides_track_the_current_coordinate_system_contract() -> None:
     assert pie.index("## Basic Pie Chart") < pie.index("## Market Share")
     assert "PIE_DATA = [" in pie
     assert 'PURPLE_SHADES = ["#6e56cf"' in pie
-    assert 'xy.legend(loc="left")' in pie
-    assert pie.count("xy.modebar(show=False),") == 5
+    assert 'xyg.legend(loc="left")' in pie
+    assert pie.count("xyg.modebar(show=False),") == 5
     assert "def donut_demo():" not in radial_bar
 
     for fragment in (
@@ -2301,7 +2303,7 @@ def test_component_api_uses_generated_shared_tables() -> None:
     for functions, render in groups:
         rendered = str(render())
         for function in functions:
-            assert f"xy.{function.__name__}" in rendered
+            assert f"xyg.{function.__name__}" in rendered
         assert "Props" in rendered
         assert "Description" in rendered
 
@@ -2315,7 +2317,7 @@ def test_component_api_uses_generated_shared_tables() -> None:
     for group_name, group_factories in CHART_FACTORY_GROUPS:
         assert group_name in factories
         for factory in group_factories:
-            assert f"xy.{factory.__name__}" in factories
+            assert f"xyg.{factory.__name__}" in factories
     assert "Props" in factories
     assert "Description" in factories
 
@@ -2323,27 +2325,27 @@ def test_component_api_uses_generated_shared_tables() -> None:
 def test_component_guides_append_frontmatter_driven_api_tables() -> None:
     """Mirror Reflex library docs by generating component APIs at page end."""
     expected = {
-        "/components/marks/": tuple(f"xy.{function.__name__}" for function in MARKS),
-        "/components/axes/": ("xy.x_axis", "xy.y_axis"),
-        "/components/legends/": ("xy.legend",),
-        "/components/tooltips/": ("xy.tooltip",),
-        "/components/colorbars/": ("xy.colorbar",),
+        "/components/marks/": tuple(f"xyg.{function.__name__}" for function in MARKS),
+        "/components/axes/": ("xyg.x_axis", "xyg.y_axis"),
+        "/components/legends/": ("xyg.legend",),
+        "/components/tooltips/": ("xyg.tooltip",),
+        "/components/colorbars/": ("xyg.colorbar",),
         "/components/modebars-and-interaction-controls/": (
-            "xy.modebar",
-            "xy.interaction_config",
+            "xyg.modebar",
+            "xyg.interaction_config",
         ),
         "/components/annotations/": (
-            "xy.vline",
-            "xy.hline",
-            "xy.x_band",
-            "xy.y_band",
-            "xy.threshold",
-            "xy.threshold_zone",
-            "xy.text",
-            "xy.label",
-            "xy.marker",
-            "xy.arrow",
-            "xy.callout",
+            "xyg.vline",
+            "xyg.hline",
+            "xyg.x_band",
+            "xyg.y_band",
+            "xyg.threshold",
+            "xyg.threshold_zone",
+            "xyg.text",
+            "xyg.label",
+            "xyg.marker",
+            "xyg.arrow",
+            "xyg.callout",
         ),
     }
     pages = {page.route: page for page in discover_docs(DOCS_CONFIG)}
@@ -2353,7 +2355,8 @@ def test_component_guides_append_frontmatter_driven_api_tables() -> None:
         assert component_api_paths(page.metadata) == component_paths
         assert (
             tuple(
-                f"xy.{component.__name__}" for component in component_api_callables(component_paths)
+                f"xyg.{component.__name__}"
+                for component in component_api_callables(component_paths)
             )
             == component_paths
         )
@@ -2365,8 +2368,8 @@ def test_component_guides_append_frontmatter_driven_api_tables() -> None:
 
     axes_rendered = str(render_xy_markdown_page(pages["/components/axes/"]))
     api_reference_index = axes_rendered.index(API_REFERENCE_HEADING)
-    assert api_reference_index < axes_rendered.rindex("xy.x_axis")
-    assert axes_rendered.rindex("xy.x_axis") < axes_rendered.rindex("xy.y_axis")
+    assert api_reference_index < axes_rendered.rindex("xyg.x_axis")
+    assert axes_rendered.rindex("xyg.x_axis") < axes_rendered.rindex("xyg.y_axis")
     assert 'id:"api-reference"' in axes_rendered
     assert "Props" in axes_rendered
     assert "Description" in axes_rendered
@@ -2377,37 +2380,37 @@ def test_component_guides_append_frontmatter_driven_api_tables() -> None:
 def test_chart_gallery_pages_append_factory_api_tables() -> None:
     """Generate focused chart-factory tables without changing the gallery index."""
     expected = {
-        "/charts/line-chart/": ("xy.line_chart",),
+        "/charts/line-chart/": ("xyg.line_chart",),
         "/charts/area-chart/": (
-            "xy.area_chart",
-            "xy.step_chart",
-            "xy.stairs_chart",
+            "xyg.area_chart",
+            "xyg.step_chart",
+            "xyg.stairs_chart",
         ),
-        "/charts/scatter/": ("xy.scatter_chart",),
+        "/charts/scatter/": ("xyg.scatter_chart",),
         "/charts/polar-chart/": (
-            "xy.polar_chart",
-            "xy.theta_axis",
-            "xy.r_axis",
+            "xyg.polar_chart",
+            "xyg.theta_axis",
+            "xyg.r_axis",
         ),
-        "/charts/radar-chart/": ("xy.radar_chart",),
-        "/charts/radial-bar-chart/": ("xy.polar_bar_chart",),
-        "/charts/pie-chart/": ("xy.pie_chart",),
-        "/charts/wind-rose/": ("xy.wind_rose",),
-        "/charts/bar-chart/": ("xy.bar_chart", "xy.column_chart"),
-        "/charts/histogram/": ("xy.histogram_chart",),
-        "/charts/ecdf/": ("xy.ecdf_chart",),
-        "/charts/box-plot/": ("xy.box_chart",),
-        "/charts/violin-plot/": ("xy.violin_chart",),
-        "/charts/heatmap/": ("xy.heatmap_chart",),
-        "/charts/hexbin/": ("xy.hexbin_chart",),
-        "/charts/contour-plot/": ("xy.contour_chart",),
-        "/charts/uncertainty/": ("xy.error_band_chart", "xy.errorbar_chart"),
-        "/charts/stem-plot/": ("xy.stem_chart",),
-        "/charts/segments/": ("xy.segments_chart",),
-        "/charts/sankey/": ("xy.sankey_chart",),
-        "/charts/graph/": ("xy.graph_chart",),
-        "/components/triangle-mesh/": ("xy.triangle_mesh_chart",),
-        "/components/facets-and-layers/": ("xy.chart", "xy.facet_chart"),
+        "/charts/radar-chart/": ("xyg.radar_chart",),
+        "/charts/radial-bar-chart/": ("xyg.polar_bar_chart",),
+        "/charts/pie-chart/": ("xyg.pie_chart",),
+        "/charts/wind-rose/": ("xyg.wind_rose",),
+        "/charts/bar-chart/": ("xyg.bar_chart", "xyg.column_chart"),
+        "/charts/histogram/": ("xyg.histogram_chart",),
+        "/charts/ecdf/": ("xyg.ecdf_chart",),
+        "/charts/box-plot/": ("xyg.box_chart",),
+        "/charts/violin-plot/": ("xyg.violin_chart",),
+        "/charts/heatmap/": ("xyg.heatmap_chart",),
+        "/charts/hexbin/": ("xyg.hexbin_chart",),
+        "/charts/contour-plot/": ("xyg.contour_chart",),
+        "/charts/uncertainty/": ("xyg.error_band_chart", "xyg.errorbar_chart"),
+        "/charts/stem-plot/": ("xyg.stem_chart",),
+        "/charts/segments/": ("xyg.segments_chart",),
+        "/charts/sankey/": ("xyg.sankey_chart",),
+        "/charts/graph/": ("xyg.graph_chart",),
+        "/components/triangle-mesh/": ("xyg.triangle_mesh_chart",),
+        "/components/facets-and-layers/": ("xyg.chart", "xyg.facet_chart"),
     }
     pages = {page.route: page for page in discover_docs(DOCS_CONFIG)}
 
@@ -2422,7 +2425,7 @@ def test_chart_gallery_pages_append_factory_api_tables() -> None:
 
     scatter_rendered = str(render_xy_markdown_page(pages["/charts/scatter/"]))
     assert scatter_rendered.index(API_REFERENCE_HEADING) < scatter_rendered.rindex(
-        "xy.scatter_chart"
+        "xyg.scatter_chart"
     )
     assert "Props" in scatter_rendered
     scatter_api_index = scatter_rendered.index(API_REFERENCE_HEADING)
@@ -2448,7 +2451,7 @@ def test_chart_factory_api_expands_forwarded_chart_props() -> None:
         if parameter.name not in {"kind", "children"}
     )
 
-    line_reference = component_api_references(("xy.line_chart",))[0]
+    line_reference = component_api_references(("xyg.line_chart",))[0]
     line_names = tuple(parameter.name for parameter in line_reference.parameters)
     assert line_names == ("*children", *shared_names)
     assert "**props" not in line_names
@@ -2459,7 +2462,7 @@ def test_chart_factory_api_expands_forwarded_chart_props() -> None:
         'Chart width in pixels or a CSS size such as ``"100%"``.'
     )
 
-    facet_reference = component_api_references(("xy.facet_chart",))[0]
+    facet_reference = component_api_references(("xyg.facet_chart",))[0]
     facet_names = tuple(parameter.name for parameter in facet_reference.parameters)
     assert facet_names[:8] == (
         "*children",
@@ -2484,7 +2487,7 @@ def test_chart_factory_api_expands_forwarded_chart_props() -> None:
 
 def test_polar_axis_api_expands_forwarded_axis_props() -> None:
     """Show the underlying x/y options instead of an opaque ``**kwargs`` row."""
-    theta_reference, radial_reference = component_api_references(("xy.theta_axis", "xy.r_axis"))
+    theta_reference, radial_reference = component_api_references(("xyg.theta_axis", "xyg.r_axis"))
     theta_names = tuple(parameter.name for parameter in theta_reference.parameters)
     radial_names = tuple(parameter.name for parameter in radial_reference.parameters)
     theta_refused = frozenset({*_POLAR_INERT_AXIS_KEYWORDS, "reverse"})
@@ -2514,8 +2517,8 @@ def test_polar_axis_api_expands_forwarded_axis_props() -> None:
 def test_other_api_owned_pages_append_focused_tables() -> None:
     """Document styling factories and the public Reflex adapter surface in place."""
     expected = {
-        "/styling/animations/": ("xy.animation", "xy.spring"),
-        "/styling/themes-and-tokens/": ("xy.theme",),
+        "/styling/animations/": ("xyg.animation", "xyg.spring"),
+        "/styling/themes-and-tokens/": ("xyg.theme",),
         "/integrations/reflex/": (
             "reflex_xy.chart",
             "reflex_xy.figure",
@@ -2542,11 +2545,11 @@ def test_other_api_owned_pages_append_focused_tables() -> None:
 @pytest.mark.parametrize(
     ("metadata", "exception"),
     (
-        ({"components": "xy.line"}, TypeError),
+        ({"components": "xyg.line"}, TypeError),
         ({"components": ["rx.line"]}, ValueError),
-        ({"components": ["xy.not_a_component"]}, ValueError),
+        ({"components": ["xyg.not_a_component"]}, ValueError),
         ({"components": ["reflex_xy.not_a_component"]}, ValueError),
-        ({"components": ["xy.line", "xy.line"]}, ValueError),
+        ({"components": ["xyg.line", "xyg.line"]}, ValueError),
     ),
 )
 def test_component_api_frontmatter_rejects_invalid_declarations(
@@ -2560,7 +2563,7 @@ def test_component_api_frontmatter_rejects_invalid_declarations(
 
 def test_component_api_html_and_markdown_share_cached_metadata() -> None:
     """Keep website and agent tables in sync without resolving twice."""
-    paths = ("xy.x_axis",)
+    paths = ("xyg.x_axis",)
     references = component_api_references(paths)
     assert component_api_references(paths) is references
 

@@ -1,8 +1,8 @@
 ---
 title: Wind Rose Charts in Python
-description: Create wind rose charts in Python with xy. Bin compass bearings into sectors and stack directional frequencies by speed band.
+description: Create wind rose charts in Python with xyg. Bin compass bearings into sectors and stack directional frequencies by speed band.
 components:
-  - xy.wind_rose
+  - xyg.wind_rose
 ---
 
 # Wind Rose Charts in Python
@@ -29,7 +29,7 @@ clockwise. The helper applies that convention automatically:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(14)
 wind_direction = np.mod(
@@ -43,7 +43,7 @@ wind_direction = np.mod(
 )
 wind_speed = np.clip(rng.gamma(shape=2.4, scale=2.1, size=440), 0.2, 11.8)
 
-rose = xy.wind_rose(
+rose = xyg.wind_rose(
     wind_direction,
     wind_speed,
     sectors=16,
@@ -76,7 +76,7 @@ size and the directional resolution of the source.
 Pass increasing upper edges through `speed_bins=`:
 
 ~~~python
-rose = xy.wind_rose(
+rose = xyg.wind_rose(
     directions,
     speeds,
     sectors=16,
@@ -99,13 +99,13 @@ enough to read:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 coarse_rng = np.random.default_rng(7)
 coarse_directions = np.mod(coarse_rng.normal(270.0, 45.0, 500), 360.0)
 coarse_speeds = np.clip(coarse_rng.gamma(shape=2.0, scale=3.0, size=500), 0.3, 17.0)
 
-coarse_rose = xy.wind_rose(
+coarse_rose = xyg.wind_rose(
     coarse_directions,
     coarse_speeds,
     sectors=8,
@@ -121,13 +121,13 @@ def wind_rose_sectors_demo():
 ## Plot a Full Year of Observations
 
 With thousands of records a high sector count resolves the prevailing wind, and
-narrow speed bands separate calm air from gales — add `xy.legend()` to place the
+narrow speed bands separate calm air from gales — add `xyg.legend()` to place the
 band labels where you want them:
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 met_rng = np.random.default_rng(2024)
 met_directions = np.mod(
@@ -142,10 +142,10 @@ met_directions = np.mod(
 )
 met_speeds = np.clip(met_rng.weibull(2.0, 8000) * 7.5, 0.2, 28.0)
 
-annual_rose = xy.wind_rose(
+annual_rose = xyg.wind_rose(
     met_directions,
     met_speeds,
-    xy.legend(loc="right", title="speed (m/s)"),
+    xyg.legend(loc="right", title="speed (m/s)"),
     sectors=32,
     speed_bins=[2, 4, 6, 8, 11, 14, 18, 25],
     title="Wind rose, 8,000 hourly observations",
@@ -179,7 +179,7 @@ The helper authors a degree-based theta axis with north at zero and clockwise
 rotation, plus an r axis labeled `count`. Build the equivalent sectors manually
 with `polar_bar_chart()` when you need custom pre-binning, non-count radial
 values, a different angular convention, or component children such as
-`xy.theme()`, `xy.legend()`, and `xy.modebar()`.
+`xyg.theme()`, `xyg.legend()`, and `xyg.modebar()`.
 
 ## Interaction and Export
 
@@ -198,7 +198,7 @@ than navigating the chart, and that is the wrong default for the compositions
 built on a constant rim or a fixed frame. A `polar_chart()` carrying measured
 radial values is exactly the case to
 [opt back in](/docs/xy/charts/polar-chart/#enable-zoom-on-a-polar-chart). Pass
-`xy.interaction_config(zoom=False)` to opt a rose out — for instance when it is
+`xyg.interaction_config(zoom=False)` to opt a rose out — for instance when it is
 embedded in a scrolling page and should not capture the wheel.
 
 See the [polar overview](/docs/xy/charts/polar-chart/) for the full interaction,

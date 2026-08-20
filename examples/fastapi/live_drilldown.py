@@ -35,18 +35,18 @@ import numpy as np
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-import xy
+import xyg as xy
 
 # The live drilldown server probes the engine directly (density_view, pick),
 # so it works on the internal figure compiled from the public composition API
 # via `Chart.figure()`.
-from xy._figure import Figure
+from xyg._figure import Figure
 
 # `encode_frame` builds the XYBF binary transport frame (wire-protocol.md §7)
 # the browser decodes with the bundled `xy.decodeFrame`; it is re-exported from
 # the transport-neutral channel module, the same seam the Reflex adapter uses.
-from xy.channel import encode_frame
-from xy.widget import bundled_js
+from xyg.channel import encode_frame
+from xyg.widget import bundled_js
 
 _DEFAULT_LIVE_POINTS = 100_000_000
 

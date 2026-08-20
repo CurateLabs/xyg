@@ -184,7 +184,7 @@ def _load() -> ctypes.CDLL:
         raise ImportError(
             f"xyg native core ABI mismatch: python wrapper expects "
             f"{ABI_VERSION}, library reports {got}. Rebuild with "
-            "`cargo build --release` or reinstall xy so the wheel and "
+            "`cargo build --release` or reinstall xyg so the wheel and "
             "package versions match."
         )
 

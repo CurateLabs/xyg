@@ -669,7 +669,7 @@ def resolve_color(
                     f"{len(unmapped)} categor{'y' if len(unmapped) == 1 else 'ies'} "
                     f"({', '.join(map(repr, unmapped[:4]))}"
                     f"{', ...' if len(unmapped) > 4 else ''}) are not in the "
-                    "xy.theme(palette={...}) map and fall back to the cycle. Add "
+                    "xyg.theme(palette={...}) map and fall back to the cycle. Add "
                     "them to the map to pin their colors."
                     + (
                         " The map already pins every built-in color, so those "

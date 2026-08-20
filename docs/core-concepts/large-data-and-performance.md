@@ -39,14 +39,14 @@ source ingest and validation still depend on the source grid.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(9)
 x = rng.normal(size=1_000_000)
 y = 0.4 * x + rng.normal(size=x.size)
 
-chart = xy.scatter_chart(
-    xy.scatter(x, y, density=None),
+chart = xyg.scatter_chart(
+    xyg.scatter(x, y, density=None),
     width=1000,
     height=500,
 )

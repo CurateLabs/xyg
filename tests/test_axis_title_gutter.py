@@ -6,7 +6,7 @@
 inset. The two together drew the title one full ascent further left than the
 browser does, off the canvas, on top of the tick labels whenever the gutter was
 also short. Both are now measured from the DejaVu advances the rasterizer blits
-(`python/xy/_fontmetrics.py`, generated from `crates/xyg-engine/src/font.rs`).
+(`python/xyg/_fontmetrics.py`, generated from `crates/xyg-engine/src/font.rs`).
 
 Every assertion below reads the boxes back out of real emitted output — SVG text
 coordinates, plus a pixel-ink scan of the native rasterizer's canvas — never out
@@ -23,8 +23,8 @@ from xml.etree import ElementTree
 import numpy as np
 import pytest
 
-import xy
-from xy import _fontmetrics, _raster, _svg
+import xyg as xy
+from xyg import _fontmetrics, _raster, _svg
 
 _ASCENT = _fontmetrics.ASCENT / _fontmetrics.BASE_PX
 _DESCENT = _fontmetrics.DESCENT / _fontmetrics.BASE_PX
@@ -217,7 +217,7 @@ def test_titleless_axis_reserves_only_its_tick_labels() -> None:
 def test_python_font_metrics_match_the_rust_atlas() -> None:
     """A gutter measured from advances the rasterizer does not use is a guess.
 
-    `scripts/gen_font.py` emits `crates/xyg-engine/src/font.rs` and `python/xy/_fontmetrics.py`
+    `scripts/gen_font.py` emits `crates/xyg-engine/src/font.rs` and `python/xyg/_fontmetrics.py`
     from one face in one run. This pins them together so a regenerated atlas
     cannot silently leave the reservation measuring a different font than the
     one being drawn.

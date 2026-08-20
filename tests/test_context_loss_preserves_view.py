@@ -21,11 +21,11 @@ from pathlib import Path
 
 import pytest
 
-import xy
+import xyg as xy
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
-_RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
+_RENDER_CALL = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
 
 _PROBE = """
   const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);

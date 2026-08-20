@@ -1,8 +1,8 @@
 ---
 title: Line Segment Chart in Python
-description: Draw line segments in Python with xy. Plot independent start-to-end segments for transitions, ranges, and arbitrary geometry, interactive by default.
+description: Draw line segments in Python with xyg. Plot independent start-to-end segments for transitions, ranges, and arbitrary geometry, interactive by default.
 components:
-  - xy.segments_chart
+  - xyg.segments_chart
 ---
 
 # Line Segment Charts in Python
@@ -26,10 +26,10 @@ through the `colormap`:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-segments_detail_chart = xy.segments_chart(
-    xy.segments(
+segments_detail_chart = xyg.segments_chart(
+    xyg.segments(
         x0=[0, 1, 2, 3, 4],
         y0=[1, 2, 1.5, 3, 2.5],
         x1=[0.8, 1.8, 2.8, 3.8, 4.8],
@@ -38,8 +38,8 @@ segments_detail_chart = xy.segments_chart(
         colormap="viridis",
         width=4,
     ),
-    xy.x_axis(label="start to end"),
-    xy.y_axis(label="value"),
+    xyg.x_axis(label="start to end"),
+    xyg.y_axis(label="value"),
     title="Independent transitions",
 )
 
@@ -56,14 +56,14 @@ per category — and use a constant `color` with a thick `width` and reduced
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 task_row = [0, 1, 2, 3, 4]
 start_day = [0.0, 2.0, 3.5, 6.0, 8.5]
 end_day = [3.0, 5.5, 7.0, 9.0, 12.0]
 
-range_segments_chart = xy.segments_chart(
-    xy.segments(
+range_segments_chart = xyg.segments_chart(
+    xyg.segments(
         x0=start_day,
         y0=task_row,
         x1=end_day,
@@ -72,8 +72,8 @@ range_segments_chart = xy.segments_chart(
         width=10,
         opacity=0.75,
     ),
-    xy.x_axis(label="day"),
-    xy.y_axis(
+    xyg.x_axis(label="day"),
+    xyg.y_axis(
         label="task",
         tick_values=[0, 1, 2, 3, 4],
         tick_labels=["Design", "Prototype", "Review", "Build", "Ship"],
@@ -89,13 +89,13 @@ def range_segments_demo():
 ## Map a Color Channel with a Colorbar
 
 Pass a numeric array to `color`, pin its scale with `domain`, and add
-`xy.colorbar()` so readers can decode the mapped values — here a slope field
+`xyg.colorbar()` so readers can decode the mapped values — here a slope field
 colored by gradient:
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 grid_x, grid_y = np.meshgrid(np.linspace(-2, 2, 9), np.linspace(-2, 2, 9))
 gx = grid_x.ravel()
@@ -103,8 +103,8 @@ gy = grid_y.ravel()
 slope = gy - gx**2 / 2
 step_len = 0.16 / np.sqrt(1 + slope**2)
 
-slope_field_chart = xy.segments_chart(
-    xy.segments(
+slope_field_chart = xyg.segments_chart(
+    xyg.segments(
         x0=gx - step_len,
         y0=gy - slope * step_len,
         x1=gx + step_len,
@@ -114,9 +114,9 @@ slope_field_chart = xy.segments_chart(
         domain=(-4.0, 2.0),
         width=2.2,
     ),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
-    xy.colorbar(title="dy/dx"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
+    xyg.colorbar(title="dy/dx"),
     title="Slope field",
 )
 
@@ -159,7 +159,7 @@ table.
 
 ### How do I draw line segments in Python?
 
-Call `xy.segments(x0=..., y0=..., x1=..., y1=...)` inside `xy.segments_chart(...)`
+Call `xyg.segments(x0=..., y0=..., x1=..., y1=...)` inside `xyg.segments_chart(...)`
 and render it. Each row of endpoints becomes one independent segment.
 
 ### How do I color each segment differently?

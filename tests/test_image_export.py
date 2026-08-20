@@ -17,9 +17,9 @@ import zlib
 import numpy as np
 import pytest
 
-import xy
-from xy import export
-from xy._figure import Figure
+import xyg as xy
+from xyg import export
+from xyg._figure import Figure
 
 
 def _fig(width: int = 300, height: int = 200) -> Figure:

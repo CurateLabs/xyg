@@ -74,7 +74,7 @@ def _parse_sizes(text: str) -> list[int]:
 def _scatter_figure(n: int) -> Any:
     if np is None:
         raise SystemExit("numpy is required for benchmarks/bench_interaction.py")
-    import xy
+    import xyg as xy
 
     rng = np.random.default_rng(70_011 + n)
     x = rng.normal(0.0, 1.0, n).astype(np.float64, copy=False)
@@ -97,7 +97,7 @@ def _scatter_figure(n: int) -> Any:
 def _core_interaction_figures() -> list[dict[str, Any]]:
     if np is None:
         raise SystemExit("numpy is required for benchmarks/bench_interaction.py")
-    import xy
+    import xyg as xy
 
     all_interactions = {
         "hover": True,
@@ -691,7 +691,7 @@ WORKER_PROBE_TIMEOUT_S = 60
 def _worker_density_figure() -> Any:
     if np is None:
         raise SystemExit("numpy is required for benchmarks/bench_interaction.py")
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
     rng = np.random.default_rng(91_017)
     n = 250_000

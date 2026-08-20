@@ -5,8 +5,8 @@ from io import BytesIO
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy._figure import Figure
+import xyg.pyplot as plt
+from xyg._figure import Figure
 
 
 def teardown_function() -> None:

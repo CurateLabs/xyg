@@ -10,7 +10,7 @@ from xml.etree import ElementTree
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 class LogNorm:

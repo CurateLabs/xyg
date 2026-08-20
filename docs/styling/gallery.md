@@ -21,7 +21,7 @@ remain inside the plot.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 months = [
     "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
@@ -30,8 +30,8 @@ months = [
 production = [2890, 2756, 3322, 3470, 3475, 3129, 3490, 2903, 2643, 2837, 2954, 3239]
 cumulative = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3736]
 
-trend_atlas = xy.chart(
-    xy.column(
+trend_atlas = xyg.chart(
+    xyg.column(
         months,
         production,
         name="Production",
@@ -39,7 +39,7 @@ trend_atlas = xy.chart(
         corner_radius=0,
         stroke_width=0,
     ),
-    xy.line(
+    xyg.line(
         months,
         cumulative,
         name="Cumulative",
@@ -47,7 +47,7 @@ trend_atlas = xy.chart(
         width=2,
         curve="linear",
     ),
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -58,7 +58,7 @@ trend_atlas = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 4200),
         style={
             "axis_width": 0,
@@ -69,9 +69,9 @@ trend_atlas = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.tooltip(title="{x}", format={"y": ",.0f"}),
-    xy.legend(show=False),
-    xy.theme(
+    xyg.tooltip(title="{x}", format={"y": ",.0f"}),
+    xyg.legend(show=False),
+    xyg.theme(
         plot_background="var(--gallery-surface, #ffffff)",
         grid_color="var(--gallery-grid, #e5e7eb)",
         axis_color="var(--gallery-axis, #d1d5db)",
@@ -147,7 +147,7 @@ color is data-driven.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 field = [
     [0.0, 0.2, 0.4, 0.1],
@@ -156,9 +156,9 @@ field = [
     [0.0, 0.2, 0.3, 0.1],
 ]
 
-field_chart = xy.chart(
-    xy.heatmap(field, colormap="purples", opacity=0.86),
-    xy.contour(
+field_chart = xyg.chart(
+    xyg.heatmap(field, colormap="purples", opacity=0.86),
+    xyg.contour(
         field,
         levels=7,
         color="#312e81",
@@ -166,15 +166,15 @@ field_chart = xy.chart(
         width=1.4,
         opacity=0.9,
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "tick_width": 0},
     ),
-    xy.colorbar(
+    xyg.colorbar(
         title="Intensity",
         orientation="vertical",
         ticks=[0.0, 0.5, 1.1],
@@ -241,8 +241,8 @@ hex_y = (
     + [1.2] * 6
 )
 
-hexbin_chart = xy.hexbin_chart(
-    xy.hexbin(
+hexbin_chart = xyg.hexbin_chart(
+    xyg.hexbin(
         hex_x,
         hex_y,
         gridsize=9,
@@ -251,16 +251,16 @@ hexbin_chart = xy.hexbin_chart(
         opacity=0.9,
         style={"fill-opacity": 0.9},
     ),
-    xy.colorbar(
+    xyg.colorbar(
         title="Points per hexagon",
         orientation="horizontal",
         ticks=[1, 3, 6],
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "tick_width": 0},
     ),
@@ -284,13 +284,13 @@ palette separates each geometry without adding decorative chart chrome.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 x = [0, 1, 2, 3, 4, 5]
 estimate = [3, 4, 4.5, 6, 6.5, 8]
 
-uncertainty_chart = xy.chart(
-    xy.error_band(
+uncertainty_chart = xyg.chart(
+    xyg.error_band(
         x,
         [value - 0.8 for value in estimate],
         [value + 0.8 for value in estimate],
@@ -301,7 +301,7 @@ uncertainty_chart = xy.chart(
         line_width=2,
         line_opacity=1,
     ),
-    xy.errorbar(
+    xyg.errorbar(
         x,
         estimate,
         yerr=[0.4, 0.7, 0.5, 0.8, 0.6, 0.5],
@@ -310,17 +310,17 @@ uncertainty_chart = xy.chart(
         width=1.7,
         cap_size=5,
     ),
-    xy.line(x, estimate, name="Estimate", color="#2b7fff", width=2),
-    xy.x_axis(
+    xyg.line(x, estimate, name="Estimate", color="#2b7fff", width=2),
+    xyg.x_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "tick_width": 0},
     ),
-    xy.legend(loc="upper left"),
-    xy.theme(
+    xyg.legend(loc="upper left"),
+    xyg.theme(
         plot_background="var(--atlas-surface, #ffffff)",
         grid_color="var(--atlas-grid, #e5e7eb)",
         axis_color="var(--atlas-axis, #d1d5db)",
@@ -334,8 +334,8 @@ uncertainty_chart = xy.chart(
     ),
 )
 
-geometry_chart = xy.chart(
-    xy.triangle_mesh(
+geometry_chart = xyg.chart(
+    xyg.triangle_mesh(
         [0, 1, 1],
         [0, 0, 1],
         [1, 2, 2],
@@ -350,7 +350,7 @@ geometry_chart = xy.chart(
         stroke_width=1,
         name="Mesh",
     ),
-    xy.segments(
+    xyg.segments(
         [0.1, 0.6, 1.1],
         [0.3, 0.7, 1.1],
         [0.8, 1.3, 1.9],
@@ -361,7 +361,7 @@ geometry_chart = xy.chart(
         width=4,
         name="Segments",
     ),
-    xy.stem(
+    xyg.stem(
         [0.25, 0.9, 1.55],
         [0.7, 1.45, 1.9],
         base=0,
@@ -370,16 +370,16 @@ geometry_chart = xy.chart(
         marker_size=7,
         name="Stems",
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "tick_width": 0},
     ),
-    xy.legend(loc="upper left"),
-    xy.theme(
+    xyg.legend(loc="upper left"),
+    xyg.theme(
         plot_background="var(--atlas-surface, #ffffff)",
         grid_color="var(--atlas-grid, #e5e7eb)",
         axis_color="var(--atlas-axis, #d1d5db)",
@@ -412,14 +412,14 @@ reduction.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(17)
 x = rng.normal(size=12_000)
 y = 0.65 * x + rng.normal(scale=0.7, size=x.size)
 
-reduction_chart = xy.scatter_chart(
-    xy.scatter(
+reduction_chart = xyg.scatter_chart(
+    xyg.scatter(
         x,
         y,
         color=np.hypot(x, y),
@@ -427,11 +427,11 @@ reduction_chart = xy.scatter_chart(
         colormap="viridis",
         opacity=0.9,
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "tick_width": 0},
     ),
@@ -462,7 +462,7 @@ layout selectors belong in export CSS.
 
 ~~~python demo exec
 import reflex as rx
-import xy
+import xyg
 
 facet_data = {
     "x": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
@@ -470,8 +470,8 @@ facet_data = {
     "region": ["West"] * 4 + ["East"] * 4 + ["Central"] * 4,
 }
 
-styled_facets = xy.facet_chart(
-    xy.area(
+styled_facets = xyg.facet_chart(
+    xyg.area(
         x="x",
         y="y",
         color="var(--facet-line, #d97706)",
@@ -484,21 +484,21 @@ styled_facets = xy.facet_chart(
         line_color="var(--facet-line, #d97706)",
         line_width=2,
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "grid_opacity": 0, "tick_width": 0},
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={"axis_width": 0, "tick_width": 0},
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--facet-bg, #ffffff)",
         grid_color="var(--facet-grid, #e5e7eb)",
         axis_color="var(--facet-axis, #d1d5db)",
         text_color="var(--facet-text, #4b5563)",
     ),
-    xy.modebar(show=False),
+    xyg.modebar(show=False),
     by="region",
     data=facet_data,
     cols=3,
@@ -549,14 +549,14 @@ the cursor without additional positioning data.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 
 class StyledChromeState(rx.State):
     show_plan: bool = True
 
     @reflex_xy.figure
-    def figure(self) -> xy.Chart:
+    def figure(self) -> xyg.Chart:
         data = {
             "period": [
                 "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -566,7 +566,7 @@ class StyledChromeState(rx.State):
             "plan": [2340, 2100, 2190, 2110, 1820, 1730, 1980, 2010, 2340, 2470, 3850, 3740],
         }
         marks = [
-            xy.area(
+            xyg.area(
                 x="period",
                 y="actual",
                 data=data,
@@ -580,7 +580,7 @@ class StyledChromeState(rx.State):
         ]
         if self.show_plan:
             marks.append(
-                xy.area(
+                xyg.area(
                     x="period",
                     y="plan",
                     data=data,
@@ -592,10 +592,10 @@ class StyledChromeState(rx.State):
                     curve="linear",
                 )
             )
-        return xy.area_chart(
+        return xyg.area_chart(
             *marks,
-            xy.legend(show=False),
-            xy.tooltip(
+            xyg.legend(show=False),
+            xyg.tooltip(
                 fields=["actual", "plan"],
                 title="{period}",
                 format={"actual": "$,.0f", "plan": "$,.0f"},
@@ -608,7 +608,7 @@ class StyledChromeState(rx.State):
                     "padding": "8px 10px",
                 },
             ),
-            xy.x_axis(
+            xyg.x_axis(
                 style={
                     "axis_width": 0,
                     "axis_color": "#00000000",
@@ -619,7 +619,7 @@ class StyledChromeState(rx.State):
                     "label_color": "#00000000",
                 },
             ),
-            xy.y_axis(
+            xyg.y_axis(
                 domain=(0, 4200),
                 style={
                     "axis_width": 0,
@@ -630,7 +630,7 @@ class StyledChromeState(rx.State):
                     "label_color": "#00000000",
                 },
             ),
-            xy.theme(
+            xyg.theme(
                 plot_background="var(--chrome-surface, #ffffff)",
                 grid_color="var(--chrome-grid, #e5e7eb)",
                 axis_color="var(--chrome-axis, #d1d5db)",

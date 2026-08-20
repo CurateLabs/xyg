@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from xy._figure import Figure
+    from xyg._figure import Figure
 
 __all__ = ["FigureEntry", "FigureRegistry", "registry"]
 

@@ -7,8 +7,8 @@ import struct
 import numpy as np
 import pytest
 
-import xy
-from xy.facets import _facet_values, _subset_data
+import xyg as xy
+from xyg.facets import _facet_values, _subset_data
 
 
 def _table() -> dict[str, list]:

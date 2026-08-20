@@ -44,7 +44,7 @@ comes from, and therefore what the chart can still do after you deploy.
 Browser-local means hover, pan, zoom, and selection still work in the page;
 they just cannot reach Python.
 
-Start at the top. A fixed `xy.Chart` becomes a content-addressed asset that
+Start at the top. A fixed `xyg.Chart` becomes a content-addressed asset that
 needs no backend connection and survives `reflex export`. Move down only when
 the chart must answer with data it did not ship with — a drill-down, a fresh
 query, the exact rows behind a lasso.
@@ -66,7 +66,7 @@ The chart definition does not change; only its source does.
 def page():
     return rx.vstack(
         reflex_xy.chart(
-            xy.scatter_chart(xy.scatter(x="orders", y="revenue", data=daily))
+            xyg.scatter_chart(xyg.scatter(x="orders", y="revenue", data=daily))
         )
     )
 
@@ -76,9 +76,9 @@ class Dashboard(rx.State):
     channel: str = "web"
 
     @reflex_xy.figure
-    def revenue(self) -> xy.Chart:
+    def revenue(self) -> xyg.Chart:
         rows = daily[daily.channel == self.channel]
-        return xy.scatter_chart(xy.scatter(x="orders", y="revenue", data=rows))
+        return xyg.scatter_chart(xyg.scatter(x="orders", y="revenue", data=rows))
 
 
 def page():
@@ -94,7 +94,7 @@ Not every chart belongs in an app. The same definition runs in a notebook and
 exports to files.
 
 ~~~python
-chart = xy.scatter_chart(xy.scatter(x="orders", y="revenue", data=daily))
+chart = xyg.scatter_chart(xyg.scatter(x="orders", y="revenue", data=daily))
 
 chart.show()                 # notebook widget — live Python, dies with the kernel
 chart.to_html("out.html")    # one portable interactive file, no server

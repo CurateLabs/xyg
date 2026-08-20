@@ -389,10 +389,10 @@ alongside the complete categorical first-payload row. Together they distinguish
 native encoding/sampling regressions from payload-policy or transport
 regressions.
 
-`test_codspeed_pyplot.py` tracks the `xy.pyplot` shim's overhead against the
+`test_codspeed_pyplot.py` tracks the `xyg.pyplot` shim's overhead against the
 raw declarative API: each workload (line 10k/1M, scatter 100k, histogram,
 categorical bars, a chrome-heavy styled panel, and static PNG export) is built
-twice from the same arrays — once with `xy.chart` + marks and once with the
+twice from the same arrays — once with `xyg.chart` + marks and once with the
 identical Matplotlib-style calls — ending in the same split wire payload or
 PNG bytes. The `*_pyplot` minus `*_raw` gap is the shim; both rows moving
 together is the shared engine. `tests/pyplot/test_perf_guardrail.py` remains

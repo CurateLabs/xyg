@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import math
 
-from xy._arrowgeom import arrow_geometry
+from xyg._arrowgeom import arrow_geometry
 
 
 def test_label_clear_trims_start_along_departure_tangent():

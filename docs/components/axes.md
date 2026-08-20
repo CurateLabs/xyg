@@ -2,8 +2,8 @@
 title: Axes in Python
 description: Configure XY scale types, domains, ticks, labels, and named axes.
 components:
-  - xy.x_axis
-  - xy.y_axis
+  - xyg.x_axis
+  - xyg.y_axis
 ---
 
 # Axes in Python
@@ -20,15 +20,15 @@ a requested `tick_count=` so the view stays put regardless of the data:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 ax_hours = np.arange(0, 25, 3)
 ax_temp = np.array([12.1, 11.4, 13.0, 17.6, 21.3, 23.8, 22.0, 17.2, 13.9])
 
-ax_domain_chart = xy.chart(
-    xy.line(ax_hours, ax_temp, color="#6e56cf", width=2.5),
-    xy.x_axis(label="hour of day", domain=(0, 24), tick_count=9),
-    xy.y_axis(label="temperature (°C)", domain=(0, 30), tick_count=4),
+ax_domain_chart = xyg.chart(
+    xyg.line(ax_hours, ax_temp, color="#6e56cf", width=2.5),
+    xyg.x_axis(label="hour of day", domain=(0, 24), tick_count=9),
+    xyg.y_axis(label="temperature (°C)", domain=(0, 30), tick_count=4),
     title="Fixed domains with requested tick counts",
 )
 
@@ -42,20 +42,20 @@ def axes_domain_demo():
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 log_x = np.logspace(0, 6, 240)
 log_y = 96 - np.log10(log_x) * 11.5
 
-log_chart = xy.line_chart(
-    xy.line(log_x, log_y),
-    xy.x_axis(
+log_chart = xyg.line_chart(
+    xyg.line(log_x, log_y),
+    xyg.x_axis(
         type_="log",
         domain=(1, 1_000_000),
         label="requests",
         format=",.0f",
     ),
-    xy.y_axis(domain=(0, 100), reverse=True, label="rank"),
+    xyg.y_axis(domain=(0, 100), reverse=True, label="rank"),
 )
 
 
@@ -74,7 +74,7 @@ Use a requested tick count for an adaptive axis, or provide exact tick values
 and matching labels:
 
 ~~~python
-xy.y_axis(
+xyg.y_axis(
     label="conversion",
     domain=(0, 1),
     tick_values=[0, 0.25, 0.5, 0.75, 1],
@@ -94,14 +94,14 @@ rotated with `tick_label_angle=` and anchored at their ends, while
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 tick_stage = np.arange(5)
 tick_rate = np.array([1.0, 0.62, 0.38, 0.21, 0.09])
 
-tick_style_chart = xy.chart(
-    xy.bar(tick_stage, tick_rate, color="#0ea5e9", width=0.6),
-    xy.x_axis(
+tick_style_chart = xyg.chart(
+    xyg.bar(tick_stage, tick_rate, color="#0ea5e9", width=0.6),
+    xyg.x_axis(
         tick_values=[0, 1, 2, 3, 4],
         tick_labels=["Visited", "Signed up", "Activated", "Subscribed", "Renewed"],
         tick_label_angle=-30,
@@ -110,7 +110,7 @@ tick_style_chart = xy.chart(
         label_position="end",
         label_offset=28,
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 1),
         tick_values=[0, 0.25, 0.5, 0.75, 1],
         tick_labels=["0%", "25%", "50%", "75%", "100%"],
@@ -131,25 +131,25 @@ start with `x` and a y-axis identifier with `y`; every named binding must have a
 matching axis component.
 
 ~~~python
-chart = xy.chart(
-    xy.line([1, 10, 100], [80, 70, 60], name="Rank"),
-    xy.line(
+chart = xyg.chart(
+    xyg.line([1, 10, 100], [80, 70, 60], name="Rank"),
+    xyg.line(
         [1, 10, 100],
         [0.08, 0.12, 0.19],
         y_axis="y2",
         name="Conversion",
         color="#dc2626",
     ),
-    xy.x_axis(type_="log", label="requests"),
-    xy.y_axis(label="rank", domain=(0, 100)),
-    xy.y_axis(
+    xyg.x_axis(type_="log", label="requests"),
+    xyg.y_axis(label="rank", domain=(0, 100)),
+    xyg.y_axis(
         id="y2",
         side="right",
         label="conversion",
         domain=(0, 0.25),
         format=".0%",
     ),
-    xy.legend(),
+    xyg.legend(),
 )
 ~~~
 
@@ -160,7 +160,7 @@ temperature keeps the primary y-axis:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 dual_month = np.arange(1, 13)
 dual_temp = np.array(
@@ -170,8 +170,8 @@ dual_rain = np.array(
     [0.18, 0.14, 0.12, 0.09, 0.07, 0.05, 0.04, 0.05, 0.09, 0.13, 0.17, 0.19]
 )
 
-dual_axis_chart = xy.chart(
-    xy.bar(
+dual_axis_chart = xyg.chart(
+    xyg.bar(
         dual_month,
         dual_rain,
         y_axis="y2",
@@ -179,17 +179,17 @@ dual_axis_chart = xy.chart(
         color="#93c5fd",
         opacity=0.6,
     ),
-    xy.line(dual_month, dual_temp, name="Temperature", color="#dc2626", width=2.5),
-    xy.x_axis(label="month", tick_count=12),
-    xy.y_axis(label="temperature (°C)", domain=(0, 25)),
-    xy.y_axis(
+    xyg.line(dual_month, dual_temp, name="Temperature", color="#dc2626", width=2.5),
+    xyg.x_axis(label="month", tick_count=12),
+    xyg.y_axis(label="temperature (°C)", domain=(0, 25)),
+    xyg.y_axis(
         id="y2",
         side="right",
         label="rain probability",
         domain=(0, 0.4),
         format=".0%",
     ),
-    xy.legend(),
+    xyg.legend(),
     title="Two units, one panel",
 )
 
@@ -205,9 +205,9 @@ Each axis takes five switches: `show`, `line`, `ticks`, `grid`, and `text`
 overrides `show`, so a grid with no other chrome is one call.
 
 ~~~python
-xy.x_axis(show=False)                       # nothing drawn for this axis
-xy.y_axis(show=False, grid=True)            # horizontal guides only
-xy.x_axis(line=False, ticks=False)          # tick labels, no baseline or ticks
+xyg.x_axis(show=False)                       # nothing drawn for this axis
+xyg.y_axis(show=False, grid=True)            # horizontal guides only
+xyg.x_axis(line=False, ticks=False)          # tick labels, no baseline or ticks
 ~~~
 
 The switches compile to ordinary axis `style` properties, so they work in HTML,
@@ -228,8 +228,8 @@ named axes in the chart. Use the validated axis style for output that must agree
 across HTML, SVG, and native PNG.
 
 ~~~python
-chart = xy.line_chart(
-    xy.line([0, 1, 2], [2, 5, 3]),
+chart = xyg.line_chart(
+    xyg.line([0, 1, 2], [2, 5, 3]),
     class_names={
         "axis_line": "bg-red-500",
         "tick_mark": "bg-emerald-500",
@@ -251,25 +251,25 @@ For the scale model, including datetime and category handling, see
 
 ### How do I set the axis range in Python?
 
-Pass `domain=(min, max)` to `xy.x_axis()` or `xy.y_axis()`, e.g.
-`xy.y_axis(domain=(0, 100))`. Explicit domains must be finite and increasing,
+Pass `domain=(min, max)` to `xyg.x_axis()` or `xyg.y_axis()`, e.g.
+`xyg.y_axis(domain=(0, 100))`. Explicit domains must be finite and increasing,
 and a `type_="log"` axis additionally requires a positive domain.
 
 ### How do I rotate or format axis tick labels?
 
 Use `format=` with a numeric format string (e.g.
-`xy.x_axis(format=",.0f")` or `format=".0%"`) and `tick_label_angle=` to rotate
+`xyg.x_axis(format=",.0f")` or `format=".0%"`) and `tick_label_angle=` to rotate
 the labels. For full control, supply exact `tick_values=` with matching
 `tick_labels=` strings instead of the adaptive `tick_count=`.
 
 ### How do I add a second y-axis to a chart?
 
-Declare a named axis such as `xy.y_axis(id="y2", side="right")` and bind marks
+Declare a named axis such as `xyg.y_axis(id="y2", side="right")` and bind marks
 to it with `y_axis="y2"`. Y-axis identifiers must start with `y` (x identifiers
 with `x`), and every named binding needs a matching axis component in the
 chart.
 
 ### How do I reverse an axis in Python?
 
-Pass `reverse=True`, e.g. `xy.y_axis(domain=(0, 100), reverse=True)`. This
+Pass `reverse=True`, e.g. `xyg.y_axis(domain=(0, 100), reverse=True)`. This
 flips the display direction only — the source data values are not rewritten.

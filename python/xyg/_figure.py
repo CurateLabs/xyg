@@ -228,7 +228,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
                 f"more than {len(cycle)} series use default colors; the chart "
                 f"palette repeats every {len(cycle)} (series "
                 f"{len(cycle) + 1} wears series 1's color). Pass a longer "
-                "xy.theme(palette=...), or an explicit color= per series.",
+                "xyg.theme(palette=...), or an explicit color= per series.",
                 RuntimeWarning,
                 stacklevel=stacklevel,
             )

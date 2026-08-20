@@ -16,9 +16,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-from xy._figure import Figure
-from xy._pdf import svg_to_pdf
+import xyg as xy
+from xyg._figure import Figure
+from xyg._pdf import svg_to_pdf
 
 
 def _basic_figure() -> Figure:

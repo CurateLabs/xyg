@@ -68,7 +68,7 @@ def test_comparison_defines_speedup_as_matplotlib_over_xy() -> None:
     assert comparison["xy_speedup_total"] == 2.0
     assert comparison["target_xy_speedup_total"] == 10.0
     assert comparison["meets_target"] is False
-    assert comparison["winner_total"] == "xy.pyplot"
+    assert comparison["winner_total"] == "xyg.pyplot"
     assert comparison["png_size_ratio_matplotlib_over_xy"] == 0.5
 
 

@@ -18,13 +18,13 @@ toward the baseline:
 ~~~python demo exec toggle preview-code id=dashboard-sparkline-recipe
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.arange(12)
 y = np.array([42, 45, 44, 49, 53, 51, 58, 61, 60, 66, 70, 74])
 
-sparkline = xy.area_chart(
-    xy.area(
+sparkline = xyg.area_chart(
+    xyg.area(
         x,
         y,
         color="#fe9a00",
@@ -33,7 +33,7 @@ sparkline = xy.area_chart(
         line_opacity=1,
         fill="linear-gradient(#fe9a004d 5%, #fe9a0000 95%)",
     ),
-    xy.x_axis(
+    xyg.x_axis(
         tick_label_strategy="none",
         style={
             "axis_width": 0,
@@ -45,7 +45,7 @@ sparkline = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         tick_label_strategy="none",
         style={
             "axis_width": 0,
@@ -57,9 +57,9 @@ sparkline = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.legend(show=False),
-    xy.tooltip(show=False),
-    xy.modebar(show=False),
+    xyg.legend(show=False),
+    xyg.tooltip(show=False),
+    xyg.modebar(show=False),
     width="100%",
     height=180,
     padding=[8, 2, 2, 2],
@@ -80,17 +80,17 @@ and round only the value end:
 
 ~~~python demo exec toggle preview-code id=rounded-gradient-columns-recipe
 import reflex_xy
-import xy
+import xyg
 
-gradient_columns = xy.column_chart(
-    xy.column(
+gradient_columns = xyg.column_chart(
+    xyg.column(
         ["Starter", "Team", "Business", "Enterprise"],
         [34, 58, 76, 93],
         fill="linear-gradient(to top, #2b7fff, #00b8db)",
         corner_radius=(6, 0),
         stroke_width=0,
     ),
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -101,7 +101,7 @@ gradient_columns = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 100),
         format=".0f",
         style={
@@ -113,7 +113,7 @@ gradient_columns = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.tooltip(title="{x}", format={"y": ".0f"}),
+    xyg.tooltip(title="{x}", format={"y": ".0f"}),
 )
 
 
@@ -133,19 +133,19 @@ clear legend so each series has multiple visual identifiers:
 
 ~~~python demo exec toggle preview-code id=accessible-monochrome-comparison-recipe
 import reflex_xy
-import xy
+import xyg
 
 periods = ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"]
 
-monochrome = xy.line_chart(
-    xy.line(
+monochrome = xyg.line_chart(
+    xyg.line(
         periods,
         [42, 48, 51, 57, 61, 68],
         name="Actual",
         color="#6a7282",
         width=2.5,
     ),
-    xy.scatter(
+    xyg.scatter(
         periods,
         [42, 48, 51, 57, 61, 68],
         symbol="circle",
@@ -154,7 +154,7 @@ monochrome = xy.line_chart(
         stroke_width=2,
         size=8,
     ),
-    xy.line(
+    xyg.line(
         periods,
         [40, 46, 53, 55, 63, 66],
         name="Plan",
@@ -162,16 +162,16 @@ monochrome = xy.line_chart(
         width=2.5,
         dash="dashed",
     ),
-    xy.scatter(
+    xyg.scatter(
         periods,
         [40, 46, 53, 55, 63, 66],
         symbol="square",
         color="#6a7282",
         size=7,
     ),
-    xy.legend(loc="upper left", ncols=2),
-    xy.tooltip(title="{x}"),
-    xy.x_axis(
+    xyg.legend(loc="upper left", ncols=2),
+    xyg.tooltip(title="{x}"),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -182,7 +182,7 @@ monochrome = xy.line_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -192,7 +192,7 @@ monochrome = xy.line_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--recipe-surface, #ffffff)",
         grid_color="var(--recipe-grid, #e5e7eb)",
         text_color="var(--recipe-text, #4b5563)",
@@ -221,10 +221,10 @@ columns remain easy to compare at a glance.
 
 ~~~python demo exec toggle preview-code id=dense-categorical-labels-recipe
 import reflex_xy
-import xy
+import xyg
 
-dense_categories = xy.column_chart(
-    xy.column(
+dense_categories = xyg.column_chart(
+    xyg.column(
         [
             "North America",
             "Latin America",
@@ -237,7 +237,7 @@ dense_categories = xy.column_chart(
         color="#8e51ff",
         corner_radius=(6, 0),
     ),
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -248,7 +248,7 @@ dense_categories = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 100),
         style={
             "axis_width": 0,
@@ -259,7 +259,7 @@ dense_categories = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.tooltip(title="{x}", format={"y": ".0f"}),
+    xyg.tooltip(title="{x}", format={"y": ".0f"}),
     width="100%",
     height=360,
     padding=[28, 24, 36, 32],
@@ -280,10 +280,10 @@ tokens follow the host's light or dark mode:
 
 ~~~python demo exec toggle preview-code id=dark-chart-card-recipe
 import reflex_xy
-import xy
+import xyg
 
-dark_card = xy.scatter_chart(
-    xy.scatter(
+dark_card = xyg.scatter_chart(
+    xyg.scatter(
         [1, 2, 3, 4, 5],
         [2, 5, 4, 7, 6],
         size=11,
@@ -293,7 +293,7 @@ dark_card = xy.scatter_chart(
             "stroke-width": 1.5,
         },
     ),
-    xy.theme(
+    xyg.theme(
         style={
             "--chart-bg": "var(--recipe-surface, #ffffff)",
             "--chart-text": "var(--recipe-text, #4b5563)",
@@ -303,7 +303,7 @@ dark_card = xy.scatter_chart(
             "--chart-tooltip-text": "#fafafa",
         }
     ),
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -314,7 +314,7 @@ dark_card = xy.scatter_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -349,10 +349,10 @@ from the page that happened to contain the chart.
 
 ~~~python demo exec toggle preview-code id=export-safe-brand-theme-recipe
 import reflex_xy
-import xy
+import xyg
 
-branded = xy.area_chart(
-    xy.area(
+branded = xyg.area_chart(
+    xyg.area(
         [0, 1, 2, 3, 4, 5],
         [18, 24, 22, 31, 35, 43],
         name="Active teams",
@@ -361,9 +361,9 @@ branded = xy.area_chart(
         line_width=2,
         fill="linear-gradient(#00b8db4d 5%, #00b8db00 95%)",
     ),
-    xy.legend(loc="upper left"),
-    xy.tooltip(title="Month {x}"),
-    xy.theme(
+    xyg.legend(loc="upper left"),
+    xyg.tooltip(title="Month {x}"),
+    xyg.theme(
         plot_background="var(--brand-surface, #ffffff)",
         text_color="var(--brand-text, #4b5563)",
         grid_color="var(--brand-grid, #e5e7eb)",
@@ -374,7 +374,7 @@ branded = xy.area_chart(
             "--chart-legend-bg": "var(--brand-legend, #fafafae0)",
         },
     ),
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -385,7 +385,7 @@ branded = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -425,7 +425,7 @@ legend, and horizontal guides keep both measures easy to compare.
 
 ~~~python demo exec toggle preview-code id=responsive-dashboard-card-recipe
 import reflex_xy
-import xy
+import xyg
 
 months = [
     "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
@@ -434,8 +434,8 @@ months = [
 solar_panels = [2890, 2756, 3322, 3470, 3475, 3129, 3490, 2903, 2643, 2837, 2954, 3239]
 inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3736]
 
-dashboard_combo = xy.chart(
-    xy.column(
+dashboard_combo = xyg.chart(
+    xyg.column(
         months,
         solar_panels,
         name="Solar panels",
@@ -443,7 +443,7 @@ dashboard_combo = xy.chart(
         corner_radius=0,
         stroke_width=0,
     ),
-    xy.line(
+    xyg.line(
         months,
         inverters,
         name="Inverters",
@@ -452,9 +452,9 @@ dashboard_combo = xy.chart(
         curve="linear",
         y_axis="y2",
     ),
-    xy.legend(loc="upper right", ncols=2),
-    xy.tooltip(title="{x}", format={"y": ",.0f"}),
-    xy.x_axis(
+    xyg.legend(loc="upper right", ncols=2),
+    xyg.tooltip(title="{x}", format={"y": ",.0f"}),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -465,7 +465,7 @@ dashboard_combo = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 4200),
         style={
             "axis_width": 0,
@@ -476,7 +476,7 @@ dashboard_combo = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         id="y2",
         side="right",
         domain=(0, 4200),
@@ -490,7 +490,7 @@ dashboard_combo = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--recipe-surface, #ffffff)",
         grid_color="var(--recipe-grid, #e5e7eb)",
         text_color="var(--recipe-text, #4b5563)",

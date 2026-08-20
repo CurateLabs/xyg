@@ -152,7 +152,7 @@ class RcParams(dict):
         if key not in _DEFAULTS and key not in _warned:
             _warned.add(key)
             warnings.warn(
-                f"xy.pyplot ignores rcParams[{key!r}] — see {COMPAT_URL}",
+                f"xyg.pyplot ignores rcParams[{key!r}] — see {COMPAT_URL}",
                 stacklevel=2,
             )
         if key.startswith("axes.spines.") and not isinstance(value, bool):

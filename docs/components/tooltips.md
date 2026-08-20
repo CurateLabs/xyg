@@ -2,7 +2,7 @@
 title: Tooltips in Python
 description: Configure hover fields, title templates, numeric formats, and replacements.
 components:
-  - xy.tooltip
+  - xyg.tooltip
 ---
 
 # Tooltips in Python
@@ -17,7 +17,7 @@ register framework-rendered content.
 
 ## Default Hover Tooltip
 
-With a bare `xy.tooltip()` (or none at all), hovering a point reports its x and
+With a bare `xyg.tooltip()` (or none at all), hovering a point reports its x and
 y values without any further configuration. A named mark uses its series name
 as the tooltip title. On a polar chart the readout reports the values — series
 name, radial value, and any color or size encoding — and leaves the numeric
@@ -28,18 +28,18 @@ Explicit `title=` and `fields=` continue to control a customized readout.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-default_tooltip_chart = xy.scatter_chart(
-    xy.scatter(
+default_tooltip_chart = xyg.scatter_chart(
+    xyg.scatter(
         [1, 2, 3, 4, 5, 6],
         [3.2, 4.1, 2.8, 5.0, 4.4, 5.6],
         color="#6e56cf",
         size=8,
     ),
-    xy.tooltip(),
-    xy.x_axis(label="trial"),
-    xy.y_axis(label="score"),
+    xyg.tooltip(),
+    xyg.x_axis(label="trial"),
+    xyg.y_axis(label="score"),
     title="Hover any point",
 )
 
@@ -55,7 +55,7 @@ be used as tooltip fields:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 tooltip_fields_data = {
     "month": [1, 2, 3, 4],
@@ -63,14 +63,14 @@ tooltip_fields_data = {
     "growth": [0.04, 0.12, 0.01, 0.18],
 }
 
-tooltip_fields_chart = xy.scatter_chart(
-    xy.scatter(
+tooltip_fields_chart = xyg.scatter_chart(
+    xyg.scatter(
         x="month",
         y="revenue",
         size="growth",
         data=tooltip_fields_data,
     ),
-    xy.tooltip(
+    xyg.tooltip(
         fields=["revenue", "growth"],
         title="Month {month}",
         format={"revenue": ",.0f", "growth": ".1%"},
@@ -100,7 +100,7 @@ dashed forecast line and the margin-sized revenue points below.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 tooltip_title_data = {
     "day": [1, 2, 3, 4, 5],
@@ -109,8 +109,8 @@ tooltip_title_data = {
     "margin": [0.21, 0.24, 0.19, 0.27, 0.31],
 }
 
-tooltip_title_chart = xy.line_chart(
-    xy.line(
+tooltip_title_chart = xyg.line_chart(
+    xyg.line(
         x="day",
         y="forecast",
         data=tooltip_title_data,
@@ -118,7 +118,7 @@ tooltip_title_chart = xy.line_chart(
         color="#94a3b8",
         dash="dashed",
     ),
-    xy.scatter(
+    xyg.scatter(
         x="day",
         y="revenue",
         size="margin",
@@ -126,12 +126,12 @@ tooltip_title_chart = xy.line_chart(
         name="Revenue",
         color="#6e56cf",
     ),
-    xy.tooltip(
+    xyg.tooltip(
         title="Day {day}",
         fields=["revenue", "forecast", "margin"],
         format={"revenue": ",.0f", "forecast": ",.0f", "margin": ".1%"},
     ),
-    xy.legend(loc="upper left"),
+    xyg.legend(loc="upper left"),
     title="Daily revenue vs forecast",
 )
 
@@ -156,9 +156,9 @@ container plus `tooltip_title`, `tooltip_row`, `tooltip_label`, and
 independently:
 
 ~~~python
-chart = xy.scatter_chart(
-    xy.scatter(x="month", y="revenue", data=tooltip_fields_data),
-    xy.tooltip(
+chart = xyg.scatter_chart(
+    xyg.scatter(x="month", y="revenue", data=tooltip_fields_data),
+    xyg.tooltip(
         fields=["revenue"],
         labels={"revenue": "Revenue"},
         format={"revenue": "$,.0f"},
@@ -181,7 +181,7 @@ last tooltip component supplies the effective configuration.
 A positional child or `render=` object is kept opaque to the core renderer and
 can be retrieved through `chart.chrome_components()`. It is not embedded into
 standalone HTML. For a Chart source, the shipped `reflex_xy.chart` adapter
-mounts `xy.tooltip(render=...)` automatically in the renderer-owned tooltip
+mounts `xyg.tooltip(render=...)` automatically in the renderer-owned tooltip
 slot; for a live figure token, pass the Reflex component through
 `reflex_xy.chart(..., tooltip=...)`. The adapter suppresses the built-in
 tooltip while the component is mounted and supplies hover data through the
@@ -199,23 +199,23 @@ for the exact tooltip signature.
 
 XY shows a built-in hover tooltip by default — with no configuration it reports
 the available x/y values plus any encoded color or size values. Add
-`xy.tooltip()` as a chart child only when you want to choose fields, formats,
+`xyg.tooltip()` as a chart child only when you want to choose fields, formats,
 or a title template.
 
 ### How do I customize which fields a tooltip shows and how numbers are formatted?
 
-Pass `fields=` and `format=` to `xy.tooltip()`, e.g.
-`xy.tooltip(fields=["revenue", "growth"], labels={"revenue": "Revenue", "growth": "Growth"}, format={"revenue": ",.0f", "growth": ".1%"})`.
+Pass `fields=` and `format=` to `xyg.tooltip()`, e.g.
+`xyg.tooltip(fields=["revenue", "growth"], labels={"revenue": "Revenue", "growth": "Growth"}, format={"revenue": ",.0f", "growth": ".1%"})`.
 Only source columns bound to a rendered channel (x, y, color, size, or
 heatmap value) can be used as tooltip fields.
 
 ### How do I put data values in the tooltip title?
 
-Use braced field names in `title=`, e.g. `xy.tooltip(title="Month {month}")` —
+Use braced field names in `title=`, e.g. `xyg.tooltip(title="Month {month}")` —
 each placeholder is replaced with the value from the hovered row.
 
 ### How do I disable tooltips on a chart?
 
-Add `xy.tooltip(show=False)` to the chart. When several tooltip components are
+Add `xyg.tooltip(show=False)` to the chart. When several tooltip components are
 present, the last one supplies the effective configuration, so a final
 `show=False` wins.

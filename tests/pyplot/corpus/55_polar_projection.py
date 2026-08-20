@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 theta = np.linspace(0.0, 2.0 * np.pi, 17)
 radius = 0.6 + 0.3 * np.cos(4.0 * theta)

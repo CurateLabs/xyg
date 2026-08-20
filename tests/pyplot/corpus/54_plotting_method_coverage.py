@@ -2,7 +2,7 @@
 
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 fig, axes = plt.subplots(5, 4, figsize=(12, 12))
 axes = axes.ravel()

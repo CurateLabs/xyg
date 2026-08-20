@@ -35,8 +35,8 @@ import numpy as np
 _HERE = os.path.dirname(__file__)
 _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "python"))
-import xy  # noqa: E402
-from xy._ooc import open_f64  # noqa: E402
+import xyg as xy  # noqa: E402
+from xyg._ooc import open_f64  # noqa: E402
 
 
 def _rss_gb() -> float:

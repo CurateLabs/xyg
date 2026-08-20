@@ -10,17 +10,17 @@ round-tripping every pan or zoom through Python. Give them the same
 `link_group` and choose the synchronized axes with `link_axes`.
 
 ~~~python
-import xy
+import xyg
 
-overview = xy.scatter_chart(
-    xy.scatter([0, 1, 2, 3], [2, 5, 3, 7]),
-    xy.interaction_config(link_group="orders", link_axes=("x",)),
+overview = xyg.scatter_chart(
+    xyg.scatter([0, 1, 2, 3], [2, 5, 3, 7]),
+    xyg.interaction_config(link_group="orders", link_axes=("x",)),
     title="Overview",
 )
 
-detail = xy.line_chart(
-    xy.line([0, 1, 2, 3], [20, 18, 24, 29]),
-    xy.interaction_config(link_group="orders", link_axes=("x",)),
+detail = xyg.line_chart(
+    xyg.line([0, 1, 2, 3], [20, 18, 24, 29]),
+    xyg.interaction_config(link_group="orders", link_axes=("x",)),
     title="Detail",
 )
 ~~~

@@ -13,8 +13,8 @@ the live playground with a preset or your own three brand colors.
 [Jump to the palette playground →](#palette-playground)
 
 Each preview displays a compact legend above the plot. The copied chart uses
-`xy.legend(show=False)` so it does not render a second legend; replace it with
-`xy.legend(...)` when the legend should be part of your application or export.
+`xyg.legend(show=False)` so it does not render a second legend; replace it with
+`xyg.legend(...)` when the legend should be part of your application or export.
 
 ~~~python exec
 from xy_docs.examples import chart_examples_layout_marker
@@ -35,12 +35,12 @@ active_teams = [28, 32, 31, 38, 43, 41, 49, 55, 53, 61, 66, 72]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def layered_momentum():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             weeks,
             active_teams,
             name="This period",
@@ -50,9 +50,9 @@ def layered_momentum():
             curve="smooth",
             line_width=2,
         ),
-        xy.tooltip(title="Week {x}", format={"y": ",.0f"}),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.tooltip(title="Week {x}", format={"y": ",.0f"}),
+        xyg.legend(show=False),
+        xyg.x_axis(
             style={
                 "axis_width": 0,
                 "axis_color": "#00000000",
@@ -63,7 +63,7 @@ def layered_momentum():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 80),
             style={
                 "axis_width": 0,
@@ -96,12 +96,12 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def solar_fleet_output():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             months,
             solar_panels,
             name="Solar panels",
@@ -111,7 +111,7 @@ def solar_fleet_output():
             curve="linear",
             line_width=2,
         ),
-        xy.area(
+        xyg.area(
             months,
             inverters,
             name="Inverters",
@@ -121,9 +121,9 @@ def solar_fleet_output():
             curve="linear",
             line_width=2,
         ),
-        xy.tooltip(title="{x}", format={"y": "$,.0f"}),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.tooltip(title="{x}", format={"y": "$,.0f"}),
+        xyg.legend(show=False),
+        xyg.x_axis(
             style={
                 "axis_width": 0,
                 "axis_color": "#00000000",
@@ -134,7 +134,7 @@ def solar_fleet_output():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 4200),
             format="$,.0f",
             style={
@@ -171,25 +171,25 @@ enterprise_base = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def stacked_product_mix():
-    chart = xy.column_chart(
-        xy.column(
+    chart = xyg.column_chart(
+        xyg.column(
             months,
             core,
             name="Core",
             color="#7c3aed",
         ),
-        xy.column(
+        xyg.column(
             months,
             growth,
             base=growth_base,
             name="Growth",
             color="#db2777",
         ),
-        xy.column(
+        xyg.column(
             months,
             enterprise,
             base=enterprise_base,
@@ -197,9 +197,9 @@ def stacked_product_mix():
             color="#fb7185",
             corner_radius=(6, 0),
         ),
-        xy.tooltip(title="{x}", format={"y": "$,.0fK"}),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
+        xyg.legend(show=False),
+        xyg.x_axis(
             style={
                 "axis_width": 0,
                 "axis_color": "#00000000",
@@ -210,7 +210,7 @@ def stacked_product_mix():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 100),
             style={
                 "axis_width": 0,
@@ -248,12 +248,12 @@ data = {
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def normalized_traffic_share():
-    chart = xy.area_chart(
-        xy.area(
+    chart = xyg.area_chart(
+        xyg.area(
             x="month",
             y="desktop",
             data=data,
@@ -264,7 +264,7 @@ def normalized_traffic_share():
             curve="smooth",
             line_width=2,
         ),
-        xy.area(
+        xyg.area(
             x="month",
             y="total",
             base="desktop",
@@ -278,7 +278,7 @@ def normalized_traffic_share():
         ),
         # Bind the actual mobile share so both percentages are resident in the
         # tooltip payload while the visible mobile area still ends at 100%.
-        xy.scatter(
+        xyg.scatter(
             x="month",
             y="mobile",
             data=data,
@@ -286,13 +286,13 @@ def normalized_traffic_share():
             opacity=0,
             size=1,
         ),
-        xy.tooltip(
+        xyg.tooltip(
             fields=["desktop", "mobile"],
             title="Period {month}",
             format={"desktop": ".0%", "mobile": ".0%"},
         ),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.legend(show=False),
+        xyg.x_axis(
             style={
                 "axis_width": 0,
                 "axis_color": "#00000000",
@@ -303,7 +303,7 @@ def normalized_traffic_share():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 1),
             format=".0%",
             style={
@@ -343,12 +343,12 @@ offsets = [-0.30, -0.18, -0.06, 0.06, 0.18, 0.30]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def regional_product_demand():
     columns = [
-        xy.column(
+        xyg.column(
             [category_centers[product_index] + offsets[region_index]],
             [values[product_index]],
             name=f"{product} · {region}",
@@ -362,11 +362,11 @@ def regional_product_demand():
         for product_index, product in enumerate(products)
     ]
 
-    chart = xy.column_chart(
+    chart = xyg.column_chart(
         *columns,
-        xy.tooltip(title="Product demand", format={"y": ",.0f"}),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.tooltip(title="Product demand", format={"y": ",.0f"}),
+        xyg.legend(show=False),
+        xyg.x_axis(
             domain=(-0.5, 3.5),
             tick_values=category_centers,
             tick_labels=products,
@@ -381,7 +381,7 @@ def regional_product_demand():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 1000),
             style={
                 "axis_width": 0,
@@ -418,12 +418,12 @@ colors = ["#2b7fff", "#00bc7d", "#8e51ff", "#fe9a00", "#6a7282"]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def conversion_by_stage():
     bars = [
-        xy.bar(
+        xyg.bar(
             x="stage",
             y="completion",
             data={"stage": [stage], "completion": [value]},
@@ -435,14 +435,14 @@ def conversion_by_stage():
         for stage, value, color in zip(stages, completion, colors, strict=True)
     ]
 
-    chart = xy.bar_chart(
+    chart = xyg.bar_chart(
         *bars,
-        xy.tooltip(
+        xyg.tooltip(
             title="{stage} · {completion}%",
             format={"completion": ".0f"},
         ),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.legend(show=False),
+        xyg.x_axis(
             domain=(0, 100),
             style={
                 "axis_width": 0,
@@ -454,7 +454,7 @@ def conversion_by_stage():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             style={
                 "axis_width": 0,
                 "axis_color": "#00000000",
@@ -484,29 +484,29 @@ pullbacks = [value if value < 0 else float("nan") for value in change]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def monthly_balance():
-    chart = xy.column_chart(
-        xy.column(
+    chart = xyg.column_chart(
+        xyg.column(
             months,
             gains,
             name="Gain",
             color="#2b7fff",
             corner_radius=4,
         ),
-        xy.column(
+        xyg.column(
             months,
             pullbacks,
             name="Pullback",
             color="#8e51ff",
             corner_radius=4,
         ),
-        xy.hline(0, color="#cbd5e1", width=1),
-        xy.tooltip(title="{x}", format={"y": ".0f%"}),
-        xy.legend(show=False),
-        xy.x_axis(
+        xyg.hline(0, color="#cbd5e1", width=1),
+        xyg.tooltip(title="{x}", format={"y": ".0f%"}),
+        xyg.legend(show=False),
+        xyg.x_axis(
             style={
                 "axis_width": 0,
                 "axis_color": "#00000000",
@@ -517,7 +517,7 @@ def monthly_balance():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(-0.25, 0.35),
             style={
                 "axis_width": 0,
@@ -552,10 +552,10 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-dashboard_combo = xy.chart(
-    xy.column(
+dashboard_combo = xyg.chart(
+    xyg.column(
         months,
         solar_panels,
         name="Solar panels",
@@ -563,7 +563,7 @@ dashboard_combo = xy.chart(
         corner_radius=0,
         stroke_width=0,
     ),
-    xy.line(
+    xyg.line(
         months,
         inverters,
         name="Inverters",
@@ -571,9 +571,9 @@ dashboard_combo = xy.chart(
         width=2,
         curve="linear",
     ),
-    xy.legend(show=False),
-    xy.tooltip(title="{x}", format={"y": ",.0f"}),
-    xy.x_axis(
+    xyg.legend(show=False),
+    xyg.tooltip(title="{x}", format={"y": ",.0f"}),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -584,7 +584,7 @@ dashboard_combo = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 4200),
         style={
             "axis_width": 0,
@@ -595,7 +595,7 @@ dashboard_combo = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--recipe-surface, #ffffff)",
         grid_color="var(--recipe-grid, #e5e7eb)",
         text_color="var(--recipe-text, #4b5563)",
@@ -649,12 +649,12 @@ products = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def product_constellation():
     bubbles = [
-        xy.scatter(
+        xyg.scatter(
             x="adoption",
             y="retention",
             data={"adoption": [adoption], "retention": [retention]},
@@ -669,15 +669,15 @@ def product_constellation():
         for name, color, adoption, retention, size in products
     ]
 
-    chart = xy.scatter_chart(
+    chart = xyg.scatter_chart(
         *bubbles,
-        xy.legend(show=False),
-        xy.tooltip(
+        xyg.legend(show=False),
+        xyg.tooltip(
             fields=["adoption", "retention"],
             format={"adoption": ".0f%", "retention": ".0f%"},
         ),
-        xy.modebar(show=False),
-        xy.x_axis(
+        xyg.modebar(show=False),
+        xyg.x_axis(
             domain=(35, 90),
             tick_label_strategy="none",
             style={
@@ -690,7 +690,7 @@ def product_constellation():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(55, 100),
             tick_label_strategy="off",
             style={
@@ -705,7 +705,7 @@ def product_constellation():
                 "label_color": "#00000000",
             },
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--constellation-surface, #ffffff)",
             grid_color="var(--constellation-grid, #e5e7eb)",
             text_color="var(--constellation-text, #6a7282)",
@@ -741,12 +741,12 @@ preview = {
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def release_velocity():
-    chart = xy.stem_chart(
-        xy.stem(
+    chart = xyg.stem_chart(
+        xyg.stem(
             x="release",
             y="velocity",
             data=stable,
@@ -755,7 +755,7 @@ def release_velocity():
             width=2,
             marker_size=8,
         ),
-        xy.stem(
+        xyg.stem(
             x="release",
             y="velocity",
             data=preview,
@@ -764,14 +764,14 @@ def release_velocity():
             width=2,
             marker_size=8,
         ),
-        xy.legend(show=False),
-        xy.tooltip(
+        xyg.legend(show=False),
+        xyg.tooltip(
             fields=["velocity"],
             title="{release}",
             format={"velocity": ".0f"},
         ),
-        xy.modebar(show=False),
-        xy.x_axis(
+        xyg.modebar(show=False),
+        xyg.x_axis(
             tick_label_strategy="none",
             style={
                 "axis_width": 0,
@@ -783,7 +783,7 @@ def release_velocity():
                 "label_color": "#00000000",
             },
         ),
-        xy.y_axis(
+        xyg.y_axis(
             domain=(0, 50),
             tick_label_strategy="off",
             style={
@@ -797,7 +797,7 @@ def release_velocity():
                 "label_color": "#00000000",
             },
         ),
-        xy.theme(
+        xyg.theme(
             plot_background="var(--velocity-surface, #ffffff)",
             grid_color="var(--velocity-grid, #e5e7eb)",
             text_color="var(--velocity-text, #6a7282)",
@@ -821,7 +821,7 @@ Choose a preset or edit the Primary, Secondary, and Accent colors to recolor a
 responsive grid of area and bar charts in real time. Manual edits switch the
 palette to **Custom**; **Reset** restores Berry. Copy any card when the palette
 and chart treatment fit your product—the generated code uses
-`xy.theme(palette=...)` where a chart-wide series cycle is the clearest fit.
+`xyg.theme(palette=...)` where a chart-wide series cycle is the clearest fit.
 
 ~~~python exec
 from xy_docs.playground import chart_playground

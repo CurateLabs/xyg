@@ -13,7 +13,7 @@ from typing import Any
 
 import numpy as np
 
-from xy import _fontmetrics
+from xyg import _fontmetrics
 
 from ._mathtext import mathtext_to_unicode
 from ._translate import MARKER_TO_SYMBOL, not_implemented

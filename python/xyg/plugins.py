@@ -14,7 +14,7 @@ carrying its own shader would reuse none of that, so shaders are a second
 system and can wait until something real needs one.
 
     import numpy as np
-    import xy
+    import xyg as xy
 
     def _calc(columns):
         low, high = columns["low"], columns["high"]
@@ -129,7 +129,7 @@ def register_mark(plugin: MarkPlugin, *, replace: bool = False) -> MarkPlugin:
     if reserved:
         raise ValueError(
             f"mark plugin {plugin.name!r} declares column(s) {reserved}, which "
-            f"xy.mark() binds itself; rename them"
+            f"xyg.mark() binds itself; rename them"
         )
     _REGISTRY[plugin.name] = plugin
     return plugin

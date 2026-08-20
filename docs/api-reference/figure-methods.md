@@ -41,7 +41,7 @@ png: bytes = chart.to_png(
     width=None,
     height=None,
     scale=2.0,
-    engine=xy.Engine.default,
+    engine=xyg.Engine.default,
     optimize=False,
     custom_css=None,
     sandbox=True,
@@ -68,7 +68,7 @@ image: bytes = chart.to_image(
     height=None,
     scale=None,                # device-pixel-ratio for raster formats
     background=None,           # "auto" | CSS color | "transparent"
-    engine=xy.Engine.auto,
+    engine=xyg.Engine.auto,
     quality=None,              # JPEG / Chromium-WebP, 1-100 (default 90)
     optimize=False,
     custom_css=None,
@@ -84,7 +84,7 @@ atomically, and returns the written bytes. `Engine.auto` deterministically
 selects the native path per format, switching to Chromium only when
 `custom_css` is passed. Omitted width/height/scale/background/quality fall
 back to the chart's `export_config()` defaults. Module-level batch export is
-`xy.write_images(figures=..., files=...)` — mixed formats, one shared browser
+`xyg.write_images(figures=..., files=...)` — mixed formats, one shared browser
 session for Chromium-resolved files, atomic per-file writes.
 
 ## Data Readout and Mutation
@@ -93,7 +93,7 @@ session for Chromium-resolved files, atomic per-file writes.
 report: dict = chart.memory_report()
 chart.append(trace_id, x, y, color=None, size=None)
 row: dict | None = chart.pick(trace_id, index)
-selection: xy.Selection = chart.select_range(x0, x1, y0, y1, trace_id=None)
+selection: xyg.Selection = chart.select_range(x0, x1, y0, y1, trace_id=None)
 ~~~
 
 - `memory_report()` describes canonical, derived, and payload allocations.

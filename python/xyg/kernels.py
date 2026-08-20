@@ -16,10 +16,10 @@ try:
     from . import _native as _impl
 except ImportError as err:  # pragma: no cover - platform-dependent
     raise ImportError(
-        "xy requires its native Rust core, which could not be loaded "
+        "xyg requires its native Rust core, which could not be loaded "
         f"({err}). Prebuilt wheels cover Linux glibc and musl (x86-64, aarch64, "
         "armv7), macOS (x86-64, Apple Silicon), and Windows (x86, x64, arm64); "
-        "on those platforms `pip install xy` needs no toolchain. On any "
+        "on those platforms `pip install xyg` needs no toolchain. On any "
         "other platform, install a Rust toolchain (https://rustup.rs) and "
         "reinstall from source (or run `cargo build --release`)."
     ) from err

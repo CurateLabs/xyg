@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._artists import Legend
-from xy.pyplot._rc import rcParams
-from xy.pyplot._ticker import AutoMinorLocator, NullLocator
+import xyg.pyplot as plt
+from xyg.pyplot._artists import Legend
+from xyg.pyplot._rc import rcParams
+from xyg.pyplot._ticker import AutoMinorLocator, NullLocator
 
 
 def teardown_function():

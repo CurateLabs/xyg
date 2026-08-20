@@ -30,13 +30,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # for abi_smoke.load
 
 from _protocol import PROTOCOL_VERSION  # noqa: E402
 from abi_smoke import load  # noqa: E402
-from xy.export import find_chromium, html_to_png  # noqa: E402
+from xyg.export import find_chromium, html_to_png  # noqa: E402
 
 W, H, SCALE = 320, 200, 2
 
 
 def build_html() -> str:
-    bundle = (ROOT / "python/xy/static/standalone.js").read_text()
+    bundle = (ROOT / "python/xyg/static/standalone.js").read_text()
     # two-point line, f32 offset-encoded (offset 0.5, scale 1) — no numpy.
     blob = struct.pack("<2f", -0.5, 0.5) + struct.pack("<2f", -0.5, 0.5)
     spec = {
@@ -73,7 +73,7 @@ def build_html() -> str:
         f"<script>{bundle}</script><script>"
         f"const spec={json.dumps(spec)};"
         f'const bytes=Uint8Array.from(atob("{b64}"),c=>c.charCodeAt(0));'
-        'xy.renderStandalone(document.getElementById("chart"),spec,bytes.buffer);'
+        'xyg.renderStandalone(document.getElementById("chart"),spec,bytes.buffer);'
         "</script></body></html>"
     )
 

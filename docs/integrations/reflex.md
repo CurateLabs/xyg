@@ -54,7 +54,7 @@ deploy.
 
 ## Fixed Charts
 
-Pass a regular `xy.Chart` directly to `reflex_xy.chart` when its data does not
+Pass a regular `xyg.Chart` directly to `reflex_xy.chart` when its data does not
 depend on state. The adapter compiles a content-addressed binary asset during
 the frontend build, so the result works with `reflex export` and needs no
 backend connection.
@@ -63,16 +63,16 @@ backend connection.
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 t = np.linspace(0, 4 * np.pi, 800)
 
 
 def index() -> rx.Component:
     return reflex_xy.chart(
-        xy.line_chart(
-            xy.line(t, np.sin(t), name="signal"),
-            xy.x_axis(label="t"),
+        xyg.line_chart(
+            xyg.line(t, np.sin(t), name="signal"),
+            xyg.x_axis(label="t"),
             title="Static payload",
             width="100%",
             height=280,
@@ -95,7 +95,7 @@ the app's existing websocket rather than through Reflex state JSON.
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 
 class Dashboard(rx.State):
@@ -103,12 +103,12 @@ class Dashboard(rx.State):
     hovered: dict = {}
 
     @reflex_xy.figure
-    def cloud(self) -> xy.Chart:
+    def cloud(self) -> xyg.Chart:
         rng = np.random.default_rng(7)
         x = rng.normal(size=self.points)
         y = 0.6 * x + rng.normal(scale=0.6, size=self.points)
-        return xy.scatter_chart(
-            xy.scatter(x, y, density=True),
+        return xyg.scatter_chart(
+            xyg.scatter(x, y, density=True),
             width="100%",
             height=420,
         )
@@ -155,17 +155,17 @@ component props:
 | `on_brush` | No dedicated prop | — |
 | `on_select` | `on_select_end` | JSON-safe summary with `total`, optional bounds, and `cleared` |
 | `on_view_change` | `on_view_change` | View dictionary |
-| `xy.animation(on_start=...)` | `on_animation_start` | Animation phase/view dictionary |
-| `xy.animation(on_end=...)` | `on_animation_end` | Animation phase/view dictionary, with `cancelled` on interruption |
+| `xyg.animation(on_start=...)` | `on_animation_start` | Animation phase/view dictionary |
+| `xyg.animation(on_end=...)` | `on_animation_end` | Animation phase/view dictionary, with `cancelled` on interruption |
 
-In particular, notebook `on_select` receives an `xy.Selection` with canonical
+In particular, notebook `on_select` receives an `xyg.Selection` with canonical
 row indices, while Reflex `on_select_end` receives a compact summary suitable
 for an ordinary Reflex event. See
 [Interactions and selections](/docs/xy/core-concepts/interactions/) for the
 core callback contract.
 
 State-driven full payloads update the existing browser view in place, so
-stable mark `key=` values and an `xy.animation(match="key")` child preserve
+stable mark `key=` values and an `xyg.animation(match="key")` child preserve
 identity across a Reflex recompute. See
 [Animations and data transitions](/docs/xy/styling/animations/).
 
@@ -183,7 +183,7 @@ for the mutation and snapshot contract.
 
 | Component source | Best for | Backend |
 | --- | --- | --- |
-| A direct `xy.Chart`: `reflex_xy.chart(chart)` | Fixed, exportable charts | None |
+| A direct `xyg.Chart`: `reflex_xy.chart(chart)` | Fixed, exportable charts | None |
 | A module-scope `token = reflex_xy.inline(chart)`, then `reflex_xy.chart(token)` | Fixed data with kernel round-trips | XY registry |
 | An `@reflex_xy.figure` var: `reflex_xy.chart(State.figure)` | Session and state-driven charts | Reflex + XY registry |
 
@@ -196,15 +196,15 @@ kernel-backed fixed-data tier; passing a Chart directly is the static tier.
 Legend, tooltip, and colorbar components can retain opaque framework objects:
 
 ~~~python
-import xy
+import xyg
 
 custom_legend = object()
 custom_tooltip = object()
 
-chart = xy.scatter_chart(
-    xy.scatter([1, 2], [3, 5]),
-    xy.legend(custom_legend, show=False),
-    xy.tooltip(custom_tooltip, show=False),
+chart = xyg.scatter_chart(
+    xyg.scatter([1, 2], [3, 5]),
+    xyg.legend(custom_legend, show=False),
+    xyg.tooltip(custom_tooltip, show=False),
 )
 
 chrome = chart.reflex_components()

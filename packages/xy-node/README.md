@@ -12,7 +12,7 @@ runtime-dependency-light (koffi + the shared cdylib), exports a stable
 `document`. VS Code webviews should load the host-neutral paint client
 (`@curatelabs/xyg` / `packages/xy-client/dist` standalone IIFE) with §29
 buffers produced by the extension host — see `src/vscode.js`. Do not point
-webviews at `python/xy/static`. HTML export is `figure.toHtml()` /
+webviews at `python/xyg/static`. HTML export is `figure.toHtml()` /
 `toHtml(payload)`, which inlines that same standalone client.
 
 ## Setup
@@ -71,7 +71,7 @@ separate host-neutral artifact:
 2. `@curatelabs/xyg` / `packages/xy-client/dist/index.js` (ESM `render`)
 
 `toHtml()` and VS Code webviews use that path. They must not read
-`python/xy/static` (that directory is the Python wheel **copy** of the same
+`python/xyg/static` (that directory is the Python wheel **copy** of the same
 files). From a source checkout: `npm ci && node js/build.mjs` at the repo root.
 
 ## Host composition (graph / marks / sankey)
@@ -159,7 +159,7 @@ const graph = graphChart(nodes, edges, { layout: "circle", seed: 1 });
 | Function | Role |
 |---|---|
 | `createEngine()` | stable engine entry (`figure` alias) |
-| `toHtml()` / `Figure.toHtml()` | standalone HTML inlining `@curatelabs/xyg` (not `python/xy/static`) |
+| `toHtml()` / `Figure.toHtml()` | standalone HTML inlining `@curatelabs/xyg` (not `python/xyg/static`) |
 | `abiVersion()` | `xyg_abi_version` |
 | `graphLayout` / `graphForce*` / `graphLod*` / `graphBuildRender` | layout + LOD + render graph |
 | `normalizeGraphInputs` / `runLayout` / `composeGraph` | host composition |

@@ -40,7 +40,7 @@ make setup
 
 `make setup` requires a Rust toolchain because it runs `cargo build --release`
 after installing the editable Python package. This leaves the checkout ready
-to import `xy.kernels` and run the fast gate.
+to import `xyg.kernels` and run the fast gate.
 
 Run the fast local gate:
 
@@ -91,7 +91,7 @@ When CI, a release job, or a local build has already produced artifacts, verify
 those exact files with:
 
 ```bash
-make check-artifacts SDIST=/path/to/xy.tar.gz WHEEL=/path/to/xy.whl
+make check-artifacts SDIST=/path/to/xyg.tar.gz WHEEL=/path/to/xyg.whl
 ```
 
 When you generate a benchmark JSON artifact locally, validate it before copying
@@ -123,7 +123,7 @@ registry/assets, run:
 make check-examples
 ```
 
-When you touch `python/xy/pyplot/` or the matplotlib compatibility corpus, run:
+When you touch `python/xyg/pyplot/` or the matplotlib compatibility corpus, run:
 
 ```bash
 make check-pyplot
@@ -154,7 +154,7 @@ When you add, remove, rename, or re-type a public export, run:
 make check-api
 ```
 
-When you change `xy.__init__`, lazy imports, dependency boundaries,
+When you change `xyg.__init__`, lazy imports, dependency boundaries,
 widget/export boundaries, or backend import setup, run:
 
 ```bash
@@ -250,17 +250,17 @@ the `<CHROMIUM>` placeholder, name it explicitly, for example
 - Public errors are actionable and name the bad parameter.
 - Failed public builder calls leave the internal `_figure.Figure` traces,
   `ColumnStore`, and category axes unchanged.
-- `import xy` stays lazy and under budget in fresh interpreters; no
+- `import xyg` stays lazy and under budget in fresh interpreters; no
   NumPy/native-core import on package import.
 - Standalone HTML handles hostile user strings in every text surface touched by
   the patch; run `make check-security` for export/client text-sink changes.
 - Benchmarks label mode truthfully: `direct`, `decimated`, `density`, `sampled`,
   or `adaptive`.
 - Canonical API examples still match the current public API.
-- New public exports appear in `xy.__all__`, lazy `_EXPORTS`, and tests;
+- New public exports appear in `xyg.__all__`, lazy `_EXPORTS`, and tests;
   run `make check-api` after public export or annotation changes.
 - Lazy import boundaries still keep package import light; run
-  `make check-import` after changing `xy.__init__`, export helpers,
+  `make check-import` after changing `xyg.__init__`, export helpers,
   widget creation, or backend imports.
 - Wheel/sdist contents still include JS bundles, an empty full-package
   `py.typed` marker, valid package metadata, and the right native/pure tagging

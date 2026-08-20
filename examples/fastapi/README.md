@@ -16,7 +16,7 @@ Two integration surfaces:
   `POST /api/xy/drilldown` (a Starlette endpoint in
   [`live_drilldown.py`](live_drilldown.py)) for the view round-trips. Each
   reply is an `XYBF` binary frame — compact JSON metadata plus raw f32/u8
-  buffers — decoded in the browser with the bundled `xy.decodeFrame`, so the
+  buffers — decoded in the browser with the bundled `xyg.decodeFrame`, so the
   density grids and point buffers that dominate a drill never pay a base64
   encode/decode or its ~33% inflation.
 
@@ -39,7 +39,7 @@ XY_LIVE_POINTS=1000000 uv run uvicorn app:app
 ```
 
 Note the drill-to-points behavior is scale-gated by the engine
-(`xy.config.PYRAMID_NO_RESCAN_ROWS`, 200M): above that row count — or for
+(`xyg.config.PYRAMID_NO_RESCAN_ROWS`, 200M): above that row count — or for
 disk-backed columns — every zoom is answered from the density pyramid,
 upsampled at its floor, and exact points never ship (the O(N) window rescan
 that drilling requires is forbidden in that regime; LOD doc §28). The badge
@@ -51,5 +51,5 @@ run that "never reaches points" is the recorded contract, not a bug.
 | File | Role |
 |---|---|
 | `app.py` | FastAPI routes: index, `/chart/{id}`, `/drilldown`, `/api/xy/drilldown` |
-| `charts.py` | `() -> xy.Chart` builders for the gallery |
+| `charts.py` | `() -> xyg.Chart` builders for the gallery |
 | `live_drilldown.py` | The drilldown engine and its Starlette callback endpoint |

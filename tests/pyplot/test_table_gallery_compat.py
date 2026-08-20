@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def test_table_is_axes_fraction_geometry_and_does_not_affect_data_limits() -> None:

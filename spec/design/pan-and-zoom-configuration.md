@@ -21,13 +21,13 @@ Viewport navigation is five independent concerns:
 The target Python API stays flat and declarative:
 
 ```python
-import xy
+import xyg
 
-chart = xy.histogram_chart(
-    xy.hist(latency_ms, bins=120),
-    xy.x_axis(label="latency (ms)", bounds="data"),
-    xy.y_axis(label="requests"),
-    xy.interaction_config(
+chart = xyg.histogram_chart(
+    xyg.hist(latency_ms, bins=120),
+    xyg.x_axis(label="latency (ms)", bounds="data"),
+    xyg.y_axis(label="requests"),
+    xyg.interaction_config(
         navigation=True,
         default_drag_action="pan",
         pan=True,
@@ -89,7 +89,7 @@ bindings. The primary IDs are `"x"` and `"y"`; secondary axes may be `"x2"`,
 ### 5.1 Public surface
 
 ```python
-xy.interaction_config(
+xyg.interaction_config(
     navigation: bool | None = None,
     default_drag_action: Literal[
         "auto", "none", "pan", "zoom", "select", "select-x", "select-y", "select-lasso"
@@ -148,7 +148,7 @@ and a wind rose are the same figure to it (`Chart.kind` never reaches the wire) 
 they want opposite answers. The centre is a fixed point of the polar transform, so
 zooming a constant-rim composition crops it rather than navigating it; the default is
 therefore `False`, `wind_rose` ships `True` because its radius is a frequency count,
-and `xy.interaction_config(zoom=…)` overrides either. With the flag off, the polar
+and `xyg.interaction_config(zoom=…)` overrides either. With the flag off, the polar
 modebar carries no zoom controls and the wheel is left uncancelled so the page keeps
 scrolling. See [`polar-axes.md`](polar-axes.md) §8.
 
@@ -229,14 +229,14 @@ Examples:
 
 ```python
 # Drag pans x; wheel still zooms x.
-xy.interaction_config(
+xyg.interaction_config(
     default_drag_action="pan",
     pan_axes=("x",),
     zoom_axes=("x",),
 )
 
 # Drag box-zooms; panning remains available from the modebar.
-xy.interaction_config(
+xyg.interaction_config(
     default_drag_action="zoom",
     pan=True,
     box_zoom=True,
@@ -244,7 +244,7 @@ xy.interaction_config(
 
 # Inert plot for a scrolling page: no drag gesture, and the wheel
 # stays with the page. Toolbar navigation keeps working.
-xy.interaction_config(default_drag_action="none")
+xyg.interaction_config(default_drag_action="none")
 ```
 
 ## 6. Shared mutation pipeline
@@ -366,18 +366,18 @@ window.
 
 ```python
 # Explicit form of the default: never zoom out beyond the original window.
-xy.interaction_config(
+xyg.interaction_config(
     zoom_axes=("x",),
     zoom_limits=(1.0, None),
 )
 
 # Allow 4× zoom-out and at most 64× zoom-in on every selected axis.
-xy.interaction_config(
+xyg.interaction_config(
     zoom_limits=(0.25, 64.0),
 )
 
 # Set different limits for independently scaled axes.
-xy.interaction_config(
+xyg.interaction_config(
     zoom_axes=("x", "y2"),
     zoom_limits={
         "x": (1.0, None),
@@ -465,7 +465,7 @@ single coordinated keymap design.
 ## 9. Domain, bounds, scales, and multiple axes
 
 ```python
-xy.x_axis(
+xyg.x_axis(
     domain=(20, 80),   # initial/home view
     bounds=(0, 100),   # hard navigation envelope
     margin=0.05,       # padding around an *automatic* domain
@@ -518,13 +518,13 @@ multiplicative log behavior and reversed range direction.
 Every declared axis owns an independent home range, current range, scale, and bounds:
 
 ```python
-chart = xy.chart(
-    xy.line(time, temperature, y_axis="y", name="temperature"),
-    xy.line(time, pressure, y_axis="y2", name="pressure"),
-    xy.x_axis(id="x", label="time"),
-    xy.y_axis(id="y", label="temperature (°C)", side="left"),
-    xy.y_axis(id="y2", label="pressure (kPa)", side="right"),
-    xy.interaction_config(
+chart = xyg.chart(
+    xyg.line(time, temperature, y_axis="y", name="temperature"),
+    xyg.line(time, pressure, y_axis="y2", name="pressure"),
+    xyg.x_axis(id="x", label="time"),
+    xyg.y_axis(id="y", label="temperature (°C)", side="left"),
+    xyg.y_axis(id="y2", label="pressure (kPa)", side="right"),
+    xyg.interaction_config(
         pan_axes=("x", "y2"),
         zoom_axes=("x", "y2"),
     ),
@@ -675,9 +675,9 @@ class Dashboard(rx.State):
             }
 
 
-chart = xy.line_chart(
-    xy.line(timestamps, values),
-    xy.interaction_config(
+chart = xyg.line_chart(
+    xyg.line(timestamps, values),
+    xyg.interaction_config(
         pan_axes=("x",),
         zoom_axes=("x",),
     ),
@@ -759,9 +759,9 @@ objects can be reconsidered only if source policy grows substantially.
 ### X-only histogram
 
 ```python
-xy.histogram_chart(
-    xy.hist(values, bins=140),
-    xy.interaction_config(
+xyg.histogram_chart(
+    xyg.hist(values, bins=140),
+    xyg.interaction_config(
         pan_axes=("x",),
         zoom_axes=("x",),
         reset_axes=("x",),
@@ -775,12 +775,12 @@ The count scale remains stable while the distribution is explored. The default
 ### Dual y axes with independent zoom
 
 ```python
-xy.chart(
-    xy.line(time, temperature, y_axis="y"),
-    xy.line(time, pressure, y_axis="y2"),
-    xy.y_axis(id="y", label="temperature (°C)"),
-    xy.y_axis(id="y2", label="pressure (kPa)", side="right"),
-    xy.interaction_config(
+xyg.chart(
+    xyg.line(time, temperature, y_axis="y"),
+    xyg.line(time, pressure, y_axis="y2"),
+    xyg.y_axis(id="y", label="temperature (°C)"),
+    xyg.y_axis(id="y2", label="pressure (kPa)", side="right"),
+    xyg.interaction_config(
         pan_axes=("x", "y2"),
         zoom_axes=("x", "y2"),
         zoom_limits={"x": (1.0, None), "y2": (0.5, 32.0)},
@@ -795,9 +795,9 @@ The time and pressure ranges change; temperature remains fixed. Use
 ### Selection-first chart with wheel zoom
 
 ```python
-xy.scatter_chart(
-    xy.scatter(x, y),
-    xy.interaction_config(
+xyg.scatter_chart(
+    xyg.scatter(x, y),
+    xyg.interaction_config(
         default_drag_action="select",
         select=True,
         brush=True,
@@ -812,9 +812,9 @@ Plain drag selects, wheel zoom remains, and competing rectangular zoom is remove
 ### Read-only linked detail
 
 ```python
-xy.line_chart(
-    xy.line(time, value),
-    xy.interaction_config(
+xyg.line_chart(
+    xyg.line(time, value),
+    xyg.interaction_config(
         navigation=False,
         link_group="shared-time",
         link_axes=("x",),

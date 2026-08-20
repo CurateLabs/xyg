@@ -12,9 +12,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _graph, _native
-from xy import kernels as k
+import xyg as xy
+from xyg import _graph, _native
+from xyg import kernels as k
 
 SMALL_N = 1_000
 MEDIUM_N = 10_000

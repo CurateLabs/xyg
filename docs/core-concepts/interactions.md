@@ -15,15 +15,15 @@ an event.
 Set flags directly on a chart or compose an `interaction_config()` child:
 
 ~~~python demo exec
-import xy
+import xyg
 
 x = [0, 1, 2, 3]
 y = [1, 3, 2, 5]
 
-chart = xy.area_chart(
-    xy.area(x, y, color="#6e56cf"),
-    xy.scatter(x, y, color="#6e56cf", size=6),
-    xy.interaction_config(
+chart = xyg.area_chart(
+    xyg.area(x, y, color="#6e56cf"),
+    xyg.scatter(x, y, color="#6e56cf", size=6),
+    xyg.interaction_config(
         hover=True,
         click=True,
         select=True,
@@ -56,10 +56,10 @@ is the wrong default for a composition read against an authored frame — a pie 
 donut, whose value is the angle and whose radius is a constant rim, but also a
 radial bar, gauge, or radar, where the radial extent *is* the value yet is read
 against a fixed rim or shared domain that zoom would clip away.
-`xy.wind_rose()` is the exception and ships with zoom on, since its radius is a
+`xyg.wind_rose()` is the exception and ships with zoom on, since its radius is a
 frequency count and pulling the ring in magnifies the short sectors.
 
-Opt back in per chart with `xy.interaction_config(zoom=True)` (or `zoom=True` on
+Opt back in per chart with `xyg.interaction_config(zoom=True)` (or `zoom=True` on
 the chart) — an ordinary `polar_chart()` whose radius is measured data is the
 expected case for this. Radial zoom then changes the maximum radius while holding
 the minimum fixed, so zooming a disc does not unexpectedly create a hole and an
@@ -97,15 +97,15 @@ point click or completed selection:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 x = [0, 1, 2, 3, 4, 5, 6]
 y = [2, 4, 3, 5, 4, 6, 5]
 
-callback_chart = xy.area_chart(
-    xy.area(x, y, color="#6e56cf"),
-    xy.scatter(x, y, color="#6e56cf", size=7),
-    xy.interaction_config(click=True, select=True, brush=True),
+callback_chart = xyg.area_chart(
+    xyg.area(x, y, color="#6e56cf"),
+    xyg.scatter(x, y, color="#6e56cf", size=7),
+    xyg.interaction_config(click=True, select=True, brush=True),
 )
 callback_chart_token = reflex_xy.inline(callback_chart)
 
@@ -148,7 +148,7 @@ The Reflex adapter exposes a separate event surface on the outer
 | `on_hover` | Resolved row dictionary | `on_point_hover` | Point envelope with data and canonical row ID |
 | `on_click` | Resolved row dictionary | `on_point_click` | Point envelope with data and canonical row ID |
 | `on_brush` | Bounds or polygon dictionary | No dedicated prop | — |
-| `on_select` | `xy.Selection` with canonical rows | `on_select_end` | Selection envelope with count, bounds, and cleared state |
+| `on_select` | `xyg.Selection` with canonical rows | `on_select_end` | Selection envelope with count, bounds, and cleared state |
 | `on_view_change` | View dictionary | `on_view_change` | View-change envelope |
 
 Reflex event props work with a live adapter source—an `inline()` token or an
@@ -163,16 +163,16 @@ but XY keeps canonical rows in Python:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 exact_readout_x = list(range(16))
 exact_readout_y = [1, 3, 2, 5, 4, 6, 3, 7, 5, 8, 6, 9, 7, 10, 8, 11]
 
-exact_readout_chart = xy.scatter_chart(
-    xy.scatter(exact_readout_x, exact_readout_y, color="#6e56cf", size=7),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
-    xy.interaction_config(click=True, select=True, brush=True),
+exact_readout_chart = xyg.scatter_chart(
+    xyg.scatter(exact_readout_x, exact_readout_y, color="#6e56cf", size=7),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
+    xyg.interaction_config(click=True, select=True, brush=True),
 )
 exact_readout_chart_token = reflex_xy.inline(exact_readout_chart)
 
@@ -284,20 +284,20 @@ canonical row.
 Give related charts the same `link_group` and choose which axes participate:
 
 ~~~python demo exec
-import xy
+import xyg
 
 x = list(range(16))
 overview_y = [2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10, 9, 11]
 detail_y = [20, 38, 31, 47, 42, 58, 51, 69, 63, 77, 72, 88, 81, 96, 91, 108]
 
-overview = xy.line_chart(
-    xy.line(x, overview_y, color="#6e56cf"),
+overview = xyg.line_chart(
+    xyg.line(x, overview_y, color="#6e56cf"),
     link_group="revenue",
     link_axes=("x",),
 )
 
-detail = xy.scatter_chart(
-    xy.scatter(x, detail_y, color="#6e56cf", size=7),
+detail = xyg.scatter_chart(
+    xyg.scatter(x, detail_y, color="#6e56cf", size=7),
     link_group="revenue",
     link_axes=("x",),
 )

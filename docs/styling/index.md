@@ -21,10 +21,10 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-overview_area = xy.area_chart(
-    xy.area(
+overview_area = xyg.area_chart(
+    xyg.area(
         months,
         solar_panels,
         name="Solar panels",
@@ -34,7 +34,7 @@ overview_area = xy.area_chart(
         curve="linear",
         line_width=2,
     ),
-    xy.area(
+    xyg.area(
         months,
         inverters,
         name="Inverters",
@@ -44,10 +44,10 @@ overview_area = xy.area_chart(
         curve="linear",
         line_width=2,
     ),
-    xy.tooltip(title="{x}", format={"y": "$,.0f"}),
-    xy.legend(show=False),
-    xy.modebar(show=False),
-    xy.x_axis(
+    xyg.tooltip(title="{x}", format={"y": "$,.0f"}),
+    xyg.legend(show=False),
+    xyg.modebar(show=False),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -58,7 +58,7 @@ overview_area = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 4200),
         format="$,.0f",
         style={
@@ -70,7 +70,7 @@ overview_area = xy.area_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.theme(
+    xyg.theme(
         plot_background="var(--overview-surface, #ffffff)",
         grid_color="var(--overview-grid, #e5e7eb)",
         text_color="var(--overview-text, #52525b)",
@@ -124,12 +124,12 @@ vocabulary.
 | --- | --- | --- |
 | Chart root class | `class_name="rounded-xl border"` | Host layout, card chrome, and Tailwind utilities on one chart |
 | Chart root style | `style={"--brand": "#6e56cf"}` | Root CSS declarations and custom variables |
-| Theme component | `xy.theme(grid_color="#e2e8f0")` | Portable chart tokens shared by chrome and exports |
+| Theme component | `xyg.theme(grid_color="#e2e8f0")` | Portable chart tokens shared by chrome and exports |
 | Slot classes | `class_names={"tooltip": "rounded-lg"}` | Tailwind utilities or existing classes on stable DOM slots |
 | Slot styles | `styles={"title": {"font_size": 18}}` | Computed inline DOM styles on stable slots |
-| Component-local style | `xy.legend(class_name="text-xs")` | Keeping one legend, tooltip, colorbar, or modebar configuration self-contained |
-| Mark style | `xy.line(..., style={"stroke-width": 3})` | Cross-renderer paint for lines, points, areas, bars, and grids |
-| Annotation style | `xy.hline(5, style={"label_color": "red"})` | Annotation geometry and its DOM label |
+| Component-local style | `xyg.legend(class_name="text-xs")` | Keeping one legend, tooltip, colorbar, or modebar configuration self-contained |
+| Mark style | `xyg.line(..., style={"stroke-width": 3})` | Cross-renderer paint for lines, points, areas, bars, and grids |
+| Annotation style | `xyg.hline(5, style={"label_color": "red"})` | Annotation geometry and its DOM label |
 | Export CSS | `chart.to_html(custom_css="...")` | Raw author CSS and attribute selectors in one browser export |
 
 If you are unsure, use this shortcut:
@@ -139,7 +139,7 @@ If you are unsure, use this shortcut:
 - Styling a title, legend, tooltip, control, tick label, or annotation label?
   Use a slot class/style or the component's local class/style.
 - Styling the chart as a whole or defining reusable colors? Use chart
-  `class_name`/`style` or `xy.theme()`.
+  `class_name`/`style` or `xyg.theme()`.
 - Styling only a self-contained HTML or Chromium export? Use `custom_css`.
 
 ~~~python demo exec toggle preview-code id=styling-overview-columns-demo
@@ -154,23 +154,23 @@ enterprise_base = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
-chart = xy.column_chart(
-    xy.column(
+chart = xyg.column_chart(
+    xyg.column(
         months,
         core,
         name="Core",
         color="#7c3aed",
     ),
-    xy.column(
+    xyg.column(
         months,
         growth,
         base=core,
         name="Growth",
         color="#db2777",
     ),
-    xy.column(
+    xyg.column(
         months,
         enterprise,
         base=enterprise_base,
@@ -178,8 +178,8 @@ chart = xy.column_chart(
         color="#fb7185",
         corner_radius=(6, 0),
     ),
-    xy.tooltip(title="{x}", format={"y": "$,.0fK"}),
-    xy.x_axis(
+    xyg.tooltip(title="{x}", format={"y": "$,.0fK"}),
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -190,7 +190,7 @@ chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         domain=(0, 100),
         style={
             "axis_width": 0,
@@ -201,7 +201,7 @@ chart = xy.column_chart(
             "label_color": "#00000000",
         },
     ),
-    xy.legend(loc="upper left"),
+    xyg.legend(loc="upper left"),
     class_name="bg-white text-slate-900 dark:bg-black dark:text-zinc-100",
     class_names={
         "tooltip": "rounded-lg bg-zinc-900/90 text-white shadow-xl",

@@ -2,7 +2,7 @@
 title: Violin Plot in Python
 description: Violin plot Python charts with xy — compare full distribution shapes across groups with mirrored density curves in a fast, interactive plot that pans and zooms.
 components:
-  - xy.violin_chart
+  - xyg.violin_chart
 ---
 
 # Violin Plots in Python
@@ -25,7 +25,7 @@ Pass a list of arrays — one per group — to `violin`, and label each group wi
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 violin_rng = np.random.default_rng(31)
 violin_groups = [
@@ -38,16 +38,16 @@ violin_groups = [
     ),
 ]
 
-violin_detail_chart = xy.violin_chart(
-    xy.violin(
+violin_detail_chart = xyg.violin_chart(
+    xyg.violin(
         violin_groups,
         x=["Single peak", "Two peaks"],
         color="#6e56cf",
         opacity=0.65,
         bins=72,
     ),
-    xy.x_axis(label="distribution"),
-    xy.y_axis(label="score"),
+    xyg.x_axis(label="distribution"),
+    xyg.y_axis(label="score"),
     title="Distribution shape",
 )
 
@@ -72,7 +72,7 @@ Raise `bins` for a finer density trace, turn the plot sideways with
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 wind_rng = np.random.default_rng(13)
 season_wind = [
@@ -81,8 +81,8 @@ season_wind = [
     wind_rng.weibull(2.4, 1_500) * 11,
 ]
 
-horizontal_violin_chart = xy.violin_chart(
-    xy.violin(
+horizontal_violin_chart = xyg.violin_chart(
+    xyg.violin(
         season_wind,
         x=["Spring", "Autumn", "Summer"],
         orientation="horizontal",
@@ -91,8 +91,8 @@ horizontal_violin_chart = xy.violin_chart(
         color="#0ea5e9",
         opacity=0.7,
     ),
-    xy.x_axis(label="wind speed (km/h)"),
-    xy.y_axis(label="season"),
+    xyg.x_axis(label="wind speed (km/h)"),
+    xyg.y_axis(label="season"),
     title="Seasonal wind speed, fine-grained density",
 )
 
@@ -104,12 +104,12 @@ def horizontal_violin_demo():
 ### Violin and Box Overlay
 
 Compose `violin` and a narrow `box` on the same groups inside a neutral
-`xy.chart(...)` so each distribution shows its full density and its quartiles.
+`xyg.chart(...)` so each distribution shows its full density and its quartiles.
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 raincloud_rng = np.random.default_rng(101)
 model_errors = [
@@ -121,8 +121,8 @@ model_errors = [
 ]
 model_names = ["Linear", "Ensemble", "Neural"]
 
-raincloud_chart = xy.chart(
-    xy.violin(
+raincloud_chart = xyg.chart(
+    xyg.violin(
         model_errors,
         x=model_names,
         color="#6e56cf",
@@ -130,15 +130,15 @@ raincloud_chart = xy.chart(
         bins=96,
         width=0.85,
     ),
-    xy.box(
+    xyg.box(
         model_errors,
         x=model_names,
         color="#1a1a2e",
         width=0.18,
         show_outliers=False,
     ),
-    xy.x_axis(label="model"),
-    xy.y_axis(label="prediction error"),
+    xyg.x_axis(label="model"),
+    xyg.y_axis(label="prediction error"),
     title="Error distribution: density plus quartiles",
 )
 
@@ -169,8 +169,8 @@ Pass column names with `data=` instead of arrays when your data is a table.
 
 ### How do I make a violin plot in Python?
 
-Pass a list of arrays to `xy.violin(...)`, one per group, inside
-`xy.violin_chart(...)` and render it. The density curves and axes are computed
+Pass a list of arrays to `xyg.violin(...)`, one per group, inside
+`xyg.violin_chart(...)` and render it. The density curves and axes are computed
 automatically.
 
 ### What does the width of a violin plot mean?

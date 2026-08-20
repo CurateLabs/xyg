@@ -5,7 +5,7 @@ from io import BytesIO
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 def teardown_function() -> None:

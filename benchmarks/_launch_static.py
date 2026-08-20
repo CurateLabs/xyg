@@ -55,7 +55,7 @@ def nonblank_png(png: bytes) -> int:
 def child_run(library: str, n: int) -> dict[str, Any]:
     # Imports are excluded from chart-to-PNG time but included in RSS.
     if library == "xy":
-        from xy import Engine, scatter, scatter_chart
+        from xyg import Engine, scatter, scatter_chart
     elif library == "plotly":
         import plotly.express as px
     elif library == "matplotlib":

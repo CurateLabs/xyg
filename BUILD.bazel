@@ -30,7 +30,7 @@ filegroup(
     name = "python_graph_sources",
     srcs = glob(
         [
-            "python/xy/**/*.py",
+            "python/xyg/**/*.py",
             "tests/test_graph.py",
             "tests/test_sankey.py",
             "scripts/abi_smoke.py",
@@ -156,7 +156,7 @@ filegroup(
             "benchmarks/bench_dual_host_graph.py",
             "benchmarks/bench_parity_kernels.py",
             "benchmarks/baseline.json",
-            "python/xy/**/*.py",
+            "python/xyg/**/*.py",
         ],
         allow_empty = True,
     ),
@@ -191,7 +191,7 @@ filegroup(
             "benchmarks/bench_tier3_pyramid.py",
             "benchmarks/bench_tier3_pyramid_node.mjs",
             "benchmarks/baseline.json",
-            "python/xy/**/*.py",
+            "python/xyg/**/*.py",
             "packages/xy-node/src/**",
             "packages/xy-node/package.json",
         ],

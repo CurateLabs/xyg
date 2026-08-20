@@ -5,8 +5,8 @@ from __future__ import annotations
 import reflex as rx
 
 import reflex_xy
-import xy
-from xy._benchmark_theme import (
+import xyg as xy
+from xyg._benchmark_theme import (
     benchmark_chart_class,
     benchmark_live_theme,
 )

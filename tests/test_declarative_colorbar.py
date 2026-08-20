@@ -7,9 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
+import xyg as xy
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 
 def test_heatmap_colorbar_uses_compiled_scale_and_public_chrome_options() -> None:
@@ -305,7 +305,7 @@ def test_svg_explicit_colorbar_ticks_preserve_authored_precision() -> None:
 
 
 def _browser_colorbar_probe(chromium: str, document: str, page: Path) -> dict:
-    render_call = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
+    render_call = 'xyg.renderStandalone(document.getElementById("chart"), spec, buf);'
     assert render_call in document
     probe = """
   const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);

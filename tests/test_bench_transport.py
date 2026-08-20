@@ -6,7 +6,7 @@ import json
 import numpy as np
 from benchmarks import bench_transport
 
-from xy._figure import Figure
+from xyg._figure import Figure
 
 
 def test_transport_benchmark_uses_production_frame_codec() -> None:

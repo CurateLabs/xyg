@@ -2,8 +2,8 @@
 title: Facet Charts and Layered Marks in Python
 description: Build faceted small multiples and layer different marks in one chart in Python with xy, with shared axes and per-panel interactivity.
 components:
-  - xy.chart
-  - xy.facet_chart
+  - xyg.chart
+  - xyg.facet_chart
 ---
 
 # Facet Charts and Layered Marks in Python
@@ -21,12 +21,12 @@ The live example layers different mark types in one coordinate system.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-chart = xy.chart(
-    xy.bar(["A", "B", "C"], [4, 7, 5], color="#c4b5fd"),
-    xy.scatter(["A", "B", "C"], [4.5, 6.5, 5.5], color="#1b212a"),
-    xy.hline(6, text="Target"),
+chart = xyg.chart(
+    xyg.bar(["A", "B", "C"], [4, 7, 5], color="#c4b5fd"),
+    xyg.scatter(["A", "B", "C"], [4.5, 6.5, 5.5], color="#1b212a"),
+    xyg.hline(6, text="Target"),
 )
 
 
@@ -46,7 +46,7 @@ system. Declare broad fills first, followed by lines, points, and annotations.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 facet_detail_data = {
     "x": [0, 1, 2, 0, 1, 2],
@@ -54,11 +54,11 @@ facet_detail_data = {
     "region": ["West", "West", "West", "East", "East", "East"],
 }
 
-facet_detail_chart = xy.facet_chart(
-    xy.line(x="x", y="y", color="#6e56cf", width=2.5),
-    xy.scatter(x="x", y="y", color="#6e56cf", size=7),
-    xy.x_axis(label="period"),
-    xy.y_axis(label="value"),
+facet_detail_chart = xyg.facet_chart(
+    xyg.line(x="x", y="y", color="#6e56cf", width=2.5),
+    xyg.scatter(x="x", y="y", color="#6e56cf", size=7),
+    xyg.x_axis(label="period"),
+    xyg.y_axis(label="value"),
     by="region",
     data=facet_detail_data,
     cols=2,
@@ -92,21 +92,21 @@ dashed forecast `line`, a solid actuals `line` with `scatter` markers, and an
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 layer_months = list(range(1, 13))
 layer_actual = [4.2, 4.8, 5.1, 4.6, 5.9, 6.4, 7.1, 6.8, 7.6, 8.2, 7.9, 8.8]
 layer_forecast = [4.0, 4.5, 5.0, 5.2, 5.8, 6.3, 6.9, 7.2, 7.5, 8.0, 8.3, 8.6]
 
-layered_legend_chart = xy.chart(
-    xy.area(
+layered_legend_chart = xyg.chart(
+    xyg.area(
         layer_months,
         layer_forecast,
         name="Forecast band",
         color="#c4b5fd",
         opacity=0.3,
     ),
-    xy.line(
+    xyg.line(
         layer_months,
         layer_forecast,
         name="Forecast",
@@ -114,12 +114,12 @@ layered_legend_chart = xy.chart(
         width=2,
         dash="dashed",
     ),
-    xy.line(layer_months, layer_actual, name="Actual", color="#1b212a", width=2.5),
-    xy.scatter(layer_months, layer_actual, name="Monthly close", color="#1b212a", size=6),
-    xy.hline(7.5, text="Goal", color="#dc2626"),
-    xy.legend(loc="top left"),
-    xy.x_axis(label="month"),
-    xy.y_axis(label="revenue ($M)"),
+    xyg.line(layer_months, layer_actual, name="Actual", color="#1b212a", width=2.5),
+    xyg.scatter(layer_months, layer_actual, name="Monthly close", color="#1b212a", size=6),
+    xyg.hline(7.5, text="Goal", color="#dc2626"),
+    xyg.legend(loc="top left"),
+    xyg.x_axis(label="month"),
+    xyg.y_axis(label="revenue ($M)"),
     title="Actuals over a forecast band",
 )
 
@@ -144,13 +144,13 @@ and the same per-mark representation rules.
 
 ### How do I make small multiples (facets) in Python?
 
-Use `xy.facet_chart(...)` with a `by=` column; xy repeats the composition once
+Use `xyg.facet_chart(...)` with a `by=` column; xy repeats the composition once
 per distinct value and lays the panels out on a grid you control with `cols`,
 one small facet graph per category.
 
 ### How do I layer multiple chart types together?
 
-Add several marks to a neutral `xy.chart(...)` container. They render in
+Add several marks to a neutral `xyg.chart(...)` container. They render in
 declaration order, so put broad fills first, then lines, points, and
 annotations.
 

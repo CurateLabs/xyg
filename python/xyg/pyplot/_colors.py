@@ -144,7 +144,7 @@ class Cmap:
         self._over = color if alpha is None else (color, alpha)
 
     def __call__(self, values: object) -> object:
-        from xy._svg import _lut
+        from xyg._svg import _lut
 
         source = np.asarray(values)
         array = np.asarray(values, dtype=np.float64)
@@ -385,7 +385,7 @@ def resolve_rgba(value: object) -> tuple[float, float, float, float]:
     css = resolve_color(color)
     if css is None:
         css = "transparent"
-    from xy import kernels
+    from xyg import kernels
 
     status, parsed = kernels.css_check(kernels.CSS_COLOR, css)
     if status <= 0 or parsed is None:
@@ -574,7 +574,7 @@ def normalize_scalar_grid(
         if isinstance(norm, str):
             raise ValueError(f"{norm!r} is not a valid value for norm")
         raise NotImplementedError(
-            f"xy.pyplot does not implement norm={type(norm).__name__}; "
+            f"xyg.pyplot does not implement norm={type(norm).__name__}; "
             "use norm='linear', norm='log', or vmin=/vmax="
         )
     if norm is not None and not isinstance(norm, str) and (vmin is not None or vmax is not None):
@@ -635,7 +635,7 @@ def scalar_grid_rgba(values: object, cmap: object) -> np.ndarray:
     is truecolor RGBA so every renderer sees the same non-linear mapping.
     """
 
-    from xy._svg import _lut
+    from xyg._svg import _lut
 
     normalized = np.asarray(values, dtype=np.float64)
     cmap_name = resolve_cmap(cmap)

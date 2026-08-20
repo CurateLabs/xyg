@@ -18,10 +18,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-from xy import components
-from xy._svg import _PolarProjection, axis_ticks, layout, minor_axis_ticks
-from xy.config import POLAR_DIRECT_CEILING
+import xyg as xy
+from xyg import components
+from xyg._svg import _PolarProjection, axis_ticks, layout, minor_axis_ticks
+from xyg.config import POLAR_DIRECT_CEILING
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -126,7 +126,7 @@ def test_refusal_names_the_supported_set() -> None:
 def test_polar_forces_direct_tier() -> None:
     """M4 buckets on a monotonic screen-x column and density bins an
     axis-aligned grid; neither survives the polar transform."""
-    from xy.config import DECIMATION_THRESHOLD
+    from xyg.config import DECIMATION_THRESHOLD
 
     theta = np.linspace(0.0, 2.0 * math.pi, DECIMATION_THRESHOLD * 2)
     spec, _ = _chart(children=[xy.line(theta, np.sin(theta) + 2.0)]).figure().build_payload_split()
@@ -250,7 +250,7 @@ def test_raster_and_svg_agree_on_where_the_data_lands() -> None:
     # theta=pi, r=1 would sit far right on an x axis spanning [0, 2pi]; under
     # polar it belongs on the left. If this fires, the raster path ignored
     # `coords` and drew the columns as x/y.
-    from xy._svg import _Scale
+    from xyg._svg import _Scale
 
     cart_x = _Scale(spec["x_axis"], plot["x"], plot["x"] + plot["w"])(math.pi)
     cart_y = _Scale(spec["y_axis"], plot["y"] + plot["h"], plot["y"])(1.0)
@@ -334,7 +334,7 @@ def test_polar_bars_render_as_wedge_paths_in_svg() -> None:
 
 
 def test_polar_wedge_points_close_the_sector() -> None:
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     # A ring segment with a hole: both arcs, so 2*(steps+1) points.
@@ -347,7 +347,7 @@ def test_polar_wedge_points_close_the_sector() -> None:
 
 
 def test_polar_wedge_from_the_centre_is_a_fan() -> None:
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     poly = polar_wedge_points(project, 0.0, math.pi / 2, 0.0, 1.0, steps=8)
@@ -583,7 +583,7 @@ def test_theta_axis_title_stays_on_canvas() -> None:
 
 
 def test_polar_point_ceiling_is_enforced() -> None:
-    from xy.config import POLAR_DIRECT_CEILING
+    from xyg.config import POLAR_DIRECT_CEILING
 
     theta = np.zeros(POLAR_DIRECT_CEILING + 1)
     with pytest.raises(ValueError, match="polar ceiling"):
@@ -851,7 +851,7 @@ def test_area_fill_clamps_to_the_radial_range_rather_than_vanishing() -> None:
 
 def test_wedge_beyond_the_outer_ring_clips_instead_of_disappearing() -> None:
     """A bar whose tip crosses the outer ring draws up to the ring."""
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     poly = polar_wedge_points(project, 0.0, math.pi / 4, 0.0, 5.0, steps=8)
@@ -861,7 +861,7 @@ def test_wedge_beyond_the_outer_ring_clips_instead_of_disappearing() -> None:
 
 
 def test_wedge_entirely_outside_the_range_draws_nothing() -> None:
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     assert polar_wedge_points(project, 0.0, math.pi / 4, 2.0, 5.0, steps=8) == []
@@ -870,7 +870,7 @@ def test_wedge_entirely_outside_the_range_draws_nothing() -> None:
 def test_bar_below_the_radial_minimum_is_clipped_not_mirrored() -> None:
     """A radius below the minimum normalizes negative, which would reflect the
     wedge through the centre into the opposite quadrant."""
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection({}, {"range": [2.0, 4.0]}, {"x": 0, "y": 0, "w": 400, "h": 400})
     poly = polar_wedge_points(project, 0.0, math.pi / 4, 0.0, 3.0, steps=8)
@@ -960,7 +960,7 @@ def test_polar_wedge_corner_radius_reaches_every_renderer() -> None:
     all three renderers — a silent approximation (§28). Rounding pulls the
     corners in, so a rounded wedge covers strictly less area than a square one.
     """
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection(
         {"theta_unit": "degrees"}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400}
@@ -983,7 +983,7 @@ def test_polar_wedge_corner_radius_reaches_every_renderer() -> None:
 
 def test_rounded_wedge_stays_within_the_square_wedge() -> None:
     """Rounding must inset the boundary, never bulge past it."""
-    from xy._svg import polar_wedge_points
+    from xyg._svg import polar_wedge_points
 
     project = _PolarProjection(
         {"theta_unit": "degrees"}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400}
@@ -1133,7 +1133,7 @@ def test_raster_polar_area_culls_vertices_outside_the_sector() -> None:
     position_mask) and the shader cull out-of-sector and NaN vertices. The PNG
     painted the full-turn polygon with chords across the sector boundary and
     let NaN reach the display list (§19)."""
-    from xy import _raster
+    from xyg import _raster
 
     captured: list[int] = []
     original_fill = _raster._Cmd.fill
@@ -1291,7 +1291,7 @@ def test_wedge_gap_is_a_constant_width_not_a_constant_angle() -> None:
     nothing at the hole — the spacing visibly narrows toward the centre. The
     gap is a length: the angular inset grows as the radius shrinks, so the arc
     removed per edge is the same number of px at every radius."""
-    from xy._svg import _PolarProjection, polar_wedge_points
+    from xyg._svg import _PolarProjection, polar_wedge_points
 
     project = _PolarProjection(
         {"theta_unit": "degrees"}, {"range": [0.0, 1.0]}, {"x": 0, "y": 0, "w": 400, "h": 400}
@@ -1645,7 +1645,7 @@ def test_get_theta_offset_matches_matplotlibs_zero_to_two_pi_mapping() -> None:
     getter returned the render tables' -pi/2 — the same angle, but a compat
     getter has to return matplotlib's number, and the negative breaks both
     `get_theta_offset() > 0` and a round-trip through `set_theta_offset`."""
-    from xy import pyplot as plt
+    from xyg import pyplot as plt
 
     expected = {
         "E": 0.0,
@@ -1718,7 +1718,7 @@ def test_polar_bar_segments_matches_the_client_on_a_degenerate_span(span) -> Non
     ValueError on NaN and OverflowError on infinity — the two renderers
     disagreed about what a degenerate wedge costs, one drawing it and the other
     crashing."""
-    from xy.config import POLAR_BAR_SEGMENTS, polar_bar_segments
+    from xyg.config import POLAR_BAR_SEGMENTS, polar_bar_segments
 
     result = polar_bar_segments(span, 360.0)
     assert result == POLAR_BAR_SEGMENTS
@@ -1726,10 +1726,10 @@ def test_polar_bar_segments_matches_the_client_on_a_degenerate_span(span) -> Non
 
 
 def test_every_polar_public_name_is_typed_for_static_analysis() -> None:
-    """The lazy `__getattr__` surface makes `from xy import polar_chart` resolve
+    """The lazy `__getattr__` surface makes `from xyg import polar_chart` resolve
     to `Any` unless the name is also in the TYPE_CHECKING import block, which
     silently drops signatures, completion and argument checking."""
-    source = (ROOT / "python/xy/__init__.py").read_text()
+    source = (ROOT / "python/xyg/__init__.py").read_text()
     start = source.index("    from .components import (")
     block = source[start : source.index(")", start)]
     for name in (
@@ -1930,7 +1930,7 @@ def test_pyplot_polar_projection_inherits_the_zoom_default() -> None:
     hand-built `xy.chart(coords="polar")` and the shim's `projection="polar"`
     get it too — the rule belongs to the coordinate system, and there is one of
     it rather than one per factory."""
-    import xy.pyplot as plt
+    import xyg.pyplot as plt
 
     theta, r = _rose()
     assert _polar_zoom_flag(xy.chart(xy.line(theta, r), coords="polar")) is False

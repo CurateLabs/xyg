@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import _native
+from xyg import _native
 
 
 def test_point_descriptor_round_trip() -> None:

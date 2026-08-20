@@ -30,9 +30,9 @@ Use canonical CSS kebab-case when sharing styles with web code; Python
 snake_case aliases remain accepted.
 
 ~~~python
-import xy
+import xyg
 
-line = xy.line(
+line = xyg.line(
     [0, 1, 2, 3],
     [2, 5, 3, 8],
     style={
@@ -43,7 +43,7 @@ line = xy.line(
     },
 )
 
-bars = xy.column(
+bars = xyg.column(
     ["A", "B", "C"],
     [4, 7, 5],
     style={
@@ -68,7 +68,7 @@ A box plot is one public mark composed from four renderer traces. Its main
 validated vocabularies as the built-in segment and scatter marks:
 
 ~~~python
-xy.box(
+xyg.box(
     values,
     group=cohorts,
     style={
@@ -109,7 +109,7 @@ rasterizer has always drawn round caps and it is the reference for static
 export. Set the property to opt into the CSS initial value.
 
 ~~~python
-xy.line(x, y, style={"stroke-width": "6px", "stroke-linecap": "butt"})
+xyg.line(x, y, style={"stroke-width": "6px", "stroke-linecap": "butt"})
 ~~~
 
 Joins are always round and are not selectable.
@@ -125,7 +125,7 @@ name rather than a standard CSS property: CSS has no shape keyword for a non-DOM
 point mark.
 
 ~~~python
-xy.scatter(x, y, size=12, style={"marker-shape": "diamond", "fill": "#22c55e"})
+xyg.scatter(x, y, size=12, style={"marker-shape": "diamond", "fill": "#22c55e"})
 ~~~
 
 ## Combine mark styles
@@ -135,13 +135,13 @@ dashed line, bordered diamond markers, and explicitly styled axes.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 x = [0, 1, 2, 3, 4, 5]
 y = [2, 4, 3, 6, 5, 8]
 
-styled_marks = xy.chart(
-    xy.area(
+styled_marks = xyg.chart(
+    xyg.area(
         x,
         y,
         style={
@@ -152,7 +152,7 @@ styled_marks = xy.chart(
         },
         color="#8e51ff",
     ),
-    xy.line(
+    xyg.line(
         x,
         y,
         style={
@@ -161,7 +161,7 @@ styled_marks = xy.chart(
             "stroke-dasharray": "7px 4px",
         },
     ),
-    xy.scatter(
+    xyg.scatter(
         x,
         y,
         symbol="diamond",
@@ -172,7 +172,7 @@ styled_marks = xy.chart(
             "stroke-width": 2,
         },
     ),
-    xy.x_axis(
+    xyg.x_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -183,7 +183,7 @@ styled_marks = xy.chart(
             "label_color": "#00000000",
         },
     ),
-    xy.y_axis(
+    xyg.y_axis(
         style={
             "axis_width": 0,
             "axis_color": "#00000000",
@@ -248,7 +248,7 @@ colors or sizes. Tick marks use `tick_*`, tick text uses `tick_label_*`, and the
 axis title uses `label_*`:
 
 ~~~python
-xy.x_axis(
+xyg.x_axis(
     label="month",
     style={
         "axis_color": "#475569",
@@ -264,7 +264,7 @@ xy.x_axis(
     },
 )
 
-xy.y_axis(
+xyg.y_axis(
     label="revenue",
     style={
         "grid_color": "rgb(148 163 184 / 25%)",

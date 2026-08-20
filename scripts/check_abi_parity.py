@@ -147,7 +147,7 @@ def check_abi_parity(root: Path = ROOT) -> list[str]:
         )
 
     for label, names, complete in (
-        ("python/xy/_abi_generated.py", py_names, True),
+        ("python/xyg/_abi_generated.py", py_names, True),
         ("scripts/abi_smoke.py", smoke_names, False),
     ):
         extra = sorted(names - rust_set)

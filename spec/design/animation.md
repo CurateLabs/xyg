@@ -9,7 +9,7 @@ motion-free by definition.
 Animation is a normal chart child. The last chart-level `Animation` child is
 the default policy; a mark-level `animation=` value cascades over it **field by
 field**, contributing only the arguments that were actually passed. So
-`xy.animation(duration=90)` on a mark keeps the chart's `match`, `easing`, and
+`xyg.animation(duration=90)` on a mark keeps the chart's `match`, `easing`, and
 the rest — a whole-spec replacement would silently disable a chart-level
 `match="key"`. Passing a field explicitly counts as setting it even when the
 value equals the default. `False` disables that mark without disabling its
@@ -20,13 +20,13 @@ the *complete* resolved policy, so the client's spread over the chart-level
 spec is a no-op rather than a second merge that would need its own copy of the
 defaults. A trace with no override ships no animation dict at all, and a chart
 with neither ships none either — which is what keeps a chart without
-`xy.animation()` static.
+`xyg.animation()` static.
 
 ```python
-xy.chart(
-    xy.scatter("x", "y", key="id"),
-    xy.line("x", "trend", animation=xy.animation(duration=180)),
-    xy.animation(
+xyg.chart(
+    xyg.scatter("x", "y", key="id"),
+    xyg.line("x", "trend", animation=xyg.animation(duration=180)),
+    xyg.animation(
         enabled="auto",
         delay=0,
         duration=400,
@@ -39,13 +39,13 @@ xy.chart(
 )
 ```
 
-`xy.animation()` validates and serializes these fields:
+`xyg.animation()` validates and serializes these fields:
 
 | Field | Values / meaning |
 | --- | --- |
 | `enabled` | `False`, `True`, or `"auto"`; auto honors reduced motion, explicit true is an opt-in override |
 | `delay`, `duration` | finite non-negative milliseconds |
-| `easing` | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, a cubic Bézier `(x1,y1,x2,y2)`, or `xy.spring(...)` |
+| `easing` | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, a cubic Bézier `(x1,y1,x2,y2)`, or `xyg.spring(...)` |
 | `match` | `index`, `append`, or `key` |
 | `enter` | `auto`, `none`, `scale`, `grow`, or `reveal` |
 | `update` | `none` or `interpolate` |
@@ -102,7 +102,7 @@ whole speedup.
 Encoding runs whenever `key=` is given, because uniqueness and typing are
 construction contract rather than animation policy. The resulting identity
 planes are only retained and shipped when the *resolved* spec can key-match —
-`match` defaults to `"index"`, so a bare `xy.animation(...)`, an
+`match` defaults to `"index"`, so a bare `xyg.animation(...)`, an
 `enabled=False` chart, or a `key=` with no animation at all would otherwise
 carry two u32 columns nothing reads, both in the widget's retained payload and
 on the wire. Duplicate and row-count errors are unaffected by that skip.

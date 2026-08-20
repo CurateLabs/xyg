@@ -1,8 +1,8 @@
 ---
 title: Triangle Mesh in Python
-description: Build a triangle mesh in Python with xy. Plot irregular surfaces from explicit per-triangle vertices with a color channel, interactive by default.
+description: Build a triangle mesh in Python with xyg. Plot irregular surfaces from explicit per-triangle vertices with a color channel, interactive by default.
 components:
-  - xy.triangle_mesh_chart
+  - xyg.triangle_mesh_chart
 ---
 
 # Triangle Mesh Charts in Python
@@ -25,10 +25,10 @@ the `colormap`:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
-triangle_mesh_detail_chart = xy.triangle_mesh_chart(
-    xy.triangle_mesh(
+triangle_mesh_detail_chart = xyg.triangle_mesh_chart(
+    xyg.triangle_mesh(
         x0=[0, 1, 1, 2],
         y0=[0, 0, 1, 0],
         x1=[1, 2, 2, 3],
@@ -42,8 +42,8 @@ triangle_mesh_detail_chart = xy.triangle_mesh_chart(
         stroke_width=1.2,
         opacity=0.8,
     ),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Irregular triangle surface",
 )
 
@@ -62,7 +62,7 @@ centroid, mapped through `colormap` over an explicit `domain` with no stroke:
 import math
 
 import reflex_xy
-import xy
+import xyg
 
 mesh_grid_nx, mesh_grid_ny = 7, 5
 mesh_grid_x0, mesh_grid_y0 = [], []
@@ -83,8 +83,8 @@ for gi in range(mesh_grid_nx):
             mx, my = (ax + bx + cx) / 3, (ay + by + cy) / 3
             mesh_grid_values.append(math.sin(mx * 0.9) * math.cos(my * 1.1))
 
-triangle_mesh_grid_chart = xy.triangle_mesh_chart(
-    xy.triangle_mesh(
+triangle_mesh_grid_chart = xyg.triangle_mesh_chart(
+    xyg.triangle_mesh(
         x0=mesh_grid_x0,
         y0=mesh_grid_y0,
         x1=mesh_grid_x1,
@@ -96,8 +96,8 @@ triangle_mesh_grid_chart = xy.triangle_mesh_chart(
         domain=(-1, 1),
         opacity=0.95,
     ),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Triangulated grid colored by value",
 )
 
@@ -116,7 +116,7 @@ constant-fill outer ring whose edges are drawn via `stroke` and `stroke_width`:
 import math
 
 import reflex_xy
-import xy
+import xyg
 
 fan_inner = {"x0": [], "y0": [], "x1": [], "y1": [], "x2": [], "y2": [], "c": []}
 fan_outer = {"x0": [], "y0": [], "x1": [], "y1": [], "x2": [], "y2": []}
@@ -141,8 +141,8 @@ for wk in range(fan_wedges):
             ring["y2"].append(pts[vc][1])
     fan_inner["c"].append(wk / (fan_wedges - 1))
 
-triangle_mesh_fan_chart = xy.triangle_mesh_chart(
-    xy.triangle_mesh(
+triangle_mesh_fan_chart = xyg.triangle_mesh_chart(
+    xyg.triangle_mesh(
         x0=fan_inner["x0"],
         y0=fan_inner["y0"],
         x1=fan_inner["x1"],
@@ -154,7 +154,7 @@ triangle_mesh_fan_chart = xy.triangle_mesh_chart(
         domain=(0, 1),
         opacity=0.9,
     ),
-    xy.triangle_mesh(
+    xyg.triangle_mesh(
         x0=fan_outer["x0"],
         y0=fan_outer["y0"],
         x1=fan_outer["x1"],
@@ -166,8 +166,8 @@ triangle_mesh_fan_chart = xy.triangle_mesh_chart(
         stroke_width=1.6,
         opacity=0.7,
     ),
-    xy.x_axis(label="x"),
-    xy.y_axis(label="y"),
+    xyg.x_axis(label="x"),
+    xyg.y_axis(label="y"),
     title="Constant fill with visible edges vs value-colored fan",
 )
 
@@ -210,8 +210,8 @@ table.
 
 ### How do I make a triangle mesh in Python?
 
-Call `xy.triangle_mesh(...)` with the three vertices of each triangle inside
-`xy.triangle_mesh_chart(...)` and render it. Pan, zoom, and hover work on the
+Call `xyg.triangle_mesh(...)` with the three vertices of each triangle inside
+`xyg.triangle_mesh_chart(...)` and render it. Pan, zoom, and hover work on the
 triangle mesh graph automatically.
 
 ### How do I color triangles by value?

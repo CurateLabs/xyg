@@ -1,8 +1,8 @@
 ---
 title: Scatter Plot in Python
-description: Create interactive scatter plots in Python with xy. Explore relationships, clusters, and outliers across millions of points with pan, zoom, and hover.
+description: Create interactive scatter plots in Python with xyg. Explore relationships, clusters, and outliers across millions of points with pan, zoom, and hover.
 components:
-  - xy.scatter_chart
+  - xyg.scatter_chart
 ---
 
 # Scatter Plots in Python
@@ -18,14 +18,14 @@ Use one for relationships, clusters, outliers, and multichannel point data.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(7)
 x = rng.normal(size=20_000)
 y = 0.55 * x + rng.normal(scale=0.65, size=x.size)
 
-chart = xy.scatter_chart(
-    xy.scatter(
+chart = xyg.scatter_chart(
+    xyg.scatter(
         x,
         y,
         color=y,
@@ -34,8 +34,8 @@ chart = xy.scatter_chart(
         size_range=(2, 14),
         opacity=0.55,
     ),
-    xy.x_axis(label="feature A"),
-    xy.y_axis(label="feature B"),
+    xyg.x_axis(label="feature A"),
+    xyg.y_axis(label="feature B"),
     title="20k interactive points",
 )
 
@@ -57,7 +57,7 @@ Map a value array to color with a fixed `color_domain`, pick a non-default
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 style_rng = np.random.default_rng(11)
 angle = style_rng.uniform(0, 4 * np.pi, 3_000)
@@ -65,8 +65,8 @@ radius = angle / (4 * np.pi) + style_rng.normal(scale=0.03, size=angle.size)
 spiral_x = radius * np.cos(angle)
 spiral_y = radius * np.sin(angle)
 
-styled_scatter_chart = xy.scatter_chart(
-    xy.scatter(
+styled_scatter_chart = xyg.scatter_chart(
+    xyg.scatter(
         spiral_x,
         spiral_y,
         color=angle,
@@ -78,8 +78,8 @@ styled_scatter_chart = xy.scatter_chart(
         stroke_width=1.0,
         opacity=0.9,
     ),
-    xy.x_axis(label="x position"),
-    xy.y_axis(label="y position"),
+    xyg.x_axis(label="x position"),
+    xyg.y_axis(label="y position"),
     title="Angle-colored spiral",
 )
 
@@ -91,12 +91,12 @@ def styled_scatter_demo():
 ## Bubble Chart with Multiple Series
 
 Encode a third variable as marker area with `size` plus `size_range`, give each
-cluster its own named series and `symbol`, and let `xy.legend()` label them.
+cluster its own named series and `symbol`, and let `xyg.legend()` label them.
 
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 bubble_rng = np.random.default_rng(42)
 cluster_specs = [
@@ -110,7 +110,7 @@ for series_name, (cx, cy), spread, marker in cluster_specs:
     by = bubble_rng.normal(cy, spread, 400)
     magnitude = np.hypot(bx - cx, by - cy)
     bubble_marks.append(
-        xy.scatter(
+        xyg.scatter(
             bx,
             by,
             name=series_name,
@@ -121,11 +121,11 @@ for series_name, (cx, cy), spread, marker in cluster_specs:
         )
     )
 
-bubble_chart = xy.scatter_chart(
+bubble_chart = xyg.scatter_chart(
     *bubble_marks,
-    xy.x_axis(label="component 1"),
-    xy.y_axis(label="component 2"),
-    xy.legend(title="Cluster"),
+    xyg.x_axis(label="component 1"),
+    xyg.y_axis(label="component 2"),
+    xyg.legend(title="Cluster"),
     title="Three clusters, size by distance from center",
 )
 
@@ -174,7 +174,7 @@ can refine the visible window back toward exact points.
 
 ### How do I make a scatter plot in Python?
 
-Call `xy.scatter(x, y)` inside `xy.scatter_chart(...)` and render it. Pan, zoom,
+Call `xyg.scatter(x, y)` inside `xyg.scatter_chart(...)` and render it. Pan, zoom,
 and hover work automatically — no extra configuration required.
 
 ### How many points can an xy scatter plot handle?

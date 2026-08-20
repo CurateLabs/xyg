@@ -3,10 +3,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy._figure import Figure
-from xy.pyplot import _axes as axes_module
-from xy.pyplot._colors import _rgba_floats
+import xyg.pyplot as plt
+from xyg._figure import Figure
+from xyg.pyplot import _axes as axes_module
+from xyg.pyplot._colors import _rgba_floats
 
 
 def test_axis_equal_before_fill_keeps_data_autoscaling() -> None:

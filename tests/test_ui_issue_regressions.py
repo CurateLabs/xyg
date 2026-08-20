@@ -9,10 +9,10 @@ from xml.etree import ElementTree
 
 import pytest
 
-import xy
+import xyg as xy
 from conftest import run_browser_probe
-from xy import _svg
-from xy.export import find_chromium
+from xyg import _svg
+from xyg.export import find_chromium
 
 # Browser renderer rule: rotated y titles clear the tick-label union by this
 # multiple of the title's font size.
@@ -74,7 +74,7 @@ def _probe(chart: xy.Chart, script: str, tmp_path: Path, name: str) -> dict:
     if chromium is None:
         pytest.skip("Chromium unavailable")
     document = chart.to_html()
-    render_call = document.rfind("xy.renderStandalone(")
+    render_call = document.rfind("xyg.renderStandalone(")
     assert render_call >= 0
     document = document[:render_call] + "window.__xyIssueView = " + document[render_call:]
     document = document.replace("</body>", f"<script>{script}</script>\n</body>", 1)

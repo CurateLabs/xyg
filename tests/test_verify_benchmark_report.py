@@ -165,7 +165,7 @@ def _pyplot_vs_matplotlib_report() -> dict:
     )
     rows = []
     for library, mode, total_ms in (
-        ("xy.pyplot", "native-raster", 10.0),
+        ("xyg.pyplot", "native-raster", 10.0),
         ("matplotlib", "agg", 20.0),
     ):
         rows.append(
@@ -203,7 +203,7 @@ def _pyplot_vs_matplotlib_report() -> dict:
                 "total_median_ms": total_ms,
                 "total_p95_ms": total_ms,
                 "output_bytes_median": 1000,
-                **({"render_tier": "direct"} if library == "xy.pyplot" else {}),
+                **({"render_tier": "direct"} if library == "xyg.pyplot" else {}),
             }
         )
     return {
@@ -229,7 +229,7 @@ def _pyplot_vs_matplotlib_report() -> dict:
                 "xy_speedup_build": 1.0,
                 "xy_speedup_render": 2.0,
                 "png_size_ratio_matplotlib_over_xy": 1.0,
-                "winner_total": "xy.pyplot",
+                "winner_total": "xyg.pyplot",
             }
         ],
         "target_xy_speedup_total": 10.0,
@@ -1354,7 +1354,7 @@ def test_verify_benchmark_report_rejects_missing_pyplot_render_tier(tmp_path: Pa
 def test_verify_benchmark_report_rejects_unknown_pyplot_render_tier(tmp_path: Path) -> None:
     payload = _pyplot_vs_matplotlib_report()
     for row in payload["rows"]:
-        if row["library"] == "xy.pyplot":
+        if row["library"] == "xyg.pyplot":
             row["render_tier"] = "subsampled"
     path = tmp_path / "report.json"
     path.write_text(json.dumps(payload))
@@ -1364,7 +1364,7 @@ def test_verify_benchmark_report_rejects_unknown_pyplot_render_tier(tmp_path: Pa
 
 def test_verify_benchmark_report_rejects_incomplete_pyplot_library_pair(tmp_path: Path) -> None:
     payload = _pyplot_vs_matplotlib_report()
-    payload["rows"] = [row for row in payload["rows"] if row["library"] == "xy.pyplot"]
+    payload["rows"] = [row for row in payload["rows"] if row["library"] == "xyg.pyplot"]
     path = _write_report(tmp_path, payload)
 
     errors = verify_benchmark_report.validate_report(path, kind="pyplot-vs-matplotlib")
