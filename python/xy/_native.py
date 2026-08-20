@@ -1617,9 +1617,7 @@ def scene_batch_encode(
     title_b = title.encode("utf-8")
     xlabel_b = x_label.encode("utf-8")
     ylabel_b = y_label.encode("utf-8")
-    capacity = (
-        160 + len(widths) * 16 + n * 56 + 40 + len(title_b) + len(xlabel_b) + len(ylabel_b)
-    )
+    capacity = 160 + len(widths) * 16 + n * 56 + 40 + len(title_b) + len(xlabel_b) + len(ylabel_b)
     while True:
         out = ctypes.create_string_buffer(capacity)
         written = _lib.xyg_scene_batch_encode(

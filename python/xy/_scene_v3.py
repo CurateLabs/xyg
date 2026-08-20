@@ -171,12 +171,8 @@ def figure_scene(
         x1=coordinates[2],
         y1=coordinates[3],
         title=str(figure.title or ""),
-        x_label=str(
-            figure.x_label or figure.axis_options.get("x", {}).get("label") or ""
-        ),
-        y_label=str(
-            figure.y_label or figure.axis_options.get("y", {}).get("label") or ""
-        ),
+        x_label=str(figure.x_label or figure.axis_options.get("x", {}).get("label") or ""),
+        y_label=str(figure.y_label or figure.axis_options.get("y", {}).get("label") or ""),
     )
 
 
