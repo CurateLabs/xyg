@@ -79,6 +79,7 @@ export {
   graphLodDecision,
   graphClusterAggregate,
   graphBuildRender,
+  graphEdgeRouteSegments,
   graphSampleEdges,
   graphBuildCsr,
   sankeyLayout,

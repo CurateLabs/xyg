@@ -30,7 +30,9 @@ test("normalize + circle runLayout emits positions and meta", () => {
     seed: 1,
   });
   assert.equal(nodePositions.x.length, 4);
-  assert.equal(edgeSegments.x0.length, 4);
+  // Directed routing: shaft + two arrow wings per edge.
+  assert.equal(edgeSegments.x0.length, 12);
+  assert.equal(meta.render_edge_index.length, 12);
   assert.equal(meta.layout, "circle");
   assert.equal(meta.source_n_nodes, 4);
   assert.equal(meta.lod_tier, 0);
@@ -95,7 +97,11 @@ test("graph ships tooltip_rows plus continuous size and color channels", () => {
   assert.equal(edges.kind, "segments");
   assert.equal(nodes.kind, "scatter");
   assert.deepEqual(nodes.tooltip_rows, [{ id: "a" }, { id: "b" }, { id: "c" }]);
-  assert.deepEqual(edges.tooltip_rows, [{ e: 0 }, { e: 1 }]);
+  assert.equal(edges.tooltip_rows.length, 6);
+  assert.deepEqual(
+    [...new Set(edges.tooltip_rows.map((r) => r.e))],
+    [0, 1],
+  );
   assert.equal(nodes.size.mode, "continuous");
   assert.deepEqual(nodes.size.domain, [10, 30]);
   assert.equal(typeof nodes.size.buf, "number");
