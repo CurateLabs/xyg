@@ -173,13 +173,16 @@ The existing `xyg_scene_scatter_svg` entry point remains a compatibility
 wrapper during migration. Version 3 intentionally has no mark-specific new SVG
 ABIs: whole-scene SVG/raster consumers attach to the single scene batch.
 Python `Figure.to_scene()` and Node `Figure.toScene()` compile the migrated
-constant-style cartesian scatter/line/bar subset plus two axes. Their explicit
-Scene SVG/raster APIs exercise the Rust consumers. Public Python SVG/PNG/PDF
-remain on the established compatibility renderers until Scene records encode
-canonical layout and authored text/style; they must not silently select a
-semantically incomplete scene. Missing/nonfinite coordinates and unsupported
-customization fail closed from the explicit scene API. This is a migration
-boundary, not a silent approximation.
+constant-style cartesian scatter/line/bar/column/histogram subset plus two axes.
+Host `column` and `histogram` marks lower to the same Scene Rect records as
+`bar` (already-authored `x0,y0,x1,y1` corners). Gradient fills, non-zero
+`corner_radius`, and density-tier scatter are rejected until dedicated records
+exist. Their explicit Scene SVG/raster APIs exercise the Rust consumers. Public
+Python SVG/PNG/PDF remain on the established compatibility renderers until Scene
+records encode canonical layout and authored text/style; they must not silently
+select a semantically incomplete scene. Missing/nonfinite coordinates and
+unsupported customization fail closed from the explicit scene API. This is a
+migration boundary, not a silent approximation.
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -258,10 +261,12 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining mark families and legend/annotation records, then
-select public SVG/PNG/PDF Scene routing once backgrounds/density/chrome parity
-is covered. Category, angular, and time/calendar tick ladders already move
-through `xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome
-paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
-gutters for Scene compilation. Browser DOM measurement and WebGL paint remain
+Next slices add remaining mark families (area, segments, ribbon, polar, …)
+and legend/annotation records, then select public SVG/PNG/PDF Scene routing
+once backgrounds/density/chrome parity is covered. Category, angular, and
+time/calendar tick ladders already move through `xyg_scene_axis_ticks` kinds
+2–5; Scene v5 carries authored chrome paints plus title/axis-label UTF-8;
+ABI `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
+Cartesian rect-family hosts (`bar`, `column`, `histogram`) already share Scene
+Rect records. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

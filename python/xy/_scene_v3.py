@@ -1,4 +1,4 @@
-"""Thin figure-to-Scene v4 compiler for the migrated core-mark subset.
+"""Thin figure-to-Scene v5 compiler for the migrated core-mark subset.
 
 Rust owns mapping, clipping, record semantics, SVG construction, and raster
 display-list construction. This module only projects already-validated Figure
@@ -14,6 +14,13 @@ import numpy as np
 
 from . import _native
 from .marks import _SYMBOL_CODES
+
+# Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
+# x0/y0/x1/y1 columns on the Trace; Scene does not recompute bar stacking.
+_RECT_KINDS = frozenset({"bar", "column", "histogram"})
+_POINT_KINDS = frozenset({"scatter", "line"})
+_SUPPORTED_KINDS = _POINT_KINDS | _RECT_KINDS
+_KIND_CODES = {"scatter": 0, "line": 1, "bar": 2, "column": 2, "histogram": 2}
 
 
 class UnsupportedSceneV3(ValueError):
@@ -35,6 +42,20 @@ def _constant_color(trace: Any, fallback: str) -> str:
     return channel.constant
 
 
+def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:
+    fill = style.get("fill")
+    if isinstance(fill, dict):
+        raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} gradient fills")
+    radius = style.get("corner_radius", 0.0)
+    if isinstance(radius, (list, tuple)):
+        if any(float(value) != 0.0 for value in radius):
+            raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} corner_radius")
+    elif float(radius) != 0.0:
+        raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} corner_radius")
+    if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0:
+        raise UnsupportedSceneV3(f"Scene v5 does not yet encode {kind} wedge_gap")
+
+
 def figure_scene(
     figure: Any,
     *,
@@ -42,7 +63,7 @@ def figure_scene(
     height: int | None = None,
     margins: tuple[float, float, float, float] | None = None,
 ) -> bytes:
-    """Compile representative scatter/line/bar plus x/y axes to Scene v5."""
+    """Compile cartesian scatter/line/bar/column/histogram plus x/y axes to Scene v5."""
     if figure.coords != "cartesian":
         raise UnsupportedSceneV3("Scene v5 figure compilation currently supports cartesian only")
     if set(figure.axis_options) != {"x", "y"}:
@@ -61,8 +82,9 @@ def figure_scene(
         raise UnsupportedSceneV3("Scene v5 does not yet encode annotations")
     if figure.colorbar_options or figure.extra_legends:
         raise UnsupportedSceneV3("Scene v5 does not yet encode colorbars or extra legends")
-    supported = {"scatter", "line", "bar"}
-    unsupported = next((trace.kind for trace in figure.traces if trace.kind not in supported), None)
+    unsupported = next(
+        (trace.kind for trace in figure.traces if trace.kind not in _SUPPORTED_KINDS), None
+    )
     if unsupported is not None:
         raise UnsupportedSceneV3(f"Scene v5 figure compilation does not yet support {unsupported}")
 
@@ -80,16 +102,23 @@ def figure_scene(
             raise UnsupportedSceneV3("Scene v5 does not yet encode legends")
         if trace.hidden or trace.has_per_item_channels():
             raise UnsupportedSceneV3("Scene v5 does not yet encode hidden or per-item styled marks")
+        if trace.kind == "scatter" and trace.use_density():
+            raise UnsupportedSceneV3("Scene v5 does not yet encode density-tier scatter")
         style = trace.style
         if any(key in style for key in ("dash", "curve", "linecap", "marker_path", "marker_glyph")):
             raise UnsupportedSceneV3(
                 "Scene v5 does not yet encode dashed, curved, or authored markers"
             )
+        if trace.kind in _RECT_KINDS:
+            _reject_rect_extras(style, trace.kind)
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
         color = _constant_color(trace, "#3987e5")
-        fill = _rgba(str(style.get("fill", color)), opacity)
+        fill_value = style.get("fill", color)
+        if not isinstance(fill_value, str):
+            raise UnsupportedSceneV3(f"Scene v5 does not yet encode {trace.kind} non-CSS fills")
+        fill = _rgba(fill_value, opacity)
         stroke_default = color if trace.kind == "line" else "transparent"
         stroke = _rgba(str(style.get("stroke", stroke_default)), opacity)
         width_value = style.get(
@@ -98,10 +127,17 @@ def figure_scene(
         stroke_width = float(width_value)
         styles.append((fill, stroke, stroke_width))
         style_ref = len(styles) - 1
-        if trace.kind == "bar":
+        if trace.kind in _RECT_KINDS:
             if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-                raise ValueError("bar Scene v5 compilation requires four rectangle columns")
+                raise ValueError(
+                    f"{trace.kind} Scene v5 compilation requires four rectangle columns"
+                )
             arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
+            lengths = {len(column) for column in arrays}
+            if len(lengths) != 1:
+                raise UnsupportedSceneV3(
+                    f"Scene v5 {trace.kind} rectangle columns must have equal length"
+                )
             count = len(arrays[0])
         else:
             arrays = [
@@ -111,9 +147,8 @@ def figure_scene(
                 np.zeros(len(trace.x)),
             ]
             count = len(trace.x)
-        if any(
-            not np.isfinite(source).all() for source in arrays[: 4 if trace.kind == "bar" else 2]
-        ):
+        finite_cols = 4 if trace.kind in _RECT_KINDS else 2
+        if any(not np.isfinite(source).all() for source in arrays[:finite_cols]):
             raise UnsupportedSceneV3(
                 "Scene v5 does not yet encode missing-data breaks or nonfinite coordinates"
             )
@@ -125,8 +160,9 @@ def figure_scene(
             if trace.kind == "scatter" and trace.size_ch is not None
             else float(style.get("size", 4.0))
         )
+        kind_code = _KIND_CODES[trace.kind]
         for index in range(count):
-            kinds.append({"scatter": 0, "line": 1, "bar": 2}[trace.kind])
+            kinds.append(kind_code)
             stable_ids.append(int(trace.id))
             style_refs.append(style_ref)
             diameters.append(diameter if trace.kind == "scatter" else 0.0)
