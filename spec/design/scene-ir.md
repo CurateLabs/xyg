@@ -206,8 +206,8 @@ grid, `rgba(32,32,32,0.55)` axis, and `rgba(32,32,32,0.85)` 12px labels.
 Version 4 derived default numeric chrome only. Version 5 adds authored chrome
 paints and title/axis-label text in the trailer. Custom tick values/text,
 custom sides, minor ticks, legends, and annotations remain rejected from
-explicit Scene compilation; public exports retain compatibility routing until
-canonical layout/gutter selection lands.
+explicit Scene compilation. Public exports select Scene when compilation
+succeeds; otherwise they retain compatibility routing.
 
 ## Version 5: authored chrome paints and title/axis labels
 
@@ -232,18 +232,20 @@ consumers paint grid/axis/labels from the trailer and place title / x-label /
 y-label with deterministic margin-relative anchors. Hosts may now compile
 figure titles and axis labels into the explicit Scene path; annotations,
 legends, custom sides, and authored tick geometry remain rejected until later
-slices. Public SVG/PNG/PDF still use the compatibility renderers until layout
-gutters and remaining chrome records land.
+slices. Public SVG/PNG/PDF select the Scene path when `figure_scene` /
+`figureSceneV3` succeeds: Rust `cartesian_scene_margins` owns compact/regular
+(or authored) gutters for that subset. Compatibility `_svg.layout()` remains
+for polar, colorbar, secondary axes, and other rejected features.
 
 ## Evidence and extension order
 
 Rust unit tests pin schema validation and byte-deterministic SVG. Python tests
-prove explicit Scene consumption while public exports preserve ticks, grids,
-text, and customization through the compatibility path. Node tests consume the
-same scene fixture and reject the same unsupported subset. ABI generation,
-parity, and version-first loading cover both hosts.
+prove explicit Scene consumption and public-path Scene selection for the
+eligible subset while styled/custom axes stay on the compatibility renderer.
+Node tests consume the same scene fixture and reject the same unsupported
+subset. ABI generation, parity, and version-first loading cover both hosts.
 
-The first browser consumer accepts the exact v4 bytes through the static WASM
+The first browser consumer accepts the exact v5 bytes through the static WASM
 Worker. Rust validates and lowers them through
 `SceneDocument::to_browser_painter` into checked f32 geometry and split-u64
 stable-ID columns plus the default numeric ticks and formatted UTF-8 labels.
@@ -256,9 +258,10 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining mark families, legend/annotation records, and
-canonical layout/gutter selection so public SVG/PNG/PDF can select the Scene
-path. Category, angular, and time/calendar tick ladders already move through
-`xyg_scene_axis_ticks` kinds 2–5, and Scene v5 carries authored chrome paints
-plus title/axis-label UTF-8. Browser DOM measurement and WebGL paint remain
+Next slices add remaining mark families and legend/annotation records, then
+retire duplicated Python layout helpers for the migrated subset. Category,
+angular, and time/calendar tick ladders already move through
+`xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome paints plus
+title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian gutters for
+public Scene selection. Browser DOM measurement and WebGL paint remain
 environment-specific consumers with documented layout tolerances (§7 and §21).

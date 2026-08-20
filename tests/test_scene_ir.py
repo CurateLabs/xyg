@@ -303,19 +303,19 @@ def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
 
 
 def test_public_svg_scatter_routes_builtin_symbols_through_rust(monkeypatch) -> None:
-    original = _native.scene_scatter_svg
+    original = _native.scene_svg
     calls: list[int] = []
 
-    def record(*args, **kwargs):
-        calls.append(len(args[0]))
-        return original(*args, **kwargs)
+    def record(encoded: bytes) -> str:
+        calls.append(len(encoded))
+        return original(encoded)
 
-    monkeypatch.setattr(_native, "scene_scatter_svg", record)
+    monkeypatch.setattr(_native, "scene_svg", record)
     svg = Figure().scatter([0.0, 1.0], [1.0, 0.0], symbol="diamond").to_svg()
 
-    assert calls == [2]
-    assert '<path d="M ' in svg
-    assert 'fill="#3987e5"' in svg
+    assert len(calls) == 1 and calls[0] > 160
+    assert 'data-xy-chrome="grid"' in svg
+    assert "<path " in svg or "<polygon " in svg
 
 
 def test_scene_rejects_malformed_host_arrays() -> None:

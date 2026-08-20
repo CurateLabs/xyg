@@ -40,7 +40,7 @@ def figure_scene(
     *,
     width: int | None = None,
     height: int | None = None,
-    margins: tuple[float, float, float, float] = (50.0, 20.0, 20.0, 40.0),
+    margins: tuple[float, float, float, float] | None = None,
 ) -> bytes:
     """Compile representative scatter/line/bar plus x/y axes to Scene v5."""
     if figure.coords != "cartesian":
@@ -136,7 +136,6 @@ def figure_scene(
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
-    left, right, top, bottom = margins
     fill_rgba = [channel for fill, _, _ in styles for channel in fill]
     stroke_rgba = [channel for _, stroke, _ in styles for channel in stroke]
     stroke_width = [value for _, _, value in styles]
@@ -153,11 +152,33 @@ def figure_scene(
             options.get("nonpositive", "clip") == "mask",
         )
 
+    x_axis = axis("x", 1)
+    y_axis = axis("y", 2)
+    title = str(figure.title or "")
+    x_label = str(figure.x_label or figure.axis_options.get("x", {}).get("label") or "")
+    y_label = str(figure.y_label or figure.axis_options.get("y", {}).get("label") or "")
+    if margins is None:
+        authored = None
+        if getattr(figure, "padding", None) is not None:
+            pad = figure.padding
+            if isinstance(pad, (list, tuple)) and len(pad) == 4:
+                authored = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
+        left, right, top, bottom = _native.scene_plot_layout(
+            viewport=(w, h),
+            x_axis=x_axis[1:],
+            y_axis=y_axis[1:],
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+            padding=authored,
+        )
+    else:
+        left, right, top, bottom = margins
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),
-        x_axis=axis("x", 1),
-        y_axis=axis("y", 2),
+        x_axis=x_axis,
+        y_axis=y_axis,
         kinds=kinds,
         stable_ids=stable_ids,
         style_refs=style_refs,
@@ -170,9 +191,9 @@ def figure_scene(
         y0=coordinates[1],
         x1=coordinates[2],
         y1=coordinates[3],
-        title=str(figure.title or ""),
-        x_label=str(figure.x_label or figure.axis_options.get("x", {}).get("label") or ""),
-        y_label=str(figure.y_label or figure.axis_options.get("y", {}).get("label") or ""),
+        title=title,
+        x_label=x_label,
+        y_label=y_label,
     )
 
 

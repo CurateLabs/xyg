@@ -130,7 +130,7 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     figure.set_axis("y", label="Vertical", domain=(0, 5))
 
     def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("public export must not select incomplete Scene v4")
+        raise AssertionError("public export must not select incomplete Scene for styled axes")
 
     monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
     monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
@@ -144,6 +144,30 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
         figure.to_scene()
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
+
+
+def test_public_exports_select_scene_for_eligible_subset(monkeypatch: pytest.MonkeyPatch) -> None:
+    figure = representative_figure()
+    calls: list[str] = []
+
+    real_svg = _native.scene_svg
+    real_raster = _native.scene_raster_commands
+
+    def record_svg(encoded: bytes) -> str:
+        calls.append("svg")
+        return real_svg(encoded)
+
+    def record_raster(encoded: bytes, scale: float = 1.0) -> bytes:
+        calls.append("raster")
+        return real_raster(encoded, scale)
+
+    monkeypatch.setattr(_native, "scene_svg", record_svg)
+    monkeypatch.setattr(_native, "scene_raster_commands", record_raster)
+    svg = figure.to_svg()
+    assert 'data-xy-chrome="grid"' in svg
+    assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
+    assert figure.to_image(format="pdf").startswith(b"%PDF-")
+    assert "svg" in calls and "raster" in calls
 
 
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:

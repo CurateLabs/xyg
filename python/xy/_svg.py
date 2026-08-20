@@ -7034,6 +7034,18 @@ def to_svg(
     element ids for composers that inline several exports in one document.
     `background` overrides the figure canvas color ("transparent" omits the
     opaque backdrop, matching the raster exporters' alpha behavior)."""
+    if not id_prefix and background is None:
+        from . import _scene_v3
+
+        try:
+            out = _scene_v3.figure_svg(fig, width=width, height=height)
+            if path is not None:
+                from .export import _atomic_write_text
+
+                _atomic_write_text(path, out)
+            return out
+        except _scene_v3.UnsupportedSceneV3:
+            pass
     eff_w = (
         int(width)
         if width is not None

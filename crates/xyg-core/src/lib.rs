@@ -89,12 +89,127 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 69;
+pub const ABI_VERSION: u32 = 70;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
 pub extern "C" fn xyg_scene_version() -> u32 {
     scene::SCENE_VERSION
+}
+
+/// Compute Cartesian default gutters for the Scene-eligible export subset.
+///
+/// Writes `left`, `right`, `top`, `bottom` into `out_margins` (length 4) on
+/// success and returns 4. `authored_padding` may be null (use compact/regular
+/// defaults) or address four f64 values in `(top, right, bottom, left)` order.
+/// Title and axis-label buffers may be null when the matching length is 0.
+///
+/// # Safety
+/// When non-null, text buffers must address the given UTF-8 byte counts.
+/// `out_margins` must address four writable f64 values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_plot_layout(
+    viewport_width: f64,
+    viewport_height: f64,
+    authored_padding: *const f64,
+    x_kind: u32,
+    x_lo: f64,
+    x_hi: f64,
+    x_constant: f64,
+    x_mask_nonpositive: i32,
+    y_kind: u32,
+    y_lo: f64,
+    y_hi: f64,
+    y_constant: f64,
+    y_mask_nonpositive: i32,
+    title: *const u8,
+    title_len: usize,
+    x_label: *const u8,
+    x_label_len: usize,
+    y_label: *const u8,
+    y_label_len: usize,
+    out_margins: *mut f64,
+) -> usize {
+    if !matches!(x_mask_nonpositive, 0 | 1)
+        || !matches!(y_mask_nonpositive, 0 | 1)
+        || title_len > scene::MAX_SCENE_TEXT_BYTES
+        || x_label_len > scene::MAX_SCENE_TEXT_BYTES
+        || y_label_len > scene::MAX_SCENE_TEXT_BYTES
+        || (title_len > 0 && title.is_null())
+        || (x_label_len > 0 && x_label.is_null())
+        || (y_label_len > 0 && y_label.is_null())
+        || out_margins.is_null()
+    {
+        return usize::MAX;
+    }
+    let scale_kind = |value| match value {
+        0 => Some(scene::ScaleKind::Linear),
+        1 => Some(scene::ScaleKind::Log),
+        2 => Some(scene::ScaleKind::SymLog),
+        _ => None,
+    };
+    let (Some(x_kind), Some(y_kind)) = (scale_kind(x_kind), scale_kind(y_kind)) else {
+        return usize::MAX;
+    };
+    let padding = if authored_padding.is_null() {
+        None
+    } else {
+        let values = std::slice::from_raw_parts(authored_padding, 4);
+        Some([values[0], values[1], values[2], values[3]])
+    };
+    let title = if title_len == 0 {
+        ""
+    } else {
+        match std::str::from_utf8(std::slice::from_raw_parts(title, title_len)) {
+            Ok(text) => text,
+            Err(_) => return usize::MAX,
+        }
+    };
+    let x_label = if x_label_len == 0 {
+        ""
+    } else {
+        match std::str::from_utf8(std::slice::from_raw_parts(x_label, x_label_len)) {
+            Ok(text) => text,
+            Err(_) => return usize::MAX,
+        }
+    };
+    let y_label = if y_label_len == 0 {
+        ""
+    } else {
+        match std::str::from_utf8(std::slice::from_raw_parts(y_label, y_label_len)) {
+            Ok(text) => text,
+            Err(_) => return usize::MAX,
+        }
+    };
+    let Some(margins) = ffi_guard(None, || {
+        scene::cartesian_scene_margins(
+            viewport_width,
+            viewport_height,
+            padding,
+            title,
+            x_label,
+            y_label,
+            x_kind,
+            x_lo,
+            x_hi,
+            x_constant,
+            x_mask_nonpositive != 0,
+            y_kind,
+            y_lo,
+            y_hi,
+            y_constant,
+            y_mask_nonpositive != 0,
+        )
+        .ok()
+    }) else {
+        return usize::MAX;
+    };
+    let out = std::slice::from_raw_parts_mut(out_margins, 4);
+    out[0] = margins.0;
+    out[1] = margins.1;
+    out[2] = margins.2;
+    out[3] = margins.3;
+    4
 }
 
 /// Build canonical axis ticks.
