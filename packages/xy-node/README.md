@@ -42,6 +42,14 @@ Lookup never searches system library directories, never falls back to Python,
 and never loads a wrong-architecture optional package. **Windows arm64**
 returns a stable unsupported-platform error before any search.
 
+Release packaging stages the built cdylib into the matching platform package:
+
+```bash
+cargo build --release
+python3 scripts/stage_node_platform_natives.py --also-facade
+python3 scripts/stage_node_platform_natives.py --list
+```
+
 ```bash
 XYG_NATIVE_LIB=/path/to/libxyg_core.dylib npm test
 XYG_EXPECTED_ABI=60 npm test   # optional ABI golden override
