@@ -17,7 +17,7 @@ const EARTH_RADIUS_M: f64 = 6_378_137.0;
 pub const WEB_MERCATOR_MAX: f64 = 20_037_508.342_789_244;
 
 /// Maximum absolute latitude accepted by Web Mercator (~85.05112878°).
-pub const MAX_WEB_MERCATOR_LAT_DEG: f64 = 85.051_128_779_806_604;
+pub const MAX_WEB_MERCATOR_LAT_DEG: f64 = 85.051_128_779_806_6;
 
 /// MapLibre-compatible world tile size in CSS pixels at zoom 0.
 const TILE_SIZE: f64 = 512.0;
@@ -59,6 +59,10 @@ pub struct GeoViewport {
 impl GeoViewport {
     /// Construct and validate a viewport. Rejects non-finite values, empty
     /// size, out-of-range pitch/zoom, and CRS-out-of-bounds centers.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "explicit camera fields match the #48 GeoViewport contract"
+    )]
     pub fn new(
         crs: GeoCrs,
         center_x: f64,
