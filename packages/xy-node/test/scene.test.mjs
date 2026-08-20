@@ -42,10 +42,19 @@ test("Node figure defaults match Python Scene bytes and canonical values", () =>
   assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
 });
 
-test("Node Scene v4 whole-scene consumers reject malformed and unsupported input", () => {
+test("Node Scene v6 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
-  const figure = new Figure().area([0, 1], [1, 2]);
-  assert.throws(() => figure.toScene(), /does not yet support area/);
+  const figure = new Figure().heatmap([[0, 1], [1, 0]]);
+  assert.throws(() => figure.toScene(), /does not yet support heatmap/);
+});
+
+test("Node Scene v6 compiles area bands", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 3]);
+  figure.area([0, 1, 2], [1, 2, 1.5], { base: 0, color: "#3987e5", opacity: 0.5 });
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /<path d="M /);
+  assert.match(svg, / Z"/);
 });
 
 test("Node Scene v4 raster rejects nonrepresentable f32 commands", () => {
@@ -237,7 +246,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 5);
+  assert.equal(sceneVersion(), 6);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -278,7 +287,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 5);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 6);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

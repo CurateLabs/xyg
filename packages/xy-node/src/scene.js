@@ -170,7 +170,7 @@ function axisDescriptor(axis, name) {
   return [asU64(id, `${name}.id`), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
 }
 
-/** Encode the shared backend-neutral Scene v5 typed batch. */
+/** Encode the shared backend-neutral Scene v6 typed batch. */
 export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
   title = "", xLabel = "", yLabel = "",
@@ -256,11 +256,14 @@ function rgba8(css, opacity, name) {
   return parsed.map((value, index) => Math.round(value * (index === 3 ? opacity : 1) * 255));
 }
 
-const RECT_KINDS = new Set(["bar", "column", "histogram", "violin"]);
-const SEGMENT_KINDS = new Set(["segments", "errorbar", "stem"]);
-const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem"]);
+const RECT_KINDS = new Set(["bar", "column", "histogram", "violin", "box"]);
+const SEGMENT_KINDS = new Set(["segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
+const BAND_KINDS = new Set(["area", "error_band"]);
+const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const SUPPORTED_KINDS = new Set([
-  "scatter", "line", "bar", "column", "histogram", "violin", "segments", "errorbar", "stem",
+  "scatter", "line", "bar", "column", "histogram", "violin", "box",
+  "segments", "errorbar", "stem", "contour", "box_whisker", "box_median",
+  "area", "error_band",
 ]);
 
 function rejectRectExtras(style, kind) {
@@ -314,7 +317,7 @@ function requireEqualColumns(columns, kind, label) {
   return count;
 }
 
-/** Compile migrated cartesian marks to Scene v5. */
+/** Compile migrated cartesian marks to Scene v6. */
 export function figureSceneV3(figure, { margins = null } = {}) {
   if (figure.coords !== "cartesian") throw new RangeError("Scene v5 figure compilation currently supports cartesian coordinates only");
   if (figure.annotations?.length) throw new RangeError("Scene v5 does not yet encode annotations");
@@ -352,6 +355,29 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     styles.push({ fillRgba: rgba8(fillCss, opacity, "fill"), strokeRgba: rgba8(strokeCss, opacity, "stroke"), strokeWidth: width });
     const styleRef = styles.length - 1;
     const id = Number(trace.id);
+
+    if (BAND_KINDS.has(trace.kind)) {
+      const xv = trace.x, yv = trace.y, base = trace.base;
+      if (xv == null || yv == null || base == null) {
+        throw new RangeError(`${trace.kind} Scene v6 compilation requires x, y, and base columns`);
+      }
+      if (!(xv.length === yv.length && yv.length === base.length)) {
+        throw new RangeError(`Scene v6 ${trace.kind} band columns must have equal length`);
+      }
+      if (
+        Array.from(xv).some((value) => !Number.isFinite(value))
+        || Array.from(yv).some((value) => !Number.isFinite(value))
+        || Array.from(base).some((value) => !Number.isFinite(value))
+      ) {
+        throw new RangeError("Scene v6 does not yet encode missing-data breaks or nonfinite coordinates");
+      }
+      for (let index = 0; index < xv.length; index += 1) {
+        kinds.push(3); stableIds.push(id); styleRefs.push(styleRef);
+        diameter.push(0); symbols.push(0);
+        x0.push(xv[index]); y0.push(yv[index]); x1.push(xv[index]); y1.push(base[index]);
+      }
+      continue;
+    }
 
     if (RECT_KINDS.has(trace.kind)) {
       const count = requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "rectangle");

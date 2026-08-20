@@ -7,11 +7,11 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 5 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 6 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 5, so additive emission is not safe.
+bitmap or schema negotiation in version 6, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
@@ -78,7 +78,7 @@ domain, and symlog constant). A bounded embedded style table (maximum 65,536
 entries) makes every style reference batch-local and independently resolvable:
 each 16-byte style stores fill RGBA8, stroke RGBA8, and f64 stroke width.
 Each 56-byte mark record contains its kind (`ScatterScene`, `PolylineScene`
-vertex, or `RectScene`), visibility/clipping flag, scatter symbol, stable u64
+vertex, `RectScene`, or `BandScene`), visibility/clipping flag, scatter symbol, stable u64
 id, u32 style-table index, four f64 screen coordinates, and scatter diameter.
 Non-scatter records must set symbol and diameter to zero.
 
@@ -164,6 +164,14 @@ invalid.
   axes. All four input coordinates are finite-checked and scale-mapped; a
   log-masked corner hides the whole rectangle. Symbol and diameter are zero. Each record is one closed axis-aligned
   rectangle; stable ID is independent animation/picking identity.
+- **Band sample (kind 3):** `x0,y0` is one top sample and `x1,y1` is the paired
+  base sample (same authored x is typical for area/error bands). All four
+  inputs are finite-checked and scale-mapped; a log-masked corner hides the
+  sample. Symbol and diameter are zero. Consecutive visible kind-3 records with
+  the same stable ID and `style_ref` form one filled polygon: tops in record
+  order, then bases in reverse order, closed. Unlike Rect, Band does not
+  min/max-normalize corners — sample order is preserved so the polygon matches
+  the authored series.
 
 Decoders must require the exact header/record widths for the declared version,
 reject unknown kinds, and enforce the reserved-zero fields above. They must not
@@ -175,16 +183,17 @@ ABIs: whole-scene SVG/raster consumers attach to the single scene batch.
 Python `Figure.to_scene()` and Node `Figure.toScene()` compile the migrated
 constant-style cartesian subset plus two axes: scatter/line (with host-side
 `step` expansion for `pre`/`post`/`mid`), rect-family marks
-(`bar`/`column`/`histogram`/`violin`), and segment-family marks
-(`segments`/`errorbar`/`stem`) as disconnected Scene Polyline runs (unique
-stable id per segment). Gradient fills, non-zero `corner_radius`, and
-density-tier scatter are rejected until dedicated records exist. Their explicit
-Scene SVG/raster APIs exercise the Rust consumers. Public Python SVG/PNG/PDF
-remain on the established compatibility renderers until Scene records encode
-canonical layout and authored text/style; they must not silently select a
-semantically incomplete scene. Missing/nonfinite coordinates and unsupported
-customization fail closed from the explicit scene API. This is a migration
-boundary, not a silent approximation.
+(`bar`/`column`/`histogram`/`violin`/`box`), segment-family marks
+(`segments`/`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`) as
+disconnected Scene Polyline runs (unique stable id per segment), and
+band-family marks (`area`/`error_band`) as Scene Band samples. Gradient fills,
+non-zero `corner_radius`, and density-tier scatter are rejected until dedicated
+records exist. Their explicit Scene SVG/raster APIs exercise the Rust consumers.
+Public Python SVG/PNG/PDF remain on the established compatibility renderers
+until Scene records encode canonical layout and authored text/style; they must
+not silently select a semantically incomplete scene. Missing/nonfinite
+coordinates and unsupported customization fail closed from the explicit scene
+API. This is a migration boundary, not a silent approximation.
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -242,6 +251,15 @@ Public SVG/PNG/PDF still use the compatibility renderers until remaining
 chrome (backgrounds, density overlays, fuller measured rooms) can select
 Scene without dropping established export behavior.
 
+## Version 6: Band filled polygons
+
+Version 6 keeps the version-5 header, style table, mark record width, and
+chrome trailer. It adds `BandScene` (kind 3) so area and error-band hosts can
+encode top/base samples without inventing a second polygon policy in Python or
+Node. Whole-scene SVG emits one closed `<path>` per band run; raster emits
+`OP_FILL_POLY`; the browser painter lowers bands as area geometry with a
+`base` column. Version 5 consumers must reject version-6 batches.
+
 ## Evidence and extension order
 
 Rust unit tests pin schema validation and byte-deterministic SVG. Python tests
@@ -250,7 +268,7 @@ text, and customization through the compatibility path. Node tests consume the
 same scene fixture and reject the same unsupported subset. ABI generation,
 parity, and version-first loading cover both hosts.
 
-The first browser consumer accepts the exact v5 bytes through the static WASM
+The first browser consumer accepts the exact v6 bytes through the static WASM
 Worker. Rust validates and lowers them through
 `SceneDocument::to_browser_painter` into checked f32 geometry and split-u64
 stable-ID columns plus the default numeric ticks and formatted UTF-8 labels.
@@ -263,14 +281,16 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining mark families (area, ribbon, polar, mesh, …)
-and legend/annotation records, then select public SVG/PNG/PDF Scene routing
-once backgrounds/density/chrome parity is covered. Category, angular, and
+Next slices add remaining mark families (ribbon, polar, mesh, …) and
+legend/annotation records, then select public SVG/PNG/PDF Scene routing once
+backgrounds/density/chrome parity is covered. Category, angular, and
 time/calendar tick ladders already move through `xyg_scene_axis_ticks` kinds
 2–5; Scene v5 carries authored chrome paints plus title/axis-label UTF-8;
 ABI `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
-Cartesian rect-family hosts (`bar`, `column`, `histogram`, `violin`) share
-Scene Rect records; segment-family hosts (`segments`, `errorbar`, `stem`) and
-stepped lines share Scene Polyline records. Browser DOM measurement and WebGL
-paint remain environment-specific consumers with documented layout tolerances
-(§7 and §21).
+Cartesian rect-family hosts (`bar`, `column`, `histogram`, `violin`, `box`)
+share Scene Rect records; segment-family hosts
+(`segments`, `errorbar`, `stem`, `contour`, `box_whisker`, `box_median`) and
+stepped lines share Scene Polyline records; band-family hosts
+(`area`, `error_band`) share Scene Band records. Browser DOM measurement and
+WebGL paint remain environment-specific consumers with documented layout
+tolerances (§7 and §21).
