@@ -1,8 +1,7 @@
-# Geospatial data contract — GeoColumn and GeoArrow ingress
+# Geospatial data contract — GeoColumn, GeoArrow ingress, GeoViewport
 
-**Status:** foundation (issue #47). Locked ownership for geographic source
-geometry. Projection/viewport (#48), MapLibre layers (#49), and
-LOD/export/scale (#50) build on this contract.
+**Status:** GeoColumn foundation (#47) + GeoViewport camera foundation (#48).
+MapLibre layers (#49) and LOD/export/scale (#50) build on these contracts.
 
 ## Product rule
 
@@ -13,9 +12,12 @@ forward a **typed descriptor** — never a second geometry engine, never
 GeoJSON row expansion on the product path, and never an Arrow dependency
 inside `xyg-engine`.
 
-MapLibre (optional browser shell) never becomes the authority for feature
-geometry, identity, styling, picking, or LOD. See #39 / #49 for the shell
-boundary.
+Rust also owns the geographic **camera / projection** (`GeoViewport`):
+center, zoom, size, bearing, pitch, CRS, world-wrap, fit, and lon/lat ↔
+Web Mercator ↔ screen equations. MapLibre (optional browser shell) may
+supply camera events and basemap chrome; it never becomes the authority for
+feature geometry, identity, styling, picking, LOD, or projected feature
+coordinates. See #39 / #49 for the shell boundary.
 
 ## Certified profile (v1)
 
@@ -99,11 +101,39 @@ Before a `GeoColumn` is published, Rust rejects:
 
 Failures are atomic: no partial column is retained.
 
+## GeoViewport (camera / projection)
+
+`crates/xyg-engine/src/geo_viewport.rs` defines the host-neutral camera:
+
+| Field | Contract |
+| --- | --- |
+| `crs` | Same certified profile: EPSG:4326 or EPSG:3857 for center/fit units |
+| `center_x/y` | Lon/lat° or easting/northing m |
+| `zoom` | MapLibre-style; world width = `512 * 2^zoom` CSS pixels |
+| `width/height` | CSS pixels; must be > 0 |
+| `bearing_deg` | Clockwise degrees; 0 = north up |
+| `pitch_deg` | Degrees in `[-60, 60]`; stored for shell parity (orthographic project for now) |
+| `world_wrap` | Prefer shorter longitudinal span across ±180° on fit |
+
+Projection policy:
+
+- Lon/lat ↔ Web Mercator uses spherical R = 6 378 137 m with polar clamp at
+  ±85.0511287798066° / ±20 037 508.342789244 m.
+- Screen mapping is CSS top-left origin; bearing rotates in plane around center.
+- Derived f32 screen buffers are **offset-encoded** from an f64 origin so deep
+  zoom never drops source precision (§4/§16); NaN never reaches the buffer (§19).
+- Documented golden tolerances: lon/lat `1e-9`°, mercator `1e-6` m, screen
+  `1e-6` px (`geo_viewport::tolerances`).
+
+Follow-ons on this camera: antimeridian line/polygon split for painted
+geometry, pitched frustum matching MapLibre, C ABI / host wrappers, and
+native↔WASM goldens (#59).
+
 ## Module and follow-ons
 
 - Implementation: `crates/xyg-engine/src/geo.rs` (`GeoColumn`,
   `GeoDescriptor`, opaque handle registry).
-- C ABI (v71+): `xyg_geo_column_new` / `_free` / `_len` / `_vertex_count` /
+- C ABI (v72+): `xyg_geo_column_new` / `_free` / `_len` / `_vertex_count` /
   `_geometry` / `_crs` in `crates/xyg-core`, generated into Python/Node ABI
   modules. Hosts decode GeoArrow and pass the typed descriptor buffers.
 - Host wrappers: `xy._native.geo_column_*` and Node `geoColumnNew` /
@@ -111,8 +141,10 @@ Failures are atomic: no partial column is retained.
 - Python GeoArrow adapter: `xy._geoarrow.ingest_geoarrow` (optional pyarrow
   input format) flattens extension arrays into the typed descriptor and
   publishes a Rust `GeoColumn` handle.
-- Next: WASM descriptor parity (#59); headless GeoViewport (#48); geographic
-  layer programs (#49); LOD/export (#50).
+- GeoViewport: `crates/xyg-engine/src/geo_viewport.rs` (camera foundation;
+  ABI/hosts next).
+- Next: GeoViewport ABI + host ergonomics; WASM descriptor/viewport parity
+  (#59); geographic layer programs (#49); LOD/export (#50).
 
 ## Related
 

@@ -14,6 +14,7 @@ mod simd;
 pub mod css;
 pub mod edge_route;
 pub mod geo;
+pub mod geo_viewport;
 pub mod graph;
 pub mod hexbin;
 pub mod kernels;
