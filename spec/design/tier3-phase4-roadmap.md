@@ -1,7 +1,8 @@
 # Tier-3 Phase 4 — disk-resident tile spill roadmap
 
-**Status:** design **locked** (WP0 complete, see “Locked decisions” below);
-implementation not started. Phase-3 square pyramid is **productized**
+**Status:** design **locked** (WP0 complete); WP1 Rust tile store **landed**
+(ABI 71: `xyg_pyramid_spill` / `xyg_tile_store_*` in `crates/xyg-engine` +
+`crates/xyg-core`). Host engagement is WP2. Phase-3 square pyramid is **productized**
 on Python and Node ([lod-architecture.md](lod-architecture.md) §4 /
 Phase 3; [tier3-testing.md](tier3-testing.md);
 [xy-coverage.md](xy-coverage.md)). Note the shipped Phase-3 pyramid is
@@ -17,11 +18,11 @@ Phase 4 is a storage-layout change, not a residency wrapper.
 [#11](https://github.com/CurateLabs/xyg/issues/11) (WP4). In-repo
 pointer: [`issues/phase4-tile-spill.md`](issues/phase4-tile-spill.md).
 
-**Sequencing overlay:** WP1 (#8) implementation is paused on draft PR #19
-until the XYG crate split ([#18](https://github.com/CurateLabs/xyg/issues/18))
-lands; re-land inside `crates/xyg-engine`. Canonical f64 columns /
-`stream.rs` are [#22](https://github.com/CurateLabs/xyg/issues/22), not this
-spill store. Cross-cutting host/identity/client plan:
+**Sequencing overlay:** WP1 (#8) re-landed in `crates/xyg-engine` after the
+crate split ([#18](https://github.com/CurateLabs/xyg/issues/18)); draft PR #19
+is superseded. Canonical f64 columns / `stream.rs` are
+[#22](https://github.com/CurateLabs/xyg/issues/22), not this spill store.
+Cross-cutting host/identity/client plan:
 [host-neutral-architecture.md](host-neutral-architecture.md) / #24.
 
 ## Why Phase 4
@@ -213,15 +214,22 @@ inside this frame; changing any of it means editing this section first.
   §32b now exists), dossier §32 “Python-only” framing, lod-architecture
   §4.1 tiled-vs-shipped ambiguity, parity-JSON Phase-4 scoping.
 
-### WP1 — Rust tile store ABI ([#8](https://github.com/CurateLabs/graphforge-xy/issues/8))
+### WP1 — Rust tile store ABI ([#8](https://github.com/CurateLabs/xyg/issues/8))
 
-- `xyg_pyramid_spill` / `xyg_tile_fetch` / `xyg_tiles_compose` (names TBD) —
-  bump `ABI_VERSION` in `crates/xyg-core/src/lib.rs`, then run
-  `python3 scripts/gen_abi_manifest.py --write` to regenerate the JSON, C
-  header, ctypes, and Koffi declarations; keep `scripts/abi_smoke.py` and
-  `scripts/check_abi_parity.py` green on that version.
-- LRU under `PYRAMID_RESIDENT_BYTES` per locked decisions D2–D3.
-- Zone-map-pruned tile index for unordered scatter (D5, dossier §32b).
+- [x] `xyg_pyramid_spill` / `xyg_tile_store_fetch` / `xyg_tile_store_compose` /
+  `_compose_color` / `_append` / `_stats` / `xyg_tile_budget_set` /
+  `xyg_tile_store_free` — ABI 71 in `crates/xyg-core`; regenerate via
+  `python3 scripts/gen_abi_manifest.py --write`; `scripts/abi_smoke.py` covers
+  spill→fetch→compose goldens.
+- [x] LRU under process-wide `PYRAMID_RESIDENT_BYTES` default (512 MiB) per D2–D3;
+  frame pinning + `over_budget` recording; spill file is `XYTS` fixed slabs
+  (pread/pwrite realization of D1 mmap layout — no mmap crate vendored).
+- [x] Compose-from-tiles shares `LevelView` / `compose_level` with in-RAM compose
+  (bit-identical). Count-only dirty-tile append; colored refuse; domain growth
+  refused atomically.
+- [ ] Zone-map-pruned tile index for unordered scatter (D5) — companion path;
+  MVP uses closed-form slab offsets; zone-map rebuild wiring remains available
+  via existing `xyg_zone_maps_*` for WP2/WP4 dirty rebuilds.
 
 ### WP2 — Hosts ([#9](https://github.com/CurateLabs/graphforge-xy/issues/9))
 

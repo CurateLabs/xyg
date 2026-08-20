@@ -1266,7 +1266,7 @@ exact full-screen-resolution grid. Position-only (no row ids, no channels), so
 it is gated to constant-styled traces and picks resolve exact-or-nothing.
 Mechanics and tier gating: LOD architecture doc §4.4.
 
-**Budgeted tile residency (Phase 4 — decisions locked, WP0 of issue #7).**
+**Budgeted tile residency (Phase 4 — decisions locked WP0 #7; WP1 kernel landed ABI 71).**
 When a pyramid no longer fits in RAM (adaptive 16 384² bases cost ~1.4 GB of
 counts + ~2.9 GB of color; multi-trace apps multiply that), it spills to a
 disk tile store the kernel owns. The locked frame — full rationale in

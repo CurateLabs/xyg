@@ -35,6 +35,7 @@ use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
 use xyg_engine::temporal;
+use xyg_engine::tile_store;
 use xyg_engine::tiles;
 use xyg_engine::transition;
 
@@ -4034,6 +4035,243 @@ pub unsafe extern "C" fn xyg_pyramid_append_from_stream(
         tiles::reg_append_from_stream(handle, x_handle, y_handle, tail_len).unwrap_or(false) as i32
     })
 }
+
+// -- Phase-4 tile store (LOD doc §4 items 10–12, dossier §32b, roadmap D1–D7):
+// disk-resident (level, tx, ty) 256² tiles behind their own opaque handles.
+
+/// Snapshot a live pyramid into a disk tile store (one `XYTS` spill file per
+/// pyramid, roadmap D1). Returns a nonzero store handle to release with
+/// `xyg_tile_store_free`, or 0 on a stale pyramid handle / I/O failure. The
+/// pyramid stays live and independent; the host frees it to reclaim the RAM
+/// the spill exists to save. Nothing is resident after the snapshot — tiles
+/// fault in on demand under the process-wide budget (D2–D3).
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_pyramid_spill(handle: u64) -> u64 {
+    ffi_guard(0, || {
+        match tiles::reg_with(handle, tile_store::TileStore::spill) {
+            Some(Ok(store)) => tile_store::reg_insert(store),
+            _ => 0,
+        }
+    })
+}
+
+/// Copy one tile's planes into caller buffers: `out_counts` receives the
+/// 256² u32 count cells; `out_color` (nullable for count-only reads) the
+/// 256² `[r, g, b, a]` u16 mean-color cells. Levels index 0 = finest,
+/// matching `xyg_pyramid_compose` level reporting; tiles are row-major
+/// `(ty, tx)` over `ceil(dim/256)` per side. 1 on success, 0 for a stale
+/// handle, an out-of-range key, or a color request on a count-only store.
+/// # Safety
+/// `out_counts` must address 65 536 writable u32s; `out_color`, when
+/// non-null, 65 536 × 4 writable u16s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tile_store_fetch(
+    store: u64,
+    level: u32,
+    tx: u32,
+    ty: u32,
+    out_counts: *mut u32,
+    out_color: *mut u16,
+) -> i32 {
+    if out_counts.is_null() {
+        return 0;
+    }
+    let cells = tile_store::TILE_DIM * tile_store::TILE_DIM;
+    let out_counts = std::slice::from_raw_parts_mut(out_counts, cells);
+    let out_color = if out_color.is_null() {
+        None
+    } else {
+        Some(std::slice::from_raw_parts_mut(out_color as *mut [u16; 4], cells))
+    };
+    ffi_guard(0, || {
+        match tile_store::reg_with(store, |s| s.fetch_into(level, tx, ty, out_counts, out_color)) {
+            Some(Ok(true)) => 1,
+            _ => 0,
+        }
+    })
+}
+
+/// Compose the window from spilled tiles into a w×h grid — the tile-store
+/// counterpart of `xyg_pyramid_compose`, bit-identical to it for the same
+/// pyramid. Returns the level used (>= 0), -1 on stale handle/bad args or
+/// I/O failure, -2 when the window outresolves the store (caller re-bins
+/// exactly and discloses it, §28).
+/// # Safety
+/// `out` must point to `w * h` writable f32s.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_tile_store_compose(
+    store: u64,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    w: usize,
+    h: usize,
+    max_upsample: usize,
+    out: *mut f32,
+) -> i32 {
+    if out.is_null() || w == 0 || h == 0 || !finite_gt(lo_x, hi_x) || !finite_gt(lo_y, hi_y) {
+        return -1;
+    }
+    let out_len = match w.checked_mul(h) {
+        Some(n) => n,
+        None => return -1,
+    };
+    let out = std::slice::from_raw_parts_mut(out, out_len);
+    let max_upsample = max_upsample.max(1);
+    ffi_guard(-1, || {
+        match tile_store::reg_with(store, |s| {
+            s.compose(lo_x, hi_x, lo_y, hi_y, w, h, max_upsample, out)
+        }) {
+            Some(Ok(Some(level))) => level as i32,
+            Some(Ok(None)) => -2,
+            _ => -1,
+        }
+    })
+}
+
+/// `xyg_tile_store_compose` plus the mean-color plane — the tile-store
+/// counterpart of `xyg_pyramid_compose_color`, bit-identical to it. Returns
+/// the level used (>= 0), -1 for bad arguments/stale handle/I/O failure, -2
+/// when the window outresolves the store OR the store carries no color
+/// planes — the caller re-bins exactly either way.
+/// # Safety
+/// `out` must address `w*h` writable f32s and `out_rgba` `w*h*4` writable bytes.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_tile_store_compose_color(
+    store: u64,
+    lo_x: f64,
+    hi_x: f64,
+    lo_y: f64,
+    hi_y: f64,
+    w: usize,
+    h: usize,
+    max_upsample: usize,
+    out: *mut f32,
+    out_rgba: *mut u8,
+) -> i32 {
+    if out.is_null()
+        || out_rgba.is_null()
+        || w == 0
+        || h == 0
+        || !finite_gt(lo_x, hi_x)
+        || !finite_gt(lo_y, hi_y)
+    {
+        return -1;
+    }
+    let Some(out_len) = w.checked_mul(h) else {
+        return -1;
+    };
+    let max_upsample = max_upsample.max(1);
+    let out = std::slice::from_raw_parts_mut(out, out_len);
+    let out_rgba = std::slice::from_raw_parts_mut(out_rgba, out_len * 4);
+    ffi_guard(-1, || {
+        match tile_store::reg_with(store, |s| {
+            s.compose_color(lo_x, hi_x, lo_y, hi_y, w, h, max_upsample, out, out_rgba)
+        }) {
+            Some(Ok(Some(level))) => level as i32,
+            Some(Ok(None)) => -2,
+            _ => -1,
+        }
+    })
+}
+
+/// Increment a count-only tile store from an appended point batch: touched
+/// tiles fault in, increment, and are marked dirty (write-back on eviction),
+/// so the composed result equals a from-scratch rebuild bit-for-bit (D4).
+/// Returns 1 when applied; 0 for a stale handle, invalid pointers/lengths, a
+/// colored store (refuse-and-rebuild stands), or a finite point outside the
+/// store's original domain (domain growth invalidates the whole store — the
+/// caller frees and respills). A rejected batch never partially mutates.
+/// # Safety
+/// `x`/`y` must point to `len` readable f64s (or may be null when `len == 0`).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tile_store_append(
+    store: u64,
+    x: *const f64,
+    y: *const f64,
+    len: usize,
+) -> i32 {
+    if len > 0 && (x.is_null() || y.is_null()) {
+        return 0;
+    }
+    let x = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(x, len)
+    };
+    let y = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(y, len)
+    };
+    ffi_guard(0, || {
+        match tile_store::reg_with(store, |s| s.append(x, y)) {
+            Some(Ok(true)) => 1,
+            _ => 0,
+        }
+    })
+}
+
+/// Residency stats for §28 recording (`tiles: {hit, miss, resident_bytes,
+/// spilled_bytes, budget_bytes, over_budget}` on tile-served replies, D3).
+/// Fills `out` with six u64s in that order: cumulative fetch hits and misses
+/// for this store, process-wide RAM-resident tile bytes (what the budget
+/// governs, index metadata included per §27), this store's spill-file bytes,
+/// the process-wide budget, and 1 when the last compose ran over budget
+/// (pinned working set alone exceeded it) else 0. 1 on success, 0 on a
+/// stale handle.
+/// # Safety
+/// `out` must address 6 writable u64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tile_store_stats(store: u64, out: *mut u64) -> i32 {
+    if out.is_null() {
+        return 0;
+    }
+    let out = std::slice::from_raw_parts_mut(out, 6);
+    ffi_guard(0, || {
+        match tile_store::reg_with(store, |s| s.stats()) {
+            Some((hits, misses, resident, spilled, budget, over)) => {
+                out[0] = hits;
+                out[1] = misses;
+                out[2] = resident;
+                out[3] = spilled;
+                out[4] = budget;
+                out[5] = u64::from(over);
+                1
+            }
+            None => 0,
+        }
+    })
+}
+
+/// Set the process-wide resident-tile byte budget (`PYRAMID_RESIDENT_BYTES`,
+/// D2 — one pool across all stores; hosts mirror the config knob here).
+/// `bytes == 0` restores the 512 MiB default. Always returns 1.
+/// # Safety
+/// No pointer arguments.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tile_budget_set(bytes: u64) -> i32 {
+    ffi_guard(0, || {
+        tile_store::budget_set(bytes);
+        1
+    })
+}
+
+/// Release a tile store: evicts everything and deletes its spill file (§27 —
+/// the store is a rebuildable cache with process-scoped lifetime). 1 if it
+/// existed, 0 for stale/unknown handles.
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tile_store_free(store: u64) -> i32 {
+    ffi_guard(0, || if tile_store::reg_remove(store) { 1 } else { 0 })
+}
+
 
 // -- canonical stream store (engine doc §5): opaque u64 handles --------------
 

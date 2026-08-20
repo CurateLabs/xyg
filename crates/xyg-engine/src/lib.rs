@@ -26,5 +26,7 @@ pub mod stats;
 pub mod stream;
 pub mod svg;
 pub mod temporal;
+#[cfg(not(target_family = "wasm"))]
+pub mod tile_store;
 pub mod tiles;
 pub mod transition;

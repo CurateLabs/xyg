@@ -233,15 +233,17 @@ pyramid replaces per-view scans with per-view *tile composition*.
 
 ### 4.1 Structure
 
-> **Shipped vs target (don’t misread):** the Phase-3 kernel in `crates/xyg-engine/src/tiles.rs`
-> stores each level as **one contiguous grid** (`levels: Vec<Vec<u32>>` plus
-> optional `[u16; 4]` mean-color planes) — there is no `(level, tx, ty)`
-> addressing, tile fetch, or spill in the shipped ABI (60; `spec/abi/xyg-abi.json`). The 256²-tile
-> decomposition described here is the **Phase-4 target layout**
-> ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) locked decision D1,
-> issue [#5](https://github.com/CurateLabs/graphforge-xy/issues/5)); the
-> level math, aggregates, and build costs below describe the shipped kernel
-> either way.
+> **Shipped vs target (don’t misread):** the Phase-3 hot path in
+> `crates/xyg-engine/src/tiles.rs` still stores each level as **one contiguous
+> grid** (`levels: Vec<Vec<u32>>` plus optional `[u16; 4]` mean-color planes).
+> Phase-4 WP1 adds a parallel disk tile store (`tile_store.rs`) with
+> `(level, tx, ty)` spill/fetch/compose ABI 71 (`xyg_pyramid_spill` /
+> `xyg_tile_store_*` in `spec/abi/xyg-abi.json`); hosts do not engage it until
+> WP2. The 256²-tile decomposition here is that layout
+> ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) D1,
+> issue [#5](https://github.com/CurateLabs/xyg/issues/5)); level math,
+> aggregates, and build costs describe both the in-RAM pyramid and the spilled
+> slabs.
 
 - **Data-space tiles**, power-of-two levels, 256×256 cells/tile.
   Level 0 covers the full x/y extent with 1 tile; level l has 4^l tiles.
@@ -256,10 +258,11 @@ pyramid replaces per-view scans with per-view *tile composition*.
   weighted means, weight = child count × child mean alpha — the same
   alpha-weighted average the flat kernel computes over raw points).
   Total cost ≈ 1.33 × one full pass; total size ≈ 1.33 × finest level.
-- **Rust owns this** (`tiles.rs`, see rust-engine doc): build_pyramid()
-  (shipped); tile fetch by (level, tx, ty) and append-aware rebuild of dirty
-  tiles are Phase-4 (roadmap D1/D4 — the shipped kernel composes whole
-  contiguous levels and appends level-wide).
+- **Rust owns this** (`tiles.rs` + `tile_store.rs`, see rust-engine doc):
+  build_pyramid() and in-RAM compose (shipped); tile spill/fetch/compose by
+  `(level, tx, ty)` and count-only dirty-tile append are Phase-4 WP1 (roadmap
+  D1/D4 — hosts engage in WP2; the Phase-3 path still composes contiguous
+  levels).
   Colored pyramids refuse native appends — the batch's colors are unknown to
   the count-only append path and an append can move a continuous channel's
   domain, silently re-coloring every already-binned point — so the caller

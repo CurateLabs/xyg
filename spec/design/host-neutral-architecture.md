@@ -116,7 +116,7 @@ conformance, and CodSpeed-backed budgets remain. See
 | Phase-4 tile spill | **#5** → #7 (done), **#8**, **#9**, #10, #11 | Derived cache spill. Append = dirty *tiles*, not owning the f64 store |
 | Fork CI hygiene | #12, #15, #16, #21 | Not on this architecture critical path |
 
-Draft PR **#19** is the paused WP1 implementation of #8 against today’s
+Draft PR **#19** preserved the pre-split WP1 implementation of #8; it is superseded by the post-split re-land in `crates/xyg-engine`. Historical note against today’s
 `src/` layout. It must be re-landed inside `crates/xyg-engine` after #18.
 It does not close #8 until that re-land.
 
@@ -133,7 +133,7 @@ It does not close #8 until that re-land.
    (in-repo + toHtml now;            (parallel with #22 after #18)
     npm publish after names)                    │
                                                 ▼
-#22 stream.rs  (not blocked by #18;             #10 WP3 (optional)
+#22 stream.rs  (not unblocked (#18 closed);             #10 WP3 (optional)
  prefer after #18 to avoid a double             #11 WP4 (alongside #8/#9)
  move of src/). Node owning the same
  f64 store needs this. #23 does not.
@@ -143,7 +143,7 @@ It does not close #8 until that re-land.
 
 | Issue | Blocked by | Why |
 | --- | --- | --- |
-| #8 WP1 re-land | **#18** | PR #19 is paused: the crate split moves the whole Rust tree. Re-land inside `xyg-engine`, do not merge #19 onto pre-split `src/`. |
+| #8 WP1 re-land | — (done) | Re-landed in `crates/xyg-engine` after #18; do not merge conflicting draft #19. |
 | #9 WP2 hosts | **#8** | Spill engagement binds the WP1 ABI ([tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) WP0 → WP1 → WP2). |
 | #10 WP3 client cache | **#8** | Tile-keyed cache needs `(level, tx, ty)` on the wire from WP1. Optional after that. |
 
