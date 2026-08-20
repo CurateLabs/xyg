@@ -13,6 +13,8 @@ export const XYG_WASM_COMPILE_VERSION = 1 as const;
 export const XYG_WASM_COMPILE_HEADER_BYTES = 192 as const;
 /** When set, Rust chooses Cartesian gutters via `cartesian_scene_margins`. */
 export const XYG_WASM_COMPILE_FLAG_AUTO_MARGINS = 1 as const;
+/** When set, Rust derives axis domains from finite column geometry. */
+export const XYG_WASM_COMPILE_FLAG_AUTO_DOMAIN = 2 as const;
 
 export type XygWasmScaleKind = "linear" | "log" | "symlog" | 0 | 1 | 2;
 export type XygWasmRecordKind = "scatter" | "polyline" | "rect" | "band" | 0 | 1 | 2 | 3;
@@ -29,19 +31,24 @@ export interface XygWasmColumnCompileInput {
   /** Explicit left/right/top/bottom margins. Ignored when `autoMargins` is true. */
   margins?: [number, number, number, number];
   autoMargins?: boolean;
+  /**
+   * When true, omit explicit `x.lo`/`x.hi`/`y.lo`/`y.hi` and let Rust scan
+   * finite column geometry in the Worker (FLAG_AUTO_DOMAIN).
+   */
+  autoDomain?: boolean;
   xAxisId?: bigint | number;
   yAxisId?: bigint | number;
   x?: {
     kind?: XygWasmScaleKind;
-    lo: number;
-    hi: number;
+    lo?: number;
+    hi?: number;
     constant?: number;
     maskNonpositive?: boolean;
   };
   y?: {
     kind?: XygWasmScaleKind;
-    lo: number;
-    hi: number;
+    lo?: number;
+    hi?: number;
     constant?: number;
     maskNonpositive?: boolean;
   };
@@ -212,7 +219,10 @@ export function encodeWasmColumns(input: XygWasmColumnCompileInput): ArrayBuffer
   bytes.set([88, 89, 67, 67], 0); // XYCC
   view.setUint32(4, XYG_WASM_COMPILE_VERSION, true);
   view.setUint32(8, XYG_WASM_COMPILE_HEADER_BYTES, true);
-  view.setUint32(12, input.autoMargins ? XYG_WASM_COMPILE_FLAG_AUTO_MARGINS : 0, true);
+  let flags = 0;
+  if (input.autoMargins) flags |= XYG_WASM_COMPILE_FLAG_AUTO_MARGINS;
+  if (input.autoDomain) flags |= XYG_WASM_COMPILE_FLAG_AUTO_DOMAIN;
+  view.setUint32(12, flags, true);
   view.setUint32(16, recordCount, true);
   view.setUint32(20, styleCount, true);
   view.setUint32(24, title.length, true);
@@ -232,6 +242,7 @@ export function encodeWasmColumns(input: XygWasmColumnCompileInput): ArrayBuffer
   view.setUint32(108, scaleCode(input.y?.kind), true);
   view.setUint32(112, input.x?.maskNonpositive ? 1 : 0, true);
   view.setUint32(116, input.y?.maskNonpositive ? 1 : 0, true);
+  // Placeholder domains when autoDomain is set; Rust overwrites after the scan.
   writeF64(view, 120, input.x?.lo ?? 0);
   writeF64(view, 128, input.x?.hi ?? 1);
   writeF64(view, 136, input.x?.constant ?? 1);

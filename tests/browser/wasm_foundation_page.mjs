@@ -1,6 +1,8 @@
 import {
   createXygWasmWorker,
+  encodeWasmChart,
   encodeWasmColumns,
+  renderWasmChart,
   renderWasmColumns,
   renderWasmScene,
   XygWasmError,
@@ -342,6 +344,58 @@ async function run() {
   columnView.destroy();
   columnHost.remove();
   await columnWorker.dispose();
+
+  const chartWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await chartWorker.ready;
+  const chart = {
+    width: 320,
+    height: 240,
+    title: "chart ergonomics",
+    series: [
+      {
+        kind: "scatter",
+        x: [0.2, 0.8],
+        y: [0.3, 0.7],
+        stableIdBase: 70n,
+        diameter: 8,
+      },
+      {
+        kind: "line",
+        x: [0.1, 0.5, 0.9],
+        y: [0.2, 0.6, 0.4],
+        stableIdBase: 80n,
+        style: { strokeRgba: [15, 23, 42, 255], strokeWidth: 2, fillRgba: [0, 0, 0, 0] },
+      },
+    ],
+  };
+  const chartPacked = encodeWasmChart(chart);
+  const chartFlags = new DataView(chartPacked).getUint32(12, true);
+  if ((chartFlags & 3) !== 3) {
+    throw new Error(`chart ergonomics did not set autoMargins|autoDomain flags: ${chartFlags}`);
+  }
+  if (new Uint8Array(chartPacked).subarray(0, 4).join(",") !== "88,89,67,67") {
+    throw new Error("chart ergonomics encoder did not emit XYCC");
+  }
+  const chartHost = document.body.appendChild(document.createElement("div"));
+  const chartView = await renderWasmChart({
+    el: chartHost,
+    chart,
+    worker: chartWorker,
+    transfer: false,
+  });
+  if (!chartHost.querySelector("canvas") || chartView.gpuTraces.length < 1) {
+    throw new Error("chart ergonomics public API did not hydrate the existing painter");
+  }
+  if (chartView.sceneStableId(0, 0) !== 70n) {
+    throw new Error("chart ergonomics stable id was not preserved through painter hydration");
+  }
+  chartView.destroy();
+  chartHost.remove();
+  await chartWorker.dispose();
 
   const malformed = canonicalSceneV5();
   malformed[0] = 0;

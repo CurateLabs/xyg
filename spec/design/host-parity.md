@@ -47,8 +47,9 @@ The #59 foundation now adds `crates/xyg-wasm`, a generated raw-export adapter,
 and an explicit static module Worker. It proves bounded JS→WASM staging,
 version/status/lifecycle behavior, exact Scene validation/paint lowering, and
 packed typed-column compile into the same canonical Scene batch native hosts
-encode. Public chart-spec ergonomics and density replacement remain open, so
-the direct-browser product acceptance remains open. See
+encode. Public chart-spec ergonomics (`encodeWasmChart` / `renderWasmChart`)
+expand series into the packed typed-column seam; density replacement remains
+open, so the direct-browser product acceptance remains open. See
 [browser-wasm.md](browser-wasm.md).
 
 The #58 scene migration is active: scene schema version 4 provides one
