@@ -45,6 +45,7 @@ ALLOWED_BLACKSMITH_RUNNERS = {
     "blacksmith-6vcpu-macos-15",
     "blacksmith-12vcpu-macos-15",
 }
+CODSPEED_HOSTED_RUNNER = "codspeed-macro"
 
 
 def _job_blocks(text: str) -> dict[str, str]:
@@ -56,12 +57,18 @@ def _job_blocks(text: str) -> dict[str, str]:
 
     blocks: dict[str, list[str]] = {}
     current: Optional[str] = None
+    unsafe_index = 0
     for line in lines[start + 1 :]:
         if line.strip() and len(line) == len(line.lstrip(" ")):
             break
-        match = re.match(r"^  ([A-Za-z0-9_-]+):\s*$", line)
-        if match:
-            current = match.group(1)
+        parsed = _direct_yaml_mapping(line)
+        if parsed is not None and parsed[0] == 2 and not parsed[3].strip():
+            _indent, job_name, unsafe, _value = parsed
+            if unsafe or job_name is None:
+                unsafe_index += 1
+                current = f"__unsafe_job_{unsafe_index}"
+            else:
+                current = job_name
             blocks[current] = [line]
             continue
         if current is not None:
@@ -110,34 +117,98 @@ def _matrix_os_values(job_text: str) -> tuple[list[str], bool]:
     for line in lines[start + 1 :]:
         if line.strip() and len(line) - len(line.lstrip()) <= 6:
             break
-        matrix_lines.append(line.split("#", 1)[0])
+        matrix_lines.append(_strip_yaml_comment(line))
 
     values: list[str] = []
-    dynamic_axis = False
+    direct_axes = []
+    axis_unsafe = False
+    include_unsafe = False
+    in_include = False
     for index, line in enumerate(matrix_lines):
-        inline_list = re.fullmatch(r"\s{8}os:\s*\[(.*)\]\s*", line)
-        if inline_list:
-            values.extend(
-                value.strip().strip("\"'")
-                for value in inline_list.group(1).split(",")
-                if value.strip()
-            )
+        parsed = _direct_yaml_mapping(line)
+        if parsed is not None and parsed[0] == 8 and parsed[1] == "include":
+            in_include = True
+            include_unsafe = include_unsafe or parsed[2] or bool(parsed[3].strip())
             continue
-        direct_scalar = re.fullmatch(r"\s{8}os:\s*(\S.*?)\s*", line)
-        if direct_scalar:
-            dynamic_axis = True
-            continue
-        if re.fullmatch(r"\s{8}os:\s*", line):
-            for value_line in matrix_lines[index + 1 :]:
-                value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
-                if value_match:
-                    values.append(value_match.group(1).strip("\"'"))
+        if in_include and line.strip() and len(line) - len(line.lstrip()) <= 8:
+            in_include = False
+        if in_include:
+            flow_item = line.strip()
+            if flow_item.startswith("- {"):
+                if not flow_item.endswith("}"):
+                    include_unsafe = True
                     continue
-                if value_line.strip():
-                    break
+                os_values: list[str] = []
+                for match in re.finditer(
+                    rf"(?:^|[,{{])\s*(?P<key>{_YAML_KEY_TOKEN})\s*:\s*"
+                    r"(?P<value>[^,}]+)",
+                    flow_item.removeprefix("- "),
+                ):
+                    key, unsafe = _decode_yaml_key(match.group("key"))
+                    include_unsafe = include_unsafe or unsafe
+                    if key == "os":
+                        raw_value = match.group("value").strip()
+                        if raw_value.startswith(('"', "'")):
+                            include_unsafe = True
+                        os_values.append(raw_value.strip("\"'"))
+                if len(os_values) != 1 or os_values[0].startswith("${{"):
+                    include_unsafe = True
+                else:
+                    values.extend(os_values)
+                continue
+            item = _sequence_item_yaml_mapping(line)
+            continuation = _direct_yaml_mapping(line)
+            include_mapping = item or (
+                continuation if continuation is not None and continuation[0] == 12 else None
+            )
+            if include_mapping is not None:
+                _indent, key, unsafe, value = include_mapping
+                include_unsafe = include_unsafe or unsafe
+                if key == "os":
+                    raw_value = value.strip()
+                    if not raw_value or raw_value.startswith(("{", "[", "${{", '"', "'")):
+                        include_unsafe = True
+                    else:
+                        values.append(raw_value)
+                continue
+            if line.strip() and len(line) - len(line.lstrip()) >= 10:
+                include_unsafe = True
             continue
-        for match in re.finditer(r"(?:^\s*-\s*\{\s*|^\s*-\s+|,\s*)os:\s*([^,}\]\s]+)", line):
-            values.append(match.group(1).strip("\"'"))
+        if parsed is not None and parsed[0] == 8 and parsed[1] == "os":
+            direct_axes.append(parsed)
+            value = parsed[3].strip()
+            inline_list = re.fullmatch(r"\[(.*)\]", value)
+            if inline_list:
+                axis_unsafe = True
+                continue
+            if not value:
+                for value_line in matrix_lines[index + 1 :]:
+                    if not value_line.strip():
+                        continue
+                    if len(value_line) - len(value_line.lstrip()) <= 8:
+                        break
+                    value_match = re.fullmatch(r"\s{10}-\s+(.+?)\s*", value_line)
+                    if value_match:
+                        scalar = value_match.group(1).strip()
+                        if scalar.startswith(("{", "[", "|", ">", "${{", '"', "'")):
+                            axis_unsafe = True
+                        else:
+                            values.append(scalar)
+                        continue
+                    axis_unsafe = True
+            continue
+    dynamic_axis = (
+        axis_unsafe
+        or include_unsafe
+        or len(direct_axes) > 1
+        or (
+            len(direct_axes) == 1
+            and (
+                direct_axes[0][2]
+                or bool(direct_axes[0][3].strip() and not direct_axes[0][3].strip().startswith("["))
+            )
+        )
+    )
     return values, dynamic_axis
 
 
@@ -1403,6 +1474,11 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     if missing_jobs:
         errors.append(f"CodSpeed workflow missing required jobs: {missing_jobs}")
 
+    benchmarks = jobs.get("benchmarks", "")
+    runner_values, runner_unsafe = _direct_yaml_key_values(benchmarks, "runs-on", indent=4)
+    if runner_unsafe or runner_values != [CODSPEED_HOSTED_RUNNER]:
+        errors.append("CodSpeed benchmarks job must run on the dedicated codspeed-macro runner")
+
     _require_workflow_contains(
         errors,
         text,
@@ -1698,9 +1774,55 @@ def validate_workflow_hosting_policy(
                 f"{path} Playwright install must not use --with-deps; "
                 "install bounded browser-specific runtime dependencies separately"
             )
+        if sum(line == "jobs:" for line in _yaml_code_lines(text)) != 1:
+            errors.append(f"{path} must define one canonical block-style top-level jobs mapping")
+            continue
+        jobs_block = _unique_mapping_block(text, "jobs", indent=0)
+        if jobs_block is None:
+            errors.append(f"{path} must define one canonical block-style top-level jobs mapping")
+            continue
+        job_mappings = [
+            parsed
+            for line in _yaml_code_lines(jobs_block)
+            if (parsed := _direct_yaml_mapping(line)) is not None and parsed[0] == 2
+        ]
+        job_keys = [entry for entry in _yaml_mapping_keys(jobs_block) if entry[0] == 2]
+        if (
+            not job_mappings
+            or len(job_keys) != len(job_mappings)
+            or any(unsafe or job_name is None for _indent, job_name, unsafe in job_keys)
+            or any(
+                unsafe or job_name is None or value.strip()
+                for _indent, job_name, unsafe, value in job_mappings
+            )
+        ):
+            errors.append(f"{path} every job must use a canonical block-style mapping")
+            continue
         job_blocks = _job_blocks(text)
+        if len(job_blocks) != len(job_mappings):
+            errors.append(f"{path} every job must be structurally visible to runner validation")
+            continue
         for job_name, block in job_blocks.items():
-            if "runs-on: ${{ matrix.os }}" not in block:
+            runner_values, runner_unsafe = _direct_yaml_key_values(block, "runs-on", indent=4)
+            if runner_unsafe or len(runner_values) != 1:
+                errors.append(f"{path} job {job_name} must declare one direct runs-on value")
+                continue
+            runner = runner_values[0]
+            codspeed_hosted = (
+                path.name == "codspeed.yml"
+                and job_name == "benchmarks"
+                and runner == CODSPEED_HOSTED_RUNNER
+            )
+            if (
+                runner != "${{ matrix.os }}"
+                and runner not in ALLOWED_BLACKSMITH_RUNNERS
+                and not codspeed_hosted
+            ):
+                errors.append(
+                    f"{path} job {job_name} must use an approved Blacksmith runner or the "
+                    f"dedicated CodSpeed hosted runner, got {runner}"
+                )
+            if runner != "${{ matrix.os }}":
                 continue
             matrix_runners, dynamic_axis = _matrix_os_values(block)
             if dynamic_axis:
@@ -1720,7 +1842,6 @@ def validate_workflow_hosting_policy(
                     )
         for lineno, line in enumerate(text.splitlines(), start=1):
             code = line.split("#", 1)[0]
-            stripped = code.strip()
             if re.search(
                 r"(?:^|[\s,{\[\"'])"
                 r"(?:ubuntu-latest|ubuntu-24\.04-arm|windows-latest|macos-latest|macos-\d+(?:-large)?)"
@@ -1731,13 +1852,6 @@ def validate_workflow_hosting_policy(
                     f"{path}:{lineno} workflow contains a GitHub-hosted runner alias; "
                     "use an explicit Blacksmith label"
                 )
-            if stripped.startswith("runs-on:"):
-                runner = stripped.partition(":")[2].strip()
-                if runner != "${{ matrix.os }}" and runner not in ALLOWED_BLACKSMITH_RUNNERS:
-                    errors.append(
-                        f"{path}:{lineno} jobs must use approved Blacksmith runners "
-                        f"(CodSpeed remains the hosted performance authority), got {runner}"
-                    )
     return errors
 
 

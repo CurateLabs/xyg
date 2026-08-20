@@ -24,7 +24,7 @@ def test_run_enforces_budget_as_hard_measurement_timeout(monkeypatch) -> None:
     )
 
     def slow_measure(_build, _render, _artifact):
-        time.sleep(1)
+        time.sleep(5)
         raise AssertionError("the hard deadline did not interrupt the measurement")
 
     monkeypatch.setattr(bench_vs, "_measure", slow_measure)
@@ -37,8 +37,9 @@ def test_run_enforces_budget_as_hard_measurement_timeout(monkeypatch) -> None:
         "skipped(hard timeout after 0.02s budget)",
         "skipped(over budget)",
     ]
-    # Bound is intentionally loose under CI load; a missed interrupt would sleep ~1s.
-    assert elapsed < 1.5
+    # Process-tree teardown varies by host. The large gap proves interruption
+    # without confusing scheduler/cleanup latency with the five-second body.
+    assert elapsed < 4.0
 
 
 def test_hard_timeout_includes_browser_ttfr(monkeypatch) -> None:

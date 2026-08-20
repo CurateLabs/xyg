@@ -1190,6 +1190,22 @@ def test_codspeed_workflow_rejects_missing_native_kernel_benches(tmp_path: Path)
     assert any("CodSpeed benchmarks job" in error and "cargo-codspeed" in error for error in errors)
 
 
+def test_codspeed_workflow_requires_dedicated_hosted_runner(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "    runs-on: codspeed-macro\n",
+            "    runs-on: blacksmith-4vcpu-ubuntu-2404\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("dedicated codspeed-macro runner" in error for error in errors)
+
+
 def test_ci_workflow_rejects_missing_interaction_stress_smoke(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
@@ -1222,7 +1238,7 @@ def test_workflow_policy_rejects_github_hosted_runner_and_playwright_apt(
 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
-    assert any("Blacksmith runners" in error and "ubuntu-latest" in error for error in errors)
+    assert any("ubuntu-latest" in error for error in errors)
     assert any("must not use --with-deps" in error for error in errors)
 
 
@@ -1360,7 +1376,7 @@ def test_workflow_policy_rejects_arbitrary_matrix_runner(tmp_path: Path) -> None
 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
-    assert any("approved Blacksmith label" in error for error in errors)
+    assert any("matrix.os must be a static list" in error for error in errors)
 
 
 def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> None:
@@ -1373,7 +1389,293 @@ def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> 
 
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
 
-    assert any("approved Blacksmith runners" in error for error in errors)
+    assert any("approved Blacksmith runner" in error for error in errors)
+
+
+def test_workflow_policy_allows_codspeed_host_only_in_codspeed_workflow(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    content = "jobs:\n  benchmarks:\n    runs-on: codspeed-macro\n    steps: []\n"
+    (workflows / "codspeed.yml").write_text(content, encoding="utf-8")
+
+    assert verify_ci_workflow.validate_workflow_hosting_policy(workflows) == []
+
+    (workflows / "ci.yml").write_text(content, encoding="utf-8")
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+    assert any(
+        "ci.yml" in error and "dedicated CodSpeed hosted runner" in error for error in errors
+    )
+
+
+def test_workflow_policy_rejects_quoted_runs_on_third_party_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "quoted.yml").write_text(
+        'jobs:\n  test:\n    "runs-on": arbitrary-third-party-runner\n    steps: []\n',
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("arbitrary-third-party-runner" in error for error in errors)
+
+
+def test_workflow_policy_rejects_quoted_job_and_runner_keys(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "quoted.yml").write_text(
+        'jobs:\n  "test":\n    "runs-on": arbitrary-third-party-runner\n    steps: []\n',
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("arbitrary-third-party-runner" in error for error in errors)
+
+
+def test_workflow_policy_rejects_quoted_dynamic_matrix_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "quoted.yml").write_text(
+        "jobs:\n"
+        "  test:\n"
+        '    "runs-on": ${{ matrix.os }}\n'
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os: ${{ fromJSON(vars.RUNNERS) }}\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_restricts_codspeed_runner_to_benchmark_job(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "codspeed.yml").write_text(
+        "jobs:\n"
+        "  benchmarks:\n"
+        "    runs-on: codspeed-macro\n"
+        "    steps: []\n"
+        "  unrelated:\n"
+        "    runs-on: codspeed-macro\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("job unrelated" in error and "codspeed-macro" in error for error in errors)
+
+
+def test_workflow_policy_rejects_noncanonical_job_structures(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    cases = [
+        '"jobs":\n  test:\n    runs-on: arbitrary-third-party-runner\n    steps: []\n',
+        "jobs:\n  test: { runs-on: arbitrary-third-party-runner, steps: [] }\n",
+        "jobs: { test: { runs-on: arbitrary-third-party-runner, steps: [] } }\n",
+    ]
+    for index, content in enumerate(cases):
+        path = workflows / f"encoded-{index}.yml"
+        path.write_text(content, encoding="utf-8")
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert errors
+        path.unlink()
+
+
+def test_workflow_policy_rejects_quoted_dynamic_axis_with_include_decoy(
+    tmp_path: Path,
+) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "dynamic.yml").write_text(
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        '        "os": ${{ fromJSON(vars.RUNNERS) }}\n'
+        "        include:\n"
+        "          - os: blacksmith-4vcpu-ubuntu-2404\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_explicit_and_tagged_job_keys(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    cases = [
+        "jobs:\n  ? evil\n  :\n    runs-on: arbitrary-third-party-runner\n    steps: []\n"
+        "  good:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps: []\n",
+        "jobs:\n  !!str evil:\n    runs-on: arbitrary-third-party-runner\n    steps: []\n"
+        "  good:\n    runs-on: blacksmith-4vcpu-ubuntu-2404\n    steps: []\n",
+    ]
+    for index, content in enumerate(cases):
+        path = workflows / f"unsafe-{index}.yml"
+        path.write_text(content, encoding="utf-8")
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert errors
+        path.unlink()
+
+
+def test_workflow_policy_rejects_flow_include_runner_override(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "flow-include.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os: [blacksmith-4vcpu-ubuntu-2404]\n"
+        "        include: [{ os: arbitrary-third-party-runner }]\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_quoted_include_runner_override(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "quoted-include.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        include:\n"
+        '          - "os": arbitrary-third-party-runner\n'
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("arbitrary-third-party-runner" in error for error in errors)
+
+
+def test_workflow_policy_preserves_hash_in_quoted_matrix_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    cases = [
+        '        os:\n          - "blacksmith-4vcpu-ubuntu-2404#arbitrary-third-party-runner"\n',
+        "        include:\n"
+        '          - "os": "blacksmith-4vcpu-ubuntu-2404#arbitrary-third-party-runner"\n',
+    ]
+    for index, matrix in enumerate(cases):
+        path = workflows / f"quoted-hash-{index}.yml"
+        path.write_text(
+            "jobs:\n"
+            "  wheels:\n"
+            "    runs-on: ${{ matrix.os }}\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            f"{matrix}"
+            "    steps: []\n",
+            encoding="utf-8",
+        )
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert any("matrix.os must be a static list" in error for error in errors)
+        path.unlink()
+
+
+def test_workflow_policy_rejects_multiline_matrix_runner_scalar(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "multiline.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        os:\n"
+        "          - blacksmith-4vcpu-ubuntu-2404\n"
+        "            arbitrary-third-party-runner\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_quoted_flow_include_runner(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "quoted-flow.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        include:\n"
+        '          - { os: "blacksmith-4vcpu-ubuntu-2404}arbitrary-third-party-runner" }\n'
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_inline_matrix_axis(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "inline-axis.yml").write_text(
+        "jobs:\n"
+        "  wheels:\n"
+        "    runs-on: ${{ matrix.os }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        '        os: ["blacksmith-4vcpu-ubuntu-2404,blacksmith-4vcpu-ubuntu-2404"]\n'
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+
+    assert any("matrix.os must be a static list" in error for error in errors)
+
+
+def test_workflow_policy_rejects_nested_quoted_runner_scalars(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    cases = [
+        "        os:\n          - '\"blacksmith-4vcpu-ubuntu-2404\"'\n",
+        "        include:\n          - os: '\"blacksmith-4vcpu-ubuntu-2404\"'\n",
+    ]
+    for index, matrix in enumerate(cases):
+        path = workflows / f"nested-quote-{index}.yml"
+        path.write_text(
+            "jobs:\n"
+            "  wheels:\n"
+            "    runs-on: ${{ matrix.os }}\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            f"{matrix}"
+            "    steps: []\n",
+            encoding="utf-8",
+        )
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert any("matrix.os must be a static list" in error for error in errors)
+        path.unlink()
 
 
 def test_workflow_policy_rejects_dynamic_matrix_with_unrelated_os_decoy(
