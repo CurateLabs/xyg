@@ -15,6 +15,8 @@ export {
   PROTOCOL_VERSION,
 } from "./encode.js";
 
+import koffi from "koffi";
+
 import {
   nativeLibraryPath,
   pointer,
@@ -113,6 +115,21 @@ export class SankeyLayoutError extends Error {
   }
 }
 
+// Packed to match `XygGraphProjectionDescriptor` in crates/xyg-core. The generated
+// ABI exposes create as `const void *`, so the host owns this layout.
+const GraphProjectionDescriptor = koffi.struct("XygGraphProjectionDescriptor", {
+  node_ids: "const void *",
+  node_count: "uint64_t",
+  edge_ids: "const void *",
+  edge_count: "uint64_t",
+  source_ids: "const void *",
+  target_ids: "const void *",
+  parent_ids: "const void *",
+  parent_validity: "const void *",
+  directed: "uint32_t",
+  reserved: "uint32_t",
+});
+
 export function abiVersion() {
   return xyAbiVersion();
 }
@@ -130,7 +147,8 @@ export function graphProjectionCreate({
   const nodeCount = nodeIds.byteLength / 16;
   const edgeCount = edgeIds.byteLength / 16;
   const outHandle = new BigUint64Array(1);
-  const code = xyGraphProjectionCreate({
+  const encoded = Buffer.alloc(koffi.sizeof(GraphProjectionDescriptor));
+  koffi.encode(encoded, GraphProjectionDescriptor, {
     node_ids: pointer(nodeIds, "uint8_t *"),
     node_count: BigInt(nodeCount),
     edge_ids: pointer(edgeIds, "uint8_t *"),
@@ -141,7 +159,8 @@ export function graphProjectionCreate({
     parent_validity: pointer(parentValidity, "uint8_t *"),
     directed: directed ? 1 : 0,
     reserved: 0,
-  }, u64Ptr(outHandle));
+  });
+  const code = xyGraphProjectionCreate(koffi.as(encoded, "const void *"), u64Ptr(outHandle));
   if (code !== 0 || outHandle[0] === 0n) {
     const error = new Error(`xyg_graph_projection_create failed with code ${code}`);
     error.nativeCode = code;
