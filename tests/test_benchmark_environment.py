@@ -181,6 +181,8 @@ def test_codspeed_dependency_is_declared_and_used_by_ci() -> None:
     assert '"pytest-codspeed>=5,<6"' in pyproject
     assert "-e . --group dev --group codspeed" in workflow
     assert "cargo install cargo-codspeed" in workflow
+    assert "cargo codspeed build -m simulation --bench kernels" in workflow
+    assert "set -euo pipefail" in workflow
     assert "cargo codspeed run --bench kernels" in workflow
     assert 'package = "codspeed-divan-compat"' in engine_manifest
     assert (ROOT / "crates" / "xyg-engine" / "benches" / "kernels.rs").is_file()

@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_CODSPEED_WORKFLOW = ROOT / ".github" / "workflows" / "codspeed.yml"
 DEFAULT_BAZEL_WORKFLOW = ROOT / ".github" / "workflows" / "bazel.yml"
+DEFAULT_FINAL_REVIEW_WORKFLOW = ROOT / ".github" / "workflows" / "final-coderabbit.yml"
+DEFAULT_CODERABBIT_CONFIG = ROOT / ".coderabbit.yaml"
+DEFAULT_FINAL_REVIEW_SCRIPT = ROOT / "scripts" / "request_final_coderabbit.py"
 DEFAULT_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yaml"
 DEFAULT_WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 DEFAULT_WORKFLOW = DEFAULT_CI_WORKFLOW
@@ -36,7 +39,9 @@ REQUIRED_CI_JOBS = {
     "install_without_rust",
     "wasm_foundation",
 }
-REQUIRED_CODSPEED_JOBS = {"benchmarks"}
+PR_REQUIRED_CI_JOBS = {"test", "wasm_foundation", "python_floor"}
+MAIN_ONLY_CI_JOBS = REQUIRED_CI_JOBS - PR_REQUIRED_CI_JOBS
+REQUIRED_CODSPEED_JOBS = {"detect", "benchmarks"}
 REQUIRED_RELEASE_JOBS = {"wheels", "sdist", "publish", "wasm", "github-release"}
 ALLOWED_BLACKSMITH_RUNNERS = {
     "blacksmith-4vcpu-ubuntu-2404",
@@ -685,7 +690,12 @@ def _step_run_lines(step_block: str) -> list[str]:
 
 
 def _require_step_runs_exactly(
-    errors: list[str], job_text: str, step: str, description: str, *commands: str
+    errors: list[str],
+    job_text: str,
+    step: str,
+    description: str,
+    *commands: str,
+    allow_job_gate: bool = False,
 ) -> None:
     """Require the exact active command list in a hard-gate named step."""
     block = _named_step_blocks(job_text).get(step)
@@ -696,14 +706,12 @@ def _require_step_runs_exactly(
     # an uninvoked function body, or one folded argument to another command.
     forbidden_step_keys = ("if", "continue-on-error", "shell", "working-directory")
     has_forbidden_step_key = any(_has_yaml_key(block, key, indent=8) for key in forbidden_step_keys)
-    forbidden_job_keys = (
-        "if",
-        "continue-on-error",
-        "defaults",
-        "container",
-        "needs",
-        "strategy",
-    )
+    forbidden_job_keys = ("continue-on-error", "defaults", "container", "strategy")
+    if not allow_job_gate:
+        job_if, job_if_unsafe = _direct_yaml_key_values(job_text, "if", indent=4)
+        if job_if_unsafe or job_if not in ([], ["github.event_name != 'pull_request'"]):
+            forbidden_job_keys += ("if",)
+        forbidden_job_keys += ("needs",)
     has_forbidden_job_key = any(
         _has_yaml_key(job_text, key, indent=4) for key in forbidden_job_keys
     )
@@ -715,6 +723,49 @@ def _require_step_runs_exactly(
         or has_forbidden_job_key
     ):
         errors.append(f"CI step {step!r} missing {description}: {list(commands)!r}")
+
+
+def _require_action_step_with_runs_exactly(
+    errors: list[str], job_text: str, step: str, action: str, mode: str, *commands: str
+) -> None:
+    """Bind an action's exact mode and fail-fast command list to its named step."""
+    block = _named_step_blocks(job_text).get(step)
+    if block is None:
+        errors.append(f"missing required CI step {step!r}")
+        return
+    lines = block.splitlines()
+    uses = [
+        line.strip()[6:].split(" #", 1)[0] for line in lines if line.startswith("        uses: ")
+    ]
+    modes, modes_unsafe = _direct_yaml_key_values(block, "mode", indent=10)
+    runs, runs_unsafe = _direct_yaml_key_values(block, "run", indent=10)
+    unsafe = any(_has_yaml_key(block, key, indent=8) for key in ("continue-on-error", "if"))
+    run_index = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if re.fullmatch(r"          run:\s*\|[-+]?\s*", line)
+        ),
+        None,
+    )
+    actual: list[str] = []
+    if run_index is not None:
+        for line in lines[run_index + 1 :]:
+            if not line.startswith("            "):
+                break
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                actual.append(stripped)
+    if (
+        uses != [action]
+        or modes != [mode]
+        or modes_unsafe
+        or runs not in (["|"], ["|-"], ["|+"])
+        or runs_unsafe
+        or actual != list(commands)
+        or unsafe
+    ):
+        errors.append(f"CI step {step!r} missing exact action commands: {list(commands)!r}")
 
 
 def _require_job_contains(
@@ -907,11 +958,31 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         errors.append("CI workflow must not override the shell for hard-gate run steps")
     if _has_shell_init_environment(text):
         errors.append("CI workflow must not set shell-init environment variables")
-    _require_docs_spec_pr_paths_ignored(errors, text, "CI")
+    _require_trigger_with_direct_option(errors, text, "CI", "push", "branches", '["main"]')
+    pull_request = _workflow_trigger_block(text, "pull_request")
+    if pull_request is None:
+        errors.append("CI workflow must run for every pull request")
+    elif _direct_yaml_key_count(pull_request, "paths", indent=4) or _direct_yaml_key_count(
+        pull_request, "paths-ignore", indent=4
+    ):
+        errors.append("CI pull_request trigger must not use path filters")
     _require_unshallow_checkouts(errors, text, "CI")
     missing_jobs = sorted(REQUIRED_CI_JOBS - set(jobs))
     if missing_jobs:
         errors.append(f"CI workflow missing required jobs: {missing_jobs}")
+    for job_name in sorted(PR_REQUIRED_CI_JOBS):
+        values, unsafe = _direct_yaml_key_values(jobs.get(job_name, ""), "if", indent=4)
+        if unsafe or values:
+            errors.append(f"CI PR-required job {job_name!r} must run unconditionally")
+    for job_name in sorted(MAIN_ONLY_CI_JOBS):
+        values, unsafe = _direct_yaml_key_values(jobs.get(job_name, ""), "if", indent=4)
+        expected = (
+            "always() && github.event_name != 'pull_request'"
+            if job_name == "benchmark"
+            else "github.event_name != 'pull_request'"
+        )
+        if unsafe or values != [expected]:
+            errors.append(f"CI breadth job {job_name!r} must run only outside pull_request events")
 
     _require_job_contains(
         errors,
@@ -1420,6 +1491,7 @@ def validate_bazel_workflow(path: Path = DEFAULT_BAZEL_WORKFLOW) -> list[str]:
         return [f"cannot read Bazel workflow {path}: {exc}"]
 
     errors: list[str] = []
+    _require_trigger_with_direct_option(errors, text, "Bazel", "push", "branches", '["main"]')
     jobs = _job_blocks(text)
     bazel = jobs.get("bazel", "")
     if not bazel:
@@ -1450,6 +1522,107 @@ def validate_bazel_workflow(path: Path = DEFAULT_BAZEL_WORKFLOW) -> list[str]:
     return errors
 
 
+def validate_final_review_policy(
+    workflow_path: Path = DEFAULT_FINAL_REVIEW_WORKFLOW,
+    config_path: Path = DEFAULT_CODERABBIT_CONFIG,
+    script_path: Path = DEFAULT_FINAL_REVIEW_SCRIPT,
+) -> list[str]:
+    """Keep CodeRabbit opt-in and bind the sole request path to final-candidate checks."""
+    errors: list[str] = []
+    try:
+        text = workflow_path.read_text(encoding="utf-8")
+        config = config_path.read_text(encoding="utf-8")
+        script = script_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"cannot read final CodeRabbit policy: {exc}"]
+    expected_config = (
+        "language: en-US\n\nreviews:\n  auto_review:\n"
+        "    enabled: false\n    auto_incremental_review: false\n"
+    )
+    if config != expected_config:
+        errors.append("CodeRabbit config must disable automatic and incremental reviews exactly")
+    required_idempotency = (
+        "comments(last:100)",
+        "<!-- xyg-final-review:{head} -->",
+        "has_existing_request(comments, head)",
+        'author.get("login") == "github-actions[bot]"',
+    )
+    missing_idempotency = _missing_needles(script, required_idempotency)
+    if missing_idempotency:
+        errors.append(
+            "final CodeRabbit request must be exact-head idempotent via trusted comments: "
+            f"{missing_idempotency}"
+        )
+    validation_index = script.find("head = validate_candidate(")
+    refresh_index = script.find('refreshed = _request(f"{api}/pulls/{number}"')
+    idempotency_index = script.find("if has_existing_request(comments, head):")
+    post_index = script.find('f"{api}/issues/{number}/comments"')
+    if not (-1 < validation_index < refresh_index < idempotency_index < post_index):
+        errors.append(
+            "final CodeRabbit idempotency skip must follow candidate validation and exact-head "
+            "refresh, and precede the review request"
+        )
+    jobs = _job_blocks(text)
+    _require_unique_workflow_structure(errors, text, "final CodeRabbit", {"request"})
+    on_block = _unique_mapping_block(text, "on", indent=0) or ""
+    triggers = [
+        key for indent, key, unsafe in _yaml_mapping_keys(on_block) if indent == 2 and not unsafe
+    ]
+    if triggers != ["workflow_dispatch"]:
+        errors.append("final CodeRabbit workflow must be manual-only")
+    _require_workflow_contains(
+        errors,
+        text,
+        "final CodeRabbit",
+        "required PR number and exact-head inputs",
+        "pull_request:",
+        "head_sha:",
+        "required: true",
+    )
+    top_permissions, top_unsafe = _direct_yaml_key_values(text, "permissions", indent=0)
+    if top_unsafe or top_permissions != ["{}"]:
+        errors.append("final CodeRabbit workflow top-level permissions must be empty")
+    request = jobs.get("request", "")
+    runners, runner_unsafe = _direct_yaml_key_values(request, "runs-on", indent=4)
+    if runner_unsafe or runners != ["blacksmith-4vcpu-ubuntu-2404"]:
+        errors.append("final CodeRabbit request must run on Blacksmith")
+    permissions = _unique_mapping_block(request, "permissions", indent=4) or ""
+    permission_pairs = [
+        (key, value.strip())
+        for line in _yaml_code_lines(permissions)
+        if (parsed := _direct_yaml_mapping(line)) is not None
+        for indent, key, unsafe, value in [parsed]
+        if indent == 6 and not unsafe
+    ]
+    if permission_pairs != [
+        ("checks", "read"),
+        ("contents", "read"),
+        ("pull-requests", "write"),
+        ("statuses", "read"),
+    ]:
+        errors.append("final CodeRabbit request must have only its four minimal permissions")
+    _require_job_contains(
+        errors,
+        jobs,
+        "request",
+        "final CodeRabbit",
+        "exact-head final-review inputs and command",
+        "XYG_CURRENT_RUN_ID: ${{ github.run_id }}",
+        "XYG_EXPECTED_HEAD: ${{ inputs.head_sha }}",
+        "XYG_PR_NUMBER: ${{ inputs.pull_request }}",
+        "XYG_REF: ${{ github.ref }}",
+        "run: python3 scripts/request_final_coderabbit.py",
+    )
+    _require_step_runs_exactly(
+        errors,
+        request,
+        "Verify final candidate and request review",
+        "exact final-review request command",
+        "python3 scripts/request_final_coderabbit.py",
+    )
+    return errors
+
+
 def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -1459,32 +1632,106 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     jobs = _job_blocks(text)
     errors: list[str] = []
     _require_unique_workflow_structure(errors, text, "CodSpeed", REQUIRED_CODSPEED_JOBS)
-    _require_docs_spec_pr_paths_ignored(errors, text, "CodSpeed")
-    _require_trigger_with_direct_option(
-        errors,
-        text,
-        "CodSpeed",
-        "push",
-        "branches",
-        '["main"]',
-    )
-    if _workflow_trigger_block(text, "workflow_dispatch") is None:
-        errors.append("CodSpeed workflow missing workflow_dispatch trigger")
+    on_block = _unique_mapping_block(text, "on", indent=0) or ""
+    trigger_keys = [
+        key for indent, key, unsafe in _yaml_mapping_keys(on_block) if indent == 2 and not unsafe
+    ]
+    if trigger_keys != ["schedule", "workflow_dispatch"]:
+        errors.append("CodSpeed workflow must have only schedule and workflow_dispatch triggers")
+    cron_lines = [
+        line.strip()
+        for line in _yaml_code_lines(on_block)
+        if re.fullmatch(r'\s*- cron: "17 7 \* \* \*"\s*', line)
+    ]
+    if cron_lines != ['- cron: "17 7 * * *"']:
+        errors.append("CodSpeed workflow must define exactly the nightly main cron")
+    concurrency = _unique_mapping_block(text, "concurrency", indent=0) or ""
+    groups, group_unsafe = _direct_yaml_key_values(concurrency, "group", indent=2)
+    cancels, cancel_unsafe = _direct_yaml_key_values(concurrency, "cancel-in-progress", indent=2)
+    if group_unsafe or groups != ["codspeed-main"] or cancel_unsafe or cancels != ["true"]:
+        errors.append("CodSpeed workflow must keep one latest-main concurrency group")
     _require_unshallow_checkouts(errors, text, "CodSpeed")
     missing_jobs = sorted(REQUIRED_CODSPEED_JOBS - set(jobs))
     if missing_jobs:
         errors.append(f"CodSpeed workflow missing required jobs: {missing_jobs}")
+
+    top_permissions, permissions_unsafe = _direct_yaml_key_values(text, "permissions", indent=0)
+    if permissions_unsafe or top_permissions != ["{}"]:
+        errors.append("CodSpeed workflow top-level permissions must be empty")
+
+    detect = jobs.get("detect", "")
+    detect_runners, detect_runner_unsafe = _direct_yaml_key_values(detect, "runs-on", indent=4)
+    if detect_runner_unsafe or detect_runners != ["blacksmith-4vcpu-ubuntu-2404"]:
+        errors.append("CodSpeed detection must run on the inexpensive Blacksmith runner")
+    detect_permissions = _unique_mapping_block(detect, "permissions", indent=4) or ""
+    detect_permission_pairs = [
+        (key, value.strip())
+        for indent, key, unsafe, value in map(
+            _direct_yaml_mapping, _yaml_code_lines(detect_permissions)
+        )
+        if indent == 6 and not unsafe
+    ]
+    if detect_permission_pairs != [("actions", "read"), ("contents", "read")]:
+        errors.append(
+            "CodSpeed detection permissions must be exactly actions/read and contents/read"
+        )
+    detect_outputs = _unique_mapping_block(detect, "outputs", indent=4) or ""
+    output_values, output_unsafe = _direct_yaml_key_values(detect_outputs, "should_run", indent=6)
+    if output_unsafe or output_values != ["${{ steps.changed.outputs.should_run }}"]:
+        errors.append("CodSpeed detect output must bind exactly to the changed step")
+    _require_job_contains(
+        errors,
+        jobs,
+        "detect",
+        "CodSpeed",
+        "fail-closed latest-main change detector",
+        "actions: read",
+        "contents: read",
+        "should_run: ${{ steps.changed.outputs.should_run }}",
+        "XYG_CURRENT_RUN_ID: ${{ github.run_id }}",
+        "XYG_CURRENT_SHA: ${{ github.sha }}",
+        "XYG_EVENT_NAME: ${{ github.event_name }}",
+        "XYG_REF: ${{ github.ref }}",
+        "XYG_REPOSITORY: ${{ github.repository }}",
+        "run: python3 scripts/codspeed_should_run.py",
+    )
+    _require_step_runs_exactly(
+        errors,
+        detect,
+        "Compare with latest successful main benchmark",
+        "exact fail-closed change detector",
+        "python3 scripts/codspeed_should_run.py",
+    )
 
     benchmarks = jobs.get("benchmarks", "")
     runner_values, runner_unsafe = _direct_yaml_key_values(benchmarks, "runs-on", indent=4)
     if runner_unsafe or runner_values != [CODSPEED_HOSTED_RUNNER]:
         errors.append("CodSpeed benchmarks job must run on the dedicated codspeed-macro runner")
 
-    _require_workflow_contains(
+    benchmark_needs, needs_unsafe = _direct_yaml_key_values(benchmarks, "needs", indent=4)
+    benchmark_if, if_unsafe = _direct_yaml_key_values(benchmarks, "if", indent=4)
+    if needs_unsafe or benchmark_needs != ["detect"]:
+        errors.append("CodSpeed benchmark job must depend directly on detect")
+    if if_unsafe or benchmark_if != ["needs.detect.outputs.should_run == 'true'"]:
+        errors.append("CodSpeed benchmark job must be gated by the exact detector output")
+    benchmark_permissions = _unique_mapping_block(benchmarks, "permissions", indent=4) or ""
+    benchmark_permission_pairs = [
+        (key, value.strip())
+        for indent, key, unsafe, value in map(
+            _direct_yaml_mapping, _yaml_code_lines(benchmark_permissions)
+        )
+        if indent == 6 and not unsafe
+    ]
+    if benchmark_permission_pairs != [("contents", "read"), ("id-token", "write")]:
+        errors.append("CodSpeed benchmark permissions must be exactly contents/read and OIDC write")
+    _require_job_contains(
         errors,
-        text,
+        jobs,
+        "benchmarks",
         "CodSpeed",
-        "OIDC permissions",
+        "minimal benchmark permissions",
+        "permissions:",
+        "contents: read",
         "id-token: write",
     )
     _require_job_contains(
@@ -1506,10 +1753,62 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "CodSpeedHQ/action@",
         "mode: simulation",
         "cargo install cargo-codspeed",
-        "cargo codspeed build --bench kernels",
+        "cargo codspeed build -m simulation --bench kernels",
         "cargo codspeed run --bench kernels",
         "benchmarks/test_codspeed_kernels.py --codspeed",
     )
+    _require_step_runs_exactly(
+        errors,
+        benchmarks,
+        "Build Rust kernel benchmarks",
+        "exact simulation benchmark build",
+        "cargo codspeed build -m simulation --bench kernels",
+        allow_job_gate=True,
+    )
+    _require_action_step_with_runs_exactly(
+        errors,
+        benchmarks,
+        "Run benchmarks",
+        "CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8",
+        "simulation",
+        "set -euo pipefail",
+        "cargo codspeed run --bench kernels",
+        ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed",
+    )
+    step_blocks = _step_sequence_blocks(benchmarks)
+    step_names = []
+    active_codspeed_commands = []
+    for block in step_blocks:
+        first = _strip_yaml_comment(block.splitlines()[0])
+        match = re.match(r"^      - name:\s*(.+?)\s*$", first)
+        step_names.append(match.group(1) if match is not None else None)
+        direct_commands = _step_run_lines(block)
+        if direct_commands:
+            active_codspeed_commands.extend(
+                command
+                for command in direct_commands
+                if command.startswith(("cargo codspeed build", "cargo codspeed run"))
+            )
+        elif any(line.startswith("        uses: ") for line in block.splitlines()):
+            active_codspeed_commands.extend(
+                line.strip()
+                for line in block.splitlines()
+                if line.startswith("            cargo codspeed ")
+            )
+    expected_pair = ["Build Rust kernel benchmarks", "Run benchmarks"]
+    if not any(
+        step_names[index : index + 2] == expected_pair for index in range(len(step_names) - 1)
+    ):
+        errors.append("CodSpeed simulation build must be immediately followed by Run benchmarks")
+    expected_commands = [
+        "cargo codspeed build -m simulation --bench kernels",
+        "cargo codspeed run --bench kernels",
+    ]
+    if active_codspeed_commands != expected_commands:
+        errors.append(
+            "CodSpeed benchmarks job must contain only the exact build/run command pair: "
+            f"{expected_commands!r}"
+        )
     return errors
 
 
@@ -1745,12 +2044,15 @@ def validate_all_workflows(
     codspeed_path: Path = DEFAULT_CODSPEED_WORKFLOW,
     bazel_path: Path = DEFAULT_BAZEL_WORKFLOW,
     release_path: Path = DEFAULT_RELEASE_WORKFLOW,
+    final_review_path: Path = DEFAULT_FINAL_REVIEW_WORKFLOW,
+    coderabbit_config_path: Path = DEFAULT_CODERABBIT_CONFIG,
 ) -> list[str]:
     return [
         *validate_workflow_hosting_policy(),
         *validate_ci_workflow(ci_path),
         *validate_codspeed_workflow(codspeed_path),
         *validate_bazel_workflow(bazel_path),
+        *validate_final_review_policy(final_review_path, coderabbit_config_path),
         *validate_release_workflow(release_path),
     ]
 
@@ -1766,6 +2068,15 @@ def validate_workflow_hosting_policy(
         except OSError as exc:
             errors.append(f"cannot read workflow {path}: {exc}")
             continue
+        if path.name in {"bazel.yml", "binder.yml"}:
+            on_block = _unique_mapping_block(text, "on", indent=0) or ""
+            triggers = {
+                key
+                for indent, key, unsafe in _yaml_mapping_keys(on_block)
+                if indent == 2 and not unsafe
+            }
+            if "pull_request" in triggers or not {"push", "workflow_dispatch"}.issubset(triggers):
+                errors.append(f"{path} breadth workflow must run only on push/manual events")
         normalized_shell = re.sub(r"\\\s*\n\s*", " ", text)
         if re.search(
             r"playwright\s+install(?:\s+[^\n]*?)?\s+--with-deps(?:\s|$)",

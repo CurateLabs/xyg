@@ -368,7 +368,7 @@ of thousands of trace runs. It records bounded Rust rejection time and asserts
 that no main-thread painter or DOM state was allocated.
 
 ```bash
-cargo codspeed build --bench kernels
+cargo codspeed build -m simulation --bench kernels
 codspeed run --mode simulation -- cargo codspeed run --bench kernels
 ```
 

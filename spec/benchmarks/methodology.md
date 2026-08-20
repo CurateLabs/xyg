@@ -237,7 +237,15 @@ and tier discipline applies to them rather than a threshold.
 
 ## 8. CodSpeed simulation modules
 
-`.github/workflows/codspeed.yml` runs `cargo codspeed run --bench kernels` and
+`.github/workflows/codspeed.yml` runs nightly on the latest `main` commit and
+allows an on-demand manual run from `main`; it does not run for pull requests
+or pushes. A
+fail-closed, Actions-API-backed gate skips the expensive macro runner when that
+exact `main` SHA already has a successful scheduled/manual result. Manual runs
+on `main` intentionally bypass that unchanged-SHA skip, while dispatches from
+other refs fail closed rather than benchmarking an unverified ref.
+Concurrency admits only the newest main run. The workflow runs
+`cargo codspeed run --bench kernels` and
 `pytest benchmarks/test_codspeed_*.py --codspeed` under `CodSpeedHQ/action` in
 `simulation` mode on CodSpeed's dedicated `codspeed-macro` bare-metal runner,
 after asserting `xyg.kernels.BACKEND == "native"`. The dedicated runner keeps
@@ -265,6 +273,14 @@ versioned Scene.
 `zone_map_threads` already forces the serial path under
 `CODSPEED_ENV`, so the instruction count these report is the representative
 single-thread one (§22).
+
+For local reproduction without uploading a GitHub result, build and run the
+same simulation instrumentation explicitly:
+
+```bash
+cargo codspeed build -m simulation --bench kernels
+codspeed run --mode simulation -- cargo codspeed run --bench kernels
+```
 
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,

@@ -1,30 +1,50 @@
 name: CodSpeed
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "spec/**"
-  # `workflow_dispatch` allows CodSpeed to trigger backtest
-  # performance analysis in order to generate initial data.
+  schedule:
+    - cron: "17 7 * * *"
   workflow_dispatch:
 
-permissions:
-  contents: read
-  id-token: write # for OpenID Connect authentication with CodSpeed
+permissions: {}
 
 concurrency:
-  group: codspeed-${{ github.ref }}
+  group: codspeed-main
   cancel-in-progress: true
 
 jobs:
+  detect:
+    name: Check for changed main
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      should_run: ${{ steps.changed.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Compare with latest successful main benchmark
+        id: changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          XYG_CURRENT_RUN_ID: ${{ github.run_id }}
+          XYG_CURRENT_SHA: ${{ github.sha }}
+          XYG_EVENT_NAME: ${{ github.event_name }}
+          XYG_REF: ${{ github.ref }}
+          XYG_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/codspeed_should_run.py
+
   benchmarks:
     name: Run benchmarks
     # Dedicated CodSpeed bare metal keeps base/head runtime identity stable;
     # Blacksmith's general x64 pool can alternate Intel and AMD generations.
     runs-on: codspeed-macro
+    needs: detect
+    if: needs.detect.outputs.should_run == 'true'
+    permissions:
+      contents: read
+      id-token: write # for OpenID Connect authentication with CodSpeed
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,7 +93,7 @@ jobs:
         run: cargo install cargo-codspeed --locked --version 4.6.0
 
       - name: Build Rust kernel benchmarks
-        run: cargo codspeed build --bench kernels
+        run: cargo codspeed build -m simulation --bench kernels
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8 # v5.0.3
@@ -90,5 +110,6 @@ jobs:
           # Required invocation: benchmarks/test_codspeed_kernels.py --codspeed
           # The codspeed dependency group installs pytest-codspeed for this run.
           run: |
+            set -euo pipefail
             cargo codspeed run --bench kernels
             .venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed

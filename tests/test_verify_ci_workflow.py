@@ -800,6 +800,122 @@ def test_codspeed_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_codspeed_workflow() == []
 
 
+def test_final_coderabbit_policy_accepts_current_gates() -> None:
+    assert verify_ci_workflow.validate_final_review_policy() == []
+
+
+def test_ci_pr_lane_policy_rejects_filters_required_skips_and_breadth_prs(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    mutations = (
+        ("  pull_request:\n", '  pull_request:\n    paths-ignore: ["docs/**"]\n'),
+        (
+            "  test:\n    name: Test (Rust + Python + JS)\n",
+            "  test:\n    name: Test (Rust + Python + JS)\n"
+            "    if: github.event_name != 'pull_request'\n",
+        ),
+        (
+            "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n"
+            "    if: github.event_name != 'pull_request'\n",
+            "  matplotlib_reference:\n    name: Matplotlib 3.11 reference compatibility\n",
+        ),
+    )
+    for index, (old, new) in enumerate(mutations):
+        path = tmp_path / f"ci-pr-policy-{index}.yml"
+        path.write_text(workflow.replace(old, new), encoding="utf-8")
+
+        errors = verify_ci_workflow.validate_ci_workflow(path)
+
+        assert errors
+
+
+def test_ci_and_bazel_reject_non_main_automatic_push_branches(tmp_path: Path) -> None:
+    cases = (
+        (Path(".github/workflows/ci.yml"), verify_ci_workflow.validate_ci_workflow),
+        (Path(".github/workflows/bazel.yml"), verify_ci_workflow.validate_bazel_workflow),
+    )
+    for index, (source, validate) in enumerate(cases):
+        workflow = source.read_text(encoding="utf-8")
+        path = tmp_path / f"push-branches-{index}.yml"
+        path.write_text(
+            workflow.replace('branches: ["main"]', 'branches: ["main", "claude/**"]', 1),
+            encoding="utf-8",
+        )
+
+        errors = validate(path)
+
+        assert any("push trigger" in error and "branches" in error for error in errors)
+
+
+def test_final_coderabbit_policy_rejects_auto_review_and_workflow_bypasses(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/final-coderabbit.yml").read_text(encoding="utf-8")
+    config = Path(".coderabbit.yaml").read_text(encoding="utf-8")
+    cases = (
+        (workflow.replace("  workflow_dispatch:\n", "  pull_request:\n", 1), config),
+        (workflow.replace("      pull-requests: write\n", "      pull-requests: read\n"), config),
+        (
+            workflow.replace(
+                "        run: python3 scripts/request_final_coderabbit.py",
+                "        run: echo python3 scripts/request_final_coderabbit.py",
+            ),
+            config,
+        ),
+        (workflow, config.replace("enabled: false", "enabled: true", 1)),
+    )
+    for index, (mutated_workflow, mutated_config) in enumerate(cases):
+        workflow_path = tmp_path / f"final-review-{index}.yml"
+        config_path = tmp_path / f"coderabbit-{index}.yaml"
+        workflow_path.write_text(mutated_workflow, encoding="utf-8")
+        config_path.write_text(mutated_config, encoding="utf-8")
+
+        errors = verify_ci_workflow.validate_final_review_policy(workflow_path, config_path)
+
+        assert errors
+
+
+def test_final_coderabbit_policy_rejects_missing_idempotency_marker(tmp_path: Path) -> None:
+    workflow_path = Path(".github/workflows/final-coderabbit.yml")
+    config_path = Path(".coderabbit.yaml")
+    source = Path("scripts/request_final_coderabbit.py").read_text(encoding="utf-8")
+    script_path = tmp_path / "request_final_coderabbit.py"
+    script_path.write_text(
+        source.replace("has_existing_request(comments, head)", "False", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_final_review_policy(
+        workflow_path, config_path, script_path
+    )
+
+    assert any("exact-head idempotent" in error for error in errors)
+
+
+def test_final_coderabbit_policy_rejects_idempotency_before_validation(tmp_path: Path) -> None:
+    workflow_path = Path(".github/workflows/final-coderabbit.yml")
+    config_path = Path(".coderabbit.yaml")
+    source = Path("scripts/request_final_coderabbit.py").read_text(encoding="utf-8")
+    skip = """        if has_existing_request(comments, head):
+            print(f"final CodeRabbit review already requested for PR #{number} at {head}")
+            return 0
+"""
+    script_path = tmp_path / "request_final_coderabbit.py"
+    script_path.write_text(
+        source.replace(skip, "", 1).replace(
+            "        head = validate_candidate(\n", skip + "        head = validate_candidate(\n", 1
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_final_review_policy(
+        workflow_path, config_path, script_path
+    )
+
+    assert any("skip must follow candidate validation" in error for error in errors)
+
+
 def test_all_workflows_accept_current_gates() -> None:
     assert verify_ci_workflow.validate_all_workflows() == []
 
@@ -855,9 +971,63 @@ def test_codspeed_trigger_checks_ignore_decoy_mapping(tmp_path: Path) -> None:
 
     errors = verify_ci_workflow.validate_codspeed_workflow(path)
 
-    assert any("missing pull_request trigger" in error for error in errors)
-    assert any("missing push trigger" in error for error in errors)
-    assert any("missing workflow_dispatch trigger" in error for error in errors)
+    assert any("only schedule and workflow_dispatch triggers" in error for error in errors)
+    assert any("exactly the nightly main cron" in error for error in errors)
+
+
+def test_codspeed_workflow_rejects_pr_and_push_triggers(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    for index, trigger in enumerate(("pull_request", "push")):
+        path = tmp_path / f"codspeed-trigger-{index}.yml"
+        path.write_text(
+            workflow.replace("  schedule:\n", f"  {trigger}:\n\n  schedule:\n", 1),
+            encoding="utf-8",
+        )
+
+        errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+        assert any("only schedule and workflow_dispatch triggers" in error for error in errors)
+
+
+def test_codspeed_workflow_rejects_drifted_cron_or_concurrency(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    mutations = (
+        ('    - cron: "17 7 * * *"', '    - cron: "0 * * * *"'),
+        ("  group: codspeed-main", "  group: codspeed-${{ github.ref }}"),
+        ("  cancel-in-progress: true", "  cancel-in-progress: false"),
+    )
+    for index, (old, new) in enumerate(mutations):
+        path = tmp_path / f"codspeed-schedule-{index}.yml"
+        path.write_text(workflow.replace(old, new), encoding="utf-8")
+
+        errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+        assert errors
+
+
+def test_codspeed_workflow_rejects_detector_gate_and_permission_bypasses(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    mutations = (
+        ("permissions: {}", "permissions:\n  contents: write"),
+        ("      actions: read", "      actions: write"),
+        ("      should_run: ${{ steps.changed.outputs.should_run }}", "      should_run: true"),
+        ("    needs: detect", "    needs: []"),
+        ("    if: needs.detect.outputs.should_run == 'true'", "    if: always()"),
+        ("      id-token: write", "      id-token: read"),
+        (
+            "        run: python3 scripts/codspeed_should_run.py",
+            "        run: echo python3 scripts/codspeed_should_run.py",
+        ),
+    )
+    for index, (old, new) in enumerate(mutations):
+        path = tmp_path / f"codspeed-gate-{index}.yml"
+        path.write_text(workflow.replace(old, new), encoding="utf-8")
+
+        errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+        assert errors
 
 
 def test_ci_workflow_rejects_normalized_duplicate_required_job(tmp_path: Path) -> None:
@@ -1002,10 +1172,12 @@ def test_ci_workflow_rejects_missing_cross_library_job_timeout(tmp_path: Path) -
         workflow.replace(
             "  benchmark_vs:\n"
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
+            "    if: github.event_name != 'pull_request'\n"
             "    runs-on: blacksmith-4vcpu-ubuntu-2404\n"
             "    timeout-minutes: 10\n",
             "  benchmark_vs:\n"
             "    name: Cross-library benchmark (${{ matrix.name }})\n"
+            "    if: github.event_name != 'pull_request'\n"
             "    runs-on: blacksmith-4vcpu-ubuntu-2404\n",
             1,
         ),
@@ -1193,7 +1365,7 @@ def test_codspeed_workflow_rejects_missing_native_kernel_benches(tmp_path: Path)
     path = tmp_path / "codspeed.yml"
     path.write_text(
         workflow.replace("cargo install cargo-codspeed --locked --version 4.6.0\n", "")
-        .replace("        run: cargo codspeed build --bench kernels\n", "")
+        .replace("        run: cargo codspeed build -m simulation --bench kernels\n", "")
         .replace("            cargo codspeed run --bench kernels\n", ""),
         encoding="utf-8",
     )
@@ -1201,6 +1373,115 @@ def test_codspeed_workflow_rejects_missing_native_kernel_benches(tmp_path: Path)
     errors = verify_ci_workflow.validate_codspeed_workflow(path)
 
     assert any("CodSpeed benchmarks job" in error and "cargo-codspeed" in error for error in errors)
+
+
+def test_codspeed_workflow_rejects_walltime_build_for_simulation_action(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "cargo codspeed build -m simulation --bench kernels",
+            "cargo codspeed build --bench kernels",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("Build Rust kernel benchmarks" in error for error in errors)
+
+
+def test_codspeed_workflow_requires_fail_fast_before_rust_action(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(workflow.replace("            set -euo pipefail\n", "", 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("Run benchmarks" in error and "exact action commands" in error for error in errors)
+
+
+def test_codspeed_workflow_rejects_nonfatal_rust_action(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Run benchmarks\n",
+            "      - name: Run benchmarks\n        continue-on-error: true\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("Run benchmarks" in error and "exact action commands" in error for error in errors)
+
+
+def test_codspeed_workflow_binds_simulation_mode_to_rust_action(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace("          mode: simulation\n", "          mode: walltime\n"),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("Run benchmarks" in error and "exact action commands" in error for error in errors)
+
+
+def test_codspeed_workflow_rejects_duplicate_action_run_key(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "          run: |\n            set -euo pipefail\n",
+            "          run: |\n            set -euo pipefail\n"
+            "          run: |\n            cargo codspeed run --bench kernels\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("Run benchmarks" in error and "exact action commands" in error for error in errors)
+
+
+def test_codspeed_workflow_rejects_intervening_artifact_rebuild(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Run benchmarks\n",
+            "      - name: Replace benchmark artifact\n"
+            "        run: cargo codspeed build --bench kernels\n\n"
+            "      - name: Run benchmarks\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("immediately followed" in error for error in errors)
+    assert any("exact build/run command pair" in error for error in errors)
+
+
+def test_codspeed_workflow_rejects_extra_codspeed_run_command(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Build Rust kernel benchmarks\n",
+            "      - name: Decoy benchmark run\n"
+            "        run: cargo codspeed run --bench kernels\n\n"
+            "      - name: Build Rust kernel benchmarks\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("exact build/run command pair" in error for error in errors)
 
 
 def test_codspeed_workflow_requires_dedicated_hosted_runner(tmp_path: Path) -> None:

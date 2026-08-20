@@ -1,6 +1,6 @@
 # Contributing
 
-xy is still alpha, so the contribution bar is mostly about not losing
+XYG is still alpha, so the contribution bar is mostly about not losing
 the hard-won production invariants while the chart surface grows.
 
 ## Before You Start
@@ -279,3 +279,29 @@ Start with the smallest reusable primitive surface:
 - Composition API wrapper if the chart is user-facing.
 - Example app card with normal-size data, not only a stress demo.
 - Benchmark row only when the comparison methodology is honest.
+
+## Pull-request gates and final review
+
+Every pull request runs three required, authoritative lanes: the complete
+Rust/Python/JS test and ABI/naming suite, the direct-browser WASM foundation,
+and the Python 3.11 floor. Cross-library benchmarks, packaging matrices,
+Matplotlib-reference breadth, Firefox/WebKit conformance, Bazel, and Binder run
+after changes reach `main` or by explicit manual dispatch; they are valuable
+breadth evidence but duplicate too much work to gate every candidate head.
+Docs retain their separate path-scoped workflow.
+
+CodeRabbit automatic and incremental reviews are disabled. Once the exact PR
+head is merge-ready, all three required checks are successful, every other
+reported check/status is successful or intentionally skipped, and all review
+threads are resolved, request the one final review from `main`:
+
+```bash
+head=$(gh pr view PR_NUMBER --json headRefOid --jq .headRefOid)
+gh workflow run final-coderabbit.yml --ref main \
+  -f pull_request=PR_NUMBER -f head_sha="$head"
+```
+
+The workflow rechecks the head before commenting `@coderabbitai review` and
+fails closed on stale heads, feature-ref dispatches, pending/failing gates,
+merge conflicts, or unresolved threads. CodeRabbit itself is not a prerequisite
+for requesting that final review, avoiding a circular gate.

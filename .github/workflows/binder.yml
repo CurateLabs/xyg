@@ -18,12 +18,6 @@ on:
       - ".github/workflows/binder.yml"
       - "pyproject.toml"
       - "hatch_build.py"
-  pull_request:
-    paths:
-      - ".binder/**"
-      - ".github/workflows/binder.yml"
-      - "pyproject.toml"
-      - "hatch_build.py"
   workflow_dispatch:
 
 permissions:
