@@ -12,6 +12,7 @@ mod font;
 mod simd;
 
 pub mod css;
+pub mod geo;
 pub mod graph;
 pub mod hexbin;
 pub mod kernels;
