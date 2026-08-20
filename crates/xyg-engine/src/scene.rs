@@ -1679,7 +1679,7 @@ impl SceneDocument {
                 .iter()
                 .copied()
                 .map(|value| {
-                    let label = if axis.labeled.iter().any(|&labeled| labeled == value) {
+                    let label = if axis.labeled.contains(&value) {
                         format_tick(value, axis.step, scale.kind)
                     } else {
                         String::new()
