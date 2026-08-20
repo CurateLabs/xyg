@@ -153,8 +153,6 @@ def verify(*, require_native: bool = False) -> dict[str, Any]:
     facade = _load_json(facade_pkg_path)
     if facade.get("name") != "@curatelabs/xyg-node":
         errors.append(f"facade name must be @curatelabs/xyg-node, got {facade.get('name')!r}")
-    if facade.get("name") == "@xy/node":
-        errors.append("never publish @xy/node")
 
     optional = facade.get("optionalDependencies") or {}
     expected_names = {meta["name"] for meta in PLATFORM_PACKAGES.values()}
