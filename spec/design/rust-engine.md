@@ -4,7 +4,7 @@
 vs the hosts and how the C-ABI seam evolves without rewrites. The Rust source
 is a Cargo **workspace** (~27K lines at this revision) with two crates: the
 safe engine `crates/xyg-engine` (algorithms + deterministic product policy;
-fifteen domain modules) and the C ABI shell `crates/xyg-core` (extern "C"
+sixteen domain modules) and the C ABI shell `crates/xyg-core` (extern "C"
 marshaling, panic shielding, opaque-handle runtime; ABI v59, one shipped
 cdylib `libxyg_core`; `png` is the one third-party crate, for static export).
 Two host bindings consume the same artifact: Python ctypes
@@ -171,6 +171,8 @@ crates/
                         #   pyramids refuse appends and rebuild lazily). Owns tile
                         #   memory; xyg-core exposes them as opaque u64 handles
                         #   over the ABI (§3.3).
+    geo.rs              # GeoColumn / GeoArrow descriptor ingest, CRS + geometry
+                        #   validation, feature identity (#47; see geospatial.md).
     graph.rs            # graph display layouts, progressive force ticks, CSR,
                         #   graph LOD/cluster/render-graph decisions
                         #   ([graph-mark.md](graph-mark.md)).
