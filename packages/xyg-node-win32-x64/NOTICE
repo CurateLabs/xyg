@@ -1,0 +1,12 @@
+XYG Node exact-platform package (@curatelabs/xyg-node-win32-x64)
+=============================================================
+
+Copyright 2024-2026 Curate Labs and contributors.
+
+This package is licensed under the Apache License, Version 2.0.
+See the repository root LICENSE file for the full text:
+  https://github.com/CurateLabs/xyg/blob/main/LICENSE
+
+It ships only the exact-platform libxyg_core / xyg_core native library for
+this OS/CPU combination as an optional dependency of @curatelabs/xyg-node.
+No third-party runtime JavaScript dependencies are bundled in this package.

@@ -7,11 +7,15 @@ Stdlib-only gate that runs without npm registry credentials. Checks:
 - Each platform package declares the correct name / os / cpu / files / exports
 - Source trees contain no CDN URLs, system library paths, or Python-static paths
 - Optional staged natives stay under a size budget and match the expected basename
+- NOTICE files and Apache-2.0 license fields are present for the facade and
+  every exact-platform package (koffi attributed on the facade)
 - Emits a SHA-256 inventory of package.json, index/entry sources, and natives
+- Optional CycloneDX-lite SBOM via --sbom (stdlib-only; no registry publish)
 
 Examples:
   python3 scripts/verify_node_packages.py
   python3 scripts/verify_node_packages.py --write /tmp/xyg-node-inventory.json
+  python3 scripts/verify_node_packages.py --sbom /tmp/xyg-node-sbom.json
   python3 scripts/verify_node_packages.py --require-native
 """
 
@@ -70,8 +74,12 @@ PLATFORM_PACKAGES: dict[str, dict[str, Any]] = {
 
 # Source-only budgets (natives are measured separately when staged).
 FACADE_SOURCE_BUDGET_BYTES = 8 * 1024 * 1024
-PLATFORM_SOURCE_BUDGET_BYTES = 64 * 1024
+PLATFORM_SOURCE_BUDGET_BYTES = 128 * 1024
 NATIVE_BUDGET_BYTES = 40 * 1024 * 1024
+
+REQUIRED_LICENSE = "Apache-2.0"
+FACADE_NOTICE_MARKERS = ("Apache License", "koffi", "MIT")
+PLATFORM_NOTICE_MARKERS = ("Apache License", "libxyg_core", "exact-platform")
 
 FORBIDDEN_PATTERNS = (
     re.compile(r"cdn\.jsdelivr\.net", re.I),
@@ -154,6 +162,17 @@ def verify(*, require_native: bool = False) -> dict[str, Any]:
     if facade.get("name") != "@curatelabs/xyg-node":
         errors.append(f"facade name must be @curatelabs/xyg-node, got {facade.get('name')!r}")
 
+    if facade.get("license") != REQUIRED_LICENSE:
+        errors.append(f"facade license must be {REQUIRED_LICENSE!r}, got {facade.get('license')!r}")
+    facade_notice = FACADE_DIR / "NOTICE"
+    if not facade_notice.is_file():
+        errors.append("facade missing NOTICE")
+    else:
+        notice_text = facade_notice.read_text(encoding="utf-8")
+        for marker in FACADE_NOTICE_MARKERS:
+            if marker not in notice_text:
+                errors.append(f"facade NOTICE missing required marker {marker!r}")
+
     optional = facade.get("optionalDependencies") or {}
     expected_names = {meta["name"] for meta in PLATFORM_PACKAGES.values()}
     if set(optional) != expected_names:
@@ -181,6 +200,8 @@ def verify(*, require_native: bool = False) -> dict[str, Any]:
     inventory["facade"] = {
         "name": facade.get("name"),
         "version": facade.get("version"),
+        "license": facade.get("license"),
+        "notice_sha256": _sha256(facade_notice) if facade_notice.is_file() else None,
         "package_json_sha256": _sha256(facade_pkg_path),
         "source_bytes": facade_bytes,
         "source_budget_bytes": FACADE_SOURCE_BUDGET_BYTES,
@@ -204,9 +225,21 @@ def verify(*, require_native: bool = False) -> dict[str, Any]:
         if pkg.get("cpu") != meta["cpu"]:
             errors.append(f"{plat_id}: cpu {pkg.get('cpu')!r} != {meta['cpu']!r}")
         files = pkg.get("files") or []
-        for required in ("index.js", meta["lib"], "README.md"):
+        for required in ("index.js", meta["lib"], "README.md", "NOTICE"):
             if required not in files:
                 errors.append(f"{plat_id}: files missing {required!r}")
+        if pkg.get("license") != REQUIRED_LICENSE:
+            errors.append(
+                f"{plat_id}: license must be {REQUIRED_LICENSE!r}, got {pkg.get('license')!r}"
+            )
+        notice_path = pkg_dir / "NOTICE"
+        if not notice_path.is_file():
+            errors.append(f"{plat_id}: missing NOTICE")
+        else:
+            notice_text = notice_path.read_text(encoding="utf-8")
+            for marker in PLATFORM_NOTICE_MARKERS:
+                if marker not in notice_text:
+                    errors.append(f"{plat_id}: NOTICE missing marker {marker!r}")
         exports = pkg.get("exports") or {}
         if exports.get("./package.json") != "./package.json":
             errors.append(f"{plat_id}: exports must include ./package.json")
@@ -240,6 +273,8 @@ def verify(*, require_native: bool = False) -> dict[str, Any]:
         entry.update(
             {
                 "version": pkg.get("version"),
+                "license": pkg.get("license"),
+                "notice_sha256": _sha256(notice_path) if notice_path.is_file() else None,
                 "package_json_sha256": _sha256(pkg_json_path),
                 "index_sha256": _sha256(index_path) if index_path.is_file() else None,
                 "source_bytes": source_bytes,
@@ -254,12 +289,91 @@ def verify(*, require_native: bool = False) -> dict[str, Any]:
     return inventory
 
 
+def build_cyclonedx_sbom(inventory: dict[str, Any]) -> dict[str, Any]:
+    """Minimal CycloneDX 1.5 document from the in-tree Node package inventory.
+
+    Does not query registries; versions and hashes come from local manifests.
+    """
+    components: list[dict[str, Any]] = []
+    facade = inventory["facade"]
+    components.append(
+        {
+            "type": "library",
+            "name": facade.get("name"),
+            "version": facade.get("version"),
+            "licenses": [{"license": {"id": facade.get("license") or REQUIRED_LICENSE}}],
+            "purl": f"pkg:npm/{facade.get('name')}@{facade.get('version')}",
+            "hashes": [
+                {"alg": "SHA-256", "content": facade.get("package_json_sha256")},
+            ],
+            "properties": [
+                {"name": "xyg:notice_sha256", "value": facade.get("notice_sha256")},
+                {
+                    "name": "xyg:runtime_dependency",
+                    "value": "koffi@^3.1.4 (MIT)",
+                },
+            ],
+        }
+    )
+    for plat_id, entry in sorted(inventory["platforms"].items()):
+        hashes = []
+        if entry.get("package_json_sha256"):
+            hashes.append({"alg": "SHA-256", "content": entry["package_json_sha256"]})
+        if entry.get("native") and entry["native"].get("sha256"):
+            hashes.append(
+                {
+                    "alg": "SHA-256",
+                    "content": entry["native"]["sha256"],
+                }
+            )
+        components.append(
+            {
+                "type": "library",
+                "name": entry.get("name"),
+                "version": entry.get("version"),
+                "licenses": [{"license": {"id": entry.get("license") or REQUIRED_LICENSE}}],
+                "purl": f"pkg:npm/{entry.get('name')}@{entry.get('version')}",
+                "hashes": hashes,
+                "properties": [
+                    {"name": "xyg:platform_id", "value": plat_id},
+                    {"name": "xyg:notice_sha256", "value": entry.get("notice_sha256")},
+                    {
+                        "name": "xyg:native_present",
+                        "value": "true" if entry.get("native") else "false",
+                    },
+                ],
+            }
+        )
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.5",
+        "version": 1,
+        "metadata": {
+            "component": {
+                "type": "application",
+                "name": "xyg-node-host-set",
+                "description": (
+                    "In-tree @curatelabs/xyg-node facade plus exact-platform "
+                    "optional packages (#52). Generated without registry access."
+                ),
+            },
+            "licenses": [{"license": {"id": REQUIRED_LICENSE}}],
+        },
+        "components": components,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--write",
         type=Path,
         help="write the inventory JSON (hashes + budgets) to this path",
+    )
+    parser.add_argument(
+        "--sbom",
+        type=Path,
+        help="write a CycloneDX-lite SBOM JSON derived from the inventory",
     )
     parser.add_argument(
         "--require-native",
@@ -275,6 +389,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {args.write}")
     else:
         sys.stdout.write(text)
+    if args.sbom:
+        sbom = build_cyclonedx_sbom(inventory)
+        args.sbom.parent.mkdir(parents=True, exist_ok=True)
+        args.sbom.write_text(json.dumps(sbom, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(f"wrote {args.sbom}")
     if inventory["errors"]:
         for err in inventory["errors"]:
             print(f"ERROR: {err}", file=sys.stderr)

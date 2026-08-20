@@ -431,9 +431,10 @@ to claim the pending PyPI project.
 npm registry publication of `@curatelabs/xyg` and `@curatelabs/xyg-node`
 (plus exact-platform `@curatelabs/xyg-node-*` optionals) remains tracked by
 the packaging milestone; packages remain `"private": true` until that ships.
-In-tree inventory, hashes, path scans, and size budgets run via
-`python3 scripts/verify_node_packages.py` (CI Test job; `--require-native`
-after staging). Never publish `@xy/node`.
+In-tree inventory, hashes, NOTICE/license checks, path scans, and size budgets
+run via `python3 scripts/verify_node_packages.py` (CI Test job; `--require-native`
+after staging; `--sbom` emits a CycloneDX-lite document from local manifests).
+Never publish `@xy/node`.
 
 Python import `xy` / `python/xy/` is still the in-tree namespace; the
 distribution name and `importlib.metadata` lookups are `xyg`. The clean-break

@@ -37,6 +37,10 @@ def test_verify_passes_on_checkout() -> None:
         assert entry["native"] is None  # not staged in a clean checkout
         assert entry["package_json_sha256"]
         assert entry["index_sha256"]
+        assert entry["license"] == "Apache-2.0"
+        assert entry["notice_sha256"]
+    assert inventory["facade"]["license"] == "Apache-2.0"
+    assert inventory["facade"]["notice_sha256"]
 
 
 def test_cli_write_inventory(tmp_path: Path) -> None:
@@ -46,6 +50,18 @@ def test_cli_write_inventory(tmp_path: Path) -> None:
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["ok"] is True
     assert "facade" in data
+
+
+def test_cli_write_sbom(tmp_path: Path) -> None:
+    mod = _load()
+    out = tmp_path / "sbom.json"
+    assert mod.main(["--sbom", str(out)]) == 0
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["bomFormat"] == "CycloneDX"
+    assert data["specVersion"] == "1.5"
+    names = {c["name"] for c in data["components"]}
+    assert "@curatelabs/xyg-node" in names
+    assert "@curatelabs/xyg-node-linux-x64" in names
 
 
 def test_require_native_fails_without_staged_libs() -> None:

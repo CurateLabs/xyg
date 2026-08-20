@@ -18,6 +18,8 @@
   "files": [
     "index.js",
     "xyg_core.dll",
-    "README.md"
-  ]
+    "README.md",
+    "NOTICE"
+  ],
+  "license": "Apache-2.0"
 }

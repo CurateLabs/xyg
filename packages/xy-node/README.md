@@ -49,8 +49,13 @@ cargo build --release
 python3 scripts/stage_node_platform_natives.py --also-facade
 python3 scripts/stage_node_platform_natives.py --list
 python3 scripts/verify_node_packages.py
+python3 scripts/verify_node_packages.py --sbom /tmp/xyg-node-sbom.json
 python3 scripts/verify_node_packages.py --require-native   # after staging
 ```
+
+Each Node package ships a `NOTICE` (Apache-2.0 plus koffi MIT attribution on the
+facade). `--sbom` writes a CycloneDX-lite document from local manifests/hashes
+without contacting the npm registry.
 
 ```bash
 XYG_NATIVE_LIB=/path/to/libxyg_core.dylib npm test
