@@ -136,7 +136,7 @@ function diagnostics() {
   };
 }
 
-function validateScene(message: any) {
+function runSceneOp(message: any) {
   queued.delete(message.requestId);
   if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
@@ -162,14 +162,23 @@ function validateScene(message: any) {
     // is copied into WASM. The logical arena is cleared after the operation.
     new Uint8Array(exports.memory.buffer, ptr, message.scene.byteLength)
       .set(new Uint8Array(message.scene));
-    const paint = message.type === "scene.paint";
-    status = paint
-      ? exports.xyg_wasm_scene_prepare(
-        handle, Number(message.sequence), 0, message.scene.byteLength,
-      )
-      : exports.xyg_wasm_scene_validate(
-        handle, Number(message.sequence), 0, message.scene.byteLength,
-      );
+    const paint = message.type === "scene.paint" || message.type === "scene.compile_paint";
+    const compile = message.type === "scene.compile" || message.type === "scene.compile_paint";
+    status = compile
+      ? (paint
+        ? exports.xyg_wasm_scene_compile_prepare(
+          handle, Number(message.sequence), 0, message.scene.byteLength,
+        )
+        : exports.xyg_wasm_scene_compile(
+          handle, Number(message.sequence), 0, message.scene.byteLength,
+        ))
+      : (paint
+        ? exports.xyg_wasm_scene_prepare(
+          handle, Number(message.sequence), 0, message.scene.byteLength,
+        )
+        : exports.xyg_wasm_scene_validate(
+          handle, Number(message.sequence), 0, message.scene.byteLength,
+        ));
     const detail = status === XYG_WASM_STATUS.OK ? "" : readXygWasmError(exports, handle);
     const value = { sequence: Number(message.sequence), ...diagnostics() };
     if (status !== XYG_WASM_STATUS.OK) {
@@ -177,18 +186,22 @@ function validateScene(message: any) {
       error(message.requestId, statusCode(status), detail, status);
       return;
     }
-    if (paint) {
+    if (paint || message.type === "scene.compile") {
       const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
       const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
       const outputEnd = outputPtr + outputLen;
       if (!outputPtr || !outputLen || !Number.isSafeInteger(outputEnd)
           || outputEnd > exports.memory.buffer.byteLength) {
-        throw new Error("Rust browser-paint output returned an invalid range");
+        throw new Error("Rust browser output returned an invalid range");
       }
-      const painter = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
+      const transferred = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
       exports.xyg_wasm_arena_resize(handle, 0);
       value.arenaBytes = 0;
-      reply(message.requestId, { ...value, painter }, [painter]);
+      if (paint) {
+        reply(message.requestId, { ...value, painter: transferred }, [transferred]);
+      } else {
+        reply(message.requestId, { ...value, scene: transferred }, [transferred]);
+      }
     } else {
       exports.xyg_wasm_arena_resize(handle, 0);
       value.arenaBytes = 0;
@@ -213,10 +226,15 @@ scope.onmessage = (event: MessageEvent<any>) => {
     void initialize(message);
     return;
   }
-  if (message?.type === "scene.validate" || message?.type === "scene.paint") {
+  if (
+    message?.type === "scene.validate"
+    || message?.type === "scene.paint"
+    || message?.type === "scene.compile"
+    || message?.type === "scene.compile_paint"
+  ) {
     // Deferring one task turn gives a cancellation already queued by the main
     // thread a chance to suppress work before a synchronous WASM call starts.
-    const timer = setTimeout(() => validateScene(message), 0);
+    const timer = setTimeout(() => runSceneOp(message), 0);
     queued.set(message.requestId, timer as unknown as number);
     return;
   }

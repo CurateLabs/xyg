@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 2,
+  "abi_version": 3,
   "scene_version": 7,
   "painter_version": 2,
   "painter_header_bytes": 64,
@@ -88,6 +88,26 @@
     },
     {
       "name": "xyg_wasm_scene_prepare",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_compile",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_prepare",
       "params": [
         "u32",
         "u32",

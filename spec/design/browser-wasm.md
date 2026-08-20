@@ -1,8 +1,9 @@
 # Direct-browser Rust/WASM boundary
 
-**Status:** bounded lifecycle plus canonical Scene v4 paint slice, **not** a
-complete direct-browser chart host. Tracking: [#59](https://github.com/CurateLabs/xyg/issues/59).
-Canonical scene dependency: [Scene v4](scene-ir.md).
+**Status:** bounded lifecycle, canonical Scene paint, and packed typed-column
+compile (`XYCC`) for scatter/polyline/rect/band, **not** a complete
+direct-browser chart host. Tracking: [#59](https://github.com/CurateLabs/xyg/issues/59).
+Canonical scene dependency: [Scene IR](scene-ir.md).
 
 ## Runtime taxonomy
 
@@ -28,6 +29,7 @@ chrome.
 | `js/src/wasm_worker.ts` | Static strict-CSP module Worker |
 | `js/src/47_wasm.ts` | Main-thread lifecycle proxy; requires explicit worker and WASM assets |
 | `js/src/48_wasm_scene.ts` | Thin display-list adapter into the existing WebGL painter |
+| `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
 The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
@@ -77,8 +79,8 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 2 for the Scene paint output exports. `SCENE_VERSION` remains independently versioned
-at 4. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
+`WASM_ABI_VERSION` is 3 for Scene paint plus packed typed-column compile exports. `SCENE_VERSION` remains independently versioned
+at 6. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant. `js/package-wasm.mjs` parses the compiled module's type,
 function, and export sections and rejects artifact-level signature drift.
@@ -192,9 +194,8 @@ Issue `#59` can close; raw local timings are not performance evidence.
 
 ## Remaining #59 work
 
-- typed column and chart-spec ingest;
-- raw typed-column compilation and aggregate production in Rust;
-- authored browser chrome after the next versioned #58 Scene extension;
+- public chart-spec ergonomics above the packed typed-column seam;
+- aggregate production paths beyond direct Scene records;
 - native Python/Node/WASM/Pyodide conformance fixtures;
 - cooperative cancellation inside long Rust operations;
 - small-through-massive CodSpeed and browser budget evidence; and

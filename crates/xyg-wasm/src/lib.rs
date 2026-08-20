@@ -2,13 +2,16 @@
 //!
 //! This crate owns only WASM memory, instance, status, and lifecycle concerns.
 //! Product policy stays in `xyg-engine`; browser painting stays in TypeScript.
-//! The first bounded seam validates the exact canonical Scene v4 batch. It is
-//! not a second browser scene schema and does not claim complete chart compile.
+//! Bounded seams validate/prepare canonical Scene batches and compile packed
+//! typed-column requests into those same batches. This is not a second browser
+//! scene schema and does not claim complete public chart-spec coverage.
+
+mod compile;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 2;
+pub const WASM_ABI_VERSION: u32 = 3;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -361,6 +364,132 @@ pub extern "C" fn xyg_wasm_scene_prepare(
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
+fn map_compile_error(instance: &mut Instance, error: SceneError) -> i32 {
+    match error {
+        SceneError::Version => fail(
+            instance,
+            STATUS_SCENE_VERSION,
+            "typed-column compile version is incompatible",
+        ),
+        SceneError::Limit => fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "typed-column compile exceeds a Rust engine bound",
+        ),
+        _ => fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "typed-column compile request is malformed",
+        ),
+    }
+}
+
+fn compile_from_arena(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+    paint: bool,
+) -> i32 {
+    instance.output.clear();
+    if sequence == 0 {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "sequence zero is reserved",
+        );
+    }
+    if sequence <= instance.cancelled_through {
+        return fail(instance, STATUS_CANCELLED, "request was cancelled");
+    }
+    if sequence <= instance.latest_sequence {
+        return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
+    }
+    let Some(end) = offset.checked_add(length) else {
+        return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
+    };
+    if end > instance.arena.len() {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "staging range lies outside the arena",
+        );
+    }
+    let compiled = compile::compile_scene_request(&instance.arena[offset..end]);
+    instance.arena.clear();
+    instance.latest_sequence = sequence;
+    let compiled = match compiled {
+        Ok(value) => value,
+        Err(error) => return map_compile_error(instance, error),
+    };
+    if compiled.bytes.len() > instance.max_arena_bytes {
+        return fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "compiled scene exceeds the instance byte budget",
+        );
+    }
+    instance.last_scene_records = compiled.records;
+    instance.last_scene_styles = compiled.styles;
+    if !paint {
+        instance.output = compiled.bytes;
+        instance.last_error.clear();
+        return STATUS_OK;
+    }
+    let result = scene::SceneDocument::decode(&compiled.bytes)
+        .and_then(|document| document.to_browser_painter(instance.max_arena_bytes));
+    match result {
+        Ok(output) if output.len() <= instance.max_arena_bytes => {
+            instance.output = output;
+            instance.last_error.clear();
+            STATUS_OK
+        }
+        Ok(_) | Err(SceneError::Limit) => fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "compiled scene output exceeds the instance byte budget",
+        ),
+        Err(SceneError::Version) => fail(
+            instance,
+            STATUS_SCENE_VERSION,
+            "compiled scene version is incompatible",
+        ),
+        Err(_) => fail(
+            instance,
+            STATUS_MALFORMED_SCENE,
+            "compiled scene cannot be lowered for browser paint",
+        ),
+    }
+}
+
+/// Compile one packed typed-column request into a canonical Scene batch.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_compile(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        compile_from_arena(instance, sequence, offset, length, false)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Compile packed typed columns and lower the resulting Scene for browser paint.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_compile_prepare(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        compile_from_arena(instance, sequence, offset, length, true)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
 #[no_mangle]
 pub extern "C" fn xyg_wasm_output_ptr(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.output.as_ptr() as usize).unwrap_or(0)
@@ -593,6 +722,88 @@ mod tests {
         assert_eq!(xyg_wasm_output_len(handle), painter_len);
         with_instance_mut(handle, |instance| {
             assert!(instance.arena.len() + instance.output.len() <= instance.max_arena_bytes);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    fn packed_columns() -> Vec<u8> {
+        let mut out = vec![0u8; compile::COMPILE_HEADER_BYTES];
+        out[..4].copy_from_slice(compile::COMPILE_MAGIC);
+        out[4..8].copy_from_slice(&compile::COMPILE_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&(compile::COMPILE_HEADER_BYTES as u32).to_le_bytes());
+        out[16..20].copy_from_slice(&1u32.to_le_bytes());
+        out[20..24].copy_from_slice(&1u32.to_le_bytes());
+        for (offset, value) in [
+            (40, 100.0f64),
+            (48, 80.0),
+            (56, 10.0),
+            (64, 10.0),
+            (72, 10.0),
+            (80, 10.0),
+            (120, 0.0),
+            (128, 1.0),
+            (136, 1.0),
+            (144, 0.0),
+            (152, 1.0),
+            (160, 1.0),
+        ] {
+            out[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        out[88..96].copy_from_slice(&1u64.to_le_bytes());
+        out[96..104].copy_from_slice(&2u64.to_le_bytes());
+        out.extend_from_slice(&[0]);
+        while out.len() % 8 != 0 {
+            out.push(0);
+        }
+        out.extend_from_slice(&7u64.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        while out.len() % 8 != 0 {
+            out.push(0);
+        }
+        out.extend_from_slice(&8.0f64.to_le_bytes());
+        out.push(0);
+        while out.len() % 8 != 0 {
+            out.push(0);
+        }
+        for value in [0.5f64, 0.5, 0.0, 0.0] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&[1, 2, 3, 255, 0, 0, 0, 0]);
+        while out.len() % 8 != 0 {
+            out.push(0);
+        }
+        out.extend_from_slice(&0.0f64.to_le_bytes());
+        out
+    }
+
+    #[test]
+    fn typed_columns_compile_and_paint_through_wasm() {
+        let request = packed_columns();
+        let handle = xyg_wasm_instance_new(8192);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_scene_compile(handle, 1, 0, request.len()),
+            STATUS_OK
+        );
+        assert_eq!(xyg_wasm_last_scene_records(handle), 1);
+        assert_eq!(xyg_wasm_arena_len(handle), 0);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYGS");
+            assert_eq!(
+                u32::from_le_bytes(instance.output[4..8].try_into().unwrap()),
+                scene::SCENE_VERSION
+            );
+        })
+        .unwrap();
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_scene_compile_prepare(handle, 2, 0, request.len()),
+            STATUS_OK
+        );
+        assert!(xyg_wasm_output_len(handle) > 64);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYPB");
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
