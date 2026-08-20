@@ -353,7 +353,7 @@ fn scene_v4_raster_commands(bencher: Bencher, n: usize) {
 
 #[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
 fn scene_v4_browser_painter(bencher: Bencher, n: usize) {
-    let document = scene_v4_document(n);
+    let document = browser_scene_document(n, false);
     let output = document.to_browser_painter(64 * 1024 * 1024).unwrap();
     assert_eq!(&output[..4], b"XYPB");
     assert_eq!(u32::from_le_bytes(output[4..8].try_into().unwrap()), 2);
@@ -361,4 +361,44 @@ fn scene_v4_browser_painter(bencher: Bencher, n: usize) {
     assert!(u32::from_le_bytes(output[52..56].try_into().unwrap()) >= 3);
     assert!(output.len() > n * 16);
     bencher.bench(|| black_box(document.to_browser_painter(64 * 1024 * 1024).unwrap()));
+}
+
+fn browser_scene_document(n: usize, fragmented: bool) -> SceneDocument {
+    let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
+    let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
+    let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
+    let x = uniform(n, 0x0055_AA11);
+    let y = uniform(n, 0x0066_BB22);
+    let symbols: Vec<u8> = (0..n)
+        .map(|index| if fragmented { (index % 2) as u8 } else { 0 })
+        .collect();
+    let encoded = SceneBatch::new(
+        layout,
+        1,
+        2,
+        sx,
+        sy,
+        &vec![0; n],
+        &vec![7; n],
+        &vec![0; n],
+        &[0x88; 4],
+        &[0x22; 4],
+        &[1.0],
+        &vec![6.0; n],
+        &symbols,
+        &x,
+        &y,
+        &vec![0.0; n],
+        &vec![0.0; n],
+    )
+    .unwrap()
+    .encode();
+    SceneDocument::decode(&encoded).unwrap()
+}
+
+#[divan::bench(args = [SMALL_N, MEDIUM_N, LARGE_N])]
+fn scene_browser_painter_fragment_limit(bencher: Bencher, n: usize) {
+    let document = browser_scene_document(n, true);
+    assert!(document.to_browser_painter(64 * 1024 * 1024).is_err());
+    bencher.bench(|| black_box(document.to_browser_painter(64 * 1024 * 1024)));
 }

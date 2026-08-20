@@ -1,11 +1,11 @@
-import { createXygWasmWorker, renderWasmScene } from "/packages/xy-client/dist/index.js";
+import { createXygWasmWorker, renderWasmScene, XygWasmError } from "/packages/xy-client/dist/index.js";
 
 function coreScene(count) {
   const body = 160 + 3 * 16 + count * 56;
   const bytes = new Uint8Array(body + 40);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83]);
-  view.setUint32(4, 5, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 7, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 3n, true);
   [800, 600, 60, 20, 780, 550].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -30,6 +30,13 @@ function coreScene(count) {
   }
   bytes.set([32, 32, 32, 36, 32, 32, 32, 140, 32, 32, 32, 217], body);
   view.setFloat64(body + 16, 12, true);
+  return bytes;
+}
+
+function fragmentedCoreScene(count) {
+  const bytes = coreScene(count);
+  const scatterEnd = Math.floor(count / 3);
+  for (let index = 0; index < scatterEnd; index++) bytes[208 + index * 56 + 2] = index % 2;
   return bytes;
 }
 
@@ -58,6 +65,23 @@ async function run() {
       stableIdTail: String(view.sceneStableId(lastTrace, view.gpuTraces[lastTrace]._sceneIds.lo.length - 1)) });
     view.destroy(); host.remove();
   }
+  const fragmentedHost = document.body.appendChild(document.createElement("div"));
+  const fragmentedStarted = performance.now();
+  try {
+    await renderWasmScene({ el: fragmentedHost, scene: fragmentedCoreScene(1_000_000), worker });
+    throw new Error("fragmented million-record Scene unexpectedly rendered");
+  } catch (error) {
+    if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_RESOURCE_LIMIT" || error.status !== 3) throw error;
+  }
+  rows.push({
+    count: 1_000_000,
+    fragmented: true,
+    rejectedTraceLimit: 1024,
+    rejectionMs: performance.now() - fragmentedStarted,
+    browserChildren: fragmentedHost.childNodes.length,
+  });
+  if (fragmentedHost.childNodes.length !== 0) throw new Error("fragmented benchmark allocated browser painter state");
+  fragmentedHost.remove();
   await worker.dispose();
   return rows;
 }

@@ -7,6 +7,7 @@ export const XYG_WASM_PAINTER_VERSION = 2 as const;
 export const XYG_WASM_PAINTER_HEADER_BYTES = 64 as const;
 export const XYG_WASM_PAINTER_TRACE_BYTES = 64 as const;
 export const XYG_WASM_PAINTER_TICK_BYTES = 16 as const;
+export const XYG_WASM_PAINTER_MAX_TRACES = 1024 as const;
 export const XYG_WASM_STATUS = {
   OK: 0,
   INVALID_HANDLE: 1,
