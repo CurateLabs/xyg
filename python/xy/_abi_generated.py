@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 72
-SIGNATURE_SHA256 = "9ae897b5cec8594c7bdec3751847df29eaf703a9891895b98bd8b93ca0b36310"
+ABI_VERSION = 73
+SIGNATURE_SHA256 = "494bee2c1e1ba457de4e40f5a83a6bf095c5681ee2b016609bc651385bd95346"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -298,6 +298,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_pyramid_free
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64]
+    # uint64_t xyg_pyramid_spill(uint64_t handle)
+    function = lib.xyg_pyramid_spill
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_uint64]
     # size_t xyg_quad_mesh_triangles(const double * x, size_t x_len, const double * y, size_t y_len, const double * values, size_t cell_rows, size_t cell_cols, uint32_t layout, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_values)
     function = lib.xyg_quad_mesh_triangles
     function.restype = ctypes.c_size_t
@@ -506,6 +510,34 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_interval_visibility_at
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_int64, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_tile_budget_set(uint64_t bytes)
+    function = lib.xyg_tile_budget_set
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len)
+    function = lib.xyg_tile_store_append
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out)
+    function = lib.xyg_tile_store_compose
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_tile_store_compose_color(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out, uint8_t * out_rgba)
+    function = lib.xyg_tile_store_compose_color
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_tile_store_fetch(uint64_t store, uint32_t level, uint32_t tx, uint32_t ty, uint32_t * out_counts, uint16_t * out_color)
+    function = lib.xyg_tile_store_fetch
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_tile_store_free(uint64_t store)
+    function = lib.xyg_tile_store_free
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_tile_store_stats(uint64_t store, uint64_t * out)
+    function = lib.xyg_tile_store_stats
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_transition_keys_fixed(const uint8_t * data, size_t len, size_t width, uint32_t kind, int32_t swap_endian, uint32_t * out_lo, uint32_t * out_hi, size_t * out_error_first, size_t * out_error_index)
     function = lib.xyg_transition_keys_fixed
     function.restype = ctypes.c_int32

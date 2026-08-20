@@ -73,6 +73,13 @@ _SCALARS: dict[str, dict[str, Any]] = {
         "signed": False,
         "bits": 8,
     },
+    "u16": {
+        "c": "uint16_t",
+        "ctypes": "ctypes.c_uint16",
+        "koffi": "uint16_t",
+        "signed": False,
+        "bits": 16,
+    },
     "u32": {
         "c": "uint32_t",
         "ctypes": "ctypes.c_uint32",
@@ -108,6 +115,8 @@ _POINTER_C: dict[str, str] = {
     "*mut i32": "int32_t *",
     "*mut i64": "int64_t *",
     "*mut u8": "uint8_t *",
+    "*mut u16": "uint16_t *",
+    "*const u16": "const uint16_t *",
     "*mut u32": "uint32_t *",
     "*mut u64": "uint64_t *",
     "*mut usize": "size_t *",

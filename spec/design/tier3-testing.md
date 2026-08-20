@@ -6,7 +6,8 @@
 The shippable product is the **square multi-resolution count pyramid**
 (`xyg_pyramid_build` → `compose` / `count` / `append` / `free`), available on
 Python and Node, with §28 `binning: "pyramid-L<l>[-upsampled]"`. Phase-4
-disk-resident 256² tile spill is a separate residency milestone and is **not**
+disk-resident 256² tile spill is a separate residency milestone: Rust ABI WP1
+is landed; host engagement is **not**
 required to claim Phase-3 Tier-3 ready.
 
 ## What “scale” means in CI

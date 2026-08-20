@@ -128,7 +128,7 @@ artifact can exist.
   registration: #13.
 - README, user docs, repository links, branding sweep, deferred identifier
   batches in §2: #14.
-- Phase-4 tile spill (#5–#11): WP1 (#8) is paused pending the crate split; its
+- Phase-4 tile spill (#5–#11): WP1 (#8) re-landed in `crates/xyg-engine` (ABI 73); its
   future home is `crates/xyg-engine`.
 - Graph force-layout process-wide mutex: separate concurrency defect, tracked
   outside this migration (issue #18 implementation notes).
