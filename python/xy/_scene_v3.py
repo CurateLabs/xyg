@@ -428,7 +428,7 @@ def figure_scene(
         color = style.get("color") or "#667085"
         if not isinstance(color, str):
             raise UnsupportedSceneV3("Scene v7 annotation color must be a constant CSS color")
-        stable_base = ((int(annotation_index) + 1) << 40)
+        stable_base = (int(annotation_index) + 1) << 40
         if annotation.get("kind") == "rule":
             value = float(annotation["value"])
             if not np.isfinite(value):
