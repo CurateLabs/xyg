@@ -11,9 +11,9 @@ import json
 from pathlib import Path
 
 import numpy as np
+from write_graph_page import write_graph_page
 
 from xy._figure import Figure
-from write_graph_page import write_graph_page
 
 ROOT = Path(__file__).resolve().parent
 DATA = json.loads((ROOT / "org_graph_data.json").read_text(encoding="utf-8"))
@@ -95,9 +95,8 @@ def build_figure() -> tuple[Figure, dict]:
     cx = float((xs.min() + xs.max()) * 0.5)
     cy = float((ys.min() + ys.max()) * 0.5)
     radius = float(max(xs.max() - xs.min(), ys.max() - ys.min()) * 0.5 * 1.28)
-    domain = (cx - radius, cx + radius)
-    fig.set_axis("x", domain=domain, style=dict(HIDDEN_AXIS))
-    fig.set_axis("y", domain=domain, style=dict(HIDDEN_AXIS))
+    fig.set_axis("x", domain=(cx - radius, cx + radius), style=dict(HIDDEN_AXIS))
+    fig.set_axis("y", domain=(cy - radius, cy + radius), style=dict(HIDDEN_AXIS))
 
     for i, n in enumerate(nodes):
         fig.text(
