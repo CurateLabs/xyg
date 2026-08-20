@@ -20,7 +20,7 @@ import operator
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, ClassVar, Optional, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -91,7 +91,7 @@ class TemporalNativeError(ValueError):
 class GeoNativeError(ValueError):
     """Stable error returned by the Rust-owned geographic column seam (#47)."""
 
-    _MESSAGES = {
+    _MESSAGES: ClassVar[dict[int, str]] = {
         -1: "geographic descriptor is incomplete or inconsistent",
         -2: "CRS is not in the certified EPSG:4326 / EPSG:3857 profile",
         -3: "geometry kind does not match the supplied offset planes",

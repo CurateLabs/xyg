@@ -8,7 +8,7 @@ import pytest
 
 pa = pytest.importorskip("pyarrow")
 
-from xy import _geoarrow, _native
+from xy import _geoarrow, _native  # noqa: E402
 
 
 def _point_field(crs: str = "EPSG:4326") -> pa.Field:
@@ -16,7 +16,9 @@ def _point_field(crs: str = "EPSG:4326") -> pa.Field:
         b"ARROW:extension:name": b"geoarrow.point",
         b"ARROW:extension:metadata": json.dumps({"crs": crs}).encode("utf-8"),
     }
-    return pa.field("geometry", pa.struct([("x", pa.float64()), ("y", pa.float64())]), metadata=meta)
+    return pa.field(
+        "geometry", pa.struct([("x", pa.float64()), ("y", pa.float64())]), metadata=meta
+    )
 
 
 def _linestring_field(crs: str = "EPSG:4326") -> pa.Field:
