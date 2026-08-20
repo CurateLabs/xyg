@@ -45,7 +45,6 @@ def test_abi_version_is_72() -> None:
     assert any(item["name"] == "xyg_temporal_column_create" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_scene_plot_layout" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_geo_column_new" for item in manifest["symbols"])
-    assert any(item["name"] == "xyg_geo_column_new" for item in manifest["symbols"])
 
 
 def test_manifest_preserves_order_width_and_pointer_direction() -> None:
