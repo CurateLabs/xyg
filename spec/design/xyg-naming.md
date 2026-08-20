@@ -41,7 +41,7 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | C ABI symbol prefix | `xy_*` (e.g. `xy_abi_version`) | **`xyg_*`** (e.g. `xyg_abi_version`); prefix change ships with the ABI 58 bump, so an old wrapper can never half-bind a new library | decided |
 | ABI contract | — (declarations duplicated by hand) | **`spec/abi/xyg-abi.json` + `xyg.h`**, generated with Python ctypes and Node Koffi declarations from `crates/xyg-core/src/lib.rs` by `scripts/gen_abi_manifest.py`; byte-for-byte checked by `scripts/check_abi_parity.py` | landed (#57) |
 | Python distribution | `xy` | **`xyg`** | landed (`pyproject.toml` / wheels / `pip install xyg`; import still `xy`) |
-| Python import namespace | `import xy` (`python/xy/`) | **`import xyg`** (`python/xyg/`) | decided (owner, 2026-08-11) |
+| Python import namespace | `import xy` (`python/xy/`) | **`import xyg`** (`python/xyg/`) | in progress (#51); distribution already `xyg` |
 | Bundled Reflex adapter | `reflex_xy` (`python/reflex_xy/`) | **`reflex_xyg`** (`python/reflex_xyg/`); extra spelled `xyg[reflex]` | decided (owner, 2026-08-11) |
 | Paint client (npm) | (Python `python/xy/static` only) | **`@curatelabs/xyg`** (owned by #23; listed so the matrix is complete) | decided |
 | Node package | `@xy/node` (`packages/xy-node/`) | **`@curatelabs/xyg-node`** (in-tree directory stays `packages/xy-node`; never publish `@xy/node`) | decided (owner; npm scope locked with #24/#23) |
@@ -132,3 +132,26 @@ artifact can exist.
   future home is `crates/xyg-engine`.
 - Graph force-layout process-wide mutex: separate concurrency defect, tracked
   outside this migration (issue #18 implementation notes).
+
+## 5. Python import cutover checklist (#51)
+
+**Current locked split (pre-cutover):**
+
+| Fact | Value |
+|---|---|
+| Distribution / PyPI project | `xyg` (`pyproject.toml` `name`, wheels, `pip install xyg`) |
+| Import namespace | `import xy` from `python/xy/` |
+| Reflex adapter | `reflex_xy` — **retained** for #51 (issue Non-Goal); matrix target `reflex_xyg` is a later branding slice |
+| Compatibility alias | **None** — when `import xyg` ships, `import xy` must fail |
+
+**Mechanical cutover steps (single coherent change or tightly sequenced PRs; no published mixed artifact):**
+
+1. `git mv python/xy python/xyg` (and update hatch `packages` / sdist includes / artifacts to `python/xyg/**`).
+2. Rewrite every product `import xy` / `from xy…` to `xyg` (tests, examples, docs, scripts, benches, and Reflex adapter imports of the chart package — adapter package name stays `reflex_xy`).
+3. Update `hatch_build.py` destinations (`python/xyg/_native_lib`, `python/xyg/static`).
+4. Update `scripts/verify_wheel.py` / `verify_sdist.py` expected paths (`xyg/_native_lib/…`, `xyg/static/…`).
+5. Keep `python/reflex_xy` / `import reflex_xy`; extra remains `xyg[reflex]`.
+6. Refresh this matrix status to **landed**, clear stale allowlist entries that existed only for the `python/xy` tree, and update host-parity / production-readiness wording.
+7. Prove BDD: clean `pip install` of wheel/sdist → `import xyg` renders; `import xy` raises `ModuleNotFoundError`.
+
+**Guardrail today:** `tests/test_xyg_package_identity.py` locks the pre-cutover split so the distribution cannot silently regress to `xy` and so the missing `import xyg` surface stays explicit until the mechanical rename lands.

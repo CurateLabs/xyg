@@ -438,8 +438,9 @@ Never publish `@xy/node`.
 
 Python import `xy` / `python/xy/` is still the in-tree namespace; the
 distribution name and `importlib.metadata` lookups are `xyg`. The clean-break
-`import xyg` / `python/xyg/` / `reflex_xyg` cutover stays staged after this
-crate split per [xyg-naming.md](../design/xyg-naming.md).
+`import xyg` / `python/xyg/` cutover is tracked by GitHub #51 with the checklist
+in [xyg-naming.md](../design/xyg-naming.md) §5; `reflex_xy` stays for that
+issue. `tests/test_xyg_package_identity.py` locks the pre-cutover split.
 
 Before tagging an `xyg-v*` release:
 
