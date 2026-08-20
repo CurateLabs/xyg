@@ -112,11 +112,14 @@ export function axisTicks({
   } else if (kind === "angular") {
     kindCode = unit === "degrees" ? 3 : unit === "radians" ? 4 : -1;
     if (kindCode < 0) throw new RangeError('angular unit must be "degrees" or "radians"');
+  } else if (kind === "time") {
+    kindCode = 5;
   }
   if (kindCode < 0) {
-    throw new RangeError("kind must be linear, log, category, or angular");
+    throw new RangeError("kind must be linear, log, category, angular, or time");
   }
-  const capacity = 200;
+  // Calendar time ladders can emit up to ~1000 first-of-month ticks.
+  const capacity = kindCode === 5 ? 1000 : 200;
   const ticks = new Float64Array(capacity);
   const labeled = new Float64Array(capacity);
   const labeledLength = new BigUint64Array(1);

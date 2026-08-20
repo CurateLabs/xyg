@@ -210,6 +210,27 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
     axisTicks({ kind: "angular", lo: 0, hi: 360, target: 8, unit: "degrees" }).ticks,
     [0, 45, 90, 135, 180, 225, 270, 315],
   );
+  const hour = 3_600_000;
+  assert.deepEqual(
+    axisTicks({ kind: "time", lo: 0, hi: 3 * hour, target: 6 }),
+    {
+      ticks: [0, 0.5 * hour, hour, 1.5 * hour, 2 * hour, 2.5 * hour, 3 * hour],
+      labeled: [0, 0.5 * hour, hour, 1.5 * hour, 2 * hour, 2.5 * hour, 3 * hour],
+      step: 0.5 * hour,
+    },
+  );
+  const day = 86_400_000;
+  const lo = Date.UTC(2020, 0, 1);
+  const hi = Date.UTC(2022, 0, 1);
+  const calendar = axisTicks({ kind: "time", lo, hi, target: 6 });
+  assert.equal(calendar.step, 6 * 30 * day);
+  assert.deepEqual(calendar.ticks, [
+    lo,
+    Date.UTC(2020, 6, 1),
+    Date.UTC(2021, 0, 1),
+    Date.UTC(2021, 6, 1),
+    hi,
+  ]);
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {

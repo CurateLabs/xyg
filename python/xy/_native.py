@@ -1463,9 +1463,11 @@ def scene_axis_ticks(
     """Build bounded canonical axis ticks in Rust.
 
     ``kind`` is ``0`` linear, ``1`` log, ``2`` category (``aux`` = category
-    count), ``3`` angular degrees, or ``4`` angular radians.
+    count), ``3`` angular degrees, ``4`` angular radians, or ``5`` time
+    (UTC milliseconds since epoch; calendar steps for long spans).
     """
-    capacity = 200
+    # Calendar time ladders can emit up to ~1000 first-of-month ticks.
+    capacity = 1000 if kind == 5 else 200
     ticks = np.empty(capacity, dtype=np.float64)
     labeled = np.empty(capacity, dtype=np.float64)
     labeled_len = ctypes.c_size_t()

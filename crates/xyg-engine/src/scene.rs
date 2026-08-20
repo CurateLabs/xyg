@@ -381,6 +381,144 @@ pub fn angular_ticks(
     })
 }
 
+const MS_S: f64 = 1_000.0;
+const MS_M: f64 = 60_000.0;
+const MS_H: f64 = 3_600_000.0;
+const MS_D: f64 = 86_400_000.0;
+const MAX_TIME_TICKS: usize = 1_000;
+
+const TIME_STEPS: &[f64] = &[
+    1.0,
+    2.0,
+    5.0,
+    10.0,
+    20.0,
+    50.0,
+    100.0,
+    200.0,
+    500.0,
+    MS_S,
+    2.0 * MS_S,
+    5.0 * MS_S,
+    10.0 * MS_S,
+    15.0 * MS_S,
+    30.0 * MS_S,
+    MS_M,
+    2.0 * MS_M,
+    5.0 * MS_M,
+    10.0 * MS_M,
+    15.0 * MS_M,
+    30.0 * MS_M,
+    MS_H,
+    2.0 * MS_H,
+    3.0 * MS_H,
+    6.0 * MS_H,
+    12.0 * MS_H,
+    MS_D,
+    2.0 * MS_D,
+    7.0 * MS_D,
+    14.0 * MS_D,
+];
+
+const MONTH_STEPS: &[i32] = &[1, 2, 3, 6, 12, 24, 60, 120];
+
+/// UTC civil date from milliseconds since Unix epoch → (year, month0) with month0 in 0..=11.
+fn utc_year_month0_from_ms(ms: f64) -> (i32, i32) {
+    // Howard Hinnant civil_from_days.
+    let z = (ms / MS_D).floor() as i64 + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let mut y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 }; // 1..=12
+    if month <= 2 {
+        y += 1;
+    }
+    (y as i32, month as i32 - 1)
+}
+
+/// First-of-month UTC milliseconds for year and month0 (0..=11).
+fn utc_ms_from_year_month0(year: i32, month0: i32) -> f64 {
+    // Howard Hinnant days_from_civil for day = 1.
+    let mut y = i64::from(year);
+    let m = i64::from(month0) + 1; // 1..=12
+    if m <= 2 {
+        y -= 1;
+    }
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = (y - era * 400) as u64;
+    let doy = (153 * if m > 2 { m - 3 } else { m + 9 } + 2) as u64 / 5;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146_097 + doe as i64 - 719_468;
+    days as f64 * MS_D
+}
+
+fn calendar_ticks(lo: f64, hi: f64, rough: f64) -> AxisTicks {
+    let months_rough = rough / (30.0 * MS_D);
+    let step_m = MONTH_STEPS
+        .iter()
+        .copied()
+        .find(|candidate| f64::from(*candidate) >= months_rough)
+        .unwrap_or(*MONTH_STEPS.last().unwrap());
+    let (year, month0) = utc_year_month0_from_ms(lo);
+    // Year-local month alignment matches Python `_calendar_ticks` and JS
+    // `calendarTicks` (ceil month0 onto `step_m`, then walk `year + m/12`).
+    let mut month_index =
+        ((f64::from(month0) / f64::from(step_m)).ceil() as i64) * i64::from(step_m);
+    let mut ticks = Vec::new();
+    while ticks.len() <= MAX_TIME_TICKS {
+        let t = utc_ms_from_year_month0(
+            year + (month_index.div_euclid(12)) as i32,
+            month_index.rem_euclid(12) as i32,
+        );
+        if t > hi {
+            break;
+        }
+        if t >= lo {
+            ticks.push(t);
+        }
+        month_index += i64::from(step_m);
+    }
+    AxisTicks {
+        labeled: ticks.clone(),
+        ticks,
+        step: f64::from(step_m) * 30.0 * MS_D,
+    }
+}
+
+/// Time-axis ticks in UTC milliseconds since Unix epoch.
+///
+/// Sub-fortnight spans use a fixed millisecond ladder; longer spans use
+/// first-of-month calendar ticks (matching Python `_time_ticks` / JS `timeTicks`).
+pub fn time_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneError> {
+    if !lo.is_finite() || !hi.is_finite() || target == 0 || target > MAX_AXIS_TICKS {
+        return Err(SceneError::NonFinite);
+    }
+    let (a, b) = if lo <= hi { (lo, hi) } else { (hi, lo) };
+    let rough = (b - a) / target as f64;
+    if rough > 14.0 * MS_D {
+        return Ok(calendar_ticks(a, b, rough));
+    }
+    let step = TIME_STEPS
+        .iter()
+        .copied()
+        .find(|candidate| *candidate >= rough)
+        .unwrap_or(*TIME_STEPS.last().unwrap());
+    let mut value = (a / step).ceil() * step;
+    let mut ticks = Vec::with_capacity(target.saturating_add(2).min(MAX_AXIS_TICKS));
+    while value <= b && ticks.len() < MAX_AXIS_TICKS {
+        ticks.push(value);
+        value += step;
+    }
+    Ok(AxisTicks {
+        labeled: ticks.clone(),
+        ticks,
+        step,
+    })
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum ScatterSymbol {
@@ -3135,6 +3273,42 @@ mod tests {
         assert!(!degrees.ticks.iter().any(|v| (*v - 360.0).abs() < 1e-9));
         let radians = angular_ticks(0.0, std::f64::consts::TAU, false, 8).unwrap();
         assert!((radians.step - std::f64::consts::FRAC_PI_4).abs() < 1e-12);
+    }
+
+    #[test]
+    fn time_ticks_match_host_fixed_and_calendar_policy() {
+        let hour = time_ticks(0.0, 3.0 * MS_H, 6).unwrap();
+        assert_eq!(hour.step, 30.0 * MS_M);
+        assert_eq!(
+            hour.ticks,
+            vec![
+                0.0,
+                30.0 * MS_M,
+                MS_H,
+                90.0 * MS_M,
+                2.0 * MS_H,
+                150.0 * MS_M,
+                3.0 * MS_H
+            ]
+        );
+
+        // ~two years → six-month calendar ticks (months_rough ≈ 4.06 → step_m = 6).
+        let lo = utc_ms_from_year_month0(2020, 0);
+        let hi = utc_ms_from_year_month0(2022, 0);
+        let cal = time_ticks(lo, hi, 6).unwrap();
+        assert_eq!(cal.step, 6.0 * 30.0 * MS_D);
+        assert_eq!(
+            cal.ticks,
+            vec![
+                lo,
+                utc_ms_from_year_month0(2020, 6),
+                utc_ms_from_year_month0(2021, 0),
+                utc_ms_from_year_month0(2021, 6),
+                hi,
+            ]
+        );
+        assert_eq!(utc_year_month0_from_ms(lo), (2020, 0));
+        assert_eq!(utc_year_month0_from_ms(hi), (2022, 0));
     }
 
     #[test]

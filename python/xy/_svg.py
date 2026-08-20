@@ -522,72 +522,20 @@ def _category_ticks(lo: float, hi: float, n_categories: int, target: int = 6) ->
         return []
 
 
-_TIME_STEPS = [
-    1,
-    2,
-    5,
-    10,
-    20,
-    50,
-    100,
-    200,
-    500,
-    _MS["s"],
-    2 * _MS["s"],
-    5 * _MS["s"],
-    10 * _MS["s"],
-    15 * _MS["s"],
-    30 * _MS["s"],
-    _MS["m"],
-    2 * _MS["m"],
-    5 * _MS["m"],
-    10 * _MS["m"],
-    15 * _MS["m"],
-    30 * _MS["m"],
-    _MS["h"],
-    2 * _MS["h"],
-    3 * _MS["h"],
-    6 * _MS["h"],
-    12 * _MS["h"],
-    _MS["d"],
-    2 * _MS["d"],
-    7 * _MS["d"],
-    14 * _MS["d"],
-]
+# Time / calendar ladders live in Rust (`scene::time_ticks`); hosts call
+# `_native.scene_axis_ticks(5, ...)`.
 
 
 def _time_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], float]:
-    a, b = min(lo, hi), max(lo, hi)
-    if not (np.isfinite(a) and np.isfinite(b)):
+    """Ticks for a time axis in UTC milliseconds since epoch.
+
+    Mirrors `timeTicks` in js/src/30_ticks.ts via Rust scene policy.
+    """
+    try:
+        ticks, _labeled, step = _native.scene_axis_ticks(5, lo, hi, target)
+        return ticks, step
+    except ValueError:
         return [], _MS["d"]
-    rough = (b - a) / target
-    if rough > 14 * _MS["d"]:
-        return _calendar_ticks(a, b, rough)
-    step = next((s for s in _TIME_STEPS if s >= rough), _TIME_STEPS[-1])
-    v = np.ceil(a / step) * step
-    out: list[float] = []
-    while v <= b and len(out) < 200:
-        out.append(v)
-        v += step
-    return out, step
-
-
-def _calendar_ticks(lo: float, hi: float, rough: float) -> tuple[list[float], float]:
-    month_steps = (1, 2, 3, 6, 12, 24, 60, 120)
-    months_rough = rough / (30 * _MS["d"])
-    step_m = next((s for s in month_steps if s >= months_rough), month_steps[-1])
-    d = datetime.fromtimestamp(lo / 1e3, tz=UTC)
-    y = d.year
-    m = int(np.ceil((d.month - 1) / step_m) * step_m)
-    out: list[float] = []
-    while len(out) <= 1000:
-        t = datetime(y + m // 12, m % 12 + 1, 1, tzinfo=UTC).timestamp() * 1e3
-        if t > hi:
-            break
-        if t >= lo:
-            out.append(t)
-        m += step_m
-    return out, step_m * 30 * _MS["d"]
 
 
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")

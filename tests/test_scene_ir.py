@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -175,6 +176,34 @@ def test_linear_and_log_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> N
     assert _svg._linear_ticks(-0.9, 5.1, 6) == ([0.0, 1.0, 2.0, 3.0, 4.0, 5.0], 1.0)
     assert _svg._log_ticks(0.1, 100.0, 6)[1] == [0.1, 1.0, 10.0, 100.0]
     assert calls == [(0, -0.9, 5.1, 6), (1, 0.1, 100.0, 6)]
+
+
+def test_time_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
+    calls: list[tuple[int, float, float, int]] = []
+    original = _native.scene_axis_ticks
+
+    def recording(kind: int, lo: float, hi: float, target: int, aux: float = 0.0):
+        calls.append((kind, lo, hi, target))
+        return original(kind, lo, hi, target, aux=aux)
+
+    monkeypatch.setattr(_native, "scene_axis_ticks", recording)
+    hour = 3_600_000.0
+    assert _svg._time_ticks(0.0, 3.0 * hour, 6) == (
+        [0.0, 0.5 * hour, hour, 1.5 * hour, 2.0 * hour, 2.5 * hour, 3.0 * hour],
+        0.5 * hour,
+    )
+    lo = datetime(2020, 1, 1, tzinfo=UTC).timestamp() * 1e3
+    hi = datetime(2022, 1, 1, tzinfo=UTC).timestamp() * 1e3
+    ticks, step = _svg._time_ticks(lo, hi, 6)
+    assert step == 6.0 * 30.0 * 86_400_000.0
+    assert ticks == [
+        lo,
+        datetime(2020, 7, 1, tzinfo=UTC).timestamp() * 1e3,
+        datetime(2021, 1, 1, tzinfo=UTC).timestamp() * 1e3,
+        datetime(2021, 7, 1, tzinfo=UTC).timestamp() * 1e3,
+        hi,
+    ]
+    assert calls == [(5, 0.0, 3.0 * hour, 6), (5, lo, hi, 6)]
 
 
 def test_static_scale_consumes_rust_scene_policy_for_all_numeric_kinds(monkeypatch) -> None:

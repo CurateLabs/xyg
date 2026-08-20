@@ -1,6 +1,6 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 67;
+export const ABI_VERSION = 68;
 export const SIGNATURE_SHA256 = "e4e19e9ba86eff3283e936eb8c0feeae1beb5c816ab58bc0225d5dae889a815e";
 
 export function bindAbiVersion(lib) {

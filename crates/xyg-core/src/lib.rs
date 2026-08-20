@@ -89,7 +89,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 67;
+pub const ABI_VERSION: u32 = 68;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -105,6 +105,7 @@ pub extern "C" fn xyg_scene_version() -> u32 {
 /// - `2` category (`aux` = category count)
 /// - `3` angular degrees
 /// - `4` angular radians
+/// - `5` time (UTC milliseconds since epoch)
 ///
 /// Returns the required tick count or `usize::MAX` for invalid arguments. The
 /// labeled count and step are written only when `out_cap` is sufficient.
@@ -136,6 +137,7 @@ pub unsafe extern "C" fn xyg_scene_axis_ticks(
         }
         3 => scene::angular_ticks(lo, hi, true, target).ok(),
         4 => scene::angular_ticks(lo, hi, false, target).ok(),
+        5 => scene::time_ticks(lo, hi, target).ok(),
         _ => None,
     });
     let Some(result) = result else {
