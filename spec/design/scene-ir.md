@@ -293,9 +293,10 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining polar marks and legend/annotation records, then
-select public SVG/PNG/PDF Scene routing once backgrounds/density/chrome parity
-is covered. Category, angular, and time/calendar tick ladders already move
+Next slices add remaining polar marks, labeled/rich annotation records, and
+legend records, then select public SVG/PNG/PDF Scene routing once
+backgrounds/density/chrome parity is covered. Unlabeled cartesian `rule` and
+`band` annotations already lower onto Scene Polyline and Rect records. Category, angular, and time/calendar tick ladders already move
 through `xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome
 paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
 gutters for Scene compilation. Cartesian rect-family hosts

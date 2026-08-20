@@ -2242,10 +2242,11 @@ class Figure(AnnotationsMixin, PayloadMixin):
         """Compile the migrated Scene v5 mark subset for this figure.
 
         Supports cartesian scatter/line (including step), bar/column/histogram/
-        violin rects, and segments/errorbar/stem polylines. Unsupported marks
-        or customization raise explicitly; ordinary SVG and raster exports
-        retain their established renderer as the compatibility fallback until
-        public Scene selection covers remaining chrome.
+        violin rects, segments/errorbar/stem polylines, area/error_band/ribbon
+        bands, triangle_mesh polyfills, and unlabeled rule/band annotations.
+        Unsupported marks or customization raise explicitly; ordinary SVG and
+        raster exports retain their established renderer as the compatibility
+        fallback until public Scene selection covers remaining chrome.
         """
         from . import _scene_v3
 

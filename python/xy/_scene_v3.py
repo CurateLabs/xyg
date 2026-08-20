@@ -170,8 +170,13 @@ def figure_scene(
             for key, value in options.items()
         ):
             raise UnsupportedSceneV3("Scene v7 does not yet encode tick, grid, or axis styling")
-    if figure.annotations:
-        raise UnsupportedSceneV3("Scene v7 does not yet encode annotations")
+    annotations = list(getattr(figure, "annotations", None) or [])
+    for annotation in annotations:
+        kind = annotation.get("kind")
+        if kind not in {"rule", "band"}:
+            raise UnsupportedSceneV3("Scene v7 does not yet encode annotations")
+        if annotation.get("text"):
+            raise UnsupportedSceneV3("Scene v7 does not yet encode annotation labels")
     if figure.colorbar_options or figure.extra_legends:
         raise UnsupportedSceneV3("Scene v7 does not yet encode colorbars or extra legends")
     unsupported = next(
@@ -407,6 +412,74 @@ def figure_scene(
             coordinates[1].append(float(yv[index]))
             coordinates[2].append(0.0)
             coordinates[3].append(0.0)
+
+    x_lo, x_hi = figure._range("x")
+    y_lo, y_hi = figure._range("y")
+    for annotation_index, annotation in enumerate(annotations):
+        axis = annotation.get("axis")
+        style = dict(annotation.get("style") or {})
+        if any(key in style for key in ("dash", "curve", "linecap")):
+            raise UnsupportedSceneV3(
+                "Scene v7 does not yet encode dashed or curved annotation strokes"
+            )
+        opacity = float(style.get("opacity", 1.0))
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            raise ValueError("annotation opacity must be finite and in [0, 1]")
+        color = style.get("color") or "#667085"
+        if not isinstance(color, str):
+            raise UnsupportedSceneV3("Scene v7 annotation color must be a constant CSS color")
+        stable_base = (int(annotation_index) + 1) << 40
+        if annotation.get("kind") == "rule":
+            value = float(annotation["value"])
+            if not np.isfinite(value):
+                raise UnsupportedSceneV3(
+                    "Scene v7 does not yet encode missing-data breaks or nonfinite coordinates"
+                )
+            stroke_width = float(style.get("width", 1.5))
+            if not np.isfinite(stroke_width) or stroke_width < 0.0:
+                raise ValueError("annotation width must be finite and non-negative")
+            styles.append((_rgba("transparent", 1.0), _rgba(color, opacity), stroke_width))
+            style_ref = len(styles) - 1
+            if axis == "x":
+                points = ((value, y_lo), (value, y_hi))
+            elif axis == "y":
+                points = ((x_lo, value), (x_hi, value))
+            else:
+                raise UnsupportedSceneV3("Scene v7 rule annotations require axis 'x' or 'y'")
+            for x_value, y_value in points:
+                kinds.append(1)
+                stable_ids.append(stable_base)
+                style_refs.append(style_ref)
+                diameters.append(0.0)
+                symbols.append(0)
+                coordinates[0].append(float(x_value))
+                coordinates[1].append(float(y_value))
+                coordinates[2].append(0.0)
+                coordinates[3].append(0.0)
+            continue
+        start = float(annotation["start"])
+        end = float(annotation["end"])
+        if not np.isfinite(start) or not np.isfinite(end):
+            raise UnsupportedSceneV3(
+                "Scene v7 does not yet encode missing-data breaks or nonfinite coordinates"
+            )
+        styles.append((_rgba(color, opacity), _rgba("transparent", 1.0), 0.0))
+        style_ref = len(styles) - 1
+        if axis == "x":
+            ax0, ax1, ay0, ay1 = start, end, y_lo, y_hi
+        elif axis == "y":
+            ax0, ax1, ay0, ay1 = x_lo, x_hi, start, end
+        else:
+            raise UnsupportedSceneV3("Scene v7 band annotations require axis 'x' or 'y'")
+        kinds.append(2)
+        stable_ids.append(stable_base)
+        style_refs.append(style_ref)
+        diameters.append(0.0)
+        symbols.append(0)
+        coordinates[0].append(float(ax0))
+        coordinates[1].append(float(ay0))
+        coordinates[2].append(float(ax1))
+        coordinates[3].append(float(ay1))
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)

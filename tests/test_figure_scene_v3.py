@@ -237,7 +237,23 @@ def test_python_scene_encodes_title_and_axis_labels() -> None:
     assert "Peak days" in svg and ">day<" in svg and ">count<" in svg
 
 
-def test_python_scene_still_rejects_annotations() -> None:
+def test_python_scene_compiles_rule_and_band_annotations() -> None:
+    figure = representative_figure()
+    figure.vline(2.0, color="#ef4444", width=2.0)
+    figure.hline(1.0, color="#22c55e")
+    figure.x_band(0.5, 1.5, color="#3987e5", opacity=0.25)
+    scene = figure.to_scene()
+    assert scene[4:8] == (7).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert svg.count("<polyline ") >= 2
+    assert svg.count("<rect ") >= 4  # clip + bars + band
+
+
+def test_python_scene_still_rejects_labeled_and_rich_annotations() -> None:
+    labeled = representative_figure()
+    labeled.vline(1.0, text="threshold")
+    with pytest.raises(UnsupportedSceneV3, match="annotation labels"):
+        labeled.to_scene()
     figure = representative_figure()
     figure.annotations.append({"kind": "text", "x": 1, "y": 2, "text": "note"})
     with pytest.raises(UnsupportedSceneV3, match="annotations"):
