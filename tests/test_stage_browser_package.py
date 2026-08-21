@@ -76,3 +76,44 @@ def test_stage_rejects_invalid_wasm(tmp_path: Path) -> None:
     (source / "xyg-wasm.wasm").write_bytes(b"not wasm")
     with pytest.raises(ValueError, match="invalid module header"):
         stage_browser.stage(dist=source, output=tmp_path / "out", version="1.2.3")
+
+
+def test_stage_rejects_symlinked_assets(tmp_path: Path) -> None:
+    source = _dist(tmp_path / "dist")
+    target = tmp_path / "external.js"
+    target.write_text("export const external=true;\n")
+    (source / "index.js").unlink()
+    (source / "index.js").symlink_to(target)
+
+    with pytest.raises(ValueError, match="must not be symlinks"):
+        stage_browser.stage(dist=source, output=tmp_path / "out", version="1.2.3")
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("scripts", {"prepack": "node mutate-dist.mjs"}, "lifecycle scripts"),
+        ("bin", {"xyg": "dist/index.js"}, "package bins"),
+    ],
+)
+def test_stage_rejects_executable_manifest_hooks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    source = _dist(tmp_path / "dist")
+    manifest = json.loads((stage_browser.SOURCE / "package.json").read_text())
+    manifest[field] = value
+    original_loads = json.loads
+
+    def loads_with_hook(payload: str, *args: object, **kwargs: object) -> object:
+        parsed = original_loads(payload, *args, **kwargs)
+        if isinstance(parsed, dict) and parsed.get("name") == stage_browser.PACKAGE_NAME:
+            return manifest
+        return parsed
+
+    monkeypatch.setattr(stage_browser.json, "loads", loads_with_hook)
+    with pytest.raises(ValueError, match=message):
+        stage_browser.stage(dist=source, output=tmp_path / "out", version="1.2.3")

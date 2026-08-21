@@ -74,6 +74,9 @@ def _contract() -> dict[str, int]:
 def _validate_assets(dist: Path) -> dict[str, dict[str, int | str]]:
     if not dist.is_dir():
         raise ValueError(f"browser dist directory is missing: {dist}")
+    symlinks = sorted(path.name for path in dist.iterdir() if path.is_symlink())
+    if symlinks:
+        raise ValueError(f"browser dist assets must not be symlinks: {symlinks!r}")
     actual = sorted(path.name for path in dist.iterdir() if path.is_file())
     if actual != sorted(ASSETS):
         raise ValueError(
@@ -143,6 +146,10 @@ def stage(*, dist: Path, output: Path, version: str) -> Path:
         )
     if manifest.get("sideEffects") is not False:
         raise ValueError("browser package must declare sideEffects=false")
+    if manifest.get("scripts"):
+        raise ValueError(f"{PACKAGE_NAME} must not declare npm lifecycle scripts")
+    if manifest.get("bin"):
+        raise ValueError(f"{PACKAGE_NAME} must not declare executable package bins")
     manifest.pop("private", None)
     manifest["version"] = version
     manifest["repository"] = REPOSITORY

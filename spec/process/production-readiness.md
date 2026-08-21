@@ -476,8 +476,9 @@ adapter and the ESM, standalone, and static Worker bundles from the tagged
 source, then stages an exact-version `@curatelabs/xyg` tarball. Its
 `ASSET-MANIFEST.json` binds every shipped filename to SHA-256 and byte length
 and records the wire protocol, WASM ABI, Scene, and painter versions. Staging
-rejects extra files (including source maps), CDN/repository/fork-origin paths,
-runtime dependencies, invalid WASM headers, and per-file or aggregate budget
+rejects extra files (including source maps), symlinked assets,
+CDN/repository/fork-origin paths, runtime dependencies, npm lifecycle scripts
+or executable bins, invalid WASM headers, and per-file or aggregate budget
 overruns. The tarball is packed and dry-published on every release rehearsal,
 blocks the PyPI release gate if it cannot be produced, and is attached to the
 matching GitHub Release. Registry publication and clean browser-application
