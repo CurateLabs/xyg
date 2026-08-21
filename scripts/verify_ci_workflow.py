@@ -46,6 +46,7 @@ REQUIRED_RELEASE_JOBS = {
     "wheels",
     "sdist",
     "wasm",
+    "browser-package",
     "node-native-packages",
     "node-facade",
     "publish",
@@ -1940,6 +1941,24 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
     _require_job_contains(
         errors,
         jobs,
+        "browser-package",
+        "release",
+        "exact-version host-neutral browser package staging (#53)",
+        "toolchain: 1.96.0",
+        "wasm32-unknown-unknown",
+        'node-version: "24"',
+        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+        "node js/build.mjs",
+        "node js/package-wasm.mjs",
+        "scripts/stage_browser_package.py",
+        "--dist packages/xy-client/dist",
+        "npm pack ./staged/xyg-browser",
+        "npm publish packed/*.tgz --dry-run --tag next --provenance=false",
+        "name: browser-package",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
         "sdist",
         "release",
         "sdist build, content verification, Rust-backed install smoke, and upload",
@@ -1984,7 +2003,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "release",
         "trusted PyPI publishing from downloaded artifacts, gated by a dry-run switch, "
         "a tag/version/CHANGELOG agreement gate, and the fork publish guards (#13)",
-        "needs: [wheels, sdist, wasm, node-native-packages, node-facade, node-clean-install, node-unsupported-windows-arm64]",
+        "needs: [wheels, sdist, wasm, browser-package, node-native-packages, node-facade, node-clean-install, node-unsupported-windows-arm64]",
         "environment: pypi",
         "contents: read",
         "id-token: write",
@@ -2129,17 +2148,23 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         errors,
         jobs,
         "github-release",
-        "post-PyPI/npm GitHub Release with the browser wheel",
+        "post-PyPI/npm GitHub Release with browser artifacts",
         "needs: [publish, publish-npm]",
         "contents: write",
         "actions/download-artifact@",
         "pattern: dist-pyemscripten",
+        "pattern: browser-package",
         "merge-multiple: true",
         "gh release create",
-        "release-dist/*.whl",
+        "release-dist/*.whl release-dist/*.tgz",
         "--verify-tag",
         "--generate-notes",
     )
+    if github_release.count("merge-multiple: true") < 2:
+        errors.append(
+            "release GitHub Release must flatten both the PyEmscripten wheel and browser "
+            "package downloads with merge-multiple"
+        )
     release_gate_values, release_gate_unsafe = _direct_yaml_key_values(
         github_release, "if", indent=4
     )

@@ -471,6 +471,18 @@ exact `publish.yaml` workflow as the trusted publisher for all six npm
 projects; first-time project creation/ownership remains a deliberate registry
 bootstrap step. The GitHub Release waits for both PyPI and npm jobs.
 
+The release-only `browser-package` job builds the direct `xyg-engine` WASM
+adapter and the ESM, standalone, and static Worker bundles from the tagged
+source, then stages an exact-version `@curatelabs/xyg` tarball. Its
+`ASSET-MANIFEST.json` binds every shipped filename to SHA-256 and byte length
+and records the wire protocol, WASM ABI, Scene, and painter versions. Staging
+rejects extra files (including source maps), CDN/repository/fork-origin paths,
+runtime dependencies, invalid WASM headers, and per-file or aggregate budget
+overruns. The tarball is packed and dry-published on every release rehearsal,
+blocks the PyPI release gate if it cannot be produced, and is attached to the
+matching GitHub Release. Registry publication and clean browser-application
+conformance remain the explicit completion work for issue 53.
+
 Packing is followed by native clean-install conformance on all five supported
 Node targets: Linux x64/arm64, macOS x64/arm64, and Windows x64. Each job starts
 with a new npm project, proves the facade's missing-package diagnostic, installs
