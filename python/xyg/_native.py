@@ -1722,8 +1722,9 @@ def scene_batch_encode(
     x_minor_ticks: npt.ArrayLike = (),
     y_major_ticks: npt.ArrayLike | None = None,
     y_minor_ticks: npt.ArrayLike = (),
+    legend_input: bytes = b"",
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v8 typed batch."""
+    """Encode the bounded backend-neutral Scene v9 typed batch."""
 
     def scene_uint(
         value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
@@ -1810,6 +1811,7 @@ def scene_batch_encode(
         None if y_major_ticks is None else _as_f64(np.asarray(y_major_ticks), "scene y major ticks")
     )
     y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
+    legend_array = np.frombuffer(legend_input, dtype=np.uint8)
     tick_arrays = (x_major, x_minor, y_major, y_minor)
     if any(value is not None and len(value) > 200 for value in tick_arrays):
         raise ValueError("scene axis tick lists are limited to 200 values")
@@ -1817,11 +1819,12 @@ def scene_batch_encode(
         160
         + len(widths) * 16
         + n * 56
-        + 232
+        + 240
         + len(title_b)
         + len(xlabel_b)
         + len(ylabel_b)
         + sum(0 if value is None else len(value) * 8 for value in tick_arrays)
+        + len(legend_array)
     )
     while True:
         out = ctypes.create_string_buffer(capacity)
@@ -1860,6 +1863,8 @@ def scene_batch_encode(
             len(xlabel_b),
             ctypes.c_char_p(ylabel_b) if ylabel_b else None,
             len(ylabel_b),
+            _ptr_u8(legend_array) if len(legend_array) else 0,
+            len(legend_array),
             out,
             capacity,
         )
@@ -1886,12 +1891,12 @@ def _scene_bytes_output(encoded: bytes, function: Any, label: str, *extra: Any) 
 
 
 def scene_svg(encoded: bytes) -> str:
-    """Render one validated Scene v8 document as a complete SVG."""
+    """Render one validated Scene v9 document as a complete SVG."""
     return _scene_bytes_output(encoded, _lib.xyg_scene_svg, "SVG").decode("utf-8")
 
 
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
-    """Compile Scene v8 into the existing native raster display list."""
+    """Compile Scene v9 into the existing native raster display list."""
     factor = float(scale)
     if not math.isfinite(factor) or factor <= 0.0:
         raise ValueError("scene raster scale must be positive and finite")

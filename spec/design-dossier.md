@@ -520,12 +520,13 @@ F3, still pending (above).
   are fixed little-endian bytes, never JSON. The legacy version-1 scatter SVG
   wrapper remains only as a migration consumer. The first #58 whole-scene slice
   compiles constant-style cartesian scatter/line/bar figures in Python and Node,
-  then exposes the exact same Scene v8 bytes to explicit Rust SVG and
+  then exposes the exact same Scene v9 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports keep their compatibility
   renderers until canonical layout and authored text/style records land. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
-  chrome ordering;
+  chrome ordering, plus bounded primary static legend entry ordering,
+  placement, frame, text, and swatch policy;
   unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. Browser paint and interaction lifecycle stay
   in TypeScript.
@@ -557,7 +558,7 @@ F3, still pending (above).
   to the stretched overview texture.
 - Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM.
   The first foundation now builds a static strict-CSP Worker plus a raw adapter over
-  `xyg-engine`; it validates exact Scene v8 and now compiles transferable
+  `xyg-engine`; it validates exact Scene v9 and now compiles transferable
   scatter/line/bar/area typed series with Rust-owned identities and defaults,
   but does not yet replace the density fallback. Transferable ArrayBuffers
   avoid a main↔Worker clone, followed by an explicit bounded copy into WASM linear

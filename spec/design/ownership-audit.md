@@ -8,9 +8,10 @@ This ledger answers ownership file by file without treating language percentages
 
 The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
 
-Migration status: Scene v8 now moves canonical viewport/plot bounds, numeric
+Migration status: Scene v9 now moves canonical viewport/plot bounds, numeric
 axis transforms, chart/plot backgrounds, authored axis side and visibility,
-explicit major/minor tick geometry and paint, default numeric
+explicit major/minor tick geometry and paint, bounded primary static legend
+entry order/placement/frame/text/swatch policy, default numeric
 tick/label/grid/spine chrome, clipping visibility, and scatter/polyline/rectangle record
 encoding into `crates/xyg-engine/src/scene.rs`. `python/xyg/_native.py` and
 `packages/xy-node/src/scene.js` only coerce typed arrays and call the generated

@@ -26,11 +26,11 @@ const SYMBOL_CODES = new Map([
 function sceneSymbolCode(value) {
   if (typeof value === "string") {
     const code = SYMBOL_CODES.get(value);
-    if (code == null) throw new RangeError(`Scene v8 does not support scatter symbol ${JSON.stringify(value)}`);
+    if (code == null) throw new RangeError(`Scene v9 does not support scatter symbol ${JSON.stringify(value)}`);
     return code;
   }
   if (!Number.isInteger(value) || value < 0 || value >= SYMBOL_CODES.size) {
-    throw new RangeError("Scene v8 scatter symbol code must be an integer from 0 through 18");
+    throw new RangeError("Scene v9 scatter symbol code must be an integer from 0 through 18");
   }
   return value;
 }
@@ -190,11 +190,12 @@ function defaultChromeStyle() {
   return bytes;
 }
 
-/** Encode the shared backend-neutral Scene v8 typed batch. */
+/** Encode the shared backend-neutral Scene v9 typed batch. */
 export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
   title = "", xLabel = "", yLabel = "", chromeStyle = null,
   xMajorTicks = null, xMinorTicks = [], yMajorTicks = null, yMinorTicks = [],
+  legendInput = null,
 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
@@ -238,8 +239,9 @@ export function sceneBatchEncode({
     : asUnsignedArray(chromeStyle, "chromeStyle", 255, Uint8Array);
   requireLength(chrome, 200, "chromeStyle");
   const tickArrays = [xMajorTicks, xMinorTicks, yMajorTicks, yMinorTicks].map((value, index) => value == null ? null : asF64Array(value, ["xMajorTicks", "xMinorTicks", "yMajorTicks", "yMinorTicks"][index]));
+  const legend = legendInput == null ? new Uint8Array() : asUnsignedArray(legendInput, "legendInput", 255, Uint8Array);
   if (tickArrays.some((value) => value != null && value.length > 200)) throw new RangeError("scene axis tick lists are limited to 200 values");
-  let capacity = 160 + widths.length * 16 + length * 56 + 232 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
+  let capacity = 160 + widths.length * 16 + length * 56 + 240 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + legend.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
@@ -256,6 +258,7 @@ export function sceneBatchEncode({
       titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
       xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
       yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
+      legend.length ? u8Ptr(legend) : 0, BigInt(legend.length),
       u8Ptr(output), BigInt(capacity),
     );
     if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical scene batch");
@@ -310,6 +313,37 @@ const SUPPORTED_KINDS = new Set([
 ]);
 const RIBBON_STEPS = 96;
 
+const LEGEND_LOCATIONS = new Map([["upper right", 0], ["upper left", 1], ["lower left", 2], ["lower right", 3], ["center right", 4], ["center left", 5], ["upper center", 6], ["lower center", 7], ["center", 8]]);
+
+function legendInput(figure, entries, styles) {
+  if (figure.showLegend === false || entries.length === 0) return new Uint8Array();
+  const options = figure.legend ?? {};
+  const allowed = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
+  if (Object.keys(options).some((key) => !allowed.has(key)) || Number(options.ncols ?? 1) !== 1) throw new RangeError("Scene v9 primary legends do not yet encode anchors, multiple columns, or custom content");
+  if (["toggle", "highlight"].some((key) => Object.hasOwn(options, key) && options[key] !== false)) throw new RangeError("Scene v9 primary legends are static; toggle and highlight must be false");
+  const authoredLoc = options.loc;
+  const loc = authoredLoc ?? "upper right";
+  if (!LEGEND_LOCATIONS.has(loc) || loc === "best") throw new RangeError(`Scene v9 does not support legend location ${JSON.stringify(loc)}`);
+  const style = options.style ?? {};
+  const allowedStyle = new Set(["background", "color", "font_size", "fontSize", "title_font_size", "titleFontSize"]);
+  if (Object.keys(style).some((key) => !allowedStyle.has(key))) throw new RangeError("Scene v9 legends support only background, color, font_size, and title_font_size");
+  const authoredFontSize = style.font_size ?? style.fontSize, authoredTitleFontSize = style.title_font_size ?? style.titleFontSize;
+  const fontSize = authoredFontSize == null ? 0 : Number(authoredFontSize), titleFontSize = authoredTitleFontSize == null ? 0 : Number(authoredTitleFontSize);
+  if (!((authoredFontSize == null || (fontSize >= 1 && fontSize <= 1000)) && (authoredTitleFontSize == null || (titleFontSize >= 1 && titleFontSize <= 1000)))) throw new RangeError("legend font sizes must be finite and in [1, 1000]");
+  const encoder = new TextEncoder(), title = encoder.encode(String(options.title ?? "")), labels = entries.map((entry) => encoder.encode(entry.label));
+  const textLength = title.length + labels.reduce((sum, label) => sum + label.length, 0);
+  if (entries.length > 128 || title.length > 4096 || textLength > 16384 || labels.some((label) => label.length === 0 || label.length > 4096)) throw new RangeError("Scene v9 legend text exceeds its bounded UTF-8 limits");
+  const out = new Uint8Array(48 + entries.length * 24 + textLength), view = new DataView(out.buffer);
+  out.set([88, 89, 76, 71]); out[4] = LEGEND_LOCATIONS.get(loc); out[5] = Number(authoredLoc != null) | (Number(authoredFontSize != null) << 1) | (Number(authoredTitleFontSize != null) << 2) | (Number(Object.hasOwn(style, "color")) << 3) | (Number(Object.hasOwn(style, "background")) << 4); view.setUint32(8, entries.length, true); view.setUint32(12, title.length, true); view.setFloat64(16, fontSize, true); view.setFloat64(24, titleFontSize, true);
+  if (Object.hasOwn(style, "color")) out.set(rgba8(style.color, 1, "legend color"), 32); if (Object.hasOwn(style, "background")) out.set(rgba8(style.background, 1, "legend background"), 36);
+  let textOffset = title.length; out.set(title, 48 + entries.length * 24);
+  for (const [index, entry] of entries.entries()) {
+    const offset = 48 + index * 24, label = labels[index], paint = styles[entry.styleRef];
+    view.setUint32(offset, entry.styleRef, true); out[offset + 4] = entry.kind; out[offset + 5] = entry.symbol; view.setUint32(offset + 8, textOffset, true); view.setUint32(offset + 12, label.length, true); out.set(paint.fillRgba, offset + 16); out.set(paint.strokeRgba, offset + 20); out.set(label, 48 + entries.length * 24 + textOffset); textOffset += label.length;
+  }
+  return out;
+}
+
 function ribbonEdge(x0, x1, ya, yb, steps = RIBBON_STEPS) {
   const outX = new Float64Array(steps + 1);
   const outY = new Float64Array(steps + 1);
@@ -326,18 +360,18 @@ function ribbonEdge(x0, x1, ya, yb, steps = RIBBON_STEPS) {
 
 function rejectRectExtras(style, kind) {
   if (style.fill != null && typeof style.fill === "object") {
-    throw new RangeError(`Scene v8 does not yet encode ${kind} gradient fills`);
+    throw new RangeError(`Scene v9 does not yet encode ${kind} gradient fills`);
   }
   const radius = style.corner_radius ?? 0;
   if (Array.isArray(radius)) {
     if (radius.some((value) => Number(value) !== 0)) {
-      throw new RangeError(`Scene v8 does not yet encode ${kind} corner_radius`);
+      throw new RangeError(`Scene v9 does not yet encode ${kind} corner_radius`);
     }
   } else if (Number(radius) !== 0) {
-    throw new RangeError(`Scene v8 does not yet encode ${kind} corner_radius`);
+    throw new RangeError(`Scene v9 does not yet encode ${kind} corner_radius`);
   }
   if (Number(style.wedge_gap ?? 0) !== 0) {
-    throw new RangeError(`Scene v8 does not yet encode ${kind} wedge_gap`);
+    throw new RangeError(`Scene v9 does not yet encode ${kind} wedge_gap`);
   }
 }
 
@@ -363,28 +397,27 @@ function stepArrays(xv, yv, where) {
 
 function requireEqualColumns(columns, kind, label) {
   if (columns.some((column) => column == null)) {
-    throw new RangeError(`${kind} Scene v8 compilation requires four ${label} columns`);
+    throw new RangeError(`${kind} Scene v9 compilation requires four ${label} columns`);
   }
   const count = columns[0].length;
   if (columns.some((column) => column.length !== count)) {
-    throw new RangeError(`Scene v8 ${kind} ${label} columns must have equal length`);
+    throw new RangeError(`Scene v9 ${kind} ${label} columns must have equal length`);
   }
   if (columns.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
-    throw new RangeError("Scene v8 does not yet encode missing-data breaks or nonfinite coordinates");
+    throw new RangeError("Scene v9 does not yet encode missing-data breaks or nonfinite coordinates");
   }
   return count;
 }
 
-/** Compile migrated cartesian marks to Scene v8. */
+/** Compile migrated cartesian marks to Scene v9. */
 export function figureSceneV3(figure, { margins = null } = {}) {
-  if (figure.coords !== "cartesian") throw new RangeError("Scene v8 figure compilation currently supports cartesian coordinates only");
-  if (figure.annotations?.length) throw new RangeError("Scene v8 does not yet encode annotations");
+  if (figure.coords !== "cartesian") throw new RangeError("Scene v9 figure compilation currently supports cartesian coordinates only");
+  if (figure.annotations?.length) throw new RangeError("Scene v9 does not yet encode annotations");
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
-  if (unsupported) throw new RangeError(`Scene v8 figure compilation does not yet support ${unsupported.kind}`);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [];
+  if (unsupported) throw new RangeError(`Scene v9 figure compilation does not yet support ${unsupported.kind}`);
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [];
   for (const trace of figure.traces) {
-    if (trace.name != null) throw new RangeError("Scene v8 does not yet encode legends");
-    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v8 currently supports only the primary x/y axes");
+    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v9 currently supports only the primary x/y axes");
     if (
       trace.kind === "scatter" &&
       shouldUseDensity(trace.x?.length ?? 0, {
@@ -393,11 +426,11 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         coords: figure.coords ?? "cartesian",
       })
     ) {
-      throw new RangeError("Scene v8 does not yet encode density-tier scatter");
+      throw new RangeError("Scene v9 does not yet encode density-tier scatter");
     }
     const style = trace.style ?? {};
     for (const key of ["color_channel", "size_channel", "stroke_channel", "dash", "curve", "smooth", "linecap", "marker_path", "marker_glyph"]) {
-      if (style[key] != null) throw new RangeError(`Scene v8 figure compilation does not yet support ${key}`);
+      if (style[key] != null) throw new RangeError(`Scene v9 figure compilation does not yet support ${key}`);
     }
     if (RECT_KINDS.has(trace.kind)) rejectRectExtras(style, trace.kind);
     const opacity = Number(style.opacity ?? 1);
@@ -407,29 +440,33 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       ?? "#3987e5";
     const fillDefault = SEGMENT_KINDS.has(trace.kind) ? "#00000000" : color;
     const fillCss = style.fill ?? fillDefault;
-    if (typeof fillCss !== "string") throw new RangeError(`Scene v8 does not yet encode ${trace.kind} non-CSS fills`);
+    if (typeof fillCss !== "string") throw new RangeError(`Scene v9 does not yet encode ${trace.kind} non-CSS fills`);
     const strokeCss = style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000");
     const width = Number(
       style.stroke_width ?? style.width ?? style.line_width ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
     );
     styles.push({ fillRgba: rgba8(fillCss, opacity, "fill"), strokeRgba: rgba8(strokeCss, opacity, "stroke"), strokeWidth: width });
     const styleRef = styles.length - 1;
+    if (trace.name != null && figure.showLegend !== false) {
+      const legendKind = trace.kind === "scatter" ? 0 : STROKE_KINDS.has(trace.kind) ? 1 : 2;
+      legendEntries.push({ styleRef, kind: legendKind, symbol: legendKind === 0 ? sceneSymbolCode(style.symbol ?? 0) : 0, label: String(trace.name) });
+    }
     const id = Number(trace.id);
 
     if (RIBBON_KINDS.has(trace.kind)) {
       if (trace.color_target != null) {
-        throw new RangeError("Scene v8 does not yet encode two-ended ribbon gradients");
+        throw new RangeError("Scene v9 does not yet encode two-ended ribbon gradients");
       }
       const cols = [trace.x0, trace.x1, trace.y0, trace.y1, trace.x, trace.y];
       if (cols.some((column) => column == null)) {
-        throw new RangeError("ribbon Scene v8 compilation requires six geometry columns");
+        throw new RangeError("ribbon Scene v9 compilation requires six geometry columns");
       }
       const count = cols[0].length;
       if (cols.some((column) => column.length !== count)) {
-        throw new RangeError("Scene v8 ribbon columns must have equal length");
+        throw new RangeError("Scene v9 ribbon columns must have equal length");
       }
       if (cols.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
-        throw new RangeError("Scene v8 does not yet encode missing-data breaks or nonfinite coordinates");
+        throw new RangeError("Scene v9 does not yet encode missing-data breaks or nonfinite coordinates");
       }
       for (let bandIndex = 0; bandIndex < count; bandIndex += 1) {
         const upper = ribbonEdge(Number(trace.x0[bandIndex]), Number(trace.x1[bandIndex]), Number(trace.y1[bandIndex]), Number(trace.y[bandIndex]));
@@ -446,17 +483,17 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
 
     if (POLYFILL_KINDS.has(trace.kind)) {
-      if (style.joined_fill) throw new RangeError("Scene v8 does not yet encode joined triangle-mesh fills");
+      if (style.joined_fill) throw new RangeError("Scene v9 does not yet encode joined triangle-mesh fills");
       const cols = [trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y];
       if (cols.some((column) => column == null)) {
-        throw new RangeError("triangle_mesh Scene v8 compilation requires six vertex columns");
+        throw new RangeError("triangle_mesh Scene v9 compilation requires six vertex columns");
       }
       const count = cols[0].length;
       if (cols.some((column) => column.length !== count)) {
-        throw new RangeError("Scene v8 triangle_mesh columns must have equal length");
+        throw new RangeError("Scene v9 triangle_mesh columns must have equal length");
       }
       if (cols.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
-        throw new RangeError("Scene v8 does not yet encode missing-data breaks or nonfinite coordinates");
+        throw new RangeError("Scene v9 does not yet encode missing-data breaks or nonfinite coordinates");
       }
       for (let triIndex = 0; triIndex < count; triIndex += 1) {
         const stableId = (BigInt(id) << 32n) | BigInt(triIndex);
@@ -476,17 +513,17 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (BAND_KINDS.has(trace.kind)) {
       const xv = trace.x, yv = trace.y, base = trace.base;
       if (xv == null || yv == null || base == null) {
-        throw new RangeError(`${trace.kind} Scene v8 compilation requires x, y, and base columns`);
+        throw new RangeError(`${trace.kind} Scene v9 compilation requires x, y, and base columns`);
       }
       if (!(xv.length === yv.length && yv.length === base.length)) {
-        throw new RangeError(`Scene v8 ${trace.kind} band columns must have equal length`);
+        throw new RangeError(`Scene v9 ${trace.kind} band columns must have equal length`);
       }
       if (
         Array.from(xv).some((value) => !Number.isFinite(value))
         || Array.from(yv).some((value) => !Number.isFinite(value))
         || Array.from(base).some((value) => !Number.isFinite(value))
       ) {
-        throw new RangeError("Scene v8 does not yet encode missing-data breaks or nonfinite coordinates");
+        throw new RangeError("Scene v9 does not yet encode missing-data breaks or nonfinite coordinates");
       }
       for (let index = 0; index < xv.length; index += 1) {
         kinds.push(3); stableIds.push(id); styleRefs.push(styleRef);
@@ -523,18 +560,18 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     let yv = trace.y;
     const where = style.step;
     if (where != null) {
-      if (trace.kind !== "line") throw new RangeError("Scene v8 step expansion applies only to line traces");
+      if (trace.kind !== "line") throw new RangeError("Scene v9 step expansion applies only to line traces");
       if (!["pre", "post", "mid"].includes(where)) {
-        throw new RangeError(`Scene v8 does not support step mode ${JSON.stringify(where)}`);
+        throw new RangeError(`Scene v9 does not support step mode ${JSON.stringify(where)}`);
       }
       const stepped = stepArrays(xv, yv, where);
       xv = stepped.x; yv = stepped.y;
     }
     if (xv == null || yv == null || xv.length !== yv.length) {
-      throw new RangeError("Scene v8 does not yet encode missing-data breaks or nonfinite coordinates");
+      throw new RangeError("Scene v9 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     if (Array.from(xv).some((value) => !Number.isFinite(value)) || Array.from(yv).some((value) => !Number.isFinite(value))) {
-      throw new RangeError("Scene v8 does not yet encode missing-data breaks or nonfinite coordinates");
+      throw new RangeError("Scene v9 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     const kindCode = trace.kind === "scatter" ? 0 : 1;
     for (let index = 0; index < xv.length; index += 1) {
@@ -570,7 +607,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
     kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-    title, xLabel, yLabel,
+    title, xLabel, yLabel, legendInput: legendInput(figure, legendEntries, styles),
   });
 }
 

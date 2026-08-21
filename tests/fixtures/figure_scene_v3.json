@@ -11,9 +11,10 @@
     0,
     5
   ],
-  "expected_sha256": "0e4d4a4e72e94abc61075f57622521bc3189297d08e50a390955d1b797d6478e",
-  "default_scatter_sha256": "a95ba27018e949cf125bc83fd4e5bf41b44f48971090804d6e67c4129603c924",
-  "default_line_sha256": "11c73ad9952c9950375990f31b9bb5d0684c1f23b34271a640e98ddf9071eb82",
+  "expected_sha256": "61170a74874bd76e85d4a796730220320de0a5c3bbf3f0ad6cb9516141c9db3e",
+  "default_scatter_sha256": "89d8da36e3a09cad26ffd551ade573ea62729e43fe97936048bc10ac6376c1f5",
+  "default_line_sha256": "ce8537c1e4a15aab34829c41a1e60c17b9ae394701fa4934f82319e57ada8fae",
+  "primary_legend_sha256": "495eccbc7316895d08b96c2da901ccc3f3976efca0c48414edd8035ca3bbee11",
   "wasm_typed_series_v1": {
     "magic": "XYTS",
     "scatter_diameter": 8,

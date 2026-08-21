@@ -40,7 +40,7 @@ has the shape specified here, byte for byte. What varies is *which* messages a
 host sends — the Reflex wrapper resolves `view_change` in the browser and never
 emits it (§2).
 
-The canonical Scene v8 batch is an in-process native host contract and a direct
+The canonical Scene v9 batch is an in-process native host contract and a direct
 browser/WASM binary input, not an `XYBF` JSON-number payload. Its little-endian
 layout, embedded style/chrome tables, authored tick arrays, and mark records are
 specified in [scene-ir.md](scene-ir.md). The #59 Worker carries those exact

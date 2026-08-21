@@ -94,7 +94,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 76;
+pub const ABI_VERSION: u32 = 77;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -339,7 +339,7 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
     })
 }
 
-/// Encode a bounded backend-neutral Scene v8 batch. Record kinds are scatter
+/// Encode a bounded backend-neutral Scene v9 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
 /// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
 /// null when the corresponding length is zero. Returns required bytes or
@@ -349,7 +349,8 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
 /// Every record input array must address `len` readable elements. The chrome
 /// style pointer must address exactly `SCENE_CHROME_STYLE_INPUT_BYTES` bytes;
 /// each tick pointer must address its corresponding count when non-zero. Text
-/// pointers must address `*_len` readable bytes when non-zero. If capacity is
+/// and bounded legend-input pointers must address `*_len` readable bytes when
+/// non-zero. If capacity is
 /// sufficient, `out` must address `out_cap` writable bytes.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
@@ -404,6 +405,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     x_label_len: usize,
     y_label: *const u8,
     y_label_len: usize,
+    legend_input: *const u8,
+    legend_input_len: usize,
     out: *mut u8,
     out_cap: usize,
 ) -> usize {
@@ -427,6 +430,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
         || y_label_len > scene::MAX_SCENE_TEXT_BYTES
+        || legend_input_len
+            > scene::MAX_SCENE_LEGEND_TEXT_BYTES + scene::MAX_SCENE_LEGEND_ENTRIES * 24 + 48
         || (len > 0
             && (kinds.is_null()
                 || stable_ids.is_null()
@@ -442,6 +447,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || (title_len > 0 && title.is_null())
         || (x_label_len > 0 && x_label.is_null())
         || (y_label_len > 0 && y_label.is_null())
+        || (legend_input_len > 0 && legend_input.is_null())
     {
         return usize::MAX;
     }
@@ -547,6 +553,12 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             std::str::from_utf8(std::slice::from_raw_parts(y_label, y_label_len)).ok()?
         };
         let text = scene::SceneChromeText::from_parts(title, x_label, y_label).ok()?;
+        let legend_bytes = if legend_input_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(legend_input, legend_input_len)
+        };
+        let legend = scene::SceneLegend::from_input(legend_bytes, style_count).ok()?;
         let tick_values = |pointer: *const f64, count: usize| {
             if count == 0 {
                 Vec::new()
@@ -562,7 +574,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             tick_values(y_minor_ticks, y_minor_count),
         )
         .ok()?;
-        scene::SceneBatch::new_with_chrome(
+        scene::SceneBatch::new_with_decorations(
             layout,
             x_axis_id,
             y_axis_id,
@@ -570,6 +582,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             y_scale,
             chrome,
             text,
+            legend,
             kinds,
             stable_ids,
             style_refs,
@@ -599,7 +612,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     required
 }
 
-/// Serialize one validated Scene v8 document as a complete SVG image.
+/// Serialize one validated Scene v9 document as a complete SVG image.
 /// Returns required bytes or `usize::MAX` for malformed input.
 ///
 /// # Safety
@@ -633,7 +646,7 @@ pub unsafe extern "C" fn xyg_scene_svg(
     required
 }
 
-/// Compile one validated Scene v8 document to the existing raster display-list
+/// Compile one validated Scene v9 document to the existing raster display-list
 /// command stream. Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -7565,11 +7578,13 @@ mod tests {
                 0,
                 std::ptr::null(),
                 0,
+                std::ptr::null(),
+                0,
                 output.as_mut_ptr(),
                 output.len(),
             )
         };
-        assert_eq!(call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1), 464);
+        assert_eq!(call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1), 472);
         assert_eq!(
             call(99, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1),
             usize::MAX
@@ -7612,7 +7627,7 @@ mod tests {
         let reserved_or_corner = [0.0f64; 4];
         let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
         let log_symbols = [0u8; 4];
-        let mut log_output = [0u8; 632];
+        let mut log_output = [0u8; 640];
         assert_eq!(
             unsafe {
                 xyg_scene_batch_encode(
@@ -7660,6 +7675,8 @@ mod tests {
                     reserved_or_corner.as_ptr(),
                     reserved_or_corner.as_ptr(),
                     4,
+                    std::ptr::null(),
+                    0,
                     std::ptr::null(),
                     0,
                     std::ptr::null(),

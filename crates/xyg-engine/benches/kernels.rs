@@ -18,8 +18,8 @@ use divan::{black_box, Bencher};
 
 use xyg_engine::kernels::{self, DEFAULT_CHUNK};
 use xyg_engine::scene::{
-    AxisScale, AxisSide, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText,
-    SceneDocument, TickDirection,
+    AxisScale, AxisSide, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
+    SceneChromeText, SceneDocument, SceneLegend, SceneLegendEntry, SceneRecordKind, TickDirection,
 };
 
 fn main() {
@@ -424,6 +424,67 @@ fn scene_v8_authored_chrome_svg(bencher: Bencher, n: usize) {
     assert!(output.contains("data-xy-chrome=\"chart-background\""));
     assert!(output.contains("rgba(148,163,184,0.313725)"));
     bencher.bench(|| black_box(document.to_svg()));
+}
+
+/// Scene v9 bounded primary-legend lowering across representative small,
+/// medium, and maximum static legend tables. Hosted nightly CodSpeed is the
+/// timing authority; these rows keep the workload reproducible locally.
+#[divan::bench(args = [4, 32, 128])]
+fn scene_v9_primary_legend_consumers(bencher: Bencher, entries: usize) {
+    let layout = PlotLayout::new(800.0, 600.0, 60.0, 20.0, 20.0, 50.0).unwrap();
+    let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
+    let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 550.0, 20.0, 1.0, false).unwrap();
+    let legend = SceneLegend {
+        location: LegendLocation::UpperRight,
+        title: "Series".into(),
+        font_size: 11.0,
+        title_font_size: 12.0,
+        text_rgba: [32, 32, 32, 255],
+        frame_fill_rgba: [255, 255, 255, 230],
+        frame_stroke_rgba: [32, 32, 32, 71],
+        entries: (0..entries)
+            .map(|index| SceneLegendEntry {
+                style_ref: 0,
+                kind: SceneRecordKind::Scatter,
+                symbol: 0,
+                fill_rgba: [57, 135, 229, 255],
+                stroke_rgba: [0, 0, 0, 0],
+                label: format!("series-{index}"),
+            })
+            .collect(),
+    };
+    let encoded = SceneBatch::new_with_decorations(
+        layout,
+        1,
+        2,
+        sx,
+        sy,
+        SceneChromeStyle::default(),
+        SceneChromeText::default(),
+        Some(legend),
+        &[0],
+        &[7],
+        &[0],
+        &[57, 135, 229, 255],
+        &[0, 0, 0, 0],
+        &[0.0],
+        &[6.0],
+        &[0],
+        &[0.5],
+        &[0.5],
+        &[0.0],
+        &[0.0],
+    )
+    .unwrap()
+    .encode();
+    let document = SceneDocument::decode(&encoded).unwrap();
+    bencher.bench(|| {
+        black_box((
+            document.to_svg(),
+            document.to_raster_commands(1.0).unwrap(),
+            document.to_browser_painter(1 << 20).unwrap(),
+        ))
+    });
 }
 
 fn browser_scene_document(n: usize, fragmented: bool) -> SceneDocument {

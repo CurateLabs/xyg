@@ -114,14 +114,16 @@ records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
 
-Painter contract v4 begins with `XYPB`, independent painter version 4, Scene
-version 8, a 280-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v5 begins with `XYPB`, independent painter version 5, Scene
+version 9, a 288-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v8
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v9
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
 geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores
-those three authored texts before formatted tick labels. Each trace descriptor identifies scatter/polyline/rect,
+those three authored texts before formatted tick labels. Header bytes 280–283
+carry the exact appended `XYLG` byte length and 284–287 are reserved zeros; the
+validated legend record follows tick-label strings. Each trace descriptor identifies scatter/polyline/rect,
 style, count, and absolute packed-column offsets. Rust derives default numeric
 ticks or consumes bounded authored major/minor positions, formats major labels,
 maps positions to painter coordinates, and emits fixed 16-byte records whose
@@ -146,9 +148,10 @@ Callers may reduce fragmentation or split work into explicitly managed views;
 the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
-This is the public direct-browser entry for the stable Scene v8
+This is the public direct-browser entry for the stable Scene v9
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
-spine, major/minor tick, side, visibility, and label paint. `frameWasmChart`
+spine, major/minor tick, side, visibility, label paint, and bounded primary
+static legends. `frameWasmChart`
 performs bounded descriptor validation and transfers exact full-buffer
 `Float64Array` columns as canonical compile ingress. Rust expands
 scatter/line/bar/area and performs the only f64-to-offset-f32 lowering,
