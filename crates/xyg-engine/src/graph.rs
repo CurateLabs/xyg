@@ -41,7 +41,7 @@ pub const LAYOUT_YIFANHU: u32 = 13;
 pub const LAYOUT_LINLOG: u32 = 14;
 /// Stress majorization on graph distances (same n limit as KK).
 pub const LAYOUT_STRESS: u32 = 15;
-/// CoSE-class compound-friendly spring layout (default option profile).
+/// CoSE-class spring layout (bounded default option profile).
 pub const LAYOUT_COSE: u32 = 16;
 
 /// Exact O(n²) pairwise repulsion ceiling. For `n` at or below this value
@@ -496,6 +496,30 @@ fn connected_components(n: usize, edges: &[(u64, u64)]) -> (Vec<usize>, usize) {
     (component, count)
 }
 
+/// Give exactly coincident CoSE ingress positions a stable direction before
+/// force evaluation. Without this, both pairwise and grid repulsion have a
+/// zero direction and a connected graph can remain fully overlapped forever.
+fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], seed: u64, scale: f64) {
+    let mut occurrences = HashMap::<(u64, u64), u64>::new();
+    for (index, (px, py)) in x.iter_mut().zip(y.iter_mut()).enumerate() {
+        let key = (
+            if *px == 0.0 { 0 } else { px.to_bits() },
+            if *py == 0.0 { 0 } else { py.to_bits() },
+        );
+        let occurrence = occurrences.entry(key).or_default();
+        if *occurrence > 0 {
+            let mut state = seed
+                ^ (index as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+                ^ occurrence.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+            let angle = std::f64::consts::TAU * rand01(&mut state);
+            let radius = scale * 1e-6 * (*occurrence as f64).sqrt();
+            *px += radius * angle.cos();
+            *py += radius * angle.sin();
+        }
+        *occurrence += 1;
+    }
+}
+
 impl ForceState {
     pub fn new(
         n_nodes: u64,
@@ -553,7 +577,12 @@ impl ForceState {
         } else {
             None
         };
-        let (component, component_count) = connected_components(n, &edges);
+        let (component, component_count) = if algo == LAYOUT_COSE {
+            seed_cose_overlaps(&mut x, &mut y, seed, k);
+            connected_components(n, &edges)
+        } else {
+            (Vec::new(), 0)
+        };
         Some(Self {
             n,
             edges,
@@ -2207,6 +2236,42 @@ mod tests {
         let a = centroid([0, 1]);
         let b = centroid([2, 3]);
         assert!((a.0 - b.0).hypot(a.1 - b.1) > state.k);
+    }
+
+    #[test]
+    fn cose_large_connected_coincident_ingress_gets_deterministic_directions() {
+        let n = FORCE_EXACT_REPULSION_MAX_N + 1;
+        let sources: Vec<u64> = (0..(n - 1) as u64).collect();
+        let targets: Vec<u64> = (1..n as u64).collect();
+        let initial_x = vec![0.0; n];
+        let initial_y = vec![-0.0; n];
+        let make = || {
+            ForceState::new(
+                n as u64,
+                &sources,
+                &targets,
+                Some(&initial_x),
+                Some(&initial_y),
+                23,
+                LAYOUT_COSE,
+            )
+            .unwrap()
+        };
+        let mut a = make();
+        let mut b = make();
+        a.tick(1);
+        b.tick(1);
+        assert_eq!(
+            (a.x.as_slice(), a.y.as_slice()),
+            (b.x.as_slice(), b.y.as_slice())
+        );
+        assert!(a.x.iter().chain(&a.y).all(|value| value.is_finite()));
+        assert!(a
+            .x
+            .iter()
+            .zip(&a.y)
+            .skip(1)
+            .any(|(&x, &y)| x != a.x[0] || y != a.y[0]));
     }
 
     #[test]

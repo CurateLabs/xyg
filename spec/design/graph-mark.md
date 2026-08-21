@@ -224,7 +224,7 @@ Single parameter; default **`"force"`**.
 | `yifanhu` | Yifan Hu–style: grid BH repulsion + edge springs |
 | `kamada_kawai` / `kk` | Kamada–Kawai stress on all-pairs shortest paths; **n ≤ 500** (falls back to FR above) |
 | `stress` | Stress majorization on graph distances; **n ≤ 500** (falls back to FR above) |
-| `cose` | Deterministic CoSE-class default profile: ideal-edge springs, node repulsion, gravity, overlap pressure, and stable disconnected-component spacing |
+| `cose` | Deterministic CoSE-class default profile: ideal-edge springs, node repulsion, gravity, exact overlap pressure through the 500-node pairwise tier, deterministic de-overlap seeding above it, and stable disconnected-component spacing |
 | `breadthfirst` | BFS layers from lowest-index root (or `roots=`) |
 | `radial` | Distance rings from root (SHOULD) |
 | `concentric` | Degree / attribute rings (SHOULD) |
