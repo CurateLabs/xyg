@@ -1,7 +1,8 @@
 /** Thin Node host for Rust-owned ordered Tier-3 XYGC range reads. */
 import {
   pointer, xyChunkedColumnsCancelBefore, xyChunkedColumnsFree,
-  xyChunkedColumnsOpen, xyChunkedColumnsRead, xyChunkedColumnsRows,
+  xyChunkedColumnsOpen, xyChunkedColumnsOverview, xyChunkedColumnsRead,
+  xyChunkedColumnsRows,
 } from "./native.js";
 
 export class ChunkedColumns {
@@ -10,6 +11,18 @@ export class ChunkedColumns {
     this.handle = xyChunkedColumnsOpen(pointer(bytes, "uint8_t *"), bytes.length);
     if (this.handle === 0n) throw new Error(`cannot open checked XYGC artifact ${JSON.stringify(String(path))}`);
     this.rows = xyChunkedColumnsRows(this.handle);
+  }
+  overview({ maxPoints = 2048 } = {}) {
+    if (!Number.isSafeInteger(maxPoints) || maxPoints < 1 || maxPoints > 1_000_000) {
+      throw new RangeError("chunked-column maxPoints must be an integer in [1, 1,000,000]");
+    }
+    const rowIds = new BigUint64Array(maxPoints);
+    const x = new Float64Array(maxPoints), y = new Float64Array(maxPoints);
+    const stats = new BigUint64Array(2);
+    const written = xyChunkedColumnsOverview(this.handle, maxPoints, pointer(rowIds, "uint64_t *"), pointer(x, "double *"), pointer(y, "double *"), pointer(stats, "uint64_t *"));
+    if (written === BigInt("18446744073709551615")) throw new Error("chunked-column overview read failed: invalid or stale request");
+    const n = Number(written);
+    return { rowIds: rowIds.slice(0, n), x: x.slice(0, n), y: y.slice(0, n), provenance: { availablePoints: stats[0], sourceRows: stats[1], detailRowsRead: 0n } };
   }
   read([x0, x1], { yRange = null, budgetBytes = 64 << 20, generation = 0 } = {}) {
     if (!Number.isSafeInteger(budgetBytes) || budgetBytes < 16) throw new RangeError("chunked-column read budget must be at least 16 bytes");

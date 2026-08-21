@@ -27,6 +27,37 @@ def _artifact(path, rows, chunk_rows=4):
             f.write(struct.pack("<2d", x, y))
 
 
+def _artifact_with_overview(path, rows, chunk_rows=4):
+    chunks = [rows[i : i + chunk_rows] for i in range(0, len(rows), chunk_rows)]
+    data_offset = 64 + 48 * len(chunks)
+    overview = [(i, x, y) for i, (x, y) in enumerate(rows)]
+    header = bytearray(64)
+    struct.pack_into(
+        "<4sIQIIQQI",
+        header,
+        0,
+        b"XYGC",
+        2,
+        len(rows),
+        chunk_rows,
+        len(chunks),
+        data_offset,
+        data_offset + 16 * len(rows),
+        len(overview),
+    )
+    with path.open("wb") as f:
+        f.write(header)
+        start = 0
+        for chunk in chunks:
+            xs, ys = zip(*chunk, strict=True)
+            f.write(struct.pack("<QII4d", start, len(chunk), 0, min(xs), max(xs), min(ys), max(ys)))
+            start += len(chunk)
+        for x, y in rows:
+            f.write(struct.pack("<2d", x, y))
+        for row, x, y in overview:
+            f.write(struct.pack("<Q2d", row, x, y))
+
+
 def test_exact_range_and_provenance(tmp_path):
     rows = [(float(i), float(i % 3)) for i in range(20)]
     path = tmp_path / "ordered.xygc"
@@ -61,3 +92,15 @@ def test_corrupt_budget_and_stale_handle_are_actionable(tmp_path):
     path.write_bytes(b"broken")
     with pytest.raises(ValueError, match="cannot open checked XYGC"):
         ChunkedColumns(path)
+
+
+def test_precomputed_overview_is_bounded_and_keeps_row_identity(tmp_path):
+    rows = [(float(i), float((i * 7) % 13)) for i in range(20)]
+    path = tmp_path / "overview.xygc"
+    _artifact_with_overview(path, rows)
+    with ChunkedColumns(path) as columns:
+        row_ids, x, y, provenance = columns.overview(max_points=7)
+    assert len(row_ids) == len(x) == len(y) == 7
+    assert row_ids[0] == 0 and row_ids[-1] == 19
+    assert [(xv, yv) for xv, yv in zip(x, y, strict=True)] == [rows[int(i)] for i in row_ids]
+    assert provenance == {"available_points": 20, "source_rows": 20, "detail_rows_read": 0}

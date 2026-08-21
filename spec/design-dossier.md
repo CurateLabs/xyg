@@ -419,7 +419,10 @@ bounded regardless of total dataset size (the "1B points" case).
 
 *Shipped local ordered-column foundation (`chunked_columns.rs`, Phase-4 #110):*
 the native engine opens versioned `XYGC` artifacts containing canonical paired f64
-rows and checked, ordered per-chunk x/y zone maps. A viewport binary-searches the x
+rows, checked ordered per-chunk x/y zone maps, and a bounded precomputed overview.
+Overview points retain canonical u64 row IDs, so first paint can refine to exact
+viewport rows without identity replacement; the overview call records source rows,
+available points, and that zero detail rows were read. A viewport binary-searches the x
 maps, optionally prunes by y, performs positioned reads of only candidate chunks,
 and applies the exact row predicate. Every reply records generation, first chunk,
 chunks considered/read, and bytes read. A hard byte budget is checked before I/O;
@@ -427,9 +430,8 @@ generation changes cancel stale work between reads. Python `ChunkedColumns` and 
 `ChunkedColumns` are thin, behavior-identical hosts. The artifact is local/offline;
 no network lookup is attempted. This is the ordered/time-series half of Tier 3 and
 does **not** complete this paragraph: remote HTTP range sources, direct-browser WASM
-staging, unordered spatial artifacts, and overview-first paint integration remain
-tracked by #110. Until those land, existing pyramid/tile-store overview behavior is
-separate from `XYGC` detail reads rather than one stable cross-tier identity.
+staging, unordered spatial artifacts, and chart-lifecycle overview/refinement wiring
+remain tracked by #110.
 
 *"Chunks intersecting the viewport" requires an index — arbitrary row groups don't
 know what they intersect.* Two cases: **(a) ordered/1-D data** (time series — the

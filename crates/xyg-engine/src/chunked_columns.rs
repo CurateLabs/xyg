@@ -12,10 +12,14 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 const MAGIC: &[u8; 4] = b"XYGC";
-const VERSION: u32 = 1;
+const VERSION: u32 = 2;
+const LEGACY_VERSION: u32 = 1;
 const HEADER_BYTES: u64 = 64;
 const META_BYTES: u64 = 48;
 const ROW_BYTES: u64 = 16;
+const OVERVIEW_BYTES: u64 = 24;
+const OVERVIEW_BUCKETS: u64 = 512;
+const MAX_OVERVIEW_POINTS: u64 = OVERVIEW_BUCKETS * 4;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ChunkMeta {
@@ -36,6 +40,20 @@ pub struct RangeRead {
     pub chunks_considered: u32,
     pub chunks_read: u32,
     pub bytes_read: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct OverviewPoint {
+    pub row: u64,
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct OverviewRead {
+    pub points: Vec<OverviewPoint>,
+    pub available: u32,
+    pub source_rows: u64,
 }
 
 #[derive(Debug)]
@@ -86,6 +104,7 @@ pub struct ChunkedColumns {
     chunk_rows: u32,
     metadata: Vec<ChunkMeta>,
     data_offset: u64,
+    overview: Vec<OverviewPoint>,
 }
 
 pub struct Registered {
@@ -126,6 +145,9 @@ impl Registered {
     }
     pub fn rows(&self) -> u64 {
         self.store.rows()
+    }
+    pub fn overview(&self, max_points: usize) -> Result<OverviewRead, Error> {
+        self.store.overview(max_points)
     }
     pub fn read(
         &self,
@@ -184,6 +206,14 @@ impl ChunkedColumns {
         file.set_len(data_offset)?;
         file.seek(SeekFrom::Start(data_offset))?;
         let mut metadata = Vec::with_capacity(chunk_count as usize);
+        let overview_bucket_rows = total_rows.div_ceil(OVERVIEW_BUCKETS).max(1);
+        let mut overview = Vec::with_capacity(
+            usize::try_from(total_rows.div_ceil(overview_bucket_rows).saturating_mul(4))
+                .unwrap_or(0),
+        );
+        let mut overview_bucket = Vec::with_capacity(
+            usize::try_from(overview_bucket_rows.min(u64::from(chunk_rows))).unwrap_or(0),
+        );
         let mut current = Vec::with_capacity(chunk_rows as usize);
         let mut last_x = f64::NEG_INFINITY;
         let mut row_start = 0u64;
@@ -199,14 +229,22 @@ impl ChunkedColumns {
                 last_x = x;
             }
             current.push(pair);
+            overview_bucket.push((consumed - 1, pair.0, pair.1));
             if current.len() == chunk_rows as usize {
                 write_chunk(&mut file, &mut metadata, row_start, &current)?;
                 row_start += current.len() as u64;
                 current.clear();
             }
+            if overview_bucket.len() as u64 == overview_bucket_rows {
+                append_overview_extrema(&mut overview, &overview_bucket)?;
+                overview_bucket.clear();
+            }
         }
         if !current.is_empty() {
             write_chunk(&mut file, &mut metadata, row_start, &current)?;
+        }
+        if !overview_bucket.is_empty() {
+            append_overview_extrema(&mut overview, &overview_bucket)?;
         }
         if consumed != total_rows || metadata.len() as u64 != chunk_count {
             return Err(Error::Corrupt("iterator length changed during creation"));
@@ -218,6 +256,9 @@ impl ChunkedColumns {
         header[16..20].copy_from_slice(&chunk_rows.to_le_bytes());
         header[20..24].copy_from_slice(&(metadata.len() as u32).to_le_bytes());
         header[24..32].copy_from_slice(&data_offset.to_le_bytes());
+        let overview_offset = data_offset + total_rows * ROW_BYTES;
+        header[32..40].copy_from_slice(&overview_offset.to_le_bytes());
+        header[40..44].copy_from_slice(&(overview.len() as u32).to_le_bytes());
         file.seek(SeekFrom::Start(0))?;
         file.write_all(&header)?;
         for meta in metadata {
@@ -227,6 +268,12 @@ impl ChunkedColumns {
             for value in [meta.x_min, meta.x_max, meta.y_min, meta.y_max] {
                 file.write_all(&value.to_le_bytes())?;
             }
+        }
+        file.seek(SeekFrom::Start(overview_offset))?;
+        for point in &overview {
+            file.write_all(&point.row.to_le_bytes())?;
+            file.write_all(&point.x.to_le_bytes())?;
+            file.write_all(&point.y.to_le_bytes())?;
         }
         file.sync_all()?;
         Ok(())
@@ -246,10 +293,13 @@ impl ChunkedColumns {
         if &header[0..4] != MAGIC {
             return Err(Error::Corrupt("bad magic"));
         }
-        if u32::from_le_bytes(header[4..8].try_into().unwrap()) != VERSION {
+        let version = u32::from_le_bytes(header[4..8].try_into().unwrap());
+        if version != VERSION && version != LEGACY_VERSION {
             return Err(Error::Corrupt("unsupported version"));
         }
-        if header[32..].iter().any(|&byte| byte != 0) {
+        if (version == LEGACY_VERSION && header[32..].iter().any(|&byte| byte != 0))
+            || (version == VERSION && header[44..].iter().any(|&byte| byte != 0))
+        {
             return Err(Error::Corrupt("nonzero reserved header bytes"));
         }
         let rows = u64::from_le_bytes(header[8..16].try_into().unwrap());
@@ -259,11 +309,31 @@ impl ChunkedColumns {
         if chunk_rows == 0 || data_offset != HEADER_BYTES + META_BYTES * u64::from(chunk_count) {
             return Err(Error::Corrupt("inconsistent header"));
         }
-        let expected = data_offset
+        let rows_end = data_offset
             .checked_add(
                 rows.checked_mul(ROW_BYTES)
                     .ok_or(Error::Corrupt("size overflow"))?,
             )
+            .ok_or(Error::Corrupt("size overflow"))?;
+        let (overview_offset, overview_count) = if version == VERSION {
+            (
+                u64::from_le_bytes(header[32..40].try_into().unwrap()),
+                u32::from_le_bytes(header[40..44].try_into().unwrap()),
+            )
+        } else {
+            (rows_end, 0)
+        };
+        if u64::from(overview_count) > MAX_OVERVIEW_POINTS
+            || u64::from(overview_count) > rows
+            || (rows > 0 && version == VERSION && overview_count == 0)
+        {
+            return Err(Error::Corrupt("invalid overview count"));
+        }
+        if overview_offset != rows_end {
+            return Err(Error::Corrupt("inconsistent overview offset"));
+        }
+        let expected = overview_offset
+            .checked_add(u64::from(overview_count) * OVERVIEW_BYTES)
             .ok_or(Error::Corrupt("size overflow"))?;
         if file_len != expected {
             return Err(Error::Corrupt("file length does not match header"));
@@ -305,12 +375,34 @@ impl ChunkedColumns {
         if expected_start != rows {
             return Err(Error::Corrupt("chunk rows do not sum to row count"));
         }
+        let mut overview = Vec::with_capacity(overview_count as usize);
+        file.seek(SeekFrom::Start(overview_offset))?;
+        let mut previous_row = None;
+        for _ in 0..overview_count {
+            let mut raw = [0u8; OVERVIEW_BYTES as usize];
+            file.read_exact(&mut raw)?;
+            let point = OverviewPoint {
+                row: u64::from_le_bytes(raw[0..8].try_into().unwrap()),
+                x: f64::from_le_bytes(raw[8..16].try_into().unwrap()),
+                y: f64::from_le_bytes(raw[16..24].try_into().unwrap()),
+            };
+            if point.row >= rows
+                || !point.x.is_finite()
+                || !point.y.is_finite()
+                || previous_row.is_some_and(|row| row >= point.row)
+            {
+                return Err(Error::Corrupt("invalid overview point"));
+            }
+            previous_row = Some(point.row);
+            overview.push(point);
+        }
         Ok(Self {
             file,
             rows,
             chunk_rows,
             metadata,
             data_offset,
+            overview,
         })
     }
 
@@ -322,6 +414,33 @@ impl ChunkedColumns {
     }
     pub fn metadata(&self) -> &[ChunkMeta] {
         &self.metadata
+    }
+
+    /// Return a screen-bounded, precomputed first-paint overview. No canonical
+    /// detail rows are read here; row IDs preserve identity for later exact
+    /// viewport refinement.
+    pub fn overview(&self, max_points: usize) -> Result<OverviewRead, Error> {
+        if max_points == 0 {
+            return Err(Error::InvalidRange);
+        }
+        let available = self.overview.len();
+        let points = if available <= max_points {
+            self.overview.clone()
+        } else if max_points == 1 {
+            vec![self.overview[0]]
+        } else {
+            (0..max_points)
+                .map(|index| {
+                    let source = index * (available - 1) / (max_points - 1);
+                    self.overview[source]
+                })
+                .collect()
+        };
+        Ok(OverviewRead {
+            points,
+            available: available as u32,
+            source_rows: self.rows,
+        })
     }
 
     /// Read exact rows in an x viewport. Zone maps select chunks; y bounds
@@ -430,6 +549,51 @@ fn write_chunk(
     Ok(())
 }
 
+fn append_overview_extrema(
+    overview: &mut Vec<OverviewPoint>,
+    bucket: &[(u64, f64, f64)],
+) -> Result<(), Error> {
+    let mut extrema: [Option<OverviewPoint>; 2] = [None, None];
+    for &(row, x, y) in bucket {
+        if !x.is_finite() || !y.is_finite() {
+            continue;
+        }
+        let point = OverviewPoint { row, x, y };
+        if extrema[0].is_none_or(|current| y < current.y) {
+            extrema[0] = Some(point);
+        }
+        if extrema[1].is_none_or(|current| y > current.y) {
+            extrema[1] = Some(point);
+        }
+    }
+    let Some(low) = extrema[0] else {
+        return Err(Error::Corrupt("overview bucket has no finite row"));
+    };
+    let high = extrema[1].unwrap();
+    let first = bucket
+        .iter()
+        .find(|(_, x, y)| x.is_finite() && y.is_finite())
+        .map(|&(row, x, y)| OverviewPoint { row, x, y })
+        .unwrap();
+    let last = bucket
+        .iter()
+        .rev()
+        .find(|(_, x, y)| x.is_finite() && y.is_finite())
+        .map(|&(row, x, y)| OverviewPoint { row, x, y })
+        .unwrap();
+    let mut candidates = [first, low, high, last];
+    candidates.sort_by_key(|point| point.row);
+    for point in candidates {
+        if overview
+            .last()
+            .is_none_or(|previous| previous.row != point.row)
+        {
+            overview.push(point);
+        }
+    }
+    Ok(())
+}
+
 #[cfg(unix)]
 fn read_exact_at(file: &File, mut buf: &mut [u8], mut offset: u64) -> io::Result<()> {
     use std::os::unix::fs::FileExt;
@@ -512,6 +676,33 @@ mod tests {
     }
 
     #[test]
+    fn overview_is_precomputed_bounded_and_identity_stable() {
+        let p = path("overview.xygc");
+        let rows: Vec<_> = (0..10_000)
+            .map(|i| (i as f64, ((i * 17) % 101) as f64))
+            .collect();
+        ChunkedColumns::create(&p, rows.clone(), 257).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let full = store.overview(10_000).unwrap();
+        assert!(full.points.len() <= 4 * OVERVIEW_BUCKETS as usize);
+        assert_eq!(full.points.first().unwrap().row, 0);
+        assert_eq!(full.points.last().unwrap().row, rows.len() as u64 - 1);
+        assert_eq!(full.source_rows, rows.len() as u64);
+        assert!(full.points.windows(2).all(|pair| pair[0].row < pair[1].row));
+        assert!(full
+            .points
+            .iter()
+            .all(|point| rows[point.row as usize] == (point.x, point.y)));
+
+        let bounded = store.overview(37).unwrap();
+        assert_eq!(bounded.points.len(), 37);
+        assert_eq!(bounded.points.first(), full.points.first());
+        assert_eq!(bounded.points.last(), full.points.last());
+        assert_eq!(bounded.available as usize, full.points.len());
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
     fn budget_cancel_and_corruption_fail_closed() {
         let p = path("failure.xygc");
         ChunkedColumns::create(&p, (0..20).map(|i| (i as f64, i as f64)), 5).unwrap();
@@ -567,6 +758,15 @@ mod tests {
         bytes[64 + 12] = 1;
         std::fs::write(&p, &bytes).unwrap();
         assert!(matches!(ChunkedColumns::open(&p), Err(Error::Corrupt(_))));
+
+        let mut bytes = std::fs::read(&p).unwrap();
+        bytes[64 + 12] = 0;
+        bytes[40..44].copy_from_slice(&u32::MAX.to_le_bytes());
+        std::fs::write(&p, &bytes).unwrap();
+        assert!(matches!(
+            ChunkedColumns::open(&p),
+            Err(Error::Corrupt("invalid overview count"))
+        ));
         std::fs::remove_file(p).unwrap();
     }
 

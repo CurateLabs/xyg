@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 78;
-export const SIGNATURE_SHA256 = "1c0d7ce275c78935498bf5a0dc3dcd14e04bd9244c4736069df6b857e782f247";
+export const ABI_VERSION = 79;
+export const SIGNATURE_SHA256 = "c906c9ede79d881dd376ea3b77e926cff2c383b1dfe5bc52d61b5782bdc6509f";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -18,6 +18,7 @@ export let xyBoxStats;
 export let xyChunkedColumnsCancelBefore;
 export let xyChunkedColumnsFree;
 export let xyChunkedColumnsOpen;
+export let xyChunkedColumnsOverview;
 export let xyChunkedColumnsRead;
 export let xyChunkedColumnsRows;
 export let xyContourfBands;
@@ -183,6 +184,7 @@ export function bindGeneratedAbi(lib) {
   xyChunkedColumnsCancelBefore = lib.func("int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation)");
   xyChunkedColumnsFree = lib.func("int32_t xyg_chunked_columns_free(uint64_t store)");
   xyChunkedColumnsOpen = lib.func("uint64_t xyg_chunked_columns_open(const uint8_t * path, size_t path_len)");
+  xyChunkedColumnsOverview = lib.func("size_t xyg_chunked_columns_overview(uint64_t store, size_t max_points, uint64_t * out_rows, double * out_x, double * out_y, uint64_t * out_stats)");
   xyChunkedColumnsRead = lib.func("size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)");
   xyChunkedColumnsRows = lib.func("uint64_t xyg_chunked_columns_rows(uint64_t store)");
   xyContourfBands = lib.func("size_t xyg_contourf_bands(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, const double * edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, int64_t * out_slots, size_t capacity)");

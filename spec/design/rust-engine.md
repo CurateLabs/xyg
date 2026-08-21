@@ -510,8 +510,11 @@ not own the canonical store. This is not npm packaging (#23).
 ### 5.1 Ordered out-of-core range reads (`chunked_columns.rs`)
 
 The first #110 slice moves ordered Tier-3 viewport selection into Rust. A
-versioned local `XYGC` artifact holds paired canonical f64 rows and per-chunk
-x/y zone maps. `ChunkedColumns::open` rejects short, mis-sized, unsupported,
+versioned local `XYGC` artifact holds paired canonical f64 rows, per-chunk x/y
+zone maps, and a fixed-size endpoint/min/max envelope built in one streaming pass. Version
+2 appends `(canonical_row_id, x, y)` overview records after detail rows; version 1
+remains readable and truthfully returns an empty overview. `ChunkedColumns::open`
+rejects short, mis-sized, unsupported,
 non-contiguous, or unordered metadata before a handle becomes visible. The
 range reader binary-searches ordered x maps, prunes optional y ranges, enforces
 a byte budget before positioned reads, applies the exact predicate, and checks
@@ -519,12 +522,15 @@ an atomic, monotonic viewport-generation watermark between chunks (older host
 requests cannot move cancellation backwards). Reserved fields and all zone-map
 bounds are validated and non-finite metadata fails closed. Its provenance
 record makes chunk/byte reduction auditable; out-of-budget diagnostics report
-both the required and configured bytes. ABI v78 gives Python and Node identical
-thin open/read/cancel/free surfaces and stable read error codes.
+both the required and configured bytes. ABI v79 gives Python and Node identical
+thin open/overview/read/cancel/free surfaces and stable read error codes.
+`overview(max_points=2048)` is caller-bounded, includes first/last coverage when
+reduced, retains canonical u64 row identity, and records available points, source
+rows, and zero detail rows read.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
-staging, spatially unordered data, overview linkage, and larger-than-RAM
-browser evidence remain open.
+staging, spatially unordered data, chart-lifecycle overview/refinement wiring,
+and larger-than-RAM browser evidence remain open.
 
 ## 6. Implementation order
 
