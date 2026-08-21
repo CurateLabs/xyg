@@ -718,6 +718,14 @@ Object.assign(ChartView.prototype, {
     this._resolvedAnnotationAnchors = new Map();
     for (const [annotationIndex, ann] of annotations.entries()) {
       const text: string = typeof ann.text === "string" ? ann.text : "";
+      if (!text && typeof ann.aria_label === "string" && ann.aria_label) {
+        const semantic = document.createElement("span");
+        semantic.textContent = ann.aria_label;
+        semantic.style.cssText = "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;";
+        semantic.setAttribute("role", "note");
+        this._applySlot(semantic, "annotation_label");
+        this.labels.appendChild(semantic);
+      }
       if (!text) continue;
       const style = ann && typeof ann.style === "object" ? ann.style : {};
       let px = null;

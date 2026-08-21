@@ -75,6 +75,41 @@ test("Node Scene v9 whole-scene consumers reject malformed and unsupported input
   assert.throws(() => figure.toScene(), /does not yet support heatmap/);
 });
 
+test("Node Scene v10 compiles bounded primary annotations and fails closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.annotations = [
+    { kind: "rule", axis: "x", value: 0.25, style: { color: "#ff0000", width: 2, opacity: 1 } },
+    { kind: "band", axis: "y", start: 0.2, end: 0.4, style: { color: "#00ff00", opacity: 0.25 } },
+    { kind: "marker", x: 0.75, y: 0.8, size: 10, symbol: "diamond", style: { color: "#0000ff", stroke_color: "#ffffff", stroke_width: 1.5, opacity: 1 } },
+  ];
+  const scene = figure.toScene(), svg = sceneSvg(scene);
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
+  assert.equal(scene[4], 10);
+  assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
+  assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
+  figure.annotations[2].text = "must not vanish";
+  assert.throws(() => figure.toScene(), /labels are deferred/);
+  for (const style of [
+    { color: "" }, { color: null }, { opacity: null }, { opacity: "" },
+    { opacity: "opaque" }, { width: null }, { width: false },
+  ]) {
+    figure.annotations = [{ kind: "rule", axis: "x", value: 0.25, style }];
+    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+  }
+  for (const annotation of [
+    { kind: "rule", axis: "x", value: null },
+    { kind: "rule", axis: "x", value: "" },
+    { kind: "rule", axis: "x", value: false },
+    { kind: "band", axis: "x", start: " ", end: 1 },
+    { kind: "marker", x: "not-a-number", y: 1 },
+    { kind: "marker", x: 0, y: 1, size: null },
+  ]) {
+    figure.annotations = [annotation];
+    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+  }
+});
+
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
   const ribbon = new Figure({ width: 320, height: 200 });
   ribbon.setAxisDomain("x", [0, 1]); ribbon.setAxisDomain("y", [0, 1]);
@@ -318,7 +353,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 9);
+  assert.equal(sceneVersion(), 10);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -359,7 +394,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 9);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 10);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

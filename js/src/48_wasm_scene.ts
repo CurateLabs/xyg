@@ -29,7 +29,7 @@ function compilePainter(painter: ArrayBuffer) {
   if (traceCount > XYG_WASM_PAINTER_MAX_TRACES || HEADER_BYTES + traceCount * TRACE_BYTES > bytes.length) throw new XygWasmError("XYG_WASM_RESOURCE_LIMIT", "Rust painter descriptor table exceeds its bound");
   const width = f32(24), height = f32(28), left = f32(32), top = f32(36), right = f32(40), bottom = f32(44);
   if (!(width > 0 && height > 0 && right > left && bottom > top && left >= 0 && top >= 0 && right <= width && bottom <= height)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter viewport is invalid");
-  const columns: any[] = [], traces: any[] = [];
+  const columns: any[] = [], traces: any[] = [], annotations: any[] = [];
   let expectedOffset = HEADER_BYTES + traceCount * TRACE_BYTES;
   const column = (descriptor: number, slot: number, count: number, dtype = "f32") => {
     const offset = u32(descriptor + slot), end = offset + count * 4;
@@ -80,6 +80,29 @@ function compilePainter(painter: ArrayBuffer) {
       };
     } else throw new XygWasmError("XYG_WASM_UNSUPPORTED", `unsupported Rust painter trace ${kind}`);
     trace.scene_ids = { lo: column(descriptor, 24, count, "u32"), hi: column(descriptor, 28, count, "u32") };
+    const idHigh = count ? view.getUint32(columns[trace.scene_ids.hi].byte_offset, true) : 0;
+    const annotationKind = (idHigh & 0xffff0000) === 0x58590000 ? (idHigh >>> 8) & 0xff : 0;
+    if (annotationKind) {
+      const px = (columnIndex: number, item = 0) => view.getFloat32(columns[columnIndex].byte_offset + item * 4, true);
+      if (annotationKind === 1 && kind === 1 && count === 2) {
+        const x0 = px(x), y0 = px(y), x1 = px(x, 1), y1 = px(y, 1);
+        annotations.push(x0 === x1
+          ? { kind: "rule", axis: "x", value: x0, style: { color: stroke, width: strokeWidth }, aria_label: "Vertical reference rule" }
+          : y0 === y1
+            ? { kind: "rule", axis: "y", value: y0, style: { color: stroke, width: strokeWidth }, aria_label: "Horizontal reference rule" }
+            : (() => { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust annotation rule is not axis aligned"); })());
+      } else if ((annotationKind === 2 || annotationKind === 4) && kind === 2 && count === 1) {
+        const x0 = px(x), y0 = px(y), x1 = px(trace.x1), y1 = px(trace.y1);
+        annotations.push(annotationKind === 2
+          ? { kind: "band", axis: "x", start: x0, end: x1, style: { color: fill, opacity: 1 }, aria_label: "Vertical reference band" }
+          : { kind: "band", axis: "y", start: y0, end: y1, style: { color: fill, opacity: 1 }, aria_label: "Horizontal reference band" });
+      } else if (annotationKind === 3 && kind === 0 && count === 1) {
+        annotations.push({ kind: "marker", x: px(x), y: px(y), size: diameter, symbol: SYMBOLS[symbol], style: { color: fill, stroke_color: stroke, stroke_width: strokeWidth, opacity: 1 }, aria_label: "Reference marker" });
+      } else {
+        throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust annotation descriptor is invalid");
+      }
+      continue;
+    }
     const markCount = kind === 4 ? 1 : count;
     Object.assign(trace, { id: index, name: null, tier: "direct", n_points: markCount, n_marks: markCount, x_axis: "x", y_axis: "y" });
     traces.push(trace);
@@ -178,7 +201,7 @@ function compilePainter(painter: ArrayBuffer) {
   };
   const xAxis = { ...axis("x", [left, right], 0, xTickCount, true, chrome + 24), label: text[1] };
   const yAxis = { ...axis("y", [bottom, top], xTickCount, yTickCount, false, chrome + 112), label: text[2] };
-  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: text[0] || null, x_axis: xAxis, y_axis: yAxis, axes: { x: xAxis, y: yAxis }, traces, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) }, styles: { title: { color: rgba(bytes.subarray(chrome + 8, chrome + 12)), "font-size": labelSize + 2 }, ...(legend ? { legend_title: { color: legend.style.color, "font-size": legend.title_style["font-size"] }, legend_label: { color: legend.style.color, "font-size": legend.style["font-size"] } } : {}) } }, legend, show_legend: legend != null, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes };
+  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: text[0] || null, x_axis: xAxis, y_axis: yAxis, axes: { x: xAxis, y: yAxis }, traces, annotations, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) }, styles: { title: { color: rgba(bytes.subarray(chrome + 8, chrome + 12)), "font-size": labelSize + 2 }, ...(legend ? { legend_title: { color: legend.style.color, "font-size": legend.title_style["font-size"] }, legend_label: { color: legend.style.color, "font-size": legend.style["font-size"] } } : {}) } }, legend, show_legend: legend != null, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes };
 }
 
 export interface RenderWasmSceneOptions { el: HTMLElement; scene: ArrayBuffer | Uint8Array; worker: XygWasmWorker; transfer?: boolean }

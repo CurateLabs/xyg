@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 9 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 10 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 9, so additive emission is not safe.
+bitmap or schema negotiation in version 10, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the exact version-9 layout (shared fixed
+WASM lifecycle foundation; it validates the exact version-10 layout (shared fixed
 header/mark widths since version 4), bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -376,7 +376,7 @@ nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
 bytes, and every count/length overflow.
 
 Rust owns entry order, location resolution, frame/text/swatch geometry and
-paint ordering for SVG and native raster. Browser painter v6 appends the exact
+paint ordering for SVG and native raster. Browser painter v7 appends the exact
 validated `XYLG` record; TypeScript projects it into the existing selectable
 and accessible DOM legend without deriving entries or defaults. Direct-Scene
 legends are static (`toggle=false`, `highlight=false`). Python and Node only
@@ -388,8 +388,33 @@ to `upper right`). Automatic `loc="best"` placement remains unsupported until
 that occupancy policy moves into Rust. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
-declarations fail closed. Colorbars and annotations remain explicit later
-issue-#116 work; Scene v9 does not approximate them.
+declarations fail closed. Colorbars remain explicit later issue-#116 work;
+Scene v10 additionally supports the bounded primary annotations below and does
+not approximate richer forms.
+
+## Version 10: primary Cartesian rule, band, and marker annotations
+
+Version 10 reserves stable IDs with high word `0x5859TT00` (`TT` is rule,
+band, or marker) and lowers the bounded primary annotation subset into the
+existing canonical Polyline, Rect, and Scatter records. Annotation records are
+always appended after data records, so Rust SVG, raster, and browser-painter
+consumers share exact projection, clipping, marker geometry, style validation,
+resource bounds, and paint order. Python and Node only coerce the same author
+values and produce byte-identical records. Painter v7 recognizes the reserved
+IDs and projects them into the existing browser annotation layer; TypeScript
+does not derive geometry or defaults. It also adds a literal, visually hidden
+`role=note` description for each direct-WASM annotation. These descriptions name
+the reference kind and orientation without misrepresenting Rust-projected pixel
+coordinates as authored data values.
+
+The supported surface is unlabeled axis-aligned rules, axis-aligned bands, and
+unlabeled built-in markers with solid literal colors, opacity, and bounded
+width/size. Text labels, callouts, arrows, classes, dash/span overrides,
+coordinate-space transforms, and unknown styles fail closed with a precise
+migration diagnostic. In particular, a marker label never disappears silently.
+Those deferred kinds are the next #116 annotation slice. Existing nightly
+`scene_v3_batch_encode`, SVG, raster-command, and browser-painter benchmark rows
+exercise the same record paths; no per-PR CodSpeed job is added.
 Authored solid chart/plot backgrounds, axis sides, and major/minor tick
 geometry/styles are Scene v8.
 Category, angular, and time/calendar tick ladders already move

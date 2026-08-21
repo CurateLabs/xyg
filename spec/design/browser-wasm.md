@@ -116,7 +116,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 `WASM_ABI_VERSION` is 5 for Scene paint, packed typed-column compile,
 transferable `XYTS` series descriptors, and resumable Tier-2 aggregation.
-`SCENE_VERSION` remains independently versioned at 9.
+`SCENE_VERSION` remains independently versioned and is 10 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including the aggregate lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -134,10 +134,10 @@ records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
 
-Painter contract v6 begins with `XYPB`, independent painter version 6, canonical
-Scene v9 (`SCENE_VERSION = 9`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v7 begins with `XYPB`, independent painter version 7, canonical
+Scene v10 (`SCENE_VERSION = 10`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v9
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v10
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
 geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores
@@ -174,10 +174,14 @@ Callers may reduce fragmentation or split work into explicitly managed views;
 the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
-This is the public direct-browser entry for the stable Scene v9
+This is the public direct-browser entry for the stable Scene v10
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
 spine, major/minor tick, side, visibility, label paint, and bounded primary
-static legends. `frameWasmChart`
+static legends. Scene v10 also carries bounded, unlabeled axis-aligned rules and
+bands plus built-in markers with literal solid paint, opacity, finite width/size,
+reserved stable identity, Rust-owned clipping/order, and a visually hidden
+`role=note` browser projection that names each reference without presenting
+projected pixel coordinates as authored data values. `frameWasmChart`
 performs bounded descriptor validation and transfers exact full-buffer
 `Float64Array` columns as canonical compile ingress. Rust expands
 scatter/line/bar/area and performs the only f64-to-offset-f32 lowering,

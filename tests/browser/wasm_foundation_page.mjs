@@ -61,7 +61,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 240 + textBytes + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 9, true);
+  view.setUint32(4, 10, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -118,13 +118,45 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   return bytes;
 }
 
+function primaryAnnotationSceneV10() {
+  const recordCount = 5, styleCount = 3;
+  const records = 160 + styleCount * 16;
+  const body = records + recordCount * 56;
+  const bytes = new Uint8Array(body + 240), view = new DataView(bytes.buffer);
+  bytes.set([88, 89, 71, 83], 0); // XYGS
+  view.setUint32(4, 10, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
+  [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
+  view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
+  [0, 1, 0, 1, 1, 1].forEach((value, index) => view.setFloat64(112 + index * 8, value, true));
+  // rule, band, marker styles
+  bytes.set([0, 0, 0, 0, 255, 0, 0, 255], 160); view.setFloat64(168, 2, true);
+  bytes.set([0, 255, 0, 64, 0, 255, 0, 64], 176); view.setFloat64(184, 0, true);
+  bytes.set([0, 0, 255, 255, 255, 255, 255, 255], 192); view.setFloat64(200, 1.5, true);
+  const writeRecord = (index, { kind, style, id, x0, y0, x1 = 0, y1 = 0, diameter = 0, symbol = 0 }) => {
+    const offset = records + index * 56;
+    bytes[offset] = kind; bytes[offset + 1] = 1; bytes[offset + 2] = symbol;
+    view.setUint32(offset + 4, style, true); view.setBigUint64(offset + 8, id, true);
+    [x0, y0, x1, y1].forEach((value, coordinate) => view.setFloat64(offset + 16 + coordinate * 8, value, true));
+    view.setFloat64(offset + 48, diameter, true);
+  };
+  const prefix = 0x5859000000000000n;
+  writeRecord(0, { kind: 1, style: 0, id: prefix | (1n << 40n), x0: 30, y0: 10 });
+  writeRecord(1, { kind: 1, style: 0, id: prefix | (1n << 40n), x0: 30, y0: 70 });
+  writeRecord(2, { kind: 2, style: 1, id: prefix | (2n << 40n) | 1n, x0: 40, y0: 10, x1: 50, y1: 70 });
+  writeRecord(3, { kind: 0, style: 2, id: prefix | (3n << 40n) | 2n, x0: 60, y0: 40, diameter: 10 });
+  writeRecord(4, { kind: 0, style: 2, id: prefix | (3n << 40n) | 3n, x0: 70, y0: 50, diameter: 10 });
+  writeDefaultSceneV9Chrome(bytes, view, body);
+  return bytes;
+}
+
 function fragmentedScene(count) {
   const records = 176;
   const body = records + count * 56;
   const bytes = new Uint8Array(body + 240);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 9, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 10, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -233,7 +265,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    5, 9, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    5, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     aggregateOutputOutOfRange ? 65520 : 0,
@@ -324,7 +356,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 5,
-    expectedSceneVersion: 9,
+    expectedSceneVersion: 10,
   };
 }
 
@@ -405,7 +437,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 5 || ready.sceneVersion !== 9) {
+  if (ready.abiVersion !== 5 || ready.sceneVersion !== 10) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -433,14 +465,38 @@ async function run() {
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const labels = [...host.querySelectorAll('[data-xy-label-kind="tick"]')].map((node) => node.textContent);
   if (labels.length < 6 || !labels.includes("0.0") || !labels.includes("0.5") || !labels.includes("1.0")) {
-    throw new Error(`Rust-authored Scene v9 chrome labels were not painted: ${JSON.stringify(labels)}`);
+    throw new Error(`Rust-authored Scene v10 chrome labels were not painted: ${JSON.stringify(labels)}`);
   }
   if (host.querySelectorAll('[data-xy-axis-side="bottom"], [data-xy-axis-side="left"]').length < 2) {
-    throw new Error("Rust-authored Scene v9 axis chrome was not painted");
+    throw new Error("Rust-authored Scene v10 axis chrome was not painted");
   }
   if (rendered.sceneStableId(0, 0) !== 7n) throw new Error("canonical stable id was not preserved through painter hydration");
   rendered.destroy();
   host.remove();
+
+  const annotationWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 4096,
+  });
+  await annotationWorker.ready;
+  const annotationHost = document.body.appendChild(document.createElement("div"));
+  const annotationView = await renderWasmScene({
+    el: annotationHost,
+    scene: primaryAnnotationSceneV10(),
+    worker: annotationWorker,
+    transfer: false,
+  });
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const annotationNotes = [...annotationHost.querySelectorAll('[role="note"]')]
+    .map((node) => node.textContent);
+  if (annotationView.gpuTraces.length !== 0
+      || annotationNotes.join("|") !== "Vertical reference rule|Vertical reference band|Reference marker|Reference marker") {
+    throw new Error(`Rust-authored primary annotations were not painted/accessibly exposed: ${JSON.stringify(annotationNotes)}`);
+  }
+  annotationView.destroy();
+  annotationHost.remove();
+  await annotationWorker.dispose();
 
   const authoredWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

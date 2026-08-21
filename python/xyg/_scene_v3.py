@@ -1,4 +1,4 @@
-"""Thin figure-to-Scene v9 compiler for the migrated core-mark subset.
+"""Thin figure-to-Scene v10 compiler for the migrated core-mark subset.
 
 Rust owns mapping, clipping, record semantics, SVG construction, and raster
 display-list construction. This module only projects already-validated Figure
@@ -60,21 +60,21 @@ def _legend_input(
     }
     if unsupported or int(options.get("ncols") or 1) != 1:
         raise UnsupportedSceneV3(
-            "Scene v9 primary legends do not yet encode anchors, multiple columns, or custom content"
+            "Scene v10 primary legends do not yet encode anchors, multiple columns, or custom content"
         )
     if any(key in options and options[key] is not False for key in ("toggle", "highlight")):
         raise UnsupportedSceneV3(
-            "Scene v9 primary legends are static; toggle and highlight must be false"
+            "Scene v10 primary legends are static; toggle and highlight must be false"
         )
     authored_loc = options.get("loc")
     loc = "upper right" if authored_loc is None else str(authored_loc)
     if loc not in _LEGEND_LOCATIONS:
-        raise UnsupportedSceneV3(f"Scene v9 does not support legend location {loc!r}")
+        raise UnsupportedSceneV3(f"Scene v10 does not support legend location {loc!r}")
     style = dict(options.get("style") or {})
     unsupported_style = set(style) - {"background", "color", "font_size", "title_font_size"}
     if unsupported_style:
         raise UnsupportedSceneV3(
-            "Scene v9 legends support only background, color, font_size, and title_font_size"
+            "Scene v10 legends support only background, color, font_size, and title_font_size"
         )
     authored_font_size = style.get("font_size")
     authored_title_font_size = style.get("title_font_size")
@@ -91,10 +91,10 @@ def _legend_input(
     title = str("" if title_value is None else title_value).encode("utf-8")
     labels = [label.encode("utf-8") for _, _, _, label in entries]
     if len(entries) > 128 or any(not label or len(label) > 4096 for label in labels):
-        raise ValueError("Scene v9 legends are limited to 128 nonempty 4096-byte labels")
+        raise ValueError("Scene v10 legends are limited to 128 nonempty 4096-byte labels")
     text_bytes = len(title) + sum(map(len, labels))
     if text_bytes > _native.MAX_SCENE_LEGEND_INPUT_BYTES - 48 - 128 * 24 or len(title) > 4096:
-        raise ValueError("Scene v9 legend text is limited to 16,384 UTF-8 bytes")
+        raise ValueError("Scene v10 legend text is limited to 16,384 UTF-8 bytes")
     out = bytearray(48 + len(entries) * 24)
     out[:4] = b"XYLG"
     out[4] = _LEGEND_LOCATIONS[loc]
@@ -162,11 +162,11 @@ def _rgba(css: str, opacity: float) -> tuple[int, int, int, int]:
 def _constant_color(trace: Any, fallback: str) -> str:
     channel = trace.color_ch
     if getattr(trace, "color2_ch", None) is not None:
-        raise UnsupportedSceneV3("Scene v9 does not yet encode two-ended ribbon gradients")
+        raise UnsupportedSceneV3("Scene v10 does not yet encode two-ended ribbon gradients")
     if channel is None:
         return str(trace.style.get("color", fallback))
     if channel.mode != "constant" or channel.constant is None:
-        raise UnsupportedSceneV3("Scene v9 does not yet support data-driven paint channels")
+        raise UnsupportedSceneV3("Scene v10 does not yet support data-driven paint channels")
     return channel.constant
 
 
@@ -198,13 +198,13 @@ def _scene_side_mask(
         return 1 << side_code
     if any(value not in allowed for value in values):
         raise UnsupportedSceneV3(
-            f"Scene v9 {axis_id} axis {name} must contain only {list(allowed)!r}"
+            f"Scene v10 {axis_id} axis {name} must contain only {list(allowed)!r}"
         )
     return sum(1 << index for index, candidate in enumerate(allowed) if candidate in values)
 
 
 def _scene_chrome_style(figure: Any) -> bytes:
-    """Pack the generated ABI's fixed Scene v9 chrome style input."""
+    """Pack the generated ABI's fixed Scene v10 chrome style input."""
     result = bytearray(200)
     figure_style = getattr(figure, "style", None) or {}
     result[0:4] = bytes(_rgba(str(figure_style.get("background") or "transparent"), 1.0))
@@ -219,13 +219,13 @@ def _scene_chrome_style(figure: Any) -> bytes:
             unsupported = set(authored) - _SCENE_AXIS_STYLE_KEYS
             if unsupported:
                 raise UnsupportedSceneV3(
-                    f"Scene v9 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
+                    f"Scene v10 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
                 )
         side = options.get("side", "bottom" if axis_id == "x" else "left")
         allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
         if side not in allowed:
             raise UnsupportedSceneV3(
-                f"Scene v9 {axis_id} axis side must be one of {list(allowed)!r}"
+                f"Scene v10 {axis_id} axis side must be one of {list(allowed)!r}"
             )
         side_low = side in {"bottom", "left"}
         side_code = 0 if side_low else 1
@@ -276,15 +276,15 @@ def _scene_chrome_style(figure: Any) -> bytes:
 def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:
     fill = style.get("fill")
     if isinstance(fill, dict):
-        raise UnsupportedSceneV3(f"Scene v9 does not yet encode {kind} gradient fills")
+        raise UnsupportedSceneV3(f"Scene v10 does not yet encode {kind} gradient fills")
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)):
         if any(float(value) != 0.0 for value in radius):
-            raise UnsupportedSceneV3(f"Scene v9 does not yet encode {kind} corner_radius")
+            raise UnsupportedSceneV3(f"Scene v10 does not yet encode {kind} corner_radius")
     elif float(radius) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v9 does not yet encode {kind} corner_radius")
+        raise UnsupportedSceneV3(f"Scene v10 does not yet encode {kind} corner_radius")
     if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v9 does not yet encode {kind} wedge_gap")
+        raise UnsupportedSceneV3(f"Scene v10 does not yet encode {kind} wedge_gap")
 
 
 def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray, np.ndarray]:
@@ -309,32 +309,32 @@ def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray
 
 def _rect_columns(trace: Any) -> list[np.ndarray]:
     if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v9 compilation requires four rectangle columns")
+        raise ValueError(f"{trace.kind} Scene v10 compilation requires four rectangle columns")
     arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
     lengths = {len(column) for column in arrays}
     if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v9 {trace.kind} rectangle columns must have equal length")
+        raise UnsupportedSceneV3(f"Scene v10 {trace.kind} rectangle columns must have equal length")
     return arrays
 
 
 def _segment_columns(trace: Any) -> list[np.ndarray]:
     if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v9 compilation requires four endpoint columns")
+        raise ValueError(f"{trace.kind} Scene v10 compilation requires four endpoint columns")
     arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
     lengths = {len(column) for column in arrays}
     if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v9 {trace.kind} endpoint columns must have equal length")
+        raise UnsupportedSceneV3(f"Scene v10 {trace.kind} endpoint columns must have equal length")
     return arrays
 
 
 def _band_columns(trace: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if trace.x is None or trace.y is None or trace.base is None:
-        raise ValueError(f"{trace.kind} Scene v9 compilation requires x, y, and base columns")
+        raise ValueError(f"{trace.kind} Scene v10 compilation requires x, y, and base columns")
     xv = np.asarray(trace.x.values, dtype=np.float64)
     yv = np.asarray(trace.y.values, dtype=np.float64)
     base = np.asarray(trace.base.values, dtype=np.float64)
     if not (len(xv) == len(yv) == len(base)):
-        raise UnsupportedSceneV3(f"Scene v9 {trace.kind} band columns must have equal length")
+        raise UnsupportedSceneV3(f"Scene v10 {trace.kind} band columns must have equal length")
     return xv, yv, base
 
 
@@ -354,11 +354,11 @@ def figure_scene(
     height: int | None = None,
     margins: tuple[float, float, float, float] | None = None,
 ) -> bytes:
-    """Compile migrated cartesian marks plus x/y axes to Scene v9."""
+    """Compile migrated cartesian marks plus x/y axes to Scene v10."""
     if figure.coords != "cartesian":
-        raise UnsupportedSceneV3("Scene v9 figure compilation currently supports cartesian only")
+        raise UnsupportedSceneV3("Scene v10 figure compilation currently supports cartesian only")
     if set(figure.axis_options) != {"x", "y"}:
-        raise UnsupportedSceneV3("Scene v9 figure compilation currently supports exactly x/y axes")
+        raise UnsupportedSceneV3("Scene v10 figure compilation currently supports exactly x/y axes")
     for options in figure.axis_options.values():
         supported_axis_keys = {
             "type",
@@ -379,18 +379,16 @@ def figure_scene(
             for key, value in options.items()
         ):
             raise UnsupportedSceneV3(
-                "Scene v9 does not yet encode tick formatting, collision policy, or advanced axis layout"
+                "Scene v10 does not yet encode tick formatting, collision policy, or advanced axis layout"
             )
     annotations = list(getattr(figure, "annotations", None) or [])
-    if annotations:
-        raise UnsupportedSceneV3("Scene v9 does not yet encode annotations")
     if figure.colorbar_options or figure.extra_legends:
-        raise UnsupportedSceneV3("Scene v9 does not yet encode colorbars or extra legends")
+        raise UnsupportedSceneV3("Scene v10 does not yet encode colorbars or extra legends")
     unsupported = next(
         (trace.kind for trace in figure.traces if trace.kind not in _SUPPORTED_KINDS), None
     )
     if unsupported is not None:
-        raise UnsupportedSceneV3(f"Scene v9 figure compilation does not yet support {unsupported}")
+        raise UnsupportedSceneV3(f"Scene v10 figure compilation does not yet support {unsupported}")
 
     kinds: list[int] = []
     stable_ids: list[int] = []
@@ -402,20 +400,22 @@ def figure_scene(
     legend_entries: list[tuple[int, int, int, str]] = []
     for trace in figure.traces:
         if trace.x_axis != "x" or trace.y_axis != "y":
-            raise UnsupportedSceneV3("Scene v9 currently supports only the primary x/y axes")
+            raise UnsupportedSceneV3("Scene v10 currently supports only the primary x/y axes")
         if trace.hidden or trace.has_per_item_channels():
-            raise UnsupportedSceneV3("Scene v9 does not yet encode hidden or per-item styled marks")
+            raise UnsupportedSceneV3(
+                "Scene v10 does not yet encode hidden or per-item styled marks"
+            )
         if trace.kind == "scatter" and trace.use_density():
-            raise UnsupportedSceneV3("Scene v9 does not yet encode density-tier scatter")
+            raise UnsupportedSceneV3("Scene v10 does not yet encode density-tier scatter")
         style = trace.style
         if any(key in style for key in ("dash", "curve", "linecap", "marker_path", "marker_glyph")):
             raise UnsupportedSceneV3(
-                "Scene v9 does not yet encode dashed, curved, or authored markers"
+                "Scene v10 does not yet encode dashed, curved, or authored markers"
             )
         if trace.kind in _RECT_KINDS:
             _reject_rect_extras(style, trace.kind)
         if trace.kind in _POLYFILL_KINDS and style.get("joined_fill"):
-            raise UnsupportedSceneV3("Scene v9 does not yet encode joined triangle-mesh fills")
+            raise UnsupportedSceneV3("Scene v10 does not yet encode joined triangle-mesh fills")
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
@@ -428,7 +428,7 @@ def figure_scene(
             fill_default = color
         fill_value = style.get("fill", fill_default)
         if not isinstance(fill_value, str):
-            raise UnsupportedSceneV3(f"Scene v9 does not yet encode {trace.kind} non-CSS fills")
+            raise UnsupportedSceneV3(f"Scene v10 does not yet encode {trace.kind} non-CSS fills")
         fill = _rgba(fill_value, opacity)
         stroke_default = color if trace.kind in _STROKE_KINDS else "transparent"
         if trace.kind in _RIBBON_KINDS | _POLYFILL_KINDS:
@@ -443,7 +443,7 @@ def figure_scene(
         style_ref = len(styles) - 1
         symbol_name = str(style.get("symbol", "circle"))
         if symbol_name not in _SYMBOL_CODES:
-            raise UnsupportedSceneV3(f"Scene v9 does not support scatter symbol {symbol_name!r}")
+            raise UnsupportedSceneV3(f"Scene v10 does not support scatter symbol {symbol_name!r}")
         diameter = (
             float(trace.size_ch.constant)
             if trace.kind == "scatter" and trace.size_ch is not None
@@ -466,7 +466,7 @@ def figure_scene(
                 value is None
                 for value in (trace.x0, trace.x1, trace.y0, trace.y1, trace.x, trace.y)
             ):
-                raise ValueError("ribbon Scene v9 compilation requires six geometry columns")
+                raise ValueError("ribbon Scene v10 compilation requires six geometry columns")
             x0s = np.asarray(trace.x0.values, dtype=np.float64)
             x1s = np.asarray(trace.x1.values, dtype=np.float64)
             source_lo = np.asarray(trace.y0.values, dtype=np.float64)
@@ -481,11 +481,11 @@ def figure_scene(
                 == len(target_lo)
                 == len(target_hi)
             ):
-                raise UnsupportedSceneV3("Scene v9 ribbon columns must have equal length")
+                raise UnsupportedSceneV3("Scene v10 ribbon columns must have equal length")
             arrays = (x0s, x1s, source_lo, source_hi, target_lo, target_hi)
             if any(not np.isfinite(column).all() for column in arrays):
                 raise UnsupportedSceneV3(
-                    "Scene v9 does not yet encode missing-data breaks or nonfinite coordinates"
+                    "Scene v10 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             for band_index in range(len(x0s)):
                 tops_x, tops_y, bases_x, bases_y = _ribbon_band_samples(
@@ -514,7 +514,7 @@ def figure_scene(
                 value is None
                 for value in (trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y)
             ):
-                raise ValueError("triangle_mesh Scene v9 compilation requires six vertex columns")
+                raise ValueError("triangle_mesh Scene v10 compilation requires six vertex columns")
             x0s = np.asarray(trace.x0.values, dtype=np.float64)
             y0s = np.asarray(trace.y0.values, dtype=np.float64)
             x1s = np.asarray(trace.x1.values, dtype=np.float64)
@@ -522,11 +522,11 @@ def figure_scene(
             x2s = np.asarray(trace.x.values, dtype=np.float64)
             y2s = np.asarray(trace.y.values, dtype=np.float64)
             if not (len(x0s) == len(y0s) == len(x1s) == len(y1s) == len(x2s) == len(y2s)):
-                raise UnsupportedSceneV3("Scene v9 triangle_mesh columns must have equal length")
+                raise UnsupportedSceneV3("Scene v10 triangle_mesh columns must have equal length")
             arrays = (x0s, y0s, x1s, y1s, x2s, y2s)
             if any(not np.isfinite(column).all() for column in arrays):
                 raise UnsupportedSceneV3(
-                    "Scene v9 does not yet encode missing-data breaks or nonfinite coordinates"
+                    "Scene v10 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             for tri_index in range(len(x0s)):
                 stable_id = (int(trace.id) << 32) | tri_index
@@ -550,7 +550,7 @@ def figure_scene(
             xv, yv, base = _band_columns(trace)
             if not (np.isfinite(xv).all() and np.isfinite(yv).all() and np.isfinite(base).all()):
                 raise UnsupportedSceneV3(
-                    "Scene v9 does not yet encode missing-data breaks or nonfinite coordinates"
+                    "Scene v10 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             for index in range(len(xv)):
                 kinds.append(3)
@@ -568,7 +568,7 @@ def figure_scene(
             arrays = _rect_columns(trace)
             if any(not np.isfinite(source).all() for source in arrays):
                 raise UnsupportedSceneV3(
-                    "Scene v9 does not yet encode missing-data breaks or nonfinite coordinates"
+                    "Scene v10 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             for index in range(len(arrays[0])):
                 kinds.append(kind_code)
@@ -584,7 +584,7 @@ def figure_scene(
             arrays = _segment_columns(trace)
             if any(not np.isfinite(source).all() for source in arrays):
                 raise UnsupportedSceneV3(
-                    "Scene v9 does not yet encode missing-data breaks or nonfinite coordinates"
+                    "Scene v10 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             x0s, y0s, x1s, y1s = arrays
             for index in range(len(x0s)):
@@ -610,13 +610,13 @@ def figure_scene(
         where = style.get("step")
         if where is not None:
             if trace.kind != "line":
-                raise UnsupportedSceneV3("Scene v9 step expansion applies only to line traces")
+                raise UnsupportedSceneV3("Scene v10 step expansion applies only to line traces")
             if where not in {"pre", "post", "mid"}:
-                raise UnsupportedSceneV3(f"Scene v9 does not support step mode {where!r}")
+                raise UnsupportedSceneV3(f"Scene v10 does not support step mode {where!r}")
             xv, yv = _step_arrays(xv, yv, where)
         if not np.isfinite(xv).all() or not np.isfinite(yv).all():
             raise UnsupportedSceneV3(
-                "Scene v9 does not yet encode missing-data breaks or nonfinite coordinates"
+                "Scene v10 does not yet encode missing-data breaks or nonfinite coordinates"
             )
         for index in range(len(xv)):
             kinds.append(kind_code)
@@ -628,6 +628,149 @@ def figure_scene(
             coordinates[1].append(float(yv[index]))
             coordinates[2].append(0.0)
             coordinates[3].append(0.0)
+
+    # Scene v10's bounded primary-annotation subset is represented by ordinary
+    # canonical records with a reserved stable-id namespace. Rust therefore
+    # remains the sole owner of scale projection, clipping, painter lowering,
+    # SVG/raster order and marker geometry; hosts only coerce authored values.
+    annotation_prefix = 0x5859000000000000
+    x_domain = tuple(float(value) for value in figure._range("x"))
+    y_domain = tuple(float(value) for value in figure._range("y"))
+
+    def annotation_number(values: dict[str, Any], key: str, default: Any, label: str) -> float:
+        raw = values.get(key, default)
+        if (
+            raw is None
+            or isinstance(raw, (bool, np.bool_))
+            or (isinstance(raw, str) and not raw.strip())
+        ):
+            raise ValueError(f"Scene v10 annotation {label} must be numeric")
+        try:
+            value = float(raw)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Scene v10 annotation {label} must be numeric") from error
+        return value
+
+    def annotation_color(style: dict[str, Any], key: str, default: str, label: str) -> str:
+        raw = style.get(key, default)
+        if not isinstance(raw, str) or not raw.strip():
+            raise ValueError(f"Scene v10 annotation {label} must be a nonempty CSS color")
+        return raw
+
+    for annotation_index, annotation in enumerate(annotations):
+        kind = annotation.get("kind")
+        if kind not in {"rule", "band", "marker"}:
+            raise UnsupportedSceneV3(
+                f"Scene v10 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
+            )
+        if annotation.get("text") not in (None, ""):
+            raise UnsupportedSceneV3(
+                f"Scene v10 {kind} annotation labels are deferred; remove text or use the legacy renderer"
+            )
+        if annotation.get("class_name") not in (None, ""):
+            raise UnsupportedSceneV3("Scene v10 annotations do not encode class_name")
+        style = dict(annotation.get("style") or {})
+        allowed = {"color", "opacity"}
+        if kind == "rule":
+            allowed.add("width")
+        elif kind == "marker":
+            allowed |= {"stroke_color", "stroke_width"}
+        unsupported_style = sorted(
+            key for key, value in style.items() if key not in allowed and value is not None
+        )
+        if unsupported_style:
+            raise UnsupportedSceneV3(
+                f"Scene v10 {kind} annotation style does not encode {unsupported_style!r}"
+            )
+        opacity = annotation_number(
+            style, "opacity", 0.14 if kind == "band" else 1.0, f"{kind} opacity"
+        )
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            raise ValueError(f"Scene v10 {kind} annotation opacity must be finite and in [0, 1]")
+        color = annotation_color(
+            style, "color", "#64748b" if kind == "band" else "#667085", f"{kind} color"
+        )
+        fill = _rgba(color, opacity) if kind != "rule" else (0, 0, 0, 0)
+        stroke_color = annotation_color(style, "stroke_color", color, f"{kind} stroke color")
+        stroke = _rgba(stroke_color, opacity)
+        width_key = "width" if kind == "rule" else "stroke_width"
+        width_value = annotation_number(
+            style, width_key, 1.5 if kind != "band" else 0.0, f"{kind} width"
+        )
+        if not np.isfinite(width_value) or width_value < 0 or (kind == "rule" and width_value == 0):
+            raise ValueError(f"Scene v10 {kind} annotation width must be finite and nonnegative")
+        styles.append((fill, stroke, width_value))
+        style_ref = len(styles) - 1
+        tag = (
+            4
+            if kind == "band" and annotation.get("axis") == "y"
+            else {"rule": 1, "band": 2, "marker": 3}[kind]
+        )
+        stable_id = annotation_prefix | (tag << 40) | annotation_index
+
+        def append_record(
+            record_kind: int,
+            a: float,
+            b: float,
+            c: float,
+            d: float,
+            *,
+            size: float = 0.0,
+            symbol: int = 0,
+            annotation_kind: str = kind,
+            annotation_stable_id: int = stable_id,
+            annotation_style_ref: int = style_ref,
+        ) -> None:
+            values = (a, b, c, d, size)
+            if not all(np.isfinite(value) for value in values):
+                raise ValueError(f"Scene v10 {annotation_kind} annotation geometry must be finite")
+            kinds.append(record_kind)
+            stable_ids.append(annotation_stable_id)
+            style_refs.append(annotation_style_ref)
+            diameters.append(size)
+            symbols.append(symbol)
+            for destination, value in zip(coordinates, (a, b, c, d), strict=True):
+                destination.append(float(value))
+
+        if kind == "rule":
+            axis_name = annotation.get("axis")
+            if axis_name not in {"x", "y"}:
+                raise ValueError("Scene v10 rule annotation axis must be 'x' or 'y'")
+            value = annotation_number(annotation, "value", None, f"{kind} value")
+            if axis_name == "x":
+                append_record(1, value, y_domain[0], 0.0, 0.0)
+                append_record(1, value, y_domain[1], 0.0, 0.0)
+            else:
+                append_record(1, x_domain[0], value, 0.0, 0.0)
+                append_record(1, x_domain[1], value, 0.0, 0.0)
+        elif kind == "band":
+            axis_name = annotation.get("axis")
+            if axis_name not in {"x", "y"}:
+                raise ValueError("Scene v10 band annotation axis must be 'x' or 'y'")
+            start = annotation_number(annotation, "start", None, f"{kind} start")
+            end = annotation_number(annotation, "end", None, f"{kind} end")
+            if axis_name == "x":
+                append_record(2, start, y_domain[0], end, y_domain[1])
+            else:
+                append_record(2, x_domain[0], start, x_domain[1], end)
+        else:
+            symbol_name = str(annotation.get("symbol", "circle"))
+            if symbol_name not in _SYMBOL_CODES:
+                raise UnsupportedSceneV3(
+                    f"Scene v10 does not support marker symbol {symbol_name!r}"
+                )
+            size = annotation_number(annotation, "size", 8.0, f"{kind} size")
+            if not np.isfinite(size) or size <= 0:
+                raise ValueError("Scene v10 marker annotation size must be finite and positive")
+            append_record(
+                0,
+                annotation_number(annotation, "x", None, f"{kind} x"),
+                annotation_number(annotation, "y", None, f"{kind} y"),
+                0.0,
+                0.0,
+                size=size,
+                symbol=_SYMBOL_CODES[symbol_name],
+            )
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
