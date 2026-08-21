@@ -194,20 +194,8 @@ mod tests {
         let mut oy1 = vec![0.0; cap];
         let mut eidx = vec![0u64; cap];
         let n = edge_route_segments(
-            3,
-            &x,
-            &y,
-            &sources,
-            &targets,
-            true,
-            0.2,
-            0.5,
-            0.15,
-            &mut ox0,
-            &mut oy0,
-            &mut ox1,
-            &mut oy1,
-            &mut eidx,
+            3, &x, &y, &sources, &targets, true, 0.2, 0.5, 0.15, &mut ox0, &mut oy0, &mut ox1,
+            &mut oy1, &mut eidx,
         )
         .expect("route");
         // Two parallel edges × (shaft + 2 wings) + one 3-segment loop = 9.

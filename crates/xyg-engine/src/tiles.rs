@@ -576,7 +576,13 @@ fn reduce_color_level(prev_counts: &[u32], prev_color: &[[u16; 4]], dim: usize) 
 
 /// Cell-index range [lo, hi) of a level whose cell CENTERS fall inside the
 /// window along one axis.
-pub(crate) fn center_range(lo: f64, hi: f64, full_lo: f64, full_hi: f64, dim: usize) -> (usize, usize) {
+pub(crate) fn center_range(
+    lo: f64,
+    hi: f64,
+    full_lo: f64,
+    full_hi: f64,
+    dim: usize,
+) -> (usize, usize) {
     let cell = (full_hi - full_lo) / dim as f64;
     // center of cell i is full_lo + (i + 0.5) * cell; inside ⇔ lo <= c < hi
     let first = ((lo - full_lo) / cell - 0.5).ceil().max(0.0) as usize;
