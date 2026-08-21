@@ -31,34 +31,34 @@ function u32(value: unknown, name: string): number {
 }
 
 export interface XygTemporalEvent {
-  groupId: bigint;
-  sourceInstance: bigint;
-  revision: bigint;
-  rangeStart: bigint;
-  rangeEnd: bigint;
-  cursor: bigint;
-  window: bigint;
-  selection: readonly bigint[];
+  readonly groupId: bigint;
+  readonly sourceInstance: bigint;
+  readonly revision: bigint;
+  readonly rangeStart: bigint;
+  readonly rangeEnd: bigint;
+  readonly cursor: bigint;
+  readonly window: bigint;
+  readonly selection: readonly bigint[];
 }
 
 export interface XygTemporalState {
-  instanceId: bigint;
-  groupId: bigint;
-  domainStart: bigint;
-  domainEnd: bigint;
-  rangeStart: bigint;
-  rangeEnd: bigint;
-  cursor: bigint;
-  window: bigint;
-  step: bigint;
-  direction: -1 | 1;
-  rateMilli: number;
-  loop: boolean;
-  playing: boolean;
-  reducedMotion: boolean;
-  disposed: boolean;
-  revision: bigint;
-  selection: readonly bigint[];
+  readonly instanceId: bigint;
+  readonly groupId: bigint;
+  readonly domainStart: bigint;
+  readonly domainEnd: bigint;
+  readonly rangeStart: bigint;
+  readonly rangeEnd: bigint;
+  readonly cursor: bigint;
+  readonly window: bigint;
+  readonly step: bigint;
+  readonly direction: -1 | 1;
+  readonly rateMilli: number;
+  readonly loop: boolean;
+  readonly playing: boolean;
+  readonly reducedMotion: boolean;
+  readonly disposed: boolean;
+  readonly revision: bigint;
+  readonly selection: readonly bigint[];
 }
 
 export interface XygTemporalResult {
@@ -104,16 +104,19 @@ function decode(buffer: ArrayBuffer): XygTemporalResult {
   }
   const flags = view.getUint32(8, true);
   const selectionCount = view.getUint32(12, true);
+  if (selectionCount > MAX_SELECTION_IDS) {
+    throw new Error("Rust temporal response selection exceeds the protocol bound");
+  }
   if (buffer.byteLength !== 176 + selectionCount * 8) {
     throw new Error("Rust temporal response selection length is invalid");
   }
-  const selection = Array.from(
+  const selection = Object.freeze(Array.from(
     { length: selectionCount },
     (_, index) => view.getBigUint64(176 + index * 8, true),
-  );
+  ));
   const direction = view.getInt32(88, true);
   if (direction !== -1 && direction !== 1) throw new Error("Rust temporal direction is invalid");
-  const state: XygTemporalState = {
+  const state: XygTemporalState = Object.freeze({
     instanceId: view.getBigUint64(16, true), groupId: view.getBigUint64(24, true),
     domainStart: view.getBigInt64(32, true), domainEnd: view.getBigInt64(40, true),
     rangeStart: view.getBigInt64(48, true), rangeEnd: view.getBigInt64(56, true),
@@ -123,8 +126,8 @@ function decode(buffer: ArrayBuffer): XygTemporalResult {
     playing: bool32(view, 100), reducedMotion: bool32(view, 104),
     disposed: bool32(view, 108), revision: view.getBigUint64(112, true),
     selection,
-  };
-  const event = (flags & 2) === 0 ? null : {
+  });
+  const event = (flags & 2) === 0 ? null : Object.freeze({
     groupId: view.getBigUint64(120, true),
     sourceInstance: view.getBigUint64(128, true),
     revision: view.getBigUint64(136, true),
@@ -133,7 +136,7 @@ function decode(buffer: ArrayBuffer): XygTemporalResult {
     cursor: view.getBigInt64(160, true),
     window: view.getBigInt64(168, true),
     selection,
-  };
+  });
   return { state, changed: (flags & 1) !== 0, event };
 }
 

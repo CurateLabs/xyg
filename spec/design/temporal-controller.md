@@ -133,7 +133,9 @@ a selection replacement therefore carries the canonical current selection; a
 receiver never observes a new time window paired with an older selection.
 Native calls carry a raw `u64*` plus count. Packed `XYTC`/`XYTR` version 2 appends
 raw little-endian u64 IDs after the fixed snapshot. Browser values remain
-`BigInt`; selection IDs never pass through JSON numbers.
+`BigInt`; selection IDs never pass through JSON numbers. Decoded browser state,
+events, and selection arrays are runtime-frozen snapshots, so consumer callbacks
+cannot mutate the host cache after Rust canonicalization.
 
 ## Host examples
 

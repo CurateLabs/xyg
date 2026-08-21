@@ -471,6 +471,21 @@ async function run() {
   reboundScrubber.remove();
   temporal.bindScrubber(scrubber);
   await temporal.setSelection([(1n << 64n) - 1n, 7n, 7n, 0n]);
+  let rejectedSnapshotMutation = 0;
+  for (const mutate of [
+    () => { temporal.state.cursor = 99n; },
+    () => { temporal.state.selection[0] = 99n; },
+    () => { temporalEvents.at(-1).selection.push(99n); },
+  ]) {
+    try { mutate(); } catch (error) {
+      if (error instanceof TypeError) rejectedSnapshotMutation += 1;
+    }
+  }
+  if (rejectedSnapshotMutation !== 3
+      || temporal.state.cursor !== 10n
+      || temporal.state.selection.join(",") !== `0,7,${(1n << 64n) - 1n}`) {
+    throw new Error("browser temporal snapshots allowed host mutation after Rust canonicalization");
+  }
   let rejectedSelectionBound = false;
   try {
     temporal.setSelection(Array(10_001).fill(1n));
