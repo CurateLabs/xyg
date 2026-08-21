@@ -177,6 +177,21 @@ class ChunkedColumns:
             self._handle, x_range, y_range, budget_bytes=budget_bytes, generation=generation
         )
 
+    def overview(
+        self, *, max_points: int = 2_048
+    ) -> tuple[
+        npt.NDArray[np.uint64],
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+        dict[str, int],
+    ]:
+        """Return a bounded first-paint overview with canonical row IDs.
+
+        The overview is precomputed in the artifact, so this never scans or
+        pages detail rows. ``max_points`` controls host allocation and output.
+        """
+        return _native.chunked_columns_overview(self._handle, max_points)
+
     def cancel_before(self, generation: int) -> None:
         _native.chunked_columns_cancel_before(self._handle, generation)
 

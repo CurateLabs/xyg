@@ -360,7 +360,7 @@
       "python": "foundation",
       "node": "foundation",
       "rust": "ready",
-      "notes": "ABI v78: checked local XYGC open, zone-map viewport selection, bounded exact reads, cancellation generations and byte/chunk provenance. Remote and browser/WASM sources plus overview linkage remain #110."
+      "notes": "ABI v79: checked local XYGC v1/v2 open, bounded precomputed overview with canonical row IDs, zone-map viewport selection, bounded exact reads, cancellation generations and byte/chunk provenance. Remote and browser/WASM sources, unordered spatial data, and chart-lifecycle overview wiring remain #110."
     }
   ],
   "references": [

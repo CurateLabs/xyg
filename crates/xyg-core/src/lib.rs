@@ -96,7 +96,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 78;
+pub const ABI_VERSION: u32 = 79;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4374,6 +4374,50 @@ pub extern "C" fn xyg_chunked_columns_cancel_before(store: u64, generation: u64)
 pub extern "C" fn xyg_chunked_columns_rows(store: u64) -> u64 {
     ffi_guard(u64::MAX, || {
         chunked_columns::reg_get(store).map_or(u64::MAX, |s| s.rows())
+    })
+}
+
+/// Copy the precomputed, screen-bounded overview without reading canonical
+/// detail rows. `out_stats` receives available overview points and source row
+/// count. Returns points written or `usize::MAX` for an invalid request.
+///
+/// # Safety
+/// Each output pointer must address `max_points` writable values and
+/// `out_stats` must address two writable u64 values.
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_chunked_columns_overview(
+    store: u64,
+    max_points: usize,
+    out_rows: *mut u64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    out_stats: *mut u64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if max_points == 0
+            || out_rows.is_null()
+            || out_x.is_null()
+            || out_y.is_null()
+            || out_stats.is_null()
+        {
+            return usize::MAX;
+        }
+        let Some(s) = chunked_columns::reg_get(store) else {
+            return usize::MAX;
+        };
+        let Ok(read) = s.overview(max_points) else {
+            return usize::MAX;
+        };
+        for (index, point) in read.points.iter().enumerate() {
+            *out_rows.add(index) = point.row;
+            *out_x.add(index) = point.x;
+            *out_y.add(index) = point.y;
+        }
+        let stats = std::slice::from_raw_parts_mut(out_stats, 2);
+        stats[0] = u64::from(read.available);
+        stats[1] = read.source_rows;
+        read.points.len()
     })
 }
 
