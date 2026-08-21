@@ -1,6 +1,6 @@
 # TemporalController and linked-view protocol
 
-**Status:** shipped in native and direct-browser/WASM hosts (ABI 79).
+**Status:** shipped in native and direct-browser/WASM hosts (ABI 80).
 Graph timebar (#45) and compositions (#46) consume this contract.
 
 **Authority:** [temporal.md](temporal.md) for canonical i64 micros; this document
