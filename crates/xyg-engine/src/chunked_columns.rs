@@ -42,6 +42,13 @@ pub struct RangeRead {
     pub bytes_read: u64,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct RangePage {
+    pub read: RangeRead,
+    pub next_chunk: u32,
+    pub done: bool,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct OverviewPoint {
     pub row: u64,
@@ -210,6 +217,20 @@ impl Registered {
         self.store.read_range(x0, x1, y, budget, generation, |g| {
             self.current_generation.load(Ordering::Acquire) == g
         })
+    }
+    pub fn read_page(
+        &self,
+        x0: f64,
+        x1: f64,
+        y: Option<(f64, f64)>,
+        budget: u64,
+        generation: u64,
+        cursor: u32,
+    ) -> Result<RangePage, Error> {
+        self.store
+            .read_range_page((x0, x1), y, budget, generation, cursor, |g| {
+                self.current_generation.load(Ordering::Acquire) == g
+            })
     }
 }
 
@@ -554,6 +575,9 @@ impl ChunkedColumns {
                 &mut raw,
                 self.data_offset + meta.row_start * ROW_BYTES,
             )?;
+            if !is_current(generation) {
+                return Err(Error::Cancelled);
+            }
             out.chunks_read += 1;
             out.bytes_read += bytes;
             for row in raw.chunks_exact(16) {
@@ -571,6 +595,110 @@ impl ChunkedColumns {
             }
         }
         Ok(out)
+    }
+
+    /// Read the next whole-chunk-bounded page of an exact viewport. `cursor`
+    /// is an opaque absolute chunk position returned by the preceding page;
+    /// zero starts at Rust's zone-map-selected first chunk. A page never reads
+    /// more than `budget` canonical bytes and always advances or fails closed.
+    /// Cancellation is checked around every positioned read and again before
+    /// publication, so a generation superseded during the final read cannot
+    /// return a stale page.
+    pub fn read_range_page<F>(
+        &self,
+        x: (f64, f64),
+        y: Option<(f64, f64)>,
+        budget: u64,
+        generation: u64,
+        cursor: u32,
+        mut is_current: F,
+    ) -> Result<RangePage, Error>
+    where
+        F: FnMut(u64) -> bool,
+    {
+        let (x0, x1) = x;
+        if !x0.is_finite()
+            || !x1.is_finite()
+            || x0 > x1
+            || y.is_some_and(|(a, b)| !a.is_finite() || !b.is_finite() || a > b)
+        {
+            return Err(Error::InvalidRange);
+        }
+        let first = self.metadata.partition_point(|m| m.x_max < x0);
+        let end = self.metadata.partition_point(|m| m.x_min <= x1);
+        let mut index = if cursor == 0 { first } else { cursor as usize };
+        if index < first || index > end {
+            return Err(Error::InvalidRange);
+        }
+        let page_first = index;
+        let mut out = RangeRead {
+            x: Vec::new(),
+            y: Vec::new(),
+            generation,
+            first_chunk: page_first as u32,
+            chunks_considered: 0,
+            chunks_read: 0,
+            bytes_read: 0,
+        };
+        while index < end {
+            if !is_current(generation) {
+                return Err(Error::Cancelled);
+            }
+            let meta = self.metadata[index];
+            out.chunks_considered += 1;
+            if y.is_some_and(|(a, b)| meta.y_max < a || meta.y_min > b) {
+                index += 1;
+                continue;
+            }
+            let bytes = u64::from(meta.row_count) * ROW_BYTES;
+            if out
+                .bytes_read
+                .checked_add(bytes)
+                .ok_or(Error::Corrupt("read size overflow"))?
+                > budget
+            {
+                if out.chunks_read == 0 {
+                    return Err(Error::BudgetExceeded {
+                        needed: bytes,
+                        budget,
+                    });
+                }
+                break;
+            }
+            let mut raw = vec![0u8; bytes as usize];
+            read_exact_at(
+                &self.file,
+                &mut raw,
+                self.data_offset + meta.row_start * ROW_BYTES,
+            )?;
+            if !is_current(generation) {
+                return Err(Error::Cancelled);
+            }
+            out.chunks_read += 1;
+            out.bytes_read += bytes;
+            for row in raw.chunks_exact(16) {
+                let x = f64::from_le_bytes(row[0..8].try_into().unwrap());
+                let yy = f64::from_le_bytes(row[8..16].try_into().unwrap());
+                if x.is_finite()
+                    && yy.is_finite()
+                    && x >= x0
+                    && x <= x1
+                    && y.is_none_or(|(a, b)| yy >= a && yy <= b)
+                {
+                    out.x.push(x);
+                    out.y.push(yy);
+                }
+            }
+            index += 1;
+        }
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        Ok(RangePage {
+            read: out,
+            next_chunk: index as u32,
+            done: index >= end,
+        })
     }
 }
 
@@ -677,6 +805,64 @@ mod tests {
         );
         assert_eq!(got.chunks_considered, 3);
         assert_eq!(got.bytes_read, 3 * 10 * 16);
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn paged_range_is_bounded_resumable_and_matches_oracle() {
+        let p = path("paged-range.xygc");
+        let rows: Vec<_> = (0..10_000).map(|i| (i as f64, (i % 11) as f64)).collect();
+        ChunkedColumns::create(&p, rows.clone(), 128).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let mut cursor = 0;
+        let mut got = Vec::new();
+        let mut pages = 0;
+        loop {
+            let page = store
+                .read_range_page(
+                    (123.0, 9_321.0),
+                    Some((3.0, 7.0)),
+                    3 * 128 * 16,
+                    9,
+                    cursor,
+                    |_| true,
+                )
+                .unwrap();
+            assert!(page.read.bytes_read <= 3 * 128 * 16);
+            assert!(page.done || page.next_chunk > cursor);
+            got.extend(page.read.x.iter().copied().zip(page.read.y.iter().copied()));
+            pages += 1;
+            if page.done {
+                break;
+            }
+            cursor = page.next_chunk;
+        }
+        let oracle: Vec<_> = rows
+            .into_iter()
+            .filter(|(x, y)| (123.0..=9_321.0).contains(x) && (3.0..=7.0).contains(y))
+            .collect();
+        assert_eq!(got, oracle);
+        assert!(pages > 20);
+        assert!(matches!(
+            store.read_range_page((0.0, 100.0), None, 16, 10, 0, |_| true),
+            Err(Error::BudgetExceeded { .. })
+        ));
+        assert!(matches!(
+            store.read_range_page((0.0, 100.0), None, 4096, 10, 0, |_| false),
+            Err(Error::Cancelled)
+        ));
+        let mut checks = 0;
+        assert!(matches!(
+            store.read_range_page((0.0, 100.0), None, 4096, 10, 0, |_| {
+                checks += 1;
+                // The first checkpoint admits the positioned read; the
+                // second simulates cancellation while that read was in
+                // flight and must reject before decode/accounting.
+                checks == 1
+            }),
+            Err(Error::Cancelled)
+        ));
+        assert_eq!(checks, 2);
         std::fs::remove_file(p).unwrap();
     }
 

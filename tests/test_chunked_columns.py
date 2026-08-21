@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import struct
+from itertools import pairwise
 
 import pytest
 
@@ -104,3 +105,34 @@ def test_precomputed_overview_is_bounded_and_keeps_row_identity(tmp_path):
     assert row_ids[0] == 0 and row_ids[-1] == 19
     assert [(xv, yv) for xv, yv in zip(x, y, strict=True)] == [rows[int(i)] for i in row_ids]
     assert provenance == {"available_points": 20, "source_rows": 20, "detail_rows_read": 0}
+
+
+def test_pull_driven_pages_are_bounded_and_match_full_scan(tmp_path):
+    rows = [(float(i), float(i % 5)) for i in range(120)]
+    path = tmp_path / "pages.xygc"
+    _artifact(path, rows)
+    with ChunkedColumns(path) as columns:
+        pages = list(columns.pages((7.0, 111.0), (1.0, 3.0), page_bytes=64, generation=12))
+    got = [(x, y) for page_x, page_y, _ in pages for x, y in zip(page_x, page_y, strict=True)]
+    assert got == [(x, y) for x, y in rows if 7 <= x <= 111 and 1 <= y <= 3]
+    assert len(pages) > 20
+    assert all(progress["bytes_read"] <= 64 for _, _, progress in pages)
+    assert pages[-1][2]["done"] is True
+    assert all(
+        page[2]["next_cursor"] < next_page[2]["next_cursor"] for page, next_page in pairwise(pages)
+    )
+
+
+def test_pages_report_budget_cancel_and_host_bounds(tmp_path):
+    path = tmp_path / "page-errors.xygc"
+    _artifact(path, [(float(i), float(i)) for i in range(8)])
+    with ChunkedColumns(path) as columns:
+        with pytest.raises(ValueError, match="needs 64 bytes, exceeding the 16-byte page budget"):
+            next(columns.pages((0.0, 7.0), page_bytes=16, generation=1))
+        columns.cancel_before(3)
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            next(columns.pages((0.0, 7.0), page_bytes=64, generation=2))
+        with pytest.raises(ValueError, match=r"page budget.*\[16, 2\^64\)"):
+            next(columns.pages((0.0, 7.0), page_bytes=1 << 64, generation=4))
+        with pytest.raises(ValueError, match=r"generation.*\[0, 2\^64\)"):
+            next(columns.pages((0.0, 7.0), page_bytes=64, generation=True))

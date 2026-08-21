@@ -6023,5 +6023,73 @@ def chunked_columns_read(
     return x[:written], y[:written], provenance
 
 
+def chunked_columns_read_page(
+    handle: int,
+    x_range: tuple[float, float],
+    y_range: tuple[float, float] | None,
+    *,
+    budget_bytes: int,
+    generation: int,
+    cursor: int,
+) -> tuple[np.ndarray, np.ndarray, dict[str, int | bool]]:
+    if (
+        not isinstance(budget_bytes, int)
+        or isinstance(budget_bytes, bool)
+        or not 16 <= budget_bytes < (1 << 64)
+    ):
+        raise ValueError("chunked-column page budget must be an integer in [16, 2^64)")
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or not 0 <= generation < (1 << 64)
+    ):
+        raise ValueError("chunked-column generation must be an integer in [0, 2^64)")
+    if not isinstance(cursor, int) or isinstance(cursor, bool) or not 0 <= cursor < (1 << 32):
+        raise ValueError("chunked-column page cursor must be an integer in [0, 2^32)")
+    capacity = budget_bytes // 16
+    x = np.empty(capacity, dtype=np.float64)
+    y = np.empty(capacity, dtype=np.float64)
+    stats = (ctypes.c_uint64 * 8)()
+    yr = y_range or (0.0, 0.0)
+    written = int(
+        _lib.xyg_chunked_columns_read_page(
+            handle,
+            *x_range,
+            *yr,
+            int(y_range is not None),
+            budget_bytes,
+            generation,
+            cursor,
+            x.ctypes.data,
+            y.ctypes.data,
+            capacity,
+            stats,
+        )
+    )
+    if written == _USIZE_MAX:
+        if int(stats[7]) == 4:
+            raise ValueError(
+                f"chunked-column page needs {int(stats[4])} bytes, exceeding the {int(stats[5])}-byte page budget"
+            )
+        reason = {
+            1: "I/O failure",
+            2: "corrupt artifact",
+            3: "invalid cursor or viewport bounds",
+            5: "cancelled by newer viewport",
+            6: "output capacity too small",
+        }.get(int(stats[7]), "invalid request")
+        raise ValueError(f"chunked-column page read failed: {reason}")
+    provenance: dict[str, int | bool] = {
+        "generation": int(stats[0]),
+        "first_chunk": int(stats[1]),
+        "chunks_considered": int(stats[2]),
+        "chunks_read": int(stats[3]),
+        "bytes_read": int(stats[4]),
+        "next_cursor": int(stats[5]),
+        "done": bool(stats[6]),
+    }
+    return x[:written], y[:written], provenance
+
+
 def chunked_columns_free(handle: int) -> bool:
     return _lib.xyg_chunked_columns_free(ctypes.c_uint64(handle)) == 1

@@ -523,7 +523,16 @@ requests cannot move cancellation backwards). Reserved fields and all zone-map
 bounds are validated and non-finite metadata fails closed. Its provenance
 record makes chunk/byte reduction auditable; out-of-budget diagnostics report
 both the required and configured bytes. ABI v79 gives Python and Node identical
-thin open/overview/read/cancel/free surfaces and stable read error codes.
+thin open/overview/read/cancel/free surfaces and stable read error codes. ABI
+v83 adds a Rust-owned resumable viewport cursor: Python and Node expose
+pull-driven `pages` iterators whose every page is capped by canonical bytes,
+advances only at checked chunk boundaries, reports progress/done provenance,
+and checks the same generation watermark before and after each positioned
+read and once more before publication. A generation superseded during the
+final read therefore returns cancellation rather than a stale last page. This
+lets a viewport larger than the resident budget refine without allocating or
+reading the whole selection; a single chunk larger than the page budget fails
+with the exact required byte count instead of weakening backpressure.
 `overview(max_points=2048)` is caller-bounded, includes first/last coverage when
 reduced, retains canonical u64 row identity, and records available points, source
 rows, and zero detail rows read. Fully non-finite overview windows are omitted

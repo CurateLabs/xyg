@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 82
-SIGNATURE_SHA256 = "86f4b0cb4e33c2281060cca9c03fce8aa36f4df922beea756deae2d724e7ed44"
+ABI_VERSION = 83
+SIGNATURE_SHA256 = "7131945d01d59094e90a3617b6a4841796a187d3eb11139791db04c6fe8a95aa"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -70,6 +70,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_chunked_columns_read
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_uint64, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)
+    function = lib.xyg_chunked_columns_read_page
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint64, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # uint64_t xyg_chunked_columns_rows(uint64_t store)
     function = lib.xyg_chunked_columns_rows
     function.restype = ctypes.c_uint64

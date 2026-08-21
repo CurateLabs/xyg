@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 82
-#define XYG_ABI_SIGNATURE_SHA256 "86f4b0cb4e33c2281060cca9c03fce8aa36f4df922beea756deae2d724e7ed44"
+#define XYG_ABI_VERSION 83
+#define XYG_ABI_SIGNATURE_SHA256 "7131945d01d59094e90a3617b6a4841796a187d3eb11139791db04c6fe8a95aa"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +26,7 @@ int32_t xyg_chunked_columns_free(uint64_t store);
 uint64_t xyg_chunked_columns_open(const uint8_t * path, size_t path_len);
 size_t xyg_chunked_columns_overview(uint64_t store, size_t max_points, uint64_t * out_rows, double * out_x, double * out_y, uint64_t * out_stats);
 size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
+size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
 uint64_t xyg_chunked_columns_rows(uint64_t store);
 size_t xyg_contourf_bands(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, const double * edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, int64_t * out_slots, size_t capacity);
 int32_t xyg_contourf_densify(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, double * out_z, double * out_x, double * out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t * out_rows, size_t * out_cols);
