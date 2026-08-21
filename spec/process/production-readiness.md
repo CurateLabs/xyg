@@ -456,8 +456,13 @@ uses npm trusted publishing on a GitHub-hosted runner (Node 24, npm >=11.5.1,
 OIDC `id-token: write`) and publishes platform packages before the facade, so
 the public facade never points at absent versioned optionals. Publication is
 retry-safe: `scripts/publish_node_packages.py` skips an immutable version only
-after its registry SHA-1 matches the local tarball, rejects mismatched bytes,
-and resumes the native-first sequence before publishing the facade. Registry
+after both its registry SHA-1 and SHA-512 Subresource Integrity value match the
+local tarball, rejects a mismatch in either digest, and resumes the native-first
+sequence before publishing the facade. After each upload it polls briefly for
+npm visibility and proves both registry digests before advancing to the next
+native package or, last, the facade. A visibility timeout reports that the
+release must be retried for verification; it never treats an accepted upload as
+verified merely because the publish command returned successfully. Registry
 inspection and upload subprocesses use a five-minute timeout so a
 stalled npm endpoint fails promptly instead of holding a partial release until
 the workflow-wide limit. This makes cross-registry recovery convergent even
