@@ -76,7 +76,7 @@ export interface XygTemporalControllerOptions {
   loop?: boolean;
   reducedMotion?: boolean;
   onEvent?: (event: XygTemporalEvent) => void;
-  onError?: (error: unknown) => void;
+  onError?: (error: unknown) => unknown;
 }
 
 function command(op: number, bytes = 16): DataView<ArrayBuffer> {
@@ -140,14 +140,14 @@ export class XygWasmTemporalController {
   private scrubberFormat: ((state: XygTemporalState) => string) | null = null;
   private scrubberAttributes: Map<string, string | null> | null = null;
   private readonly onEvent?: (event: XygTemporalEvent) => void;
-  private readonly onError?: (error: unknown) => void;
+  private readonly onError?: (error: unknown) => unknown;
   state: XygTemporalState;
 
   private constructor(
     private readonly worker: XygWasmWorker,
     initial: XygTemporalResult,
     onEvent?: (event: XygTemporalEvent) => void,
-    onError?: (error: unknown) => void,
+    onError?: (error: unknown) => unknown,
   ) {
     this.state = initial.state;
     this.queue = Promise.resolve(initial);
@@ -268,7 +268,11 @@ export class XygWasmTemporalController {
     this.keyTarget = element; element.tabIndex = 0; element.setAttribute("role", "slider");
     element.setAttribute("aria-label", "Temporal position");
     this.keyHandler = (event) => {
-      const guard = (work: Promise<unknown>) => { void work.catch((error) => this.onError?.(error)); };
+      const guard = (work: Promise<unknown>) => {
+        void work.catch((error) => {
+          void Promise.resolve().then(() => this.onError?.(error)).catch(() => {});
+        });
+      };
       if (event.key === "ArrowRight" || event.key === "ArrowUp") guard(this.setDirection(1).then(() => this.step()));
       else if (event.key === "ArrowLeft" || event.key === "ArrowDown") guard(this.setDirection(-1).then(() => this.step()));
       else if (event.key === "Home") guard(this.setCursor(this.state.domainStart));

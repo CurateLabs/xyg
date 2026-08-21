@@ -497,6 +497,33 @@ async function run() {
     rejectedOverflow = error instanceof RangeError;
   }
   if (!rejectedOverflow) throw new Error("browser temporal i64 overflow did not fail closed");
+
+  let reportedErrors = 0;
+  let unhandledErrors = 0;
+  const unhandled = (event) => { unhandledErrors += 1; event.preventDefault(); };
+  window.addEventListener("unhandledrejection", unhandled);
+  for (const onError of [
+    () => { reportedErrors += 1; throw new Error("sync handler failure"); },
+    async () => { reportedErrors += 1; throw new Error("async handler failure"); },
+  ]) {
+    const errorWorker = createXygWasmWorker({
+      workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4096,
+    });
+    const errorController = await XygWasmTemporalController.create(errorWorker, {
+      instanceId: BigInt(20 + reportedErrors), domain: [0n, 10n], onError,
+    });
+    const errorScrubber = document.body.appendChild(document.createElement("div"));
+    errorController.bindScrubber(errorScrubber);
+    await errorWorker.dispose();
+    errorScrubber.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    errorController.unbindScrubber();
+    errorScrubber.remove();
+  }
+  window.removeEventListener("unhandledrejection", unhandled);
+  if (reportedErrors !== 2 || unhandledErrors !== 0) {
+    throw new Error("temporal onError containment allowed an unhandled rejection");
+  }
   await temporal.dispose();
   if (scrubber.getAttribute("role") !== "button" || scrubber.getAttribute("tabindex") !== "3"
       || scrubber.hasAttribute("aria-valuenow")) {

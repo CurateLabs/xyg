@@ -140,6 +140,8 @@ inputs are range-checked before encoding; out-of-width BigInts and non-integral
 numeric controls fail instead of wrapping at the `DataView` boundary.
 Scrubber-triggered command failures are contained and delivered to the
 optional `onError` callback rather than becoming unhandled browser rejections.
+That reporting boundary also contains synchronous throws and rejected promises
+from the application callback itself.
 
 ## Wire
 
