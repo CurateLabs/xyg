@@ -621,7 +621,7 @@ fn connected_components_with_parents(
 /// Give exactly coincident CoSE ingress positions a stable direction before
 /// force evaluation. Without this, both pairwise and grid repulsion have a
 /// zero direction and a connected graph can remain fully overlapped forever.
-fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], seed: u64, scale: f64) {
+fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], pinned: &[u8], seed: u64, scale: f64) {
     let mut occurrences = HashMap::<(u64, u64), u64>::new();
     for (index, (px, py)) in x.iter_mut().zip(y.iter_mut()).enumerate() {
         let key = (
@@ -629,7 +629,7 @@ fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], seed: u64, scale: f64) {
             if *py == 0.0 { 0 } else { py.to_bits() },
         );
         let occurrence = occurrences.entry(key).or_default();
-        if *occurrence > 0 {
+        if *occurrence > 0 && pinned.get(index).copied().unwrap_or(0) == 0 {
             let mut state = seed
                 ^ (index as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
                 ^ occurrence.wrapping_mul(0xBF58_476D_1CE4_E5B9);
@@ -722,10 +722,12 @@ impl ForceState {
         }
         if let Some([x0, y0, x1, y1]) = cose.bounds {
             for index in 0..n {
-                if pinned.get(index).copied().unwrap_or(0) != 0
-                    && (x[index] < x0 || x[index] > x1 || y[index] < y0 || y[index] > y1)
-                {
-                    return None;
+                if x[index] < x0 || x[index] > x1 || y[index] < y0 || y[index] > y1 {
+                    if pinned.get(index).copied().unwrap_or(0) != 0 {
+                        return None;
+                    }
+                    x[index] = x[index].clamp(x0, x1);
+                    y[index] = y[index].clamp(y0, y1);
                 }
             }
         }
@@ -755,7 +757,15 @@ impl ForceState {
             None
         };
         let (component, component_count) = if algo == LAYOUT_COSE {
-            seed_cose_overlaps(&mut x, &mut y, seed, k);
+            seed_cose_overlaps(&mut x, &mut y, pinned, seed, k);
+            if let Some([x0, y0, x1, y1]) = cose.bounds {
+                for index in 0..n {
+                    if pinned.get(index).copied().unwrap_or(0) == 0 {
+                        x[index] = x[index].clamp(x0, x1);
+                        y[index] = y[index].clamp(y0, y1);
+                    }
+                }
+            }
             connected_components_with_parents(n, &edges, parents)
         } else {
             (Vec::new(), 0)
@@ -2553,6 +2563,34 @@ mod tests {
             .chain(&state.y)
             .all(|&value| (-1.0..=1.0).contains(&value)));
         assert!((state.alpha - 0.9f64.powi(20)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn cose_overlap_seeding_never_moves_coincident_pins_and_clamps_unpinned_ingress() {
+        let initial_x = [0.25, 0.25, 4.0, 4.0];
+        let initial_y = [-0.5, -0.5, -4.0, -4.0];
+        let options = CoseOptions {
+            bounds: Some([-1.0, -1.0, 1.0, 1.0]),
+            ..CoseOptions::default()
+        };
+        let state = ForceState::new_configured(
+            4,
+            &[],
+            &[],
+            Some(&initial_x),
+            Some(&initial_y),
+            9,
+            LAYOUT_COSE,
+            options,
+            &[1, 1, 0, 0],
+            &[],
+        )
+        .unwrap();
+        assert_eq!((state.x[0], state.y[0]), (initial_x[0], initial_y[0]));
+        assert_eq!((state.x[1], state.y[1]), (initial_x[1], initial_y[1]));
+        assert_eq!((state.x[2], state.y[2]), (1.0, -1.0));
+        assert!((-1.0..=1.0).contains(&state.x[3]));
+        assert!((-1.0..=1.0).contains(&state.y[3]));
     }
 
     #[test]
