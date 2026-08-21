@@ -9,12 +9,13 @@
 
 pub mod aggregate;
 pub mod compile;
+mod graph;
 mod temporal;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 6;
+pub const WASM_ABI_VERSION: u32 = 7;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -54,6 +55,7 @@ struct Instance {
     aggregate_job: Option<aggregate::AggregateJob>,
     aggregate_sequence: u32,
     temporal: Option<xyg_engine::temporal_controller::TemporalController>,
+    graph_job: Option<graph::GraphJob>,
 }
 
 impl Instance {
@@ -139,6 +141,7 @@ impl Registry {
                 aggregate_job: None,
                 aggregate_sequence: 0,
                 temporal: None,
+                graph_job: None,
             }),
         };
         (generation << HANDLE_SLOT_BITS) | (slot_index as u32 + 1)
@@ -280,8 +283,44 @@ pub extern "C" fn xyg_wasm_cancel(handle: u32, sequence: u32) -> i32 {
             );
         }
         instance.cancelled_through = instance.cancelled_through.max(sequence);
+        if instance
+            .graph_job
+            .as_ref()
+            .is_some_and(|job| job.sequence <= sequence)
+        {
+            instance.graph_job = None;
+        }
         instance.last_error.clear();
         STATUS_OK
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Start a Rust-owned progressive graph layout from one packed `XYGL` request.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graph_begin(
+    handle: u32,
+    sequence: u32,
+    revision: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        graph::begin(instance, sequence, revision, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Advance the active graph layout and encode one `XYGO` position checkpoint.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_graph_step(
+    handle: u32,
+    sequence: u32,
+    revision: u32,
+    steps: u32,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        graph::step(instance, sequence, revision, steps)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
@@ -1472,6 +1511,157 @@ mod tests {
         assert!(xyg_wasm_output_len(handle) > 64);
         with_instance_mut(handle, |instance| {
             assert_eq!(&instance.output[..4], b"XYPB");
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    fn packed_cose(total_steps: u32) -> Vec<u8> {
+        let n = 3usize;
+        let mut out = vec![0u8; 128];
+        out[..4].copy_from_slice(b"XYGL");
+        out[4..8].copy_from_slice(&1u32.to_le_bytes());
+        out[8..12].copy_from_slice(&128u32.to_le_bytes());
+        out[12..16].copy_from_slice(&3u32.to_le_bytes()); // positions + pins
+        out[16..20].copy_from_slice(&(n as u32).to_le_bytes());
+        out[20..24].copy_from_slice(&2u32.to_le_bytes());
+        out[24..28].copy_from_slice(&total_steps.to_le_bytes());
+        out[32..40].copy_from_slice(&7u64.to_le_bytes());
+        for (at, value) in [
+            (40, 1.0),
+            (48, 1.25),
+            (56, 0.08),
+            (64, 0.985),
+            (72, 0.35),
+            (80, 2.5),
+        ] as [(usize, f64); 6]
+        {
+            out[at..at + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        for values in [[0u64, 1], [1u64, 2]] {
+            for value in values {
+                out.extend_from_slice(&value.to_le_bytes());
+            }
+        }
+        for values in [[-0.5f64, 0.0, 0.5], [0.0f64, 0.0, 0.0]] {
+            for value in values {
+                out.extend_from_slice(&value.to_le_bytes());
+            }
+        }
+        out.extend_from_slice(&[1, 0, 0]);
+        out
+    }
+
+    #[test]
+    fn graph_progress_is_revision_safe_cancellable_and_keeps_pins() {
+        let request = packed_cose(5);
+        let mut native = xyg_engine::graph::ForceState::new_configured(
+            3,
+            &[0, 1],
+            &[1, 2],
+            Some(&[-0.5, 0.0, 0.5]),
+            Some(&[0.0, 0.0, 0.0]),
+            7,
+            xyg_engine::graph::LAYOUT_COSE,
+            xyg_engine::graph::CoseOptions::default(),
+            &[1, 0, 0],
+            &[],
+        )
+        .unwrap();
+        native.tick(5);
+        let handle = xyg_wasm_instance_new(64 * 1024);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_graph_begin(handle, 1, 9, 0, request.len()),
+            STATUS_OK
+        );
+        assert_eq!(xyg_wasm_graph_step(handle, 1, 8, 1), STATUS_STALE_REVISION);
+        assert_eq!(xyg_wasm_graph_step(handle, 1, 9, 1), STATUS_PENDING);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYGO");
+            assert_eq!(
+                f64::from_le_bytes(instance.output[40..48].try_into().unwrap()),
+                -0.5
+            );
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_graph_step(handle, 1, 9, 4), STATUS_OK);
+        with_instance_mut(handle, |instance| {
+            assert!(instance.graph_job.is_none());
+            let n = 3;
+            for index in 0..n {
+                let x_at = 40 + index * 8;
+                let y_at = 40 + n * 8 + index * 8;
+                assert_eq!(
+                    f64::from_le_bytes(instance.output[x_at..x_at + 8].try_into().unwrap()),
+                    native.x[index]
+                );
+                assert_eq!(
+                    f64::from_le_bytes(instance.output[y_at..y_at + 8].try_into().unwrap()),
+                    native.y[index]
+                );
+            }
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_cancel(handle, 1), STATUS_OK);
+        assert_eq!(xyg_wasm_graph_step(handle, 1, 9, 1), STATUS_CANCELLED);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn graph_instances_are_independent_and_malformed_requests_fail_closed() {
+        let request = packed_cose(2);
+        let first = xyg_wasm_instance_new(64 * 1024);
+        let second = xyg_wasm_instance_new(64 * 1024);
+        write_arena(first, &request);
+        write_arena(second, &request);
+        assert_eq!(
+            xyg_wasm_graph_begin(first, 1, 1, 0, request.len()),
+            STATUS_OK
+        );
+        assert_eq!(
+            xyg_wasm_graph_begin(second, 1, 2, 0, request.len()),
+            STATUS_OK
+        );
+        assert_eq!(xyg_wasm_graph_step(first, 1, 1, 1), STATUS_PENDING);
+        assert_eq!(xyg_wasm_graph_step(second, 1, 2, 2), STATUS_OK);
+        let mut malformed = request;
+        malformed[0] = b'!';
+        write_arena(first, &malformed);
+        assert_eq!(
+            xyg_wasm_graph_begin(first, 2, 3, 0, malformed.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        let mut future_header = packed_cose(2);
+        future_header[28] = 1;
+        write_arena(first, &future_header);
+        assert_eq!(
+            xyg_wasm_graph_begin(first, 2, 3, 0, future_header.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        assert_eq!(xyg_wasm_instance_dispose(first), STATUS_OK);
+        assert_eq!(xyg_wasm_instance_dispose(second), STATUS_OK);
+    }
+
+    #[test]
+    fn graph_edge_heavy_construction_peak_is_rejected_before_decode() {
+        let request = packed_cose(2);
+        // The request itself fits, but the conservative CoSE construction
+        // high-water (decoded endpoints + ForceState + joined adjacency)
+        // does not. This guards the edge multiplier in graph::begin.
+        let budget = request.len() * graph::REQUEST_COPY_FACTOR
+            + 3 * graph::CONSTRUCTION_BYTES_PER_NODE
+            + 2 * graph::CONSTRUCTION_BYTES_PER_EDGE
+            - 1;
+        let handle = xyg_wasm_instance_new(budget);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_graph_begin(handle, 1, 1, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        with_instance_mut(handle, |instance| {
+            assert!(instance.graph_job.is_none());
+            assert!(instance.output.is_empty());
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);

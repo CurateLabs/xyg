@@ -176,10 +176,11 @@ test("force_scheduler chunked setImmediate completes", async () => {
   });
   assert.equal(result.steps, 20);
   assert.equal(result.x.length, 3);
-  assert.deepEqual(ticks, [5, 10, 15, 20]);
+  assert.deepEqual(ticks, [1, 6, 11, 16, 20]);
 });
 
 test("force_scheduler worker transports CoSE options and pins without host math", async () => {
+  const phases = [];
   const result = await runForceTicks({
     nNodes: 2,
     sources: new BigUint64Array([0n]),
@@ -191,8 +192,51 @@ test("force_scheduler worker transports CoSE options and pins without host math"
     cose: { idealEdgeLength: 0.4, bounds: [-1, -1, 1, 1] },
     totalSteps: 10,
     chunkSteps: 5,
-    mode: "worker",
+    onTick: (state) => phases.push([state.phase, state.step, state.revision]),
+    revision: 7,
   });
   assert.equal(result.steps, 10);
   assert.deepEqual([result.x[0], result.y[0]], [-0.5, 0]);
+  assert.deepEqual(phases, [["initial", 1, 7], ["update", 6, 7], ["complete", 10, 7]]);
+});
+
+test("force_scheduler stops after the first converged completion phase", async () => {
+  const phases = [];
+  const result = await runForceTicks({
+    nNodes: 2,
+    sources: new BigUint64Array([0n]),
+    targets: new BigUint64Array([1n]),
+    totalSteps: 1_000,
+    chunkSteps: 100,
+    mode: "immediate",
+    onTick: (state) => phases.push(state.phase),
+  });
+  assert.ok(result.steps < 1_000);
+  assert.equal(phases.filter((phase) => phase === "complete").length, 1);
+  assert.equal(phases.at(-1), "complete");
+});
+
+test("force_scheduler rejects and terminates when a progress callback fails", async () => {
+  await assert.rejects(
+    runForceTicks({
+      nNodes: 2,
+      sources: new BigUint64Array([0n]),
+      targets: new BigUint64Array([1n]),
+      totalSteps: 10,
+      onTick: () => { throw new Error("consumer failed"); },
+    }),
+    /consumer failed/,
+  );
+});
+
+test("force_scheduler never turns a misspelled mode into main-thread work", async () => {
+  const request = {
+    nNodes: 2,
+    sources: new BigUint64Array([0n]),
+    targets: new BigUint64Array([1n]),
+  };
+  await assert.rejects(runForceTicks({ ...request, mode: "workre" }), /mode must be/);
+  await assert.rejects(runForceTicks({ ...request, onTick: "nope" }), /onTick must be/);
+  await assert.rejects(runForceTicks({ ...request, signal: {} }), /signal must be/);
+  await assert.rejects(runForceTicks({ ...request, jobId: {} }), /jobId must be/);
 });

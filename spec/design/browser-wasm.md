@@ -265,6 +265,16 @@ const chartView = await renderWasmChart({
     series: [{ kind: "scatter", x: xs, y: ys }],
   },
 });
+// Or progressive Rust CoSE. `onUpdate` receives the one-tick initial placement
+// and later coalescible checkpoints; only revision 42 may update this view.
+const layout = layoutWasmCose(engine, {
+  nNodes: 3,
+  sources: new BigUint64Array([0n, 1n]),
+  targets: new BigUint64Array([1n, 2n]),
+  totalSteps: 300,
+  cose: { idealEdgeLength: 0.4 },
+}, { revision: 42, onUpdate: paintPositions });
+const finalPositions = await layout.result;
 ```
 
 The library never uses `Blob`, `eval`, a CDN, default URL, or path probing.
@@ -280,6 +290,8 @@ under that CSP and tests explicit Module/bytes/URL loading, transfer and copy
 diagnostics, lifecycle, cancellation, stale sequence, malformed module/scene,
 resource bounds, redirect rejection, a real runtime trap, public Scene paint,
 existing-painter hydration, and disposal. It
+also exercises progressive CoSE initial/update/completion phases, pins,
+revision-safe supersession, and two concurrent graph workers. It
 also verifies unsigned split-u64 accounting across the `0x80000000` boundary
 and that an invalid source is rejected before a Worker is allocated.
 

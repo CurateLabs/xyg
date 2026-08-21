@@ -21,3 +21,8 @@ test("vscode.js points webviews at the host-neutral paint client", () => {
   assert.ok(src.includes("@curatelabs/xyg"), "webview contract must name @curatelabs/xyg");
   assert.ok(src.includes("toHtml"), "extension host should re-export toHtml");
 });
+
+test("vscode.js exposes the background force scheduler", async () => {
+  const api = await import("../src/vscode.js");
+  assert.equal(typeof api.runForceAnimation, "function");
+});

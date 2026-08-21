@@ -514,6 +514,14 @@
       "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
     },
     {
+      "path": "crates/xyg-wasm/src/graph.rs",
+      "current_owner": "Rust WASM lifecycle adapter",
+      "policy": "rust-wasm-abi",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
       "path": "crates/xyg-wasm/src/lib.rs",
       "current_owner": "Rust WASM lifecycle adapter",
       "policy": "rust-wasm-abi",
@@ -611,6 +619,14 @@
     },
     {
       "path": "js/src/48_wasm_scene.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
+      "path": "js/src/49_wasm_graph.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",
       "disposition": "implement-rust-wasm",

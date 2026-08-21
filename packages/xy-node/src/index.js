@@ -143,7 +143,7 @@ export { Figure, PayloadWriter, figure, toHtml };
 
 export { axisTicks, figureSceneV3, scaleMap, sceneBatchEncode, sceneRasterCommands, sceneSvg, sceneVersion, scatterSceneSvg } from "./scene.js";
 
-export { runForceTicks } from "./force_scheduler.js";
+export { runForceTicks, runForceTicks as runForceAnimation } from "./force_scheduler.js";
 
 export { composeSankey } from "./sankey.js";
 

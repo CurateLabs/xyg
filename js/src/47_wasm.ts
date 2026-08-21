@@ -2,8 +2,11 @@ import {
   XYG_WASM_ABI_VERSION,
   XYG_WASM_MAX_ARENA_BYTES,
   XYG_WASM_SCENE_VERSION,
+  XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS,
+  XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS,
 } from "./wasm_abi_generated";
 import type { XygWasmTypedSeriesRequest } from "./49_wasm_chart";
+import type { XygWasmGraphCheckpoint } from "./49_wasm_graph";
 
 export type XygWasmSource = string | URL | ArrayBuffer | Uint8Array | WebAssembly.Module;
 
@@ -77,6 +80,8 @@ export class XygWasmError extends Error {
 type Pending = {
   resolve(value: any): void;
   reject(reason: XygWasmError): void;
+  progress?(value: any): void;
+  sequence?: number;
 };
 
 function workerError(value: any): XygWasmError {
@@ -318,6 +323,43 @@ export class XygWasmWorker {
     return result;
   }
 
+  /** Run one Rust CoSE job progressively inside this dedicated Worker. */
+  layoutCose(
+    request: ArrayBuffer,
+    options: {
+      revision: number;
+      sequence?: number;
+      chunkSteps?: number;
+      maxWallMs?: number;
+      onUpdate?: (checkpoint: XygWasmGraphCheckpoint) => void;
+    },
+  ): XygWasmTask<XygWasmGraphCheckpoint> {
+    this.assertLive();
+    if (!(request instanceof ArrayBuffer) || request.byteLength <= 0 || request.byteLength > this.maxArenaBytes) throw new RangeError("graph request exceeds the worker byte budget");
+    const revision = Number(options?.revision), sequence = options.sequence ?? this.nextSequence++;
+    if (!Number.isInteger(revision) || revision <= 0 || revision > 0xffffffff) throw new RangeError("revision must be a nonzero u32");
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
+    const chunkSteps = options.chunkSteps ?? XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS;
+    const maxWallMs = options.maxWallMs ?? XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS;
+    if (!Number.isInteger(chunkSteps) || chunkSteps <= 0 || chunkSteps > 1000) throw new RangeError("chunkSteps must be an integer in 1..1000");
+    if (!Number.isFinite(maxWallMs) || maxWallMs <= 0 || maxWallMs > 300_000) throw new RangeError("maxWallMs must be in (0, 300000]");
+    if (options.onUpdate !== undefined && typeof options.onUpdate !== "function") throw new TypeError("onUpdate must be a function");
+    this.nextSequence = Math.max(this.nextSequence, sequence + 1);
+    const requestId = this.allocateRequest();
+    const result = new Promise<XygWasmGraphCheckpoint>((resolve, reject) => this.pending.set(requestId, { resolve, reject, progress: options.onUpdate, sequence }));
+    try {
+      this.worker.postMessage({ type: "graph.cose", requestId, sequence, revision, request, chunkSteps, maxWallMs }, [request]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer graph request");
+    }
+    return { requestId, sequence, result, cancel: () => {
+      const pending = this.pending.get(requestId); if (!pending) return;
+      this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "graph layout was cancelled", 6));
+      if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
+    } };
+  }
+
   private sceneTask<T extends XygWasmSceneValidation>(
     type:
       | "scene.validate"
@@ -414,6 +456,25 @@ export class XygWasmWorker {
   private onMessage(message: any) {
     const pending = this.pending.get(message?.requestId);
     if (!pending) return;
+    if (message.progress && message.ok) {
+      try {
+        pending.progress?.(message.value);
+      } catch (cause) {
+        this.pending.delete(message.requestId);
+        pending.reject(new XygWasmError(
+          "XYG_WASM_PROGRESS_CALLBACK_FAILED",
+          cause instanceof Error ? cause.message : "graph progress callback failed",
+        ));
+        if (!this.disposed && pending.sequence !== undefined) {
+          this.worker.postMessage({
+            type: "cancel",
+            requestId: message.requestId,
+            sequence: pending.sequence,
+          });
+        }
+      }
+      return;
+    }
     this.pending.delete(message.requestId);
     if (message.ok) pending.resolve(message.value);
     else pending.reject(workerError(message.error));

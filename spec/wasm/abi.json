@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 6,
+  "abi_version": 7,
   "scene_version": 10,
   "painter_version": 7,
   "painter_header_bytes": 288,
@@ -185,6 +185,16 @@
       "result": "i32"
     },
     {
+      "name": "xyg_wasm_graph_begin",
+      "params": ["u32", "u32", "u32", "usize", "usize"],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_graph_step",
+      "params": ["u32", "u32", "u32", "u32"],
+      "result": "i32"
+    },
+    {
       "name": "xyg_wasm_output_ptr",
       "params": [
         "u32"
@@ -254,5 +264,25 @@
       ],
       "result": "usize"
     }
-  ]
+  ],
+  "graph": {
+    "request_magic": "XYGL",
+    "version": 1,
+    "header_bytes": 128,
+    "request_offsets": {"version": 4, "header_bytes": 8, "flags": 12, "node_count": 16, "edge_count": 20, "total_steps": 24, "reserved0": 28, "seed": 32, "ideal_edge_length": 40, "repulsion_strength": 48, "gravity_strength": 56, "cooling_factor": 64, "overlap_padding": 72, "component_spacing": 80, "bounds_x0": 88, "bounds_y0": 96, "bounds_x1": 104, "bounds_y1": 112, "reserved1": 120},
+    "flags": {"positions": 1, "pins": 2, "parents": 4, "bounds": 8},
+    "output_magic": "XYGO",
+    "output_version": 1,
+    "output_header_bytes": 40,
+    "output_offsets": {"version": 4, "header_bytes": 8, "revision": 12, "completed_steps": 16, "total_steps": 20, "node_count": 24, "alpha": 28, "reserved": 36},
+    "max_nodes": 1000000,
+    "max_edges": 4000000,
+    "max_steps": 1000000,
+    "request_copy_factor": 2,
+    "construction_bytes_per_node": 112,
+    "construction_bytes_per_edge": 64,
+    "first_paint_steps": 1,
+    "default_chunk_steps": 8,
+    "default_max_wall_ms": 30000
+  }
 }

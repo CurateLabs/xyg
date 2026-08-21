@@ -3,8 +3,10 @@ import {
   createXygWasmWorker,
   frameWasmChart,
   encodeWasmAggregate,
+  encodeWasmCose,
   encodeWasmColumns,
   hydrateWasmPainter,
+  layoutWasmCose,
   renderWasmChart,
   renderWasmColumns,
   renderWasmScene,
@@ -215,6 +217,7 @@ async function fixtureModule({
   aggregateStepTrap = false,
   aggregateOutputOutOfRange = false,
   cancelTrap = false,
+  graphStepTrap = false,
 } = {}) {
   const names = [
     "xyg_wasm_abi_version",
@@ -232,6 +235,8 @@ async function fixtureModule({
     "xyg_wasm_scene_compile_prepare",
     "xyg_wasm_aggregate_bin2d",
     "xyg_wasm_aggregate_step",
+    "xyg_wasm_graph_begin",
+    "xyg_wasm_graph_step",
     "xyg_wasm_output_ptr",
     "xyg_wasm_output_len",
     "xyg_wasm_last_error_ptr",
@@ -244,7 +249,7 @@ async function fixtureModule({
     "xyg_wasm_last_scene_styles",
     "xyg_wasm_temporal_execute",
   ];
-  const arities = [0, 1, 2, 3, 4];
+  const arities = [0, 1, 2, 3, 4, 5];
   const types = [
     ...u32(arities.length),
     ...arities.flatMap((arity) => [
@@ -256,7 +261,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -267,9 +272,10 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    6, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    7, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
+    0, 0,
     aggregateOutputOutOfRange ? 65520 : 0,
     aggregateOutputOutOfRange ? 32 : 0,
     0, 0,
@@ -282,6 +288,7 @@ async function fixtureModule({
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
       || (cancelTrap && index === 8)
       || (aggregateStepTrap && index === 14)
+      || (graphStepTrap && index === 16)
       ? [0x00, 0x0b] // unreachable; end
       : [0x41, ...i32(values[index] ?? 0), 0x0b];
     const body = [0, ...instructions]; // no local declarations
@@ -357,7 +364,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 6,
+    expectedAbiVersion: 7,
     expectedSceneVersion: 10,
   };
 }
@@ -439,7 +446,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 6 || ready.sceneVersion !== 10) {
+  if (ready.abiVersion !== 7 || ready.sceneVersion !== 10) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1014,6 +1021,47 @@ async function run() {
     throw new Error("explicit typed-series transfer did not detach caller buffers");
   }
   await transferWorker.dispose();
+
+  foundationStage = "progressive CoSE worker scheduling";
+  const graphWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024 });
+  const peerGraphWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024 });
+  await Promise.all([graphWorker.ready, peerGraphWorker.ready]);
+  const graphInput = () => encodeWasmCose({
+    nNodes: 3, sources: new BigUint64Array([0n, 1n]), targets: new BigUint64Array([1n, 2n]),
+    x: new Float64Array([-0.5, 0, 0.5]), y: new Float64Array([0, 0, 0]), pinned: new Uint8Array([1, 0, 0]),
+    parents: new BigUint64Array([0xffffffffffffffffn, 0n, 0n]), totalSteps: 17, seed: 7n,
+    cose: { idealEdgeLength: 0.4, bounds: [-1, -1, 1, 1] },
+  });
+  const updates = [];
+  const graphTask = layoutWasmCose(graphWorker, {
+    nNodes: 3, sources: new BigUint64Array([0n, 1n]), targets: new BigUint64Array([1n, 2n]),
+    x: new Float64Array([-0.5, 0, 0.5]), y: new Float64Array([0, 0, 0]), pinned: new Uint8Array([1, 0, 0]),
+    totalSteps: 17, seed: 7n, cose: { idealEdgeLength: 0.4, bounds: [-1, -1, 1, 1] },
+  }, { revision: 11, chunkSteps: 4, onUpdate: (value) => updates.push(value) });
+  const peerTask = peerGraphWorker.layoutCose(graphInput(), { revision: 21, chunkSteps: 8 });
+  const [graphResult, peerResult] = await Promise.all([graphTask.result, peerTask.result]);
+  if (updates[0]?.phase !== "initial" || updates[0]?.step !== 1 || graphResult.phase !== "complete" || graphResult.revision !== 11 || peerResult.revision !== 21) throw new Error("graph workers did not preserve bounded initial/progressive/completion phases or independent revisions");
+  if (graphResult.x[0] !== -0.5 || graphResult.y[0] !== 0) throw new Error("browser WASM CoSE moved a Rust-owned pin");
+  const staleGraph = graphWorker.layoutCose(graphInput(), { sequence: 30, revision: 30, chunkSteps: 1 });
+  const currentGraph = graphWorker.layoutCose(graphInput(), { sequence: 31, revision: 31, chunkSteps: 8 });
+  await rejected(staleGraph.result, "XYG_WASM_CANCELLED", 6);
+  if ((await currentGraph.result).revision !== 31) throw new Error("superseded graph reply crossed revisions");
+  const callbackFailure = graphWorker.layoutCose(graphInput(), {
+    sequence: 32,
+    revision: 32,
+    chunkSteps: 1,
+    onUpdate: () => { throw new Error("consumer progress failed"); },
+  });
+  await rejected(callbackFailure.result, "XYG_WASM_PROGRESS_CALLBACK_FAILED");
+  if ((await graphWorker.layoutCose(graphInput(), { sequence: 33, revision: 33 }).result).revision !== 33) {
+    throw new Error("graph worker did not recover after cancelling a failed progress callback");
+  }
+  await Promise.all([graphWorker.dispose(), peerGraphWorker.dispose()]);
+  const failedGraphWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: await fixtureModule({ graphStepTrap: true }), maxArenaBytes: 1024 });
+  await failedGraphWorker.ready;
+  await rejected(failedGraphWorker.layoutCose(graphInput(), { revision: 1 }).result, "XYG_WASM_TRAP");
+  await rejected(failedGraphWorker.layoutCose(graphInput(), { revision: 2 }).result, "XYG_WASM_NOT_READY");
+  await failedGraphWorker.dispose();
 
   const aggWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

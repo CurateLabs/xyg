@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "spec" / "wasm" / "abi.json"
 RUST = ROOT / "crates" / "xyg-wasm" / "src" / "lib.rs"
 AGGREGATE_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "aggregate.rs"
+GRAPH_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "graph.rs"
 OUTPUT = ROOT / "js" / "src" / "wasm_abi_generated.ts"
 
 
@@ -38,12 +39,14 @@ def render(manifest: dict[str, object]) -> str:
     max_arena_bytes = int(manifest["max_arena_bytes"])
     painter_max_legend_bytes = int(manifest["painter_max_legend_bytes"])
     aggregate = manifest["aggregate"]
+    graph = manifest["graph"]
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if (
         not isinstance(statuses, dict)
         or not isinstance(exports, list)
         or not isinstance(aggregate, dict)
+        or not isinstance(graph, dict)
     ):
         raise ValueError("aggregate, statuses, and exports must be structured values")
 
@@ -100,6 +103,24 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_AGGREGATE_MAX_GRID_CELLS = {int(aggregate['max_grid_cells'])} as const;",
         f"export const XYG_WASM_AGGREGATE_OFFSETS = {json.dumps(aggregate['request_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_AGGREGATE_OUTPUT_OFFSETS = {json.dumps(aggregate['output_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_GRAPH_VERSION = {int(graph['version'])} as const;",
+        f"export const XYG_WASM_GRAPH_MAGIC = {json.dumps(graph['request_magic'])} as const;",
+        f"export const XYG_WASM_GRAPH_HEADER_BYTES = {int(graph['header_bytes'])} as const;",
+        f"export const XYG_WASM_GRAPH_OFFSETS = {json.dumps(graph['request_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_GRAPH_FLAGS = {json.dumps(graph['flags'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_GRAPH_OUTPUT_MAGIC = {json.dumps(graph['output_magic'])} as const;",
+        f"export const XYG_WASM_GRAPH_OUTPUT_VERSION = {int(graph['output_version'])} as const;",
+        f"export const XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES = {int(graph['output_header_bytes'])} as const;",
+        f"export const XYG_WASM_GRAPH_OUTPUT_OFFSETS = {json.dumps(graph['output_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_GRAPH_MAX_NODES = {int(graph['max_nodes'])} as const;",
+        f"export const XYG_WASM_GRAPH_MAX_EDGES = {int(graph['max_edges'])} as const;",
+        f"export const XYG_WASM_GRAPH_MAX_STEPS = {int(graph['max_steps'])} as const;",
+        f"export const XYG_WASM_GRAPH_REQUEST_COPY_FACTOR = {int(graph['request_copy_factor'])} as const;",
+        f"export const XYG_WASM_GRAPH_CONSTRUCTION_BYTES_PER_NODE = {int(graph['construction_bytes_per_node'])} as const;",
+        f"export const XYG_WASM_GRAPH_CONSTRUCTION_BYTES_PER_EDGE = {int(graph['construction_bytes_per_edge'])} as const;",
+        f"export const XYG_WASM_GRAPH_FIRST_PAINT_STEPS = {int(graph['first_paint_steps'])} as const;",
+        f"export const XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS = {int(graph['default_chunk_steps'])} as const;",
+        f"export const XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS = {int(graph['default_max_wall_ms'])} as const;",
         "export const XYG_WASM_STATUS = {",
     ]
     for name, value in statuses.items():
@@ -241,6 +262,32 @@ def verify_rust(manifest: dict[str, object]) -> None:
             not in aggregate_source
         ):
             raise SystemExit(f"xyg-wasm aggregate {rust_name} differs from spec/wasm/abi.json")
+    graph_source = GRAPH_RUST.read_text(encoding="utf-8")
+    for rust_name, manifest_name in (("MAGIC", "request_magic"), ("OUTPUT_MAGIC", "output_magic")):
+        if (
+            f'const {rust_name}: &[u8; 4] = b"{manifest["graph"][manifest_name]}";'
+            not in graph_source
+        ):
+            raise SystemExit(f"xyg-wasm graph {rust_name} differs from spec/wasm/abi.json")
+    for rust_name, manifest_name in (
+        ("VERSION", "version"),
+        ("HEADER", "header_bytes"),
+        ("OUTPUT_HEADER", "output_header_bytes"),
+        ("MAX_NODES", "max_nodes"),
+        ("MAX_EDGES", "max_edges"),
+        ("MAX_STEPS", "max_steps"),
+        ("REQUEST_COPY_FACTOR", "request_copy_factor"),
+        ("CONSTRUCTION_BYTES_PER_NODE", "construction_bytes_per_node"),
+        ("CONSTRUCTION_BYTES_PER_EDGE", "construction_bytes_per_edge"),
+    ):
+        match = re.search(
+            rf"(?:pub\(super\) )?const {rust_name}: (?:u32|usize) = ([0-9_]+);",
+            graph_source,
+        )
+        if not match or int(match.group(1).replace("_", "")) != int(
+            manifest["graph"][manifest_name]
+        ):
+            raise SystemExit(f"xyg-wasm graph {rust_name} differs from spec/wasm/abi.json")
     for rust_name, manifest_name in (
         ("REQUEST_OFFSETS", "request_offsets"),
         ("OUTPUT_OFFSETS", "output_offsets"),

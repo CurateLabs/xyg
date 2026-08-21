@@ -97,7 +97,7 @@ files). From a source checkout: `npm ci && node js/build.mjs` at the repo root.
 | `src/marks/*.js` | Thin TypedArray builders for every chart family (scatter→radar); Rust kernels only |
 | `src/charts.js` | `*Chart` convenience constructors for all dual-host families |
 | `src/figure.js` | Minimal `Figure`; `buildPayload()` → `{spec, buffers}` (`protocol: 12`); `toHtml()` inlines `@curatelabs/xyg` standalone. Scatter **density tier** when `n ≥ SCATTER_DENSITY_THRESHOLD` (or `forceDensity`). Line M4 when over `DECIMATION_THRESHOLD`. Contour/errorbar/stem/mesh/ribbon/radar covered. |
-| `src/force_scheduler.js` | Progressive `force_tick` helper — default chunked `setImmediate` loop; `mode: "worker"` uses `worker_threads`. Node-host only (never browser main thread). |
+| `src/force_scheduler.js` | Progressive `force_tick` helper — defaults to `worker_threads`; explicit `mode: "immediate"` is batch/test-only. Node-host only (never browser main thread). |
 | `src/sankey.js` | Thin `composeSankey` over `xyg_sankey_layout` → ribbon band polygons (link + node) |
 | `src/vscode.js` | VS Code extension-host re-export + webview notes (`@curatelabs/xyg`, not the Python tree) |
 | `src/html.js` | `toHtml()` — self-contained HTML inlining host-neutral `standalone.js` |
@@ -190,6 +190,12 @@ const graph = graphChart(nodes, edges, {
 | `bin2d` / `densityLogU8` / `lodPlan` / `shouldUseDensity` | Tier-2 LOD helpers |
 | `figure` / `Figure` / `buildPayload` | minimal figure + §29 payload |
 | `runForceAnimation` | progressive tick scheduler |
+
+`runForceAnimation`/`runForceTicks` defaults to a dedicated worker thread and
+emits `initial`, `update`, and `complete` checkpoints tagged with the caller's
+`revision`/`jobId`. `AbortSignal`, `chunkSteps`, and `maxWallMs` bound work;
+interactive callers should not select the explicit batch/test-only
+`mode: "immediate"` escape hatch.
 
 Layout names match Python `_native.py`: `preset`, `grid`, `circle`,
 `force`/`fr`, `spring`, `forceatlas2`/`fa2`, `kamada_kawai`/`kk`,
