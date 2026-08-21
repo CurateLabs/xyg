@@ -686,6 +686,8 @@ def graph(
     directed: bool = True,
     seed: int = 0,
     iterations: int = 300,
+    cose: dict[str, Any] | None = None,
+    pinned: Union[str, ArrayLike, None] = None,
     color: Union[str, ArrayLike, None] = None,
     size: Union[float, ArrayLike, None] = None,
     edge_color: Union[str, ArrayLike, None] = None,
@@ -713,8 +715,16 @@ def graph(
     data = _graph.resolve_graph_data(nodes, edges, x=x, y=y, directed=directed, mapping=mapping)
     color = _graph.resolve_encoding_values(data, color, where="node")
     size = _graph.resolve_encoding_values(data, size, where="node")
+    pinned = _graph.resolve_encoding_values(data, pinned, where="node")
     edge_color = _graph.resolve_encoding_values(data, edge_color, where="edge")
-    px, py, meta = _graph.run_layout(data, layout=layout, seed=seed, iterations=iterations)
+    px, py, meta = _graph.run_layout(
+        data,
+        layout=layout,
+        seed=seed,
+        iterations=iterations,
+        cose=cose,
+        pinned=pinned,
+    )
     # Emit ONLY the Rust render-graph buffers (no second edge sample).
     tier = meta["lod_tier"]
     sources = np.asarray(meta["render_sources"], dtype=np.uint64)

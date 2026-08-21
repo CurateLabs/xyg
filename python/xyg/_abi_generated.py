@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 80
-SIGNATURE_SHA256 = "4694c96b2e997392083061425fdc6719315bd316aadbf2a592321021afbcac49"
+ABI_VERSION = 81
+SIGNATURE_SHA256 = "6f461e4cf3f9bf9721fde09c4d0871a87baeb1ae9dbf364c1ea2178bfb2de97d"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -170,6 +170,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_force_create
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_void_p]
+    # int32_t xyg_graph_force_create_cose(const void * descriptor, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, uint64_t seed, uint64_t * out_handle)
+    function = lib.xyg_graph_force_create_cose
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_graph_force_destroy(uint64_t handle)
     function = lib.xyg_graph_force_destroy
     function.restype = ctypes.c_int32

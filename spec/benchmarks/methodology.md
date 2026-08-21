@@ -293,7 +293,7 @@ evidence as required above.
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **119 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **120 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
 
@@ -307,9 +307,10 @@ no longer exists. Removing one is allowed; removing one silently is not. Stale
 rows already in the dashboard have to be archived there by hand; this gate stops
 new ones appearing.
 
-**`benchmarks/test_codspeed_graph_render.py` — 8 rows.** Graph rendering is
+**`benchmarks/test_codspeed_graph_render.py` — 9 rows.** Graph rendering is
 split into attributable CPU/native stages: canonical GraphForge UUID ingest at
-10k nodes/edges, five seeded force ticks at 1k nodes, direct render-graph
+10k nodes/edges, five seeded force ticks at 1k nodes, five configured CoSE
+ticks with a pin and hard bounds at 1k nodes, direct render-graph
 construction at 10k, aggregate render-graph construction at 100k under fixed
 5k/10k node/edge budgets, 10M/100M/1B-class LOD policy decisions, a complete
 10k graph composition-to-split-payload row, and paired SVG/native-PNG exports

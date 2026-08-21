@@ -44,7 +44,7 @@ runtime may still be landing).
 | GraphForge / canonical ingest helpers | design / partial | design / partial | Same mark buffers | Optional; never the only path ([graph-fork-requirements.md](graph-fork-requirements.md) REQ-API-3) |
 | Dense `u64` indices + f64 columns | required | required | Host→Rust pointers | No `u32` element identity |
 | Layout (preset/grid/circle/force/…) | Rust ABI | Rust ABI | `xyg_graph_layout` / force handle | Seeded FR goldens bit-identical |
-| Force ticks (progressive) | Host schedules | Host schedules | `xyg_graph_force_*` | **Never browser main-thread decisions**; Barnes–Hut/grid approx at scale |
+| Force ticks (progressive) | Host schedules | Host schedules | `xyg_graph_force_*`; configured CoSE descriptor | **Never browser main-thread decisions**; Rust owns CoSE options, pins, compounds, bounds, and Barnes–Hut/grid approximation |
 | Viewport + graph LOD + edge LOD | Rust | Rust | `xyg_graph_lod_*` / cluster / sample | Recorded §28; Rust emits render graph |
 | Encode → §29 f32 | Rust | Rust | Same binary payloads | Offset-encoded; no JSON numbers |
 | Shared WebGL browser paint | shared client | shared client | `GLHost` (dossier §18) | Paint / pick / gestures only; no raw V/E past direct tier |

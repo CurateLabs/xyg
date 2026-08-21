@@ -1161,6 +1161,8 @@ def graph(
     directed: bool = True,
     seed: int = 0,
     iterations: int = 300,
+    cose: Optional[dict[str, Any]] = None,
+    pinned: Union[str, ArrayLike, None] = None,
     color: Union[str, ColorLike, ArrayLike, None] = None,
     size: Union[str, float, ArrayLike, None] = None,
     edge_color: Union[str, ColorLike, ArrayLike, None] = None,
@@ -1187,6 +1189,9 @@ def graph(
         directed: Whether edges are directed (affects CSR neighborhood).
         seed: RNG seed for force layout.
         iterations: Force-layout tick count.
+        cose: Rust-owned CoSE option overrides. Valid only with ``layout="cose"``.
+        pinned: Boolean node mask or node-column name. Pins require authored
+            ``x`` and ``y`` initial positions.
         color: Node colour encoding (constant, array, or GraphForge column name).
         size: Node size encoding (constant, array, or GraphForge column name).
         edge_color: Edge colour (constant, array, or GraphForge column name).
@@ -1214,6 +1219,8 @@ def graph(
             "directed": directed,
             "seed": seed,
             "iterations": iterations,
+            "cose": None if cose is None else dict(cose),
+            "pinned": pinned,
             "color": color,
             "size": size,
             "edge_color": edge_color,
@@ -5922,6 +5929,8 @@ def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
         directed=m.props["directed"],
         seed=m.props["seed"],
         iterations=m.props["iterations"],
+        cose=m.props.get("cose"),
+        pinned=m.props.get("pinned"),
         color=m.props["color"],
         size=m.props["size"],
         edge_color=m.props["edge_color"],

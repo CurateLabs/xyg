@@ -51,6 +51,59 @@ pub const LAYOUT_COSE: u32 = 16;
 /// uses the grid path regardless of n.
 pub const FORCE_EXACT_REPULSION_MAX_N: usize = 500;
 
+/// Sentinel for a node without a compound parent in CoSE ingress.
+pub const COSE_NO_PARENT: u64 = u64::MAX;
+
+/// Rust-owned CoSE option profile. Hosts validate ergonomic input, then pass
+/// these exact values through the ABI; they never reproduce force policy.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CoseOptions {
+    pub ideal_edge_length: f64,
+    pub repulsion_strength: f64,
+    pub gravity_strength: f64,
+    pub cooling_factor: f64,
+    pub overlap_padding: f64,
+    pub component_spacing: f64,
+    pub bounds: Option<[f64; 4]>,
+}
+
+impl Default for CoseOptions {
+    fn default() -> Self {
+        Self {
+            ideal_edge_length: 1.0,
+            repulsion_strength: 1.25,
+            gravity_strength: 0.08,
+            cooling_factor: 0.985,
+            overlap_padding: 0.35,
+            component_spacing: 2.5,
+            bounds: None,
+        }
+    }
+}
+
+impl CoseOptions {
+    pub fn is_valid(self) -> bool {
+        let finite_non_negative = |value: f64| value.is_finite() && value >= 0.0;
+        self.ideal_edge_length.is_finite()
+            && self.ideal_edge_length > 0.0
+            && finite_non_negative(self.repulsion_strength)
+            && finite_non_negative(self.gravity_strength)
+            && self.cooling_factor.is_finite()
+            && self.cooling_factor > 0.0
+            && self.cooling_factor < 1.0
+            && finite_non_negative(self.overlap_padding)
+            && finite_non_negative(self.component_spacing)
+            && self.bounds.is_none_or(|[x0, y0, x1, y1]| {
+                x0.is_finite()
+                    && y0.is_finite()
+                    && x1.is_finite()
+                    && y1.is_finite()
+                    && x0 < x1
+                    && y0 < y1
+            })
+    }
+}
+
 /// Ceiling for all-pairs shortest-path layouts (Kamada–Kawai / stress).
 /// Above this, create/layout falls back to Fruchterman–Reingold (documented).
 pub const STRESS_LAYOUT_MAX_N: usize = 500;
@@ -416,6 +469,12 @@ pub struct ForceState {
     /// Connected-component index used by CoSE to keep disconnected groups apart.
     pub component: Vec<usize>,
     pub component_count: usize,
+    /// CoSE-only option policy; defaults preserve the original profile.
+    pub cose: CoseOptions,
+    /// CoSE pin mask. Pinned nodes remain bit-identical to ingress positions.
+    pub pinned: Vec<bool>,
+    /// CoSE compound parents (`COSE_NO_PARENT` for roots).
+    pub parents: Vec<u64>,
 }
 
 fn splitmix64(state: &mut u64) -> u64 {
@@ -496,10 +555,73 @@ fn connected_components(n: usize, edges: &[(u64, u64)]) -> (Vec<usize>, usize) {
     (component, count)
 }
 
+fn validate_compound_parents(n: usize, parents: &[u64]) -> bool {
+    if parents.is_empty() {
+        return true;
+    }
+    if parents.len() != n {
+        return false;
+    }
+    for (node, &parent) in parents.iter().enumerate() {
+        if parent == COSE_NO_PARENT {
+            continue;
+        }
+        if parent as usize >= n || parent as usize == node {
+            return false;
+        }
+    }
+    // Three-colour walk: every parent link is traversed at most once, so
+    // adversarial deep compound chains remain O(n), not O(n²).
+    let mut state = vec![0u8; n];
+    for start in 0..n {
+        if state[start] == 2 {
+            continue;
+        }
+        let mut path = Vec::new();
+        let mut cursor = start as u64;
+        while cursor != COSE_NO_PARENT {
+            let index = cursor as usize;
+            match state[index] {
+                2 => break,
+                1 => return false,
+                _ => {
+                    state[index] = 1;
+                    path.push(index);
+                    cursor = parents[index];
+                }
+            }
+        }
+        for index in path {
+            state[index] = 2;
+        }
+    }
+    true
+}
+
+fn connected_components_with_parents(
+    n: usize,
+    edges: &[(u64, u64)],
+    parents: &[u64],
+) -> (Vec<usize>, usize) {
+    if parents.is_empty() {
+        return connected_components(n, edges);
+    }
+    let mut joined = Vec::with_capacity(edges.len() + n);
+    joined.extend_from_slice(edges);
+    joined.extend(
+        parents
+            .iter()
+            .enumerate()
+            .filter(|(_, parent)| **parent != COSE_NO_PARENT)
+            .map(|(child, &parent)| (child as u64, parent)),
+    );
+    connected_components(n, &joined)
+}
+
 /// Give exactly coincident CoSE ingress positions a stable direction before
 /// force evaluation. Without this, both pairwise and grid repulsion have a
 /// zero direction and a connected graph can remain fully overlapped forever.
-fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], seed: u64, scale: f64) {
+fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], pinned: &[u8], seed: u64, scale: f64) {
     let mut occurrences = HashMap::<(u64, u64), u64>::new();
     for (index, (px, py)) in x.iter_mut().zip(y.iter_mut()).enumerate() {
         let key = (
@@ -507,7 +629,7 @@ fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], seed: u64, scale: f64) {
             if *py == 0.0 { 0 } else { py.to_bits() },
         );
         let occurrence = occurrences.entry(key).or_default();
-        if *occurrence > 0 {
+        if *occurrence > 0 && pinned.get(index).copied().unwrap_or(0) == 0 {
             let mut state = seed
                 ^ (index as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
                 ^ occurrence.wrapping_mul(0xBF58_476D_1CE4_E5B9);
@@ -530,6 +652,33 @@ impl ForceState {
         seed: u64,
         algorithm: u32,
     ) -> Option<Self> {
+        Self::new_configured(
+            n_nodes,
+            sources,
+            targets,
+            init_x,
+            init_y,
+            seed,
+            algorithm,
+            CoseOptions::default(),
+            &[],
+            &[],
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_configured(
+        n_nodes: u64,
+        sources: &[u64],
+        targets: &[u64],
+        init_x: Option<&[f64]>,
+        init_y: Option<&[f64]>,
+        seed: u64,
+        algorithm: u32,
+        cose: CoseOptions,
+        pinned: &[u8],
+        parents: &[u64],
+    ) -> Option<Self> {
         let n = n_nodes as usize;
         if sources.len() != targets.len() || n_nodes > (usize::MAX as u64) {
             return None;
@@ -540,6 +689,19 @@ impl ForceState {
             }
         }
         let algo = resolve_force_algo(algorithm, n);
+        if algo == LAYOUT_COSE {
+            if !cose.is_valid()
+                || (!pinned.is_empty() && pinned.len() != n)
+                || pinned.iter().any(|&value| value > 1)
+                || !validate_compound_parents(n, parents)
+                || (pinned.iter().any(|&value| value != 0)
+                    && (init_x.is_none() || init_y.is_none()))
+            {
+                return None;
+            }
+        } else if !pinned.is_empty() || !parents.is_empty() || cose != CoseOptions::default() {
+            return None;
+        }
         let mut rng = seed | 1;
         let mut x = vec![0.0; n];
         let mut y = vec![0.0; n];
@@ -559,6 +721,17 @@ impl ForceState {
         if x.iter().chain(&y).any(|value| !value.is_finite()) {
             return None;
         }
+        if let Some([x0, y0, x1, y1]) = cose.bounds {
+            for index in 0..n {
+                if x[index] < x0 || x[index] > x1 || y[index] < y0 || y[index] > y1 {
+                    if pinned.get(index).copied().unwrap_or(0) != 0 {
+                        return None;
+                    }
+                    x[index] = x[index].clamp(x0, x1);
+                    y[index] = y[index].clamp(y0, y1);
+                }
+            }
+        }
         let edges: Vec<(u64, u64)> = sources
             .iter()
             .zip(targets.iter())
@@ -573,16 +746,28 @@ impl ForceState {
                 degree[j] += 1.0;
             }
         }
-        let area = (n as f64).max(1.0);
-        let k = (area / (n as f64).max(1.0)).sqrt();
+        let k = if algo == LAYOUT_COSE {
+            cose.ideal_edge_length
+        } else {
+            1.0
+        };
+        let area = k * k * (n as f64).max(1.0);
         let dist = if matches!(algo, LAYOUT_KAMADA_KAWAI | LAYOUT_STRESS) && n > 0 {
             Some(all_pairs_shortest_paths(n, &edges))
         } else {
             None
         };
         let (component, component_count) = if algo == LAYOUT_COSE {
-            seed_cose_overlaps(&mut x, &mut y, seed, k);
-            connected_components(n, &edges)
+            seed_cose_overlaps(&mut x, &mut y, pinned, seed, k);
+            if let Some([x0, y0, x1, y1]) = cose.bounds {
+                for index in 0..n {
+                    if pinned.get(index).copied().unwrap_or(0) == 0 {
+                        x[index] = x[index].clamp(x0, x1);
+                        y[index] = y[index].clamp(y0, y1);
+                    }
+                }
+            }
+            connected_components_with_parents(n, &edges, parents)
         } else {
             (Vec::new(), 0)
         };
@@ -604,6 +789,17 @@ impl ForceState {
             dist,
             component,
             component_count,
+            cose,
+            pinned: if pinned.is_empty() {
+                vec![false; n]
+            } else {
+                pinned.iter().map(|&value| value != 0).collect()
+            },
+            parents: if parents.is_empty() {
+                vec![COSE_NO_PARENT; n]
+            } else {
+                parents.to_vec()
+            },
         })
     }
 
@@ -633,7 +829,7 @@ impl ForceState {
             let mut fx = vec![0.0; n];
             let mut fy = vec![0.0; n];
             if force_bh || n > FORCE_EXACT_REPULSION_MAX_N {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             } else {
                 self.apply_repulsion_exact(&mut fx, &mut fy, 1.0);
             }
@@ -669,7 +865,7 @@ impl ForceState {
             if n <= FORCE_EXACT_REPULSION_MAX_N {
                 self.apply_repulsion_exact(&mut fx, &mut fy, 1.0);
             } else {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             }
             for &(s, t) in &self.edges {
                 let i = s as usize;
@@ -719,7 +915,7 @@ impl ForceState {
                     }
                 }
             } else {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             }
             for &(s, t) in &self.edges {
                 let i = s as usize;
@@ -758,7 +954,7 @@ impl ForceState {
             }
             let mut fx = vec![0.0; n];
             let mut fy = vec![0.0; n];
-            self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+            self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             for &(s, t) in &self.edges {
                 let i = s as usize;
                 let j = t as usize;
@@ -877,8 +1073,8 @@ impl ForceState {
     /// kernel rather than implemented by a host.
     fn tick_cose(&mut self, steps: u32) {
         let n = self.n;
-        let ideal = self.k;
-        let minimum_separation = ideal * 0.35;
+        let ideal = self.cose.ideal_edge_length;
+        let minimum_separation = ideal * self.cose.overlap_padding;
         for _ in 0..steps {
             if self.alpha < 0.001 {
                 break;
@@ -886,9 +1082,32 @@ impl ForceState {
             let mut fx = vec![0.0; n];
             let mut fy = vec![0.0; n];
             if n <= FORCE_EXACT_REPULSION_MAX_N {
-                self.apply_repulsion_exact(&mut fx, &mut fy, 1.25);
+                self.apply_repulsion_exact(&mut fx, &mut fy, self.cose.repulsion_strength);
             } else {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.25);
+                self.apply_repulsion_grid_bh(
+                    &mut fx,
+                    &mut fy,
+                    self.cose.repulsion_strength,
+                    minimum_separation,
+                );
+            }
+            // Compound membership participates in the same Rust kernel as a
+            // shorter, symmetric containment spring. It affects components,
+            // movement, cooling, pins, and bounds without host-side policy.
+            for (child, &parent) in self.parents.iter().enumerate() {
+                if parent == COSE_NO_PARENT {
+                    continue;
+                }
+                let parent = parent as usize;
+                let dx = self.x[child] - self.x[parent];
+                let dy = self.y[child] - self.y[parent];
+                let distance = (dx * dx + dy * dy).sqrt().max(1e-8);
+                let force = 0.8 * (distance - ideal * 0.5);
+                let (compound_fx, compound_fy) = (force * dx / distance, force * dy / distance);
+                fx[child] -= compound_fx;
+                fy[child] -= compound_fy;
+                fx[parent] += compound_fx;
+                fy[parent] += compound_fy;
             }
             for &(s, t) in &self.edges {
                 let (i, j) = (s as usize, t as usize);
@@ -939,14 +1158,14 @@ impl ForceState {
                 let radius = if self.component_count <= 1 {
                     0.0
                 } else {
-                    ideal * 2.5 * self.component_count as f64
+                    ideal * self.cose.component_spacing * self.component_count as f64
                 };
                 let (anchor_x, anchor_y) = (radius * angle.cos(), radius * angle.sin());
-                fx[i] += 0.08 * (anchor_x - self.x[i]);
-                fy[i] += 0.08 * (anchor_y - self.y[i]);
+                fx[i] += self.cose.gravity_strength * (anchor_x - self.x[i]);
+                fy[i] += self.cose.gravity_strength * (anchor_y - self.y[i]);
             }
             self.apply_displacement(&fx, &fy);
-            self.alpha *= 0.985;
+            self.alpha *= self.cose.cooling_factor;
         }
     }
 
@@ -954,6 +1173,11 @@ impl ForceState {
         let n = self.n;
         let temp = self.alpha * self.area.sqrt();
         for i in 0..n {
+            if self.pinned.get(i).copied().unwrap_or(false) {
+                self.vx[i] = 0.0;
+                self.vy[i] = 0.0;
+                continue;
+            }
             let mut dx = fx[i];
             let mut dy = fy[i];
             let mag = (dx * dx + dy * dy).sqrt();
@@ -963,6 +1187,10 @@ impl ForceState {
             }
             self.x[i] += dx;
             self.y[i] += dy;
+            if let Some([x0, y0, x1, y1]) = self.cose.bounds {
+                self.x[i] = self.x[i].clamp(x0, x1);
+                self.y[i] = self.y[i].clamp(y0, y1);
+            }
         }
     }
 
@@ -987,7 +1215,13 @@ impl ForceState {
     }
 
     #[allow(clippy::needless_range_loop)] // indexes x/y/cell_of together; force math stays scalar
-    fn apply_repulsion_grid_bh(&self, fx: &mut [f64], fy: &mut [f64], mass_scale: f64) {
+    fn apply_repulsion_grid_bh(
+        &self,
+        fx: &mut [f64],
+        fy: &mut [f64],
+        mass_scale: f64,
+        minimum_separation: f64,
+    ) {
         const EXACT_CELL_MAX: usize = 32;
         let n = self.n;
         let k2 = self.k * self.k * mass_scale;
@@ -1058,6 +1292,11 @@ impl ForceState {
                             let force = k2 / dist;
                             fx[i] += force * dx / dist;
                             fy[i] += force * dy / dist;
+                            if dist < minimum_separation {
+                                let pressure = (minimum_separation - dist) * 2.0;
+                                fx[i] += pressure * dx / dist;
+                                fy[i] += pressure * dy / dist;
+                            }
                         }
                     } else {
                         let contains_i = c == ci;
@@ -1073,6 +1312,12 @@ impl ForceState {
                             let force = k2 * aggregate_mass as f64 / dist;
                             fx[i] += force * dx / dist;
                             fy[i] += force * dy / dist;
+                            if dist < minimum_separation {
+                                let pressure =
+                                    (minimum_separation - dist) * 2.0 * aggregate_mass as f64;
+                                fx[i] += pressure * dx / dist;
+                                fy[i] += pressure * dy / dist;
+                            }
                         }
                     }
                 }
@@ -1142,6 +1387,38 @@ pub fn force_create(
     algorithm: u32,
 ) -> Option<u64> {
     let state = ForceState::new(n_nodes, sources, targets, init_x, init_y, seed, algorithm)?;
+    let id = next_handle();
+    force_map()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(id, state);
+    Some(id)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn force_create_cose(
+    n_nodes: u64,
+    sources: &[u64],
+    targets: &[u64],
+    init_x: Option<&[f64]>,
+    init_y: Option<&[f64]>,
+    seed: u64,
+    options: CoseOptions,
+    pinned: &[u8],
+    parents: &[u64],
+) -> Option<u64> {
+    let state = ForceState::new_configured(
+        n_nodes,
+        sources,
+        targets,
+        init_x,
+        init_y,
+        seed,
+        LAYOUT_COSE,
+        options,
+        pinned,
+        parents,
+    )?;
     let id = next_handle();
     force_map()
         .lock()
@@ -2271,6 +2548,184 @@ mod tests {
             .zip(&a.y)
             .skip(1)
             .any(|(&x, &y)| x != a.x[0] || y != a.y[0]));
+
+        let make_with_padding = |overlap_padding| {
+            ForceState::new_configured(
+                n as u64,
+                &sources,
+                &targets,
+                Some(&initial_x),
+                Some(&initial_y),
+                23,
+                LAYOUT_COSE,
+                CoseOptions {
+                    repulsion_strength: 0.0,
+                    gravity_strength: 0.0,
+                    overlap_padding,
+                    ..CoseOptions::default()
+                },
+                &[],
+                &[],
+            )
+            .unwrap()
+        };
+        let mut no_padding = make_with_padding(0.0);
+        let mut padded = make_with_padding(2.0);
+        no_padding.tick(1);
+        padded.tick(1);
+        assert_ne!((no_padding.x, no_padding.y), (padded.x, padded.y));
+    }
+
+    #[test]
+    fn cose_options_pins_and_bounds_are_rust_owned() {
+        let sources = [0, 1];
+        let targets = [1, 2];
+        let initial_x = [-0.75, 0.0, 0.75];
+        let initial_y = [0.25, 0.0, -0.25];
+        let options = CoseOptions {
+            ideal_edge_length: 0.4,
+            repulsion_strength: 2.0,
+            gravity_strength: 0.2,
+            cooling_factor: 0.9,
+            overlap_padding: 0.5,
+            component_spacing: 3.0,
+            bounds: Some([-1.0, -1.0, 1.0, 1.0]),
+        };
+        let mut state = ForceState::new_configured(
+            3,
+            &sources,
+            &targets,
+            Some(&initial_x),
+            Some(&initial_y),
+            9,
+            LAYOUT_COSE,
+            options,
+            &[1, 0, 0],
+            &[],
+        )
+        .unwrap();
+        state.tick(20);
+        assert_eq!((state.x[0], state.y[0]), (initial_x[0], initial_y[0]));
+        assert!(state
+            .x
+            .iter()
+            .chain(&state.y)
+            .all(|&value| (-1.0..=1.0).contains(&value)));
+        assert!((state.alpha - 0.9f64.powi(20)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn cose_overlap_seeding_never_moves_coincident_pins_and_clamps_unpinned_ingress() {
+        let initial_x = [0.25, 0.25, 4.0, 4.0];
+        let initial_y = [-0.5, -0.5, -4.0, -4.0];
+        let options = CoseOptions {
+            bounds: Some([-1.0, -1.0, 1.0, 1.0]),
+            ..CoseOptions::default()
+        };
+        let state = ForceState::new_configured(
+            4,
+            &[],
+            &[],
+            Some(&initial_x),
+            Some(&initial_y),
+            9,
+            LAYOUT_COSE,
+            options,
+            &[1, 1, 0, 0],
+            &[],
+        )
+        .unwrap();
+        assert_eq!((state.x[0], state.y[0]), (initial_x[0], initial_y[0]));
+        assert_eq!((state.x[1], state.y[1]), (initial_x[1], initial_y[1]));
+        assert_eq!((state.x[2], state.y[2]), (1.0, -1.0));
+        assert!((-1.0..=1.0).contains(&state.x[3]));
+        assert!((-1.0..=1.0).contains(&state.y[3]));
+    }
+
+    #[test]
+    fn cose_compounds_join_components_and_reject_cycles() {
+        let initial_x = [-1.0, -0.8, 1.0, 0.8];
+        let initial_y = [0.0; 4];
+        let parents = [COSE_NO_PARENT, 0, COSE_NO_PARENT, 2];
+        let state = ForceState::new_configured(
+            4,
+            &[],
+            &[],
+            Some(&initial_x),
+            Some(&initial_y),
+            0,
+            LAYOUT_COSE,
+            CoseOptions::default(),
+            &[],
+            &parents,
+        )
+        .unwrap();
+        assert_eq!(state.component_count, 2);
+        assert_eq!(state.component[0], state.component[1]);
+        assert_eq!(state.component[2], state.component[3]);
+        assert_ne!(state.component[0], state.component[2]);
+
+        let cyclic = [1, 0];
+        assert!(ForceState::new_configured(
+            2,
+            &[],
+            &[],
+            Some(&initial_x[..2]),
+            Some(&initial_y[..2]),
+            0,
+            LAYOUT_COSE,
+            CoseOptions::default(),
+            &[],
+            &cyclic,
+        )
+        .is_none());
+        assert!(ForceState::new_configured(
+            1,
+            &[],
+            &[],
+            Some(&[0.0]),
+            None,
+            0,
+            LAYOUT_COSE,
+            CoseOptions::default(),
+            &[1],
+            &[],
+        )
+        .is_none());
+    }
+
+    #[test]
+    fn cose_rejects_invalid_options_and_pins_without_positions() {
+        let invalid = CoseOptions {
+            cooling_factor: 1.0,
+            ..CoseOptions::default()
+        };
+        assert!(ForceState::new_configured(
+            1,
+            &[],
+            &[],
+            None,
+            None,
+            0,
+            LAYOUT_COSE,
+            invalid,
+            &[],
+            &[],
+        )
+        .is_none());
+        assert!(ForceState::new_configured(
+            1,
+            &[],
+            &[],
+            None,
+            None,
+            0,
+            LAYOUT_COSE,
+            CoseOptions::default(),
+            &[1],
+            &[],
+        )
+        .is_none());
     }
 
     #[test]

@@ -115,6 +115,24 @@ def test_graphforge_graphdata_passthrough_and_column_encoding():
     assert spec["traces"][1]["color"]["mode"] == "continuous"
 
 
+def test_graphforge_ipc_configured_cose_is_seeded_and_respects_pin():
+    nodes, edges = _airports_tables()
+    kwargs = {
+        "x": [-0.5, 0.0, 0.5],
+        "y": [0.0, 0.5, 0.0],
+        "layout": "cose",
+        "seed": 29,
+        "iterations": 20,
+        "pinned": [True, False, False],
+        "cose": {"ideal_edge_length": 0.4, "bounds": (-1.0, -1.0, 1.0, 1.0)},
+    }
+    first = Figure().graph(nodes, edges, **kwargs).traces[-1]
+    second = Figure().graph(nodes, edges, **kwargs).traces[-1]
+    assert (first.x.values[0], first.y.values[0]) == (-0.5, 0.0)
+    assert list(first.x.values) == list(second.x.values)
+    assert list(first.y.values) == list(second.y.values)
+
+
 def test_graphforge_ipc_missing_endpoint_fails_before_paint():
     nodes = _load_arrow("airports_nodes.arrow")
     edges = _load_arrow("airports_edges_missing_endpoint.arrow")

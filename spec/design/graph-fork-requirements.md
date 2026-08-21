@@ -227,7 +227,9 @@ Legend: **M** = must, **S** = should, **—** = out of scope.
 - **REQ-LAY-3 (SHOULD).** `layout="auto"` from size/structure.
 - **REQ-LAY-4 (SHOULD).** DAG/hierarchical and radial/concentric — also via
   `layout=`, not separate entry points.
-- **REQ-LAY-5 (MAY).** Fixed/pinned nodes during force.
+- **REQ-LAY-5 (MAY, shipped for CoSE).** Fixed/pinned nodes preserve authored
+  f64 positions exactly; bounds conflicts fail closed. Other force families do
+  not silently inherit CoSE pin semantics.
 - **REQ-LAY-6 (MUST).** Additional layout algorithms added later remain
   callable through the same `layout=` parameter (string name or enum), with
   the original default unchanged unless a versioned migration says otherwise.

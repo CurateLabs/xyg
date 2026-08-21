@@ -31,6 +31,59 @@ def test_force_seeded_matches_across_calls():
     assert m1["alpha"] == pytest.approx(m2["alpha"])
 
 
+def test_cose_options_pins_bounds_and_compounds_cross_python_abi():
+    data = _graph.normalize_graph_inputs(
+        ["parent-a", "child-a", "parent-b", "child-b"],
+        [],
+        x=[-0.8, -0.6, 0.8, 0.6],
+        y=[0.2, 0.0, -0.2, 0.0],
+    )
+    data.parent_indices = np.array([0, 0, 0, 2], dtype=np.uint64)
+    data.parent_validity = np.array([0, 1, 0, 1], dtype=np.uint8)
+    x, y, meta = _graph.run_layout(
+        data,
+        layout="cose",
+        seed=19,
+        iterations=20,
+        pinned=[True, False, False, False],
+        cose={
+            "ideal_edge_length": 0.4,
+            "repulsion_strength": 2.0,
+            "gravity_strength": 0.2,
+            "cooling_factor": 0.9,
+            "overlap_padding": 0.5,
+            "component_spacing": 3.0,
+            "bounds": (-1.0, -1.0, 1.0, 1.0),
+        },
+    )
+    assert meta["layout"] == "cose"
+    assert (x[0], y[0]) == (-0.8, 0.2)
+    assert np.all((x >= -1.0) & (x <= 1.0))
+    assert np.all((y >= -1.0) & (y <= 1.0))
+    assert meta["alpha"] == pytest.approx(0.9**20)
+
+
+def test_cose_ergonomics_fail_closed():
+    data = _graph.normalize_graph_inputs(["a"], [], x=[0.0], y=[0.0])
+    with pytest.raises(ValueError, match="unknown CoSE option"):
+        _graph.run_layout(data, layout="cose", cose={"host_force": 1})
+    with pytest.raises(ValueError, match="require algorithm='cose'"):
+        _graph.run_layout(data, layout="force", cose={})
+    without_positions = _graph.normalize_graph_inputs(["a"], [])
+    with pytest.raises(ValueError, match="require explicit x and y"):
+        _graph.run_layout(without_positions, layout="cose", pinned=[True])
+    outside_bounds = _graph.normalize_graph_inputs(["a"], [], x=[2.0], y=[0.0])
+    with pytest.raises(ValueError, match="native graph_force_create failed"):
+        _graph.run_layout(
+            outside_bounds,
+            layout="cose",
+            pinned=[True],
+            cose={"bounds": (-1.0, -1.0, 1.0, 1.0)},
+        )
+    with pytest.raises(ValueError, match="iterations > 0"):
+        _graph.run_layout(data, layout="cose", iterations=0, cose={})
+
+
 @pytest.mark.parametrize(
     "layout",
     [
@@ -102,6 +155,25 @@ def test_graph_chart_emits_segments_scatter_and_meta():
     spec, _blob = fig.build_payload()
     assert "graph" in spec
     assert spec["graph"][0]["layout"] == "grid"
+
+
+def test_graph_chart_exposes_cose_options_and_pin_column_ergonomically():
+    chart = xyg.graph_chart(
+        xyg.graph(
+            {"id": ["a", "b"], "fixed": [True, False]},
+            [("a", "b")],
+            x=[-0.5, 0.5],
+            y=[0.0, 0.0],
+            layout="cose",
+            pinned="fixed",
+            cose={"ideal_edge_length": 0.4, "bounds": (-1, -1, 1, 1)},
+            iterations=10,
+        )
+    )
+    fig = chart.figure()
+    node_trace = next(trace for trace in fig.traces if trace.kind == "scatter")
+    assert node_trace.x.values[0] == -0.5
+    assert node_trace.y.values[0] == 0.0
 
 
 def test_figure_graph_fluent():

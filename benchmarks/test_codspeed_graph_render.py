@@ -108,6 +108,31 @@ def test_graph_force_ticks_small(benchmark, graph_data):
     assert 0.0 <= alpha <= 1.0
 
 
+def test_graph_cose_configured_ticks_small(benchmark, graph_data):
+    data = graph_data["small"]
+    x0, y0 = _native.graph_layout("circle", SMALL_N, data.sources, data.targets)
+    pinned = np.zeros(SMALL_N, dtype=np.uint8)
+    pinned[0] = 1
+    handle = _native.graph_force_create(
+        SMALL_N,
+        data.sources,
+        data.targets,
+        x=x0,
+        y=y0,
+        seed=7,
+        algorithm="cose",
+        pinned=pinned,
+        cose={"ideal_edge_length": 1.0, "bounds": (-2_000.0, -2_000.0, 2_000.0, 2_000.0)},
+    )
+    try:
+        x, y, alpha = benchmark(_native.graph_force_tick, handle, SMALL_N, 5)
+    finally:
+        _native.graph_force_destroy(handle)
+    assert (x[0], y[0]) == (x0[0], y0[0])
+    assert len(x) == SMALL_N and len(y) == SMALL_N
+    assert 0.0 <= alpha <= 1.0
+
+
 def test_graph_render_direct_medium(benchmark, graph_data):
     sources = graph_data["medium_sources"]
     targets = graph_data["medium_targets"]

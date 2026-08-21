@@ -20,6 +20,7 @@ import operator
 import os
 import struct
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, ClassVar, Optional, cast
 
@@ -46,6 +47,24 @@ class _GraphProjectionDescriptor(ctypes.Structure):
         ("parent_ids", ctypes.c_void_p),
         ("parent_validity", ctypes.c_void_p),
         ("directed", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32),
+    ]
+
+
+class _CoseDescriptor(ctypes.Structure):
+    _fields_ = [
+        ("in_x", ctypes.c_void_p),
+        ("in_y", ctypes.c_void_p),
+        ("pinned", ctypes.c_void_p),
+        ("parents", ctypes.c_void_p),
+        ("ideal_edge_length", ctypes.c_double),
+        ("repulsion_strength", ctypes.c_double),
+        ("gravity_strength", ctypes.c_double),
+        ("cooling_factor", ctypes.c_double),
+        ("overlap_padding", ctypes.c_double),
+        ("component_spacing", ctypes.c_double),
+        ("bounds", ctypes.c_void_p),
+        ("has_bounds", ctypes.c_uint32),
         ("reserved", ctypes.c_uint32),
     ]
 
@@ -4265,26 +4284,107 @@ def graph_force_create(
     y: npt.NDArray[np.float64] | None = None,
     seed: int = 0,
     algorithm: int | str = GRAPH_LAYOUT_FORCE,
+    cose: Mapping[str, Any] | None = None,
+    pinned: npt.ArrayLike | None = None,
+    parents: npt.ArrayLike | None = None,
 ) -> int:
+    n_nodes = int(n_nodes)
+    if n_nodes < 0:
+        raise ValueError("n_nodes must be non-negative")
     sources = _as_u64(sources, "sources")
     targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
     algo = graph_layout_id(algorithm) if isinstance(algorithm, str) else int(algorithm)
     handle = ctypes.c_uint64(0)
-    in_x = _ptr_f64(_as_f64(x, "x")) if x is not None else None
-    in_y = _ptr_f64(_as_f64(y, "y")) if y is not None else None
-    if (x is None) ^ (y is None):
+    x_array = None if x is None else _as_f64(x, "x")
+    y_array = None if y is None else _as_f64(y, "y")
+    if (x_array is None) != (y_array is None):
         raise ValueError("force create requires both x and y or neither")
-    ok = _lib.xyg_graph_force_create(
-        ctypes.c_uint64(int(n_nodes)),
-        ctypes.c_uint64(len(sources)),
-        sources.ctypes.data if len(sources) else None,
-        targets.ctypes.data if len(targets) else None,
-        in_x,
-        in_y,
-        ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
-        ctypes.c_uint32(algo),
-        ctypes.byref(handle),
-    )
+    if x_array is not None:
+        assert y_array is not None
+        if len(x_array) != n_nodes or len(y_array) != n_nodes:
+            raise ValueError("x and y must have length n_nodes")
+    in_x = None if x_array is None else _ptr_f64(x_array)
+    in_y = None if y_array is None else _ptr_f64(y_array)
+    configured_cose = cose is not None or pinned is not None or parents is not None
+    if configured_cose:
+        if algo != GRAPH_LAYOUT_COSE:
+            raise ValueError("CoSE options, pins, and parents require algorithm='cose'")
+        raw = dict(cose or {})
+        allowed = {
+            "ideal_edge_length",
+            "repulsion_strength",
+            "gravity_strength",
+            "cooling_factor",
+            "overlap_padding",
+            "component_spacing",
+            "bounds",
+        }
+        unknown = sorted(set(raw) - allowed)
+        if unknown:
+            raise ValueError(f"unknown CoSE option(s): {', '.join(unknown)}")
+        pin_array = None
+        if pinned is not None:
+            raw_pins = np.asarray(pinned).reshape(-1)
+            if not (
+                np.issubdtype(raw_pins.dtype, np.bool_) or np.issubdtype(raw_pins.dtype, np.integer)
+            ) or np.any((raw_pins != 0) & (raw_pins != 1)):
+                raise ValueError("pinned must contain only booleans or 0/1 integers")
+            pin_array = np.ascontiguousarray(raw_pins, dtype=np.uint8)
+        parent_array = (
+            None if parents is None else np.ascontiguousarray(parents, dtype=np.uint64).reshape(-1)
+        )
+        if pin_array is not None and len(pin_array) != int(n_nodes):
+            raise ValueError("pinned must have length n_nodes")
+        if parent_array is not None and len(parent_array) != int(n_nodes):
+            raise ValueError("parents must have length n_nodes")
+        if pin_array is not None and np.any(pin_array) and x is None:
+            raise ValueError("pinned nodes require explicit x and y initial positions")
+        bounds_value = raw.get("bounds")
+        bounds = (
+            None
+            if bounds_value is None
+            else np.ascontiguousarray(bounds_value, dtype=np.float64).reshape(-1)
+        )
+        if bounds is not None and len(bounds) != 4:
+            raise ValueError("CoSE bounds must be (x0, y0, x1, y1)")
+        descriptor = _CoseDescriptor(
+            in_x,
+            in_y,
+            None if pin_array is None else pin_array.ctypes.data,
+            None if parent_array is None else parent_array.ctypes.data,
+            float(raw.get("ideal_edge_length", 1.0)),
+            float(raw.get("repulsion_strength", 1.25)),
+            float(raw.get("gravity_strength", 0.08)),
+            float(raw.get("cooling_factor", 0.985)),
+            float(raw.get("overlap_padding", 0.35)),
+            float(raw.get("component_spacing", 2.5)),
+            None if bounds is None else bounds.ctypes.data,
+            0 if bounds is None else 1,
+            0,
+        )
+        ok = _lib.xyg_graph_force_create_cose(
+            ctypes.byref(descriptor),
+            ctypes.c_uint64(int(n_nodes)),
+            ctypes.c_uint64(len(sources)),
+            sources.ctypes.data if len(sources) else None,
+            targets.ctypes.data if len(targets) else None,
+            ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
+            ctypes.byref(handle),
+        )
+    else:
+        ok = _lib.xyg_graph_force_create(
+            ctypes.c_uint64(int(n_nodes)),
+            ctypes.c_uint64(len(sources)),
+            sources.ctypes.data if len(sources) else None,
+            targets.ctypes.data if len(targets) else None,
+            in_x,
+            in_y,
+            ctypes.c_uint64(int(seed) & ((1 << 64) - 1)),
+            ctypes.c_uint32(algo),
+            ctypes.byref(handle),
+        )
     if ok != 0:
         raise ValueError("native graph_force_create failed")
     return int(handle.value)

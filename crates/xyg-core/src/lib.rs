@@ -96,7 +96,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 80;
+pub const ABI_VERSION: u32 = 81;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6179,6 +6179,138 @@ pub unsafe extern "C" fn xyg_graph_force_create(
     })
 }
 
+/// Packed configurable CoSE ingress. Optional node arrays are either null or
+/// exactly `n_nodes` long. `parents` uses [`graph::COSE_NO_PARENT`] for roots.
+/// Bounds are `(x0, y0, x1, y1)` when `has_bounds != 0`.
+#[repr(C)]
+pub struct XygCoseDescriptor {
+    pub in_x: *const f64,
+    pub in_y: *const f64,
+    pub pinned: *const u8,
+    pub parents: *const u64,
+    pub ideal_edge_length: f64,
+    pub repulsion_strength: f64,
+    pub gravity_strength: f64,
+    pub cooling_factor: f64,
+    pub overlap_padding: f64,
+    pub component_spacing: f64,
+    pub bounds: *const f64,
+    pub has_bounds: u32,
+    pub reserved: u32,
+}
+
+/// Create a progressive configurable CoSE handle.
+///
+/// Returns `0` and a non-zero handle on success; `-1` for malformed graph,
+/// option, pin, compound, or bounds ingress. No host-side fallback is used.
+///
+/// # Safety
+/// `descriptor` and `out_handle` must be valid. Edge arrays must address
+/// `n_edges` entries. Each non-null node array in the descriptor must address
+/// `n_nodes` entries; bounds must address four f64 values when enabled.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_force_create_cose(
+    descriptor: *const XygCoseDescriptor,
+    n_nodes: u64,
+    n_edges: u64,
+    sources: *const u64,
+    targets: *const u64,
+    seed: u64,
+    out_handle: *mut u64,
+) -> i32 {
+    if descriptor.is_null()
+        || out_handle.is_null()
+        || n_nodes > usize::MAX as u64
+        || n_edges > usize::MAX as u64
+    {
+        return -1;
+    }
+    *out_handle = 0;
+    let descriptor = &*descriptor;
+    if descriptor.reserved != 0 || descriptor.has_bounds > 1 {
+        return -1;
+    }
+    if (descriptor.in_x.is_null()) != (descriptor.in_y.is_null()) {
+        return -1;
+    }
+    let n = n_nodes as usize;
+    let e = n_edges as usize;
+    let sources = if e == 0 {
+        &[][..]
+    } else if sources.is_null() {
+        return -1;
+    } else {
+        std::slice::from_raw_parts(sources, e)
+    };
+    let targets = if e == 0 {
+        &[][..]
+    } else if targets.is_null() {
+        return -1;
+    } else {
+        std::slice::from_raw_parts(targets, e)
+    };
+    let initial = if descriptor.in_x.is_null() {
+        None
+    } else {
+        Some((
+            std::slice::from_raw_parts(descriptor.in_x, n),
+            std::slice::from_raw_parts(descriptor.in_y, n),
+        ))
+    };
+    let pinned = if descriptor.pinned.is_null() {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(descriptor.pinned, n)
+    };
+    let parents = if descriptor.parents.is_null() {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(descriptor.parents, n)
+    };
+    let bounds = if descriptor.has_bounds == 0 {
+        None
+    } else if descriptor.bounds.is_null() {
+        return -1;
+    } else {
+        let values = std::slice::from_raw_parts(descriptor.bounds, 4);
+        Some([values[0], values[1], values[2], values[3]])
+    };
+    let options = graph::CoseOptions {
+        ideal_edge_length: descriptor.ideal_edge_length,
+        repulsion_strength: descriptor.repulsion_strength,
+        gravity_strength: descriptor.gravity_strength,
+        cooling_factor: descriptor.cooling_factor,
+        overlap_padding: descriptor.overlap_padding,
+        component_spacing: descriptor.component_spacing,
+        bounds,
+    };
+    ffi_guard(-1, || {
+        let handle = match initial {
+            Some((x, y)) => graph::force_create_cose(
+                n_nodes,
+                sources,
+                targets,
+                Some(x),
+                Some(y),
+                seed,
+                options,
+                pinned,
+                parents,
+            ),
+            None => graph::force_create_cose(
+                n_nodes, sources, targets, None, None, seed, options, pinned, parents,
+            ),
+        };
+        match handle {
+            Some(handle) => {
+                *out_handle = handle;
+                0
+            }
+            None => -1,
+        }
+    })
+}
+
 /// Advance a force handle by `steps` and write positions. Returns 0 on
 /// success and writes remaining alpha to `out_alpha`; -1 on bad handle/args.
 ///
@@ -8425,6 +8557,83 @@ mod tests {
             assert_eq!(status, -1);
             assert_eq!(handle, 0);
         }
+    }
+
+    #[test]
+    fn configured_cose_abi_preserves_pins_and_rejects_compound_cycles() {
+        let sources = [0_u64];
+        let targets = [1_u64];
+        let x = [-0.5_f64, 0.5];
+        let y = [0.0_f64, 0.0];
+        let pinned = [1_u8, 0];
+        let parents = [graph::COSE_NO_PARENT, 0];
+        let bounds = [-1.0_f64, -1.0, 1.0, 1.0];
+        let descriptor = XygCoseDescriptor {
+            in_x: x.as_ptr(),
+            in_y: y.as_ptr(),
+            pinned: pinned.as_ptr(),
+            parents: parents.as_ptr(),
+            ideal_edge_length: 0.4,
+            repulsion_strength: 2.0,
+            gravity_strength: 0.2,
+            cooling_factor: 0.9,
+            overlap_padding: 0.5,
+            component_spacing: 3.0,
+            bounds: bounds.as_ptr(),
+            has_bounds: 1,
+            reserved: 0,
+        };
+        let mut handle = 0;
+        unsafe {
+            assert_eq!(
+                xyg_graph_force_create_cose(
+                    &descriptor,
+                    2,
+                    1,
+                    sources.as_ptr(),
+                    targets.as_ptr(),
+                    7,
+                    &mut handle,
+                ),
+                0
+            );
+            let (mut out_x, mut out_y, mut alpha) = ([0.0; 2], [0.0; 2], 0.0);
+            assert_eq!(
+                xyg_graph_force_tick(
+                    handle,
+                    2,
+                    10,
+                    out_x.as_mut_ptr(),
+                    out_y.as_mut_ptr(),
+                    &mut alpha,
+                ),
+                0
+            );
+            assert_eq!((out_x[0], out_y[0]), (x[0], y[0]));
+            assert_eq!(xyg_graph_force_destroy(handle), 1);
+        }
+
+        let cyclic = [1_u64, 0];
+        let bad = XygCoseDescriptor {
+            parents: cyclic.as_ptr(),
+            ..descriptor
+        };
+        handle = u64::MAX;
+        unsafe {
+            assert_eq!(
+                xyg_graph_force_create_cose(
+                    &bad,
+                    2,
+                    1,
+                    sources.as_ptr(),
+                    targets.as_ptr(),
+                    7,
+                    &mut handle,
+                ),
+                -1
+            );
+        }
+        assert_eq!(handle, 0);
     }
 
     #[test]

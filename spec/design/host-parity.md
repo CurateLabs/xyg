@@ -251,6 +251,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   only the reduced buffers — no second edge-sample for draw.
 - **Force at scale:** exact pairwise repulsion for `n ≤ 500`
   (`FORCE_EXACT_REPULSION_MAX_N`); spatial-grid Barnes–Hut-style approx above.
+- **Configured CoSE:** Python and Node normalize ergonomic option spelling,
+  pins, bounds, and compound-parent buffers into `xyg_graph_force_create_cose`.
+  Rust alone validates and applies every force/layout decision. Direct browser
+  Worker/WASM parity and Python background scheduling remain #35 closure gates.
 - **Box-select:** reuses the existing scatter/segments selection path — no
   graph-specific selection ABI for MVP.
 - **Node shapes:** via scatter `symbol=` (same mark as other scatter charts).
