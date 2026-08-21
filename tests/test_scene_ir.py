@@ -119,6 +119,10 @@ def test_python_scene_v3_rejects_malformed_batches() -> None:
         _native.scene_batch_encode(**(options | {"margins": (60.0, 40.0, 10.0, 10.0)}))
     with np.testing.assert_raises_regex(ValueError, "4,096 UTF-8 bytes"):
         _native.scene_batch_encode(**(options | {"title": "x" * 4_097}))
+    with np.testing.assert_raises_regex(ValueError, "19,504 bytes"):
+        _native.scene_batch_encode(
+            **(options | {"legend_input": bytes(_native.MAX_SCENE_LEGEND_INPUT_BYTES + 1)})
+        )
 
 
 def test_python_scene_v3_rejects_unsigned_values_before_coercion() -> None:

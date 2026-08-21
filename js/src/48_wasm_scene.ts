@@ -1,7 +1,7 @@
 import { PROTOCOL } from "./00_header";
 import { XygWasmError, XygWasmWorker, type XygWasmScenePaint } from "./47_wasm";
 import { ChartView } from "./50_chartview";
-import { XYG_WASM_PAINTER_HEADER_BYTES, XYG_WASM_PAINTER_MAX_TRACES, XYG_WASM_PAINTER_TICK_BYTES, XYG_WASM_PAINTER_TRACE_BYTES, XYG_WASM_PAINTER_VERSION, XYG_WASM_SCENE_VERSION } from "./wasm_abi_generated";
+import { XYG_WASM_PAINTER_HEADER_BYTES, XYG_WASM_PAINTER_MAX_LEGEND_BYTES, XYG_WASM_PAINTER_MAX_TRACES, XYG_WASM_PAINTER_TICK_BYTES, XYG_WASM_PAINTER_TRACE_BYTES, XYG_WASM_PAINTER_VERSION, XYG_WASM_SCENE_VERSION } from "./wasm_abi_generated";
 
 const HEADER_BYTES = XYG_WASM_PAINTER_HEADER_BYTES, TRACE_BYTES = XYG_WASM_PAINTER_TRACE_BYTES;
 const SYMBOLS = ["circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star", "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel", "thin_diamond", "plus_line", "x_line", "horizontal_line", "vertical_line"] as const;
@@ -111,7 +111,7 @@ function compilePainter(painter: ArrayBuffer) {
     tickValues.push(position); tickLabels.push(label); tickMajor.push(major === 1); nextString += labelLength;
   }
   const legendLength = u32(280);
-  if (bytes.subarray(284, 288).some((value) => value !== 0) || legendLength > 20_000 || nextString + legendLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend range is invalid");
+  if (bytes.subarray(284, 288).some((value) => value !== 0) || legendLength > XYG_WASM_PAINTER_MAX_LEGEND_BYTES || nextString + legendLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend range is invalid");
   let legend: any = null;
   if (legendLength) {
     const start = nextString;
@@ -131,9 +131,22 @@ function compilePainter(painter: ArrayBuffer) {
       items.push({ name: decodeLegend(labelOffset, labelLength), kind: kind === 0 ? "scatter" : kind === 1 ? "line" : "bar", style: { color: kind === 1 ? stroke : fill, fill, stroke, symbol: kind === 0 ? SYMBOLS[symbol] : undefined } });
       expected += labelLength;
     }
-    if (expected !== textLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend text has trailing bytes");
-    const locations = ["upper right", "upper left", "lower left", "lower right", "center right", "center left", "upper center", "lower center", "center"];
-    legend = { loc: locations[location], title: title || null, items, toggle: false, highlight: false, style: { color: rgba(bytes.subarray(start + 32, start + 36)), background: rgba(bytes.subarray(start + 36, start + 40)), border: `1px solid ${rgba(bytes.subarray(start + 40, start + 44))}`, "font-size": fontSize }, title_style: { "font-size": titleFontSize } };
+    const geometry = textStart + expected, tableEndGeometry = geometry + 32 + entryCount * 40;
+    if (tableEndGeometry > start + legendLength || String.fromCharCode(...bytes.subarray(geometry, geometry + 4)) !== "XYRG" || u32(geometry + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend geometry is invalid");
+    const finite = (offset: number) => { const value = f32(offset); if (!Number.isFinite(value)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend geometry is non-finite"); return value; };
+    const bounds = [finite(geometry + 8), finite(geometry + 12), finite(geometry + 16), finite(geometry + 20)];
+    const titlePosition = [finite(geometry + 24), finite(geometry + 28)];
+    let nextPath = tableEndGeometry;
+    for (let index = 0; index < entryCount; index++) {
+      const item = geometry + 32 + index * 40, primitive = u32(item + 24), fillNone = u32(item + 28), strokeWidth = finite(item + 32), pathLength = u32(item + 36);
+      if (primitive > 3 || fillNone > 1 || strokeWidth < 0 || (primitive === 3) !== (pathLength > 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend swatch is invalid");
+      if (nextPath + pathLength > start + legendLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend swatch path is invalid");
+      let path = ""; try { path = decoder.decode(bytes.subarray(nextPath, nextPath + pathLength)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend swatch path is invalid UTF-8"); }
+      items[index].geometry = { label: [finite(item), finite(item + 4)], swatch: [finite(item + 8), finite(item + 12), finite(item + 16), finite(item + 20)], primitive, fillNone: fillNone === 1, strokeWidth, path };
+      nextPath += pathLength;
+    }
+    if (nextPath !== start + legendLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend geometry has trailing bytes");
+    legend = { resolved: { bounds, title: titlePosition }, title: title || null, items, toggle: false, highlight: false, style: { color: rgba(bytes.subarray(start + 32, start + 36)), background: rgba(bytes.subarray(start + 36, start + 40)), border: rgba(bytes.subarray(start + 40, start + 44)), "font-size": fontSize }, title_style: { "font-size": titleFontSize } };
   }
   nextString += legendLength;
   if (nextString !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter output has trailing bytes");

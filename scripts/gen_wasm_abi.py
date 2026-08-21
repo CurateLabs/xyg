@@ -34,6 +34,7 @@ def render(manifest: dict[str, object]) -> str:
     typed_series_peak_bytes_per_series = int(manifest["typed_series_peak_bytes_per_series"])
     typed_series_peak_input_multiplier = int(manifest["typed_series_peak_input_multiplier"])
     max_arena_bytes = int(manifest["max_arena_bytes"])
+    painter_max_legend_bytes = int(manifest["painter_max_legend_bytes"])
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if not isinstance(statuses, dict) or not isinstance(exports, list):
@@ -62,6 +63,7 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_SERIES = {typed_series_peak_bytes_per_series} as const;",
         f"export const XYG_WASM_TYPED_SERIES_PEAK_INPUT_MULTIPLIER = {typed_series_peak_input_multiplier} as const;",
         f"export const XYG_WASM_MAX_ARENA_BYTES = {max_arena_bytes} as const;",
+        f"export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = {painter_max_legend_bytes} as const;",
         "export const XYG_WASM_STATUS = {",
     ]
     for name, value in statuses.items():
@@ -153,6 +155,7 @@ def verify_rust(manifest: dict[str, object]) -> None:
         ("BROWSER_PAINTER_TRACE_BYTES", "painter_trace_bytes"),
         ("BROWSER_PAINTER_TICK_BYTES", "painter_tick_bytes"),
         ("MAX_BROWSER_PAINTER_TRACES", "painter_max_traces"),
+        ("BROWSER_PAINTER_MAX_LEGEND_BYTES", "painter_max_legend_bytes"),
     ):
         match = re.search(rf"pub const {rust_name}: usize = (\d+);", engine)
         if not match or int(match.group(1)) != int(manifest[manifest_name]):

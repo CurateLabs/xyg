@@ -32,6 +32,7 @@ from .config import MAX_CONTOUR_WORK, MAX_SCREEN_DIM
 _MAX_SCENE_MARKS = 2_000_000
 _MAX_SCENE_STYLES = 65_536
 _MAX_SCENE_TEXT_BYTES = 4_096
+MAX_SCENE_LEGEND_INPUT_BYTES = 48 + 128 * 24 + 16_384
 
 
 class _GraphProjectionDescriptor(ctypes.Structure):
@@ -1812,6 +1813,8 @@ def scene_batch_encode(
     )
     y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
     legend_array = np.frombuffer(legend_input, dtype=np.uint8)
+    if len(legend_array) > MAX_SCENE_LEGEND_INPUT_BYTES:
+        raise ValueError(f"scene legend input is limited to {MAX_SCENE_LEGEND_INPUT_BYTES:,} bytes")
     tick_arrays = (x_major, x_minor, y_major, y_minor)
     if any(value is not None and len(value) > 200 for value in tick_arrays):
         raise ValueError("scene axis tick lists are limited to 200 values")

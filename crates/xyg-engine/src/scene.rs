@@ -20,7 +20,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 240;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 5;
+pub const BROWSER_PAINTER_VERSION: u32 = 6;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 288;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -32,6 +32,15 @@ pub const MAX_SCENE_LEGEND_ENTRIES: usize = 128;
 pub const MAX_SCENE_LEGEND_TEXT_BYTES: usize = 16_384;
 const SCENE_LEGEND_HEADER_BYTES: usize = 48;
 const SCENE_LEGEND_ENTRY_BYTES: usize = 24;
+pub const MAX_SCENE_LEGEND_INPUT_BYTES: usize = SCENE_LEGEND_HEADER_BYTES
+    + MAX_SCENE_LEGEND_ENTRIES * SCENE_LEGEND_ENTRY_BYTES
+    + MAX_SCENE_LEGEND_TEXT_BYTES;
+const MAX_BROWSER_LEGEND_PATH_BYTES: usize = 256;
+pub const BROWSER_PAINTER_MAX_LEGEND_BYTES: usize = 57424;
+const _: () = assert!(BROWSER_PAINTER_MAX_LEGEND_BYTES
+    == MAX_SCENE_LEGEND_INPUT_BYTES
+        + 32
+        + MAX_SCENE_LEGEND_ENTRIES * (40 + MAX_BROWSER_LEGEND_PATH_BYTES));
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -87,6 +96,29 @@ pub struct SceneLegend {
 }
 
 impl SceneLegend {
+    fn validate_constructed(&self) -> Result<(), SceneError> {
+        if self.entries.iter().any(|entry| {
+            (entry.kind == SceneRecordKind::Scatter
+                && entry.symbol > ScatterSymbol::VerticalLine as u8)
+                || (entry.kind != SceneRecordKind::Scatter && entry.symbol != 0)
+        }) {
+            return Err(SceneError::Length);
+        }
+        let text_bytes = self.title.len().checked_add(
+            self.entries.iter().map(|entry| entry.label.len()).sum(),
+        ).ok_or(SceneError::Limit)?;
+        if self.entries.is_empty()
+            || self.entries.len() > MAX_SCENE_LEGEND_ENTRIES
+            || self.title.len() > MAX_SCENE_TEXT_BYTES
+            || self.title.contains('\0')
+            || text_bytes > MAX_SCENE_LEGEND_TEXT_BYTES
+            || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&self.font_size)
+            || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&self.title_font_size)
+            || self.entries.iter().any(|entry| entry.label.is_empty()
+                || entry.label.len() > MAX_SCENE_TEXT_BYTES || entry.label.contains('\0'))
+        { return Err(SceneError::Limit); }
+        Ok(())
+    }
     pub fn from_input(bytes: &[u8], style_count: usize) -> Result<Option<Self>, SceneError> {
         Self::parse(bytes, style_count, true)
     }
@@ -533,6 +565,11 @@ fn push_raster_f32(out: &mut Vec<u8>, value: f64, scale: f64) -> Result<(), Scen
     }
     out.extend_from_slice(&narrowed.to_le_bytes());
     Ok(())
+}
+
+fn checked_f32(value: f64) -> Result<f32, SceneError> {
+    let value = value as f32;
+    value.is_finite().then_some(value).ok_or(SceneError::NonFinite)
 }
 
 fn push_raster_stroke(
@@ -1261,11 +1298,7 @@ fn read_chrome_trailer(
     let counts = [212, 216, 220, 224]
         .map(|offset| u32::from_le_bytes(trailer[offset..offset + 4].try_into().unwrap()));
     let legend_len = u32::from_le_bytes(trailer[228..232].try_into().unwrap()) as usize;
-    if legend_len
-        > SCENE_LEGEND_HEADER_BYTES
-            + MAX_SCENE_LEGEND_ENTRIES * SCENE_LEGEND_ENTRY_BYTES
-            + MAX_SCENE_LEGEND_TEXT_BYTES
-    {
+    if legend_len > MAX_SCENE_LEGEND_INPUT_BYTES {
         return Err(SceneError::Limit);
     }
     if counts[1] == u32::MAX || counts[3] == u32::MAX {
@@ -1436,6 +1469,58 @@ fn write_chrome_trailer(
         }
     }
     out.extend_from_slice(&legend_bytes);
+}
+
+fn resolved_legend_bounds(
+    layout: PlotLayout,
+    legend: &SceneLegend,
+) -> Result<(f64, f64, f64, f64), SceneError> {
+    let widest = legend
+        .entries
+        .iter()
+        .map(|entry| text_advance(&entry.label, legend.font_size))
+        .chain(std::iter::once(text_advance(
+            &legend.title,
+            legend.title_font_size,
+        )))
+        .fold(0.0_f64, f64::max);
+    let width = 36.0 + widest;
+    let title_rows = usize::from(!legend.title.is_empty());
+    let height = 12.0
+        + legend.entries.len() as f64 * (legend.font_size + 6.0)
+        + title_rows as f64 * (legend.title_font_size + 6.0);
+    if !width.is_finite()
+        || !height.is_finite()
+        || width > layout.right - layout.left - 16.0
+        || height > layout.bottom - layout.top - 16.0
+    {
+        return Err(SceneError::Limit);
+    }
+    let (mut x, mut y) = (layout.left + 8.0, layout.top + 8.0);
+    match legend.location {
+        LegendLocation::UpperRight => x = layout.right - width - 8.0,
+        LegendLocation::UpperLeft => {}
+        LegendLocation::LowerLeft => y = layout.bottom - height - 8.0,
+        LegendLocation::LowerRight => {
+            x = layout.right - width - 8.0;
+            y = layout.bottom - height - 8.0;
+        }
+        LegendLocation::CenterRight => {
+            x = layout.right - width - 8.0;
+            y = (layout.top + layout.bottom - height) * 0.5;
+        }
+        LegendLocation::CenterLeft => y = (layout.top + layout.bottom - height) * 0.5,
+        LegendLocation::UpperCenter => x = (layout.left + layout.right - width) * 0.5,
+        LegendLocation::LowerCenter => {
+            x = (layout.left + layout.right - width) * 0.5;
+            y = layout.bottom - height - 8.0;
+        }
+        LegendLocation::Center => {
+            x = (layout.left + layout.right - width) * 0.5;
+            y = (layout.top + layout.bottom - height) * 0.5;
+        }
+    }
+    Ok((x, y, width, height))
 }
 
 /// Validate a serialized canonical Scene v9 batch without allocating.
@@ -1828,6 +1913,7 @@ impl<'a> SceneBatch<'a> {
             return Err(SceneError::Limit);
         }
         if let Some(value) = &legend {
+            value.validate_constructed()?;
             if value.entries.iter().any(|entry| {
                 entry.style_ref >= style_count
                     || entry.fill_rgba != fill_rgba[entry.style_ref * 4..entry.style_ref * 4 + 4]
@@ -1836,6 +1922,7 @@ impl<'a> SceneBatch<'a> {
             }) {
                 return Err(SceneError::Length);
             }
+            resolved_legend_bounds(layout, value)?;
         }
         if [
             stable_ids.len(),
@@ -2199,6 +2286,76 @@ pub struct SceneDocument {
 }
 
 impl SceneDocument {
+    fn painter_legend_bytes(&self) -> Result<Vec<u8>, SceneError> {
+        let Some(legend) = &self.legend else { return Ok(Vec::new()); };
+        let mut out = legend.encode();
+        let (x, y, width, height) = self.legend_bounds(legend)?;
+        out.extend_from_slice(b"XYRG");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        for value in [x, y, width, height] {
+            out.extend_from_slice(&checked_f32(value)?.to_le_bytes());
+        }
+        let mut row_y = y + 8.0;
+        let title_baseline = if legend.title.is_empty() { 0.0 } else {
+            row_y += legend.title_font_size;
+            let value = row_y;
+            row_y += 6.0;
+            value
+        };
+        out.extend_from_slice(&checked_f32(x + 8.0)?.to_le_bytes());
+        out.extend_from_slice(&checked_f32(title_baseline)?.to_le_bytes());
+        let mut paths = Vec::new();
+        for entry in &legend.entries {
+            row_y += legend.font_size;
+            let swatch_y = row_y - legend.font_size * 0.35;
+            let style = self.styles[entry.style_ref];
+            let (primitive, fill_none, x0, y0, x1, y1) = match entry.kind {
+                SceneRecordKind::Polyline => (0u32, true, x + 8.0, swatch_y, x + 28.0, swatch_y),
+                SceneRecordKind::Scatter => {
+                    let symbol = ScatterSymbol::from_code(entry.symbol);
+                    let radius = MarkerGeometry::new(symbol, 8.0, style.stroke_width).radius;
+                    if matches!(symbol, ScatterSymbol::Square | ScatterSymbol::Pixel) {
+                        (1u32, false, x + 18.0 - radius, swatch_y - radius, radius * 2.0, radius * 2.0)
+                    } else if matches!(symbol, ScatterSymbol::Circle | ScatterSymbol::Point) {
+                        (2u32, false, x + 18.0, swatch_y, radius, 0.0)
+                    } else {
+                        (3u32, symbol.is_line(), x + 18.0, swatch_y, radius, 0.0)
+                    }
+                }
+                _ => (1u32, false, x + 10.0, swatch_y - 4.0, 16.0, 8.0),
+            };
+            for value in [x + 34.0, row_y, x0, y0, x1, y1] {
+                out.extend_from_slice(&checked_f32(value)?.to_le_bytes());
+            }
+            out.extend_from_slice(&primitive.to_le_bytes());
+            out.extend_from_slice(&u32::from(fill_none).to_le_bytes());
+            out.extend_from_slice(&checked_f32(style.stroke_width.max(1.0))?.to_le_bytes());
+            let path = if entry.kind == SceneRecordKind::Scatter {
+                let mut element = String::new();
+                push_symbol(
+                    &mut element,
+                    ScatterSymbol::from_code(entry.symbol),
+                    x + 18.0,
+                    swatch_y,
+                    MarkerGeometry::new(
+                        ScatterSymbol::from_code(entry.symbol), 8.0, style.stroke_width,
+                    ).radius,
+                );
+                element
+                    .split_once(" d=\"")
+                    .and_then(|(_, rest)| rest.split_once('"'))
+                    .map(|(path, _)| path.as_bytes().to_vec())
+                    .unwrap_or_default()
+            } else { Vec::new() };
+            if path.len() > MAX_BROWSER_LEGEND_PATH_BYTES { return Err(SceneError::Limit); }
+            out.extend_from_slice(&(path.len() as u32).to_le_bytes());
+            paths.push(path);
+            row_y += 6.0;
+        }
+        for path in paths { out.extend_from_slice(&path); }
+        Ok(out)
+    }
+
     pub fn decode(bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.len() < SCENE_BATCH_HEADER_BYTES || &bytes[..4] != b"XYGS" {
             return Err(SceneError::Length);
@@ -2265,6 +2422,9 @@ impl SceneDocument {
             top,
             viewport_height - bottom,
         )?;
+        if let Some(value) = &legend {
+            resolved_legend_bounds(layout, value)?;
+        }
         if bytes[96] > ScaleKind::SymLog as u8
             || bytes[104] > ScaleKind::SymLog as u8
             || !matches!(bytes[97], 0 | 1)
@@ -2531,53 +2691,15 @@ impl SceneDocument {
             .filter(|value| !ticks.labeled.contains(value))
     }
 
-    fn legend_bounds(&self, legend: &SceneLegend) -> (f64, f64, f64, f64) {
-        let widest = legend
-            .entries
-            .iter()
-            .map(|entry| text_advance(&entry.label, legend.font_size))
-            .chain(std::iter::once(text_advance(
-                &legend.title,
-                legend.title_font_size,
-            )))
-            .fold(0.0_f64, f64::max);
-        let width = (36.0 + widest).min((self.layout.right - self.layout.left - 16.0).max(40.0));
-        let title_rows = usize::from(!legend.title.is_empty());
-        let height = 12.0
-            + legend.entries.len() as f64 * (legend.font_size + 6.0)
-            + title_rows as f64 * (legend.title_font_size + 6.0);
-        let (mut x, mut y) = (self.layout.left + 8.0, self.layout.top + 8.0);
-        match legend.location {
-            LegendLocation::UpperRight => x = self.layout.right - width - 8.0,
-            LegendLocation::UpperLeft => {}
-            LegendLocation::LowerLeft => y = self.layout.bottom - height - 8.0,
-            LegendLocation::LowerRight => {
-                x = self.layout.right - width - 8.0;
-                y = self.layout.bottom - height - 8.0;
-            }
-            LegendLocation::CenterRight => {
-                x = self.layout.right - width - 8.0;
-                y = (self.layout.top + self.layout.bottom - height) * 0.5;
-            }
-            LegendLocation::CenterLeft => y = (self.layout.top + self.layout.bottom - height) * 0.5,
-            LegendLocation::UpperCenter => x = (self.layout.left + self.layout.right - width) * 0.5,
-            LegendLocation::LowerCenter => {
-                x = (self.layout.left + self.layout.right - width) * 0.5;
-                y = self.layout.bottom - height - 8.0;
-            }
-            LegendLocation::Center => {
-                x = (self.layout.left + self.layout.right - width) * 0.5;
-                y = (self.layout.top + self.layout.bottom - height) * 0.5;
-            }
-        }
-        (x, y, width, height)
+    fn legend_bounds(&self, legend: &SceneLegend) -> Result<(f64, f64, f64, f64), SceneError> {
+        resolved_legend_bounds(self.layout, legend)
     }
 
     fn append_svg_legend(&self, out: &mut String) {
         let Some(legend) = &self.legend else {
             return;
         };
-        let (x, y, width, height) = self.legend_bounds(legend);
+        let (x, y, width, height) = self.legend_bounds(legend).expect("validated legend fit");
         out.push_str("<g data-xy-chrome=\"legend\" role=\"list\"><rect x=\"");
         push_num(out, x);
         out.push_str("\" y=\"");
@@ -3353,7 +3475,7 @@ impl SceneDocument {
             )
             .saturating_add(186);
         let legend_capacity = self.legend.as_ref().map_or(0, |legend| {
-            128usize.saturating_add(legend.title.len()).saturating_add(
+            256usize.saturating_add(legend.title.len()).saturating_add(
                 legend
                     .entries
                     .iter()
@@ -3370,7 +3492,7 @@ impl SceneDocument {
         let Some(legend) = &self.legend else {
             return Ok(());
         };
-        let (x, y, width, height) = self.legend_bounds(legend);
+        let (x, y, width, height) = self.legend_bounds(legend)?;
         let points = [
             (x, y),
             (x + width, y),
@@ -3925,11 +4047,7 @@ impl SceneDocument {
             .and_then(|value| value.checked_add(self.text.x_label.len()))
             .and_then(|value| value.checked_add(self.text.y_label.len()))
             .ok_or(SceneError::Limit)?;
-        let legend_bytes = self
-            .legend
-            .as_ref()
-            .map(SceneLegend::encode)
-            .unwrap_or_default();
+        let legend_bytes = self.painter_legend_bytes()?;
         required = required
             .checked_add(legend_bytes.len())
             .ok_or(SceneError::Limit)?;
@@ -5888,30 +6006,13 @@ mod tests {
                 label: "observed".into(),
             }],
         };
-        let encoded = SceneBatch::new_with_decorations(
-            layout,
-            1,
-            2,
-            x,
-            y,
-            SceneChromeStyle::default(),
-            SceneChromeText::default(),
-            Some(legend),
-            &[0],
-            &[7],
-            &[0],
-            &[57, 135, 229, 255],
-            &[0, 0, 0, 0],
-            &[0.0],
-            &[6.0],
-            &[0],
-            &[0.5],
-            &[0.5],
-            &[0.0],
-            &[0.0],
-        )
-        .unwrap()
-        .encode();
+        let build = |legend| SceneBatch::new_with_decorations(
+            layout, 1, 2, x, y, SceneChromeStyle::default(),
+            SceneChromeText::default(), Some(legend), &[0], &[7], &[0],
+            &[57, 135, 229, 255], &[0, 0, 0, 0], &[0.0], &[6.0], &[0],
+            &[0.5], &[0.5], &[0.0], &[0.0],
+        );
+        let encoded = build(legend.clone()).unwrap().encode();
         let document = SceneDocument::decode(&encoded).unwrap();
         let svg = document.to_svg();
         assert!(svg.contains("data-xy-chrome=\"legend\""));
@@ -5924,6 +6025,37 @@ mod tests {
             .any(|bytes| bytes == b"observed"));
         let painter = document.to_browser_painter(16_384).unwrap();
         assert!(painter.windows(4).any(|bytes| bytes == b"XYLG"));
+        let geometry = painter.windows(4).position(|bytes| bytes == b"XYRG").unwrap();
+        assert_eq!(u32::from_le_bytes(painter[geometry + 4..geometry + 8].try_into().unwrap()), 1);
+        let painter_x = f32::from_le_bytes(painter[geometry + 8..geometry + 12].try_into().unwrap());
+        assert!(painter_x >= layout.left as f32 + 8.0);
+
+        let mut too_tall = legend.clone();
+        too_tall.entries = vec![too_tall.entries[0].clone(); MAX_SCENE_LEGEND_ENTRIES];
+        assert_eq!(build(too_tall).err(), Some(SceneError::Limit));
+        let mut too_many = legend.clone();
+        too_many.entries = vec![too_many.entries[0].clone(); MAX_SCENE_LEGEND_ENTRIES + 1];
+        assert_eq!(build(too_many).err(), Some(SceneError::Limit));
+        let mut high_font = legend.clone();
+        high_font.font_size = 1000.0;
+        assert_eq!(build(high_font).err(), Some(SceneError::Limit));
+        let mut too_wide = legend.clone();
+        too_wide.entries[0].label = "wide".repeat(128);
+        assert_eq!(build(too_wide).err(), Some(SceneError::Limit));
+        let mut nul_label = legend.clone();
+        nul_label.entries[0].label = "bad\0label".into();
+        assert_eq!(build(nul_label).err(), Some(SceneError::Limit));
+        let mut boundary_symbol = legend.clone();
+        boundary_symbol.entries[0].symbol = ScatterSymbol::VerticalLine as u8;
+        let boundary_encoded = build(boundary_symbol).unwrap().encode();
+        assert!(SceneDocument::decode(&boundary_encoded).is_ok());
+        let mut invalid_scatter = legend.clone();
+        invalid_scatter.entries[0].symbol = ScatterSymbol::VerticalLine as u8 + 1;
+        assert_eq!(build(invalid_scatter).err(), Some(SceneError::Length));
+        let mut invalid_non_scatter = legend.clone();
+        invalid_non_scatter.entries[0].kind = SceneRecordKind::Polyline;
+        invalid_non_scatter.entries[0].symbol = 1;
+        assert_eq!(build(invalid_non_scatter).err(), Some(SceneError::Length));
         let mut malformed = encoded.clone();
         let legend_start = malformed
             .windows(4)

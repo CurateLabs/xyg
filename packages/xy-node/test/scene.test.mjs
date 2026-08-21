@@ -56,6 +56,8 @@ test("Node Scene v9 primary legend matches Python bytes and rejects unsupported 
   assert.equal(crypto.createHash("sha256").update(legend).digest("hex"), figureSceneFixture.primary_legend_sha256);
   const svg = sceneSvg(scene);
   assert.match(svg, /data-xy-chrome="legend"/); assert.match(svg, /role="listitem"/); assert.match(svg, /observed/);
+  const unnamed = new Figure({ width: 200, height: 120 }); unnamed.scatter([1], [1], { name: "" });
+  assert.equal(Buffer.from(unnamed.toScene()).indexOf("XYLG"), -1);
   assert.ok(Buffer.from(sceneRasterCommands(scene)).includes(Buffer.from("observed")));
   const multi = new Figure({ legend: { ncols: 2 } }); multi.scatter([1], [1], { name: "x" });
   assert.throws(() => multi.toScene(), /multiple columns/);

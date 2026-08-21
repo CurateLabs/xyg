@@ -106,6 +106,20 @@ def test_python_scene_v9_legend_bounds_and_unsupported_variants_fail_closed() ->
     figure.legend_options = {"loc": "best"}
     with pytest.raises(UnsupportedSceneV3, match="location"):
         figure.to_scene()
+    figure.legend_options = {"loc": ""}
+    with pytest.raises(UnsupportedSceneV3, match="location"):
+        figure.to_scene()
+
+
+@pytest.mark.parametrize(("value", "encoded"), [("", b""), (0, b"0"), (False, b"false")])
+def test_python_scene_v9_legend_title_defaults_only_for_none(value: object, encoded: bytes) -> None:
+    figure = Figure(width=240, height=160)
+    figure.scatter([0.25], [0.5], name="observed")
+    figure.legend_options = {"title": value}
+    legend = figure.to_scene().split(b"XYLG", 1)[1]
+    title_length = int.from_bytes(legend[8:12], "little")
+    assert title_length == len(encoded)
+    assert legend[68 : 68 + title_length] == encoded
 
 
 def test_python_explicit_scene_raster_is_nonblank() -> None:

@@ -2,7 +2,7 @@ import { bytesToSpan, decodeFrame, payloadBuffers, payloadCoherent } from "./00_
 import { ChartView } from "./50_chartview";
 import { MARK_KINDS, markOf } from "./55_marks";
 import { createXygWasmWorker, XygWasmError, XygWasmWorker } from "./47_wasm";
-import { renderWasmScene } from "./48_wasm_scene";
+import { hydrateWasmPainter, renderWasmScene } from "./48_wasm_scene";
 import {
   compilePrepareWasmScene,
   compileWasmScene,
@@ -118,6 +118,7 @@ export {
   XygWasmError,
   XygWasmWorker,
   renderWasmScene,
+  hydrateWasmPainter,
   encodeWasmColumns,
   compileWasmScene,
   compilePrepareWasmScene,

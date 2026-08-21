@@ -67,7 +67,7 @@ def _legend_input(
             "Scene v9 primary legends are static; toggle and highlight must be false"
         )
     authored_loc = options.get("loc")
-    loc = str(authored_loc or "upper right")
+    loc = "upper right" if authored_loc is None else str(authored_loc)
     if loc not in _LEGEND_LOCATIONS:
         raise UnsupportedSceneV3(f"Scene v9 does not support legend location {loc!r}")
     style = dict(options.get("style") or {})
@@ -85,12 +85,15 @@ def _legend_input(
         and (authored_title_font_size is None or 1.0 <= title_font_size <= 1000.0)
     ):
         raise ValueError("legend font sizes must be finite and in [1, 1000]")
-    title = str(options.get("title") or "").encode("utf-8")
+    title_value = options.get("title")
+    if isinstance(title_value, bool):
+        title_value = str(title_value).lower()
+    title = str("" if title_value is None else title_value).encode("utf-8")
     labels = [label.encode("utf-8") for _, _, _, label in entries]
     if len(entries) > 128 or any(not label or len(label) > 4096 for label in labels):
         raise ValueError("Scene v9 legends are limited to 128 nonempty 4096-byte labels")
     text_bytes = len(title) + sum(map(len, labels))
-    if text_bytes > 16_384 or len(title) > 4096:
+    if text_bytes > _native.MAX_SCENE_LEGEND_INPUT_BYTES - 48 - 128 * 24 or len(title) > 4096:
         raise ValueError("Scene v9 legend text is limited to 16,384 UTF-8 bytes")
     out = bytearray(48 + len(entries) * 24)
     out[:4] = b"XYLG"
