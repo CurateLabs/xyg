@@ -40,7 +40,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 8
+    assert int.from_bytes(encoded[4:8], "little") == 9
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -119,6 +119,10 @@ def test_python_scene_v3_rejects_malformed_batches() -> None:
         _native.scene_batch_encode(**(options | {"margins": (60.0, 40.0, 10.0, 10.0)}))
     with np.testing.assert_raises_regex(ValueError, "4,096 UTF-8 bytes"):
         _native.scene_batch_encode(**(options | {"title": "x" * 4_097}))
+    with np.testing.assert_raises_regex(ValueError, "19,504 bytes"):
+        _native.scene_batch_encode(
+            **(options | {"legend_input": bytes(_native.MAX_SCENE_LEGEND_INPUT_BYTES + 1)})
+        )
 
 
 def test_python_scene_v3_rejects_unsigned_values_before_coercion() -> None:
@@ -321,7 +325,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 8
+    assert _native.scene_version() == 9
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

@@ -16,10 +16,11 @@ the kernel channel (`54_kernel.ts`) in [wire-protocol.md](wire-protocol.md).
 What remains normatively unspecified is the ARIA/DOM accessibility contract —
 see R11.
 
-Scene v8 ([scene-ir.md](scene-ir.md)) is the backend-neutral target consumed by
+Scene v9 ([scene-ir.md](scene-ir.md)) is the backend-neutral target consumed by
 the direct-browser WASM adapter. Its fixed binary batch embeds bounded styles,
 complete scatter symbol/diameter geometry plus polyline/rectangle records, and
-Rust-owned chart/plot backgrounds and authored/default Cartesian chrome.
+Rust-owned chart/plot backgrounds, authored/default Cartesian chrome, and one
+bounded primary static legend.
 TypeScript keeps GPU paint, picking,
 gestures, DOM chrome, and lifecycle, but must reject unsupported scene versions
 and unknown record kinds rather than fall back to a parallel layout decision.

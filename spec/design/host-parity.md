@@ -58,7 +58,7 @@ They are not the live paint wire and are not `XYBF`. Rust alone validates and
 lowers them to the shared offset-f32/u8 painter buffer consumed by WebGL; the
 browser host has no per-record conversion or policy fallback.
 
-The #58 scene migration is active: scene schema version 8 provides one
+The #58 scene migration is active: scene schema version 9 provides one
 backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,
 scatter, polyline, and rectangle records through both host bindings. The v1
 scatter SVG wrapper remains temporarily for scatter-only compatibility. Python
@@ -66,9 +66,10 @@ and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
 compatibility renderer until Rust owns every remaining layout/gutter and Scene
-record. Scene v8 now covers solid chart/plot backgrounds and authored
-  Cartesian side/visibility/major-minor geometry and paint; legends,
-  colorbars, annotations, custom tick strings, and advanced text layout remain
+record. Scene v9 now covers solid chart/plot backgrounds, authored
+  Cartesian side/visibility/major-minor geometry and paint, and a bounded
+  single-column primary static legend for named constant-style traces; extra
+  legends, colorbars, annotations, custom tick strings, and advanced text layout remain
   loud unsupported boundaries. See
 [scene-ir.md](scene-ir.md). Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until

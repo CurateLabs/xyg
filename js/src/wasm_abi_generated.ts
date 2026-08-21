@@ -2,9 +2,9 @@
 // Do not hand-edit raw WASM signatures or status numbers here.
 
 export const XYG_WASM_ABI_VERSION = 4 as const;
-export const XYG_WASM_SCENE_VERSION = 8 as const;
-export const XYG_WASM_PAINTER_VERSION = 4 as const;
-export const XYG_WASM_PAINTER_HEADER_BYTES = 280 as const;
+export const XYG_WASM_SCENE_VERSION = 9 as const;
+export const XYG_WASM_PAINTER_VERSION = 6 as const;
+export const XYG_WASM_PAINTER_HEADER_BYTES = 288 as const;
 export const XYG_WASM_PAINTER_TRACE_BYTES = 64 as const;
 export const XYG_WASM_PAINTER_TICK_BYTES = 16 as const;
 export const XYG_WASM_PAINTER_MAX_TRACES = 1024 as const;
@@ -20,6 +20,7 @@ export const XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_RECORD = 256 as const;
 export const XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_SERIES = 1024 as const;
 export const XYG_WASM_TYPED_SERIES_PEAK_INPUT_MULTIPLIER = 2 as const;
 export const XYG_WASM_MAX_ARENA_BYTES = 402653184 as const;
+export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = 57424 as const;
 export const XYG_WASM_STATUS = {
   OK: 0,
   INVALID_HANDLE: 1,

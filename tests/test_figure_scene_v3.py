@@ -75,6 +75,55 @@ def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
     assert np.frombuffer(memoryview(line)[168:176], dtype="<f8")[0] == 1.5
 
 
+def test_python_scene_v9_primary_legend_matches_node_bytes_and_consumers() -> None:
+    figure = Figure(width=200, height=120)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter([0.25], [0.5], name="observed", color="#3987e5")
+    figure.legend_options = {"loc": "lower left", "title": "Series"}
+    scene = figure.to_scene()
+    legend = scene[scene.index(b"XYLG") :]
+    assert hashlib.sha256(legend).hexdigest() == FIXTURE["primary_legend_sha256"]
+    svg = _native.scene_svg(scene)
+    assert 'data-xy-chrome="legend"' in svg
+    assert 'role="listitem"' in svg
+    assert "observed" in svg
+    assert b"observed" in _native.scene_raster_commands(scene, 1.0)
+
+
+def test_python_scene_v9_legend_bounds_and_unsupported_variants_fail_closed() -> None:
+    figure = Figure()
+    figure.scatter([0.25], [0.5], name="observed")
+    figure.legend_options = {"ncols": 2}
+    with pytest.raises(UnsupportedSceneV3, match="multiple columns"):
+        figure.to_scene()
+    figure.legend_options = {"anchor": [1.0, 1.0]}
+    with pytest.raises(UnsupportedSceneV3, match="anchors"):
+        figure.to_scene()
+    figure.legend_options = {"toggle": True}
+    with pytest.raises(UnsupportedSceneV3, match="static"):
+        figure.to_scene()
+    figure.legend_options = {"loc": "best"}
+    with pytest.raises(UnsupportedSceneV3, match="location"):
+        figure.to_scene()
+    figure.legend_options = {"loc": ""}
+    with pytest.raises(UnsupportedSceneV3, match="location"):
+        figure.to_scene()
+
+
+@pytest.mark.parametrize(
+    ("value", "encoded"), [(None, b""), ("", b""), (0, b"0"), (False, b"false")]
+)
+def test_python_scene_v9_legend_title_defaults_only_for_none(value: object, encoded: bytes) -> None:
+    figure = Figure(width=240, height=160)
+    figure.scatter([0.25], [0.5], name="observed")
+    figure.legend_options = {"title": value}
+    legend = figure.to_scene().split(b"XYLG", 1)[1]
+    title_length = int.from_bytes(legend[8:12], "little")
+    assert title_length == len(encoded)
+    assert legend[68 : 68 + title_length] == encoded
+
+
 def test_python_explicit_scene_raster_is_nonblank() -> None:
     figure = representative_figure()
     scene = figure.to_scene()
@@ -213,7 +262,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 8
+    assert int.from_bytes(encoded[4:8], "little") == 9
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -247,7 +296,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (8).to_bytes(4, "little")
+    assert scene[4:8] == (9).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -273,7 +322,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
     area.axis_options["y"]["domain"] = (0.0, 3.0)
     area.area([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], base=0.0, color="#3987e5", opacity=0.5)
     scene = area.to_scene()
-    assert scene[4:8] == (8).to_bytes(4, "little")
+    assert scene[4:8] == (9).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -353,7 +402,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (8).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (9).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg

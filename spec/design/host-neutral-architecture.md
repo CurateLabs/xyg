@@ -110,7 +110,7 @@ related, not the same acceptance criteria.
 Issue `#59`'s first foundation is now concrete: a `wasm32-unknown-unknown`
 `crates/xyg-wasm` raw adapter, generated TypeScript binding, and static
 strict-CSP Worker establish memory, version, status, cancellation, trap, and
-disposal semantics against exact Scene v8. This is deliberately only “part of
+disposal semantics against exact Scene v9. This is deliberately only “part of
 Issue #59”; typed chart ingest, Rust scene production, painter integration, full
 conformance, and CodSpeed-backed budgets remain. See
 [browser-wasm.md](browser-wasm.md).

@@ -186,6 +186,8 @@ export class Figure {
     this.height = opts.height ?? 400;
     this.title = opts.title ?? null;
     this.coords = opts.coords ?? "cartesian";
+    this.showLegend = opts.showLegend ?? true;
+    this.legend = opts.legend ?? {};
     this.traces = [];
     this._graphMeta = null;
     this._axisRange = { x: null, y: null };

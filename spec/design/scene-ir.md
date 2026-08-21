@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 8 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 9 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 8, so additive emission is not safe.
+bitmap or schema negotiation in version 9, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the exact version-8 layout (shared fixed
+WASM lifecycle foundation; it validates the exact version-9 layout (shared fixed
 header/mark widths since version 4), bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -348,11 +348,48 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining polar marks, annotation records, legend/colorbar
-records, then select public SVG/PNG/PDF Scene auto-routing once
+Next slices add remaining polar marks, annotation/colorbar records and richer
+legend variants, then select public SVG/PNG/PDF Scene auto-routing once
 chrome and CSS-spelling parity with ``_svg.py`` is covered; ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` are the opt-in helpers. Unlabeled
 cartesian annotations remain rejected rather than being approximated as marks.
+
+## Version 9: bounded primary static legends
+
+Version 9 keeps the fixed header, style, and mark widths from version 8 and
+extends the chrome trailer from 232 to 240 bytes. Trailer offset 228 stores the
+length of one optional `XYLG` legend record and offsets 232–239 are reserved
+zeros. The legend follows title/axis-label UTF-8 and authored tick f64 arrays.
+
+The host input record carries presence bits plus authored values; Rust alone
+resolves the default upper-right location, 11 px text/title sizes, and default
+text/frame paints. The canonical record carries that resolved nine-position
+Cartesian location, optional title, bounded text/title sizes and RGBA paints,
+frame fill/stroke, and 1–128 authored
+entries. Each fixed 24-byte entry references the Scene style table, identifies
+scatter/line/filled-swatch semantics and a built-in scatter symbol, repeats its
+validated fill/stroke RGBA for zero-policy browser projection, and slices one
+nonempty UTF-8 label from a canonical contiguous text table. Per-label text is
+limited to 4,096 bytes and total legend text to 16,384 bytes. Rust rejects
+unknown locations/kinds/symbols, unresolved or paint-mismatched style refs,
+nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
+bytes, and every count/length overflow.
+
+Rust owns entry order, location resolution, frame/text/swatch geometry and
+paint ordering for SVG and native raster. Browser painter v6 appends the exact
+validated `XYLG` record; TypeScript projects it into the existing selectable
+and accessible DOM legend without deriving entries or defaults. Direct-Scene
+legends are static (`toggle=false`, `highlight=false`). Python and Node only
+pack the same bounded record, and exact legend bytes are pinned cross-host.
+
+This slice supports a single primary, one-column legend for named,
+constant-style Cartesian traces at an explicit supported location (defaulting
+to `upper right`). Automatic `loc="best"` placement remains unsupported until
+that occupancy policy moves into Rust. Anchors, extra legends,
+multiple columns, category rows, continuous ramps, gradients, dashes,
+interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
+declarations fail closed. Colorbars and annotations remain explicit later
+issue-#116 work; Scene v9 does not approximate them.
 Authored solid chart/plot backgrounds, axis sides, and major/minor tick
 geometry/styles are Scene v8.
 Category, angular, and time/calendar tick ladders already move

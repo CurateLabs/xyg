@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "abi_version": 4,
-  "scene_version": 8,
-  "painter_version": 4,
-  "painter_header_bytes": 280,
+  "scene_version": 9,
+  "painter_version": 6,
+  "painter_header_bytes": 288,
   "painter_trace_bytes": 64,
   "painter_tick_bytes": 16,
   "painter_max_traces": 1024,
@@ -19,6 +19,7 @@
   "typed_series_peak_bytes_per_series": 1024,
   "typed_series_peak_input_multiplier": 2,
   "max_arena_bytes": 402653184,
+  "painter_max_legend_bytes": 57424,
   "statuses": {
     "OK": 0,
     "INVALID_HANDLE": 1,

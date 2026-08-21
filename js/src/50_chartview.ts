@@ -2640,6 +2640,7 @@ export class ChartView {
             symbol: it.kind === "scatter" ? (it.style?.symbol || "circle") : null,
             line: ["line", "segments", "step", "stairs", "errorbar"].includes(it.kind),
             style: it.style || {},
+            geometry: it.geometry,
           });
         }
       } else {
@@ -2712,6 +2713,36 @@ export class ChartView {
   }
 
   _legendBox(root, items, options) {
+    if (options.resolved) {
+      const ns = "http://www.w3.org/2000/svg", [x, y, width, height] = options.resolved.bounds;
+      const svg: any = document.createElementNS(ns, "svg");
+      svg.setAttribute("width", String(this.size.w)); svg.setAttribute("height", String(this.size.h));
+      svg.style.cssText = "position:absolute;inset:0;overflow:visible;pointer-events:none";
+      this._applySlot(svg, "legend"); svg.setAttribute("role", "list");
+      const frame = document.createElementNS(ns, "rect");
+      for (const [key, value] of Object.entries({ x, y, width, height })) frame.setAttribute(key, String(value));
+      frame.setAttribute("fill", String(options.style.background)); frame.setAttribute("stroke", String(options.style.border)); svg.appendChild(frame);
+      if (options.title) {
+        const title = document.createElementNS(ns, "text"); this._applySlot(title, "legend_title");
+        title.setAttribute("x", String(options.resolved.title[0])); title.setAttribute("y", String(options.resolved.title[1]));
+        title.setAttribute("fill", String(options.style.color)); title.setAttribute("font-size", String(options.title_style["font-size"])); title.textContent = String(options.title); svg.appendChild(title);
+      }
+      for (const it of items) {
+        const row = document.createElementNS(ns, "g"); this._applySlot(row, "legend_item"); row.setAttribute("role", "listitem"); row.setAttribute("aria-label", String(it.name));
+        const [sx, sy, a, b] = it.geometry.swatch;
+        let swatch: any;
+        if (it.geometry.primitive === 0) { swatch = document.createElementNS(ns, "line"); for (const [key, value] of Object.entries({ x1:sx, y1:sy, x2:a, y2:b })) swatch.setAttribute(key, String(value)); }
+        else if (it.geometry.primitive === 1) { swatch = document.createElementNS(ns, "rect"); for (const [key, value] of Object.entries({ x:sx, y:sy, width:a, height:b })) swatch.setAttribute(key, String(value)); }
+        else if (it.geometry.primitive === 2) { swatch = document.createElementNS(ns, "circle"); swatch.setAttribute("cx", String(sx)); swatch.setAttribute("cy", String(sy)); swatch.setAttribute("r", String(a)); }
+        else {
+          swatch = document.createElementNS(ns, "path"); swatch.setAttribute("d", it.geometry.path);
+        }
+        swatch.setAttribute("fill", it.geometry.fillNone ? "none" : it.style.fill); swatch.setAttribute("stroke", it.style.stroke); swatch.setAttribute("stroke-width", String(it.geometry.strokeWidth));
+        row.appendChild(swatch);
+        const label = document.createElementNS(ns, "text"); this._applySlot(label, "legend_label"); label.setAttribute("x", String(it.geometry.label[0])); label.setAttribute("y", String(it.geometry.label[1])); label.setAttribute("fill", String(options.style.color)); label.setAttribute("font-size", String(options.style["font-size"])); label.textContent = String(it.name); row.appendChild(label); svg.appendChild(row);
+      }
+      root.appendChild(svg); return;
+    }
     const lg: any = document.createElement("div");
     const loc = options.loc || "upper right";
     const ncols = Math.max(1, Number(options.ncols) || 1);
