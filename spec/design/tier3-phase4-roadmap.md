@@ -224,6 +224,11 @@ inside this frame; changing any of it means editing this section first.
 - [x] LRU under process-wide `PYRAMID_RESIDENT_BYTES` default (512 MiB) per D2–D3;
   frame pinning + `over_budget` recording; spill file is `XYTS` fixed slabs
   (pread/pwrite realization of D1 mmap layout — no mmap crate vendored).
+  Registered operations use a bounded kernel operation lock and process-wide
+  recency clock, choosing the deterministic oldest unpinned `(tick, store
+  handle, tile key)` across siblings. The lock order prevents cross-store
+  eviction deadlocks and an idle figure cannot make a fitting active frame
+  report a false over-budget condition.
 - [x] Compose-from-tiles shares `LevelView` / `compose_level` with in-RAM compose
   (bit-identical). Count-only dirty-tile append; colored refuse; domain growth
   refused atomically.
