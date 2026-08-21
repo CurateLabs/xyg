@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 75
-SIGNATURE_SHA256 = "a6a54b0536fe583100791e0770b9bccd16614df196145d749e78c0a3a237cc17"
+ABI_VERSION = 76
+SIGNATURE_SHA256 = "12f8f7ebdfe3239fd7cb86a51c7530a0a177ce29b5f6acac242ae321c7eedea2"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -494,6 +494,74 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_column_timezone
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint32]
+    # int32_t xyg_temporal_controller_apply_event(uint64_t handle, uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)
+    function = lib.xyg_temporal_controller_apply_event
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
+    # int32_t xyg_temporal_controller_create(const void * descriptor, uint64_t * out_handle)
+    function = lib.xyg_temporal_controller_create
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_temporal_controller_destroy(uint64_t handle)
+    function = lib.xyg_temporal_controller_destroy
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_controller_dispose(uint64_t handle)
+    function = lib.xyg_temporal_controller_dispose
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_controller_pause(uint64_t handle)
+    function = lib.xyg_temporal_controller_pause
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_controller_play(uint64_t handle)
+    function = lib.xyg_temporal_controller_play
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_controller_poll_event(uint64_t handle, uint32_t * out_has_event, uint64_t * out_group_id, uint64_t * out_source_instance, uint64_t * out_revision, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window)
+    function = lib.xyg_temporal_controller_poll_event
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_temporal_controller_set_cursor(uint64_t handle, int64_t cursor)
+    function = lib.xyg_temporal_controller_set_cursor
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_int64]
+    # int32_t xyg_temporal_controller_set_direction(uint64_t handle, int32_t direction)
+    function = lib.xyg_temporal_controller_set_direction
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_int32]
+    # int32_t xyg_temporal_controller_set_loop(uint64_t handle, uint32_t enabled)
+    function = lib.xyg_temporal_controller_set_loop
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint32]
+    # int32_t xyg_temporal_controller_set_range(uint64_t handle, int64_t start, int64_t end)
+    function = lib.xyg_temporal_controller_set_range
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64]
+    # int32_t xyg_temporal_controller_set_rate_milli(uint64_t handle, uint32_t rate_milli)
+    function = lib.xyg_temporal_controller_set_rate_milli
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint32]
+    # int32_t xyg_temporal_controller_set_reduced_motion(uint64_t handle, uint32_t enabled)
+    function = lib.xyg_temporal_controller_set_reduced_motion
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint32]
+    # int32_t xyg_temporal_controller_state(uint64_t handle, uint64_t * out_instance_id, uint64_t * out_group_id, int64_t * out_domain_start, int64_t * out_domain_end, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, int64_t * out_step, int32_t * out_direction, uint32_t * out_rate_milli, uint32_t * out_loop_enabled, uint32_t * out_playing, uint32_t * out_reduced_motion, uint64_t * out_revision, uint32_t * out_disposed)
+    function = lib.xyg_temporal_controller_state
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_temporal_controller_step(uint64_t handle)
+    function = lib.xyg_temporal_controller_step
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_controller_tick(uint64_t handle, int64_t dt_micros, uint32_t * out_advanced)
+    function = lib.xyg_temporal_controller_tick
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_int64, ctypes.c_void_p]
+    # int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)
+    function = lib.xyg_temporal_coordinate_deliver
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
     # int32_t xyg_temporal_events_in_range(const int64_t * event_micros, const uint8_t * event_valid, uint64_t event_len, int64_t range_start, uint32_t range_start_valid, int64_t range_end, uint32_t range_end_valid, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)
     function = lib.xyg_temporal_events_in_range
     function.restype = ctypes.c_int32

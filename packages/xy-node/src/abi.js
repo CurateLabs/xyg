@@ -55,11 +55,30 @@ import {
   xyGeoColumnLen,
   xyGeoColumnNew,
   xyGeoColumnVertexCount,
+  xyTemporalControllerApplyEvent,
+  xyTemporalControllerCreate,
+  xyTemporalControllerDestroy,
+  xyTemporalControllerDispose,
+  xyTemporalControllerPause,
+  xyTemporalControllerPlay,
+  xyTemporalControllerPollEvent,
+  xyTemporalControllerSetCursor,
+  xyTemporalControllerSetDirection,
+  xyTemporalControllerSetLoop,
+  xyTemporalControllerSetRange,
+  xyTemporalControllerSetRateMilli,
+  xyTemporalControllerSetReducedMotion,
+  xyTemporalControllerState,
+  xyTemporalControllerStep,
+  xyTemporalControllerTick,
+  xyTemporalCoordinateDeliver,
 } from "./native.js";
 
 export { nativeLibraryPath };
 
 const U64_MAX = (1n << 64n) - 1n;
+const I64_MIN = -(1n << 63n);
+const I64_MAX = (1n << 63n) - 1n;
 
 export const GRAPH_LAYOUT_PRESET = 0;
 export const GRAPH_LAYOUT_GRID = 1;
@@ -171,6 +190,21 @@ const TemporalIntervalDescriptor = koffi.struct("XygTemporalIntervalDescriptor",
   reserved: "uint32_t",
 });
 
+const TemporalControllerDescriptor = koffi.struct("XygTemporalControllerDescriptor", {
+  instance_id: "uint64_t",
+  group_id: "uint64_t",
+  domain_start: "int64_t",
+  domain_end: "int64_t",
+  cursor: "int64_t",
+  window: "int64_t",
+  step: "int64_t",
+  direction: "int32_t",
+  rate_milli: "uint32_t",
+  loop_enabled: "uint32_t",
+  reduced_motion: "uint32_t",
+  reserved: "uint32_t",
+});
+
 export const TEMPORAL_PRECISION = Object.freeze({
   second: 0,
   millisecond: 1,
@@ -188,6 +222,11 @@ export const TEMPORAL_DST = Object.freeze({
   unique: 0,
   gap: 1,
   fold: 2,
+});
+
+export const TEMPORAL_DIRECTION = Object.freeze({
+  reverse: -1,
+  forward: 1,
 });
 
 export class TemporalNativeError extends Error {
@@ -557,6 +596,224 @@ export function temporalEventsInRange({
   );
   if (code !== 0) throw new TemporalNativeError(code);
   return out;
+}
+
+function temporalStatus(code) {
+  if (code !== 0) throw new TemporalNativeError(code);
+}
+
+export function temporalControllerCreate({
+  instanceId,
+  domainStart,
+  domainEnd,
+  cursor = null,
+  window: windowUs = 0,
+  step = 1,
+  direction = TEMPORAL_DIRECTION.forward,
+  rateMilli = 1000,
+  loopEnabled = false,
+  reducedMotion = false,
+  groupId = 0,
+}) {
+  const outHandle = new BigUint64Array(1);
+  const encoded = Buffer.alloc(koffi.sizeof(TemporalControllerDescriptor));
+  koffi.encode(encoded, TemporalControllerDescriptor, {
+    instance_id: toU64(instanceId, "instanceId"),
+    group_id: toU64(groupId, "groupId"),
+    domain_start: toI64(domainStart, "domainStart"),
+    domain_end: toI64(domainEnd, "domainEnd"),
+    cursor: toI64(cursor == null ? domainStart : cursor, "cursor"),
+    window: toI64(windowUs, "window"),
+    step: toI64(step, "step"),
+    direction: toI32(direction, "direction"),
+    rate_milli: toStrictU32(rateMilli, "rateMilli"),
+    loop_enabled: toStrictBool(loopEnabled, "loopEnabled") ? 1 : 0,
+    reduced_motion: toStrictBool(reducedMotion, "reducedMotion") ? 1 : 0,
+    reserved: 0,
+  });
+  temporalStatus(xyTemporalControllerCreate(koffi.as(encoded, "const void *"), u64Ptr(outHandle)));
+  return outHandle[0];
+}
+
+export function temporalControllerState(handle) {
+  const instanceId = new BigUint64Array(1);
+  const groupId = new BigUint64Array(1);
+  const domainStart = new BigInt64Array(1);
+  const domainEnd = new BigInt64Array(1);
+  const rangeStart = new BigInt64Array(1);
+  const rangeEnd = new BigInt64Array(1);
+  const cursor = new BigInt64Array(1);
+  const windowUs = new BigInt64Array(1);
+  const step = new BigInt64Array(1);
+  const direction = new Int32Array(1);
+  const rateMilli = new Uint32Array(1);
+  const loopEnabled = new Uint32Array(1);
+  const playing = new Uint32Array(1);
+  const reducedMotion = new Uint32Array(1);
+  const revision = new BigUint64Array(1);
+  const disposed = new Uint32Array(1);
+  temporalStatus(xyTemporalControllerState(
+    toU64(handle, "handle"),
+    u64Ptr(instanceId),
+    u64Ptr(groupId),
+    pointer(domainStart, "int64_t *"),
+    pointer(domainEnd, "int64_t *"),
+    pointer(rangeStart, "int64_t *"),
+    pointer(rangeEnd, "int64_t *"),
+    pointer(cursor, "int64_t *"),
+    pointer(windowUs, "int64_t *"),
+    pointer(step, "int64_t *"),
+    pointer(direction, "int32_t *"),
+    u32Ptr(rateMilli),
+    u32Ptr(loopEnabled),
+    u32Ptr(playing),
+    u32Ptr(reducedMotion),
+    u64Ptr(revision),
+    u32Ptr(disposed),
+  ));
+  return {
+    instanceId: instanceId[0],
+    groupId: groupId[0],
+    domainStart: domainStart[0],
+    domainEnd: domainEnd[0],
+    rangeStart: rangeStart[0],
+    rangeEnd: rangeEnd[0],
+    cursor: cursor[0],
+    window: windowUs[0],
+    step: step[0],
+    direction: direction[0],
+    rateMilli: rateMilli[0],
+    loopEnabled: loopEnabled[0] !== 0,
+    playing: playing[0] !== 0,
+    reducedMotion: reducedMotion[0] !== 0,
+    revision: revision[0],
+    disposed: disposed[0] !== 0,
+  };
+}
+
+export function temporalControllerSetRange(handle, start, end) {
+  temporalStatus(xyTemporalControllerSetRange(
+    toU64(handle, "handle"), toI64(start, "start"), toI64(end, "end"),
+  ));
+}
+
+export function temporalControllerSetCursor(handle, cursor) {
+  temporalStatus(xyTemporalControllerSetCursor(toU64(handle, "handle"), toI64(cursor, "cursor")));
+}
+
+export function temporalControllerStep(handle) {
+  temporalStatus(xyTemporalControllerStep(toU64(handle, "handle")));
+}
+
+export function temporalControllerPlay(handle) {
+  temporalStatus(xyTemporalControllerPlay(toU64(handle, "handle")));
+}
+
+export function temporalControllerPause(handle) {
+  temporalStatus(xyTemporalControllerPause(toU64(handle, "handle")));
+}
+
+export function temporalControllerSetRateMilli(handle, rateMilli) {
+  temporalStatus(xyTemporalControllerSetRateMilli(
+    toU64(handle, "handle"), toStrictU32(rateMilli, "rateMilli"),
+  ));
+}
+
+export function temporalControllerSetDirection(handle, direction) {
+  temporalStatus(xyTemporalControllerSetDirection(
+    toU64(handle, "handle"), toI32(direction, "direction"),
+  ));
+}
+
+export function temporalControllerSetLoop(handle, enabled) {
+  temporalStatus(xyTemporalControllerSetLoop(
+    toU64(handle, "handle"), toStrictBool(enabled, "enabled") ? 1 : 0,
+  ));
+}
+
+export function temporalControllerSetReducedMotion(handle, enabled) {
+  temporalStatus(xyTemporalControllerSetReducedMotion(
+    toU64(handle, "handle"), toStrictBool(enabled, "enabled") ? 1 : 0,
+  ));
+}
+
+export function temporalControllerTick(handle, dtMicros) {
+  const advanced = new Uint32Array(1);
+  temporalStatus(xyTemporalControllerTick(
+    toU64(handle, "handle"), toI64(dtMicros, "dtMicros"), u32Ptr(advanced),
+  ));
+  return advanced[0] !== 0;
+}
+
+export function temporalControllerPollEvent(handle) {
+  const hasEvent = new Uint32Array(1);
+  const groupId = new BigUint64Array(1);
+  const source = new BigUint64Array(1);
+  const revision = new BigUint64Array(1);
+  const rangeStart = new BigInt64Array(1);
+  const rangeEnd = new BigInt64Array(1);
+  const cursor = new BigInt64Array(1);
+  const windowUs = new BigInt64Array(1);
+  temporalStatus(xyTemporalControllerPollEvent(
+    toU64(handle, "handle"),
+    u32Ptr(hasEvent),
+    u64Ptr(groupId),
+    u64Ptr(source),
+    u64Ptr(revision),
+    pointer(rangeStart, "int64_t *"),
+    pointer(rangeEnd, "int64_t *"),
+    pointer(cursor, "int64_t *"),
+    pointer(windowUs, "int64_t *"),
+  ));
+  if (hasEvent[0] === 0) return null;
+  return {
+    groupId: groupId[0],
+    sourceInstance: source[0],
+    revision: revision[0],
+    rangeStart: rangeStart[0],
+    rangeEnd: rangeEnd[0],
+    cursor: cursor[0],
+    window: windowUs[0],
+  };
+}
+
+export function temporalControllerApplyEvent(handle, event) {
+  const applied = new Uint32Array(1);
+  temporalStatus(xyTemporalControllerApplyEvent(
+    toU64(handle, "handle"),
+    toU64(event.groupId, "groupId"),
+    toU64(event.sourceInstance, "sourceInstance"),
+    toU64(event.revision, "revision"),
+    toI64(event.rangeStart, "rangeStart"),
+    toI64(event.rangeEnd, "rangeEnd"),
+    toI64(event.cursor, "cursor"),
+    toI64(event.window, "window"),
+    u32Ptr(applied),
+  ));
+  return applied[0] !== 0;
+}
+
+export function temporalCoordinateDeliver(event) {
+  const applied = new Uint32Array(1);
+  temporalStatus(xyTemporalCoordinateDeliver(
+    toU64(event.groupId, "groupId"),
+    toU64(event.sourceInstance, "sourceInstance"),
+    toU64(event.revision, "revision"),
+    toI64(event.rangeStart, "rangeStart"),
+    toI64(event.rangeEnd, "rangeEnd"),
+    toI64(event.cursor, "cursor"),
+    toI64(event.window, "window"),
+    u32Ptr(applied),
+  ));
+  return applied[0];
+}
+
+export function temporalControllerDispose(handle) {
+  temporalStatus(xyTemporalControllerDispose(toU64(handle, "handle")));
+}
+
+export function temporalControllerDestroy(handle) {
+  temporalStatus(xyTemporalControllerDestroy(toU64(handle, "handle")));
 }
 
 export function graphLayout(layout, nNodes, sources, targets, opts = {}) {
@@ -1075,6 +1332,48 @@ function toU64(value, name) {
     throw new RangeError(`${name} must be a non-negative safe integer or bigint`);
   }
   return BigInt(value);
+}
+
+function toI64(value, name) {
+  let converted;
+  if (typeof value === "bigint") {
+    converted = value;
+  } else {
+    if (typeof value !== "number" || !Number.isSafeInteger(value)) {
+      throw new RangeError(`${name} must be a safe integer or bigint fitting in int64`);
+    }
+    converted = BigInt(value);
+  }
+  if (converted < I64_MIN || converted > I64_MAX) {
+    throw new RangeError(`${name} must fit in int64`);
+  }
+  return converted;
+}
+
+function toStrictU32(value, name) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 0xffff_ffff) {
+    throw new RangeError(`${name} must be a uint32 number`);
+  }
+  return value;
+}
+
+function toI32(value, name) {
+  if (
+    typeof value !== "number"
+    || !Number.isInteger(value)
+    || value < -0x8000_0000
+    || value > 0x7fff_ffff
+  ) {
+    throw new RangeError(`${name} must be an int32 number`);
+  }
+  return value;
+}
+
+function toStrictBool(value, name) {
+  if (typeof value !== "boolean") {
+    throw new TypeError(`${name} must be a boolean`);
+  }
+  return value;
 }
 
 function toLength(value, name) {

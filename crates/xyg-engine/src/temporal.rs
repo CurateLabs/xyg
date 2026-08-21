@@ -104,6 +104,9 @@ pub enum TemporalError {
     Cancelled = -10,
     BudgetExceeded = -11,
     UnitUnsupported = -12,
+    Disposed = -13,
+    StaleRevision = -14,
+    SelfEcho = -15,
 }
 
 /// Canonical temporal column: UTC micros + validity + timezone + precision.

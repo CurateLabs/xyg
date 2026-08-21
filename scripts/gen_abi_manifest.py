@@ -124,6 +124,7 @@ _POINTER_C: dict[str, str] = {
     "*const XygGraphProjectionDescriptor": "const void *",
     "*const XygTemporalColumnDescriptor": "const void *",
     "*const XygTemporalIntervalDescriptor": "const void *",
+    "*const XygTemporalControllerDescriptor": "const void *",
     "*const i32": "const int32_t *",
     "*const *const f64": "const double *const *",
     "*const *const u8": "const uint8_t *const *",

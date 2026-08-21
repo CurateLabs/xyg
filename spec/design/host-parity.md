@@ -103,6 +103,7 @@ The exhaustive per-file application of these rules is
 | JS render client | One bundled WebGL client (`@curatelabs/xyg`: `index.js` / `standalone.js`); Python copies into the wheel |
 | Public chart semantics | Same mark kinds, options, defaults, layout/LOD decisions |
 | Temporal foundation (#43) | Same `TemporalColumn` / interval visibility for identical Arrow-like fixtures ([temporal.md](temporal.md)) |
+| Temporal controller (#44) | Same `TemporalController` commands, revisions, and coordination reject rules ([temporal-controller.md](temporal-controller.md)) |
 
 Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
 notebook/Reflex vs Node embed / VS Code webview attach). Names and defaults

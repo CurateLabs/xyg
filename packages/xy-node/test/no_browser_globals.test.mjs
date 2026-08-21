@@ -22,7 +22,19 @@ function collectJsFiles(dir) {
 test("@curatelabs/xyg-node modules do not reference browser globals", () => {
   const files = collectJsFiles(root);
   assert.ok(files.length > 0);
-  const banned = /\b(?:window|document|HTMLElement|localStorage)\b/;
+  // Temporal domain fields may be named `window`. Ban browser global *use*
+  // (member access / call / assignment), not bare FFI param or struct keys.
+  const banned =
+    /\b(?:document|HTMLElement|localStorage)\b|\bglobalThis\s*(?:(?:\?\.|\.)\s*window\b|(?:\?\.\[|\[)\s*(?:["']window["']|`window`)\s*\])|\bwindow\s*(?:\?\.|\?\[|[.\[=(]|\s*`)/;
+  assert.equal(banned.test("window?.document"), true);
+  assert.equal(banned.test("window?.['name']"), true);
+  assert.equal(banned.test("globalThis.window"), true);
+  assert.equal(banned.test("globalThis?.window"), true);
+  assert.equal(banned.test('globalThis?.["window"]'), true);
+  assert.equal(banned.test("globalThis['window']"), true);
+  assert.equal(banned.test("globalThis[`window`]"), true);
+  assert.equal(banned.test("globalThis?.[`window`]"), true);
+  assert.equal(banned.test("const temporal = { window: 1 };"), false);
   for (const file of files) {
     const src = fs.readFileSync(file, "utf8");
     // Allow mentioning the words in comments / docs strings that explain the

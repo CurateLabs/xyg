@@ -35,6 +35,8 @@ use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
 use xyg_engine::temporal;
+use xyg_engine::temporal_controller;
+#[cfg(not(target_family = "wasm"))]
 use xyg_engine::tile_store;
 use xyg_engine::tiles;
 use xyg_engine::transition;
@@ -92,7 +94,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 75;
+pub const ABI_VERSION: u32 = 76;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5219,6 +5221,490 @@ pub unsafe extern "C" fn xyg_temporal_interval_index_destroy(handle: u64) -> i32
     })
 }
 
+// ---------------------------------------------------------------------------
+// TemporalController + linked-view coordination (#44).
+// ---------------------------------------------------------------------------
+
+/// Create descriptor for a temporal controller. `group_id` 0 = unlinked.
+#[repr(C)]
+pub struct XygTemporalControllerDescriptor {
+    pub instance_id: u64,
+    pub group_id: u64,
+    pub domain_start: i64,
+    pub domain_end: i64,
+    pub cursor: i64,
+    pub window: i64,
+    pub step: i64,
+    pub direction: i32,
+    pub rate_milli: u32,
+    pub loop_enabled: u32,
+    pub reduced_motion: u32,
+    pub reserved: u32,
+}
+
+/// Create a controller handle.
+///
+/// # Safety
+/// `descriptor` / `out_handle` must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_create(
+    descriptor: *const XygTemporalControllerDescriptor,
+    out_handle: *mut u64,
+) -> i32 {
+    if descriptor.is_null() || out_handle.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    *out_handle = 0;
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let descriptor = &*descriptor;
+        if descriptor.reserved != 0 || descriptor.loop_enabled > 1 || descriptor.reduced_motion > 1
+        {
+            return temporal::TemporalError::InvalidArgument as i32;
+        }
+        let Some(direction) =
+            temporal_controller::PlaybackDirection::from_i32(descriptor.direction)
+        else {
+            return temporal::TemporalError::InvalidArgument as i32;
+        };
+        match temporal_controller::TemporalController::create(
+            descriptor.instance_id,
+            descriptor.group_id,
+            descriptor.domain_start,
+            descriptor.domain_end,
+            descriptor.cursor,
+            descriptor.window,
+            descriptor.step,
+            direction,
+            descriptor.rate_milli,
+            descriptor.loop_enabled == 1,
+            descriptor.reduced_motion == 1,
+        ) {
+            Ok(controller) => match temporal_controller::controller_insert(controller) {
+                Ok(handle) => {
+                    *out_handle = handle;
+                    0
+                }
+                Err(error) => error as i32,
+            },
+            Err(error) => error as i32,
+        }
+    })
+}
+
+/// Copy controller state into host scalars.
+///
+/// # Safety
+/// All output pointers must be valid for one value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_state(
+    handle: u64,
+    out_instance_id: *mut u64,
+    out_group_id: *mut u64,
+    out_domain_start: *mut i64,
+    out_domain_end: *mut i64,
+    out_range_start: *mut i64,
+    out_range_end: *mut i64,
+    out_cursor: *mut i64,
+    out_window: *mut i64,
+    out_step: *mut i64,
+    out_direction: *mut i32,
+    out_rate_milli: *mut u32,
+    out_loop_enabled: *mut u32,
+    out_playing: *mut u32,
+    out_reduced_motion: *mut u32,
+    out_revision: *mut u64,
+    out_disposed: *mut u32,
+) -> i32 {
+    if out_instance_id.is_null()
+        || out_group_id.is_null()
+        || out_domain_start.is_null()
+        || out_domain_end.is_null()
+        || out_range_start.is_null()
+        || out_range_end.is_null()
+        || out_cursor.is_null()
+        || out_window.is_null()
+        || out_step.is_null()
+        || out_direction.is_null()
+        || out_rate_milli.is_null()
+        || out_loop_enabled.is_null()
+        || out_playing.is_null()
+        || out_reduced_motion.is_null()
+        || out_revision.is_null()
+        || out_disposed.is_null()
+    {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |controller| {
+            let state = controller.state();
+            *out_instance_id = state.instance_id;
+            *out_group_id = state.group_id;
+            *out_domain_start = state.domain_start;
+            *out_domain_end = state.domain_end;
+            *out_range_start = state.range_start;
+            *out_range_end = state.range_end;
+            *out_cursor = state.cursor;
+            *out_window = state.window;
+            *out_step = state.step;
+            *out_direction = state.direction as i32;
+            *out_rate_milli = state.rate_milli;
+            *out_loop_enabled = u32::from(state.loop_enabled);
+            *out_playing = u32::from(state.playing);
+            *out_reduced_motion = u32::from(state.reduced_motion);
+            *out_revision = state.revision;
+            *out_disposed = u32::from(state.disposed);
+            0
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Set selected half-open range.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_set_range(
+    handle: u64,
+    start: i64,
+    end: i64,
+) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.set_range(start, end) {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Set cursor (re-centers window when possible).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_set_cursor(handle: u64, cursor: i64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.set_cursor(cursor) {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Start playback when reduced motion is off.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_play(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.play() {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Pause playback.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_pause(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.pause() {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Advance one step along the current direction.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_step(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.step() {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Set playback rate in milli-units (1000 = 1.0×).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_set_rate_milli(
+    handle: u64,
+    rate_milli: u32,
+) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.set_rate_milli(rate_milli) {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Set playback direction (−1 reverse, +1 forward).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_set_direction(handle: u64, direction: i32) -> i32 {
+    let Some(direction) = temporal_controller::PlaybackDirection::from_i32(direction) else {
+        return temporal::TemporalError::InvalidArgument as i32;
+    };
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.set_direction(direction) {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Enable or disable looping at domain bounds.
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_set_loop(handle: u64, enabled: u32) -> i32 {
+    if enabled > 1 {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.set_loop(enabled == 1) {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Set reduced-motion policy (`play` becomes a no-op when enabled).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_set_reduced_motion(
+    handle: u64,
+    enabled: u32,
+) -> i32 {
+    if enabled > 1 {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| {
+            match c.set_reduced_motion(enabled == 1) {
+                Ok(()) => 0,
+                Err(e) => e as i32,
+            }
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Host-clock tick. Writes 1 to `out_advanced` when the cursor moved.
+///
+/// # Safety
+/// `out_advanced` must be valid for one `u32`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_tick(
+    handle: u64,
+    dt_micros: i64,
+    out_advanced: *mut u32,
+) -> i32 {
+    if out_advanced.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.tick(dt_micros) {
+            Ok(advanced) => {
+                *out_advanced = u32::from(advanced);
+                0
+            }
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Poll and clear the pending outbound coordination event.
+///
+/// # Safety
+/// Output pointers must be valid. Writes `out_has_event` 0/1 and initializes
+/// every event field to zero when no event is available or the handle is stale.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
+    handle: u64,
+    out_has_event: *mut u32,
+    out_group_id: *mut u64,
+    out_source_instance: *mut u64,
+    out_revision: *mut u64,
+    out_range_start: *mut i64,
+    out_range_end: *mut i64,
+    out_cursor: *mut i64,
+    out_window: *mut i64,
+) -> i32 {
+    if out_has_event.is_null()
+        || out_group_id.is_null()
+        || out_source_instance.is_null()
+        || out_revision.is_null()
+        || out_range_start.is_null()
+        || out_range_end.is_null()
+        || out_cursor.is_null()
+        || out_window.is_null()
+    {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    *out_has_event = 0;
+    *out_group_id = 0;
+    *out_source_instance = 0;
+    *out_revision = 0;
+    *out_range_start = 0;
+    *out_range_end = 0;
+    *out_cursor = 0;
+    *out_window = 0;
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| {
+            if let Some(event) = c.take_outbound() {
+                *out_has_event = 1;
+                *out_group_id = event.group_id;
+                *out_source_instance = event.source_instance;
+                *out_revision = event.revision;
+                *out_range_start = event.range_start;
+                *out_range_end = event.range_end;
+                *out_cursor = event.cursor;
+                *out_window = event.window;
+            }
+            0
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Apply an inbound coordination event. Writes 1 to `out_applied` on change.
+///
+/// # Safety
+/// `out_applied` must be valid for one `u32`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_apply_event(
+    handle: u64,
+    group_id: u64,
+    source_instance: u64,
+    revision: u64,
+    range_start: i64,
+    range_end: i64,
+    cursor: i64,
+    window: i64,
+    out_applied: *mut u32,
+) -> i32 {
+    if out_applied.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    let event = temporal_controller::CoordinationEvent {
+        group_id,
+        source_instance,
+        revision,
+        range_start,
+        range_end,
+        cursor,
+        window,
+    };
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.apply_event(&event) {
+            Ok(applied) => {
+                *out_applied = u32::from(applied);
+                0
+            }
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Same-process group deliver for the polled event fields.
+///
+/// # Safety
+/// `out_applied` must be valid for one `u32`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_coordinate_deliver(
+    group_id: u64,
+    source_instance: u64,
+    revision: u64,
+    range_start: i64,
+    range_end: i64,
+    cursor: i64,
+    window: i64,
+    out_applied: *mut u32,
+) -> i32 {
+    if out_applied.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    let event = temporal_controller::CoordinationEvent {
+        group_id,
+        source_instance,
+        revision,
+        range_start,
+        range_end,
+        cursor,
+        window,
+    };
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        match temporal_controller::coordinate_deliver(&event) {
+            Ok(n) => {
+                *out_applied = n;
+                0
+            }
+            Err(e) => e as i32,
+        }
+    })
+}
+
+/// Dispose a controller (stops playback; further ops fail with Disposed).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_dispose(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.dispose() {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Destroy the handle (after dispose or instead of it).
+///
+/// # Safety
+/// No pointer arguments; safe for any handle value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_destroy(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let _ = temporal_controller::controller_with_mut(handle, |c| {
+            let _ = c.dispose();
+        });
+        if temporal_controller::controller_remove(handle) {
+            0
+        } else {
+            temporal::TemporalError::StaleHandle as i32
+        }
+    })
+}
+
 /// One-shot graph layout. `layout` is LAYOUT_* from `graph`. Returns 0 on
 /// success, -1 on invalid args. `preset` requires `in_x`/`in_y`; others may
 /// pass null. `roots` is optional for breadthfirst/radial (null → default).
@@ -7678,5 +8164,44 @@ mod tests {
         };
         assert_eq!(bad, 0);
         assert_eq!(err, -2);
+    }
+
+    #[test]
+    fn temporal_poll_initializes_all_outputs_on_failure() {
+        let mut has_event = 9_u32;
+        let mut group_id = 9_u64;
+        let mut source = 9_u64;
+        let mut revision = 9_u64;
+        let mut range_start = 9_i64;
+        let mut range_end = 9_i64;
+        let mut cursor = 9_i64;
+        let mut window = 9_i64;
+        let status = unsafe {
+            xyg_temporal_controller_poll_event(
+                0,
+                &mut has_event,
+                &mut group_id,
+                &mut source,
+                &mut revision,
+                &mut range_start,
+                &mut range_end,
+                &mut cursor,
+                &mut window,
+            )
+        };
+        assert_eq!(status, temporal::TemporalError::StaleHandle as i32);
+        assert_eq!(
+            (
+                has_event,
+                group_id,
+                source,
+                revision,
+                range_start,
+                range_end,
+                cursor,
+                window,
+            ),
+            (0, 0, 0, 0, 0, 0, 0, 0)
+        );
     }
 }
