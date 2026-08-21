@@ -617,7 +617,47 @@ async function run() {
       || rapid[1].value.revision !== 3n) {
     throw new Error("rapid temporal graph frames applied a stale browser reply");
   }
+  const temporalLayout = await temporalGraph.frameAndLayout({
+    revision: 4n, cursor: 15n, range: [15n, 16n], budget: 12n,
+    layout: { totalSteps: 17, seed: 9n },
+  });
+  if (temporalLayout.frame.sources.join(",") !== "0"
+      || temporalLayout.frame.targets.join(",") !== "1"
+      || temporalLayout.layout.revision !== 4
+      || temporalLayout.layout.x.length !== 2
+      || temporalLayout.layout.phase !== "complete") {
+    throw new Error("temporal graph did not feed Rust-remapped visible topology into Rust CoSE");
+  }
+  let superseded = false, staleLayoutUpdates = 0;
+  const oldLayout = temporalGraph.frameAndLayout({
+    revision: 5n, cursor: 15n, range: [15n, 16n], budget: 12n,
+    layout: { totalSteps: 100000, seed: 10n },
+    onUpdate: () => { if (superseded) staleLayoutUpdates += 1; },
+  });
+  superseded = true;
+  const newLayout = temporalGraph.frameAndLayout({
+    revision: 6n, cursor: 25n, range: [25n, 26n], budget: 12n,
+    layout: { totalSteps: 17, seed: 11n },
+  });
+  const supersession = await Promise.allSettled([oldLayout, newLayout]);
+  if (supersession[0].status !== "rejected" || supersession[1].status !== "fulfilled"
+      || supersession[1].value.layout.revision !== 6 || staleLayoutUpdates !== 0) {
+    throw new Error("new temporal frame did not cancel and suppress the stale Rust layout");
+  }
+  let disposedUpdates = 0;
+  const disposedLayout = temporalGraph.frameAndLayout({
+    revision: 7n, cursor: 15n, range: [15n, 16n], budget: 12n,
+    layout: { totalSteps: 100000, seed: 12n },
+    onUpdate: () => { disposedUpdates += 1; },
+  });
+  await Promise.resolve();
   temporalGraph.dispose();
+  const updatesAtDispose = disposedUpdates;
+  const disposedResult = await Promise.allSettled([disposedLayout]);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (disposedResult[0].status !== "rejected" || disposedUpdates !== updatesAtDispose) {
+    throw new Error("disposed temporal graph accepted a late Rust layout result or update");
+  }
   await temporalGraphWorker.dispose();
 
   const canonical = canonicalSceneV9();
