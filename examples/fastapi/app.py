@@ -1,4 +1,4 @@
-"""A FastAPI app that serves xy charts.
+"""A FastAPI app that serves XYG charts.
 
 Routes:
 

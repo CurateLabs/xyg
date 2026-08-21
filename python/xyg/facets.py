@@ -119,7 +119,7 @@ def _facet_values(data: Any, by: Any) -> tuple[np.ndarray, list[str]]:
 
 
 class FacetGrid:
-    """A rendered grid of independent xy figures."""
+    """A rendered grid of independent XYG figures."""
 
     def __init__(
         self,

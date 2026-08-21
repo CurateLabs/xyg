@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if current-product files still use retired XYG/XYG identities.
+"""Fail if current-product files still use retired XY/xy identities.
 
 Enforces spec/design/xyg-naming.md, including the clean Python ``xyg``
 namespace cutover. Historical audits, the naming matrix's old column, and the
@@ -218,10 +218,16 @@ def _structural_identity_errors(rel: str, text: str) -> list[str]:
     for label, pattern in _STRUCTURAL_CURRENT_IDENTITY.get(rel, ()):
         for match in pattern.finditer(text):
             lineno = text.count("\n", 0, match.start()) + 1
+            line = text.splitlines()[lineno - 1]
+            if LINE_ALLOW_MARKER in line:
+                continue
             errors.append(f"{rel}:{lineno}: stale {label}")
     if rel.startswith(".github/workflows/"):
         for match in _WORKFLOW_INSTALL_XY.finditer(text):
             lineno = text.count("\n", 0, match.start()) + 1
+            line = text.splitlines()[lineno - 1]
+            if LINE_ALLOW_MARKER in line:
+                continue
             errors.append(f"{rel}:{lineno}: stale workflow product label")
     return errors
 

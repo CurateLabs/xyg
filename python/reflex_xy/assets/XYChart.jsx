@@ -1,4 +1,4 @@
-// XYChart: mount a xy figure inside a Reflex app.
+// XYChart: mount an XYG figure inside a Reflex app.
 //
 // Two modes, one prop apart (spec/design/reflex-integration.md):
 //

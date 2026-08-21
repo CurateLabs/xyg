@@ -200,3 +200,11 @@ def test_structurally_flags_current_product_build_release_and_workflow_identity(
         "workflow product label",
     ):
         assert label in errors
+
+
+def test_structural_identity_honors_the_documented_line_marker(tmp_path: Path) -> None:
+    (tmp_path / "SECURITY.md").write_text(
+        "xy is a quoted historical statement. <!-- xyg-stale-name: allow -->\n",
+        encoding="utf-8",
+    )
+    assert check_stale_names.check_stale_names(tmp_path) == []

@@ -1,7 +1,7 @@
-"""Reflex integration for xy figures.
+"""Reflex integration for XYG figures.
 
 The integration in one paragraph (full design:
-spec/design/reflex-integration.md in the xy repo): chart data rides
+spec/design/reflex-integration.md in the XYG repository): chart data rides
 the app's *existing* websocket as a second socket.io namespace — binary
 columns, no JSON numbers, no extra endpoints to proxy. Figures live in a
 per-process registry keyed by tokens; the tokens live in Reflex state. A

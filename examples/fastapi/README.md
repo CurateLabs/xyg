@@ -1,6 +1,6 @@
 # xy FastAPI example
 
-A [FastAPI](https://fastapi.tiangolo.com/) app that serves xy charts, showing
+A [FastAPI](https://fastapi.tiangolo.com/) app that serves XYG charts, showing
 how the library is used from a Python web stack other than Reflex.
 
 Each chart is generated on request with `chart.to_html()`, and the **Code**

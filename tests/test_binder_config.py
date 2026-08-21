@@ -49,7 +49,7 @@ def test_environment_provisions_toolchain_and_notebook_stack() -> None:
     # retired by conda-forge rebuilds — they rot into an unsolvable image.
     assert not any(spec.count("=") > 1 for spec in dependencies)
 
-    # repo2docker's default kernel env is Python 3.10, below xy's
+    # repo2docker's default kernel env is Python 3.10, below XYG's
     # requires-python floor — the interpreter must be pinned, loosely, to a
     # version the package supports. pip stays unpinned.
     python_specs = [spec for spec in dependencies if spec.split("=", 1)[0] == "python"]
