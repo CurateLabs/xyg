@@ -5,10 +5,11 @@
 //! MapLibre (or any shell) may feed camera events; this module owns the
 //! equations, polar clamp, and rebuildable f32 offset encoding policy.
 //!
-//! Basemap tile lifecycle is out of scope (#49). Antimeridian line/polygon
-//! splitting for painted geometry is a follow-on on top of this camera.
+//! Basemap tile lifecycle is out of scope (#49). This module lowers and clips
+//! antimeridian-safe route segments; polygon fill topology remains a follow-on.
 
-use crate::geo::{GeoCrs, GeoError};
+use crate::geo::{GeoCrs, GeoError, GeoLimits};
+use std::mem::size_of;
 
 /// Spherical Web Mercator radius used by EPSG:3857 (metres).
 const EARTH_RADIUS_M: f64 = 6_378_137.0;
@@ -54,6 +55,21 @@ pub struct GeoViewport {
     pub pitch_deg: f64,
     /// When true, longitude differences wrap across ±180°.
     pub world_wrap: bool,
+}
+
+/// Screen-clipped line segments with stable source-feature identity.
+///
+/// Every offset range is one independent two-point segment. Keeping segments
+/// independent avoids inventing a connection across the antimeridian or a
+/// clipped-away portion of a route. Coordinates are offset-encoded f32 around
+/// the f64 viewport centre, so painter uploads remain precise at deep zoom.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProjectedGeoLines {
+    pub xy: Vec<f32>,
+    pub offsets: Vec<u32>,
+    pub feature_ids: Vec<u64>,
+    pub origin_x: f64,
+    pub origin_y: f64,
 }
 
 impl GeoViewport {
@@ -232,6 +248,83 @@ impl GeoViewport {
         Ok((out, origin_x, origin_y))
     }
 
+    /// Split, project, and clip line features while preserving source IDs.
+    ///
+    /// `offsets` uses the canonical Arrow-style contract: it starts at zero,
+    /// ends at `xy.len() / 2`, and has one more entry than `feature_ids`.
+    /// EPSG:4326 segments crossing ±180° are split at the dateline before
+    /// projection when world wrapping is enabled. The returned ranges contain
+    /// only finite points inside the CSS viewport; invisible features produce
+    /// no range and no ID.
+    pub fn project_line_features(
+        &self,
+        xy: &[f64],
+        offsets: &[u32],
+        feature_ids: &[u64],
+    ) -> Result<ProjectedGeoLines, GeoError> {
+        if !xy.len().is_multiple_of(2)
+            || offsets.len() != feature_ids.len() + 1
+            || offsets.first() != Some(&0)
+            || offsets.last().copied().map(|v| v as usize) != Some(xy.len() / 2)
+            || offsets.windows(2).any(|pair| pair[0] > pair[1])
+        {
+            return Err(GeoError::OffsetMismatch);
+        }
+        let limits = GeoLimits::default();
+        if feature_ids.len() > limits.max_features
+            || xy.len() / 2 > limits.max_vertices
+            || xy.len().saturating_mul(size_of::<f64>()) > limits.max_bytes
+        {
+            return Err(GeoError::ResourceLimit);
+        }
+
+        let origin_x = self.width * 0.5;
+        let origin_y = self.height * 0.5;
+        let mut out = ProjectedGeoLines {
+            xy: Vec::new(),
+            offsets: vec![0],
+            feature_ids: Vec::new(),
+            origin_x,
+            origin_y,
+        };
+
+        for (feature_index, &feature_id) in feature_ids.iter().enumerate() {
+            let start = offsets[feature_index] as usize;
+            let end = offsets[feature_index + 1] as usize;
+            if end - start < 2 {
+                return Err(GeoError::InvalidArgument);
+            }
+            let points = &xy[start * 2..end * 2];
+            validate_line_coordinates(self.crs, points)?;
+            for index in 0..points.len() / 2 - 1 {
+                let (x0, y0) = (points[index * 2], points[index * 2 + 1]);
+                let (x1, y1) = (points[(index + 1) * 2], points[(index + 1) * 2 + 1]);
+                let (segments, count) =
+                    split_line_segment(self.crs, self.world_wrap, x0, y0, x1, y1);
+                for segment in segments.into_iter().take(count) {
+                    let a = self.project(segment[0], segment[1])?;
+                    let b = self.project(segment[2], segment[3])?;
+                    let Some((a, b)) = clip_segment(a, b, self.width, self.height) else {
+                        continue;
+                    };
+                    let next_bytes = (out.xy.len() + 4) * size_of::<f32>()
+                        + (out.feature_ids.len() + 1) * size_of::<u64>()
+                        + (out.offsets.len() + 1) * size_of::<u32>();
+                    if next_bytes > limits.max_bytes {
+                        return Err(GeoError::ResourceLimit);
+                    }
+                    for (x, y) in [a, b] {
+                        out.xy.push((x - origin_x) as f32);
+                        out.xy.push((y - origin_y) as f32);
+                    }
+                    out.feature_ids.push(feature_id);
+                    out.offsets.push((out.xy.len() / 2) as u32);
+                }
+            }
+        }
+        Ok(out)
+    }
+
     /// Fit the camera to an axis-aligned source-CRS bounding box.
     ///
     /// `padding_px` is applied on every side. When `world_wrap` is set and the
@@ -391,6 +484,90 @@ impl GeoViewport {
         let (cx, cy) = self.center_mercator();
         (cx + dx * scale, cy - dy * scale)
     }
+}
+
+fn validate_line_coordinates(crs: GeoCrs, xy: &[f64]) -> Result<(), GeoError> {
+    for pair in xy.chunks_exact(2) {
+        if !pair[0].is_finite() || !pair[1].is_finite() {
+            return Err(GeoError::NonFiniteCoordinate);
+        }
+        let valid = match crs {
+            GeoCrs::Epsg4326 => pair[0].abs() <= 180.0 && pair[1].abs() <= 90.0,
+            GeoCrs::Epsg3857 => {
+                pair[0].abs() <= WEB_MERCATOR_MAX && pair[1].abs() <= WEB_MERCATOR_MAX
+            }
+        };
+        if !valid {
+            return Err(GeoError::CoordinateOutOfRange);
+        }
+    }
+    Ok(())
+}
+
+/// Return independent source-CRS segments, splitting dateline crossings into
+/// paired ±180° endpoints. Interpolating latitude in source space is the
+/// deterministic v1 route contract; geographic curves remain a later layer.
+fn split_line_segment(
+    crs: GeoCrs,
+    world_wrap: bool,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+) -> ([[f64; 4]; 2], usize) {
+    if crs != GeoCrs::Epsg4326 || !world_wrap || (x1 - x0).abs() <= 180.0 {
+        return ([[x0, y0, x1, y1], [0.0; 4]], 1);
+    }
+    let (unwrapped_x1, boundary, opposite) = if x1 < x0 {
+        (x1 + 360.0, 180.0, -180.0)
+    } else {
+        (x1 - 360.0, -180.0, 180.0)
+    };
+    let t = (boundary - x0) / (unwrapped_x1 - x0);
+    let y_cross = y0 + (y1 - y0) * t;
+    (
+        [[x0, y0, boundary, y_cross], [opposite, y_cross, x1, y1]],
+        2,
+    )
+}
+
+/// Liang–Barsky clip against the viewport. The arithmetic is f64 and output
+/// is emitted only after all bounds are proven finite.
+fn clip_segment(
+    a: (f64, f64),
+    b: (f64, f64),
+    width: f64,
+    height: f64,
+) -> Option<((f64, f64), (f64, f64))> {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let mut t0: f64 = 0.0;
+    let mut t1: f64 = 1.0;
+    for (p, q) in [
+        (-dx, a.0),
+        (dx, width - a.0),
+        (-dy, a.1),
+        (dy, height - a.1),
+    ] {
+        if p == 0.0 {
+            if q < 0.0 {
+                return None;
+            }
+            continue;
+        }
+        let r = q / p;
+        if p < 0.0 {
+            t0 = t0.max(r);
+        } else {
+            t1 = t1.min(r);
+        }
+        if t0 > t1 {
+            return None;
+        }
+    }
+    Some((
+        (a.0 + t0 * dx, a.1 + t0 * dy),
+        (a.0 + t1 * dx, a.1 + t1 * dy),
+    ))
 }
 
 /// Clamp latitude to the Web Mercator domain.
@@ -623,5 +800,75 @@ mod tests {
         let (x2, y2) = vp.unproject(sx, sy).unwrap();
         assert!((x2 - (mx + 1000.0)).abs() < tolerances::MERCATOR_M);
         assert!((y2 - (my - 500.0)).abs() < tolerances::MERCATOR_M);
+    }
+
+    #[test]
+    fn dateline_route_splits_without_long_world_segment() {
+        let vp = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            180.0,
+            0.0,
+            2.0,
+            800.0,
+            600.0,
+            0.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        let lines = vp
+            .project_line_features(&[170.0, -10.0, -170.0, 10.0], &[0, 2], &[42])
+            .unwrap();
+        assert_eq!(lines.offsets, [0, 2, 4]);
+        assert_eq!(lines.feature_ids, [42, 42]);
+        assert_eq!(lines.xy.len(), 8);
+        for point in lines.xy.chunks_exact(2) {
+            let x = point[0] as f64 + lines.origin_x;
+            let y = point[1] as f64 + lines.origin_y;
+            assert!((0.0..=vp.width).contains(&x));
+            assert!((0.0..=vp.height).contains(&y));
+        }
+    }
+
+    #[test]
+    fn line_projection_clips_and_preserves_visible_identity() {
+        let vp = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            0.0,
+            0.0,
+            3.0,
+            400.0,
+            300.0,
+            0.0,
+            0.0,
+            false,
+        )
+        .unwrap();
+        let lines = vp
+            .project_line_features(
+                &[-30.0, 0.0, 30.0, 0.0, 100.0, 70.0, 110.0, 70.0],
+                &[0, 2, 4],
+                &[7, 9],
+            )
+            .unwrap();
+        assert_eq!(lines.offsets, [0, 2]);
+        assert_eq!(lines.feature_ids, [7]);
+        let first_x = lines.xy[0] as f64 + lines.origin_x;
+        let last_x = lines.xy[2] as f64 + lines.origin_x;
+        assert_eq!(first_x, 0.0);
+        assert_eq!(last_x, vp.width);
+    }
+
+    #[test]
+    fn line_projection_rejects_bad_offsets_atomically() {
+        let vp = denver();
+        assert_eq!(
+            vp.project_line_features(&[-105.0, 40.0, -104.0, 40.0], &[1, 2], &[1]),
+            Err(GeoError::OffsetMismatch)
+        );
+        assert_eq!(
+            vp.project_line_features(&[-105.0, 40.0, f64::NAN, 40.0], &[0, 2], &[1]),
+            Err(GeoError::NonFiniteCoordinate)
+        );
     }
 }

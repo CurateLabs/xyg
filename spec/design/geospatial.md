@@ -130,9 +130,21 @@ Projection policy:
 - Documented golden tolerances: lon/lat `1e-9`°, mercator `1e-6` m, screen
   `1e-6` px (`geo_viewport::tolerances`).
 
-Follow-ons on this camera: antimeridian line/polygon split for painted
-geometry, pitched frustum matching MapLibre, C ABI / host wrappers, and
-native↔WASM goldens (#59).
+The first geometry lowering slice is `GeoViewport::project_line_features`.
+It accepts canonical interleaved f64 coordinates, Arrow-style offsets, and
+u64 source feature IDs. Rust validates the whole feature before publishing
+output, splits EPSG:4326 routes at paired `+180/-180` endpoints when world
+wrap is active, projects in f64, clips every segment to the CSS viewport, and
+only then emits centre-offset f32 painter geometry. Output ranges are
+independent two-point segments: a dateline or clipped-away interval can never
+be reconnected accidentally. Each visible segment carries its original
+feature ID; wholly invisible features emit neither geometry nor an ID. This
+is intentionally a line/route slice. Ring splitting and fill topology remain
+required before polygon layers can claim the same contract.
+
+Follow-ons on this camera: polygon antimeridian splitting and fill topology,
+pitched frustum matching MapLibre, C ABI / host wrappers, and native↔WASM
+goldens (#59).
 
 ## Module and follow-ons
 
