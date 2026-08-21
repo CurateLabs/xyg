@@ -139,8 +139,12 @@ only then emits centre-offset f32 painter geometry. Output ranges are
 independent two-point segments: a dateline or clipped-away interval can never
 be reconnected accidentally. Each visible segment carries its original
 feature ID; wholly invisible features emit neither geometry nor an ID. This
-is intentionally a line/route slice. Ring splitting and fill topology remain
-required before polygon layers can claim the same contract.
+projection selects one coherent wrapped-world copy for both endpoints of each
+segment, including when a `+180/-180` endpoint is opposite the camera centre;
+the dateline split therefore cannot turn a short edge segment into a line
+across the world. The complete descriptor is validated before derived output
+work begins. This is intentionally a line/route slice. Ring splitting and fill
+topology remain required before polygon layers can claim the same contract.
 
 Follow-ons on this camera: polygon antimeridian splitting and fill topology,
 pitched frustum matching MapLibre, C ABI / host wrappers, and native↔WASM
