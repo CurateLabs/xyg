@@ -47,6 +47,10 @@ pub struct TemporalGraphFrame {
     selected_visible_edge_ids: Vec<Uuid>,
     focused_visible: Option<GraphEntity>,
     pinned_visible_node_ids: Vec<Uuid>,
+    selected_node_ids: Vec<Uuid>,
+    selected_edge_ids: Vec<Uuid>,
+    focused: Option<GraphEntity>,
+    pinned_node_ids: Vec<Uuid>,
 }
 
 impl TemporalGraphFrame {
@@ -353,7 +357,7 @@ impl TemporalGraph {
             &self.pinned_nodes,
             cancel,
         )?;
-        let (visible_edge_ids, selected_visible_edge_ids) = visible_edge_state(
+        let edge_state = visible_edge_state(
             &self.edge_ids,
             &edge_visibility,
             &self.selected_edges,
@@ -374,11 +378,15 @@ impl TemporalGraph {
                 node_visibility,
                 edge_visibility,
                 visible_node_ids: node_state.visible,
-                visible_edge_ids,
-                selected_visible_node_ids: node_state.selected,
-                selected_visible_edge_ids,
+                visible_edge_ids: edge_state.visible,
+                selected_visible_node_ids: node_state.selected_visible,
+                selected_visible_edge_ids: edge_state.selected_visible,
                 focused_visible,
-                pinned_visible_node_ids: node_state.pinned,
+                pinned_visible_node_ids: node_state.pinned_visible,
+                selected_node_ids: node_state.selected,
+                selected_edge_ids: edge_state.selected,
+                focused: self.focused,
+                pinned_node_ids: node_state.pinned,
             }
         })
     }
@@ -402,31 +410,18 @@ impl TemporalGraph {
             range_end_micros: frame.range_end_micros,
             visible_node_ids: frame.visible_node_ids.clone(),
             visible_edge_ids: frame.visible_edge_ids.clone(),
-            selected_node_ids: self
-                .node_ids
-                .iter()
-                .copied()
-                .filter(|id| self.selected_nodes.contains(id))
-                .collect(),
-            selected_edge_ids: self
-                .edge_ids
-                .iter()
-                .copied()
-                .filter(|id| self.selected_edges.contains(id))
-                .collect(),
-            focused: self.focused,
-            pinned_node_ids: self
-                .node_ids
-                .iter()
-                .copied()
-                .filter(|id| self.pinned_nodes.contains(id))
-                .collect(),
+            selected_node_ids: frame.selected_node_ids.clone(),
+            selected_edge_ids: frame.selected_edge_ids.clone(),
+            focused: frame.focused,
+            pinned_node_ids: frame.pinned_node_ids.clone(),
         })
     }
 }
 
 struct VisibleNodeState {
     visible: Vec<Uuid>,
+    selected_visible: Vec<Uuid>,
+    pinned_visible: Vec<Uuid>,
     selected: Vec<Uuid>,
     pinned: Vec<Uuid>,
 }
@@ -439,27 +434,45 @@ fn visible_node_state(
     cancel: &CancelFlag,
 ) -> Result<VisibleNodeState, TemporalError> {
     let mut visible_ids = Vec::new();
+    let mut selected_visible = Vec::new();
+    let mut pinned_visible = Vec::new();
     let mut selected_ids = Vec::new();
     let mut pinned_ids = Vec::new();
     for (i, (&id, &visible)) in ids.iter().zip(visibility).enumerate() {
         if (i & 0xffff) == 0 && cancel.is_cancelled() {
             return Err(TemporalError::Cancelled);
         }
+        let is_selected = selected.contains(&id);
+        let is_pinned = pinned.contains(&id);
+        if is_selected {
+            selected_ids.push(id);
+        }
+        if is_pinned {
+            pinned_ids.push(id);
+        }
         if visible == 1 {
             visible_ids.push(id);
-            if selected.contains(&id) {
-                selected_ids.push(id);
+            if is_selected {
+                selected_visible.push(id);
             }
-            if pinned.contains(&id) {
-                pinned_ids.push(id);
+            if is_pinned {
+                pinned_visible.push(id);
             }
         }
     }
     Ok(VisibleNodeState {
         visible: visible_ids,
+        selected_visible,
+        pinned_visible,
         selected: selected_ids,
         pinned: pinned_ids,
     })
+}
+
+struct VisibleEdgeState {
+    visible: Vec<Uuid>,
+    selected_visible: Vec<Uuid>,
+    selected: Vec<Uuid>,
 }
 
 fn visible_edge_state(
@@ -467,21 +480,30 @@ fn visible_edge_state(
     visibility: &[u8],
     selected: &BTreeSet<Uuid>,
     cancel: &CancelFlag,
-) -> Result<(Vec<Uuid>, Vec<Uuid>), TemporalError> {
+) -> Result<VisibleEdgeState, TemporalError> {
     let mut visible_ids = Vec::new();
+    let mut selected_visible = Vec::new();
     let mut selected_ids = Vec::new();
     for (i, (&id, &visible)) in ids.iter().zip(visibility).enumerate() {
         if (i & 0xffff) == 0 && cancel.is_cancelled() {
             return Err(TemporalError::Cancelled);
         }
+        let is_selected = selected.contains(&id);
+        if is_selected {
+            selected_ids.push(id);
+        }
         if visible == 1 {
             visible_ids.push(id);
-            if selected.contains(&id) {
-                selected_ids.push(id);
+            if is_selected {
+                selected_visible.push(id);
             }
         }
     }
-    Ok((visible_ids, selected_ids))
+    Ok(VisibleEdgeState {
+        visible: visible_ids,
+        selected_visible,
+        selected: selected_ids,
+    })
 }
 
 #[cfg(test)]
@@ -711,6 +733,30 @@ mod tests {
         assert_eq!(frozen.selected_node_ids, [id(3), id(1)]);
         assert_eq!(frozen.selected_edge_ids, [id(12), id(11)]);
         assert_eq!(frozen.pinned_node_ids, [id(3), id(1)]);
+    }
+
+    #[test]
+    fn frozen_interaction_state_is_the_frame_publication_snapshot() {
+        let graph = projection();
+        let mut temporal = TemporalGraph::bind(
+            &graph,
+            TemporalBindingInput::default(),
+            TemporalBindingInput::default(),
+        )
+        .unwrap();
+        temporal.set_selection([id(1)], [id(11)]).unwrap();
+        temporal.set_focus(Some(GraphEntity::Node(id(1)))).unwrap();
+        temporal.set_pinned_nodes([id(1)]).unwrap();
+        let frame = temporal.frame(1, 5, 0, 10, &CancelFlag::new(), 12).unwrap();
+        temporal.set_selection([id(2)], [id(12)]).unwrap();
+        temporal.set_focus(Some(GraphEntity::Edge(id(12)))).unwrap();
+        temporal.set_pinned_nodes([id(2)]).unwrap();
+
+        let frozen = temporal.freeze(&frame).unwrap();
+        assert_eq!(frozen.selected_node_ids, [id(1)]);
+        assert_eq!(frozen.selected_edge_ids, [id(11)]);
+        assert_eq!(frozen.focused, Some(GraphEntity::Node(id(1))));
+        assert_eq!(frozen.pinned_node_ids, [id(1)]);
     }
 
     #[test]

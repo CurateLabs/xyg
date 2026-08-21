@@ -264,7 +264,9 @@ is O(V), including adversarial deep chains.
 `overlap_padding` remains active in both scale tiers: the exact tier applies
 pairwise separation, while the bounded grid tier applies the same pressure to
 exact neighboring members and the mass-weighted cell representative for dense
-neighbors. Configured CoSE rejects non-positive iteration counts rather than
+neighbors. `run_layout`/`runLayout` validate the host-only iteration count
+before stepping the Rust force handle; iterations are not transported in the
+CoSE descriptor. Configured CoSE rejects non-positive counts rather than
 silently discarding options, pins, or compounds through the one-shot path.
 
 Direct browser Worker/WASM execution, browser/native deterministic tolerance,

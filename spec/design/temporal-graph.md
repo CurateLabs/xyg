@@ -64,7 +64,9 @@ node/edge UUID membership, and persistent selection/focus/pin identities. This
 is the Rust-owned provenance payload that later HTML/PNG/SVG adapters attach to
 an export. Frame fields are read-only outside this module and carry an opaque
 graph-instance token, preventing a host from forging, mutating, or cross-wiring
-visibility before it is frozen. All emitted identity lists, including
+visibility before it is frozen. Frame publication atomically snapshots the
+complete persistent selection, focus, and pin state; later interaction changes
+cannot alter the provenance frozen from that frame. All emitted identity lists, including
 persistent state, retain canonical projection order. Static output shows the
 selected state but does not imply playback or other unavailable interaction.
 
