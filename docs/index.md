@@ -3,7 +3,7 @@ title: Fast, Interactive Python Charting Library
 description: XYG is a fast Python charting library for interactive data visualization. Plot millions of points with pan, zoom, and hover. Style charts with CSS or Tailwind.
 ---
 
-# What is `xy`?
+# What is XYG?
 
 XYG is a Python charting library for interactive 2D visualizations that stay
 smooth at millions of points and take your design system seriously. Two ideas

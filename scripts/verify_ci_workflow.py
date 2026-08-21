@@ -1002,7 +1002,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         reference,
-        "Install xy and released reference wheel",
+        "Install XYG and released reference wheel",
         "released reference installation",
         "uv venv .venv",
         "uv pip install -p .venv/bin/python -e . --group dev",
@@ -1318,7 +1318,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_contains(
         errors,
         cross_library,
-        "Install xy",
+        "Install XYG",
         "xy-only constrained install",
         "if: matrix.xy",
         'XYG_REQUIRE_CARGO: "1"',

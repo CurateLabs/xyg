@@ -1,4 +1,4 @@
-# Contributing to xy
+# Contributing to XYG
 
 The full contributor guide — PR checklist, local gate commands, and the
 chart-type contribution walkthrough — lives at

@@ -74,6 +74,7 @@ stage lands. Proposed targets are recorded so the later rename is mechanical.
 | Wire-protocol constants | `XY_FRAME_MAGIC`, `XY_FRAME_VERSION`, `XY_PAYLOAD_MAGIC`, … (Python + TS) | `XYG_*` with a protocol-version bump | wire-protocol stage — byte-level magic changes need migration evidence (`spec/design/wire-protocol.md`) |
 | Widget/anywidget module + static bundle names | `python/xyg/static/{index,standalone}.js` internals | unchanged paths until `import xyg`; internal names follow browser stage | browser/branding stage (#14) |
 | Dev/test/bench env knobs | `XY_BROWSER`, `XY_CHROMIUM`, `XY_LIVE_POINTS`, `XY_CONTEXT_GOVERNOR`, `XY_NOTEBOOK_DISPLAY`, `XY_SHARED_WEBGL`, `XY_POLAR_AA`, and other dev-only `XY_*` knobs | `XYG_*` sweep | branding stage (#14) — dev-only, no product artifact depends on them |
+| Benchmark/report arm keys | `xy`, `xy-exact` in committed benchmark schemas, CLI selectors, and historical result assets | `xyg`, `xyg-exact` with an explicit report-schema migration | cross-host release evidence (#40) — display labels must say XYG now; machine keys remain stable until readers and baselines migrate together |
 | Python-internal constant prefixes | `XY_OK`, `XY_ERROR`, `XY_VERSION`, … (module-level constants) | `XYG_*` | with the wire/branding stages that own each constant |
 | README, user docs, branding sweep | README branding, docs-app copy | — | #14 (explicitly out of scope here) |
 | Historical repository slugs | `graphforge-xy`, `reflex-dev/xy` | permitted only in provenance/evidence contexts (old URLs redirect); current-product references use `CurateLabs/xyg` | policy (gate-enforced) |
@@ -87,6 +88,13 @@ They remain unchanged in #51 and must never be presented as the current
 package, import namespace, or product brand. The browser compatibility global
 likewise remains only `window.xy`, `xy.renderStandalone`, and `xy.decodeFrame`
 until its separately versioned migration.
+
+Current repository, build, release, and contributor metadata use the XYG
+identity: the Bazel module is `xyg`, the private root npm tool package is
+`xyg-dev-tools`, and current workflow step labels and top-level guidance say
+XYG. The stale-name gate checks these structural locations directly so prose
+or package metadata cannot regress while the explicitly versioned exceptions
+above remain available.
 
 ## 3. Migration order (no mixed intermediate artifact)
 

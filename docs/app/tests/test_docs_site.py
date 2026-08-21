@@ -735,11 +735,11 @@ def test_styling_docs_cover_every_annotation_factory_and_alias() -> None:
     assert all(f"`{factory}" in content for factory in factories)
 
 
-def test_what_is_xy_restores_the_sdf_hero_and_ends_with_a_short_pitch() -> None:
+def test_what_is_xyg_restores_the_sdf_hero_and_ends_with_a_short_pitch() -> None:
     """Keep the original visual opening and the merged Why XYG section."""
     content = (DOCS_ROOT / "index.md").read_text(encoding="utf-8")
 
-    heading = content.index("# What is `xy`?")
+    heading = content.index("# What is XYG?")
     styling = content.index("**Styled by your CSS, not ours.**")
     hero = content.index("~~~python demo-only exec")
     early_alpha = content.index("**Early alpha.**")

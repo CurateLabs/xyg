@@ -1,7 +1,7 @@
 {
-  "name": "xy-dev-tools",
+  "name": "xyg-dev-tools",
   "private": true,
-  "description": "Development-only dependencies for xy: the vite/typescript client build toolchain and browser test runner",
+  "description": "Development-only dependencies for XYG: the Vite/TypeScript client build toolchain and browser test runner",
   "scripts": {
     "build": "node js/build.mjs",
     "build:wasm": "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown && node js/package-wasm.mjs",

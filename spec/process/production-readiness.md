@@ -1,12 +1,12 @@
 # Production Readiness
 
-This is the release bar for xy while the core renderer is still moving.
+This is the release bar for XYG while the core renderer is still moving.
 It separates hard gates from advisory measurements so packaging promises and
 API stability do not depend on memory or vibes.
 
 ## Current Contract
 
-xy is early alpha. The goal is Plotly-class chart breadth with a
+XYG is early alpha. The goal is Plotly-class chart breadth with a
 screen-bounded performance core, but the stable commitments today are narrower:
 
 - Python 3.11+ only.
@@ -16,12 +16,12 @@ screen-bounded performance core, but the stable commitments today are narrower:
   200 ms budget. Chart-building APIs are the compute import boundary; notebook
   widget dependencies stay deferred until `.widget()`/display, and standalone
   HTML export reads its static bundle without importing the widget stack.
-- Published wheels include only the shippable `xy/` package,
+- Published wheels include only the shippable `xyg/` package,
   `.dist-info`, the render-client JavaScript bundles, `py.typed`, and, for native
   wheels, the Rust core. The JS bundles are a generated artifact (not committed to
   git): the build hook builds them into the wheel/sdist, so **end users do not need
   Rust, Node, npm, or a CDN.**
-- Source distributions contain only install and build inputs: the `xy` package,
+- Source distributions contain only install and build inputs: the `xyg` package,
   bundled `reflex_xy` integration, Rust/JS sources, and the prebuilt render
   client. Repository-only docs, tests, benchmarks, scripts, and examples are
   excluded. Installing from an sdist therefore needs no Node.
@@ -127,9 +127,9 @@ These must pass before publishing.
 | Real chart render | A real composed chart exports and paints in Chromium | `python scripts/smoke_render.py <chromium>` |
 | Step tier update | A decimated `step` chart keeps its risers after a synthetic kernel `tier_update` replaces the vertex buffers | `python scripts/step_tier_smoke.py <chromium>` |
 | Dashboard reliability | Attempts 10/20/50/60 charts, hard-gates the 10-chart row as loss-free and nonblank, retains partial larger rows, and applies the production shader-cache oracle to a complete, fully nonblank, loss-free 60-chart row | `python benchmarks/bench_dashboard.py --chart-counts 10,20,50,60 --chromium <chromium> --json dashboard-smoke.json` then `python scripts/verify_benchmark_report.py dashboard-smoke.json --kind dashboard-browser` |
-| sdist | Build-input-only source archive contains the `xy` and bundled `reflex_xy` packages, JSX/render-client bundles, complete JS/Rust build sources, and `PKG-INFO` version/dependencies (including `Provides-Extra: reflex` and `reflex>=0.9.6` under that marker) matching the archive's own `xy-<version>` root; repository-only material, duplicate/unsafe members, native binaries, and generated junk are absent | `python scripts/verify_sdist.py dist/*.tar.gz` |
-| Native wheel | Platform wheel contains package-only `xy` and `reflex_xy` files, exactly one native library, the JSX wrapper but no duplicate render client, `METADATA` version/base dependencies/`reflex` extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, and is tagged non-pure | `python scripts/verify_wheel.py dist/*.whl --expect-native` |
-| Fallback wheel | No-toolchain wheel contains package-only `xy` and `reflex_xy` files, `METADATA` version/base dependencies/`reflex` extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, is pure, and contains no native library | `python scripts/verify_wheel.py dist/*.whl --expect-pure` |
+| sdist | Build-input-only source archive contains the `xyg` and bundled `reflex_xy` packages, JSX/render-client bundles, complete JS/Rust build sources, and `PKG-INFO` version/dependencies (including `Provides-Extra: reflex` and `reflex>=0.9.6` under that marker) matching the archive's own `xyg-<version>` root; repository-only material, duplicate/unsafe members, native binaries, and generated junk are absent | `python scripts/verify_sdist.py dist/*.tar.gz` |
+| Native wheel | Platform wheel contains package-only `xyg` and `reflex_xy` files, exactly one native library, the JSX wrapper but no duplicate render client, `METADATA` version/base dependencies/`reflex` extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, and is tagged non-pure | `python scripts/verify_wheel.py dist/*.whl --expect-native` |
+| Fallback wheel | No-toolchain wheel contains package-only `xyg` and `reflex_xy` files, `METADATA` version/base dependencies/`reflex` extra matching the wheel's own filename and `.dist-info`, complete hash-checked `RECORD`, public export-surface markers, matching filename/`WHEEL` tags, is pure, and contains no native library | `python scripts/verify_wheel.py dist/*.whl --expect-pure` |
 | Wheel size | Platform wheel remains small enough for notebook installs | CI budget: 15 MB |
 | Benchmark artifact | JSON benchmark reports carry schema, environment, categories, row status, and finite non-negative metrics; native reports must declare the native backend | `python scripts/verify_benchmark_report.py benchmark.json --kind scatter-vs`; repeat for line, install, core-2D, pyplot-vs-matplotlib, native, interaction, dashboard, and workflow artifacts |
 
