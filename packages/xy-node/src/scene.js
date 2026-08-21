@@ -35,6 +35,13 @@ function sceneSymbolCode(value) {
   return value;
 }
 
+function annotationSymbolCode(value) {
+  if (typeof value !== "string") {
+    throw new RangeError("Scene v10 annotation marker symbol must be a supported string name");
+  }
+  return sceneSymbolCode(value);
+}
+
 function asU8Array(value, name) {
   if (value instanceof Uint8Array) return value;
   if (value == null) return new Uint8Array(0);
@@ -635,7 +642,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     } else {
       const size = annotationNumber(annotation, "size", 8, `${kind} size`);
       if (!Number.isFinite(size) || size <= 0) throw new RangeError("Scene v10 marker annotation size must be finite and positive");
-      append(0, annotationNumber(annotation, "x", undefined, `${kind} x`), annotationNumber(annotation, "y", undefined, `${kind} y`), 0, 0, size, sceneSymbolCode(annotation.symbol ?? "circle"));
+      append(0, annotationNumber(annotation, "x", undefined, `${kind} x`), annotationNumber(annotation, "y", undefined, `${kind} y`), 0, 0, size, annotationSymbolCode(annotation.symbol ?? "circle"));
     }
   }
   const title = figure.title ?? "";
