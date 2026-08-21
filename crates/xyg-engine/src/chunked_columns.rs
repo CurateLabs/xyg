@@ -252,6 +252,13 @@ impl ChunkedColumns {
             return Err(Error::Corrupt("too many chunks"));
         }
         let data_offset = HEADER_BYTES + META_BYTES * chunk_count;
+        let overview_offset = data_offset
+            .checked_add(
+                total_rows
+                    .checked_mul(ROW_BYTES)
+                    .ok_or(Error::Corrupt("size overflow"))?,
+            )
+            .ok_or(Error::Corrupt("size overflow"))?;
         let mut file = File::create(path)?;
         file.set_len(data_offset)?;
         file.seek(SeekFrom::Start(data_offset))?;
@@ -303,7 +310,6 @@ impl ChunkedColumns {
         header[16..20].copy_from_slice(&chunk_rows.to_le_bytes());
         header[20..24].copy_from_slice(&(metadata.len() as u32).to_le_bytes());
         header[24..32].copy_from_slice(&data_offset.to_le_bytes());
-        let overview_offset = data_offset + total_rows * ROW_BYTES;
         header[32..40].copy_from_slice(&overview_offset.to_le_bytes());
         header[40..44].copy_from_slice(&(overview.len() as u32).to_le_bytes());
         file.seek(SeekFrom::Start(0))?;
@@ -858,5 +864,29 @@ mod tests {
             Err(Error::Corrupt("iterator length changed during creation"))
         ));
         std::fs::remove_file(p).unwrap();
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn creation_rejects_declared_file_size_overflow_before_creating_a_file() {
+        struct Oversized;
+        impl Iterator for Oversized {
+            type Item = (f64, f64);
+            fn next(&mut self) -> Option<Self::Item> {
+                None
+            }
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                let rows = (u64::from(u32::MAX) * u64::from(u32::MAX)) as usize;
+                (rows, Some(rows))
+            }
+        }
+        impl ExactSizeIterator for Oversized {}
+
+        let p = path("create-overflow.xygc");
+        assert!(matches!(
+            ChunkedColumns::create(&p, Oversized, u32::MAX),
+            Err(Error::Corrupt("size overflow"))
+        ));
+        assert!(!p.exists());
     }
 }
