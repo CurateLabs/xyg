@@ -124,11 +124,35 @@ Projection policy:
 
 - Lon/lat ↔ Web Mercator uses spherical R = 6 378 137 m with polar clamp at
   ±85.0511287798066° / ±20 037 508.342789244 m.
-- Screen mapping is CSS top-left origin; bearing rotates in plane around center.
+- Screen mapping is CSS top-left origin. Bearing is a MapLibre-compatible
+  clockwise camera heading, so positive bearing rotates map content by the
+  opposite angle around center (`+90°` puts east at screen-top).
 - Derived f32 screen buffers are **offset-encoded** from an f64 origin so deep
   zoom never drops source precision (§4/§16); NaN never reaches the buffer (§19).
 - Documented golden tolerances: lon/lat `1e-9`°, mercator `1e-6` m, screen
   `1e-6` px (`geo_viewport::tolerances`).
+
+Camera transitions are Rust-owned and transactional. `set_center`, `set_zoom`,
+`resize`, `set_bearing`, and `set_pitch` validate a complete candidate before
+publishing it; an error leaves the prior camera intact. Bearings normalize to
+`(-180, 180]` at construction, updates, rebuild identity, and projection, so a
+restored full-turn or extreme finite bearing cannot diverge from its canonical
+camera or overflow trigonometric projection. `pan_by_pixels(dx, dy)` defines an ergonomic, host-neutral
+gesture seam: positive X moves the camera centre toward screen-right and
+positive Y toward screen-bottom, after applying the current bearing. Wrapped
+EPSG:4326 cameras cross the dateline continuously; non-wrapped cameras stop at
+the world boundary, and latitude/easting/northing stop at the certified Web
+Mercator limits. A zero-pixel pan is bitwise inert.
+
+`GeoViewport::rebuild_key()` freezes the complete validated camera as exact
+IEEE-754 identities plus CRS and world-wrap state. It canonicalizes signed zero,
+equivalent wrapped `-180/+180` centres, and full-turn bearings. Native/headless
+hosts can therefore reuse or reject rebuildable painter buffers without JSON,
+formatted floats, or host-local camera comparisons. Any meaningful resize,
+zoom, centre, bearing, pitch, CRS, or wrap-policy change changes the key.
+Projection, unprojection, painter lowering, and rebuild-key entry points
+revalidate the complete camera first. A malformed restored/public-field camera
+therefore fails closed before trigonometry, f32 emission, or cache identity.
 
 The first geometry lowering slice is `GeoViewport::project_line_features`.
 It accepts canonical interleaved f64 coordinates, Arrow-style offsets, and
@@ -153,8 +177,8 @@ worlds. This is intentionally a line/route slice. Ring splitting and fill
 topology remain required before polygon layers can claim the same contract.
 
 Follow-ons on this camera: polygon antimeridian splitting and fill topology,
-pitched frustum matching MapLibre, C ABI / host wrappers, and native↔WASM
-goldens (#59).
+pitched frustum matching MapLibre, C ABI / host wrappers for the transition and
+rebuild-key seams, and native↔WASM goldens (#59).
 
 ## Module and follow-ons
 
