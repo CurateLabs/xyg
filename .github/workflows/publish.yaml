@@ -143,8 +143,8 @@ jobs:
           uv venv plain-smoke
           uv pip install -p plain-smoke dist/*.whl
           cp scripts/plain_python_smoke.py "$RUNNER_TEMP/plain-python-smoke.py"
-          (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/plain-smoke/bin/python" plain-python-smoke.py) \
-            || (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/plain-smoke/Scripts/python.exe" plain-python-smoke.py)
+          (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/plain-smoke/bin/python" -I plain-python-smoke.py) \
+            || (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/plain-smoke/Scripts/python.exe" -I plain-python-smoke.py)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ matrix.plat }}

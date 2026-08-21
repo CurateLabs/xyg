@@ -1904,6 +1904,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "assert k.BACKEND=='native'",
         "Prove plain Python needs no Node, browser, or Reflex runtime",
         "scripts/plain_python_smoke.py",
+        "-I plain-python-smoke.py",
         "actions/upload-artifact@",
         "dist/*.whl",
     )
