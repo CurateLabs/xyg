@@ -118,7 +118,11 @@ pub fn reg_remove(handle: u64) -> bool {
 }
 impl Registered {
     pub fn set_generation(&self, generation: u64) {
-        self.current_generation.store(generation, Ordering::Release);
+        // Generations are a monotonic cancellation watermark. An older host
+        // request must never move the watermark backwards and invalidate
+        // newer work that has already started.
+        self.current_generation
+            .fetch_max(generation, Ordering::AcqRel);
     }
     pub fn rows(&self) -> u64 {
         self.store.lock().unwrap().rows()
@@ -241,6 +245,9 @@ impl ChunkedColumns {
         if u32::from_le_bytes(header[4..8].try_into().unwrap()) != VERSION {
             return Err(Error::Corrupt("unsupported version"));
         }
+        if header[32..].iter().any(|&byte| byte != 0) {
+            return Err(Error::Corrupt("nonzero reserved header bytes"));
+        }
         let rows = u64::from_le_bytes(header[8..16].try_into().unwrap());
         let chunk_rows = u32::from_le_bytes(header[16..20].try_into().unwrap());
         let chunk_count = u32::from_le_bytes(header[20..24].try_into().unwrap());
@@ -263,6 +270,9 @@ impl ChunkedColumns {
         for _ in 0..chunk_count {
             let mut raw = [0u8; META_BYTES as usize];
             file.read_exact(&mut raw)?;
+            if raw[12..16] != [0; 4] {
+                return Err(Error::Corrupt("nonzero reserved metadata bytes"));
+            }
             let meta = ChunkMeta {
                 row_start: u64::from_le_bytes(raw[0..8].try_into().unwrap()),
                 row_count: u32::from_le_bytes(raw[8..12].try_into().unwrap()),
@@ -274,6 +284,10 @@ impl ChunkedColumns {
             if meta.row_start != expected_start
                 || meta.row_count == 0
                 || meta.row_count > chunk_rows
+                || !meta.x_min.is_finite()
+                || !meta.x_max.is_finite()
+                || !meta.y_min.is_finite()
+                || !meta.y_max.is_finite()
                 || meta.x_min > meta.x_max
                 || meta.y_min > meta.y_max
                 || meta.x_min < previous_max
@@ -468,6 +482,42 @@ mod tests {
             ChunkedColumns::open(&p),
             Err(Error::Corrupt("bad magic"))
         ));
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn cancellation_watermark_never_moves_backwards() {
+        let p = path("generation.xygc");
+        ChunkedColumns::create(&p, (0..10).map(|i| (i as f64, i as f64)), 5).unwrap();
+        let registered = Registered {
+            store: Mutex::new(ChunkedColumns::open(&p).unwrap()),
+            current_generation: AtomicU64::new(0),
+        };
+        registered.set_generation(9);
+        registered.set_generation(4);
+        assert!(matches!(
+            registered.read(0.0, 9.0, None, 1 << 20, 4),
+            Err(Error::Cancelled)
+        ));
+        assert!(registered.read(0.0, 9.0, None, 1 << 20, 9).is_ok());
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn nonfinite_or_reserved_metadata_is_corrupt() {
+        let p = path("metadata.xygc");
+        ChunkedColumns::create(&p, (0..5).map(|i| (i as f64, i as f64)), 5).unwrap();
+        let original = std::fs::read(&p).unwrap();
+
+        let mut bytes = original.clone();
+        bytes[64 + 16..64 + 24].copy_from_slice(&f64::NAN.to_le_bytes());
+        std::fs::write(&p, &bytes).unwrap();
+        assert!(matches!(ChunkedColumns::open(&p), Err(Error::Corrupt(_))));
+
+        let mut bytes = original;
+        bytes[64 + 12] = 1;
+        std::fs::write(&p, &bytes).unwrap();
+        assert!(matches!(ChunkedColumns::open(&p), Err(Error::Corrupt(_))));
         std::fs::remove_file(p).unwrap();
     }
 }

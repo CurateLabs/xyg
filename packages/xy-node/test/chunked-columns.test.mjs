@@ -24,6 +24,8 @@ test("chunked columns matches exact oracle and Python provenance contract", () =
   const got = columns.read([3, 8], { yRange: [1, 2], budgetBytes: 1024, generation: 4 });
   assert.deepEqual(Array.from(got.x, (x, i) => [x, got.y[i]]), rows.filter(([x, y]) => x >= 3 && x <= 8 && y >= 1 && y <= 2));
   assert.deepEqual(got.provenance, { generation: 4n, firstChunk: 0n, chunksConsidered: 3n, chunksRead: 3n, bytesRead: 192n });
-  assert.throws(() => columns.read([0, 11], { budgetBytes: 16, generation: 5 }), /read budget exceeded/);
+  assert.throws(() => columns.read([0, 11], { budgetBytes: 16, generation: 5 }), /needs 192 bytes, exceeding the 16-byte read budget/);
+  assert.throws(() => columns.read([0, 11], { generation: -1 }), /generation must be/);
+  columns.read([0, 1], { generation: 6 });
   columns.close(); rmSync(dir, { recursive: true });
 });

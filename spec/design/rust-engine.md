@@ -515,9 +515,12 @@ x/y zone maps. `ChunkedColumns::open` rejects short, mis-sized, unsupported,
 non-contiguous, or unordered metadata before a handle becomes visible. The
 range reader binary-searches ordered x maps, prunes optional y ranges, enforces
 a byte budget before positioned reads, applies the exact predicate, and checks
-an atomic viewport generation between chunks. Its provenance record makes
-chunk/byte reduction auditable. ABI v78 gives Python and Node identical thin
-open/read/cancel/free surfaces and stable read error codes.
+an atomic, monotonic viewport-generation watermark between chunks (older host
+requests cannot move cancellation backwards). Reserved fields and all zone-map
+bounds are validated and non-finite metadata fails closed. Its provenance
+record makes chunk/byte reduction auditable; out-of-budget diagnostics report
+both the required and configured bytes. ABI v78 gives Python and Node identical
+thin open/read/cancel/free surfaces and stable read error codes.
 
 This is not yet the complete #110 store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, overview linkage, and larger-than-RAM

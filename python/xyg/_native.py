@@ -5485,6 +5485,12 @@ def chunked_columns_rows(handle: int) -> int:
 
 
 def chunked_columns_cancel_before(handle: int, generation: int) -> None:
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or not 0 <= generation < (1 << 64)
+    ):
+        raise ValueError("chunked-column generation must be an integer in [0, 2^64)")
     if _lib.xyg_chunked_columns_cancel_before(handle, generation) != 1:
         raise ValueError("stale chunked-column handle")
 
@@ -5497,8 +5503,16 @@ def chunked_columns_read(
     budget_bytes: int,
     generation: int,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, int]]:
-    if budget_bytes < 16:
+    if not isinstance(budget_bytes, int) or isinstance(budget_bytes, bool) or budget_bytes < 16:
         raise ValueError("chunked-column read budget must be at least 16 bytes")
+    if budget_bytes >= 1 << 64:
+        raise ValueError("chunked-column read budget must be smaller than 2^64 bytes")
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or not 0 <= generation < (1 << 64)
+    ):
+        raise ValueError("chunked-column generation must be an integer in [0, 2^64)")
     capacity = int(budget_bytes) // 16
     x = np.empty(capacity, dtype=np.float64)
     y = np.empty(capacity, dtype=np.float64)
@@ -5519,11 +5533,15 @@ def chunked_columns_read(
         )
     )
     if written == _USIZE_MAX:
+        if int(stats[5]) == 4 and stats[4]:
+            raise ValueError(
+                f"chunked-column viewport read needs {int(stats[4])} bytes, "
+                f"exceeding the {int(stats[3])}-byte read budget"
+            )
         reason = {
             1: "I/O failure",
             2: "corrupt artifact",
             3: "invalid viewport bounds",
-            4: "read budget exceeded",
             5: "cancelled by newer viewport",
         }.get(int(stats[5]), "invalid request")
         raise ValueError(f"chunked-column viewport read failed: {reason}")

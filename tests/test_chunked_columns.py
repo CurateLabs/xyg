@@ -47,8 +47,12 @@ def test_corrupt_budget_and_stale_handle_are_actionable(tmp_path):
     path = tmp_path / "ordered.xygc"
     _artifact(path, [(float(i), float(i)) for i in range(8)])
     columns = ChunkedColumns(path)
-    with pytest.raises(ValueError, match="read budget exceeded"):
+    with pytest.raises(ValueError, match="needs 128 bytes, exceeding the 16-byte read budget"):
         columns.read((0.0, 7.0), budget_bytes=16, generation=1)
+    with pytest.raises(ValueError, match="generation must be"):
+        columns.read((0.0, 7.0), generation=-1)
+    # Invalid input must not poison the monotonic cancellation watermark.
+    columns.read((0.0, 1.0), generation=2)
     columns.close()
     with pytest.raises(ValueError, match="stale chunked-column handle"):
         columns.cancel_before(2)

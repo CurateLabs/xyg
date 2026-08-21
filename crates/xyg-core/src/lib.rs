@@ -4416,6 +4416,10 @@ pub unsafe extern "C" fn xyg_chunked_columns_read(
         let read = match s.read(x0, x1, y, budget_bytes, generation) {
             Ok(v) => v,
             Err(e) => {
+                if let chunked_columns::Error::BudgetExceeded { needed, budget } = &e {
+                    stats[3] = *budget;
+                    stats[4] = *needed;
+                }
                 stats[5] = e.code();
                 return usize::MAX;
             }
