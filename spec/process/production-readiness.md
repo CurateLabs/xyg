@@ -452,7 +452,12 @@ CHANGELOG, and package-name guards) succeeds before npm can publish.
 Publication
 uses npm trusted publishing on a GitHub-hosted runner (Node 24, npm >=11.5.1,
 OIDC `id-token: write`) and publishes platform packages before the facade, so
-the public facade never points at absent versioned optionals. Configure this
+the public facade never points at absent versioned optionals. Publication is
+retry-safe: `scripts/publish_node_packages.py` skips an immutable version only
+after its registry SHA-1 matches the local tarball, rejects mismatched bytes,
+and resumes the native-first sequence before publishing the facade. This makes
+cross-registry recovery convergent even though PyPI and npm cannot provide one
+atomic transaction. Configure this
 exact `publish.yaml` workflow as the trusted publisher for all six npm
 projects; first-time project creation/ownership remains a deliberate registry
 bootstrap step. The GitHub Release waits for both PyPI and npm jobs.

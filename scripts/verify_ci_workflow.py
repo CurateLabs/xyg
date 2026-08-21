@@ -2023,16 +2023,14 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "runs-on: ubuntu-latest",
         "environment: npm",
         "id-token: write",
+        "actions/checkout@",
         "npm@^11.5.1",
         "pattern: node-*",
         "test \"$(find node-dist -name '*.tgz' -type f | wc -l | tr -d ' ')\" = 6",
         "XYG_ALLOW_NPM_PUBLISH",
         "XYG_ALLOW_PYPI_PUBLISH",
         "refs/tags/xyg-v",
-        "node-dist/node-platform-*",
-        "node-dist/node-facade",
-        'npm publish "$artifact" --access public',
-        'npm publish "$facade" --access public',
+        "scripts/publish_node_packages.py node-dist",
     )
     if not _has_safe_release_dry_run_input(text):
         errors.append(

@@ -95,15 +95,16 @@ def _native_from_wheel(wheel: Path, library_name: str) -> bytes:
         raise ValueError(f"native source must be one wheel, got {wheel}")
     with zipfile.ZipFile(wheel) as archive:
         expected = f"xyg/_native_lib/{library_name}"
-        matches = [
-            name for name in archive.namelist() if name == expected or name.endswith(f"/{expected}")
-        ]
+        matches = [name for name in archive.namelist() if name == expected]
         if len(matches) != 1:
             raise ValueError(
                 f"{wheel.name} must contain exactly one xyg/_native_lib/{library_name}; "
                 f"found {matches}"
             )
-        return archive.read(matches[0])
+        info = archive.getinfo(matches[0])
+        if info.file_size > NATIVE_BUDGET_BYTES:
+            raise ValueError(f"{library_name} exceeds {NATIVE_BUDGET_BYTES} byte package budget")
+        return archive.read(info)
 
 
 def _native_arch(payload: bytes) -> tuple[str, str]:

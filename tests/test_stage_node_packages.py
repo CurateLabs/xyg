@@ -149,6 +149,17 @@ def test_staging_rejects_wrong_or_ambiguous_native(tmp_path: Path) -> None:
             version="0.6.0",
         )
 
+    prefixed = tmp_path / "prefixed.whl"
+    with zipfile.ZipFile(prefixed, "w") as archive:
+        archive.writestr("unexpected/xyg/_native_lib/libxyg_core.so", _elf("x64"))
+    with pytest.raises(ValueError, match="exactly one"):
+        mod.stage_platform(
+            platform_id="linux-x64",
+            wheel=prefixed,
+            output=tmp_path / "out",
+            version="0.6.0",
+        )
+
 
 def test_source_manifests_remain_publish_safe() -> None:
     for manifest_path in [
