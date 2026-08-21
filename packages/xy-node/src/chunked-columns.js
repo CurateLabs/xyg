@@ -21,7 +21,7 @@ export class ChunkedColumns {
     const written = xyChunkedColumnsRead(this.handle, x0, x1, y0, y1, yRange === null ? 0 : 1, BigInt(budgetBytes), BigInt(generation), pointer(x, "double *"), pointer(y, "double *"), capacity, pointer(stats, "uint64_t *"));
     if (written === BigInt("18446744073709551615")) {
       if (stats[5] === 4n && stats[4] !== 0n) throw new Error(`chunked-column viewport read needs ${stats[4]} bytes, exceeding the ${stats[3]}-byte read budget`);
-      const reason = ({ 1: "I/O failure", 2: "corrupt artifact", 3: "invalid viewport bounds", 5: "cancelled by newer viewport" })[Number(stats[5])] ?? "invalid request";
+      const reason = ({ 1: "I/O failure", 2: "corrupt artifact", 3: "invalid viewport bounds", 5: "cancelled by newer viewport", 6: "output capacity too small" })[Number(stats[5])] ?? "invalid request";
       throw new Error(`chunked-column viewport read failed: ${reason}`);
     }
     const n = Number(written);

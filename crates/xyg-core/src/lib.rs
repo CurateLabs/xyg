@@ -4380,7 +4380,7 @@ pub extern "C" fn xyg_chunked_columns_rows(store: u64) -> u64 {
 /// Read exact rows matching an x/y viewport under a hard byte budget.
 /// `out_stats[0..6]` receives generation, first chunk, chunks considered,
 /// chunks read, bytes read and a stable error code (0 success, 1 I/O,
-/// 2 corrupt, 3 bounds, 4 budget, 5 cancelled). Returns rows written, or `usize::MAX` on any
+/// 2 corrupt, 3 bounds, 4 budget, 5 cancelled, 6 output capacity). Returns rows written, or `usize::MAX` on any
 /// invalid/corrupt/cancelled/out-of-budget request. Hosts may retry with a
 /// larger output capacity; capacity never weakens the read budget.
 ///
@@ -4425,7 +4425,8 @@ pub unsafe extern "C" fn xyg_chunked_columns_read(
             }
         };
         if read.x.len() > capacity {
-            stats[5] = 4;
+            stats[4] = read.x.len() as u64;
+            stats[5] = 6;
             return usize::MAX;
         }
         std::ptr::copy_nonoverlapping(read.x.as_ptr(), out_x, read.x.len());

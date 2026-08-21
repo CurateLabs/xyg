@@ -501,4 +501,4 @@ the raw result records reuse/cancellation even before a resident detail cache is
 added. Hosted CodSpeed executes this only from the changed-main nightly workflow,
 never on pull requests. The initial engine tests use small deterministic fixtures;
 the sparse larger-than-RAM runner and remote/browser rows remain required before
-#110 can close.
+issue `#110` can close.

@@ -27,5 +27,6 @@ test("chunked columns matches exact oracle and Python provenance contract", () =
   assert.throws(() => columns.read([0, 11], { budgetBytes: 16, generation: 5 }), /needs 192 bytes, exceeding the 16-byte read budget/);
   assert.throws(() => columns.read([0, 11], { generation: -1 }), /generation must be/);
   columns.read([0, 1], { generation: 6 });
+  assert.throws(() => columns.read([0, 1], { generation: 5 }), /cancelled by newer viewport/);
   columns.close(); rmSync(dir, { recursive: true });
 });

@@ -53,6 +53,8 @@ def test_corrupt_budget_and_stale_handle_are_actionable(tmp_path):
         columns.read((0.0, 7.0), generation=-1)
     # Invalid input must not poison the monotonic cancellation watermark.
     columns.read((0.0, 1.0), generation=2)
+    with pytest.raises(ValueError, match="cancelled by newer viewport"):
+        columns.read((0.0, 1.0), generation=1)
     columns.close()
     with pytest.raises(ValueError, match="stale chunked-column handle"):
         columns.cancel_before(2)

@@ -522,7 +522,7 @@ record makes chunk/byte reduction auditable; out-of-budget diagnostics report
 both the required and configured bytes. ABI v78 gives Python and Node identical
 thin open/read/cancel/free surfaces and stable read error codes.
 
-This is not yet the complete #110 store: remote ranges, browser/WASM bounded
+This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, overview linkage, and larger-than-RAM
 browser evidence remain open.
 

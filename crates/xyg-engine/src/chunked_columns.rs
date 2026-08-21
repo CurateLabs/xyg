@@ -89,7 +89,7 @@ pub struct ChunkedColumns {
 }
 
 pub struct Registered {
-    store: Mutex<ChunkedColumns>,
+    store: ChunkedColumns,
     current_generation: AtomicU64,
 }
 static REGISTRY: OnceLock<Mutex<std::collections::HashMap<u64, Arc<Registered>>>> = OnceLock::new();
@@ -104,7 +104,7 @@ pub fn reg_open(path: &Path) -> Result<u64, Error> {
     registry().lock().unwrap().insert(
         handle,
         Arc::new(Registered {
-            store: Mutex::new(store),
+            store,
             current_generation: AtomicU64::new(0),
         }),
     );
@@ -125,7 +125,7 @@ impl Registered {
             .fetch_max(generation, Ordering::AcqRel);
     }
     pub fn rows(&self) -> u64 {
-        self.store.lock().unwrap().rows()
+        self.store.rows()
     }
     pub fn read(
         &self,
@@ -135,12 +135,9 @@ impl Registered {
         budget: u64,
         generation: u64,
     ) -> Result<RangeRead, Error> {
-        self.store
-            .lock()
-            .unwrap()
-            .read_range(x0, x1, y, budget, generation, |g| {
-                self.current_generation.load(Ordering::Acquire) == g
-            })
+        self.store.read_range(x0, x1, y, budget, generation, |g| {
+            self.current_generation.load(Ordering::Acquire) == g
+        })
     }
 }
 
@@ -190,7 +187,11 @@ impl ChunkedColumns {
         let mut current = Vec::with_capacity(chunk_rows as usize);
         let mut last_x = f64::NEG_INFINITY;
         let mut row_start = 0u64;
+        let mut consumed = 0u64;
         for pair @ (x, _) in rows.by_ref() {
+            consumed = consumed
+                .checked_add(1)
+                .ok_or(Error::Corrupt("row count overflow"))?;
             if x.is_finite() && x < last_x {
                 return Err(Error::Corrupt("x is not sorted"));
             }
@@ -206,6 +207,9 @@ impl ChunkedColumns {
         }
         if !current.is_empty() {
             write_chunk(&mut file, &mut metadata, row_start, &current)?;
+        }
+        if consumed != total_rows || metadata.len() as u64 != chunk_count {
+            return Err(Error::Corrupt("iterator length changed during creation"));
         }
         let mut header = [0u8; HEADER_BYTES as usize];
         header[0..4].copy_from_slice(MAGIC);
@@ -324,7 +328,7 @@ impl ChunkedColumns {
     /// optionally prune chunks and rows. `is_current` is checked before every
     /// positioned chunk read, making stale work generation-safe.
     pub fn read_range<F>(
-        &mut self,
+        &self,
         x0: f64,
         x1: f64,
         y: Option<(f64, f64)>,
@@ -376,10 +380,11 @@ impl ChunkedColumns {
             }
             let bytes = u64::from(meta.row_count) * ROW_BYTES;
             let mut raw = vec![0u8; bytes as usize];
-            self.file.seek(SeekFrom::Start(
+            read_exact_at(
+                &self.file,
+                &mut raw,
                 self.data_offset + meta.row_start * ROW_BYTES,
-            ))?;
-            self.file.read_exact(&mut raw)?;
+            )?;
             out.chunks_read += 1;
             out.bytes_read += bytes;
             for row in raw.chunks_exact(16) {
@@ -407,6 +412,9 @@ fn write_chunk(
     chunk: &[(f64, f64)],
 ) -> Result<(), Error> {
     let (x_min, x_max, y_min, y_max) = finite_min_max(chunk);
+    if !x_min.is_finite() || !x_max.is_finite() || !y_min.is_finite() || !y_max.is_finite() {
+        return Err(Error::Corrupt("chunk has no finite x/y bounds"));
+    }
     metadata.push(ChunkMeta {
         row_start,
         row_count: chunk.len() as u32,
@@ -420,6 +428,47 @@ fn write_chunk(
         file.write_all(&y.to_le_bytes())?;
     }
     Ok(())
+}
+
+#[cfg(unix)]
+fn read_exact_at(file: &File, mut buf: &mut [u8], mut offset: u64) -> io::Result<()> {
+    use std::os::unix::fs::FileExt;
+    while !buf.is_empty() {
+        match file.read_at(buf, offset) {
+            Ok(0) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof)),
+            Ok(n) => {
+                offset += n as u64;
+                buf = &mut buf[n..];
+            }
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn read_exact_at(file: &File, mut buf: &mut [u8], mut offset: u64) -> io::Result<()> {
+    use std::os::windows::fs::FileExt;
+    while !buf.is_empty() {
+        match file.seek_read(buf, offset) {
+            Ok(0) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof)),
+            Ok(n) => {
+                offset += n as u64;
+                buf = &mut buf[n..];
+            }
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(any(unix, windows)))]
+fn read_exact_at(file: &File, buf: &mut [u8], offset: u64) -> io::Result<()> {
+    let mut file = file.try_clone()?;
+    file.seek(SeekFrom::Start(offset))?;
+    file.read_exact(buf)
 }
 
 #[cfg(test)]
@@ -441,7 +490,7 @@ mod tests {
         let p = path("range.xygc");
         let rows: Vec<_> = (0..100).map(|i| (i as f64, (i % 7) as f64)).collect();
         ChunkedColumns::create(&p, rows.clone(), 10).unwrap();
-        let mut store = ChunkedColumns::open(&p).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
         let got = store
             .read_range(23.0, 41.0, Some((2.0, 4.0)), 1 << 20, 7, |_| true)
             .unwrap();
@@ -466,7 +515,7 @@ mod tests {
     fn budget_cancel_and_corruption_fail_closed() {
         let p = path("failure.xygc");
         ChunkedColumns::create(&p, (0..20).map(|i| (i as f64, i as f64)), 5).unwrap();
-        let mut store = ChunkedColumns::open(&p).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
         assert!(matches!(
             store.read_range(0.0, 9.0, None, 1, 1, |_| true),
             Err(Error::BudgetExceeded { .. })
@@ -490,7 +539,7 @@ mod tests {
         let p = path("generation.xygc");
         ChunkedColumns::create(&p, (0..10).map(|i| (i as f64, i as f64)), 5).unwrap();
         let registered = Registered {
-            store: Mutex::new(ChunkedColumns::open(&p).unwrap()),
+            store: ChunkedColumns::open(&p).unwrap(),
             current_generation: AtomicU64::new(0),
         };
         registered.set_generation(9);
@@ -518,6 +567,37 @@ mod tests {
         bytes[64 + 12] = 1;
         std::fs::write(&p, &bytes).unwrap();
         assert!(matches!(ChunkedColumns::open(&p), Err(Error::Corrupt(_))));
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn creation_rejects_nonfinite_bounds_and_a_lying_exact_size_iterator() {
+        let p = path("create-invalid.xygc");
+        assert!(matches!(
+            ChunkedColumns::create(&p, [(f64::NAN, f64::NAN)], 1),
+            Err(Error::Corrupt("chunk has no finite x/y bounds"))
+        ));
+
+        struct Lying {
+            rows: std::vec::IntoIter<(f64, f64)>,
+        }
+        impl Iterator for Lying {
+            type Item = (f64, f64);
+            fn next(&mut self) -> Option<Self::Item> {
+                self.rows.next()
+            }
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (2, Some(2))
+            }
+        }
+        impl ExactSizeIterator for Lying {}
+        let rows = Lying {
+            rows: vec![(0.0, 0.0)].into_iter(),
+        };
+        assert!(matches!(
+            ChunkedColumns::create(&p, rows, 1),
+            Err(Error::Corrupt("iterator length changed during creation"))
+        ));
         std::fs::remove_file(p).unwrap();
     }
 }

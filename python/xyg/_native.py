@@ -5543,6 +5543,7 @@ def chunked_columns_read(
             2: "corrupt artifact",
             3: "invalid viewport bounds",
             5: "cancelled by newer viewport",
+            6: "output capacity too small",
         }.get(int(stats[5]), "invalid request")
         raise ValueError(f"chunked-column viewport read failed: {reason}")
     provenance = dict(
