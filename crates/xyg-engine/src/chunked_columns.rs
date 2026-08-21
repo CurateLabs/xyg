@@ -56,6 +56,56 @@ pub struct OverviewRead {
     pub source_rows: u64,
 }
 
+#[derive(Default)]
+struct OverviewBucket {
+    first: Option<OverviewPoint>,
+    low: Option<OverviewPoint>,
+    high: Option<OverviewPoint>,
+    last: Option<OverviewPoint>,
+    rows: u64,
+}
+
+impl OverviewBucket {
+    fn push(&mut self, row: u64, x: f64, y: f64) {
+        self.rows += 1;
+        if !x.is_finite() || !y.is_finite() {
+            return;
+        }
+        let point = OverviewPoint { row, x, y };
+        self.first.get_or_insert(point);
+        if self.low.is_none_or(|current| y < current.y) {
+            self.low = Some(point);
+        }
+        if self.high.is_none_or(|current| y > current.y) {
+            self.high = Some(point);
+        }
+        self.last = Some(point);
+    }
+
+    fn flush(&mut self, overview: &mut Vec<OverviewPoint>) -> Result<(), Error> {
+        let Some(first) = self.first else {
+            return Err(Error::Corrupt("overview bucket has no finite row"));
+        };
+        let mut candidates = [
+            first,
+            self.low.unwrap(),
+            self.high.unwrap(),
+            self.last.unwrap(),
+        ];
+        candidates.sort_by_key(|point| point.row);
+        for point in candidates {
+            if overview
+                .last()
+                .is_none_or(|previous| previous.row != point.row)
+            {
+                overview.push(point);
+            }
+        }
+        *self = Self::default();
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 pub enum Error {
     Io(io::Error),
@@ -211,9 +261,7 @@ impl ChunkedColumns {
             usize::try_from(total_rows.div_ceil(overview_bucket_rows).saturating_mul(4))
                 .unwrap_or(0),
         );
-        let mut overview_bucket = Vec::with_capacity(
-            usize::try_from(overview_bucket_rows.min(u64::from(chunk_rows))).unwrap_or(0),
-        );
+        let mut overview_bucket = OverviewBucket::default();
         let mut current = Vec::with_capacity(chunk_rows as usize);
         let mut last_x = f64::NEG_INFINITY;
         let mut row_start = 0u64;
@@ -229,22 +277,21 @@ impl ChunkedColumns {
                 last_x = x;
             }
             current.push(pair);
-            overview_bucket.push((consumed - 1, pair.0, pair.1));
+            overview_bucket.push(consumed - 1, pair.0, pair.1);
             if current.len() == chunk_rows as usize {
                 write_chunk(&mut file, &mut metadata, row_start, &current)?;
                 row_start += current.len() as u64;
                 current.clear();
             }
-            if overview_bucket.len() as u64 == overview_bucket_rows {
-                append_overview_extrema(&mut overview, &overview_bucket)?;
-                overview_bucket.clear();
+            if overview_bucket.rows == overview_bucket_rows {
+                overview_bucket.flush(&mut overview)?;
             }
         }
         if !current.is_empty() {
             write_chunk(&mut file, &mut metadata, row_start, &current)?;
         }
-        if !overview_bucket.is_empty() {
-            append_overview_extrema(&mut overview, &overview_bucket)?;
+        if overview_bucket.rows > 0 {
+            overview_bucket.flush(&mut overview)?;
         }
         if consumed != total_rows || metadata.len() as u64 != chunk_count {
             return Err(Error::Corrupt("iterator length changed during creation"));
@@ -545,51 +592,6 @@ fn write_chunk(
     for &(x, y) in chunk {
         file.write_all(&x.to_le_bytes())?;
         file.write_all(&y.to_le_bytes())?;
-    }
-    Ok(())
-}
-
-fn append_overview_extrema(
-    overview: &mut Vec<OverviewPoint>,
-    bucket: &[(u64, f64, f64)],
-) -> Result<(), Error> {
-    let mut extrema: [Option<OverviewPoint>; 2] = [None, None];
-    for &(row, x, y) in bucket {
-        if !x.is_finite() || !y.is_finite() {
-            continue;
-        }
-        let point = OverviewPoint { row, x, y };
-        if extrema[0].is_none_or(|current| y < current.y) {
-            extrema[0] = Some(point);
-        }
-        if extrema[1].is_none_or(|current| y > current.y) {
-            extrema[1] = Some(point);
-        }
-    }
-    let Some(low) = extrema[0] else {
-        return Err(Error::Corrupt("overview bucket has no finite row"));
-    };
-    let high = extrema[1].unwrap();
-    let first = bucket
-        .iter()
-        .find(|(_, x, y)| x.is_finite() && y.is_finite())
-        .map(|&(row, x, y)| OverviewPoint { row, x, y })
-        .unwrap();
-    let last = bucket
-        .iter()
-        .rev()
-        .find(|(_, x, y)| x.is_finite() && y.is_finite())
-        .map(|&(row, x, y)| OverviewPoint { row, x, y })
-        .unwrap();
-    let mut candidates = [first, low, high, last];
-    candidates.sort_by_key(|point| point.row);
-    for point in candidates {
-        if overview
-            .last()
-            .is_none_or(|previous| previous.row != point.row)
-        {
-            overview.push(point);
-        }
     }
     Ok(())
 }
