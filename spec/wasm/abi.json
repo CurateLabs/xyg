@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 4,
+  "abi_version": 5,
   "scene_version": 9,
   "painter_version": 6,
   "painter_header_bytes": 288,
@@ -20,6 +20,32 @@
   "typed_series_peak_input_multiplier": 2,
   "max_arena_bytes": 402653184,
   "painter_max_legend_bytes": 57424,
+  "aggregate": {
+    "request_magic": "XYAG",
+    "version": 1,
+    "header_bytes": 64,
+    "request_offsets": {"version": 4, "header_bytes": 8, "flags": 12, "point_count": 16, "width": 20, "height": 24, "reserved": 28, "x0": 32, "x1": 40, "y0": 48, "y1": 56},
+    "output_magic": "XYAO",
+    "output_version": 1,
+    "output_header_bytes": 32,
+    "output_offsets": {"version": 4, "header_bytes": 8, "flags": 12, "width": 16, "height": 20, "max_count": 24, "reserved": 28},
+    "flag_mean_color": 1,
+    "checkpoint_points": 32768,
+    "max_request_bytes": 67108864,
+    "total_memory_bytes": 67108864,
+    "request_stride_count": 16,
+    "request_stride_color": 20,
+    "accumulator_stride_count": 4,
+    "accumulator_stride_color": 40,
+    "output_stride_count": 4,
+    "output_stride_color": 8,
+    "checkpoint_stride_count": 16,
+    "checkpoint_stride_color": 20,
+    "request_copy_factor": 2,
+    "output_copy_factor": 2,
+    "max_points": 8000000,
+    "max_grid_cells": 4194304
+  },
   "statuses": {
     "OK": 0,
     "INVALID_HANDLE": 1,
@@ -28,7 +54,8 @@
     "SCENE_VERSION": 4,
     "MALFORMED_SCENE": 5,
     "CANCELLED": 6,
-    "STALE_SEQUENCE": 7
+    "STALE_SEQUENCE": 7,
+    "PENDING": 8
   },
   "exports": [
     {
@@ -128,6 +155,21 @@
         "usize",
         "usize"
       ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_aggregate_bin2d",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_aggregate_step",
+      "params": ["u32", "u32", "usize"],
       "result": "i32"
     },
     {

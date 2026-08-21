@@ -10,6 +10,11 @@ import {
   renderWasmColumns,
 } from "./49_wasm_columns";
 import { frameWasmChart, renderWasmChart } from "./49_wasm_chart";
+import {
+  aggregateWasmBin2d,
+  decodeWasmAggregateOutput,
+  encodeWasmAggregate,
+} from "./49_wasm_aggregate";
 // Prototype-augmentation modules: imported for their side effect of attaching
 // methods to ChartView.prototype. Every entry point must load them before the
 // first ChartView is constructed.
@@ -125,5 +130,9 @@ export {
   renderWasmColumns,
   frameWasmChart,
   renderWasmChart,
+  encodeWasmAggregate,
+  decodeWasmAggregateOutput,
+  aggregateWasmBin2d,
 };
+export type { XygWasmAggregateTaskOptions } from "./47_wasm";
 export default { render, decodeFrame };

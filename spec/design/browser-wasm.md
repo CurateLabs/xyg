@@ -1,5 +1,21 @@
 # Direct-browser Rust/WASM boundary
 
+## Tier-2 aggregate seam (`XYAG` to `XYAO`)
+
+WASM ABI 5 adds a resumable Rust-owned density aggregate operation. TypeScript
+only frames the generated `XYAG` request, transfers it to the static Worker,
+schedules bounded checkpoints, and decodes the generated `XYAO` output header.
+The shared Rust `bin_2d` and mean-color kernels own binning policy and numeric
+behavior; this does not replace the existing density worker or close #59.
+
+The generated ABI manifest is authoritative for request/output offsets, aligned
+strides, copy factors, the 32,768-point checkpoint, and the 64 MiB aggregate
+peak. The peak includes the retained transferred request and WASM staging copy,
+the accumulator, one decode checkpoint, and both Rust-owned and transferred
+output copies. Aggregate calls require ownership transfer; clone mode fails
+closed. A newer sequence cancels an active aggregate only after stale-sequence
+validation, and every scene operation clears older aggregate state.
+
 **Status:** bounded lifecycle, canonical Scene paint, and packed typed-column
 compile (`XYCC`) for scatter/polyline/rect/band, plus transferable series
 descriptors (`XYTS`) whose record expansion and defaults run in Rust.
@@ -98,11 +114,12 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 4 for Scene paint, packed typed-column compile, and
-transferable `XYTS` series descriptors. `SCENE_VERSION` remains independently versioned
-at 8. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
+`WASM_ABI_VERSION` is 5 for Scene paint, packed typed-column compile,
+transferable `XYTS` series descriptors, and resumable Tier-2 aggregation.
+`SCENE_VERSION` remains independently versioned at 9.
+`scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
-scene constant. `js/package-wasm.mjs` parses the compiled module's type,
+scene constant, including the aggregate lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
 function, and export sections and rejects artifact-level signature drift.
 
 `validateScene` remains the allocation-free validation seam. `prepareScene`

@@ -1753,8 +1753,8 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "CodSpeedHQ/action@",
         "mode: simulation",
         "cargo install cargo-codspeed",
-        "cargo codspeed build -m simulation --bench kernels",
-        "cargo codspeed run --bench kernels",
+        "cargo codspeed build -m simulation --bench kernels --bench aggregate",
+        "cargo codspeed run --bench kernels --bench aggregate",
         "benchmarks/test_codspeed_kernels.py --codspeed",
     )
     _require_step_runs_exactly(
@@ -1762,7 +1762,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         benchmarks,
         "Build Rust kernel benchmarks",
         "exact simulation benchmark build",
-        "cargo codspeed build -m simulation --bench kernels",
+        "cargo codspeed build -m simulation --bench kernels --bench aggregate",
         allow_job_gate=True,
     )
     _require_action_step_with_runs_exactly(
@@ -1772,7 +1772,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8",
         "simulation",
         "set -euo pipefail",
-        "cargo codspeed run --bench kernels",
+        "cargo codspeed run --bench kernels --bench aggregate",
         ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed",
     )
     step_blocks = _step_sequence_blocks(benchmarks)
@@ -1801,8 +1801,8 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     ):
         errors.append("CodSpeed simulation build must be immediately followed by Run benchmarks")
     expected_commands = [
-        "cargo codspeed build -m simulation --bench kernels",
-        "cargo codspeed run --bench kernels",
+        "cargo codspeed build -m simulation --bench kernels --bench aggregate",
+        "cargo codspeed run --bench kernels --bench aggregate",
     ]
     if active_codspeed_commands != expected_commands:
         errors.append(

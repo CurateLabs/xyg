@@ -4,6 +4,8 @@ import {
   bindXygWasmExports,
   readXygWasmError,
   XYG_WASM_STATUS,
+  XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
+  XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
   type XygWasmExports,
 } from "./wasm_abi_generated";
 
@@ -14,7 +16,9 @@ let exports: XygWasmExports | null = null;
 let handle = 0;
 type Lifecycle = "idle" | "initializing" | "initialized" | "failed" | "disposed";
 let lifecycle: Lifecycle = "idle";
+let operationBudgetBytes = 0;
 const queued = new Map<number, number>();
+let activeAggregate: { requestId: number; sequence: number; timer: number } | null = null;
 
 function isDisposed(): boolean {
   return lifecycle === "disposed";
@@ -105,6 +109,7 @@ async function initialize(message: any) {
     }
     exports = bound;
     handle = created;
+    operationBudgetBytes = max;
     created = 0;
     lifecycle = "initialized";
     reply(message.requestId, diagnostics());
@@ -139,12 +144,48 @@ function diagnostics() {
   };
 }
 
+function advanceAggregate(message: any) {
+  if (!exports || !handle || lifecycle !== "initialized") return;
+  try {
+    const status = exports.xyg_wasm_aggregate_step(handle, Number(message.sequence), XYG_WASM_AGGREGATE_CHECKPOINT_POINTS);
+    if (status === XYG_WASM_STATUS.PENDING) {
+      const timer = setTimeout(() => advanceAggregate(message), 0) as unknown as number;
+      activeAggregate = { requestId: message.requestId, sequence: Number(message.sequence), timer };
+      return;
+    }
+    if (activeAggregate?.requestId === message.requestId) activeAggregate = null;
+    queued.delete(message.requestId);
+    if (status !== XYG_WASM_STATUS.OK) {
+      error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+      return;
+    }
+    const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
+    const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
+    const end = outputPtr + outputLen;
+    if (!outputPtr || !outputLen || !Number.isSafeInteger(end) || end > exports.memory.buffer.byteLength) throw new Error("Rust aggregate output returned an invalid range");
+    const aggregate = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
+    const value = { sequence: Number(message.sequence), ...diagnostics(), arenaBytes: 0, aggregate };
+    reply(message.requestId, value, [aggregate]);
+  } catch (cause) {
+    if (activeAggregate?.requestId === message.requestId) activeAggregate = null;
+    queued.delete(message.requestId);
+    lifecycle = "failed";
+    disposeRust();
+    error(
+      message.requestId,
+      "XYG_WASM_TRAP",
+      cause instanceof Error ? cause.message : "WASM aggregate checkpoint trapped",
+    );
+  }
+}
+
 function runSceneOp(message: any) {
   queued.delete(message.requestId);
   if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
     return;
   }
+  let superseded: typeof activeAggregate = null;
   try {
     const series = message.type === "series.compile_paint";
     if (!series && !(message.scene instanceof ArrayBuffer)) {
@@ -173,6 +214,43 @@ function runSceneOp(message: any) {
         return;
       }
     }
+    if (activeAggregate && activeAggregate.requestId !== message.requestId) {
+      if (Number(message.sequence) <= activeAggregate.sequence) {
+        error(
+          message.requestId,
+          "XYG_WASM_STALE_SEQUENCE",
+          "request sequence is stale",
+          XYG_WASM_STATUS.STALE_SEQUENCE,
+        );
+        return;
+      }
+      superseded = activeAggregate;
+      const previous = superseded;
+      clearTimeout(previous.timer);
+      queued.delete(previous.requestId);
+      exports.xyg_wasm_cancel(handle, previous.sequence);
+      const cancelled = exports.xyg_wasm_aggregate_step(handle, previous.sequence, 1);
+      if (cancelled !== XYG_WASM_STATUS.CANCELLED) {
+        throw new Error("Rust aggregate cancellation cleanup returned an invalid status");
+      }
+      activeAggregate = null;
+      error(previous.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by a newer viewport", XYG_WASM_STATUS.CANCELLED);
+      superseded = null;
+    }
+    if (!series && !(message.scene instanceof ArrayBuffer)) {
+      error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "scene must be an ArrayBuffer");
+      return;
+    }
+    if (message.type === "aggregate.bin2d"
+        && inputLength * XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR > operationBudgetBytes) {
+      error(
+        message.requestId,
+        "XYG_WASM_RESOURCE_LIMIT",
+        "aggregate request copies exceed the instance operation budget",
+        XYG_WASM_STATUS.RESOURCE_LIMIT,
+      );
+      return;
+    }
     let status = exports.xyg_wasm_arena_resize(handle, inputLength);
     if (status !== XYG_WASM_STATUS.OK) {
       error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
@@ -199,7 +277,12 @@ function runSceneOp(message: any) {
     }
     const paint = series || message.type === "scene.paint" || message.type === "scene.compile_paint";
     const compile = series || message.type === "scene.compile" || message.type === "scene.compile_paint";
-    status = compile
+    const aggregate = message.type === "aggregate.bin2d";
+    status = aggregate
+      ? exports.xyg_wasm_aggregate_bin2d(
+        handle, Number(message.sequence), 0, inputLength,
+      )
+      : compile
       ? (paint
         ? exports.xyg_wasm_scene_compile_prepare(
           handle, Number(message.sequence), 0, inputLength,
@@ -214,6 +297,12 @@ function runSceneOp(message: any) {
         : exports.xyg_wasm_scene_validate(
           handle, Number(message.sequence), 0, inputLength,
         ));
+    if (aggregate && status === XYG_WASM_STATUS.PENDING) {
+      const timer = setTimeout(() => advanceAggregate(message), 0) as unknown as number;
+      activeAggregate = { requestId: message.requestId, sequence: Number(message.sequence), timer };
+      queued.set(message.requestId, timer);
+      return;
+    }
     const detail = status === XYG_WASM_STATUS.OK ? "" : readXygWasmError(exports, handle);
     const value = { sequence: Number(message.sequence), ...diagnostics() };
     if (status !== XYG_WASM_STATUS.OK) {
@@ -221,7 +310,7 @@ function runSceneOp(message: any) {
       error(message.requestId, statusCode(status), detail, status);
       return;
     }
-    if (paint || message.type === "scene.compile") {
+    if (paint || message.type === "scene.compile" || aggregate) {
       const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
       const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
       const outputEnd = outputPtr + outputLen;
@@ -234,6 +323,8 @@ function runSceneOp(message: any) {
       value.arenaBytes = 0;
       if (paint) {
         reply(message.requestId, { ...value, painter: transferred }, [transferred]);
+      } else if (aggregate) {
+        reply(message.requestId, { ...value, aggregate: transferred }, [transferred]);
       } else {
         reply(message.requestId, { ...value, scene: transferred }, [transferred]);
       }
@@ -247,6 +338,15 @@ function runSceneOp(message: any) {
     // worker; never continue with partially mutated engine state.
     lifecycle = "failed";
     disposeRust();
+    if (superseded) {
+      queued.delete(superseded.requestId);
+      activeAggregate = null;
+      error(
+        superseded.requestId,
+        "XYG_WASM_TRAP",
+        cause instanceof Error ? cause.message : "WASM aggregate cancellation trapped",
+      );
+    }
     error(
       message.requestId,
       "XYG_WASM_TRAP",
@@ -267,6 +367,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     || message?.type === "scene.compile"
     || message?.type === "scene.compile_paint"
     || message?.type === "series.compile_paint"
+    || message?.type === "aggregate.bin2d"
   ) {
     // Deferring one task turn gives a cancellation already queued by the main
     // thread a chance to suppress work before a synchronous WASM call starts.
@@ -280,7 +381,23 @@ scope.onmessage = (event: MessageEvent<any>) => {
       clearTimeout(timer);
       queued.delete(message.requestId);
     }
-    if (exports && handle) exports.xyg_wasm_cancel(handle, Number(message.sequence));
+    try {
+      if (exports && handle) exports.xyg_wasm_cancel(handle, Number(message.sequence));
+      if (activeAggregate?.requestId === message.requestId && exports && handle) {
+        clearTimeout(activeAggregate.timer);
+        exports.xyg_wasm_aggregate_step(handle, Number(message.sequence), 1);
+        activeAggregate = null;
+      }
+    } catch (cause) {
+      activeAggregate = null;
+      lifecycle = "failed";
+      disposeRust();
+      error(
+        message.requestId,
+        "XYG_WASM_TRAP",
+        cause instanceof Error ? cause.message : "WASM cancellation trapped",
+      );
+    }
     return;
   }
   if (message?.type === "dispose") {

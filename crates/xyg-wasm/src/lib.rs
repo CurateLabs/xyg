@@ -2,16 +2,18 @@
 //!
 //! This crate owns only WASM memory, instance, status, and lifecycle concerns.
 //! Product policy stays in `xyg-engine`; browser painting stays in TypeScript.
-//! Bounded seams validate/prepare canonical Scene batches and compile packed
-//! typed-column requests into those same batches. This is not a second browser
-//! scene schema and does not claim complete public chart-spec coverage.
+//! Bounded seams validate/prepare canonical Scene batches, compile packed
+//! typed-column requests into those same batches, and produce Tier-2 density
+//! aggregates via the shared `bin_2d` kernels. This is not a second browser
+//! scene schema and does not claim complete density-worker replacement yet.
 
+pub mod aggregate;
 pub mod compile;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 4;
+pub const WASM_ABI_VERSION: u32 = 5;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -20,6 +22,7 @@ pub const STATUS_SCENE_VERSION: i32 = 4;
 pub const STATUS_MALFORMED_SCENE: i32 = 5;
 pub const STATUS_CANCELLED: i32 = 6;
 pub const STATUS_STALE_SEQUENCE: i32 = 7;
+pub const STATUS_PENDING: i32 = 8;
 
 pub const MAX_INSTANCES: usize = 64;
 pub const MAX_ARENA_BYTES: usize = 402_653_184;
@@ -44,6 +47,15 @@ struct Instance {
     arena_high_water: usize,
     last_scene_records: usize,
     last_scene_styles: usize,
+    aggregate_job: Option<aggregate::AggregateJob>,
+    aggregate_sequence: u32,
+}
+
+impl Instance {
+    fn clear_aggregate(&mut self) {
+        self.aggregate_job = None;
+        self.aggregate_sequence = 0;
+    }
 }
 
 #[derive(Debug)]
@@ -119,6 +131,8 @@ impl Registry {
                 arena_high_water: 0,
                 last_scene_records: 0,
                 last_scene_styles: 0,
+                aggregate_job: None,
+                aggregate_sequence: 0,
             }),
         };
         (generation << HANDLE_SLOT_BITS) | (slot_index as u32 + 1)
@@ -202,6 +216,7 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
                 "requested staging arena exceeds the instance byte budget",
             );
         }
+        instance.clear_aggregate();
         if length > instance.arena.capacity()
             && instance
                 .arena
@@ -263,9 +278,6 @@ pub extern "C" fn xyg_wasm_scene_validate(
 ) -> i32 {
     with_instance_mut(handle, |instance| {
         instance.output = Vec::new();
-        // Every operation consumes staging, including guard failures. Keeping
-        // it local makes all early returns drop its allocation automatically.
-        let arena = std::mem::take(&mut instance.arena);
         if sequence == 0 {
             return fail(
                 instance,
@@ -274,11 +286,21 @@ pub extern "C" fn xyg_wasm_scene_validate(
             );
         }
         if sequence <= instance.cancelled_through {
+            if instance.aggregate_job.is_none() {
+                instance.arena = Vec::new();
+            }
             return fail(instance, STATUS_CANCELLED, "request was cancelled");
         }
         if sequence <= instance.latest_sequence {
+            if instance.aggregate_job.is_none() {
+                instance.arena = Vec::new();
+            }
             return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
         }
+        instance.clear_aggregate();
+        // Only a strictly newer operation may consume shared staging. Keeping
+        // it local makes all subsequent early returns drop its allocation.
+        let arena = std::mem::take(&mut instance.arena);
         let Some(end) = offset.checked_add(length) else {
             return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
         };
@@ -330,7 +352,6 @@ pub extern "C" fn xyg_wasm_scene_prepare(
 ) -> i32 {
     with_instance_mut(handle, |instance| {
         instance.output = Vec::new();
-        let arena = std::mem::take(&mut instance.arena);
         if sequence == 0 {
             return fail(
                 instance,
@@ -339,11 +360,19 @@ pub extern "C" fn xyg_wasm_scene_prepare(
             );
         }
         if sequence <= instance.cancelled_through {
+            if instance.aggregate_job.is_none() {
+                instance.arena = Vec::new();
+            }
             return fail(instance, STATUS_CANCELLED, "request was cancelled");
         }
         if sequence <= instance.latest_sequence {
+            if instance.aggregate_job.is_none() {
+                instance.arena = Vec::new();
+            }
             return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
         }
+        instance.clear_aggregate();
+        let arena = std::mem::take(&mut instance.arena);
         let Some(end) = offset.checked_add(length) else {
             return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
         };
@@ -425,7 +454,6 @@ fn compile_from_arena(
     paint: bool,
 ) -> i32 {
     instance.output = Vec::new();
-    let arena = std::mem::take(&mut instance.arena);
     if sequence == 0 {
         return fail(
             instance,
@@ -434,11 +462,19 @@ fn compile_from_arena(
         );
     }
     if sequence <= instance.cancelled_through {
+        if instance.aggregate_job.is_none() {
+            instance.arena = Vec::new();
+        }
         return fail(instance, STATUS_CANCELLED, "request was cancelled");
     }
     if sequence <= instance.latest_sequence {
+        if instance.aggregate_job.is_none() {
+            instance.arena = Vec::new();
+        }
         return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
     }
+    instance.clear_aggregate();
+    let arena = std::mem::take(&mut instance.arena);
     let Some(end) = offset.checked_add(length) else {
         return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
     };
@@ -525,6 +561,152 @@ pub extern "C" fn xyg_wasm_scene_compile_prepare(
 ) -> i32 {
     with_instance_mut(handle, |instance| {
         compile_from_arena(instance, sequence, offset, length, true)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+fn map_aggregate_error(instance: &mut Instance, error: aggregate::AggregateError) -> i32 {
+    match error {
+        aggregate::AggregateError::Limit => fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "aggregate exceeds its total memory, point, or grid bound; reduce the grid or omit mean color",
+        ),
+        aggregate::AggregateError::Version
+        | aggregate::AggregateError::Domain
+        | aggregate::AggregateError::Length => fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "aggregate request is malformed",
+        ),
+    }
+}
+
+fn aggregate_from_arena(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    instance.output = Vec::new();
+    if sequence == 0 {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "sequence zero is reserved",
+        );
+    }
+    if sequence <= instance.cancelled_through {
+        return fail(instance, STATUS_CANCELLED, "request was cancelled");
+    }
+    if sequence <= instance.latest_sequence {
+        return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
+    }
+    instance.clear_aggregate();
+    let Some(end) = offset.checked_add(length) else {
+        return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
+    };
+    if end > instance.arena.len() {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "staging range lies outside the arena",
+        );
+    }
+    let retained_slack = instance.arena.capacity().saturating_sub(length);
+    let aggregate_budget = instance.max_arena_bytes.saturating_sub(retained_slack);
+    let aggregated =
+        aggregate::AggregateJob::begin(&instance.arena[offset..end], offset, aggregate_budget);
+    instance.latest_sequence = sequence;
+    let aggregated = match aggregated {
+        Ok(value) => value,
+        Err(error) => {
+            instance.arena = Vec::new();
+            return map_aggregate_error(instance, error);
+        }
+    };
+    instance.aggregate_job = Some(aggregated);
+    instance.aggregate_sequence = sequence;
+    instance.last_error.clear();
+    STATUS_PENDING
+}
+
+/// Bin points from a packed `XYAG` request into a screen-bounded count grid
+/// (optional mean-color plane). Output is a transferable `XYAO` buffer.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_aggregate_bin2d(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        aggregate_from_arena(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Advance the active aggregate by at most `max_points`. `PENDING` requires
+/// the Worker to yield before calling again so cancel/new viewport messages run.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_aggregate_step(handle: u32, sequence: u32, max_points: usize) -> i32 {
+    with_instance_mut(handle, |instance| {
+        if sequence == 0 {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "sequence zero is reserved",
+            );
+        }
+        instance.output.clear();
+        if sequence != instance.aggregate_sequence {
+            return fail(
+                instance,
+                STATUS_CANCELLED,
+                "aggregate request was superseded by a newer viewport",
+            );
+        }
+        if sequence <= instance.cancelled_through {
+            instance.clear_aggregate();
+            instance.arena = Vec::new();
+            return fail(
+                instance,
+                STATUS_CANCELLED,
+                "aggregate request was cancelled at a checkpoint",
+            );
+        }
+        if max_points == 0 || max_points > aggregate::CHECKPOINT_POINTS {
+            instance.clear_aggregate();
+            instance.arena = Vec::new();
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "aggregate checkpoint is invalid",
+            );
+        }
+        let Some(job) = instance.aggregate_job.as_mut() else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "aggregate job is not active",
+            );
+        };
+        match job.step(&instance.arena, max_points) {
+            Ok(false) => STATUS_PENDING,
+            Ok(true) => {
+                let job = instance.aggregate_job.take().expect("active aggregate job");
+                instance.aggregate_sequence = 0;
+                instance.output = job.finish();
+                instance.arena = Vec::new();
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Err(error) => {
+                instance.clear_aggregate();
+                instance.arena = Vec::new();
+                map_aggregate_error(instance, error)
+            }
+        }
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
@@ -689,6 +871,182 @@ mod tests {
         )
         .unwrap()
         .encode()
+    }
+
+    fn aggregate_request(points: usize) -> Vec<u8> {
+        let mut out = vec![0u8; aggregate::AGGREGATE_HEADER_BYTES];
+        out[..4].copy_from_slice(aggregate::AGGREGATE_MAGIC);
+        out[4..8].copy_from_slice(&aggregate::AGGREGATE_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&(aggregate::AGGREGATE_HEADER_BYTES as u32).to_le_bytes());
+        out[16..20].copy_from_slice(&(points as u32).to_le_bytes());
+        out[20..24].copy_from_slice(&4u32.to_le_bytes());
+        out[24..28].copy_from_slice(&4u32.to_le_bytes());
+        for (offset, value) in [(32, 0.0f64), (40, 1.0), (48, 0.0), (56, 1.0)] {
+            out[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        for _ in 0..points * 2 {
+            out.extend_from_slice(&0.5f64.to_le_bytes());
+        }
+        out
+    }
+
+    #[test]
+    fn aggregate_checkpoints_cancel_and_allow_newer_viewport() {
+        let first = aggregate_request(aggregate::CHECKPOINT_POINTS + 1);
+        let handle = xyg_wasm_instance_new(2 * 1024 * 1024);
+        write_arena(handle, &first);
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 1, 0, first.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(
+            xyg_wasm_aggregate_step(handle, 1, aggregate::CHECKPOINT_POINTS),
+            STATUS_PENDING
+        );
+        assert_eq!(xyg_wasm_cancel(handle, 1), STATUS_OK);
+        assert_eq!(xyg_wasm_aggregate_step(handle, 1, 1), STATUS_CANCELLED);
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+        let newer = aggregate_request(1);
+        write_arena(handle, &newer);
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 2, 0, newer.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(xyg_wasm_aggregate_step(handle, 2, 1), STATUS_OK);
+        assert!(xyg_wasm_output_len(handle) > aggregate::OUTPUT_HEADER_BYTES);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn aggregate_accepts_nonzero_staging_offset() {
+        let request = aggregate_request(2);
+        let prefix = 37;
+        let handle = xyg_wasm_instance_new(1024 * 1024);
+        assert_eq!(
+            xyg_wasm_arena_resize(handle, prefix + request.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            instance.arena[..prefix].fill(0xa5);
+            instance.arena[prefix..].copy_from_slice(&request);
+        })
+        .unwrap();
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 1, prefix, request.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(xyg_wasm_aggregate_step(handle, 1, 2), STATUS_OK);
+        assert!(xyg_wasm_output_len(handle) > aggregate::OUTPUT_HEADER_BYTES);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn every_aggregate_clear_invalidates_its_sequence() {
+        let request = aggregate_request(2);
+        let handle = xyg_wasm_instance_new(1024 * 1024);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 1, 0, request.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(
+            xyg_wasm_aggregate_step(handle, 1, 0),
+            STATUS_INVALID_ARGUMENT
+        );
+        assert_eq!(xyg_wasm_aggregate_step(handle, 1, 1), STATUS_CANCELLED);
+
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 2, 0, request.len()),
+            STATUS_PENDING
+        );
+        let mut malformed = request.clone();
+        malformed[0] = 0;
+        write_arena(handle, &malformed);
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 3, 0, malformed.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        assert_eq!(xyg_wasm_aggregate_step(handle, 2, 1), STATUS_CANCELLED);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn raw_scene_export_supersedes_nonzero_offset_aggregate_in_shared_arena() {
+        let aggregate = aggregate_request(2);
+        let scene = valid_scene();
+        let aggregate_offset = 19;
+        let scene_offset = aggregate_offset + aggregate.len() + 23;
+        let handle = xyg_wasm_instance_new(1024 * 1024);
+        assert_eq!(
+            xyg_wasm_arena_resize(handle, scene_offset + scene.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            instance.arena[aggregate_offset..aggregate_offset + aggregate.len()]
+                .copy_from_slice(&aggregate);
+            instance.arena[scene_offset..scene_offset + scene.len()].copy_from_slice(&scene);
+        })
+        .unwrap();
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 1, aggregate_offset, aggregate.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(
+            xyg_wasm_scene_validate(handle, 2, scene_offset, scene.len()),
+            STATUS_OK
+        );
+        assert_eq!(xyg_wasm_aggregate_step(handle, 1, 1), STATUS_CANCELLED);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn stale_raw_scene_export_does_not_cancel_newer_aggregate() {
+        let aggregate = aggregate_request(2);
+        let scene = valid_scene();
+        let scene_offset = aggregate.len();
+        let handle = xyg_wasm_instance_new(1024 * 1024);
+        assert_eq!(
+            xyg_wasm_arena_resize(handle, scene_offset + scene.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            instance.arena[..aggregate.len()].copy_from_slice(&aggregate);
+            instance.arena[scene_offset..].copy_from_slice(&scene);
+        })
+        .unwrap();
+        assert_eq!(
+            xyg_wasm_aggregate_bin2d(handle, 2, 0, aggregate.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(
+            xyg_wasm_scene_validate(handle, 1, scene_offset, scene.len()),
+            STATUS_STALE_SEQUENCE
+        );
+        assert_eq!(xyg_wasm_aggregate_step(handle, 2, 2), STATUS_OK);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn zero_sequence_aggregate_step_does_not_mutate_an_idle_arena() {
+        let handle = xyg_wasm_instance_new(1024);
+        assert_eq!(xyg_wasm_arena_resize(handle, 8), STATUS_OK);
+        with_instance_mut(handle, |instance| {
+            instance.arena.copy_from_slice(b"sentinel");
+        })
+        .unwrap();
+
+        assert_eq!(
+            xyg_wasm_aggregate_step(handle, 0, 1),
+            STATUS_INVALID_ARGUMENT
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(instance.arena, b"sentinel");
+            assert!(instance.aggregate_job.is_none());
+            assert_eq!(instance.aggregate_sequence, 0);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
     #[test]
