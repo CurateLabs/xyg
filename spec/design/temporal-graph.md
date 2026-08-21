@@ -1,8 +1,9 @@
 # Temporal graph bindings and identity-safe filtering
 
-**Status:** Rust engine foundation, Part of #45. Native/WASM transport,
-timebar-to-layout scheduling, graph LOD aggregate membership, and host export
-attachment remain required before #45 closes.
+**Status:** Rust engine plus native Python/Node host transport, Part of #45.
+Direct-browser/WASM transport, timebar-to-layout scheduling, graph LOD
+aggregate membership, and rendered host export attachment remain required
+before #45 closes.
 
 **Authority:** [temporal.md](temporal.md) defines canonical i64 UTC micros and
 half-open intervals; [temporal-controller.md](temporal-controller.md) defines
@@ -53,9 +54,27 @@ over-budget, or stale request cannot advance
 the applied revision or mutate selection/focus/pin state. Revision zero and any
 revision not newer than the applied revision fail as stale.
 
-This slice deliberately has no C ABI entry point while ABI 81 graph work is in
-flight. The later native/WASM seam must transport typed i64/u8/u64 buffers and
-opaque UUID bytes, never graph or temporal numbers through JSON.
+ABI 82 exposes the native graph seam through opaque graph handles. Creation
+binds one projection handle and up to six temporal-column handles, copying the
+canonical identity/time planes before returning so those source handles may be
+released immediately. Python `xyg.TemporalGraph` and Node `TemporalGraph` only
+coerce ergonomic host inputs and marshal typed buffers; they do not filter
+topology or calculate work budgets. Rust reports the exact minimum budget,
+validates exact nonzero `u64` revisions and signed `i64` time, publishes a
+complete frame, and supplies packed UUID membership.
+
+Frame metadata and frame buffers use a two-call contract. The copy call echoes
+the metadata revision; if another frame wins between calls, Rust returns
+`StaleRevision` instead of mixing memberships. Python and Node frame calls
+also require the copied snapshot revision to equal the requested
+revision, so a newer same-handle winner is rejected rather than returned.
+Both hosts preserve opaque UUIDs as `(n, 16)`/packed `Uint8Array` values and
+preserve Node `u64`/`i64`
+scalars as `bigint`. The native cancellation endpoint remains callable from
+another thread while frame work is active. Destroy removes the handle first
+and cancels owned work. The later WASM seam must retain these guarantees and
+transport typed i64/u8/u64 buffers and opaque UUID bytes, never graph or
+temporal numbers through JSON.
 
 ## Frozen export provenance
 
@@ -70,6 +89,12 @@ cannot alter the provenance frozen from that frame. All emitted identity lists, 
 persistent state, retain canonical projection order. Static output shows the
 selected state but does not imply playback or other unavailable interaction.
 
+The native frame result exposes that frozen state together with current
+visibility: canonical node/edge visibility bytes, visible UUIDs, visible-only
+selection/focus/pins, and persistent selection/focus/pins. This is export
+provenance, not yet proof that HTML/PNG/SVG adapters render or attach it; that
+adapter work remains a close gate.
+
 ## Evidence and remaining closure work
 
 Rust tests cover half-open boundaries, event-range conjunction, endpoint-safe
@@ -78,7 +103,7 @@ unknown identities, cancellation, work budgets, stale revisions, and frozen
 state. #45 remains open until:
 
 - the GraphForge assertion-validity and event-history fixtures bind through
-  native and direct-browser/WASM hosts;
+  direct-browser/WASM hosts (native Python/Node binding is now covered);
 - revisioned timebar commands cancel/coalesce layout and reject stale replies;
 - direct and aggregate graph LOD report exact deterministic membership;
 - HTML/PNG/SVG adapters attach and render frozen temporal provenance; and

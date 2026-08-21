@@ -1,9 +1,9 @@
 {
-  "abi_version": 81,
+  "abi_version": 82,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "6f461e4cf3f9bf9721fde09c4d0871a87baeb1ae9dbf364c1ea2178bfb2de97d",
+  "signature_sha256": "86f4b0cb4e33c2281060cca9c03fce8aa36f4df922beea756deae2d724e7ed44",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -19019,6 +19019,635 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_temporal_events_in_range(const int64_t * event_micros, const uint8_t * event_valid, uint64_t event_len, int64_t range_start, uint32_t range_start_valid, int64_t range_end, uint32_t range_end_valid, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)"
+    },
+    {
+      "name": "xyg_temporal_graph_cancel",
+      "node_name": "xyTemporalGraphCancel",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_cancel(uint64_t handle)"
+    },
+    {
+      "name": "xyg_temporal_graph_create",
+      "node_name": "xyTemporalGraphCreate",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "descriptor",
+          "type": {
+            "rust": "*const XygTemporalGraphDescriptor",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_handle",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_create(const void * descriptor, uint64_t * out_handle)"
+    },
+    {
+      "name": "xyg_temporal_graph_destroy",
+      "node_name": "xyTemporalGraphDestroy",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_destroy(uint64_t handle)"
+    },
+    {
+      "name": "xyg_temporal_graph_frame",
+      "node_name": "xyTemporalGraphFrame",
+      "nargs": 6,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "revision",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "cursor_micros",
+          "type": {
+            "rust": "i64",
+            "c": "int64_t",
+            "ctypes": "ctypes.c_int64",
+            "koffi": "int64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "range_start_micros",
+          "type": {
+            "rust": "i64",
+            "c": "int64_t",
+            "ctypes": "ctypes.c_int64",
+            "koffi": "int64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "range_end_micros",
+          "type": {
+            "rust": "i64",
+            "c": "int64_t",
+            "ctypes": "ctypes.c_int64",
+            "koffi": "int64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "budget",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_frame(uint64_t handle, uint64_t revision, int64_t cursor_micros, int64_t range_start_micros, int64_t range_end_micros, uint64_t budget)"
+    },
+    {
+      "name": "xyg_temporal_graph_required_budget",
+      "node_name": "xyTemporalGraphRequiredBudget",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_budget",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_required_budget(uint64_t handle, uint64_t * out_budget)"
+    },
+    {
+      "name": "xyg_temporal_graph_set_focus",
+      "node_name": "xyTemporalGraphSetFocus",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "kind",
+          "type": {
+            "rust": "u32",
+            "c": "uint32_t",
+            "ctypes": "ctypes.c_uint32",
+            "koffi": "uint32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "id",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_set_focus(uint64_t handle, uint32_t kind, const uint8_t * id)"
+    },
+    {
+      "name": "xyg_temporal_graph_set_pinned",
+      "node_name": "xyTemporalGraphSetPinned",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "node_ids",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "node_count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_set_pinned(uint64_t handle, const uint8_t * node_ids, uint64_t node_count)"
+    },
+    {
+      "name": "xyg_temporal_graph_set_selection",
+      "node_name": "xyTemporalGraphSetSelection",
+      "nargs": 5,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "node_ids",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "node_count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "edge_ids",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "edge_count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_set_selection(uint64_t handle, const uint8_t * node_ids, uint64_t node_count, const uint8_t * edge_ids, uint64_t edge_count)"
+    },
+    {
+      "name": "xyg_temporal_graph_snapshot_copy",
+      "node_name": "xyTemporalGraphSnapshotCopy",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "expected_revision",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "buffers",
+          "type": {
+            "rust": "*const XygTemporalGraphSnapshotBuffers",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_snapshot_copy(uint64_t handle, uint64_t expected_revision, const void * buffers)"
+    },
+    {
+      "name": "xyg_temporal_graph_snapshot_meta",
+      "node_name": "xyTemporalGraphSnapshotMeta",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_meta",
+          "type": {
+            "rust": "*mut XygTemporalGraphSnapshotMeta",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_graph_snapshot_meta(uint64_t handle, void * out_meta)"
     },
     {
       "name": "xyg_temporal_interval_index_create",

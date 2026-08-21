@@ -292,6 +292,17 @@ impl TemporalGraph {
         Ok(())
     }
 
+    /// Exact minimum work budget for one frame under the current bindings.
+    pub fn required_budget(&self) -> Result<usize, TemporalError> {
+        self.nodes
+            .work()
+            .checked_add(self.edges.work())
+            .and_then(|work| work.checked_add(self.edge_ids.len()))
+            .and_then(|work| work.checked_add(self.node_ids.len()))
+            .and_then(|work| work.checked_add(self.edge_ids.len()))
+            .ok_or(TemporalError::CapacityExceeded)
+    }
+
     /// Compute and atomically publish a frame. Failed, cancelled, over-budget,
     /// or stale work never changes the last applied revision or identity state.
     pub fn frame(
@@ -312,14 +323,7 @@ impl TemporalGraph {
         {
             return Err(TemporalError::InvalidArgument);
         }
-        let required = self
-            .nodes
-            .work()
-            .checked_add(self.edges.work())
-            .and_then(|work| work.checked_add(self.edge_ids.len()))
-            .and_then(|work| work.checked_add(self.node_ids.len()))
-            .and_then(|work| work.checked_add(self.edge_ids.len()))
-            .ok_or(TemporalError::CapacityExceeded)?;
+        let required = self.required_budget()?;
         if budget < required {
             return Err(TemporalError::BudgetExceeded);
         }

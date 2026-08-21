@@ -42,6 +42,7 @@ export {
 } from "./encode.js";
 
 export { ChunkedColumns } from "./chunked-columns.js";
+export { TemporalGraph } from "./temporal-graph.js";
 
 export {
   nativeLibraryPath,
@@ -71,6 +72,7 @@ export {
   TEMPORAL_DST,
   TEMPORAL_DIRECTION,
   TemporalNativeError,
+  TemporalGraphError,
   GEO_GEOMETRY,
   GEO_CRS,
   GeoNativeError,
@@ -117,6 +119,15 @@ export {
   temporalCoordinateDeliver,
   temporalControllerDispose,
   temporalControllerDestroy,
+  temporalGraphCreate,
+  temporalGraphSetSelection,
+  temporalGraphSetFocus,
+  temporalGraphSetPinned,
+  temporalGraphRequiredBudget,
+  temporalGraphFrame,
+  temporalGraphCancel,
+  temporalGraphSnapshot,
+  temporalGraphDestroy,
 } from "./abi.js";
 
 export {

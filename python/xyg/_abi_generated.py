@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 81
-SIGNATURE_SHA256 = "6f461e4cf3f9bf9721fde09c4d0871a87baeb1ae9dbf364c1ea2178bfb2de97d"
+ABI_VERSION = 82
+SIGNATURE_SHA256 = "86f4b0cb4e33c2281060cca9c03fce8aa36f4df922beea756deae2d724e7ed44"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -598,6 +598,46 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_events_in_range
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_int64, ctypes.c_uint32, ctypes.c_int64, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_temporal_graph_cancel(uint64_t handle)
+    function = lib.xyg_temporal_graph_cancel
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_graph_create(const void * descriptor, uint64_t * out_handle)
+    function = lib.xyg_temporal_graph_create
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_temporal_graph_destroy(uint64_t handle)
+    function = lib.xyg_temporal_graph_destroy
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_temporal_graph_frame(uint64_t handle, uint64_t revision, int64_t cursor_micros, int64_t range_start_micros, int64_t range_end_micros, uint64_t budget)
+    function = lib.xyg_temporal_graph_frame
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_uint64]
+    # int32_t xyg_temporal_graph_required_budget(uint64_t handle, uint64_t * out_budget)
+    function = lib.xyg_temporal_graph_required_budget
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_temporal_graph_set_focus(uint64_t handle, uint32_t kind, const uint8_t * id)
+    function = lib.xyg_temporal_graph_set_focus
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint32, ctypes.c_void_p]
+    # int32_t xyg_temporal_graph_set_pinned(uint64_t handle, const uint8_t * node_ids, uint64_t node_count)
+    function = lib.xyg_temporal_graph_set_pinned
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_temporal_graph_set_selection(uint64_t handle, const uint8_t * node_ids, uint64_t node_count, const uint8_t * edge_ids, uint64_t edge_count)
+    function = lib.xyg_temporal_graph_set_selection
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_temporal_graph_snapshot_copy(uint64_t handle, uint64_t expected_revision, const void * buffers)
+    function = lib.xyg_temporal_graph_snapshot_copy
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_temporal_graph_snapshot_meta(uint64_t handle, void * out_meta)
+    function = lib.xyg_temporal_graph_snapshot_meta
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_temporal_interval_index_create(const void * descriptor, uint64_t * out_handle)
     function = lib.xyg_temporal_interval_index_create
     function.restype = ctypes.c_int32

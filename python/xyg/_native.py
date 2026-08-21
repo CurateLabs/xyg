@@ -122,12 +122,94 @@ class _TemporalControllerDescriptor(ctypes.Structure):
     ]
 
 
+class _TemporalGraphDescriptor(ctypes.Structure):
+    _fields_ = [
+        ("projection_handle", ctypes.c_uint64),
+        ("node_valid_from", ctypes.c_uint64),
+        ("node_valid_to", ctypes.c_uint64),
+        ("node_event_at", ctypes.c_uint64),
+        ("edge_valid_from", ctypes.c_uint64),
+        ("edge_valid_to", ctypes.c_uint64),
+        ("edge_event_at", ctypes.c_uint64),
+        ("reserved", ctypes.c_uint64),
+    ]
+
+
+class _TemporalGraphSnapshotMeta(ctypes.Structure):
+    _fields_ = [
+        ("revision", ctypes.c_uint64),
+        ("cursor_micros", ctypes.c_int64),
+        ("range_start_micros", ctypes.c_int64),
+        ("range_end_micros", ctypes.c_int64),
+        ("node_count", ctypes.c_uint64),
+        ("edge_count", ctypes.c_uint64),
+        ("visible_node_count", ctypes.c_uint64),
+        ("visible_edge_count", ctypes.c_uint64),
+        ("selected_visible_node_count", ctypes.c_uint64),
+        ("selected_visible_edge_count", ctypes.c_uint64),
+        ("pinned_visible_node_count", ctypes.c_uint64),
+        ("selected_node_count", ctypes.c_uint64),
+        ("selected_edge_count", ctypes.c_uint64),
+        ("pinned_node_count", ctypes.c_uint64),
+        ("focused_visible_kind", ctypes.c_uint32),
+        ("focused_kind", ctypes.c_uint32),
+        ("focused_visible_id", ctypes.c_uint8 * 16),
+        ("focused_id", ctypes.c_uint8 * 16),
+    ]
+
+
+class _TemporalGraphSnapshotBuffers(ctypes.Structure):
+    _fields_ = [
+        ("node_visibility", ctypes.c_void_p),
+        ("node_capacity", ctypes.c_uint64),
+        ("edge_visibility", ctypes.c_void_p),
+        ("edge_capacity", ctypes.c_uint64),
+        ("visible_node_ids", ctypes.c_void_p),
+        ("visible_node_capacity", ctypes.c_uint64),
+        ("visible_edge_ids", ctypes.c_void_p),
+        ("visible_edge_capacity", ctypes.c_uint64),
+        ("selected_visible_node_ids", ctypes.c_void_p),
+        ("selected_visible_node_capacity", ctypes.c_uint64),
+        ("selected_visible_edge_ids", ctypes.c_void_p),
+        ("selected_visible_edge_capacity", ctypes.c_uint64),
+        ("pinned_visible_node_ids", ctypes.c_void_p),
+        ("pinned_visible_node_capacity", ctypes.c_uint64),
+        ("selected_node_ids", ctypes.c_void_p),
+        ("selected_node_capacity", ctypes.c_uint64),
+        ("selected_edge_ids", ctypes.c_void_p),
+        ("selected_edge_capacity", ctypes.c_uint64),
+        ("pinned_node_ids", ctypes.c_void_p),
+        ("pinned_node_capacity", ctypes.c_uint64),
+    ]
+
+
 class TemporalNativeError(ValueError):
     """Stable error returned by the Rust-owned temporal column/index seam."""
 
+    _MESSAGES: ClassVar[dict[int, str]] = {
+        -1: "temporal arguments are incomplete or inconsistent",
+        -2: "temporal input exceeds native capacity",
+        -3: "temporal integer conversion overflowed",
+        -4: "timezone is required",
+        -5: "local time falls in a DST gap",
+        -6: "local time is ambiguous at a DST fold",
+        -7: "temporal interval is reversed",
+        -8: "temporal handle is stale or closed",
+        -9: "temporal output buffer is too small",
+        -10: "temporal work was cancelled",
+        -11: "temporal work exceeds the supplied budget",
+        -12: "temporal precision unit is unsupported",
+        -13: "temporal resource is disposed",
+        -14: "temporal revision is stale",
+        -15: "temporal coordination rejected a self-echo",
+    }
+
     def __init__(self, status: int):
         self.status = int(status)
-        super().__init__(f"native temporal failed with status {self.status}")
+        message = self._MESSAGES.get(
+            self.status, f"native temporal failed with status {self.status}"
+        )
+        super().__init__(message)
 
 
 class GeoNativeError(ValueError):
@@ -4273,6 +4355,199 @@ def temporal_controller_destroy(handle: int) -> None:
     _temporal_controller_status(
         _lib.xyg_temporal_controller_destroy(ctypes.c_uint64(_temporal_u64(handle, "handle")))
     )
+
+
+def temporal_graph_create(
+    projection_handle: int,
+    *,
+    node_valid_from: int = 0,
+    node_valid_to: int = 0,
+    node_event_at: int = 0,
+    edge_valid_from: int = 0,
+    edge_valid_to: int = 0,
+    edge_event_at: int = 0,
+) -> int:
+    """Bind canonical graph/time handles into one Rust-owned graph filter."""
+    descriptor = _TemporalGraphDescriptor(
+        _temporal_u64(projection_handle, "projection_handle"),
+        _temporal_u64(node_valid_from, "node_valid_from"),
+        _temporal_u64(node_valid_to, "node_valid_to"),
+        _temporal_u64(node_event_at, "node_event_at"),
+        _temporal_u64(edge_valid_from, "edge_valid_from"),
+        _temporal_u64(edge_valid_to, "edge_valid_to"),
+        _temporal_u64(edge_event_at, "edge_event_at"),
+        0,
+    )
+    handle = ctypes.c_uint64()
+    status = _lib.xyg_temporal_graph_create(ctypes.byref(descriptor), ctypes.byref(handle))
+    _temporal_controller_status(status)
+    return int(handle.value)
+
+
+def _temporal_graph_uuid_buffer(values: Any, name: str) -> npt.NDArray[np.uint8]:
+    array = np.ascontiguousarray(values, dtype=np.uint8)
+    if array.size == 0:
+        return np.empty((0, 16), dtype=np.uint8)
+    return _projection_uuid_buffer(array, name)
+
+
+def temporal_graph_set_selection(handle: int, node_ids: Any, edge_ids: Any) -> None:
+    nodes = _temporal_graph_uuid_buffer(node_ids, "node_ids")
+    edges = _temporal_graph_uuid_buffer(edge_ids, "edge_ids")
+    status = _lib.xyg_temporal_graph_set_selection(
+        _temporal_u64(handle, "handle"),
+        nodes.ctypes.data if len(nodes) else None,
+        len(nodes),
+        edges.ctypes.data if len(edges) else None,
+        len(edges),
+    )
+    _temporal_controller_status(status)
+
+
+def temporal_graph_set_focus(handle: int, kind: int, entity_id: Any | None = None) -> None:
+    if isinstance(kind, bool) or kind not in (0, 1, 2):
+        raise ValueError("kind must be 0 (clear), 1 (node), or 2 (edge)")
+    if kind == 0:
+        if entity_id is not None:
+            raise ValueError("entity_id must be omitted when clearing focus")
+        pointer = None
+    else:
+        if isinstance(entity_id, (bytes, bytearray, memoryview)):
+            raw = bytes(entity_id)
+            if len(raw) != 16:
+                raise ValueError("entity_id must contain exactly 16 bytes")
+            entity = np.frombuffer(raw, dtype=np.uint8).reshape((1, 16))
+        else:
+            entity = _projection_uuid_buffer(entity_id, "entity_id")
+            if len(entity) != 1:
+                raise ValueError("entity_id must contain exactly one UUID")
+        pointer = entity.ctypes.data
+    status = _lib.xyg_temporal_graph_set_focus(_temporal_u64(handle, "handle"), kind, pointer)
+    _temporal_controller_status(status)
+
+
+def temporal_graph_set_pinned(handle: int, node_ids: Any) -> None:
+    nodes = _temporal_graph_uuid_buffer(node_ids, "node_ids")
+    status = _lib.xyg_temporal_graph_set_pinned(
+        _temporal_u64(handle, "handle"),
+        nodes.ctypes.data if len(nodes) else None,
+        len(nodes),
+    )
+    _temporal_controller_status(status)
+
+
+def temporal_graph_required_budget(handle: int) -> int:
+    budget = ctypes.c_uint64()
+    status = _lib.xyg_temporal_graph_required_budget(
+        _temporal_u64(handle, "handle"), ctypes.byref(budget)
+    )
+    _temporal_controller_status(status)
+    return int(budget.value)
+
+
+def temporal_graph_frame(
+    handle: int,
+    *,
+    revision: int,
+    cursor_micros: int,
+    range_start_micros: int,
+    range_end_micros: int,
+    budget: int | None = None,
+) -> None:
+    if budget is None:
+        budget = temporal_graph_required_budget(handle)
+    status = _lib.xyg_temporal_graph_frame(
+        _temporal_u64(handle, "handle"),
+        _temporal_u64(revision, "revision"),
+        _temporal_i64(cursor_micros, "cursor_micros"),
+        _temporal_i64(range_start_micros, "range_start_micros"),
+        _temporal_i64(range_end_micros, "range_end_micros"),
+        _temporal_u64(budget, "budget"),
+    )
+    _temporal_controller_status(status)
+
+
+def temporal_graph_cancel(handle: int) -> None:
+    _temporal_controller_status(_lib.xyg_temporal_graph_cancel(_temporal_u64(handle, "handle")))
+
+
+def _temporal_graph_uuid_output(count: int) -> npt.NDArray[np.uint8]:
+    return np.empty((count, 16), dtype=np.uint8)
+
+
+def temporal_graph_snapshot(handle: int) -> dict[str, object]:
+    """Copy the last complete frame plus exact frozen export provenance."""
+    meta = _TemporalGraphSnapshotMeta()
+    status = _lib.xyg_temporal_graph_snapshot_meta(
+        _temporal_u64(handle, "handle"), ctypes.byref(meta)
+    )
+    _temporal_controller_status(status)
+    node_visibility = np.empty(meta.node_count, dtype=np.uint8)
+    edge_visibility = np.empty(meta.edge_count, dtype=np.uint8)
+    names = (
+        ("visible_node_ids", meta.visible_node_count),
+        ("visible_edge_ids", meta.visible_edge_count),
+        ("selected_visible_node_ids", meta.selected_visible_node_count),
+        ("selected_visible_edge_ids", meta.selected_visible_edge_count),
+        ("pinned_visible_node_ids", meta.pinned_visible_node_count),
+        ("selected_node_ids", meta.selected_node_count),
+        ("selected_edge_ids", meta.selected_edge_count),
+        ("pinned_node_ids", meta.pinned_node_count),
+    )
+    ids = {name: _temporal_graph_uuid_output(int(count)) for name, count in names}
+
+    def ptr(array: npt.NDArray[np.uint8]) -> int | None:
+        return array.ctypes.data if len(array) else None
+
+    buffers = _TemporalGraphSnapshotBuffers(
+        ptr(node_visibility),
+        len(node_visibility),
+        ptr(edge_visibility),
+        len(edge_visibility),
+        ptr(ids["visible_node_ids"]),
+        len(ids["visible_node_ids"]),
+        ptr(ids["visible_edge_ids"]),
+        len(ids["visible_edge_ids"]),
+        ptr(ids["selected_visible_node_ids"]),
+        len(ids["selected_visible_node_ids"]),
+        ptr(ids["selected_visible_edge_ids"]),
+        len(ids["selected_visible_edge_ids"]),
+        ptr(ids["pinned_visible_node_ids"]),
+        len(ids["pinned_visible_node_ids"]),
+        ptr(ids["selected_node_ids"]),
+        len(ids["selected_node_ids"]),
+        ptr(ids["selected_edge_ids"]),
+        len(ids["selected_edge_ids"]),
+        ptr(ids["pinned_node_ids"]),
+        len(ids["pinned_node_ids"]),
+    )
+    status = _lib.xyg_temporal_graph_snapshot_copy(
+        _temporal_u64(handle, "handle"),
+        meta.revision,
+        ctypes.byref(buffers),
+    )
+    _temporal_controller_status(status)
+
+    def focus(kind: int, value: ctypes.Array[ctypes.c_uint8]) -> dict[str, object] | None:
+        if kind == 0:
+            return None
+        return {"kind": "node" if kind == 1 else "edge", "id": bytes(value)}
+
+    return {
+        "revision": int(meta.revision),
+        "cursor_micros": int(meta.cursor_micros),
+        "range_start_micros": int(meta.range_start_micros),
+        "range_end_micros": int(meta.range_end_micros),
+        "node_visibility": node_visibility,
+        "edge_visibility": edge_visibility,
+        **ids,
+        "focused_visible": focus(meta.focused_visible_kind, meta.focused_visible_id),
+        "focused": focus(meta.focused_kind, meta.focused_id),
+    }
+
+
+def temporal_graph_destroy(handle: int) -> None:
+    _temporal_controller_status(_lib.xyg_temporal_graph_destroy(_temporal_u64(handle, "handle")))
 
 
 def graph_force_create(

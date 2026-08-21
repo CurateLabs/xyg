@@ -22,7 +22,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 81);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 82);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
