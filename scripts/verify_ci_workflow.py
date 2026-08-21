@@ -49,6 +49,7 @@ REQUIRED_RELEASE_JOBS = {
     "browser-package",
     "node-native-packages",
     "node-facade",
+    "release-cohort-linux-x64",
     "publish",
     "publish-npm",
     "github-release",
@@ -2081,6 +2082,24 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "optional package resolution must not run",
         "XYG Node does not support Windows arm64",
         "Remediation:",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "release-cohort-linux-x64",
+        "release",
+        "exact Python, Node, browser, and clean-consumer release cohort (#54)",
+        "needs: [wheels, browser-package, node-native-packages, node-facade, node-clean-install]",
+        "startsWith(github.ref, 'refs/tags/xyg-v')",
+        "dist-manylinux_2_17_x86_64",
+        "node-platform-linux-x64",
+        "scripts/verify_release_cohort.py",
+        '--commit "$GITHUB_SHA"',
+        "python3 -m venv",
+        "npm install --no-audit --no-fund",
+        "@curatelabs/xyg/xyg-wasm.wasm",
+        "release-conformance-linux-x64",
+        "retention-days: 30",
     )
     _require_job_contains(
         errors,
