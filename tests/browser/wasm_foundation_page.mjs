@@ -628,12 +628,18 @@ async function run() {
       || temporalLayout.layout.phase !== "complete") {
     throw new Error("temporal graph did not feed Rust-remapped visible topology into Rust CoSE");
   }
-  let superseded = false, staleLayoutUpdates = 0;
+  const checkpointWithin = (promise, label) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} did not emit a progressive checkpoint`)), 5000);
+    promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
+  });
+  let superseded = false, staleLayoutUpdates = 0, resolveOldStarted;
+  const oldStarted = new Promise((resolve) => { resolveOldStarted = resolve; });
   const oldLayout = temporalGraph.frameAndLayout({
     revision: 5n, cursor: 15n, range: [15n, 16n], budget: 12n,
     layout: { totalSteps: 100000, seed: 10n },
-    onUpdate: () => { if (superseded) staleLayoutUpdates += 1; },
+    onUpdate: () => { if (superseded) staleLayoutUpdates += 1; else resolveOldStarted(); },
   });
+  await checkpointWithin(oldStarted, "superseded temporal layout");
   superseded = true;
   const newLayout = temporalGraph.frameAndLayout({
     revision: 6n, cursor: 25n, range: [25n, 26n], budget: 12n,
@@ -644,13 +650,14 @@ async function run() {
       || supersession[1].value.layout.revision !== 6 || staleLayoutUpdates !== 0) {
     throw new Error("new temporal frame did not cancel and suppress the stale Rust layout");
   }
-  let disposedUpdates = 0;
+  let disposedUpdates = 0, resolveDisposedStarted;
+  const disposedStarted = new Promise((resolve) => { resolveDisposedStarted = resolve; });
   const disposedLayout = temporalGraph.frameAndLayout({
     revision: 7n, cursor: 15n, range: [15n, 16n], budget: 12n,
     layout: { totalSteps: 100000, seed: 12n },
-    onUpdate: () => { disposedUpdates += 1; },
+    onUpdate: () => { disposedUpdates += 1; resolveDisposedStarted(); },
   });
-  await Promise.resolve();
+  await checkpointWithin(disposedStarted, "disposed temporal layout");
   temporalGraph.dispose();
   const updatesAtDispose = disposedUpdates;
   const disposedResult = await Promise.allSettled([disposedLayout]);
