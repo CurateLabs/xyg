@@ -30,12 +30,14 @@ def test_linked_views_coordinate_once() -> None:
     b = _ctrl(2, group_id=7)
     c = _ctrl(3, group_id=9)
     try:
+        _native.temporal_controller_set_selection(a, [(1 << 64) - 1, 7, 7, 0])
         _native.temporal_controller_set_cursor(a, 200_000)
         event = _native.temporal_controller_poll_event(a)
         assert event is not None
         assert event["source_instance"] == 1
         assert _native.temporal_controller_apply_event(b, event) is True
         assert _native.temporal_controller_state(b)["cursor"] == 200_000
+        assert _native.temporal_controller_state(b)["selection"] == [0, 7, (1 << 64) - 1]
         with pytest.raises(_native.TemporalNativeError) as echo:
             _native.temporal_controller_apply_event(a, event)
         assert echo.value.status == -15
@@ -86,6 +88,7 @@ def test_inbound_event_rejects_noncanonical_fields(field: str, value: int) -> No
         "range_end": 250_000,
         "cursor": 200_000,
         "window": 150_000,
+        "selection": [],
     }
     event[field] = value
     try:
@@ -137,6 +140,7 @@ def test_same_process_deliver_rejects_malformed_event_without_peers() -> None:
         "range_end": 20,
         "cursor": 20,
         "window": 10,
+        "selection": [],
     }
     with pytest.raises(_native.TemporalNativeError):
         _native.temporal_coordinate_deliver(event)
@@ -182,6 +186,7 @@ def test_public_controller_is_chainable_and_owns_its_handle() -> None:
     ) as controller:
         state = (
             controller.set_cursor(200)
+            .set_selection([9, 2, 9])
             .step()
             .set_rate(2.0)
             .set_direction(-1)
@@ -194,9 +199,19 @@ def test_public_controller_is_chainable_and_owns_its_handle() -> None:
         assert state["direction"] == -1
         assert state["loop_enabled"] is True
         assert state["reduced_motion"] is True
+        assert state["selection"] == [2, 9]
         assert controller.tick(1_000) is False
     with pytest.raises(RuntimeError, match="closed"):
         _ = controller.state
+
+
+def test_selection_bound_fails_before_native_allocation() -> None:
+    handle = _ctrl(32)
+    try:
+        with pytest.raises(ValueError, match="at most 10000"):
+            _native.temporal_controller_set_selection(handle, range(10_001))
+    finally:
+        _native.temporal_controller_destroy(handle)
 
 
 @pytest.mark.parametrize(
@@ -232,6 +247,7 @@ def test_python_host_rejects_scalar_wrap_before_ffi(field: str, value: int) -> N
         ("direction", 1 << 31),
         ("loop", 1),
         ("reduced_motion", "false"),
+        ("selection", -1),
     ],
 )
 def test_python_host_rejects_every_temporal_scalar_before_ffi(operation: str, value: Any) -> None:
@@ -246,6 +262,7 @@ def test_python_host_rejects_every_temporal_scalar_before_ffi(operation: str, va
             "direction": lambda: _native.temporal_controller_set_direction(handle, value),
             "loop": lambda: _native.temporal_controller_set_loop(handle, value),
             "reduced_motion": lambda: _native.temporal_controller_set_reduced_motion(handle, value),
+            "selection": lambda: _native.temporal_controller_set_selection(handle, [value]),
         }
         with pytest.raises(ValueError):
             calls[operation]()

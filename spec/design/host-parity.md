@@ -117,7 +117,7 @@ The exhaustive per-file application of these rules is
 | JS render client | One bundled WebGL client (`@curatelabs/xyg`: `index.js` / `standalone.js`); Python copies into the wheel |
 | Public chart semantics | Same mark kinds, options, defaults, layout/LOD decisions |
 | Temporal foundation (#43) | Same `TemporalColumn` / interval visibility for identical Arrow-like fixtures ([temporal.md](temporal.md)) |
-| Temporal controller (#44) | Same `TemporalController` commands, revisions, and coordination reject rules ([temporal-controller.md](temporal-controller.md)) |
+| Temporal controller (#44) | Same `TemporalController` commands, exact u64 stable-ID replacement selection, revisions, atomic apply, and coordination reject rules ([temporal-controller.md](temporal-controller.md)) |
 
 Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
 notebook/Reflex vs Node embed / VS Code webview attach). Names and defaults
@@ -126,6 +126,9 @@ match.
 The direct-browser `XygWasmTemporalController` submits packed raw i64/u64
 commands to that same Rust state machine. TypeScript owns only the coalesced
 clock, explicit event transport, keyboard/focus surface, and ARIA presentation.
+Python lists, Node `BigUint64Array`s, and browser `BigInt[]` values all lower to
+the same Rust-canonical sorted/deduplicated selection; no host truncates or
+reorders the result.
 
 ---
 

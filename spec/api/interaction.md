@@ -246,6 +246,24 @@ rows-selections are non-durable — is
 [`../design/view-state.md`](../design/view-state.md) §5; the wire messages
 are in [`../design/wire-protocol.md`](../design/wire-protocol.md) §4.
 
+### 3.1 Temporal linked-view control
+
+`xyg.TemporalController` is the lifecycle-safe, host-neutral control surface
+for time scrubbing and playback; Node exposes the same low-level verbs and the
+browser exposes `XygWasmTemporalController`. All hosts support range, cursor,
+step, play/pause, rate, direction, loop, reduced motion, and exact stable-ID
+selection replacement. Arrow/Home/End/Space and the single-tab-stop slider ARIA
+contract are defined in
+[`../design/temporal-controller.md`](../design/temporal-controller.md).
+
+Coordination is explicitly opt-in through a nonzero group. Each event replaces
+range, cursor, and the canonical selection together; there is no implicit link
+to ordinary `link_group`, no conversion from stable IDs to local row offsets,
+and no partial apply. Empty selection clears. Disposal cancels playback,
+detaches the scrubber listener, restores its prior focus/ARIA attributes,
+clears selection and coordination bookkeeping, and prevents stale events from
+reviving the instance.
+
 ## 4. Linking
 
 `link_group` names a `BroadcastChannel` opened as `` `xy:${group}` ``

@@ -386,8 +386,13 @@ function runTemporalCommand(message: any) {
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
     const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
     const outputEnd = outputPtr + outputLen;
-    if (!outputPtr || outputLen !== 176 || outputEnd > exports.memory.buffer.byteLength) {
+    if (!outputPtr || outputLen < 176 || outputLen > operationBudgetBytes
+        || outputEnd > exports.memory.buffer.byteLength) {
       throw new Error("Rust temporal response returned an invalid range");
+    }
+    const selectionCount = new DataView(exports.memory.buffer, outputPtr, 16).getUint32(12, true);
+    if (outputLen !== 176 + selectionCount * 8) {
+      throw new Error("Rust temporal response returned an invalid selection range");
     }
     const response = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
     exports.xyg_wasm_arena_resize(handle, 0);

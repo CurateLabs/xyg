@@ -470,8 +470,18 @@ async function run() {
   }
   reboundScrubber.remove();
   temporal.bindScrubber(scrubber);
+  await temporal.setSelection([(1n << 64n) - 1n, 7n, 7n, 0n]);
+  let rejectedSelectionBound = false;
+  try {
+    temporal.setSelection(Array(10_001).fill(1n));
+  } catch (error) {
+    rejectedSelectionBound = error instanceof RangeError;
+  }
+  if (!rejectedSelectionBound) throw new Error("browser temporal selection bound did not fail before allocation");
   await temporal.setCursor(25n);
-  if (temporal.state.cursor !== 25n || temporalEvents.length < 1
+  if (temporal.state.cursor !== 25n
+      || temporal.state.selection.join(",") !== `0,7,${(1n << 64n) - 1n}`
+      || temporalEvents.length < 1
       || scrubber.getAttribute("aria-valuenow") !== "25") {
     throw new Error("direct-browser temporal state, coordination, or ARIA did not round-trip");
   }
@@ -505,6 +515,9 @@ async function run() {
   await peer.applyEvent(temporalEvents.at(-1));
   if (peer.state.cursor !== temporalEvents.at(-1).cursor) {
     throw new Error("cross-worker temporal coordination lost exact bigint state");
+  }
+  if (peer.state.selection.join(",") !== temporal.state.selection.join(",")) {
+    throw new Error("cross-worker temporal selection was not atomic or exact");
   }
   await rejected(peer.applyEvent(temporalEvents.at(-1)), "XYG_WASM_STALE_REVISION", 10);
   await rejected(temporal.applyEvent(temporalEvents.at(-1)), "XYG_WASM_SELF_ECHO", 11);

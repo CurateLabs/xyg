@@ -10,6 +10,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::temporal::TemporalError;
 
+/// Hard wire and memory bound for one coordinated stable-ID replacement set.
+pub const MAX_COORDINATED_SELECTION_IDS: usize = 10_000;
+
 /// Playback direction: −1 reverse, +1 forward.
 #[repr(i32)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -54,6 +57,8 @@ pub struct ControllerState {
     pub reduced_motion: bool,
     pub revision: u64,
     pub disposed: bool,
+    /// Canonical stable identities: strictly increasing, exact u64 values.
+    pub selection: Vec<u64>,
 }
 
 /// Opt-in coordination payload. Never carries JSON numbers.
@@ -66,6 +71,7 @@ pub struct CoordinationEvent {
     pub range_end: i64,
     pub cursor: i64,
     pub window: i64,
+    pub selection: Vec<u64>,
 }
 
 #[derive(Debug)]
@@ -120,6 +126,7 @@ impl TemporalController {
                 reduced_motion,
                 revision: 1,
                 disposed: false,
+                selection: Vec::new(),
             },
             last_remote: HashMap::new(),
             outbound: None,
@@ -149,6 +156,7 @@ impl TemporalController {
                 range_end: self.state.range_end,
                 cursor: self.state.cursor,
                 window: self.state.window,
+                selection: self.state.selection.clone(),
             });
         } else {
             self.outbound = None;
@@ -157,6 +165,10 @@ impl TemporalController {
 
     pub fn take_outbound(&mut self) -> Option<CoordinationEvent> {
         self.outbound.take()
+    }
+
+    pub fn pending_outbound(&self) -> Option<&CoordinationEvent> {
+        self.outbound.as_ref()
     }
 
     pub fn set_range(&mut self, start: i64, end: i64) -> Result<(), TemporalError> {
@@ -207,6 +219,19 @@ impl TemporalController {
         self.state.cursor = cursor;
         self.state.range_start = start;
         self.state.range_end = end;
+        self.bump_and_queue();
+        Ok(())
+    }
+
+    /// Replace the coordinated stable-ID selection. Rust canonicalizes the
+    /// set so every host observes one deterministic ordering and identity.
+    pub fn set_selection(&mut self, ids: &[u64]) -> Result<(), TemporalError> {
+        self.ensure_live()?;
+        let selection = canonical_selection(ids)?;
+        if self.state.selection == selection {
+            return Ok(());
+        }
+        self.state.selection = selection;
         self.bump_and_queue();
         Ok(())
     }
@@ -354,6 +379,7 @@ impl TemporalController {
         self.state.range_end = event.range_end;
         self.state.window = event.window;
         self.state.cursor = event.cursor;
+        self.state.selection.clone_from(&event.selection);
         // Remote apply does not bump local revision or emit outbound (no echo).
         Ok(true)
     }
@@ -364,6 +390,7 @@ impl TemporalController {
         }
         self.state.playing = false;
         self.state.disposed = true;
+        self.state.selection.clear();
         self.outbound = None;
         self.last_remote.clear();
         Ok(())
@@ -385,7 +412,22 @@ fn validate_event_shape(event: &CoordinationEvent) -> Result<(), TemporalError> 
     {
         return Err(TemporalError::InvalidArgument);
     }
+    if event.selection.len() > MAX_COORDINATED_SELECTION_IDS
+        || event.selection.windows(2).any(|pair| pair[0] >= pair[1])
+    {
+        return Err(TemporalError::InvalidArgument);
+    }
     Ok(())
+}
+
+fn canonical_selection(ids: &[u64]) -> Result<Vec<u64>, TemporalError> {
+    if ids.len() > MAX_COORDINATED_SELECTION_IDS {
+        return Err(TemporalError::InvalidArgument);
+    }
+    let mut canonical = ids.to_vec();
+    canonical.sort_unstable();
+    canonical.dedup();
+    Ok(canonical)
 }
 
 fn clamp(value: i64, lo: i64, hi: i64) -> i64 {
@@ -559,12 +601,14 @@ mod tests {
         let mut a = make(1, 7);
         let mut b = make(2, 7);
         let mut c = make(3, 9); // unrelated group
+        a.set_selection(&[u64::MAX, 7, 7, 0]).unwrap();
         a.set_cursor(200_000).unwrap();
         let event = a.take_outbound().expect("outbound");
         assert_eq!(event.source_instance, 1);
-        assert_eq!(event.revision, 2);
+        assert_eq!(event.revision, 3);
         assert!(b.apply_event(&event).unwrap());
         assert_eq!(b.state().cursor, a.state().cursor);
+        assert_eq!(b.state().selection, [0, 7, u64::MAX]);
         // Source must not echo.
         assert_eq!(a.apply_event(&event).unwrap_err(), TemporalError::SelfEcho);
         // Unrelated group ignores.
@@ -574,6 +618,38 @@ mod tests {
         assert_eq!(
             b.apply_event(&event).unwrap_err(),
             TemporalError::StaleRevision
+        );
+    }
+
+    #[test]
+    fn selection_is_canonical_bounded_and_applied_atomically() {
+        let mut source = make(1, 7);
+        source.set_selection(&[9, 2, 9, 0]).unwrap();
+        assert_eq!(source.state().selection, [0, 2, 9]);
+        let revision = source.state().revision;
+        source.set_selection(&[9, 0, 2]).unwrap();
+        assert_eq!(source.state().revision, revision);
+
+        let event = source.take_outbound().unwrap();
+        assert_eq!(event.selection, [0, 2, 9]);
+        let mut target = make(2, 7);
+        let before = target.state().clone();
+        let malformed = CoordinationEvent {
+            selection: vec![9, 2],
+            ..event.clone()
+        };
+        assert_eq!(
+            target.apply_event(&malformed),
+            Err(TemporalError::InvalidArgument)
+        );
+        assert_eq!(target.state(), &before);
+        assert!(target.apply_event(&event).unwrap());
+        assert_eq!(target.state().selection, [0, 2, 9]);
+
+        let oversized = vec![0; MAX_COORDINATED_SELECTION_IDS + 1];
+        assert_eq!(
+            source.set_selection(&oversized),
+            Err(TemporalError::InvalidArgument)
         );
     }
 
@@ -588,6 +664,7 @@ mod tests {
             range_end: 150_000,
             cursor: 125_000,
             window: 50_000,
+            selection: Vec::new(),
         };
         for malformed in [
             CoordinationEvent {
@@ -658,10 +735,12 @@ mod tests {
     fn disposal_stops_playback_and_rejects_stale() {
         let mut a = make(1, 0);
         a.play().unwrap();
+        a.set_selection(&[1, 2]).unwrap();
         assert!(a.state().playing);
         a.dispose().unwrap();
         assert!(!a.state().playing);
         assert!(a.state().disposed);
+        assert!(a.state().selection.is_empty());
         assert_eq!(a.tick(1_000).unwrap_err(), TemporalError::Disposed);
         assert_eq!(a.set_cursor(1).unwrap_err(), TemporalError::Disposed);
         assert_eq!(a.dispose().unwrap_err(), TemporalError::Disposed);
@@ -802,6 +881,7 @@ mod tests {
             range_end: 20,
             cursor: 20,
             window: 10,
+            selection: Vec::new(),
         };
         assert_eq!(
             coordinate_deliver(&malformed),

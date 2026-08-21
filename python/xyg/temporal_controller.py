@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from types import TracebackType
 from typing import Self
 
@@ -64,7 +64,7 @@ class TemporalController:
         return self._handle
 
     @property
-    def state(self) -> dict[str, int | bool]:
+    def state(self) -> dict[str, int | bool | list[int]]:
         """Return the current canonical Rust state."""
         return _native.temporal_controller_state(self._open_handle())
 
@@ -74,6 +74,11 @@ class TemporalController:
 
     def set_cursor(self, cursor: int) -> Self:
         _native.temporal_controller_set_cursor(self._open_handle(), cursor)
+        return self
+
+    def set_selection(self, ids: Iterable[int]) -> Self:
+        """Replace linked views' exact stable-ID selection (empty clears)."""
+        _native.temporal_controller_set_selection(self._open_handle(), ids)
         return self
 
     def step(self) -> Self:
@@ -112,10 +117,10 @@ class TemporalController:
     def tick(self, elapsed_micros: int) -> bool:
         return _native.temporal_controller_tick(self._open_handle(), elapsed_micros)
 
-    def poll_event(self) -> dict[str, int] | None:
+    def poll_event(self) -> dict[str, int | list[int]] | None:
         return _native.temporal_controller_poll_event(self._open_handle())
 
-    def apply_event(self, event: Mapping[str, int]) -> bool:
+    def apply_event(self, event: Mapping[str, object]) -> bool:
         return _native.temporal_controller_apply_event(self._open_handle(), dict(event))
 
     def dispose(self) -> None:

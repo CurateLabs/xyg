@@ -30,10 +30,12 @@ and precision travel as explicit metadata beside the i64 buffers.
 ### Temporal coordination (#44)
 
 Linked-view scrubbing uses revisioned `CoordinationEvent` payloads
-([temporal-controller.md](temporal-controller.md), ABI 76): `group_id`,
+([temporal-controller.md](temporal-controller.md), ABI 79): `group_id`,
 `source_instance`, `revision`, half-open `range_*`, `cursor`, and `window` as
-typed integers. Self-echo and stale revisions are rejected in Rust; unrelated
-groups never share state.
+typed integers, plus a bounded canonical replacement set of raw u64 stable IDs.
+The selection is never JSON-number encoded. Self-echo and stale revisions are
+rejected in Rust; range/cursor/selection apply atomically and unrelated groups
+never share state.
 
 The catalog does not vary by transport: where a host sends a given message, it
 has the shape specified here, byte for byte. What varies is *which* messages a
