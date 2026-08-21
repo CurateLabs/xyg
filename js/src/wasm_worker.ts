@@ -493,6 +493,32 @@ function runTemporalCommand(message: any) {
   }
 }
 
+function runTemporalGraphCommand(message: any) {
+  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
+  try {
+    if (activeGraph) {
+      clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
+      error(activeGraph.requestId, "XYG_WASM_CANCELLED", "graph layout was superseded by a temporal graph frame", XYG_WASM_STATUS.CANCELLED); activeGraph = null;
+    }
+    if (!(message.command instanceof ArrayBuffer) || message.command.byteLength < 32 || message.command.byteLength > operationBudgetBytes) {
+      error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "temporal graph command is malformed"); return;
+    }
+    let status = exports.xyg_wasm_arena_resize(handle, message.command.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) { error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0; const end = ptr + message.command.byteLength;
+    if (!ptr || end > exports.memory.buffer.byteLength) throw new Error("invalid temporal graph staging range");
+    new Uint8Array(exports.memory.buffer, ptr, message.command.byteLength).set(new Uint8Array(message.command));
+    status = exports.xyg_wasm_temporal_graph_execute(handle, 0, message.command.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) { const detail = readXygWasmError(exports, handle); exports.xyg_wasm_arena_resize(handle, 0); error(message.requestId, statusCode(status), detail, status); return; }
+    const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0; const outputLen = exports.xyg_wasm_output_len(handle) >>> 0; const outputEnd = outputPtr + outputLen;
+    if (outputLen !== 0 && (!outputPtr || outputLen < 64 || outputLen > operationBudgetBytes || outputEnd > exports.memory.buffer.byteLength)) throw new Error("Rust temporal graph response returned an invalid range");
+    const response = outputLen === 0 ? new ArrayBuffer(0) : new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
+    exports.xyg_wasm_arena_resize(handle, 0); reply(message.requestId, response, [response]);
+  } catch (cause) {
+    lifecycle = "failed"; disposeRust(); error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM temporal graph command trapped");
+  }
+}
+
 scope.onmessage = (event: MessageEvent<any>) => {
   const message = event.data;
   if (message?.type === "init") {
@@ -517,6 +543,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     runTemporalCommand(message);
     return;
   }
+  if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "graph.cose") { const timer = setTimeout(() => runGraph(message), 0); queued.set(message.requestId, timer as unknown as number); return; }
   if (message?.type === "cancel") {
     const timer = queued.get(message.requestId);

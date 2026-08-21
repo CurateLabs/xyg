@@ -11,11 +11,12 @@ pub mod aggregate;
 pub mod compile;
 mod graph;
 mod temporal;
+mod temporal_graph;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 7;
+pub const WASM_ABI_VERSION: u32 = 8;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -55,6 +56,7 @@ struct Instance {
     aggregate_job: Option<aggregate::AggregateJob>,
     aggregate_sequence: u32,
     temporal: Option<xyg_engine::temporal_controller::TemporalController>,
+    temporal_graph: Option<temporal_graph::WasmTemporalGraph>,
     graph_job: Option<graph::GraphJob>,
 }
 
@@ -141,6 +143,7 @@ impl Registry {
                 aggregate_job: None,
                 aggregate_sequence: 0,
                 temporal: None,
+                temporal_graph: None,
                 graph_job: None,
             }),
         };
@@ -218,6 +221,19 @@ pub extern "C" fn xyg_wasm_instance_dispose(handle: u32) -> i32 {
 pub extern "C" fn xyg_wasm_temporal_execute(handle: u32, offset: usize, length: usize) -> i32 {
     with_instance_mut(handle, |instance| {
         temporal::execute(instance, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Execute one packed Rust-owned temporal graph create/frame command.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_temporal_graph_execute(
+    handle: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        temporal_graph::execute(instance, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
