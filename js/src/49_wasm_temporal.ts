@@ -76,6 +76,7 @@ export interface XygTemporalControllerOptions {
   loop?: boolean;
   reducedMotion?: boolean;
   onEvent?: (event: XygTemporalEvent) => void;
+  onError?: (error: unknown) => void;
 }
 
 function command(op: number, bytes = 16): DataView<ArrayBuffer> {
@@ -139,16 +140,19 @@ export class XygWasmTemporalController {
   private scrubberFormat: ((state: XygTemporalState) => string) | null = null;
   private scrubberAttributes: Map<string, string | null> | null = null;
   private readonly onEvent?: (event: XygTemporalEvent) => void;
+  private readonly onError?: (error: unknown) => void;
   state: XygTemporalState;
 
   private constructor(
     private readonly worker: XygWasmWorker,
     initial: XygTemporalResult,
     onEvent?: (event: XygTemporalEvent) => void,
+    onError?: (error: unknown) => void,
   ) {
     this.state = initial.state;
     this.queue = Promise.resolve(initial);
     this.onEvent = onEvent;
+    this.onError = onError;
   }
 
   static async create(worker: XygWasmWorker, options: XygTemporalControllerOptions) {
@@ -178,7 +182,7 @@ export class XygWasmTemporalController {
     );
     view.setUint32(84, prefersReduced ? 1 : 0, true);
     const initial = decode(await worker.temporalCommand(view.buffer));
-    return new XygWasmTemporalController(worker, initial, options.onEvent);
+    return new XygWasmTemporalController(worker, initial, options.onEvent, options.onError);
   }
 
   private submit(view: DataView<ArrayBuffer>): Promise<XygTemporalResult> {
@@ -264,11 +268,12 @@ export class XygWasmTemporalController {
     this.keyTarget = element; element.tabIndex = 0; element.setAttribute("role", "slider");
     element.setAttribute("aria-label", "Temporal position");
     this.keyHandler = (event) => {
-      if (event.key === "ArrowRight" || event.key === "ArrowUp") void this.setDirection(1).then(() => this.step());
-      else if (event.key === "ArrowLeft" || event.key === "ArrowDown") void this.setDirection(-1).then(() => this.step());
-      else if (event.key === "Home") void this.setCursor(this.state.domainStart);
-      else if (event.key === "End") void this.setCursor(this.state.domainEnd - 1n);
-      else if (event.key === " ") void (this.state.playing ? this.pause() : this.play());
+      const guard = (work: Promise<unknown>) => { void work.catch((error) => this.onError?.(error)); };
+      if (event.key === "ArrowRight" || event.key === "ArrowUp") guard(this.setDirection(1).then(() => this.step()));
+      else if (event.key === "ArrowLeft" || event.key === "ArrowDown") guard(this.setDirection(-1).then(() => this.step()));
+      else if (event.key === "Home") guard(this.setCursor(this.state.domainStart));
+      else if (event.key === "End") guard(this.setCursor(this.state.domainEnd - 1n));
+      else if (event.key === " ") guard(this.state.playing ? this.pause() : this.play());
       else return;
       event.preventDefault();
     };

@@ -378,7 +378,9 @@ function runTemporalCommand(message: any) {
       .set(new Uint8Array(message.command));
     status = exports.xyg_wasm_temporal_execute(handle, 0, message.command.byteLength);
     if (status !== XYG_WASM_STATUS.OK) {
-      error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+      const detail = readXygWasmError(exports, handle);
+      exports.xyg_wasm_arena_resize(handle, 0);
+      error(message.requestId, statusCode(status), detail, status);
       return;
     }
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
