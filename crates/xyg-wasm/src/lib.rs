@@ -1632,7 +1632,38 @@ mod tests {
             xyg_wasm_graph_begin(first, 2, 3, 0, malformed.len()),
             STATUS_INVALID_ARGUMENT
         );
+        let mut future_header = packed_cose(2);
+        future_header[28] = 1;
+        write_arena(first, &future_header);
+        assert_eq!(
+            xyg_wasm_graph_begin(first, 2, 3, 0, future_header.len()),
+            STATUS_INVALID_ARGUMENT
+        );
         assert_eq!(xyg_wasm_instance_dispose(first), STATUS_OK);
         assert_eq!(xyg_wasm_instance_dispose(second), STATUS_OK);
+    }
+
+    #[test]
+    fn graph_edge_heavy_construction_peak_is_rejected_before_decode() {
+        let request = packed_cose(2);
+        // The request itself fits, but the conservative CoSE construction
+        // high-water (decoded endpoints + ForceState + joined adjacency)
+        // does not. This guards the edge multiplier in graph::begin.
+        let budget = request.len() * graph::REQUEST_COPY_FACTOR
+            + 3 * graph::CONSTRUCTION_BYTES_PER_NODE
+            + 2 * graph::CONSTRUCTION_BYTES_PER_EDGE
+            - 1;
+        let handle = xyg_wasm_instance_new(budget);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_graph_begin(handle, 1, 1, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        with_instance_mut(handle, |instance| {
+            assert!(instance.graph_job.is_none());
+            assert!(instance.output.is_empty());
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 }

@@ -5,6 +5,7 @@ import {
   XYG_WASM_GRAPH_MAGIC,
   XYG_WASM_GRAPH_MAX_EDGES,
   XYG_WASM_GRAPH_MAX_NODES,
+  XYG_WASM_GRAPH_MAX_STEPS,
   XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES,
   XYG_WASM_GRAPH_OUTPUT_MAGIC,
   XYG_WASM_GRAPH_OUTPUT_VERSION,
@@ -47,7 +48,7 @@ export function encodeWasmCose(request: XygWasmGraphRequest): ArrayBuffer {
   if (request.pinned?.some(Boolean) && !hasPositions) throw new TypeError("pinned nodes require authored x and y positions");
   if (request.parents !== undefined && (!(request.parents instanceof BigUint64Array) || request.parents.length !== n)) throw new TypeError("parents must be an nNodes-length BigUint64Array");
   const totalSteps = Number(request.totalSteps ?? 300);
-  if (!Number.isInteger(totalSteps) || totalSteps <= 0 || totalSteps > 1_000_000) throw new RangeError("totalSteps must be an integer in 1..1000000");
+  if (!Number.isInteger(totalSteps) || totalSteps <= 0 || totalSteps > XYG_WASM_GRAPH_MAX_STEPS) throw new RangeError(`totalSteps must be an integer in 1..${XYG_WASM_GRAPH_MAX_STEPS}`);
   const c = request.cose ?? {};
   const allowed = new Set(["idealEdgeLength", "repulsionStrength", "gravityStrength", "coolingFactor", "overlapPadding", "componentSpacing", "bounds"]);
   const unknown = Object.keys(c).filter((key) => !allowed.has(key));
@@ -78,8 +79,14 @@ export function decodeWasmGraphCheckpoint(buffer: ArrayBuffer): XygWasmGraphChec
   const v = new DataView(buffer); let magic = ""; for (let i = 0; i < 4; i++) magic += String.fromCharCode(v.getUint8(i));
   if (magic !== XYG_WASM_GRAPH_OUTPUT_MAGIC || v.getUint32(4, true) !== XYG_WASM_GRAPH_OUTPUT_VERSION || v.getUint32(8, true) !== XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES) throw new TypeError("WASM graph checkpoint header is incompatible");
   const revision = v.getUint32(12, true), step = v.getUint32(16, true), totalSteps = v.getUint32(20, true), n = v.getUint32(24, true), alpha = v.getFloat64(28, true);
+  if (revision === 0 || totalSteps === 0 || step === 0 || step > totalSteps
+      || n > XYG_WASM_GRAPH_MAX_NODES || !Number.isFinite(alpha) || alpha < 0 || alpha > 1
+      || v.getUint32(36, true) !== 0) {
+    throw new TypeError("WASM graph checkpoint fields are invalid");
+  }
   if (buffer.byteLength !== XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES + n * 16) throw new TypeError("WASM graph checkpoint length is invalid");
   const x = new Float64Array(buffer.slice(XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES, XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES + n * 8)); const y = new Float64Array(buffer.slice(XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES + n * 8));
+  if (x.some((value) => !Number.isFinite(value)) || y.some((value) => !Number.isFinite(value))) throw new TypeError("WASM graph checkpoint positions are non-finite");
   return { revision, step, totalSteps, alpha, phase: step >= totalSteps || alpha < .001 ? "complete" : step === 1 ? "initial" : "update", x, y };
 }
 

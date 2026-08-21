@@ -106,11 +106,18 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_GRAPH_VERSION = {int(graph['version'])} as const;",
         f"export const XYG_WASM_GRAPH_MAGIC = {json.dumps(graph['request_magic'])} as const;",
         f"export const XYG_WASM_GRAPH_HEADER_BYTES = {int(graph['header_bytes'])} as const;",
+        f"export const XYG_WASM_GRAPH_OFFSETS = {json.dumps(graph['request_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_GRAPH_FLAGS = {json.dumps(graph['flags'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_GRAPH_OUTPUT_MAGIC = {json.dumps(graph['output_magic'])} as const;",
         f"export const XYG_WASM_GRAPH_OUTPUT_VERSION = {int(graph['output_version'])} as const;",
         f"export const XYG_WASM_GRAPH_OUTPUT_HEADER_BYTES = {int(graph['output_header_bytes'])} as const;",
+        f"export const XYG_WASM_GRAPH_OUTPUT_OFFSETS = {json.dumps(graph['output_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_GRAPH_MAX_NODES = {int(graph['max_nodes'])} as const;",
         f"export const XYG_WASM_GRAPH_MAX_EDGES = {int(graph['max_edges'])} as const;",
+        f"export const XYG_WASM_GRAPH_MAX_STEPS = {int(graph['max_steps'])} as const;",
+        f"export const XYG_WASM_GRAPH_REQUEST_COPY_FACTOR = {int(graph['request_copy_factor'])} as const;",
+        f"export const XYG_WASM_GRAPH_CONSTRUCTION_BYTES_PER_NODE = {int(graph['construction_bytes_per_node'])} as const;",
+        f"export const XYG_WASM_GRAPH_CONSTRUCTION_BYTES_PER_EDGE = {int(graph['construction_bytes_per_edge'])} as const;",
         f"export const XYG_WASM_GRAPH_FIRST_PAINT_STEPS = {int(graph['first_paint_steps'])} as const;",
         f"export const XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS = {int(graph['default_chunk_steps'])} as const;",
         f"export const XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS = {int(graph['default_max_wall_ms'])} as const;",
@@ -268,8 +275,15 @@ def verify_rust(manifest: dict[str, object]) -> None:
         ("OUTPUT_HEADER", "output_header_bytes"),
         ("MAX_NODES", "max_nodes"),
         ("MAX_EDGES", "max_edges"),
+        ("MAX_STEPS", "max_steps"),
+        ("REQUEST_COPY_FACTOR", "request_copy_factor"),
+        ("CONSTRUCTION_BYTES_PER_NODE", "construction_bytes_per_node"),
+        ("CONSTRUCTION_BYTES_PER_EDGE", "construction_bytes_per_edge"),
     ):
-        match = re.search(rf"const {rust_name}: (?:u32|usize) = ([0-9_]+);", graph_source)
+        match = re.search(
+            rf"(?:pub\(super\) )?const {rust_name}: (?:u32|usize) = ([0-9_]+);",
+            graph_source,
+        )
         if not match or int(match.group(1).replace("_", "")) != int(
             manifest["graph"][manifest_name]
         ):

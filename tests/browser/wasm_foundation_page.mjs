@@ -1046,6 +1046,16 @@ async function run() {
   const currentGraph = graphWorker.layoutCose(graphInput(), { sequence: 31, revision: 31, chunkSteps: 8 });
   await rejected(staleGraph.result, "XYG_WASM_CANCELLED", 6);
   if ((await currentGraph.result).revision !== 31) throw new Error("superseded graph reply crossed revisions");
+  const callbackFailure = graphWorker.layoutCose(graphInput(), {
+    sequence: 32,
+    revision: 32,
+    chunkSteps: 1,
+    onUpdate: () => { throw new Error("consumer progress failed"); },
+  });
+  await rejected(callbackFailure.result, "XYG_WASM_PROGRESS_CALLBACK_FAILED");
+  if ((await graphWorker.layoutCose(graphInput(), { sequence: 33, revision: 33 }).result).revision !== 33) {
+    throw new Error("graph worker did not recover after cancelling a failed progress callback");
+  }
   await Promise.all([graphWorker.dispose(), peerGraphWorker.dispose()]);
   const failedGraphWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: await fixtureModule({ graphStepTrap: true }), maxArenaBytes: 1024 });
   await failedGraphWorker.ready;

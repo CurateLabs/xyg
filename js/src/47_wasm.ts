@@ -81,6 +81,7 @@ type Pending = {
   resolve(value: any): void;
   reject(reason: XygWasmError): void;
   progress?(value: any): void;
+  sequence?: number;
 };
 
 function workerError(value: any): XygWasmError {
@@ -345,7 +346,7 @@ export class XygWasmWorker {
     if (options.onUpdate !== undefined && typeof options.onUpdate !== "function") throw new TypeError("onUpdate must be a function");
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const requestId = this.allocateRequest();
-    const result = new Promise<XygWasmGraphCheckpoint>((resolve, reject) => this.pending.set(requestId, { resolve, reject, progress: options.onUpdate }));
+    const result = new Promise<XygWasmGraphCheckpoint>((resolve, reject) => this.pending.set(requestId, { resolve, reject, progress: options.onUpdate, sequence }));
     try {
       this.worker.postMessage({ type: "graph.cose", requestId, sequence, revision, request, chunkSteps, maxWallMs }, [request]);
     } catch (cause) {
@@ -455,7 +456,25 @@ export class XygWasmWorker {
   private onMessage(message: any) {
     const pending = this.pending.get(message?.requestId);
     if (!pending) return;
-    if (message.progress && message.ok) { pending.progress?.(message.value); return; }
+    if (message.progress && message.ok) {
+      try {
+        pending.progress?.(message.value);
+      } catch (cause) {
+        this.pending.delete(message.requestId);
+        pending.reject(new XygWasmError(
+          "XYG_WASM_PROGRESS_CALLBACK_FAILED",
+          cause instanceof Error ? cause.message : "graph progress callback failed",
+        ));
+        if (!this.disposed && pending.sequence !== undefined) {
+          this.worker.postMessage({
+            type: "cancel",
+            requestId: message.requestId,
+            sequence: pending.sequence,
+          });
+        }
+      }
+      return;
+    }
     this.pending.delete(message.requestId);
     if (message.ok) pending.resolve(message.value);
     else pending.reject(workerError(message.error));

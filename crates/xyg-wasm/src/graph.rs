@@ -17,6 +17,10 @@ const FLAG_PARENTS: u32 = 4;
 const FLAG_BOUNDS: u32 = 8;
 const MAX_NODES: usize = 1_000_000;
 const MAX_EDGES: usize = 4_000_000;
+const MAX_STEPS: u32 = 1_000_000;
+pub(super) const REQUEST_COPY_FACTOR: usize = 2;
+pub(super) const CONSTRUCTION_BYTES_PER_NODE: usize = 112;
+pub(super) const CONSTRUCTION_BYTES_PER_EDGE: usize = 64;
 
 pub(super) struct GraphJob {
     pub sequence: u32,
@@ -115,6 +119,8 @@ pub(super) fn begin(
         || bytes.get(0..4) != Some(MAGIC)
         || u32_at(bytes, 4) != Some(VERSION)
         || u32_at(bytes, 8) != Some(HEADER as u32)
+        || u32_at(bytes, 28) != Some(0)
+        || u64_at(bytes, 120) != Some(0)
     {
         return fail(
             instance,
@@ -134,19 +140,24 @@ pub(super) fn begin(
     let m = u32_at(bytes, 20).unwrap() as usize;
     let total_steps = u32_at(bytes, 24).unwrap();
     let seed = u64_at(bytes, 32).unwrap();
-    if n > MAX_NODES || m > MAX_EDGES || total_steps == 0 {
+    if n > MAX_NODES || m > MAX_EDGES || total_steps == 0 || total_steps > MAX_STEPS {
         return fail(
             instance,
             STATUS_RESOURCE_LIMIT,
             "graph node, edge, or step bound exceeded",
         );
     }
-    // Peak includes transferable staging, decoded typed columns, and the
-    // Rust-owned ForceState before ingress temporaries are released.
+    // Peak includes transferable staging, decoded typed columns, the
+    // Rust-owned ForceState, and the temporary joined/adjacency storage used
+    // while CoSE discovers components and compound membership. In particular,
+    // an edge is retained in the request, decoded source/target columns,
+    // ForceState, the joined edge list, and the undirected adjacency list at
+    // the construction high-water. Under-counting that edge-heavy phase can
+    // admit a request that exceeds the worker's declared operation budget.
     let retained = length
-        .checked_mul(2)
-        .and_then(|v| v.checked_add(n.checked_mul(112)?))
-        .and_then(|v| v.checked_add(m.checked_mul(16)?));
+        .checked_mul(REQUEST_COPY_FACTOR)
+        .and_then(|v| v.checked_add(n.checked_mul(CONSTRUCTION_BYTES_PER_NODE)?))
+        .and_then(|v| v.checked_add(m.checked_mul(CONSTRUCTION_BYTES_PER_EDGE)?));
     if retained.is_none_or(|v| v > instance.max_arena_bytes) {
         return fail(
             instance,

@@ -93,6 +93,7 @@ async function runForceTicksImmediate(args) {
       if (typeof args.onTick === "function") {
         args.onTick({ x: last.x, y: last.y, alpha: last.alpha, step, phase, revision, jobId: args.jobId });
       }
+      if (phase === "complete") break;
       if (step < totalSteps) {
         await yieldEventLoop();
       }
@@ -111,16 +112,22 @@ function runForceTicksInWorker(args) {
     ...serializable
   } = args;
   return new Promise((resolve, reject) => {
-    const worker = new Worker(selfPath, {
-      workerData: { type: "force_ticks", args: serializable },
-    });
+    let settled = false;
+    let worker;
+    const finish = (operation, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (signal) signal.removeEventListener("abort", onAbort);
+      operation(value);
+    };
     const onAbort = () => {
-      worker.terminate().catch(() => {});
-      reject(new Error("force ticks aborted"));
+      worker?.terminate().catch(() => {});
+      finish(reject, new Error("force ticks aborted"));
     };
     const timeout = setTimeout(() => {
-      worker.terminate().catch(() => {});
-      reject(new Error("force ticks exceeded maxWallMs"));
+      worker?.terminate().catch(() => {});
+      finish(reject, new Error("force ticks exceeded maxWallMs"));
     }, Number(args.maxWallMs ?? 30_000));
     if (signal) {
       if (signal.aborted) {
@@ -129,23 +136,33 @@ function runForceTicksInWorker(args) {
       }
       signal.addEventListener("abort", onAbort, { once: true });
     }
+    try {
+      worker = new Worker(selfPath, {
+        workerData: { type: "force_ticks", args: serializable },
+      });
+    } catch (cause) {
+      finish(reject, cause);
+      return;
+    }
     worker.on("message", (msg) => {
       if (msg?.type === "done") {
-        clearTimeout(timeout);
-        resolve(msg.result);
+        finish(resolve, msg.result);
       } else if (msg?.type === "tick" && typeof args.onTick === "function") {
-        args.onTick(msg.state);
+        try {
+          args.onTick(msg.state);
+        } catch (cause) {
+          worker.terminate().catch(() => {});
+          finish(reject, cause);
+        }
       } else if (msg?.type === "error") {
-        clearTimeout(timeout);
-        reject(new Error(msg.message ?? "worker force tick failed"));
+        worker.terminate().catch(() => {});
+        finish(reject, new Error(msg.message ?? "worker force tick failed"));
       }
     });
-    worker.on("error", reject);
+    worker.on("error", (cause) => finish(reject, cause));
     worker.on("exit", (code) => {
-      clearTimeout(timeout);
-      if (signal) signal.removeEventListener("abort", onAbort);
       if (code !== 0) {
-        reject(new Error(`force tick worker exited with code ${code}`));
+        finish(reject, new Error(`force tick worker exited with code ${code}`));
       }
     });
   });

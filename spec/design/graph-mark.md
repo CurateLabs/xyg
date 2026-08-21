@@ -278,6 +278,13 @@ supersession cancels and drops the old Rust state, mismatched revisions fail
 with `STALE_REVISION`, and dispose terminates the worker within the existing
 bounded lifecycle. The default 30 s wall limit is explicit and configurable;
 the packed request and retained state must both fit the instance byte budget.
+Admission conservatively includes both request copies, decoded columns,
+`ForceState`, and the edge-heavy joined/undirected adjacency construction
+high-water. A throwing progress callback rejects and cancels its job rather
+than leaving Rust state or a consumer promise live.
+The generated ABI manifest records every `XYGL`/`XYGO` header offset, flag,
+count bound, and construction multiplier; reserved words must remain zero so
+future formats cannot be misread as version 1.
 Multiple graphs use independent `XygWasmWorker` instances and therefore cannot
 share layout state or replies. TypeScript validates ergonomic buffer shape and
 option spelling, but Rust alone validates topology, options, pins, compounds,
@@ -287,7 +294,8 @@ job; its cooperative `setImmediate` mode is explicit and reserved for batch or
 test callers, never an interactive host default. The same one-tick initial
 phase, bounded chunk size, render revision, cancellation signal, 30 s default
 wall limit, and explicit initial/update/complete phases are visible to Node
-consumers.
+consumers. Native scheduling stops on Rust convergence and emits exactly one
+completion phase rather than replaying no-op ticks through the requested cap.
 
 Python off-event-loop scheduling, drag/pin reheating and the full browser/native
 deterministic tolerance plus first-paint/cadence size-ladder evidence remain the
