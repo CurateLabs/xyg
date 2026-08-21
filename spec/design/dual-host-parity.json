@@ -109,8 +109,8 @@
       "layer": "Force ticks (progressive)",
       "python": "ready",
       "node": "ready",
-      "shared_artifact": "xyg_graph_force_*",
-      "notes": "Never browser main-thread decisions; Barnes–Hut/grid approx at scale"
+      "shared_artifact": "xyg_graph_force_* plus XygCoseDescriptor",
+      "notes": "Never browser main-thread decisions; Rust owns configured CoSE forces, pins, compounds, bounds, and Barnes–Hut/grid approximation"
     },
     {
       "layer": "Viewport + graph LOD + edge LOD",

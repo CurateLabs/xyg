@@ -170,3 +170,21 @@ test("force_scheduler chunked setImmediate completes", async () => {
   assert.equal(result.x.length, 3);
   assert.deepEqual(ticks, [5, 10, 15, 20]);
 });
+
+test("force_scheduler worker transports CoSE options and pins without host math", async () => {
+  const result = await runForceTicks({
+    nNodes: 2,
+    sources: new BigUint64Array([0n]),
+    targets: new BigUint64Array([1n]),
+    x: new Float64Array([-0.5, 0.5]),
+    y: new Float64Array([0, 0]),
+    layout: "cose",
+    pinned: new Uint8Array([1, 0]),
+    cose: { idealEdgeLength: 0.4, bounds: [-1, -1, 1, 1] },
+    totalSteps: 10,
+    chunkSteps: 5,
+    mode: "worker",
+  });
+  assert.equal(result.steps, 10);
+  assert.deepEqual([result.x[0], result.y[0]], [-0.5, 0]);
+});

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 80;
-export const SIGNATURE_SHA256 = "4694c96b2e997392083061425fdc6719315bd316aadbf2a592321021afbcac49";
+export const ABI_VERSION = 81;
+export const SIGNATURE_SHA256 = "6f461e4cf3f9bf9721fde09c4d0871a87baeb1ae9dbf364c1ea2178bfb2de97d";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -45,6 +45,7 @@ export let xyGraphBuildRender;
 export let xyGraphClusterAggregate;
 export let xyGraphEdgeRouteSegments;
 export let xyGraphForceCreate;
+export let xyGraphForceCreateCose;
 export let xyGraphForceDestroy;
 export let xyGraphForceTick;
 export let xyGraphLayout;
@@ -213,6 +214,7 @@ export function bindGeneratedAbi(lib) {
   xyGraphClusterAggregate = lib.func("int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, uint64_t node_budget, uint64_t edge_budget, double * out_x, double * out_y, uint64_t * out_count, uint64_t * out_member_of, uint32_t * out_tier, uint64_t * out_edges_kept)");
   xyGraphEdgeRouteSegments = lib.func("int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments)");
   xyGraphForceCreate = lib.func("int32_t xyg_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, uint64_t seed, uint32_t algorithm, uint64_t * out_handle)");
+  xyGraphForceCreateCose = lib.func("int32_t xyg_graph_force_create_cose(const void * descriptor, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, uint64_t seed, uint64_t * out_handle)");
   xyGraphForceDestroy = lib.func("int32_t xyg_graph_force_destroy(uint64_t handle)");
   xyGraphForceTick = lib.func("int32_t xyg_graph_force_tick(uint64_t handle, uint64_t n_nodes, uint32_t steps, double * out_x, double * out_y, double * out_alpha)");
   xyGraphLayout = lib.func("int32_t xyg_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, const uint64_t * roots, uint64_t n_roots, uint64_t seed, double * out_x, double * out_y)");

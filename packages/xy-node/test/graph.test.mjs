@@ -22,7 +22,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 80);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 81);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -82,6 +82,55 @@ test("seeded force is deterministic across two calls", () => {
     graphForceDestroy(first);
     graphForceDestroy(second);
   }
+});
+
+test("configurable CoSE pins and bounds stay in the Rust kernel", () => {
+  const x = new Float64Array([-0.75, 0, 0.75]);
+  const y = new Float64Array([0.25, 0, -0.25]);
+  const handle = graphForceCreate(
+    3,
+    new BigUint64Array([0n, 1n]),
+    new BigUint64Array([1n, 2n]),
+    {
+      algorithm: "cose",
+      x,
+      y,
+      pinned: new Uint8Array([1, 0, 0]),
+      parents: new BigUint64Array([(1n << 64n) - 1n, 0n, (1n << 64n) - 1n]),
+      cose: {
+        idealEdgeLength: 0.4,
+        repulsionStrength: 2,
+        gravityStrength: 0.2,
+        coolingFactor: 0.9,
+        overlapPadding: 0.5,
+        componentSpacing: 3,
+        bounds: [-1, -1, 1, 1],
+      },
+    },
+  );
+  try {
+    const tick = graphForceTick(handle, 3, 20);
+    assert.deepEqual([tick.x[0], tick.y[0]], [-0.75, 0.25]);
+    assert.ok([...tick.x, ...tick.y].every((value) => value >= -1 && value <= 1));
+    assert.ok(Math.abs(tick.alpha - 0.9 ** 20) < 1e-12);
+  } finally {
+    graphForceDestroy(handle);
+  }
+});
+
+test("CoSE ergonomic options fail closed instead of falling back", () => {
+  assert.throws(
+    () => graphForceCreate(1, [], [], { algorithm: "force", cose: {} }),
+    /require algorithm='cose'/,
+  );
+  assert.throws(
+    () => graphForceCreate(1, [], [], { algorithm: "cose", cose: { hostForce: 1 } }),
+    /unknown CoSE option/,
+  );
+  assert.throws(
+    () => graphForceCreate(1, [], [], { algorithm: "cose", pinned: [1] }),
+    /require explicit opts.x and opts.y/,
+  );
 });
 
 test("force layout catalog names are seeded deterministic", () => {

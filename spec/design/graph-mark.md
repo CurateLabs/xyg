@@ -238,10 +238,33 @@ pin seeded FR output across Python and Node for the exact small-N path.
 Progressive ticks (`force_create` + `algorithm` + `force_tick`) cover FR /
 FA2 / spring / linlog / yifanhu at minimum; KK / stress share the same
 handle for n ≤ 500.
-`cose` uses that handle across native hosts. This bounded first slice exposes a
-single documented default profile. Caller-set ideal length/repulsion/gravity,
-explicit pinned nodes, compound participation, and direct browser Worker/WASM
-execution remain required follow-up for #35; hosts must not emulate them.
+`cose` uses that handle across native hosts. Python accepts snake-case option
+keys in `cose={...}`; Node accepts the corresponding camel-case keys. Both
+lower to one `XygCoseDescriptor` and `xyg_graph_force_create_cose`:
+
+| Policy | Python key | Node key | Default / validation |
+|---|---|---|---|
+| ideal edge length | `ideal_edge_length` | `idealEdgeLength` | `1.0`, finite and > 0 |
+| repulsion | `repulsion_strength` | `repulsionStrength` | `1.25`, finite and ≥ 0 |
+| component gravity | `gravity_strength` | `gravityStrength` | `0.08`, finite and ≥ 0 |
+| cooling multiplier | `cooling_factor` | `coolingFactor` | `0.985`, finite and strictly between 0 and 1 |
+| overlap separation / ideal | `overlap_padding` | `overlapPadding` | `0.35`, finite and ≥ 0 |
+| disconnected spacing / ideal | `component_spacing` | `componentSpacing` | `2.5`, finite and ≥ 0 |
+| hard layout bounds | `bounds=(x0,y0,x1,y1)` | `bounds: [x0,y0,x1,y1]` | absent; finite, ordered bounds |
+
+Unknown keys, invalid values, cyclic/self/out-of-range compounds, inconsistent
+buffer lengths, and pins without authored initial positions fail closed. A pin
+mask is node-indexed and preserves the authored f64 coordinate bit-for-bit;
+pins outside authored bounds are rejected rather than moving silently.
+GraphForge `parent_indices` plus validity lower to the canonical `u64::MAX`
+root sentinel. Parent membership joins connected-component discovery and adds
+a symmetric shorter containment spring inside the same Rust tick, so compounds
+participate in repulsion, gravity, cooling, pins, and bounds. Parent validation
+is O(V), including adversarial deep chains.
+
+Direct browser Worker/WASM execution, browser/native deterministic tolerance,
+revision-safe cancellation, and Python off-event-loop scheduling remain the
+explicit #35 closure gate. Hosts must not emulate the shipped CoSE policy.
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid
 approximation: at most 32 members per neighboring cell are evaluated exactly;
 denser neighboring cells and the complete far field are represented by mass
@@ -342,6 +365,7 @@ segments (loops / arrow wings) while preserving source edge identity via
 |---|---|
 | `xyg_graph_layout` | One-shot layout → `out_x`/`out_y` f64 |
 | `xyg_graph_force_create` | Handle for progressive force family; takes `algorithm: u32` (`LAYOUT_*`) |
+| `xyg_graph_force_create_cose` | Configurable CoSE handle; packed options plus optional f64 positions, u8 pins, and u64 compound parents |
 | `xyg_graph_force_tick` | Advance k steps; write positions |
 | `xyg_graph_force_destroy` | Free handle |
 | `xyg_graph_build_csr` | `offsets`/`neighbors` u64 CSR |

@@ -26,6 +26,7 @@ import {
   xyGraphEdgeRouteSegments,
   xyGraphClusterAggregate,
   xyGraphForceCreate,
+  xyGraphForceCreateCose,
   xyGraphForceDestroy,
   xyGraphForceTick,
   xyGraphLayout,
@@ -168,6 +169,22 @@ const GraphProjectionDescriptor = koffi.struct("XygGraphProjectionDescriptor", {
   parent_ids: "const void *",
   parent_validity: "const void *",
   directed: "uint32_t",
+  reserved: "uint32_t",
+});
+
+const CoseDescriptor = koffi.struct("XygCoseDescriptor", {
+  in_x: "const void *",
+  in_y: "const void *",
+  pinned: "const void *",
+  parents: "const void *",
+  ideal_edge_length: "double",
+  repulsion_strength: "double",
+  gravity_strength: "double",
+  cooling_factor: "double",
+  overlap_padding: "double",
+  component_spacing: "double",
+  bounds: "const void *",
+  has_bounds: "uint32_t",
   reserved: "uint32_t",
 });
 
@@ -917,17 +934,77 @@ export function graphForceCreate(nNodes, sources, targets, opts = {}) {
   }
   const algorithm = graphLayoutId(opts.algorithm ?? opts.layout ?? "force");
   const handle = new BigUint64Array(1);
-  const code = xyGraphForceCreate(
-    toU64(nodeCount, "nNodes"),
-    toU64(sourceArray.length, "nEdges"),
-    u64Ptr(sourceArray),
-    u64Ptr(targetArray),
-    f64Ptr(inX),
-    f64Ptr(inY),
-    toU64(opts.seed ?? 0, "opts.seed"),
-    toU32(algorithm, "algorithm"),
-    u64Ptr(handle),
-  );
+  const configuredCose = opts.cose != null || opts.pinned != null || opts.parents != null;
+  let code;
+  if (configuredCose) {
+    if (algorithm !== GRAPH_LAYOUT_COSE) {
+      throw new TypeError("CoSE options, pins, and parents require algorithm='cose'");
+    }
+    const cose = opts.cose ?? {};
+    const allowed = new Set([
+      "idealEdgeLength", "repulsionStrength", "gravityStrength", "coolingFactor",
+      "overlapPadding", "componentSpacing", "bounds",
+    ]);
+    const unknown = Object.keys(cose).filter((key) => !allowed.has(key));
+    if (unknown.length > 0) {
+      throw new TypeError(`unknown CoSE option(s): ${unknown.sort().join(", ")}`);
+    }
+    const pinned = opts.pinned == null ? null : asU8Array(opts.pinned, "opts.pinned");
+    const parents = opts.parents == null ? null : asU64Array(opts.parents, "opts.parents");
+    if (pinned != null && pinned.length !== nodeCount) {
+      throw new RangeError("opts.pinned must have length nNodes");
+    }
+    if (pinned?.some((value) => value > 1)) {
+      throw new RangeError("opts.pinned must contain only booleans or 0/1 integers");
+    }
+    if (parents != null && parents.length !== nodeCount) {
+      throw new RangeError("opts.parents must have length nNodes");
+    }
+    if (pinned?.some((value) => value !== 0) && inX == null) {
+      throw new TypeError("pinned nodes require explicit opts.x and opts.y initial positions");
+    }
+    const bounds = cose.bounds == null ? null : asF64Array(cose.bounds, "opts.cose.bounds");
+    if (bounds != null && bounds.length !== 4) {
+      throw new RangeError("opts.cose.bounds must be [x0, y0, x1, y1]");
+    }
+    const encoded = Buffer.alloc(koffi.sizeof(CoseDescriptor));
+    koffi.encode(encoded, CoseDescriptor, {
+      in_x: pointer(inX, "double *"),
+      in_y: pointer(inY, "double *"),
+      pinned: pointer(pinned, "uint8_t *"),
+      parents: pointer(parents, "uint64_t *"),
+      ideal_edge_length: Number(cose.idealEdgeLength ?? 1.0),
+      repulsion_strength: Number(cose.repulsionStrength ?? 1.25),
+      gravity_strength: Number(cose.gravityStrength ?? 0.08),
+      cooling_factor: Number(cose.coolingFactor ?? 0.985),
+      overlap_padding: Number(cose.overlapPadding ?? 0.35),
+      component_spacing: Number(cose.componentSpacing ?? 2.5),
+      bounds: pointer(bounds, "double *"),
+      has_bounds: bounds == null ? 0 : 1,
+      reserved: 0,
+    });
+    code = xyGraphForceCreateCose(
+      koffi.as(encoded, "const void *"),
+      toU64(nodeCount, "nNodes"),
+      toU64(sourceArray.length, "nEdges"),
+      u64Ptr(sourceArray),
+      u64Ptr(targetArray),
+      toU64(opts.seed ?? 0, "opts.seed"),
+      u64Ptr(handle),
+    );
+  } else {
+    code = xyGraphForceCreate(
+      toU64(nodeCount, "nNodes"),
+      toU64(sourceArray.length, "nEdges"),
+      u64Ptr(sourceArray),
+      u64Ptr(targetArray),
+      f64Ptr(inX),
+      f64Ptr(inY),
+      toU64(opts.seed ?? 0, "opts.seed"),
+      toU32(algorithm, "algorithm"),
+      u64Ptr(handle),
+    );
+  }
   if (code !== 0 || handle[0] === 0n) {
     throw new Error(`xyg_graph_force_create failed with code ${code}`);
   }

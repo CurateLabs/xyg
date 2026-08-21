@@ -421,11 +421,26 @@ export function runLayout(data, opts = {}) {
   let alpha = null;
 
   if (graphIsProgressiveForce(layoutName) && iterations > 0) {
+    const pinned = resolveEncodingValues(data, opts.pinned, "node");
+    let parents = null;
+    if (layoutName === "cose" && data.parentIndices != null) {
+      if (data.parentIndices.length !== n || data.parentValidity?.length !== n) {
+        throw new RangeError("CoSE compound parent metadata must have length nNodes");
+      }
+      parents = new BigUint64Array(n);
+      parents.fill((1n << 64n) - 1n);
+      for (let index = 0; index < n; index += 1) {
+        if (data.parentValidity[index] !== 0) parents[index] = data.parentIndices[index];
+      }
+    }
     const handle = graphForceCreate(n, sources, targets, {
       x: data.x,
       y: data.y,
       seed,
       algorithm: layoutName,
+      cose: opts.cose,
+      pinned,
+      parents,
     });
     try {
       const tick = graphForceTick(handle, n, Math.max(1, iterations));

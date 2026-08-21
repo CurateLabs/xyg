@@ -169,7 +169,14 @@ const scatter = scatterChart(new Float64Array([0, 1]), new Float64Array([0, 1]))
 const dense = scatterChart(xs, ys, { forceDensity: true }); // Tier-2 density
 const line = lineChart(xs, ys);           // M4 when n > DECIMATION_THRESHOLD
 const hist = histogramChart(values, { bins: 10, range: [0, 1] });
-const graph = graphChart(nodes, edges, { layout: "circle", seed: 1 });
+const graph = graphChart(nodes, edges, {
+  layout: "cose",
+  seed: 1,
+  x: new Float64Array([-0.5, 0.5]),
+  y: new Float64Array([0, 0]),
+  pinned: new Uint8Array([1, 0]),
+  cose: { idealEdgeLength: 0.4, bounds: [-1, -1, 1, 1] },
+});
 ```
 
 ## Exports
@@ -190,5 +197,11 @@ const graph = graphChart(nodes, edges, { layout: "circle", seed: 1 });
 Layout names match Python `_native.py`: `preset`, `grid`, `circle`,
 `force`/`fr`, `spring`, `forceatlas2`/`fa2`, `kamada_kawai`/`kk`,
 `yifanhu`, `linlog`, `stress`, `barnes_hut`, `breadthfirst`, `auto`,
-`radial`, `concentric`; aliases `dagre` / `hierarchical` → hierarchical
+`radial`, `concentric`, `cose`; aliases `dagre` / `hierarchical` → hierarchical
 ABI id. Kamada–Kawai / stress fall back to FR when `n > 500`.
+
+Configured CoSE accepts `idealEdgeLength`, `repulsionStrength`,
+`gravityStrength`, `coolingFactor`, `overlapPadding`, `componentSpacing`, and
+`bounds`. `pinned` is a node-length u8/bool mask and requires `x` plus `y`;
+`parents` is a node-length `BigUint64Array` using `2**64-1` for roots. Invalid
+input fails instead of selecting another layout.

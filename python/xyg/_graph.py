@@ -12,6 +12,7 @@ from typing import Any
 from uuid import UUID
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from . import _native
 
@@ -419,7 +420,10 @@ def normalize_graph_inputs(
         tgt_ids = np.asarray(edges["target"])
     else:
         pairs = np.asarray(edges, dtype=object)
-        if pairs.ndim == 2 and pairs.shape[1] == 2:
+        if pairs.size == 0:
+            src_ids = np.empty(0, dtype=object)
+            tgt_ids = np.empty(0, dtype=object)
+        elif pairs.ndim == 2 and pairs.shape[1] == 2:
             src_ids = pairs[:, 0]
             tgt_ids = pairs[:, 1]
         elif isinstance(edges, Sequence) and edges and isinstance(edges[0], (tuple, list)):
@@ -629,6 +633,8 @@ def run_layout(
     node_budget: int = 200_000,
     edge_budget: int = 500_000,
     viewport: tuple[float, float, float, float] | None = None,
+    cose: Mapping[str, Any] | None = None,
+    pinned: ArrayLike | None = None,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
     """Layout via Rust ABI, then emit a perceptually bounded render graph.
 
@@ -645,6 +651,17 @@ def run_layout(
     layout_id = _native.graph_layout_id(layout_name)
     use_progressive = iterations > 0 and layout_id in _native._GRAPH_PROGRESSIVE_FORCE
     if use_progressive:
+        parents = None
+        if layout_id == _native.GRAPH_LAYOUT_COSE and data.parent_indices is not None:
+            parents = np.full(n, np.iinfo(np.uint64).max, dtype=np.uint64)
+            validity = (
+                np.ones(n, dtype=bool)
+                if data.parent_validity is None
+                else np.asarray(data.parent_validity, dtype=bool)
+            )
+            if len(data.parent_indices) != n or len(validity) != n:
+                raise ValueError("CoSE compound parent metadata must have length n_nodes")
+            parents[validity] = np.asarray(data.parent_indices, dtype=np.uint64)[validity]
         handle = _native.graph_force_create(
             n,
             sources,
@@ -653,6 +670,9 @@ def run_layout(
             y=data.y,
             seed=seed,
             algorithm=layout_id,
+            cose=cose,
+            pinned=pinned,
+            parents=parents,
         )
         try:
             x, y, alpha = _native.graph_force_tick(handle, n, max(1, int(iterations)))
