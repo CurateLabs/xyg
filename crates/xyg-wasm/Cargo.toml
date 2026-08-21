@@ -21,3 +21,7 @@ divan = { version = "5.0.1", package = "codspeed-divan-compat" }
 [[bench]]
 name = "typed_series"
 harness = false
+
+[[bench]]
+name = "aggregate"
+harness = false

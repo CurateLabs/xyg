@@ -52,6 +52,16 @@ export interface XygWasmTask<T> {
   cancel(): void;
 }
 
+export interface XygWasmAggregateTaskOptions {
+  sequence?: number;
+  /** Aggregate ownership transfer is mandatory so browser-wide peak memory stays bounded. */
+  transfer?: true;
+}
+
+type AggregateTransferContract = Exclude<XygWasmAggregateTaskOptions["transfer"], undefined>;
+type AssertTrue<T extends true> = T;
+type AggregateTransferMustRemainTrue = AssertTrue<AggregateTransferContract>;
+
 export class XygWasmError extends Error {
   readonly code: string;
   readonly status: number | null;
@@ -276,19 +286,45 @@ export class XygWasmWorker {
     };
   }
 
+  /**
+   * Bin a packed `XYAG` aggregate request. Returns a transferable `XYAO`
+   * buffer; callers decode width/height/grid via `decodeWasmAggregateOutput`.
+   */
+  aggregateBin2d(
+    request: ArrayBuffer | Uint8Array,
+    options: XygWasmAggregateTaskOptions = {},
+  ): XygWasmTask<XygWasmSceneValidation & { aggregate: ArrayBuffer }> {
+    return this.sceneTask("aggregate.bin2d", request, options);
+  }
+
   private sceneTask<T extends XygWasmSceneValidation>(
-    type: "scene.validate" | "scene.paint" | "scene.compile" | "scene.compile_paint",
+    type:
+      | "scene.validate"
+      | "scene.paint"
+      | "scene.compile"
+      | "scene.compile_paint"
+      | "aggregate.bin2d",
     scene: ArrayBuffer | Uint8Array,
     options: { sequence?: number; transfer?: boolean },
   ): XygWasmTask<T> {
     this.assertLive();
+    if (type === "aggregate.bin2d") {
+      if (options.transfer === false) {
+        throw new XygWasmError(
+          "XYG_WASM_INVALID_ARGUMENT",
+          "aggregate requests must transfer ownership; transfer: false is not supported",
+          2,
+        );
+      }
+    }
+    const transfer = options.transfer !== false;
     const requestId = this.allocateRequest();
     const sequence = options.sequence ?? this.nextSequence++;
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
       throw new RangeError("sequence must be a nonzero u32");
     }
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
-    const payload = sceneMessage(scene, options.transfer !== false);
+    const payload = sceneMessage(scene, transfer);
     const result = this.promiseFor<T>(requestId);
     try {
       this.worker.postMessage(

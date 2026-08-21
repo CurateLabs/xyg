@@ -3684,7 +3684,7 @@ fn bin_2d_count(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn bin_2d_count_scalar(
+pub fn bin_2d_count_scalar(
     x: &[f64],
     y: &[f64],
     x0: f64,
@@ -3909,9 +3909,9 @@ pub enum BinColorSource<'a> {
 /// count, like `bin_2d`). Color sums are alpha-weighted linear-light u16, so
 /// a translucent point contributes proportionally and the mean is the
 /// physically downsampled color of the cell's points.
-#[derive(Clone, Copy, Default)]
-pub(crate) struct MeanColorCell {
-    pub(crate) count: u32,
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MeanColorCell {
+    pub count: u32,
     alpha: u64,
     red: u64,
     green: u64,
@@ -3921,7 +3921,7 @@ pub(crate) struct MeanColorCell {
 impl MeanColorCell {
     /// Straight-alpha RGBA8: sRGB mean color + mean point alpha (integer
     /// rounding, half away from zero — deterministic).
-    fn rgba8(&self) -> [u8; 4] {
+    pub fn rgba8(&self) -> [u8; 4] {
         if self.count == 0 || self.alpha == 0 {
             return [0, 0, 0, 0];
         }
@@ -4078,7 +4078,7 @@ pub fn bin_2d_mean_color(
 /// identical by construction). `base` offsets the row index into the color
 /// source so parallel chunks read their own colors.
 #[allow(clippy::too_many_arguments)]
-fn bin_2d_mean_color_accumulate(
+pub fn bin_2d_mean_color_accumulate(
     x: &[f64],
     y: &[f64],
     colors: &BinColorSource<'_>,

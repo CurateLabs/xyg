@@ -355,7 +355,12 @@ f32, M4, viewport binning, density log-encode, histogram, box selection,
 sorted ingest) at the same 10k/100k/1M sizes the pytest suite uses. A
 `kernels.rs` regression is attributed to the kernel there instead of arriving
 mixed with FFI and NumPy work, and each row carries its own flame graph. They
-run in the same CodSpeed job:
+run in the same CodSpeed job.
+
+The `xyg-wasm` `aggregate` bench measures complete packed `XYAG` decode,
+generated-size cooperative checkpoints, and `XYAO` output at 10k, 100k, and 1M
+points for both count and mean-color modes. Strict-CSP browser coverage
+separately verifies Worker transfer, cancellation, and newer-viewport progress.
 
 The Scene rows cover native SVG/raster lowering. The direct-browser harness
 adds representative small/medium/large Scene-to-painter cases and reports
@@ -368,8 +373,8 @@ of thousands of trace runs. It records bounded Rust rejection time and asserts
 that no main-thread painter or DOM state was allocated.
 
 ```bash
-cargo codspeed build -m simulation --bench kernels
-codspeed run --mode simulation -- cargo codspeed run --bench kernels
+cargo codspeed build -m simulation --bench kernels --bench aggregate
+codspeed run --mode simulation -- cargo codspeed run --bench kernels --bench aggregate
 ```
 
 Plain `cargo bench --bench kernels` still works outside CodSpeed: the compat

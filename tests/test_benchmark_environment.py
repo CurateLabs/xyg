@@ -176,14 +176,17 @@ def test_codspeed_dependency_is_declared_and_used_by_ci() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     workflow = (ROOT / ".github" / "workflows" / "codspeed.yml").read_text(encoding="utf-8")
     engine_manifest = (ROOT / "crates" / "xyg-engine" / "Cargo.toml").read_text(encoding="utf-8")
+    wasm_manifest = (ROOT / "crates" / "xyg-wasm" / "Cargo.toml").read_text(encoding="utf-8")
 
     assert "codspeed = [" in pyproject
     assert '"pytest-codspeed>=5,<6"' in pyproject
     assert "-e . --group dev --group codspeed" in workflow
     assert "cargo install cargo-codspeed" in workflow
-    assert "cargo codspeed build -m simulation --bench kernels" in workflow
+    assert "cargo codspeed build -m simulation --bench kernels --bench aggregate" in workflow
     assert "set -euo pipefail" in workflow
-    assert "cargo codspeed run --bench kernels" in workflow
+    assert "cargo codspeed run --bench kernels --bench aggregate" in workflow
+    assert '[[bench]]\nname = "aggregate"\nharness = false' in wasm_manifest
+    assert (ROOT / "crates" / "xyg-wasm" / "benches" / "aggregate.rs").is_file()
     assert 'package = "codspeed-divan-compat"' in engine_manifest
     assert (ROOT / "crates" / "xyg-engine" / "benches" / "kernels.rs").is_file()
 

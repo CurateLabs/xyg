@@ -93,7 +93,7 @@ jobs:
         run: cargo install cargo-codspeed --locked --version 4.6.0
 
       - name: Build Rust kernel benchmarks
-        run: cargo codspeed build -m simulation --bench kernels
+        run: cargo codspeed build -m simulation --bench kernels --bench aggregate
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8 # v5.0.3
@@ -111,5 +111,5 @@ jobs:
           # The codspeed dependency group installs pytest-codspeed for this run.
           run: |
             set -euo pipefail
-            cargo codspeed run --bench kernels
+            cargo codspeed run --bench kernels --bench aggregate
             .venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed

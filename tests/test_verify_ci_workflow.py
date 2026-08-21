@@ -1365,8 +1365,11 @@ def test_codspeed_workflow_rejects_missing_native_kernel_benches(tmp_path: Path)
     path = tmp_path / "codspeed.yml"
     path.write_text(
         workflow.replace("cargo install cargo-codspeed --locked --version 4.6.0\n", "")
-        .replace("        run: cargo codspeed build -m simulation --bench kernels\n", "")
-        .replace("            cargo codspeed run --bench kernels\n", ""),
+        .replace(
+            "        run: cargo codspeed build -m simulation --bench kernels --bench aggregate\n",
+            "",
+        )
+        .replace("            cargo codspeed run --bench kernels --bench aggregate\n", ""),
         encoding="utf-8",
     )
 
@@ -1380,8 +1383,8 @@ def test_codspeed_workflow_rejects_walltime_build_for_simulation_action(tmp_path
     path = tmp_path / "codspeed.yml"
     path.write_text(
         workflow.replace(
-            "cargo codspeed build -m simulation --bench kernels",
-            "cargo codspeed build --bench kernels",
+            "cargo codspeed build -m simulation --bench kernels --bench aggregate",
+            "cargo codspeed build --bench kernels --bench aggregate",
         ),
         encoding="utf-8",
     )

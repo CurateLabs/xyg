@@ -1,6 +1,8 @@
 import {
+  aggregateWasmBin2d,
   createXygWasmWorker,
   frameWasmChart,
+  encodeWasmAggregate,
   encodeWasmColumns,
   hydrateWasmPainter,
   renderWasmChart,
@@ -173,7 +175,14 @@ function utf8(value) {
   return [...u32(bytes.length), ...bytes];
 }
 
-async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnostics = false } = {}) {
+async function fixtureModule({
+  trap = false,
+  disposeTrap = false,
+  highBitDiagnostics = false,
+  aggregateStepTrap = false,
+  aggregateOutputOutOfRange = false,
+  cancelTrap = false,
+} = {}) {
   const names = [
     "xyg_wasm_abi_version",
     "xyg_wasm_scene_version",
@@ -188,6 +197,8 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
     "xyg_wasm_scene_prepare",
     "xyg_wasm_scene_compile",
     "xyg_wasm_scene_compile_prepare",
+    "xyg_wasm_aggregate_bin2d",
+    "xyg_wasm_aggregate_step",
     "xyg_wasm_output_ptr",
     "xyg_wasm_output_len",
     "xyg_wasm_last_error_ptr",
@@ -199,7 +210,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
     "xyg_wasm_last_scene_records",
     "xyg_wasm_last_scene_styles",
   ];
-  const arities = [0, 1, 2, 4];
+  const arities = [0, 1, 2, 3, 4];
   const types = [
     ...u32(arities.length),
     ...arities.flatMap((arity) => [
@@ -211,7 +222,7 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -222,7 +233,12 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
   ];
   const highBit = 0x80000000;
   const values = [
-    4, 9, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    5, 9, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
+    cancelTrap ? 8 : 0,
+    aggregateOutputOutOfRange ? 65520 : 0,
+    aggregateOutputOutOfRange ? 32 : 0,
+    0, 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
@@ -230,6 +246,8 @@ async function fixtureModule({ trap = false, disposeTrap = false, highBitDiagnos
   ];
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
+      || (cancelTrap && index === 8)
+      || (aggregateStepTrap && index === 14)
       ? [0x00, 0x0b] // unreachable; end
       : [0x41, ...i32(values[index] ?? 0), 0x0b];
     const body = [0, ...instructions]; // no local declarations
@@ -251,7 +269,7 @@ async function rejected(promise, code, status = null) {
     await promise;
   } catch (error) {
     if (!(error instanceof XygWasmError)) throw error;
-    if (error.code !== code) throw new Error(`wanted ${code}, got ${error.code}`);
+    if (error.code !== code) throw new Error(`wanted ${code}, got ${error.code}: ${error.message}`);
     if (status !== null && error.status !== status) {
       throw new Error(`wanted status ${status}, got ${error.status}`);
     }
@@ -305,7 +323,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 4,
+    expectedAbiVersion: 5,
     expectedSceneVersion: 9,
   };
 }
@@ -387,7 +405,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 4 || ready.sceneVersion !== 9) {
+  if (ready.abiVersion !== 5 || ready.sceneVersion !== 9) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -799,6 +817,187 @@ async function run() {
     throw new Error("explicit typed-series transfer did not detach caller buffers");
   }
   await transferWorker.dispose();
+
+  const aggWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await aggWorker.ready;
+  const aggPacked = encodeWasmAggregate({
+    x: [0.5, 2.5],
+    y: [0.5, 2.5],
+    x0: 0,
+    x1: 4,
+    y0: 0,
+    y1: 4,
+    width: 4,
+    height: 4,
+    rgba: [255, 0, 0, 255, 0, 0, 255, 255],
+  });
+  if (new Uint8Array(aggPacked).subarray(0, 4).join(",") !== "88,89,65,71") {
+    throw new Error("aggregate encoder did not emit XYAG");
+  }
+  const agg = await aggregateWasmBin2d(aggWorker, aggPacked, {
+    sequence: 1,
+  }).result;
+  if (!(agg.aggregate instanceof ArrayBuffer) || agg.width !== 4 || agg.height !== 4) {
+    throw new Error(`aggregate bin2d did not return XYAO grid: ${JSON.stringify({
+      width: agg.width, height: agg.height, maxCount: agg.maxCount,
+    })}`);
+  }
+  if (new Uint8Array(agg.aggregate).subarray(0, 4).join(",") !== "88,89,65,79") {
+    throw new Error("aggregate bin2d did not emit XYAO");
+  }
+  if (!(agg.maxCount >= 1) || !agg.rgba || agg.rgba.length !== 64) {
+    throw new Error(`aggregate mean-color plane missing: max=${agg.maxCount}`);
+  }
+  let occupied = 0;
+  for (let i = 0; i < agg.grid.length; i++) {
+    if (agg.grid[i] > 0) occupied += 1;
+  }
+  if (occupied !== 2) {
+    throw new Error(`aggregate expected 2 occupied cells, got ${occupied}`);
+  }
+  for (const rgba of [undefined, []]) {
+    const empty = await aggregateWasmBin2d(aggWorker, {
+      x: [], y: [], x0: 0, x1: 1, y0: 0, y1: 1, width: 3, height: 2, rgba,
+    }).result;
+    if (empty.maxCount !== 0 || empty.grid.length !== 6
+        || empty.grid.some((value) => value !== 0)
+        || (rgba && (!empty.rgba || empty.rgba.some((value) => value !== 0)))) {
+      throw new Error("empty aggregate did not match the native zero-grid contract");
+    }
+  }
+  for (const bad of [
+    { x: [0], y: [0], width: 2 ** 32, height: 1 },
+    { x: [0], y: [0], width: 1, height: 1, rgba: [256, 0, 0, 255] },
+  ]) {
+    let rejectedInput = false;
+    try { encodeWasmAggregate({ x0: 0, x1: 1, y0: 0, y1: 1, ...bad }); } catch (error) { rejectedInput = error instanceof TypeError || error instanceof RangeError; }
+    if (!rejectedInput) throw new Error("aggregate encoder accepted an out-of-range u32/u8 or empty input");
+  }
+  const oversized = { length: 4_194_304 };
+  let rejectedBytes = false;
+  try {
+    encodeWasmAggregate({ x: oversized, y: oversized, x0: 0, x1: 1, y0: 0, y1: 1, width: 1, height: 1 });
+  } catch (error) {
+    rejectedBytes = error instanceof RangeError;
+  }
+  if (!rejectedBytes) throw new Error("aggregate encoder allocated beyond its generated byte bound");
+  let cloneRejected = false;
+  try {
+    aggWorker.aggregateBin2d(new Uint8Array(1), { transfer: false });
+  } catch (error) {
+    cloneRejected = error instanceof XygWasmError
+      && error.code === "XYG_WASM_INVALID_ARGUMENT" && error.status === 2;
+  }
+  if (!cloneRejected) throw new Error("aggregate clone mode did not fail before postMessage");
+  const oversizedTransfer = aggWorker.aggregateBin2d(new Uint8Array(600 * 1024));
+  await rejected(oversizedTransfer.result, "XYG_WASM_RESOURCE_LIMIT", 3);
+  const rawTransferred = aggWorker.aggregateBin2d(new Uint8Array(400 * 1024));
+  await rejected(rawTransferred.result, "XYG_WASM_INVALID_ARGUMENT", 2);
+  await aggWorker.dispose();
+
+  const checkpointWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8 * 1024 * 1024 });
+  await checkpointWorker.ready;
+  const checkpointPoints = new Float64Array(100_000).fill(0.5);
+  const firstAggregate = aggregateWasmBin2d(checkpointWorker, { x: checkpointPoints, y: checkpointPoints, x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64 }, { sequence: 1 });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const newerAggregate = aggregateWasmBin2d(checkpointWorker, { x: [0.5], y: [0.5], x0: 0, x1: 1, y0: 0, y1: 1, width: 2, height: 2 }, { sequence: 2 });
+  await rejected(firstAggregate.result, "XYG_WASM_CANCELLED", 6);
+  const newer = await newerAggregate.result;
+  if (newer.maxCount !== 1 || newer.width !== 2) throw new Error("new viewport did not progress after aggregate checkpoint cancellation");
+  await checkpointWorker.dispose();
+
+  const staleWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8 * 1024 * 1024,
+  });
+  await staleWorker.ready;
+  const currentAggregate = aggregateWasmBin2d(staleWorker, {
+    x: checkpointPoints, y: checkpointPoints, x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
+  }, { sequence: 2 });
+  const staleScene = staleWorker.validateScene(canonicalSceneV9(), { sequence: 1, transfer: false });
+  await rejected(staleScene.result, "XYG_WASM_STALE_SEQUENCE", 7);
+  const current = await currentAggregate.result;
+  if (current.maxCount !== 100_000) throw new Error("stale scene request cancelled the current aggregate");
+  await staleWorker.dispose();
+
+  for (const [name, invoke] of [
+    ["validate", (w) => w.validateScene(canonicalSceneV9(), { sequence: 2, transfer: false })],
+    ["paint", (w) => w.prepareScene(canonicalSceneV9(), { sequence: 2, transfer: false })],
+    ["compile", (w) => w.compileScene(packed.slice(0), { sequence: 2, transfer: false })],
+    ["compile_paint", (w) => w.compilePrepareScene(packed.slice(0), { sequence: 2, transfer: false })],
+  ]) {
+    const operationWorker = createXygWasmWorker({
+      workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8 * 1024 * 1024,
+    });
+    await operationWorker.ready;
+    const pendingAggregate = aggregateWasmBin2d(operationWorker, {
+      x: checkpointPoints, y: checkpointPoints, x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
+    }, { sequence: 1 });
+    const nextOperation = invoke(operationWorker);
+    await rejected(pendingAggregate.result, "XYG_WASM_CANCELLED", 6);
+    await nextOperation.result;
+    await operationWorker.dispose();
+    if (!name) throw new Error("unreachable aggregate supersession case");
+  }
+
+  for (const fixture of [
+    { aggregateStepTrap: true },
+    { aggregateOutputOutOfRange: true },
+  ]) {
+    const checkpointFailure = createXygWasmWorker({
+      workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+      wasm: await fixtureModule(fixture),
+      maxArenaBytes: 1024,
+    });
+    await checkpointFailure.ready;
+    const failed = aggregateWasmBin2d(checkpointFailure, {
+      x: [0.5], y: [0.5], x0: 0, x1: 1, y0: 0, y1: 1, width: 1, height: 1,
+    }, { sequence: 1 });
+    await rejected(failed.result, "XYG_WASM_TRAP");
+    await rejected(
+      checkpointFailure.validateScene(canonicalSceneV9(), { sequence: 2 }).result,
+      "XYG_WASM_NOT_READY",
+    );
+    await checkpointFailure.dispose();
+  }
+
+  const cleanupTrapWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: await fixtureModule({ cancelTrap: true }),
+    maxArenaBytes: 1024,
+  });
+  await cleanupTrapWorker.ready;
+  const cleanupTrapAggregate = aggregateWasmBin2d(cleanupTrapWorker, {
+    x: [0.5], y: [0.5], x0: 0, x1: 1, y0: 0, y1: 1, width: 1, height: 1,
+  }, { sequence: 1 });
+  const cleanupTrapNext = cleanupTrapWorker.validateScene(
+    canonicalSceneV9(), { sequence: 2, transfer: false },
+  );
+  await rejected(cleanupTrapAggregate.result, "XYG_WASM_TRAP");
+  await rejected(cleanupTrapNext.result, "XYG_WASM_TRAP");
+  await cleanupTrapWorker.dispose();
+
+  const cancelTrapWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: await fixtureModule({ cancelTrap: true }),
+    maxArenaBytes: 1024,
+  });
+  await cancelTrapWorker.ready;
+  const cancelTrapAggregate = aggregateWasmBin2d(cancelTrapWorker, {
+    x: [0.5], y: [0.5], x0: 0, x1: 1, y0: 0, y1: 1, width: 1, height: 1,
+  }, { sequence: 1 });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  cancelTrapAggregate.cancel();
+  await rejected(cancelTrapAggregate.result, "XYG_WASM_CANCELLED");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await rejected(
+    cancelTrapWorker.validateScene(canonicalSceneV9(), { sequence: 2 }).result,
+    "XYG_WASM_NOT_READY",
+  );
+  await cancelTrapWorker.dispose();
 
   const malformed = canonicalSceneV9();
   malformed[0] = 0;
