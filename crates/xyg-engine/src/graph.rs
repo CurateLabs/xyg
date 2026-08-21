@@ -1193,6 +1193,15 @@ pub fn layout_force_family(
         None => return false,
     };
     state.tick(steps.max(1));
+    if !state.alpha.is_finite()
+        || state
+            .x
+            .iter()
+            .chain(&state.y)
+            .any(|value| !value.is_finite())
+    {
+        return false;
+    }
     out_x.copy_from_slice(&state.x);
     out_y.copy_from_slice(&state.y);
     true
@@ -1205,6 +1214,15 @@ pub fn force_tick(handle: u64, steps: u32, out_x: &mut [f64], out_y: &mut [f64])
         return None;
     }
     state.tick(steps);
+    if !state.alpha.is_finite()
+        || state
+            .x
+            .iter()
+            .chain(&state.y)
+            .any(|value| !value.is_finite())
+    {
+        return None;
+    }
     out_x.copy_from_slice(&state.x);
     out_y.copy_from_slice(&state.y);
     Some(state.alpha)

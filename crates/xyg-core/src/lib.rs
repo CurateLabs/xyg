@@ -8273,6 +8273,49 @@ mod tests {
     }
 
     #[test]
+    fn graph_force_abi_never_exposes_overflowed_positions() {
+        let sources = [0_u64];
+        let targets = [1_u64];
+        let x = [f64::MAX, -f64::MAX];
+        let y = [0.0_f64, 0.0];
+        let mut handle = 0_u64;
+        let create = unsafe {
+            xyg_graph_force_create(
+                2,
+                1,
+                sources.as_ptr(),
+                targets.as_ptr(),
+                x.as_ptr(),
+                y.as_ptr(),
+                7,
+                graph::LAYOUT_COSE,
+                &mut handle,
+            )
+        };
+        assert_eq!(create, 0);
+        assert_ne!(handle, 0);
+
+        let mut out_x = [17.0_f64; 2];
+        let mut out_y = [19.0_f64; 2];
+        let mut alpha = 23.0_f64;
+        let tick = unsafe {
+            xyg_graph_force_tick(
+                handle,
+                2,
+                1,
+                out_x.as_mut_ptr(),
+                out_y.as_mut_ptr(),
+                &mut alpha,
+            )
+        };
+        assert_eq!(tick, -1);
+        assert_eq!(out_x, [17.0; 2]);
+        assert_eq!(out_y, [19.0; 2]);
+        assert_eq!(alpha, 23.0);
+        assert_eq!(unsafe { xyg_graph_force_destroy(handle) }, 1);
+    }
+
+    #[test]
     fn geo_column_abi_round_trips_point() {
         let xy = [-104.9903_f64, 39.7392];
         let validity = [1_u8];
