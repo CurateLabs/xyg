@@ -137,7 +137,7 @@ columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
 Painter contract v7 begins with `XYPB`, independent painter version 7, canonical
 Scene v10 (`SCENE_VERSION = 10`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v9
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v10
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
 geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores

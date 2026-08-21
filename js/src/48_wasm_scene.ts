@@ -87,17 +87,17 @@ function compilePainter(painter: ArrayBuffer) {
       if (annotationKind === 1 && kind === 1 && count === 2) {
         const x0 = px(x), y0 = px(y), x1 = px(x, 1), y1 = px(y, 1);
         annotations.push(x0 === x1
-          ? { kind: "rule", axis: "x", value: x0, style: { color: stroke, width: strokeWidth }, aria_label: `Vertical reference rule at ${x0}` }
+          ? { kind: "rule", axis: "x", value: x0, style: { color: stroke, width: strokeWidth }, aria_label: "Vertical reference rule" }
           : y0 === y1
-            ? { kind: "rule", axis: "y", value: y0, style: { color: stroke, width: strokeWidth }, aria_label: `Horizontal reference rule at ${y0}` }
+            ? { kind: "rule", axis: "y", value: y0, style: { color: stroke, width: strokeWidth }, aria_label: "Horizontal reference rule" }
             : (() => { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust annotation rule is not axis aligned"); })());
       } else if ((annotationKind === 2 || annotationKind === 4) && kind === 2 && count === 1) {
         const x0 = px(x), y0 = px(y), x1 = px(trace.x1), y1 = px(trace.y1);
         annotations.push(annotationKind === 2
-          ? { kind: "band", axis: "x", start: x0, end: x1, style: { color: fill, opacity: 1 }, aria_label: `Vertical reference band from ${x0} to ${x1}` }
-          : { kind: "band", axis: "y", start: y0, end: y1, style: { color: fill, opacity: 1 }, aria_label: `Horizontal reference band from ${y0} to ${y1}` });
+          ? { kind: "band", axis: "x", start: x0, end: x1, style: { color: fill, opacity: 1 }, aria_label: "Vertical reference band" }
+          : { kind: "band", axis: "y", start: y0, end: y1, style: { color: fill, opacity: 1 }, aria_label: "Horizontal reference band" });
       } else if (annotationKind === 3 && kind === 0 && count === 1) {
-        annotations.push({ kind: "marker", x: px(x), y: px(y), size: diameter, symbol: SYMBOLS[symbol], style: { color: fill, stroke_color: stroke, stroke_width: strokeWidth, opacity: 1 }, aria_label: `Reference marker at ${px(x)}, ${px(y)}` });
+        annotations.push({ kind: "marker", x: px(x), y: px(y), size: diameter, symbol: SYMBOLS[symbol], style: { color: fill, stroke_color: stroke, stroke_width: strokeWidth, opacity: 1 }, aria_label: "Reference marker" });
       } else {
         throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust annotation descriptor is invalid");
       }

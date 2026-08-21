@@ -402,7 +402,9 @@ resource bounds, and paint order. Python and Node only coerce the same author
 values and produce byte-identical records. Painter v7 recognizes the reserved
 IDs and projects them into the existing browser annotation layer; TypeScript
 does not derive geometry or defaults. It also adds a literal, visually hidden
-`role=note` description for each direct-WASM annotation.
+`role=note` description for each direct-WASM annotation. These descriptions name
+the reference kind and orientation without misrepresenting Rust-projected pixel
+coordinates as authored data values.
 
 The supported surface is unlabeled axis-aligned rules, axis-aligned bands, and
 unlabeled built-in markers with solid literal colors, opacity, and bounded

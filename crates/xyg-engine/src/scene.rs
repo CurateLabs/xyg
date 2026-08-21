@@ -32,6 +32,10 @@ pub const MAX_SCENE_LEGEND_ENTRIES: usize = 128;
 pub const MAX_SCENE_LEGEND_TEXT_BYTES: usize = 16_384;
 const SCENE_ANNOTATION_ID_MASK: u64 = 0xffff_0000_0000_0000;
 const SCENE_ANNOTATION_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
+
+fn is_scene_annotation_id(stable_id: u64) -> bool {
+    stable_id & SCENE_ANNOTATION_ID_MASK == SCENE_ANNOTATION_ID_PREFIX
+}
 const SCENE_LEGEND_HEADER_BYTES: usize = 48;
 const SCENE_LEGEND_ENTRY_BYTES: usize = 24;
 pub const MAX_SCENE_LEGEND_INPUT_BYTES: usize = SCENE_LEGEND_HEADER_BYTES
@@ -1974,7 +1978,7 @@ impl<'a> SceneBatch<'a> {
         let mut annotations_started = false;
         while annotation_index < len {
             let id = stable_ids[annotation_index];
-            if id & SCENE_ANNOTATION_ID_MASK != SCENE_ANNOTATION_ID_PREFIX {
+            if !is_scene_annotation_id(id) {
                 if annotations_started {
                     return Err(SceneError::Length);
                 }
@@ -2720,7 +2724,7 @@ impl SceneDocument {
         let mut annotations_started = false;
         while annotation_cursor < records.len() {
             let record = records[annotation_cursor];
-            if record.stable_id & SCENE_ANNOTATION_ID_MASK != SCENE_ANNOTATION_ID_PREFIX {
+            if !is_scene_annotation_id(record.stable_id) {
                 if annotations_started {
                     return Err(SceneError::Length);
                 }
@@ -2734,7 +2738,9 @@ impl SceneDocument {
                 .position(|candidate| candidate.stable_id != record.stable_id)
                 .map_or(records.len(), |value| annotation_cursor + 1 + value);
             match tag {
-                1 if record.kind == SceneRecordKind::Polyline && run_end - annotation_cursor == 2 => {
+                1 if record.kind == SceneRecordKind::Polyline
+                    && run_end - annotation_cursor == 2 =>
+                {
                     let next = records[annotation_cursor + 1];
                     if record.style_ref != next.style_ref
                         || record.visible != next.visible
@@ -2753,7 +2759,8 @@ impl SceneDocument {
                         return Err(SceneError::Length);
                     }
                 }
-                3 if record.kind == SceneRecordKind::Scatter && run_end - annotation_cursor == 1 => {}
+                3 if record.kind == SceneRecordKind::Scatter
+                    && run_end - annotation_cursor == 1 => {}
                 4 if record.kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
                     if record.visible
                         && (record.coordinates[0] != layout.left
@@ -4073,6 +4080,8 @@ impl SceneDocument {
                             || next.style_ref != record.style_ref
                             || next.symbol != record.symbol
                             || next.diameter.to_bits() != record.diameter.to_bits()
+                            || (is_scene_annotation_id(record.stable_id)
+                                && next.stable_id != record.stable_id)
                         {
                             break;
                         }
@@ -4085,6 +4094,8 @@ impl SceneDocument {
                         if !next.visible
                             || next.kind != SceneRecordKind::Rect
                             || next.style_ref != record.style_ref
+                            || (is_scene_annotation_id(record.stable_id)
+                                && next.stable_id != record.stable_id)
                         {
                             break;
                         }
@@ -5046,6 +5057,61 @@ mod tests {
             validate_scene_batch(&encoded[..encoded.len() - 1]),
             Err(SceneError::Length)
         );
+    }
+
+    #[test]
+    fn browser_painter_keeps_same_style_annotations_as_distinct_descriptors() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y_scale = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let marker = SCENE_ANNOTATION_ID_PREFIX | (3 << 40);
+        let band = SCENE_ANNOTATION_ID_PREFIX | (2 << 40);
+        let encoded = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            &[0, 0, 2, 2],
+            &[marker, marker | 1, band | 2, band | 3],
+            &[0, 0, 1, 1],
+            &[37, 99, 235, 255, 100, 116, 139, 36],
+            &[255, 255, 255, 255, 100, 116, 139, 36],
+            &[1.0, 0.0],
+            &[8.0, 8.0, 0.0, 0.0],
+            &[0, 0, 0, 0],
+            &[0.2, 0.8, 0.1, 0.6],
+            &[0.3, 0.7, 0.0, 0.0],
+            &[0.0, 0.0, 0.2, 0.9],
+            &[0.0, 0.0, 1.0, 1.0],
+        )
+        .unwrap()
+        .encode();
+        let painter = SceneDocument::decode(&encoded)
+            .unwrap()
+            .to_browser_painter(16_384)
+            .unwrap();
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 4);
     }
 
     #[test]
