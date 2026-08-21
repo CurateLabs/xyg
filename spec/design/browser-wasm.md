@@ -134,8 +134,8 @@ records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
 
-Painter contract v6 begins with `XYPB`, independent painter version 6, canonical
-Scene v9 (`SCENE_VERSION = 9`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v7 begins with `XYPB`, independent painter version 7, canonical
+Scene v10 (`SCENE_VERSION = 10`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v9
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
@@ -174,7 +174,7 @@ Callers may reduce fragmentation or split work into explicitly managed views;
 the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
-This is the public direct-browser entry for the stable Scene v9
+This is the public direct-browser entry for the stable Scene v10
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
 spine, major/minor tick, side, visibility, label paint, and bounded primary
 static legends. `frameWasmChart`

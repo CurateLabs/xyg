@@ -262,7 +262,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 9
+    assert int.from_bytes(encoded[4:8], "little") == 10
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -296,7 +296,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (9).to_bytes(4, "little")
+    assert scene[4:8] == (10).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -322,7 +322,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
     area.axis_options["y"]["domain"] = (0.0, 3.0)
     area.area([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], base=0.0, color="#3987e5", opacity=0.5)
     scene = area.to_scene()
-    assert scene[4:8] == (9).to_bytes(4, "little")
+    assert scene[4:8] == (10).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -372,23 +372,25 @@ def test_python_scene_encodes_title_and_axis_labels() -> None:
     assert "Peak days" in svg and ">day<" in svg and ">count<" in svg
 
 
-def test_python_scene_defers_rule_and_band_annotations() -> None:
+def test_python_scene_compiles_rule_and_band_annotations() -> None:
     figure = representative_figure()
     figure.vline(2.0, color="#ef4444", width=2.0)
     figure.hline(1.0, color="#22c55e")
     figure.x_band(0.5, 1.5, color="#3987e5", opacity=0.25)
-    with pytest.raises(UnsupportedSceneV3, match="does not yet encode annotations"):
-        figure.to_scene()
+    svg = _native.scene_svg(figure.to_scene())
+    assert "rgb(239,68,68)" in svg
+    assert "rgb(34,197,94)" in svg
+    assert "rgb(57,135,229)" in svg
 
 
 def test_python_scene_still_rejects_labeled_and_rich_annotations() -> None:
     labeled = representative_figure()
     labeled.vline(1.0, text="threshold")
-    with pytest.raises(UnsupportedSceneV3, match="does not yet encode annotations"):
+    with pytest.raises(UnsupportedSceneV3, match="labels are deferred"):
         labeled.to_scene()
     figure = representative_figure()
     figure.annotations.append({"kind": "text", "x": 1, "y": 2, "text": "note"})
-    with pytest.raises(UnsupportedSceneV3, match="annotations"):
+    with pytest.raises(UnsupportedSceneV3, match="is deferred"):
         figure.to_scene()
 
 
@@ -402,7 +404,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (9).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (10).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg

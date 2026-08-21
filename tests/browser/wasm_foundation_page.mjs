@@ -61,7 +61,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 240 + textBytes + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 9, true);
+  view.setUint32(4, 10, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -124,7 +124,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 240);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 9, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 10, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -233,7 +233,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    5, 9, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    5, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     aggregateOutputOutOfRange ? 65520 : 0,
@@ -324,7 +324,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 5,
-    expectedSceneVersion: 9,
+    expectedSceneVersion: 10,
   };
 }
 
@@ -405,7 +405,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 5 || ready.sceneVersion !== 9) {
+  if (ready.abiVersion !== 5 || ready.sceneVersion !== 10) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");

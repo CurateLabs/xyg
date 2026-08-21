@@ -382,8 +382,6 @@ def figure_scene(
                 "Scene v9 does not yet encode tick formatting, collision policy, or advanced axis layout"
             )
     annotations = list(getattr(figure, "annotations", None) or [])
-    if annotations:
-        raise UnsupportedSceneV3("Scene v9 does not yet encode annotations")
     if figure.colorbar_options or figure.extra_legends:
         raise UnsupportedSceneV3("Scene v9 does not yet encode colorbars or extra legends")
     unsupported = next(
@@ -628,6 +626,121 @@ def figure_scene(
             coordinates[1].append(float(yv[index]))
             coordinates[2].append(0.0)
             coordinates[3].append(0.0)
+
+    # Scene v10's bounded primary-annotation subset is represented by ordinary
+    # canonical records with a reserved stable-id namespace. Rust therefore
+    # remains the sole owner of scale projection, clipping, painter lowering,
+    # SVG/raster order and marker geometry; hosts only coerce authored values.
+    annotation_prefix = 0x5859000000000000
+    x_domain = tuple(float(value) for value in figure._range("x"))
+    y_domain = tuple(float(value) for value in figure._range("y"))
+    for annotation_index, annotation in enumerate(annotations):
+        kind = annotation.get("kind")
+        if kind not in {"rule", "band", "marker"}:
+            raise UnsupportedSceneV3(
+                f"Scene v10 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
+            )
+        if annotation.get("text") not in (None, ""):
+            raise UnsupportedSceneV3(
+                f"Scene v10 {kind} annotation labels are deferred; remove text or use the legacy renderer"
+            )
+        if annotation.get("class_name") not in (None, ""):
+            raise UnsupportedSceneV3("Scene v10 annotations do not encode class_name")
+        style = dict(annotation.get("style") or {})
+        allowed = {"color", "opacity"}
+        if kind == "rule":
+            allowed.add("width")
+        elif kind == "marker":
+            allowed |= {"stroke_color", "stroke_width"}
+        unsupported_style = sorted(
+            key for key, value in style.items() if key not in allowed and value is not None
+        )
+        if unsupported_style:
+            raise UnsupportedSceneV3(
+                f"Scene v10 {kind} annotation style does not encode {unsupported_style!r}"
+            )
+        opacity = float(style.get("opacity", 0.14 if kind == "band" else 1.0))
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            raise ValueError(f"Scene v10 {kind} annotation opacity must be finite and in [0, 1]")
+        color = str(style.get("color") or ("#64748b" if kind == "band" else "#667085"))
+        fill = _rgba(color, opacity) if kind != "rule" else (0, 0, 0, 0)
+        stroke_color = str(style.get("stroke_color") or color)
+        stroke = _rgba(stroke_color, opacity)
+        width_value = style.get("width", style.get("stroke_width", 1.5 if kind != "band" else 0.0))
+        width_value = float(width_value)
+        if not np.isfinite(width_value) or width_value < 0 or (kind == "rule" and width_value == 0):
+            raise ValueError(f"Scene v10 {kind} annotation width must be finite and nonnegative")
+        styles.append((fill, stroke, width_value))
+        style_ref = len(styles) - 1
+        tag = (
+            4
+            if kind == "band" and annotation.get("axis") == "y"
+            else {"rule": 1, "band": 2, "marker": 3}[kind]
+        )
+        stable_id = annotation_prefix | (tag << 40) | annotation_index
+
+        def append_record(
+            record_kind: int,
+            a: float,
+            b: float,
+            c: float,
+            d: float,
+            *,
+            size: float = 0.0,
+            symbol: int = 0,
+            annotation_kind: str = kind,
+            annotation_stable_id: int = stable_id,
+            annotation_style_ref: int = style_ref,
+        ) -> None:
+            values = (a, b, c, d, size)
+            if not all(np.isfinite(value) for value in values):
+                raise ValueError(f"Scene v10 {annotation_kind} annotation geometry must be finite")
+            kinds.append(record_kind)
+            stable_ids.append(annotation_stable_id)
+            style_refs.append(annotation_style_ref)
+            diameters.append(size)
+            symbols.append(symbol)
+            for destination, value in zip(coordinates, (a, b, c, d), strict=True):
+                destination.append(float(value))
+
+        if kind == "rule":
+            axis_name = annotation.get("axis")
+            if axis_name not in {"x", "y"}:
+                raise ValueError("Scene v10 rule annotation axis must be 'x' or 'y'")
+            value = float(annotation.get("value"))
+            if axis_name == "x":
+                append_record(1, value, y_domain[0], 0.0, 0.0)
+                append_record(1, value, y_domain[1], 0.0, 0.0)
+            else:
+                append_record(1, x_domain[0], value, 0.0, 0.0)
+                append_record(1, x_domain[1], value, 0.0, 0.0)
+        elif kind == "band":
+            axis_name = annotation.get("axis")
+            if axis_name not in {"x", "y"}:
+                raise ValueError("Scene v10 band annotation axis must be 'x' or 'y'")
+            start, end = float(annotation.get("start")), float(annotation.get("end"))
+            if axis_name == "x":
+                append_record(2, start, y_domain[0], end, y_domain[1])
+            else:
+                append_record(2, x_domain[0], start, x_domain[1], end)
+        else:
+            symbol_name = str(annotation.get("symbol", "circle"))
+            if symbol_name not in _SYMBOL_CODES:
+                raise UnsupportedSceneV3(
+                    f"Scene v10 does not support marker symbol {symbol_name!r}"
+                )
+            size = float(annotation.get("size", 8.0))
+            if not np.isfinite(size) or size <= 0:
+                raise ValueError("Scene v10 marker annotation size must be finite and positive")
+            append_record(
+                0,
+                float(annotation.get("x")),
+                float(annotation.get("y")),
+                0.0,
+                0.0,
+                size=size,
+                symbol=_SYMBOL_CODES[symbol_name],
+            )
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)

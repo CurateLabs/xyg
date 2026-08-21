@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 9;
+pub const SCENE_VERSION: u32 = 10;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -20,7 +20,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 240;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 6;
+pub const BROWSER_PAINTER_VERSION: u32 = 7;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 288;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -30,6 +30,8 @@ pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 pub const MAX_BROWSER_PAINTER_TRACES: usize = 1024;
 pub const MAX_SCENE_LEGEND_ENTRIES: usize = 128;
 pub const MAX_SCENE_LEGEND_TEXT_BYTES: usize = 16_384;
+const SCENE_ANNOTATION_ID_MASK: u64 = 0xffff_0000_0000_0000;
+const SCENE_ANNOTATION_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
 const SCENE_LEGEND_HEADER_BYTES: usize = 48;
 const SCENE_LEGEND_ENTRY_BYTES: usize = 24;
 pub const MAX_SCENE_LEGEND_INPUT_BYTES: usize = SCENE_LEGEND_HEADER_BYTES
@@ -1965,6 +1967,57 @@ impl<'a> SceneBatch<'a> {
                 return Err(SceneError::Length);
             }
         }
+        // Scene v10 annotation records use ordinary paint primitives but a
+        // reserved identity namespace. Validate their complete geometry here,
+        // before any consumer can mistake a malformed annotation for a trace.
+        let mut annotation_index = 0;
+        let mut annotations_started = false;
+        while annotation_index < len {
+            let id = stable_ids[annotation_index];
+            if id & SCENE_ANNOTATION_ID_MASK != SCENE_ANNOTATION_ID_PREFIX {
+                if annotations_started {
+                    return Err(SceneError::Length);
+                }
+                annotation_index += 1;
+                continue;
+            }
+            annotations_started = true;
+            let tag = ((id >> 40) & 0xff) as u8;
+            let kind = SceneRecordKind::from_code(kinds[annotation_index])?;
+            let run_end = stable_ids[annotation_index + 1..]
+                .iter()
+                .position(|candidate| *candidate != id)
+                .map_or(len, |offset| annotation_index + 1 + offset);
+            match tag {
+                1 if kind == SceneRecordKind::Polyline && run_end - annotation_index == 2 => {
+                    let next = annotation_index + 1;
+                    if !((x0[annotation_index] == x0[next]) ^ (y0[annotation_index] == y0[next]))
+                        || style_refs[annotation_index] != style_refs[next]
+                    {
+                        return Err(SceneError::Length);
+                    }
+                }
+                2 if kind == SceneRecordKind::Rect && run_end - annotation_index == 1 => {
+                    let (lo, hi) = y_scale.domain();
+                    if !((y0[annotation_index] == lo && y1[annotation_index] == hi)
+                        || (y0[annotation_index] == hi && y1[annotation_index] == lo))
+                    {
+                        return Err(SceneError::Length);
+                    }
+                }
+                3 if kind == SceneRecordKind::Scatter && run_end - annotation_index == 1 => {}
+                4 if kind == SceneRecordKind::Rect && run_end - annotation_index == 1 => {
+                    let (lo, hi) = x_scale.domain();
+                    if !((x0[annotation_index] == lo && x1[annotation_index] == hi)
+                        || (x0[annotation_index] == hi && x1[annotation_index] == lo))
+                    {
+                        return Err(SceneError::Length);
+                    }
+                }
+                _ => return Err(SceneError::Length),
+            }
+            annotation_index = run_end;
+        }
         if kinds.iter().enumerate().any(|(index, kind)| {
             !x0[index].is_finite()
                 || !y0[index].is_finite()
@@ -2662,6 +2715,56 @@ impl SceneDocument {
                 diameter,
             });
             offset += SCENE_BATCH_RECORD_BYTES;
+        }
+        let mut annotation_cursor = 0;
+        let mut annotations_started = false;
+        while annotation_cursor < records.len() {
+            let record = records[annotation_cursor];
+            if record.stable_id & SCENE_ANNOTATION_ID_MASK != SCENE_ANNOTATION_ID_PREFIX {
+                if annotations_started {
+                    return Err(SceneError::Length);
+                }
+                annotation_cursor += 1;
+                continue;
+            }
+            annotations_started = true;
+            let tag = ((record.stable_id >> 40) & 0xff) as u8;
+            let run_end = records[annotation_cursor + 1..]
+                .iter()
+                .position(|candidate| candidate.stable_id != record.stable_id)
+                .map_or(records.len(), |value| annotation_cursor + 1 + value);
+            match tag {
+                1 if record.kind == SceneRecordKind::Polyline && run_end - annotation_cursor == 2 => {
+                    let next = records[annotation_cursor + 1];
+                    if record.style_ref != next.style_ref
+                        || record.visible != next.visible
+                        || (record.visible
+                            && !((record.coordinates[0] == next.coordinates[0])
+                                ^ (record.coordinates[1] == next.coordinates[1])))
+                    {
+                        return Err(SceneError::Length);
+                    }
+                }
+                2 if record.kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
+                    if record.visible
+                        && (record.coordinates[1] != layout.top
+                            || record.coordinates[3] != layout.bottom)
+                    {
+                        return Err(SceneError::Length);
+                    }
+                }
+                3 if record.kind == SceneRecordKind::Scatter && run_end - annotation_cursor == 1 => {}
+                4 if record.kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
+                    if record.visible
+                        && (record.coordinates[0] != layout.left
+                            || record.coordinates[2] != layout.right)
+                    {
+                        return Err(SceneError::Length);
+                    }
+                }
+                _ => return Err(SceneError::Length),
+            }
+            annotation_cursor = run_end;
         }
         Ok(Self {
             layout,
@@ -4833,7 +4936,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 9);
+        assert_eq!(SCENE_VERSION, 10);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"

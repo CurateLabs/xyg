@@ -6,9 +6,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from xyg import _native, _svg
 from xyg._figure import Figure
+from xyg._scene_v3 import UnsupportedSceneV3
 
 EXPECTED_SCATTER = (
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" '
@@ -16,6 +18,43 @@ EXPECTED_SCATTER = (
     'M 20 16.5 V 25.5" fill="none" stroke="rgb(17,24,39)" '
     'stroke-opacity="0.25" stroke-width="1"/></g>'
 )
+
+
+def test_scene_v10_primary_annotations_are_canonical_and_ordered() -> None:
+    figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
+    figure.vline(0.25, color="#ff0000", width=2.0)
+    figure.y_band(0.2, 0.4, color="#00ff00", opacity=0.25)
+    figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
+    encoded = figure.to_scene()
+    assert encoded[:4] == b"XYGS"
+    assert int.from_bytes(encoded[4:8], "little") == 10
+    svg = _native.scene_svg(encoded)
+    assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
+    assert "rgb(255,0,0)" in svg
+    assert "rgb(0,255,0)" in svg
+    assert "rgb(0,0,255)" in svg
+    assert _native.scene_raster_commands(encoded)
+
+    annotation_only = Figure(width=320, height=240)
+    annotation_only.axis_options["x"]["domain"] = (0.0, 1.0)
+    annotation_only.axis_options["y"]["domain"] = (0.0, 1.0)
+    annotation_only.vline(0.25, color="#ff0000", width=2.0)
+    annotation_only.y_band(0.2, 0.4, color="#00ff00", opacity=0.25)
+    annotation_only.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    assert (
+        hashlib.sha256(annotation_only.to_scene()).hexdigest()
+        == fixture["primary_annotations_sha256"]
+    )
+
+
+def test_scene_v10_annotations_fail_closed_for_deferred_content() -> None:
+    with pytest.raises(UnsupportedSceneV3, match="labels are deferred"):
+        Figure().vline(1.0, text="limit").to_scene()
+    with pytest.raises(UnsupportedSceneV3, match=r"arrow.*deferred"):
+        Figure().arrow(0.0, 0.0, 1.0, 1.0).to_scene()
+    with pytest.raises(UnsupportedSceneV3, match="does not encode"):
+        Figure().vline(1.0, style={"dash": "2,2"}).to_scene()
 
 
 def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
@@ -40,7 +79,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 9
+    assert int.from_bytes(encoded[4:8], "little") == 10
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -325,7 +364,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 9
+    assert _native.scene_version() == 10
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

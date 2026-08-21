@@ -412,10 +412,11 @@ function requireEqualColumns(columns, kind, label) {
 /** Compile migrated cartesian marks to Scene v9. */
 export function figureSceneV3(figure, { margins = null } = {}) {
   if (figure.coords !== "cartesian") throw new RangeError("Scene v9 figure compilation currently supports cartesian coordinates only");
-  if (figure.annotations?.length) throw new RangeError("Scene v9 does not yet encode annotations");
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
   if (unsupported) throw new RangeError(`Scene v9 figure compilation does not yet support ${unsupported.kind}`);
   const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [];
+  const xDomain = figure._range("x");
+  const yDomain = figure._range("y");
   for (const trace of figure.traces) {
     if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v9 currently supports only the primary x/y axes");
     if (
@@ -581,11 +582,48 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       x0.push(xv[index]); y0.push(yv[index]); x1.push(0); y1.push(0);
     }
   }
+  const annotationPrefix = 0x5859000000000000n;
+  for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
+    const kind = annotation.kind;
+    if (!["rule", "band", "marker"].includes(kind)) throw new RangeError(`Scene v10 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
+    if (annotation.text != null && annotation.text !== "") throw new RangeError(`Scene v10 ${kind} annotation labels are deferred; remove text or use the legacy renderer`);
+    if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError("Scene v10 annotations do not encode class_name");
+    const style = { ...(annotation.style ?? {}) };
+    const allowed = new Set(kind === "rule" ? ["color", "opacity", "width"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
+    const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();
+    if (unsupported.length) throw new RangeError(`Scene v10 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
+    const opacity = Number(style.opacity ?? (kind === "band" ? 0.14 : 1));
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError(`Scene v10 ${kind} annotation opacity must be finite and in [0, 1]`);
+    const color = String(style.color ?? (kind === "band" ? "#64748b" : "#667085"));
+    const width = Number(style.width ?? style.stroke_width ?? (kind === "band" ? 0 : 1.5));
+    if (!Number.isFinite(width) || width < 0 || (kind === "rule" && width === 0)) throw new RangeError(`Scene v10 ${kind} annotation width must be finite and nonnegative`);
+    styles.push({ fillRgba: kind === "rule" ? [0, 0, 0, 0] : rgba8(color, opacity, "annotation fill"), strokeRgba: rgba8(String(style.stroke_color ?? color), opacity, "annotation stroke"), strokeWidth: width });
+    const styleRef = styles.length - 1;
+    const tag = kind === "band" && annotation.axis === "y" ? 4n : { rule: 1n, band: 2n, marker: 3n }[kind];
+    const stableId = annotationPrefix | (tag << 40n) | BigInt(annotationIndex);
+    const append = (recordKind, a, b, c = 0, d = 0, size = 0, symbol = 0) => {
+      if (![a, b, c, d, size].every(Number.isFinite)) throw new RangeError(`Scene v10 ${kind} annotation geometry must be finite`);
+      kinds.push(recordKind); stableIds.push(stableId); styleRefs.push(styleRef); diameter.push(size); symbols.push(symbol); x0.push(a); y0.push(b); x1.push(c); y1.push(d);
+    };
+    if (kind === "rule") {
+      const value = Number(annotation.value);
+      if (annotation.axis === "x") { append(1, value, Number(yDomain[0])); append(1, value, Number(yDomain[1])); }
+      else if (annotation.axis === "y") { append(1, Number(xDomain[0]), value); append(1, Number(xDomain[1]), value); }
+      else throw new RangeError("Scene v10 rule annotation axis must be 'x' or 'y'");
+    } else if (kind === "band") {
+      const start = Number(annotation.start), end = Number(annotation.end);
+      if (annotation.axis === "x") append(2, start, Number(yDomain[0]), end, Number(yDomain[1]));
+      else if (annotation.axis === "y") append(2, Number(xDomain[0]), start, Number(xDomain[1]), end);
+      else throw new RangeError("Scene v10 band annotation axis must be 'x' or 'y'");
+    } else {
+      const size = Number(annotation.size ?? 8);
+      if (!Number.isFinite(size) || size <= 0) throw new RangeError("Scene v10 marker annotation size must be finite and positive");
+      append(0, Number(annotation.x), Number(annotation.y), 0, 0, size, sceneSymbolCode(annotation.symbol ?? "circle"));
+    }
+  }
   const title = figure.title ?? "";
   const xLabel = figure.xLabel ?? figure.x_label ?? "";
   const yLabel = figure.yLabel ?? figure.y_label ?? "";
-  const xDomain = figure._range("x");
-  const yDomain = figure._range("y");
   let resolvedMargins = margins;
   if (resolvedMargins == null) {
     const out = new Float64Array(4);
