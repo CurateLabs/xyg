@@ -98,6 +98,7 @@ test("force layout catalog names are seeded deterministic", () => {
     "kamada_kawai",
     "kk",
     "stress",
+    "cose",
   ];
   for (const name of names) {
     const a = graphLayout(name, 3, sources, targets, { seed: 5 });
@@ -127,6 +128,7 @@ test("layout name aliases match Python map ids", async () => {
   assert.equal(graphLayoutId("stress"), GRAPH_LAYOUT_IDS.stress);
   assert.equal(graphLayoutId("yifanhu"), GRAPH_LAYOUT_IDS.yifanhu);
   assert.equal(graphLayoutId("linlog"), GRAPH_LAYOUT_IDS.linlog);
+  assert.equal(graphLayoutId("cose"), GRAPH_LAYOUT_IDS.cose);
 });
 
 test("hierarchical/dagre differ from undirected breadthfirst on a DAG", () => {

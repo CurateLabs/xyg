@@ -45,6 +45,7 @@ def test_force_seeded_matches_across_calls():
         "kk",
         "stress",
         "barnes_hut",
+        "cose",
     ],
 )
 def test_force_layout_catalog_seeded(layout):
@@ -65,8 +66,10 @@ def test_force_layout_aliases_match_ids():
     assert _native.graph_layout_id("stress") == _native.GRAPH_LAYOUT_STRESS
     assert _native.graph_layout_id("yifanhu") == _native.GRAPH_LAYOUT_YIFANHU
     assert _native.graph_layout_id("linlog") == _native.GRAPH_LAYOUT_LINLOG
+    assert _native.graph_layout_id("cose") == _native.GRAPH_LAYOUT_COSE
     assert _native.graph_is_progressive_force("spring")
     assert _native.graph_is_progressive_force("forceatlas2")
+    assert _native.graph_is_progressive_force("cose")
 
 
 def test_tiny_force_golden_stable():

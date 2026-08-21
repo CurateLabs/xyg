@@ -5904,7 +5904,8 @@ pub unsafe extern "C" fn xyg_graph_layout(
             | graph::LAYOUT_KAMADA_KAWAI
             | graph::LAYOUT_YIFANHU
             | graph::LAYOUT_LINLOG
-            | graph::LAYOUT_STRESS => graph::layout_force_family(
+            | graph::LAYOUT_STRESS
+            | graph::LAYOUT_COSE => graph::layout_force_family(
                 layout, n_nodes, sources, targets, seed, 300, out_x, out_y,
             ),
             graph::LAYOUT_BREADTHFIRST => {

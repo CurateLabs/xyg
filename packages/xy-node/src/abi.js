@@ -96,6 +96,7 @@ export const GRAPH_LAYOUT_KAMADA_KAWAI = 12;
 export const GRAPH_LAYOUT_YIFANHU = 13;
 export const GRAPH_LAYOUT_LINLOG = 14;
 export const GRAPH_LAYOUT_STRESS = 15;
+export const GRAPH_LAYOUT_COSE = 16;
 
 export const GRAPH_LAYOUT_IDS = Object.freeze({
   preset: GRAPH_LAYOUT_PRESET,
@@ -119,6 +120,7 @@ export const GRAPH_LAYOUT_IDS = Object.freeze({
   yifanhu: GRAPH_LAYOUT_YIFANHU,
   linlog: GRAPH_LAYOUT_LINLOG,
   stress: GRAPH_LAYOUT_STRESS,
+  cose: GRAPH_LAYOUT_COSE,
 });
 
 /** Progressive force families that share xyg_graph_force_create/tick. */
@@ -132,6 +134,7 @@ export const GRAPH_PROGRESSIVE_FORCE = Object.freeze(
     GRAPH_LAYOUT_LINLOG,
     GRAPH_LAYOUT_KAMADA_KAWAI,
     GRAPH_LAYOUT_STRESS,
+    GRAPH_LAYOUT_COSE,
   ]),
 );
 

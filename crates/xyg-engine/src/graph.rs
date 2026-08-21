@@ -41,6 +41,8 @@ pub const LAYOUT_YIFANHU: u32 = 13;
 pub const LAYOUT_LINLOG: u32 = 14;
 /// Stress majorization on graph distances (same n limit as KK).
 pub const LAYOUT_STRESS: u32 = 15;
+/// CoSE-class compound-friendly spring layout (default option profile).
+pub const LAYOUT_COSE: u32 = 16;
 
 /// Exact O(n²) pairwise repulsion ceiling. For `n` at or below this value
 /// Fruchterman–Reingold uses exact pairwise forces (seeded determinism for
@@ -65,6 +67,7 @@ pub fn is_progressive_force_algo(algo: u32) -> bool {
             | LAYOUT_LINLOG
             | LAYOUT_KAMADA_KAWAI
             | LAYOUT_STRESS
+            | LAYOUT_COSE
     )
 }
 
@@ -410,6 +413,9 @@ pub struct ForceState {
     pub algo: u32,
     /// All-pairs shortest-path distances (row-major n×n) for KK / stress.
     pub dist: Option<Vec<f64>>,
+    /// Connected-component index used by CoSE to keep disconnected groups apart.
+    pub component: Vec<usize>,
+    pub component_count: usize,
 }
 
 fn splitmix64(state: &mut u64) -> u64 {
@@ -457,6 +463,37 @@ fn all_pairs_shortest_paths(n: usize, edges: &[(u64, u64)]) -> Vec<f64> {
         }
     }
     dist
+}
+
+fn connected_components(n: usize, edges: &[(u64, u64)]) -> (Vec<usize>, usize) {
+    let mut adj = vec![Vec::new(); n];
+    for &(s, t) in edges {
+        let (i, j) = (s as usize, t as usize);
+        if i >= n || j >= n || i == j {
+            continue;
+        }
+        adj[i].push(j);
+        adj[j].push(i);
+    }
+    let mut component = vec![usize::MAX; n];
+    let mut count = 0usize;
+    for root in 0..n {
+        if component[root] != usize::MAX {
+            continue;
+        }
+        component[root] = count;
+        let mut queue = VecDeque::from([root]);
+        while let Some(node) = queue.pop_front() {
+            for &next in &adj[node] {
+                if component[next] == usize::MAX {
+                    component[next] = count;
+                    queue.push_back(next);
+                }
+            }
+        }
+        count += 1;
+    }
+    (component, count)
 }
 
 impl ForceState {
@@ -516,6 +553,7 @@ impl ForceState {
         } else {
             None
         };
+        let (component, component_count) = connected_components(n, &edges);
         Some(Self {
             n,
             edges,
@@ -532,6 +570,8 @@ impl ForceState {
             rng,
             algo,
             dist,
+            component,
+            component_count,
         })
     }
 
@@ -547,6 +587,7 @@ impl ForceState {
             LAYOUT_YIFANHU => self.tick_yifanhu(steps),
             LAYOUT_KAMADA_KAWAI => self.tick_kamada_kawai(steps),
             LAYOUT_STRESS => self.tick_stress(steps),
+            LAYOUT_COSE => self.tick_cose(steps),
             _ => self.tick_fr(steps, false),
         }
     }
@@ -795,6 +836,85 @@ impl ForceState {
                 }
             }
             self.alpha *= 0.99;
+        }
+    }
+
+    /// Deterministic default CoSE profile: spring attraction, node
+    /// repulsion, central gravity, overlap pressure, and stable component
+    /// anchors. Rich option and compound/pin ingress is layered onto this same
+    /// kernel rather than implemented by a host.
+    fn tick_cose(&mut self, steps: u32) {
+        let n = self.n;
+        let ideal = self.k;
+        let minimum_separation = ideal * 0.35;
+        for _ in 0..steps {
+            if self.alpha < 0.001 {
+                break;
+            }
+            let mut fx = vec![0.0; n];
+            let mut fy = vec![0.0; n];
+            if n <= FORCE_EXACT_REPULSION_MAX_N {
+                self.apply_repulsion_exact(&mut fx, &mut fy, 1.25);
+            } else {
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.25);
+            }
+            for &(s, t) in &self.edges {
+                let (i, j) = (s as usize, t as usize);
+                if i == j {
+                    continue;
+                }
+                let dx = self.x[i] - self.x[j];
+                let dy = self.y[i] - self.y[j];
+                let distance = (dx * dx + dy * dy).sqrt().max(1e-8);
+                let force = 0.8 * (distance - ideal);
+                let (edge_fx, edge_fy) = (force * dx / distance, force * dy / distance);
+                fx[i] -= edge_fx;
+                fy[i] -= edge_fy;
+                fx[j] += edge_fx;
+                fy[j] += edge_fy;
+            }
+            if n <= FORCE_EXACT_REPULSION_MAX_N {
+                for i in 0..n {
+                    for j in (i + 1)..n {
+                        let mut dx = self.x[i] - self.x[j];
+                        let mut dy = self.y[i] - self.y[j];
+                        let mut distance = (dx * dx + dy * dy).sqrt();
+                        if distance < 1e-8 {
+                            let angle = std::f64::consts::TAU
+                                * (((i as u64).wrapping_mul(0x9E37) ^ j as u64) % 65_521) as f64
+                                / 65_521.0;
+                            dx = angle.cos() * 1e-8;
+                            dy = angle.sin() * 1e-8;
+                            distance = 1e-8;
+                        }
+                        if distance < minimum_separation {
+                            let pressure = (minimum_separation - distance) * 2.0;
+                            let (px, py) = (pressure * dx / distance, pressure * dy / distance);
+                            fx[i] += px;
+                            fy[i] += py;
+                            fx[j] -= px;
+                            fy[j] -= py;
+                        }
+                    }
+                }
+            }
+            for i in 0..n {
+                let angle = if self.component_count <= 1 {
+                    0.0
+                } else {
+                    std::f64::consts::TAU * self.component[i] as f64 / self.component_count as f64
+                };
+                let radius = if self.component_count <= 1 {
+                    0.0
+                } else {
+                    ideal * 2.5 * self.component_count as f64
+                };
+                let (anchor_x, anchor_y) = (radius * angle.cos(), radius * angle.sin());
+                fx[i] += 0.08 * (anchor_x - self.x[i]);
+                fy[i] += 0.08 * (anchor_y - self.y[i]);
+            }
+            self.apply_displacement(&fx, &fy);
+            self.alpha *= 0.985;
         }
     }
 
@@ -2025,6 +2145,7 @@ mod tests {
             LAYOUT_KAMADA_KAWAI,
             LAYOUT_STRESS,
             LAYOUT_BARNES_HUT,
+            LAYOUT_COSE,
         ];
         for &algo in &algos {
             let mut a = ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("a");
@@ -2053,6 +2174,39 @@ mod tests {
         assert_ne!(fr, spring);
         assert_ne!(fr, fa2);
         assert_ne!(fr, kk);
+    }
+
+    #[test]
+    fn cose_separates_disconnected_components_and_avoids_overlap() {
+        let sources = [0, 2];
+        let targets = [1, 3];
+        let initial_x = [0.0; 4];
+        let initial_y = [0.0; 4];
+        let mut state = ForceState::new(
+            4,
+            &sources,
+            &targets,
+            Some(&initial_x),
+            Some(&initial_y),
+            17,
+            LAYOUT_COSE,
+        )
+        .unwrap();
+        state.tick(100);
+        for i in 0..state.n {
+            for j in (i + 1)..state.n {
+                assert_ne!((state.x[i], state.y[i]), (state.x[j], state.y[j]));
+            }
+        }
+        let centroid = |nodes: [usize; 2]| {
+            (
+                (state.x[nodes[0]] + state.x[nodes[1]]) * 0.5,
+                (state.y[nodes[0]] + state.y[nodes[1]]) * 0.5,
+            )
+        };
+        let a = centroid([0, 1]);
+        let b = centroid([2, 3]);
+        assert!((a.0 - b.0).hypot(a.1 - b.1) > state.k);
     }
 
     #[test]

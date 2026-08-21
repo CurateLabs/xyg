@@ -224,6 +224,7 @@ Single parameter; default **`"force"`**.
 | `yifanhu` | Yifan Hu–style: grid BH repulsion + edge springs |
 | `kamada_kawai` / `kk` | Kamada–Kawai stress on all-pairs shortest paths; **n ≤ 500** (falls back to FR above) |
 | `stress` | Stress majorization on graph distances; **n ≤ 500** (falls back to FR above) |
+| `cose` | Deterministic CoSE-class default profile: ideal-edge springs, node repulsion, gravity, overlap pressure, and stable disconnected-component spacing |
 | `breadthfirst` | BFS layers from lowest-index root (or `roots=`) |
 | `radial` | Distance rings from root (SHOULD) |
 | `concentric` | Degree / attribute rings (SHOULD) |
@@ -237,6 +238,10 @@ pin seeded FR output across Python and Node for the exact small-N path.
 Progressive ticks (`force_create` + `algorithm` + `force_tick`) cover FR /
 FA2 / spring / linlog / yifanhu at minimum; KK / stress share the same
 handle for n ≤ 500.
+`cose` uses that handle across native hosts. This bounded first slice exposes a
+single documented default profile. Caller-set ideal length/repulsion/gravity,
+explicit pinned nodes, compound participation, and direct browser Worker/WASM
+execution remain required follow-up for #35; hosts must not emulate them.
 
 ---
 
