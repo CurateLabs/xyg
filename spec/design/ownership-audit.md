@@ -330,6 +330,7 @@ Forbidden:
 | `packages/xy-node/src/pyramid.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/sankey.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/scene.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/temporal-graph.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/vscode.js` | Node host | `node-host` | `keep-host` | — |
 | `python/reflex_xy/__init__.py` | Python host | `python-host` | `keep-host` | — |
 | `python/reflex_xy/app.py` | Python host | `python-host` | `keep-host` | — |
@@ -408,6 +409,7 @@ Forbidden:
 | `python/xyg/styling/__init__.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/styling/capabilities.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/temporal_controller.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/temporal_graph.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/widget.py` | Python host | `python-host` | `keep-host` | — |
 
 ## Contributor rule

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 81
-#define XYG_ABI_SIGNATURE_SHA256 "6f461e4cf3f9bf9721fde09c4d0871a87baeb1ae9dbf364c1ea2178bfb2de97d"
+#define XYG_ABI_VERSION 82
+#define XYG_ABI_SIGNATURE_SHA256 "86f4b0cb4e33c2281060cca9c03fce8aa36f4df922beea756deae2d724e7ed44"
 
 #ifdef __cplusplus
 extern "C" {
@@ -158,6 +158,16 @@ int32_t xyg_temporal_controller_step(uint64_t handle);
 int32_t xyg_temporal_controller_tick(uint64_t handle, int64_t dt_micros, uint32_t * out_advanced);
 int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, const uint64_t * selection, uint64_t selection_count, uint32_t * out_applied);
 int32_t xyg_temporal_events_in_range(const int64_t * event_micros, const uint8_t * event_valid, uint64_t event_len, int64_t range_start, uint32_t range_start_valid, int64_t range_end, uint32_t range_end_valid, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag);
+int32_t xyg_temporal_graph_cancel(uint64_t handle);
+int32_t xyg_temporal_graph_create(const void * descriptor, uint64_t * out_handle);
+int32_t xyg_temporal_graph_destroy(uint64_t handle);
+int32_t xyg_temporal_graph_frame(uint64_t handle, uint64_t revision, int64_t cursor_micros, int64_t range_start_micros, int64_t range_end_micros, uint64_t budget);
+int32_t xyg_temporal_graph_required_budget(uint64_t handle, uint64_t * out_budget);
+int32_t xyg_temporal_graph_set_focus(uint64_t handle, uint32_t kind, const uint8_t * id);
+int32_t xyg_temporal_graph_set_pinned(uint64_t handle, const uint8_t * node_ids, uint64_t node_count);
+int32_t xyg_temporal_graph_set_selection(uint64_t handle, const uint8_t * node_ids, uint64_t node_count, const uint8_t * edge_ids, uint64_t edge_count);
+int32_t xyg_temporal_graph_snapshot_copy(uint64_t handle, uint64_t expected_revision, const void * buffers);
+int32_t xyg_temporal_graph_snapshot_meta(uint64_t handle, void * out_meta);
 int32_t xyg_temporal_interval_index_create(const void * descriptor, uint64_t * out_handle);
 int32_t xyg_temporal_interval_index_destroy(uint64_t handle);
 int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len);

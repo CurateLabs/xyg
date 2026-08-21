@@ -1058,6 +1058,14 @@
       "rationale": "Issue #58 retains the JS API shell while moving shared scene decisions into Rust."
     },
     {
+      "path": "packages/xy-node/src/temporal-graph.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
       "path": "packages/xy-node/src/vscode.js",
       "current_owner": "Node host",
       "policy": "node-host",
@@ -1675,6 +1683,14 @@
     },
     {
       "path": "python/xyg/temporal_controller.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/temporal_graph.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",

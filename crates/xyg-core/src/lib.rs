@@ -38,6 +38,7 @@ use xyg_engine::stream;
 use xyg_engine::svg;
 use xyg_engine::temporal;
 use xyg_engine::temporal_controller;
+use xyg_engine::temporal_graph;
 #[cfg(not(target_family = "wasm"))]
 use xyg_engine::tile_store;
 use xyg_engine::tiles;
@@ -96,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 81;
+pub const ABI_VERSION: u32 = 82;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5982,6 +5983,605 @@ pub unsafe extern "C" fn xyg_temporal_controller_destroy(handle: u64) -> i32 {
         } else {
             temporal::TemporalError::StaleHandle as i32
         }
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Identity-safe temporal graph filtering (#45). UUIDs are packed 16-byte IDs.
+// ---------------------------------------------------------------------------
+
+/// Bind a canonical projection to optional canonical temporal-column handles.
+/// A zero column handle means that plane is unbounded/unbound.
+#[repr(C)]
+pub struct XygTemporalGraphDescriptor {
+    pub projection_handle: u64,
+    pub node_valid_from: u64,
+    pub node_valid_to: u64,
+    pub node_event_at: u64,
+    pub edge_valid_from: u64,
+    pub edge_valid_to: u64,
+    pub edge_event_at: u64,
+    pub reserved: u64,
+}
+
+/// Exact counts and scalar provenance for the most recently published frame.
+#[repr(C)]
+pub struct XygTemporalGraphSnapshotMeta {
+    pub revision: u64,
+    pub cursor_micros: i64,
+    pub range_start_micros: i64,
+    pub range_end_micros: i64,
+    pub node_count: u64,
+    pub edge_count: u64,
+    pub visible_node_count: u64,
+    pub visible_edge_count: u64,
+    pub selected_visible_node_count: u64,
+    pub selected_visible_edge_count: u64,
+    pub pinned_visible_node_count: u64,
+    pub selected_node_count: u64,
+    pub selected_edge_count: u64,
+    pub pinned_node_count: u64,
+    pub focused_visible_kind: u32,
+    pub focused_kind: u32,
+    pub focused_visible_id: [u8; 16],
+    pub focused_id: [u8; 16],
+}
+
+/// Output buffers for one exact frame/frozen-provenance snapshot. UUID
+/// capacities count 16-byte identities, not bytes.
+#[repr(C)]
+pub struct XygTemporalGraphSnapshotBuffers {
+    pub node_visibility: *mut u8,
+    pub node_capacity: u64,
+    pub edge_visibility: *mut u8,
+    pub edge_capacity: u64,
+    pub visible_node_ids: *mut u8,
+    pub visible_node_capacity: u64,
+    pub visible_edge_ids: *mut u8,
+    pub visible_edge_capacity: u64,
+    pub selected_visible_node_ids: *mut u8,
+    pub selected_visible_node_capacity: u64,
+    pub selected_visible_edge_ids: *mut u8,
+    pub selected_visible_edge_capacity: u64,
+    pub pinned_visible_node_ids: *mut u8,
+    pub pinned_visible_node_capacity: u64,
+    pub selected_node_ids: *mut u8,
+    pub selected_node_capacity: u64,
+    pub selected_edge_ids: *mut u8,
+    pub selected_edge_capacity: u64,
+    pub pinned_node_ids: *mut u8,
+    pub pinned_node_capacity: u64,
+}
+
+struct NativeTemporalGraphState {
+    graph: temporal_graph::TemporalGraph,
+    frame: Option<temporal_graph::TemporalGraphFrame>,
+    frozen: Option<temporal_graph::FrozenTemporalGraphState>,
+}
+
+struct NativeTemporalGraph {
+    operation: std::sync::Mutex<()>,
+    state: std::sync::Mutex<NativeTemporalGraphState>,
+    active_cancel: std::sync::Mutex<Option<std::sync::Arc<temporal::CancelFlag>>>,
+    disposed: std::sync::atomic::AtomicBool,
+}
+
+type TemporalGraphRegistry = (
+    u64,
+    std::collections::HashMap<u64, std::sync::Arc<NativeTemporalGraph>>,
+);
+static TEMPORAL_GRAPH_REGISTRY: std::sync::OnceLock<std::sync::Mutex<TemporalGraphRegistry>> =
+    std::sync::OnceLock::new();
+
+fn temporal_graph_registry() -> &'static std::sync::Mutex<TemporalGraphRegistry> {
+    TEMPORAL_GRAPH_REGISTRY
+        .get_or_init(|| std::sync::Mutex::new((0, std::collections::HashMap::new())))
+}
+
+fn temporal_graph_entry(handle: u64) -> Option<std::sync::Arc<NativeTemporalGraph>> {
+    temporal_graph_registry()
+        .lock()
+        .expect("temporal graph registry poisoned")
+        .1
+        .get(&handle)
+        .cloned()
+}
+
+fn optional_temporal_column(
+    handle: u64,
+) -> Result<Option<temporal::TemporalColumn>, temporal::TemporalError> {
+    if handle == 0 {
+        return Ok(None);
+    }
+    temporal::column_with(handle, Clone::clone)
+        .map(Some)
+        .ok_or(temporal::TemporalError::StaleHandle)
+}
+
+fn temporal_graph_entity_parts(entity: Option<temporal_graph::GraphEntity>) -> (u32, [u8; 16]) {
+    match entity {
+        None => (0, [0; 16]),
+        Some(temporal_graph::GraphEntity::Node(id)) => (1, id),
+        Some(temporal_graph::GraphEntity::Edge(id)) => (2, id),
+    }
+}
+
+unsafe fn temporal_graph_uuid_slice<'a>(
+    ptr: *const u8,
+    count: u64,
+) -> Result<&'a [projection::Uuid], temporal::TemporalError> {
+    let count = usize::try_from(count).map_err(|_| temporal::TemporalError::CapacityExceeded)?;
+    if count == 0 {
+        return Ok(&[]);
+    }
+    if ptr.is_null() {
+        return Err(temporal::TemporalError::InvalidArgument);
+    }
+    Ok(std::slice::from_raw_parts(
+        ptr.cast::<projection::Uuid>(),
+        count,
+    ))
+}
+
+/// Create a Rust-owned temporal graph. All referenced identity/time planes are
+/// copied before this call returns, so source handles may be destroyed later.
+///
+/// # Safety
+/// `descriptor` and `out_handle` must be valid for one value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_create(
+    descriptor: *const XygTemporalGraphDescriptor,
+    out_handle: *mut u64,
+) -> i32 {
+    if descriptor.is_null() || out_handle.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    *out_handle = 0;
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let descriptor = &*descriptor;
+        if descriptor.reserved != 0 || descriptor.projection_handle == 0 {
+            return temporal::TemporalError::InvalidArgument as i32;
+        }
+        let columns = [
+            descriptor.node_valid_from,
+            descriptor.node_valid_to,
+            descriptor.node_event_at,
+            descriptor.edge_valid_from,
+            descriptor.edge_valid_to,
+            descriptor.edge_event_at,
+        ];
+        let mut owned = Vec::with_capacity(columns.len());
+        for handle in columns {
+            match optional_temporal_column(handle) {
+                Ok(value) => owned.push(value),
+                Err(error) => return error as i32,
+            }
+        }
+        let bind = |projection: &projection::GraphProjection| {
+            temporal_graph::TemporalGraph::bind(
+                projection,
+                temporal_graph::TemporalBindingInput {
+                    valid_from: owned[0].as_ref(),
+                    valid_to: owned[1].as_ref(),
+                    event_at: owned[2].as_ref(),
+                },
+                temporal_graph::TemporalBindingInput {
+                    valid_from: owned[3].as_ref(),
+                    valid_to: owned[4].as_ref(),
+                    event_at: owned[5].as_ref(),
+                },
+            )
+        };
+        let Some(result) = projection::reg_with(descriptor.projection_handle, bind) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let graph = match result {
+            Ok(graph) => graph,
+            Err(error) => return error as i32,
+        };
+        let entry = std::sync::Arc::new(NativeTemporalGraph {
+            operation: std::sync::Mutex::new(()),
+            state: std::sync::Mutex::new(NativeTemporalGraphState {
+                graph,
+                frame: None,
+                frozen: None,
+            }),
+            active_cancel: std::sync::Mutex::new(None),
+            disposed: std::sync::atomic::AtomicBool::new(false),
+        });
+        let mut registry = temporal_graph_registry()
+            .lock()
+            .expect("temporal graph registry poisoned");
+        let Some(next) = registry.0.checked_add(1) else {
+            return temporal::TemporalError::CapacityExceeded as i32;
+        };
+        registry.0 = next;
+        registry.1.insert(next, entry);
+        *out_handle = next;
+        0
+    })
+}
+
+/// Atomically replace UUID-keyed selection.
+///
+/// # Safety
+/// Non-empty UUID buffers contain `count * 16` readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_set_selection(
+    handle: u64,
+    node_ids: *const u8,
+    node_count: u64,
+    edge_ids: *const u8,
+    edge_count: u64,
+) -> i32 {
+    let nodes = match temporal_graph_uuid_slice(node_ids, node_count) {
+        Ok(ids) => ids,
+        Err(error) => return error as i32,
+    };
+    let edges = match temporal_graph_uuid_slice(edge_ids, edge_count) {
+        Ok(ids) => ids,
+        Err(error) => return error as i32,
+    };
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let mut state = entry.state.lock().expect("temporal graph poisoned");
+        state
+            .graph
+            .set_selection(nodes.iter().copied(), edges.iter().copied())
+            .map_or_else(|error| error as i32, |()| 0)
+    })
+}
+
+/// Replace focus. `kind`: 0 clear, 1 node, 2 edge.
+///
+/// # Safety
+/// Kinds 1/2 require `id` to address exactly 16 readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_set_focus(
+    handle: u64,
+    kind: u32,
+    id: *const u8,
+) -> i32 {
+    let entity = match kind {
+        0 => None,
+        1 | 2 if !id.is_null() => {
+            let uuid = *id.cast::<projection::Uuid>();
+            Some(if kind == 1 {
+                temporal_graph::GraphEntity::Node(uuid)
+            } else {
+                temporal_graph::GraphEntity::Edge(uuid)
+            })
+        }
+        _ => return temporal::TemporalError::InvalidArgument as i32,
+    };
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let result = entry
+            .state
+            .lock()
+            .expect("temporal graph poisoned")
+            .graph
+            .set_focus(entity);
+        result.map_or_else(|error| error as i32, |()| 0)
+    })
+}
+
+/// Atomically replace UUID-keyed pinned nodes.
+///
+/// # Safety
+/// A non-empty UUID buffer contains `count * 16` readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_set_pinned(
+    handle: u64,
+    node_ids: *const u8,
+    node_count: u64,
+) -> i32 {
+    let nodes = match temporal_graph_uuid_slice(node_ids, node_count) {
+        Ok(ids) => ids,
+        Err(error) => return error as i32,
+    };
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let result = entry
+            .state
+            .lock()
+            .expect("temporal graph poisoned")
+            .graph
+            .set_pinned_nodes(nodes.iter().copied());
+        result.map_or_else(|error| error as i32, |()| 0)
+    })
+}
+
+/// Return Rust's exact minimum work budget for one frame.
+///
+/// # Safety
+/// `out_budget` must be valid for one `u64`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_required_budget(
+    handle: u64,
+    out_budget: *mut u64,
+) -> i32 {
+    if out_budget.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let state = entry.state.lock().expect("temporal graph poisoned");
+        match state.graph.required_budget() {
+            Ok(value) => {
+                *out_budget = value as u64;
+                0
+            }
+            Err(error) => error as i32,
+        }
+    })
+}
+
+/// Compute and publish a revisioned frame. Calls on one handle serialize;
+/// `xyg_temporal_graph_cancel` remains callable from another thread.
+#[no_mangle]
+pub extern "C" fn xyg_temporal_graph_frame(
+    handle: u64,
+    revision: u64,
+    cursor_micros: i64,
+    range_start_micros: i64,
+    range_end_micros: i64,
+    budget: u64,
+) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let Ok(budget) = usize::try_from(budget) else {
+            return temporal::TemporalError::CapacityExceeded as i32;
+        };
+        let _operation = entry
+            .operation
+            .lock()
+            .expect("temporal graph operation poisoned");
+        let cancel = std::sync::Arc::new(temporal::CancelFlag::new());
+        let mut active = entry
+            .active_cancel
+            .lock()
+            .expect("temporal graph cancel poisoned");
+        if entry.disposed.load(std::sync::atomic::Ordering::Acquire) {
+            return temporal::TemporalError::Disposed as i32;
+        }
+        *active = Some(cancel.clone());
+        drop(active);
+        let result = {
+            let mut state = entry.state.lock().expect("temporal graph poisoned");
+            state.graph.frame(
+                revision,
+                cursor_micros,
+                range_start_micros,
+                range_end_micros,
+                &cancel,
+                budget,
+            )
+        };
+        *entry
+            .active_cancel
+            .lock()
+            .expect("temporal graph cancel poisoned") = None;
+        match result {
+            Ok(frame) => {
+                let mut state = entry.state.lock().expect("temporal graph poisoned");
+                let frozen = match state.graph.freeze(&frame) {
+                    Ok(value) => value,
+                    Err(error) => return error as i32,
+                };
+                state.frame = Some(frame);
+                state.frozen = Some(frozen);
+                0
+            }
+            Err(error) => error as i32,
+        }
+    })
+}
+
+/// Cooperatively cancel the active frame computation, if any.
+#[no_mangle]
+pub extern "C" fn xyg_temporal_graph_cancel(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        if let Some(cancel) = entry
+            .active_cancel
+            .lock()
+            .expect("temporal graph cancel poisoned")
+            .as_ref()
+        {
+            cancel.cancel();
+        }
+        0
+    })
+}
+
+/// Read exact scalar/count metadata for the last successful frame.
+///
+/// # Safety
+/// `out_meta` must be valid for one value.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_snapshot_meta(
+    handle: u64,
+    out_meta: *mut XygTemporalGraphSnapshotMeta,
+) -> i32 {
+    if out_meta.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let state = entry.state.lock().expect("temporal graph poisoned");
+        let (Some(frame), Some(frozen)) = (&state.frame, &state.frozen) else {
+            return temporal::TemporalError::StaleRevision as i32;
+        };
+        let (focused_visible_kind, focused_visible_id) =
+            temporal_graph_entity_parts(frame.focused_visible());
+        let (focused_kind, focused_id) = temporal_graph_entity_parts(frozen.focused);
+        *out_meta = XygTemporalGraphSnapshotMeta {
+            revision: frame.revision(),
+            cursor_micros: frame.cursor_micros(),
+            range_start_micros: frame.range_start_micros(),
+            range_end_micros: frame.range_end_micros(),
+            node_count: frame.node_visibility().len() as u64,
+            edge_count: frame.edge_visibility().len() as u64,
+            visible_node_count: frame.visible_node_ids().len() as u64,
+            visible_edge_count: frame.visible_edge_ids().len() as u64,
+            selected_visible_node_count: frame.selected_visible_node_ids().len() as u64,
+            selected_visible_edge_count: frame.selected_visible_edge_ids().len() as u64,
+            pinned_visible_node_count: frame.pinned_visible_node_ids().len() as u64,
+            selected_node_count: frozen.selected_node_ids.len() as u64,
+            selected_edge_count: frozen.selected_edge_ids.len() as u64,
+            pinned_node_count: frozen.pinned_node_ids.len() as u64,
+            focused_visible_kind,
+            focused_kind,
+            focused_visible_id,
+            focused_id,
+        };
+        0
+    })
+}
+
+unsafe fn temporal_graph_copy_bytes<T: Copy>(
+    source: &[T],
+    output: *mut T,
+    capacity: u64,
+) -> Result<(), temporal::TemporalError> {
+    if capacity < source.len() as u64 {
+        return Err(temporal::TemporalError::OutputCapacity);
+    }
+    if !source.is_empty() && output.is_null() {
+        return Err(temporal::TemporalError::InvalidArgument);
+    }
+    if !source.is_empty() {
+        std::ptr::copy_nonoverlapping(source.as_ptr(), output, source.len());
+    }
+    Ok(())
+}
+
+/// Copy all frame and frozen-membership buffers described by `snapshot_meta`.
+/// UUID outputs are packed `capacity * 16` bytes; capacities count UUIDs.
+///
+/// # Safety
+/// Every non-empty output must be writable for its declared capacity.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_snapshot_copy(
+    handle: u64,
+    expected_revision: u64,
+    buffers: *const XygTemporalGraphSnapshotBuffers,
+) -> i32 {
+    if buffers.is_null() {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let buffers = &*buffers;
+        let Some(entry) = temporal_graph_entry(handle) else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        let state = entry.state.lock().expect("temporal graph poisoned");
+        let (Some(frame), Some(frozen)) = (&state.frame, &state.frozen) else {
+            return temporal::TemporalError::StaleRevision as i32;
+        };
+        if frame.revision() != expected_revision {
+            return temporal::TemporalError::StaleRevision as i32;
+        }
+        let copies = [
+            temporal_graph_copy_bytes(
+                frame.node_visibility(),
+                buffers.node_visibility,
+                buffers.node_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                frame.edge_visibility(),
+                buffers.edge_visibility,
+                buffers.edge_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                frame.visible_node_ids(),
+                buffers.visible_node_ids.cast(),
+                buffers.visible_node_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                frame.visible_edge_ids(),
+                buffers.visible_edge_ids.cast(),
+                buffers.visible_edge_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                frame.selected_visible_node_ids(),
+                buffers.selected_visible_node_ids.cast(),
+                buffers.selected_visible_node_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                frame.selected_visible_edge_ids(),
+                buffers.selected_visible_edge_ids.cast(),
+                buffers.selected_visible_edge_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                frame.pinned_visible_node_ids(),
+                buffers.pinned_visible_node_ids.cast(),
+                buffers.pinned_visible_node_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                &frozen.selected_node_ids,
+                buffers.selected_node_ids.cast(),
+                buffers.selected_node_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                &frozen.selected_edge_ids,
+                buffers.selected_edge_ids.cast(),
+                buffers.selected_edge_capacity,
+            ),
+            temporal_graph_copy_bytes(
+                &frozen.pinned_node_ids,
+                buffers.pinned_node_ids.cast(),
+                buffers.pinned_node_capacity,
+            ),
+        ];
+        copies
+            .into_iter()
+            .find_map(Result::err)
+            .map_or(0, |error| error as i32)
+    })
+}
+
+/// Destroy a temporal graph handle and cancel owned work first.
+#[no_mangle]
+pub extern "C" fn xyg_temporal_graph_destroy(handle: u64) -> i32 {
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        let entry = {
+            temporal_graph_registry()
+                .lock()
+                .expect("temporal graph registry poisoned")
+                .1
+                .remove(&handle)
+        };
+        let Some(entry) = entry else {
+            return temporal::TemporalError::StaleHandle as i32;
+        };
+        entry
+            .disposed
+            .store(true, std::sync::atomic::Ordering::Release);
+        if let Some(cancel) = entry
+            .active_cancel
+            .lock()
+            .expect("temporal graph cancel poisoned")
+            .as_ref()
+        {
+            cancel.cancel();
+        }
+        0
     })
 }
 

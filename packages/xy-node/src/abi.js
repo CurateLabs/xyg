@@ -75,6 +75,16 @@ import {
   xyTemporalControllerTick,
   xyTemporalCoordinateDeliver,
   xyTemporalSelectionLimit,
+  xyTemporalGraphCancel,
+  xyTemporalGraphCreate,
+  xyTemporalGraphDestroy,
+  xyTemporalGraphFrame,
+  xyTemporalGraphRequiredBudget,
+  xyTemporalGraphSetFocus,
+  xyTemporalGraphSetPinned,
+  xyTemporalGraphSetSelection,
+  xyTemporalGraphSnapshotCopy,
+  xyTemporalGraphSnapshotMeta,
 } from "./native.js";
 
 export { nativeLibraryPath };
@@ -227,6 +237,61 @@ const TemporalControllerDescriptor = koffi.struct("XygTemporalControllerDescript
   reserved: "uint32_t",
 });
 
+const TemporalGraphDescriptor = koffi.struct("XygTemporalGraphDescriptor", {
+  projection_handle: "uint64_t",
+  node_valid_from: "uint64_t",
+  node_valid_to: "uint64_t",
+  node_event_at: "uint64_t",
+  edge_valid_from: "uint64_t",
+  edge_valid_to: "uint64_t",
+  edge_event_at: "uint64_t",
+  reserved: "uint64_t",
+});
+
+const TemporalGraphSnapshotMeta = koffi.struct("XygTemporalGraphSnapshotMeta", {
+  revision: "uint64_t",
+  cursor_micros: "int64_t",
+  range_start_micros: "int64_t",
+  range_end_micros: "int64_t",
+  node_count: "uint64_t",
+  edge_count: "uint64_t",
+  visible_node_count: "uint64_t",
+  visible_edge_count: "uint64_t",
+  selected_visible_node_count: "uint64_t",
+  selected_visible_edge_count: "uint64_t",
+  pinned_visible_node_count: "uint64_t",
+  selected_node_count: "uint64_t",
+  selected_edge_count: "uint64_t",
+  pinned_node_count: "uint64_t",
+  focused_visible_kind: "uint32_t",
+  focused_kind: "uint32_t",
+  focused_visible_id: koffi.array("uint8_t", 16),
+  focused_id: koffi.array("uint8_t", 16),
+});
+
+const TemporalGraphSnapshotBuffers = koffi.struct("XygTemporalGraphSnapshotBuffers", {
+  node_visibility: "uint8_t *",
+  node_capacity: "uint64_t",
+  edge_visibility: "uint8_t *",
+  edge_capacity: "uint64_t",
+  visible_node_ids: "uint8_t *",
+  visible_node_capacity: "uint64_t",
+  visible_edge_ids: "uint8_t *",
+  visible_edge_capacity: "uint64_t",
+  selected_visible_node_ids: "uint8_t *",
+  selected_visible_node_capacity: "uint64_t",
+  selected_visible_edge_ids: "uint8_t *",
+  selected_visible_edge_capacity: "uint64_t",
+  pinned_visible_node_ids: "uint8_t *",
+  pinned_visible_node_capacity: "uint64_t",
+  selected_node_ids: "uint8_t *",
+  selected_node_capacity: "uint64_t",
+  selected_edge_ids: "uint8_t *",
+  selected_edge_capacity: "uint64_t",
+  pinned_node_ids: "uint8_t *",
+  pinned_node_capacity: "uint64_t",
+});
+
 export const TEMPORAL_PRECISION = Object.freeze({
   second: 0,
   millisecond: 1,
@@ -251,13 +316,33 @@ export const TEMPORAL_DIRECTION = Object.freeze({
   forward: 1,
 });
 
+const TEMPORAL_MESSAGES = Object.freeze({
+  [-1]: "temporal arguments are incomplete or inconsistent",
+  [-2]: "temporal input exceeds native capacity",
+  [-3]: "temporal integer conversion overflowed",
+  [-4]: "timezone is required",
+  [-5]: "local time falls in a DST gap",
+  [-6]: "local time is ambiguous at a DST fold",
+  [-7]: "temporal interval is reversed",
+  [-8]: "temporal handle is stale or closed",
+  [-9]: "temporal output buffer is too small",
+  [-10]: "temporal work was cancelled",
+  [-11]: "temporal work exceeds the supplied budget",
+  [-12]: "temporal precision unit is unsupported",
+  [-13]: "temporal resource is disposed",
+  [-14]: "temporal revision is stale",
+  [-15]: "temporal coordination rejected a self-echo",
+});
+
 export class TemporalNativeError extends Error {
   constructor(code, message) {
-    super(message ?? `native temporal failed with status ${code}`);
+    super(message ?? TEMPORAL_MESSAGES[code] ?? `native temporal failed with status ${code}`);
     this.name = "TemporalNativeError";
     this.nativeCode = code;
   }
 }
+
+export const TemporalGraphError = TemporalNativeError;
 
 export const GEO_GEOMETRY = Object.freeze({
   point: 1,
@@ -308,8 +393,25 @@ export function graphProjectionCreate({
   parentValidity = null,
   directed = true,
 }) {
+  nodeIds = asUuidBytes(nodeIds, "nodeIds");
+  edgeIds = asUuidBytes(edgeIds, "edgeIds");
+  sourceIds = asUuidBytes(sourceIds, "sourceIds");
+  targetIds = asUuidBytes(targetIds, "targetIds");
   const nodeCount = nodeIds.byteLength / 16;
   const edgeCount = edgeIds.byteLength / 16;
+  if (sourceIds.byteLength !== edgeIds.byteLength || targetIds.byteLength !== edgeIds.byteLength) {
+    throw new RangeError("edgeIds, sourceIds, and targetIds must contain equal UUID counts");
+  }
+  if ((parentIds == null) !== (parentValidity == null)) {
+    throw new TypeError("parentIds and parentValidity must be provided together");
+  }
+  if (parentIds != null) {
+    parentIds = asUuidBytes(parentIds, "parentIds");
+    parentValidity = asU8Array(parentValidity, "parentValidity");
+    if (parentIds.byteLength !== nodeIds.byteLength || parentValidity.byteLength !== nodeCount) {
+      throw new RangeError("parent buffers must match the node UUID count");
+    }
+  }
   const outHandle = new BigUint64Array(1);
   const encoded = Buffer.alloc(koffi.sizeof(GraphProjectionDescriptor));
   koffi.encode(encoded, GraphProjectionDescriptor, {
@@ -880,6 +982,200 @@ export function temporalControllerDispose(handle) {
 
 export function temporalControllerDestroy(handle) {
   temporalStatus(xyTemporalControllerDestroy(toU64(handle, "handle")));
+}
+
+function asUuidBytes(value, name) {
+  if (!(value instanceof Uint8Array) || value.byteLength % 16 !== 0) {
+    throw new TypeError(`${name} must be a Uint8Array with a multiple-of-16 byte length`);
+  }
+  return value;
+}
+
+export function temporalGraphCreate({
+  projectionHandle,
+  nodeValidFrom = 0n,
+  nodeValidTo = 0n,
+  nodeEventAt = 0n,
+  edgeValidFrom = 0n,
+  edgeValidTo = 0n,
+  edgeEventAt = 0n,
+}) {
+  const encoded = Buffer.alloc(koffi.sizeof(TemporalGraphDescriptor));
+  koffi.encode(encoded, TemporalGraphDescriptor, {
+    projection_handle: toU64(projectionHandle, "projectionHandle"),
+    node_valid_from: toU64(nodeValidFrom, "nodeValidFrom"),
+    node_valid_to: toU64(nodeValidTo, "nodeValidTo"),
+    node_event_at: toU64(nodeEventAt, "nodeEventAt"),
+    edge_valid_from: toU64(edgeValidFrom, "edgeValidFrom"),
+    edge_valid_to: toU64(edgeValidTo, "edgeValidTo"),
+    edge_event_at: toU64(edgeEventAt, "edgeEventAt"),
+    reserved: 0n,
+  });
+  const out = new BigUint64Array(1);
+  temporalStatus(xyTemporalGraphCreate(koffi.as(encoded, "const void *"), u64Ptr(out)));
+  return out[0];
+}
+
+export function temporalGraphSetSelection(handle, { nodes = new Uint8Array(), edges = new Uint8Array() } = {}) {
+  nodes = asUuidBytes(nodes, "nodes");
+  edges = asUuidBytes(edges, "edges");
+  temporalStatus(xyTemporalGraphSetSelection(
+    toU64(handle, "handle"),
+    pointer(nodes, "uint8_t *"), BigInt(nodes.byteLength / 16),
+    pointer(edges, "uint8_t *"), BigInt(edges.byteLength / 16),
+  ));
+}
+
+export function temporalGraphSetFocus(handle, focus = null) {
+  if (focus == null) {
+    temporalStatus(xyTemporalGraphSetFocus(toU64(handle, "handle"), 0, null));
+    return;
+  }
+  if (focus.kind !== "node" && focus.kind !== "edge") {
+    throw new TypeError("focus.kind must be 'node' or 'edge'");
+  }
+  const id = asUuidBytes(focus.id, "focus.id");
+  if (id.byteLength !== 16) throw new TypeError("focus.id must contain exactly 16 bytes");
+  temporalStatus(xyTemporalGraphSetFocus(
+    toU64(handle, "handle"), focus.kind === "node" ? 1 : 2, pointer(id, "uint8_t *"),
+  ));
+}
+
+export function temporalGraphSetPinned(handle, nodes = new Uint8Array()) {
+  nodes = asUuidBytes(nodes, "nodes");
+  temporalStatus(xyTemporalGraphSetPinned(
+    toU64(handle, "handle"), pointer(nodes, "uint8_t *"), BigInt(nodes.byteLength / 16),
+  ));
+}
+
+export function temporalGraphRequiredBudget(handle) {
+  const out = new BigUint64Array(1);
+  temporalStatus(xyTemporalGraphRequiredBudget(toU64(handle, "handle"), u64Ptr(out)));
+  return out[0];
+}
+
+export function temporalGraphFrame(handle, {
+  revision,
+  cursor,
+  range,
+  budget = null,
+}) {
+  if (!Array.isArray(range) || range.length !== 2) {
+    throw new TypeError("range must be a [start, end] pair");
+  }
+  const requestedRevision = toU64(revision, "revision");
+  const resolvedBudget = budget == null ? temporalGraphRequiredBudget(handle) : toU64(budget, "budget");
+  temporalStatus(xyTemporalGraphFrame(
+    toU64(handle, "handle"), requestedRevision, toI64(cursor, "cursor"),
+    toI64(range[0], "range[0]"), toI64(range[1], "range[1]"), resolvedBudget,
+  ));
+  const snapshot = temporalGraphSnapshot(handle);
+  _assertTemporalGraphRevision(snapshot, requestedRevision);
+  return snapshot;
+}
+
+/** @internal Fail closed when another same-handle frame wins before snapshot copy. */
+export function _assertTemporalGraphRevision(snapshot, requestedRevision) {
+  if (snapshot.revision !== requestedRevision) throw new TemporalNativeError(-14);
+}
+
+export function temporalGraphCancel(handle) {
+  temporalStatus(xyTemporalGraphCancel(toU64(handle, "handle")));
+}
+
+function uuidOutput(count) {
+  return new Uint8Array(toLength(count, "UUID count") * 16);
+}
+
+function decodeFocus(kind, id) {
+  if (kind === 0) return null;
+  return { kind: kind === 1 ? "node" : "edge", id: Uint8Array.from(id) };
+}
+
+function decodeTemporalGraphMeta(encoded) {
+  const u64 = (offset) => encoded.readBigUInt64LE(offset);
+  const i64 = (offset) => encoded.readBigInt64LE(offset);
+  return {
+    revision: u64(0),
+    cursor_micros: i64(8),
+    range_start_micros: i64(16),
+    range_end_micros: i64(24),
+    node_count: u64(32),
+    edge_count: u64(40),
+    visible_node_count: u64(48),
+    visible_edge_count: u64(56),
+    selected_visible_node_count: u64(64),
+    selected_visible_edge_count: u64(72),
+    pinned_visible_node_count: u64(80),
+    selected_node_count: u64(88),
+    selected_edge_count: u64(96),
+    pinned_node_count: u64(104),
+    focused_visible_kind: encoded.readUInt32LE(112),
+    focused_kind: encoded.readUInt32LE(116),
+    focused_visible_id: encoded.subarray(120, 136),
+    focused_id: encoded.subarray(136, 152),
+  };
+}
+
+export function temporalGraphSnapshot(handle) {
+  const encoded = Buffer.alloc(koffi.sizeof(TemporalGraphSnapshotMeta));
+  temporalStatus(xyTemporalGraphSnapshotMeta(
+    toU64(handle, "handle"), koffi.as(encoded, "void *"),
+  ));
+  const meta = decodeTemporalGraphMeta(encoded);
+  const nodeVisibility = new Uint8Array(toLength(meta.node_count, "nodeCount"));
+  const edgeVisibility = new Uint8Array(toLength(meta.edge_count, "edgeCount"));
+  const outputs = {
+    visibleNodeIds: uuidOutput(meta.visible_node_count),
+    visibleEdgeIds: uuidOutput(meta.visible_edge_count),
+    selectedVisibleNodeIds: uuidOutput(meta.selected_visible_node_count),
+    selectedVisibleEdgeIds: uuidOutput(meta.selected_visible_edge_count),
+    pinnedVisibleNodeIds: uuidOutput(meta.pinned_visible_node_count),
+    selectedNodeIds: uuidOutput(meta.selected_node_count),
+    selectedEdgeIds: uuidOutput(meta.selected_edge_count),
+    pinnedNodeIds: uuidOutput(meta.pinned_node_count),
+  };
+  const buffers = Buffer.alloc(koffi.sizeof(TemporalGraphSnapshotBuffers));
+  koffi.encode(buffers, TemporalGraphSnapshotBuffers, {
+    node_visibility: pointer(nodeVisibility, "uint8_t *"),
+    node_capacity: meta.node_count,
+    edge_visibility: pointer(edgeVisibility, "uint8_t *"),
+    edge_capacity: meta.edge_count,
+    visible_node_ids: pointer(outputs.visibleNodeIds, "uint8_t *"),
+    visible_node_capacity: meta.visible_node_count,
+    visible_edge_ids: pointer(outputs.visibleEdgeIds, "uint8_t *"),
+    visible_edge_capacity: meta.visible_edge_count,
+    selected_visible_node_ids: pointer(outputs.selectedVisibleNodeIds, "uint8_t *"),
+    selected_visible_node_capacity: meta.selected_visible_node_count,
+    selected_visible_edge_ids: pointer(outputs.selectedVisibleEdgeIds, "uint8_t *"),
+    selected_visible_edge_capacity: meta.selected_visible_edge_count,
+    pinned_visible_node_ids: pointer(outputs.pinnedVisibleNodeIds, "uint8_t *"),
+    pinned_visible_node_capacity: meta.pinned_visible_node_count,
+    selected_node_ids: pointer(outputs.selectedNodeIds, "uint8_t *"),
+    selected_node_capacity: meta.selected_node_count,
+    selected_edge_ids: pointer(outputs.selectedEdgeIds, "uint8_t *"),
+    selected_edge_capacity: meta.selected_edge_count,
+    pinned_node_ids: pointer(outputs.pinnedNodeIds, "uint8_t *"),
+    pinned_node_capacity: meta.pinned_node_count,
+  });
+  temporalStatus(xyTemporalGraphSnapshotCopy(
+    toU64(handle, "handle"), meta.revision,
+    koffi.as(buffers, "const void *"),
+  ));
+  return {
+    revision: meta.revision,
+    cursor: meta.cursor_micros,
+    range: [meta.range_start_micros, meta.range_end_micros],
+    nodeVisibility,
+    edgeVisibility,
+    ...outputs,
+    focusedVisible: decodeFocus(meta.focused_visible_kind, meta.focused_visible_id),
+    focused: decodeFocus(meta.focused_kind, meta.focused_id),
+  };
+}
+
+export function temporalGraphDestroy(handle) {
+  temporalStatus(xyTemporalGraphDestroy(toU64(handle, "handle")));
 }
 
 export function graphLayout(layout, nNodes, sources, targets, opts = {}) {

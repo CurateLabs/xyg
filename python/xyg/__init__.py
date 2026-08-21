@@ -56,6 +56,8 @@ _EXPORTS = {
     "Spring": ".components",
     "Theme": ".components",
     "TemporalController": ".temporal_controller",
+    "TemporalGraph": ".temporal_graph",
+    "TemporalGraphError": ".temporal_graph",
     "Tooltip": ".components",
     "ZoneMaps": ".columns",
     "area": ".components",
@@ -166,6 +168,8 @@ __all__ = [
     "Selection",
     "Spring",
     "TemporalController",
+    "TemporalGraph",
+    "TemporalGraphError",
     "Theme",
     "Tooltip",
     "ZoneMaps",
@@ -406,3 +410,4 @@ if TYPE_CHECKING:
         unregister_mark,
     )
     from .temporal_controller import TemporalController
+    from .temporal_graph import TemporalGraph, TemporalGraphError

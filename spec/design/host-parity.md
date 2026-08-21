@@ -140,6 +140,13 @@ reorders the result.
 | **Host (Python *or* Node)** | Public API shapes, idiomatic ingest coercion (list/NumPy/TypedArray → pointers), error message text, transport attach — **no** second layout/algorithm/encode/decision path |
 | **Browser client** | WebGL draw, hit-test, pan/zoom/select/drag gestures applying uploaded buffers; playback clocks submit revisioned temporal commands to Rust (#44+) |
 
+Temporal graph native hosts follow the same boundary: Python and Node accept
+UUID/time buffers, expose lifecycle methods, and return Rust-produced
+visibility plus frozen provenance. They do not calculate membership, endpoint
+closure, interaction persistence, revision ordering, or work budgets. Node
+retains revisions and timestamps as exact `bigint`; Python performs bounded
+integer conversion before the C ABI call.
+
 Graph **analysis algorithms** (paths, centrality, communities, Cypher, …) are
 not owned here — they live in GraphForge (and similar peers). This charting
 stack plots their outputs; it does not reimplement them.
