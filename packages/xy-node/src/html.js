@@ -51,6 +51,11 @@ function standaloneClientPath() {
   } catch {
     // In-repo checkout: resolve the host-neutral dist next to this package.
   }
+  // Release staging copies the exact, verified @curatelabs/xyg standalone
+  // artifact into the Node facade. Keeping it beside the host avoids a
+  // runtime registry dependency and makes `toHtml()` work offline after a
+  // clean `npm install @curatelabs/xyg-node` (#52).
+  candidates.push(join(here, "..", "client", "standalone.js"));
   candidates.push(join(here, "..", "..", "xy-client", "dist", "standalone.js"));
   for (const candidate of candidates) {
     if (existsSync(candidate)) return candidate;
@@ -154,7 +159,7 @@ export function toHtml(figOrPayload, path = null, opts = {}) {
   const blob = asBuffer(buffers);
   const clientJs = javascriptForInlineScript(readFileSync(standaloneClientPath(), "utf8"));
   const specJs = jsonForInlineScript(spec);
-  const titleHtml = escapeHtml(title || "xy");
+  const titleHtml = escapeHtml(title || "XYG");
   const css = customCssBlock(opts.customCss);
   const parts = [
     `<!doctype html>

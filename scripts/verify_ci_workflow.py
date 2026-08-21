@@ -42,7 +42,16 @@ REQUIRED_CI_JOBS = {
 PR_REQUIRED_CI_JOBS = {"test", "wasm_foundation", "python_floor"}
 MAIN_ONLY_CI_JOBS = REQUIRED_CI_JOBS - PR_REQUIRED_CI_JOBS
 REQUIRED_CODSPEED_JOBS = {"detect", "benchmarks"}
-REQUIRED_RELEASE_JOBS = {"wheels", "sdist", "publish", "wasm", "github-release"}
+REQUIRED_RELEASE_JOBS = {
+    "wheels",
+    "sdist",
+    "wasm",
+    "node-native-packages",
+    "node-facade",
+    "publish",
+    "publish-npm",
+    "github-release",
+}
 ALLOWED_BLACKSMITH_RUNNERS = {
     "blacksmith-4vcpu-ubuntu-2404",
     "blacksmith-4vcpu-ubuntu-2404-arm",
@@ -822,7 +831,12 @@ PYPI_PUBLISH_GATE = (
     "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
 )
 REAL_PUBLISH_STEP_GATE = "if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'"
-GITHUB_RELEASE_GATE = PYPI_PUBLISH_GATE.partition(":")[2].strip()
+GITHUB_RELEASE_GATE = (
+    "vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && "
+    "vars.XYG_ALLOW_NPM_PUBLISH == 'true' && "
+    "startsWith(github.ref, 'refs/tags/xyg-v') && "
+    "(github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')"
+)
 
 # The fork repository guard on the publish job itself (issue #13): only
 # CurateLabs/xyg may reach the OIDC upload. PyPI trusted publishing is bound
@@ -1955,7 +1969,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "release",
         "trusted PyPI publishing from downloaded artifacts, gated by a dry-run switch, "
         "a tag/version/CHANGELOG agreement gate, and the fork publish guards (#13)",
-        "needs: [wheels, sdist, wasm]",
+        "needs: [wheels, sdist, wasm, node-native-packages, node-facade]",
         "environment: pypi",
         "contents: read",
         "id-token: write",
@@ -1969,6 +1983,56 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "pypa/gh-action-pypi-publish@",
         "packages-dir: dist/",
         "skip-existing: true",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "node-native-packages",
+        "release",
+        "exact-wheel Node native package staging and dry publication (#52)",
+        "needs: [wheels]",
+        "dist-${{ matrix.wheel }}",
+        "scripts/stage_node_packages.py",
+        '--platform "${{ matrix.platform }}"',
+        "--wheel wheel/*.whl",
+        "npm pack",
+        "npm publish packed/*.tgz --dry-run --provenance=false",
+        "node-platform-${{ matrix.platform }}",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "node-facade",
+        "release",
+        "offline-client Node facade staging and dry publication (#52)",
+        "node js/build.mjs",
+        "scripts/stage_node_packages.py",
+        "--facade",
+        "--client packages/xy-client/dist/standalone.js",
+        "client/standalone.js",
+        "npm pack",
+        "node-facade",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "publish-npm",
+        "release",
+        "complete guarded npm trusted-publishing set (#52)",
+        "needs: [node-native-packages, node-facade, publish]",
+        "runs-on: ubuntu-latest",
+        "environment: npm",
+        "id-token: write",
+        "npm@^11.5.1",
+        "pattern: node-*",
+        "test \"$(find node-dist -name '*.tgz' -type f | wc -l | tr -d ' ')\" = 6",
+        "XYG_ALLOW_NPM_PUBLISH",
+        "XYG_ALLOW_PYPI_PUBLISH",
+        "refs/tags/xyg-v",
+        "node-dist/node-platform-*",
+        "node-dist/node-facade",
+        'npm publish "$artifact" --access public',
+        'npm publish "$facade" --access public',
     )
     if not _has_safe_release_dry_run_input(text):
         errors.append(
@@ -2017,8 +2081,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         errors,
         jobs,
         "github-release",
-        "post-PyPI GitHub Release with the browser wheel",
-        "needs: [publish]",
+        "post-PyPI/npm GitHub Release with the browser wheel",
+        "needs: [publish, publish-npm]",
         "contents: write",
         "actions/download-artifact@",
         "pattern: dist-pyemscripten",
@@ -2033,8 +2097,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
     )
     if release_gate_unsafe or release_gate_values != [GITHUB_RELEASE_GATE]:
         errors.append(
-            "release GitHub Release job must use the same opt-in, XYG tag, and "
-            f"non-dry-run gate as PyPI (`if: {GITHUB_RELEASE_GATE}`)"
+            "release GitHub Release job must use both registry opt-ins, the XYG tag, "
+            f"and the non-dry-run gate (`if: {GITHUB_RELEASE_GATE}`)"
         )
     return errors
 
@@ -2125,10 +2189,21 @@ def validate_workflow_hosting_policy(
                 and job_name == "benchmarks"
                 and runner == CODSPEED_HOSTED_RUNNER
             )
+            # npm trusted publishing only accepts GitHub-hosted runners. Keep
+            # this exception pinned to the OIDC-only release job; build/test
+            # work remains on the approved Blacksmith fleet (#52).
+            npm_trusted_hosted = (
+                path.name == "publish.yaml"
+                and job_name == "publish-npm"
+                and runner == "ubuntu-latest"
+                and "environment: npm" in block
+                and "id-token: write" in block
+            )
             if (
                 runner != "${{ matrix.os }}"
                 and runner not in ALLOWED_BLACKSMITH_RUNNERS
                 and not codspeed_hosted
+                and not npm_trusted_hosted
             ):
                 errors.append(
                     f"{path} job {job_name} must use an approved Blacksmith runner or the "
@@ -2152,6 +2227,11 @@ def validate_workflow_hosting_policy(
                         f"{path} job {job_name} matrix runner must use an approved "
                         f"Blacksmith label, got {runner}"
                     )
+        trusted_npm_alias = (
+            path.name == "publish.yaml"
+            and "runs-on: ubuntu-latest" in job_blocks.get("publish-npm", "")
+            and text.count("runs-on: ubuntu-latest") == 1
+        )
         for lineno, line in enumerate(text.splitlines(), start=1):
             code = line.split("#", 1)[0]
             if re.search(
@@ -2160,6 +2240,8 @@ def validate_workflow_hosting_policy(
                 r"(?=$|[\s,}\]\"'])",
                 code,
             ):
+                if trusted_npm_alias and code.strip() == "runs-on: ubuntu-latest":
+                    continue
                 errors.append(
                     f"{path}:{lineno} workflow contains a GitHub-hosted runner alias; "
                     "use an explicit Blacksmith label"

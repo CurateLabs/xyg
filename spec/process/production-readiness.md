@@ -432,13 +432,35 @@ pruning is required. The first production tag starts the fork line at
 `xyg-v0.1.0`; set `XYG_ALLOW_PYPI_PUBLISH=true` only when that release is ready
 to claim the pending PyPI project.
 
-npm registry publication of `@curatelabs/xyg` and `@curatelabs/xyg-node`
-(plus exact-platform `@curatelabs/xyg-node-*` optionals) remains tracked by
-the packaging milestone; packages remain `"private": true` until that ships.
+npm registry publication of `@curatelabs/xyg` and the complete
+`@curatelabs/xyg-node` set remains tracked by the packaging milestone. The
+tracked Node manifests intentionally remain `"private": true`, version
+`0.0.0`, and use local `file:` optionals so a source checkout cannot publish.
+The release workflow uses `scripts/stage_node_packages.py` to create separate
+publishable trees from the release tag: five exact-platform packages reuse the
+byte-identical cdylibs already verified inside the Python wheels, while the
+facade pins every optional to the mapped npm semver and embeds the exact built
+standalone paint client for offline `toHtml()` use. The PEP 440 tag suffixes
+`aN`, `bN`, and `rcN` map deterministically to npm `alpha.N`, `beta.N`, and
+`rc.N`; stable versions are identical.
+
+Every run packs and dry-publishes all six Node tarballs. A real npm upload is
+additionally gated by an `xyg-v*` ref, non-dry dispatch, repository identity,
+the `npm` GitHub environment, and both `XYG_ALLOW_PYPI_PUBLISH=true` and
+`XYG_ALLOW_NPM_PUBLISH=true`. The PyPI job (including the shared tag,
+CHANGELOG, and package-name guards) succeeds before npm can publish.
+Publication
+uses npm trusted publishing on a GitHub-hosted runner (Node 24, npm >=11.5.1,
+OIDC `id-token: write`) and publishes platform packages before the facade, so
+the public facade never points at absent versioned optionals. Configure this
+exact `publish.yaml` workflow as the trusted publisher for all six npm
+projects; first-time project creation/ownership remains a deliberate registry
+bootstrap step. The GitHub Release waits for both PyPI and npm jobs.
+
 In-tree inventory, hashes, NOTICE/license checks, path scans, and size budgets
 run via `python3 scripts/verify_node_packages.py` (CI Test job; `--require-native`
-after staging; `--sbom` emits a CycloneDX-lite document from local manifests).
-Never publish `@xy/node`.
+after local staging; `--sbom` emits a CycloneDX-lite document). Never publish
+`@xy/node`.
 
 Python import `xyg` / `python/xyg/`, the distribution name, and
 `importlib.metadata` lookups all use `xyg`. The clean break intentionally ships
@@ -467,6 +489,14 @@ Before tagging an `xyg-v*` release:
 - Confirm CI built and verified native wheels for Linux glibc and musl/Alpine
   (x86-64, aarch64, armv7), macOS (x86-64, Apple Silicon), and Windows (x86, x64,
   arm64).
+- Confirm the release workflow produced six npm tarballs, each platform
+  package contains the native bytes extracted from its exact wheel, every
+  manifest carries the tag-derived npm semver and CurateLabs repository
+  identity, and the facade contains the byte-identical standalone paint client.
+- Before the first npm release, create/claim all six scoped public projects,
+  bind their trusted publisher to `CurateLabs/xyg` / `publish.yaml` /
+  environment `npm`, then enable `XYG_ALLOW_NPM_PUBLISH` alongside the PyPI
+  opt-in. Keep either variable unset for build-only release rehearsals.
 - Confirm the Pyodide/Emscripten wheel passes its runtime load gate, not only
   its structural wheel check. The tested toolchain is Rust 1.96.0 with
   `panic=abort`, Emscripten 5.0.3, cibuildwheel 4.1.0, the PEP 783
