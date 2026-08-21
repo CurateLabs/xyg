@@ -420,6 +420,12 @@ export function runLayout(data, opts = {}) {
   let y;
   let alpha = null;
 
+  const configuredCose = layoutName === "cose"
+    && (opts.cose != null || opts.pinned != null || data.parentIndices != null);
+  if (configuredCose && iterations <= 0) {
+    throw new RangeError("configured CoSE requires iterations > 0");
+  }
+
   if (graphIsProgressiveForce(layoutName) && iterations > 0) {
     const pinned = resolveEncodingValues(data, opts.pinned, "node");
     let parents = null;

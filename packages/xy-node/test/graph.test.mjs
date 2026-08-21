@@ -131,6 +131,10 @@ test("CoSE ergonomic options fail closed instead of falling back", () => {
     () => graphForceCreate(1, [], [], { algorithm: "cose", pinned: [1] }),
     /require explicit opts.x and opts.y/,
   );
+  assert.throws(
+    () => graphForceCreate(1, [], [], { algorithm: "cose", cose: { idealEdgeLength: NaN } }),
+    /must be a finite number/,
+  );
 });
 
 test("force layout catalog names are seeded deterministic", () => {

@@ -4288,14 +4288,25 @@ def graph_force_create(
     pinned: npt.ArrayLike | None = None,
     parents: npt.ArrayLike | None = None,
 ) -> int:
+    n_nodes = int(n_nodes)
+    if n_nodes < 0:
+        raise ValueError("n_nodes must be non-negative")
     sources = _as_u64(sources, "sources")
     targets = _as_u64(targets, "targets")
+    if len(sources) != len(targets):
+        raise ValueError("sources and targets must have equal length")
     algo = graph_layout_id(algorithm) if isinstance(algorithm, str) else int(algorithm)
     handle = ctypes.c_uint64(0)
-    in_x = _ptr_f64(_as_f64(x, "x")) if x is not None else None
-    in_y = _ptr_f64(_as_f64(y, "y")) if y is not None else None
-    if (x is None) ^ (y is None):
+    x_array = None if x is None else _as_f64(x, "x")
+    y_array = None if y is None else _as_f64(y, "y")
+    if (x_array is None) != (y_array is None):
         raise ValueError("force create requires both x and y or neither")
+    if x_array is not None:
+        assert y_array is not None
+        if len(x_array) != n_nodes or len(y_array) != n_nodes:
+            raise ValueError("x and y must have length n_nodes")
+    in_x = None if x_array is None else _ptr_f64(x_array)
+    in_y = None if y_array is None else _ptr_f64(y_array)
     configured_cose = cose is not None or pinned is not None or parents is not None
     if configured_cose:
         if algo != GRAPH_LAYOUT_COSE:

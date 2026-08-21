@@ -203,5 +203,5 @@ ABI id. Kamada–Kawai / stress fall back to FR when `n > 500`.
 Configured CoSE accepts `idealEdgeLength`, `repulsionStrength`,
 `gravityStrength`, `coolingFactor`, `overlapPadding`, `componentSpacing`, and
 `bounds`. `pinned` is a node-length u8/bool mask and requires `x` plus `y`;
-`parents` is a node-length `BigUint64Array` using `2**64-1` for roots. Invalid
+`parents` is a node-length `BigUint64Array` using `2n ** 64n - 1n` for roots. Invalid
 input fails instead of selecting another layout.

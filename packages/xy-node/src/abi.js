@@ -967,18 +967,25 @@ export function graphForceCreate(nNodes, sources, targets, opts = {}) {
     if (bounds != null && bounds.length !== 4) {
       throw new RangeError("opts.cose.bounds must be [x0, y0, x1, y1]");
     }
+    const coseNumber = (value, fallback, name) => {
+      const number = Number(value ?? fallback);
+      if (!Number.isFinite(number)) {
+        throw new TypeError(`opts.cose.${name} must be a finite number`);
+      }
+      return number;
+    };
     const encoded = Buffer.alloc(koffi.sizeof(CoseDescriptor));
     koffi.encode(encoded, CoseDescriptor, {
       in_x: pointer(inX, "double *"),
       in_y: pointer(inY, "double *"),
       pinned: pointer(pinned, "uint8_t *"),
       parents: pointer(parents, "uint64_t *"),
-      ideal_edge_length: Number(cose.idealEdgeLength ?? 1.0),
-      repulsion_strength: Number(cose.repulsionStrength ?? 1.25),
-      gravity_strength: Number(cose.gravityStrength ?? 0.08),
-      cooling_factor: Number(cose.coolingFactor ?? 0.985),
-      overlap_padding: Number(cose.overlapPadding ?? 0.35),
-      component_spacing: Number(cose.componentSpacing ?? 2.5),
+      ideal_edge_length: coseNumber(cose.idealEdgeLength, 1.0, "idealEdgeLength"),
+      repulsion_strength: coseNumber(cose.repulsionStrength, 1.25, "repulsionStrength"),
+      gravity_strength: coseNumber(cose.gravityStrength, 0.08, "gravityStrength"),
+      cooling_factor: coseNumber(cose.coolingFactor, 0.985, "coolingFactor"),
+      overlap_padding: coseNumber(cose.overlapPadding, 0.35, "overlapPadding"),
+      component_spacing: coseNumber(cose.componentSpacing, 2.5, "componentSpacing"),
       bounds: pointer(bounds, "double *"),
       has_bounds: bounds == null ? 0 : 1,
       reserved: 0,
@@ -1006,7 +1013,8 @@ export function graphForceCreate(nNodes, sources, targets, opts = {}) {
     );
   }
   if (code !== 0 || handle[0] === 0n) {
-    throw new Error(`xyg_graph_force_create failed with code ${code}`);
+    const symbol = configuredCose ? "xyg_graph_force_create_cose" : "xyg_graph_force_create";
+    throw new Error(`${symbol} failed with code ${code}`);
   }
   return handle[0];
 }

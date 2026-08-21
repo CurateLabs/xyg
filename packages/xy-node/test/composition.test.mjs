@@ -40,6 +40,14 @@ test("normalize + circle runLayout emits positions and meta", () => {
   assert.ok(meta.csr_offsets instanceof BigUint64Array);
 });
 
+test("configured CoSE rejects non-positive iterations instead of dropping options", () => {
+  const data = normalizeGraphInputs(["a"], [], { x: [0], y: [0] });
+  assert.throws(
+    () => runLayout(data, { layout: "cose", iterations: 0, cose: {} }),
+    /iterations > 0/,
+  );
+});
+
 test("composeGraph + figure.buildPayload protocol subset", () => {
   const fig = figure({ width: 400, height: 300 });
   fig.graph(

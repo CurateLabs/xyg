@@ -650,6 +650,11 @@ def run_layout(
     alpha = None
     layout_id = _native.graph_layout_id(layout_name)
     use_progressive = iterations > 0 and layout_id in _native._GRAPH_PROGRESSIVE_FORCE
+    configured_cose = layout_id == _native.GRAPH_LAYOUT_COSE and (
+        cose is not None or pinned is not None or data.parent_indices is not None
+    )
+    if configured_cose and iterations <= 0:
+        raise ValueError("configured CoSE requires iterations > 0")
     if use_progressive:
         parents = None
         if layout_id == _native.GRAPH_LAYOUT_COSE and data.parent_indices is not None:

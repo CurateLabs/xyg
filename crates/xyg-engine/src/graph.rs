@@ -694,7 +694,8 @@ impl ForceState {
                 || (!pinned.is_empty() && pinned.len() != n)
                 || pinned.iter().any(|&value| value > 1)
                 || !validate_compound_parents(n, parents)
-                || (pinned.iter().any(|&value| value != 0) && init_x.is_none())
+                || (pinned.iter().any(|&value| value != 0)
+                    && (init_x.is_none() || init_y.is_none()))
             {
                 return None;
             }
@@ -828,7 +829,7 @@ impl ForceState {
             let mut fx = vec![0.0; n];
             let mut fy = vec![0.0; n];
             if force_bh || n > FORCE_EXACT_REPULSION_MAX_N {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             } else {
                 self.apply_repulsion_exact(&mut fx, &mut fy, 1.0);
             }
@@ -864,7 +865,7 @@ impl ForceState {
             if n <= FORCE_EXACT_REPULSION_MAX_N {
                 self.apply_repulsion_exact(&mut fx, &mut fy, 1.0);
             } else {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             }
             for &(s, t) in &self.edges {
                 let i = s as usize;
@@ -914,7 +915,7 @@ impl ForceState {
                     }
                 }
             } else {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             }
             for &(s, t) in &self.edges {
                 let i = s as usize;
@@ -953,7 +954,7 @@ impl ForceState {
             }
             let mut fx = vec![0.0; n];
             let mut fy = vec![0.0; n];
-            self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0);
+            self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             for &(s, t) in &self.edges {
                 let i = s as usize;
                 let j = t as usize;
@@ -1083,7 +1084,12 @@ impl ForceState {
             if n <= FORCE_EXACT_REPULSION_MAX_N {
                 self.apply_repulsion_exact(&mut fx, &mut fy, self.cose.repulsion_strength);
             } else {
-                self.apply_repulsion_grid_bh(&mut fx, &mut fy, self.cose.repulsion_strength);
+                self.apply_repulsion_grid_bh(
+                    &mut fx,
+                    &mut fy,
+                    self.cose.repulsion_strength,
+                    minimum_separation,
+                );
             }
             // Compound membership participates in the same Rust kernel as a
             // shorter, symmetric containment spring. It affects components,
@@ -1209,7 +1215,13 @@ impl ForceState {
     }
 
     #[allow(clippy::needless_range_loop)] // indexes x/y/cell_of together; force math stays scalar
-    fn apply_repulsion_grid_bh(&self, fx: &mut [f64], fy: &mut [f64], mass_scale: f64) {
+    fn apply_repulsion_grid_bh(
+        &self,
+        fx: &mut [f64],
+        fy: &mut [f64],
+        mass_scale: f64,
+        minimum_separation: f64,
+    ) {
         const EXACT_CELL_MAX: usize = 32;
         let n = self.n;
         let k2 = self.k * self.k * mass_scale;
@@ -1280,6 +1292,11 @@ impl ForceState {
                             let force = k2 / dist;
                             fx[i] += force * dx / dist;
                             fy[i] += force * dy / dist;
+                            if dist < minimum_separation {
+                                let pressure = (minimum_separation - dist) * 2.0;
+                                fx[i] += pressure * dx / dist;
+                                fy[i] += pressure * dy / dist;
+                            }
                         }
                     } else {
                         let contains_i = c == ci;
@@ -1295,6 +1312,12 @@ impl ForceState {
                             let force = k2 * aggregate_mass as f64 / dist;
                             fx[i] += force * dx / dist;
                             fy[i] += force * dy / dist;
+                            if dist < minimum_separation {
+                                let pressure =
+                                    (minimum_separation - dist) * 2.0 * aggregate_mass as f64;
+                                fx[i] += pressure * dx / dist;
+                                fy[i] += pressure * dy / dist;
+                            }
                         }
                     }
                 }
@@ -2525,6 +2548,32 @@ mod tests {
             .zip(&a.y)
             .skip(1)
             .any(|(&x, &y)| x != a.x[0] || y != a.y[0]));
+
+        let make_with_padding = |overlap_padding| {
+            ForceState::new_configured(
+                n as u64,
+                &sources,
+                &targets,
+                Some(&initial_x),
+                Some(&initial_y),
+                23,
+                LAYOUT_COSE,
+                CoseOptions {
+                    repulsion_strength: 0.0,
+                    gravity_strength: 0.0,
+                    overlap_padding,
+                    ..CoseOptions::default()
+                },
+                &[],
+                &[],
+            )
+            .unwrap()
+        };
+        let mut no_padding = make_with_padding(0.0);
+        let mut padded = make_with_padding(2.0);
+        no_padding.tick(1);
+        padded.tick(1);
+        assert_ne!((no_padding.x, no_padding.y), (padded.x, padded.y));
     }
 
     #[test]
@@ -2628,6 +2677,19 @@ mod tests {
             CoseOptions::default(),
             &[],
             &cyclic,
+        )
+        .is_none());
+        assert!(ForceState::new_configured(
+            1,
+            &[],
+            &[],
+            Some(&[0.0]),
+            None,
+            0,
+            LAYOUT_COSE,
+            CoseOptions::default(),
+            &[1],
+            &[],
         )
         .is_none());
     }

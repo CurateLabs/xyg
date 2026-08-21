@@ -72,6 +72,16 @@ def test_cose_ergonomics_fail_closed():
     without_positions = _graph.normalize_graph_inputs(["a"], [])
     with pytest.raises(ValueError, match="require explicit x and y"):
         _graph.run_layout(without_positions, layout="cose", pinned=[True])
+    outside_bounds = _graph.normalize_graph_inputs(["a"], [], x=[2.0], y=[0.0])
+    with pytest.raises(ValueError, match="native graph_force_create failed"):
+        _graph.run_layout(
+            outside_bounds,
+            layout="cose",
+            pinned=[True],
+            cose={"bounds": (-1.0, -1.0, 1.0, 1.0)},
+        )
+    with pytest.raises(ValueError, match="iterations > 0"):
+        _graph.run_layout(data, layout="cose", iterations=0, cose={})
 
 
 @pytest.mark.parametrize(

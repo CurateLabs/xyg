@@ -261,6 +261,11 @@ root sentinel. Parent membership joins connected-component discovery and adds
 a symmetric shorter containment spring inside the same Rust tick, so compounds
 participate in repulsion, gravity, cooling, pins, and bounds. Parent validation
 is O(V), including adversarial deep chains.
+`overlap_padding` remains active in both scale tiers: the exact tier applies
+pairwise separation, while the bounded grid tier applies the same pressure to
+exact neighboring members and the mass-weighted cell representative for dense
+neighbors. Configured CoSE rejects non-positive iteration counts rather than
+silently discarding options, pins, or compounds through the one-shot path.
 
 Direct browser Worker/WASM execution, browser/native deterministic tolerance,
 revision-safe cancellation, and Python off-event-loop scheduling remain the
