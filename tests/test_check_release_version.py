@@ -126,6 +126,12 @@ def test_gate_rejects_leading_zero_release_segments(tmp_path: Path) -> None:
         assert any("is not a release tag" in error for error in errors), tag
 
 
+def test_gate_rejects_unicode_version_digits(tmp_path: Path) -> None:
+    changelog = _changelog(tmp_path, "## [13.2.3] — 2026-07-25")
+    errors = check_release_version.check_release("xyg-v1٣.2.3", changelog)
+    assert any("is not a release tag" in error for error in errors)
+
+
 def test_a_prerelease_needs_its_own_dated_entry(tmp_path: Path) -> None:
     # An entry for the final 0.0.1 must not vouch for 0.0.1a1 (or vice versa).
     changelog = _changelog(tmp_path, "## [0.0.1] — 2026-07-25")

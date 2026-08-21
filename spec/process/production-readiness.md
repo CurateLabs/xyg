@@ -439,7 +439,8 @@ tracked Node manifests intentionally remain `"private": true`, version
 `0.0.0`, and use local `file:` optionals so a source checkout cannot publish.
 The release workflow uses `scripts/stage_node_packages.py` to create separate
 publishable trees from the release tag: five exact-platform packages reuse the
-byte-identical cdylibs already verified inside the Python wheels, while the
+byte-identical cdylibs already verified inside the Python wheels and require a
+valid ELF64, Mach-O 64-bit, or PE architecture header, while the
 facade pins every optional to the mapped npm semver and embeds the exact built
 standalone paint client for offline `toHtml()` use. The PEP 440 tag suffixes
 `aN`, `bN`, and `rcN` map deterministically to npm `alpha.N`, `beta.N`, and

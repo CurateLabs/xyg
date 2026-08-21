@@ -34,14 +34,14 @@ PLATFORMS = {
     "win32-x64": ("xyg_core.dll", "win32", "x64"),
 }
 
-PRERELEASE_IDENTIFIER = r"(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)"
+PRERELEASE_IDENTIFIER = r"(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
 SEMVER_RE = re.compile(
     r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
     rf"(?:-{PRERELEASE_IDENTIFIER}(?:\.{PRERELEASE_IDENTIFIER})*)?$"
 )
 TAG_RE = re.compile(
-    r"^xyg-v(?P<base>(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))"
-    r"(?:(?P<pre>a|b|rc)(?P<num>0|[1-9]\d*))?$"
+    r"^xyg-v(?P<base>(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))"
+    r"(?:(?P<pre>a|b|rc)(?P<num>0|[1-9][0-9]*))?$"
 )
 REPOSITORY = {"type": "git", "url": "git+https://github.com/CurateLabs/xyg.git"}
 PUBLISH_CONFIG = {"access": "public", "provenance": True}
@@ -115,6 +115,8 @@ def _native_arch(payload: bytes) -> tuple[str, str]:
     """Return the executable format and architecture from bounded headers."""
 
     if payload.startswith(b"\x7fELF") and len(payload) >= 20:
+        if payload[4] != 2 or payload[5] not in {1, 2}:
+            raise ValueError("native payload has an unsupported or truncated executable header")
         byteorder = "little" if payload[5] == 1 else "big"
         machine = int.from_bytes(payload[18:20], byteorder)
         arch = {62: "x64", 183: "arm64"}.get(machine)

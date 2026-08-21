@@ -100,6 +100,15 @@ def test_native_header_architecture_probe(payload: bytes, expected: tuple[str, s
     assert _load()._native_arch(payload) == expected
 
 
+@pytest.mark.parametrize(("elf_class", "elf_data"), [(1, 1), (2, 0), (2, 3)])
+def test_native_arch_rejects_invalid_elf_identity(elf_class: int, elf_data: int) -> None:
+    payload = bytearray(_elf("x64"))
+    payload[4] = elf_class
+    payload[5] = elf_data
+    with pytest.raises(ValueError, match="unsupported or truncated"):
+        _load()._native_arch(bytes(payload))
+
+
 def test_platform_staging_embeds_exact_wheel_native(tmp_path: Path) -> None:
     mod = _load()
     payload = _elf("x64")
