@@ -123,11 +123,14 @@ async function initialize(message: any) {
 
 function diagnostics() {
   if (!exports || !handle) throw new Error("XYG WASM worker is not initialized");
+  const memoryBytes = exports.memory.buffer.byteLength;
   return {
     abiVersion: exports.xyg_wasm_abi_version() >>> 0,
     sceneVersion: exports.xyg_wasm_scene_version() >>> 0,
     arenaBytes: exports.xyg_wasm_arena_len(handle) >>> 0,
-    memoryBytes: exports.memory.buffer.byteLength,
+    arenaHighWaterBytes: exports.xyg_wasm_arena_high_water(handle) >>> 0,
+    memoryBytes,
+    memoryHighWaterBytes: memoryBytes,
     copyCount: exports.xyg_wasm_copy_count(handle) >>> 0,
     copyBytesLo: exports.xyg_wasm_copy_bytes_lo(handle) >>> 0,
     copyBytesHi: exports.xyg_wasm_copy_bytes_hi(handle) >>> 0,
@@ -143,41 +146,73 @@ function runSceneOp(message: any) {
     return;
   }
   try {
-    if (!(message.scene instanceof ArrayBuffer)) {
+    const series = message.type === "series.compile_paint";
+    if (!series && !(message.scene instanceof ArrayBuffer)) {
       error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "scene must be an ArrayBuffer");
       return;
     }
-    let status = exports.xyg_wasm_arena_resize(handle, message.scene.byteLength);
+    if (series && (!(message.prefix instanceof ArrayBuffer)
+        || !Array.isArray(message.columns)
+        || message.columns.some((column: unknown) => !(column instanceof ArrayBuffer)))) {
+      error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "typed-series buffers are malformed");
+      return;
+    }
+    const inputLength = series ? Number(message.byteLength) : message.scene.byteLength;
+    if (!Number.isSafeInteger(inputLength) || inputLength <= 0) {
+      error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "scene or typed-series byte length is invalid");
+      return;
+    }
+    if (series) {
+      const total = message.columns.reduce(
+        (sum: number, column: ArrayBuffer) => sum + column.byteLength,
+        message.prefix.byteLength,
+      );
+      if (!Number.isSafeInteger(total) || total !== inputLength) {
+        exports.xyg_wasm_arena_resize(handle, 0);
+        error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "typed-series buffers do not match byte length");
+        return;
+      }
+    }
+    let status = exports.xyg_wasm_arena_resize(handle, inputLength);
     if (status !== XYG_WASM_STATUS.OK) {
       error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
       return;
     }
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
-    const end = ptr + message.scene.byteLength;
+    const end = ptr + inputLength;
     if (!ptr || !Number.isSafeInteger(end) || end > exports.memory.buffer.byteLength) {
       throw new Error("Rust staging arena returned an invalid range");
     }
     // Ordinary ArrayBuffers cannot alias wasm32 linear memory. The canonical
     // source remains a JS-owned transferable; only this bounded staging slice
     // is copied into WASM. The logical arena is cleared after the operation.
-    new Uint8Array(exports.memory.buffer, ptr, message.scene.byteLength)
-      .set(new Uint8Array(message.scene));
-    const paint = message.type === "scene.paint" || message.type === "scene.compile_paint";
-    const compile = message.type === "scene.compile" || message.type === "scene.compile_paint";
+    const destination = new Uint8Array(exports.memory.buffer, ptr, inputLength);
+    if (series) {
+      destination.set(new Uint8Array(message.prefix), 0);
+      let offset = message.prefix.byteLength;
+      for (const column of message.columns) {
+        destination.set(new Uint8Array(column), offset);
+        offset += column.byteLength;
+      }
+    } else {
+      destination.set(new Uint8Array(message.scene));
+    }
+    const paint = series || message.type === "scene.paint" || message.type === "scene.compile_paint";
+    const compile = series || message.type === "scene.compile" || message.type === "scene.compile_paint";
     status = compile
       ? (paint
         ? exports.xyg_wasm_scene_compile_prepare(
-          handle, Number(message.sequence), 0, message.scene.byteLength,
+          handle, Number(message.sequence), 0, inputLength,
         )
         : exports.xyg_wasm_scene_compile(
-          handle, Number(message.sequence), 0, message.scene.byteLength,
+          handle, Number(message.sequence), 0, inputLength,
         ))
       : (paint
         ? exports.xyg_wasm_scene_prepare(
-          handle, Number(message.sequence), 0, message.scene.byteLength,
+          handle, Number(message.sequence), 0, inputLength,
         )
         : exports.xyg_wasm_scene_validate(
-          handle, Number(message.sequence), 0, message.scene.byteLength,
+          handle, Number(message.sequence), 0, inputLength,
         ));
     const detail = status === XYG_WASM_STATUS.OK ? "" : readXygWasmError(exports, handle);
     const value = { sequence: Number(message.sequence), ...diagnostics() };
@@ -231,6 +266,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     || message?.type === "scene.paint"
     || message?.type === "scene.compile"
     || message?.type === "scene.compile_paint"
+    || message?.type === "series.compile_paint"
   ) {
     // Deferring one task turn gives a cancellation already queued by the main
     // thread a chance to suppress work before a synchronous WASM call starts.

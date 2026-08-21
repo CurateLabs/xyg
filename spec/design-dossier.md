@@ -557,8 +557,9 @@ F3, still pending (above).
   to the stretched overview texture.
 - Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM.
   The first foundation now builds a static strict-CSP Worker plus a raw adapter over
-  `xyg-engine`; it validates exact Scene v8 and lifecycle/bounds but does not yet
-  compile public charts or replace the density fallback. Transferable ArrayBuffers
+  `xyg-engine`; it validates exact Scene v8 and now compiles transferable
+  scatter/line/bar/area typed series with Rust-owned identities and defaults,
+  but does not yet replace the density fallback. Transferable ArrayBuffers
   avoid a main↔Worker clone, followed by an explicit bounded copy into WASM linear
   memory. SharedArrayBuffer remains an optional isolated-context optimization.
 - *Historical decision, now narrowed:* the original design made Worker/WASM the
@@ -1153,7 +1154,8 @@ user's data structure**, and whether any step re-encodes.
 
 | Path | Transport | Copies (min/typical) | Re-encode? | Fallback / notes |
 |---|---|---|---|---|
-| **Pure JS app, same page** | typed arrays → transferable to worker → bounded WASM arena chunks | **1** / 1 per processed chunk (transfer = move; JS→WASM is one `memcpy`) | none | ordinary JS buffers cannot alias wasm32 memory; SAB is optional where isolated (§8) |
+| **Pure JS live paint / interaction** | Rust-produced offset f32/u8 typed arrays → transferable painter buffer | **0–1** / 1 (transfer = move; upload may copy into GPU storage) | never | this is the live §29 paint/data wire; TypeScript does not narrow or re-encode values |
+| **Pure JS canonical authoring → Rust/WASM compile** | exact f64 source columns in versioned `XYTS` → transferable main-thread-to-Worker handoff → bounded WASM arena | **1** / 1 with ownership transfer (JS→WASM is one bounded `memcpy`); preserve mode adds one structured-clone copy | **once, in Rust only:** canonical f64 → offset painter f32/u8 | `XYTS` is compile ingress, not the live paint wire or an `XYBF` envelope; ordinary JS buffers cannot alias wasm32 memory; Rust validates before lowering; SAB is optional where isolated (§8) |
 | **Python (Polars / Arrow-pandas), native render** | in-process Arrow | **0** / 0 | none | — |
 | **Python (NumPy-pandas), native render** | NumPy → Arrow | **0–1** / 1 (numeric can alias; strings copy) | dictionary-encode strings once | conversion cost reported at ingest |
 | **Jupyter kernel → browser** | xy's GPU-ready column blob over **binary** anywidget comm frames | **2** / 3 (payload assembly; socket transit; JS ArrayBuffer landing) | **never** — the compact f32/u8 blob lands as typed views; base64/JSON is forbidden on the live path | old frontends without binary comms: explicit unsupported/error rather than silently changing the performance contract |
@@ -1161,9 +1163,12 @@ user's data structure**, and whether any step re-encodes.
 | **Static HTML export (interactive)** | xy blob base64-embedded in the one-file artifact | 1 decode + stated 33% text expansion | base64, because HTML is a text container | size warning above threshold; offer aggregate-only embed (ship pyramid, not points) |
 | **Native static export** | in-process | 0 | none | — |
 
-Design consequences: (a) the numerical wire payload **is** the browser upload format —
-offset f32/u8 columns with no per-value transformation, while `XYBF` only supplies a
-bounded/versioned envelope; (b) the copies that do happen are `memcpy`-shaped, never
+Design consequences: (a) the live numerical paint payload **is** the browser upload
+format — offset f32/u8 columns with no per-value transformation, while `XYBF` only
+supplies a bounded/versioned envelope; canonical authoring ingress such as `XYTS` is
+distinct and may carry exact f64 source columns only as far as Rust compile, where
+Rust alone lowers them to that painter format; (b) the copies that do happen are
+`memcpy`-shaped, never
 number-parse-shaped; (c) every binding reports its actual copy count at ingest in debug
 mode, so "zero-copy" regressions are observable rather than folklore; (d) the Jupyter
 live path still has no text encoding of numbers, DOM payload, or main-thread data parse.

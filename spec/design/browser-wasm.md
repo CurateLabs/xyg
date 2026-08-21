@@ -1,8 +1,8 @@
 # Direct-browser Rust/WASM boundary
 
 **Status:** bounded lifecycle, canonical Scene paint, and packed typed-column
-compile (`XYCC`) for scatter/polyline/rect/band, plus series-shaped chart
-ergonomics (`encodeWasmChart` / `renderWasmChart`) that expand into that seam.
+compile (`XYCC`) for scatter/polyline/rect/band, plus transferable series
+descriptors (`XYTS`) whose record expansion and defaults run in Rust.
 This is **not** yet a complete direct-browser chart host. Tracking:
 [#59](https://github.com/CurateLabs/xyg/issues/59).
 Canonical scene dependency: [Scene IR](scene-ir.md).
@@ -32,7 +32,7 @@ chrome.
 | `js/src/47_wasm.ts` | Main-thread lifecycle proxy; requires explicit worker and WASM assets |
 | `js/src/48_wasm_scene.ts` | Thin display-list adapter into the existing WebGL painter |
 | `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
-| `js/src/49_wasm_chart.ts` | Series→column expansion (`scatter`/`line`/`bar`/`area`); framing only |
+| `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
 The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
@@ -47,9 +47,14 @@ default contract is therefore:
 1. Canonical typed source stays in JavaScript-owned buffers.
 2. Moving a buffer to the Worker uses `postMessage` transfer by default, so it
    does not clone the payload between main thread and Worker.
+   The high-level chart handle is intentionally safer: its default
+   `dataOwnership: "preserve"` path uses structured cloning, copying caller
+   buffers into the Worker without detaching them. This differs from the
+   low-level API's default transfer; `dataOwnership: "transfer"` explicitly
+   selects that zero-clone, detaching handoff for the high-level handle.
 3. The Worker copies only the bounded operation slice into a reusable WASM
    staging arena. The Rust adapter enforces the per-instance logical bound and
-   a 64 MiB compile-time ceiling.
+   a 384 MiB compile-time ceiling.
 4. Rust validates or computes from that slice. Outputs remain bounded scene/LOD
    records and are copied or transferred back as their contracts require.
 5. The arena's logical length returns to zero. wasm32 pages may remain reserved
@@ -66,10 +71,21 @@ The foundation diagnostics report every non-empty JS→WASM staging copy at the
 successful arena-resize boundary, before validation can reject a stale,
 cancelled, malformed, or incompatible request. They include copy count,
 split-u64 copied bytes, current logical arena length, scene record/style counts,
-ABI version, and scene version.
+arena high-water bytes, current WASM linear-memory bytes (also its high-water
+because WebAssembly memory cannot shrink), ABI version, and scene version.
 The Worker normalizes semantically unsigned wasm32 results before exposing
 them, so a set high bit in either copied-byte half remains a non-negative u32.
 They never log user values.
+`XYTS` is the canonical authoring/compile ingress, not the live §29 paint wire
+and not an `XYBF` transport envelope. Its column attachments are exact raw
+`Float64Array` source values, matching the CPU-side f64 authority. The main
+thread only validates bounded descriptor shape and transfers (or, under the
+explicit preserve policy, clones) those source buffers to the Worker. The
+Worker performs one bounded byte copy into WASM linear memory. Rust then
+validates, expands mark records/defaults, and is the sole layer that narrows
+canonical f64 geometry to offset painter f32/u8 output. TypeScript never scans,
+converts, or re-encodes per-record values. The resulting `XYPB` painter buffer
+is the live WebGL-consumed format governed by §29's raw-f32/u8 rule.
 Painter output is attempt-local instance state. Arena resize, validation,
 cancellation, the start of another prepare, any failed prepare, and disposal
 clear it; the Worker copies a successful output into one transferable
@@ -82,7 +98,8 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 3 for Scene paint plus packed typed-column compile exports. `SCENE_VERSION` remains independently versioned
+`WASM_ABI_VERSION` is 4 for Scene paint, packed typed-column compile, and
+transferable `XYTS` series descriptors. `SCENE_VERSION` remains independently versioned
 at 8. `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant. `js/package-wasm.mjs` parses the compiled module's type,
@@ -130,11 +147,22 @@ the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
 This is the public direct-browser entry for the stable Scene v8
-subset with canonical solid chart/plot backgrounds and authored Cartesian
-grid, spine, major/minor tick, side, visibility, and label paint. Packed `XYCC`
-compile plus series-shaped `encodeWasmChart` /
-`renderWasmChart` expand browser chart inputs into that Scene without main-thread
-domain scans (`FLAG_AUTO_DOMAIN`) or TypeScript Scene policy. Aggregate
+subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
+spine, major/minor tick, side, visibility, and label paint. `frameWasmChart`
+performs bounded descriptor validation and transfers exact full-buffer
+`Float64Array` columns as canonical compile ingress. Rust expands
+scatter/line/bar/area and performs the only f64-to-offset-f32 lowering,
+assigns or preserves stable identities, and owns default diameter, line width,
+bar width/baseline, area baseline, colors, domains, and margins. The default
+bar width is 80% of the minimum positive spacing between sorted x values. A
+singleton or all-coincident series uses 80% of the absolute authored x-domain
+span (including reversed domains); invalid or degenerate fallback domains fail
+closed rather than inventing data-space geometry. The returned
+`XygWasmChartHandle` owns update cancellation, diagnostics, painter teardown,
+and its own painter resources. Caller arrays and the caller-supplied Worker are
+preserved by default. `dataOwnership: "transfer"` explicitly opts into buffer
+detachment, while `workerOwnership: "own"` explicitly delegates Worker disposal
+to the handle. Aggregate
 production, density replacement, and cross-host conformance remain later #59
 slices. The two version numbers are
 checked independently so rebasing the axis/chrome work cannot silently widen
@@ -150,7 +178,18 @@ this consumer.
   is pending; every post-await continuation rechecks disposal, cleans up any
   attempt-local Rust handle, and never publishes a late ready response.
 - At most 64 instances exist per module. Each instance has an explicit arena
-  budget no greater than 64 MiB.
+  budget no greater than 384 MiB, and the sum of declared budgets for live
+  instances in one module cannot exceed that same 384 MiB ceiling. Before any
+  O(N) expansion, `XYTS` computes a
+  conservative total logical peak covering input retention, expansion vectors,
+  repacking, canonical Scene output, and allocator slack; requests above the
+  instance budget fail with `RESOURCE_LIMIT` and clear prior output. Starting
+  new staging drops the prior output allocation, and each validate, prepare, or
+  compile call consumes staging up front. Success and every error exit
+  (including stale, cancelled, bad-range, malformed, and bounded rejection)
+  therefore drop the staging allocation rather than retaining either `Vec`
+  capacity across operations; a large rejected request cannot inflate a later
+  small request's unaccounted resident baseline.
 - Sequence zero is reserved. Lower/repeated sequences fail as stale. Cancelled
   sequences fail with a stable cancelled status. The Worker defers queued work
   one task turn so already-posted cancellation can suppress it; future long
@@ -178,7 +217,7 @@ const view = await renderWasmScene({
   scene: canonicalSceneBytes,
   worker: engine,
 });
-// Or series-shaped input (expands to XYCC; Rust owns domain/margins/Scene):
+// Or transferable typed series (Rust owns expansion/defaults/domain/Scene):
 const chartView = await renderWasmChart({
   el: document.querySelector("#chart"),
   worker: engine,
@@ -238,6 +277,6 @@ Issue `#59` can close; raw local timings are not performance evidence.
 - replacement (not expansion) of `46_worker.ts` only after WASM covers its
   density contract without regression.
 
-Public chart-spec ergonomics (`expandWasmChart` / `encodeWasmChart` /
-`renderWasmChart`) and `FLAG_AUTO_DOMAIN` (Rust derives axis domains in the
-Worker) sit above the packed typed-column seam and are in place.
+Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
+typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps
+domain scans in Rust inside the Worker.

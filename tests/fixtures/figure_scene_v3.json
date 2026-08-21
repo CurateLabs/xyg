@@ -13,5 +13,17 @@
   ],
   "expected_sha256": "0e4d4a4e72e94abc61075f57622521bc3189297d08e50a390955d1b797d6478e",
   "default_scatter_sha256": "a95ba27018e949cf125bc83fd4e5bf41b44f48971090804d6e67c4129603c924",
-  "default_line_sha256": "11c73ad9952c9950375990f31b9bb5d0684c1f23b34271a640e98ddf9071eb82"
+  "default_line_sha256": "11c73ad9952c9950375990f31b9bb5d0684c1f23b34271a640e98ddf9071eb82",
+  "wasm_typed_series_v1": {
+    "magic": "XYTS",
+    "scatter_diameter": 8,
+    "line_stroke_width": 1.5,
+    "bar_half_width": 0.4,
+    "bar_baseline": 0,
+    "area_baseline": 0,
+    "default_stable_id_base": 1,
+    "joined_series_share_stable_id": true,
+    "default_fill_rgba": [37, 99, 235, 255],
+    "default_line_stroke_rgba": [37, 99, 235, 255]
+  }
 }

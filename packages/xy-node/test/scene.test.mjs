@@ -27,6 +27,12 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture"
 });
 
 test("Node figure defaults match Python Scene bytes and canonical values", () => {
+  assert.deepEqual(figureSceneFixture.wasm_typed_series_v1, {
+    magic: "XYTS", scatter_diameter: 8, line_stroke_width: 1.5,
+    bar_half_width: 0.4, bar_baseline: 0, area_baseline: 0,
+    default_stable_id_base: 1, joined_series_share_stable_id: true,
+    default_fill_rgba: [37, 99, 235, 255], default_line_stroke_rgba: [37, 99, 235, 255],
+  });
   const scene = (kind) => {
     const figure = new Figure({ width: 200, height: 120 });
     figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);

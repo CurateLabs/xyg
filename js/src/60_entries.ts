@@ -9,7 +9,7 @@ import {
   encodeWasmColumns,
   renderWasmColumns,
 } from "./49_wasm_columns";
-import { encodeWasmChart, expandWasmChart, renderWasmChart } from "./49_wasm_chart";
+import { frameWasmChart, renderWasmChart } from "./49_wasm_chart";
 // Prototype-augmentation modules: imported for their side effect of attaching
 // methods to ChartView.prototype. Every entry point must load them before the
 // first ChartView is constructed.
@@ -122,8 +122,7 @@ export {
   compileWasmScene,
   compilePrepareWasmScene,
   renderWasmColumns,
-  expandWasmChart,
-  encodeWasmChart,
+  frameWasmChart,
   renderWasmChart,
 };
 export default { render, decodeFrame };

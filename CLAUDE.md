@@ -141,7 +141,10 @@ PRs, or code. Set `git config user.name/user.email` to the human author
 
 ## Invariants (from the dossier — don't regress silently)
 
-- No JSON numbers on the wire; data moves as raw f32 buffers (§29).
+- No JSON numbers on the wire. Live paint/data payloads move as raw offset
+  f32/u8 buffers (§29). Canonical authoring/compile ingress such as `XYTS` may
+  transfer raw f64 source columns to Rust; Rust alone validates and lowers them
+  to the offset-f32 painter contract before TypeScript/WebGL consumption.
 - Canonical data is CPU-side f64; every GPU/derived buffer is a rebuildable
   cache (§27). NaN never reaches vertex buffers (§19).
 - f32 uploads are offset-encoded; tick/hover math stays f64 (§4/§16).

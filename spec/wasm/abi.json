@@ -1,12 +1,24 @@
 {
   "schema_version": 1,
-  "abi_version": 3,
+  "abi_version": 4,
   "scene_version": 8,
   "painter_version": 4,
   "painter_header_bytes": 280,
   "painter_trace_bytes": 64,
   "painter_tick_bytes": 16,
   "painter_max_traces": 1024,
+  "typed_series_version": 1,
+  "typed_series_header_bytes": 192,
+  "typed_series_descriptor_bytes": 96,
+  "typed_series_max_series": 4096,
+  "typed_series_max_records": 10000000,
+  "typed_series_max_text_bytes": 4096,
+  "typed_series_max_symbol_code": 18,
+  "typed_series_peak_fixed_bytes": 4096,
+  "typed_series_peak_bytes_per_record": 256,
+  "typed_series_peak_bytes_per_series": 1024,
+  "typed_series_peak_input_multiplier": 2,
+  "max_arena_bytes": 402653184,
   "statuses": {
     "OK": 0,
     "INVALID_HANDLE": 1,
@@ -165,6 +177,13 @@
         "u32"
       ],
       "result": "u32"
+    },
+    {
+      "name": "xyg_wasm_arena_high_water",
+      "params": [
+        "u32"
+      ],
+      "result": "usize"
     },
     {
       "name": "xyg_wasm_last_scene_records",

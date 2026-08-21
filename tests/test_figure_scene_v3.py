@@ -54,6 +54,18 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
 
 
 def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
+    assert FIXTURE["wasm_typed_series_v1"] == {
+        "magic": "XYTS",
+        "scatter_diameter": 8,
+        "line_stroke_width": 1.5,
+        "bar_half_width": 0.4,
+        "bar_baseline": 0,
+        "area_baseline": 0,
+        "default_stable_id_base": 1,
+        "joined_series_share_stable_id": True,
+        "default_fill_rgba": [37, 99, 235, 255],
+        "default_line_stroke_rgba": [37, 99, 235, 255],
+    }
     scatter = default_style_figure("scatter").to_scene()
     line = default_style_figure("line").to_scene()
     assert hashlib.sha256(scatter).hexdigest() == FIXTURE["default_scatter_sha256"]

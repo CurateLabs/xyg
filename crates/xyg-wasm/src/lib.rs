@@ -6,12 +6,12 @@
 //! typed-column requests into those same batches. This is not a second browser
 //! scene schema and does not claim complete public chart-spec coverage.
 
-mod compile;
+pub mod compile;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 3;
+pub const WASM_ABI_VERSION: u32 = 4;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -22,7 +22,11 @@ pub const STATUS_CANCELLED: i32 = 6;
 pub const STATUS_STALE_SEQUENCE: i32 = 7;
 
 pub const MAX_INSTANCES: usize = 64;
-pub const MAX_ARENA_BYTES: usize = 64 * 1024 * 1024;
+pub const MAX_ARENA_BYTES: usize = 402_653_184;
+// Multiple handles share one wasm32 memory. Reserve their declared operation
+// budgets against one module-wide ceiling so retained outputs across otherwise
+// idle instances cannot collectively promise more memory than the seam allows.
+pub const MAX_TOTAL_INSTANCE_BUDGET_BYTES: usize = MAX_ARENA_BYTES;
 const HANDLE_SLOT_BITS: u32 = 8;
 const HANDLE_SLOT_MASK: u32 = (1 << HANDLE_SLOT_BITS) - 1;
 const MAX_GENERATION: u32 = u32::MAX >> HANDLE_SLOT_BITS;
@@ -37,6 +41,7 @@ struct Instance {
     cancelled_through: u32,
     copy_count: u32,
     copy_bytes: u64,
+    arena_high_water: usize,
     last_scene_records: usize,
     last_scene_styles: usize,
 }
@@ -63,6 +68,20 @@ impl Registry {
 
     fn allocate(&mut self, max_arena_bytes: usize) -> u32 {
         if max_arena_bytes == 0 || max_arena_bytes > MAX_ARENA_BYTES {
+            return 0;
+        }
+        let reserved = self
+            .slots
+            .iter()
+            .filter_map(|slot| slot.instance.as_ref())
+            .try_fold(0usize, |total, instance| {
+                total.checked_add(instance.max_arena_bytes)
+            });
+        let Some(reserved_after) = reserved.and_then(|total| total.checked_add(max_arena_bytes))
+        else {
+            return 0;
+        };
+        if reserved_after > MAX_TOTAL_INSTANCE_BUDGET_BYTES {
             return 0;
         }
         let slot_index =
@@ -97,6 +116,7 @@ impl Registry {
                 cancelled_through: 0,
                 copy_count: 0,
                 copy_bytes: 0,
+                arena_high_water: 0,
                 last_scene_records: 0,
                 last_scene_styles: 0,
             }),
@@ -171,7 +191,10 @@ pub extern "C" fn xyg_wasm_instance_dispose(handle: u32) -> i32 {
 #[no_mangle]
 pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
     with_instance_mut(handle, |instance| {
-        instance.output.clear();
+        // A prior result is no longer observable once the caller starts a new
+        // request. Drop its allocation before reserving staging so retained
+        // capacity cannot stack on top of the next operation's peak budget.
+        instance.output = Vec::new();
         if length > instance.max_arena_bytes {
             return fail(
                 instance,
@@ -192,6 +215,7 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
             );
         }
         instance.arena.resize(length, 0);
+        instance.arena_high_water = instance.arena_high_water.max(length);
         if length != 0 {
             instance.copy_count = instance.copy_count.saturating_add(1);
             instance.copy_bytes = instance.copy_bytes.saturating_add(length as u64);
@@ -238,7 +262,10 @@ pub extern "C" fn xyg_wasm_scene_validate(
     length: usize,
 ) -> i32 {
     with_instance_mut(handle, |instance| {
-        instance.output.clear();
+        instance.output = Vec::new();
+        // Every operation consumes staging, including guard failures. Keeping
+        // it local makes all early returns drop its allocation automatically.
+        let arena = std::mem::take(&mut instance.arena);
         if sequence == 0 {
             return fail(
                 instance,
@@ -255,7 +282,7 @@ pub extern "C" fn xyg_wasm_scene_validate(
         let Some(end) = offset.checked_add(length) else {
             return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
         };
-        let Some(batch) = instance.arena.get(offset..end) else {
+        let Some(batch) = arena.get(offset..end) else {
             return fail(
                 instance,
                 STATUS_INVALID_ARGUMENT,
@@ -302,7 +329,8 @@ pub extern "C" fn xyg_wasm_scene_prepare(
     length: usize,
 ) -> i32 {
     with_instance_mut(handle, |instance| {
-        instance.output.clear();
+        instance.output = Vec::new();
+        let arena = std::mem::take(&mut instance.arena);
         if sequence == 0 {
             return fail(
                 instance,
@@ -319,7 +347,7 @@ pub extern "C" fn xyg_wasm_scene_prepare(
         let Some(end) = offset.checked_add(length) else {
             return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
         };
-        if end > instance.arena.len() {
+        if end > arena.len() {
             return fail(
                 instance,
                 STATUS_INVALID_ARGUMENT,
@@ -328,8 +356,8 @@ pub extern "C" fn xyg_wasm_scene_prepare(
         }
         // Decode owns the scene; end the arena borrow before clearing staging so
         // staging and painter output never both retain the full byte budget.
-        let decoded = scene::SceneDocument::decode(&instance.arena[offset..end]);
-        instance.arena.clear();
+        let decoded = scene::SceneDocument::decode(&arena[offset..end]);
+        drop(arena);
         let result = decoded.and_then(|document| {
             let counts = (document.record_count(), document.style_count());
             let output = document.to_browser_painter(instance.max_arena_bytes)?;
@@ -374,17 +402,17 @@ fn map_compile_error(instance: &mut Instance, error: SceneError) -> i32 {
         SceneError::Version => fail(
             instance,
             STATUS_SCENE_VERSION,
-            "typed-column compile version is incompatible",
+            "scene compile version is incompatible",
         ),
         SceneError::Limit | SceneError::PainterTraceLimit => fail(
             instance,
             STATUS_RESOURCE_LIMIT,
-            "typed-column compile exceeds a Rust engine bound",
+            "scene compile peak or output exceeds the instance byte budget",
         ),
         _ => fail(
             instance,
             STATUS_INVALID_ARGUMENT,
-            "typed-column compile request is malformed",
+            "scene compile request is malformed",
         ),
     }
 }
@@ -396,7 +424,8 @@ fn compile_from_arena(
     length: usize,
     paint: bool,
 ) -> i32 {
-    instance.output.clear();
+    instance.output = Vec::new();
+    let arena = std::mem::take(&mut instance.arena);
     if sequence == 0 {
         return fail(
             instance,
@@ -413,15 +442,15 @@ fn compile_from_arena(
     let Some(end) = offset.checked_add(length) else {
         return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
     };
-    if end > instance.arena.len() {
+    if end > arena.len() {
         return fail(
             instance,
             STATUS_INVALID_ARGUMENT,
             "staging range lies outside the arena",
         );
     }
-    let compiled = compile::compile_scene_request(&instance.arena[offset..end]);
-    instance.arena.clear();
+    let compiled = compile::compile_scene_request(&arena[offset..end], instance.max_arena_bytes);
+    drop(arena);
     instance.latest_sequence = sequence;
     let compiled = match compiled {
         Ok(value) => value,
@@ -536,6 +565,11 @@ pub extern "C" fn xyg_wasm_copy_bytes_hi(handle: u32) -> u32 {
 }
 
 #[no_mangle]
+pub extern "C" fn xyg_wasm_arena_high_water(handle: u32) -> usize {
+    with_instance_mut(handle, |instance| instance.arena_high_water).unwrap_or(0)
+}
+
+#[no_mangle]
 pub extern "C" fn xyg_wasm_last_scene_records(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.last_scene_records).unwrap_or(0)
 }
@@ -575,6 +609,49 @@ mod tests {
         )
         .unwrap()
         .encode()
+    }
+
+    fn typed_series_points(count: usize) -> Vec<u8> {
+        let data_start = compile::COMPILE_HEADER_BYTES + compile::SERIES_DESCRIPTOR_BYTES;
+        let mut out = vec![0u8; data_start];
+        out[..4].copy_from_slice(compile::SERIES_MAGIC);
+        out[4..8].copy_from_slice(&compile::SERIES_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&(compile::COMPILE_HEADER_BYTES as u32).to_le_bytes());
+        out[12..16].copy_from_slice(&3u32.to_le_bytes());
+        out[16..20].copy_from_slice(&1u32.to_le_bytes());
+        out[20..24].copy_from_slice(&(count as u32).to_le_bytes());
+        for (offset, value) in [
+            (40, 100.0f64),
+            (48, 80.0),
+            (120, 0.0),
+            (128, 1.0),
+            (136, 1.0),
+            (144, 0.0),
+            (152, 1.0),
+            (160, 1.0),
+        ] {
+            out[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        out[88..96].copy_from_slice(&1u64.to_le_bytes());
+        out[96..104].copy_from_slice(&2u64.to_le_bytes());
+        let descriptor = compile::COMPILE_HEADER_BYTES;
+        out[descriptor + 8..descriptor + 12].copy_from_slice(&(count as u32).to_le_bytes());
+        out[descriptor + 24..descriptor + 32].copy_from_slice(&f64::NAN.to_le_bytes());
+        out[descriptor + 32..descriptor + 40].copy_from_slice(&f64::NAN.to_le_bytes());
+        out[descriptor + 48..descriptor + 52].copy_from_slice(&(data_start as u32).to_le_bytes());
+        out[descriptor + 52..descriptor + 56]
+            .copy_from_slice(&((data_start + count * 8) as u32).to_le_bytes());
+        for index in 0..count {
+            out.extend_from_slice(&((index as f64 + 0.5) / count as f64).to_le_bytes());
+        }
+        for index in 0..count {
+            out.extend_from_slice(&((index as f64 + 0.5) / count as f64).to_le_bytes());
+        }
+        out
+    }
+
+    fn one_point_typed_series() -> Vec<u8> {
+        typed_series_points(1)
     }
 
     fn write_arena(handle: u32, bytes: &[u8]) {
@@ -622,9 +699,154 @@ mod tests {
         assert_eq!(xyg_wasm_arena_resize(handle, 64), STATUS_OK);
         assert_ne!(xyg_wasm_arena_ptr(handle), 0);
         assert_eq!(xyg_wasm_arena_len(handle), 64);
+        assert_eq!(xyg_wasm_arena_high_water(handle), 64);
+        assert_eq!(xyg_wasm_arena_resize(handle, 8), STATUS_OK);
+        assert_eq!(xyg_wasm_arena_high_water(handle), 64);
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
         assert_eq!(xyg_wasm_arena_resize(handle, 1), STATUS_INVALID_HANDLE);
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_INVALID_HANDLE);
+    }
+
+    #[test]
+    fn registry_caps_aggregate_declared_instance_budgets() {
+        let mut registry = Registry::new();
+        let first = registry.allocate(300 * 1024 * 1024);
+        assert_ne!(first, 0);
+        assert_eq!(registry.allocate(100 * 1024 * 1024), 0);
+        registry.slot_mut(first).unwrap().instance = None;
+        assert_ne!(registry.allocate(100 * 1024 * 1024), 0);
+    }
+
+    #[test]
+    fn typed_series_peak_budget_rejects_before_allocating_and_clears_output() {
+        let request = one_point_typed_series();
+        let handle = xyg_wasm_instance_new(request.len());
+        assert_ne!(handle, 0);
+        with_instance_mut(handle, |instance| {
+            instance.output.extend_from_slice(b"stale")
+        })
+        .unwrap();
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_scene_compile(handle, 1, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+        assert!(
+            with_instance_mut(handle, |instance| instance.last_error.clone())
+                .unwrap()
+                .contains("byte budget")
+        );
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn typed_series_large_then_small_does_not_retain_capacity_across_operations() {
+        let large = typed_series_points(2_000);
+        let small = one_point_typed_series();
+        let budget = 1_048_576;
+        let handle = xyg_wasm_instance_new(budget);
+        assert_ne!(handle, 0);
+        write_arena(handle, &large);
+        assert_eq!(xyg_wasm_scene_compile(handle, 1, 0, large.len()), STATUS_OK);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(instance.arena.capacity(), 0);
+            assert!(instance.output.capacity() <= budget);
+        })
+        .unwrap();
+
+        write_arena(handle, &small);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(instance.output.capacity(), 0);
+            assert!(instance.arena.capacity() <= small.len());
+            assert!(instance.arena.capacity() + instance.output.capacity() <= budget);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_scene_compile(handle, 2, 0, small.len()), STATUS_OK);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(instance.arena.capacity(), 0);
+            assert!(instance.output.capacity() <= budget);
+            assert!(instance.arena.capacity() + instance.output.capacity() <= budget);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_arena_high_water(handle), large.len());
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn rejected_compile_requests_release_large_staging_before_small_retry() {
+        let large = typed_series_points(2_000);
+        let small = one_point_typed_series();
+        let handle = xyg_wasm_instance_new(1_048_576);
+        assert_ne!(handle, 0);
+        write_arena(handle, &small);
+        assert_eq!(xyg_wasm_scene_compile(handle, 1, 0, small.len()), STATUS_OK);
+
+        write_arena(handle, &large);
+        assert_eq!(
+            xyg_wasm_scene_compile(handle, 1, 0, large.len()),
+            STATUS_STALE_SEQUENCE
+        );
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
+
+        assert_eq!(xyg_wasm_cancel(handle, 2), STATUS_OK);
+        write_arena(handle, &large);
+        assert_eq!(
+            xyg_wasm_scene_compile(handle, 2, 0, large.len()),
+            STATUS_CANCELLED
+        );
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
+
+        let malformed = vec![0u8; large.len()];
+        write_arena(handle, &malformed);
+        assert_eq!(
+            xyg_wasm_scene_compile(handle, 3, 0, malformed.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
+
+        write_arena(handle, &small);
+        assert_eq!(xyg_wasm_scene_compile(handle, 4, 0, small.len()), STATUS_OK);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn rejected_validate_and_prepare_release_large_staging() {
+        let valid = valid_scene();
+        let large_malformed = vec![0u8; 256 * 1024];
+        let handle = xyg_wasm_instance_new(1_048_576);
+        assert_ne!(handle, 0);
+        write_arena(handle, &valid);
+        assert_eq!(
+            xyg_wasm_scene_validate(handle, 1, 0, valid.len()),
+            STATUS_OK
+        );
+
+        write_arena(handle, &large_malformed);
+        assert_eq!(
+            xyg_wasm_scene_validate(handle, 1, 0, large_malformed.len()),
+            STATUS_STALE_SEQUENCE
+        );
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
+
+        assert_eq!(xyg_wasm_cancel(handle, 2), STATUS_OK);
+        write_arena(handle, &large_malformed);
+        assert_eq!(
+            xyg_wasm_scene_prepare(handle, 2, 0, large_malformed.len()),
+            STATUS_CANCELLED
+        );
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
+
+        write_arena(handle, &large_malformed);
+        assert_eq!(
+            xyg_wasm_scene_prepare(handle, 3, 0, large_malformed.len()),
+            STATUS_MALFORMED_SCENE
+        );
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
+
+        write_arena(handle, &valid);
+        assert_eq!(xyg_wasm_scene_prepare(handle, 4, 0, valid.len()), STATUS_OK);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
     #[test]

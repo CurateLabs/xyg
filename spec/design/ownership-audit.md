@@ -208,6 +208,8 @@ Allowed:
 
 - Explicit static Worker/WASM asset loading, bounded memory copies, stable
   status transport, cancellation, trap handling, and disposal.
+- O(series) validation and framing for transferable typed columns. Rust owns
+  per-record expansion, stable identities, and default mark/bar geometry.
 
 Forbidden:
 
