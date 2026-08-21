@@ -332,8 +332,14 @@ pub(super) fn step(instance: &mut Instance, sequence: u32, revision: u32, steps:
         );
     }
     let n = job.state.n;
-    let Some(output_len) = OUTPUT_HEADER.checked_add(n.checked_mul(16).unwrap_or(usize::MAX))
-    else {
+    let Some(position_bytes) = n.checked_mul(16) else {
+        return fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "graph output size overflow",
+        );
+    };
+    let Some(output_len) = OUTPUT_HEADER.checked_add(position_bytes) else {
         return fail(
             instance,
             STATUS_RESOURCE_LIMIT,
