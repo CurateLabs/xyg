@@ -466,6 +466,19 @@ exact `publish.yaml` workflow as the trusted publisher for all six npm
 projects; first-time project creation/ownership remains a deliberate registry
 bootstrap step. The GitHub Release waits for both PyPI and npm jobs.
 
+Packing is followed by native clean-install conformance on all five supported
+Node targets: Linux x64/arm64, macOS x64/arm64, and Windows x64. Each job starts
+with a new npm project, proves the facade's missing-package diagnostic, installs
+the matching packed native package, verifies that the resolved cdylib is inside
+that exact optional package, validates the generated ABI, builds a canonical
+scatter payload, and emits a network-free self-contained HTML export. The
+packed facade is also probed with an explicit Windows-arm64 host identity to
+prove the stable unsupported-platform message and remediation before any native
+discovery. These jobs gate both PyPI and npm
+publication. They prove the packed artifacts themselves, not an in-repository
+build or a cross-compiled executable header; VS Code local/remote application
+conformance and the immutable published-version ledger remain part of #52/#54.
+
 In-tree inventory, hashes, NOTICE/license checks, path scans, and size budgets
 run via `python3 scripts/verify_node_packages.py` (CI Test job; `--require-native`
 after local staging; `--sbom` emits a CycloneDX-lite document). Never publish

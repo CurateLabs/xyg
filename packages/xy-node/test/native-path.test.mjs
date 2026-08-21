@@ -13,6 +13,7 @@ import {
   assertSupportedPlatform,
   candidateNativeLibraries,
   nativeLibraryFileName,
+  resolveNativeLibrary,
   resolvePlatformPackageName,
   tryResolvePlatformPackageLibrary,
 } from "../src/native-path.js";
@@ -87,6 +88,20 @@ test("Windows arm64 is an explicit unsupported-platform error", () => {
       }),
     /does not support Windows arm64/,
   );
+  assert.throws(
+    () =>
+      resolveNativeLibrary({
+        platform: "win32",
+        arch: "arm64",
+        env: {},
+        requireFn: {
+          resolve() {
+            throw new Error("optional package resolution must not run");
+          },
+        },
+      }),
+    /does not support Windows arm64/,
+  );
 });
 
 test("unknown platform/arch fails before filesystem search", () => {
@@ -96,9 +111,7 @@ test("unknown platform/arch fails before filesystem search", () => {
   );
 });
 
-test("lookup prefers exact platform package, then packaged and cargo paths", () => {
-  const packageDir = "/repo/packages/xy-node";
-  const cwd = "/tmp/project";
+test("lookup uses only the exact platform package and explicit development override", () => {
   const stagedDir = "/tmp/staged-platform";
   const staged = path.join(stagedDir, "libxyg_core.so");
   const requireFn = {
@@ -114,19 +127,11 @@ test("lookup prefers exact platform package, then packaged and cargo paths", () 
       platform: "linux",
       arch: "x64",
       env: { XYG_NATIVE_LIB: "/explicit/libxyg_core.so" },
-      packageDir,
-      cwd,
       requireFn,
     });
     assert.equal(candidates[0], staged);
     assert.equal(candidates[1], "/explicit/libxyg_core.so");
-    assert.ok(
-      candidates.some((c) =>
-        c.endsWith("/packages/xy-node/_native_lib/libxyg_core.so"),
-      ),
-    );
-    assert.ok(candidates.some((c) => c.endsWith("/target/release/libxyg_core.so")));
-    assert.ok(candidates.some((c) => c.endsWith("/target/debug/libxyg_core.so")));
+    assert.equal(candidates.length, 2);
     for (const candidate of candidates) {
       assert.equal(candidate.includes("/usr/lib"), false);
       assert.equal(candidate.includes("/usr/local"), false);
@@ -135,34 +140,31 @@ test("lookup prefers exact platform package, then packaged and cargo paths", () 
     fs.existsSync = exists;
   }
 
-  const relative = candidateNativeLibraries({
-    platform: "linux",
-    arch: "x64",
-    env: { XYG_NATIVE_LIB: "rel/libxyg_core.so" },
-    packageDir,
-    cwd,
-    requireFn: missingRequire(),
-  });
-  assert.equal(relative[0], "/tmp/project/rel/libxyg_core.so");
+  assert.throws(
+    () =>
+      candidateNativeLibraries({
+        platform: "linux",
+        arch: "x64",
+        env: { XYG_NATIVE_LIB: "rel/libxyg_core.so" },
+        requireFn: missingRequire(),
+      }),
+    /XYG_NATIVE_LIB must be an absolute path.*current working directory/,
+  );
 
   const darwin = candidateNativeLibraries({
     platform: "darwin",
     arch: "arm64",
     env: {},
-    packageDir,
-    cwd,
     requireFn: missingRequire(),
   });
-  assert.ok(darwin.every((c) => c.endsWith("libxyg_core.dylib")));
+  assert.deepEqual(darwin, []);
   const win = candidateNativeLibraries({
     platform: "win32",
     arch: "x64",
     env: {},
-    packageDir,
-    cwd,
     requireFn: missingRequire(),
   });
-  assert.ok(win.every((c) => c.endsWith("xyg_core.dll")));
+  assert.deepEqual(win, []);
 });
 
 test("tryResolvePlatformPackageLibrary ignores missing optional packages", () => {

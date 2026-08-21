@@ -25,7 +25,7 @@ cd packages/xy-node && npm ci && npm test
 ## Native library search order
 
 The facade selects **only** the exact `process.platform`/`process.arch`
-optional package (#52), then falls back for source checkouts:
+optional package (#52). Source checkouts may use one explicit override:
 
 1. Exact optional platform package (when installed and its binary is staged):
    - `@curatelabs/xyg-node-darwin-arm64`
@@ -34,12 +34,9 @@ optional package (#52), then falls back for source checkouts:
    - `@curatelabs/xyg-node-linux-arm64`
    - `@curatelabs/xyg-node-win32-x64`
 2. `XYG_NATIVE_LIB` (absolute path to `libxyg_core.so` / `.dylib` / `xyg_core.dll`)
-3. `packages/xy-node/_native_lib/<platform-lib>` (packaged)
-4. repo `target/{release,debug}/<platform-lib>`
-5. `process.cwd()/target/{release,debug}/<platform-lib>`
 
-Lookup never searches system library directories, never falls back to Python,
-and never loads a wrong-architecture optional package. **Windows arm64**
+Lookup never searches repository, current-working-directory, or system library
+paths, never falls back to Python, and never loads a wrong-architecture optional package. **Windows arm64**
 returns a stable unsupported-platform error before any search.
 
 For local development, stage the built cdylib into the matching in-tree

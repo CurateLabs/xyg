@@ -378,6 +378,88 @@ jobs:
           name: node-facade
           path: packed/*.tgz
 
+  # Header inspection is not runtime conformance. Install the exact packed
+  # facade/native pair in a new project on each supported architecture, then
+  # load the Rust ABI and exercise figure + offline HTML export without a
+  # repository-relative native lookup (#52).
+  node-clean-install:
+    name: Node clean install ${{ matrix.platform }}
+    needs: [node-native-packages, node-facade]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: darwin-arm64, os: blacksmith-6vcpu-macos-15, node_arch: arm64 }
+          # The Apple Silicon runner executes the x64 Node build under Rosetta,
+          # so process.arch and the loaded Mach-O are both x64.
+          - { platform: darwin-x64, os: blacksmith-6vcpu-macos-15, node_arch: x64 }
+          - { platform: linux-arm64, os: blacksmith-4vcpu-ubuntu-2404-arm, node_arch: arm64 }
+          - { platform: linux-x64, os: blacksmith-4vcpu-ubuntu-2404, node_arch: x64 }
+          - { platform: win32-x64, os: blacksmith-4vcpu-windows-2025, node_arch: x64 }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          architecture: ${{ matrix.node_arch }}
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: node-facade
+          path: release-smoke/facade
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: node-platform-${{ matrix.platform }}
+          path: release-smoke/native
+      - name: Clean-install and load exact platform package
+        shell: bash
+        env:
+          XYG_EXPECTED_NODE_PLATFORM: ${{ matrix.platform }}
+        run: |
+          smoke="$RUNNER_TEMP/xyg-node-clean-install"
+          mkdir -p "$smoke"
+          cp scripts/node_release_smoke.mjs "$smoke/release-smoke.mjs"
+          cp release-smoke/facade/*.tgz "$smoke/facade.tgz"
+          cp release-smoke/native/*.tgz "$smoke/native.tgz"
+          export XYG_EXPECTED_ABI="$(node -p "require('./spec/abi/xyg-abi.json').abi_version")"
+          cd "$smoke"
+          mkdir unpacked
+          tar -xzf facade.tgz -C unpacked
+          node --input-type=module -e 'const { resolveNativeLibrary } = await import("./unpacked/package/src/native-path.js"); const requireFn = { resolve() { const error = new Error("not installed"); error.code = "MODULE_NOT_FOUND"; throw error } }; try { resolveNativeLibrary({ env: {}, requireFn }); throw new Error("missing platform package unexpectedly loaded") } catch (error) { if (!String(error.message).includes("Expected optional dependency @curatelabs/xyg-node-")) throw error; console.log(error.message) }'
+          npm init --yes
+          npm install --no-audit --no-fund "$smoke/facade.tgz" "$smoke/native.tgz"
+          node release-smoke.mjs | tee conformance.json
+          test -s conformance.json
+
+  node-unsupported-windows-arm64:
+    name: Node explicit unsupported Windows arm64
+    needs: [node-facade]
+    runs-on: blacksmith-4vcpu-windows-2025
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: node-facade
+          path: release-smoke/facade
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Prove Windows arm64 fails before native discovery
+        shell: bash
+        run: |
+          smoke="$RUNNER_TEMP/xyg-node-windows-arm64"
+          mkdir -p "$smoke"
+          cp release-smoke/facade/*.tgz "$smoke/facade.tgz"
+          cd "$smoke"
+          tar -xzf facade.tgz
+          node --input-type=module -e 'const { resolveNativeLibrary } = await import("./package/src/native-path.js"); const requireFn = { resolve() { throw new Error("optional package resolution must not run") } }; try { resolveNativeLibrary({ platform: "win32", arch: "arm64", env: {}, requireFn }); throw new Error("Windows arm64 unexpectedly accepted") } catch (error) { const message = String(error.message); if (!message.includes("XYG Node does not support Windows arm64") || !message.includes("Remediation:")) throw error; console.log(message) }'
+
   publish-npm:
     name: Publish XYG Node packages to npm
     # PyPI runs the shared tag/CHANGELOG/name gates first. npm cannot publish a
@@ -425,7 +507,7 @@ jobs:
     # Publishing requires the runtime-verified PyEmscripten job to pass. Its
     # PEP 783 wheel uses a standard PyPI platform tag and joins the same
     # trusted-publishing batch as the native wheels and sdist.
-    needs: [wheels, sdist, wasm, node-native-packages, node-facade]
+    needs: [wheels, sdist, wasm, node-native-packages, node-facade, node-clean-install, node-unsupported-windows-arm64]
     # Repository guard (#13): only CurateLabs/xyg may reach the OIDC publish
     # job. Forks and mirrors stop here. PyPI trusted publishing is bound to
     # this slug, workflow filename publish.yaml, and environment `pypi`.

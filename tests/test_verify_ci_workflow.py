@@ -2430,6 +2430,19 @@ def test_release_workflow_rejects_missing_native_wheel_verifier(tmp_path: Path) 
     assert any("release wheels job" in error and "verify_wheel" in error for error in errors)
 
 
+def test_release_workflow_requires_node_clean_install_matrix(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        workflow.replace("  node-clean-install:\n", "  removed-node-clean-install:\n", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("node-clean-install" in error for error in errors)
+
+
 def test_release_workflow_rejects_nonblocking_native_wheel_matrix(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
