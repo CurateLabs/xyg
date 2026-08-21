@@ -132,18 +132,24 @@ Projection policy:
 
 The first geometry lowering slice is `GeoViewport::project_line_features`.
 It accepts canonical interleaved f64 coordinates, Arrow-style offsets, and
-u64 source feature IDs. Rust validates the whole feature before publishing
-output, splits EPSG:4326 routes at paired `+180/-180` endpoints when world
-wrap is active, projects in f64, clips every segment to the CSS viewport, and
-only then emits centre-offset f32 painter geometry. Output ranges are
+u64 source feature IDs. Rust validates the complete descriptor before derived
+output work, then splits EPSG:4326 routes at paired `+180/-180` endpoints when
+world wrap is active, projects in f64, clips every segment to the CSS viewport,
+and only then emits centre-offset f32 painter geometry. Output ranges are
 independent two-point segments: a dateline or clipped-away interval can never
 be reconnected accidentally. Each visible segment carries its original
 feature ID; wholly invisible features emit neither geometry nor an ID. This
 projection selects one coherent wrapped-world copy for both endpoints of each
 segment, including when a `+180/-180` endpoint is opposite the camera centre;
 the dateline split therefore cannot turn a short edge segment into a line
-across the world. The complete descriptor is validated before derived output
-work begins. This is intentionally a line/route slice. Ring splitting and fill
+across the world. Consecutive source segments carry that selected copy across
+their shared vertex. Empty and single-vertex feature ranges emit nothing.
+Budget ceilings are the engine-owned `GeoLimits::default()` values in this
+slice; callers cannot override them. Returned failures use
+`XYG_GEO_OFFSET_MISMATCH`, `XYG_GEO_NON_FINITE_COORDINATE`,
+`XYG_GEO_COORDINATE_OUT_OF_RANGE`, or `XYG_GEO_RESOURCE_LIMIT`. Each feature
+is emitted in one wrapped-world copy even if a low-zoom viewport spans multiple
+worlds. This is intentionally a line/route slice. Ring splitting and fill
 topology remain required before polygon layers can claim the same contract.
 
 Follow-ons on this camera: polygon antimeridian splitting and fill topology,

@@ -68,10 +68,15 @@ pub struct GeoViewport {
 /// the f64 viewport centre, so painter uploads remain precise at deep zoom.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProjectedGeoLines {
+    /// Interleaved centre-relative f32 screen coordinates.
     pub xy: Vec<f32>,
+    /// Two-point segment boundaries; always `feature_ids.len() + 1` entries.
     pub offsets: Vec<u32>,
+    /// Stable source-feature identity for each emitted segment.
     pub feature_ids: Vec<u64>,
+    /// Viewport-centre f64 X origin used to decode `xy`.
     pub origin_x: f64,
+    /// Viewport-centre f64 Y origin used to decode `xy`.
     pub origin_y: f64,
 }
 
@@ -286,10 +291,6 @@ impl GeoViewport {
         // allocating derived output. Callers get one atomic failure even when
         // a malformed feature appears late in a large column.
         validate_line_coordinates(self.crs, xy)?;
-        if offsets.windows(2).any(|pair| pair[1] - pair[0] < 2) {
-            return Err(GeoError::InvalidArgument);
-        }
-
         let origin_x = self.width * 0.5;
         let origin_y = self.height * 0.5;
         let mut out = ProjectedGeoLines {
@@ -303,14 +304,28 @@ impl GeoViewport {
         for (feature_index, &feature_id) in feature_ids.iter().enumerate() {
             let start = offsets[feature_index] as usize;
             let end = offsets[feature_index + 1] as usize;
+            if end - start < 2 {
+                continue;
+            }
             let points = &xy[start * 2..end * 2];
+            let mut prior_source_end_lon = None;
             for index in 0..points.len() / 2 - 1 {
                 let (x0, y0) = (points[index * 2], points[index * 2 + 1]);
                 let (x1, y1) = (points[(index + 1) * 2], points[(index + 1) * 2 + 1]);
                 let (segments, count) =
                     split_line_segment(self.crs, self.world_wrap, x0, y0, x1, y1);
-                for segment in segments.into_iter().take(count) {
-                    let (a, b) = self.project_line_segment(segment)?;
+                for (split_index, segment) in segments.into_iter().take(count).enumerate() {
+                    // Preserve continuity between source segments, but not
+                    // across the paired screen edges introduced by a dateline
+                    // split. Each half selects the visible wrapped-world copy.
+                    let preferred_start = if split_index == 0 {
+                        prior_source_end_lon
+                    } else {
+                        None
+                    };
+                    let ((a, b), source_end_lon) =
+                        self.project_line_segment(segment, preferred_start)?;
+                    prior_source_end_lon = source_end_lon;
                     let Some((a, b)) = clip_segment(a, b, self.width, self.height) else {
                         continue;
                     };
@@ -495,24 +510,37 @@ impl GeoViewport {
     /// Project both endpoints into one coherent wrapped-world copy. Projecting
     /// them independently makes exactly +180 degrees jump to the opposite
     /// screen edge while a nearby +170 degree point remains on the right.
-    fn project_line_segment(&self, segment: [f64; 4]) -> Result<ScreenSegment, GeoError> {
+    fn project_line_segment(
+        &self,
+        segment: [f64; 4],
+        preferred_start_lon: Option<f64>,
+    ) -> Result<(ScreenSegment, Option<f64>), GeoError> {
         if self.crs != GeoCrs::Epsg4326 || !self.world_wrap {
             return Ok((
-                self.project(segment[0], segment[1])?,
-                self.project(segment[2], segment[3])?,
+                (
+                    self.project(segment[0], segment[1])?,
+                    self.project(segment[2], segment[3])?,
+                ),
+                None,
             ));
         }
 
         let midpoint_lon = 0.5 * (segment[0] + segment[2]);
-        let world_turns = ((self.center_x - midpoint_lon) / 360.0).round();
+        let world_turns = preferred_start_lon.map_or_else(
+            || ((self.center_x - midpoint_lon) / 360.0).round(),
+            |prior| ((prior - segment[0]) / 360.0).round(),
+        );
         let project_unwrapped = |lon: f64, lat: f64| {
             let mx = EARTH_RADIUS_M * (lon + world_turns * 360.0).to_radians();
             let (_, my) = lonlat_to_mercator(0.0, lat);
             self.mercator_to_screen_unwrapped(mx, my)
         };
         Ok((
-            project_unwrapped(segment[0], segment[1]),
-            project_unwrapped(segment[2], segment[3]),
+            (
+                project_unwrapped(segment[0], segment[1]),
+                project_unwrapped(segment[2], segment[3]),
+            ),
+            Some(segment[2] + world_turns * 360.0),
         ))
     }
 
@@ -901,6 +929,40 @@ mod tests {
                 x <= 16.0 || x >= vp.width - 16.0
             }));
         }
+    }
+
+    #[test]
+    fn wrapped_multi_segment_route_keeps_shared_source_vertex_continuous() {
+        let vp = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            -179.0,
+            0.0,
+            0.0,
+            512.0,
+            300.0,
+            0.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        let lines = vp
+            .project_line_features(&[-10.0, 0.0, 0.0, 0.0, 170.0, 0.0], &[0, 3], &[7])
+            .unwrap();
+        assert_eq!(lines.offsets, [0, 2, 4]);
+        assert_eq!(lines.feature_ids, [7, 7]);
+        assert_eq!(lines.xy[2], lines.xy[4]);
+        assert_eq!(lines.xy[3], lines.xy[5]);
+    }
+
+    #[test]
+    fn empty_and_single_vertex_features_emit_nothing() {
+        let vp = denver();
+        let lines = vp
+            .project_line_features(&[-105.0, 40.0], &[0, 0, 1], &[7, 9])
+            .unwrap();
+        assert!(lines.xy.is_empty());
+        assert_eq!(lines.offsets, [0]);
+        assert!(lines.feature_ids.is_empty());
     }
 
     #[test]
