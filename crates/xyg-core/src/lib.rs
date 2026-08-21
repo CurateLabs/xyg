@@ -4336,6 +4336,9 @@ pub unsafe extern "C" fn xyg_tile_store_free(store: u64) -> i32 {
 
 /// Open a checked local XYGC canonical-column artifact. Returns a nonzero
 /// handle, or zero for invalid UTF-8, missing, partial or corrupt artifacts.
+///
+/// # Safety
+/// `path` must address `path_len` readable bytes when `path_len > 0`.
 #[cfg(not(target_family = "wasm"))]
 #[no_mangle]
 pub unsafe extern "C" fn xyg_chunked_columns_open(path: *const u8, path_len: usize) -> u64 {
@@ -4380,6 +4383,10 @@ pub extern "C" fn xyg_chunked_columns_rows(store: u64) -> u64 {
 /// 2 corrupt, 3 bounds, 4 budget, 5 cancelled). Returns rows written, or `usize::MAX` on any
 /// invalid/corrupt/cancelled/out-of-budget request. Hosts may retry with a
 /// larger output capacity; capacity never weakens the read budget.
+///
+/// # Safety
+/// `out_x` and `out_y` must each address `capacity` writable f64 values.
+/// `out_stats` must address six writable u64 values.
 #[cfg(not(target_family = "wasm"))]
 #[no_mangle]
 pub unsafe extern "C" fn xyg_chunked_columns_read(
