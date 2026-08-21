@@ -2385,6 +2385,19 @@ def test_release_workflow_requires_post_publish_github_release(tmp_path: Path) -
     assert any("GitHub Release" in error and "gh release create" in error for error in errors)
 
 
+def test_release_workflow_requires_browser_package_gate(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        workflow.replace("          node js/package-wasm.mjs\n", "", 1),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("browser package" in error and "package-wasm.mjs" in error for error in errors)
+
+
 def test_github_release_flattens_downloaded_wheel_for_attachment(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     prefix, separator, release_block = workflow.partition("  github-release:\n")

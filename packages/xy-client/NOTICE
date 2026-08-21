@@ -1,0 +1,11 @@
+XYG browser client (@curatelabs/xyg)
+====================================
+
+Copyright 2024-2026 Curate Labs and contributors.
+
+This package is licensed under the Apache License, Version 2.0.
+See the bundled LICENSE file for the full text.
+
+The shipped ESM, standalone, Worker, and WebAssembly assets are built entirely
+from this repository. The package has no runtime npm dependencies and does not
+load a third-party CDN or visualization runtime.
