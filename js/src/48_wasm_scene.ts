@@ -120,7 +120,13 @@ function compilePainter(painter: ArrayBuffer) {
     if (location > 8 || entryCount === 0 || entryCount > 128 || bytes.subarray(start + 5, start + 8).some((value) => value !== 0) || bytes.subarray(start + 44, start + 48).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend metadata is invalid");
     const fontSize = f64(start + 16), titleFontSize = f64(start + 24), tableEnd = start + 48 + entryCount * 24;
     if (!(fontSize >= 1 && fontSize <= 1000 && titleFontSize >= 1 && titleFontSize <= 1000) || tableEnd > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend style is invalid");
-    const textStart = tableEnd, textLength = legendLength - (tableEnd - start);
+    const textStart = tableEnd;
+    let geometry = -1;
+    for (let offset = start + legendLength - 4; offset >= textStart; offset--) {
+      if (String.fromCharCode(...bytes.subarray(offset, offset + 4)) === "XYRG") { geometry = offset; break; }
+    }
+    if (geometry < textStart) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend geometry is invalid");
+    const textLength = geometry - textStart;
     if (titleLength > textLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend title is invalid");
     const decodeLegend = (offset: number, length: number) => { try { return decoder.decode(bytes.subarray(textStart + offset, textStart + offset + length)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend text is invalid UTF-8"); } };
     const title = decodeLegend(0, titleLength), items: any[] = []; let expected = titleLength;
@@ -131,7 +137,8 @@ function compilePainter(painter: ArrayBuffer) {
       items.push({ name: decodeLegend(labelOffset, labelLength), kind: kind === 0 ? "scatter" : kind === 1 ? "line" : "bar", style: { color: kind === 1 ? stroke : fill, fill, stroke, symbol: kind === 0 ? SYMBOLS[symbol] : undefined } });
       expected += labelLength;
     }
-    const geometry = textStart + expected, tableEndGeometry = geometry + 32 + entryCount * 40;
+    if (expected !== textLength) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend entry is invalid");
+    const tableEndGeometry = geometry + 32 + entryCount * 40;
     if (tableEndGeometry > start + legendLength || String.fromCharCode(...bytes.subarray(geometry, geometry + 4)) !== "XYRG" || u32(geometry + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend geometry is invalid");
     const finite = (offset: number) => { const value = f32(offset); if (!Number.isFinite(value)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend geometry is non-finite"); return value; };
     const bounds = [finite(geometry + 8), finite(geometry + 12), finite(geometry + 16), finite(geometry + 20)];

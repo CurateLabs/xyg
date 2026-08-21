@@ -111,7 +111,9 @@ def test_python_scene_v9_legend_bounds_and_unsupported_variants_fail_closed() ->
         figure.to_scene()
 
 
-@pytest.mark.parametrize(("value", "encoded"), [("", b""), (0, b"0"), (False, b"false")])
+@pytest.mark.parametrize(
+    ("value", "encoded"), [(None, b""), ("", b""), (0, b"0"), (False, b"false")]
+)
 def test_python_scene_v9_legend_title_defaults_only_for_none(value: object, encoded: bytes) -> None:
     figure = Figure(width=240, height=160)
     figure.scatter([0.25], [0.5], name="observed")

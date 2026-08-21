@@ -516,6 +516,22 @@ async function run() {
     if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_MALFORMED_OUTPUT") throw error;
   }
   malformedHost.remove();
+  const overlappingPainter = negativeStroke.painter.slice(0), overlappingBytes = new Uint8Array(overlappingPainter);
+  const legendOffset = overlappingBytes.findIndex((_, index) =>
+    String.fromCharCode(...overlappingBytes.subarray(index, index + 4)) === "XYLG");
+  const overlappingGeometryOffset = overlappingBytes.findIndex((_, index) =>
+    String.fromCharCode(...overlappingBytes.subarray(index, index + 4)) === "XYRG");
+  if (legendOffset < 0 || overlappingGeometryOffset < 0) throw new Error("Rust painter legend payload is incomplete");
+  const legendTextOffset = legendOffset + 48 + 24;
+  new DataView(overlappingPainter).setUint32(legendOffset + 48 + 12, overlappingGeometryOffset - legendTextOffset + 1, true);
+  const overlappingHost = document.body.appendChild(document.createElement("div"));
+  try {
+    hydrateWasmPainter(overlappingHost, { ...negativeStroke, painter: overlappingPainter });
+    throw new Error("legend label overlapping XYRG geometry was accepted");
+  } catch (error) {
+    if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_MALFORMED_OUTPUT") throw error;
+  }
+  overlappingHost.remove();
   symbolView.destroy(); await symbolWorker.dispose(); symbolHost.remove();
   authored.destroy();
   authoredHost.remove();
