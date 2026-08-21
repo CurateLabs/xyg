@@ -108,6 +108,9 @@ fn response(state: &ControllerState, event: Option<&CoordinationEvent>, result: 
 
 fn selection_at(bytes: &[u8], count_offset: usize, ids_offset: usize) -> Option<Vec<u64>> {
     let count = usize::try_from(u32_at(bytes, count_offset)?).ok()?;
+    if count > xyg_engine::temporal_controller::MAX_COORDINATED_SELECTION_IDS {
+        return None;
+    }
     let expected = ids_offset.checked_add(count.checked_mul(8)?)?;
     if bytes.len() != expected {
         return None;
@@ -280,6 +283,18 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn selection_decode_rejects_counts_above_the_product_limit() {
+        let mut command = [0_u8; 24];
+        put_u32(
+            &mut command,
+            16,
+            u32::try_from(xyg_engine::temporal_controller::MAX_COORDINATED_SELECTION_IDS + 1)
+                .unwrap(),
+        );
+        assert_eq!(selection_at(&command, 16, 24), None);
+    }
 
     #[test]
     fn create_step_and_dispose_are_packed_and_rust_owned() {

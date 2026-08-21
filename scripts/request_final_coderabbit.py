@@ -78,7 +78,14 @@ def validate_candidate(
     head = pull.get("head", {}).get("sha") if isinstance(pull.get("head"), dict) else None
     if head != expected_head or not isinstance(head, str) or _SHA.fullmatch(head) is None:
         raise ValueError("pull request head does not match the requested exact SHA")
-    if pull.get("mergeable") is not True or pull.get("mergeable_state") != "clean":
+    # GitHub reports ``blocked`` while branch protection is waiting for the
+    # very review this workflow requests. Required checks, statuses, and
+    # unresolved threads are verified independently below.
+    if (
+        pull.get("draft") is True
+        or pull.get("mergeable") is not True
+        or pull.get("mergeable_state") not in {"clean", "blocked"}
+    ):
         raise ValueError("pull request is not currently merge-ready")
 
     if not isinstance(checks, dict) or not isinstance(checks.get("check_runs"), list):

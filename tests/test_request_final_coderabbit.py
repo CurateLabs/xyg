@@ -31,6 +31,16 @@ def test_final_candidate_accepts_exact_green_merge_ready_head() -> None:
     )
 
 
+def test_final_candidate_accepts_protection_blocked_green_head() -> None:
+    pull, checks, statuses, threads = _candidate()
+    pull["mergeable_state"] = "blocked"
+
+    assert (
+        validate_candidate(pull, checks, statuses, threads, expected_head=SHA, current_run_id=99)
+        == SHA
+    )
+
+
 def test_exact_head_request_marker_is_idempotent() -> None:
     comments = [
         {
@@ -120,7 +130,9 @@ def test_malformed_request_comments_fail_closed(comments: object) -> None:
         has_existing_request(comments, SHA)
 
 
-@pytest.mark.parametrize("mutation", ["stale", "unmergeable", "pending", "missing", "thread"])
+@pytest.mark.parametrize(
+    "mutation", ["stale", "unmergeable", "draft", "pending", "missing", "thread"]
+)
 def test_final_candidate_fails_closed(mutation: str) -> None:
     pull, checks, statuses, threads = _candidate()
     expected = SHA
@@ -128,6 +140,8 @@ def test_final_candidate_fails_closed(mutation: str) -> None:
         expected = "b" * 40
     elif mutation == "unmergeable":
         pull["mergeable_state"] = "behind"
+    elif mutation == "draft":
+        pull["draft"] = True
     elif mutation == "pending":
         checks["check_runs"].append(
             {"name": "another", "conclusion": None, "details_url": "https://checks/3"}

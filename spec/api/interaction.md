@@ -257,7 +257,7 @@ contract are defined in
 [`../design/temporal-controller.md`](../design/temporal-controller.md).
 
 Coordination is explicitly opt-in through a nonzero group. Each event replaces
-range, cursor, and the canonical selection together; there is no implicit link
+range, cursor, window, and the canonical selection together; there is no implicit link
 to ordinary `link_group`, no conversion from stable IDs to local row offsets,
 and no partial apply. Empty selection clears. Disposal cancels playback,
 detaches the scrubber listener, restores its prior focus/ARIA attributes,

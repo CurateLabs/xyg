@@ -34,7 +34,7 @@ Linked-view scrubbing uses revisioned `CoordinationEvent` payloads
 `source_instance`, `revision`, half-open `range_*`, `cursor`, and `window` as
 typed integers, plus a bounded canonical replacement set of raw u64 stable IDs.
 The selection is never JSON-number encoded. Self-echo and stale revisions are
-rejected in Rust; range/cursor/selection apply atomically and unrelated groups
+rejected in Rust; range/cursor/window/selection apply atomically and unrelated groups
 never share state.
 
 The catalog does not vary by transport: where a host sends a given message, it

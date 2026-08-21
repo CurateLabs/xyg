@@ -5527,7 +5527,7 @@ pub unsafe extern "C" fn xyg_temporal_controller_state(
             let state = controller.state();
             *out_selection_count = state.selection.len() as u64;
             if selection_capacity < state.selection.len() {
-                return temporal::TemporalError::InvalidArgument as i32;
+                return temporal::TemporalError::OutputCapacity as i32;
             }
             *out_instance_id = state.instance_id;
             *out_group_id = state.group_id;
@@ -5819,7 +5819,7 @@ pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
             if let Some(event) = c.pending_outbound() {
                 *out_selection_count = event.selection.len() as u64;
                 if selection_capacity < event.selection.len() {
-                    return temporal::TemporalError::InvalidArgument as i32;
+                    return temporal::TemporalError::OutputCapacity as i32;
                 }
             }
             if let Some(event) = c.take_outbound() {
@@ -8626,7 +8626,7 @@ mod tests {
                     &mut count,
                 )
             },
-            temporal::TemporalError::InvalidArgument as i32
+            temporal::TemporalError::OutputCapacity as i32
         );
         assert_eq!(count, 3);
 
