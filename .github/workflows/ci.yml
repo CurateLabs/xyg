@@ -2,11 +2,8 @@ name: CI
 
 on:
   push:
-    branches: ["main", "claude/**"]
+    branches: ["main"]
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "spec/**"
   workflow_dispatch:
 
 # Limit every job to the only repository permission needed by this workflow.
@@ -23,6 +20,7 @@ concurrency:
 jobs:
   matplotlib_reference:
     name: Matplotlib 3.11 reference compatibility
+    if: github.event_name != 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -327,6 +325,7 @@ jobs:
 
   browser_conformance:
     name: Accessibility + cross-browser conformance
+    if: github.event_name != 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -415,6 +414,7 @@ jobs:
   # parallel. The report job below merges the partial results.
   benchmark_vs:
     name: Cross-library benchmark (${{ matrix.name }})
+    if: github.event_name != 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     continue-on-error: true
@@ -552,6 +552,7 @@ jobs:
   # Other benchmark suites run concurrently with the cross-library matrix.
   benchmark_methodology:
     name: Benchmark methodology suites
+    if: github.event_name != 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     continue-on-error: true
     steps:
@@ -657,9 +658,9 @@ jobs:
 
   benchmark:
     name: Merge and verify benchmark reports
+    if: always() && github.event_name != 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [benchmark_vs, benchmark_methodology]
-    if: always()
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -715,6 +716,7 @@ jobs:
 
   sdist:
     name: Source distribution
+    if: github.event_name != 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -798,6 +800,7 @@ jobs:
   # still includes both Intel and Apple Silicon macOS wheels.
   wheels:
     name: Wheel ${{ matrix.os }}
+    if: github.event_name != 'pull_request'
     needs: test
     runs-on: ${{ matrix.os }}
     strategy:
@@ -894,6 +897,7 @@ jobs:
   # fallback and never an opaque crash.
   install_without_rust:
     name: Install without Rust (clear error)
+    if: github.event_name != 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

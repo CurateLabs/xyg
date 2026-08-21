@@ -1,0 +1,43 @@
+name: Final CodeRabbit review
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Pull request number to review.
+        required: true
+        type: number
+      head_sha:
+        description: Exact candidate head SHA; stale requests fail closed.
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: final-coderabbit-${{ inputs.pull_request }}
+  cancel-in-progress: false
+
+jobs:
+  request:
+    name: Request final CodeRabbit review
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      checks: read
+      contents: read
+      pull-requests: write
+      statuses: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          ref: main
+      - name: Verify final candidate and request review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          XYG_CURRENT_RUN_ID: ${{ github.run_id }}
+          XYG_EXPECTED_HEAD: ${{ inputs.head_sha }}
+          XYG_PR_NUMBER: ${{ inputs.pull_request }}
+          XYG_REF: ${{ github.ref }}
+          XYG_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/request_final_coderabbit.py

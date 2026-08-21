@@ -2,8 +2,7 @@ name: Bazel (Blacksmith)
 
 on:
   push:
-    branches: ["main", "claude/**", "cursor/**"]
-  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
