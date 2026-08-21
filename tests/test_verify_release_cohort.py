@@ -104,3 +104,14 @@ def test_release_cohort_rejects_manifest_drift(tmp_path: Path) -> None:
     files["browser"] = _tgz(tmp_path / "browser-drift.tgz", archive)
     with pytest.raises(ValueError, match="manifest mismatch"):
         cohort.verify(tag="xyg-v1.2.3rc4", commit="a" * 40, **files)
+
+
+def test_release_cohort_rejects_malformed_manifest_entry(tmp_path: Path) -> None:
+    files = _fixtures(tmp_path)
+    archive = cohort._read_tgz(files["browser"])
+    manifest = json.loads(archive["package/ASSET-MANIFEST.json"])
+    manifest["assets"]["index.js"] = "not an integrity record"
+    archive["package/ASSET-MANIFEST.json"] = json.dumps(manifest).encode()
+    files["browser"] = _tgz(tmp_path / "browser-malformed.tgz", archive)
+    with pytest.raises(ValueError, match="must be an object"):
+        cohort.verify(tag="xyg-v1.2.3rc4", commit="a" * 40, **files)

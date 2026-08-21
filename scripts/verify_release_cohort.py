@@ -120,6 +120,8 @@ def verify(
     if not isinstance(assets, dict) or set(assets) != EXPECTED_BROWSER_ASSETS:
         raise ValueError("browser asset manifest must list the exact four XYG assets")
     for name, expected in assets.items():
+        if not isinstance(expected, dict):
+            raise ValueError(f"browser asset manifest entry for {name} must be an object")
         payload = _only(archives["browser"], f"package/dist/{name}", f"browser asset {name}")
         if len(payload) != expected.get("bytes") or _digest(payload) != expected.get("sha256"):
             raise ValueError(f"browser asset manifest mismatch for {name}")
