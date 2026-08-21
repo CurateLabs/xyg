@@ -85,7 +85,7 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
   ];
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
-  assert.equal(scene[4], 10);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 10);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -104,6 +104,7 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
     { kind: "band", axis: "x", start: " ", end: 1 },
     { kind: "marker", x: "not-a-number", y: 1 },
     { kind: "marker", x: 0, y: 1, size: null },
+    { kind: "marker", x: 0, y: 1, symbol: 2 },
   ]) {
     figure.annotations = [annotation];
     assert.throws(() => figure.toScene(), /Scene v10 annotation/);

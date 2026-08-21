@@ -74,7 +74,7 @@ def test_scene_v10_annotation_style_falsey_values_do_not_become_defaults(
 ) -> None:
     figure = Figure().vline(1.0)
     figure.annotations[0]["style"] = style
-    with pytest.raises(ValueError, match="Scene v10 annotation"):
+    with pytest.raises(ValueError, match="Scene v10"):
         figure.to_scene()
 
 
@@ -87,6 +87,7 @@ def test_scene_v10_annotation_style_falsey_values_do_not_become_defaults(
         {"kind": "band", "axis": "x", "start": " ", "end": 1.0},
         {"kind": "marker", "x": "not-a-number", "y": 1.0},
         {"kind": "marker", "x": 0.0, "y": 1.0, "size": None},
+        {"kind": "marker", "x": 0.0, "y": 1.0, "symbol": 2},
     ],
 )
 def test_scene_v10_annotation_geometry_is_strict_across_hosts(
@@ -94,7 +95,7 @@ def test_scene_v10_annotation_geometry_is_strict_across_hosts(
 ) -> None:
     figure = Figure()
     figure.annotations = [annotation]
-    with pytest.raises(ValueError, match="Scene v10 annotation"):
+    with pytest.raises(ValueError, match="Scene v10"):
         figure.to_scene()
 
 

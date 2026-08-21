@@ -2068,18 +2068,20 @@ impl<'a> SceneBatch<'a> {
                     }
                 }
                 2 if kind == SceneRecordKind::Rect && run_end - annotation_index == 1 => {
-                    let (lo, hi) = y_scale.domain();
-                    if !((y0[annotation_index] == lo && y1[annotation_index] == hi)
-                        || (y0[annotation_index] == hi && y1[annotation_index] == lo))
+                    let py0 = y_scale.pixel(y0[annotation_index]);
+                    let py1 = y_scale.pixel(y1[annotation_index]);
+                    if !((py0 == layout.top && py1 == layout.bottom)
+                        || (py0 == layout.bottom && py1 == layout.top))
                     {
                         return Err(SceneError::Length);
                     }
                 }
                 3 if kind == SceneRecordKind::Scatter && run_end - annotation_index == 1 => {}
                 4 if kind == SceneRecordKind::Rect && run_end - annotation_index == 1 => {
-                    let (lo, hi) = x_scale.domain();
-                    if !((x0[annotation_index] == lo && x1[annotation_index] == hi)
-                        || (x0[annotation_index] == hi && x1[annotation_index] == lo))
+                    let px0 = x_scale.pixel(x0[annotation_index]);
+                    let px1 = x_scale.pixel(x1[annotation_index]);
+                    if !((px0 == layout.left && px1 == layout.right)
+                        || (px0 == layout.right && px1 == layout.left))
                     {
                         return Err(SceneError::Length);
                     }
@@ -4147,7 +4149,8 @@ impl SceneDocument {
                             || next.style_ref != record.style_ref
                             || next.symbol != record.symbol
                             || next.diameter.to_bits() != record.diameter.to_bits()
-                            || (is_scene_annotation_id(record.stable_id)
+                            || ((is_scene_annotation_id(record.stable_id)
+                                || is_scene_annotation_id(next.stable_id))
                                 && next.stable_id != record.stable_id)
                         {
                             break;
@@ -4161,7 +4164,8 @@ impl SceneDocument {
                         if !next.visible
                             || next.kind != SceneRecordKind::Rect
                             || next.style_ref != record.style_ref
-                            || (is_scene_annotation_id(record.stable_id)
+                            || ((is_scene_annotation_id(record.stable_id)
+                                || is_scene_annotation_id(next.stable_id))
                                 && next.stable_id != record.stable_id)
                         {
                             break;
