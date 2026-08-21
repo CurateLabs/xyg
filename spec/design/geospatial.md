@@ -150,6 +150,9 @@ equivalent wrapped `-180/+180` centres, and full-turn bearings. Native/headless
 hosts can therefore reuse or reject rebuildable painter buffers without JSON,
 formatted floats, or host-local camera comparisons. Any meaningful resize,
 zoom, centre, bearing, pitch, CRS, or wrap-policy change changes the key.
+Projection, unprojection, painter lowering, and rebuild-key entry points
+revalidate the complete camera first. A malformed restored/public-field camera
+therefore fails closed before trigonometry, f32 emission, or cache identity.
 
 The first geometry lowering slice is `GeoViewport::project_line_features`.
 It accepts canonical interleaved f64 coordinates, Arrow-style offsets, and
