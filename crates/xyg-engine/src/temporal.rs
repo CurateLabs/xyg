@@ -456,6 +456,22 @@ impl CancelFlag {
     pub fn is_cancelled(&self) -> bool {
         *self.cancelled.lock().expect("cancel flag poisoned")
     }
+
+    /// Linearize a successful publication against [`Self::cancel`].
+    ///
+    /// The cancellation lock remains held through `publish`, so cancellation
+    /// either happens before publication (which is rejected) or after the
+    /// published value becomes authoritative.
+    pub(crate) fn publish_if_active<T>(
+        &self,
+        publish: impl FnOnce() -> T,
+    ) -> Result<T, TemporalError> {
+        let cancelled = self.cancelled.lock().expect("cancel flag poisoned");
+        if *cancelled {
+            return Err(TemporalError::Cancelled);
+        }
+        Ok(publish())
+    }
 }
 
 // -- handle registries -------------------------------------------------------

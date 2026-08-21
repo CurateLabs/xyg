@@ -136,7 +136,7 @@ reorders the result.
 
 | Lives in | Examples |
 |---|---|
-| **XYG Rust (shared)** | Display layouts (including today’s Python-only ones such as Sankey), graph adjacency/position buffers, channel resolution, decimation, LOD aggregates, layout/LOD **decisions**, thresholds that change buffers, progressive layout ticks, canonical temporal columns and interval/event visibility |
+| **XYG Rust (shared)** | Display layouts (including today’s Python-only ones such as Sankey), graph adjacency/position buffers, channel resolution, decimation, LOD aggregates, layout/LOD **decisions**, thresholds that change buffers, progressive layout ticks, canonical temporal columns, interval/event visibility, and UUID-stable temporal graph membership/interaction state |
 | **Host (Python *or* Node)** | Public API shapes, idiomatic ingest coercion (list/NumPy/TypedArray → pointers), error message text, transport attach — **no** second layout/algorithm/encode/decision path |
 | **Browser client** | WebGL draw, hit-test, pan/zoom/select/drag gestures applying uploaded buffers; playback clocks submit revisioned temporal commands to Rust (#44+) |
 
@@ -251,9 +251,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   only the reduced buffers — no second edge-sample for draw.
 - **Force at scale:** exact pairwise repulsion for `n ≤ 500`
   (`FORCE_EXACT_REPULSION_MAX_N`); spatial-grid Barnes–Hut-style approx above.
-- **Configured CoSE:** Python and Node normalize ergonomic option spelling,
-  pins, bounds, and compound-parent buffers into `xyg_graph_force_create_cose`.
-  Rust alone validates and applies every force/layout decision. Direct browser
+- **Configured CoSE:** Python and Node normalize ergonomic option spelling and
+  shape host buffers for `xyg_graph_force_create_cose`; Rust validates semantic
+  numeric constraints, bounds, pins, and compound parents and applies every
+  force/layout decision. Direct browser
   Worker/WASM parity and Python background scheduling remain #35 closure gates.
 - **Box-select:** reuses the existing scatter/segments selection path — no
   graph-specific selection ABI for MVP.
