@@ -442,6 +442,14 @@ export class PyramidCache {
         this.store = store;
         return { kind: "tiles", handle: store };
       }
+      if (forceSpill) {
+        pyramidFree(handle);
+        this.handle = 0n;
+        throw new Error(
+          "pyramidSpill=true could not create the disk-backed tile store; " +
+            "check temporary-directory space and permissions",
+        );
+      }
     }
     this.handle = handle;
     return { kind: "pyramid", handle };

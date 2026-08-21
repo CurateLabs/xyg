@@ -237,7 +237,11 @@ inside this frame; changing any of it means editing this section first.
   or the public scatter option `pyramid_spill=True`; `None` retains automatic
   policy and invalid non-booleans fail before ingest.
 - [x] Node: mirror the option as `pyramidSpill` (with `pyramid_spill` accepted
-  at the host boundary) in `packages/xy-node/src/pyramid.js`.
+  at the host boundary) in `packages/xy-node/src/pyramid.js`; both spellings
+  require an actual boolean and composed marks preserve the option unchanged.
+- [x] An explicit spill request fails with an actionable temporary-directory
+  error when the store cannot be created; only automatic spill may retain the
+  RAM pyramid as a safe fallback.
 - [x] First paint + `density_view` prefer spilled tiles when the resident pyramid
   would exceed budget.
 

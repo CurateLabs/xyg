@@ -119,6 +119,22 @@ def test_spill_configuration_rejects_ambiguous_values_before_ingest():
         sync_tile_budget(-1)
 
 
+def test_explicit_spill_failure_is_actionable_and_releases_ram_cache(monkeypatch):
+    from xyg import interaction
+
+    x, y = _scatter_points(4_096, seed=3)
+    fig = xyg.scatter_chart(
+        xyg.scatter(x, y, density=True, pyramid_spill=True), width=320, height=240
+    ).figure()
+    trace = fig.traces[0]
+    monkeypatch.setattr(interaction, "PYRAMID_MIN_POINTS", 1)
+    monkeypatch.setattr(kernels, "pyramid_spill", lambda _handle: 0)
+    with pytest.raises(RuntimeError, match="temporary-directory space and permissions"):
+        _ensure_pyramid(trace)
+    assert trace._pyr_handle is None
+    assert trace._tile_store is None
+
+
 def test_first_paint_records_tiles_binning():
     n = PYRAMID_MIN_POINTS
     x, y = _scatter_points(n, seed=2)

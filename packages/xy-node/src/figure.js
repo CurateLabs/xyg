@@ -72,6 +72,14 @@ function asF64(value) {
   return Float64Array.from(value, Number);
 }
 
+function optionalBoolean(value, name) {
+  if (value == null) return undefined;
+  if (typeof value !== "boolean") {
+    throw new TypeError(`${name} must be a boolean`);
+  }
+  return value;
+}
+
 function finiteBounds(arr) {
   const mm = minMax(arr);
   return mm == null ? [0.0, 0.0] : mm;
@@ -233,7 +241,10 @@ export class Figure {
     const forceDensity = opts.forceDensity ?? opts.force_density;
     const forceDirect = opts.forceDirect ?? opts.force_direct;
     const forcePyramid = opts.forcePyramid ?? opts.force_pyramid;
-    const pyramidSpill = opts.pyramidSpill ?? opts.pyramid_spill;
+    const pyramidSpill = optionalBoolean(
+      opts.pyramidSpill ?? opts.pyramid_spill,
+      "scatter pyramidSpill",
+    );
     if (opts._composed) {
       this.traces.push({
         id: opts.id ?? nextTraceId++,
@@ -251,7 +262,7 @@ export class Figure {
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
-        ...(pyramidSpill != null ? { pyramid_spill: Boolean(pyramidSpill) } : {}),
+        ...(pyramidSpill != null ? { pyramid_spill: pyramidSpill } : {}),
       });
       return this;
     }
@@ -273,7 +284,7 @@ export class Figure {
       ...(fd != null ? { force_density: Boolean(fd) } : {}),
       ...(fx != null ? { force_direct: Boolean(fx) } : {}),
       ...(fp != null ? { force_pyramid: Boolean(fp) } : {}),
-      ...(ps != null ? { pyramid_spill: Boolean(ps) } : {}),
+      ...(ps != null ? { pyramid_spill: ps } : {}),
     });
     return this;
   }

@@ -15,6 +15,7 @@ import {
   PYRAMID_BASE_DIM,
   PYRAMID_MIN_POINTS,
   PYRAMID_RESIDENT_BYTES,
+  attachScatter,
   bin2d,
   densityLogU8,
   figure,
@@ -213,5 +214,16 @@ test("figure pyramidSpill records §28 tiles binning on density tier", () => {
   const appended = fig.append(fig.traces[0].id, [0.5], [0.5]);
   assert.equal(appended.spec.append.pyramid, "dirty-tiles");
   assert.match(appended.spec.traces[0].density.binning, /^pyramid-L\d+-tiles/);
+  fig.dispose();
+});
+
+test("scatter spill option is strict and survives the composed mark path", () => {
+  const fig = figure({ width: 320, height: 240 });
+  assert.throws(
+    () => fig.scatter([0], [0], { pyramidSpill: "false" }),
+    /pyramidSpill must be a boolean/,
+  );
+  attachScatter(fig, [0, 1], [0, 1], { pyramidSpill: true });
+  assert.equal(fig.traces[0].pyramid_spill, true);
   fig.dispose();
 });

@@ -678,7 +678,13 @@ def _ensure_pyramid(t: Trace) -> int | None:
         # process-lifetime registry.
         t._pyr_finalizer = weakref.finalize(t, kernels.pyramid_free, handle)
         if _wants_pyramid_spill(t, base_dim, colored=t._pyr_colored):
-            _spill_pyramid(t, handle)
+            store = _spill_pyramid(t, handle)
+            if store is None and bool(getattr(t, "pyramid_spill", None)):
+                _free_pyramid(t)
+                raise RuntimeError(
+                    "pyramid_spill=True could not create the disk-backed tile store; "
+                    "check temporary-directory space and permissions"
+                )
             return None
     return handle or None
 
