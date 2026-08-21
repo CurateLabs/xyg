@@ -1984,7 +1984,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "release",
         "trusted PyPI publishing from downloaded artifacts, gated by a dry-run switch, "
         "a tag/version/CHANGELOG agreement gate, and the fork publish guards (#13)",
-        "needs: [wheels, sdist, wasm, node-native-packages, node-facade]",
+        "needs: [wheels, sdist, wasm, node-native-packages, node-facade, node-clean-install, node-unsupported-windows-arm64]",
         "environment: pypi",
         "contents: read",
         "id-token: write",
@@ -2027,6 +2027,39 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "client/standalone.js",
         "npm pack",
         "node-facade",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "node-clean-install",
+        "release",
+        "native supported-platform clean-install/load/export conformance (#52)",
+        "needs: [node-native-packages, node-facade]",
+        "darwin-arm64",
+        "blacksmith-6vcpu-macos-15",
+        "darwin-x64",
+        "linux-arm64",
+        "blacksmith-4vcpu-ubuntu-2404-arm",
+        "linux-x64",
+        "blacksmith-4vcpu-ubuntu-2404",
+        "win32-x64",
+        "blacksmith-4vcpu-windows-2025",
+        "node-platform-${{ matrix.platform }}",
+        "npm install --no-audit --no-fund",
+        "Expected optional dependency @curatelabs/xyg-node-",
+        "scripts/node_release_smoke.mjs",
+        "XYG_EXPECTED_ABI",
+    )
+    _require_job_contains(
+        errors,
+        jobs,
+        "node-unsupported-windows-arm64",
+        "release",
+        "real Windows arm64 unsupported-platform conformance (#52)",
+        "needs: [node-facade]",
+        "runs-on: blacksmith-4vcpu-windows-2025",
+        "XYG Node does not support Windows arm64",
+        "Remediation:",
     )
     _require_job_contains(
         errors,

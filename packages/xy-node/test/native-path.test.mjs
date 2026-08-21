@@ -96,8 +96,7 @@ test("unknown platform/arch fails before filesystem search", () => {
   );
 });
 
-test("lookup prefers exact platform package, then packaged and cargo paths", () => {
-  const packageDir = "/repo/packages/xy-node";
+test("lookup uses only the exact platform package and explicit development override", () => {
   const cwd = "/tmp/project";
   const stagedDir = "/tmp/staged-platform";
   const staged = path.join(stagedDir, "libxyg_core.so");
@@ -114,19 +113,12 @@ test("lookup prefers exact platform package, then packaged and cargo paths", () 
       platform: "linux",
       arch: "x64",
       env: { XYG_NATIVE_LIB: "/explicit/libxyg_core.so" },
-      packageDir,
       cwd,
       requireFn,
     });
     assert.equal(candidates[0], staged);
     assert.equal(candidates[1], "/explicit/libxyg_core.so");
-    assert.ok(
-      candidates.some((c) =>
-        c.endsWith("/packages/xy-node/_native_lib/libxyg_core.so"),
-      ),
-    );
-    assert.ok(candidates.some((c) => c.endsWith("/target/release/libxyg_core.so")));
-    assert.ok(candidates.some((c) => c.endsWith("/target/debug/libxyg_core.so")));
+    assert.equal(candidates.length, 2);
     for (const candidate of candidates) {
       assert.equal(candidate.includes("/usr/lib"), false);
       assert.equal(candidate.includes("/usr/local"), false);
@@ -139,30 +131,27 @@ test("lookup prefers exact platform package, then packaged and cargo paths", () 
     platform: "linux",
     arch: "x64",
     env: { XYG_NATIVE_LIB: "rel/libxyg_core.so" },
-    packageDir,
     cwd,
     requireFn: missingRequire(),
   });
-  assert.equal(relative[0], "/tmp/project/rel/libxyg_core.so");
+  assert.deepEqual(relative, ["/tmp/project/rel/libxyg_core.so"]);
 
   const darwin = candidateNativeLibraries({
     platform: "darwin",
     arch: "arm64",
     env: {},
-    packageDir,
     cwd,
     requireFn: missingRequire(),
   });
-  assert.ok(darwin.every((c) => c.endsWith("libxyg_core.dylib")));
+  assert.deepEqual(darwin, []);
   const win = candidateNativeLibraries({
     platform: "win32",
     arch: "x64",
     env: {},
-    packageDir,
     cwd,
     requireFn: missingRequire(),
   });
-  assert.ok(win.every((c) => c.endsWith("xyg_core.dll")));
+  assert.deepEqual(win, []);
 });
 
 test("tryResolvePlatformPackageLibrary ignores missing optional packages", () => {

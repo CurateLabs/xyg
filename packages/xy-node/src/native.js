@@ -1,6 +1,3 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 import koffi from "koffi";
 
 import {
@@ -17,10 +14,8 @@ import {
 export * from "./_abi_generated.js";
 export { nativeLibraryFileName, NATIVE_LIBRARY_NAMES } from "./native-path.js";
 
-const packageDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
 export function resolvePackageNativeLibrary() {
-  return resolveNativeLibrary({ packageDir });
+  return resolveNativeLibrary();
 }
 
 const libraryPath = resolvePackageNativeLibrary();

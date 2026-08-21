@@ -126,23 +126,18 @@ export function tryResolvePlatformPackageLibrary({
 /**
  * Packaged and development lookup only. Never searches system library paths.
  *
- * Order: exact optional platform package, `XYG_NATIVE_LIB`, package
- * `_native_lib/`, repo `target/{release,debug}/`, cwd `target/{release,debug}/`.
+ * Order: exact optional platform package, then the explicit development-only
+ * `XYG_NATIVE_LIB` override. There is deliberately no repository, current
+ * working directory, system-library, or Python discovery.
  */
 export function candidateNativeLibraries({
   platform = process.platform,
   arch = process.arch,
   env = process.env,
-  packageDir,
   cwd = process.cwd(),
   requireFn = DEFAULT_REQUIRE,
 } = {}) {
   assertSupportedPlatform(platform, arch);
-  if (!packageDir) {
-    throw new TypeError("candidateNativeLibraries requires packageDir");
-  }
-  const name = nativeLibraryFileName(platform);
-  const repoRoot = path.resolve(packageDir, "..", "..");
   const candidates = [];
   const fromPlatform = tryResolvePlatformPackageLibrary({
     platform,
@@ -155,11 +150,6 @@ export function candidateNativeLibraries({
   if (env.XYG_NATIVE_LIB) {
     candidates.push(path.resolve(cwd, env.XYG_NATIVE_LIB));
   }
-  candidates.push(path.resolve(packageDir, "_native_lib", name));
-  candidates.push(path.resolve(repoRoot, "target", "release", name));
-  candidates.push(path.resolve(repoRoot, "target", "debug", name));
-  candidates.push(path.resolve(cwd, "target", "release", name));
-  candidates.push(path.resolve(cwd, "target", "debug", name));
   return candidates;
 }
 
@@ -178,8 +168,8 @@ export function resolveNativeLibrary(opts) {
     [
       "Unable to find XYG native library (libxyg_core).",
       `Expected optional dependency ${packageName} with its bundled library,`,
-      "or set XYG_NATIVE_LIB / run `cargo build --release` from the repository root.",
-      "Lookup never searches system library directories or falls back to Python.",
+      "or set XYG_NATIVE_LIB to one explicit development build.",
+      "Lookup never searches repository, working-directory, or system library paths and never falls back to Python.",
       `Searched: ${candidates.join(", ") || "(none)"}`,
     ].join(" "),
   );

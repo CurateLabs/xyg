@@ -69,3 +69,16 @@ def test_require_native_fails_without_staged_libs() -> None:
     inventory = mod.verify(require_native=True)
     assert inventory["ok"] is False
     assert any("required native missing" in err for err in inventory["errors"])
+
+
+def test_scan_rejects_repository_target_discovery(tmp_path: Path) -> None:
+    mod = _load()
+    source = tmp_path / "native-path.js"
+    source.write_text(
+        'const candidate = join(repoRoot, "target/release/libxyg_core.so");\n',
+        encoding="utf-8",
+    )
+
+    hits = mod._scan_forbidden(tmp_path)
+
+    assert any("target/(?:release|debug)" in hit for hit in hits)
