@@ -311,7 +311,17 @@ mod tests {
             let mut j = AggregateJob::begin(&b, 0, 1 << 20).unwrap();
             assert!(!j.step(&b, 1).unwrap());
             assert!(j.step(&b, 1).unwrap());
-            assert_eq!(&j.finish()[..4], b"XYAO")
+            let expected = j.finish();
+            assert_eq!(&expected[..4], b"XYAO");
+
+            let request_base = 13;
+            let mut arena = vec![0xa5; request_base];
+            arena.extend_from_slice(&b);
+            let mut offset_job =
+                AggregateJob::begin(&arena[request_base..], request_base, 1 << 20).unwrap();
+            assert!(!offset_job.step(&arena, 1).unwrap());
+            assert!(offset_job.step(&arena, 1).unwrap());
+            assert_eq!(offset_job.finish(), expected);
         }
     }
     #[test]

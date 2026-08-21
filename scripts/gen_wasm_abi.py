@@ -215,11 +215,6 @@ def verify_rust(manifest: dict[str, object]) -> None:
         match = re.search(rf"pub const {rust_name}: (?:u32|usize) = ([0-9_]+);", compile_source)
         if not match or int(match.group(1).replace("_", "")) != int(manifest[manifest_name]):
             raise SystemExit(f"xyg-wasm {rust_name} differs from spec/wasm/abi.json")
-    arena_match = re.search(r"pub const MAX_ARENA_BYTES: usize = ([0-9_]+);", source)
-    if not arena_match or int(arena_match.group(1).replace("_", "")) != int(
-        manifest["max_arena_bytes"]
-    ):
-        raise SystemExit("xyg-wasm MAX_ARENA_BYTES differs from spec/wasm/abi.json")
     for name, value in manifest["statuses"].items():
         match = re.search(rf"pub const STATUS_{re.escape(str(name))}: i32 = (\d+);", source)
         if not match or int(match.group(1)) != int(value):
@@ -232,6 +227,8 @@ def verify_rust(manifest: dict[str, object]) -> None:
             int(part.strip().replace("_", "")) for part in arena_match.group(1).split("*")
         )
     )
+    if arena_value != int(manifest["max_arena_bytes"]):
+        raise SystemExit("xyg-wasm MAX_ARENA_BYTES differs from spec/wasm/abi.json")
     if int(manifest["aggregate"]["total_memory_bytes"]) > arena_value:
         raise SystemExit("aggregate total_memory_bytes exceeds xyg-wasm MAX_ARENA_BYTES")
     aggregate_source = AGGREGATE_RUST.read_text(encoding="utf-8")

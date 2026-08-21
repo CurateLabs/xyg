@@ -134,4 +134,5 @@ export {
   decodeWasmAggregateOutput,
   aggregateWasmBin2d,
 };
+export type { XygWasmAggregateTaskOptions } from "./47_wasm";
 export default { render, decodeFrame };

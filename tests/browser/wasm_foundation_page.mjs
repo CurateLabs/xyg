@@ -875,7 +875,7 @@ async function run() {
   ]) {
     let rejectedInput = false;
     try { encodeWasmAggregate({ x0: 0, x1: 1, y0: 0, y1: 1, ...bad }); } catch (error) { rejectedInput = error instanceof TypeError || error instanceof RangeError; }
-    if (!rejectedInput) throw new Error("aggregate encoder accepted an out-of-range u32/u8 or empty input");
+    if (!rejectedInput) throw new Error("aggregate encoder accepted an out-of-range u32/u8 input");
   }
   const oversized = { length: 4_194_304 };
   let rejectedBytes = false;
@@ -893,9 +893,12 @@ async function run() {
       && error.code === "XYG_WASM_INVALID_ARGUMENT" && error.status === 2;
   }
   if (!cloneRejected) throw new Error("aggregate clone mode did not fail before postMessage");
-  const oversizedTransfer = aggWorker.aggregateBin2d(new Uint8Array(600 * 1024));
+  // The 1 MiB worker budget and 2-copy request contract bind raw input at
+  // 512 KiB: above it fails before header validation, below it reaches XYAG validation.
+  const copyBoundary = (1024 * 1024) / 2;
+  const oversizedTransfer = aggWorker.aggregateBin2d(new Uint8Array(copyBoundary + 88 * 1024));
   await rejected(oversizedTransfer.result, "XYG_WASM_RESOURCE_LIMIT", 3);
-  const rawTransferred = aggWorker.aggregateBin2d(new Uint8Array(400 * 1024));
+  const rawTransferred = aggWorker.aggregateBin2d(new Uint8Array(copyBoundary - 112 * 1024));
   await rejected(rawTransferred.result, "XYG_WASM_INVALID_ARGUMENT", 2);
   await aggWorker.dispose();
 
@@ -937,10 +940,14 @@ async function run() {
       x: checkpointPoints, y: checkpointPoints, x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
     }, { sequence: 1 });
     const nextOperation = invoke(operationWorker);
-    await rejected(pendingAggregate.result, "XYG_WASM_CANCELLED", 6);
-    await nextOperation.result;
-    await operationWorker.dispose();
-    if (!name) throw new Error("unreachable aggregate supersession case");
+    try {
+      await rejected(pendingAggregate.result, "XYG_WASM_CANCELLED", 6);
+      await nextOperation.result;
+    } catch (error) {
+      throw new Error(`aggregate supersession by ${name} failed: ${error.message}`);
+    } finally {
+      await operationWorker.dispose();
+    }
   }
 
   for (const fixture of [
