@@ -36,6 +36,8 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from . import _native
+
 _F64_BYTES = 8
 
 
@@ -148,3 +150,43 @@ def open_f64(path: str | os.PathLike[str]) -> npt.NDArray[np.float64]:
     if rem:
         raise ValueError(f"{path!r} is not a whole number of f64 values")
     return np.memmap(path, dtype=np.float64, mode="r", shape=(int(n),))
+
+
+class ChunkedColumns:
+    """Thin local/offline host for Rust-owned XYGC viewport selection.
+
+    ``read`` returns exact canonical f64 rows plus auditable I/O provenance.
+    The hard byte budget bounds both native scratch and returned host arrays.
+    """
+
+    def __init__(self, path: str | os.PathLike[str]) -> None:
+        self.path = os.fspath(path)
+        self._handle = _native.chunked_columns_open(self.path)
+        self.rows = _native.chunked_columns_rows(self._handle)
+
+    def read(
+        self,
+        x_range: tuple[float, float],
+        y_range: tuple[float, float] | None = None,
+        *,
+        budget_bytes: int = 64 << 20,
+        generation: int = 0,
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], dict[str, int]]:
+        self.cancel_before(generation)
+        return _native.chunked_columns_read(
+            self._handle, x_range, y_range, budget_bytes=budget_bytes, generation=generation
+        )
+
+    def cancel_before(self, generation: int) -> None:
+        _native.chunked_columns_cancel_before(self._handle, generation)
+
+    def close(self) -> None:
+        if self._handle:
+            _native.chunked_columns_free(self._handle)
+            self._handle = 0
+
+    def __enter__(self) -> "ChunkedColumns":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()

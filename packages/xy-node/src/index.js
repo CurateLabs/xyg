@@ -41,6 +41,8 @@ export {
   xyStreamCopy,
 } from "./encode.js";
 
+export { ChunkedColumns } from "./chunked-columns.js";
+
 export {
   nativeLibraryPath,
   GRAPH_LAYOUT_PRESET,

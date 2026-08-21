@@ -39,6 +39,7 @@ _EXPORTS = {
     "Colorbar": ".components",
     "Column": ".columns",
     "ColumnStore": ".columns",
+    "ChunkedColumns": "._ooc",
     "Component": ".components",
     "Engine": ".export",
     "ExportConfig": ".components",

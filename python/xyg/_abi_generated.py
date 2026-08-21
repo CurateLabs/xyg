@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 77
-SIGNATURE_SHA256 = "ffe0b75c1cb2c4ccf5fc5e0c353621880575f3b192d4ac6409f179430218c60a"
+ABI_VERSION = 78
+SIGNATURE_SHA256 = "1c0d7ce275c78935498bf5a0dc3dcd14e04bd9244c4736069df6b857e782f247"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -50,6 +50,26 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_box_stats
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation)
+    function = lib.xyg_chunked_columns_cancel_before
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64]
+    # int32_t xyg_chunked_columns_free(uint64_t store)
+    function = lib.xyg_chunked_columns_free
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64]
+    # uint64_t xyg_chunked_columns_open(const uint8_t * path, size_t path_len)
+    function = lib.xyg_chunked_columns_open
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)
+    function = lib.xyg_chunked_columns_read
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint64, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # uint64_t xyg_chunked_columns_rows(uint64_t store)
+    function = lib.xyg_chunked_columns_rows
+    function.restype = ctypes.c_uint64
+    function.argtypes = [ctypes.c_uint64]
     # size_t xyg_contourf_bands(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, const double * edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, int64_t * out_slots, size_t capacity)
     function = lib.xyg_contourf_bands
     function.restype = ctypes.c_size_t

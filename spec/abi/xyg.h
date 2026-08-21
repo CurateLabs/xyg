@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 77
-#define XYG_ABI_SIGNATURE_SHA256 "ffe0b75c1cb2c4ccf5fc5e0c353621880575f3b192d4ac6409f179430218c60a"
+#define XYG_ABI_VERSION 78
+#define XYG_ABI_SIGNATURE_SHA256 "1c0d7ce275c78935498bf5a0dc3dcd14e04bd9244c4736069df6b857e782f247"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +21,11 @@ int32_t xyg_bin_2d_mean_color(const double * x, const double * y, size_t len, co
 size_t xyg_bin_2d_sample_range(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint64_t seed, uint64_t threshold, float * grid, uint32_t * out, size_t capacity);
 size_t xyg_bin_2d_stratified_sample_range_u8_counted(const double * x, const double * y, const uint8_t * groups, size_t len, const uint64_t * counts, size_t n_groups, double x0, double x1, double y0, double y1, size_t w, size_t h, uint64_t seed, double fraction, uint64_t min_count, float * grid, uint32_t * out, size_t capacity);
 int32_t xyg_box_stats(const double * data, size_t len, double * out_stats, double * out_outliers, size_t outliers_cap, size_t * out_n_outliers);
+int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation);
+int32_t xyg_chunked_columns_free(uint64_t store);
+uint64_t xyg_chunked_columns_open(const uint8_t * path, size_t path_len);
+size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
+uint64_t xyg_chunked_columns_rows(uint64_t store);
 size_t xyg_contourf_bands(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, const double * edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, int64_t * out_slots, size_t capacity);
 int32_t xyg_contourf_densify(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, double * out_z, double * out_x, double * out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t * out_rows, size_t * out_cols);
 int32_t xyg_correlation(const double * x, const double * y, size_t len, size_t max_lag, int32_t normalize, double * out_lag, double * out_correlation);
