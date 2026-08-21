@@ -637,8 +637,8 @@ def figure_scene(
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
 
-    def annotation_number(style: dict[str, Any], key: str, default: float, label: str) -> float:
-        raw = style.get(key, default)
+    def annotation_number(values: dict[str, Any], key: str, default: Any, label: str) -> float:
+        raw = values.get(key, default)
         if (
             raw is None
             or isinstance(raw, (bool, np.bool_))
@@ -736,7 +736,7 @@ def figure_scene(
             axis_name = annotation.get("axis")
             if axis_name not in {"x", "y"}:
                 raise ValueError("Scene v10 rule annotation axis must be 'x' or 'y'")
-            value = float(annotation.get("value"))
+            value = annotation_number(annotation, "value", None, f"{kind} value")
             if axis_name == "x":
                 append_record(1, value, y_domain[0], 0.0, 0.0)
                 append_record(1, value, y_domain[1], 0.0, 0.0)
@@ -747,7 +747,8 @@ def figure_scene(
             axis_name = annotation.get("axis")
             if axis_name not in {"x", "y"}:
                 raise ValueError("Scene v10 band annotation axis must be 'x' or 'y'")
-            start, end = float(annotation.get("start")), float(annotation.get("end"))
+            start = annotation_number(annotation, "start", None, f"{kind} start")
+            end = annotation_number(annotation, "end", None, f"{kind} end")
             if axis_name == "x":
                 append_record(2, start, y_domain[0], end, y_domain[1])
             else:
@@ -758,13 +759,13 @@ def figure_scene(
                 raise UnsupportedSceneV3(
                     f"Scene v10 does not support marker symbol {symbol_name!r}"
                 )
-            size = float(annotation.get("size", 8.0))
+            size = annotation_number(annotation, "size", 8.0, f"{kind} size")
             if not np.isfinite(size) or size <= 0:
                 raise ValueError("Scene v10 marker annotation size must be finite and positive")
             append_record(
                 0,
-                float(annotation.get("x")),
-                float(annotation.get("y")),
+                annotation_number(annotation, "x", None, f"{kind} x"),
+                annotation_number(annotation, "y", None, f"{kind} y"),
                 0.0,
                 0.0,
                 size=size,

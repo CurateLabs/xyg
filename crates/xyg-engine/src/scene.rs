@@ -1706,6 +1706,70 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         }
     }
 
+    // Keep this allocation-free seam equivalent to SceneDocument::decode for
+    // the reserved Scene v10 annotation namespace. A batch that validates here
+    // must never fail later only because its annotation runs were malformed.
+    let mut annotation_cursor = 0;
+    let mut annotations_started = false;
+    while annotation_cursor < records {
+        let offset = records_offset + annotation_cursor * SCENE_BATCH_RECORD_BYTES;
+        let stable_id = batch_u64(bytes, offset + 8)?;
+        if !is_scene_annotation_id(stable_id) {
+            if annotations_started {
+                return Err(SceneError::Length);
+            }
+            annotation_cursor += 1;
+            continue;
+        }
+        annotations_started = true;
+        let mut run_end = annotation_cursor + 1;
+        while run_end < records {
+            let candidate = records_offset + run_end * SCENE_BATCH_RECORD_BYTES;
+            if batch_u64(bytes, candidate + 8)? != stable_id {
+                break;
+            }
+            run_end += 1;
+        }
+        let tag = ((stable_id >> 40) & 0xff) as u8;
+        let kind = SceneRecordKind::from_code(bytes[offset])?;
+        let visible = bytes[offset + 1];
+        let style_ref = batch_u32(bytes, offset + 4)?;
+        let coordinates = [
+            batch_f64(bytes, offset + 16)?,
+            batch_f64(bytes, offset + 24)?,
+            batch_f64(bytes, offset + 32)?,
+            batch_f64(bytes, offset + 40)?,
+        ];
+        match tag {
+            1 if kind == SceneRecordKind::Polyline && run_end - annotation_cursor == 2 => {
+                let next = offset + SCENE_BATCH_RECORD_BYTES;
+                let next_coordinates = [batch_f64(bytes, next + 16)?, batch_f64(bytes, next + 24)?];
+                if SceneRecordKind::from_code(bytes[next])? != SceneRecordKind::Polyline
+                    || batch_u32(bytes, next + 4)? != style_ref
+                    || bytes[next + 1] != visible
+                    || (visible != 0
+                        && !((coordinates[0] == next_coordinates[0])
+                            ^ (coordinates[1] == next_coordinates[1])))
+                {
+                    return Err(SceneError::Length);
+                }
+            }
+            2 if kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
+                if visible != 0 && (coordinates[1] != top || coordinates[3] != bottom) {
+                    return Err(SceneError::Length);
+                }
+            }
+            3 if kind == SceneRecordKind::Scatter && run_end - annotation_cursor == 1 => {}
+            4 if kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
+                if visible != 0 && (coordinates[0] != left || coordinates[2] != right) {
+                    return Err(SceneError::Length);
+                }
+            }
+            _ => return Err(SceneError::Length),
+        }
+        annotation_cursor = run_end;
+    }
+
     Ok(SceneBatchSummary { records, styles })
 }
 
@@ -5118,6 +5182,10 @@ mod tests {
         assert_eq!(
             SceneDocument::decode(&malformed_rule).err(),
             Some(SceneError::Length)
+        );
+        assert_eq!(
+            validate_scene_batch(&malformed_rule),
+            Err(SceneError::Length)
         );
         assert_eq!(
             SceneBatch::new_with_chrome(

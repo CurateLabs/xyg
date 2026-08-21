@@ -78,6 +78,26 @@ def test_scene_v10_annotation_style_falsey_values_do_not_become_defaults(
         figure.to_scene()
 
 
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        {"kind": "rule", "axis": "x", "value": None},
+        {"kind": "rule", "axis": "x", "value": ""},
+        {"kind": "rule", "axis": "x", "value": False},
+        {"kind": "band", "axis": "x", "start": " ", "end": 1.0},
+        {"kind": "marker", "x": "not-a-number", "y": 1.0},
+        {"kind": "marker", "x": 0.0, "y": 1.0, "size": None},
+    ],
+)
+def test_scene_v10_annotation_geometry_is_strict_across_hosts(
+    annotation: dict[str, object],
+) -> None:
+    figure = Figure()
+    figure.annotations = [annotation]
+    with pytest.raises(ValueError, match="Scene v10 annotation"):
+        figure.to_scene()
+
+
 def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v3.json").read_text())
     encoded = _native.scene_batch_encode(

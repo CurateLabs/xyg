@@ -622,19 +622,20 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       kinds.push(recordKind); stableIds.push(stableId); styleRefs.push(styleRef); diameter.push(size); symbols.push(symbol); x0.push(a); y0.push(b); x1.push(c); y1.push(d);
     };
     if (kind === "rule") {
-      const value = Number(annotation.value);
+      const value = annotationNumber(annotation, "value", undefined, `${kind} value`);
       if (annotation.axis === "x") { append(1, value, Number(yDomain[0])); append(1, value, Number(yDomain[1])); }
       else if (annotation.axis === "y") { append(1, Number(xDomain[0]), value); append(1, Number(xDomain[1]), value); }
       else throw new RangeError("Scene v10 rule annotation axis must be 'x' or 'y'");
     } else if (kind === "band") {
-      const start = Number(annotation.start), end = Number(annotation.end);
+      const start = annotationNumber(annotation, "start", undefined, `${kind} start`);
+      const end = annotationNumber(annotation, "end", undefined, `${kind} end`);
       if (annotation.axis === "x") append(2, start, Number(yDomain[0]), end, Number(yDomain[1]));
       else if (annotation.axis === "y") append(2, Number(xDomain[0]), start, Number(xDomain[1]), end);
       else throw new RangeError("Scene v10 band annotation axis must be 'x' or 'y'");
     } else {
-      const size = Number(annotation.size ?? 8);
+      const size = annotationNumber(annotation, "size", 8, `${kind} size`);
       if (!Number.isFinite(size) || size <= 0) throw new RangeError("Scene v10 marker annotation size must be finite and positive");
-      append(0, Number(annotation.x), Number(annotation.y), 0, 0, size, sceneSymbolCode(annotation.symbol ?? "circle"));
+      append(0, annotationNumber(annotation, "x", undefined, `${kind} x`), annotationNumber(annotation, "y", undefined, `${kind} y`), 0, 0, size, sceneSymbolCode(annotation.symbol ?? "circle"));
     }
   }
   const title = figure.title ?? "";

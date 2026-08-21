@@ -177,7 +177,11 @@ styles, symbols, or stable identity.
 This is the public direct-browser entry for the stable Scene v10
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
 spine, major/minor tick, side, visibility, label paint, and bounded primary
-static legends. `frameWasmChart`
+static legends. Scene v10 also carries bounded, unlabeled axis-aligned rules and
+bands plus built-in markers with literal solid paint, opacity, finite width/size,
+reserved stable identity, Rust-owned clipping/order, and a visually hidden
+`role=note` browser projection that names each reference without presenting
+projected pixel coordinates as authored data values. `frameWasmChart`
 performs bounded descriptor validation and transfers exact full-buffer
 `Float64Array` columns as canonical compile ingress. Rust expands
 scatter/line/bar/area and performs the only f64-to-offset-f32 lowering,

@@ -97,6 +97,17 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
     figure.annotations = [{ kind: "rule", axis: "x", value: 0.25, style }];
     assert.throws(() => figure.toScene(), /Scene v10 annotation/);
   }
+  for (const annotation of [
+    { kind: "rule", axis: "x", value: null },
+    { kind: "rule", axis: "x", value: "" },
+    { kind: "rule", axis: "x", value: false },
+    { kind: "band", axis: "x", start: " ", end: 1 },
+    { kind: "marker", x: "not-a-number", y: 1 },
+    { kind: "marker", x: 0, y: 1, size: null },
+  ]) {
+    figure.annotations = [annotation];
+    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+  }
 });
 
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
