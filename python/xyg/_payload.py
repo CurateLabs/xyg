@@ -1190,7 +1190,8 @@ class PayloadMixin(_Host):
         )
         if grid is None and linear_axes and int(t.n_points) >= PYRAMID_MIN_POINTS:
             pyr = interaction._ensure_pyramid(t)
-            if pyr:
+            store = interaction._tile_store_of(t)
+            if store is not None or pyr is not None:
                 from . import _ooc as ooc
 
                 no_rescan = (
@@ -1199,7 +1200,28 @@ class PayloadMixin(_Host):
                     or int(t.n_points) > PYRAMID_NO_RESCAN_ROWS
                 )
                 max_upsample = 1_000_000 if no_rescan else 2
-                if getattr(t, "_pyr_colored", False):
+                tiles_meta = None
+                if store is not None:
+                    tile_upsample = 1_000_000 if (no_rescan or store) else max_upsample
+                    if getattr(t, "_pyr_colored", False):
+                        res_color = kernels.tile_store_compose_color(
+                            store, bx0, bx1, by0, by1, w, h, tile_upsample
+                        )
+                        if res_color is not None:
+                            grid, rgba_from_pyramid, level = res_color
+                            upsampled = no_rescan and level == 0
+                            binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
+                            tiles_meta = interaction._tiles_stats_dict(store)
+                    else:
+                        res = kernels.tile_store_compose(
+                            store, bx0, bx1, by0, by1, w, h, tile_upsample
+                        )
+                        if res is not None:
+                            grid, level = res
+                            upsampled = no_rescan and level == 0
+                            binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
+                            tiles_meta = interaction._tiles_stats_dict(store)
+                elif pyr is not None and getattr(t, "_pyr_colored", False):
                     res_color = kernels.pyramid_compose_color(
                         pyr, bx0, bx1, by0, by1, w, h, max_upsample
                     )
@@ -1208,13 +1230,17 @@ class PayloadMixin(_Host):
                         binning = (
                             f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
                         )
-                else:
+                elif pyr is not None:
                     res = kernels.pyramid_compose(pyr, bx0, bx1, by0, by1, w, h, max_upsample)
                     if res is not None:
                         grid, level = res
                         binning = (
                             f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
                         )
+            else:
+                tiles_meta = None
+        else:
+            tiles_meta = None
         # Pyramid compose yields the grid without a fused overlay sample.
         # Fill the public sample without re-binning so first paint still
         # ships `density["sample"]` (raster `point_overlay=False` stays empty).
@@ -1327,6 +1353,8 @@ class PayloadMixin(_Host):
             "binning": binning,
             "reduction": "pyramid-count" if binning.startswith("pyramid-") else "bin2d",
         }
+        if tiles_meta is not None:
+            density["tiles"] = tiles_meta
         if rgba_from_pyramid is not None:
             density["rgba"] = pw.ship_u8(rgba_from_pyramid.reshape(-1))
             density["color_agg"] = "mean"

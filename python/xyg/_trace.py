@@ -74,6 +74,10 @@ class Trace:
     # Tri-state density override: None = auto (threshold), True/False = forced.
     # (A bool here silently ignored density=False — staff-review finding.)
     force_density: Optional[bool] = None
+    # Phase-4: force tile spill after pyramid build (tests / explicit opt-in).
+    # Auto path spills when no-rescan/memmap eligibility would keep a pyramid
+    # larger than PYRAMID_RESIDENT_BYTES resident.
+    pyramid_spill: Optional[bool] = None
     # Legend-toggle state (§34 filter predicates, interaction spec §10).
     # `hidden` retires the whole trace from selections/decimation/density
     # replies; `hidden_categories` holds excluded categorical codes and makes
@@ -125,6 +129,10 @@ class Trace:
     _pyr_colored: bool = field(default=False, init=False, repr=False, compare=False)
     _pyr_finalizer: Optional[Any] = field(default=None, init=False, repr=False, compare=False)
     _pyr_base_dim: int = field(default=0, init=False, repr=False, compare=False)
+    # Phase-4 tile store after spill: None = none, else native store handle.
+    # Finalizer deletes the spill file (§27 process-scoped rebuildable cache).
+    _tile_store: Optional[int] = field(default=None, init=False, repr=False, compare=False)
+    _tile_finalizer: Optional[Any] = field(default=None, init=False, repr=False, compare=False)
     # Optional Tier-3 spatial index (xyg._spatial.SpatialIndex) for O(window)
     # exact deep-zoom density; attached out-of-band, duck-typed in interaction.
     _spatial_index: Any = field(default=None, init=False, repr=False, compare=False)

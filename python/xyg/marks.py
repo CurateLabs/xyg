@@ -1883,6 +1883,7 @@ def scatter(
     color_domain: Optional[tuple[float, float]] = None,
     size_range: tuple[float, float] = (2.0, 18.0),
     density: Optional[bool] = None,
+    pyramid_spill: Optional[bool] = None,
     symbol: Any = "circle",
     stroke: Any = None,
     stroke_width: Any = 0.0,
@@ -1900,6 +1901,8 @@ def scatter(
     one of the 19 renderer-backed marker shapes; `stroke` / `stroke_width`
     draw a point border. Large scatters automatically switch to an aggregated
     density surface; pass `density=True/False` to force or disable it.
+    `pyramid_spill=True` forces its pyramid into the bounded disk-backed tile
+    store; `None` retains automatic budget policy.
 
     `zoom_size_factor` multiplies marker sizes and `zoom_opacity` sets their
     target opacity at `zoom_emphasis` times the initial view scale. The client
@@ -1922,6 +1925,7 @@ def scatter(
     if zoom_emphasis <= 1.0:
         raise ValueError("scatter zoom_emphasis must be > 1")
     density = self._optional_bool(density, "scatter density")
+    pyramid_spill = self._optional_bool(pyramid_spill, "scatter pyramid_spill")
     checkpoint = self._checkpoint()
     try:
         xc, yc = self._ingest_xy(x, y, "scatter")
@@ -2022,6 +2026,7 @@ def scatter(
             size_ch=size_ch,
             style_channels=style_channels,
             force_density=density,
+            pyramid_spill=pyramid_spill,
         )
 
         # The color channel survives aggregation as the density surface's

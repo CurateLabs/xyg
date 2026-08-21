@@ -3254,6 +3254,141 @@ def pyramid_free(handle: int) -> bool:
     return _lib.xyg_pyramid_free(ctypes.c_uint64(_pyramid_handle(handle))) == 1
 
 
+def pyramid_spill(handle: int) -> int:
+    """Snapshot a live pyramid into a disk tile store (Phase-4 WP1 ABI).
+
+    Returns a nonzero store handle (release with :func:`tile_store_free`), or
+    0 on a stale pyramid / I/O failure. The pyramid stays live until the host
+    frees it — reclaim RAM after a successful spill.
+    """
+    return int(_lib.xyg_pyramid_spill(ctypes.c_uint64(_pyramid_handle(handle))))
+
+
+def tile_store_compose(
+    store: int,
+    lo_x: float,
+    hi_x: float,
+    lo_y: float,
+    hi_y: float,
+    w: int,
+    h: int,
+    max_upsample: int = 2,
+) -> tuple[npt.NDArray[np.float32], int] | None:
+    """Tile-store twin of :func:`pyramid_compose` (bit-identical counts)."""
+    store = _pyramid_handle(store)
+    lo_x, hi_x = _finite_increasing(lo_x, hi_x, "x range")
+    lo_y, hi_y = _finite_increasing(lo_y, hi_y, "y range")
+    w = _bounded_positive_int(w, "w")
+    h = _bounded_positive_int(h, "h")
+    max_upsample = _positive_int(max_upsample, "max_upsample")
+    out = np.zeros(w * h, dtype=np.float32)
+    level = _lib.xyg_tile_store_compose(
+        ctypes.c_uint64(store),
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        w,
+        h,
+        max_upsample,
+        out.ctypes.data,
+    )
+    if level < 0:
+        return None
+    return out, int(level)
+
+
+def tile_store_compose_color(
+    store: int,
+    lo_x: float,
+    hi_x: float,
+    lo_y: float,
+    hi_y: float,
+    w: int,
+    h: int,
+    max_upsample: int = 2,
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.uint8], int] | None:
+    """Tile-store twin of :func:`pyramid_compose_color`."""
+    store = _pyramid_handle(store)
+    lo_x, hi_x = _finite_increasing(lo_x, hi_x, "x range")
+    lo_y, hi_y = _finite_increasing(lo_y, hi_y, "y range")
+    w = _bounded_positive_int(w, "w")
+    h = _bounded_positive_int(h, "h")
+    max_upsample = _positive_int(max_upsample, "max_upsample")
+    out = np.zeros(w * h, dtype=np.float32)
+    out_rgba = np.zeros((h, w, 4), dtype=np.uint8)
+    level = _lib.xyg_tile_store_compose_color(
+        ctypes.c_uint64(store),
+        lo_x,
+        hi_x,
+        lo_y,
+        hi_y,
+        w,
+        h,
+        max_upsample,
+        out.ctypes.data,
+        out_rgba.ctypes.data,
+    )
+    if level < 0:
+        return None
+    return out, out_rgba, int(level)
+
+
+def tile_store_append(
+    store: int,
+    x: "npt.NDArray[np.float64]",
+    y: "npt.NDArray[np.float64]",
+) -> bool:
+    """Increment a count-only tile store from an append batch (D4)."""
+    store = _pyramid_handle(store)
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("x and y must have equal length")
+    return (
+        _lib.xyg_tile_store_append(
+            ctypes.c_uint64(store),
+            x.ctypes.data if len(x) else None,
+            y.ctypes.data if len(y) else None,
+            len(x),
+        )
+        == 1
+    )
+
+
+def tile_store_stats(store: int) -> tuple[int, int, int, int, int, bool] | None:
+    """§28 residency: ``(hit, miss, resident_bytes, spilled_bytes, budget, over)``."""
+    store = _pyramid_handle(store)
+    out = (ctypes.c_uint64 * 6)()
+    if _lib.xyg_tile_store_stats(ctypes.c_uint64(store), out) != 1:
+        return None
+    return (
+        int(out[0]),
+        int(out[1]),
+        int(out[2]),
+        int(out[3]),
+        int(out[4]),
+        bool(out[5]),
+    )
+
+
+def tile_store_free(store: int) -> bool:
+    return _lib.xyg_tile_store_free(ctypes.c_uint64(_pyramid_handle(store))) == 1
+
+
+def tile_budget_set(bytes_: int) -> bool:
+    """Mirror ``PYRAMID_RESIDENT_BYTES`` into the process-wide tile LRU budget."""
+    if isinstance(bytes_, (bool, np.bool_)):
+        raise ValueError("budget bytes must be an integer")
+    try:
+        n = operator.index(bytes_)
+    except TypeError as e:
+        raise ValueError("budget bytes must be an integer") from e
+    if n < 0:
+        raise ValueError("budget bytes must be non-negative")
+    return _lib.xyg_tile_budget_set(ctypes.c_uint64(n)) == 1
+
+
 # Graph layout ids — keep in lockstep with src/graph.rs LAYOUT_*.
 GRAPH_LAYOUT_PRESET = 0
 GRAPH_LAYOUT_GRID = 1

@@ -83,6 +83,13 @@ pyramid_count = _impl.pyramid_count
 pyramid_compose = _impl.pyramid_compose
 pyramid_compose_color = _impl.pyramid_compose_color
 pyramid_free = _impl.pyramid_free
+pyramid_spill = _impl.pyramid_spill
+tile_store_compose = _impl.tile_store_compose
+tile_store_compose_color = _impl.tile_store_compose_color
+tile_store_append = _impl.tile_store_append
+tile_store_stats = _impl.tile_store_stats
+tile_store_free = _impl.tile_store_free
+tile_budget_set = _impl.tile_budget_set
 stream_new = _impl.stream_new
 stream_append = _impl.stream_append
 stream_seal = _impl.stream_seal
@@ -167,6 +174,7 @@ __all__ = [
     "pyramid_compose_color",
     "pyramid_count",
     "pyramid_free",
+    "pyramid_spill",
     "quad_mesh_triangles",
     "quantiles",
     "range_indices",
@@ -192,6 +200,12 @@ __all__ = [
     "stream_view",
     "stream_zone_maps",
     "streamlines",
+    "tile_budget_set",
+    "tile_store_append",
+    "tile_store_compose",
+    "tile_store_compose_color",
+    "tile_store_free",
+    "tile_store_stats",
     "transition_keys_fixed",
     "triangle_edges",
     "valid_indices_f64",

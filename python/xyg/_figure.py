@@ -2400,6 +2400,7 @@ class Figure(AnnotationsMixin, PayloadMixin):
         n_total = sum(t.n_points for t in self.traces) or 1
         report["transport_bytes_per_point"] = len(blob) / n_total
         report["pyramid_bytes"] = interaction.pyramid_report_bytes(self)
+        report["pyramid_spilled_bytes"] = interaction.pyramid_spilled_bytes(self)
         report["bin_color_bytes"] = interaction.bin_color_cache_bytes(self)
         report["legend_vis_cache_bytes"] = interaction.legend_vis_cache_bytes(self)
         # Capacity, not live length: a streamed column's growth-buffer slack is

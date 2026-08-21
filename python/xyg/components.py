@@ -613,6 +613,7 @@ def scatter(
     zoom_opacity: Optional[float] = None,
     zoom_emphasis: float = 16.0,
     density: Optional[bool] = None,
+    pyramid_spill: Optional[bool] = None,
     symbol: Any = "circle",
     stroke: Any = None,
     stroke_width: Any = 0.0,
@@ -646,6 +647,8 @@ def scatter(
         zoom_opacity: Optional marker opacity reached on deep zoom.
         zoom_emphasis: Zoom factor at which responsive targets are reached.
         density: Whether to force or disable density aggregation.
+        pyramid_spill: Force the density pyramid into the bounded disk-backed
+            tile store. ``None`` retains automatic budget policy.
         symbol: Marker symbol name.
         stroke: Optional marker outline color.
         stroke_width: Marker outline width in pixels.
@@ -681,6 +684,7 @@ def scatter(
             "zoom_opacity": zoom_opacity,
             "zoom_emphasis": zoom_emphasis,
             "density": density,
+            "pyramid_spill": pyramid_spill,
             "symbol": symbol,
             "stroke": stroke,
             "stroke_width": stroke_width,
@@ -5768,6 +5772,7 @@ def _apply_scatter(fig: Figure, m: Mark, data: Any) -> None:
             zoom_opacity=m.props["zoom_opacity"],
             zoom_emphasis=m.props["zoom_emphasis"],
             density=m.props["density"],
+            pyramid_spill=m.props["pyramid_spill"],
             symbol=m.props["symbol"],
             stroke=m.props["stroke"],
             stroke_width=m.props["stroke_width"],

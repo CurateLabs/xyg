@@ -8,11 +8,14 @@
  * - Force pyramid for small fixtures; auto path covered at PYRAMID_MIN.
  */
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import test from "node:test";
 
 import {
   PYRAMID_BASE_DIM,
   PYRAMID_MIN_POINTS,
+  PYRAMID_RESIDENT_BYTES,
+  attachScatter,
   bin2d,
   densityLogU8,
   figure,
@@ -22,7 +25,11 @@ import {
   pyramidCount,
   pyramidFree,
   pyramidReportBytes,
+  pyramidSpill,
   shouldUsePyramid,
+  tileStoreCompose,
+  tileStoreFree,
+  tileStoreStats,
 } from "../src/index.js";
 
 function fill(n, fn) {
@@ -164,4 +171,59 @@ test("densityLogU8 accepts pyramid compose grids", () => {
   assert.equal(encoded.length, grid.length);
   assert.ok(max >= 0);
   pyramidFree(handle);
+});
+
+test("pyramid spill compose is bit-identical to in-RAM compose", () => {
+  const n = 8_192;
+  const x = fill(n, (i) => ((i * 17) % n) / n);
+  const y = fill(n, (i) => ((i * 31) % n) / n);
+  const handle = pyramidBuild(x, y, 0, 1, 0, 1, 128);
+  const ram = pyramidCompose(handle, 0, 1, 0, 1, 64, 48, { maxUpsample: 16 });
+  const store = pyramidSpill(handle);
+  assert.ok(store !== 0n);
+  assert.equal(pyramidFree(handle), true);
+  const tiles = tileStoreCompose(store, 0, 1, 0, 1, 64, 48, { maxUpsample: 16 });
+  assert.ok(tiles);
+  assert.equal(tiles.level, ram.level);
+  assert.deepEqual(tiles.grid, ram.grid);
+  assert.equal(
+    crypto.createHash("sha256").update(Buffer.from(tiles.grid.buffer, tiles.grid.byteOffset, tiles.grid.byteLength)).digest("hex"),
+    "e8e9e65493798cfeecd8e1e1ecee19a9e2a786121f8f8051a9bbc114515c3b2b",
+  );
+  assert.match(tiles.binning, /^pyramid-L\d+-tiles/);
+  const stats = tileStoreStats(store);
+  assert.ok(stats);
+  assert.ok(stats.spilled_bytes > 0);
+  assert.equal(stats.budget_bytes, PYRAMID_RESIDENT_BYTES);
+  assert.equal(tileStoreFree(store), true);
+});
+
+test("figure pyramidSpill records §28 tiles binning on density tier", () => {
+  const n = 10_000;
+  const x = fill(n, (i) => (i % 100) / 99);
+  const y = fill(n, (i) => Math.floor(i / 100) / 99);
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter(x, y, { forcePyramid: true, forceDensity: true, pyramidSpill: true });
+  const { spec } = fig.buildPayload();
+  const t = spec.traces[0];
+  assert.equal(t.tier, "density");
+  assert.match(t.density.binning, /^pyramid-L\d+-tiles/);
+  assert.equal(t.density.reduction, "pyramid-count");
+  assert.ok(t.density.tiles);
+  assert.ok(t.density.tiles.spilled_bytes > 0);
+  const appended = fig.append(fig.traces[0].id, [0.5], [0.5]);
+  assert.equal(appended.spec.append.pyramid, "dirty-tiles");
+  assert.match(appended.spec.traces[0].density.binning, /^pyramid-L\d+-tiles/);
+  fig.dispose();
+});
+
+test("scatter spill option is strict and survives the composed mark path", () => {
+  const fig = figure({ width: 320, height: 240 });
+  assert.throws(
+    () => fig.scatter([0], [0], { pyramidSpill: "false" }),
+    /pyramidSpill must be a boolean/,
+  );
+  attachScatter(fig, [0, 1], [0, 1], { pyramidSpill: true });
+  assert.equal(fig.traces[0].pyramid_spill, true);
+  fig.dispose();
 });

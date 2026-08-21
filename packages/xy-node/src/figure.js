@@ -36,6 +36,7 @@ import {
   densityViewFromPyramid,
   pyramidAppendFromStream,
   shouldUsePyramid,
+  tileStoreAppend,
 } from "./pyramid.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
@@ -69,6 +70,14 @@ function asF64(value) {
   if (value instanceof Float64Array) return value;
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
+}
+
+function optionalBoolean(value, name) {
+  if (value == null) return undefined;
+  if (typeof value !== "boolean") {
+    throw new TypeError(`${name} must be a boolean`);
+  }
+  return value;
 }
 
 function finiteBounds(arr) {
@@ -232,6 +241,10 @@ export class Figure {
     const forceDensity = opts.forceDensity ?? opts.force_density;
     const forceDirect = opts.forceDirect ?? opts.force_direct;
     const forcePyramid = opts.forcePyramid ?? opts.force_pyramid;
+    const pyramidSpill = optionalBoolean(
+      opts.pyramidSpill ?? opts.pyramid_spill,
+      "scatter pyramidSpill",
+    );
     if (opts._composed) {
       this.traces.push({
         id: opts.id ?? nextTraceId++,
@@ -249,6 +262,7 @@ export class Figure {
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
+        ...(pyramidSpill != null ? { pyramid_spill: pyramidSpill } : {}),
       });
       return this;
     }
@@ -257,6 +271,7 @@ export class Figure {
     const fd = forceDensity ?? t.force_density;
     const fx = forceDirect ?? t.force_direct;
     const fp = forcePyramid ?? t.force_pyramid;
+    const ps = pyramidSpill ?? t.pyramid_spill;
     this.traces.push({
       id: opts.id ?? nextTraceId++,
       kind: "scatter",
@@ -269,6 +284,7 @@ export class Figure {
       ...(fd != null ? { force_density: Boolean(fd) } : {}),
       ...(fx != null ? { force_direct: Boolean(fx) } : {}),
       ...(fp != null ? { force_pyramid: Boolean(fp) } : {}),
+      ...(ps != null ? { pyramid_spill: ps } : {}),
     });
     return this;
   }
@@ -779,9 +795,11 @@ export class Figure {
     let grid;
     let binning = "exact";
     let reduction = "bin2d";
+    let tiles = null;
     const forceBin2d = Boolean(t.force_bin2d ?? t.style?.force_bin2d);
     const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
     const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
+    const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
@@ -795,11 +813,15 @@ export class Figure {
       const served = densityViewFromPyramid(cache, t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, {
         force: forcePyramid,
         noRescan,
+        forceSpill,
       });
       if (served != null) {
         grid = served.grid;
         binning = served.binning;
         reduction = served.reduction;
+        if (served.tiles != null) {
+          tiles = served.tiles;
+        }
       }
     }
     if (grid == null) {
@@ -823,6 +845,9 @@ export class Figure {
       dropped_channels: [],
       overlay_omitted: "node_host_mvp",
     };
+    if (tiles != null) {
+      density.tiles = tiles;
+    }
     if (t.style?.color) {
       density.color = t.style.color;
     }
@@ -1177,7 +1202,16 @@ export class Figure {
 
     let pyramidUpdate = "none";
     const cache = this._pyramids.get(t.id);
-    if (t.kind === "scatter" && cache?.handle) {
+    if (t.kind === "scatter" && cache?.store) {
+      const applied = tileStoreAppend(cache.store, ax, ay);
+      if (applied) {
+        pyramidUpdate = "dirty-tiles";
+      } else {
+        cache.free();
+        this._pyramids.delete(t.id);
+        pyramidUpdate = "invalidate";
+      }
+    } else if (t.kind === "scatter" && cache?.handle) {
       const applied = pyramidAppendFromStream(
         cache.handle,
         xCol._stream,

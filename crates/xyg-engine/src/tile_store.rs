@@ -68,6 +68,9 @@ static RESIDENT_BUDGET: AtomicU64 = AtomicU64::new(DEFAULT_RESIDENT_BUDGET_BYTES
 /// RAM-resident tile bytes across every live store (D2: the budget is
 /// process-wide — multi-trace apps share one pool).
 static GLOBAL_RESIDENT: AtomicU64 = AtomicU64::new(0);
+/// Monotonic process-wide recency clock. Per-store clocks cannot define an
+/// LRU order across sibling figures, which is exactly where D2 matters.
+static GLOBAL_TICK: AtomicU64 = AtomicU64::new(0);
 static SPILL_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Set the process-wide resident budget; `0` restores the default.
@@ -160,7 +163,9 @@ pub struct TileStore {
     y0: f64,
     y1: f64,
     resident: HashMap<(u32, u32, u32), Tile>,
-    tick: u64,
+    /// Assigned when inserted into the ABI registry. Direct unit-test stores
+    /// remain unregistered and use the same-store eviction path only.
+    registry_handle: Option<u64>,
     hits: u64,
     misses: u64,
     /// Recorded per D3: true when the last compose could not fit its pinned
@@ -230,7 +235,7 @@ impl TileStore {
             y0,
             y1,
             resident: HashMap::new(),
-            tick: 0,
+            registry_handle: None,
             hits: 0,
             misses: 0,
             over_budget: false,
@@ -266,7 +271,9 @@ impl TileStore {
     }
 
     fn slab_index(&self, level: usize, tx: u32, ty: u32) -> u64 {
-        self.slab_base[level] + u64::from(ty) * u64::from(self.tiles_per_side[level]) + u64::from(tx)
+        self.slab_base[level]
+            + u64::from(ty) * u64::from(self.tiles_per_side[level])
+            + u64::from(tx)
     }
 
     fn count_offset(&self, level: usize, tx: u32, ty: u32) -> u64 {
@@ -310,15 +317,12 @@ impl TileStore {
             && ty < self.tiles_per_side[level as usize]
     }
 
-    /// Oldest unpinned resident key, if any. Linear scan: resident counts
-    /// are budget-bounded (≤ ~2k tiles at the 512 MiB default) and eviction
-    /// is off the per-pixel path, so an ordered structure isn't warranted.
-    fn lru_victim(&self, pinned: &[(u32, u32, u32)]) -> Option<(u32, u32, u32)> {
+    fn lru_candidate(&self, pinned: &[(u32, u32, u32)]) -> Option<((u32, u32, u32), u64)> {
         self.resident
             .iter()
-            .filter(|(k, _)| !pinned.contains(k))
-            .min_by_key(|(_, t)| t.last_used)
-            .map(|(k, _)| *k)
+            .filter(|(key, _)| !pinned.contains(key))
+            .min_by_key(|(key, tile)| (tile.last_used, **key))
+            .map(|(key, tile)| (*key, tile.last_used))
     }
 
     fn evict(&mut self, key: (u32, u32, u32)) -> io::Result<()> {
@@ -339,16 +343,28 @@ impl TileStore {
         Ok(())
     }
 
-    /// Evict own unpinned LRU tiles until the process-wide total fits the
-    /// budget (or nothing evictable remains). Victim selection is per-store
-    /// in WP1 — an idle sibling store's bytes are reclaimed when *it* next
-    /// admits or frees; cross-store reclaim arrives with WP2 host
-    /// engagement (recorded in the roadmap WP1 notes).
+    /// Evict the globally oldest unpinned tile until the process-wide total
+    /// fits. Registered ABI calls are serialized by `operation_lock`, so it is
+    /// safe to inspect and evict sibling stores while this store is locked;
+    /// direct unit-test stores retain the same-store path.
     fn evict_to_budget(&mut self, headroom: u64, pinned: &[(u32, u32, u32)]) -> io::Result<()> {
         while global_resident() + headroom > budget_get() {
-            match self.lru_victim(pinned) {
-                Some(victim) => self.evict(victim)?,
-                None => break,
+            let own = self.lru_candidate(pinned);
+            let sibling = self
+                .registry_handle
+                .and_then(oldest_sibling_candidate);
+            match (own, sibling) {
+                (Some((key, tick)), Some((other_handle, other_key, other_tick)))
+                    if (other_tick, other_handle, other_key)
+                        < (tick, self.registry_handle.unwrap_or(0), key) =>
+                {
+                    evict_registered(other_handle, other_key)?;
+                }
+                (Some((key, _)), _) => self.evict(key)?,
+                (None, Some((other_handle, other_key, _))) => {
+                    evict_registered(other_handle, other_key)?;
+                }
+                (None, None) => break,
             }
         }
         Ok(())
@@ -364,8 +380,7 @@ impl TileStore {
         pinned: &[(u32, u32, u32)],
     ) -> io::Result<&Tile> {
         let key = (level, tx, ty);
-        self.tick += 1;
-        let tick = self.tick;
+        let tick = GLOBAL_TICK.fetch_add(1, Ordering::Relaxed) + 1;
         if self.resident.contains_key(&key) {
             self.hits += 1;
             let tile = self.resident.get_mut(&key).expect("resident tile");
@@ -377,8 +392,8 @@ impl TileStore {
         self.evict_to_budget(bytes, pinned)?;
         if global_resident() + bytes > budget_get() {
             // Nothing evictable is left and the admit still overflows: the
-            // pinned working set (plus unevictable siblings) exceeds the
-            // budget. Proceed — a frame never fails for budget reasons —
+            // current frame's pinned working set exceeds the budget. Proceed
+            // — a frame never fails for budget reasons —
             // and record the condition for the §28 reply (D3).
             self.over_budget = true;
         }
@@ -628,8 +643,14 @@ impl TileStore {
             }
             Some(rect) => {
                 let (counts, _, _pinned) = self.gather_rect(level, rect, false)?;
-                let view =
-                    LevelView::window(&counts, None, rect.0, rect.2, rect.1 - rect.0, rect.3 - rect.2);
+                let view = LevelView::window(
+                    &counts,
+                    None,
+                    rect.0,
+                    rect.2,
+                    rect.1 - rect.0,
+                    rect.3 - rect.2,
+                );
                 tiles::compose_level(domain, dim, &view, lo_x, hi_x, lo_y, hi_y, w, h, out);
                 self.finish_frame()?;
                 Ok(Some(level))
@@ -809,20 +830,68 @@ fn pack_color_slab(level: &[[u16; 4]], dim: usize, tx: usize, ty: usize, out: &m
 type Registry = (u64, HashMap<u64, Arc<Mutex<TileStore>>>);
 
 static REGISTRY: OnceLock<Mutex<Registry>> = OnceLock::new();
+static OPERATION_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 fn registry() -> &'static Mutex<Registry> {
     REGISTRY.get_or_init(|| Mutex::new((0, HashMap::new())))
 }
 
-pub fn reg_insert(s: TileStore) -> u64 {
+fn operation_lock() -> &'static Mutex<()> {
+    OPERATION_LOCK.get_or_init(|| Mutex::new(()))
+}
+
+fn registry_entries_excluding(exclude: u64) -> Vec<(u64, Arc<Mutex<TileStore>>)> {
+    let g = registry().lock().expect("tile store registry poisoned");
+    let mut entries: Vec<_> =
+        g.1.iter()
+            .filter(|(handle, _)| **handle != exclude)
+            .map(|(handle, store)| (*handle, Arc::clone(store)))
+            .collect();
+    entries.sort_by_key(|(handle, _)| *handle);
+    entries
+}
+
+fn oldest_sibling_candidate(exclude: u64) -> Option<(u64, (u32, u32, u32), u64)> {
+    registry_entries_excluding(exclude)
+        .into_iter()
+        .filter_map(|(handle, store)| {
+            let store = store.lock().expect("tile store poisoned");
+            store
+                .lru_candidate(&[])
+                .map(|(key, tick)| (handle, key, tick))
+        })
+        .min_by_key(|(handle, key, tick)| (*tick, *handle, *key))
+}
+
+fn evict_registered(handle: u64, key: (u32, u32, u32)) -> io::Result<()> {
+    let store = {
+        let g = registry().lock().expect("tile store registry poisoned");
+        g.1.get(&handle).cloned()
+    }
+    .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "tile store disappeared"))?;
+    let result = store.lock().expect("tile store poisoned").evict(key);
+    result
+}
+
+pub fn reg_insert(mut s: TileStore) -> u64 {
+    let _operation = operation_lock()
+        .lock()
+        .expect("tile store operation lock poisoned");
     let mut g = registry().lock().expect("tile store registry poisoned");
     g.0 += 1;
     let h = g.0;
+    s.registry_handle = Some(h);
     g.1.insert(h, Arc::new(Mutex::new(s)));
     h
 }
 
 pub fn reg_with<R>(h: u64, f: impl FnOnce(&mut TileStore) -> R) -> Option<R> {
+    // A single operation lock gives cross-store eviction a bounded lock order:
+    // operation -> registry snapshot -> one store at a time. No two ABI calls
+    // can hold sibling store mutexes while waiting on each other.
+    let _operation = operation_lock()
+        .lock()
+        .expect("tile store operation lock poisoned");
     let s = {
         let g = registry().lock().expect("tile store registry poisoned");
         g.1.get(&h).cloned()
@@ -831,6 +900,9 @@ pub fn reg_with<R>(h: u64, f: impl FnOnce(&mut TileStore) -> R) -> Option<R> {
 }
 
 pub fn reg_remove(h: u64) -> bool {
+    let _operation = operation_lock()
+        .lock()
+        .expect("tile store operation lock poisoned");
     let mut g = registry().lock().expect("tile store registry poisoned");
     g.1.remove(&h).is_some()
 }
@@ -895,7 +967,8 @@ mod tests {
         for r in 0..TILE_DIM {
             assert_eq!(
                 &tile[r * TILE_DIM..(r + 1) * TILE_DIM],
-                &lvl[(2 * TILE_DIM + r) * 1024 + 3 * TILE_DIM..(2 * TILE_DIM + r) * 1024 + 4 * TILE_DIM],
+                &lvl[(2 * TILE_DIM + r) * 1024 + 3 * TILE_DIM
+                    ..(2 * TILE_DIM + r) * 1024 + 4 * TILE_DIM],
                 "fetched tile row {r} must equal the level slice"
             );
         }
@@ -903,7 +976,9 @@ mod tests {
         assert!(!store.fetch_into(99, 0, 0, &mut tile, None).unwrap());
         assert!(!store.fetch_into(0, 4, 0, &mut tile, None).unwrap());
         let mut color = vec![[0u16; 4]; TILE_CELLS];
-        assert!(!store.fetch_into(0, 0, 0, &mut tile, Some(&mut color)).unwrap());
+        assert!(!store
+            .fetch_into(0, 0, 0, &mut tile, Some(&mut color))
+            .unwrap());
 
         for &(lo_x, hi_x, lo_y, hi_y, w, h, up) in &WINDOWS {
             let mut in_ram = vec![0.0f32; w * h];
@@ -1016,7 +1091,10 @@ mod tests {
                 resident <= budget,
                 "resident {resident} must return to budget {budget} after pins release"
             );
-            assert!(!over, "a working set under budget never records over_budget");
+            assert!(
+                !over,
+                "a working set under budget never records over_budget"
+            );
         }
         let (hits, misses, ..) = store.stats();
         assert!(misses > 0, "the sweep must fault tiles in");
@@ -1045,6 +1123,55 @@ mod tests {
     }
 
     #[test]
+    fn registered_stores_share_one_deterministic_lru_budget() {
+        let _g = lock_budget();
+        assert_eq!(global_resident(), 0, "no resident tiles leak across tests");
+        let (x, y) = scattered(20_000);
+        let p = tiles::build(&x, &y, 0.0, 100.0, 0.0, 100.0, 512).unwrap();
+        let first = reg_insert(TileStore::spill(&p).unwrap());
+        let second = reg_insert(TileStore::spill(&p).unwrap());
+        let one_tile = COUNT_SLAB_BYTES + TILE_INDEX_ENTRY_BYTES;
+        budget_set(one_tile);
+
+        let compose = |handle| {
+            reg_with(handle, |store| {
+                let mut grid = vec![0.0f32; 64 * 64];
+                let level = store
+                    .compose(0.0, 100.0, 0.0, 100.0, 64, 64, 1 << 20, &mut grid)
+                    .unwrap();
+                assert!(level.is_some());
+                store.stats()
+            })
+            .expect("live registered store")
+        };
+
+        let first_stats = compose(first);
+        assert!(first_stats.2 <= one_tile);
+        assert!(!first_stats.5);
+        let first_misses = first_stats.1;
+
+        // The second store's one-tile frame fits the process budget. The
+        // globally older first-store tile must be reclaimed instead of
+        // falsely reporting that the second frame itself is over budget.
+        let second_stats = compose(second);
+        assert!(second_stats.2 <= one_tile);
+        assert!(!second_stats.5);
+
+        let first_again = compose(first);
+        assert!(
+            first_again.1 > first_misses,
+            "global LRU evicted the older sibling tile"
+        );
+        assert!(first_again.2 <= one_tile);
+        assert!(!first_again.5);
+
+        assert!(reg_remove(first));
+        assert!(reg_remove(second));
+        assert_eq!(global_resident(), 0);
+        budget_set(0);
+    }
+
+    #[test]
     fn append_equals_full_rebuild_and_rejections_are_atomic() {
         let _g = lock_budget();
         let (x, y) = scattered(40_000);
@@ -1066,12 +1193,16 @@ mod tests {
         for &(lo_x, hi_x, lo_y, hi_y, w, h, up) in &WINDOWS {
             let mut expect = vec![0.0f32; w * h];
             let mut got = vec![0.0f32; w * h];
-            let lvl_expect = tiles::compose(&rebuilt, lo_x, hi_x, lo_y, hi_y, w, h, up, &mut expect);
+            let lvl_expect =
+                tiles::compose(&rebuilt, lo_x, hi_x, lo_y, hi_y, w, h, up, &mut expect);
             let lvl_got = store
                 .compose(lo_x, hi_x, lo_y, hi_y, w, h, up, &mut got)
                 .unwrap();
             assert_eq!(lvl_got, lvl_expect);
-            assert_eq!(got, expect, "dirty-tile append equals a from-scratch rebuild");
+            assert_eq!(
+                got, expect,
+                "dirty-tile append equals a from-scratch rebuild"
+            );
         }
 
         // Domain growth refuses atomically: the store composes exactly as
@@ -1108,7 +1239,8 @@ mod tests {
         assert!(h > 0);
         let total = reg_with(h, |s| {
             let mut g = vec![0.0f32; 64 * 64];
-            s.compose(0.0, 100.0, 0.0, 100.0, 64, 64, 2, &mut g).unwrap();
+            s.compose(0.0, 100.0, 0.0, 100.0, 64, 64, 2, &mut g)
+                .unwrap();
             g.iter().map(|&c| c as f64).sum::<f64>()
         })
         .unwrap();

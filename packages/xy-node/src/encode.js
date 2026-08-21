@@ -17,6 +17,8 @@ export const PYRAMID_MIN_POINTS = 2_000_000;
 export const PYRAMID_BASE_DIM = 2048;
 export const PYRAMID_NO_RESCAN_ROWS = 200_000_000;
 export const PYRAMID_MAX_DIM = 16384;
+/** Phase-4 resident-tile byte budget (roadmap D2); mirrored via xyTileBudgetSet. */
+export const PYRAMID_RESIDENT_BYTES = 512 * (1 << 20);
 export const F32_SAFE_MAG = 1e37;
 export const LOG_FAMILY_SCALES = Object.freeze(["log", "symlog"]);
 

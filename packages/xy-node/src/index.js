@@ -247,6 +247,7 @@ export {
   PYRAMID_BASE_DIM,
   PYRAMID_NO_RESCAN_ROWS,
   PYRAMID_MAX_DIM,
+  PYRAMID_RESIDENT_BYTES,
 } from "./encode.js";
 
 export {
@@ -259,11 +260,19 @@ export {
   pyramidCompose,
   pyramidComposeColor,
   pyramidFree,
+  pyramidSpill,
   pyramidReportBytes,
   pyramidBaseDimFor,
+  pyramidResidentBytes,
   shouldUsePyramid,
   densityViewFromPyramid,
   PyramidCache,
+  tileBudgetSet,
+  tileStoreCompose,
+  tileStoreComposeColor,
+  tileStoreAppend,
+  tileStoreStats,
+  tileStoreFree,
 } from "./pyramid.js";
 
 export {

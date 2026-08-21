@@ -5,6 +5,14 @@
 
 import { asF64Array, encodeF32Values, minMax } from "../encode.js";
 
+function optionalBoolean(value, name) {
+  if (value == null) return undefined;
+  if (typeof value !== "boolean") {
+    throw new TypeError(`${name} must be a boolean`);
+  }
+  return value;
+}
+
 /**
  * @param {ArrayLike|TypedArray} x
  * @param {ArrayLike|TypedArray} y
@@ -20,6 +28,10 @@ export function composeScatter(x, y, opts = {}) {
   const forceDensity = opts.forceDensity ?? opts.force_density;
   const forceDirect = opts.forceDirect ?? opts.force_direct;
   const forcePyramid = opts.forcePyramid ?? opts.force_pyramid;
+  const pyramidSpill = optionalBoolean(
+    opts.pyramidSpill ?? opts.pyramid_spill,
+    "scatter pyramidSpill",
+  );
   return {
     traces: [
       {
@@ -33,6 +45,7 @@ export function composeScatter(x, y, opts = {}) {
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
+        ...(pyramidSpill != null ? { pyramid_spill: pyramidSpill } : {}),
         ...(opts.id != null ? { id: opts.id } : {}),
       },
     ],
@@ -57,6 +70,8 @@ export function attachScatter(fig, x, y, opts = {}) {
     id: t.id,
     forceDensity: t.force_density,
     forceDirect: t.force_direct,
+    forcePyramid: t.force_pyramid,
+    pyramidSpill: t.pyramid_spill,
     _composed: true,
   });
   return fig;

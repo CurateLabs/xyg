@@ -224,6 +224,11 @@ inside this frame; changing any of it means editing this section first.
 - [x] LRU under process-wide `PYRAMID_RESIDENT_BYTES` default (512 MiB) per D2–D3;
   frame pinning + `over_budget` recording; spill file is `XYTS` fixed slabs
   (pread/pwrite realization of D1 mmap layout — no mmap crate vendored).
+  Registered operations use a bounded kernel operation lock and process-wide
+  recency clock, choosing the deterministic oldest unpinned `(tick, store
+  handle, tile key)` across siblings. The lock order prevents cross-store
+  eviction deadlocks and an idle figure cannot make a fitting active frame
+  report a false over-budget condition.
 - [x] Compose-from-tiles shares `LevelView` / `compose_level` with in-RAM compose
   (bit-identical). Count-only dirty-tile append; colored refuse; domain growth
   refused atomically.
@@ -231,12 +236,18 @@ inside this frame; changing any of it means editing this section first.
   MVP uses closed-form slab offsets; zone-map rebuild wiring remains available
   via existing `xyg_zone_maps_*` for WP2/WP4 dirty rebuilds.
 
-### WP2 — Hosts ([#9](https://github.com/CurateLabs/graphforge-xy/issues/9))
+### WP2 — Hosts ([#9](https://github.com/CurateLabs/xyg/issues/9))
 
-- Python: wire spill behind `no_rescan` / memmap / `n > PYRAMID_NO_RESCAN_ROWS`
-  or an explicit `pyramid_spill=True`.
-- Node: mirror in `packages/xy-node/src/pyramid.js`.
-- First paint + `density_view` prefer spilled tiles when the resident pyramid
+- [x] Python: wire spill behind `no_rescan` / memmap / `n > PYRAMID_NO_RESCAN_ROWS`
+  or the public scatter option `pyramid_spill=True`; `None` retains automatic
+  policy and invalid non-booleans fail before ingest.
+- [x] Node: mirror the option as `pyramidSpill` (with `pyramid_spill` accepted
+  at the host boundary) in `packages/xy-node/src/pyramid.js`; both spellings
+  require an actual boolean and composed marks preserve the option unchanged.
+- [x] An explicit spill request fails with an actionable temporary-directory
+  error when the store cannot be created; only automatic spill may retain the
+  RAM pyramid as a safe fallback.
+- [x] First paint + `density_view` prefer spilled tiles when the resident pyramid
   would exceed budget.
 
 ### WP3 — Client (optional follow-on, [#10](https://github.com/CurateLabs/graphforge-xy/issues/10))
