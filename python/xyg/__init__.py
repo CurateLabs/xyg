@@ -39,6 +39,7 @@ _EXPORTS = {
     "Colorbar": ".components",
     "Column": ".columns",
     "ColumnStore": ".columns",
+    "ChunkedColumns": "._ooc",
     "Component": ".components",
     "Engine": ".export",
     "ExportConfig": ".components",
@@ -146,6 +147,7 @@ __all__ = [
     "Annotation",
     "Axis",
     "Chart",
+    "ChunkedColumns",
     "Colorbar",
     "Column",
     "ColumnStore",
@@ -299,6 +301,7 @@ def __dir__() -> list[str]:
 if TYPE_CHECKING:
     from ._figure import Selection
     from ._graph import GraphData, GraphProjectionError, from_graphforge_tables
+    from ._ooc import ChunkedColumns
     from .columns import Column, ColumnStore, ZoneMaps
     from .components import (
         Animation,

@@ -353,6 +353,14 @@
       "python": "ready",
       "node": "ready",
       "notes": "ready covers Phase-3 square pyramid + Phase-4 256² disk tile spill on both hosts (WP1 ABI 73 + WP2 engagement): §28 binning pyramid-L*-tiles, PYRAMID_RESIDENT_BYTES / xyg_tile_budget_set, tiles hit/miss/resident/spilled stats. Optional client tile cache (#10) and evidence (#11) remain. #5 with #8/#9 done; #10/#11 open. spec/design/tier3-phase4-roadmap.md."
+    },
+    {
+      "tier": 3,
+      "name": "ordered chunked canonical columns",
+      "python": "foundation",
+      "node": "foundation",
+      "rust": "ready",
+      "notes": "ABI v78: checked local XYGC open, zone-map viewport selection, bounded exact reads, cancellation generations and byte/chunk provenance. Remote and browser/WASM sources plus overview linkage remain #110."
     }
   ],
   "references": [

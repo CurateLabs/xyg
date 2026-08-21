@@ -20,6 +20,8 @@
 
 #![allow(clippy::too_many_arguments)] // C ABI entry points; arity is the contract
 
+#[cfg(not(target_family = "wasm"))]
+use xyg_engine::chunked_columns;
 use xyg_engine::css;
 use xyg_engine::geo;
 use xyg_engine::graph;
@@ -94,7 +96,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 77;
+pub const ABI_VERSION: u32 = 78;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4330,6 +4332,120 @@ pub unsafe extern "C" fn xyg_tile_budget_set(bytes: u64) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn xyg_tile_store_free(store: u64) -> i32 {
     ffi_guard(0, || if tile_store::reg_remove(store) { 1 } else { 0 })
+}
+
+/// Open a checked local XYGC canonical-column artifact. Returns a nonzero
+/// handle, or zero for invalid UTF-8, missing, partial or corrupt artifacts.
+///
+/// # Safety
+/// `path` must address `path_len` readable bytes when `path_len > 0`.
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_chunked_columns_open(path: *const u8, path_len: usize) -> u64 {
+    ffi_guard(0, || {
+        if path.is_null() || path_len == 0 {
+            return 0;
+        }
+        let bytes = std::slice::from_raw_parts(path, path_len);
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return 0;
+        };
+        chunked_columns::reg_open(std::path::Path::new(text)).unwrap_or(0)
+    })
+}
+
+/// Set the newest viewport generation. An in-flight older read observes this
+/// between chunk reads and fails closed rather than publishing stale data.
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub extern "C" fn xyg_chunked_columns_cancel_before(store: u64, generation: u64) -> i32 {
+    ffi_guard(0, || match chunked_columns::reg_get(store) {
+        Some(s) => {
+            s.set_generation(generation);
+            1
+        }
+        None => 0,
+    })
+}
+
+/// Return the canonical row count, or `u64::MAX` for a stale handle.
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub extern "C" fn xyg_chunked_columns_rows(store: u64) -> u64 {
+    ffi_guard(u64::MAX, || {
+        chunked_columns::reg_get(store).map_or(u64::MAX, |s| s.rows())
+    })
+}
+
+/// Read exact rows matching an x/y viewport under a hard byte budget.
+/// `out_stats[0..6]` receives generation, first chunk, chunks considered,
+/// chunks read, bytes read and a stable error code (0 success, 1 I/O,
+/// 2 corrupt, 3 bounds, 4 budget, 5 cancelled, 6 output capacity). Returns rows written, or `usize::MAX` on any
+/// invalid/corrupt/cancelled/out-of-budget request. Hosts may retry with a
+/// larger output capacity; capacity never weakens the read budget.
+///
+/// # Safety
+/// `out_x` and `out_y` must each address `capacity` writable f64 values.
+/// `out_stats` must address six writable u64 values.
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_chunked_columns_read(
+    store: u64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    use_y: i32,
+    budget_bytes: u64,
+    generation: u64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+    out_stats: *mut u64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_x.is_null() || out_y.is_null() || out_stats.is_null() {
+            return usize::MAX;
+        }
+        let Some(s) = chunked_columns::reg_get(store) else {
+            return usize::MAX;
+        };
+        let stats = std::slice::from_raw_parts_mut(out_stats, 6);
+        stats.fill(0);
+        let y = if use_y == 0 { None } else { Some((y0, y1)) };
+        let read = match s.read(x0, x1, y, budget_bytes, generation) {
+            Ok(v) => v,
+            Err(e) => {
+                if let chunked_columns::Error::BudgetExceeded { needed, budget } = &e {
+                    stats[3] = *budget;
+                    stats[4] = *needed;
+                }
+                stats[5] = e.code();
+                return usize::MAX;
+            }
+        };
+        if read.x.len() > capacity {
+            stats[4] = read.x.len() as u64;
+            stats[5] = 6;
+            return usize::MAX;
+        }
+        std::ptr::copy_nonoverlapping(read.x.as_ptr(), out_x, read.x.len());
+        std::ptr::copy_nonoverlapping(read.y.as_ptr(), out_y, read.y.len());
+        stats[0..5].copy_from_slice(&[
+            read.generation,
+            u64::from(read.first_chunk),
+            u64::from(read.chunks_considered),
+            u64::from(read.chunks_read),
+            read.bytes_read,
+        ]);
+        read.x.len()
+    })
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub extern "C" fn xyg_chunked_columns_free(store: u64) -> i32 {
+    ffi_guard(0, || i32::from(chunked_columns::reg_remove(store)))
 }
 
 // -- canonical stream store (engine doc §5): opaque u64 handles --------------

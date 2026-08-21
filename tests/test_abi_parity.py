@@ -36,12 +36,20 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_77() -> None:
+def test_abi_version_is_78() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 77
+    assert manifest["abi_version"] == 78
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
+    names = {item["name"] for item in manifest["symbols"]}
+    assert {
+        "xyg_chunked_columns_cancel_before",
+        "xyg_chunked_columns_free",
+        "xyg_chunked_columns_open",
+        "xyg_chunked_columns_read",
+        "xyg_chunked_columns_rows",
+    } <= names
     assert any(item["name"] == "xyg_temporal_controller_create" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_scene_plot_layout" for item in manifest["symbols"])
     assert any(item["name"] == "xyg_geo_column_new" for item in manifest["symbols"])

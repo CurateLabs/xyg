@@ -5467,3 +5467,94 @@ def css_check(
     status = int(_lib.xyg_css_check(kind, pb or None, len(pb), vb or None, len(vb), out))
     wrote = status == 1 and out[0] == out[0]  # NaN sentinel: untouched = no static color
     return status, (out[0], out[1], out[2], out[3]) if wrote else None
+
+
+def chunked_columns_open(path: str) -> int:
+    encoded = path.encode("utf-8")
+    handle = int(_lib.xyg_chunked_columns_open(encoded, len(encoded)))
+    if handle == 0:
+        raise ValueError(f"cannot open checked XYGC artifact {path!r}")
+    return handle
+
+
+def chunked_columns_rows(handle: int) -> int:
+    rows = int(_lib.xyg_chunked_columns_rows(ctypes.c_uint64(handle)))
+    if rows == (1 << 64) - 1:
+        raise ValueError("stale chunked-column handle")
+    return rows
+
+
+def chunked_columns_cancel_before(handle: int, generation: int) -> None:
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or not 0 <= generation < (1 << 64)
+    ):
+        raise ValueError("chunked-column generation must be an integer in [0, 2^64)")
+    if _lib.xyg_chunked_columns_cancel_before(handle, generation) != 1:
+        raise ValueError("stale chunked-column handle")
+
+
+def chunked_columns_read(
+    handle: int,
+    x_range: tuple[float, float],
+    y_range: tuple[float, float] | None,
+    *,
+    budget_bytes: int,
+    generation: int,
+) -> tuple[np.ndarray, np.ndarray, dict[str, int]]:
+    if not isinstance(budget_bytes, int) or isinstance(budget_bytes, bool) or budget_bytes < 16:
+        raise ValueError("chunked-column read budget must be at least 16 bytes")
+    if budget_bytes >= 1 << 64:
+        raise ValueError("chunked-column read budget must be smaller than 2^64 bytes")
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or not 0 <= generation < (1 << 64)
+    ):
+        raise ValueError("chunked-column generation must be an integer in [0, 2^64)")
+    capacity = int(budget_bytes) // 16
+    x = np.empty(capacity, dtype=np.float64)
+    y = np.empty(capacity, dtype=np.float64)
+    stats = (ctypes.c_uint64 * 6)()
+    yr = y_range or (0.0, 0.0)
+    written = int(
+        _lib.xyg_chunked_columns_read(
+            handle,
+            *x_range,
+            *yr,
+            int(y_range is not None),
+            budget_bytes,
+            generation,
+            x.ctypes.data,
+            y.ctypes.data,
+            capacity,
+            stats,
+        )
+    )
+    if written == _USIZE_MAX:
+        if int(stats[5]) == 4 and stats[4]:
+            raise ValueError(
+                f"chunked-column viewport read needs {int(stats[4])} bytes, "
+                f"exceeding the {int(stats[3])}-byte read budget"
+            )
+        reason = {
+            1: "I/O failure",
+            2: "corrupt artifact",
+            3: "invalid viewport bounds",
+            5: "cancelled by newer viewport",
+            6: "output capacity too small",
+        }.get(int(stats[5]), "invalid request")
+        raise ValueError(f"chunked-column viewport read failed: {reason}")
+    provenance = dict(
+        zip(
+            ("generation", "first_chunk", "chunks_considered", "chunks_read", "bytes_read"),
+            (int(stats[i]) for i in range(5)),
+            strict=True,
+        )
+    )
+    return x[:written], y[:written], provenance
+
+
+def chunked_columns_free(handle: int) -> bool:
+    return _lib.xyg_chunked_columns_free(ctypes.c_uint64(handle)) == 1

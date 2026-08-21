@@ -507,6 +507,25 @@ named in `affected`.
 Phase-4 disk-resident tile spill (#8) consumes this dirty-tile set; it does
 not own the canonical store. This is not npm packaging (#23).
 
+### 5.1 Ordered out-of-core range reads (`chunked_columns.rs`)
+
+The first #110 slice moves ordered Tier-3 viewport selection into Rust. A
+versioned local `XYGC` artifact holds paired canonical f64 rows and per-chunk
+x/y zone maps. `ChunkedColumns::open` rejects short, mis-sized, unsupported,
+non-contiguous, or unordered metadata before a handle becomes visible. The
+range reader binary-searches ordered x maps, prunes optional y ranges, enforces
+a byte budget before positioned reads, applies the exact predicate, and checks
+an atomic, monotonic viewport-generation watermark between chunks (older host
+requests cannot move cancellation backwards). Reserved fields and all zone-map
+bounds are validated and non-finite metadata fails closed. Its provenance
+record makes chunk/byte reduction auditable; out-of-budget diagnostics report
+both the required and configured bytes. ABI v78 gives Python and Node identical
+thin open/read/cancel/free surfaces and stable read error codes.
+
+This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
+staging, spatially unordered data, overview linkage, and larger-than-RAM
+browser evidence remain open.
+
 ## 6. Implementation order
 
 E4's panic shield and the `tiles.rs` pyramid handles (LOD phases 3-4) have

@@ -487,3 +487,18 @@ The real coverage gap is narrower and is on the speed side: no workflow invokes
 `bench_pyplot_vs_matplotlib.py`. The per-family 10x PNG target is therefore
 enforced by `make check-pyplot-speed` locally and watched by the CodSpeed pyplot
 rows' trend, but no blocking CI job asserts it.
+
+## 10. Chunked-column larger-than-RAM evidence (#110)
+
+The committed nightly-only row opens a sparse `XYGC` fixture whose logical
+canonical bytes exceed available RAM, records peak RSS before/after open and a
+sequence of narrow viewport reads, and reports first-result latency, navigation
+latency, candidate/read chunks, and bytes read. It must assert that peak RSS is
+bounded by `read_budget + 2 * output_bytes + 32 MiB`, not by artifact size, and
+compare every returned row with a streaming full-scan oracle. A navigation
+sequence repeats one window, pans by one chunk, then cancels an older generation;
+the raw result records reuse/cancellation even before a resident detail cache is
+added. Hosted CodSpeed executes this only from the changed-main nightly workflow,
+never on pull requests. The initial engine tests use small deterministic fixtures;
+the sparse larger-than-RAM runner and remote/browser rows remain required before
+issue `#110` can close.
