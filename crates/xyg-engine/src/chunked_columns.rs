@@ -370,10 +370,7 @@ impl ChunkedColumns {
         } else {
             (rows_end, 0)
         };
-        if u64::from(overview_count) > MAX_OVERVIEW_POINTS
-            || u64::from(overview_count) > rows
-            || (rows > 0 && version == VERSION && overview_count == 0)
-        {
+        if u64::from(overview_count) > MAX_OVERVIEW_POINTS || u64::from(overview_count) > rows {
             return Err(Error::Corrupt("invalid overview count"));
         }
         if overview_offset != rows_end {
@@ -715,6 +712,24 @@ mod tests {
         assert_eq!(overview.points.len(), 2);
         assert_eq!(overview.points[0].row, 0);
         assert_eq!(overview.points[1].row, 2);
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn overview_can_be_empty_when_chunk_bounds_are_finite_across_different_rows() {
+        let p = path("overview-no-paired-finite.xygc");
+        let rows = [(0.0, f64::NAN), (f64::NAN, 1.0)];
+        ChunkedColumns::create(&p, rows, 2).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let overview = store.overview(10).unwrap();
+        assert_eq!(overview.source_rows, 2);
+        assert_eq!(overview.available, 0);
+        assert!(overview.points.is_empty());
+        let detail = store
+            .read_range(-1.0, 1.0, None, 1024, 0, |_| true)
+            .unwrap();
+        assert!(detail.x.is_empty());
+        assert!(detail.y.is_empty());
         std::fs::remove_file(p).unwrap();
     }
 
