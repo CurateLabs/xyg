@@ -134,7 +134,6 @@ export function candidateNativeLibraries({
   platform = process.platform,
   arch = process.arch,
   env = process.env,
-  cwd = process.cwd(),
   requireFn = DEFAULT_REQUIRE,
 } = {}) {
   assertSupportedPlatform(platform, arch);
@@ -148,7 +147,12 @@ export function candidateNativeLibraries({
     candidates.push(fromPlatform);
   }
   if (env.XYG_NATIVE_LIB) {
-    candidates.push(path.resolve(cwd, env.XYG_NATIVE_LIB));
+    if (!path.isAbsolute(env.XYG_NATIVE_LIB)) {
+      throw new Error(
+        "XYG_NATIVE_LIB must be an absolute path so native loading never depends on the current working directory.",
+      );
+    }
+    candidates.push(env.XYG_NATIVE_LIB);
   }
   return candidates;
 }

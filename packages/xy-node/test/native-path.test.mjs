@@ -97,7 +97,6 @@ test("unknown platform/arch fails before filesystem search", () => {
 });
 
 test("lookup uses only the exact platform package and explicit development override", () => {
-  const cwd = "/tmp/project";
   const stagedDir = "/tmp/staged-platform";
   const staged = path.join(stagedDir, "libxyg_core.so");
   const requireFn = {
@@ -113,7 +112,6 @@ test("lookup uses only the exact platform package and explicit development overr
       platform: "linux",
       arch: "x64",
       env: { XYG_NATIVE_LIB: "/explicit/libxyg_core.so" },
-      cwd,
       requireFn,
     });
     assert.equal(candidates[0], staged);
@@ -127,20 +125,21 @@ test("lookup uses only the exact platform package and explicit development overr
     fs.existsSync = exists;
   }
 
-  const relative = candidateNativeLibraries({
-    platform: "linux",
-    arch: "x64",
-    env: { XYG_NATIVE_LIB: "rel/libxyg_core.so" },
-    cwd,
-    requireFn: missingRequire(),
-  });
-  assert.deepEqual(relative, ["/tmp/project/rel/libxyg_core.so"]);
+  assert.throws(
+    () =>
+      candidateNativeLibraries({
+        platform: "linux",
+        arch: "x64",
+        env: { XYG_NATIVE_LIB: "rel/libxyg_core.so" },
+        requireFn: missingRequire(),
+      }),
+    /XYG_NATIVE_LIB must be an absolute path.*current working directory/,
+  );
 
   const darwin = candidateNativeLibraries({
     platform: "darwin",
     arch: "arm64",
     env: {},
-    cwd,
     requireFn: missingRequire(),
   });
   assert.deepEqual(darwin, []);
@@ -148,7 +147,6 @@ test("lookup uses only the exact platform package and explicit development overr
     platform: "win32",
     arch: "x64",
     env: {},
-    cwd,
     requireFn: missingRequire(),
   });
   assert.deepEqual(win, []);

@@ -2055,7 +2055,7 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         jobs,
         "node-unsupported-windows-arm64",
         "release",
-        "real Windows arm64 unsupported-platform conformance (#52)",
+        "Windows-host simulated-arm64 unsupported-platform conformance (#52)",
         "needs: [node-facade]",
         "runs-on: blacksmith-4vcpu-windows-2025",
         "XYG Node does not support Windows arm64",
