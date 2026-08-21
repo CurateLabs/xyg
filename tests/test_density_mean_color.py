@@ -63,7 +63,7 @@ def _mean_color_oracle(
 
 
 def _decode_truecolor_png(data: bytes) -> tuple[int, int, np.ndarray]:
-    """Minimal decoder for xy's own truecolor PNGs (color type 6,
+    """Minimal decoder for XYG's own truecolor PNGs (color type 6,
     filter-0 scanlines, no interlace) — enough to assert exported pixels."""
     import struct
     import zlib
@@ -90,7 +90,7 @@ def _decode_truecolor_png(data: bytes) -> tuple[int, int, np.ndarray]:
     rows = []
     for row in range(height):
         offset = row * (stride + 1)
-        assert raw[offset] == 0, "xy PNGs write filter-0 scanlines"
+        assert raw[offset] == 0, "XYG PNGs write filter-0 scanlines"
         rows.append(np.frombuffer(raw, dtype=np.uint8, count=stride, offset=offset + 1))
     return width, height, np.stack(rows).reshape(height, width, 4)
 

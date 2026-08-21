@@ -95,7 +95,7 @@ def main() -> int:
 
     if result.get("ok"):
         print(
-            f"PASS: pyodide loaded xy, backend={result['backend']} "
+            f"PASS: Pyodide loaded xyg, backend={result['backend']} "
             f"abi={result['abi']} min_max=({result['min']},{result['max']})"
         )
         return 0

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if current-product files still use retired XYG/XYG identities.
+"""Fail if current-product files still use retired XY/xy identities.
 
 Enforces spec/design/xyg-naming.md, including the clean Python ``xyg``
 namespace cutover. Historical audits, the naming matrix's old column, and the
@@ -135,6 +135,33 @@ _PYTHON_TEXT_XY = re.compile(r"(?<![A-Za-z0-9_])xy\.[A-Za-z_]")
 _BROWSER_GLOBALS = ("xy.renderStandalone", "xy.decodeFrame")
 _PRODUCT_DESCRIPTION_XY = re.compile(r"(?<![A-Za-z0-9_])xy(?=\.| chart\b| wheel\b| package\b|'s\b)")
 
+_STRUCTURAL_CURRENT_IDENTITY = {
+    "CLAUDE.md": (("retired repository heading", re.compile(r"^#\s+xy\s*/\s*xy\s*$", re.M)),),
+    "CONTRIBUTING.md": (
+        ("retired contributor heading", re.compile(r"^#\s+Contributing to xy\s*$", re.M)),
+    ),
+    "SECURITY.md": (("retired security product name", re.compile(r"^xy is\b", re.M)),),
+    "MODULE.bazel": (("retired Bazel module name", re.compile(r'\bname\s*=\s*["\']xy["\']')),),
+    "package.json": (
+        ("retired root tool package name", re.compile(r'"name"\s*:\s*"xy-dev-tools"')),
+    ),
+    "package-lock.json": (
+        ("retired root tool package name", re.compile(r'"name"\s*:\s*"xy-dev-tools"')),
+    ),
+    "docs/index.md": (
+        ("retired documentation heading", re.compile(r"^#\s+What is `xy`\?\s*$", re.M)),
+    ),
+    "spec/process/production-readiness.md": (
+        (
+            "retired release product name",
+            re.compile(r"(?m)^(?:This is the release bar for|xy is)\s+xy\b|^xy is\b"),
+        ),
+        ("retired release package path", re.compile(r"`xy/`|the `xy` package|`xy-<version>`")),
+    ),
+}
+
+_WORKFLOW_INSTALL_XY = re.compile(r"(?m)^\s*-\s+name:\s+.*\bInstall xy\b", re.IGNORECASE)
+
 
 def _python_text_errors(path: Path, rel: str, text: str, *, repository_scan: bool) -> list[str]:
     """Reject retired public Python names in comments, docstrings, and errors."""
@@ -183,6 +210,26 @@ def _module_description_errors(path: Path, rel: str, text: str) -> list[str]:
         return []
     lineno = tree.body[0].lineno if tree.body else 1
     return [f"{rel}:{lineno}: stale XYG product/API wording in module description"]
+
+
+def _structural_identity_errors(rel: str, text: str) -> list[str]:
+    """Lock high-impact repository, build, release, and workflow identity surfaces."""
+    errors: list[str] = []
+    for label, pattern in _STRUCTURAL_CURRENT_IDENTITY.get(rel, ()):
+        for match in pattern.finditer(text):
+            lineno = text.count("\n", 0, match.start()) + 1
+            line = text.splitlines()[lineno - 1]
+            if LINE_ALLOW_MARKER in line:
+                continue
+            errors.append(f"{rel}:{lineno}: stale {label}")
+    if rel.startswith(".github/workflows/"):
+        for match in _WORKFLOW_INSTALL_XY.finditer(text):
+            lineno = text.count("\n", 0, match.start()) + 1
+            line = text.splitlines()[lineno - 1]
+            if LINE_ALLOW_MARKER in line:
+                continue
+            errors.append(f"{rel}:{lineno}: stale workflow product label")
+    return errors
 
 
 def _skip(path: Path) -> bool:
@@ -284,6 +331,7 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
         except (OSError, UnicodeDecodeError):
             continue
         rel = path.relative_to(root).as_posix()
+        errors.extend(_structural_identity_errors(rel, text))
         errors.extend(_python_text_errors(path, rel, text, repository_scan=repository_scan))
         if repository_scan:
             errors.extend(_module_description_errors(path, rel, text))
@@ -319,6 +367,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         for error in errors:
             print(error, file=sys.stderr)
         print(f"{len(errors)} stale XY identity name(s)", file=sys.stderr)
+        print(
+            "Use XYG/xyg for the current product and package. Retain xy only for "
+            "explicitly documented browser protocol, coordinates, provenance, or "
+            f"history; otherwise migrate it or annotate the intentional line with {LINE_ALLOW_MARKER!r}.",
+            file=sys.stderr,
+        )
         return 1
     print("stale-name gate ok")
     return 0

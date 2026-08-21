@@ -1,6 +1,6 @@
-# xy FastAPI example
+# XYG FastAPI example
 
-A [FastAPI](https://fastapi.tiangolo.com/) app that serves xy charts, showing
+A [FastAPI](https://fastapi.tiangolo.com/) app that serves XYG charts, showing
 how the library is used from a Python web stack other than Reflex.
 
 Each chart is generated on request with `chart.to_html()`, and the **Code**
@@ -27,7 +27,7 @@ cd examples/fastapi
 uv run uvicorn app:app --reload
 ```
 
-`uv run` resolves this directory's [`pyproject.toml`](pyproject.toml) (xy,
+`uv run` resolves this directory's [`pyproject.toml`](pyproject.toml) (xyg,
 FastAPI, uvicorn) into a local environment. Open the printed URL (usually
 <http://127.0.0.1:8000>).
 

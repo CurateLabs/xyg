@@ -1,4 +1,4 @@
-# xy / xy
+# XYG
 
 A high-performance charting engine. The authoritative design is
 `spec/design-dossier.md` — **read the relevant § before changing behavior**;
@@ -56,7 +56,7 @@ control.
   axes) — the **only public chart-building surface**; keep it dependency-free
   (no `reflex` import). `_figure.py` is the internal scene/engine object
   (`Figure`) that composed charts compile to via `Chart.figure()`; it is not
-  exported from `xy` (only `Selection` is public from it).
+  exported from `xyg` (only `Selection` is public from it).
   `marks.py` is the declarative mark core: the single implementation of every
   chart kind, bound onto the internal `Figure` (one body, one signature, one
   set of defaults — parity is identity, not convention).
@@ -71,8 +71,8 @@ control.
   `reflex_xy`; design: `spec/design/reflex-integration.md`). Chart
   data rides the app's own websocket as a second socket.io namespace;
   figures live in a per-process registry rebuilt from Reflex state on miss.
-  The source ships in every `xy` artifact; the `xyg[reflex]` extra selects the
-  supported Reflex floor while plain `xy` keeps no Reflex runtime dependency.
+  The source ships in every `xyg` artifact; the `xyg[reflex]` extra selects the
+  supported Reflex floor while plain `xyg` keeps no Reflex runtime dependency.
   The core `python/xyg` package must never import Reflex. The render client is
   linked out of that package at app compile (no second copy to drift).
   Tests: `tests/reflex_adapter/` (skip unless Reflex is installed).
@@ -117,7 +117,7 @@ uv run pytest                         # native core required (no fallback)
 python3 scripts/reflex_ws_smoke.py    # browser E2E vs the running Reflex demo app
 uv run ruff check . && uv run ruff format . && uv run ty check
 uv run python scripts/bench.py        # §12 benchmark harness
-python3 scripts/bench_scatter_native.py --render   # xy scatter, no deps
+python3 scripts/bench_scatter_native.py --render   # XYG scatter, no deps
 uv run python scripts/bench_vs.py     # three-way vs plotly/matplotlib (needs both)
 ```
 

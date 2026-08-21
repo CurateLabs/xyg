@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-xy is pre-1.0; only the latest released version receives security
+XYG is pre-1.0; only the latest released version receives security
 fixes.
 
 ## Reporting a vulnerability

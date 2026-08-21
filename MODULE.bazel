@@ -1,4 +1,4 @@
-"""Bazel module for the xy / graphforge-xy dual-host graph MVP.
+"""Bazel module for the XYG dual-host graph engine.
 
 Cargo remains the source of truth for the Rust crate graph
 (`Cargo.toml` / `Cargo.lock`). Root targets wrap `cargo` /
@@ -7,6 +7,6 @@ cdylib without requiring crates.io from the Bazel fetch path.
 """
 
 module(
-    name = "xy",
+    name = "xyg",
     version = "0.1.0",
 )

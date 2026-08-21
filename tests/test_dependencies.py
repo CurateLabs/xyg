@@ -23,7 +23,7 @@ def test_core_runtime_dependencies_do_not_include_reflex() -> None:
     runtime_names = {_dependency_name(requirement) for requirement in dependencies}
 
     assert not any(name == "reflex" or name.startswith("reflex-") for name in runtime_names), (
-        "plain xy must stay Reflex-free; publish the supported framework floor "
+        "plain xyg must stay Reflex-free; publish the supported framework floor "
         "through the reflex extra"
     )
 
@@ -51,7 +51,7 @@ def test_core_publishes_only_the_reflex_optional_dependency() -> None:
     }
     assert "plotly" not in group_names, (
         "Plotly is an external comparison baseline installed by benchmark workflows, "
-        "not an xy development or runtime dependency"
+        "not an XYG development or runtime dependency"
     )
 
 

@@ -166,3 +166,45 @@ def test_flags_root_src_lib_as_abi_location(tmp_path: Path) -> None:
     (tmp_path / "bad.md").write_text("Bump ABI_VERSION in src/lib.rs\n", encoding="utf-8")
     errors = check_stale_names.check_stale_names(tmp_path)
     assert any("src/lib.rs ABI" in error for error in errors)
+
+
+def test_structurally_flags_current_product_build_release_and_workflow_identity(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "spec" / "process").mkdir(parents=True)
+    (tmp_path / "CLAUDE.md").write_text("# xy / xy\n", encoding="utf-8")
+    (tmp_path / "CONTRIBUTING.md").write_text("# Contributing to xy\n", encoding="utf-8")
+    (tmp_path / "SECURITY.md").write_text("xy is pre-1.0\n", encoding="utf-8")
+    (tmp_path / "MODULE.bazel").write_text('module(name = "xy")\n', encoding="utf-8")
+    (tmp_path / "package.json").write_text('{"name":"xy-dev-tools"}\n', encoding="utf-8")
+    (tmp_path / "docs" / "index.md").write_text("# What is `xy`?\n", encoding="utf-8")
+    (tmp_path / "spec" / "process" / "production-readiness.md").write_text(
+        "xy is early alpha. Published wheels contain the `xy/` package.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+        "steps:\n  - name: Install xy + competitors\n", encoding="utf-8"
+    )
+    errors = "\n".join(check_stale_names.check_stale_names(tmp_path))
+    for label in (
+        "repository heading",
+        "contributor heading",
+        "security product name",
+        "Bazel module name",
+        "root tool package name",
+        "documentation heading",
+        "release product name",
+        "release package path",
+        "workflow product label",
+    ):
+        assert label in errors
+
+
+def test_structural_identity_honors_the_documented_line_marker(tmp_path: Path) -> None:
+    (tmp_path / "SECURITY.md").write_text(
+        "xy is a quoted historical statement. <!-- xyg-stale-name: allow -->\n",
+        encoding="utf-8",
+    )
+    assert check_stale_names.check_stale_names(tmp_path) == []

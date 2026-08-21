@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify xy source distributions before upload/install smoke tests.
+"""Verify XYG source distributions before upload/install smoke tests.
 
 An sdist is the escape hatch for users without a prebuilt wheel. It must carry
 the Rust source, the prebuilt render-client bundles (host-neutral `@curatelabs/xyg`

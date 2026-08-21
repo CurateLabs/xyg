@@ -59,7 +59,7 @@ def _build_component_cls() -> Any:
     wrapper_library = register()
 
     class XYChart(rx.Component):
-        """A xy figure bound to a registry token or a static payload."""
+        """An XYG figure bound to a registry token or a static payload."""
 
         # The shared-asset module path ($/public/external/reflex_xy/assets/…):
         # a local-JS library, never sent to the package manager.

@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
-      - name: Install xy and released reference wheel
+      - name: Install XYG and released reference wheel
         run: |
           uv venv .venv
           uv pip install -p .venv/bin/python -e . --group dev
@@ -502,7 +502,7 @@ jobs:
         run: node js/build.mjs
       - name: Create benchmark environment
         run: uv venv .venv
-      - name: Install xy
+      - name: Install XYG
         if: matrix.xy
         env:
           XYG_REQUIRE_CARGO: "1"
@@ -579,7 +579,7 @@ jobs:
         run: |
           node js/build.mjs
           cargo build --release
-      - name: Install xy + competitors
+      - name: Install XYG + competitors
         env:
           XYG_REQUIRE_CARGO: "1"
         run: |
@@ -610,7 +610,7 @@ jobs:
             | tee -a docs/benchmark_ci.md
       - name: Install footprint & cold import (methodology §1)
         run: .venv/bin/python benchmarks/bench_install.py --json install.json | tee -a docs/benchmark_ci.md
-      - name: Fresh-environment footprint (xy vs Plotly)
+      - name: Fresh-environment footprint (XYG vs Plotly)
         run: |
           .venv/bin/python benchmarks/bench_install.py --packages xyg,plotly \
             --repeat 3 --fresh-venv --json install-fresh.json | tee -a docs/benchmark_ci.md
