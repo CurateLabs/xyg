@@ -526,7 +526,8 @@ both the required and configured bytes. ABI v79 gives Python and Node identical
 thin open/overview/read/cancel/free surfaces and stable read error codes.
 `overview(max_points=2048)` is caller-bounded, includes first/last coverage when
 reduced, retains canonical u64 row identity, and records available points, source
-rows, and zero detail rows read.
+rows, and zero detail rows read. Fully non-finite overview windows are omitted
+without rejecting an otherwise valid detail chunk.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,
