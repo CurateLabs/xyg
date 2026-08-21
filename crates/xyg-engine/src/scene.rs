@@ -36,6 +36,10 @@ const SCENE_ANNOTATION_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
 fn is_scene_annotation_id(stable_id: u64) -> bool {
     stable_id & SCENE_ANNOTATION_ID_MASK == SCENE_ANNOTATION_ID_PREFIX
 }
+
+fn scene_edge_eq(actual: f64, expected: f64) -> bool {
+    (actual - expected).abs() <= 8.0 * f64::EPSILON * actual.abs().max(expected.abs()).max(1.0)
+}
 const SCENE_LEGEND_HEADER_BYTES: usize = 48;
 const SCENE_LEGEND_ENTRY_BYTES: usize = 24;
 pub const MAX_SCENE_LEGEND_INPUT_BYTES: usize = SCENE_LEGEND_HEADER_BYTES
@@ -1755,13 +1759,19 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 }
             }
             2 if kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
-                if visible != 0 && (coordinates[1] != top || coordinates[3] != bottom) {
+                if visible != 0
+                    && (!scene_edge_eq(coordinates[1], top)
+                        || !scene_edge_eq(coordinates[3], bottom))
+                {
                     return Err(SceneError::Length);
                 }
             }
             3 if kind == SceneRecordKind::Scatter && run_end - annotation_cursor == 1 => {}
             4 if kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
-                if visible != 0 && (coordinates[0] != left || coordinates[2] != right) {
+                if visible != 0
+                    && (!scene_edge_eq(coordinates[0], left)
+                        || !scene_edge_eq(coordinates[2], right))
+                {
                     return Err(SceneError::Length);
                 }
             }
@@ -2070,8 +2080,8 @@ impl<'a> SceneBatch<'a> {
                 2 if kind == SceneRecordKind::Rect && run_end - annotation_index == 1 => {
                     let py0 = y_scale.pixel(y0[annotation_index]);
                     let py1 = y_scale.pixel(y1[annotation_index]);
-                    if !((py0 == layout.top && py1 == layout.bottom)
-                        || (py0 == layout.bottom && py1 == layout.top))
+                    if !((scene_edge_eq(py0, layout.top) && scene_edge_eq(py1, layout.bottom))
+                        || (scene_edge_eq(py0, layout.bottom) && scene_edge_eq(py1, layout.top)))
                     {
                         return Err(SceneError::Length);
                     }
@@ -2080,8 +2090,8 @@ impl<'a> SceneBatch<'a> {
                 4 if kind == SceneRecordKind::Rect && run_end - annotation_index == 1 => {
                     let px0 = x_scale.pixel(x0[annotation_index]);
                     let px1 = x_scale.pixel(x1[annotation_index]);
-                    if !((px0 == layout.left && px1 == layout.right)
-                        || (px0 == layout.right && px1 == layout.left))
+                    if !((scene_edge_eq(px0, layout.left) && scene_edge_eq(px1, layout.right))
+                        || (scene_edge_eq(px0, layout.right) && scene_edge_eq(px1, layout.left)))
                     {
                         return Err(SceneError::Length);
                     }
@@ -2822,8 +2832,8 @@ impl SceneDocument {
                 }
                 2 if record.kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
                     if record.visible
-                        && (record.coordinates[1] != layout.top
-                            || record.coordinates[3] != layout.bottom)
+                        && (!scene_edge_eq(record.coordinates[1], layout.top)
+                            || !scene_edge_eq(record.coordinates[3], layout.bottom))
                     {
                         return Err(SceneError::Length);
                     }
@@ -2832,8 +2842,8 @@ impl SceneDocument {
                     && run_end - annotation_cursor == 1 => {}
                 4 if record.kind == SceneRecordKind::Rect && run_end - annotation_cursor == 1 => {
                     if record.visible
-                        && (record.coordinates[0] != layout.left
-                            || record.coordinates[2] != layout.right)
+                        && (!scene_edge_eq(record.coordinates[0], layout.left)
+                            || !scene_edge_eq(record.coordinates[2], layout.right))
                     {
                         return Err(SceneError::Length);
                     }
@@ -5132,7 +5142,7 @@ mod tests {
 
     #[test]
     fn browser_painter_keeps_same_style_annotations_as_distinct_descriptors() {
-        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let layout = PlotLayout::new(240.0, 160.0, 20.1, 20.3, 20.1, 20.3).unwrap();
         let x_scale = AxisScale::new(
             ScaleKind::Linear,
             0.0,
