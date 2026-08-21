@@ -57,6 +57,27 @@ def test_scene_v10_annotations_fail_closed_for_deferred_content() -> None:
         Figure().vline(1.0, style={"dash": "2,2"}).to_scene()
 
 
+@pytest.mark.parametrize(
+    "style",
+    [
+        {"color": ""},
+        {"color": None},
+        {"opacity": None},
+        {"opacity": ""},
+        {"opacity": "opaque"},
+        {"width": None},
+        {"width": False},
+    ],
+)
+def test_scene_v10_annotation_style_falsey_values_do_not_become_defaults(
+    style: dict[str, object],
+) -> None:
+    figure = Figure().vline(1.0)
+    figure.annotations[0]["style"] = style
+    with pytest.raises(ValueError, match="Scene v10 annotation"):
+        figure.to_scene()
+
+
 def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v3.json").read_text())
     encoded = _native.scene_batch_encode(

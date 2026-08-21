@@ -90,6 +90,13 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
   assert.throws(() => figure.toScene(), /labels are deferred/);
+  for (const style of [
+    { color: "" }, { color: null }, { opacity: null }, { opacity: "" },
+    { opacity: "opaque" }, { width: null }, { width: false },
+  ]) {
+    figure.annotations = [{ kind: "rule", axis: "x", value: 0.25, style }];
+    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+  }
 });
 
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {

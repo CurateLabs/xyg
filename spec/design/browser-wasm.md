@@ -116,7 +116,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 `WASM_ABI_VERSION` is 5 for Scene paint, packed typed-column compile,
 transferable `XYTS` series descriptors, and resumable Tier-2 aggregation.
-`SCENE_VERSION` remains independently versioned at 9.
+`SCENE_VERSION` remains independently versioned and is 10 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including the aggregate lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,

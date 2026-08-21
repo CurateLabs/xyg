@@ -1995,7 +1995,9 @@ impl<'a> SceneBatch<'a> {
             match tag {
                 1 if kind == SceneRecordKind::Polyline && run_end - annotation_index == 2 => {
                     let next = annotation_index + 1;
-                    if !((x0[annotation_index] == x0[next]) ^ (y0[annotation_index] == y0[next]))
+                    if SceneRecordKind::from_code(kinds[next])? != SceneRecordKind::Polyline
+                        || !((x0[annotation_index] == x0[next])
+                            ^ (y0[annotation_index] == y0[next]))
                         || style_refs[annotation_index] != style_refs[next]
                     {
                         return Err(SceneError::Length);
@@ -2742,7 +2744,8 @@ impl SceneDocument {
                     && run_end - annotation_cursor == 2 =>
                 {
                     let next = records[annotation_cursor + 1];
-                    if record.style_ref != next.style_ref
+                    if next.kind != SceneRecordKind::Polyline
+                        || record.style_ref != next.style_ref
                         || record.visible != next.visible
                         || (record.visible
                             && !((record.coordinates[0] == next.coordinates[0])
@@ -5084,6 +5087,63 @@ mod tests {
         .unwrap();
         let marker = SCENE_ANNOTATION_ID_PREFIX | (3 << 40);
         let band = SCENE_ANNOTATION_ID_PREFIX | (2 << 40);
+        let rule = SCENE_ANNOTATION_ID_PREFIX | (1 << 40);
+        let valid_rule = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            &[1, 1],
+            &[rule, rule],
+            &[0, 0],
+            &[0, 0, 0, 0],
+            &[255, 0, 0, 255],
+            &[1.0],
+            &[0.0, 0.0],
+            &[0, 0],
+            &[0.25, 0.25],
+            &[0.0, 1.0],
+            &[0.0, 0.0],
+            &[0.0, 0.0],
+        )
+        .unwrap()
+        .encode();
+        let mut malformed_rule = valid_rule;
+        malformed_rule
+            [SCENE_BATCH_HEADER_BYTES + SCENE_STYLE_RECORD_BYTES + SCENE_BATCH_RECORD_BYTES] =
+            SceneRecordKind::Scatter as u8;
+        assert_eq!(
+            SceneDocument::decode(&malformed_rule).err(),
+            Some(SceneError::Length)
+        );
+        assert_eq!(
+            SceneBatch::new_with_chrome(
+                layout,
+                1,
+                2,
+                x_scale,
+                y_scale,
+                SceneChromeStyle::default(),
+                SceneChromeText::default(),
+                &[1, 0],
+                &[rule, rule],
+                &[0, 0],
+                &[0, 0, 0, 0],
+                &[255, 0, 0, 255],
+                &[1.0],
+                &[0.0, 0.0],
+                &[0, 0],
+                &[0.25, 0.25],
+                &[0.0, 1.0],
+                &[0.0, 0.0],
+                &[0.0, 0.0],
+            )
+            .err(),
+            Some(SceneError::Length)
+        );
         let encoded = SceneBatch::new_with_chrome(
             layout,
             1,

@@ -636,6 +636,27 @@ def figure_scene(
     annotation_prefix = 0x5859000000000000
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
+
+    def annotation_number(style: dict[str, Any], key: str, default: float, label: str) -> float:
+        raw = style.get(key, default)
+        if (
+            raw is None
+            or isinstance(raw, (bool, np.bool_))
+            or (isinstance(raw, str) and not raw.strip())
+        ):
+            raise ValueError(f"Scene v10 annotation {label} must be numeric")
+        try:
+            value = float(raw)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Scene v10 annotation {label} must be numeric") from error
+        return value
+
+    def annotation_color(style: dict[str, Any], key: str, default: str, label: str) -> str:
+        raw = style.get(key, default)
+        if not isinstance(raw, str) or not raw.strip():
+            raise ValueError(f"Scene v10 annotation {label} must be a nonempty CSS color")
+        return raw
+
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
         if kind not in {"rule", "band", "marker"}:
@@ -661,15 +682,21 @@ def figure_scene(
             raise UnsupportedSceneV3(
                 f"Scene v10 {kind} annotation style does not encode {unsupported_style!r}"
             )
-        opacity = float(style.get("opacity", 0.14 if kind == "band" else 1.0))
+        opacity = annotation_number(
+            style, "opacity", 0.14 if kind == "band" else 1.0, f"{kind} opacity"
+        )
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError(f"Scene v10 {kind} annotation opacity must be finite and in [0, 1]")
-        color = str(style.get("color") or ("#64748b" if kind == "band" else "#667085"))
+        color = annotation_color(
+            style, "color", "#64748b" if kind == "band" else "#667085", f"{kind} color"
+        )
         fill = _rgba(color, opacity) if kind != "rule" else (0, 0, 0, 0)
-        stroke_color = str(style.get("stroke_color") or color)
+        stroke_color = annotation_color(style, "stroke_color", color, f"{kind} stroke color")
         stroke = _rgba(stroke_color, opacity)
-        width_value = style.get("width", style.get("stroke_width", 1.5 if kind != "band" else 0.0))
-        width_value = float(width_value)
+        width_key = "width" if kind == "rule" else "stroke_width"
+        width_value = annotation_number(
+            style, width_key, 1.5 if kind != "band" else 0.0, f"{kind} width"
+        )
         if not np.isfinite(width_value) or width_value < 0 or (kind == "rule" and width_value == 0):
             raise ValueError(f"Scene v10 {kind} annotation width must be finite and nonnegative")
         styles.append((fill, stroke, width_value))

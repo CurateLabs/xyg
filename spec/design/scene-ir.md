@@ -376,7 +376,7 @@ nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
 bytes, and every count/length overflow.
 
 Rust owns entry order, location resolution, frame/text/swatch geometry and
-paint ordering for SVG and native raster. Browser painter v6 appends the exact
+paint ordering for SVG and native raster. Browser painter v7 appends the exact
 validated `XYLG` record; TypeScript projects it into the existing selectable
 and accessible DOM legend without deriving entries or defaults. Direct-Scene
 legends are static (`toggle=false`, `highlight=false`). Python and Node only
@@ -388,8 +388,9 @@ to `upper right`). Automatic `loc="best"` placement remains unsupported until
 that occupancy policy moves into Rust. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
-declarations fail closed. Colorbars and annotations remain explicit later
-issue-#116 work; Scene v9 does not approximate them.
+declarations fail closed. Colorbars remain explicit later issue-#116 work;
+Scene v10 additionally supports the bounded primary annotations below and does
+not approximate richer forms.
 
 ## Version 10: primary Cartesian rule, band, and marker annotations
 

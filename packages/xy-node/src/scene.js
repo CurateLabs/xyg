@@ -300,6 +300,20 @@ function rgba8(css, opacity, name) {
   return parsed.map((value, index) => Math.round(value * (index === 3 ? opacity : 1) * 255));
 }
 
+function annotationNumber(style, key, fallback, label) {
+  const raw = Object.hasOwn(style, key) ? style[key] : fallback;
+  if (raw == null || typeof raw === "boolean" || (typeof raw === "string" && raw.trim() === "")) throw new RangeError(`Scene v10 annotation ${label} must be numeric`);
+  const value = Number(raw);
+  if (!Number.isFinite(value)) throw new RangeError(`Scene v10 annotation ${label} must be numeric`);
+  return value;
+}
+
+function annotationColor(style, key, fallback, label) {
+  const raw = Object.hasOwn(style, key) ? style[key] : fallback;
+  if (typeof raw !== "string" || raw.trim() === "") throw new RangeError(`Scene v10 annotation ${label} must be a nonempty CSS color`);
+  return raw;
+}
+
 const RECT_KINDS = new Set(["bar", "column", "histogram", "violin", "box"]);
 const SEGMENT_KINDS = new Set(["segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const BAND_KINDS = new Set(["area", "error_band"]);
@@ -592,12 +606,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const allowed = new Set(kind === "rule" ? ["color", "opacity", "width"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
     const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();
     if (unsupported.length) throw new RangeError(`Scene v10 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
-    const opacity = Number(style.opacity ?? (kind === "band" ? 0.14 : 1));
+    const opacity = annotationNumber(style, "opacity", kind === "band" ? 0.14 : 1, `${kind} opacity`);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError(`Scene v10 ${kind} annotation opacity must be finite and in [0, 1]`);
-    const color = String(style.color ?? (kind === "band" ? "#64748b" : "#667085"));
-    const width = Number(style.width ?? style.stroke_width ?? (kind === "band" ? 0 : 1.5));
+    const color = annotationColor(style, "color", kind === "band" ? "#64748b" : "#667085", `${kind} color`);
+    const strokeColor = annotationColor(style, "stroke_color", color, `${kind} stroke color`);
+    const widthKey = kind === "rule" ? "width" : "stroke_width";
+    const width = annotationNumber(style, widthKey, kind === "band" ? 0 : 1.5, `${kind} width`);
     if (!Number.isFinite(width) || width < 0 || (kind === "rule" && width === 0)) throw new RangeError(`Scene v10 ${kind} annotation width must be finite and nonnegative`);
-    styles.push({ fillRgba: kind === "rule" ? [0, 0, 0, 0] : rgba8(color, opacity, "annotation fill"), strokeRgba: rgba8(String(style.stroke_color ?? color), opacity, "annotation stroke"), strokeWidth: width });
+    styles.push({ fillRgba: kind === "rule" ? [0, 0, 0, 0] : rgba8(color, opacity, "annotation fill"), strokeRgba: rgba8(strokeColor, opacity, "annotation stroke"), strokeWidth: width });
     const styleRef = styles.length - 1;
     const tag = kind === "band" && annotation.axis === "y" ? 4n : { rule: 1n, band: 2n, marker: 3n }[kind];
     const stableId = annotationPrefix | (tag << 40n) | BigInt(annotationIndex);
