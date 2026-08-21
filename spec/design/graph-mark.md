@@ -11,7 +11,7 @@
 
 ## 1. Architecture — render-graph mental model
 
-Graph viz in xy is not “dump V/E into WebGL.” Canonical graph data stays
+Graph visualization in XYG is not “dump V/E into WebGL.” Canonical graph data stays
 host/CPU-side; **Rust** decides layout, viewport culling, graph LOD, edge LOD,
 and encoding; the browser receives only **bounded §29 buffers** and paints
 them through the **shared WebGL host**. Analysis algorithms stay in
