@@ -60,6 +60,26 @@ pub struct GeoViewport {
     pub world_wrap: bool,
 }
 
+/// Exact, host-neutral identity for a frozen geographic camera.
+///
+/// Hosts may retain this value beside rebuildable painter buffers and compare
+/// it after camera or context events. Float fields are represented by their
+/// IEEE-754 bits, avoiding string formatting, host rounding, or JSON-number
+/// identity. Validated viewports cannot contain NaN, so bit identity is also
+/// semantic identity for this contract.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct GeoViewportRebuildKey {
+    pub crs: GeoCrs,
+    pub center_x_bits: u64,
+    pub center_y_bits: u64,
+    pub zoom_bits: u64,
+    pub width_bits: u64,
+    pub height_bits: u64,
+    pub bearing_deg_bits: u64,
+    pub pitch_deg_bits: u64,
+    pub world_wrap: bool,
+}
+
 /// Screen-clipped line segments with stable source-feature identity.
 ///
 /// Every offset range is one independent two-point segment. Keeping segments
@@ -470,6 +490,94 @@ impl GeoViewport {
         Ok(())
     }
 
+    /// Set the clockwise bearing, normalized to `(-180, 180]` degrees.
+    ///
+    /// The update is transactional: invalid input leaves the camera unchanged.
+    pub fn set_bearing(&mut self, bearing_deg: f64) -> Result<(), GeoError> {
+        if !bearing_deg.is_finite() {
+            return Err(GeoError::NonFiniteCoordinate);
+        }
+        let mut next = *self;
+        next.bearing_deg = normalize_bearing(bearing_deg);
+        next.validate()?;
+        *self = next;
+        Ok(())
+    }
+
+    /// Set pitch in the certified orthographic range `[-60, 60]` degrees.
+    ///
+    /// Pitch is frozen for shell/headless parity; perspective projection stays
+    /// explicitly deferred to the MapLibre frustum work in #49.
+    pub fn set_pitch(&mut self, pitch_deg: f64) -> Result<(), GeoError> {
+        let mut next = *self;
+        next.pitch_deg = pitch_deg;
+        next.validate()?;
+        *self = next;
+        Ok(())
+    }
+
+    /// Move the camera centre by a screen-space CSS-pixel displacement.
+    ///
+    /// Positive X moves the centre toward the current screen-right direction;
+    /// positive Y moves it toward screen-bottom. Bearing is therefore applied
+    /// exactly as it is for project/unproject. Wrapped longitude is normalized;
+    /// a non-wrapped camera and both Mercator axes stop at the certified world
+    /// bounds. The transition is atomic and allocation-free.
+    pub fn pan_by_pixels(&mut self, delta_x: f64, delta_y: f64) -> Result<(), GeoError> {
+        if !delta_x.is_finite() || !delta_y.is_finite() {
+            return Err(GeoError::NonFiniteCoordinate);
+        }
+        if delta_x == 0.0 && delta_y == 0.0 {
+            return Ok(());
+        }
+        let (mut mx, my) =
+            self.screen_to_mercator(self.width * 0.5 + delta_x, self.height * 0.5 + delta_y);
+        let my = my.clamp(-WEB_MERCATOR_MAX, WEB_MERCATOR_MAX);
+        if self.crs == GeoCrs::Epsg3857 || !self.world_wrap {
+            mx = mx.clamp(-WEB_MERCATOR_MAX, WEB_MERCATOR_MAX);
+        } else {
+            let world_m = 2.0 * WEB_MERCATOR_MAX;
+            mx = (mx + WEB_MERCATOR_MAX).rem_euclid(world_m) - WEB_MERCATOR_MAX;
+        }
+
+        let mut next = *self;
+        match self.crs {
+            GeoCrs::Epsg4326 => {
+                let (lon, lat) = mercator_to_lonlat(mx, my);
+                next.center_x = lon;
+                next.center_y = lat;
+            }
+            GeoCrs::Epsg3857 => {
+                next.center_x = mx;
+                next.center_y = my;
+            }
+        }
+        next.validate()?;
+        *self = next;
+        Ok(())
+    }
+
+    /// Return exact rebuild identity for the complete frozen camera state.
+    #[must_use]
+    pub fn rebuild_key(&self) -> GeoViewportRebuildKey {
+        let center_x = if self.crs == GeoCrs::Epsg4326 && self.world_wrap {
+            normalize_lon(self.center_x)
+        } else {
+            self.center_x
+        };
+        GeoViewportRebuildKey {
+            crs: self.crs,
+            center_x_bits: canonical_f64_bits(center_x),
+            center_y_bits: canonical_f64_bits(self.center_y),
+            zoom_bits: canonical_f64_bits(self.zoom),
+            width_bits: canonical_f64_bits(self.width),
+            height_bits: canonical_f64_bits(self.height),
+            bearing_deg_bits: canonical_f64_bits(normalize_bearing(self.bearing_deg)),
+            pitch_deg_bits: canonical_f64_bits(self.pitch_deg),
+            world_wrap: self.world_wrap,
+        }
+    }
+
     fn mercator_to_screen(&self, mx: f64, my: f64) -> (f64, f64) {
         let (cx, cy) = self.center_mercator();
         let scale = 1.0 / self.metres_per_pixel();
@@ -659,6 +767,20 @@ pub fn normalize_lon(lon_deg: f64) -> f64 {
     lon
 }
 
+/// Normalize bearing into `(-180, 180]` degrees.
+#[must_use]
+pub fn normalize_bearing(bearing_deg: f64) -> f64 {
+    normalize_lon(bearing_deg)
+}
+
+fn canonical_f64_bits(value: f64) -> u64 {
+    if value == 0.0 {
+        0.0_f64.to_bits()
+    } else {
+        value.to_bits()
+    }
+}
+
 /// Lon/lat degrees → Web Mercator metres (EPSG:3857).
 #[must_use]
 pub fn lonlat_to_mercator(lon_deg: f64, lat_deg: f64) -> (f64, f64) {
@@ -832,6 +954,125 @@ mod tests {
         assert_eq!(vp, original);
         assert_eq!(vp.resize(0.0, 600.0), Err(GeoError::InvalidArgument));
         assert_eq!(vp, original);
+        assert_eq!(vp.set_pitch(61.0), Err(GeoError::InvalidArgument));
+        assert_eq!(vp, original);
+        assert_eq!(
+            vp.set_bearing(f64::INFINITY),
+            Err(GeoError::NonFiniteCoordinate)
+        );
+        assert_eq!(vp, original);
+        assert_eq!(
+            vp.pan_by_pixels(f64::NAN, 0.0),
+            Err(GeoError::NonFiniteCoordinate)
+        );
+        assert_eq!(vp, original);
+    }
+
+    #[test]
+    fn camera_setters_normalize_bearing_and_freeze_pitch() {
+        let mut vp = denver();
+        vp.set_bearing(450.0).unwrap();
+        vp.set_pitch(45.0).unwrap();
+        assert_eq!(vp.bearing_deg, 90.0);
+        assert_eq!(vp.pitch_deg, 45.0);
+
+        let source = (-104.8, 39.8);
+        let screen = vp.project(source.0, source.1).unwrap();
+        let restored = vp.unproject(screen.0, screen.1).unwrap();
+        assert!((restored.0 - source.0).abs() < tolerances::LONLAT_DEG);
+        assert!((restored.1 - source.1).abs() < tolerances::LONLAT_DEG);
+    }
+
+    #[test]
+    fn pixel_pan_moves_center_in_bearing_aware_screen_space() {
+        let mut vp = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            0.0,
+            0.0,
+            4.0,
+            800.0,
+            600.0,
+            90.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        let expected = vp.unproject(440.0, 320.0).unwrap();
+        vp.pan_by_pixels(40.0, 20.0).unwrap();
+        assert!((vp.center_x - expected.0).abs() < tolerances::LONLAT_DEG);
+        assert!((vp.center_y - expected.1).abs() < tolerances::LONLAT_DEG);
+        let (sx, sy) = vp.project(vp.center_x, vp.center_y).unwrap();
+        assert!((sx - 400.0).abs() < tolerances::SCREEN_PX);
+        assert!((sy - 300.0).abs() < tolerances::SCREEN_PX);
+    }
+
+    #[test]
+    fn pixel_pan_wraps_or_stops_at_world_and_polar_limits() {
+        let mut wrapped = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            179.0,
+            84.0,
+            2.0,
+            800.0,
+            600.0,
+            0.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        wrapped.pan_by_pixels(200.0, -10_000.0).unwrap();
+        assert!((-180.0..=180.0).contains(&wrapped.center_x));
+        assert_eq!(wrapped.center_y, MAX_WEB_MERCATOR_LAT_DEG);
+
+        let mut bounded = wrapped;
+        bounded.world_wrap = false;
+        bounded.center_x = 179.0;
+        bounded.pan_by_pixels(10_000.0, 0.0).unwrap();
+        assert_eq!(bounded.center_x, 180.0);
+    }
+
+    #[test]
+    fn rebuild_key_is_complete_canonical_and_noop_stable() {
+        let mut vp = denver();
+        let initial = vp.rebuild_key();
+        vp.pan_by_pixels(0.0, -0.0).unwrap();
+        assert_eq!(vp.rebuild_key(), initial);
+
+        let mut equivalent = vp;
+        equivalent.bearing_deg = 360.0;
+        assert_eq!(equivalent.rebuild_key(), initial);
+
+        let east = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            180.0,
+            0.0,
+            1.0,
+            100.0,
+            100.0,
+            0.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        let west = GeoViewport::new(
+            GeoCrs::Epsg4326,
+            -180.0,
+            0.0,
+            1.0,
+            100.0,
+            100.0,
+            0.0,
+            0.0,
+            true,
+        )
+        .unwrap();
+        assert_eq!(east.rebuild_key(), west.rebuild_key());
+
+        vp.resize(801.0, 600.0).unwrap();
+        assert_ne!(vp.rebuild_key(), initial);
+        let resized = vp.rebuild_key();
+        vp.set_pitch(1.0).unwrap();
+        assert_ne!(vp.rebuild_key(), resized);
     }
 
     #[test]
