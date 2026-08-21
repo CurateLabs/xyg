@@ -73,12 +73,16 @@ def test_require_native_fails_without_staged_libs() -> None:
 
 def test_scan_rejects_repository_target_discovery(tmp_path: Path) -> None:
     mod = _load()
-    source = tmp_path / "native-path.js"
-    source.write_text(
-        'const candidate = join(repoRoot, "target/release/libxyg_core.so");\n',
+    (tmp_path / "release-path.js").write_text(
+        'const release = join(repoRoot, "target/release/libxyg_core.so");\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "debug-path.js").write_text(
+        'const debug = join(repoRoot, "TARGET/DEBUG/libxyg_core.so");\n',
         encoding="utf-8",
     )
 
     hits = mod._scan_forbidden(tmp_path)
 
-    assert any("target/(?:release|debug)" in hit for hit in hits)
+    target_hits = [hit for hit in hits if "target/(?:release|debug)" in hit]
+    assert len(target_hits) == 2

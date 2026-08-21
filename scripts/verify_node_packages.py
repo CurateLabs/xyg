@@ -90,7 +90,7 @@ FORBIDDEN_PATTERNS = (
     re.compile(r"python/xyg/static"),
     re.compile(r"LD_LIBRARY_PATH"),
     re.compile(r"DYLD_LIBRARY_PATH"),
-    re.compile(r"(?:^|[/\"'])target/(?:release|debug)"),
+    re.compile(r"(?:^|[/\"'])target/(?:release|debug)", re.I),
 )
 
 SCAN_SUFFIXES = {".js", ".mjs", ".cjs", ".ts", ".json", ".md"}

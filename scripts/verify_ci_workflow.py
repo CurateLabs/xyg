@@ -2058,6 +2058,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "Windows-host simulated-arm64 unsupported-platform conformance (#52)",
         "needs: [node-facade]",
         "runs-on: blacksmith-4vcpu-windows-2025",
+        'resolveNativeLibrary({ platform: "win32", arch: "arm64", env: {}, requireFn })',
+        "optional package resolution must not run",
         "XYG Node does not support Windows arm64",
         "Remediation:",
     )

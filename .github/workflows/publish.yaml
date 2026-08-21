@@ -458,7 +458,7 @@ jobs:
           cp release-smoke/facade/*.tgz "$smoke/facade.tgz"
           cd "$smoke"
           tar -xzf facade.tgz
-          node --input-type=module -e 'const { assertSupportedPlatform } = await import("./package/src/native-path.js"); try { assertSupportedPlatform("win32", "arm64"); throw new Error("Windows arm64 unexpectedly accepted") } catch (error) { const message = String(error.message); if (!message.includes("XYG Node does not support Windows arm64") || !message.includes("Remediation:")) throw error; console.log(message) }'
+          node --input-type=module -e 'const { resolveNativeLibrary } = await import("./package/src/native-path.js"); const requireFn = { resolve() { throw new Error("optional package resolution must not run") } }; try { resolveNativeLibrary({ platform: "win32", arch: "arm64", env: {}, requireFn }); throw new Error("Windows arm64 unexpectedly accepted") } catch (error) { const message = String(error.message); if (!message.includes("XYG Node does not support Windows arm64") || !message.includes("Remediation:")) throw error; console.log(message) }'
 
   publish-npm:
     name: Publish XYG Node packages to npm

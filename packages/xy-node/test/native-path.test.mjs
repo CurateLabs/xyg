@@ -13,6 +13,7 @@ import {
   assertSupportedPlatform,
   candidateNativeLibraries,
   nativeLibraryFileName,
+  resolveNativeLibrary,
   resolvePlatformPackageName,
   tryResolvePlatformPackageLibrary,
 } from "../src/native-path.js";
@@ -84,6 +85,20 @@ test("Windows arm64 is an explicit unsupported-platform error", () => {
         env: {},
         packageDir: "/repo/packages/xy-node",
         cwd: "/tmp/project",
+      }),
+    /does not support Windows arm64/,
+  );
+  assert.throws(
+    () =>
+      resolveNativeLibrary({
+        platform: "win32",
+        arch: "arm64",
+        env: {},
+        requireFn: {
+          resolve() {
+            throw new Error("optional package resolution must not run");
+          },
+        },
       }),
     /does not support Windows arm64/,
   );
