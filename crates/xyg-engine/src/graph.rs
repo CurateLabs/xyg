@@ -556,6 +556,9 @@ impl ForceState {
                 y[i] += 0.01 * (rand01(&mut rng) - 0.5);
             }
         }
+        if x.iter().chain(&y).any(|value| !value.is_finite()) {
+            return None;
+        }
         let edges: Vec<(u64, u64)> = sources
             .iter()
             .zip(targets.iter())

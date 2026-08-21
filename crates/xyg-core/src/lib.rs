@@ -8246,6 +8246,33 @@ mod tests {
     }
 
     #[test]
+    fn graph_force_abi_rejects_nonfinite_initial_positions() {
+        let sources = [0_u64];
+        let targets = [1_u64];
+        let finite = [0.0_f64, 1.0];
+        let bad_x = [f64::NAN, 1.0];
+        let bad_y = [0.0_f64, f64::INFINITY];
+        for (x, y) in [(&bad_x[..], &finite[..]), (&finite[..], &bad_y[..])] {
+            let mut handle = 0_u64;
+            let status = unsafe {
+                xyg_graph_force_create(
+                    2,
+                    1,
+                    sources.as_ptr(),
+                    targets.as_ptr(),
+                    x.as_ptr(),
+                    y.as_ptr(),
+                    7,
+                    graph::LAYOUT_COSE,
+                    &mut handle,
+                )
+            };
+            assert_eq!(status, -1);
+            assert_eq!(handle, 0);
+        }
+    }
+
+    #[test]
     fn geo_column_abi_round_trips_point() {
         let xy = [-104.9903_f64, 39.7392];
         let validity = [1_u8];
