@@ -342,7 +342,7 @@ def test_verify_wheel_rejects_missing_metadata_file(tmp_path: Path) -> None:
         ),
         (
             DEFAULT_METADATA + "\nRequires-Dist: reflex>=0.8",
-            "only xy base dependencies",
+            "only XYG base dependencies",
         ),
         (
             DEFAULT_METADATA.replace("reflex>=0.9.6", "reflex>=0.8"),
@@ -358,12 +358,12 @@ def test_verify_wheel_rejects_missing_metadata_file(tmp_path: Path) -> None:
         ),
         (
             DEFAULT_METADATA.replace("; extra == 'reflex'", ""),
-            "only xy base dependencies",
+            "only XYG base dependencies",
         ),
         (
             DEFAULT_METADATA
             + "\nRequires-Dist: plotly>=5; extra == 'bench'\nProvides-Extra: bench",
-            "only xy base dependencies",
+            "only XYG base dependencies",
         ),
         (
             DEFAULT_METADATA.replace("Provides-Extra: reflex", "Provides-Extra: dev"),

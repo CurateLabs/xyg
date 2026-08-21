@@ -1902,6 +1902,8 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "import importlib.metadata as m, reflex_xy",
         "assert reflex_xy.__version__ == m.version('xyg')",
         "assert k.BACKEND=='native'",
+        "Prove plain Python needs no Node, browser, or Reflex runtime",
+        "scripts/plain_python_smoke.py",
         "actions/upload-artifact@",
         "dist/*.whl",
     )
