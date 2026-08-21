@@ -7,6 +7,7 @@
 //! not destroy its selection, focus, pin, or provenance identity.
 
 use std::collections::{BTreeSet, HashMap};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::projection::{GraphProjection, Uuid};
 use crate::temporal::{
@@ -33,6 +34,7 @@ pub enum GraphEntity {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TemporalGraphFrame {
+    graph_token: u64,
     revision: u64,
     cursor_micros: i64,
     range_start_micros: i64,
@@ -186,6 +188,7 @@ impl EntityBinding {
 /// Rust-owned temporal bindings plus interaction state for one graph instance.
 #[derive(Debug)]
 pub struct TemporalGraph {
+    graph_token: u64,
     node_ids: Vec<Uuid>,
     edge_ids: Vec<Uuid>,
     sources: Vec<u64>,
@@ -207,9 +210,17 @@ impl TemporalGraph {
         nodes: TemporalBindingInput<'_>,
         edges: TemporalBindingInput<'_>,
     ) -> Result<Self, TemporalError> {
+        static NEXT_GRAPH_TOKEN: AtomicU64 = AtomicU64::new(0);
+        let previous = NEXT_GRAPH_TOKEN
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                value.checked_add(1)
+            })
+            .map_err(|_| TemporalError::CapacityExceeded)?;
+        let graph_token = previous + 1;
         let node_ids = projection.node_ids().to_vec();
         let edge_ids = projection.edge_ids().to_vec();
         Ok(Self {
+            graph_token,
             node_dense: node_ids
                 .iter()
                 .enumerate()
@@ -352,24 +363,23 @@ impl TemporalGraph {
             GraphEntity::Node(id) => node_visibility[self.node_dense[id]] == 1,
             GraphEntity::Edge(id) => edge_visibility[self.edge_dense[id]] == 1,
         });
-        if cancel.is_cancelled() {
-            return Err(TemporalError::Cancelled);
-        }
-
-        self.applied_revision = revision;
-        Ok(TemporalGraphFrame {
-            revision,
-            cursor_micros,
-            range_start_micros,
-            range_end_micros,
-            node_visibility,
-            edge_visibility,
-            visible_node_ids: node_state.visible,
-            visible_edge_ids,
-            selected_visible_node_ids: node_state.selected,
-            selected_visible_edge_ids,
-            focused_visible,
-            pinned_visible_node_ids: node_state.pinned,
+        cancel.publish_if_active(|| {
+            self.applied_revision = revision;
+            TemporalGraphFrame {
+                graph_token: self.graph_token,
+                revision,
+                cursor_micros,
+                range_start_micros,
+                range_end_micros,
+                node_visibility,
+                edge_visibility,
+                visible_node_ids: node_state.visible,
+                visible_edge_ids,
+                selected_visible_node_ids: node_state.selected,
+                selected_visible_edge_ids,
+                focused_visible,
+                pinned_visible_node_ids: node_state.pinned,
+            }
         })
     }
 
@@ -379,6 +389,9 @@ impl TemporalGraph {
         &self,
         frame: &TemporalGraphFrame,
     ) -> Result<FrozenTemporalGraphState, TemporalError> {
+        if frame.graph_token != self.graph_token {
+            return Err(TemporalError::InvalidArgument);
+        }
         if frame.revision != self.applied_revision {
             return Err(TemporalError::StaleRevision);
         }
@@ -698,5 +711,28 @@ mod tests {
         assert_eq!(frozen.selected_node_ids, [id(3), id(1)]);
         assert_eq!(frozen.selected_edge_ids, [id(12), id(11)]);
         assert_eq!(frozen.pinned_node_ids, [id(3), id(1)]);
+    }
+
+    #[test]
+    fn freeze_rejects_a_same_revision_frame_from_another_graph_instance() {
+        let graph = projection();
+        let mut first = TemporalGraph::bind(
+            &graph,
+            TemporalBindingInput::default(),
+            TemporalBindingInput::default(),
+        )
+        .unwrap();
+        let mut second = TemporalGraph::bind(
+            &graph,
+            TemporalBindingInput::default(),
+            TemporalBindingInput::default(),
+        )
+        .unwrap();
+        let first_frame = first.frame(1, 5, 0, 10, &CancelFlag::new(), 12).unwrap();
+        second.frame(1, 5, 0, 10, &CancelFlag::new(), 12).unwrap();
+        assert_eq!(
+            second.freeze(&first_frame).unwrap_err(),
+            TemporalError::InvalidArgument
+        );
     }
 }

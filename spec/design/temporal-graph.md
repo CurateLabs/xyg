@@ -47,8 +47,9 @@ coincidence is never an identity seam.
 A frame declares a work budget covering node validity/event evaluation, edge
 validity/event evaluation, endpoint closure, and canonical membership output.
 Insufficient budget fails before scanning. Cancellation is checked before work,
-cooperatively during every row scan, and immediately before publication. A
-cancelled, invalid, over-budget, or stale request cannot advance
+cooperatively during every row scan, and through a lock-held publication gate
+that linearizes revision commit against cancellation. A cancelled, invalid,
+over-budget, or stale request cannot advance
 the applied revision or mutate selection/focus/pin state. Revision zero and any
 revision not newer than the applied revision fail as stale.
 
@@ -61,11 +62,11 @@ opaque UUID bytes, never graph or temporal numbers through JSON.
 `freeze(frame)` records the exact cursor, selected range, revision, visible
 node/edge UUID membership, and persistent selection/focus/pin identities. This
 is the Rust-owned provenance payload that later HTML/PNG/SVG adapters attach to
-an export. Frame fields are read-only outside this module, preventing a host
-from forging or mutating visibility before it is frozen. All emitted identity
-lists, including persistent state, retain canonical projection order. Static
-output shows the selected state but does not imply playback or other
-unavailable interaction.
+an export. Frame fields are read-only outside this module and carry an opaque
+graph-instance token, preventing a host from forging, mutating, or cross-wiring
+visibility before it is frozen. All emitted identity lists, including
+persistent state, retain canonical projection order. Static output shows the
+selected state but does not imply playback or other unavailable interaction.
 
 ## Evidence and remaining closure work
 
