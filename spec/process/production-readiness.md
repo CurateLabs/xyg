@@ -484,6 +484,18 @@ blocks the PyPI release gate if it cannot be produced, and is attached to the
 matching GitHub Release. Registry publication and clean browser-application
 conformance remain the explicit completion work for issue 53.
 
+Version-tag releases also assemble a Linux x64 cross-host cohort from the
+exact manylinux wheel, Node facade and native package, and host-neutral browser
+tarball produced by that workflow run. `scripts/verify_release_cohort.py`
+requires the Python and npm versions to match the tag, proves that Python and
+Node carry byte-identical Rust cores, proves that Python, Node, and browser
+carry the same standalone painter, rechecks the browser asset manifest, and
+emits a SHA-256 ledger bound to the full release commit. The release-only job
+then installs those four archives in a new Python virtual environment and npm
+project and resolves the direct-browser WASM locally. This is the first issue
+54 cohort; the remaining platform, notebook/Reflex, VS Code local/remote,
+journey, lifecycle, and leak/isolation matrix remains required before closure.
+
 Packing is followed by native clean-install conformance on all five supported
 Node targets: Linux x64/arm64, macOS x64/arm64, and Windows x64. Each job starts
 with a new npm project, proves the facade's missing-package diagnostic, installs

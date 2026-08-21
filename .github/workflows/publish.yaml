@@ -509,6 +509,68 @@ jobs:
           tar -xzf facade.tgz
           node --input-type=module -e 'const { resolveNativeLibrary } = await import("./package/src/native-path.js"); const requireFn = { resolve() { throw new Error("optional package resolution must not run") } }; try { resolveNativeLibrary({ platform: "win32", arch: "arm64", env: {}, requireFn }); throw new Error("Windows arm64 unexpectedly accepted") } catch (error) { const message = String(error.message); if (!message.includes("XYG Node does not support Windows arm64") || !message.includes("Remediation:")) throw error; console.log(message) }'
 
+  release-cohort-linux-x64:
+    name: Exact release cohort (Linux x64)
+    needs: [wheels, browser-package, node-native-packages, node-facade, node-clean-install]
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-manylinux_2_17_x86_64
+          path: cohort/python
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: node-facade
+          path: cohort/facade
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: node-platform-linux-x64
+          path: cohort/native
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: browser-package
+          path: cohort/browser
+      - name: Bind exact Python, Node, and browser artifact bytes
+        if: startsWith(github.ref, 'refs/tags/xyg-v')
+        shell: bash
+        run: |
+          python3 scripts/verify_release_cohort.py \
+            --tag "$GITHUB_REF_NAME" \
+            --commit "$GITHUB_SHA" \
+            --wheel cohort/python/*.whl \
+            --node-facade cohort/facade/*.tgz \
+            --node-native cohort/native/*.tgz \
+            --browser cohort/browser/*.tgz \
+            --output release-conformance-linux-x64.json
+      - name: Clean downstream consumer installs exact cohort
+        shell: bash
+        run: |
+          consumer="$RUNNER_TEMP/xyg-release-cohort-consumer"
+          python3 -m venv "$consumer/venv"
+          "$consumer/venv/bin/pip" install --no-index cohort/python/*.whl
+          "$consumer/venv/bin/python" -c 'import xyg; assert xyg.__name__ == "xyg"'
+          mkdir -p "$consumer/npm"
+          cd "$consumer/npm"
+          npm init --yes
+          npm install --no-audit --no-fund "$GITHUB_WORKSPACE"/cohort/{facade,native,browser}/*.tgz
+          node --input-type=module -e 'await import("@curatelabs/xyg-node"); const url = import.meta.resolve("@curatelabs/xyg/xyg-wasm.wasm"); if (!url.startsWith("file:")) throw new Error(`XYG browser asset did not resolve locally: ${url}`); console.log("clean XYG cohort consumer OK")'
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: startsWith(github.ref, 'refs/tags/xyg-v')
+        with:
+          name: release-conformance-linux-x64
+          path: release-conformance-linux-x64.json
+          retention-days: 30
+
   publish-npm:
     name: Publish XYG Node packages to npm
     # PyPI runs the shared tag/CHANGELOG/name gates first. npm cannot publish a
@@ -556,7 +618,7 @@ jobs:
     # Publishing requires the runtime-verified PyEmscripten job to pass. Its
     # PEP 783 wheel uses a standard PyPI platform tag and joins the same
     # trusted-publishing batch as the native wheels and sdist.
-    needs: [wheels, sdist, wasm, browser-package, node-native-packages, node-facade, node-clean-install, node-unsupported-windows-arm64]
+    needs: [wheels, sdist, wasm, browser-package, node-native-packages, node-facade, node-clean-install, node-unsupported-windows-arm64, release-cohort-linux-x64]
     # Repository guard (#13): only CurateLabs/xyg may reach the OIDC publish
     # job. Forks and mirrors stop here. PyPI trusted publishing is bound to
     # this slug, workflow filename publish.yaml, and environment `pypi`.
