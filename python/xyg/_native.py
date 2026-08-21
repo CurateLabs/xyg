@@ -3990,7 +3990,28 @@ def temporal_controller_create(
     return int(handle.value)
 
 
-def temporal_controller_state(handle: int) -> dict[str, int | bool]:
+def _temporal_selection(values: Any, name: str = "selection") -> tuple[ctypes.Array, int]:
+    if isinstance(values, (str, bytes, bytearray)):
+        raise ValueError(f"{name} must be an iterable of u64 stable IDs")
+    try:
+        iterator = iter(values)
+    except TypeError as exc:
+        raise ValueError(f"{name} must be an iterable of u64 stable IDs") from exc
+    limit = _temporal_selection_limit()
+    normalized = []
+    for index, value in enumerate(iterator):
+        if index >= limit:
+            raise ValueError(f"{name} may contain at most {limit} IDs")
+        normalized.append(_temporal_u64(value, f"{name}[{index}]"))
+    array = (ctypes.c_uint64 * len(normalized))(*normalized)
+    return array, len(normalized)
+
+
+def _temporal_selection_limit() -> int:
+    return int(_lib.xyg_temporal_selection_limit())
+
+
+def temporal_controller_state(handle: int) -> dict[str, int | bool | list[int]]:
     """Read the full controller state snapshot."""
     fields = {
         "instance_id": ctypes.c_uint64(),
@@ -4010,9 +4031,15 @@ def temporal_controller_state(handle: int) -> dict[str, int | bool]:
         "revision": ctypes.c_uint64(),
         "disposed": ctypes.c_uint32(),
     }
+    selection_capacity = _temporal_selection_limit()
+    selection = (ctypes.c_uint64 * selection_capacity)()
+    selection_count = ctypes.c_uint64()
     status = _lib.xyg_temporal_controller_state(
         ctypes.c_uint64(_temporal_u64(handle, "handle")),
         *(ctypes.byref(value) for value in fields.values()),
+        selection,
+        ctypes.c_uint64(selection_capacity),
+        ctypes.byref(selection_count),
     )
     if status != 0:
         raise TemporalNativeError(status)
@@ -4033,6 +4060,7 @@ def temporal_controller_state(handle: int) -> dict[str, int | bool]:
         "reduced_motion": bool(fields["reduced_motion"].value),
         "revision": int(fields["revision"].value),
         "disposed": bool(fields["disposed"].value),
+        "selection": [int(selection[index]) for index in range(selection_count.value)],
     }
 
 
@@ -4056,6 +4084,17 @@ def temporal_controller_set_cursor(handle: int, cursor: int) -> None:
         _lib.xyg_temporal_controller_set_cursor(
             ctypes.c_uint64(_temporal_u64(handle, "handle")),
             ctypes.c_int64(_temporal_i64(cursor, "cursor")),
+        )
+    )
+
+
+def temporal_controller_set_selection(handle: int, ids: object) -> None:
+    selection, count = _temporal_selection(ids)
+    _temporal_controller_status(
+        _lib.xyg_temporal_controller_set_selection(
+            ctypes.c_uint64(_temporal_u64(handle, "handle")),
+            selection,
+            ctypes.c_uint64(count),
         )
     )
 
@@ -4125,7 +4164,7 @@ def temporal_controller_tick(handle: int, dt_micros: int) -> bool:
     return bool(advanced.value)
 
 
-def temporal_controller_poll_event(handle: int) -> dict[str, int] | None:
+def temporal_controller_poll_event(handle: int) -> dict[str, int | list[int]] | None:
     has_event = ctypes.c_uint32()
     group_id = ctypes.c_uint64()
     source = ctypes.c_uint64()
@@ -4134,6 +4173,9 @@ def temporal_controller_poll_event(handle: int) -> dict[str, int] | None:
     range_end = ctypes.c_int64()
     cursor = ctypes.c_int64()
     window = ctypes.c_int64()
+    selection_capacity = _temporal_selection_limit()
+    selection = (ctypes.c_uint64 * selection_capacity)()
+    selection_count = ctypes.c_uint64()
     status = _lib.xyg_temporal_controller_poll_event(
         ctypes.c_uint64(_temporal_u64(handle, "handle")),
         ctypes.byref(has_event),
@@ -4144,6 +4186,9 @@ def temporal_controller_poll_event(handle: int) -> dict[str, int] | None:
         ctypes.byref(range_end),
         ctypes.byref(cursor),
         ctypes.byref(window),
+        selection,
+        ctypes.c_uint64(selection_capacity),
+        ctypes.byref(selection_count),
     )
     _temporal_controller_status(status)
     if not has_event.value:
@@ -4156,11 +4201,13 @@ def temporal_controller_poll_event(handle: int) -> dict[str, int] | None:
         "range_end": int(range_end.value),
         "cursor": int(cursor.value),
         "window": int(window.value),
+        "selection": [int(selection[index]) for index in range(selection_count.value)],
     }
 
 
-def temporal_controller_apply_event(handle: int, event: dict[str, int]) -> bool:
+def temporal_controller_apply_event(handle: int, event: dict[str, object]) -> bool:
     applied = ctypes.c_uint32()
+    selection, selection_count = _temporal_selection(event["selection"], "event.selection")
     status = _lib.xyg_temporal_controller_apply_event(
         ctypes.c_uint64(_temporal_u64(handle, "handle")),
         ctypes.c_uint64(_temporal_u64(event["group_id"], "group_id")),
@@ -4170,14 +4217,17 @@ def temporal_controller_apply_event(handle: int, event: dict[str, int]) -> bool:
         ctypes.c_int64(_temporal_i64(event["range_end"], "range_end")),
         ctypes.c_int64(_temporal_i64(event["cursor"], "cursor")),
         ctypes.c_int64(_temporal_i64(event["window"], "window")),
+        selection,
+        ctypes.c_uint64(selection_count),
         ctypes.byref(applied),
     )
     _temporal_controller_status(status)
     return bool(applied.value)
 
 
-def temporal_coordinate_deliver(event: dict[str, int]) -> int:
+def temporal_coordinate_deliver(event: dict[str, object]) -> int:
     applied = ctypes.c_uint32()
+    selection, selection_count = _temporal_selection(event["selection"], "event.selection")
     status = _lib.xyg_temporal_coordinate_deliver(
         ctypes.c_uint64(_temporal_u64(event["group_id"], "group_id")),
         ctypes.c_uint64(_temporal_u64(event["source_instance"], "source_instance")),
@@ -4186,6 +4236,8 @@ def temporal_coordinate_deliver(event: dict[str, int]) -> int:
         ctypes.c_int64(_temporal_i64(event["range_end"], "range_end")),
         ctypes.c_int64(_temporal_i64(event["cursor"], "cursor")),
         ctypes.c_int64(_temporal_i64(event["window"], "window")),
+        selection,
+        ctypes.c_uint64(selection_count),
         ctypes.byref(applied),
     )
     _temporal_controller_status(status)

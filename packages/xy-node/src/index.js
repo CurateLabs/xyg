@@ -103,6 +103,7 @@ export {
   temporalControllerState,
   temporalControllerSetRange,
   temporalControllerSetCursor,
+  temporalControllerSetSelection,
   temporalControllerStep,
   temporalControllerPlay,
   temporalControllerPause,

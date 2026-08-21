@@ -1,9 +1,9 @@
 {
-  "abi_version": 79,
+  "abi_version": 80,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "c906c9ede79d881dd376ea3b77e926cff2c383b1dfe5bc52d61b5782bdc6509f",
+  "signature_sha256": "4694c96b2e997392083061425fdc6719315bd316aadbf2a592321021afbcac49",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -17124,7 +17124,7 @@
     {
       "name": "xyg_temporal_controller_apply_event",
       "node_name": "xyTemporalControllerApplyEvent",
-      "nargs": 9,
+      "nargs": 11,
       "arguments": [
         {
           "name": "handle",
@@ -17247,6 +17247,37 @@
           }
         },
         {
+          "name": "selection",
+          "type": {
+            "rust": "*const u64",
+            "c": "const uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "selection_count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
           "name": "out_applied",
           "type": {
             "rust": "*mut u32",
@@ -17275,7 +17306,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_temporal_controller_apply_event(uint64_t handle, uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)"
+      "c_signature": "int32_t xyg_temporal_controller_apply_event(uint64_t handle, uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, const uint64_t * selection, uint64_t selection_count, uint32_t * out_applied)"
     },
     {
       "name": "xyg_temporal_controller_create",
@@ -17472,7 +17503,7 @@
     {
       "name": "xyg_temporal_controller_poll_event",
       "node_name": "xyTemporalControllerPollEvent",
-      "nargs": 9,
+      "nargs": 12,
       "arguments": [
         {
           "name": "handle",
@@ -17616,6 +17647,53 @@
             "nullable": "contract-defined",
             "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
           }
+        },
+        {
+          "name": "out_selection",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "selection_capacity",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_selection_count",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
         }
       ],
       "returns": {
@@ -17630,7 +17708,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_temporal_controller_poll_event(uint64_t handle, uint32_t * out_has_event, uint64_t * out_group_id, uint64_t * out_source_instance, uint64_t * out_revision, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window)"
+      "c_signature": "int32_t xyg_temporal_controller_poll_event(uint64_t handle, uint32_t * out_has_event, uint64_t * out_group_id, uint64_t * out_source_instance, uint64_t * out_revision, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, uint64_t * out_selection, uint64_t selection_capacity, uint64_t * out_selection_count)"
     },
     {
       "name": "xyg_temporal_controller_set_cursor",
@@ -17948,9 +18026,75 @@
       "c_signature": "int32_t xyg_temporal_controller_set_reduced_motion(uint64_t handle, uint32_t enabled)"
     },
     {
+      "name": "xyg_temporal_controller_set_selection",
+      "node_name": "xyTemporalControllerSetSelection",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "handle",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "ids",
+          "type": {
+            "rust": "*const u64",
+            "c": "const uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_temporal_controller_set_selection(uint64_t handle, const uint64_t * ids, uint64_t count)"
+    },
+    {
       "name": "xyg_temporal_controller_state",
       "node_name": "xyTemporalControllerState",
-      "nargs": 17,
+      "nargs": 20,
       "arguments": [
         {
           "name": "handle",
@@ -18222,6 +18366,53 @@
             "nullable": "contract-defined",
             "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
           }
+        },
+        {
+          "name": "out_selection",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "selection_capacity",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_selection_count",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
         }
       ],
       "returns": {
@@ -18236,7 +18427,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_temporal_controller_state(uint64_t handle, uint64_t * out_instance_id, uint64_t * out_group_id, int64_t * out_domain_start, int64_t * out_domain_end, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, int64_t * out_step, int32_t * out_direction, uint32_t * out_rate_milli, uint32_t * out_loop_enabled, uint32_t * out_playing, uint32_t * out_reduced_motion, uint64_t * out_revision, uint32_t * out_disposed)"
+      "c_signature": "int32_t xyg_temporal_controller_state(uint64_t handle, uint64_t * out_instance_id, uint64_t * out_group_id, int64_t * out_domain_start, int64_t * out_domain_end, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, int64_t * out_step, int32_t * out_direction, uint32_t * out_rate_milli, uint32_t * out_loop_enabled, uint32_t * out_playing, uint32_t * out_reduced_motion, uint64_t * out_revision, uint32_t * out_disposed, uint64_t * out_selection, uint64_t selection_capacity, uint64_t * out_selection_count)"
     },
     {
       "name": "xyg_temporal_controller_step",
@@ -18342,7 +18533,7 @@
     {
       "name": "xyg_temporal_coordinate_deliver",
       "node_name": "xyTemporalCoordinateDeliver",
-      "nargs": 8,
+      "nargs": 10,
       "arguments": [
         {
           "name": "group_id",
@@ -18450,6 +18641,37 @@
           }
         },
         {
+          "name": "selection",
+          "type": {
+            "rust": "*const u64",
+            "c": "const uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "selection_count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
           "name": "out_applied",
           "type": {
             "rust": "*mut u32",
@@ -18478,7 +18700,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)"
+      "c_signature": "int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, const uint64_t * selection, uint64_t selection_count, uint32_t * out_applied)"
     },
     {
       "name": "xyg_temporal_events_in_range",
@@ -18918,6 +19140,25 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)"
+    },
+    {
+      "name": "xyg_temporal_selection_limit",
+      "node_name": "xyTemporalSelectionLimit",
+      "nargs": 0,
+      "arguments": [],
+      "returns": {
+        "rust": "u64",
+        "c": "uint64_t",
+        "ctypes": "ctypes.c_uint64",
+        "koffi": "uint64_t",
+        "kind": "scalar",
+        "bits": 64,
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "uint64_t xyg_temporal_selection_limit()"
     },
     {
       "name": "xyg_tile_budget_set",

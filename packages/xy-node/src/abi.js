@@ -68,10 +68,12 @@ import {
   xyTemporalControllerSetRange,
   xyTemporalControllerSetRateMilli,
   xyTemporalControllerSetReducedMotion,
+  xyTemporalControllerSetSelection,
   xyTemporalControllerState,
   xyTemporalControllerStep,
   xyTemporalControllerTick,
   xyTemporalCoordinateDeliver,
+  xyTemporalSelectionLimit,
 } from "./native.js";
 
 export { nativeLibraryPath };
@@ -605,6 +607,23 @@ function temporalStatus(code) {
   if (code !== 0) throw new TemporalNativeError(code);
 }
 
+function asTemporalSelection(value, name) {
+  if (value == null || typeof value[Symbol.iterator] !== "function") {
+    throw new TypeError(`${name} must be an iterable of u64 stable IDs`);
+  }
+  const limit = Number(xyTemporalSelectionLimit());
+  if (value instanceof BigUint64Array) {
+    if (value.length > limit) throw new RangeError(`${name} may contain at most ${limit} IDs`);
+    return value;
+  }
+  const ids = [];
+  for (const item of value) {
+    if (ids.length >= limit) throw new RangeError(`${name} may contain at most ${limit} IDs`);
+    ids.push(toU64(item, `${name}[${ids.length}]`));
+  }
+  return BigUint64Array.from(ids);
+}
+
 export function temporalControllerCreate({
   instanceId,
   domainStart,
@@ -655,6 +674,8 @@ export function temporalControllerState(handle) {
   const reducedMotion = new Uint32Array(1);
   const revision = new BigUint64Array(1);
   const disposed = new Uint32Array(1);
+  const selection = new BigUint64Array(Number(xyTemporalSelectionLimit()));
+  const selectionCount = new BigUint64Array(1);
   temporalStatus(xyTemporalControllerState(
     toU64(handle, "handle"),
     u64Ptr(instanceId),
@@ -673,6 +694,9 @@ export function temporalControllerState(handle) {
     u32Ptr(reducedMotion),
     u64Ptr(revision),
     u32Ptr(disposed),
+    u64Ptr(selection),
+    BigInt(selection.length),
+    u64Ptr(selectionCount),
   ));
   return {
     instanceId: instanceId[0],
@@ -691,6 +715,7 @@ export function temporalControllerState(handle) {
     reducedMotion: reducedMotion[0] !== 0,
     revision: revision[0],
     disposed: disposed[0] !== 0,
+    selection: selection.slice(0, Number(selectionCount[0])),
   };
 }
 
@@ -702,6 +727,13 @@ export function temporalControllerSetRange(handle, start, end) {
 
 export function temporalControllerSetCursor(handle, cursor) {
   temporalStatus(xyTemporalControllerSetCursor(toU64(handle, "handle"), toI64(cursor, "cursor")));
+}
+
+export function temporalControllerSetSelection(handle, ids) {
+  const selection = asTemporalSelection(ids, "selection");
+  temporalStatus(xyTemporalControllerSetSelection(
+    toU64(handle, "handle"), u64Ptr(selection), BigInt(selection.length),
+  ));
 }
 
 export function temporalControllerStep(handle) {
@@ -757,6 +789,8 @@ export function temporalControllerPollEvent(handle) {
   const rangeEnd = new BigInt64Array(1);
   const cursor = new BigInt64Array(1);
   const windowUs = new BigInt64Array(1);
+  const selection = new BigUint64Array(Number(xyTemporalSelectionLimit()));
+  const selectionCount = new BigUint64Array(1);
   temporalStatus(xyTemporalControllerPollEvent(
     toU64(handle, "handle"),
     u32Ptr(hasEvent),
@@ -767,6 +801,9 @@ export function temporalControllerPollEvent(handle) {
     pointer(rangeEnd, "int64_t *"),
     pointer(cursor, "int64_t *"),
     pointer(windowUs, "int64_t *"),
+    u64Ptr(selection),
+    BigInt(selection.length),
+    u64Ptr(selectionCount),
   ));
   if (hasEvent[0] === 0) return null;
   return {
@@ -777,11 +814,14 @@ export function temporalControllerPollEvent(handle) {
     rangeEnd: rangeEnd[0],
     cursor: cursor[0],
     window: windowUs[0],
+    selection: selection.slice(0, Number(selectionCount[0])),
   };
 }
 
 export function temporalControllerApplyEvent(handle, event) {
   const applied = new Uint32Array(1);
+  if (event?.selection == null) throw new TypeError("event.selection is required");
+  const selection = asTemporalSelection(event.selection, "event.selection");
   temporalStatus(xyTemporalControllerApplyEvent(
     toU64(handle, "handle"),
     toU64(event.groupId, "groupId"),
@@ -791,6 +831,8 @@ export function temporalControllerApplyEvent(handle, event) {
     toI64(event.rangeEnd, "rangeEnd"),
     toI64(event.cursor, "cursor"),
     toI64(event.window, "window"),
+    u64Ptr(selection),
+    BigInt(selection.length),
     u32Ptr(applied),
   ));
   return applied[0] !== 0;
@@ -798,6 +840,8 @@ export function temporalControllerApplyEvent(handle, event) {
 
 export function temporalCoordinateDeliver(event) {
   const applied = new Uint32Array(1);
+  if (event?.selection == null) throw new TypeError("event.selection is required");
+  const selection = asTemporalSelection(event.selection, "event.selection");
   temporalStatus(xyTemporalCoordinateDeliver(
     toU64(event.groupId, "groupId"),
     toU64(event.sourceInstance, "sourceInstance"),
@@ -806,6 +850,8 @@ export function temporalCoordinateDeliver(event) {
     toI64(event.rangeEnd, "rangeEnd"),
     toI64(event.cursor, "cursor"),
     toI64(event.window, "window"),
+    u64Ptr(selection),
+    BigInt(selection.length),
     u32Ptr(applied),
   ));
   return applied[0];

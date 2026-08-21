@@ -12,7 +12,7 @@ use crate::{
 
 const COMMAND_MAGIC: &[u8; 4] = b"XYTC";
 const RESPONSE_MAGIC: &[u8; 4] = b"XYTR";
-const VERSION: u32 = 1;
+const VERSION: u32 = 2;
 const HEADER: usize = 16;
 const RESPONSE_BYTES: usize = 176;
 
@@ -66,7 +66,7 @@ fn put_i64(out: &mut [u8], offset: usize, value: i64) {
 }
 
 fn response(state: &ControllerState, event: Option<&CoordinationEvent>, result: bool) -> Vec<u8> {
-    let mut out = vec![0; RESPONSE_BYTES];
+    let mut out = vec![0; RESPONSE_BYTES + state.selection.len() * 8];
     out[..4].copy_from_slice(RESPONSE_MAGIC);
     put_u32(&mut out, 4, VERSION);
     put_u32(
@@ -74,6 +74,7 @@ fn response(state: &ControllerState, event: Option<&CoordinationEvent>, result: 
         8,
         u32::from(result) | (u32::from(event.is_some()) << 1),
     );
+    put_u32(&mut out, 12, state.selection.len() as u32);
     put_u64(&mut out, 16, state.instance_id);
     put_u64(&mut out, 24, state.group_id);
     put_i64(&mut out, 32, state.domain_start);
@@ -99,7 +100,24 @@ fn response(state: &ControllerState, event: Option<&CoordinationEvent>, result: 
         put_i64(&mut out, 160, event.cursor);
         put_i64(&mut out, 168, event.window);
     }
+    for (index, id) in state.selection.iter().copied().enumerate() {
+        put_u64(&mut out, RESPONSE_BYTES + index * 8, id);
+    }
     out
+}
+
+fn selection_at(bytes: &[u8], count_offset: usize, ids_offset: usize) -> Option<Vec<u64>> {
+    let count = usize::try_from(u32_at(bytes, count_offset)?).ok()?;
+    if count > xyg_engine::temporal_controller::MAX_COORDINATED_SELECTION_IDS {
+        return None;
+    }
+    let expected = ids_offset.checked_add(count.checked_mul(8)?)?;
+    if bytes.len() != expected {
+        return None;
+    }
+    (0..count)
+        .map(|index| u64_at(bytes, ids_offset + index * 8))
+        .collect()
 }
 
 pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> i32 {
@@ -218,16 +236,25 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             .set_reduced_motion(u32_at(command, 16) == Some(1))
             .map(|_| false),
         12 if length == 24 => controller.tick(i64_at(command, 16).unwrap()),
-        13 if length == 72 => controller.apply_event(&CoordinationEvent {
-            group_id: u64_at(command, 16).unwrap(),
-            source_instance: u64_at(command, 24).unwrap(),
-            revision: u64_at(command, 32).unwrap(),
-            range_start: i64_at(command, 40).unwrap(),
-            range_end: i64_at(command, 48).unwrap(),
-            cursor: i64_at(command, 56).unwrap(),
-            window: i64_at(command, 64).unwrap(),
-        }),
+        13 => selection_at(command, 72, 80)
+            .ok_or(TemporalError::InvalidArgument)
+            .and_then(|selection| {
+                controller.apply_event(&CoordinationEvent {
+                    group_id: u64_at(command, 16).unwrap(),
+                    source_instance: u64_at(command, 24).unwrap(),
+                    revision: u64_at(command, 32).unwrap(),
+                    range_start: i64_at(command, 40).unwrap(),
+                    range_end: i64_at(command, 48).unwrap(),
+                    cursor: i64_at(command, 56).unwrap(),
+                    window: i64_at(command, 64).unwrap(),
+                    selection,
+                })
+            }),
         14 if length == HEADER => controller.dispose().map(|_| false),
+        16 => selection_at(command, 16, 24)
+            .ok_or(TemporalError::InvalidArgument)
+            .and_then(|selection| controller.set_selection(&selection))
+            .map(|_| false),
         _ => Err(TemporalError::InvalidArgument),
     };
     let result = match outcome {
@@ -256,6 +283,18 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn selection_decode_rejects_counts_above_the_product_limit() {
+        let mut command = [0_u8; 24];
+        put_u32(
+            &mut command,
+            16,
+            u32::try_from(xyg_engine::temporal_controller::MAX_COORDINATED_SELECTION_IDS + 1)
+                .unwrap(),
+        );
+        assert_eq!(selection_at(&command, 16, 24), None);
+    }
 
     #[test]
     fn create_step_and_dispose_are_packed_and_rust_owned() {
@@ -296,6 +335,22 @@ mod tests {
         assert_eq!(execute(&mut instance, 0, 16), STATUS_OK);
         assert_eq!(i64_at(&instance.output, 64), Some(15));
         assert_eq!(u32_at(&instance.output, 8).unwrap() & 2, 2);
+        instance.arena.resize(56, 0);
+        instance.arena[..4].copy_from_slice(COMMAND_MAGIC);
+        put_u32(&mut instance.arena, 4, VERSION);
+        put_u32(&mut instance.arena, 8, 16);
+        put_u32(&mut instance.arena, 16, 4);
+        for (index, id) in [u64::MAX, 7, 7, 0].into_iter().enumerate() {
+            put_u64(&mut instance.arena, 24 + index * 8, id);
+        }
+        assert_eq!(execute(&mut instance, 0, 56), STATUS_OK);
+        assert_eq!(u32_at(&instance.output, 12), Some(3));
+        assert_eq!(u64_at(&instance.output, 176), Some(0));
+        assert_eq!(u64_at(&instance.output, 184), Some(7));
+        assert_eq!(u64_at(&instance.output, 192), Some(u64::MAX));
+        instance.arena.resize(16, 0);
+        instance.arena[..4].copy_from_slice(COMMAND_MAGIC);
+        put_u32(&mut instance.arena, 4, VERSION);
         put_u32(&mut instance.arena, 8, 14);
         assert_eq!(execute(&mut instance, 0, 16), STATUS_OK);
         assert_eq!(u32_at(&instance.output, 108), Some(1));

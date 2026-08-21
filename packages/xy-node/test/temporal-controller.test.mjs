@@ -18,6 +18,7 @@ import {
   temporalControllerSetRange,
   temporalControllerSetRateMilli,
   temporalControllerSetReducedMotion,
+  temporalControllerSetSelection,
   temporalControllerState,
   temporalControllerStep,
   temporalControllerTick,
@@ -43,12 +44,14 @@ test("linked views coordinate once", () => {
   const b = make(2n, 7n);
   const c = make(3n, 9n);
   try {
+    temporalControllerSetSelection(a, [(2n ** 64n) - 1n, 7n, 7n, 0n]);
     temporalControllerSetCursor(a, 200_000n);
     const event = temporalControllerPollEvent(a);
     assert.ok(event);
     assert.equal(event.sourceInstance, 1n);
     assert.equal(temporalControllerApplyEvent(b, event), true);
     assert.equal(temporalControllerState(b).cursor, 200_000n);
+    assert.deepEqual([...temporalControllerState(b).selection], [0n, 7n, (2n ** 64n) - 1n]);
     assert.throws(
       () => temporalControllerApplyEvent(a, event),
       (error) => error instanceof TemporalNativeError && error.nativeCode === -15,
@@ -76,6 +79,18 @@ test("disposal stops playback", () => {
   }
 });
 
+test("selection bound fails before native allocation", () => {
+  const handle = make(32n);
+  try {
+    assert.throws(
+      () => temporalControllerSetSelection(handle, Array(10_001).fill(1n)),
+      /at most 10000/,
+    );
+  } finally {
+    temporalControllerDestroy(handle);
+  }
+});
+
 test("inbound events reject noncanonical identity and geometry", () => {
   const handle = make(2n, 7n);
   const canonical = {
@@ -86,6 +101,7 @@ test("inbound events reject noncanonical identity and geometry", () => {
     rangeEnd: 250_000n,
     cursor: 200_000n,
     window: 150_000n,
+    selection: [],
   };
   try {
     for (const mutation of [
@@ -177,6 +193,7 @@ test("same-process deliver validates malformed events without peers", () => {
     rangeEnd: 20n,
     cursor: 20n,
     window: 10n,
+    selection: [],
   }), TemporalNativeError);
 });
 
@@ -201,6 +218,7 @@ test("host rejects every temporal scalar before native coercion", () => {
       () => temporalControllerSetDirection(handle, 2 ** 31),
       () => temporalControllerSetLoop(handle, 1),
       () => temporalControllerSetReducedMotion(handle, "false"),
+      () => temporalControllerSetSelection(handle, [-1n]),
       () => temporalControllerApplyEvent(handle, {
         groupId: 7n,
         sourceInstance: 2n,
@@ -209,6 +227,7 @@ test("host rejects every temporal scalar before native coercion", () => {
         rangeEnd: 10n,
         cursor: 1n,
         window: 9n,
+        selection: [],
       }),
     ];
     for (const call of invalid) assert.throws(call, /must/);

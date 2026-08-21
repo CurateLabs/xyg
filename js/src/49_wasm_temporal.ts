@@ -2,11 +2,12 @@ import { XygWasmWorker } from "./47_wasm";
 
 const MAGIC = 0x43545958; // XYTC little-endian
 const RESPONSE_MAGIC = 0x52545958; // XYTR
-const VERSION = 1;
+const VERSION = 2;
 const I64_MIN = -(1n << 63n);
 const I64_MAX = (1n << 63n) - 1n;
 const U64_MAX = (1n << 64n) - 1n;
 const U32_MAX = 0xffff_ffff;
+const MAX_SELECTION_IDS = 10_000;
 
 function i64(value: unknown, name: string): bigint {
   if (typeof value !== "bigint" || value < I64_MIN || value > I64_MAX) {
@@ -30,32 +31,34 @@ function u32(value: unknown, name: string): number {
 }
 
 export interface XygTemporalEvent {
-  groupId: bigint;
-  sourceInstance: bigint;
-  revision: bigint;
-  rangeStart: bigint;
-  rangeEnd: bigint;
-  cursor: bigint;
-  window: bigint;
+  readonly groupId: bigint;
+  readonly sourceInstance: bigint;
+  readonly revision: bigint;
+  readonly rangeStart: bigint;
+  readonly rangeEnd: bigint;
+  readonly cursor: bigint;
+  readonly window: bigint;
+  readonly selection: readonly bigint[];
 }
 
 export interface XygTemporalState {
-  instanceId: bigint;
-  groupId: bigint;
-  domainStart: bigint;
-  domainEnd: bigint;
-  rangeStart: bigint;
-  rangeEnd: bigint;
-  cursor: bigint;
-  window: bigint;
-  step: bigint;
-  direction: -1 | 1;
-  rateMilli: number;
-  loop: boolean;
-  playing: boolean;
-  reducedMotion: boolean;
-  disposed: boolean;
-  revision: bigint;
+  readonly instanceId: bigint;
+  readonly groupId: bigint;
+  readonly domainStart: bigint;
+  readonly domainEnd: bigint;
+  readonly rangeStart: bigint;
+  readonly rangeEnd: bigint;
+  readonly cursor: bigint;
+  readonly window: bigint;
+  readonly step: bigint;
+  readonly direction: -1 | 1;
+  readonly rateMilli: number;
+  readonly loop: boolean;
+  readonly playing: boolean;
+  readonly reducedMotion: boolean;
+  readonly disposed: boolean;
+  readonly revision: bigint;
+  readonly selection: readonly bigint[];
 }
 
 export interface XygTemporalResult {
@@ -94,15 +97,26 @@ function bool32(view: DataView, offset: number): boolean {
 }
 
 function decode(buffer: ArrayBuffer): XygTemporalResult {
-  if (buffer.byteLength !== 176) throw new Error("Rust temporal response has the wrong length");
+  if (buffer.byteLength < 176) throw new Error("Rust temporal response has the wrong length");
   const view = new DataView(buffer);
   if (view.getUint32(0, true) !== RESPONSE_MAGIC || view.getUint32(4, true) !== VERSION) {
     throw new Error("Rust temporal response has an incompatible header");
   }
   const flags = view.getUint32(8, true);
+  const selectionCount = view.getUint32(12, true);
+  if (selectionCount > MAX_SELECTION_IDS) {
+    throw new Error("Rust temporal response selection exceeds the protocol bound");
+  }
+  if (buffer.byteLength !== 176 + selectionCount * 8) {
+    throw new Error("Rust temporal response selection length is invalid");
+  }
+  const selection = Object.freeze(Array.from(
+    { length: selectionCount },
+    (_, index) => view.getBigUint64(176 + index * 8, true),
+  ));
   const direction = view.getInt32(88, true);
   if (direction !== -1 && direction !== 1) throw new Error("Rust temporal direction is invalid");
-  const state: XygTemporalState = {
+  const state: XygTemporalState = Object.freeze({
     instanceId: view.getBigUint64(16, true), groupId: view.getBigUint64(24, true),
     domainStart: view.getBigInt64(32, true), domainEnd: view.getBigInt64(40, true),
     rangeStart: view.getBigInt64(48, true), rangeEnd: view.getBigInt64(56, true),
@@ -111,8 +125,9 @@ function decode(buffer: ArrayBuffer): XygTemporalResult {
     rateMilli: view.getUint32(92, true), loop: bool32(view, 96),
     playing: bool32(view, 100), reducedMotion: bool32(view, 104),
     disposed: bool32(view, 108), revision: view.getBigUint64(112, true),
-  };
-  const event = (flags & 2) === 0 ? null : {
+    selection,
+  });
+  const event = (flags & 2) === 0 ? null : Object.freeze({
     groupId: view.getBigUint64(120, true),
     sourceInstance: view.getBigUint64(128, true),
     revision: view.getBigUint64(136, true),
@@ -120,7 +135,8 @@ function decode(buffer: ArrayBuffer): XygTemporalResult {
     rangeEnd: view.getBigInt64(152, true),
     cursor: view.getBigInt64(160, true),
     window: view.getBigInt64(168, true),
-  };
+    selection,
+  });
   return { state, changed: (flags & 1) !== 0, event };
 }
 
@@ -218,9 +234,20 @@ export class XygWasmTemporalController {
   setReducedMotion(enabled: boolean) { if (typeof enabled !== "boolean") throw new TypeError("enabled must be boolean"); if (enabled) this.stopClock(); return this.scalar(11, enabled ? 1 : 0).then((result) => { if (result.state.reducedMotion) this.stopClock(); return result; }); }
   tick(dtMicros: bigint) { return this.scalar(12, i64(dtMicros, "dtMicros")); }
 
+  setSelection(ids: readonly bigint[]) {
+    if (!Array.isArray(ids)) throw new TypeError("selection must be an array of u64 bigint IDs");
+    if (ids.length > MAX_SELECTION_IDS) throw new RangeError(`selection may contain at most ${MAX_SELECTION_IDS} IDs`);
+    const view = command(16, 24 + ids.length * 8);
+    view.setUint32(16, u32(ids.length, "selection length"), true);
+    ids.forEach((id, index) => view.setBigUint64(24 + index * 8, u64(id, `selection[${index}]`), true));
+    return this.submit(view);
+  }
+
   applyEvent(event: XygTemporalEvent) {
     if (!event) throw new TypeError("event is required");
-    const view = command(13, 72);
+    if (!Array.isArray(event.selection)) throw new TypeError("event.selection must be an array");
+    if (event.selection.length > MAX_SELECTION_IDS) throw new RangeError(`event.selection may contain at most ${MAX_SELECTION_IDS} IDs`);
+    const view = command(13, 80 + event.selection.length * 8);
     view.setBigUint64(16, u64(event.groupId, "event.groupId"), true);
     view.setBigUint64(24, u64(event.sourceInstance, "event.sourceInstance", true), true);
     view.setBigUint64(32, u64(event.revision, "event.revision", true), true);
@@ -228,6 +255,10 @@ export class XygWasmTemporalController {
     view.setBigInt64(48, i64(event.rangeEnd, "event.rangeEnd"), true);
     view.setBigInt64(56, i64(event.cursor, "event.cursor"), true);
     view.setBigInt64(64, i64(event.window, "event.window"), true);
+    view.setUint32(72, u32(event.selection.length, "event.selection length"), true);
+    event.selection.forEach((id, index) => {
+      view.setBigUint64(80 + index * 8, u64(id, `event.selection[${index}]`), true);
+    });
     return this.submit(view);
   }
 

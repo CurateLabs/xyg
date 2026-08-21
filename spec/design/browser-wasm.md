@@ -117,6 +117,10 @@ plus painter buffers must always stay within `max_arena_bytes`.
 `WASM_ABI_VERSION` is 6 for Scene paint, packed typed-column compile,
 transferable `XYTS` series descriptors, resumable Tier-2 aggregation, and
 packed `XYTC`/`XYTR` temporal-controller commands and snapshots.
+The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
+stable-ID selection owned and canonicalized by Rust, while all temporal samples
+remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
+one Worker response; TypeScript neither sorts IDs nor applies partial state.
 `SCENE_VERSION` remains independently versioned and is 10 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust

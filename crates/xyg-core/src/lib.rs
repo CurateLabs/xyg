@@ -96,7 +96,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 79;
+pub const ABI_VERSION: u32 = 80;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -687,6 +687,12 @@ const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
 #[no_mangle]
 pub extern "C" fn xyg_abi_version() -> u32 {
     ABI_VERSION
+}
+
+/// Maximum exact stable IDs accepted by one temporal coordination selection.
+#[no_mangle]
+pub extern "C" fn xyg_temporal_selection_limit() -> u64 {
+    temporal_controller::MAX_COORDINATED_SELECTION_IDS as u64
 }
 
 /// Encode homogeneous fixed-width NumPy records as stable animation identity
@@ -5487,7 +5493,13 @@ pub unsafe extern "C" fn xyg_temporal_controller_state(
     out_reduced_motion: *mut u32,
     out_revision: *mut u64,
     out_disposed: *mut u32,
+    out_selection: *mut u64,
+    selection_capacity: u64,
+    out_selection_count: *mut u64,
 ) -> i32 {
+    let Ok(selection_capacity) = usize::try_from(selection_capacity) else {
+        return temporal::TemporalError::InvalidArgument as i32;
+    };
     if out_instance_id.is_null()
         || out_group_id.is_null()
         || out_domain_start.is_null()
@@ -5504,12 +5516,19 @@ pub unsafe extern "C" fn xyg_temporal_controller_state(
         || out_reduced_motion.is_null()
         || out_revision.is_null()
         || out_disposed.is_null()
+        || out_selection_count.is_null()
+        || (selection_capacity != 0 && out_selection.is_null())
     {
         return temporal::TemporalError::InvalidArgument as i32;
     }
+    *out_selection_count = 0;
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
         temporal_controller::controller_with_mut(handle, |controller| {
             let state = controller.state();
+            *out_selection_count = state.selection.len() as u64;
+            if selection_capacity < state.selection.len() {
+                return temporal::TemporalError::OutputCapacity as i32;
+            }
             *out_instance_id = state.instance_id;
             *out_group_id = state.group_id;
             *out_domain_start = state.domain_start;
@@ -5526,6 +5545,13 @@ pub unsafe extern "C" fn xyg_temporal_controller_state(
             *out_reduced_motion = u32::from(state.reduced_motion);
             *out_revision = state.revision;
             *out_disposed = u32::from(state.disposed);
+            if !state.selection.is_empty() {
+                std::ptr::copy_nonoverlapping(
+                    state.selection.as_ptr(),
+                    out_selection,
+                    state.selection.len(),
+                );
+            }
             0
         })
         .unwrap_or(temporal::TemporalError::StaleHandle as i32)
@@ -5559,6 +5585,36 @@ pub unsafe extern "C" fn xyg_temporal_controller_set_range(
 pub unsafe extern "C" fn xyg_temporal_controller_set_cursor(handle: u64, cursor: i64) -> i32 {
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
         temporal_controller::controller_with_mut(handle, |c| match c.set_cursor(cursor) {
+            Ok(()) => 0,
+            Err(e) => e as i32,
+        })
+        .unwrap_or(temporal::TemporalError::StaleHandle as i32)
+    })
+}
+
+/// Replace the exact stable-ID selection coordinated with temporal state.
+///
+/// # Safety
+/// `ids` must reference `count` readable u64 values when count is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_controller_set_selection(
+    handle: u64,
+    ids: *const u64,
+    count: u64,
+) -> i32 {
+    let Ok(count) = usize::try_from(count) else {
+        return temporal::TemporalError::InvalidArgument as i32;
+    };
+    if count > temporal_controller::MAX_COORDINATED_SELECTION_IDS || (count != 0 && ids.is_null()) {
+        return temporal::TemporalError::InvalidArgument as i32;
+    }
+    let selection = if count == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(ids, count)
+    };
+    ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
+        temporal_controller::controller_with_mut(handle, |c| match c.set_selection(selection) {
             Ok(()) => 0,
             Err(e) => e as i32,
         })
@@ -5729,7 +5785,13 @@ pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
     out_range_end: *mut i64,
     out_cursor: *mut i64,
     out_window: *mut i64,
+    out_selection: *mut u64,
+    selection_capacity: u64,
+    out_selection_count: *mut u64,
 ) -> i32 {
+    let Ok(selection_capacity) = usize::try_from(selection_capacity) else {
+        return temporal::TemporalError::InvalidArgument as i32;
+    };
     if out_has_event.is_null()
         || out_group_id.is_null()
         || out_source_instance.is_null()
@@ -5738,6 +5800,8 @@ pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
         || out_range_end.is_null()
         || out_cursor.is_null()
         || out_window.is_null()
+        || out_selection_count.is_null()
+        || (selection_capacity != 0 && out_selection.is_null())
     {
         return temporal::TemporalError::InvalidArgument as i32;
     }
@@ -5749,8 +5813,15 @@ pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
     *out_range_end = 0;
     *out_cursor = 0;
     *out_window = 0;
+    *out_selection_count = 0;
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
         temporal_controller::controller_with_mut(handle, |c| {
+            if let Some(event) = c.pending_outbound() {
+                *out_selection_count = event.selection.len() as u64;
+                if selection_capacity < event.selection.len() {
+                    return temporal::TemporalError::OutputCapacity as i32;
+                }
+            }
             if let Some(event) = c.take_outbound() {
                 *out_has_event = 1;
                 *out_group_id = event.group_id;
@@ -5760,6 +5831,14 @@ pub unsafe extern "C" fn xyg_temporal_controller_poll_event(
                 *out_range_end = event.range_end;
                 *out_cursor = event.cursor;
                 *out_window = event.window;
+                *out_selection_count = event.selection.len() as u64;
+                if !event.selection.is_empty() {
+                    std::ptr::copy_nonoverlapping(
+                        event.selection.as_ptr(),
+                        out_selection,
+                        event.selection.len(),
+                    );
+                }
             }
             0
         })
@@ -5781,11 +5860,24 @@ pub unsafe extern "C" fn xyg_temporal_controller_apply_event(
     range_end: i64,
     cursor: i64,
     window: i64,
+    selection: *const u64,
+    selection_count: u64,
     out_applied: *mut u32,
 ) -> i32 {
-    if out_applied.is_null() {
+    let Ok(selection_count) = usize::try_from(selection_count) else {
+        return temporal::TemporalError::InvalidArgument as i32;
+    };
+    if out_applied.is_null()
+        || selection_count > temporal_controller::MAX_COORDINATED_SELECTION_IDS
+        || (selection_count != 0 && selection.is_null())
+    {
         return temporal::TemporalError::InvalidArgument as i32;
     }
+    let selection = if selection_count == 0 {
+        Vec::new()
+    } else {
+        std::slice::from_raw_parts(selection, selection_count).to_vec()
+    };
     let event = temporal_controller::CoordinationEvent {
         group_id,
         source_instance,
@@ -5794,6 +5886,7 @@ pub unsafe extern "C" fn xyg_temporal_controller_apply_event(
         range_end,
         cursor,
         window,
+        selection,
     };
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
         temporal_controller::controller_with_mut(handle, |c| match c.apply_event(&event) {
@@ -5820,11 +5913,24 @@ pub unsafe extern "C" fn xyg_temporal_coordinate_deliver(
     range_end: i64,
     cursor: i64,
     window: i64,
+    selection: *const u64,
+    selection_count: u64,
     out_applied: *mut u32,
 ) -> i32 {
-    if out_applied.is_null() {
+    let Ok(selection_count) = usize::try_from(selection_count) else {
+        return temporal::TemporalError::InvalidArgument as i32;
+    };
+    if out_applied.is_null()
+        || selection_count > temporal_controller::MAX_COORDINATED_SELECTION_IDS
+        || (selection_count != 0 && selection.is_null())
+    {
         return temporal::TemporalError::InvalidArgument as i32;
     }
+    let selection = if selection_count == 0 {
+        Vec::new()
+    } else {
+        std::slice::from_raw_parts(selection, selection_count).to_vec()
+    };
     let event = temporal_controller::CoordinationEvent {
         group_id,
         source_instance,
@@ -5833,6 +5939,7 @@ pub unsafe extern "C" fn xyg_temporal_coordinate_deliver(
         range_end,
         cursor,
         window,
+        selection,
     };
     ffi_guard(temporal::TemporalError::InvalidArgument as i32, || {
         match temporal_controller::coordinate_deliver(&event) {
@@ -8428,6 +8535,8 @@ mod tests {
         let mut range_end = 9_i64;
         let mut cursor = 9_i64;
         let mut window = 9_i64;
+        let mut selection = [9_u64; 1];
+        let mut selection_count = 9_u64;
         let status = unsafe {
             xyg_temporal_controller_poll_event(
                 0,
@@ -8439,6 +8548,9 @@ mod tests {
                 &mut range_end,
                 &mut cursor,
                 &mut window,
+                selection.as_mut_ptr(),
+                selection.len() as u64,
+                &mut selection_count,
             )
         };
         assert_eq!(status, temporal::TemporalError::StaleHandle as i32);
@@ -8452,8 +8564,94 @@ mod tests {
                 range_end,
                 cursor,
                 window,
+                selection_count,
             ),
-            (0, 0, 0, 0, 0, 0, 0, 0)
+            (0, 0, 0, 0, 0, 0, 0, 0, 0)
         );
+    }
+
+    #[test]
+    fn temporal_selection_abi_is_exact_and_poll_capacity_is_atomic() {
+        let controller = temporal_controller::TemporalController::create(
+            81,
+            990_081,
+            0,
+            100,
+            10,
+            20,
+            1,
+            temporal_controller::PlaybackDirection::Forward,
+            1000,
+            false,
+            false,
+        )
+        .unwrap();
+        let handle = temporal_controller::controller_insert(controller).unwrap();
+        let authored = [u64::MAX, 7, 7, 0];
+        assert_eq!(
+            unsafe {
+                xyg_temporal_controller_set_selection(
+                    handle,
+                    authored.as_ptr(),
+                    authored.len() as u64,
+                )
+            },
+            0
+        );
+
+        let mut short = [0_u64; 1];
+        let mut has_event = 0;
+        let mut group = 0;
+        let mut source = 0;
+        let mut revision = 0;
+        let mut start = 0;
+        let mut end = 0;
+        let mut cursor = 0;
+        let mut window = 0;
+        let mut count = 0;
+        assert_eq!(
+            unsafe {
+                xyg_temporal_controller_poll_event(
+                    handle,
+                    &mut has_event,
+                    &mut group,
+                    &mut source,
+                    &mut revision,
+                    &mut start,
+                    &mut end,
+                    &mut cursor,
+                    &mut window,
+                    short.as_mut_ptr(),
+                    short.len() as u64,
+                    &mut count,
+                )
+            },
+            temporal::TemporalError::OutputCapacity as i32
+        );
+        assert_eq!(count, 3);
+
+        let mut selection = [0_u64; 3];
+        assert_eq!(
+            unsafe {
+                xyg_temporal_controller_poll_event(
+                    handle,
+                    &mut has_event,
+                    &mut group,
+                    &mut source,
+                    &mut revision,
+                    &mut start,
+                    &mut end,
+                    &mut cursor,
+                    &mut window,
+                    selection.as_mut_ptr(),
+                    selection.len() as u64,
+                    &mut count,
+                )
+            },
+            0
+        );
+        assert_eq!(has_event, 1);
+        assert_eq!(selection, [0, 7, u64::MAX]);
+        assert!(temporal_controller::controller_remove(handle));
     }
 }

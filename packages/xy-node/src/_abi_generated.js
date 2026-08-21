@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 79;
-export const SIGNATURE_SHA256 = "c906c9ede79d881dd376ea3b77e926cff2c383b1dfe5bc52d61b5782bdc6509f";
+export const ABI_VERSION = 80;
+export const SIGNATURE_SHA256 = "4694c96b2e997392083061425fdc6719315bd316aadbf2a592321021afbcac49";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -145,6 +145,7 @@ export let xyTemporalControllerSetLoop;
 export let xyTemporalControllerSetRange;
 export let xyTemporalControllerSetRateMilli;
 export let xyTemporalControllerSetReducedMotion;
+export let xyTemporalControllerSetSelection;
 export let xyTemporalControllerState;
 export let xyTemporalControllerStep;
 export let xyTemporalControllerTick;
@@ -154,6 +155,7 @@ export let xyTemporalIntervalIndexCreate;
 export let xyTemporalIntervalIndexDestroy;
 export let xyTemporalIntervalIndexLen;
 export let xyTemporalIntervalVisibilityAt;
+export let xyTemporalSelectionLimit;
 export let xyTileBudgetSet;
 export let xyTileStoreAppend;
 export let xyTileStoreCompose;
@@ -298,28 +300,30 @@ export function bindGeneratedAbi(lib) {
   xyTemporalColumnDestroy = lib.func("int32_t xyg_temporal_column_destroy(uint64_t handle)");
   xyTemporalColumnMeta = lib.func("int32_t xyg_temporal_column_meta(uint64_t handle, uint64_t * out_len, uint32_t * out_precision, uint32_t * out_timezone_len)");
   xyTemporalColumnTimezone = lib.func("int32_t xyg_temporal_column_timezone(uint64_t handle, uint8_t * out_timezone, uint32_t capacity)");
-  xyTemporalControllerApplyEvent = lib.func("int32_t xyg_temporal_controller_apply_event(uint64_t handle, uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)");
+  xyTemporalControllerApplyEvent = lib.func("int32_t xyg_temporal_controller_apply_event(uint64_t handle, uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, const uint64_t * selection, uint64_t selection_count, uint32_t * out_applied)");
   xyTemporalControllerCreate = lib.func("int32_t xyg_temporal_controller_create(const void * descriptor, uint64_t * out_handle)");
   xyTemporalControllerDestroy = lib.func("int32_t xyg_temporal_controller_destroy(uint64_t handle)");
   xyTemporalControllerDispose = lib.func("int32_t xyg_temporal_controller_dispose(uint64_t handle)");
   xyTemporalControllerPause = lib.func("int32_t xyg_temporal_controller_pause(uint64_t handle)");
   xyTemporalControllerPlay = lib.func("int32_t xyg_temporal_controller_play(uint64_t handle)");
-  xyTemporalControllerPollEvent = lib.func("int32_t xyg_temporal_controller_poll_event(uint64_t handle, uint32_t * out_has_event, uint64_t * out_group_id, uint64_t * out_source_instance, uint64_t * out_revision, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window)");
+  xyTemporalControllerPollEvent = lib.func("int32_t xyg_temporal_controller_poll_event(uint64_t handle, uint32_t * out_has_event, uint64_t * out_group_id, uint64_t * out_source_instance, uint64_t * out_revision, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, uint64_t * out_selection, uint64_t selection_capacity, uint64_t * out_selection_count)");
   xyTemporalControllerSetCursor = lib.func("int32_t xyg_temporal_controller_set_cursor(uint64_t handle, int64_t cursor)");
   xyTemporalControllerSetDirection = lib.func("int32_t xyg_temporal_controller_set_direction(uint64_t handle, int32_t direction)");
   xyTemporalControllerSetLoop = lib.func("int32_t xyg_temporal_controller_set_loop(uint64_t handle, uint32_t enabled)");
   xyTemporalControllerSetRange = lib.func("int32_t xyg_temporal_controller_set_range(uint64_t handle, int64_t start, int64_t end)");
   xyTemporalControllerSetRateMilli = lib.func("int32_t xyg_temporal_controller_set_rate_milli(uint64_t handle, uint32_t rate_milli)");
   xyTemporalControllerSetReducedMotion = lib.func("int32_t xyg_temporal_controller_set_reduced_motion(uint64_t handle, uint32_t enabled)");
-  xyTemporalControllerState = lib.func("int32_t xyg_temporal_controller_state(uint64_t handle, uint64_t * out_instance_id, uint64_t * out_group_id, int64_t * out_domain_start, int64_t * out_domain_end, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, int64_t * out_step, int32_t * out_direction, uint32_t * out_rate_milli, uint32_t * out_loop_enabled, uint32_t * out_playing, uint32_t * out_reduced_motion, uint64_t * out_revision, uint32_t * out_disposed)");
+  xyTemporalControllerSetSelection = lib.func("int32_t xyg_temporal_controller_set_selection(uint64_t handle, const uint64_t * ids, uint64_t count)");
+  xyTemporalControllerState = lib.func("int32_t xyg_temporal_controller_state(uint64_t handle, uint64_t * out_instance_id, uint64_t * out_group_id, int64_t * out_domain_start, int64_t * out_domain_end, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, int64_t * out_step, int32_t * out_direction, uint32_t * out_rate_milli, uint32_t * out_loop_enabled, uint32_t * out_playing, uint32_t * out_reduced_motion, uint64_t * out_revision, uint32_t * out_disposed, uint64_t * out_selection, uint64_t selection_capacity, uint64_t * out_selection_count)");
   xyTemporalControllerStep = lib.func("int32_t xyg_temporal_controller_step(uint64_t handle)");
   xyTemporalControllerTick = lib.func("int32_t xyg_temporal_controller_tick(uint64_t handle, int64_t dt_micros, uint32_t * out_advanced)");
-  xyTemporalCoordinateDeliver = lib.func("int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)");
+  xyTemporalCoordinateDeliver = lib.func("int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, const uint64_t * selection, uint64_t selection_count, uint32_t * out_applied)");
   xyTemporalEventsInRange = lib.func("int32_t xyg_temporal_events_in_range(const int64_t * event_micros, const uint8_t * event_valid, uint64_t event_len, int64_t range_start, uint32_t range_start_valid, int64_t range_end, uint32_t range_end_valid, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)");
   xyTemporalIntervalIndexCreate = lib.func("int32_t xyg_temporal_interval_index_create(const void * descriptor, uint64_t * out_handle)");
   xyTemporalIntervalIndexDestroy = lib.func("int32_t xyg_temporal_interval_index_destroy(uint64_t handle)");
   xyTemporalIntervalIndexLen = lib.func("int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len)");
   xyTemporalIntervalVisibilityAt = lib.func("int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)");
+  xyTemporalSelectionLimit = lib.func("uint64_t xyg_temporal_selection_limit()");
   xyTileBudgetSet = lib.func("int32_t xyg_tile_budget_set(uint64_t bytes)");
   xyTileStoreAppend = lib.func("int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len)");
   xyTileStoreCompose = lib.func("int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out)");

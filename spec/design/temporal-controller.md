@@ -1,8 +1,7 @@
 # TemporalController and linked-view protocol
 
-**Status:** native and direct-browser/WASM controller lifecycle, Part of #44.
-Coordinated selection payloads remain required before #44 can close. Graph
-timebar (#45) and compositions (#46) consume this contract.
+**Status:** shipped in native and direct-browser/WASM hosts (ABI 80).
+Graph timebar (#45) and compositions (#46) consume this contract.
 
 **Authority:** [temporal.md](temporal.md) for canonical i64 micros; this document
 for lifecycle-safe scrubbing, playback, and opt-in coordination.
@@ -11,7 +10,7 @@ for lifecycle-safe scrubbing, playback, and opt-in coordination.
 
 | Concern | Owner |
 |---|---|
-| Range / cursor / window validation, revision, dispose, stale/self-echo rejection | Rust (`xyg-engine::temporal_controller`) |
+| Range / cursor / window and stable-ID selection canonicalization, revision, dispose, stale/self-echo rejection | Rust (`xyg-engine::temporal_controller`) |
 | Playback clocks, keyboard, focus chrome, reduced-motion preference read | Host (Python / Node / browser TypeScript) |
 | Scene / filter application of range+cursor | Rust (later consumers under #45/#46) |
 
@@ -24,7 +23,7 @@ numbers or duplicates range policy.
 
 Python exposes an ergonomic, context-manageable ``xyg.TemporalController``
 that owns the native handle and returns itself from range, cursor, playback,
-rate, direction, loop, and reduced-motion state-changing commands.
+rate, direction, loop, selection, and reduced-motion state-changing commands.
 The low-level Python and Node functions remain thin ABI projections for host
 integrators. `XygWasmTemporalController` is the browser lifecycle wrapper: it
 serializes commands, coalesces in-flight animation ticks, stops its clock and
@@ -47,6 +46,7 @@ TemporalController {
   direction ∈ {-1, +1},
   rate_milli,                // 1000 = 1.0× (integer ABI; no f64 on the wire)
   loop_enabled, playing, reduced_motion,
+  selection: sorted_unique<u64>[0..10_000],
   revision, disposed
 }
 ```
@@ -57,29 +57,37 @@ reaching a bound with loop off pauses playback. `tick` reports true only when
 the cursor actually moved; an already-clamped boundary tick returns false while
 still stopping playback.
 
+`selection` is an exact replacement set of application-stable identities, not
+shipped vertex positions. Rust accepts at most 10,000 authored IDs, sorts and
+deduplicates them, and exposes one strictly increasing canonical vector.
+Empty means clear. Linked views must share an identity namespace; joining a
+group whose views use unrelated IDs is an application error, never an implicit
+row-number conversion by a host.
+
 ## Commands
 
-`create`, `set_range`, `set_cursor`, `step`, `play`, `pause`, `set_rate_milli`,
+`create`, `set_range`, `set_cursor`, `set_selection`, `step`, `play`, `pause`, `set_rate_milli`,
 `set_direction`, `set_loop`, `set_reduced_motion`, `tick(dt_micros)`,
 `poll_event`, `apply_event`, `dispose`, `destroy`.
 
 - **Reduced motion:** `play` is a no-op (playing stays false); explicit `step`
   and range/cursor changes remain available; `tick` never advances.
-- **Dispose:** clears playing, drops outbound/pending remote state; further
+- **Dispose:** clears playing and selection and drops outbound/pending remote state; further
   commands return `Disposed` (−13). `destroy` removes the handle.
 
 ## Coordination protocol
 
-Opt-in only (`group_id != 0`). After a local mutation that changes range/cursor,
+Opt-in only (`group_id != 0`). After a local mutation that changes range/cursor/selection,
 Rust queues one outbound event:
 
-Normalized no-op `set_range`, `set_cursor`, and boundary `step` calls do not
+Normalized no-op `set_range`, `set_cursor`, `set_selection`, and boundary `step` calls do not
 increment the revision or emit an event.
 
 ```text
 CoordinationEvent {
   group_id, source_instance, revision,
-  range_start, range_end, cursor, window
+  range_start, range_end, cursor, window,
+  selection: sorted_unique<u64>[0..10_000]
 }
 ```
 
@@ -93,7 +101,8 @@ Same-process delivery visits peers in stable handle order and prevalidates every
 eligible peer before applying to any. A malformed event or mixed-domain peer
 therefore fails the delivery without partially updating the group; stale peers
 are deterministic no-ops. The transport-level event shape (nonzero source and
-revision, ordered range, contained cursor, and canonical window) is validated
+revision, ordered range, contained cursor, canonical window, bounded selection,
+and strict selection ordering) is validated
 before group membership, peer availability, self-echo, or stale-revision
 filtering, so malformed events never become successful no-ops.
 
@@ -113,12 +122,43 @@ constraint.
 - The event range must remain inside the controller domain, the cursor must be
   inside that range, and `window` must be canonical: zero only for a
   single-instant range, otherwise exactly `range_end - range_start`.
-- Success updates range/cursor/window **without** bumping local revision or
+- Selection IDs must be strictly increasing and contain at most 10,000 values.
+  Hosts may validate integer widths but never sort, deduplicate, truncate, or
+  reinterpret them.
+- Success updates range/cursor/window/selection **atomically**, without bumping local revision or
   emitting outbound (no echo storms).
 
-This foundation coordinates temporal range/cursor state only. Selection-mask
-payload coordination is deferred to the remaining #44 slice and is not implied
-by either native ABI or packed WASM seam.
+Every outbound event is a complete coordination snapshot. A cursor update after
+a selection replacement therefore carries the canonical current selection; a
+receiver never observes a new time window paired with an older selection.
+Native calls carry a raw `u64*` plus count. Packed `XYTC`/`XYTR` version 2 appends
+raw little-endian u64 IDs after the fixed snapshot. Browser values remain
+`BigInt`; selection IDs never pass through JSON numbers. Decoded browser state,
+events, and selection arrays are runtime-frozen snapshots, so consumer callbacks
+cannot mutate the host cache after Rust canonicalization.
+
+## Host examples
+
+```python
+with xyg.TemporalController(
+    instance_id=1, group_id=42, domain=(start_us, end_us)
+) as controller:
+    controller.set_selection([customer_a, customer_b]).set_cursor(noon_us)
+    event = controller.poll_event()  # transport explicitly to another process
+```
+
+```js
+temporalControllerSetSelection(handle, new BigUint64Array([customerA, customerB]));
+const event = temporalControllerPollEvent(handle);
+temporalCoordinateDeliver(event); // explicit same-process opt-in group delivery
+
+await browserController.setSelection([customerA, customerB]);
+await browserPeer.applyEvent(eventFromTransport);
+```
+
+Applications transport the whole event. They must not send the cursor and
+selection as separate messages: doing so would discard the atomic revision
+contract and could show a selection computed for the wrong time window.
 
 ## Accessibility (host obligations)
 

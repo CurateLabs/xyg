@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 79
-SIGNATURE_SHA256 = "c906c9ede79d881dd376ea3b77e926cff2c383b1dfe5bc52d61b5782bdc6509f"
+ABI_VERSION = 80
+SIGNATURE_SHA256 = "4694c96b2e997392083061425fdc6719315bd316aadbf2a592321021afbcac49"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -518,10 +518,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_column_timezone
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint32]
-    # int32_t xyg_temporal_controller_apply_event(uint64_t handle, uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)
+    # int32_t xyg_temporal_controller_apply_event(uint64_t handle, uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, const uint64_t * selection, uint64_t selection_count, uint32_t * out_applied)
     function = lib.xyg_temporal_controller_apply_event
     function.restype = ctypes.c_int32
-    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_temporal_controller_create(const void * descriptor, uint64_t * out_handle)
     function = lib.xyg_temporal_controller_create
     function.restype = ctypes.c_int32
@@ -542,10 +542,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_controller_play
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64]
-    # int32_t xyg_temporal_controller_poll_event(uint64_t handle, uint32_t * out_has_event, uint64_t * out_group_id, uint64_t * out_source_instance, uint64_t * out_revision, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window)
+    # int32_t xyg_temporal_controller_poll_event(uint64_t handle, uint32_t * out_has_event, uint64_t * out_group_id, uint64_t * out_source_instance, uint64_t * out_revision, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, uint64_t * out_selection, uint64_t selection_capacity, uint64_t * out_selection_count)
     function = lib.xyg_temporal_controller_poll_event
     function.restype = ctypes.c_int32
-    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_temporal_controller_set_cursor(uint64_t handle, int64_t cursor)
     function = lib.xyg_temporal_controller_set_cursor
     function.restype = ctypes.c_int32
@@ -570,10 +570,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_controller_set_reduced_motion
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint32]
-    # int32_t xyg_temporal_controller_state(uint64_t handle, uint64_t * out_instance_id, uint64_t * out_group_id, int64_t * out_domain_start, int64_t * out_domain_end, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, int64_t * out_step, int32_t * out_direction, uint32_t * out_rate_milli, uint32_t * out_loop_enabled, uint32_t * out_playing, uint32_t * out_reduced_motion, uint64_t * out_revision, uint32_t * out_disposed)
+    # int32_t xyg_temporal_controller_set_selection(uint64_t handle, const uint64_t * ids, uint64_t count)
+    function = lib.xyg_temporal_controller_set_selection
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64]
+    # int32_t xyg_temporal_controller_state(uint64_t handle, uint64_t * out_instance_id, uint64_t * out_group_id, int64_t * out_domain_start, int64_t * out_domain_end, int64_t * out_range_start, int64_t * out_range_end, int64_t * out_cursor, int64_t * out_window, int64_t * out_step, int32_t * out_direction, uint32_t * out_rate_milli, uint32_t * out_loop_enabled, uint32_t * out_playing, uint32_t * out_reduced_motion, uint64_t * out_revision, uint32_t * out_disposed, uint64_t * out_selection, uint64_t selection_capacity, uint64_t * out_selection_count)
     function = lib.xyg_temporal_controller_state
     function.restype = ctypes.c_int32
-    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_temporal_controller_step(uint64_t handle)
     function = lib.xyg_temporal_controller_step
     function.restype = ctypes.c_int32
@@ -582,10 +586,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_controller_tick
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_int64, ctypes.c_void_p]
-    # int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, uint32_t * out_applied)
+    # int32_t xyg_temporal_coordinate_deliver(uint64_t group_id, uint64_t source_instance, uint64_t revision, int64_t range_start, int64_t range_end, int64_t cursor, int64_t window, const uint64_t * selection, uint64_t selection_count, uint32_t * out_applied)
     function = lib.xyg_temporal_coordinate_deliver
     function.restype = ctypes.c_int32
-    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
+    function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_void_p]
     # int32_t xyg_temporal_events_in_range(const int64_t * event_micros, const uint8_t * event_valid, uint64_t event_len, int64_t range_start, uint32_t range_start_valid, int64_t range_end, uint32_t range_end_valid, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag)
     function = lib.xyg_temporal_events_in_range
     function.restype = ctypes.c_int32
@@ -606,6 +610,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_temporal_interval_visibility_at
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_int64, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+    # uint64_t xyg_temporal_selection_limit()
+    function = lib.xyg_temporal_selection_limit
+    function.restype = ctypes.c_uint64
+    function.argtypes = []
     # int32_t xyg_tile_budget_set(uint64_t bytes)
     function = lib.xyg_tile_budget_set
     function.restype = ctypes.c_int32
