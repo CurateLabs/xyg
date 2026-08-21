@@ -190,7 +190,7 @@ class FacetGrid:
                 f'"n":{len(blob)}' + "}"
             )
         js = export._javascript_for_inline_script(export._bundled_js("standalone"))
-        title = export._html.escape(self.title or "xy facets")
+        title = export._html.escape(self.title or "XYG facets")
         # Grid title rendered once here; each panel's own chart title is its
         # facet label, so labels are not duplicated in a separate strip.
         heading = (

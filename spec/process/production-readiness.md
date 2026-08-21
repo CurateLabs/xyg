@@ -16,7 +16,8 @@ screen-bounded performance core, but the stable commitments today are narrower:
   200 ms budget. Chart-building APIs are the compute import boundary; notebook
   widget dependencies stay deferred until `.widget()`/display, and standalone
   HTML export reads its static bundle without importing the widget stack.
-- Published wheels include only the shippable `xyg/` package,
+- Published wheels include only the shippable `xyg/` and bundled `reflex_xy/`
+  packages,
   `.dist-info`, the render-client JavaScript bundles, `py.typed`, and, for native
   wheels, the Rust core. The JS bundles are a generated artifact (not committed to
   git): the build hook builds them into the wheel/sdist, so **end users do not need
@@ -112,7 +113,7 @@ These must pass before publishing.
 |---|---|---|
 | Python floor | `pyproject.toml`, Ruff, docs, syntax, and annotations stay on the Python 3.11+ floor | `python scripts/check_python_floor.py` |
 | Public API | `__all__`, lazy exports, `__version__`, the source `py.typed` marker, focused type-surface tests, and fresh-process import-time budget stay coherent | `make check-api` |
-| Import-time budget | `xyg.__init__`, `dir(xy)`, export helpers, chart construction, and `.widget()` keep their lazy import boundaries | `make check-import` |
+| Import-time budget | `xyg.__init__`, `dir(xyg)`, export helpers, chart construction, and `.widget()` keep their lazy import boundaries | `make check-import` |
 | CI/release workflows | Hard gates, non-blocking benchmarks, best-effort benchmark artifact upload/download, trusted publishing, and no-Rust clear-error jobs stay wired | `make check-ci` |
 | GitHub Actions token scope | CI, release, and manual benchmark workflows declare an explicit least-privilege `GITHUB_TOKEN` default; privileged jobs use narrow job-level overrides | GitHub code scanning (`actions/missing-workflow-permissions`) |
 | HTML export safety | Inline JSON/script escaping, atomic path writes, hostile user strings, and browser client text-node insertion stay protected | `make check-security` |

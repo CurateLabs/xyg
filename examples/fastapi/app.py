@@ -34,7 +34,7 @@ from live_drilldown import (
     live_drilldown_html,
 )
 
-app = FastAPI(title="xy × FastAPI")
+app = FastAPI(title="XYG × FastAPI")
 
 
 # --- chart rendering --------------------------------------------------------
@@ -242,13 +242,13 @@ def index() -> HTMLResponse:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>xy × FastAPI</title>
+<title>XYG × FastAPI</title>
 <style>{_STYLE}</style>
 </head>
 <body>
 <main>
   <header>
-    <h1>xy × FastAPI</h1>
+    <h1>XYG × FastAPI</h1>
     <p>Interactive WebGL2 charts served from a plain FastAPI app — no Reflex, no
        committed HTML. Each chart is generated on request with
        <code>chart.to_html()</code>; expand a card's <b>Code</b> panel to read the
