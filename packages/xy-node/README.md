@@ -42,7 +42,8 @@ Lookup never searches system library directories, never falls back to Python,
 and never loads a wrong-architecture optional package. **Windows arm64**
 returns a stable unsupported-platform error before any search.
 
-Release packaging stages the built cdylib into the matching platform package:
+For local development, stage the built cdylib into the matching in-tree
+platform package:
 
 ```bash
 cargo build --release
@@ -56,6 +57,23 @@ python3 scripts/verify_node_packages.py --require-native   # after staging
 Each Node package ships a `NOTICE` (Apache-2.0 plus koffi MIT attribution on the
 facade). `--sbom` writes a CycloneDX-lite document from local manifests/hashes
 without contacting the npm registry.
+
+Release packaging never rewrites those private source manifests. It extracts
+the already-verified native from the matching release wheel and creates a
+fresh publish tree with an exact tag-derived npm semver:
+
+```bash
+python3 scripts/stage_node_packages.py \
+  --tag xyg-v0.6.0rc1 --output /tmp/xyg-node-release \
+  --platform linux-x64 --wheel dist/xyg-0.6.0rc1-*-manylinux_2_17_x86_64.whl
+python3 scripts/stage_node_packages.py \
+  --tag xyg-v0.6.0rc1 --output /tmp/xyg-node-release \
+  --facade --client packages/xy-client/dist/standalone.js
+```
+
+The facade embeds that exact standalone artifact under `client/`, so
+`toHtml()` remains self-contained after a clean npm install and does not need
+Python, a CDN, a repository checkout, or a second runtime package lookup.
 
 ```bash
 XYG_NATIVE_LIB=/path/to/libxyg_core.dylib npm test

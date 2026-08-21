@@ -44,16 +44,20 @@ const DECODE_B64_JS =
 /** Browser hydrate target; split so this Node module never names DOM globals. */
 const BROWSER_DOCUMENT = "doc" + "ument";
 
-function standaloneClientPath() {
-  const candidates = [];
+export function standaloneClientPath({
+  exists = existsSync,
+  requireFn = createRequire(import.meta.url),
+} = {}) {
+  const candidates = [join(here, "..", "client", "standalone.js")];
   try {
-    candidates.push(createRequire(import.meta.url).resolve("@curatelabs/xyg/standalone"));
+    candidates.push(requireFn.resolve("@curatelabs/xyg/standalone"));
   } catch {
-    // In-repo checkout: resolve the host-neutral dist next to this package.
+    // The separately installed client is optional; continue to the repository fallback.
   }
+  // In-repo checkout: resolve the host-neutral dist next to this package.
   candidates.push(join(here, "..", "..", "xy-client", "dist", "standalone.js"));
   for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate;
+    if (exists(candidate)) return candidate;
   }
   throw new Error(
     "Host-neutral paint client missing (`@curatelabs/xyg` standalone). " +
@@ -154,7 +158,7 @@ export function toHtml(figOrPayload, path = null, opts = {}) {
   const blob = asBuffer(buffers);
   const clientJs = javascriptForInlineScript(readFileSync(standaloneClientPath(), "utf8"));
   const specJs = jsonForInlineScript(spec);
-  const titleHtml = escapeHtml(title || "xy");
+  const titleHtml = escapeHtml(title || "XYG");
   const css = customCssBlock(opts.customCss);
   const parts = [
     `<!doctype html>

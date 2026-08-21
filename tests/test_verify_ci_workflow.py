@@ -1689,6 +1689,64 @@ def test_workflow_policy_rejects_unapproved_blacksmith_label(tmp_path: Path) -> 
     assert any("approved Blacksmith runner" in error for error in errors)
 
 
+def test_workflow_policy_allows_only_oidc_npm_publish_on_github_host(tmp_path: Path) -> None:
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "publish.yaml").write_text(
+        "jobs:\n"
+        "  publish-npm:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    environment: npm\n"
+        "    permissions:\n"
+        "      id-token: write\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+    assert verify_ci_workflow.validate_workflow_hosting_policy(workflows) == []
+
+    (workflows / "publish.yaml").write_text(
+        "jobs:\n"
+        "  publish-npm:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    environment: npm\n"
+        "    permissions:\n"
+        "      id-token: write\n"
+        "    steps: []\n"
+        "  unrelated:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+    assert any("approved Blacksmith runner" in error for error in errors)
+
+    (workflows / "publish.yaml").write_text(
+        "jobs:\n"
+        "  publish-npm:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    permissions:\n"
+        "      contents: read\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+    assert any("approved Blacksmith runner" in error for error in errors)
+
+    invalid_fields = [
+        "    # environment: npm\n    permissions:\n      id-token: write\n",
+        "    environment: npm\n    permissions:\n      # id-token: write\n      contents: read\n",
+        "    permissions:\n      id-token: write\n",
+        "    environment: npm\n    permissions:\n      contents: read\n",
+    ]
+    for fields in invalid_fields:
+        (workflows / "publish.yaml").write_text(
+            "jobs:\n  publish-npm:\n    runs-on: ubuntu-latest\n" + fields + "    steps: []\n",
+            encoding="utf-8",
+        )
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert any("approved Blacksmith runner" in error for error in errors), fields
+
+
 def test_workflow_policy_allows_codspeed_host_only_in_codspeed_workflow(
     tmp_path: Path,
 ) -> None:
@@ -2343,8 +2401,10 @@ def test_github_release_flattens_downloaded_wheel_for_attachment(tmp_path: Path)
 def test_github_release_cannot_run_for_dry_or_untagged_build(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
-    job_gate = "    if: vars.XYG_ALLOW_PYPI_PUBLISH == 'true' && startsWith(github.ref, 'refs/tags/xyg-v') && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')\n"
-    release_header = "  github-release:\n    name: Create GitHub Release\n    needs: [publish]\n"
+    job_gate = f"    if: {verify_ci_workflow.GITHUB_RELEASE_GATE}\n"
+    release_header = (
+        "  github-release:\n    name: Create GitHub Release\n    needs: [publish, publish-npm]\n"
+    )
     target = release_header + job_gate
     assert target in workflow
     path.write_text(
