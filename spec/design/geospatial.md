@@ -124,7 +124,9 @@ Projection policy:
 
 - Lon/lat ↔ Web Mercator uses spherical R = 6 378 137 m with polar clamp at
   ±85.0511287798066° / ±20 037 508.342789244 m.
-- Screen mapping is CSS top-left origin; bearing rotates in plane around center.
+- Screen mapping is CSS top-left origin. Bearing is a MapLibre-compatible
+  clockwise camera heading, so positive bearing rotates map content by the
+  opposite angle around center (`+90°` puts east at screen-top).
 - Derived f32 screen buffers are **offset-encoded** from an f64 origin so deep
   zoom never drops source precision (§4/§16); NaN never reaches the buffer (§19).
 - Documented golden tolerances: lon/lat `1e-9`°, mercator `1e-6` m, screen
@@ -133,7 +135,9 @@ Projection policy:
 Camera transitions are Rust-owned and transactional. `set_center`, `set_zoom`,
 `resize`, `set_bearing`, and `set_pitch` validate a complete candidate before
 publishing it; an error leaves the prior camera intact. Bearings normalize to
-`(-180, 180]`. `pan_by_pixels(dx, dy)` defines an ergonomic, host-neutral
+`(-180, 180]` at construction, updates, rebuild identity, and projection, so a
+restored full-turn or extreme finite bearing cannot diverge from its canonical
+camera or overflow trigonometric projection. `pan_by_pixels(dx, dy)` defines an ergonomic, host-neutral
 gesture seam: positive X moves the camera centre toward screen-right and
 positive Y toward screen-bottom, after applying the current bearing. Wrapped
 EPSG:4326 cameras cross the dateline continuously; non-wrapped cameras stop at

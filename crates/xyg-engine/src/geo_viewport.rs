@@ -125,7 +125,7 @@ impl GeoViewport {
             zoom,
             width,
             height,
-            bearing_deg,
+            bearing_deg: normalize_bearing(bearing_deg),
             pitch_deg,
             world_wrap,
         };
@@ -588,8 +588,11 @@ impl GeoViewport {
         }
         let mut dx = dx_m * scale;
         let mut dy = (cy - my) * scale; // screen +y is down
-        if self.bearing_deg != 0.0 {
-            let rad = self.bearing_deg.to_radians();
+        let bearing_deg = normalize_bearing(self.bearing_deg);
+        if bearing_deg != 0.0 {
+            // A positive camera bearing is a clockwise heading, so map
+            // content rotates by the opposite angle (MapLibre convention).
+            let rad = (-bearing_deg).to_radians();
             let (sin_b, cos_b) = (rad.sin(), rad.cos());
             let rx = dx * cos_b - dy * sin_b;
             let ry = dx * sin_b + dy * cos_b;
@@ -602,8 +605,9 @@ impl GeoViewport {
     fn screen_to_mercator(&self, screen_x: f64, screen_y: f64) -> (f64, f64) {
         let mut dx = screen_x - self.width * 0.5;
         let mut dy = screen_y - self.height * 0.5;
-        if self.bearing_deg != 0.0 {
-            let rad = (-self.bearing_deg).to_radians();
+        let bearing_deg = normalize_bearing(self.bearing_deg);
+        if bearing_deg != 0.0 {
+            let rad = bearing_deg.to_radians();
             let (sin_b, cos_b) = (rad.sin(), rad.cos());
             let rx = dx * cos_b - dy * sin_b;
             let ry = dx * sin_b + dy * cos_b;
@@ -657,8 +661,9 @@ impl GeoViewport {
         let scale = 1.0 / self.metres_per_pixel();
         let mut dx = (mx - cx) * scale;
         let mut dy = (cy - my) * scale;
-        if self.bearing_deg != 0.0 {
-            let rad = self.bearing_deg.to_radians();
+        let bearing_deg = normalize_bearing(self.bearing_deg);
+        if bearing_deg != 0.0 {
+            let rad = (-bearing_deg).to_radians();
             let (sin_b, cos_b) = (rad.sin(), rad.cos());
             let rx = dx * cos_b - dy * sin_b;
             let ry = dx * sin_b + dy * cos_b;
@@ -886,6 +891,11 @@ mod tests {
         let mut vp = denver();
         vp.bearing_deg = 90.0;
         let (sx, sy) = vp.project(-104.9903 + 0.1, 39.7392).unwrap();
+        assert!((sx - vp.width * 0.5).abs() < tolerances::SCREEN_PX);
+        assert!(
+            sy < vp.height * 0.5,
+            "east must be screen-up at +90° bearing"
+        );
         let (lon, lat) = vp.unproject(sx, sy).unwrap();
         assert!((lon - (-104.9903 + 0.1)).abs() < 1e-7);
         assert!((lat - 39.7392).abs() < 1e-7);
@@ -984,6 +994,36 @@ mod tests {
     }
 
     #[test]
+    fn constructor_and_projection_canonicalize_full_turn_bearings() {
+        let canonical = denver();
+        let restored = GeoViewport::new(
+            canonical.crs,
+            canonical.center_x,
+            canonical.center_y,
+            canonical.zoom,
+            canonical.width,
+            canonical.height,
+            360.0,
+            canonical.pitch_deg,
+            canonical.world_wrap,
+        )
+        .unwrap();
+        assert_eq!(restored.bearing_deg, 0.0);
+        assert_eq!(restored.rebuild_key(), canonical.rebuild_key());
+        assert_eq!(
+            restored.project(-104.8, 39.8).unwrap(),
+            canonical.project(-104.8, 39.8).unwrap()
+        );
+
+        // A deserialized/public-field camera cannot turn an otherwise finite
+        // projection into NaN through degree-to-radian overflow.
+        let mut extreme = canonical;
+        extreme.bearing_deg = f64::MAX;
+        let projected = extreme.project(-104.8, 39.8).unwrap();
+        assert!(projected.0.is_finite() && projected.1.is_finite());
+    }
+
+    #[test]
     fn pixel_pan_moves_center_in_bearing_aware_screen_space() {
         let mut vp = GeoViewport::new(
             GeoCrs::Epsg4326,
@@ -1004,6 +1044,11 @@ mod tests {
         let (sx, sy) = vp.project(vp.center_x, vp.center_y).unwrap();
         assert!((sx - 400.0).abs() < tolerances::SCREEN_PX);
         assert!((sy - 300.0).abs() < tolerances::SCREEN_PX);
+        assert!(vp.center_x < 0.0, "screen-down points west at +90° bearing");
+        assert!(
+            vp.center_y < 0.0,
+            "screen-right points south at +90° bearing"
+        );
     }
 
     #[test]
