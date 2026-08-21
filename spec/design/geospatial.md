@@ -83,7 +83,12 @@ buffers and metadata, not imported Arrow modules or full JSON geometry rows.
 Producer-neutral interchange fixtures from GraphForge
 (`tests/contracts/geoarrow-interchange-v1.json` and
 `tests/fixtures/geoarrow-v1/`) are the compatibility reference. XYG unit
-tests embed the same coordinate cases as descriptor goldens.
+tests read the checked-in Arrow IPC and Parquet artifacts, verify their pinned
+SHA-256 digests and field metadata, and require both formats to lower into
+identical typed descriptors. Every certified geometry is then published
+through the Rust `GeoColumn` boundary. GraphForge's preserved-only vendor CRS
+case remains transportable by GraphForge but fails closed at XYG's deliberately
+narrow v1 compute boundary.
 
 ## Validation
 
@@ -141,6 +146,10 @@ native↔WASM goldens (#59).
 - Python GeoArrow adapter: `xyg._geoarrow.ingest_geoarrow` (optional pyarrow
   input format) flattens extension arrays into the typed descriptor and
   publishes a Rust `GeoColumn` handle.
+- Producer conformance: `tests/test_geoarrow_graphforge_fixtures.py` consumes
+  GraphForge's pinned IPC and Parquet fixtures directly and proves equivalent
+  descriptor/Rust publication behavior without field renaming or row-wise
+  WKB, WKT, or GeoJSON reconstruction.
 - GeoViewport: `crates/xyg-engine/src/geo_viewport.rs` (camera foundation;
   ABI/hosts next).
 - Next: GeoViewport ABI + host ergonomics; WASM descriptor/viewport parity
