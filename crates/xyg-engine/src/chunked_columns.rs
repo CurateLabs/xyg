@@ -82,9 +82,10 @@ impl OverviewBucket {
         self.last = Some(point);
     }
 
-    fn flush(&mut self, overview: &mut Vec<OverviewPoint>) -> Result<(), Error> {
+    fn flush(&mut self, overview: &mut Vec<OverviewPoint>) {
         let Some(first) = self.first else {
-            return Err(Error::Corrupt("overview bucket has no finite row"));
+            *self = Self::default();
+            return;
         };
         let mut candidates = [
             first,
@@ -102,7 +103,6 @@ impl OverviewBucket {
             }
         }
         *self = Self::default();
-        Ok(())
     }
 }
 
@@ -284,14 +284,14 @@ impl ChunkedColumns {
                 current.clear();
             }
             if overview_bucket.rows == overview_bucket_rows {
-                overview_bucket.flush(&mut overview)?;
+                overview_bucket.flush(&mut overview);
             }
         }
         if !current.is_empty() {
             write_chunk(&mut file, &mut metadata, row_start, &current)?;
         }
         if overview_bucket.rows > 0 {
-            overview_bucket.flush(&mut overview)?;
+            overview_bucket.flush(&mut overview);
         }
         if consumed != total_rows || metadata.len() as u64 != chunk_count {
             return Err(Error::Corrupt("iterator length changed during creation"));
@@ -701,6 +701,48 @@ mod tests {
         assert_eq!(bounded.points.first(), full.points.first());
         assert_eq!(bounded.points.last(), full.points.last());
         assert_eq!(bounded.available as usize, full.points.len());
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn overview_omits_all_nonfinite_windows_without_rejecting_valid_chunks() {
+        let p = path("overview-sparse.xygc");
+        let rows = [(0.0, 0.0), (f64::NAN, f64::NAN), (2.0, 2.0)];
+        ChunkedColumns::create(&p, rows, 3).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let overview = store.overview(10).unwrap();
+        assert_eq!(overview.source_rows, 3);
+        assert_eq!(overview.points.len(), 2);
+        assert_eq!(overview.points[0].row, 0);
+        assert_eq!(overview.points[1].row, 2);
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn legacy_v1_artifact_opens_with_an_empty_overview() {
+        let p = path("overview-v1.xygc");
+        let mut file = File::create(&p).unwrap();
+        let mut header = [0u8; HEADER_BYTES as usize];
+        header[0..4].copy_from_slice(MAGIC);
+        header[4..8].copy_from_slice(&LEGACY_VERSION.to_le_bytes());
+        header[8..16].copy_from_slice(&2u64.to_le_bytes());
+        header[16..20].copy_from_slice(&2u32.to_le_bytes());
+        header[20..24].copy_from_slice(&1u32.to_le_bytes());
+        header[24..32].copy_from_slice(&(HEADER_BYTES + META_BYTES).to_le_bytes());
+        file.write_all(&header).unwrap();
+        file.write_all(&0u64.to_le_bytes()).unwrap();
+        file.write_all(&2u32.to_le_bytes()).unwrap();
+        file.write_all(&0u32.to_le_bytes()).unwrap();
+        for bound in [0.0f64, 1.0, 2.0, 3.0] {
+            file.write_all(&bound.to_le_bytes()).unwrap();
+        }
+        for value in [0.0f64, 2.0, 1.0, 3.0] {
+            file.write_all(&value.to_le_bytes()).unwrap();
+        }
+        file.sync_all().unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        assert_eq!(store.rows(), 2);
+        assert!(store.overview(10).unwrap().points.is_empty());
         std::fs::remove_file(p).unwrap();
     }
 

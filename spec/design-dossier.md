@@ -422,7 +422,10 @@ the native engine opens versioned `XYGC` artifacts containing canonical paired f
 rows, checked ordered per-chunk x/y zone maps, and a bounded precomputed overview.
 Overview points retain canonical u64 row IDs, so first paint can refine to exact
 viewport rows without identity replacement; the overview call records source rows,
-available points, and that zero detail rows were read. A viewport binary-searches the x
+available points, and that zero detail rows were read. Overview windows containing no
+finite x/y pair are omitted. When a caller requests fewer than the available points,
+XYG samples deterministic, evenly spaced overview indices; requests above one point
+retain both endpoints, while a one-point request returns the first point. A viewport binary-searches the x
 maps, optionally prunes by y, performs positioned reads of only candidate chunks,
 and applies the exact row predicate. Every reply records generation, first chunk,
 chunks considered/read, and bytes read. A hard byte budget is checked before I/O;
