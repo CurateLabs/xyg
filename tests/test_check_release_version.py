@@ -107,7 +107,14 @@ def test_gate_rejects_non_canonical_prerelease_spellings(tmp_path: Path) -> None
     # never equal its own built version — refuse it before it builds anything.
     changelog = _changelog(tmp_path, "## [0.0.1a1] — 2026-07-25")
 
-    for tag in ("xyg-v0.0.1-alpha1", "xyg-v0.0.1alpha1", "xyg-v0.0.1a"):
+    for tag in (
+        "xyg-v0.0.1-alpha1",
+        "xyg-v0.0.1alpha1",
+        "xyg-v0.0.1a",
+        "xyg-v0.0.1a01",
+        "xyg-v0.0.1b01",
+        "xyg-v0.0.1rc01",
+    ):
         errors = check_release_version.check_release(tag, changelog)
         assert any("is not a release tag" in e for e in errors), tag
 

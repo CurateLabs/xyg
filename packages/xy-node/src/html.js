@@ -44,10 +44,13 @@ const DECODE_B64_JS =
 /** Browser hydrate target; split so this Node module never names DOM globals. */
 const BROWSER_DOCUMENT = "doc" + "ument";
 
-function standaloneClientPath() {
-  const candidates = [];
+export function standaloneClientPath({
+  exists = existsSync,
+  requireFn = createRequire(import.meta.url),
+} = {}) {
+  const candidates = [join(here, "..", "client", "standalone.js")];
   try {
-    candidates.push(createRequire(import.meta.url).resolve("@curatelabs/xyg/standalone"));
+    candidates.push(requireFn.resolve("@curatelabs/xyg/standalone"));
   } catch {
     // In-repo checkout: resolve the host-neutral dist next to this package.
   }
@@ -55,10 +58,9 @@ function standaloneClientPath() {
   // artifact into the Node facade. Keeping it beside the host avoids a
   // runtime registry dependency and makes `toHtml()` work offline after a
   // clean `npm install @curatelabs/xyg-node` (#52).
-  candidates.push(join(here, "..", "client", "standalone.js"));
   candidates.push(join(here, "..", "..", "xy-client", "dist", "standalone.js"));
   for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate;
+    if (exists(candidate)) return candidate;
   }
   throw new Error(
     "Host-neutral paint client missing (`@curatelabs/xyg` standalone). " +

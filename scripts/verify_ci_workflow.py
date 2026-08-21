@@ -62,6 +62,21 @@ ALLOWED_BLACKSMITH_RUNNERS = {
 CODSPEED_HOSTED_RUNNER = "codspeed-macro"
 
 
+def _is_structural_npm_trusted_job(block: str, runner: str) -> bool:
+    environment, environment_unsafe = _direct_yaml_key_values(block, "environment", indent=4)
+    permissions = _unique_mapping_block(block, "permissions", indent=4)
+    if permissions is None:
+        return False
+    id_token, id_token_unsafe = _direct_yaml_key_values(permissions, "id-token", indent=6)
+    return (
+        runner == "ubuntu-latest"
+        and not environment_unsafe
+        and environment == ["npm"]
+        and not id_token_unsafe
+        and id_token == ["write"]
+    )
+
+
 def _job_blocks(text: str) -> dict[str, str]:
     lines = text.splitlines()
     try:
@@ -2193,9 +2208,7 @@ def validate_workflow_hosting_policy(
             npm_trusted_hosted = (
                 path.name == "publish.yaml"
                 and job_name == "publish-npm"
-                and runner == "ubuntu-latest"
-                and "environment: npm" in block
-                and "id-token: write" in block
+                and _is_structural_npm_trusted_job(block, runner)
             )
             if (
                 runner != "${{ matrix.os }}"
@@ -2225,9 +2238,15 @@ def validate_workflow_hosting_policy(
                         f"{path} job {job_name} matrix runner must use an approved "
                         f"Blacksmith label, got {runner}"
                     )
+        publish_npm_block = job_blocks.get("publish-npm", "")
+        publish_npm_runners, publish_npm_runner_unsafe = _direct_yaml_key_values(
+            publish_npm_block, "runs-on", indent=4
+        )
         trusted_npm_alias = (
             path.name == "publish.yaml"
-            and "runs-on: ubuntu-latest" in job_blocks.get("publish-npm", "")
+            and not publish_npm_runner_unsafe
+            and publish_npm_runners == ["ubuntu-latest"]
+            and _is_structural_npm_trusted_job(publish_npm_block, publish_npm_runners[0])
             and text.count("runs-on: ubuntu-latest") == 1
         )
         for lineno, line in enumerate(text.splitlines(), start=1):

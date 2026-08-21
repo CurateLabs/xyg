@@ -1716,6 +1716,20 @@ def test_workflow_policy_allows_only_oidc_npm_publish_on_github_host(tmp_path: P
     errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
     assert any("approved Blacksmith runner" in error for error in errors)
 
+    invalid_fields = [
+        "    # environment: npm\n    permissions:\n      id-token: write\n",
+        "    environment: npm\n    permissions:\n      # id-token: write\n      contents: read\n",
+        "    permissions:\n      id-token: write\n",
+        "    environment: npm\n    permissions:\n      contents: read\n",
+    ]
+    for fields in invalid_fields:
+        (workflows / "publish.yaml").write_text(
+            "jobs:\n  publish-npm:\n    runs-on: ubuntu-latest\n" + fields + "    steps: []\n",
+            encoding="utf-8",
+        )
+        errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+        assert any("approved Blacksmith runner" in error for error in errors), fields
+
 
 def test_workflow_policy_allows_codspeed_host_only_in_codspeed_workflow(
     tmp_path: Path,

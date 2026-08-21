@@ -46,7 +46,7 @@ class _Package(NamedTuple):
 
 # Canonical PEP 440 spellings only: the derivation would normalize `alpha1`
 # to `a1`, so a non-canonical tag can never equal its own built version.
-_RELEASE = r"\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?"
+_RELEASE = r"\d+\.\d+\.\d+(?:(?:a|b|rc)(?:0|[1-9]\d*))?"
 _SHAPE = "xyg-vX.Y.Z with an optional aN/bN/rcN pre-release suffix"
 
 PACKAGES = {

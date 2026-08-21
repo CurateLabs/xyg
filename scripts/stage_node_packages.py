@@ -34,11 +34,15 @@ PLATFORMS = {
     "win32-x64": ("xyg_core.dll", "win32", "x64"),
 }
 
+PRERELEASE_IDENTIFIER = r"(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)"
 SEMVER_RE = re.compile(
     r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-    r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
+    rf"(?:-{PRERELEASE_IDENTIFIER}(?:\.{PRERELEASE_IDENTIFIER})*)?$"
 )
-TAG_RE = re.compile(r"^xyg-v(?P<base>\d+\.\d+\.\d+)(?:(?P<pre>a|b|rc)(?P<num>\d+))?$")
+TAG_RE = re.compile(
+    r"^xyg-v(?P<base>\d+\.\d+\.\d+)"
+    r"(?:(?P<pre>a|b|rc)(?P<num>0|[1-9]\d*))?$"
+)
 REPOSITORY = {"type": "git", "url": "git+https://github.com/CurateLabs/xyg.git"}
 PUBLISH_CONFIG = {"access": "public", "provenance": True}
 NATIVE_BUDGET_BYTES = 40 * 1024 * 1024
@@ -131,6 +135,21 @@ def _native_arch(payload: bytes) -> tuple[str, str]:
     raise ValueError("native payload has an unsupported or truncated executable header")
 
 
+def validate_native_payload(payload: bytes, platform_id: str) -> None:
+    """Validate one platform package's bounded native executable bytes."""
+
+    if platform_id not in PLATFORMS:
+        raise ValueError(f"unsupported Node platform {platform_id!r}")
+    library_name, expected_os, expected_cpu = PLATFORMS[platform_id]
+    if not payload:
+        raise ValueError(f"{platform_id} native {library_name} is empty")
+    if len(payload) > NATIVE_BUDGET_BYTES:
+        raise ValueError(f"{platform_id} native exceeds {NATIVE_BUDGET_BYTES} byte package budget")
+    actual_os, actual_cpu = _native_arch(payload)
+    if (actual_os, actual_cpu) != (expected_os, expected_cpu):
+        raise ValueError(f"{platform_id} package contains {actual_os}-{actual_cpu} native bytes")
+
+
 def stage_platform(*, platform_id: str, wheel: Path, output: Path, version: str) -> Path:
     _require_semver(version)
     if platform_id not in PLATFORMS:
@@ -143,11 +162,7 @@ def stage_platform(*, platform_id: str, wheel: Path, output: Path, version: str)
         _copy_file(source / name, destination / name)
     _copy_file(ROOT / "LICENSE", destination / "LICENSE")
     native_payload = _native_from_wheel(wheel, library_name)
-    actual_os, actual_cpu = _native_arch(native_payload)
-    if (actual_os, actual_cpu) != (expected_os, expected_cpu):
-        raise ValueError(f"{platform_id} wheel contains {actual_os}-{actual_cpu} native bytes")
-    if len(native_payload) > NATIVE_BUDGET_BYTES:
-        raise ValueError(f"{platform_id} native exceeds {NATIVE_BUDGET_BYTES} byte package budget")
+    validate_native_payload(native_payload, platform_id)
     (destination / library_name).write_bytes(native_payload)
 
     manifest = _release_manifest(source / "package.json", version)

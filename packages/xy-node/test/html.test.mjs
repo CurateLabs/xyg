@@ -5,11 +5,25 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { toHtml } from "../src/html.js";
+import { standaloneClientPath, toHtml } from "../src/html.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const htmlSrc = fs.readFileSync(path.join(root, "src", "html.js"), "utf8");
 const clientPath = path.join(root, "..", "xy-client", "dist", "standalone.js");
+
+test("packaged standalone client wins over a separately installed client", () => {
+  const external = path.join("external", "@curatelabs", "xyg", "standalone.js");
+  const seen = [];
+  const selected = standaloneClientPath({
+    exists(candidate) {
+      seen.push(candidate);
+      return candidate.endsWith(path.join("client", "standalone.js")) || candidate === external;
+    },
+    requireFn: { resolve: () => external },
+  });
+  assert.ok(selected.endsWith(path.join("client", "standalone.js")));
+  assert.deepEqual(seen, [selected]);
+});
 
 test("toHtml inlines the host-neutral standalone client", () => {
   assert.equal(

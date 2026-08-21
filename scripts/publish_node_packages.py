@@ -19,6 +19,23 @@ import tarfile
 from dataclasses import dataclass
 from pathlib import Path
 
+try:
+    from stage_node_packages import (
+        NATIVE_BUDGET_BYTES,
+        validate_native_payload,
+    )
+    from stage_node_packages import (
+        PLATFORMS as PLATFORM_LAYOUTS,
+    )
+except ModuleNotFoundError:  # Imported as ``scripts.publish_node_packages`` in tests.
+    from scripts.stage_node_packages import (
+        NATIVE_BUDGET_BYTES,
+        validate_native_payload,
+    )
+    from scripts.stage_node_packages import (
+        PLATFORMS as PLATFORM_LAYOUTS,
+    )
+
 PLATFORMS = (
     "darwin-arm64",
     "darwin-x64",
@@ -49,6 +66,9 @@ def _artifact(path: Path) -> Artifact:
             if handle is None or member.size > 1024 * 1024:
                 raise ValueError(f"{path.name} has an invalid package manifest")
             manifest = json.loads(handle.read().decode("utf-8"))
+            name = manifest.get("name")
+            if isinstance(name, str) and name.startswith(f"{FACADE}-"):
+                _validate_native_archive(archive, manifest, name.removeprefix(f"{FACADE}-"))
     except (KeyError, tarfile.TarError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError(f"cannot read {path.name}: {error}") from error
     name = manifest.get("name")
@@ -56,6 +76,27 @@ def _artifact(path: Path) -> Artifact:
     if not isinstance(name, str) or not isinstance(version, str):
         raise ValueError(f"{path.name} is missing a string name/version")
     return Artifact(path, name, version, hashlib.sha1(path.read_bytes()).hexdigest(), manifest)
+
+
+def _validate_native_archive(
+    archive: tarfile.TarFile, manifest: dict[str, object], platform_id: str
+) -> None:
+    if platform_id not in PLATFORM_LAYOUTS:
+        raise ValueError(f"unexpected XYG Node native platform {platform_id!r}")
+    library_name, expected_os, expected_cpu = PLATFORM_LAYOUTS[platform_id]
+    if manifest.get("os") != [expected_os] or manifest.get("cpu") != [expected_cpu]:
+        raise ValueError(f"{platform_id} archive has mismatched os/cpu metadata")
+    expected_member = f"package/{library_name}"
+    members = [member for member in archive.getmembers() if member.name == expected_member]
+    if len(members) != 1 or not members[0].isfile():
+        raise ValueError(f"{platform_id} archive must contain exactly one {expected_member}")
+    member = members[0]
+    if member.size <= 0 or member.size > NATIVE_BUDGET_BYTES:
+        raise ValueError(f"{platform_id} archive native size is outside the package budget")
+    handle = archive.extractfile(member)
+    if handle is None:
+        raise ValueError(f"{platform_id} archive native cannot be read")
+    validate_native_payload(handle.read(), platform_id)
 
 
 def load_release(directory: Path) -> list[Artifact]:

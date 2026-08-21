@@ -67,6 +67,19 @@ def test_release_tag_maps_to_npm_semver(tag: str, expected: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("suffix", "npm_label"), [("a01", "alpha"), ("b01", "beta"), ("rc01", "rc")]
+)
+def test_release_version_rejects_leading_zero_prerelease_counter(
+    suffix: str, npm_label: str
+) -> None:
+    mod = _load()
+    with pytest.raises(ValueError, match="invalid XYG release tag"):
+        mod.npm_version_from_tag(f"xyg-v0.6.0{suffix}")
+    with pytest.raises(ValueError, match="invalid npm semver"):
+        mod._require_semver(f"0.6.0-{npm_label}.01")
+
+
+@pytest.mark.parametrize(
     ("payload", "expected"),
     [
         (_elf("x64"), ("linux", "x64")),
