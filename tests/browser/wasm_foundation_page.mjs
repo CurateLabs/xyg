@@ -534,7 +534,7 @@ async function run() {
     errorController.bindScrubber(errorScrubber);
     await errorWorker.dispose();
     errorScrubber.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await errorController.whenIdle().catch(() => {});
     errorController.unbindScrubber();
     errorScrubber.remove();
   }
