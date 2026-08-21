@@ -434,7 +434,16 @@ fn scene_v9_primary_legend_consumers(bencher: Bencher, entries: usize) {
     let viewport_height = (46.0 + entries as f64 * 17.0).max(600.0);
     let layout = PlotLayout::new(800.0, viewport_height, 60.0, 20.0, 20.0, 50.0).unwrap();
     let sx = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 60.0, 780.0, 1.0, false).unwrap();
-    let sy = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, viewport_height - 50.0, 20.0, 1.0, false).unwrap();
+    let sy = AxisScale::new(
+        ScaleKind::Linear,
+        0.0,
+        1.0,
+        viewport_height - 50.0,
+        20.0,
+        1.0,
+        false,
+    )
+    .unwrap();
     let legend = SceneLegend {
         location: LegendLocation::UpperRight,
         title: "Series".into(),

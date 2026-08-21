@@ -350,9 +350,7 @@ impl TileStore {
     fn evict_to_budget(&mut self, headroom: u64, pinned: &[(u32, u32, u32)]) -> io::Result<()> {
         while global_resident() + headroom > budget_get() {
             let own = self.lru_candidate(pinned);
-            let sibling = self
-                .registry_handle
-                .and_then(oldest_sibling_candidate);
+            let sibling = self.registry_handle.and_then(oldest_sibling_candidate);
             match (own, sibling) {
                 (Some((key, tick)), Some((other_handle, other_key, other_tick)))
                     if (other_tick, other_handle, other_key)
