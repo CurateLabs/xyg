@@ -5974,7 +5974,11 @@ pub unsafe extern "C" fn xyg_graph_force_create(
     algorithm: u32,
     out_handle: *mut u64,
 ) -> i32 {
-    if out_handle.is_null() || n_edges > (usize::MAX as u64) {
+    if out_handle.is_null() {
+        return -1;
+    }
+    *out_handle = 0;
+    if n_edges > (usize::MAX as u64) {
         return -1;
     }
     let e = n_edges as usize;
@@ -8253,7 +8257,7 @@ mod tests {
         let bad_x = [f64::NAN, 1.0];
         let bad_y = [0.0_f64, f64::INFINITY];
         for (x, y) in [(&bad_x[..], &finite[..]), (&finite[..], &bad_y[..])] {
-            let mut handle = 0_u64;
+            let mut handle = u64::MAX;
             let status = unsafe {
                 xyg_graph_force_create(
                     2,

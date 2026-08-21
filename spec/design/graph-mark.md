@@ -242,6 +242,11 @@ handle for n ≤ 500.
 single documented default profile. Caller-set ideal length/repulsion/gravity,
 explicit pinned nodes, compound participation, and direct browser Worker/WASM
 execution remain required follow-up for #35; hosts must not emulate them.
+Above the 500-node exact tier, repulsion uses a bounded uniform-grid
+approximation: at most 32 members per neighboring cell are evaluated exactly;
+denser neighboring cells and the complete far field are represented by mass
+centres. A tick is therefore linear in node count for fixed neighborhood size,
+rather than scanning every occupied cell for every node.
 
 ---
 

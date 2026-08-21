@@ -988,6 +988,7 @@ impl ForceState {
 
     #[allow(clippy::needless_range_loop)] // indexes x/y/cell_of together; force math stays scalar
     fn apply_repulsion_grid_bh(&self, fx: &mut [f64], fy: &mut [f64], mass_scale: f64) {
+        const EXACT_CELL_MAX: usize = 32;
         let n = self.n;
         let k2 = self.k * self.k * mass_scale;
         let mut min_x = f64::INFINITY;
@@ -1010,8 +1011,8 @@ impl ForceState {
         let mut cell_of = vec![0usize; n];
         let mut members: Vec<Vec<usize>> = vec![Vec::new(); cells];
         let mut mass = vec![0u64; cells];
-        let mut com_x = vec![0.0f64; cells];
-        let mut com_y = vec![0.0f64; cells];
+        let mut sum_x = vec![0.0f64; cells];
+        let mut sum_y = vec![0.0f64; cells];
         for (i, cell_slot) in cell_of.iter_mut().enumerate() {
             let col = (((self.x[i] - min_x) / span_x) * (side as f64))
                 .floor()
@@ -1023,92 +1024,69 @@ impl ForceState {
             *cell_slot = cell;
             members[cell].push(i);
             mass[cell] += 1;
-            com_x[cell] += self.x[i];
-            com_y[cell] += self.y[i];
+            sum_x[cell] += self.x[i];
+            sum_y[cell] += self.y[i];
         }
-        for c in 0..cells {
-            if mass[c] > 0 {
-                let m = mass[c] as f64;
-                com_x[c] /= m;
-                com_y[c] /= m;
-            }
-        }
-        for m in &members {
-            for a in 0..m.len() {
-                for b in (a + 1)..m.len() {
-                    let i = m[a];
-                    let j = m[b];
-                    let dx = self.x[i] - self.x[j];
-                    let dy = self.y[i] - self.y[j];
-                    let dist2 = dx * dx + dy * dy + 1e-8;
-                    let dist = dist2.sqrt();
-                    let force = k2 / dist;
-                    let fx_i = force * dx / dist;
-                    let fy_i = force * dy / dist;
-                    fx[i] += fx_i;
-                    fy[i] += fy_i;
-                    fx[j] -= fx_i;
-                    fy[j] -= fy_i;
-                }
-            }
-        }
-        for row in 0..side {
-            for col in 0..side {
-                let c0 = row * side + col;
-                for dr in 0i32..=1 {
-                    for dc in -1i32..=1 {
-                        if dr == 0 && dc <= 0 {
-                            continue;
-                        }
-                        let r2 = row as i32 + dr;
-                        let c2 = col as i32 + dc;
-                        if r2 < 0 || c2 < 0 || r2 >= side as i32 || c2 >= side as i32 {
-                            continue;
-                        }
-                        let c1 = (r2 as usize) * side + (c2 as usize);
-                        for &i in &members[c0] {
-                            for &j in &members[c1] {
-                                let dx = self.x[i] - self.x[j];
-                                let dy = self.y[i] - self.y[j];
-                                let dist2 = dx * dx + dy * dy + 1e-8;
-                                let dist = dist2.sqrt();
-                                let force = k2 / dist;
-                                let fx_i = force * dx / dist;
-                                let fy_i = force * dy / dist;
-                                fx[i] += fx_i;
-                                fy[i] += fy_i;
-                                fx[j] -= fx_i;
-                                fy[j] -= fy_i;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        let total_sum_x: f64 = sum_x.iter().sum();
+        let total_sum_y: f64 = sum_y.iter().sum();
         for i in 0..n {
             let ci = cell_of[i];
             let ri = ci / side;
             let coli = ci % side;
-            for row in 0..side {
-                for col in 0..side {
-                    let crow = row as i32 - ri as i32;
-                    let ccol = col as i32 - coli as i32;
-                    if crow.abs() <= 1 && ccol.abs() <= 1 {
+            let mut near_mass = 0u64;
+            let mut near_sum_x = 0.0;
+            let mut near_sum_y = 0.0;
+            for dr in -1i32..=1 {
+                for dc in -1i32..=1 {
+                    let row = ri as i32 + dr;
+                    let col = coli as i32 + dc;
+                    if row < 0 || col < 0 || row >= side as i32 || col >= side as i32 {
                         continue;
                     }
-                    let c = row * side + col;
-                    let m = mass[c];
-                    if m == 0 {
-                        continue;
+                    let c = row as usize * side + col as usize;
+                    near_mass += mass[c];
+                    near_sum_x += sum_x[c];
+                    near_sum_y += sum_y[c];
+                    if members[c].len() <= EXACT_CELL_MAX {
+                        for &j in &members[c] {
+                            if i == j {
+                                continue;
+                            }
+                            let dx = self.x[i] - self.x[j];
+                            let dy = self.y[i] - self.y[j];
+                            let dist = (dx * dx + dy * dy + 1e-8).sqrt();
+                            let force = k2 / dist;
+                            fx[i] += force * dx / dist;
+                            fy[i] += force * dy / dist;
+                        }
+                    } else {
+                        let contains_i = c == ci;
+                        let aggregate_mass = mass[c] - u64::from(contains_i);
+                        if aggregate_mass > 0 {
+                            let mx = (sum_x[c] - if contains_i { self.x[i] } else { 0.0 })
+                                / aggregate_mass as f64;
+                            let my = (sum_y[c] - if contains_i { self.y[i] } else { 0.0 })
+                                / aggregate_mass as f64;
+                            let dx = self.x[i] - mx;
+                            let dy = self.y[i] - my;
+                            let dist = (dx * dx + dy * dy + 1e-8).sqrt();
+                            let force = k2 * aggregate_mass as f64 / dist;
+                            fx[i] += force * dx / dist;
+                            fy[i] += force * dy / dist;
+                        }
                     }
-                    let dx = self.x[i] - com_x[c];
-                    let dy = self.y[i] - com_y[c];
-                    let dist2 = dx * dx + dy * dy + 1e-8;
-                    let dist = dist2.sqrt();
-                    let force = (k2 * (m as f64)) / dist;
-                    fx[i] += force * dx / dist;
-                    fy[i] += force * dy / dist;
                 }
+            }
+            let far_mass = n as u64 - near_mass;
+            if far_mass > 0 {
+                let mx = (total_sum_x - near_sum_x) / far_mass as f64;
+                let my = (total_sum_y - near_sum_y) / far_mass as f64;
+                let dx = self.x[i] - mx;
+                let dy = self.y[i] - my;
+                let dist = (dx * dx + dy * dy + 1e-8).sqrt();
+                let force = k2 * far_mass as f64 / dist;
+                fx[i] += force * dx / dist;
+                fy[i] += force * dy / dist;
             }
         }
     }
