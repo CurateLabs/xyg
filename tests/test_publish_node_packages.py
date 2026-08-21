@@ -114,7 +114,11 @@ def test_publish_retry_skips_only_identical_registry_bytes(tmp_path: Path, monke
     mod = _release(tmp_path)
     artifacts = mod.load_release(tmp_path)
     published: list[str] = []
-    monkeypatch.setattr(mod, "_registry_shasum", lambda spec: artifacts[0].shasum)
+    monkeypatch.setattr(
+        mod,
+        "_registry_dist",
+        lambda spec: mod.RegistryDist(artifacts[0].shasum, artifacts[0].integrity),
+    )
     monkeypatch.setattr(
         mod.subprocess,
         "run",
@@ -123,8 +127,12 @@ def test_publish_retry_skips_only_identical_registry_bytes(tmp_path: Path, monke
     mod.publish_release([artifacts[0]])
     assert published == []
 
-    monkeypatch.setattr(mod, "_registry_shasum", lambda spec: "0" * 40)
-    with pytest.raises(RuntimeError, match="differs"):
+    monkeypatch.setattr(
+        mod,
+        "_registry_dist",
+        lambda spec: mod.RegistryDist(artifacts[0].shasum, "sha512-wrong"),
+    )
+    with pytest.raises(RuntimeError, match="immutable registry mismatch"):
         mod.publish_release([artifacts[0]])
 
 
@@ -132,15 +140,47 @@ def test_publish_processes_native_packages_before_facade(tmp_path: Path, monkeyp
     mod = _release(tmp_path)
     artifacts = mod.load_release(tmp_path)
     published: list[str] = []
-    monkeypatch.setattr(mod, "_registry_shasum", lambda spec: None)
     monkeypatch.setattr(
         mod.subprocess,
         "run",
         lambda command, check, timeout: published.append(Path(command[2]).name),
     )
+    by_spec = {f"{artifact.name}@{artifact.version}": artifact for artifact in artifacts}
+    calls = {spec: 0 for spec in by_spec}
+
+    def registry(spec):
+        calls[spec] += 1
+        if calls[spec] == 1:
+            return None
+        artifact = by_spec[spec]
+        return mod.RegistryDist(artifact.shasum, artifact.integrity)
+
+    monkeypatch.setattr(mod, "_registry_dist", registry)
     mod.publish_release(artifacts)
     by_path = {artifact.path.name: artifact.name for artifact in artifacts}
     assert [by_path[name] for name in published] == list(mod.EXPECTED_NAMES)
+
+
+def test_registry_metadata_requires_both_hashes(monkeypatch) -> None:
+    mod = _load()
+
+    def run(*args, **kwargs):
+        return subprocess.CompletedProcess(args[0], 0, '{"shasum":"abc"}\n', "")
+
+    monkeypatch.setattr(mod.subprocess, "run", run)
+    with pytest.raises(RuntimeError, match=r"SHA-512 dist\.integrity"):
+        mod._registry_dist("@curatelabs/xyg-node@1.2.3")
+
+
+def test_post_publish_visibility_failure_is_actionable(tmp_path: Path, monkeypatch) -> None:
+    mod = _release(tmp_path)
+    artifact = mod.load_release(tmp_path)[0]
+    monkeypatch.setattr(mod, "REGISTRY_VERIFY_ATTEMPTS", 2)
+    monkeypatch.setattr(mod, "REGISTRY_VERIFY_DELAY_S", 0)
+    monkeypatch.setattr(mod, "_registry_dist", lambda spec: None)
+    monkeypatch.setattr(mod.subprocess, "run", lambda *args, **kwargs: None)
+    with pytest.raises(RuntimeError, match="retry the release to verify immutable bytes"):
+        mod.publish_release([artifact])
 
 
 def test_publish_timeout_fails_through_the_stable_cli_error(tmp_path: Path, monkeypatch) -> None:
