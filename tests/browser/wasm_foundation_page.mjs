@@ -461,16 +461,34 @@ async function run() {
   const scrubber = document.body.appendChild(document.createElement("div"));
   scrubber.setAttribute("role", "button");
   scrubber.setAttribute("tabindex", "3");
+  const firstCleanup = temporal.bindScrubber(scrubber);
+  const reboundScrubber = document.body.appendChild(document.createElement("div"));
+  temporal.bindScrubber(reboundScrubber);
+  firstCleanup();
+  if (reboundScrubber.getAttribute("role") !== "slider") {
+    throw new Error("stale temporal cleanup detached the newer scrubber");
+  }
+  reboundScrubber.remove();
   temporal.bindScrubber(scrubber);
-  scrubber.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
   await temporal.setCursor(25n);
   if (temporal.state.cursor !== 25n || temporalEvents.length < 1
       || scrubber.getAttribute("aria-valuenow") !== "25") {
     throw new Error("direct-browser temporal state, coordination, or ARIA did not round-trip");
   }
+  scrubber.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+  scrubber.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+  await temporal.whenIdle();
+  if (temporal.state.cursor !== 25n) {
+    throw new Error("rapid temporal arrow actions interleaved direction and step commands");
+  }
   await temporal.play();
   if (temporal.state.playing) throw new Error("reduced motion allowed automatic temporal playback");
   await temporal.setReducedMotion(false);
+  scrubber.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+  scrubber.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+  await temporal.whenIdle();
+  if (temporal.state.playing) throw new Error("rapid temporal Space keys used stale playback state");
+  await temporal.setDirection(1);
   await temporal.play();
   await temporal.tick(10n);
   await temporal.pause();
@@ -524,7 +542,10 @@ async function run() {
   if (reportedErrors !== 2 || unhandledErrors !== 0) {
     throw new Error("temporal onError containment allowed an unhandled rejection");
   }
-  await temporal.dispose();
+  const disposeA = temporal.dispose();
+  const disposeB = temporal.dispose();
+  if (disposeA !== disposeB) throw new Error("concurrent temporal disposal did not share one promise");
+  await Promise.all([disposeA, disposeB]);
   if (scrubber.getAttribute("role") !== "button" || scrubber.getAttribute("tabindex") !== "3"
       || scrubber.hasAttribute("aria-valuenow")) {
     throw new Error("temporal scrubber disposal did not restore prior DOM attributes");

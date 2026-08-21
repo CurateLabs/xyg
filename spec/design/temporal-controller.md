@@ -142,6 +142,12 @@ Scrubber-triggered command failures are contained and delivered to the
 optional `onError` callback rather than becoming unhandled browser rejections.
 That reporting boundary also contains synchronous throws and rejected promises
 from the application callback itself.
+Keyboard actions are serialized as actions, so a direction change and its step
+cannot interleave with the next key and Space evaluates play/pause when its turn
+runs. A stale binding cleanup cannot detach a newer scrubber, and concurrent
+disposal callers share one in-flight teardown promise.
+`whenIdle()` lets application teardown and deterministic tests await the
+keyboard-action queue without exposing or bypassing Rust-owned state policy.
 
 ## Wire
 

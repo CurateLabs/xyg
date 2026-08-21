@@ -131,6 +131,8 @@ function decode(buffer: ArrayBuffer): XygTemporalResult {
  */
 export class XygWasmTemporalController {
   private queue: Promise<XygTemporalResult>;
+  private actionQueue: Promise<void> = Promise.resolve();
+  private disposePromise: Promise<void> | null = null;
   private frame = 0;
   private lastFrame: number | null = null;
   private tickPending = false;
@@ -259,6 +261,17 @@ export class XygWasmTemporalController {
     this.frame = 0; this.lastFrame = null; this.tickPending = false; this.pendingMicros = 0n;
   }
 
+  private enqueueKeyboardAction(action: () => Promise<unknown>) {
+    const run = async () => { await action(); };
+    this.actionQueue = this.actionQueue.then(run, run);
+    void this.actionQueue.catch((error) => {
+      void Promise.resolve().then(() => this.onError?.(error)).catch(() => {});
+    });
+  }
+
+  /** Resolve after all keyboard actions accepted so far have completed. */
+  whenIdle(): Promise<void> { return this.actionQueue; }
+
   bindScrubber(element: HTMLElement, format: (state: XygTemporalState) => string = (state) => `Cursor ${state.cursor}; range ${state.rangeStart} to ${state.rangeEnd}`) {
     this.unbindScrubber();
     if (!(element instanceof HTMLElement) || typeof format !== "function") throw new TypeError("a scrubber element and formatter are required");
@@ -268,22 +281,24 @@ export class XygWasmTemporalController {
     this.keyTarget = element; element.tabIndex = 0; element.setAttribute("role", "slider");
     element.setAttribute("aria-label", "Temporal position");
     this.keyHandler = (event) => {
-      const guard = (work: Promise<unknown>) => {
-        void work.catch((error) => {
-          void Promise.resolve().then(() => this.onError?.(error)).catch(() => {});
-        });
-      };
-      if (event.key === "ArrowRight" || event.key === "ArrowUp") guard(this.setDirection(1).then(() => this.step()));
-      else if (event.key === "ArrowLeft" || event.key === "ArrowDown") guard(this.setDirection(-1).then(() => this.step()));
-      else if (event.key === "Home") guard(this.setCursor(this.state.domainStart));
-      else if (event.key === "End") guard(this.setCursor(this.state.domainEnd - 1n));
-      else if (event.key === " ") guard(this.state.playing ? this.pause() : this.play());
+      if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+        this.enqueueKeyboardAction(() => this.setDirection(1).then(() => this.step()));
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+        this.enqueueKeyboardAction(() => this.setDirection(-1).then(() => this.step()));
+      } else if (event.key === "Home") {
+        this.enqueueKeyboardAction(() => this.setCursor(this.state.domainStart));
+      } else if (event.key === "End") {
+        this.enqueueKeyboardAction(() => this.setCursor(this.state.domainEnd - 1n));
+      } else if (event.key === " ") {
+        this.enqueueKeyboardAction(() => this.state.playing ? this.pause() : this.play());
+      }
       else return;
       event.preventDefault();
     };
     element.addEventListener("keydown", this.keyHandler);
     this.syncAccessibility();
-    return () => this.unbindScrubber();
+    const binding = this.keyHandler;
+    return () => { if (this.keyHandler === binding) this.unbindScrubber(); };
   }
 
   private syncAccessibility() {
@@ -306,11 +321,16 @@ export class XygWasmTemporalController {
     this.scrubberFormat = null; this.scrubberAttributes = null;
   }
 
-  async dispose() {
-    if (this.state.disposed) return;
+  dispose(): Promise<void> {
+    if (this.state.disposed) return Promise.resolve();
+    if (this.disposePromise) return this.disposePromise;
     this.stopClock(); this.unbindScrubber();
-    const result = await this.submit(command(14));
-    this.stopClock();
-    this.state = result.state;
+    this.disposePromise = this.submit(command(14)).then((result) => {
+      this.stopClock();
+      this.state = result.state;
+    }).finally(() => {
+      if (!this.state.disposed) this.disposePromise = null;
+    });
+    return this.disposePromise;
   }
 }
