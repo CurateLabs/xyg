@@ -43,12 +43,20 @@ export async function runForceTicks(args) {
   if (!args || typeof args !== "object") throw new TypeError("force scheduler arguments are required");
   const maxWallMs = Number(args.maxWallMs ?? 30_000);
   if (!Number.isFinite(maxWallMs) || maxWallMs <= 0 || maxWallMs > 300_000) throw new RangeError("maxWallMs must be in (0, 300000]");
+  if (args.onTick !== undefined && typeof args.onTick !== "function") throw new TypeError("onTick must be a function");
+  if (args.signal !== undefined && (typeof args.signal?.aborted !== "boolean"
+      || typeof args.signal.addEventListener !== "function"
+      || typeof args.signal.removeEventListener !== "function")) {
+    throw new TypeError("signal must be an AbortSignal");
+  }
+  if (args.jobId !== undefined && typeof args.jobId !== "string" && typeof args.jobId !== "number") throw new TypeError("jobId must be a string or number");
   args = { ...args, maxWallMs };
   const mode = args.mode ?? "worker";
   if (mode === "worker") {
     return runForceTicksInWorker(args);
   }
-  return runForceTicksImmediate(args);
+  if (mode === "immediate") return runForceTicksImmediate(args);
+  throw new RangeError("mode must be 'worker' or explicit batch-only 'immediate'");
 }
 
 function yieldEventLoop() {

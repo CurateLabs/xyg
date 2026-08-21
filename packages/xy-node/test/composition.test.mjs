@@ -228,3 +228,15 @@ test("force_scheduler rejects and terminates when a progress callback fails", as
     /consumer failed/,
   );
 });
+
+test("force_scheduler never turns a misspelled mode into main-thread work", async () => {
+  const request = {
+    nNodes: 2,
+    sources: new BigUint64Array([0n]),
+    targets: new BigUint64Array([1n]),
+  };
+  await assert.rejects(runForceTicks({ ...request, mode: "workre" }), /mode must be/);
+  await assert.rejects(runForceTicks({ ...request, onTick: "nope" }), /onTick must be/);
+  await assert.rejects(runForceTicks({ ...request, signal: {} }), /signal must be/);
+  await assert.rejects(runForceTicks({ ...request, jobId: {} }), /jobId must be/);
+});

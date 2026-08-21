@@ -296,6 +296,9 @@ phase, bounded chunk size, render revision, cancellation signal, 30 s default
 wall limit, and explicit initial/update/complete phases are visible to Node
 consumers. Native scheduling stops on Rust convergence and emits exactly one
 completion phase rather than replaying no-op ticks through the requested cap.
+Any unknown scheduler mode fails closed; only the exact, explicitly authored
+`"immediate"` escape hatch can select caller-thread execution. Callback,
+AbortSignal, and job identity shapes are rejected before allocating a Worker.
 
 Python off-event-loop scheduling, drag/pin reheating and the full browser/native
 deterministic tolerance plus first-paint/cadence size-ladder evidence remain the
