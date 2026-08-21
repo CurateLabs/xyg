@@ -224,6 +224,7 @@ Single parameter; default **`"force"`**.
 | `yifanhu` | Yifan Hu–style: grid BH repulsion + edge springs |
 | `kamada_kawai` / `kk` | Kamada–Kawai stress on all-pairs shortest paths; **n ≤ 500** (falls back to FR above) |
 | `stress` | Stress majorization on graph distances; **n ≤ 500** (falls back to FR above) |
+| `cose` | Deterministic CoSE-class default profile: ideal-edge springs, node repulsion, gravity, exact overlap pressure through the 500-node pairwise tier, deterministic de-overlap seeding above it, and stable disconnected-component spacing |
 | `breadthfirst` | BFS layers from lowest-index root (or `roots=`) |
 | `radial` | Distance rings from root (SHOULD) |
 | `concentric` | Degree / attribute rings (SHOULD) |
@@ -237,6 +238,15 @@ pin seeded FR output across Python and Node for the exact small-N path.
 Progressive ticks (`force_create` + `algorithm` + `force_tick`) cover FR /
 FA2 / spring / linlog / yifanhu at minimum; KK / stress share the same
 handle for n ≤ 500.
+`cose` uses that handle across native hosts. This bounded first slice exposes a
+single documented default profile. Caller-set ideal length/repulsion/gravity,
+explicit pinned nodes, compound participation, and direct browser Worker/WASM
+execution remain required follow-up for #35; hosts must not emulate them.
+Above the 500-node exact tier, repulsion uses a bounded uniform-grid
+approximation: at most 32 members per neighboring cell are evaluated exactly;
+denser neighboring cells and the complete far field are represented by mass
+centres. A tick is therefore linear in node count for fixed neighborhood size,
+rather than scanning every occupied cell for every node.
 
 ---
 

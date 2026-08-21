@@ -5904,7 +5904,8 @@ pub unsafe extern "C" fn xyg_graph_layout(
             | graph::LAYOUT_KAMADA_KAWAI
             | graph::LAYOUT_YIFANHU
             | graph::LAYOUT_LINLOG
-            | graph::LAYOUT_STRESS => graph::layout_force_family(
+            | graph::LAYOUT_STRESS
+            | graph::LAYOUT_COSE => graph::layout_force_family(
                 layout, n_nodes, sources, targets, seed, 300, out_x, out_y,
             ),
             graph::LAYOUT_BREADTHFIRST => {
@@ -5973,7 +5974,11 @@ pub unsafe extern "C" fn xyg_graph_force_create(
     algorithm: u32,
     out_handle: *mut u64,
 ) -> i32 {
-    if out_handle.is_null() || n_edges > (usize::MAX as u64) {
+    if out_handle.is_null() {
+        return -1;
+    }
+    *out_handle = 0;
+    if n_edges > (usize::MAX as u64) {
         return -1;
     }
     let e = n_edges as usize;
@@ -8242,6 +8247,76 @@ mod tests {
             assert_eq!(xyg_graph_projection_create(&descriptor, &mut handle), -6);
         }
         assert_eq!(handle, 0);
+    }
+
+    #[test]
+    fn graph_force_abi_rejects_nonfinite_initial_positions() {
+        let sources = [0_u64];
+        let targets = [1_u64];
+        let finite = [0.0_f64, 1.0];
+        let bad_x = [f64::NAN, 1.0];
+        let bad_y = [0.0_f64, f64::INFINITY];
+        for (x, y) in [(&bad_x[..], &finite[..]), (&finite[..], &bad_y[..])] {
+            let mut handle = u64::MAX;
+            let status = unsafe {
+                xyg_graph_force_create(
+                    2,
+                    1,
+                    sources.as_ptr(),
+                    targets.as_ptr(),
+                    x.as_ptr(),
+                    y.as_ptr(),
+                    7,
+                    graph::LAYOUT_COSE,
+                    &mut handle,
+                )
+            };
+            assert_eq!(status, -1);
+            assert_eq!(handle, 0);
+        }
+    }
+
+    #[test]
+    fn graph_force_abi_never_exposes_overflowed_positions() {
+        let sources = [0_u64];
+        let targets = [1_u64];
+        let x = [f64::MAX, -f64::MAX];
+        let y = [0.0_f64, 0.0];
+        let mut handle = 0_u64;
+        let create = unsafe {
+            xyg_graph_force_create(
+                2,
+                1,
+                sources.as_ptr(),
+                targets.as_ptr(),
+                x.as_ptr(),
+                y.as_ptr(),
+                7,
+                graph::LAYOUT_COSE,
+                &mut handle,
+            )
+        };
+        assert_eq!(create, 0);
+        assert_ne!(handle, 0);
+
+        let mut out_x = [17.0_f64; 2];
+        let mut out_y = [19.0_f64; 2];
+        let mut alpha = 23.0_f64;
+        let tick = unsafe {
+            xyg_graph_force_tick(
+                handle,
+                2,
+                1,
+                out_x.as_mut_ptr(),
+                out_y.as_mut_ptr(),
+                &mut alpha,
+            )
+        };
+        assert_eq!(tick, -1);
+        assert_eq!(out_x, [17.0; 2]);
+        assert_eq!(out_y, [19.0; 2]);
+        assert_eq!(alpha, 23.0);
+        assert_eq!(unsafe { xyg_graph_force_destroy(handle) }, 1);
     }
 
     #[test]

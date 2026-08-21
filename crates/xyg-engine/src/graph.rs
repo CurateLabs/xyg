@@ -41,6 +41,8 @@ pub const LAYOUT_YIFANHU: u32 = 13;
 pub const LAYOUT_LINLOG: u32 = 14;
 /// Stress majorization on graph distances (same n limit as KK).
 pub const LAYOUT_STRESS: u32 = 15;
+/// CoSE-class spring layout (bounded default option profile).
+pub const LAYOUT_COSE: u32 = 16;
 
 /// Exact O(n²) pairwise repulsion ceiling. For `n` at or below this value
 /// Fruchterman–Reingold uses exact pairwise forces (seeded determinism for
@@ -65,6 +67,7 @@ pub fn is_progressive_force_algo(algo: u32) -> bool {
             | LAYOUT_LINLOG
             | LAYOUT_KAMADA_KAWAI
             | LAYOUT_STRESS
+            | LAYOUT_COSE
     )
 }
 
@@ -410,6 +413,9 @@ pub struct ForceState {
     pub algo: u32,
     /// All-pairs shortest-path distances (row-major n×n) for KK / stress.
     pub dist: Option<Vec<f64>>,
+    /// Connected-component index used by CoSE to keep disconnected groups apart.
+    pub component: Vec<usize>,
+    pub component_count: usize,
 }
 
 fn splitmix64(state: &mut u64) -> u64 {
@@ -459,6 +465,61 @@ fn all_pairs_shortest_paths(n: usize, edges: &[(u64, u64)]) -> Vec<f64> {
     dist
 }
 
+fn connected_components(n: usize, edges: &[(u64, u64)]) -> (Vec<usize>, usize) {
+    let mut adj = vec![Vec::new(); n];
+    for &(s, t) in edges {
+        let (i, j) = (s as usize, t as usize);
+        if i >= n || j >= n || i == j {
+            continue;
+        }
+        adj[i].push(j);
+        adj[j].push(i);
+    }
+    let mut component = vec![usize::MAX; n];
+    let mut count = 0usize;
+    for root in 0..n {
+        if component[root] != usize::MAX {
+            continue;
+        }
+        component[root] = count;
+        let mut queue = VecDeque::from([root]);
+        while let Some(node) = queue.pop_front() {
+            for &next in &adj[node] {
+                if component[next] == usize::MAX {
+                    component[next] = count;
+                    queue.push_back(next);
+                }
+            }
+        }
+        count += 1;
+    }
+    (component, count)
+}
+
+/// Give exactly coincident CoSE ingress positions a stable direction before
+/// force evaluation. Without this, both pairwise and grid repulsion have a
+/// zero direction and a connected graph can remain fully overlapped forever.
+fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], seed: u64, scale: f64) {
+    let mut occurrences = HashMap::<(u64, u64), u64>::new();
+    for (index, (px, py)) in x.iter_mut().zip(y.iter_mut()).enumerate() {
+        let key = (
+            if *px == 0.0 { 0 } else { px.to_bits() },
+            if *py == 0.0 { 0 } else { py.to_bits() },
+        );
+        let occurrence = occurrences.entry(key).or_default();
+        if *occurrence > 0 {
+            let mut state = seed
+                ^ (index as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+                ^ occurrence.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+            let angle = std::f64::consts::TAU * rand01(&mut state);
+            let radius = scale * 1e-6 * (*occurrence as f64).sqrt();
+            *px += radius * angle.cos();
+            *py += radius * angle.sin();
+        }
+        *occurrence += 1;
+    }
+}
+
 impl ForceState {
     pub fn new(
         n_nodes: u64,
@@ -495,6 +556,9 @@ impl ForceState {
                 y[i] += 0.01 * (rand01(&mut rng) - 0.5);
             }
         }
+        if x.iter().chain(&y).any(|value| !value.is_finite()) {
+            return None;
+        }
         let edges: Vec<(u64, u64)> = sources
             .iter()
             .zip(targets.iter())
@@ -516,6 +580,12 @@ impl ForceState {
         } else {
             None
         };
+        let (component, component_count) = if algo == LAYOUT_COSE {
+            seed_cose_overlaps(&mut x, &mut y, seed, k);
+            connected_components(n, &edges)
+        } else {
+            (Vec::new(), 0)
+        };
         Some(Self {
             n,
             edges,
@@ -532,6 +602,8 @@ impl ForceState {
             rng,
             algo,
             dist,
+            component,
+            component_count,
         })
     }
 
@@ -547,6 +619,7 @@ impl ForceState {
             LAYOUT_YIFANHU => self.tick_yifanhu(steps),
             LAYOUT_KAMADA_KAWAI => self.tick_kamada_kawai(steps),
             LAYOUT_STRESS => self.tick_stress(steps),
+            LAYOUT_COSE => self.tick_cose(steps),
             _ => self.tick_fr(steps, false),
         }
     }
@@ -798,6 +871,85 @@ impl ForceState {
         }
     }
 
+    /// Deterministic default CoSE profile: spring attraction, node
+    /// repulsion, central gravity, overlap pressure, and stable component
+    /// anchors. Rich option and compound/pin ingress is layered onto this same
+    /// kernel rather than implemented by a host.
+    fn tick_cose(&mut self, steps: u32) {
+        let n = self.n;
+        let ideal = self.k;
+        let minimum_separation = ideal * 0.35;
+        for _ in 0..steps {
+            if self.alpha < 0.001 {
+                break;
+            }
+            let mut fx = vec![0.0; n];
+            let mut fy = vec![0.0; n];
+            if n <= FORCE_EXACT_REPULSION_MAX_N {
+                self.apply_repulsion_exact(&mut fx, &mut fy, 1.25);
+            } else {
+                self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.25);
+            }
+            for &(s, t) in &self.edges {
+                let (i, j) = (s as usize, t as usize);
+                if i == j {
+                    continue;
+                }
+                let dx = self.x[i] - self.x[j];
+                let dy = self.y[i] - self.y[j];
+                let distance = (dx * dx + dy * dy).sqrt().max(1e-8);
+                let force = 0.8 * (distance - ideal);
+                let (edge_fx, edge_fy) = (force * dx / distance, force * dy / distance);
+                fx[i] -= edge_fx;
+                fy[i] -= edge_fy;
+                fx[j] += edge_fx;
+                fy[j] += edge_fy;
+            }
+            if n <= FORCE_EXACT_REPULSION_MAX_N {
+                for i in 0..n {
+                    for j in (i + 1)..n {
+                        let mut dx = self.x[i] - self.x[j];
+                        let mut dy = self.y[i] - self.y[j];
+                        let mut distance = (dx * dx + dy * dy).sqrt();
+                        if distance < 1e-8 {
+                            let angle = std::f64::consts::TAU
+                                * (((i as u64).wrapping_mul(0x9E37) ^ j as u64) % 65_521) as f64
+                                / 65_521.0;
+                            dx = angle.cos() * 1e-8;
+                            dy = angle.sin() * 1e-8;
+                            distance = 1e-8;
+                        }
+                        if distance < minimum_separation {
+                            let pressure = (minimum_separation - distance) * 2.0;
+                            let (px, py) = (pressure * dx / distance, pressure * dy / distance);
+                            fx[i] += px;
+                            fy[i] += py;
+                            fx[j] -= px;
+                            fy[j] -= py;
+                        }
+                    }
+                }
+            }
+            for i in 0..n {
+                let angle = if self.component_count <= 1 {
+                    0.0
+                } else {
+                    std::f64::consts::TAU * self.component[i] as f64 / self.component_count as f64
+                };
+                let radius = if self.component_count <= 1 {
+                    0.0
+                } else {
+                    ideal * 2.5 * self.component_count as f64
+                };
+                let (anchor_x, anchor_y) = (radius * angle.cos(), radius * angle.sin());
+                fx[i] += 0.08 * (anchor_x - self.x[i]);
+                fy[i] += 0.08 * (anchor_y - self.y[i]);
+            }
+            self.apply_displacement(&fx, &fy);
+            self.alpha *= 0.985;
+        }
+    }
+
     fn apply_displacement(&mut self, fx: &[f64], fy: &[f64]) {
         let n = self.n;
         let temp = self.alpha * self.area.sqrt();
@@ -836,6 +988,7 @@ impl ForceState {
 
     #[allow(clippy::needless_range_loop)] // indexes x/y/cell_of together; force math stays scalar
     fn apply_repulsion_grid_bh(&self, fx: &mut [f64], fy: &mut [f64], mass_scale: f64) {
+        const EXACT_CELL_MAX: usize = 32;
         let n = self.n;
         let k2 = self.k * self.k * mass_scale;
         let mut min_x = f64::INFINITY;
@@ -858,8 +1011,8 @@ impl ForceState {
         let mut cell_of = vec![0usize; n];
         let mut members: Vec<Vec<usize>> = vec![Vec::new(); cells];
         let mut mass = vec![0u64; cells];
-        let mut com_x = vec![0.0f64; cells];
-        let mut com_y = vec![0.0f64; cells];
+        let mut sum_x = vec![0.0f64; cells];
+        let mut sum_y = vec![0.0f64; cells];
         for (i, cell_slot) in cell_of.iter_mut().enumerate() {
             let col = (((self.x[i] - min_x) / span_x) * (side as f64))
                 .floor()
@@ -871,92 +1024,69 @@ impl ForceState {
             *cell_slot = cell;
             members[cell].push(i);
             mass[cell] += 1;
-            com_x[cell] += self.x[i];
-            com_y[cell] += self.y[i];
+            sum_x[cell] += self.x[i];
+            sum_y[cell] += self.y[i];
         }
-        for c in 0..cells {
-            if mass[c] > 0 {
-                let m = mass[c] as f64;
-                com_x[c] /= m;
-                com_y[c] /= m;
-            }
-        }
-        for m in &members {
-            for a in 0..m.len() {
-                for b in (a + 1)..m.len() {
-                    let i = m[a];
-                    let j = m[b];
-                    let dx = self.x[i] - self.x[j];
-                    let dy = self.y[i] - self.y[j];
-                    let dist2 = dx * dx + dy * dy + 1e-8;
-                    let dist = dist2.sqrt();
-                    let force = k2 / dist;
-                    let fx_i = force * dx / dist;
-                    let fy_i = force * dy / dist;
-                    fx[i] += fx_i;
-                    fy[i] += fy_i;
-                    fx[j] -= fx_i;
-                    fy[j] -= fy_i;
-                }
-            }
-        }
-        for row in 0..side {
-            for col in 0..side {
-                let c0 = row * side + col;
-                for dr in 0i32..=1 {
-                    for dc in -1i32..=1 {
-                        if dr == 0 && dc <= 0 {
-                            continue;
-                        }
-                        let r2 = row as i32 + dr;
-                        let c2 = col as i32 + dc;
-                        if r2 < 0 || c2 < 0 || r2 >= side as i32 || c2 >= side as i32 {
-                            continue;
-                        }
-                        let c1 = (r2 as usize) * side + (c2 as usize);
-                        for &i in &members[c0] {
-                            for &j in &members[c1] {
-                                let dx = self.x[i] - self.x[j];
-                                let dy = self.y[i] - self.y[j];
-                                let dist2 = dx * dx + dy * dy + 1e-8;
-                                let dist = dist2.sqrt();
-                                let force = k2 / dist;
-                                let fx_i = force * dx / dist;
-                                let fy_i = force * dy / dist;
-                                fx[i] += fx_i;
-                                fy[i] += fy_i;
-                                fx[j] -= fx_i;
-                                fy[j] -= fy_i;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        let total_sum_x: f64 = sum_x.iter().sum();
+        let total_sum_y: f64 = sum_y.iter().sum();
         for i in 0..n {
             let ci = cell_of[i];
             let ri = ci / side;
             let coli = ci % side;
-            for row in 0..side {
-                for col in 0..side {
-                    let crow = row as i32 - ri as i32;
-                    let ccol = col as i32 - coli as i32;
-                    if crow.abs() <= 1 && ccol.abs() <= 1 {
+            let mut near_mass = 0u64;
+            let mut near_sum_x = 0.0;
+            let mut near_sum_y = 0.0;
+            for dr in -1i32..=1 {
+                for dc in -1i32..=1 {
+                    let row = ri as i32 + dr;
+                    let col = coli as i32 + dc;
+                    if row < 0 || col < 0 || row >= side as i32 || col >= side as i32 {
                         continue;
                     }
-                    let c = row * side + col;
-                    let m = mass[c];
-                    if m == 0 {
-                        continue;
+                    let c = row as usize * side + col as usize;
+                    near_mass += mass[c];
+                    near_sum_x += sum_x[c];
+                    near_sum_y += sum_y[c];
+                    if members[c].len() <= EXACT_CELL_MAX {
+                        for &j in &members[c] {
+                            if i == j {
+                                continue;
+                            }
+                            let dx = self.x[i] - self.x[j];
+                            let dy = self.y[i] - self.y[j];
+                            let dist = (dx * dx + dy * dy + 1e-8).sqrt();
+                            let force = k2 / dist;
+                            fx[i] += force * dx / dist;
+                            fy[i] += force * dy / dist;
+                        }
+                    } else {
+                        let contains_i = c == ci;
+                        let aggregate_mass = mass[c] - u64::from(contains_i);
+                        if aggregate_mass > 0 {
+                            let mx = (sum_x[c] - if contains_i { self.x[i] } else { 0.0 })
+                                / aggregate_mass as f64;
+                            let my = (sum_y[c] - if contains_i { self.y[i] } else { 0.0 })
+                                / aggregate_mass as f64;
+                            let dx = self.x[i] - mx;
+                            let dy = self.y[i] - my;
+                            let dist = (dx * dx + dy * dy + 1e-8).sqrt();
+                            let force = k2 * aggregate_mass as f64 / dist;
+                            fx[i] += force * dx / dist;
+                            fy[i] += force * dy / dist;
+                        }
                     }
-                    let dx = self.x[i] - com_x[c];
-                    let dy = self.y[i] - com_y[c];
-                    let dist2 = dx * dx + dy * dy + 1e-8;
-                    let dist = dist2.sqrt();
-                    let force = (k2 * (m as f64)) / dist;
-                    fx[i] += force * dx / dist;
-                    fy[i] += force * dy / dist;
                 }
+            }
+            let far_mass = n as u64 - near_mass;
+            if far_mass > 0 {
+                let mx = (total_sum_x - near_sum_x) / far_mass as f64;
+                let my = (total_sum_y - near_sum_y) / far_mass as f64;
+                let dx = self.x[i] - mx;
+                let dy = self.y[i] - my;
+                let dist = (dx * dx + dy * dy + 1e-8).sqrt();
+                let force = k2 * far_mass as f64 / dist;
+                fx[i] += force * dx / dist;
+                fy[i] += force * dy / dist;
             }
         }
     }
@@ -1041,6 +1171,15 @@ pub fn layout_force_family(
         None => return false,
     };
     state.tick(steps.max(1));
+    if !state.alpha.is_finite()
+        || state
+            .x
+            .iter()
+            .chain(&state.y)
+            .any(|value| !value.is_finite())
+    {
+        return false;
+    }
     out_x.copy_from_slice(&state.x);
     out_y.copy_from_slice(&state.y);
     true
@@ -1053,6 +1192,15 @@ pub fn force_tick(handle: u64, steps: u32, out_x: &mut [f64], out_y: &mut [f64])
         return None;
     }
     state.tick(steps);
+    if !state.alpha.is_finite()
+        || state
+            .x
+            .iter()
+            .chain(&state.y)
+            .any(|value| !value.is_finite())
+    {
+        return None;
+    }
     out_x.copy_from_slice(&state.x);
     out_y.copy_from_slice(&state.y);
     Some(state.alpha)
@@ -2025,6 +2173,7 @@ mod tests {
             LAYOUT_KAMADA_KAWAI,
             LAYOUT_STRESS,
             LAYOUT_BARNES_HUT,
+            LAYOUT_COSE,
         ];
         for &algo in &algos {
             let mut a = ForceState::new(3, &sources, &targets, None, None, 99, algo).expect("a");
@@ -2053,6 +2202,75 @@ mod tests {
         assert_ne!(fr, spring);
         assert_ne!(fr, fa2);
         assert_ne!(fr, kk);
+    }
+
+    #[test]
+    fn cose_separates_disconnected_components_and_avoids_overlap() {
+        let sources = [0, 2];
+        let targets = [1, 3];
+        let initial_x = [0.0; 4];
+        let initial_y = [0.0; 4];
+        let mut state = ForceState::new(
+            4,
+            &sources,
+            &targets,
+            Some(&initial_x),
+            Some(&initial_y),
+            17,
+            LAYOUT_COSE,
+        )
+        .unwrap();
+        state.tick(100);
+        for i in 0..state.n {
+            for j in (i + 1)..state.n {
+                assert_ne!((state.x[i], state.y[i]), (state.x[j], state.y[j]));
+            }
+        }
+        let centroid = |nodes: [usize; 2]| {
+            (
+                (state.x[nodes[0]] + state.x[nodes[1]]) * 0.5,
+                (state.y[nodes[0]] + state.y[nodes[1]]) * 0.5,
+            )
+        };
+        let a = centroid([0, 1]);
+        let b = centroid([2, 3]);
+        assert!((a.0 - b.0).hypot(a.1 - b.1) > state.k);
+    }
+
+    #[test]
+    fn cose_large_connected_coincident_ingress_gets_deterministic_directions() {
+        let n = FORCE_EXACT_REPULSION_MAX_N + 1;
+        let sources: Vec<u64> = (0..(n - 1) as u64).collect();
+        let targets: Vec<u64> = (1..n as u64).collect();
+        let initial_x = vec![0.0; n];
+        let initial_y = vec![-0.0; n];
+        let make = || {
+            ForceState::new(
+                n as u64,
+                &sources,
+                &targets,
+                Some(&initial_x),
+                Some(&initial_y),
+                23,
+                LAYOUT_COSE,
+            )
+            .unwrap()
+        };
+        let mut a = make();
+        let mut b = make();
+        a.tick(1);
+        b.tick(1);
+        assert_eq!(
+            (a.x.as_slice(), a.y.as_slice()),
+            (b.x.as_slice(), b.y.as_slice())
+        );
+        assert!(a.x.iter().chain(&a.y).all(|value| value.is_finite()));
+        assert!(a
+            .x
+            .iter()
+            .zip(&a.y)
+            .skip(1)
+            .any(|(&x, &y)| x != a.x[0] || y != a.y[0]));
     }
 
     #[test]
