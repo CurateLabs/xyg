@@ -1,8 +1,8 @@
 # TemporalController and linked-view protocol
 
-**Status:** native coordination foundation, Part of #44. The browser/WASM
-lifecycle and accessible temporal UX remain required before #44 can close.
-Graph timebar (#45) and compositions (#46) consume this contract.
+**Status:** native and direct-browser/WASM controller lifecycle, Part of #44.
+Coordinated selection payloads remain required before #44 can close. Graph
+timebar (#45) and compositions (#46) consume this contract.
 
 **Authority:** [temporal.md](temporal.md) for canonical i64 micros; this document
 for lifecycle-safe scrubbing, playback, and opt-in coordination.
@@ -15,15 +15,23 @@ for lifecycle-safe scrubbing, playback, and opt-in coordination.
 | Playback clocks, keyboard, focus chrome, reduced-motion preference read | Host (Python / Node / browser TypeScript) |
 | Scene / filter application of range+cursor | Rust (later consumers under #45/#46) |
 
-Browser TypeScript may own `requestAnimationFrame` clocks and accessible
-controls, but it **must** submit revisioned commands to native/WASM Rust rather
-than reimplement coordination policy.
+Browser TypeScript owns a coalesced `requestAnimationFrame` clock and accessible
+scrubber controls, but every state transition is a packed command to the same
+Rust controller. The direct-browser seam uses `XYTC` commands and `XYTR`
+snapshots with raw little-endian i64/u64 fields. JavaScript exposes those exact
+values as `BigInt`; it never converts temporal state or revisions to JSON
+numbers or duplicates range policy.
 
 Python exposes an ergonomic, context-manageable ``xyg.TemporalController``
 that owns the native handle and returns itself from range, cursor, playback,
 rate, direction, loop, and reduced-motion state-changing commands.
 The low-level Python and Node functions remain thin ABI projections for host
-integrators; a browser lifecycle wrapper remains part of #44's later slice.
+integrators. `XygWasmTemporalController` is the browser lifecycle wrapper: it
+serializes commands, coalesces in-flight animation ticks, stops its clock and
+DOM listeners on disposal, and emits typed coordination events for an explicit
+caller transport.
+Coalescing accumulates (rather than drops) elapsed frame time while a worker
+command is in flight, and releases the animation clock if that worker fails.
 Both native hosts validate exact integer widths and boolean types before the C
 ABI call; oversized integers, unsafe JavaScript Numbers, and truthy substitutes
 are rejected rather than wrapped or coerced.
@@ -109,8 +117,8 @@ constraint.
   emitting outbound (no echo storms).
 
 This foundation coordinates temporal range/cursor state only. Selection-mask
-payload coordination is deferred to the remaining #44 browser/UX slice and is
-not implied by this ABI.
+payload coordination is deferred to the remaining #44 slice and is not implied
+by either native ABI or packed WASM seam.
 
 ## Accessibility (host obligations)
 
@@ -119,7 +127,27 @@ not implied by this ABI.
 - Focus: the time scrubber exposes a single tab stop with a live summary of
   cursor and selected range (host-formatted from i64 micros).
 - Reduced motion: honor OS/user preference via `set_reduced_motion(true)` before
-  autoplay.
+  autoplay. The browser wrapper reads `prefers-reduced-motion` by default and
+  never starts automatic playback when Rust reports reduced motion.
+
+`bindScrubber(element)` installs one focusable `role="slider"` surface. Arrow
+keys step in the chosen direction, Home/End move to exact domain bounds, and
+Space toggles playback. `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, and
+an overridable `aria-valuetext` formatter are refreshed from each Rust
+snapshot. Unbinding or disposal removes the key listener.
+It also restores the element's prior focus and ARIA attributes. Packed browser
+inputs are range-checked before encoding; out-of-width BigInts and non-integral
+numeric controls fail instead of wrapping at the `DataView` boundary.
+Scrubber-triggered command failures are contained and delivered to the
+optional `onError` callback rather than becoming unhandled browser rejections.
+That reporting boundary also contains synchronous throws and rejected promises
+from the application callback itself.
+Keyboard actions are serialized as actions, so a direction change and its step
+cannot interleave with the next key and Space evaluates play/pause when its turn
+runs. A stale binding cleanup cannot detach a newer scrubber, and concurrent
+disposal callers share one in-flight teardown promise.
+`whenIdle()` lets application teardown and deterministic tests await the
+keyboard-action queue without exposing or bypassing Rust-owned state policy.
 
 ## Wire
 

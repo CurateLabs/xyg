@@ -9,11 +9,12 @@
 
 pub mod aggregate;
 pub mod compile;
+mod temporal;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 5;
+pub const WASM_ABI_VERSION: u32 = 6;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -23,6 +24,9 @@ pub const STATUS_MALFORMED_SCENE: i32 = 5;
 pub const STATUS_CANCELLED: i32 = 6;
 pub const STATUS_STALE_SEQUENCE: i32 = 7;
 pub const STATUS_PENDING: i32 = 8;
+pub const STATUS_DISPOSED: i32 = 9;
+pub const STATUS_STALE_REVISION: i32 = 10;
+pub const STATUS_SELF_ECHO: i32 = 11;
 
 pub const MAX_INSTANCES: usize = 64;
 pub const MAX_ARENA_BYTES: usize = 402_653_184;
@@ -49,6 +53,7 @@ struct Instance {
     last_scene_styles: usize,
     aggregate_job: Option<aggregate::AggregateJob>,
     aggregate_sequence: u32,
+    temporal: Option<xyg_engine::temporal_controller::TemporalController>,
 }
 
 impl Instance {
@@ -133,6 +138,7 @@ impl Registry {
                 last_scene_styles: 0,
                 aggregate_job: None,
                 aggregate_sequence: 0,
+                temporal: None,
             }),
         };
         (generation << HANDLE_SLOT_BITS) | (slot_index as u32 + 1)
@@ -200,6 +206,17 @@ pub extern "C" fn xyg_wasm_instance_dispose(handle: u32) -> i32 {
     };
     slot.instance = None;
     STATUS_OK
+}
+
+/// Execute one packed `XYTC` temporal-controller command and place its packed
+/// `XYTR` snapshot in the ordinary output buffer. Temporal values remain raw
+/// i64/u64 bytes across the browser boundary; TypeScript never owns policy.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_temporal_execute(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |instance| {
+        temporal::execute(instance, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
 #[no_mangle]
