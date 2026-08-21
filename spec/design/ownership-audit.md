@@ -241,6 +241,7 @@ Forbidden:
 | `crates/xyg-wasm/src/graph.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/aggregate.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/temporal.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+| `crates/xyg-wasm/src/temporal_graph.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-engine/src/css.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/font.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -281,6 +282,7 @@ Forbidden:
 | `js/src/49_wasm_chart.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_aggregate.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_temporal.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/49_wasm_temporal_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/50_chartview.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `literal-projection-only`; Scene v10 rule/band/marker geometry, order, clipping and defaults are Rust-owned; text/callout/arrow remain migration debt | #116 |
 | `js/src/52_tooltip.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |

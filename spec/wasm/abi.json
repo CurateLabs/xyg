@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 7,
+  "abi_version": 8,
   "scene_version": 10,
   "painter_version": 7,
   "painter_header_bytes": 288,
@@ -92,6 +92,15 @@
     },
     {
       "name": "xyg_wasm_temporal_execute",
+      "params": [
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_temporal_graph_execute",
       "params": [
         "u32",
         "usize",
@@ -284,5 +293,14 @@
     "first_paint_steps": 1,
     "default_chunk_steps": 8,
     "default_max_wall_ms": 30000
+  },
+  "temporal_graph": {
+    "request_magic": "XYTG",
+    "version": 1,
+    "create_header_bytes": 32,
+    "frame_header_bytes": 56,
+    "output_magic": "XYTF",
+    "output_header_bytes": 64,
+    "max_entities": 5000000
   }
 }

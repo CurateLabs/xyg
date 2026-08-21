@@ -12,6 +12,7 @@ import {
   renderWasmScene,
   XygWasmError,
   XygWasmTemporalController,
+  XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
 
 function writeDefaultSceneV9Chrome(bytes, view, body) {
@@ -248,6 +249,7 @@ async function fixtureModule({
     "xyg_wasm_last_scene_records",
     "xyg_wasm_last_scene_styles",
     "xyg_wasm_temporal_execute",
+    "xyg_wasm_temporal_graph_execute",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -261,7 +263,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -272,7 +274,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    7, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    8, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -364,7 +366,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 7,
+    expectedAbiVersion: 8,
     expectedSceneVersion: 10,
   };
 }
@@ -446,7 +448,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 7 || ready.sceneVersion !== 10) {
+  if (ready.abiVersion !== 8 || ready.sceneVersion !== 10) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -589,6 +591,81 @@ async function run() {
   await temporalWorker.dispose();
   await peerWorker.dispose();
   scrubber.remove();
+
+  const temporalGraphWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const uuidBytes = (...values) => Uint8Array.from(values.flatMap((value) => Array(16).fill(value)));
+  const temporalGraph = await XygWasmTemporalGraph.create(temporalGraphWorker, {
+    nodeIds: uuidBytes(1, 2, 3), edgeIds: uuidBytes(11, 12),
+    sourceIds: uuidBytes(1, 2), targetIds: uuidBytes(2, 3),
+    nodeValidFrom: { values: new BigInt64Array([0n, 10n, 20n]), validity: new Uint8Array([1, 1, 1]) },
+    nodeValidTo: { values: new BigInt64Array([30n, 20n, 40n]), validity: new Uint8Array([1, 1, 1]) },
+  });
+  const temporalFrame = await temporalGraph.frame({ revision: 1n, cursor: 20n, range: [20n, 21n], budget: 12n });
+  if (temporalFrame.revision !== 1n || temporalFrame.nodeVisibility.join(",") !== "1,0,1"
+      || temporalFrame.edgeVisibility.join(",") !== "0,0" || temporalFrame.visibleNodeIds.byteLength !== 32) {
+    throw new Error("direct-browser temporal graph frame lost Rust identity membership");
+  }
+  const rapid = await Promise.allSettled([
+    temporalGraph.frame({ revision: 2n, cursor: 15n, range: [15n, 16n], budget: 12n }),
+    temporalGraph.frame({ revision: 3n, cursor: 25n, range: [25n, 26n], budget: 12n }),
+  ]);
+  if (rapid[0].status !== "rejected" || rapid[1].status !== "fulfilled"
+      || rapid[1].value.revision !== 3n) {
+    throw new Error("rapid temporal graph frames applied a stale browser reply");
+  }
+  const temporalLayout = await temporalGraph.frameAndLayout({
+    revision: 4n, cursor: 15n, range: [15n, 16n], budget: 12n,
+    layout: { totalSteps: 17, seed: 9n },
+  });
+  if (temporalLayout.frame.sources.join(",") !== "0"
+      || temporalLayout.frame.targets.join(",") !== "1"
+      || temporalLayout.layout.revision !== 4
+      || temporalLayout.layout.x.length !== 2
+      || temporalLayout.layout.phase !== "complete") {
+    throw new Error("temporal graph did not feed Rust-remapped visible topology into Rust CoSE");
+  }
+  const checkpointWithin = (promise, label) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} did not emit a progressive checkpoint`)), 5000);
+    promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
+  });
+  let superseded = false, staleLayoutUpdates = 0, resolveOldStarted;
+  const oldStarted = new Promise((resolve) => { resolveOldStarted = resolve; });
+  const oldLayout = temporalGraph.frameAndLayout({
+    revision: 5n, cursor: 15n, range: [15n, 16n], budget: 12n,
+    layout: { totalSteps: 100000, seed: 10n },
+    onUpdate: () => { if (superseded) staleLayoutUpdates += 1; else resolveOldStarted(); },
+  });
+  await checkpointWithin(oldStarted, "superseded temporal layout");
+  superseded = true;
+  const newLayout = temporalGraph.frameAndLayout({
+    revision: 6n, cursor: 25n, range: [25n, 26n], budget: 12n,
+    layout: { totalSteps: 17, seed: 11n },
+  });
+  const supersession = await Promise.allSettled([oldLayout, newLayout]);
+  if (supersession[0].status !== "rejected" || supersession[1].status !== "fulfilled"
+      || supersession[1].value.layout.revision !== 6 || staleLayoutUpdates !== 0) {
+    throw new Error("new temporal frame did not cancel and suppress the stale Rust layout");
+  }
+  let disposedUpdates = 0, resolveDisposedStarted;
+  const disposedStarted = new Promise((resolve) => { resolveDisposedStarted = resolve; });
+  const disposedLayout = temporalGraph.frameAndLayout({
+    revision: 7n, cursor: 15n, range: [15n, 16n], budget: 12n,
+    layout: { totalSteps: 100000, seed: 12n },
+    onUpdate: () => { disposedUpdates += 1; resolveDisposedStarted(); },
+  });
+  await checkpointWithin(disposedStarted, "disposed temporal layout");
+  temporalGraph.dispose();
+  const updatesAtDispose = disposedUpdates;
+  const disposedResult = await Promise.allSettled([disposedLayout]);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (disposedResult[0].status !== "rejected" || disposedUpdates !== updatesAtDispose) {
+    throw new Error("disposed temporal graph accepted a late Rust layout result or update");
+  }
+  await temporalGraphWorker.dispose();
 
   const canonical = canonicalSceneV9();
   const transferred = canonical.buffer;

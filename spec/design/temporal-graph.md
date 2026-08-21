@@ -1,9 +1,8 @@
 # Temporal graph bindings and identity-safe filtering
 
-**Status:** Rust engine plus native Python/Node host transport, Part of #45.
-Direct-browser/WASM transport, timebar-to-layout scheduling, graph LOD
-aggregate membership, and rendered host export attachment remain required
-before #45 closes.
+**Status:** Rust engine plus native Python/Node and direct-browser/WASM frame
+transport. Graph LOD aggregate membership, rendered host export attachment,
+and massive playback evidence remain required before issue 45 closes.
 
 **Authority:** [temporal.md](temporal.md) defines canonical i64 UTC micros and
 half-open intervals; [temporal-controller.md](temporal-controller.md) defines
@@ -72,9 +71,16 @@ Both hosts preserve opaque UUIDs as `(n, 16)`/packed `Uint8Array` values and
 preserve Node `u64`/`i64`
 scalars as `bigint`. The native cancellation endpoint remains callable from
 another thread while frame work is active. Destroy removes the handle first
-and cancels owned work. The later WASM seam must retain these guarantees and
-transport typed i64/u8/u64 buffers and opaque UUID bytes, never graph or
-temporal numbers through JSON.
+and cancels owned work. WASM ABI 8 retains these guarantees through packed
+`XYTG` create/frame commands and `XYTF` frame output. It transports typed
+i64/u8/u64 buffers and opaque UUID bytes, never graph or temporal numbers
+through JSON. Rust emits visibility, visible UUID membership, and remapped
+visible topology; TypeScript does not filter graph rows.
+
+The browser `XygWasmTemporalGraph` coordinator cancels an active layout before
+submitting a newer frame, rejects any response that is no longer the latest
+requested revision, and only forwards progressive layout checkpoints for the
+current frame. Disposal cancels owned layout work and rejects late replies.
 
 ## Frozen export provenance
 
@@ -102,9 +108,10 @@ edge membership, canonical ordering, hidden/reappearing interaction state,
 unknown identities, cancellation, work budgets, stale revisions, and frozen
 state. #45 remains open until:
 
-- the GraphForge assertion-validity and event-history fixtures bind through
-  direct-browser/WASM hosts (native Python/Node binding is now covered);
-- revisioned timebar commands cancel/coalesce layout and reject stale replies;
+- full GraphForge assertion-validity and event-history fixtures extend the
+  direct-browser boundary golden now covered by packed validity intervals;
+- temporal controller events attach to chart composition without application
+  glue (the direct frame/layout latest-wins coordinator is now covered);
 - direct and aggregate graph LOD report exact deterministic membership;
 - HTML/PNG/SVG adapters attach and render frozen temporal provenance; and
 - large/massive playback, accessibility, and native-versus-WASM parity evidence

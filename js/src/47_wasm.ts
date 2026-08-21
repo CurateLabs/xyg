@@ -323,6 +323,24 @@ export class XygWasmWorker {
     return result;
   }
 
+  /** Submit one packed Rust-owned temporal graph create/frame command. */
+  temporalGraphCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
+    this.assertLive();
+    if (!(command instanceof ArrayBuffer) || command.byteLength < 32
+        || command.byteLength > this.maxArenaBytes) {
+      throw new TypeError("temporal graph command must be a bounded ArrayBuffer");
+    }
+    const requestId = this.allocateRequest();
+    const result = this.promiseFor<ArrayBuffer>(requestId);
+    try {
+      this.worker.postMessage({ type: "temporal_graph.command", requestId, command }, [command]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not post temporal graph command");
+    }
+    return result;
+  }
+
   /** Run one Rust CoSE job progressively inside this dedicated Worker. */
   layoutCose(
     request: ArrayBuffer,

@@ -40,6 +40,7 @@ def render(manifest: dict[str, object]) -> str:
     painter_max_legend_bytes = int(manifest["painter_max_legend_bytes"])
     aggregate = manifest["aggregate"]
     graph = manifest["graph"]
+    temporal_graph = manifest["temporal_graph"]
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if (
@@ -47,6 +48,7 @@ def render(manifest: dict[str, object]) -> str:
         or not isinstance(exports, list)
         or not isinstance(aggregate, dict)
         or not isinstance(graph, dict)
+        or not isinstance(temporal_graph, dict)
     ):
         raise ValueError("aggregate, statuses, and exports must be structured values")
 
@@ -121,6 +123,13 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_GRAPH_FIRST_PAINT_STEPS = {int(graph['first_paint_steps'])} as const;",
         f"export const XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS = {int(graph['default_chunk_steps'])} as const;",
         f"export const XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS = {int(graph['default_max_wall_ms'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_MAGIC = {json.dumps(temporal_graph['request_magic'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_VERSION = {int(temporal_graph['version'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_CREATE_HEADER_BYTES = {int(temporal_graph['create_header_bytes'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_FRAME_HEADER_BYTES = {int(temporal_graph['frame_header_bytes'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_OUTPUT_MAGIC = {json.dumps(temporal_graph['output_magic'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_OUTPUT_HEADER_BYTES = {int(temporal_graph['output_header_bytes'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_MAX_ENTITIES = {int(temporal_graph['max_entities'])} as const;",
         "export const XYG_WASM_STATUS = {",
     ]
     for name, value in statuses.items():
