@@ -27,8 +27,12 @@ The direct-browser foundation requires callers to provide both an explicit
 static worker URL and an explicit local WASM URL, `WebAssembly.Module`, or byte
 buffer. It never creates a Blob worker, guesses an asset path, imports from a
 CDN, or silently runs chart algorithms in JavaScript. The worker currently
-proves bounded memory/lifecycle handling, Scene validate/paint, and packed
-typed-column (`XYCC`) compile for scatter/polyline/rect/band; remaining
+proves bounded memory/lifecycle handling, Scene validate/paint, packed
+typed-column (`XYCC`) compile for scatter/polyline/rect/band, and packed
+progressive CoSE (`XYGL`/`XYGO`) with cancellation, revisions, pins, compounds,
+and explicit scheduler bounds. `encodeWasmCose` plus
+`XygWasmWorker.layoutCose` keep every force tick in Rust inside the Worker;
+remaining
 chart-spec ergonomics and density replacement stay tracked by
 [#59](https://github.com/CurateLabs/xyg/issues/59).
 

@@ -269,8 +269,28 @@ before stepping the Rust force handle; iterations are not transported in the
 CoSE descriptor. Configured CoSE rejects non-positive counts rather than
 silently discarding options, pins, or compounds through the one-shot path.
 
-Direct browser Worker/WASM execution, browser/native deterministic tolerance,
-revision-safe cancellation, and Python off-event-loop scheduling remain the
+Direct browser CoSE now runs the same `ForceState` inside the static module
+Worker through packed `XYGL` ingress and `XYGO` f64 checkpoints. A dedicated
+worker returns one Rust tick as the initial phase, then advances in bounded
+eight-tick chunks (configurable to 1..1000) separated by worker task turns.
+Every job carries a monotonically increasing sequence plus a render revision;
+supersession cancels and drops the old Rust state, mismatched revisions fail
+with `STALE_REVISION`, and dispose terminates the worker within the existing
+bounded lifecycle. The default 30 s wall limit is explicit and configurable;
+the packed request and retained state must both fit the instance byte budget.
+Multiple graphs use independent `XygWasmWorker` instances and therefore cannot
+share layout state or replies. TypeScript validates ergonomic buffer shape and
+option spelling, but Rust alone validates topology, options, pins, compounds,
+bounds, and performs every force tick.
+Node's progressive helper likewise defaults to a dedicated `worker_threads`
+job; its cooperative `setImmediate` mode is explicit and reserved for batch or
+test callers, never an interactive host default. The same one-tick initial
+phase, bounded chunk size, render revision, cancellation signal, 30 s default
+wall limit, and explicit initial/update/complete phases are visible to Node
+consumers.
+
+Python off-event-loop scheduling, drag/pin reheating and the full browser/native
+deterministic tolerance plus first-paint/cadence size-ladder evidence remain the
 explicit #35 closure gate. Hosts must not emulate the shipped CoSE policy.
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid
 approximation: at most 32 members per neighboring cell are evaluated exactly;
@@ -403,6 +423,8 @@ packages/xy-node/
   src/force_scheduler.js  # progressive ticks (setImmediate / worker_threads)
   src/sankey.js         # thin composeSankey
 js/src/
+  49_wasm_graph.ts  # packed CoSE request/checkpoint ergonomics
+  wasm_worker.ts    # revision-safe progressive scheduling around Rust/WASM
   # shared GLHost paint; graph meta / CSR highlight only
 ```
 

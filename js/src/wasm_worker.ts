@@ -6,8 +6,12 @@ import {
   XYG_WASM_STATUS,
   XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
   XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
+  XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS,
+  XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS,
+  XYG_WASM_GRAPH_FIRST_PAINT_STEPS,
   type XygWasmExports,
 } from "./wasm_abi_generated";
+import { decodeWasmGraphCheckpoint } from "./49_wasm_graph";
 
 type WorkerScope = DedicatedWorkerGlobalScope;
 const scope = self as unknown as WorkerScope;
@@ -19,6 +23,7 @@ let lifecycle: Lifecycle = "idle";
 let operationBudgetBytes = 0;
 const queued = new Map<number, number>();
 let activeAggregate: { requestId: number; sequence: number; timer: number } | null = null;
+let activeGraph: { requestId: number; sequence: number; revision: number; timer: number; chunkSteps: number; started: number; maxWallMs: number; first: boolean } | null = null;
 
 function isDisposed(): boolean {
   return lifecycle === "disposed";
@@ -179,6 +184,65 @@ function advanceAggregate(message: any) {
   }
 }
 
+function graphOutput(): ArrayBuffer {
+  if (!exports || !handle) throw new Error("worker is not initialized");
+  const ptr = exports.xyg_wasm_output_ptr(handle) >>> 0, len = exports.xyg_wasm_output_len(handle) >>> 0;
+  if (!ptr || !len || ptr + len > exports.memory.buffer.byteLength) throw new Error("Rust graph checkpoint returned an invalid range");
+  return new Uint8Array(exports.memory.buffer, ptr, len).slice().buffer;
+}
+
+function advanceGraph(message: any) {
+  const active = activeGraph;
+  if (!active || active.requestId !== message.requestId || !exports || !handle) return;
+  try {
+    if (performance.now() - active.started > active.maxWallMs) {
+      exports.xyg_wasm_cancel(handle, active.sequence); activeGraph = null;
+      error(active.requestId, "XYG_WASM_TIMEOUT", "graph layout exceeded maxWallMs", XYG_WASM_STATUS.RESOURCE_LIMIT); return;
+    }
+    const steps = active.first ? XYG_WASM_GRAPH_FIRST_PAINT_STEPS : active.chunkSteps; active.first = false;
+    const status = exports.xyg_wasm_graph_step(handle, active.sequence, active.revision, steps);
+    if (status !== XYG_WASM_STATUS.OK && status !== XYG_WASM_STATUS.PENDING) {
+      activeGraph = null; error(active.requestId, statusCode(status), readXygWasmError(exports, handle), status); return;
+    }
+    const checkpoint = decodeWasmGraphCheckpoint(graphOutput());
+    if (status === XYG_WASM_STATUS.OK) { activeGraph = null; reply(active.requestId, checkpoint); return; }
+    scope.postMessage({ requestId: active.requestId, ok: true, progress: true, value: checkpoint });
+    active.timer = setTimeout(() => advanceGraph(message), 0) as unknown as number;
+  } catch (cause) {
+    activeGraph = null; lifecycle = "failed"; disposeRust();
+    error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM graph checkpoint trapped");
+  }
+}
+
+function runGraph(message: any) {
+  queued.delete(message.requestId);
+  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
+  try {
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "graph request is malformed or over budget"); return; }
+    if (activeGraph) {
+      if (Number(message.sequence) <= activeGraph.sequence) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "graph request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
+      clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
+      error(activeGraph.requestId, "XYG_WASM_CANCELLED", "graph layout was superseded", XYG_WASM_STATUS.CANCELLED); activeGraph = null;
+    }
+    if (activeAggregate) {
+      if (Number(message.sequence) <= activeAggregate.sequence) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "graph request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
+      clearTimeout(activeAggregate.timer); exports.xyg_wasm_cancel(handle, activeAggregate.sequence);
+      exports.xyg_wasm_aggregate_step(handle, activeAggregate.sequence, 1);
+      error(activeAggregate.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by graph layout", XYG_WASM_STATUS.CANCELLED); activeAggregate = null;
+    }
+    let status = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) { error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
+    new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
+    status = exports.xyg_wasm_graph_begin(handle, Number(message.sequence), Number(message.revision), 0, message.request.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) { error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    const chunkSteps = Number(message.chunkSteps ?? XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS), maxWallMs = Number(message.maxWallMs ?? XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS);
+    if (!Number.isInteger(chunkSteps) || chunkSteps <= 0 || chunkSteps > 1000 || !Number.isFinite(maxWallMs) || maxWallMs <= 0 || maxWallMs > 300000) { exports.xyg_wasm_cancel(handle, Number(message.sequence)); error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "graph scheduler bounds are invalid"); return; }
+    activeGraph = { requestId: message.requestId, sequence: Number(message.sequence), revision: Number(message.revision), timer: 0, chunkSteps, started: performance.now(), maxWallMs, first: true };
+    advanceGraph(message);
+  } catch (cause) { activeGraph = null; lifecycle = "failed"; disposeRust(); error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM graph start trapped"); }
+}
+
 function runSceneOp(message: any) {
   queued.delete(message.requestId);
   if (!exports || !handle || lifecycle !== "initialized") {
@@ -187,6 +251,11 @@ function runSceneOp(message: any) {
   }
   let superseded: typeof activeAggregate = null;
   try {
+    if (activeGraph && activeGraph.requestId !== message.requestId) {
+      if (Number(message.sequence) <= activeGraph.sequence) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
+      clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
+      error(activeGraph.requestId, "XYG_WASM_CANCELLED", "graph layout was superseded", XYG_WASM_STATUS.CANCELLED); activeGraph = null;
+    }
     const series = message.type === "series.compile_paint";
     if (!series && !(message.scene instanceof ArrayBuffer)) {
       error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "scene must be an ArrayBuffer");
@@ -361,6 +430,22 @@ function runTemporalCommand(message: any) {
     return;
   }
   try {
+    // One WASM instance owns one staging/output arena. A temporal command is
+    // newer work on that instance, so retire any progressive job before it
+    // can publish another checkpoint into the shared output buffer.
+    if (activeGraph) {
+      clearTimeout(activeGraph.timer);
+      exports.xyg_wasm_cancel(handle, activeGraph.sequence);
+      error(activeGraph.requestId, "XYG_WASM_CANCELLED", "graph layout was superseded by temporal work", XYG_WASM_STATUS.CANCELLED);
+      activeGraph = null;
+    }
+    if (activeAggregate) {
+      clearTimeout(activeAggregate.timer);
+      exports.xyg_wasm_cancel(handle, activeAggregate.sequence);
+      exports.xyg_wasm_aggregate_step(handle, activeAggregate.sequence, 1);
+      error(activeAggregate.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by temporal work", XYG_WASM_STATUS.CANCELLED);
+      activeAggregate = null;
+    }
     if (!(message.command instanceof ArrayBuffer) || message.command.byteLength < 16
         || message.command.byteLength > operationBudgetBytes) {
       error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "temporal command is malformed");
@@ -432,6 +517,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     runTemporalCommand(message);
     return;
   }
+  if (message?.type === "graph.cose") { const timer = setTimeout(() => runGraph(message), 0); queued.set(message.requestId, timer as unknown as number); return; }
   if (message?.type === "cancel") {
     const timer = queued.get(message.requestId);
     if (timer !== undefined) {
@@ -445,6 +531,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
         exports.xyg_wasm_aggregate_step(handle, Number(message.sequence), 1);
         activeAggregate = null;
       }
+      if (activeGraph?.requestId === message.requestId) { clearTimeout(activeGraph.timer); activeGraph = null; }
     } catch (cause) {
       activeAggregate = null;
       lifecycle = "failed";
@@ -460,6 +547,8 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "dispose") {
     lifecycle = "disposed";
     for (const timer of queued.values()) clearTimeout(timer);
+    if (activeGraph) clearTimeout(activeGraph.timer);
+    activeGraph = null;
     queued.clear();
     disposeRust();
     reply(message.requestId, undefined);

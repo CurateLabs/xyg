@@ -313,6 +313,7 @@ mod tests {
             aggregate_job: None,
             aggregate_sequence: 0,
             temporal: None,
+            graph_job: None,
         };
         instance.arena[..4].copy_from_slice(COMMAND_MAGIC);
         put_u32(&mut instance.arena, 4, VERSION);
