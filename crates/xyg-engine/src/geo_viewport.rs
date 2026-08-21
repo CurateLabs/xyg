@@ -575,7 +575,6 @@ impl GeoViewport {
     ///
     /// Restored/public-field cameras are revalidated before identity is
     /// published, so an invalid camera cannot masquerade as a reusable cache.
-    #[must_use]
     pub fn rebuild_key(&self) -> Result<GeoViewportRebuildKey, GeoError> {
         self.validate()?;
         let center_x = if self.crs == GeoCrs::Epsg4326 && self.world_wrap {
