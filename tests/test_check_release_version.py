@@ -119,6 +119,13 @@ def test_gate_rejects_non_canonical_prerelease_spellings(tmp_path: Path) -> None
         assert any("is not a release tag" in e for e in errors), tag
 
 
+def test_gate_rejects_leading_zero_release_segments(tmp_path: Path) -> None:
+    changelog = _changelog(tmp_path, "## [1.2.3] — 2026-07-25")
+    for tag in ("xyg-v01.2.3", "xyg-v1.02.3", "xyg-v1.2.03"):
+        errors = check_release_version.check_release(tag, changelog)
+        assert any("is not a release tag" in error for error in errors), tag
+
+
 def test_a_prerelease_needs_its_own_dated_entry(tmp_path: Path) -> None:
     # An entry for the final 0.0.1 must not vouch for 0.0.1a1 (or vice versa).
     changelog = _changelog(tmp_path, "## [0.0.1] — 2026-07-25")

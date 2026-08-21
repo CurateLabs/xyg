@@ -45,6 +45,7 @@ PLATFORMS = (
 )
 FACADE = "@curatelabs/xyg-node"
 EXPECTED_NAMES = tuple(f"{FACADE}-{platform}" for platform in PLATFORMS) + (FACADE,)
+NPM_TIMEOUT_S = 300
 
 
 @dataclass(frozen=True)
@@ -66,6 +67,8 @@ def _artifact(path: Path) -> Artifact:
             if handle is None or member.size > 1024 * 1024:
                 raise ValueError(f"{path.name} has an invalid package manifest")
             manifest = json.loads(handle.read().decode("utf-8"))
+            if not isinstance(manifest, dict):
+                raise ValueError(f"{path.name} package manifest is not a JSON object")
             name = manifest.get("name")
             if isinstance(name, str) and name.startswith(f"{FACADE}-"):
                 _validate_native_archive(archive, manifest, name.removeprefix(f"{FACADE}-"))
@@ -123,6 +126,7 @@ def _registry_shasum(spec: str) -> str | None:
         check=False,
         capture_output=True,
         text=True,
+        timeout=NPM_TIMEOUT_S,
     )
     if result.returncode != 0:
         combined = f"{result.stdout}\n{result.stderr}"
@@ -150,6 +154,7 @@ def publish_release(artifacts: list[Artifact]) -> None:
         subprocess.run(
             ["npm", "publish", str(artifact.path), "--access", "public", "--provenance"],
             check=True,
+            timeout=NPM_TIMEOUT_S,
         )
         print(f"published {spec}")
 
@@ -160,7 +165,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         publish_release(load_release(args.directory))
-    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+    except (
+        OSError,
+        ValueError,
+        RuntimeError,
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+    ) as error:
         print(f"XYG Node publication failed: {error}", file=sys.stderr)
         return 1
     return 0

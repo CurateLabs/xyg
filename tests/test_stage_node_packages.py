@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -79,6 +80,12 @@ def test_release_version_rejects_leading_zero_prerelease_counter(
         mod._require_semver(f"0.6.0-{npm_label}.01")
 
 
+@pytest.mark.parametrize("tag", ["xyg-v01.2.3", "xyg-v1.02.3", "xyg-v1.2.03"])
+def test_release_version_rejects_leading_zero_release_segment(tag: str) -> None:
+    with pytest.raises(ValueError, match="invalid XYG release tag"):
+        _load().npm_version_from_tag(tag)
+
+
 @pytest.mark.parametrize(
     ("payload", "expected"),
     [
@@ -122,7 +129,13 @@ def test_facade_staging_locks_optionals_and_embeds_client(tmp_path: Path) -> Non
     assert set(manifest["optionalDependencies"].values()) == {"0.6.0-rc.1"}
     assert (staged / "client" / "standalone.js").read_bytes() == client.read_bytes()
     assert "client/standalone.js" in manifest["files"]
+    (staged / "src" / "index.js").unlink()
+    with pytest.raises(ValueError, match="entry point is missing"):
+        mod._verify_facade(staged, "0.6.0-rc.1", client)
+    (staged / "src" / "index.js").write_text("export {};", encoding="utf-8")
 
+    if shutil.which("node") is None:
+        pytest.skip("node is required for the offline facade probe")
     probe = subprocess.run(
         [
             "node",

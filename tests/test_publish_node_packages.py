@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tarfile
 from pathlib import Path
@@ -79,11 +80,23 @@ def test_load_release_requires_complete_aligned_set_and_facade_last(tmp_path: Pa
     assert artifacts[-1].name == mod.FACADE
 
 
+def test_load_release_rejects_non_object_manifest(tmp_path: Path) -> None:
+    path = tmp_path / "bad.tgz"
+    payload = b"[]\n"
+    with tarfile.open(path, "w:gz") as archive:
+        info = tarfile.TarInfo("package/package.json")
+        info.size = len(payload)
+        archive.addfile(info, io.BytesIO(payload))
+    with pytest.raises(ValueError, match="not a JSON object"):
+        _load().load_release(tmp_path)
+
+
 @pytest.mark.parametrize("corruption", ["missing-native", "wrong-metadata"])
 def test_load_release_rejects_corrupt_native_archive(tmp_path: Path, corruption: str) -> None:
     mod = _release(tmp_path)
-    target = tmp_path / "artifact-0.tgz"
     platform_id = next(iter(mod.PLATFORM_LAYOUTS))
+    package_name = f"{mod.FACADE}-{platform_id}"
+    target = tmp_path / f"artifact-{mod.EXPECTED_NAMES.index(package_name)}.tgz"
     library, os_name, cpu = mod.PLATFORM_LAYOUTS[platform_id]
     manifest = {
         "name": f"{mod.FACADE}-{platform_id}",
@@ -105,7 +118,7 @@ def test_publish_retry_skips_only_identical_registry_bytes(tmp_path: Path, monke
     monkeypatch.setattr(
         mod.subprocess,
         "run",
-        lambda command, check: published.append(command[2]),
+        lambda command, check, timeout: published.append(command[2]),
     )
     mod.publish_release([artifacts[0]])
     assert published == []
@@ -123,8 +136,19 @@ def test_publish_processes_native_packages_before_facade(tmp_path: Path, monkeyp
     monkeypatch.setattr(
         mod.subprocess,
         "run",
-        lambda command, check: published.append(Path(command[2]).name),
+        lambda command, check, timeout: published.append(Path(command[2]).name),
     )
     mod.publish_release(artifacts)
     by_path = {artifact.path.name: artifact.name for artifact in artifacts}
     assert [by_path[name] for name in published] == list(mod.EXPECTED_NAMES)
+
+
+def test_publish_timeout_fails_through_the_stable_cli_error(tmp_path: Path, monkeypatch) -> None:
+    mod = _release(tmp_path)
+
+    def timeout(command, **kwargs):
+        assert kwargs["timeout"] == mod.NPM_TIMEOUT_S
+        raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+    monkeypatch.setattr(mod.subprocess, "run", timeout)
+    assert mod.main([str(tmp_path)]) == 1

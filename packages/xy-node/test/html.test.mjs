@@ -25,6 +25,22 @@ test("packaged standalone client wins over a separately installed client", () =>
   assert.deepEqual(seen, [selected]);
 });
 
+test("standalone client falls back to a separately installed client", () => {
+  const external = path.join("external", "@curatelabs", "xyg", "standalone.js");
+  const seen = [];
+  const selected = standaloneClientPath({
+    exists(candidate) {
+      seen.push(candidate);
+      return candidate === external;
+    },
+    requireFn: { resolve: () => external },
+  });
+  assert.equal(selected, external);
+  assert.equal(seen.length, 2);
+  assert.ok(seen[0].endsWith(path.join("client", "standalone.js")));
+  assert.equal(seen[1], external);
+});
+
 test("toHtml inlines the host-neutral standalone client", () => {
   assert.equal(
     htmlSrc.includes("python/xyg/static"),

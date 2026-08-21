@@ -1708,6 +1708,22 @@ def test_workflow_policy_allows_only_oidc_npm_publish_on_github_host(tmp_path: P
         "jobs:\n"
         "  publish-npm:\n"
         "    runs-on: ubuntu-latest\n"
+        "    environment: npm\n"
+        "    permissions:\n"
+        "      id-token: write\n"
+        "    steps: []\n"
+        "  unrelated:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+    errors = verify_ci_workflow.validate_workflow_hosting_policy(workflows)
+    assert any("approved Blacksmith runner" in error for error in errors)
+
+    (workflows / "publish.yaml").write_text(
+        "jobs:\n"
+        "  publish-npm:\n"
+        "    runs-on: ubuntu-latest\n"
         "    permissions:\n"
         "      contents: read\n"
         "    steps: []\n",

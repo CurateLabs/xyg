@@ -52,12 +52,9 @@ export function standaloneClientPath({
   try {
     candidates.push(requireFn.resolve("@curatelabs/xyg/standalone"));
   } catch {
-    // In-repo checkout: resolve the host-neutral dist next to this package.
+    // The separately installed client is optional; continue to the repository fallback.
   }
-  // Release staging copies the exact, verified @curatelabs/xyg standalone
-  // artifact into the Node facade. Keeping it beside the host avoids a
-  // runtime registry dependency and makes `toHtml()` work offline after a
-  // clean `npm install @curatelabs/xyg-node` (#52).
+  // In-repo checkout: resolve the host-neutral dist next to this package.
   candidates.push(join(here, "..", "..", "xy-client", "dist", "standalone.js"));
   for (const candidate of candidates) {
     if (exists(candidate)) return candidate;

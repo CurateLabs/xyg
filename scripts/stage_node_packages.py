@@ -40,7 +40,7 @@ SEMVER_RE = re.compile(
     rf"(?:-{PRERELEASE_IDENTIFIER}(?:\.{PRERELEASE_IDENTIFIER})*)?$"
 )
 TAG_RE = re.compile(
-    r"^xyg-v(?P<base>\d+\.\d+\.\d+)"
+    r"^xyg-v(?P<base>(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))"
     r"(?:(?P<pre>a|b|rc)(?P<num>0|[1-9]\d*))?$"
 )
 REPOSITORY = {"type": "git", "url": "git+https://github.com/CurateLabs/xyg.git"}
@@ -230,6 +230,14 @@ def _verify_platform(
 
 def _verify_facade(directory: Path, version: str, source_client: Path) -> None:
     manifest = _verify_common(directory, "@curatelabs/xyg-node", version)
+    main = manifest.get("main")
+    exports = manifest.get("exports")
+    exported_main = exports.get(".") if isinstance(exports, dict) else None
+    if not isinstance(main, str) or exported_main != main:
+        raise ValueError("facade main and root export must identify the same entry point")
+    entry = directory / main.removeprefix("./")
+    if not entry.is_file() or directory.resolve() not in entry.resolve().parents:
+        raise ValueError("facade entry point is missing from the staged tree")
     expected = {f"@curatelabs/xyg-node-{platform_id}": version for platform_id in sorted(PLATFORMS)}
     if manifest.get("optionalDependencies") != expected:
         raise ValueError("facade optionalDependencies are not exact-version aligned")

@@ -375,8 +375,9 @@ Pre-releases are tagged the same way with a canonical PEP 440 suffix —
 pipeline; pip ignores them unless a pre-release is requested explicitly. Only
 the canonical spelling passes the release gate: `-alpha1`-style tags would be
 normalized by the version derivation and could never match their own built
-artifacts. A pre-release needs its own dated changelog entry, exactly like a
-final release.
+artifacts. Release segments and pre-release counters also reject leading zeros
+because those spellings normalize to different built versions. A pre-release
+needs its own dated changelog entry, exactly like a final release.
 
 The repository has one release line: the `xyg` distribution, including its
 bundled `reflex_xy` integration, ships from `xyg-vX.Y.Z` tags through
@@ -455,9 +456,11 @@ OIDC `id-token: write`) and publishes platform packages before the facade, so
 the public facade never points at absent versioned optionals. Publication is
 retry-safe: `scripts/publish_node_packages.py` skips an immutable version only
 after its registry SHA-1 matches the local tarball, rejects mismatched bytes,
-and resumes the native-first sequence before publishing the facade. This makes
-cross-registry recovery convergent even though PyPI and npm cannot provide one
-atomic transaction. Configure this
+and resumes the native-first sequence before publishing the facade. Registry
+inspection and upload subprocesses use a five-minute timeout so a
+stalled npm endpoint fails promptly instead of holding a partial release until
+the workflow-wide limit. This makes cross-registry recovery convergent even
+though PyPI and npm cannot provide one atomic transaction. Configure this
 exact `publish.yaml` workflow as the trusted publisher for all six npm
 projects; first-time project creation/ownership remains a deliberate registry
 bootstrap step. The GitHub Release waits for both PyPI and npm jobs.

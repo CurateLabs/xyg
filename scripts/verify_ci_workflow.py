@@ -2247,7 +2247,8 @@ def validate_workflow_hosting_policy(
             and not publish_npm_runner_unsafe
             and publish_npm_runners == ["ubuntu-latest"]
             and _is_structural_npm_trusted_job(publish_npm_block, publish_npm_runners[0])
-            and text.count("runs-on: ubuntu-latest") == 1
+            and sum(line.strip() == "runs-on: ubuntu-latest" for line in _yaml_code_lines(text))
+            == 1
         )
         for lineno, line in enumerate(text.splitlines(), start=1):
             code = line.split("#", 1)[0]
