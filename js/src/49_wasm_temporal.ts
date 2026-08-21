@@ -3,6 +3,31 @@ import { XygWasmWorker } from "./47_wasm";
 const MAGIC = 0x43545958; // XYTC little-endian
 const RESPONSE_MAGIC = 0x52545958; // XYTR
 const VERSION = 1;
+const I64_MIN = -(1n << 63n);
+const I64_MAX = (1n << 63n) - 1n;
+const U64_MAX = (1n << 64n) - 1n;
+const U32_MAX = 0xffff_ffff;
+
+function i64(value: unknown, name: string): bigint {
+  if (typeof value !== "bigint" || value < I64_MIN || value > I64_MAX) {
+    throw new RangeError(`${name} must be an i64 bigint`);
+  }
+  return value;
+}
+
+function u64(value: unknown, name: string, nonzero = false): bigint {
+  if (typeof value !== "bigint" || value < 0n || value > U64_MAX || (nonzero && value === 0n)) {
+    throw new RangeError(`${name} must be ${nonzero ? "a nonzero " : "an "}u64 bigint`);
+  }
+  return value;
+}
+
+function u32(value: unknown, name: string): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > U32_MAX) {
+    throw new RangeError(`${name} must be a u32 integer`);
+  }
+  return value;
+}
 
 export interface XygTemporalEvent {
   groupId: bigint;
@@ -110,6 +135,8 @@ export class XygWasmTemporalController {
   private tickPending = false;
   private keyTarget: HTMLElement | null = null;
   private keyHandler: ((event: KeyboardEvent) => void) | null = null;
+  private scrubberFormat: ((state: XygTemporalState) => string) | null = null;
+  private scrubberAttributes: Map<string, string | null> | null = null;
   private readonly onEvent?: (event: XygTemporalEvent) => void;
   state: XygTemporalState;
 
@@ -125,20 +152,25 @@ export class XygWasmTemporalController {
 
   static async create(worker: XygWasmWorker, options: XygTemporalControllerOptions) {
     await worker.ready;
-    if (!options || typeof options.instanceId !== "bigint" || options.instanceId === 0n
+    if (!options || typeof options.instanceId !== "bigint"
         || !Array.isArray(options.domain) || options.domain.length !== 2) {
       throw new TypeError("instanceId and a two-value bigint domain are required");
     }
     const view = command(1, 88);
-    const [start, end] = options.domain;
-    const cursor = options.cursor ?? start;
-    view.setBigUint64(16, options.instanceId, true);
-    view.setBigUint64(24, options.groupId ?? 0n, true);
+    const start = i64(options.domain[0], "domain start");
+    const end = i64(options.domain[1], "domain end");
+    const cursor = i64(options.cursor ?? start, "cursor");
+    view.setBigUint64(16, u64(options.instanceId, "instanceId", true), true);
+    view.setBigUint64(24, u64(options.groupId ?? 0n, "groupId"), true);
     view.setBigInt64(32, start, true); view.setBigInt64(40, end, true);
-    view.setBigInt64(48, cursor, true); view.setBigInt64(56, options.window ?? 0n, true);
-    view.setBigInt64(64, options.step ?? 1n, true);
-    view.setInt32(72, options.direction ?? 1, true);
-    view.setUint32(76, options.rateMilli ?? 1000, true);
+    view.setBigInt64(48, cursor, true); view.setBigInt64(56, i64(options.window ?? 0n, "window"), true);
+    view.setBigInt64(64, i64(options.step ?? 1n, "step"), true);
+    const direction = options.direction ?? 1;
+    if (direction !== -1 && direction !== 1) throw new RangeError("direction must be -1 or 1");
+    view.setInt32(72, direction, true);
+    view.setUint32(76, u32(options.rateMilli ?? 1000, "rateMilli"), true);
+    if (options.loop !== undefined && typeof options.loop !== "boolean") throw new TypeError("loop must be boolean");
+    if (options.reducedMotion !== undefined && typeof options.reducedMotion !== "boolean") throw new TypeError("reducedMotion must be boolean");
     view.setUint32(80, options.loop === true ? 1 : 0, true);
     const prefersReduced = options.reducedMotion ?? (
       typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -168,23 +200,27 @@ export class XygWasmTemporalController {
     return this.submit(view);
   }
 
-  setRange(start: bigint, end: bigint) { const view = command(3, 32); view.setBigInt64(16, start, true); view.setBigInt64(24, end, true); return this.submit(view); }
-  setCursor(cursor: bigint) { return this.scalar(4, cursor); }
+  setRange(start: bigint, end: bigint) { const view = command(3, 32); view.setBigInt64(16, i64(start, "range start"), true); view.setBigInt64(24, i64(end, "range end"), true); return this.submit(view); }
+  setCursor(cursor: bigint) { return this.scalar(4, i64(cursor, "cursor")); }
   step() { return this.submit(command(5)); }
-  play() { const result = this.submit(command(6)); this.startClock(); return result; }
-  pause() { this.stopClock(); return this.submit(command(7)); }
-  setRateMilli(rate: number) { return this.scalar(8, rate); }
-  setDirection(direction: -1 | 1) { return this.scalar(9, direction); }
-  setLoop(enabled: boolean) { return this.scalar(10, enabled ? 1 : 0); }
-  setReducedMotion(enabled: boolean) { if (enabled) this.stopClock(); return this.scalar(11, enabled ? 1 : 0); }
-  tick(dtMicros: bigint) { return this.scalar(12, dtMicros); }
+  play() { return this.submit(command(6)).then((result) => { if (result.state.playing) this.startClock(); return result; }); }
+  pause() { this.stopClock(); return this.submit(command(7)).then((result) => { this.stopClock(); return result; }); }
+  setRateMilli(rate: number) { return this.scalar(8, u32(rate, "rateMilli")); }
+  setDirection(direction: -1 | 1) { if (direction !== -1 && direction !== 1) throw new RangeError("direction must be -1 or 1"); return this.scalar(9, direction); }
+  setLoop(enabled: boolean) { if (typeof enabled !== "boolean") throw new TypeError("enabled must be boolean"); return this.scalar(10, enabled ? 1 : 0); }
+  setReducedMotion(enabled: boolean) { if (typeof enabled !== "boolean") throw new TypeError("enabled must be boolean"); if (enabled) this.stopClock(); return this.scalar(11, enabled ? 1 : 0).then((result) => { if (result.state.reducedMotion) this.stopClock(); return result; }); }
+  tick(dtMicros: bigint) { return this.scalar(12, i64(dtMicros, "dtMicros")); }
 
   applyEvent(event: XygTemporalEvent) {
+    if (!event) throw new TypeError("event is required");
     const view = command(13, 72);
-    view.setBigUint64(16, event.groupId, true); view.setBigUint64(24, event.sourceInstance, true);
-    view.setBigUint64(32, event.revision, true); view.setBigInt64(40, event.rangeStart, true);
-    view.setBigInt64(48, event.rangeEnd, true); view.setBigInt64(56, event.cursor, true);
-    view.setBigInt64(64, event.window, true);
+    view.setBigUint64(16, u64(event.groupId, "event.groupId"), true);
+    view.setBigUint64(24, u64(event.sourceInstance, "event.sourceInstance", true), true);
+    view.setBigUint64(32, u64(event.revision, "event.revision", true), true);
+    view.setBigInt64(40, i64(event.rangeStart, "event.rangeStart"), true);
+    view.setBigInt64(48, i64(event.rangeEnd, "event.rangeEnd"), true);
+    view.setBigInt64(56, i64(event.cursor, "event.cursor"), true);
+    view.setBigInt64(64, i64(event.window, "event.window"), true);
     return this.submit(view);
   }
 
@@ -213,6 +249,10 @@ export class XygWasmTemporalController {
 
   bindScrubber(element: HTMLElement, format: (state: XygTemporalState) => string = (state) => `Cursor ${state.cursor}; range ${state.rangeStart} to ${state.rangeEnd}`) {
     this.unbindScrubber();
+    if (!(element instanceof HTMLElement) || typeof format !== "function") throw new TypeError("a scrubber element and formatter are required");
+    const names = ["tabindex", "role", "aria-label", "aria-valuetext", "aria-valuemin", "aria-valuemax", "aria-valuenow"];
+    this.scrubberAttributes = new Map(names.map((name) => [name, element.getAttribute(name)]));
+    this.scrubberFormat = format;
     this.keyTarget = element; element.tabIndex = 0; element.setAttribute("role", "slider");
     element.setAttribute("aria-label", "Temporal position");
     this.keyHandler = (event) => {
@@ -225,15 +265,13 @@ export class XygWasmTemporalController {
       event.preventDefault();
     };
     element.addEventListener("keydown", this.keyHandler);
-    (element as any).__xygTemporalFormat = format;
     this.syncAccessibility();
     return () => this.unbindScrubber();
   }
 
   private syncAccessibility() {
     if (!this.keyTarget) return;
-    const format = (this.keyTarget as any).__xygTemporalFormat as (state: XygTemporalState) => string;
-    this.keyTarget.setAttribute("aria-valuetext", format(this.state));
+    this.keyTarget.setAttribute("aria-valuetext", this.scrubberFormat!(this.state));
     this.keyTarget.setAttribute("aria-valuemin", this.state.domainStart.toString());
     this.keyTarget.setAttribute("aria-valuemax", (this.state.domainEnd - 1n).toString());
     this.keyTarget.setAttribute("aria-valuenow", this.state.cursor.toString());
@@ -241,13 +279,21 @@ export class XygWasmTemporalController {
 
   unbindScrubber() {
     if (this.keyTarget && this.keyHandler) this.keyTarget.removeEventListener("keydown", this.keyHandler);
+    if (this.keyTarget && this.scrubberAttributes) {
+      for (const [name, value] of this.scrubberAttributes) {
+        if (value === null) this.keyTarget.removeAttribute(name);
+        else this.keyTarget.setAttribute(name, value);
+      }
+    }
     this.keyTarget = null; this.keyHandler = null;
+    this.scrubberFormat = null; this.scrubberAttributes = null;
   }
 
   async dispose() {
     if (this.state.disposed) return;
     this.stopClock(); this.unbindScrubber();
     const result = await this.submit(command(14));
+    this.stopClock();
     this.state = result.state;
   }
 }

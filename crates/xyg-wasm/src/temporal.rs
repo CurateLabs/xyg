@@ -193,7 +193,8 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
         .as_mut()
         .expect("created or checked above");
     let outcome = match op {
-        1 | 2 | 15 => Ok(false),
+        1 => Ok(false),
+        2 | 15 if length == HEADER => Ok(false),
         3 if length == 32 => controller
             .set_range(i64_at(command, 16).unwrap(), i64_at(command, 24).unwrap())
             .map(|_| false),

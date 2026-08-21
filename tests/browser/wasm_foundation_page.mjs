@@ -459,6 +459,8 @@ async function run() {
     onEvent: (event) => temporalEvents.push(event),
   });
   const scrubber = document.body.appendChild(document.createElement("div"));
+  scrubber.setAttribute("role", "button");
+  scrubber.setAttribute("tabindex", "3");
   temporal.bindScrubber(scrubber);
   scrubber.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
   await temporal.setCursor(25n);
@@ -488,7 +490,18 @@ async function run() {
   }
   await rejected(peer.applyEvent(temporalEvents.at(-1)), "XYG_WASM_STALE_REVISION", 10);
   await rejected(temporal.applyEvent(temporalEvents.at(-1)), "XYG_WASM_SELF_ECHO", 11);
+  let rejectedOverflow = false;
+  try {
+    temporal.setCursor(1n << 63n);
+  } catch (error) {
+    rejectedOverflow = error instanceof RangeError;
+  }
+  if (!rejectedOverflow) throw new Error("browser temporal i64 overflow did not fail closed");
   await temporal.dispose();
+  if (scrubber.getAttribute("role") !== "button" || scrubber.getAttribute("tabindex") !== "3"
+      || scrubber.hasAttribute("aria-valuenow")) {
+    throw new Error("temporal scrubber disposal did not restore prior DOM attributes");
+  }
   await peer.dispose();
   await temporalWorker.dispose();
   await peerWorker.dispose();

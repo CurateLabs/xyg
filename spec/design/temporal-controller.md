@@ -133,6 +133,9 @@ keys step in the chosen direction, Home/End move to exact domain bounds, and
 Space toggles playback. `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, and
 an overridable `aria-valuetext` formatter are refreshed from each Rust
 snapshot. Unbinding or disposal removes the key listener.
+It also restores the element's prior focus and ARIA attributes. Packed browser
+inputs are range-checked before encoding; out-of-width BigInts and non-integral
+numeric controls fail instead of wrapping at the `DataView` boundary.
 
 ## Wire
 
