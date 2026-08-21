@@ -297,6 +297,27 @@ export class XygWasmWorker {
     return this.sceneTask("aggregate.bin2d", request, options);
   }
 
+  /** Submit one packed temporal command to the shared Rust state machine. */
+  temporalCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
+    this.assertLive();
+    if (!(command instanceof ArrayBuffer) || command.byteLength < 16
+        || command.byteLength > this.maxArenaBytes) {
+      throw new TypeError("temporal command must be a bounded ArrayBuffer");
+    }
+    const requestId = this.allocateRequest();
+    const result = this.promiseFor<ArrayBuffer>(requestId);
+    try {
+      this.worker.postMessage({ type: "temporal.command", requestId, command }, [command]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError(
+        "XYG_WASM_INVALID_ARGUMENT",
+        cause instanceof Error ? cause.message : "could not post temporal command",
+      );
+    }
+    return result;
+  }
+
   private sceneTask<T extends XygWasmSceneValidation>(
     type:
       | "scene.validate"

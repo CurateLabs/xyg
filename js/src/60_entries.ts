@@ -15,6 +15,7 @@ import {
   decodeWasmAggregateOutput,
   encodeWasmAggregate,
 } from "./49_wasm_aggregate";
+import { XygWasmTemporalController } from "./49_wasm_temporal";
 // Prototype-augmentation modules: imported for their side effect of attaching
 // methods to ChartView.prototype. Every entry point must load them before the
 // first ChartView is constructed.
@@ -133,6 +134,13 @@ export {
   encodeWasmAggregate,
   decodeWasmAggregateOutput,
   aggregateWasmBin2d,
+  XygWasmTemporalController,
 };
 export type { XygWasmAggregateTaskOptions } from "./47_wasm";
+export type {
+  XygTemporalControllerOptions,
+  XygTemporalEvent,
+  XygTemporalResult,
+  XygTemporalState,
+} from "./49_wasm_temporal";
 export default { render, decodeFrame };

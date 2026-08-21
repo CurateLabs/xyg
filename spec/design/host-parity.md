@@ -123,6 +123,10 @@ Host-only differences are idiomatic (NumPy/pandas/Arrow vs TypedArrays;
 notebook/Reflex vs Node embed / VS Code webview attach). Names and defaults
 match.
 
+The direct-browser `XygWasmTemporalController` submits packed raw i64/u64
+commands to that same Rust state machine. TypeScript owns only the coalesced
+clock, explicit event transport, keyboard/focus surface, and ARIA presentation.
+
 ---
 
 ## 2. Placement rule (Rust owns decisions)

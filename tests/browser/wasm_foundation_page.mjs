@@ -9,6 +9,7 @@ import {
   renderWasmColumns,
   renderWasmScene,
   XygWasmError,
+  XygWasmTemporalController,
 } from "/packages/xy-client/dist/index.js";
 
 function writeDefaultSceneV9Chrome(bytes, view, body) {
@@ -241,6 +242,7 @@ async function fixtureModule({
     "xyg_wasm_arena_high_water",
     "xyg_wasm_last_scene_records",
     "xyg_wasm_last_scene_styles",
+    "xyg_wasm_temporal_execute",
   ];
   const arities = [0, 1, 2, 3, 4];
   const types = [
@@ -254,7 +256,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -265,7 +267,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    5, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    6, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     aggregateOutputOutOfRange ? 65520 : 0,
@@ -274,7 +276,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0,
+    0, 0, 0, 0,
   ];
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
@@ -355,7 +357,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 5,
+    expectedAbiVersion: 6,
     expectedSceneVersion: 10,
   };
 }
@@ -437,10 +439,60 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 5 || ready.sceneVersion !== 10) {
+  if (ready.abiVersion !== 6 || ready.sceneVersion !== 10) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
+
+  const temporalEvents = [];
+  const temporalWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4096,
+  });
+  const temporal = await XygWasmTemporalController.create(temporalWorker, {
+    instanceId: 7n,
+    groupId: 9n,
+    domain: [0n, 100n],
+    cursor: 10n,
+    window: 20n,
+    step: 5n,
+    reducedMotion: true,
+    onEvent: (event) => temporalEvents.push(event),
+  });
+  const scrubber = document.body.appendChild(document.createElement("div"));
+  temporal.bindScrubber(scrubber);
+  scrubber.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+  await temporal.setCursor(25n);
+  if (temporal.state.cursor !== 25n || temporalEvents.length < 1
+      || scrubber.getAttribute("aria-valuenow") !== "25") {
+    throw new Error("direct-browser temporal state, coordination, or ARIA did not round-trip");
+  }
+  await temporal.play();
+  if (temporal.state.playing) throw new Error("reduced motion allowed automatic temporal playback");
+  await temporal.setReducedMotion(false);
+  await temporal.play();
+  await temporal.tick(10n);
+  await temporal.pause();
+  if (temporal.state.cursor <= 25n || temporal.state.playing) {
+    throw new Error("browser temporal playback did not use the Rust state machine");
+  }
+  const peerWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4096,
+  });
+  const peer = await XygWasmTemporalController.create(
+    peerWorker,
+    { instanceId: 8n, groupId: 9n, domain: [0n, 100n] },
+  );
+  await peer.applyEvent(temporalEvents.at(-1));
+  if (peer.state.cursor !== temporalEvents.at(-1).cursor) {
+    throw new Error("cross-worker temporal coordination lost exact bigint state");
+  }
+  await rejected(peer.applyEvent(temporalEvents.at(-1)), "XYG_WASM_STALE_REVISION", 10);
+  await rejected(temporal.applyEvent(temporalEvents.at(-1)), "XYG_WASM_SELF_ECHO", 11);
+  await temporal.dispose();
+  await peer.dispose();
+  await temporalWorker.dispose();
+  await peerWorker.dispose();
+  scrubber.remove();
 
   const canonical = canonicalSceneV9();
   const transferred = canonical.buffer;
