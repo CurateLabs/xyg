@@ -133,6 +133,7 @@ export class XygWasmTemporalController {
   private frame = 0;
   private lastFrame: number | null = null;
   private tickPending = false;
+  private pendingMicros = 0n;
   private keyTarget: HTMLElement | null = null;
   private keyHandler: ((event: KeyboardEvent) => void) | null = null;
   private scrubberFormat: ((state: XygTemporalState) => string) | null = null;
@@ -230,11 +231,18 @@ export class XygWasmTemporalController {
       if (!this.frame) return;
       const previous = this.lastFrame;
       this.lastFrame = now;
-      if (previous !== null && this.state.playing && !this.state.reducedMotion && !this.tickPending) {
-        const micros = BigInt(Math.max(0, Math.round((now - previous) * 1000)));
+      if (previous !== null && this.state.playing && !this.state.reducedMotion) {
+        this.pendingMicros += BigInt(Math.max(0, Math.round((now - previous) * 1000)));
+      }
+      if (this.pendingMicros > 0n && !this.tickPending) {
+        const micros = this.pendingMicros;
+        this.pendingMicros = 0n;
         this.tickPending = true;
         void this.tick(micros).then(() => {
           if (!this.state.playing) this.stopClock();
+        }).catch(() => {
+          // A failed/disposed worker cannot advance playback; release the RAF.
+          this.stopClock();
         }).finally(() => { this.tickPending = false; });
       }
       if (this.frame) this.frame = requestAnimationFrame(frame);
@@ -244,7 +252,7 @@ export class XygWasmTemporalController {
 
   private stopClock() {
     if (this.frame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(this.frame);
-    this.frame = 0; this.lastFrame = null; this.tickPending = false;
+    this.frame = 0; this.lastFrame = null; this.tickPending = false; this.pendingMicros = 0n;
   }
 
   bindScrubber(element: HTMLElement, format: (state: XygTemporalState) => string = (state) => `Cursor ${state.cursor}; range ${state.rangeStart} to ${state.rangeEnd}`) {

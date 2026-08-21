@@ -30,6 +30,8 @@ integrators. `XygWasmTemporalController` is the browser lifecycle wrapper: it
 serializes commands, coalesces in-flight animation ticks, stops its clock and
 DOM listeners on disposal, and emits typed coordination events for an explicit
 caller transport.
+Coalescing accumulates (rather than drops) elapsed frame time while a worker
+command is in flight, and releases the animation clock if that worker fails.
 Both native hosts validate exact integer widths and boolean types before the C
 ABI call; oversized integers, unsafe JavaScript Numbers, and truthy substitutes
 are rejected rather than wrapped or coerced.
