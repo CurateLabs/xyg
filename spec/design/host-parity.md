@@ -322,13 +322,13 @@ client must not grow a parallel “JS layout/LOD” product path.
   painter/export allocation. Browser painter, SVG, and raster consume those
   identical Rect/Polyline/Scatter records and the same accepted-label plane;
   no host walks ancestors or recomputes collapsed endpoints. Direct-WASM XYGG
-  authoring waits for its separately owned ABI revision; this slice does not
-  overload an existing semantic plane or introduce a TypeScript fallback.
+  v3 frames exact parent, parent-validity, and collapse planes into that same
+  compiler without overloading a semantic plane or adding a TypeScript fallback.
   `tests/fixtures/graphforge/semantic_compound.json` anchors exact native Scene,
   painter, SVG, raster-command, and PNG bytes for both themes. The strict-CSP
-  browser worker smoke consumes the same semantic fields on XYGG v2 and proves
+  browser worker smoke consumes the same semantic and compound fields on XYGG v3 and proves
   real WebGL paint plus deterministic label/legend accessibility and stable
-  IDs; it does not claim direct-WASM compound ingress.
+  IDs plus collapsed descendant omission.
   follow-up; curved edge rendering is not MVP-blocking.
 - **Shared dashboard admission:** the browser-only
   `ChartView.applyDashboardResourceBudget(worker, budgetBytes)` surface and

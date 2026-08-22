@@ -6,8 +6,8 @@
 
 pub use crate::typed_series_abi_generated::*;
 use xyg_engine::graph_style::{
-    encode_semantic_graph_scene, SemanticGraphSceneInput, MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES,
-    SEMANTIC_GRAPH_SCENE_VERSION,
+    encode_compound_graph_scene, CompoundGraphSceneInput, SemanticGraphSceneInput,
+    MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
 };
 use xyg_engine::scene::{
     self, AxisScale, CartesianLayoutRequest, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
@@ -48,6 +48,9 @@ struct SemanticGraphOffsets {
     edge_status: usize,
     edge_metric: usize,
     edge_flags: usize,
+    parents: usize,
+    parent_validity: usize,
+    collapsed: usize,
 }
 
 fn semantic_graph_offsets(bytes: &[u8]) -> Result<SemanticGraphOffsets, SceneError> {
@@ -107,11 +110,18 @@ fn semantic_graph_offsets(bytes: &[u8]) -> Result<SemanticGraphOffsets, SceneErr
     let edge_flags = edge_metric
         .checked_add(edges.checked_mul(8).ok_or(SceneError::Limit)?)
         .ok_or(SceneError::Limit)?;
-    let label_lengths = align8(
+    let parents = align8(
         edge_flags
             .checked_add(edges.checked_mul(4).ok_or(SceneError::Limit)?)
             .ok_or(SceneError::Limit)?,
     );
+    let parent_validity = parents
+        .checked_add(nodes.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let collapsed = parent_validity
+        .checked_add(nodes)
+        .ok_or(SceneError::Limit)?;
+    let label_lengths = align8(collapsed.checked_add(nodes).ok_or(SceneError::Limit)?);
     let label_count = nodes.checked_add(edges).ok_or(SceneError::Limit)?;
     let edge_label_lengths = align8(
         label_lengths
@@ -167,6 +177,9 @@ fn semantic_graph_offsets(bytes: &[u8]) -> Result<SemanticGraphOffsets, SceneErr
         edge_status,
         edge_metric,
         edge_flags,
+        parents,
+        parent_validity,
+        collapsed,
     })
 }
 
@@ -251,6 +264,10 @@ fn compile_semantic_graph_request(
     let edge_metric = take_f64s(bytes, &mut cursor, edge_count)?;
     let edge_flags = take_u32s(bytes, &mut cursor, edge_count)?;
     align_zero(bytes, &mut cursor)?;
+    let parents = take_u64s(bytes, &mut cursor, node_count)?;
+    let parent_validity = take_u8s(bytes, &mut cursor, node_count)?;
+    let collapsed = take_u8s(bytes, &mut cursor, node_count)?;
+    align_zero(bytes, &mut cursor)?;
     let node_label_lengths = take_u32s(bytes, &mut cursor, node_count)?;
     let edge_label_lengths = take_u32s(bytes, &mut cursor, edge_count)?;
     let label_bytes = node_label_lengths
@@ -287,7 +304,7 @@ fn compile_semantic_graph_request(
     if cursor != bytes.len() {
         return Err(SceneError::Length);
     }
-    let scene = encode_semantic_graph_scene(SemanticGraphSceneInput {
+    let graph = SemanticGraphSceneInput {
         version: SEMANTIC_GRAPH_SCENE_VERSION,
         width,
         height,
@@ -309,6 +326,12 @@ fn compile_semantic_graph_request(
         edge_metric: &edge_metric,
         edge_flags: &edge_flags,
         edge_labels: &edge_labels,
+    };
+    let scene = encode_compound_graph_scene(CompoundGraphSceneInput {
+        graph,
+        parents: &parents,
+        parent_validity: &parent_validity,
+        collapsed: &collapsed,
     })?;
     if scene
         .len()
@@ -1169,9 +1192,15 @@ pub fn checkpoint_validate_records(
             ];
             let metric = f64_at(bytes, o.node_metric + index * 8)?;
             let flags = u32_at(bytes, o.node_flags + index * 4)?;
+            let parent = u64_at(bytes, o.parents + index * 8)?;
+            let parent_valid = bytes[o.parent_validity + index];
+            let collapsed = bytes[o.collapsed + index];
             if values.iter().any(|v| !v.is_finite())
                 || metric.is_infinite()
                 || flags & !xyg_engine::graph_style::KNOWN_STATE_FLAGS != 0
+                || parent_valid > 1
+                || collapsed > 1
+                || parent_valid == 1 && parent >= o.nodes as u64
                 || [o.node_class, o.node_epistemic, o.node_status]
                     .iter()
                     .any(|base| bytes[*base + index] > xyg_engine::graph_style::MAX_SEMANTIC_CODE)
@@ -1390,6 +1419,14 @@ mod tests {
         while !out.len().is_multiple_of(8) {
             out.push(0);
         }
+        for _ in 0..3 {
+            out.extend_from_slice(&0u64.to_le_bytes());
+        }
+        out.extend_from_slice(&[0, 0, 0]); // parent validity
+        out.extend_from_slice(&[0, 0, 0]); // collapsed
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
         let labels = [
             "Selected node",
             "Disabled node",
@@ -1431,6 +1468,79 @@ mod tests {
             .windows(4)
             .any(|w| w == b"XYLG"));
         assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn compound_semantic_graph_is_byte_exact_with_the_native_compiler() {
+        let mut request = pack_semantic_graph();
+        let offsets = semantic_graph_offsets(&request).unwrap();
+        for (index, parent) in [0u64, 0, 0].into_iter().enumerate() {
+            request[offsets.parents + index * 8..offsets.parents + (index + 1) * 8]
+                .copy_from_slice(&parent.to_le_bytes());
+        }
+        request[offsets.parent_validity..offsets.parent_validity + 3].copy_from_slice(&[0, 1, 0]);
+        request[offsets.collapsed..offsets.collapsed + 3].copy_from_slice(&[1, 0, 0]);
+
+        let compiled = compile_scene_request(&request, 1 << 20).unwrap();
+        let node_labels = ["Selected node", "Disabled node", "Third node"];
+        let edge_labels = ["parallel edge", "pinned edge"];
+        let graph = SemanticGraphSceneInput {
+            version: SEMANTIC_GRAPH_SCENE_VERSION,
+            width: 800.0,
+            height: 600.0,
+            theme: 1,
+            title: "Semantic graph",
+            x: &[0.0, 1.0, 0.5],
+            y: &[0.0, 0.0, 1.0],
+            node_classes: &[1, 2, 3],
+            node_epistemic: &[1, 0, 2],
+            node_statuses: &[0, 1, 2],
+            node_metric: &[0.0, 0.5, 1.0],
+            node_flags: &[2, 64, 0],
+            node_labels: &node_labels,
+            sources: &[0, 2],
+            targets: &[2, 1],
+            edge_classes: &[1, 2],
+            edge_epistemic: &[1, 3],
+            edge_statuses: &[1, 0],
+            edge_metric: &[1.0, 2.0],
+            edge_flags: &[0, 16],
+            edge_labels: &edge_labels,
+        };
+        let native = encode_compound_graph_scene(CompoundGraphSceneInput {
+            graph,
+            parents: &[0, 0, 0],
+            parent_validity: &[0, 1, 0],
+            collapsed: &[1, 0, 0],
+        })
+        .unwrap();
+        assert_eq!(compiled.bytes, native);
+    }
+
+    #[test]
+    fn compound_semantic_graph_rejects_hostile_planes_and_utf8() {
+        let request = pack_semantic_graph();
+        let offsets = semantic_graph_offsets(&request).unwrap();
+        for (offset, value) in [(offsets.parent_validity, 2), (offsets.collapsed, 2)] {
+            let mut hostile = request.clone();
+            hostile[offset] = value;
+            assert_eq!(
+                checkpoint_validate_records(&hostile, 0, 1),
+                Err(SceneError::NonFinite)
+            );
+            assert!(compile_scene_request(&hostile, 1 << 20).is_err());
+        }
+        let mut bad_parent = request.clone();
+        bad_parent[offsets.parent_validity] = 1;
+        bad_parent[offsets.parents..offsets.parents + 8].copy_from_slice(&3u64.to_le_bytes());
+        assert!(compile_scene_request(&bad_parent, 1 << 20).is_err());
+
+        let mut bad_utf8 = request;
+        bad_utf8[SEMANTIC_GRAPH_HEADER_BYTES] = 0xff;
+        assert!(matches!(
+            compile_scene_request(&bad_utf8, 1 << 20),
+            Err(SceneError::Length)
+        ));
     }
 
     #[test]

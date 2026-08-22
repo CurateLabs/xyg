@@ -64,12 +64,15 @@ misaligned, or out-of-range fields before either module can be emitted. This kee
 mechanics host-visible while leaving identities, mark defaults, geometry, and
 all per-record decisions exclusively in Rust.
 
-`XYGG` v2 is the bounded semantic-graph compile ingress. Its source count is
+`XYGG` v3 is the bounded semantic-graph compile ingress. Its source count is
 limited to 1,024 direct-tier nodes plus edges, and Rust separately enforces the
 1,024 emitted-painter-trace ceiling after expanding resolved halo, dash, and
 arrow primitives. The framer validates only exact numeric representation and
 aligned lengths. Rust owns semantic domains, state precedence, light/dark
-paint, legend ordering, final node/edge label placement and truncation, and all screen-space expansion. Aggregate
+paint, legend ordering, final node/edge label placement and truncation,
+transitive compound/collapse resolution, and all screen-space expansion. The
+thin framer requires exact node-count parent, parent-validity, and collapse
+planes together; omitted planes encode one flat forest. Aggregate
 LOD must omit source-indexed semantic planes and is rejected explicitly.
 
 The compiler preserves source-edge IDs through parallel routes, self-loops,
@@ -147,8 +150,10 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 12. ABI 12 adds the bounded `XYDP` dashboard resource
-planner to the Scene v12/painter v9 contract. Earlier revisions added Scene
+`WASM_ABI_VERSION` is 13. ABI 13 adds exact compound planes to `XYGG` v3 and
+routes them through the canonical Rust compound Scene compiler while retaining
+the Scene v12/painter v9 contract. ABI 12 added the bounded `XYDP` dashboard
+resource planner. Earlier revisions added Scene
 paint, packed typed-column compile, transferable `XYTS` series descriptors,
 resumable Tier-2 aggregation, and packed `XYTC`/`XYTR` temporal-controller
 commands and snapshots. ABI 8 adds

@@ -30,6 +30,10 @@ export interface XygWasmSemanticGraphInput {
   nodeMetric: ArrayLike<number>;
   nodeFlags: ArrayLike<number>;
   nodeLabels?: ArrayLike<string | null>;
+  /** Exact compound planes. Supply all three or none; Rust owns collapse policy. */
+  parents?: ArrayLike<bigint | number>;
+  parentValidity?: ArrayLike<number>;
+  collapsed?: ArrayLike<number>;
   sources: ArrayLike<bigint | number>;
   targets: ArrayLike<bigint | number>;
   edgeClass: ArrayLike<number>;
@@ -97,6 +101,18 @@ export function encodeWasmSemanticGraph(input: XygWasmSemanticGraphInput): Array
       || edgeColumns.some((column) => !column || column.length !== e)) {
     throw new TypeError("semantic graph columns must match their node or edge count");
   }
+  const compound = [input.parents, input.parentValidity, input.collapsed];
+  const hasCompound = compound.some((column) => column !== undefined);
+  if (hasCompound && compound.some((column) => column === undefined || column.length !== n)) {
+    throw new TypeError("parents, parentValidity, and collapsed must all exactly match the node count");
+  }
+  for (let i=0; i<n; i++) {
+    exactU64(input.parents === undefined ? 0 : input.parents[i], "parents");
+    for (const [column, name] of [[input.parentValidity,"parentValidity"],[input.collapsed,"collapsed"]] as const) {
+      const value = column === undefined ? 0 : column[i];
+      if (value !== 0 && value !== 1) throw new TypeError(`${name} values must be exact 0 or 1 integers`);
+    }
+  }
   if (!Number.isFinite(input.width) || !Number.isFinite(input.height)
       || input.width < 160 || input.height < 120) {
     throw new RangeError("semantic graph viewport must be finite and at least 160 by 120 CSS pixels");
@@ -119,7 +135,7 @@ export function encodeWasmSemanticGraph(input: XygWasmSemanticGraphInput): Array
     throw new RangeError("semantic graph labels exceed the Rust text bounds");
   }
   let length = align8(XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES + title.byteLength);
-  for (const bytes of [16*n, 3*n, 8*n, 4*n, 16*e, 3*e, 8*e, 4*e]) length = align8(length + bytes);
+  for (const bytes of [16*n, 3*n, 8*n, 4*n, 16*e, 3*e, 8*e, 4*e, 8*n, 2*n]) length = align8(length + bytes);
   length = align8(align8(length + 4*n) + 4*e + nodeLabels.concat(edgeLabels).reduce((sum, label) => sum + label.byteLength, 0));
   if (!Number.isSafeInteger(length)) throw new RangeError("semantic graph request byte length overflow");
   const buffer = new ArrayBuffer(length);
@@ -170,6 +186,15 @@ export function encodeWasmSemanticGraph(input: XygWasmSemanticGraphInput): Array
     view.setFloat64(offset, value, true);
   }
   for (let i=0; i<e; i++, offset+=4) view.setUint32(offset, exactFlags(input.edgeFlags[i], "edgeFlags"), true);
+  offset = align8(offset);
+  for (let i=0; i<n; i++, offset+=8) view.setBigUint64(offset, exactU64(input.parents === undefined ? 0 : input.parents[i], "parents"), true);
+  for (const [column, name] of [[input.parentValidity,"parentValidity"],[input.collapsed,"collapsed"]] as const) {
+    for (let i=0; i<n; i++, offset++) {
+      const value = column === undefined ? 0 : column[i];
+      if (value !== 0 && value !== 1) throw new TypeError(`${name} values must be exact 0 or 1 integers`);
+      bytes[offset] = value;
+    }
+  }
   offset = align8(offset);
   for (const label of nodeLabels) { view.setUint32(offset, label.byteLength, true); offset += 4; }
   offset = align8(offset);

@@ -477,7 +477,8 @@ text length; the text table is contiguous and exact. Rust rejects nonfinite or
 out-of-viewport geometry, invalid UTF-8/NUL, empty text, count/byte overflow,
 and trailing data before any consumer allocation.
 
-For `XYGG` v2 direct semantic graphs, Rust alone ranks state and stable source
+For `XYGG` v3 direct semantic graphs, Rust alone resolves compound visibility,
+then ranks state and stable source
 identity, omits aggregate/filtered labels, truncates to the 32-character and
 remaining-plot-width bound, and greedily accepts nonoverlapping boxes. SVG,
 native raster, and browser painter v9 consume those final records verbatim.
