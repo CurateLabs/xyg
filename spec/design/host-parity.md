@@ -285,7 +285,8 @@ client must not grow a parallel “JS layout/LOD” product path.
 - **Node shapes:** via scatter `symbol=` (same mark as other scatter charts).
 - **`edge_curve`:** recorded in graph meta (`straight` default) for client
 - **`xyg_graph_edge_route_segments`:** Python/Node call the same Rust router after `build_render` so Direct-tier parallels, self-loops, and arrowheads stay host-neutral (`render_edge_index` on graph meta).
-- **Graph style foundation:** Python and Node call `xyg_graph_label_accept`,
-  `xyg_graph_visual_state_resolve`, and `xyg_graph_compound_bounds`; browser
-  and export paint the accepted results without reevaluating policy (#34).
+- **Graph style foundation:** Node utilities and private Python `_native`
+  utilities call `xyg_graph_label_accept`, `xyg_graph_visual_state_resolve`,
+  and `xyg_graph_compound_bounds`. Wiring these results into composed scenes,
+  browser paint, and export remains open under #34.
   follow-up; curved edge rendering is not MVP-blocking.

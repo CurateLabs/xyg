@@ -4962,9 +4962,12 @@ def graph_edge_route_segments(
 
 def graph_visual_states(flags: npt.NDArray[np.uint32]) -> npt.NDArray[np.uint8]:
     """Resolve interaction flags with the shared Rust precedence contract."""
-    flags_arr = np.ascontiguousarray(flags, dtype=np.uint32)
-    if flags_arr.ndim != 1:
-        raise ValueError("flags must be 1-D")
+    raw = np.asarray(flags)
+    if raw.ndim != 1 or raw.dtype.kind not in "iu" or raw.dtype.kind == "b":
+        raise ValueError("flags must be a 1-D exact integer array")
+    if any(int(value) < 0 or int(value) > 0xFFFF_FFFF for value in raw):
+        raise ValueError("flags must contain uint32 values")
+    flags_arr = np.ascontiguousarray(raw, dtype=np.uint32)
     out = np.empty(len(flags_arr), dtype=np.uint8)
     status = _lib.xyg_graph_visual_state_resolve(
         ctypes.c_uint64(len(flags_arr)),
@@ -4981,14 +4984,20 @@ def graph_label_accept(
 ) -> npt.NDArray[np.bool_]:
     """Return the deterministic Rust-owned label mask for the viewport budget."""
     priority_arr = _as_f64(priorities, "priorities")
-    if budget < 0:
-        raise ValueError("budget must be non-negative")
+    if isinstance(budget, (bool, np.bool_)):
+        raise TypeError("budget must be an exact uint64 integer")
+    try:
+        budget_value = operator.index(budget)
+    except TypeError as exc:
+        raise TypeError("budget must be an exact uint64 integer") from exc
+    if budget_value < 0 or budget_value > 0xFFFF_FFFF_FFFF_FFFF:
+        raise ValueError("budget must fit uint64")
     out = np.empty(len(priority_arr), dtype=np.uint8)
     count = ctypes.c_uint64()
     status = _lib.xyg_graph_label_accept(
         ctypes.c_uint64(len(priority_arr)),
         priority_arr.ctypes.data if len(priority_arr) else None,
-        ctypes.c_uint64(budget),
+        ctypes.c_uint64(budget_value),
         ctypes.c_double(math.nan if min_priority is None else float(min_priority)),
         out.ctypes.data if len(out) else None,
         ctypes.byref(count),
@@ -5007,8 +5016,18 @@ def graph_compound_bounds(
     """Return parent membership, compound mask, and ``[xmin,xmax,ymin,ymax]`` bounds."""
     x_arr = _as_f64(x, "x")
     y_arr = _as_f64(y, "y")
-    parent_arr = _as_u64(parents, "parents")
-    validity_arr = np.ascontiguousarray(parent_validity, dtype=np.uint8)
+    raw_parents = np.asarray(parents)
+    if raw_parents.ndim != 1 or raw_parents.dtype.kind not in "iu" or raw_parents.dtype.kind == "b":
+        raise ValueError("parents must be a 1-D exact integer array")
+    if any(int(value) < 0 or int(value) > 0xFFFF_FFFF_FFFF_FFFF for value in raw_parents):
+        raise ValueError("parents must contain uint64 identities")
+    parent_arr = np.ascontiguousarray(raw_parents, dtype=np.uint64)
+    raw_validity = np.asarray(parent_validity)
+    if raw_validity.ndim != 1 or raw_validity.dtype.kind not in "iub":
+        raise ValueError("parent_validity must be a 1-D boolean or integer array")
+    if any(int(value) not in (0, 1) for value in raw_validity):
+        raise ValueError("parent_validity must contain only 0 or 1")
+    validity_arr = np.ascontiguousarray(raw_validity, dtype=np.uint8)
     n = len(x_arr)
     if (
         y_arr.ndim != 1
@@ -5018,6 +5037,9 @@ def graph_compound_bounds(
         or len(validity_arr) != n
     ):
         raise ValueError("compound inputs must be 1-D arrays of equal length")
+    no_compound = np.uint64(0xFFFF_FFFF_FFFF_FFFF)
+    if np.any((validity_arr == 0) & (parent_arr != no_compound)):
+        raise ValueError("invalid parent entries must use the uint64 NO_COMPOUND sentinel")
     parent_of = np.empty(n, dtype=np.uint64)
     compounds = np.empty(n, dtype=np.uint8)
     xmin = np.empty(n, dtype=np.float64)

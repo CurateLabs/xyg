@@ -1547,6 +1547,10 @@ export function graphCompoundBounds(x, y, parents, parentValidity) {
   const xa = asF64Array(x, "x"); const ya = asF64Array(y, "y");
   const pa = asU64Array(parents, "parents"); const va = asU8Array(parentValidity, "parentValidity");
   requireEqualLength(xa, ya, "x", "y"); requireEqualLength(xa, pa, "x", "parents"); requireEqualLength(xa, va, "x", "parentValidity");
+  for (let index = 0; index < pa.length; index += 1) {
+    if (va[index] !== 0 && va[index] !== 1) throw new RangeError("parentValidity must contain only 0 or 1");
+    if (va[index] === 0 && pa[index] !== U64_MAX) throw new RangeError("invalid parent entries must use the uint64 NO_COMPOUND sentinel");
+  }
   const n = xa.length; const parentOf = new BigUint64Array(n); const isCompound = new Uint8Array(n);
   const xmin = new Float64Array(n); const xmax = new Float64Array(n); const ymin = new Float64Array(n); const ymax = new Float64Array(n);
   const code = xyGraphCompoundBounds(toU64(n, "x.length"), f64Ptr(xa), f64Ptr(ya), u64Ptr(pa), u8Ptr(va), u64Ptr(parentOf), u8Ptr(isCompound), f64Ptr(xmin), f64Ptr(xmax), f64Ptr(ymin), f64Ptr(ymax));
@@ -1759,6 +1763,9 @@ function asU32Array(value, name) {
     return new Uint32Array(0);
   }
   return Uint32Array.from(value, (item) => {
+    if (typeof item !== "number") {
+      throw new RangeError(`${name} must contain exact uint32 numbers`);
+    }
     const number = Number(item);
     if (!Number.isInteger(number) || number < 0 || number > 0xffffffff) {
       throw new RangeError(`${name} must contain uint32 values`);

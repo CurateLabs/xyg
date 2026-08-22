@@ -407,10 +407,11 @@ segments (loops / arrow wings) while preserving source edge identity via
 - `xyg_graph_compound_bounds` preserves each child's dense identity while
   emitting direct parent membership and parent AABBs.
 
-Python and Node expose thin typed-array consumers. Browser and export clients
-paint these accepted results and do not repeat the policy. Nested transitive
-bounds, collapse/expand, style scales, legends, and visual goldens remain in
-the rest of #34.
+Node exposes thin typed-array utilities; Python currently exposes equivalent
+private `_native` utilities for composition work. Neither utility is wired
+into the composed graph scene yet, so browser/export consumption remains part
+of #34. Nested transitive bounds, collapse/expand, style scales, legends, and
+visual goldens also remain.
 
 ---
 

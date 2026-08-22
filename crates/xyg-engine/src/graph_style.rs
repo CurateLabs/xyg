@@ -99,6 +99,40 @@ pub fn compound_bounds(
     {
         return None;
     }
+    // Validate the complete parent graph before writing any membership/bounds.
+    // A compound cycle has no meaningful root and must fail atomically.
+    let mut direct_parent = vec![None; n];
+    for i in 0..n {
+        if validity[i] == 0 {
+            continue;
+        }
+        let parent = usize::try_from(parents[i]).ok().filter(|&p| p < n)?;
+        if parent == i {
+            return None;
+        }
+        direct_parent[i] = Some(parent);
+    }
+    let mut color = vec![0u8; n];
+    for start in 0..n {
+        let mut node = start;
+        let mut path = Vec::new();
+        let mut reached_root = false;
+        while color[node] == 0 {
+            color[node] = 1;
+            path.push(node);
+            let Some(parent) = direct_parent[node] else {
+                reached_root = true;
+                break;
+            };
+            node = parent;
+        }
+        if !reached_root && color[node] == 1 && path.contains(&node) {
+            return None;
+        }
+        for visited in path {
+            color[visited] = 2;
+        }
+    }
     parent_of.fill(NO_COMPOUND);
     is_compound.fill(0);
     xmin.fill(f64::NAN);
@@ -125,10 +159,7 @@ pub fn compound_bounds(
         if validity[i] == 0 {
             continue;
         }
-        let p = usize::try_from(parents[i]).ok().filter(|&p| p < n)?;
-        if p == i {
-            return None;
-        }
+        let p = direct_parent[i]?;
         parent_of[i] = parents[i];
         is_compound[p] = 1;
         expand(p, x[i], y[i]);
@@ -187,5 +218,33 @@ mod tests {
         .unwrap();
         assert_eq!(po, [NO_COMPOUND, 0, 0, NO_COMPOUND]);
         assert_eq!((xmin[0], xmax[0], ymin[0], ymax[0]), (-1., 2., 0., 3.));
+    }
+    #[test]
+    fn compound_cycles_fail_before_writing_outputs() {
+        let mut po = [11; 3];
+        let mut ic = [12; 3];
+        let mut xmin = [13.; 3];
+        let mut xmax = [14.; 3];
+        let mut ymin = [15.; 3];
+        let mut ymax = [16.; 3];
+        assert_eq!(
+            compound_bounds(
+                &[0.; 3],
+                &[0.; 3],
+                &[1, 2, 0],
+                &[1; 3],
+                &mut po,
+                &mut ic,
+                &mut xmin,
+                &mut xmax,
+                &mut ymin,
+                &mut ymax
+            ),
+            None
+        );
+        assert_eq!(po, [11; 3]);
+        assert_eq!(ic, [12; 3]);
+        assert_eq!(xmin, [13.; 3]);
+        assert_eq!(ymax, [16.; 3]);
     }
 }
