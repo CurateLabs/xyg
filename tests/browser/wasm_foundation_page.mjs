@@ -404,6 +404,7 @@ async function run() {
 
   const sharedFixture = await fetch("/tests/fixtures/figure_scene_v3.json").then((response) => response.json());
   const xytsFixture = await fetch("/tests/fixtures/xyts_cross_host.json").then((response) => response.json());
+  const graphForgeSemanticFixture = await fetch("/tests/fixtures/graphforge/semantic_compound.json").then((response) => response.json());
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
   const wasmBytes = await wasmResponse.arrayBuffer();
   const wasmModule = await WebAssembly.compile(wasmBytes);
@@ -1139,7 +1140,59 @@ async function run() {
   if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) {
     throw new Error("updated semantic graph destroy retained its label layer");
   }
-  semanticHost.remove(); await semanticWorker.dispose();
+  semanticHost.remove();
+
+  foundationStage = "GraphForge semantic light/dark visual and accessibility goldens";
+  for (const theme of ["light", "dark"]) {
+    const fixtureHost = document.body.appendChild(document.createElement("div"));
+    const nodes = graphForgeSemanticFixture.nodes, edges = graphForgeSemanticFixture.edges;
+    const fixtureView = await renderWasmSemanticGraph({
+      el: fixtureHost, worker: semanticWorker, transfer: false,
+      graph: {
+        width: graphForgeSemanticFixture.width, height: graphForgeSemanticFixture.height,
+        title: graphForgeSemanticFixture.title, theme, tier: "direct",
+        x: nodes.x, y: nodes.y, nodeClass: nodes.class, nodeEpistemic: nodes.epistemic,
+        nodeStatus: nodes.status, nodeMetric: nodes.metric, nodeFlags: nodes.state_flags,
+        nodeLabels: nodes.label, sources: edges.source_index.map(BigInt), targets: edges.target_index.map(BigInt),
+        edgeClass: edges.class, edgeEpistemic: edges.epistemic, edgeStatus: edges.status,
+        edgeMetric: edges.metric, edgeFlags: edges.state_flags, edgeLabels: edges.label,
+      },
+    });
+    fixtureView.draw();
+    const items = [...fixtureHost.querySelectorAll('[data-xy-slot="graph_label"][role="listitem"]')];
+    const legendItems = [...fixtureHost.querySelectorAll('[data-xy-slot="legend_item"][role="listitem"]')];
+    const legendLabels = legendItems.map((item) => item.textContent);
+    const expectedLegendLabels = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5",
+      "Epistemic 0", "Epistemic 1", "Epistemic 2", "Epistemic 3", "Epistemic 4",
+      "Status 0", "Status 1", "Status 2", "Status 3", "Status 4"];
+    const expectedBackground = theme === "dark" ? "rgb(3, 7, 18)" : "rgb(255, 255, 255)";
+    if (getComputedStyle(fixtureHost.firstElementChild).backgroundColor !== expectedBackground
+        || items.length < 2 || items.some((item) => !item.dataset.xyStableId || !item.textContent)
+        || legendLabels.join("|") !== expectedLegendLabels.join("|")
+        || legendItems.some((item) => item.getAttribute("aria-label") !== item.textContent)) {
+      throw new Error(`GraphForge ${theme} visual/a11y golden drifted: labels=${items.length} legends=${legendItems.length}`);
+    }
+    const ids = fixtureView.gpuTraces.flatMap((trace, traceIndex) =>
+      Array.from(trace._sceneIds.lo, (_, row) => fixtureView.sceneStableId(traceIndex, row)));
+    const uniqueIds = [...new Set(ids)].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+    const expectedIds = [1n, 2n, 1n << 32n, (1n << 32n) + 1n, (1n << 32n) + 2n,
+      (1n << 32n) + 3n, (1n << 32n) + 4n];
+    if (uniqueIds.join("|") !== expectedIds.join("|")) {
+      throw new Error(`GraphForge ${theme} source identities drifted: ${uniqueIds.join("|")}`);
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    fixtureView.draw();
+    const pixels = new Uint8Array(fixtureView.canvas.width * fixtureView.canvas.height * 4);
+    fixtureView.gl.readPixels(0, 0, fixtureView.canvas.width, fixtureView.canvas.height,
+      fixtureView.gl.RGBA, fixtureView.gl.UNSIGNED_BYTE, pixels);
+    const colors = new Set();
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index + 3]) colors.add(`${pixels[index]},${pixels[index + 1]},${pixels[index + 2]},${pixels[index + 3]}`);
+    }
+    if (colors.size < 6) throw new Error(`GraphForge ${theme} visual golden is flat (${colors.size} colors)`);
+    fixtureView.destroy(); fixtureHost.remove();
+  }
+  await semanticWorker.dispose();
 
   const chartWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

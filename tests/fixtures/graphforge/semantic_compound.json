@@ -1,0 +1,47 @@
+{
+  "contract": "graphforge-semantic-compound-v1",
+  "title": "GraphForge semantic compound",
+  "width": 640,
+  "height": 480,
+  "nodes": {
+    "node_uuid": ["00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000003", "00000000-0000-0000-0000-000000000004", "00000000-0000-0000-0000-000000000005"],
+    "x": [0.0, 1.0, 2.0, -1.0, 4.0],
+    "y": [0.0, 1.0, 2.0, -1.0, 0.0],
+    "class": [1, 2, 3, 4, 5],
+    "epistemic": [0, 1, 2, 3, 4],
+    "status": [0, 1, 2, 3, 4],
+    "metric": [0.0, 0.25, 0.5, 0.75, 1.0],
+    "state_flags": [0, 0, 2, 0, 16],
+    "label": ["Collapsed evidence group", "Hidden child", "Hidden selected grandchild", "Hidden sibling", "Visible pinned outside"],
+    "parent_index": [0, 0, 1, 0, 0],
+    "parent_validity": [0, 1, 1, 1, 0],
+    "collapsed": [1, 0, 0, 0, 0]
+  },
+  "edges": {
+    "edge_uuid": ["10000000-0000-0000-0000-000000000001", "10000000-0000-0000-0000-000000000002", "10000000-0000-0000-0000-000000000003"],
+    "source_index": [2, 2, 4],
+    "target_index": [3, 4, 4],
+    "class": [1, 2, 3],
+    "epistemic": [1, 2, 3],
+    "status": [1, 2, 3],
+    "metric": [0.25, 0.5, 0.75],
+    "state_flags": [0, 0, 0],
+    "label": ["omitted internal", "remapped boundary", "outside loop"]
+  },
+  "goldens": {
+    "light": {
+      "scene_sha256": "19c3a5a991f30728a9f5ceab436c610844097457fe060d27119ee7037d037936",
+      "painter_sha256": "a7a40553f6d294121e1541e63e702903ff51fadcb2a927d73e8e2a9b4048dc6d",
+      "svg_sha256": "1895a102b76aff7228e8c545c27912b2dfadcb0317e8621f4aba0f920d0b2950",
+      "raster_sha256": "e096c537353732bf3bb4b971808a2571c751b1db26d2580144a4f0c768359fba",
+      "png_sha256": "af1be8145c0f26aafcefb5f00cd0918b2991145b8a4469c7ff97000c69694e4c"
+    },
+    "dark": {
+      "scene_sha256": "9acbf523df3443a8c243ac6029c829a08507813d28cc2e8ea5282158d478da9f",
+      "painter_sha256": "277895654d453fef99b79a3f7958c24473588d480b4f3c42c4484c89875e8835",
+      "svg_sha256": "a7d346465f89a380019673e43745c4f813445140f486639c7bbda0342aa562c2",
+      "raster_sha256": "1bd05b4b5f06b56afe9de684249c419184de1728cf2aa4f6a2a9ca47a21bbc7e",
+      "png_sha256": "000ba64aaaba67b51ea12a4e0c4403d5f730f8122d7822c578b05da0bdd3b938"
+    }
+  }
+}

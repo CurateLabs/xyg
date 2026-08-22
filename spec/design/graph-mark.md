@@ -497,6 +497,21 @@ Application-facing Python/Node composition mapping names and
 aggregate-specific semantic summaries remain follow-up work; aggregate
 omission is already enforced at this seam.
 
+`tests/fixtures/graphforge/semantic_compound.json` is the inspectable final-
+evidence corpus for this contract. It combines all five canonical class,
+epistemic, and status values; selected and pinned state; node and edge labels;
+a transitive collapsed hierarchy; a boundary edge; an internal omitted edge;
+and a self-loop. Exact SHA-256 goldens cover Scene v12, browser-painter bytes,
+SVG, raster commands, and PNG in light and dark themes. The native evidence
+asserts preserved node/edge source IDs, collapse remapping, omitted descendants,
+bounded label truncation, and non-flat raster output. The browser smoke reuses
+the same semantic columns through the packaged direct-WASM worker and public
+API, and checks theme backgrounds, resolved visual diversity, stable source
+IDs, deterministic 15-row legend order, and label/legend accessibility roles.
+The browser check intentionally exercises the current direct-only XYGG v2
+contract; transitive compound authoring through direct WASM remains gated on a
+future ABI revision and must not be inferred from this fixture.
+
 ---
 
 ## 8. Export
