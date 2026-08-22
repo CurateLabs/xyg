@@ -5245,7 +5245,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 10);
+        assert_eq!(SCENE_VERSION, 11);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
