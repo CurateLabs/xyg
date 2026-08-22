@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 10;
+pub const SCENE_VERSION: u32 = 11;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -20,7 +20,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 240;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 7;
+pub const BROWSER_PAINTER_VERSION: u32 = 8;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 288;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -1709,7 +1709,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         let kind = SceneRecordKind::from_code(bytes[offset])?;
         let visible = bytes[offset + 1];
         let symbol = bytes[offset + 2];
-        if visible > 1 || bytes[offset + 3] != 0 {
+        if visible > 1 || !matches!(bytes[offset + 3], 0..=4 | 0x80) {
             return Err(SceneError::Length);
         }
         let style = batch_u32(bytes, offset + 4)? as usize;
@@ -1774,7 +1774,8 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
     while annotation_cursor < records {
         let offset = records_offset + annotation_cursor * SCENE_BATCH_RECORD_BYTES;
         let stable_id = batch_u64(bytes, offset + 8)?;
-        if !is_scene_annotation_id(stable_id) {
+        let tag = bytes[offset + 3];
+        if tag == 0 || tag == 0x80 {
             if annotations_started {
                 return Err(SceneError::Length);
             }
@@ -1785,12 +1786,11 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         let mut run_end = annotation_cursor + 1;
         while run_end < records {
             let candidate = records_offset + run_end * SCENE_BATCH_RECORD_BYTES;
-            if batch_u64(bytes, candidate + 8)? != stable_id {
+            if bytes[candidate + 3] != tag || batch_u64(bytes, candidate + 8)? != stable_id {
                 break;
             }
             run_end += 1;
         }
-        let tag = ((stable_id >> 40) & 0xff) as u8;
         let kind = SceneRecordKind::from_code(bytes[offset])?;
         let visible = bytes[offset + 1];
         let style_ref = batch_u32(bytes, offset + 4)?;
@@ -1933,6 +1933,7 @@ pub struct SceneBatch<'a> {
     y0: &'a [f64],
     x1: &'a [f64],
     y1: &'a [f64],
+    annotations_from_ids: bool,
 }
 
 impl<'a> SceneBatch<'a> {
@@ -2048,6 +2049,102 @@ impl<'a> SceneBatch<'a> {
         x1: &'a [f64],
         y1: &'a [f64],
     ) -> Result<Self, SceneError> {
+        Self::new_with_decorations_impl(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            legend,
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+            true,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_chrome_literal_ids(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        chrome: SceneChromeStyle,
+        text: SceneChromeText,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        Self::new_with_decorations_impl(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            None,
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+            false,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn new_with_decorations_impl(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        chrome: SceneChromeStyle,
+        text: SceneChromeText,
+        legend: Option<SceneLegend>,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+        annotations_from_ids: bool,
+    ) -> Result<Self, SceneError> {
         let chrome = chrome.validated()?;
         let len = kinds.len();
         if len > MAX_SCENE_MARKS {
@@ -2106,7 +2203,7 @@ impl<'a> SceneBatch<'a> {
         // before any consumer can mistake a malformed annotation for a trace.
         let mut annotation_index = 0;
         let mut annotations_started = false;
-        while annotation_index < len {
+        while annotations_from_ids && annotation_index < len {
             let id = stable_ids[annotation_index];
             if !is_scene_annotation_id(id) {
                 if annotations_started {
@@ -2209,6 +2306,7 @@ impl<'a> SceneBatch<'a> {
             y0,
             x1,
             y1,
+            annotations_from_ids,
         })
     }
 
@@ -2313,7 +2411,13 @@ impl<'a> SceneBatch<'a> {
             out.push(kind as u8);
             out.push(u8::from(visible));
             out.push(self.symbols[index]);
-            out.push(0);
+            out.push(if !self.annotations_from_ids {
+                0x80
+            } else if is_scene_annotation_id(self.stable_ids[index]) {
+                ((self.stable_ids[index] >> 40) & 0xff) as u8
+            } else {
+                0
+            });
             out.extend_from_slice(&self.style_refs[index].to_le_bytes());
             out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
             let record_coordinates = if !visible {
@@ -2359,6 +2463,12 @@ struct EncodedRecord {
     stable_id: u64,
     coordinates: [f64; 4],
     diameter: f64,
+    annotation_tag: u8,
+}
+
+fn same_record_run(left: EncodedRecord, right: EncodedRecord) -> bool {
+    left.annotation_tag == right.annotation_tag
+        && (left.annotation_tag == 0x80 || left.stable_id == right.stable_id)
 }
 
 fn format_tick(value: f64, step: f64, kind: ScaleKind) -> String {
@@ -2763,7 +2873,8 @@ impl SceneDocument {
                 _ => return Err(SceneError::Length),
             };
             let symbol = bytes[offset + 2];
-            if bytes[offset + 3] != 0
+            let annotation_tag = bytes[offset + 3];
+            if !matches!(annotation_tag, 0..=4 | 0x80)
                 || (kind == SceneRecordKind::Scatter && symbol > ScatterSymbol::VerticalLine as u8)
                 || (kind != SceneRecordKind::Scatter && symbol != 0)
             {
@@ -2851,6 +2962,7 @@ impl SceneDocument {
                 stable_id,
                 coordinates,
                 diameter,
+                annotation_tag,
             });
             offset += SCENE_BATCH_RECORD_BYTES;
         }
@@ -2858,7 +2970,7 @@ impl SceneDocument {
         let mut annotations_started = false;
         while annotation_cursor < records.len() {
             let record = records[annotation_cursor];
-            if !is_scene_annotation_id(record.stable_id) {
+            if record.annotation_tag == 0 || record.annotation_tag == 0x80 {
                 if annotations_started {
                     return Err(SceneError::Length);
                 }
@@ -2866,10 +2978,12 @@ impl SceneDocument {
                 continue;
             }
             annotations_started = true;
-            let tag = ((record.stable_id >> 40) & 0xff) as u8;
+            let tag = record.annotation_tag;
             let run_end = records[annotation_cursor + 1..]
                 .iter()
-                .position(|candidate| candidate.stable_id != record.stable_id)
+                .position(|candidate| {
+                    candidate.annotation_tag != tag || candidate.stable_id != record.stable_id
+                })
                 .map_or(records.len(), |value| annotation_cursor + 1 + value);
             match tag {
                 1 if record.kind == SceneRecordKind::Polyline
@@ -3230,13 +3344,12 @@ impl SceneDocument {
                     index += 1;
                 }
                 SceneRecordKind::Band => {
-                    let id = record.stable_id;
                     let style_ref = record.style_ref;
                     let start = index;
                     while index < self.records.len() {
                         let point = self.records[index];
                         if point.kind != SceneRecordKind::Band
-                            || point.stable_id != id
+                            || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
                         {
@@ -3276,13 +3389,12 @@ impl SceneDocument {
                     }
                 }
                 SceneRecordKind::PolyFill => {
-                    let id = record.stable_id;
                     let style_ref = record.style_ref;
                     let start = index;
                     while index < self.records.len() {
                         let point = self.records[index];
                         if point.kind != SceneRecordKind::PolyFill
-                            || point.stable_id != id
+                            || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
                         {
@@ -3317,12 +3429,11 @@ impl SceneDocument {
                 }
                 SceneRecordKind::Polyline => {
                     out.push_str("<polyline points=\"");
-                    let id = record.stable_id;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
                         let point = self.records[index];
                         if point.kind != SceneRecordKind::Polyline
-                            || point.stable_id != id
+                            || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
                         {
@@ -3995,12 +4106,11 @@ impl SceneDocument {
                 }
                 SceneRecordKind::Band => {
                     let start = index;
-                    let id = record.stable_id;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
                         let point = self.records[index];
                         if point.kind != SceneRecordKind::Band
-                            || point.stable_id != id
+                            || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
                         {
@@ -4043,12 +4153,11 @@ impl SceneDocument {
                 }
                 SceneRecordKind::PolyFill => {
                     let start = index;
-                    let id = record.stable_id;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
                         let point = self.records[index];
                         if point.kind != SceneRecordKind::PolyFill
-                            || point.stable_id != id
+                            || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
                         {
@@ -4083,12 +4192,11 @@ impl SceneDocument {
                 }
                 SceneRecordKind::Polyline => {
                     let start = index;
-                    let id = record.stable_id;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
                         let point = self.records[index];
                         if point.kind != SceneRecordKind::Polyline
-                            || point.stable_id != id
+                            || !same_record_run(record, point)
                             || point.style_ref != style_ref
                             || !point.visible
                         {
@@ -4203,6 +4311,7 @@ impl SceneDocument {
             style_ref: usize,
             symbol: u8,
             diameter: f64,
+            annotation_tag: u8,
         }
 
         let f32_value = |value: f64| -> Result<f32, SceneError> {
@@ -4249,7 +4358,7 @@ impl SceneDocument {
                         let next = self.records[index];
                         if !next.visible
                             || next.kind != SceneRecordKind::Polyline
-                            || next.stable_id != record.stable_id
+                            || !same_record_run(record, next)
                             || next.style_ref != record.style_ref
                         {
                             break;
@@ -4265,9 +4374,7 @@ impl SceneDocument {
                             || next.style_ref != record.style_ref
                             || next.symbol != record.symbol
                             || next.diameter.to_bits() != record.diameter.to_bits()
-                            || ((is_scene_annotation_id(record.stable_id)
-                                || is_scene_annotation_id(next.stable_id))
-                                && next.stable_id != record.stable_id)
+                            || !same_record_run(record, next)
                         {
                             break;
                         }
@@ -4280,9 +4387,7 @@ impl SceneDocument {
                         if !next.visible
                             || next.kind != SceneRecordKind::Rect
                             || next.style_ref != record.style_ref
-                            || ((is_scene_annotation_id(record.stable_id)
-                                || is_scene_annotation_id(next.stable_id))
-                                && next.stable_id != record.stable_id)
+                            || !same_record_run(record, next)
                         {
                             break;
                         }
@@ -4297,7 +4402,7 @@ impl SceneDocument {
                         let next = self.records[index];
                         if !next.visible
                             || next.kind != SceneRecordKind::Band
-                            || next.stable_id != record.stable_id
+                            || !same_record_run(record, next)
                             || next.style_ref != record.style_ref
                         {
                             break;
@@ -4315,7 +4420,7 @@ impl SceneDocument {
                         let next = self.records[index];
                         if !next.visible
                             || next.kind != SceneRecordKind::PolyFill
-                            || next.stable_id != record.stable_id
+                            || !same_record_run(record, next)
                             || next.style_ref != record.style_ref
                         {
                             break;
@@ -4334,6 +4439,7 @@ impl SceneDocument {
                 style_ref: record.style_ref,
                 symbol: record.symbol,
                 diameter: record.diameter,
+                annotation_tag: record.annotation_tag,
             });
             if groups.len() > MAX_BROWSER_PAINTER_TRACES {
                 return Err(SceneError::PainterTraceLimit);
@@ -4416,6 +4522,11 @@ impl SceneDocument {
                 BROWSER_PAINTER_HEADER_BYTES + group_index * BROWSER_PAINTER_TRACE_BYTES;
             out[descriptor] = group.kind as u8;
             out[descriptor + 1] = group.symbol;
+            out[descriptor + 2] = if group.annotation_tag <= 4 {
+                group.annotation_tag
+            } else {
+                0
+            };
             let count = group.end - group.start;
             out[descriptor + 4..descriptor + 8].copy_from_slice(&(count as u32).to_le_bytes());
             let coordinate_columns =

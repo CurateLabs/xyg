@@ -122,7 +122,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 9 for Scene paint, packed typed-column compile,
+`WASM_ABI_VERSION` is 10 for Scene paint, packed typed-column compile,
 transferable `XYTS` series descriptors, resumable Tier-2 aggregation, and
 packed `XYTC`/`XYTR` temporal-controller commands and snapshots. ABI 8 adds
 packed `XYTG` temporal-graph binding/frame commands and Rust-produced `XYTF`
@@ -148,9 +148,15 @@ TypeScript does not scan Scene
 records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
+Scene v11 assigns record metadata byte 3 explicitly: `0` retains legacy
+trace/run identity, `1..4` identifies the bounded annotation kinds, and `128`
+marks literal per-row identity whose value must never classify annotations or
+split connected line/area geometry. Painter v8 carries only the annotation tag
+in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
+an internal namespace, while pick identity round-trips unchanged.
 
-Painter contract v7 begins with `XYPB`, independent painter version 7, canonical
-Scene v10 (`SCENE_VERSION = 10`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v8 begins with `XYPB`, independent painter version 8, canonical
+Scene v11 (`SCENE_VERSION = 11`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v10
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor

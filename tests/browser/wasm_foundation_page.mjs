@@ -65,7 +65,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 240 + textBytes + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 10, true);
+  view.setUint32(4, 11, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -128,7 +128,7 @@ function primaryAnnotationSceneV10() {
   const body = records + recordCount * 56;
   const bytes = new Uint8Array(body + 240), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 10, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 11, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -137,19 +137,19 @@ function primaryAnnotationSceneV10() {
   bytes.set([0, 0, 0, 0, 255, 0, 0, 255], 160); view.setFloat64(168, 2, true);
   bytes.set([0, 255, 0, 64, 0, 255, 0, 64], 176); view.setFloat64(184, 0, true);
   bytes.set([0, 0, 255, 255, 255, 255, 255, 255], 192); view.setFloat64(200, 1.5, true);
-  const writeRecord = (index, { kind, style, id, x0, y0, x1 = 0, y1 = 0, diameter = 0, symbol = 0 }) => {
+  const writeRecord = (index, { kind, style, id, annotation, x0, y0, x1 = 0, y1 = 0, diameter = 0, symbol = 0 }) => {
     const offset = records + index * 56;
-    bytes[offset] = kind; bytes[offset + 1] = 1; bytes[offset + 2] = symbol;
+    bytes[offset] = kind; bytes[offset + 1] = 1; bytes[offset + 2] = symbol; bytes[offset + 3] = annotation;
     view.setUint32(offset + 4, style, true); view.setBigUint64(offset + 8, id, true);
     [x0, y0, x1, y1].forEach((value, coordinate) => view.setFloat64(offset + 16 + coordinate * 8, value, true));
     view.setFloat64(offset + 48, diameter, true);
   };
   const prefix = 0x5859000000000000n;
-  writeRecord(0, { kind: 1, style: 0, id: prefix | (1n << 40n), x0: 30, y0: 10 });
-  writeRecord(1, { kind: 1, style: 0, id: prefix | (1n << 40n), x0: 30, y0: 70 });
-  writeRecord(2, { kind: 2, style: 1, id: prefix | (2n << 40n) | 1n, x0: 40, y0: 10, x1: 50, y1: 70 });
-  writeRecord(3, { kind: 0, style: 2, id: prefix | (3n << 40n) | 2n, x0: 60, y0: 40, diameter: 10 });
-  writeRecord(4, { kind: 0, style: 2, id: prefix | (3n << 40n) | 3n, x0: 70, y0: 50, diameter: 10 });
+  writeRecord(0, { kind: 1, style: 0, id: prefix | (1n << 40n), annotation: 1, x0: 30, y0: 10 });
+  writeRecord(1, { kind: 1, style: 0, id: prefix | (1n << 40n), annotation: 1, x0: 30, y0: 70 });
+  writeRecord(2, { kind: 2, style: 1, id: prefix | (2n << 40n) | 1n, annotation: 2, x0: 40, y0: 10, x1: 50, y1: 70 });
+  writeRecord(3, { kind: 0, style: 2, id: prefix | (3n << 40n) | 2n, annotation: 3, x0: 60, y0: 40, diameter: 10 });
+  writeRecord(4, { kind: 0, style: 2, id: prefix | (3n << 40n) | 3n, annotation: 3, x0: 70, y0: 50, diameter: 10 });
   writeDefaultSceneV9Chrome(bytes, view, body);
   return bytes;
 }
@@ -160,7 +160,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 240);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 10, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 11, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -274,7 +274,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    9, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    10, 11, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -366,8 +366,8 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 9,
-    expectedSceneVersion: 10,
+    expectedAbiVersion: 10,
+    expectedSceneVersion: 11,
   };
 }
 
@@ -448,7 +448,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 9 || ready.sceneVersion !== 10) {
+  if (ready.abiVersion !== 10 || ready.sceneVersion !== 11) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -926,14 +926,14 @@ async function run() {
         kind: "scatter",
         x: new Float64Array([0.2, 0.8]),
         y: new Float64Array([0.3, 0.7]),
-        stableIds: new BigUint64Array([70n, 73n]),
+        stableIds: new BigUint64Array([0x5859000000000001n, 0x5859030000000002n]),
         diameter: 8,
       },
       {
         kind: "line",
         x: new Float64Array([0.1, 0.5, 0.9]),
         y: new Float64Array([0.2, 0.6, 0.4]),
-        stableIdBase: 80n,
+        stableIds: new BigUint64Array([80n, 83n, 81n]),
       },
       {
         kind: "bar",
@@ -945,7 +945,7 @@ async function run() {
         kind: "area",
         x: new Float64Array([0.1, 0.9]),
         y: new Float64Array([0.4, 0.6]),
-        stableIdBase: 100n,
+        stableIds: new BigUint64Array([100n, 107n]),
       },
     ],
   };
@@ -1028,11 +1028,16 @@ async function run() {
   if (!chartHost.querySelector("canvas") || chartView.gpuTraces.length < 1) {
     throw new Error("chart ergonomics public API did not hydrate the existing painter");
   }
-  if (chartView.sceneStableId(0, 0) !== 70n) {
+  if (chartView.sceneStableId(0, 0) !== 0x5859000000000001n) {
     throw new Error("chart ergonomics stable id was not preserved through painter hydration");
   }
-  if (chartView.sceneStableId(0, 1) !== 73n) {
+  if (chartView.sceneStableId(0, 1) !== 0x5859030000000002n) {
     throw new Error("chart ergonomics did not preserve a non-sequential transferred stable id");
+  }
+  if (chartView.gpuTraces.find((gpu) => gpu.trace?.kind === "line")?.trace?.n_points !== 3
+      || chartView.gpuTraces.find((gpu) => gpu.trace?.kind === "area")?.trace?.n_points !== 2
+      || chartView.sceneStableId(1, 1) !== 83n || chartView.sceneStableId(3, 1) !== 107n) {
+    throw new Error("arbitrary line/area row identities split Rust trace geometry or drifted through picking");
   }
   const defaultLine = chartView.gpuTraces.find((gpu) => gpu.trace?.kind === "line")?.trace;
   if (defaultLine?.style?.color !== "rgba(37 99 235 / 1)" || defaultLine.style.width !== 1.5) {

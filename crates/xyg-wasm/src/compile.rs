@@ -312,7 +312,7 @@ fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
         y_constant,
         y_mask != 0,
     )?;
-    let batch = SceneBatch::new_with_chrome(
+    let batch = SceneBatch::new_with_chrome_literal_ids(
         layout,
         x_axis_id,
         y_axis_id,

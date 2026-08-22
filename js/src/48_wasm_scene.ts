@@ -41,8 +41,8 @@ function compilePainter(painter: ArrayBuffer) {
   };
   for (let index = 0; index < traceCount; index++) {
     const descriptor = HEADER_BYTES + index * TRACE_BYTES;
-    const kind = bytes[descriptor], symbol = bytes[descriptor + 1], count = u32(descriptor + 4);
-    if (bytes[descriptor + 2] !== 0 || bytes[descriptor + 3] !== 0 || bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0) || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
+    const kind = bytes[descriptor], symbol = bytes[descriptor + 1], annotationKind = bytes[descriptor + 2], count = u32(descriptor + 4);
+    if (annotationKind > 4 || bytes[descriptor + 3] !== 0 || bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0) || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
     const fill = rgba(bytes.subarray(descriptor + 32, descriptor + 36)), stroke = rgba(bytes.subarray(descriptor + 36, descriptor + 40));
     const strokeWidth = f32(descriptor + 40), diameter = f32(descriptor + 44);
     if (strokeWidth < 0 || diameter < 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter style is invalid");
@@ -80,8 +80,6 @@ function compilePainter(painter: ArrayBuffer) {
       };
     } else throw new XygWasmError("XYG_WASM_UNSUPPORTED", `unsupported Rust painter trace ${kind}`);
     trace.scene_ids = { lo: column(descriptor, 24, count, "u32"), hi: column(descriptor, 28, count, "u32") };
-    const idHigh = count ? view.getUint32(columns[trace.scene_ids.hi].byte_offset, true) : 0;
-    const annotationKind = (idHigh & 0xffff0000) === 0x58590000 ? (idHigh >>> 8) & 0xff : 0;
     if (annotationKind) {
       const px = (columnIndex: number, item = 0) => view.getFloat32(columns[columnIndex].byte_offset + item * 4, true);
       if (annotationKind === 1 && kind === 1 && count === 2) {
