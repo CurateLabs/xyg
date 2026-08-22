@@ -166,7 +166,7 @@ fn auto_domain_from_columns(
     Some((x_lo, x_hi, y_lo, y_hi))
 }
 
-fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
+fn compile_columns_request(bytes: &[u8], literal_ids: bool) -> Result<CompiledScene, SceneError> {
     if bytes.len() < COMPILE_HEADER_BYTES {
         return Err(SceneError::Length);
     }
@@ -312,27 +312,51 @@ fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
         y_constant,
         y_mask != 0,
     )?;
-    let batch = SceneBatch::new_with_chrome(
-        layout,
-        x_axis_id,
-        y_axis_id,
-        x_scale,
-        y_scale,
-        SceneChromeStyle::default(),
-        text,
-        &kinds,
-        &stable_ids,
-        &style_refs,
-        &fill_rgba,
-        &stroke_rgba,
-        &stroke_width,
-        &diameter,
-        &symbols,
-        &x0,
-        &y0,
-        &x1,
-        &y1,
-    )?;
+    let batch = if literal_ids {
+        SceneBatch::new_with_chrome_literal_ids(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            text,
+            &kinds,
+            &stable_ids,
+            &style_refs,
+            &fill_rgba,
+            &stroke_rgba,
+            &stroke_width,
+            &diameter,
+            &symbols,
+            &x0,
+            &y0,
+            &x1,
+            &y1,
+        )?
+    } else {
+        SceneBatch::new_with_chrome(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            text,
+            &kinds,
+            &stable_ids,
+            &style_refs,
+            &fill_rgba,
+            &stroke_rgba,
+            &stroke_width,
+            &diameter,
+            &symbols,
+            &x0,
+            &y0,
+            &x1,
+            &y1,
+        )?
+    };
     Ok(CompiledScene {
         records: record_count,
         styles: style_count,
@@ -421,6 +445,34 @@ fn next_series_f64s(
     *cursor = cursor
         .checked_add(count.checked_mul(8).ok_or(SceneError::Limit)?)
         .ok_or(SceneError::Limit)?;
+    Ok(values)
+}
+
+fn next_series_u64s(
+    bytes: &[u8],
+    offset: u32,
+    count: usize,
+    data_start: usize,
+    cursor: &mut usize,
+) -> Result<Vec<u64>, SceneError> {
+    if offset as usize != *cursor || !(offset as usize).is_multiple_of(8) {
+        return Err(SceneError::Length);
+    }
+    let byte_len = count.checked_mul(8).ok_or(SceneError::Limit)?;
+    let end = cursor.checked_add(byte_len).ok_or(SceneError::Limit)?;
+    let raw = bytes.get(*cursor..end).ok_or(SceneError::Length)?;
+    let values = raw
+        .chunks_exact(8)
+        .map(|chunk| {
+            Ok(u64::from_le_bytes(
+                chunk.try_into().map_err(|_| SceneError::Length)?,
+            ))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if *cursor < data_start {
+        return Err(SceneError::Length);
+    }
+    *cursor = end;
     Ok(values)
 }
 
@@ -530,6 +582,9 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         if count == 0 || flags & !DESCRIPTOR_FLAG_KNOWN != 0 {
             return Err(SceneError::Length);
         }
+        if flags & DESCRIPTOR_FLAG_STABLE_ID_BASE != 0 && flags & DESCRIPTOR_FLAG_STABLE_IDS != 0 {
+            return Err(SceneError::Length);
+        }
         let stable_base = if flags & DESCRIPTOR_FLAG_STABLE_ID_BASE != 0 {
             u64_at(bytes, base + DESCRIPTOR_STABLE_ID_BASE)?
         } else {
@@ -540,9 +595,6 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else {
             count as u64
         };
-        next_default_id = stable_base
-            .checked_add(identity_count)
-            .ok_or(SceneError::Limit)?;
         let scalar_diameter = f64_at(bytes, base + DESCRIPTOR_DIAMETER)?;
         let authored_stroke = f64_at(bytes, base + DESCRIPTOR_STROKE_WIDTH)?;
         if flags & DESCRIPTOR_FLAG_FILL_RGBA != 0 {
@@ -623,6 +675,31 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else {
             None
         };
+        let authored_stable_ids = if flags & DESCRIPTOR_FLAG_STABLE_IDS != 0 {
+            Some(next_series_u64s(
+                bytes,
+                u32_at(bytes, base + DESCRIPTOR_STABLE_IDS)?,
+                count,
+                data_start,
+                &mut data_cursor,
+            )?)
+        } else {
+            None
+        };
+        next_default_id = if let Some(ids) = &authored_stable_ids {
+            ids.iter()
+                .copied()
+                .max()
+                .unwrap_or(0)
+                .checked_add(1)
+                .ok_or(SceneError::Limit)?
+                .max(next_default_id)
+        } else {
+            stable_base
+                .checked_add(identity_count)
+                .ok_or(SceneError::Limit)?
+                .max(next_default_id)
+        };
         let bar_half_width = if kind == KIND_BAR {
             Some(default_bar_half_width(&xs, domain_x_lo, domain_x_hi)?)
         } else {
@@ -630,7 +707,9 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         };
         for index in 0..count {
             kinds.push(kind as u8);
-            stable_ids.push(if matches!(kind, KIND_LINE | KIND_AREA) {
+            stable_ids.push(if let Some(ids) = &authored_stable_ids {
+                ids[index]
+            } else if matches!(kind, KIND_LINE | KIND_AREA) {
                 stable_base
             } else {
                 stable_base
@@ -717,7 +796,7 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         .checked_add(title_len + x_label_len + y_label_len)
         .ok_or(SceneError::Limit)?;
     packed.extend_from_slice(bytes.get(text_start..text_end).ok_or(SceneError::Length)?);
-    compile_columns_request(&packed)
+    compile_columns_request(&packed, true)
 }
 
 /// Decode either packed canonical columns (`XYCC`) or transferable typed
@@ -729,7 +808,7 @@ pub fn compile_scene_request(
     if bytes.get(..4) == Some(SERIES_MAGIC) {
         compile_series_request(bytes, peak_budget)
     } else {
-        compile_columns_request(bytes)
+        compile_columns_request(bytes, false)
     }
 }
 
@@ -927,6 +1006,77 @@ mod tests {
             compile_scene_request(&wrong_header, usize::MAX),
             Err(SceneError::Length)
         ));
+    }
+
+    #[test]
+    fn typed_series_preserves_transferred_per_record_stable_ids() {
+        let mut request = pack_typed_series();
+        let descriptor = COMPILE_HEADER_BYTES;
+        let ids_offset = request.len();
+        request[descriptor + DESCRIPTOR_FLAGS..descriptor + DESCRIPTOR_FLAGS + 4]
+            .copy_from_slice(&DESCRIPTOR_FLAG_STABLE_IDS.to_le_bytes());
+        request[descriptor + DESCRIPTOR_STABLE_IDS..descriptor + DESCRIPTOR_STABLE_IDS + 4]
+            .copy_from_slice(&(ids_offset as u32).to_le_bytes());
+        request.extend_from_slice(&91u64.to_le_bytes());
+        request.extend_from_slice(&7u64.to_le_bytes());
+
+        let compiled = compile_scene_request(&request, usize::MAX).unwrap();
+        let first = scene::SCENE_BATCH_HEADER_BYTES + 16;
+        let second = first + scene::SCENE_BATCH_RECORD_BYTES;
+        assert_eq!(u64_at(&compiled.bytes, first + 8).unwrap(), 91);
+        assert_eq!(u64_at(&compiled.bytes, second + 8).unwrap(), 7);
+
+        let mut conflicting = request;
+        let flags = DESCRIPTOR_FLAG_STABLE_IDS | DESCRIPTOR_FLAG_STABLE_ID_BASE;
+        conflicting[descriptor + DESCRIPTOR_FLAGS..descriptor + DESCRIPTOR_FLAGS + 4]
+            .copy_from_slice(&flags.to_le_bytes());
+        assert!(matches!(
+            compile_scene_request(&conflicting, usize::MAX),
+            Err(SceneError::Length)
+        ));
+    }
+
+    #[test]
+    fn legacy_xycc_stable_ids_remain_run_boundaries() {
+        let mut request = vec![0u8; COMPILE_HEADER_BYTES];
+        request[..4].copy_from_slice(COMPILE_MAGIC);
+        request[4..8].copy_from_slice(&COMPILE_VERSION.to_le_bytes());
+        request[8..12].copy_from_slice(&(COMPILE_HEADER_BYTES as u32).to_le_bytes());
+        request[16..20].copy_from_slice(&2u32.to_le_bytes());
+        request[20..24].copy_from_slice(&1u32.to_le_bytes());
+        for (offset, value) in [
+            (40, 320.0f64),
+            (48, 240.0),
+            (120, 0.0),
+            (128, 1.0),
+            (136, 1.0),
+            (144, 0.0),
+            (152, 1.0),
+            (160, 1.0),
+        ] {
+            request[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        request[88..96].copy_from_slice(&1u64.to_le_bytes());
+        request[96..104].copy_from_slice(&2u64.to_le_bytes());
+        request.extend_from_slice(&[KIND_LINE as u8, KIND_LINE as u8]);
+        append_aligned_u64s(&mut request, &[10, 11]);
+        append_aligned_u32s(&mut request, &[0, 0]);
+        append_aligned_f64s(&mut request, &[0.0, 0.0]);
+        request.extend_from_slice(&[0, 0]);
+        append_aligned_f64s(&mut request, &[0.1, 0.9]);
+        append_aligned_f64s(&mut request, &[0.2, 0.8]);
+        append_aligned_f64s(&mut request, &[0.0, 0.0]);
+        append_aligned_f64s(&mut request, &[0.0, 0.0]);
+        request.extend_from_slice(&[0, 0, 0, 0]);
+        request.extend_from_slice(&[37, 99, 235, 255]);
+        append_aligned_f64s(&mut request, &[1.5]);
+        let compiled = compile_columns_request(&request, false).unwrap();
+        assert_eq!(compiled.bytes[scene::SCENE_BATCH_HEADER_BYTES + 16 + 3], 0);
+        let painter = scene::SceneDocument::decode(&compiled.bytes)
+            .unwrap()
+            .to_browser_painter(1 << 20)
+            .unwrap();
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 2);
     }
 
     #[test]

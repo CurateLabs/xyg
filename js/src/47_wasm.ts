@@ -246,6 +246,10 @@ export class XygWasmWorker {
     if (!(request?.prefix instanceof ArrayBuffer) || !Array.isArray(request.columns)) {
       throw new TypeError("typed-series request is malformed");
     }
+    if (!Number.isInteger(request.framedSeries) || request.framedSeries <= 0
+        || request.mainThreadRecordVisits !== 0) {
+      throw new TypeError("typed-series framing diagnostics are malformed");
+    }
     const buffers = [request.prefix, ...request.columns];
     if (request.columns.some((column) => !(column instanceof ArrayBuffer))
         || new Set(buffers).size !== buffers.length) {

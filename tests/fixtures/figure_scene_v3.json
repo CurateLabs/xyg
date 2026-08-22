@@ -11,12 +11,12 @@
     0,
     5
   ],
-  "expected_sha256": "68b3741638ff19184f9d5204e013646af6b0d115c9cfa0f024cdc7fef306522c",
-  "default_scatter_sha256": "be2110cceff06b88585ec1802c2f27f5302d33af770bf42d6bbd0e523a00c5e3",
-  "default_line_sha256": "250bd206608db92ebf51e6f4b2cef0bebae09531c1df80fdf14d60b0eb138416",
+  "expected_sha256": "81f53c2f3f70a6c63b36dcd7830014ea0119cb9fc7cc418da5fbbf53ca8e30cc",
+  "default_scatter_sha256": "5512929909f2a8bfc7572c177b0219c1e6354696554859c75e6e6a0c011645ec",
+  "default_line_sha256": "406155a3d8df1b9b13654756a455716dab3ef47bd08d154d0e941ea701ed856b",
   "primary_legend_sha256": "495eccbc7316895d08b96c2da901ccc3f3976efca0c48414edd8035ca3bbee11",
-  "primary_annotations_sha256": "090454c4e029226724ef3ecf38750c5d0525d753fe21ca09753c18dbadafdca7",
-  "wasm_typed_series_v1": {
+  "primary_annotations_sha256": "11f340ba33375a57df63a268cea6bc50fbf9e0d9b4691acd89653c11b86dc5bd",
+  "wasm_typed_series_v2": {
     "magic": "XYTS",
     "scatter_diameter": 8,
     "line_stroke_width": 1.5,
@@ -24,6 +24,7 @@
     "bar_baseline": 0,
     "area_baseline": 0,
     "default_stable_id_base": 1,
+    "arbitrary_stable_ids": [91, 7],
     "joined_series_share_stable_id": true,
     "default_fill_rgba": [37, 99, 235, 255],
     "default_line_stroke_rgba": [37, 99, 235, 255]

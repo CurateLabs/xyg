@@ -13,7 +13,7 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal(sceneSupportReason(0), "");
   assert.equal(
     sceneSupportReason((1n << 6n) | (1n << 1n)),
-    "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources",
+    "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources",
   );
   assert.throws(() => sceneSupportReason(1n << 63n), /version or feature mask/);
   assert.throws(() => sceneSupportReason(0, 2), /version or feature mask/);
@@ -66,10 +66,10 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture"
 });
 
 test("Node figure defaults match Python Scene bytes and canonical values", () => {
-  assert.deepEqual(figureSceneFixture.wasm_typed_series_v1, {
+  assert.deepEqual(figureSceneFixture.wasm_typed_series_v2, {
     magic: "XYTS", scatter_diameter: 8, line_stroke_width: 1.5,
     bar_half_width: 0.4, bar_baseline: 0, area_baseline: 0,
-    default_stable_id_base: 1, joined_series_share_stable_id: true,
+    default_stable_id_base: 1, arbitrary_stable_ids: [91, 7], joined_series_share_stable_id: true,
     default_fill_rgba: [37, 99, 235, 255], default_line_stroke_rgba: [37, 99, 235, 255],
   });
   const scene = (kind) => {
@@ -135,7 +135,7 @@ test("Node Scene v9 whole-scene consumers reject malformed and unsupported input
   assert.throws(() => figure.toScene(), /does not yet support heatmap/);
 });
 
-test("Node Scene v10 compiles bounded primary annotations and fails closed", () => {
+test("Node Scene v11 compiles bounded primary annotations and fails closed", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [
@@ -145,7 +145,7 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
   ];
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 10);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 11);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -155,7 +155,7 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
     { opacity: "opaque" }, { width: null }, { width: false },
   ]) {
     figure.annotations = [{ kind: "rule", axis: "x", value: 0.25, style }];
-    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+    assert.throws(() => figure.toScene(), /Scene v11 annotation/);
   }
   for (const annotation of [
     { kind: "rule", axis: "x", value: null },
@@ -167,7 +167,7 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
     { kind: "marker", x: 0, y: 1, symbol: 2 },
   ]) {
     figure.annotations = [annotation];
-    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+    assert.throws(() => figure.toScene(), /Scene v11 annotation/);
   }
 });
 
@@ -414,7 +414,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 10);
+  assert.equal(sceneVersion(), 11);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -455,7 +455,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 10);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 11);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });
