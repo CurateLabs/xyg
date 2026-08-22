@@ -2466,6 +2466,9 @@ struct EncodedRecord {
     annotation_tag: u8,
 }
 
+// Scene v11 tag 0x80 marks literal per-row identity, so it is intentionally
+// excluded from grouping: callers use kind/style for those run boundaries,
+// while legacy and annotation records additionally require stable-ID equality.
 fn same_record_run(left: EncodedRecord, right: EncodedRecord) -> bool {
     left.annotation_tag == right.annotation_tag
         && (left.annotation_tag == 0x80 || left.stable_id == right.stable_id)
