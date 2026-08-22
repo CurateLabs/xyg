@@ -61,14 +61,14 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
         missing_constant.to_scene()
 
 
-def test_scene_v10_primary_annotations_are_canonical_and_ordered() -> None:
+def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
     figure.vline(0.25, color="#ff0000", width=2.0)
     figure.y_band(0.2, 0.4, color="#00ff00", opacity=0.25)
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 10
+    assert int.from_bytes(encoded[4:8], "little") == 11
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -162,7 +162,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 10
+    assert int.from_bytes(encoded[4:8], "little") == 11
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -179,6 +179,32 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
         np.frombuffer(encoded, dtype="<f8", count=4, offset=rect + 16),
         [156.0, 142.0, 272.0, 318.0],
     )
+
+
+def test_legacy_native_batch_reserves_annotation_identity_prefix() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v3.json").read_text())
+    fixture["stable_ids"][0] = 0x5859010000000001
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(
+            viewport=tuple(fixture["viewport"]),
+            margins=tuple(fixture["margins"]),
+            x_axis=tuple(fixture["x_axis"]),
+            y_axis=tuple(fixture["y_axis"]),
+            kinds=fixture["kinds"],
+            stable_ids=fixture["stable_ids"],
+            style_refs=fixture["style_refs"],
+            fill_rgba=[channel for style in fixture["styles"] for channel in style["fill_rgba"]],
+            stroke_rgba=[
+                channel for style in fixture["styles"] for channel in style["stroke_rgba"]
+            ],
+            stroke_width=[style["stroke_width"] for style in fixture["styles"]],
+            diameter=fixture["diameter"],
+            symbols=fixture["symbols"],
+            x0=fixture["x0"],
+            y0=fixture["y0"],
+            x1=fixture["x1"],
+            y1=fixture["y1"],
+        )
 
 
 def test_python_scene_v8_authored_chrome_matches_node_fixture_bytes() -> None:
@@ -447,7 +473,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 10
+    assert _native.scene_version() == 11
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

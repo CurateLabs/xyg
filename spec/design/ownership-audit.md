@@ -8,7 +8,7 @@ This ledger answers ownership file by file without treating language percentages
 
 The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
 
-Migration status: Scene v10 now moves canonical viewport/plot bounds, numeric
+Migration status: Scene v11 now moves canonical viewport/plot bounds, numeric
 axis transforms, chart/plot backgrounds, authored axis side and visibility,
 explicit major/minor tick geometry and paint, bounded primary static legend
 entry order/placement/frame/text/swatch policy, default numeric
@@ -295,7 +295,7 @@ Forbidden:
 | `js/src/49_wasm_temporal.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_temporal_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/50_chartview.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
-| `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `literal-projection-only`; Scene v10 rule/band/marker geometry, order, clipping and defaults are Rust-owned; text/callout/arrow remain migration debt | #116 |
+| `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `literal-projection-only`; Scene v11 rule/band/marker geometry, order, clipping and defaults are Rust-owned; text/callout/arrow remain migration debt | #116 |
 | `js/src/52_tooltip.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/53_interaction.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/54_kernel.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |

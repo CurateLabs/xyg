@@ -15,7 +15,7 @@
   "default_scatter_sha256": "5512929909f2a8bfc7572c177b0219c1e6354696554859c75e6e6a0c011645ec",
   "default_line_sha256": "406155a3d8df1b9b13654756a455716dab3ef47bd08d154d0e941ea701ed856b",
   "primary_legend_sha256": "495eccbc7316895d08b96c2da901ccc3f3976efca0c48414edd8035ca3bbee11",
-  "primary_annotations_sha256": "090454c4e029226724ef3ecf38750c5d0525d753fe21ca09753c18dbadafdca7",
+  "primary_annotations_sha256": "11f340ba33375a57df63a268cea6bc50fbf9e0d9b4691acd89653c11b86dc5bd",
   "wasm_typed_series_v2": {
     "magic": "XYTS",
     "scatter_diameter": 8,

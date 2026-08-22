@@ -166,7 +166,7 @@ fn auto_domain_from_columns(
     Some((x_lo, x_hi, y_lo, y_hi))
 }
 
-fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
+fn compile_columns_request(bytes: &[u8], literal_ids: bool) -> Result<CompiledScene, SceneError> {
     if bytes.len() < COMPILE_HEADER_BYTES {
         return Err(SceneError::Length);
     }
@@ -312,27 +312,51 @@ fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
         y_constant,
         y_mask != 0,
     )?;
-    let batch = SceneBatch::new_with_chrome_literal_ids(
-        layout,
-        x_axis_id,
-        y_axis_id,
-        x_scale,
-        y_scale,
-        SceneChromeStyle::default(),
-        text,
-        &kinds,
-        &stable_ids,
-        &style_refs,
-        &fill_rgba,
-        &stroke_rgba,
-        &stroke_width,
-        &diameter,
-        &symbols,
-        &x0,
-        &y0,
-        &x1,
-        &y1,
-    )?;
+    let batch = if literal_ids {
+        SceneBatch::new_with_chrome_literal_ids(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            text,
+            &kinds,
+            &stable_ids,
+            &style_refs,
+            &fill_rgba,
+            &stroke_rgba,
+            &stroke_width,
+            &diameter,
+            &symbols,
+            &x0,
+            &y0,
+            &x1,
+            &y1,
+        )?
+    } else {
+        SceneBatch::new_with_chrome(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            text,
+            &kinds,
+            &stable_ids,
+            &style_refs,
+            &fill_rgba,
+            &stroke_rgba,
+            &stroke_width,
+            &diameter,
+            &symbols,
+            &x0,
+            &y0,
+            &x1,
+            &y1,
+        )?
+    };
     Ok(CompiledScene {
         records: record_count,
         styles: style_count,
@@ -772,7 +796,7 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         .checked_add(title_len + x_label_len + y_label_len)
         .ok_or(SceneError::Limit)?;
     packed.extend_from_slice(bytes.get(text_start..text_end).ok_or(SceneError::Length)?);
-    compile_columns_request(&packed)
+    compile_columns_request(&packed, true)
 }
 
 /// Decode either packed canonical columns (`XYCC`) or transferable typed
@@ -784,7 +808,7 @@ pub fn compile_scene_request(
     if bytes.get(..4) == Some(SERIES_MAGIC) {
         compile_series_request(bytes, peak_budget)
     } else {
-        compile_columns_request(bytes)
+        compile_columns_request(bytes, false)
     }
 }
 
@@ -1010,6 +1034,49 @@ mod tests {
             compile_scene_request(&conflicting, usize::MAX),
             Err(SceneError::Length)
         ));
+    }
+
+    #[test]
+    fn legacy_xycc_stable_ids_remain_run_boundaries() {
+        let mut request = vec![0u8; COMPILE_HEADER_BYTES];
+        request[..4].copy_from_slice(COMPILE_MAGIC);
+        request[4..8].copy_from_slice(&COMPILE_VERSION.to_le_bytes());
+        request[8..12].copy_from_slice(&(COMPILE_HEADER_BYTES as u32).to_le_bytes());
+        request[16..20].copy_from_slice(&2u32.to_le_bytes());
+        request[20..24].copy_from_slice(&1u32.to_le_bytes());
+        for (offset, value) in [
+            (40, 320.0f64),
+            (48, 240.0),
+            (120, 0.0),
+            (128, 1.0),
+            (136, 1.0),
+            (144, 0.0),
+            (152, 1.0),
+            (160, 1.0),
+        ] {
+            request[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        request[88..96].copy_from_slice(&1u64.to_le_bytes());
+        request[96..104].copy_from_slice(&2u64.to_le_bytes());
+        request.extend_from_slice(&[KIND_LINE as u8, KIND_LINE as u8]);
+        append_aligned_u64s(&mut request, &[10, 11]);
+        append_aligned_u32s(&mut request, &[0, 0]);
+        append_aligned_f64s(&mut request, &[0.0, 0.0]);
+        request.extend_from_slice(&[0, 0]);
+        append_aligned_f64s(&mut request, &[0.1, 0.9]);
+        append_aligned_f64s(&mut request, &[0.2, 0.8]);
+        append_aligned_f64s(&mut request, &[0.0, 0.0]);
+        append_aligned_f64s(&mut request, &[0.0, 0.0]);
+        request.extend_from_slice(&[0, 0, 0, 0]);
+        request.extend_from_slice(&[37, 99, 235, 255]);
+        append_aligned_f64s(&mut request, &[1.5]);
+        let compiled = compile_columns_request(&request, false).unwrap();
+        assert_eq!(compiled.bytes[scene::SCENE_BATCH_HEADER_BYTES + 16 + 3], 0);
+        let painter = scene::SceneDocument::decode(&compiled.bytes)
+            .unwrap()
+            .to_browser_painter(1 << 20)
+            .unwrap();
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 2);
     }
 
     #[test]

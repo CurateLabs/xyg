@@ -73,7 +73,7 @@ and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
 compatibility renderer until Rust owns every remaining layout/gutter and Scene
-record. Scene v10 now covers solid chart/plot backgrounds, authored
+record. Scene v11 now covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus
   rule, band, and unlabeled marker annotations. Extra legends, colorbars,

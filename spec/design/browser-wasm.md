@@ -131,7 +131,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 10 for this contract.
+`SCENE_VERSION` remains independently versioned and is 11 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -158,7 +158,7 @@ an internal namespace, while pick identity round-trips unchanged.
 Painter contract v8 begins with `XYPB`, independent painter version 8, canonical
 Scene v11 (`SCENE_VERSION = 11`), a 288-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v10
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v11
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
 geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores
@@ -195,10 +195,10 @@ Callers may reduce fragmentation or split work into explicitly managed views;
 the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
-This is the public direct-browser entry for the stable Scene v10
+This is the public direct-browser entry for the stable Scene v11
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
 spine, major/minor tick, side, visibility, label paint, and bounded primary
-static legends. Scene v10 also carries bounded, unlabeled axis-aligned rules and
+static legends. Scene v11 also carries bounded, unlabeled axis-aligned rules and
 bands plus built-in markers with literal solid paint, opacity, finite width/size,
 reserved stable identity, Rust-owned clipping/order, and a visually hidden
 `role=note` browser projection that names each reference without presenting

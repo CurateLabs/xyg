@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 10 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 11 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 10, so additive emission is not safe.
+bitmap or schema negotiation in version 11, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the exact version-10 layout (shared fixed
+WASM lifecycle foundation; it validates the exact version-11 layout (shared fixed
 header/mark widths since version 4), bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -141,7 +141,10 @@ The byte layout established by version 3 remains fixed in version 4:
 
 ### Fixed record semantics
 
-All records are emitted in authored order. `visible = 0` means all four
+All records are emitted in authored order. Record byte 3 is explicit identity
+metadata: `0` is the legacy stable-ID run contract, `1..4` are bounded
+annotation kinds, and `128` is literal per-row identity whose u64 value never
+groups geometry or classifies annotations. `visible = 0` means all four
 coordinates are zero and the consumer emits no primitive. Every record's
 `style_ref` indexes the batch-local style table; out-of-range references are
 invalid.
@@ -381,7 +384,7 @@ nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
 bytes, and every count/length overflow.
 
 Rust owns entry order, location resolution, frame/text/swatch geometry and
-paint ordering for SVG and native raster. Browser painter v7 appends the exact
+paint ordering for SVG and native raster. Browser painter v8 appends the exact
 validated `XYLG` record; TypeScript projects it into the existing selectable
 and accessible DOM legend without deriving entries or defaults. Direct-Scene
 legends are static (`toggle=false`, `highlight=false`). Python and Node only
@@ -394,23 +397,29 @@ that occupancy policy moves into Rust. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
 declarations fail closed. Colorbars remain explicit later issue-#116 work;
-Scene v10 additionally supports the bounded primary annotations below and does
+Scene v11 additionally supports the bounded primary annotations below and does
 not approximate richer forms.
 
-## Version 10: primary Cartesian rule, band, and marker annotations
+## Version 11 identity metadata for primary Cartesian annotations
 
-Version 10 reserves stable IDs with high word `0x5859TT00` (`TT` is rule,
-band, or marker) and lowers the bounded primary annotation subset into the
+Version 11 records annotation kind explicitly in byte 3 and lowers the bounded
+primary annotation subset into the
 existing canonical Polyline, Rect, and Scatter records. Annotation records are
 always appended after data records, so Rust SVG, raster, and browser-painter
 consumers share exact projection, clipping, marker geometry, style validation,
 resource bounds, and paint order. Python and Node only coerce the same author
-values and produce byte-identical records. Painter v7 recognizes the reserved
-IDs and projects them into the existing browser annotation layer; TypeScript
+values and produce byte-identical records. Painter v8 consumes the explicit
+descriptor annotation byte and projects records into the existing browser annotation layer; TypeScript
 does not derive geometry or defaults. It also adds a literal, visually hidden
 `role=note` description for each direct-WASM annotation. These descriptions name
 the reference kind and orientation without misrepresenting Rust-projected pixel
 coordinates as authored data values.
+
+The legacy native `xyg_scene_batch_encode` ingress still derives annotation
+metadata from the reserved `0x5859TT00` stable-ID prefix for compatibility;
+ordinary native batch callers must not use that prefix for data identities.
+The XYTS v2 direct-browser ingress has an explicit literal-identity mode and
+therefore preserves every authored u64, including values inside that prefix.
 
 The supported surface is unlabeled axis-aligned rules, axis-aligned bands, and
 unlabeled built-in markers with solid literal colors, opacity, and bounded
