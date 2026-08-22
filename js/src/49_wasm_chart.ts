@@ -2,7 +2,7 @@
 import { hydrateWasmPainter, type XygWasmSceneView } from "./48_wasm_scene";
 import type { XygWasmScaleKind } from "./49_wasm_columns";
 import { XygWasmWorker, type XygWasmDiagnostics, type XygWasmTask, type XygWasmScenePaint } from "./47_wasm";
-import { XYG_WASM_TYPED_SERIES_DESCRIPTOR_BYTES as DESCRIPTOR, XYG_WASM_TYPED_SERIES_HEADER_BYTES as HEADER, XYG_WASM_TYPED_SERIES_MAX_RECORDS as MAX_RECORDS, XYG_WASM_TYPED_SERIES_MAX_SERIES as MAX_SERIES, XYG_WASM_TYPED_SERIES_MAX_SYMBOL_CODE as MAX_SYMBOL, XYG_WASM_TYPED_SERIES_MAX_TEXT_BYTES as MAX_TEXT_BYTES, XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_RECORD as PEAK_RECORD, XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_SERIES as PEAK_SERIES, XYG_WASM_TYPED_SERIES_PEAK_FIXED_BYTES as PEAK_FIXED, XYG_WASM_TYPED_SERIES_PEAK_INPUT_MULTIPLIER as PEAK_INPUT, XYG_WASM_TYPED_SERIES_VERSION } from "./wasm_abi_generated";
+import { XYG_WASM_TYPED_SERIES_DESCRIPTOR_BYTES as DESCRIPTOR, XYG_WASM_TYPED_SERIES_DESCRIPTOR_OFFSETS as D, XYG_WASM_TYPED_SERIES_FLAGS as F, XYG_WASM_TYPED_SERIES_HEADER_BYTES as HEADER, XYG_WASM_TYPED_SERIES_HEADER_FLAGS as HF, XYG_WASM_TYPED_SERIES_HEADER_OFFSETS as H, XYG_WASM_TYPED_SERIES_KINDS as K, XYG_WASM_TYPED_SERIES_MAGIC, XYG_WASM_TYPED_SERIES_MAX_RECORDS as MAX_RECORDS, XYG_WASM_TYPED_SERIES_MAX_SERIES as MAX_SERIES, XYG_WASM_TYPED_SERIES_MAX_SYMBOL_CODE as MAX_SYMBOL, XYG_WASM_TYPED_SERIES_MAX_TEXT_BYTES as MAX_TEXT_BYTES, XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_RECORD as PEAK_RECORD, XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_SERIES as PEAK_SERIES, XYG_WASM_TYPED_SERIES_PEAK_FIXED_BYTES as PEAK_FIXED, XYG_WASM_TYPED_SERIES_PEAK_INPUT_MULTIPLIER as PEAK_INPUT, XYG_WASM_TYPED_SERIES_VERSION } from "./wasm_abi_generated";
 
 export type XygWasmChartSeriesKind = "scatter" | "line" | "bar" | "area";
 export interface XygWasmChartSeries {
@@ -39,7 +39,7 @@ function scale(value: XygWasmScaleKind | undefined) {
   throw new TypeError("scale kind must be linear, log, or symlog");
 }
 function kind(value: XygWasmChartSeriesKind) {
-  const code = ({ scatter: 0, line: 1, bar: 2, area: 3 } as const)[value];
+  const code = K[value];
   if (code === undefined) throw new TypeError("series kind must be scatter, line, bar, or area");
   return code;
 }
@@ -69,18 +69,18 @@ export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSer
   if ([title, xLabel, yLabel].some((text) => text.length > MAX_TEXT_BYTES)) throw new RangeError("chrome text exceeds the Rust scene text bound");
   const prefixLength = align8(HEADER + input.series.length * DESCRIPTOR + title.length + xLabel.length + yLabel.length);
   const prefix = new ArrayBuffer(prefixLength), bytes = new Uint8Array(prefix), view = new DataView(prefix);
-  bytes.set([88, 89, 84, 83]); view.setUint32(4, XYG_WASM_TYPED_SERIES_VERSION, true); view.setUint32(8, HEADER, true);
+  bytes.set(new TextEncoder().encode(XYG_WASM_TYPED_SERIES_MAGIC)); view.setUint32(H.version, XYG_WASM_TYPED_SERIES_VERSION, true); view.setUint32(H.header_bytes, HEADER, true);
   const explicit = input.x?.lo !== undefined || input.x?.hi !== undefined || input.y?.lo !== undefined || input.y?.hi !== undefined;
-  view.setUint32(12, (input.autoMargins ?? true ? 1 : 0) | (input.autoDomain ?? !explicit ? 2 : 0), true);
-  view.setUint32(16, input.series.length, true); view.setUint32(24, title.length, true); view.setUint32(28, xLabel.length, true); view.setUint32(32, yLabel.length, true);
-  finite(view, 40, input.width, "width"); finite(view, 48, input.height, "height");
+  view.setUint32(H.flags, (input.autoMargins ?? true ? HF.auto_margins : 0) | (input.autoDomain ?? !explicit ? HF.auto_domain : 0), true);
+  view.setUint32(H.series_count, input.series.length, true); view.setUint32(H.title_bytes, title.length, true); view.setUint32(H.x_label_bytes, xLabel.length, true); view.setUint32(H.y_label_bytes, yLabel.length, true);
+  finite(view, H.width, input.width, "width"); finite(view, H.height, input.height, "height");
   const margins = input.margins ?? [0, 0, 0, 0];
   if (margins.length !== 4) throw new TypeError("margins must have four values");
-  margins.forEach((value, index) => finite(view, 56 + index * 8, value, "margin"));
-  u64(view, 88, input.xAxisId ?? 1, "xAxisId"); u64(view, 96, input.yAxisId ?? 2, "yAxisId");
-  view.setUint32(104, scale(input.x?.kind), true); view.setUint32(108, scale(input.y?.kind), true);
-  view.setUint32(112, input.x?.maskNonpositive ? 1 : 0, true); view.setUint32(116, input.y?.maskNonpositive ? 1 : 0, true);
-  ([[120, input.x?.lo ?? 0, "x.lo"], [128, input.x?.hi ?? 1, "x.hi"], [136, input.x?.constant ?? 1, "x.constant"], [144, input.y?.lo ?? 0, "y.lo"], [152, input.y?.hi ?? 1, "y.hi"], [160, input.y?.constant ?? 1, "y.constant"]] as const).forEach(([offset, value, label]) => finite(view, offset, value, label));
+  margins.forEach((value, index) => finite(view, H.margins + index * 8, value, "margin"));
+  u64(view, H.x_axis_id, input.xAxisId ?? 1, "xAxisId"); u64(view, H.y_axis_id, input.yAxisId ?? 2, "yAxisId");
+  view.setUint32(H.x_scale_kind, scale(input.x?.kind), true); view.setUint32(H.y_scale_kind, scale(input.y?.kind), true);
+  view.setUint32(H.x_mask_nonpositive, input.x?.maskNonpositive ? 1 : 0, true); view.setUint32(H.y_mask_nonpositive, input.y?.maskNonpositive ? 1 : 0, true);
+  ([[H.x_lo, input.x?.lo ?? 0, "x.lo"], [H.x_hi, input.x?.hi ?? 1, "x.hi"], [H.x_constant, input.x?.constant ?? 1, "x.constant"], [H.y_lo, input.y?.lo ?? 0, "y.lo"], [H.y_hi, input.y?.hi ?? 1, "y.hi"], [H.y_constant, input.y?.constant ?? 1, "y.constant"]] as const).forEach(([offset, value, label]) => finite(view, offset, value, label));
   let textOffset = HEADER + input.series.length * DESCRIPTOR;
   bytes.set(title, textOffset); textOffset += title.length; bytes.set(xLabel, textOffset); textOffset += xLabel.length; bytes.set(yLabel, textOffset);
   const columns: ArrayBuffer[] = [], transferred = new Set<ArrayBuffer>(); let dataOffset = prefixLength, records = 0;
@@ -108,8 +108,8 @@ export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSer
     }
     const count = series.x.length, x = column(series.x, count, "x"), y = column(series.y, count, "y");
     records += count; if (records > MAX_RECORDS) throw new RangeError("typed series exceeds the record bound");
-    const base = HEADER + seriesIndex * DESCRIPTOR; view.setUint32(base, kind(series.kind), true); view.setUint32(base + 8, count, true);
-    const symbol = series.symbol ?? 0; if (!Number.isInteger(symbol) || symbol < 0 || symbol > MAX_SYMBOL) throw new TypeError(`symbol must be 0..${MAX_SYMBOL}`); view.setUint32(base + 4, symbol, true);
+    const base = HEADER + seriesIndex * DESCRIPTOR; view.setUint32(base + D.kind, kind(series.kind), true); view.setUint32(base + D.record_count, count, true);
+    const symbol = series.symbol ?? 0; if (!Number.isInteger(symbol) || symbol < 0 || symbol > MAX_SYMBOL) throw new TypeError(`symbol must be 0..${MAX_SYMBOL}`); view.setUint32(base + D.symbol, symbol, true);
     let flags = 0;
     if (series.diameter !== undefined && typeof series.diameter !== "number"
         && !(series.diameter instanceof Float64Array)) {
@@ -117,23 +117,23 @@ export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSer
     }
     const diameters = series.diameter instanceof Float64Array ? column(series.diameter, count, "diameter") : null;
     const lower = series.y0 ? column(series.y0, count, "y0") : null, upper = series.y1 ? column(series.y1, count, "y1") : null;
-    if (diameters) flags |= 1; if (lower) flags |= 2; if (upper) flags |= 4;
+    if (diameters) flags |= F.diameters; if (lower) flags |= F.y0; if (upper) flags |= F.y1;
     const fill = rgba(series.style?.fillRgba, "fillRgba"), stroke = rgba(series.style?.strokeRgba, "strokeRgba");
-    if (fill) { flags |= 8; bytes.set(fill, base + 40); } if (stroke) { flags |= 16; bytes.set(stroke, base + 44); }
-    if (series.stableIdBase !== undefined) { flags |= 32; u64(view, base + 16, series.stableIdBase, "stableIdBase"); }
-    view.setUint32(base + 12, flags, true);
+    if (fill) { flags |= F.fill_rgba; bytes.set(fill, base + D.fill_rgba); } if (stroke) { flags |= F.stroke_rgba; bytes.set(stroke, base + D.stroke_rgba); }
+    if (series.stableIdBase !== undefined) { flags |= F.stable_id_base; u64(view, base + D.stable_id_base, series.stableIdBase, "stableIdBase"); }
+    view.setUint32(base + D.flags, flags, true);
     if (typeof series.diameter === "number") {
       if (series.diameter < 0) throw new TypeError("diameter must be nonnegative");
-      finite(view, base + 24, series.diameter, "diameter");
-    } else view.setFloat64(base + 24, Number.NaN, true);
+      finite(view, base + D.diameter, series.diameter, "diameter");
+    } else view.setFloat64(base + D.diameter, Number.NaN, true);
     if (series.style?.strokeWidth !== undefined) {
       if (series.style.strokeWidth < 0) throw new TypeError("strokeWidth must be nonnegative");
-      finite(view, base + 32, series.style.strokeWidth, "strokeWidth");
-    } else view.setFloat64(base + 32, Number.NaN, true);
-    view.setUint32(base + 48, add(x), true); view.setUint32(base + 52, add(y), true);
-    if (lower) view.setUint32(base + 56, add(lower), true); if (upper) view.setUint32(base + 60, add(upper), true); if (diameters) view.setUint32(base + 64, add(diameters), true);
+      finite(view, base + D.stroke_width, series.style.strokeWidth, "strokeWidth");
+    } else view.setFloat64(base + D.stroke_width, Number.NaN, true);
+    view.setUint32(base + D.x, add(x), true); view.setUint32(base + D.y, add(y), true);
+    if (lower) view.setUint32(base + D.y0, add(lower), true); if (upper) view.setUint32(base + D.y1, add(upper), true); if (diameters) view.setUint32(base + D.diameters, add(diameters), true);
   });
-  view.setUint32(20, records, true);
+  view.setUint32(H.record_count, records, true);
   const peakBytes = dataOffset * PEAK_INPUT + records * PEAK_RECORD
     + input.series.length * PEAK_SERIES + PEAK_FIXED;
   if (!Number.isSafeInteger(peakBytes)) throw new RangeError("typed-series peak byte estimate overflowed");

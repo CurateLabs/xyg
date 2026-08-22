@@ -55,6 +55,14 @@ The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
 SVG/PNG/PDF export remains a native-host concern; browser output reuses the
 shared painter. The raw module must request no ambient WebAssembly imports.
 
+`XYTS` magic, header and descriptor offsets, flags, and mark-kind codes are
+owned by `spec/wasm/abi.json` and emitted into generated TypeScript and Rust
+contract modules. The thin framer and Rust decoder both consume those generated
+values, while schema validation rejects missing, unknown, overlapping,
+misaligned, or out-of-range fields before either module can be emitted. This keeps wire
+mechanics host-visible while leaving identities, mark defaults, geometry, and
+all per-record decisions exclusively in Rust.
+
 ## Memory and copy contract
 
 An ordinary JavaScript `ArrayBuffer` cannot alias wasm32 linear memory. The

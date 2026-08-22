@@ -4,6 +4,7 @@
 //! Rust validates lengths and scale fields, then builds the same canonical
 //! Scene batch that native hosts encode through `xyg_scene_batch_encode`.
 
+pub use crate::typed_series_abi_generated::*;
 use xyg_engine::scene::{
     self, AxisScale, CartesianLayoutRequest, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
     SceneChromeText, SceneError,
@@ -11,27 +12,12 @@ use xyg_engine::scene::{
 
 pub const COMPILE_MAGIC: &[u8; 4] = b"XYCC";
 pub const COMPILE_VERSION: u32 = 1;
-pub const COMPILE_HEADER_BYTES: usize = 192;
-pub const SERIES_MAGIC: &[u8; 4] = b"XYTS";
-pub const SERIES_VERSION: u32 = 1;
-pub const SERIES_DESCRIPTOR_BYTES: usize = 96;
-pub const MAX_SERIES: usize = 4_096;
-pub const MAX_RECORDS: usize = 10_000_000;
-pub const MAX_TEXT_BYTES: usize = 4_096;
-pub const MAX_SYMBOL_CODE: u32 = 18;
-pub const SERIES_PEAK_FIXED_BYTES: usize = 4_096;
 // Conservative simultaneous logical storage for one expanded record: parsed
 // columns, mark metadata, the canonical Scene record, packed output, and Vec
 // capacity slack. Keep this above the sum of those representations whenever
 // the lowering pipeline changes.
-pub const SERIES_PEAK_BYTES_PER_RECORD: usize = 256;
-pub const SERIES_PEAK_BYTES_PER_SERIES: usize = 1_024;
-pub const SERIES_PEAK_INPUT_MULTIPLIER: usize = 2;
-pub const FLAG_AUTO_MARGINS: u32 = 1;
 /// When set, Rust derives axis domains from finite column values so the browser
 /// main thread does not scan O(N) data for lo/hi.
-pub const FLAG_AUTO_DOMAIN: u32 = 2;
-const FLAG_KNOWN: u32 = FLAG_AUTO_MARGINS | FLAG_AUTO_DOMAIN;
 
 #[derive(Debug)]
 pub struct CompiledScene {
@@ -161,7 +147,7 @@ fn auto_domain_from_columns(
         consider_finite(x0[index], &mut x_lo, &mut x_hi, &mut any_x);
         consider_finite(y0[index], &mut y_lo, &mut y_hi, &mut any_y);
         // Rect (2) and band (3) span both corners; scatter/polyline leave x1/y1 unused.
-        if matches!(kind, 2 | 3) {
+        if matches!(kind as u32, KIND_BAR | KIND_AREA) {
             consider_finite(x1[index], &mut x_lo, &mut x_hi, &mut any_x);
             consider_finite(y1[index], &mut y_lo, &mut y_hi, &mut any_y);
         }
@@ -187,22 +173,22 @@ fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
     if &bytes[..4] != COMPILE_MAGIC {
         return Err(SceneError::Length);
     }
-    if u32_at(bytes, 4)? != COMPILE_VERSION {
+    if u32_at(bytes, HEADER_VERSION)? != COMPILE_VERSION {
         return Err(SceneError::Version);
     }
-    if u32_at(bytes, 8)? as usize != COMPILE_HEADER_BYTES {
+    if u32_at(bytes, HEADER_HEADER_BYTES)? as usize != COMPILE_HEADER_BYTES {
         return Err(SceneError::Length);
     }
-    let flags = u32_at(bytes, 12)?;
-    if flags & !FLAG_KNOWN != 0 {
+    let flags = u32_at(bytes, HEADER_FLAGS)?;
+    if flags & !HEADER_FLAG_KNOWN != 0 {
         return Err(SceneError::Length);
     }
-    let record_count = u32_at(bytes, 16)? as usize;
-    let style_count = u32_at(bytes, 20)? as usize;
-    let title_len = u32_at(bytes, 24)? as usize;
-    let x_label_len = u32_at(bytes, 28)? as usize;
-    let y_label_len = u32_at(bytes, 32)? as usize;
-    if u32_at(bytes, 36)? != 0 {
+    let record_count = u32_at(bytes, HEADER_SERIES_COUNT)? as usize;
+    let style_count = u32_at(bytes, HEADER_RECORD_COUNT)? as usize;
+    let title_len = u32_at(bytes, HEADER_TITLE_BYTES)? as usize;
+    let x_label_len = u32_at(bytes, HEADER_X_LABEL_BYTES)? as usize;
+    let y_label_len = u32_at(bytes, HEADER_Y_LABEL_BYTES)? as usize;
+    if u32_at(bytes, HEADER_RESERVED0)? != 0 {
         return Err(SceneError::Length);
     }
     if record_count > scene::MAX_SCENE_MARKS
@@ -214,28 +200,28 @@ fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
         return Err(SceneError::Limit);
     }
 
-    let viewport_width = f64_at(bytes, 40)?;
-    let viewport_height = f64_at(bytes, 48)?;
-    let margin_left = f64_at(bytes, 56)?;
-    let margin_right = f64_at(bytes, 64)?;
-    let margin_top = f64_at(bytes, 72)?;
-    let margin_bottom = f64_at(bytes, 80)?;
-    let x_axis_id = u64_at(bytes, 88)?;
-    let y_axis_id = u64_at(bytes, 96)?;
-    let x_kind = scale_kind(u32_at(bytes, 104)?)?;
-    let y_kind = scale_kind(u32_at(bytes, 108)?)?;
-    let x_mask = u32_at(bytes, 112)?;
-    let y_mask = u32_at(bytes, 116)?;
+    let viewport_width = f64_at(bytes, HEADER_WIDTH)?;
+    let viewport_height = f64_at(bytes, HEADER_HEIGHT)?;
+    let margin_left = f64_at(bytes, HEADER_MARGINS)?;
+    let margin_right = f64_at(bytes, HEADER_MARGINS + 8)?;
+    let margin_top = f64_at(bytes, HEADER_MARGINS + 16)?;
+    let margin_bottom = f64_at(bytes, HEADER_MARGINS + 24)?;
+    let x_axis_id = u64_at(bytes, HEADER_X_AXIS_ID)?;
+    let y_axis_id = u64_at(bytes, HEADER_Y_AXIS_ID)?;
+    let x_kind = scale_kind(u32_at(bytes, HEADER_X_SCALE_KIND)?)?;
+    let y_kind = scale_kind(u32_at(bytes, HEADER_Y_SCALE_KIND)?)?;
+    let x_mask = u32_at(bytes, HEADER_X_MASK_NONPOSITIVE)?;
+    let y_mask = u32_at(bytes, HEADER_Y_MASK_NONPOSITIVE)?;
     if !matches!(x_mask, 0 | 1) || !matches!(y_mask, 0 | 1) {
         return Err(SceneError::Length);
     }
-    let mut x_lo = f64_at(bytes, 120)?;
-    let mut x_hi = f64_at(bytes, 128)?;
-    let x_constant = f64_at(bytes, 136)?;
-    let mut y_lo = f64_at(bytes, 144)?;
-    let mut y_hi = f64_at(bytes, 152)?;
-    let y_constant = f64_at(bytes, 160)?;
-    for reserved in (168..COMPILE_HEADER_BYTES).step_by(4) {
+    let mut x_lo = f64_at(bytes, HEADER_X_LO)?;
+    let mut x_hi = f64_at(bytes, HEADER_X_HI)?;
+    let x_constant = f64_at(bytes, HEADER_X_CONSTANT)?;
+    let mut y_lo = f64_at(bytes, HEADER_Y_LO)?;
+    let mut y_hi = f64_at(bytes, HEADER_Y_HI)?;
+    let y_constant = f64_at(bytes, HEADER_Y_CONSTANT)?;
+    for reserved in (HEADER_RESERVED_TAIL..COMPILE_HEADER_BYTES).step_by(4) {
         if u32_at(bytes, reserved)? != 0 {
             return Err(SceneError::Length);
         }
@@ -266,7 +252,7 @@ fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
     let y_label = std::str::from_utf8(y_label_bytes).map_err(|_| SceneError::Length)?;
     let text = SceneChromeText::from_parts(title, x_label, y_label)?;
 
-    if flags & FLAG_AUTO_DOMAIN != 0 {
+    if flags & HEADER_FLAG_AUTO_DOMAIN != 0 {
         let Some(domain) = auto_domain_from_columns(&kinds, &x0, &y0, &x1, &y1) else {
             return Err(SceneError::NonFinite);
         };
@@ -276,28 +262,29 @@ fn compile_columns_request(bytes: &[u8]) -> Result<CompiledScene, SceneError> {
         y_hi = domain.3;
     }
 
-    let (margin_left, margin_right, margin_top, margin_bottom) = if flags & FLAG_AUTO_MARGINS != 0 {
-        scene::cartesian_scene_margins(CartesianLayoutRequest {
-            viewport_width,
-            viewport_height,
-            authored_padding: None,
-            title,
-            x_label,
-            y_label,
-            x_kind,
-            x_lo,
-            x_hi,
-            x_constant,
-            x_mask_nonpositive: x_mask != 0,
-            y_kind,
-            y_lo,
-            y_hi,
-            y_constant,
-            y_mask_nonpositive: y_mask != 0,
-        })?
-    } else {
-        (margin_left, margin_right, margin_top, margin_bottom)
-    };
+    let (margin_left, margin_right, margin_top, margin_bottom) =
+        if flags & HEADER_FLAG_AUTO_MARGINS != 0 {
+            scene::cartesian_scene_margins(CartesianLayoutRequest {
+                viewport_width,
+                viewport_height,
+                authored_padding: None,
+                title,
+                x_label,
+                y_label,
+                x_kind,
+                x_lo,
+                x_hi,
+                x_constant,
+                x_mask_nonpositive: x_mask != 0,
+                y_kind,
+                y_lo,
+                y_hi,
+                y_constant,
+                y_mask_nonpositive: y_mask != 0,
+            })?
+        } else {
+            (margin_left, margin_right, margin_top, margin_bottom)
+        };
 
     let layout = PlotLayout::new(
         viewport_width,
@@ -461,16 +448,16 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
     if bytes.len() < COMPILE_HEADER_BYTES || &bytes[..4] != SERIES_MAGIC {
         return Err(SceneError::Length);
     }
-    if u32_at(bytes, 4)? != SERIES_VERSION {
+    if u32_at(bytes, HEADER_VERSION)? != SERIES_VERSION {
         return Err(SceneError::Version);
     }
-    if u32_at(bytes, 8)? as usize != COMPILE_HEADER_BYTES {
+    if u32_at(bytes, HEADER_HEADER_BYTES)? as usize != COMPILE_HEADER_BYTES {
         return Err(SceneError::Length);
     }
-    let series_count = u32_at(bytes, 16)? as usize;
-    let record_count = u32_at(bytes, 20)? as usize;
-    let domain_x_lo = f64_at(bytes, 120)?;
-    let domain_x_hi = f64_at(bytes, 128)?;
+    let series_count = u32_at(bytes, HEADER_SERIES_COUNT)? as usize;
+    let record_count = u32_at(bytes, HEADER_RECORD_COUNT)? as usize;
+    let domain_x_lo = f64_at(bytes, HEADER_X_LO)?;
+    let domain_x_hi = f64_at(bytes, HEADER_X_HI)?;
     if series_count == 0
         || series_count > MAX_SERIES.min(scene::MAX_SCENE_STYLES)
         || record_count > MAX_RECORDS.min(scene::MAX_SCENE_MARKS)
@@ -490,9 +477,9 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
     if descriptors_end > bytes.len() {
         return Err(SceneError::Length);
     }
-    let title_len = u32_at(bytes, 24)? as usize;
-    let x_label_len = u32_at(bytes, 28)? as usize;
-    let y_label_len = u32_at(bytes, 32)? as usize;
+    let title_len = u32_at(bytes, HEADER_TITLE_BYTES)? as usize;
+    let x_label_len = u32_at(bytes, HEADER_X_LABEL_BYTES)? as usize;
+    let y_label_len = u32_at(bytes, HEADER_Y_LABEL_BYTES)? as usize;
     if title_len > MAX_TEXT_BYTES || x_label_len > MAX_TEXT_BYTES || y_label_len > MAX_TEXT_BYTES {
         return Err(SceneError::Limit);
     }
@@ -530,25 +517,25 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
 
     for series_index in 0..series_count {
         let base = COMPILE_HEADER_BYTES + series_index * SERIES_DESCRIPTOR_BYTES;
-        let kind = u32_at(bytes, base)?;
-        if kind > 3 {
+        let kind = u32_at(bytes, base + DESCRIPTOR_KIND)?;
+        if !matches!(kind, KIND_SCATTER | KIND_LINE | KIND_BAR | KIND_AREA) {
             return Err(SceneError::Length);
         }
-        let symbol = u32_at(bytes, base + 4)?;
+        let symbol = u32_at(bytes, base + DESCRIPTOR_SYMBOL)?;
         if symbol > MAX_SYMBOL_CODE {
             return Err(SceneError::Length);
         }
-        let count = u32_at(bytes, base + 8)? as usize;
-        let flags = u32_at(bytes, base + 12)?;
-        if count == 0 || flags & !63 != 0 {
+        let count = u32_at(bytes, base + DESCRIPTOR_RECORD_COUNT)? as usize;
+        let flags = u32_at(bytes, base + DESCRIPTOR_FLAGS)?;
+        if count == 0 || flags & !DESCRIPTOR_FLAG_KNOWN != 0 {
             return Err(SceneError::Length);
         }
-        let stable_base = if flags & 32 != 0 {
-            u64_at(bytes, base + 16)?
+        let stable_base = if flags & DESCRIPTOR_FLAG_STABLE_ID_BASE != 0 {
+            u64_at(bytes, base + DESCRIPTOR_STABLE_ID_BASE)?
         } else {
             next_default_id
         };
-        let identity_count = if matches!(kind, 1 | 3) {
+        let identity_count = if matches!(kind, KIND_LINE | KIND_AREA) {
             1
         } else {
             count as u64
@@ -556,25 +543,32 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         next_default_id = stable_base
             .checked_add(identity_count)
             .ok_or(SceneError::Limit)?;
-        let scalar_diameter = f64_at(bytes, base + 24)?;
-        let authored_stroke = f64_at(bytes, base + 32)?;
-        if flags & 8 != 0 {
-            fill_rgba.extend_from_slice(bytes.get(base + 40..base + 44).ok_or(SceneError::Length)?);
-        } else if kind == 1 {
+        let scalar_diameter = f64_at(bytes, base + DESCRIPTOR_DIAMETER)?;
+        let authored_stroke = f64_at(bytes, base + DESCRIPTOR_STROKE_WIDTH)?;
+        if flags & DESCRIPTOR_FLAG_FILL_RGBA != 0 {
+            fill_rgba.extend_from_slice(
+                bytes
+                    .get(base + DESCRIPTOR_FILL_RGBA..base + DESCRIPTOR_FILL_RGBA + 4)
+                    .ok_or(SceneError::Length)?,
+            );
+        } else if kind == KIND_LINE {
             fill_rgba.extend_from_slice(&[0, 0, 0, 0]);
         } else {
             fill_rgba.extend_from_slice(&[37, 99, 235, 255]);
         }
-        if flags & 16 != 0 {
-            stroke_rgba
-                .extend_from_slice(bytes.get(base + 44..base + 48).ok_or(SceneError::Length)?);
-        } else if kind == 1 {
+        if flags & DESCRIPTOR_FLAG_STROKE_RGBA != 0 {
+            stroke_rgba.extend_from_slice(
+                bytes
+                    .get(base + DESCRIPTOR_STROKE_RGBA..base + DESCRIPTOR_STROKE_RGBA + 4)
+                    .ok_or(SceneError::Length)?,
+            );
+        } else if kind == KIND_LINE {
             stroke_rgba.extend_from_slice(&[37, 99, 235, 255]);
         } else {
             stroke_rgba.extend_from_slice(&[0, 0, 0, 0]);
         }
         stroke_width.push(if authored_stroke.is_nan() {
-            if kind == 1 {
+            if kind == KIND_LINE {
                 1.5
             } else {
                 0.0
@@ -584,22 +578,22 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         });
         let xs = next_series_f64s(
             bytes,
-            u32_at(bytes, base + 48)?,
+            u32_at(bytes, base + DESCRIPTOR_X)?,
             count,
             data_start,
             &mut data_cursor,
         )?;
         let ys = next_series_f64s(
             bytes,
-            u32_at(bytes, base + 52)?,
+            u32_at(bytes, base + DESCRIPTOR_Y)?,
             count,
             data_start,
             &mut data_cursor,
         )?;
-        let lower = if flags & 2 != 0 {
+        let lower = if flags & DESCRIPTOR_FLAG_Y0 != 0 {
             Some(next_series_f64s(
                 bytes,
-                u32_at(bytes, base + 56)?,
+                u32_at(bytes, base + DESCRIPTOR_Y0)?,
                 count,
                 data_start,
                 &mut data_cursor,
@@ -607,10 +601,10 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else {
             None
         };
-        let upper = if flags & 4 != 0 {
+        let upper = if flags & DESCRIPTOR_FLAG_Y1 != 0 {
             Some(next_series_f64s(
                 bytes,
-                u32_at(bytes, base + 60)?,
+                u32_at(bytes, base + DESCRIPTOR_Y1)?,
                 count,
                 data_start,
                 &mut data_cursor,
@@ -618,10 +612,10 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else {
             None
         };
-        let diameters = if flags & 1 != 0 {
+        let diameters = if flags & DESCRIPTOR_FLAG_DIAMETERS != 0 {
             Some(next_series_f64s(
                 bytes,
-                u32_at(bytes, base + 64)?,
+                u32_at(bytes, base + DESCRIPTOR_DIAMETERS)?,
                 count,
                 data_start,
                 &mut data_cursor,
@@ -629,14 +623,14 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else {
             None
         };
-        let bar_half_width = if kind == 2 {
+        let bar_half_width = if kind == KIND_BAR {
             Some(default_bar_half_width(&xs, domain_x_lo, domain_x_hi)?)
         } else {
             None
         };
         for index in 0..count {
             kinds.push(kind as u8);
-            stable_ids.push(if matches!(kind, 1 | 3) {
+            stable_ids.push(if matches!(kind, KIND_LINE | KIND_AREA) {
                 stable_base
             } else {
                 stable_base
@@ -644,8 +638,12 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
                     .ok_or(SceneError::Limit)?
             });
             style_refs.push(series_index as u32);
-            symbols.push(if kind == 0 { symbol as u8 } else { 0 });
-            diameter.push(if kind == 0 {
+            symbols.push(if kind == KIND_SCATTER {
+                symbol as u8
+            } else {
+                0
+            });
+            diameter.push(if kind == KIND_SCATTER {
                 diameters.as_ref().map(|values| values[index]).unwrap_or(
                     if scalar_diameter.is_nan() {
                         8.0
@@ -657,20 +655,20 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
                 0.0
             });
             match kind {
-                0 | 1 => {
+                KIND_SCATTER | KIND_LINE => {
                     x0.push(xs[index]);
                     y0.push(ys[index]);
                     x1.push(0.0);
                     y1.push(0.0);
                 }
-                2 => {
+                KIND_BAR => {
                     let half_width = bar_half_width.ok_or(SceneError::Length)?;
                     x0.push(xs[index] - half_width);
                     x1.push(xs[index] + half_width);
                     y0.push(lower.as_ref().map(|v| v[index]).unwrap_or(0.0));
                     y1.push(upper.as_ref().map(|v| v[index]).unwrap_or(ys[index]));
                 }
-                3 => {
+                KIND_AREA => {
                     x0.push(xs[index]);
                     x1.push(xs[index]);
                     y0.push(lower.as_ref().map(|v| v[index]).unwrap_or(0.0));
@@ -744,7 +742,8 @@ mod tests {
         out[..4].copy_from_slice(COMPILE_MAGIC);
         out[4..8].copy_from_slice(&COMPILE_VERSION.to_le_bytes());
         out[8..12].copy_from_slice(&(COMPILE_HEADER_BYTES as u32).to_le_bytes());
-        out[12..16].copy_from_slice(&FLAG_AUTO_MARGINS.to_le_bytes());
+        out[HEADER_FLAGS..HEADER_FLAGS + 4]
+            .copy_from_slice(&HEADER_FLAG_AUTO_MARGINS.to_le_bytes());
         out[16..20].copy_from_slice(&1u32.to_le_bytes());
         out[20..24].copy_from_slice(&1u32.to_le_bytes());
         for (offset, value) in [
@@ -792,7 +791,8 @@ mod tests {
         out[..4].copy_from_slice(SERIES_MAGIC);
         out[4..8].copy_from_slice(&SERIES_VERSION.to_le_bytes());
         out[8..12].copy_from_slice(&(COMPILE_HEADER_BYTES as u32).to_le_bytes());
-        out[12..16].copy_from_slice(&(FLAG_AUTO_MARGINS | FLAG_AUTO_DOMAIN).to_le_bytes());
+        out[HEADER_FLAGS..HEADER_FLAGS + 4]
+            .copy_from_slice(&(HEADER_FLAG_AUTO_MARGINS | HEADER_FLAG_AUTO_DOMAIN).to_le_bytes());
         out[16..20].copy_from_slice(&1u32.to_le_bytes());
         out[20..24].copy_from_slice(&2u32.to_le_bytes());
         for (offset, value) in [
@@ -849,7 +849,8 @@ mod tests {
     #[test]
     fn auto_domain_overrides_header_lo_hi() {
         let mut packed = pack_scatter();
-        packed[12..16].copy_from_slice(&(FLAG_AUTO_MARGINS | FLAG_AUTO_DOMAIN).to_le_bytes());
+        packed[HEADER_FLAGS..HEADER_FLAGS + 4]
+            .copy_from_slice(&(HEADER_FLAG_AUTO_MARGINS | HEADER_FLAG_AUTO_DOMAIN).to_le_bytes());
         // Header domains are deliberately wrong; geometry is at (0.5, 0.5).
         packed[120..128].copy_from_slice(&(-10.0f64).to_le_bytes());
         packed[128..136].copy_from_slice(&(-9.0f64).to_le_bytes());
