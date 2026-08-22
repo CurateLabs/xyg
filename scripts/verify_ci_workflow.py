@@ -1784,8 +1784,8 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "CodSpeedHQ/action@",
         "mode: simulation",
         "cargo install cargo-codspeed",
-        "cargo codspeed build -m simulation --bench kernels --bench aggregate",
-        "cargo codspeed run --bench kernels --bench aggregate",
+        "cargo codspeed build -m simulation --bench kernels --bench aggregate --bench typed_series",
+        "cargo codspeed run --bench kernels --bench aggregate --bench typed_series",
         "benchmarks/test_codspeed_kernels.py --codspeed",
     )
     _require_step_runs_exactly(
@@ -1793,7 +1793,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         benchmarks,
         "Build Rust kernel benchmarks",
         "exact simulation benchmark build",
-        "cargo codspeed build -m simulation --bench kernels --bench aggregate",
+        "cargo codspeed build -m simulation --bench kernels --bench aggregate --bench typed_series",
         allow_job_gate=True,
     )
     _require_action_step_with_runs_exactly(
@@ -1803,7 +1803,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8",
         "simulation",
         "set -euo pipefail",
-        "cargo codspeed run --bench kernels --bench aggregate",
+        "cargo codspeed run --bench kernels --bench aggregate --bench typed_series",
         ".venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed",
     )
     step_blocks = _step_sequence_blocks(benchmarks)
@@ -1832,14 +1832,28 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     ):
         errors.append("CodSpeed simulation build must be immediately followed by Run benchmarks")
     expected_commands = [
-        "cargo codspeed build -m simulation --bench kernels --bench aggregate",
-        "cargo codspeed run --bench kernels --bench aggregate",
+        "cargo codspeed build -m simulation --bench kernels --bench aggregate --bench typed_series",
+        "cargo codspeed run --bench kernels --bench aggregate --bench typed_series",
     ]
     if active_codspeed_commands != expected_commands:
         errors.append(
             "CodSpeed benchmarks job must contain only the exact build/run command pair: "
             f"{expected_commands!r}"
         )
+    _require_job_contains(
+        errors,
+        jobs,
+        "typed-series-browser-evidence",
+        "CodSpeed",
+        "changed-main typed-series browser evidence",
+        "needs: detect",
+        "needs.detect.outputs.should_run == 'true'",
+        "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+        "node benchmarks/bench_wasm_scene.mjs",
+        "scripts/verify_wasm_scene_benchmark.py",
+        "typed-series-browser-${{ github.sha }}.json",
+        "actions/upload-artifact@",
+    )
     return errors
 
 

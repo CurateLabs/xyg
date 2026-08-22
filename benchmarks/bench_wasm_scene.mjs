@@ -38,7 +38,7 @@ try {
     new Promise((_, reject) => setTimeout(() => reject(new Error("WASM Scene benchmark timed out")), 60_000)),
   ]);
   if (pageErrors.length) throw new Error(`benchmark page errors: ${pageErrors.join(" | ")}`);
-  console.log(JSON.stringify({ schema: "xyg-wasm-scene-browser-v2", measurements: rows }, null, 2));
+  console.log(JSON.stringify({ schema: "xyg-wasm-scene-browser-v2", gitSha: process.env.GITHUB_SHA ?? null, measurements: rows }, null, 2));
 } finally {
   await Promise.race([
     (async () => { await page.close(); await browser.close(); })(),

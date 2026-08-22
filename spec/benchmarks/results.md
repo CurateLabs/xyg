@@ -26,6 +26,19 @@ python benchmarks/bench_vs.py
 The xy-only arm also runs with no dependencies via
 `benchmarks/bench_scatter_native.py`.
 
+## Direct-browser typed-series evidence
+
+The changed-main nightly CodSpeed workflow owns the hosted #118 evidence path;
+it does not run for pull requests. Rust simulation rows cover 100, 10k, 100k,
+and 1M-record XYTS v2 expansion. A separate strict-CSP Chromium job measures the
+same four sizes through `renderWasmChart`, including two-frame first paint, Rust
+staging-copy counters, arena/WASM-memory high-water, and the asserted zero
+main-thread record-visit contract. Each run uploads its unmodified validated
+JSON as `typed-series-browser-<git-sha>.json`, so results remain tied to the
+exact source revision and runner rather than being copied into an environment-
+free headline table. Until the first post-merge artifact exists, this section
+makes no numeric performance or competitive-win claim.
+
 ## Competitive product goal
 
 XYG's product goal is to outperform every competing charting library across
