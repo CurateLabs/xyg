@@ -269,6 +269,7 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_SEMANTIC_GRAPH_VERSION = {int(semantic_graph['version'])} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES = {int(semantic_graph['header_bytes'])} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS = {int(semantic_graph['max_input_elements'])} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_PAINTER_TRACES = {int(semantic_graph['max_painter_traces'])} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS = {json.dumps(semantic_graph['header_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_THEMES = {json.dumps(semantic_graph['themes'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_CODE = {int(semantic_graph['semantic_code_max'])} as const;",
@@ -450,6 +451,7 @@ def render_typed_series_rust(manifest: dict[str, object]) -> str:
             f"pub const SEMANTIC_GRAPH_REQUEST_VERSION: u32 = {int(semantic['version'])};",
             f"pub const SEMANTIC_GRAPH_HEADER_BYTES: usize = {int(semantic['header_bytes'])};",
             f"pub const SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS: usize = {int(semantic['max_input_elements']):_};",
+            f"pub const SEMANTIC_GRAPH_MAX_PAINTER_TRACES: usize = {int(semantic['max_painter_traces']):_};",
             "",
         ]
     )
@@ -472,6 +474,23 @@ def verify_rust(manifest: dict[str, object]) -> None:
     scene_match = re.search(r"pub const SCENE_VERSION: u32 = (\d+);", engine)
     if not scene_match or int(scene_match.group(1)) != constants["SCENE_VERSION"]:
         raise SystemExit("xyg-engine SCENE_VERSION differs from spec/wasm/abi.json")
+    semantic = manifest["semantic_graph"]
+    assert isinstance(semantic, dict)
+    graph_style = (ROOT / "crates" / "xyg-engine" / "src" / "graph_style.rs").read_text(
+        encoding="utf-8"
+    )
+    code_match = re.search(r"pub const MAX_SEMANTIC_CODE: u8 = ([0-9_]+);", graph_style)
+    flags_match = re.search(
+        r"pub const KNOWN_STATE_FLAGS: u32 = \(1 << ([0-9_]+)\) - 1;", graph_style
+    )
+    if not code_match or int(code_match.group(1).replace("_", "")) != int(
+        semantic["semantic_code_max"]
+    ):
+        raise SystemExit("xyg-engine MAX_SEMANTIC_CODE differs from semantic_graph manifest")
+    if not flags_match or (1 << int(flags_match.group(1).replace("_", ""))) - 1 != int(
+        semantic["state_flag_mask"]
+    ):
+        raise SystemExit("xyg-engine KNOWN_STATE_FLAGS differs from semantic_graph manifest")
     painter_match = re.search(r"pub const BROWSER_PAINTER_VERSION: u32 = (\d+);", engine)
     if not painter_match or int(painter_match.group(1)) != int(manifest["painter_version"]):
         raise SystemExit("xyg-engine BROWSER_PAINTER_VERSION differs from spec/wasm/abi.json")

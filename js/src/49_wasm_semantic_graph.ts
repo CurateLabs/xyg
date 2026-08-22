@@ -6,6 +6,7 @@ import {
 import type { XygWasmWorker, XygWasmCompiledScene, XygWasmScenePaint, XygWasmTask } from "./47_wasm";
 import {
   XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES,
+  XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS,
   XYG_WASM_SEMANTIC_GRAPH_MAGIC,
   XYG_WASM_SEMANTIC_GRAPH_MAX_CODE,
   XYG_WASM_SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS,
@@ -61,7 +62,10 @@ function exactFlags(value: unknown, name: string): number {
   return result;
 }
 
-function exactU64(value: bigint | number, name: string): bigint {
+function exactU64(value: unknown, name: string): bigint {
+  if (typeof value !== "number" && typeof value !== "bigint") {
+    throw new TypeError(`${name} values must be non-negative safe integers or bigint`);
+  }
   if (typeof value === "number" && (!Number.isSafeInteger(value) || value < 0)) {
     throw new TypeError(`${name} values must be non-negative safe integers or bigint`);
   }
@@ -104,23 +108,23 @@ export function encodeWasmSemanticGraph(input: XygWasmSemanticGraphInput): Array
   const bytes = new Uint8Array(buffer);
   const view = new DataView(buffer);
   bytes.set(new TextEncoder().encode(XYG_WASM_SEMANTIC_GRAPH_MAGIC));
-  view.setUint32(4, XYG_WASM_SEMANTIC_GRAPH_VERSION, true);
-  view.setUint32(8, XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES, true);
+  view.setUint32(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.version, XYG_WASM_SEMANTIC_GRAPH_VERSION, true);
+  view.setUint32(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.header_bytes, XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES, true);
   const theme = input.theme ?? "light";
   const themeCode = theme === "light" || theme === 0 ? XYG_WASM_SEMANTIC_GRAPH_THEMES.light : theme === "dark" || theme === 1 ? XYG_WASM_SEMANTIC_GRAPH_THEMES.dark : -1;
   if (themeCode < 0) throw new TypeError("semantic graph theme must be light or dark");
-  view.setUint32(12, themeCode, true);
-  view.setUint32(16, n, true);
-  view.setUint32(20, e, true);
-  view.setUint32(24, title.byteLength, true);
-  view.setFloat64(32, input.width, true);
-  view.setFloat64(40, input.height, true);
+  view.setUint32(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.theme, themeCode, true);
+  view.setUint32(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.node_count, n, true);
+  view.setUint32(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.edge_count, e, true);
+  view.setUint32(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.title_bytes, title.byteLength, true);
+  view.setFloat64(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.width, input.width, true);
+  view.setFloat64(XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS.height, input.height, true);
   let offset: number = XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES;
   bytes.set(title, offset); offset = align8(offset + title.byteLength);
   for (const column of [input.x, input.y]) {
     for (let i=0; i<n; i++, offset+=8) {
-      const value = Number(column[i]);
-      if (!Number.isFinite(value)) throw new TypeError("semantic graph coordinates must be finite f64 values");
+      const value = column[i];
+      if (typeof value !== "number" || !Number.isFinite(value)) throw new TypeError("semantic graph coordinates must be finite f64 values");
       view.setFloat64(offset, value, true);
     }
   }

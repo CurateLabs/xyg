@@ -655,6 +655,15 @@ pub fn encode_semantic_graph_scene(
                 3 => (10.0, 4.0),
                 _ => (length, 0.0),
             };
+            // Preserve authored dash ratios while bounding screen-space
+            // expansion for very large but valid viewports.
+            let period = pattern.0 + pattern.1;
+            let pattern = if pattern.1 > 0.0 && length / period > 64.0 {
+                let scale = length / (period * 64.0);
+                (pattern.0 * scale, pattern.1 * scale)
+            } else {
+                pattern
+            };
             let mut cursor = 0.0;
             while cursor < length {
                 let end = (cursor + pattern.0).min(length);
@@ -717,6 +726,8 @@ pub fn encode_semantic_graph_scene(
         let stable = index as u64 + 1;
         for (paint, width) in layers {
             for &(x0, y0, x1, y1) in &geometry {
+                // Fresh style_ref is the run plane: reusing a deduplicated
+                // style would join adjacent records and paint across dash gaps.
                 let style_ref = columns.fresh_style([0; 4], paint, width)?;
                 columns.line(stable, style_ref, x0, y0, x1, y1)?;
             }
@@ -1327,32 +1338,28 @@ mod tests {
 
     #[test]
     fn semantic_graph_scene_fails_closed_before_unbounded_primitive_growth() {
-        let count = MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES + 1;
-        let x = vec![0.0; count];
-        let codes = vec![0; count];
-        let metric = vec![0.0; count];
-        let flags = vec![0; count];
+        let edges = 6;
         assert_eq!(
             encode_semantic_graph_scene(SemanticGraphSceneInput {
                 version: 1,
-                width: 800.0,
+                width: MAX_SEMANTIC_GRAPH_VIEWPORT,
                 height: 600.0,
                 theme: 0,
                 title: "",
-                x: &x,
-                y: &x,
-                node_classes: &codes,
-                node_epistemic: &codes,
-                node_statuses: &codes,
-                node_metric: &metric,
-                node_flags: &flags,
-                sources: &[],
-                targets: &[],
-                edge_classes: &[],
-                edge_epistemic: &[],
-                edge_statuses: &[],
-                edge_metric: &[],
-                edge_flags: &[],
+                x: &[0.0, 1.0],
+                y: &[0.0, 1.0],
+                node_classes: &[0, 0],
+                node_epistemic: &[0, 0],
+                node_statuses: &[0, 0],
+                node_metric: &[0.0, 1.0],
+                node_flags: &[0, 0],
+                sources: &vec![0; edges],
+                targets: &vec![1; edges],
+                edge_classes: &vec![1; edges],
+                edge_epistemic: &vec![1; edges],
+                edge_statuses: &vec![1; edges],
+                edge_metric: &vec![0.0; edges],
+                edge_flags: &vec![0; edges],
             }),
             Err(SceneError::Limit)
         );

@@ -29,6 +29,7 @@ export const XYG_WASM_SEMANTIC_GRAPH_MAGIC = "XYGG" as const;
 export const XYG_WASM_SEMANTIC_GRAPH_VERSION = 1 as const;
 export const XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES = 64 as const;
 export const XYG_WASM_SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS = 1024 as const;
+export const XYG_WASM_SEMANTIC_GRAPH_MAX_PAINTER_TRACES = 1024 as const;
 export const XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS = {"version":4,"header_bytes":8,"theme":12,"node_count":16,"edge_count":20,"title_bytes":24,"reserved0":28,"width":32,"height":40,"reserved_tail":48} as const;
 export const XYG_WASM_SEMANTIC_GRAPH_THEMES = {"light":0,"dark":1} as const;
 export const XYG_WASM_SEMANTIC_GRAPH_MAX_CODE = 7 as const;

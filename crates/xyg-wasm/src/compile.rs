@@ -182,7 +182,14 @@ fn compile_semantic_graph_request(
         .and_then(|value| value.checked_add(elements.checked_mul(160)?))
         .and_then(|value| value.checked_add(MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES.checked_mul(512)?))
         .ok_or(SceneError::Limit)?;
-    if theme > u8::MAX as u32 || title_len > 4_096 || peak > peak_budget {
+    if node_count == 0
+        || node_count
+            .checked_add(edge_count)
+            .is_none_or(|value| value > SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS)
+        || theme > u8::MAX as u32
+        || title_len > 4_096
+        || peak > peak_budget
+    {
         return Err(SceneError::Limit);
     }
     let width = f64_at(bytes, 32)?;
@@ -1332,6 +1339,28 @@ mod tests {
             .windows(4)
             .any(|w| w == b"XYLG"));
         assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn semantic_graph_checkpoint_validates_node_edge_boundary_and_planes() {
+        let request = pack_semantic_graph();
+        assert_eq!(checkpoint_record_count(&request), Ok(5));
+        assert_eq!(checkpoint_validate_records(&request, 2, 2), Ok(()));
+
+        let offsets = semantic_graph_offsets(&request).unwrap();
+        let mut bad_code = request.clone();
+        bad_code[offsets.node_class] = xyg_engine::graph_style::MAX_SEMANTIC_CODE + 1;
+        assert_eq!(
+            checkpoint_validate_records(&bad_code, 0, 1),
+            Err(SceneError::NonFinite)
+        );
+
+        let mut bad_endpoint = request;
+        bad_endpoint[offsets.sources..offsets.sources + 8].copy_from_slice(&3u64.to_le_bytes());
+        assert_eq!(
+            checkpoint_validate_records(&bad_endpoint, offsets.nodes, 1),
+            Err(SceneError::Length)
+        );
     }
 
     #[test]

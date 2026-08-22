@@ -951,8 +951,12 @@ async function run() {
     throw new Error(`semantic graph did not hydrate Rust painter/legend parity: ${legendLabels.join("|")}`);
   }
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  const semanticCanvas = semanticHost.querySelector("canvas");
-  const semanticPixels = semanticCanvas.getContext("2d").getImageData(0, 0, semanticCanvas.width, semanticCanvas.height).data;
+  const semanticCanvas = semanticView.canvas;
+  const semanticGl = semanticView.gl;
+  if (!semanticGl) throw new Error("semantic graph canvas has no WebGL2 context");
+  const semanticPixels = new Uint8Array(semanticCanvas.width * semanticCanvas.height * 4);
+  semanticGl.readPixels(0, 0, semanticCanvas.width, semanticCanvas.height,
+    semanticGl.RGBA, semanticGl.UNSIGNED_BYTE, semanticPixels);
   const paints = new Set();
   for (let index=0; index<semanticPixels.length; index+=4) {
     if (semanticPixels[index+3]) paints.add(`${semanticPixels[index]},${semanticPixels[index+1]},${semanticPixels[index+2]},${semanticPixels[index+3]}`);
@@ -980,6 +984,17 @@ async function run() {
     throw new Error("aggregate semantic metadata was accepted");
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
+  }
+  for (const malformed of [
+    { ...semanticGraph, x: ["0", 1, 0.5] },
+    { ...semanticGraph, sources: ["0", 0n, 2n] },
+  ]) {
+    try {
+      encodeWasmSemanticGraph(malformed);
+      throw new Error("coercible semantic graph input was accepted");
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+    }
   }
   semanticView.destroy(); semanticHost.remove(); await semanticWorker.dispose();
 
