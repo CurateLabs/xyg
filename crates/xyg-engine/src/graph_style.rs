@@ -2207,6 +2207,21 @@ mod tests {
             Some(true)
         );
         assert_eq!(out, [0, 1, 0, 0]);
+        let mut no_op = [9; 4];
+        assert_eq!(
+            compound_collapse_transition(
+                &ids,
+                &parents,
+                &validity,
+                &out,
+                17,
+                COMPOUND_ACTION_COLLAPSE,
+                GRAPH_LOD_DIRECT,
+                &mut no_op,
+            ),
+            Some(false)
+        );
+        assert_eq!(no_op, out);
         assert_eq!(
             compound_collapse_transition(
                 &ids,

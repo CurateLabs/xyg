@@ -3,8 +3,20 @@
 use crate::{fail, Instance, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT};
 use xyg_engine::graph_style::compound_collapse_transition;
 
-const HEADER_BYTES: usize = 40;
-const VERSION: u32 = 1;
+const REQUEST_MAGIC: &[u8; 4] = b"XYGC";
+const REQUEST_VERSION: u32 = 1;
+const REQUEST_HEADER_BYTES: usize = 40;
+const REQUEST_PLANE_BYTES_PER_NODE: usize = 18;
+const REQUEST_VERSION_OFFSET: usize = 4;
+const REQUEST_HEADER_BYTES_OFFSET: usize = 8;
+const REQUEST_ACTION_OFFSET: usize = 12;
+const REQUEST_LOD_TIER_OFFSET: usize = 16;
+const REQUEST_NODE_COUNT_OFFSET: usize = 20;
+const REQUEST_TARGET_ID_OFFSET: usize = 24;
+const REQUEST_RESERVED_OFFSET: usize = 32;
+const OUTPUT_MAGIC: &[u8; 4] = b"XYCO";
+const OUTPUT_VERSION: u32 = 1;
+const OUTPUT_HEADER_BYTES: usize = 16;
 
 fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(
@@ -37,24 +49,24 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "compound transition range lies outside the arena",
         );
     };
-    if request.get(..4) != Some(b"XYGC")
-        || u32_at(request, 4) != Some(VERSION)
-        || u32_at(request, 8) != Some(HEADER_BYTES as u32)
-        || u64_at(request, 32) != Some(0)
+    if request.get(..4) != Some(REQUEST_MAGIC)
+        || u32_at(request, REQUEST_VERSION_OFFSET) != Some(REQUEST_VERSION)
+        || u32_at(request, REQUEST_HEADER_BYTES_OFFSET) != Some(REQUEST_HEADER_BYTES as u32)
+        || u64_at(request, REQUEST_RESERVED_OFFSET) != Some(0)
     {
         return fail(instance, STATUS_INVALID_ARGUMENT, "malformed XYGC header");
     }
     let (Some(action), Some(lod_tier), Some(n), Some(target_id)) = (
-        u32_at(request, 12),
-        u32_at(request, 16),
-        u32_at(request, 20).map(|value| value as usize),
-        u64_at(request, 24),
+        u32_at(request, REQUEST_ACTION_OFFSET),
+        u32_at(request, REQUEST_LOD_TIER_OFFSET),
+        u32_at(request, REQUEST_NODE_COUNT_OFFSET).map(|value| value as usize),
+        u64_at(request, REQUEST_TARGET_ID_OFFSET),
     ) else {
         return fail(instance, STATUS_INVALID_ARGUMENT, "truncated XYGC header");
     };
     let Some(expected) = n
-        .checked_mul(18)
-        .and_then(|planes| HEADER_BYTES.checked_add(planes))
+        .checked_mul(REQUEST_PLANE_BYTES_PER_NODE)
+        .and_then(|planes| REQUEST_HEADER_BYTES.checked_add(planes))
     else {
         return fail(
             instance,
@@ -62,10 +74,6 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "XYGC plane length overflow",
         );
     };
-    let output_len = 16usize.saturating_add(n);
-    let peak = expected
-        .checked_add(n.saturating_mul(128))
-        .and_then(|value| value.checked_add(output_len));
     if n == 0 || expected != request.len() {
         return fail(
             instance,
@@ -73,6 +81,10 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "XYGC planes have invalid lengths",
         );
     }
+    let output_len = OUTPUT_HEADER_BYTES.saturating_add(n);
+    let peak = expected
+        .checked_add(n.saturating_mul(128))
+        .and_then(|value| value.checked_add(output_len));
     if peak.is_none_or(|value| value > instance.max_arena_bytes) {
         return fail(
             instance,
@@ -80,7 +92,7 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "compound transition peak memory exceeds budget",
         );
     }
-    let ids_start = HEADER_BYTES;
+    let ids_start = REQUEST_HEADER_BYTES;
     let parents_start = ids_start + n * 8;
     let validity_start = parents_start + n * 8;
     let collapsed_start = validity_start + n;
@@ -124,9 +136,13 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "compound transition output exceeds budget",
         );
     }
-    instance.output.extend_from_slice(b"XYCO");
-    instance.output.extend_from_slice(&VERSION.to_le_bytes());
-    instance.output.extend_from_slice(&(16u32).to_le_bytes());
+    instance.output.extend_from_slice(OUTPUT_MAGIC);
+    instance
+        .output
+        .extend_from_slice(&OUTPUT_VERSION.to_le_bytes());
+    instance
+        .output
+        .extend_from_slice(&(OUTPUT_HEADER_BYTES as u32).to_le_bytes());
     instance.output.push(u8::from(changed));
     instance.output.extend_from_slice(&[0; 3]);
     instance.output.extend_from_slice(&next);

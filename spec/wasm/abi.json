@@ -72,10 +72,13 @@
     "request_magic": "XYGC",
     "request_version": 1,
     "request_header_bytes": 40,
+    "request_offsets": {"version": 4, "header_bytes": 8, "action": 12, "lod_tier": 16, "node_count": 20, "target_id": 24, "reserved": 32},
+    "request_plane_bytes_per_node": 18,
     "request_planes": ["node_ids_u64", "parents_u64", "parent_validity_u8", "collapsed_u8"],
     "output_magic": "XYCO",
     "output_version": 1,
     "output_header_bytes": 16,
+    "output_offsets": {"version": 4, "header_bytes": 8, "changed": 12, "collapsed": 16},
     "actions": {"expand": 0, "collapse": 1, "toggle": 2},
     "lod_tiers": {"direct": 0},
     "max_nodes": 1024

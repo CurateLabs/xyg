@@ -306,8 +306,11 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0,
   ];
+  if (names.length !== functionTypes.length || names.length !== values.length) {
+    throw new Error("fake WASM export tables are misaligned");
+  }
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
       || (cancelTrap && index === 8)

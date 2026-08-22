@@ -44,6 +44,7 @@ def test_abi_version_is_89() -> None:
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
     names = {item["name"] for item in manifest["symbols"]}
     assert "xyg_graph_force_create_cose" in names
+    assert "xyg_graph_compound_transition" in names
     assert {
         "xyg_chunked_columns_cancel_before",
         "xyg_chunked_columns_free",

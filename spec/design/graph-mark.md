@@ -448,8 +448,9 @@ XYGG v3; TypeScript only frames the three exact planes and does not synthesize
 collapse policy.
 
 ABI 90 adds `xyg_graph_compound_transition`, the public disclosure-state
-transaction. A host supplies exact stable node IDs, canonical parent and
-collapse planes, a target ID, and expand/collapse/toggle. Rust validates the
+transaction. A host supplies exact stable node IDs plus `node_count` values in
+each canonical `parents`, `parent_validity`, and `collapsed` plane, in that ABI
+order, followed by a target ID and expand/collapse/toggle. Rust validates the
 whole forest, rejects duplicate/missing/non-group targets and every non-Direct
 LOD tier, and copies the next collapse plane only after all checks succeed.
 The operation is bounded to 1,024 source nodes; thin hosts do not traverse the
