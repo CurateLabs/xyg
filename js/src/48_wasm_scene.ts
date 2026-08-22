@@ -245,7 +245,7 @@ export function hydrateWasmPainter(
       Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, whiteSpace:"nowrap"});
       layer.appendChild(item);
     }
-    el.appendChild(layer);
+    view.root.appendChild(layer);
   }
   (view as any).wasmMetrics = {
     workerPrepareMs: timing.workerPrepareMs,

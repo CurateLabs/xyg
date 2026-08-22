@@ -1016,7 +1016,7 @@ async function run() {
     throw new Error("semantic graph encoder did not emit XYGG");
   }
   const semanticHost = document.body.appendChild(document.createElement("div"));
-  const semanticView = await renderWasmSemanticGraph({
+  let semanticView = await renderWasmSemanticGraph({
     el: semanticHost, graph: semanticGraph, worker: semanticWorker, transfer: false,
   });
   const legendLabels = [...semanticHost.querySelectorAll('[data-xy-slot="legend_label"]')]
@@ -1075,6 +1075,8 @@ async function run() {
   for (const malformed of [
     { ...semanticGraph, x: ["0", 1, 0.5] },
     { ...semanticGraph, sources: ["0", 0n, 2n] },
+    { ...semanticGraph, nodeLabels: [1, null, "valid"] },
+    { ...semanticGraph, edgeLabels: [{ toString: () => "coercible" }, null, "valid"] },
   ]) {
     try {
       encodeWasmSemanticGraph(malformed);
@@ -1083,7 +1085,26 @@ async function run() {
       if (!(error instanceof TypeError)) throw error;
     }
   }
-  semanticView.destroy(); semanticHost.remove(); await semanticWorker.dispose();
+  semanticView.destroy();
+  if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) {
+    throw new Error("semantic graph destroy retained a stale visible/a11y label layer");
+  }
+  semanticView = await renderWasmSemanticGraph({
+    el: semanticHost,
+    graph: { ...semanticGraph, nodeLabels: ["Updated node", null, null], edgeLabels: [null, null, null] },
+    worker: semanticWorker,
+    transfer: false,
+  });
+  const updatedLayers = semanticHost.querySelectorAll('[data-xy-chrome="graph_labels"]');
+  const updatedItems = semanticHost.querySelectorAll('[data-xy-slot="graph_label"][role="listitem"]');
+  if (updatedLayers.length !== 1 || updatedItems.length !== 1 || updatedItems[0].textContent !== "Updated node") {
+    throw new Error("semantic graph update did not retain exactly one current Rust label layer");
+  }
+  semanticView.destroy();
+  if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) {
+    throw new Error("updated semantic graph destroy retained its label layer");
+  }
+  semanticHost.remove(); await semanticWorker.dispose();
 
   const chartWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

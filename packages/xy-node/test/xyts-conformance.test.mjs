@@ -11,7 +11,7 @@ const fixture = JSON.parse(fs.readFileSync(
 test("native Node consumes exact Rust-generated XYTS Scene v12 output", () => {
   assert.equal(fixture.authority, "crates/xyg-wasm/src/compile.rs");
   assert.equal(fixture.scene_version, 12);
-  assert.equal(fixture.painter_version, 8);
+  assert.equal(fixture.painter_version, 9);
   for (const value of fixture.successful) {
     const scene = Uint8Array.from(Buffer.from(value.scene_hex, "hex"));
     const view = new DataView(scene.buffer, scene.byteOffset, scene.byteLength);

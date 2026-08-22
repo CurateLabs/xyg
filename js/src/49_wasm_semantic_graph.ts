@@ -104,10 +104,17 @@ export function encodeWasmSemanticGraph(input: XygWasmSemanticGraphInput): Array
   const title = new TextEncoder().encode(input.title ?? "");
   if (title.byteLength > 4096 || title.includes(0)) throw new RangeError("semantic graph title exceeds the Rust text bound");
   const encoder = new TextEncoder();
-  const nodeLabels = Array.from({length:n}, (_, i) => encoder.encode(input.nodeLabels?.[i] ?? ""));
-  const edgeLabels = Array.from({length:e}, (_, i) => encoder.encode(input.edgeLabels?.[i] ?? ""));
-  if (input.nodeLabels && input.nodeLabels.length !== n || input.edgeLabels && input.edgeLabels.length !== e
-      || nodeLabels.concat(edgeLabels).some((label) => label.byteLength > 4096 || label.includes(0))
+  const encodeLabels = (values: ArrayLike<string | null> | undefined, count: number, name: string) => {
+    if (values !== undefined && values.length !== count) throw new TypeError(`${name} must match its graph element count`);
+    return Array.from({length:count}, (_, i) => {
+      const value = values === undefined ? null : values[i];
+      if (value !== null && typeof value !== "string") throw new TypeError(`${name} values must be string or null`);
+      return encoder.encode(value ?? "");
+    });
+  };
+  const nodeLabels = encodeLabels(input.nodeLabels, n, "nodeLabels");
+  const edgeLabels = encodeLabels(input.edgeLabels, e, "edgeLabels");
+  if (nodeLabels.concat(edgeLabels).some((label) => label.byteLength > 4096 || label.includes(0))
       || nodeLabels.concat(edgeLabels).reduce((sum, label) => sum + label.byteLength, 0) > 8192) {
     throw new RangeError("semantic graph labels exceed the Rust text bounds");
   }
