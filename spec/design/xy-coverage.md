@@ -26,7 +26,7 @@ Machine-readable twin: [`dual-host-parity.json`](dual-host-parity.json)
 | Interval / uncertainty | errorbar, error_band | same |
 | Categorical / flow | bar, column, pie, sankey (ribbon), funnel* | `barChart` / `sankeyChart` / polar |
 | Polar | polar, radar, wind_rose | `polarChart` / `radarChart` / `windRoseChart` |
-| Graph | graph | `graphChart` / `composeGraph` |
+| Graph | graph | `graphChart` / `composeGraph`; direct browser `renderWasmSemanticGraph` consumes Rust-owned semantic Scene paint |
 | GraphForge canonical graph | `from_graphforge_tables` | `fromGraphForgeTables`; ABI 60 UUID/topology/parent parity |
 | Layout | facet | `facetChart` |
 
@@ -52,7 +52,7 @@ Every profile records screen-bounded budgets; Tier-3 CI proves pyramid compose
 is O(grid) with modest N — it does not allocate a billion points. Phase-4
 disk-resident 256² tile spill is the next residency milestone —
 [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) /
-[#5](https://github.com/CurateLabs/graphforge-xy/issues/5).
+[#5](https://github.com/CurateLabs/xyg/issues/5).
 
 ## Tests
 

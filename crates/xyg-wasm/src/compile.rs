@@ -5,6 +5,10 @@
 //! Scene batch that native hosts encode through `xyg_scene_batch_encode`.
 
 pub use crate::typed_series_abi_generated::*;
+use xyg_engine::graph_style::{
+    encode_semantic_graph_scene, SemanticGraphSceneInput, MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES,
+    SEMANTIC_GRAPH_SCENE_VERSION,
+};
 use xyg_engine::scene::{
     self, AxisScale, CartesianLayoutRequest, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
     SceneChromeText, SceneError,
@@ -24,6 +28,224 @@ pub struct CompiledScene {
     pub bytes: Vec<u8>,
     pub records: usize,
     pub styles: usize,
+}
+
+#[derive(Clone, Copy)]
+struct SemanticGraphOffsets {
+    nodes: usize,
+    edges: usize,
+    x: usize,
+    y: usize,
+    node_class: usize,
+    node_epistemic: usize,
+    node_status: usize,
+    node_metric: usize,
+    node_flags: usize,
+    sources: usize,
+    targets: usize,
+    edge_class: usize,
+    edge_epistemic: usize,
+    edge_status: usize,
+    edge_metric: usize,
+    edge_flags: usize,
+}
+
+fn semantic_graph_offsets(bytes: &[u8]) -> Result<SemanticGraphOffsets, SceneError> {
+    if bytes.len() < SEMANTIC_GRAPH_HEADER_BYTES
+        || bytes.get(..4) != Some(SEMANTIC_GRAPH_MAGIC)
+        || u32_at(bytes, 4)? != SEMANTIC_GRAPH_REQUEST_VERSION
+        || u32_at(bytes, 8)? as usize != SEMANTIC_GRAPH_HEADER_BYTES
+        || u32_at(bytes, 28)? != 0
+        || bytes[48..64] != [0; 16]
+    {
+        return Err(SceneError::Length);
+    }
+    let nodes = u32_at(bytes, 16)? as usize;
+    let edges = u32_at(bytes, 20)? as usize;
+    if nodes == 0
+        || nodes
+            .checked_add(edges)
+            .is_none_or(|v| v > SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS)
+    {
+        return Err(SceneError::Limit);
+    }
+    let title = u32_at(bytes, 24)? as usize;
+    if title > 4_096 {
+        return Err(SceneError::Limit);
+    }
+    let x = align8(
+        SEMANTIC_GRAPH_HEADER_BYTES
+            .checked_add(title)
+            .ok_or(SceneError::Limit)?,
+    );
+    let y = x
+        .checked_add(nodes.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let node_class = y
+        .checked_add(nodes.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let node_epistemic = node_class.checked_add(nodes).ok_or(SceneError::Limit)?;
+    let node_status = node_epistemic.checked_add(nodes).ok_or(SceneError::Limit)?;
+    let node_metric = align8(node_status.checked_add(nodes).ok_or(SceneError::Limit)?);
+    let node_flags = node_metric
+        .checked_add(nodes.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let sources = align8(
+        node_flags
+            .checked_add(nodes.checked_mul(4).ok_or(SceneError::Limit)?)
+            .ok_or(SceneError::Limit)?,
+    );
+    let targets = sources
+        .checked_add(edges.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let edge_class = targets
+        .checked_add(edges.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let edge_epistemic = edge_class.checked_add(edges).ok_or(SceneError::Limit)?;
+    let edge_status = edge_epistemic.checked_add(edges).ok_or(SceneError::Limit)?;
+    let edge_metric = align8(edge_status.checked_add(edges).ok_or(SceneError::Limit)?);
+    let edge_flags = edge_metric
+        .checked_add(edges.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let end = align8(
+        edge_flags
+            .checked_add(edges.checked_mul(4).ok_or(SceneError::Limit)?)
+            .ok_or(SceneError::Limit)?,
+    );
+    if end != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(SemanticGraphOffsets {
+        nodes,
+        edges,
+        x,
+        y,
+        node_class,
+        node_epistemic,
+        node_status,
+        node_metric,
+        node_flags,
+        sources,
+        targets,
+        edge_class,
+        edge_epistemic,
+        edge_status,
+        edge_metric,
+        edge_flags,
+    })
+}
+
+fn align_zero(bytes: &[u8], cursor: &mut usize) -> Result<(), SceneError> {
+    let aligned = cursor.checked_add(7).ok_or(SceneError::Limit)? & !7;
+    if bytes
+        .get(*cursor..aligned)
+        .ok_or(SceneError::Length)?
+        .iter()
+        .any(|&v| v != 0)
+    {
+        return Err(SceneError::Length);
+    }
+    *cursor = aligned;
+    Ok(())
+}
+
+fn take_u8s(bytes: &[u8], cursor: &mut usize, count: usize) -> Result<Vec<u8>, SceneError> {
+    Ok(take(bytes, cursor, count)?.to_vec())
+}
+
+fn compile_semantic_graph_request(
+    bytes: &[u8],
+    peak_budget: usize,
+) -> Result<CompiledScene, SceneError> {
+    if bytes.len() < SEMANTIC_GRAPH_HEADER_BYTES
+        || bytes.get(..4) != Some(SEMANTIC_GRAPH_MAGIC)
+        || u32_at(bytes, 4)? != SEMANTIC_GRAPH_REQUEST_VERSION
+        || u32_at(bytes, 8)? as usize != SEMANTIC_GRAPH_HEADER_BYTES
+        || u32_at(bytes, 28)? != 0
+        || bytes[48..64] != [0; 16]
+    {
+        return Err(SceneError::Length);
+    }
+    let theme = u32_at(bytes, 12)?;
+    let node_count = u32_at(bytes, 16)? as usize;
+    let edge_count = u32_at(bytes, 20)? as usize;
+    let title_len = u32_at(bytes, 24)? as usize;
+    // Bound peak storage before allocating parsed columns. This includes the
+    // request, owned input planes, routed geometry, canonical records/styles,
+    // and encoded Scene with conservative Vec capacity slack.
+    let elements = node_count
+        .checked_add(edge_count)
+        .ok_or(SceneError::Limit)?;
+    let peak = bytes
+        .len()
+        .checked_mul(2)
+        .and_then(|value| value.checked_add(elements.checked_mul(160)?))
+        .and_then(|value| value.checked_add(MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES.checked_mul(512)?))
+        .ok_or(SceneError::Limit)?;
+    if theme > u8::MAX as u32 || title_len > 4_096 || peak > peak_budget {
+        return Err(SceneError::Limit);
+    }
+    let width = f64_at(bytes, 32)?;
+    let height = f64_at(bytes, 40)?;
+    let mut cursor = SEMANTIC_GRAPH_HEADER_BYTES;
+    let title = std::str::from_utf8(take(bytes, &mut cursor, title_len)?)
+        .map_err(|_| SceneError::Length)?;
+    align_zero(bytes, &mut cursor)?;
+    let x = take_f64s(bytes, &mut cursor, node_count)?;
+    let y = take_f64s(bytes, &mut cursor, node_count)?;
+    let node_classes = take_u8s(bytes, &mut cursor, node_count)?;
+    let node_epistemic = take_u8s(bytes, &mut cursor, node_count)?;
+    let node_statuses = take_u8s(bytes, &mut cursor, node_count)?;
+    align_zero(bytes, &mut cursor)?;
+    let node_metric = take_f64s(bytes, &mut cursor, node_count)?;
+    let node_flags = take_u32s(bytes, &mut cursor, node_count)?;
+    align_zero(bytes, &mut cursor)?;
+    let sources = take_u64s(bytes, &mut cursor, edge_count)?;
+    let targets = take_u64s(bytes, &mut cursor, edge_count)?;
+    let edge_classes = take_u8s(bytes, &mut cursor, edge_count)?;
+    let edge_epistemic = take_u8s(bytes, &mut cursor, edge_count)?;
+    let edge_statuses = take_u8s(bytes, &mut cursor, edge_count)?;
+    align_zero(bytes, &mut cursor)?;
+    let edge_metric = take_f64s(bytes, &mut cursor, edge_count)?;
+    let edge_flags = take_u32s(bytes, &mut cursor, edge_count)?;
+    align_zero(bytes, &mut cursor)?;
+    if cursor != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    let scene = encode_semantic_graph_scene(SemanticGraphSceneInput {
+        version: SEMANTIC_GRAPH_SCENE_VERSION,
+        width,
+        height,
+        theme: theme as u8,
+        title,
+        x: &x,
+        y: &y,
+        node_classes: &node_classes,
+        node_epistemic: &node_epistemic,
+        node_statuses: &node_statuses,
+        node_metric: &node_metric,
+        node_flags: &node_flags,
+        sources: &sources,
+        targets: &targets,
+        edge_classes: &edge_classes,
+        edge_epistemic: &edge_epistemic,
+        edge_statuses: &edge_statuses,
+        edge_metric: &edge_metric,
+        edge_flags: &edge_flags,
+    })?;
+    if scene
+        .len()
+        .checked_add(bytes.len())
+        .is_none_or(|peak| peak > peak_budget)
+    {
+        return Err(SceneError::Limit);
+    }
+    let summary = scene::validate_scene_batch(&scene)?;
+    Ok(CompiledScene {
+        bytes: scene,
+        records: summary.records,
+        styles: summary.styles,
+    })
 }
 
 fn u32_at(bytes: &[u8], offset: usize) -> Result<u32, SceneError> {
@@ -805,7 +1027,9 @@ pub fn compile_scene_request(
     bytes: &[u8],
     peak_budget: usize,
 ) -> Result<CompiledScene, SceneError> {
-    if bytes.get(..4) == Some(SERIES_MAGIC) {
+    if bytes.get(..4) == Some(SEMANTIC_GRAPH_MAGIC) {
+        compile_semantic_graph_request(bytes, peak_budget)
+    } else if bytes.get(..4) == Some(SERIES_MAGIC) {
         compile_series_request(bytes, peak_budget)
     } else {
         compile_columns_request(bytes, false)
@@ -816,6 +1040,13 @@ pub fn compile_scene_request(
 /// the common magic/header/version envelope. Full decoding remains fail-closed
 /// in `compile_scene_request`.
 pub fn checkpoint_record_count(bytes: &[u8]) -> Result<usize, SceneError> {
+    if bytes.get(..4) == Some(SEMANTIC_GRAPH_MAGIC) {
+        let offsets = semantic_graph_offsets(bytes)?;
+        return offsets
+            .nodes
+            .checked_add(offsets.edges)
+            .ok_or(SceneError::Limit);
+    }
     if bytes.len() < COMPILE_HEADER_BYTES {
         return Err(SceneError::Length);
     }
@@ -851,6 +1082,45 @@ pub fn checkpoint_validate_records(
         .min(total);
     if first > end {
         return Err(SceneError::Length);
+    }
+    if bytes.get(..4) == Some(SEMANTIC_GRAPH_MAGIC) {
+        let o = semantic_graph_offsets(bytes)?;
+        for index in first..end.min(o.nodes) {
+            let values = [
+                f64_at(bytes, o.x + index * 8)?,
+                f64_at(bytes, o.y + index * 8)?,
+            ];
+            let metric = f64_at(bytes, o.node_metric + index * 8)?;
+            let flags = u32_at(bytes, o.node_flags + index * 4)?;
+            if values.iter().any(|v| !v.is_finite())
+                || metric.is_infinite()
+                || flags & !xyg_engine::graph_style::KNOWN_STATE_FLAGS != 0
+                || [o.node_class, o.node_epistemic, o.node_status]
+                    .iter()
+                    .any(|base| bytes[*base + index] > xyg_engine::graph_style::MAX_SEMANTIC_CODE)
+            {
+                return Err(SceneError::NonFinite);
+            }
+        }
+        let edge_first = first.saturating_sub(o.nodes).min(o.edges);
+        let edge_end = end.saturating_sub(o.nodes).min(o.edges);
+        for index in edge_first..edge_end {
+            let source = u64_at(bytes, o.sources + index * 8)?;
+            let target = u64_at(bytes, o.targets + index * 8)?;
+            let metric = f64_at(bytes, o.edge_metric + index * 8)?;
+            let flags = u32_at(bytes, o.edge_flags + index * 4)?;
+            if source >= o.nodes as u64
+                || target >= o.nodes as u64
+                || metric.is_infinite()
+                || flags & !xyg_engine::graph_style::KNOWN_STATE_FLAGS != 0
+                || [o.edge_class, o.edge_epistemic, o.edge_status]
+                    .iter()
+                    .any(|base| bytes[*base + index] > xyg_engine::graph_style::MAX_SEMANTIC_CODE)
+            {
+                return Err(SceneError::Length);
+            }
+        }
+        return Ok(());
     }
     if bytes.get(..4) == Some(SERIES_MAGIC) {
         let series_count = u32_at(bytes, HEADER_SERIES_COUNT)? as usize;
@@ -989,6 +1259,110 @@ mod tests {
         }
         out.extend_from_slice(&0.0f64.to_le_bytes());
         out
+    }
+
+    fn pack_semantic_graph() -> Vec<u8> {
+        let mut out = vec![0u8; SEMANTIC_GRAPH_HEADER_BYTES];
+        out[..4].copy_from_slice(SEMANTIC_GRAPH_MAGIC);
+        out[4..8].copy_from_slice(&SEMANTIC_GRAPH_REQUEST_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&(SEMANTIC_GRAPH_HEADER_BYTES as u32).to_le_bytes());
+        out[16..20].copy_from_slice(&3u32.to_le_bytes());
+        out[20..24].copy_from_slice(&2u32.to_le_bytes());
+        out[24..28].copy_from_slice(&14u32.to_le_bytes());
+        out[12..16].copy_from_slice(&1u32.to_le_bytes());
+        out[32..40].copy_from_slice(&800.0f64.to_le_bytes());
+        out[40..48].copy_from_slice(&600.0f64.to_le_bytes());
+        out.extend_from_slice(b"Semantic graph");
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
+        for values in [[0.0f64, 1.0, 0.5], [0.0f64, 0.0, 1.0]] {
+            for value in values {
+                out.extend_from_slice(&value.to_le_bytes());
+            }
+        }
+        out.extend_from_slice(&[1, 2, 3]); // class
+        out.extend_from_slice(&[1, 0, 2]); // epistemic
+        out.extend_from_slice(&[0, 1, 2]); // status
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
+        for value in [0.0f64, 0.5, 1.0] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        for value in [2u32, 64, 0] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
+        out.extend_from_slice(&0u64.to_le_bytes());
+        out.extend_from_slice(&2u64.to_le_bytes());
+        out.extend_from_slice(&2u64.to_le_bytes());
+        out.extend_from_slice(&1u64.to_le_bytes());
+        out.extend_from_slice(&[1, 2, 1, 3, 1, 0]);
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
+        for value in [1.0f64, 2.0] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        for value in [0u32, 16] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
+        out
+    }
+
+    #[test]
+    fn semantic_graph_request_compiles_to_the_canonical_scene_and_legend() {
+        let request = pack_semantic_graph();
+        let first = compile_scene_request(&request, 1 << 20).unwrap();
+        let second = compile_scene_request(&request, 1 << 20).unwrap();
+        assert_eq!(first.bytes, second.bytes);
+        assert_eq!(&first.bytes[..4], b"XYGS");
+        assert!(first.records > 4);
+        let document = scene::SceneDocument::decode(&first.bytes).unwrap();
+        assert!(document.to_svg().contains("Graph semantics"));
+        assert!(document
+            .to_browser_painter(1 << 20)
+            .unwrap()
+            .windows(4)
+            .any(|w| w == b"XYLG"));
+        assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn semantic_graph_request_rejects_reserved_and_trailing_data() {
+        let mut reserved = pack_semantic_graph();
+        reserved[28] = 1;
+        assert!(matches!(
+            compile_scene_request(&reserved, 1 << 20),
+            Err(SceneError::Length)
+        ));
+        let mut trailing = pack_semantic_graph();
+        trailing.extend_from_slice(&[0; 8]);
+        assert!(matches!(
+            compile_scene_request(&trailing, 1 << 20),
+            Err(SceneError::Length)
+        ));
+    }
+
+    #[test]
+    fn semantic_graph_rejects_huge_viewport_and_insufficient_peak_before_columns() {
+        let request = pack_semantic_graph();
+        assert!(matches!(
+            compile_scene_request(&request, request.len()),
+            Err(SceneError::Limit)
+        ));
+        let mut huge = request;
+        huge[32..40].copy_from_slice(&f64::MAX.to_le_bytes());
+        assert!(matches!(
+            compile_scene_request(&huge, 1 << 20),
+            Err(SceneError::Length)
+        ));
     }
 
     fn pack_typed_series() -> Vec<u8> {

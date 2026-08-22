@@ -48,6 +48,7 @@ chrome.
 | `js/src/47_wasm.ts` | Main-thread lifecycle proxy; requires explicit worker and WASM assets |
 | `js/src/48_wasm_scene.ts` | Thin display-list adapter into the existing WebGL painter |
 | `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
+| `js/src/49_wasm_semantic_graph.ts` | Packed direct-tier `XYGG` semantic planes; Rust emits styles, primitives, and legend |
 | `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
@@ -62,6 +63,21 @@ values, while schema validation rejects missing, unknown, overlapping,
 misaligned, or out-of-range fields before either module can be emitted. This keeps wire
 mechanics host-visible while leaving identities, mark defaults, geometry, and
 all per-record decisions exclusively in Rust.
+
+`XYGG` v1 is the bounded semantic-graph compile ingress. Its source count is
+limited to 1,024 direct-tier nodes plus edges, and Rust separately enforces the
+1,024 emitted-painter-trace ceiling after expanding resolved halo, dash, and
+arrow primitives. The framer validates only exact numeric representation and
+aligned lengths. Rust owns semantic domains, state precedence, light/dark
+paint, legend ordering and labels, and all screen-space expansion. Aggregate
+LOD must omit source-indexed semantic planes and is rejected explicitly.
+
+The compiler preserves source-edge IDs through parallel routes, self-loops,
+semantic layers, dash spans, and arrowheads; run grouping is independent of
+pick identity. Viewports are bounded to 16,384 px per side, peak storage is
+charged before owned column allocation, and each expanded primitive is charged
+before append. Light/dark backgrounds and axis/label chrome are Scene bytes,
+not CSS defaults.
 
 ## Memory and copy contract
 

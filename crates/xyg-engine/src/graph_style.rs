@@ -1,5 +1,11 @@
 //! Rust-owned graph label acceptance, visual-state precedence, and compound bounds (#34).
 
+use crate::edge_route::{edge_route_segments, EDGE_ROUTE_SEGMENTS_PER_EDGE};
+use crate::scene::{
+    AxisScale, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
+    SceneChromeText, SceneError, SceneLegend, SceneLegendEntry, SceneRecordKind,
+};
+
 pub const STATE_NORMAL: u8 = 0;
 pub const STATE_AGGREGATE: u8 = 1;
 pub const STATE_PINNED: u8 = 2;
@@ -21,6 +27,12 @@ pub const RESOLVED_STYLE_VERSION: u32 = 1;
 pub const MAX_SEMANTIC_CODE: u8 = 7;
 pub const THEME_LIGHT: u8 = 0;
 pub const THEME_DARK: u8 = 1;
+pub const SEMANTIC_GRAPH_SCENE_VERSION: u32 = 1;
+/// Browser painter traces, not source rows, are the governing bound. A dashed
+/// edge may lower to several line primitives, so the compiler checks the
+/// emitted primitive count rather than trusting an input-node ceiling.
+pub const MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES: usize = 1_024;
+pub const MAX_SEMANTIC_GRAPH_VIEWPORT: f64 = 16_384.0;
 
 /// Complete painter-facing graph style. Hosts may customize the semantic input
 /// mapping, but never reinterpret these resolved values.
@@ -266,6 +278,581 @@ pub fn semantic_legend(
         }
     }
     Some(entries)
+}
+
+/// Canonical semantic graph input for the direct-WASM/export Scene seam.
+/// Coordinates are canonical f64; endpoints remain u64 until Rust validates
+/// them. Hosts frame these planes but never resolve paint or screen geometry.
+#[derive(Clone, Copy, Debug)]
+pub struct SemanticGraphSceneInput<'a> {
+    pub version: u32,
+    pub width: f64,
+    pub height: f64,
+    pub theme: u8,
+    pub title: &'a str,
+    pub x: &'a [f64],
+    pub y: &'a [f64],
+    pub node_classes: &'a [u8],
+    pub node_epistemic: &'a [u8],
+    pub node_statuses: &'a [u8],
+    pub node_metric: &'a [f64],
+    pub node_flags: &'a [u32],
+    pub sources: &'a [u64],
+    pub targets: &'a [u64],
+    pub edge_classes: &'a [u8],
+    pub edge_epistemic: &'a [u8],
+    pub edge_statuses: &'a [u8],
+    pub edge_metric: &'a [f64],
+    pub edge_flags: &'a [u32],
+}
+
+#[derive(Default)]
+struct SemanticSceneColumns {
+    kinds: Vec<u8>,
+    stable_ids: Vec<u64>,
+    style_refs: Vec<u32>,
+    fill_rgba: Vec<u8>,
+    stroke_rgba: Vec<u8>,
+    stroke_width: Vec<f64>,
+    diameter: Vec<f64>,
+    symbols: Vec<u8>,
+    x0: Vec<f64>,
+    y0: Vec<f64>,
+    x1: Vec<f64>,
+    y1: Vec<f64>,
+    styles: Vec<([u8; 4], [u8; 4], u64)>,
+    primitives: usize,
+}
+
+impl SemanticSceneColumns {
+    fn style(&mut self, fill: [u8; 4], stroke: [u8; 4], width: f64) -> u32 {
+        let key = (fill, stroke, width.to_bits());
+        if let Some(index) = self.styles.iter().position(|candidate| *candidate == key) {
+            return index as u32;
+        }
+        self.styles.push(key);
+        self.fill_rgba.extend_from_slice(&fill);
+        self.stroke_rgba.extend_from_slice(&stroke);
+        self.stroke_width.push(width);
+        (self.styles.len() - 1) as u32
+    }
+
+    fn fresh_style(
+        &mut self,
+        fill: [u8; 4],
+        stroke: [u8; 4],
+        width: f64,
+    ) -> Result<u32, SceneError> {
+        if self.styles.len() >= MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES * 3 {
+            return Err(SceneError::Limit);
+        }
+        self.styles.push((fill, stroke, width.to_bits()));
+        self.fill_rgba.extend_from_slice(&fill);
+        self.stroke_rgba.extend_from_slice(&stroke);
+        self.stroke_width.push(width);
+        Ok((self.styles.len() - 1) as u32)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn point(
+        &mut self,
+        stable_id: u64,
+        style_ref: u32,
+        diameter: f64,
+        symbol: u8,
+        x: f64,
+        y: f64,
+    ) -> Result<(), SceneError> {
+        self.primitives = self.primitives.checked_add(1).ok_or(SceneError::Limit)?;
+        if self.primitives > MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES {
+            return Err(SceneError::Limit);
+        }
+        self.kinds.push(SceneRecordKind::Scatter as u8);
+        self.stable_ids.push(stable_id);
+        self.style_refs.push(style_ref);
+        self.diameter.push(diameter);
+        self.symbols.push(symbol);
+        self.x0.push(x);
+        self.y0.push(y);
+        self.x1.push(0.0);
+        self.y1.push(0.0);
+        Ok(())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn line(
+        &mut self,
+        stable_id: u64,
+        style_ref: u32,
+        x0: f64,
+        y0: f64,
+        x1: f64,
+        y1: f64,
+    ) -> Result<(), SceneError> {
+        self.primitives = self.primitives.checked_add(1).ok_or(SceneError::Limit)?;
+        if self.primitives > MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES {
+            return Err(SceneError::Limit);
+        }
+        for (x, y) in [(x0, y0), (x1, y1)] {
+            self.kinds.push(SceneRecordKind::Polyline as u8);
+            self.stable_ids.push(stable_id);
+            self.style_refs.push(style_ref);
+            self.diameter.push(0.0);
+            self.symbols.push(0);
+            self.x0.push(x);
+            self.y0.push(y);
+            self.x1.push(0.0);
+            self.y1.push(0.0);
+        }
+        Ok(())
+    }
+}
+
+fn alpha(color: [u8; 4], opacity: f32, factor: f32) -> [u8; 4] {
+    let mut out = color;
+    out[3] = ((f32::from(color[3]) * opacity * factor).round()).clamp(0.0, 255.0) as u8;
+    out
+}
+
+fn padded_domain(values: &[f64]) -> Option<(f64, f64)> {
+    let (mut lo, mut hi) = metric_domain(values);
+    if !lo.is_finite() || !hi.is_finite() {
+        return None;
+    }
+    if lo == hi {
+        let pad = lo.abs().max(1.0) * 0.05;
+        lo -= pad;
+        hi += pad;
+    } else {
+        let pad = (hi - lo) * 0.05;
+        lo -= pad;
+        hi += pad;
+    }
+    (lo.is_finite() && hi.is_finite() && lo < hi).then_some((lo, hi))
+}
+
+fn semantic_legend_label(field: u8, value: u8) -> String {
+    let field = match field {
+        0 => "Class",
+        1 => "Epistemic",
+        _ => "Status",
+    };
+    format!("{field} {value}")
+}
+
+/// Resolve semantic graph planes and lower their complete painter contract to
+/// one canonical Scene. Halos, dashed edges, and arrowheads are explicit,
+/// screen-bounded primitives chosen here; browser/SVG/raster only paint them.
+pub fn encode_semantic_graph_scene(
+    input: SemanticGraphSceneInput<'_>,
+) -> Result<Vec<u8>, SceneError> {
+    if input.version != SEMANTIC_GRAPH_SCENE_VERSION
+        || !input.width.is_finite()
+        || !input.height.is_finite()
+        || input.width < 160.0
+        || input.height < 120.0
+        || input.width > MAX_SEMANTIC_GRAPH_VIEWPORT
+        || input.height > MAX_SEMANTIC_GRAPH_VIEWPORT
+        || input.title.len() > 4_096
+        || input.title.contains('\0')
+    {
+        return Err(SceneError::Length);
+    }
+    let n = input.x.len();
+    let e = input.sources.len();
+    if n.checked_add(e)
+        .is_none_or(|count| count > MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES)
+    {
+        return Err(SceneError::Limit);
+    }
+    if n == 0
+        || [
+            input.y.len(),
+            input.node_classes.len(),
+            input.node_epistemic.len(),
+            input.node_statuses.len(),
+            input.node_metric.len(),
+            input.node_flags.len(),
+        ]
+        .iter()
+        .any(|&len| len != n)
+        || [
+            input.targets.len(),
+            input.edge_classes.len(),
+            input.edge_epistemic.len(),
+            input.edge_statuses.len(),
+            input.edge_metric.len(),
+            input.edge_flags.len(),
+        ]
+        .iter()
+        .any(|&len| len != e)
+        || input.x.iter().chain(input.y).any(|v| !v.is_finite())
+        || input
+            .sources
+            .iter()
+            .chain(input.targets)
+            .any(|&v| v >= n as u64)
+    {
+        return Err(SceneError::Length);
+    }
+    let mut nodes = vec![
+        ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        };
+        n
+    ];
+    let mut edges = vec![
+        ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        };
+        e
+    ];
+    resolve_semantic_styles(
+        SemanticStyleInput {
+            classes: input.node_classes,
+            epistemic: input.node_epistemic,
+            statuses: input.node_statuses,
+            metric: input.node_metric,
+            flags: input.node_flags,
+            edge: false,
+            theme: input.theme,
+        },
+        &mut nodes,
+    )
+    .ok_or(SceneError::Length)?;
+    resolve_semantic_styles(
+        SemanticStyleInput {
+            classes: input.edge_classes,
+            epistemic: input.edge_epistemic,
+            statuses: input.edge_statuses,
+            metric: input.edge_metric,
+            flags: input.edge_flags,
+            edge: true,
+            theme: input.theme,
+        },
+        &mut edges,
+    )
+    .ok_or(SceneError::Length)?;
+
+    let x_domain = padded_domain(input.x).ok_or(SceneError::NonFinite)?;
+    let y_domain = padded_domain(input.y).ok_or(SceneError::NonFinite)?;
+    let layout = PlotLayout::new(input.width, input.height, 52.0, 16.0, 24.0, 44.0)?;
+    let x_scale = AxisScale::new(
+        ScaleKind::Linear,
+        x_domain.0,
+        x_domain.1,
+        layout.left,
+        layout.right,
+        1.0,
+        false,
+    )?;
+    let y_scale = AxisScale::new(
+        ScaleKind::Linear,
+        y_domain.0,
+        y_domain.1,
+        layout.bottom,
+        layout.top,
+        1.0,
+        false,
+    )?;
+    let to_px = |x: f64, y: f64| {
+        (
+            layout.left
+                + (x - x_domain.0) / (x_domain.1 - x_domain.0) * (layout.right - layout.left),
+            layout.bottom
+                - (y - y_domain.0) / (y_domain.1 - y_domain.0) * (layout.bottom - layout.top),
+        )
+    };
+    let mut columns = SemanticSceneColumns::default();
+
+    let route_capacity = e
+        .checked_mul(EDGE_ROUTE_SEGMENTS_PER_EDGE)
+        .ok_or(SceneError::Limit)?;
+    let mut route_x0 = vec![0.0; route_capacity];
+    let mut route_y0 = vec![0.0; route_capacity];
+    let mut route_x1 = vec![0.0; route_capacity];
+    let mut route_y1 = vec![0.0; route_capacity];
+    let mut route_edge = vec![0; route_capacity];
+    let route_count = edge_route_segments(
+        n as u64,
+        input.x,
+        input.y,
+        input.sources,
+        input.targets,
+        false,
+        0.08,
+        0.35,
+        0.0,
+        &mut route_x0,
+        &mut route_y0,
+        &mut route_x1,
+        &mut route_y1,
+        &mut route_edge,
+    )
+    .ok_or(SceneError::Length)? as usize;
+    let mut routes = vec![Vec::new(); e];
+    for route in 0..route_count {
+        routes[route_edge[route] as usize].push((
+            route_x0[route],
+            route_y0[route],
+            route_x1[route],
+            route_y1[route],
+        ));
+    }
+
+    // Rust first routes multiedges and loops, then expands resolved dash and
+    // arrow geometry in screen space. Hosts never see raw topology decisions.
+    for (index, style) in edges.iter().enumerate() {
+        if style.opacity <= 0.0 {
+            continue;
+        }
+        let layer_count = 1
+            + usize::from(input.edge_epistemic[index] != 0)
+            + usize::from(input.edge_classes[index] != 0);
+        let remaining = MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES
+            .checked_sub(columns.primitives)
+            .ok_or(SceneError::Limit)?;
+        let mut geometry = Vec::new();
+        let mut push_geometry = |segment| -> Result<(), SceneError> {
+            let count = geometry.len().checked_add(1).ok_or(SceneError::Limit)?;
+            if count
+                .checked_mul(layer_count)
+                .is_none_or(|value| value > remaining)
+            {
+                return Err(SceneError::Limit);
+            }
+            geometry.push(segment);
+            Ok(())
+        };
+        for &(ax, ay, bx, by) in &routes[index] {
+            let (apx, apy) = to_px(ax, ay);
+            let (bpx, bpy) = to_px(bx, by);
+            let length = (bpx - apx).hypot(bpy - apy);
+            if !length.is_finite() || length <= f64::EPSILON {
+                continue;
+            }
+            let pattern = match style.dash {
+                1 => (6.0, 4.0),
+                2 => (2.0, 3.0),
+                3 => (10.0, 4.0),
+                _ => (length, 0.0),
+            };
+            let mut cursor = 0.0;
+            while cursor < length {
+                let end = (cursor + pattern.0).min(length);
+                let t0 = cursor / length;
+                let t1 = end / length;
+                push_geometry((
+                    ax + (bx - ax) * t0,
+                    ay + (by - ay) * t0,
+                    ax + (bx - ax) * t1,
+                    ay + (by - ay) * t1,
+                ))?;
+                if pattern.1 == 0.0 {
+                    break;
+                }
+                cursor = end + pattern.1;
+            }
+        }
+        if style.arrow != 0 && !routes[index].is_empty() {
+            let &(ax, ay, bx, by) = routes[index].last().unwrap();
+            let (apx, apy) = to_px(ax, ay);
+            let (bpx, bpy) = to_px(bx, by);
+            let length = (bpx - apx).hypot(bpy - apy);
+            if length >= 8.0 {
+                let ux = (bpx - apx) / length;
+                let uy = (bpy - apy) / length;
+                let arrow = (6.0 + f64::from(style.width)).min(length * 0.35);
+                for side in [-1.0, 1.0] {
+                    let px = bpx - ux * arrow + (-uy) * side * arrow * 0.55;
+                    let py = bpy - uy * arrow + ux * side * arrow * 0.55;
+                    let dx = x_domain.0
+                        + (px - layout.left) / (layout.right - layout.left)
+                            * (x_domain.1 - x_domain.0);
+                    let dy = y_domain.0
+                        + (layout.bottom - py) / (layout.bottom - layout.top)
+                            * (y_domain.1 - y_domain.0);
+                    push_geometry((bx, by, dx, dy))?;
+                }
+            }
+        }
+        // The line-like Scene primitive has one paint. Rust therefore lowers
+        // the complete three-channel semantic edge style as ordered layers:
+        // epistemic halo, class body, then status stroke. Consumers only paint.
+        let mut layers = Vec::with_capacity(3);
+        if input.edge_epistemic[index] != 0 {
+            layers.push((
+                alpha(style.halo, style.opacity, 0.38),
+                f64::from(style.width + 5.0),
+            ));
+        }
+        if input.edge_classes[index] != 0 {
+            layers.push((
+                alpha(style.fill, style.opacity, 1.0),
+                f64::from(style.width + 2.0),
+            ));
+        }
+        layers.push((
+            alpha(style.stroke, style.opacity, 1.0),
+            f64::from(style.width),
+        ));
+        let stable = index as u64 + 1;
+        for (paint, width) in layers {
+            for &(x0, y0, x1, y1) in &geometry {
+                let style_ref = columns.fresh_style([0; 4], paint, width)?;
+                columns.line(stable, style_ref, x0, y0, x1, y1)?;
+            }
+        }
+    }
+    for (index, style) in nodes.iter().enumerate() {
+        if style.opacity <= 0.0 {
+            continue;
+        }
+        let stable = (1u64 << 32) + index as u64;
+        if input.node_epistemic[index] != 0 {
+            let halo = alpha(style.halo, style.opacity, 0.38);
+            let halo_ref = columns.style(halo, [0; 4], 0.0);
+            columns.point(
+                stable,
+                halo_ref,
+                f64::from(style.size + 7.0),
+                0,
+                input.x[index],
+                input.y[index],
+            )?;
+        }
+        let node_ref = columns.style(
+            alpha(style.fill, style.opacity, 1.0),
+            alpha(style.stroke, style.opacity, 1.0),
+            f64::from(style.width),
+        );
+        columns.point(
+            stable,
+            node_ref,
+            f64::from(style.size),
+            style.shape,
+            input.x[index],
+            input.y[index],
+        )?;
+    }
+
+    let mut descriptors = semantic_legend(
+        input.node_classes,
+        input.node_epistemic,
+        input.node_statuses,
+        input.theme,
+    )
+    .ok_or(SceneError::Length)?;
+    let edge_descriptors = semantic_legend(
+        input.edge_classes,
+        input.edge_epistemic,
+        input.edge_statuses,
+        input.theme,
+    )
+    .ok_or(SceneError::Length)?;
+    for descriptor in edge_descriptors {
+        if !descriptors
+            .iter()
+            .any(|item| item.field == descriptor.field && item.value == descriptor.value)
+        {
+            descriptors.push(descriptor);
+        }
+    }
+    descriptors.sort_by_key(|item| (item.field, item.value));
+    let mut legend_entries = Vec::with_capacity(descriptors.len());
+    for descriptor in descriptors {
+        let style_ref = columns.style(descriptor.color, descriptor.color, 1.5) as usize;
+        legend_entries.push(SceneLegendEntry {
+            style_ref,
+            kind: SceneRecordKind::Scatter,
+            symbol: descriptor.shape,
+            fill_rgba: descriptor.color,
+            stroke_rgba: descriptor.color,
+            label: semantic_legend_label(descriptor.field, descriptor.value),
+        });
+    }
+    let colors = palette(input.theme).ok_or(SceneError::Length)?;
+    let legend = (!legend_entries.is_empty()).then(|| SceneLegend {
+        location: LegendLocation::UpperRight,
+        title: "Graph semantics".to_owned(),
+        font_size: 11.0,
+        title_font_size: 12.0,
+        text_rgba: colors[0],
+        frame_fill_rgba: if input.theme == THEME_LIGHT {
+            [255, 255, 255, 238]
+        } else {
+            [17, 24, 39, 238]
+        },
+        frame_stroke_rgba: colors[0],
+        entries: legend_entries,
+    });
+    let mut chrome = SceneChromeStyle::default();
+    let (chart_bg, plot_bg, foreground, grid) = if input.theme == THEME_LIGHT {
+        (
+            [255, 255, 255, 255],
+            [248, 250, 252, 255],
+            [31, 41, 55, 255],
+            [31, 41, 55, 38],
+        )
+    } else {
+        (
+            [3, 7, 18, 255],
+            [17, 24, 39, 255],
+            [229, 231, 235, 255],
+            [229, 231, 235, 42],
+        )
+    };
+    chrome.chart_background_rgba = chart_bg;
+    chrome.plot_background_rgba = plot_bg;
+    chrome.label_rgba = foreground;
+    for axis in [&mut chrome.x_axis, &mut chrome.y_axis] {
+        axis.axis_rgba = foreground;
+        axis.tick_rgba = foreground;
+        axis.minor_tick_rgba = foreground;
+        axis.label_rgba = foreground;
+        axis.grid_rgba = grid;
+    }
+    SceneBatch::new_with_decorations(
+        layout,
+        1,
+        2,
+        x_scale,
+        y_scale,
+        chrome,
+        SceneChromeText::from_parts(input.title, "", "")?,
+        legend,
+        &columns.kinds,
+        &columns.stable_ids,
+        &columns.style_refs,
+        &columns.fill_rgba,
+        &columns.stroke_rgba,
+        &columns.stroke_width,
+        &columns.diameter,
+        &columns.symbols,
+        &columns.x0,
+        &columns.y0,
+        &columns.x1,
+        &columns.y1,
+    )
+    .map(|batch| batch.encode())
 }
 
 #[must_use]
@@ -609,6 +1196,166 @@ mod tests {
             None
         );
         assert_eq!(out, [sentinel]);
+    }
+
+    #[test]
+    fn semantic_graph_scene_is_one_exact_browser_svg_and_raster_contract() {
+        let bytes = encode_semantic_graph_scene(SemanticGraphSceneInput {
+            version: 1,
+            width: 800.0,
+            height: 600.0,
+            theme: THEME_LIGHT,
+            title: "GraphForge semantics",
+            x: &[0.0, 1.0, 0.5],
+            y: &[0.0, 0.0, 1.0],
+            node_classes: &[1, 2, 3],
+            node_epistemic: &[1, 0, 2],
+            node_statuses: &[0, 1, 2],
+            node_metric: &[0.0, 0.5, 1.0],
+            node_flags: &[FLAG_SELECTED, FLAG_DISABLED, 0],
+            // Parallel edges and a self-loop prove Rust-owned routing is not
+            // silently omitted by any Scene consumer.
+            sources: &[0, 0, 2],
+            targets: &[2, 2, 2],
+            edge_classes: &[1, 2, 3],
+            edge_epistemic: &[1, 3, 2],
+            edge_statuses: &[1, 0, 2],
+            edge_metric: &[1.0, 2.0, 3.0],
+            edge_flags: &[0, FLAG_PINNED, 0],
+        })
+        .unwrap();
+        let document = crate::scene::SceneDocument::decode(&bytes).unwrap();
+        let svg = document.to_svg();
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let raster = document.to_raster_commands(1.0).unwrap();
+        assert!(svg.contains("GraphForge semantics"));
+        assert!(svg.contains("Graph semantics"));
+        assert!(svg.contains("Class 1"));
+        assert!(svg.contains("data-xy-chrome=\"chart-background\""));
+        assert!(document.record_count() > 10); // dash + arrowheads + halos
+        assert_eq!(&painter[..4], b"XYPB");
+        let trace_count = u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize;
+        let mut edge_ids = Vec::new();
+        for trace in 0..trace_count {
+            let descriptor = crate::scene::BROWSER_PAINTER_HEADER_BYTES
+                + trace * crate::scene::BROWSER_PAINTER_TRACE_BYTES;
+            if painter[descriptor] != SceneRecordKind::Polyline as u8 {
+                continue;
+            }
+            let count =
+                u32::from_le_bytes(painter[descriptor + 4..descriptor + 8].try_into().unwrap())
+                    as usize;
+            let low = u32::from_le_bytes(
+                painter[descriptor + 24..descriptor + 28]
+                    .try_into()
+                    .unwrap(),
+            ) as usize;
+            for row in 0..count {
+                edge_ids.push(u32::from_le_bytes(
+                    painter[low + row * 4..low + row * 4 + 4]
+                        .try_into()
+                        .unwrap(),
+                ) as u64);
+            }
+        }
+        assert!(edge_ids.iter().all(|id| (1..=3).contains(id)));
+        assert!(edge_ids.iter().filter(|&&id| id == 1).count() > 4);
+        assert!(painter.windows(4).any(|window| window == b"XYLG"));
+        assert!(!raster.is_empty());
+        #[cfg(feature = "raster")]
+        {
+            let mut rgba = vec![0; 800 * 600 * 4];
+            assert!(crate::raster::rasterize_into(&raster, 800, 600, &mut rgba));
+            assert!(rgba.chunks_exact(4).any(|pixel| pixel[3] != 0));
+            assert_eq!(&rgba[..4], &[255, 255, 255, 255]);
+            let plot_pixel = (100 * 800 + 100) * 4;
+            assert_eq!(&rgba[plot_pixel..plot_pixel + 4], &[248, 250, 252, 255]);
+        }
+    }
+
+    #[test]
+    fn semantic_graph_scene_rejects_huge_finite_viewports_before_geometry_allocation() {
+        let result = encode_semantic_graph_scene(SemanticGraphSceneInput {
+            version: 1,
+            width: MAX_SEMANTIC_GRAPH_VIEWPORT + 1.0,
+            height: 600.0,
+            theme: THEME_LIGHT,
+            title: "",
+            x: &[0.0, 1.0],
+            y: &[0.0, 1.0],
+            node_classes: &[0, 0],
+            node_epistemic: &[0, 0],
+            node_statuses: &[0, 0],
+            node_metric: &[0.0, 1.0],
+            node_flags: &[0, 0],
+            sources: &[0],
+            targets: &[1],
+            edge_classes: &[1],
+            edge_epistemic: &[1],
+            edge_statuses: &[1],
+            edge_metric: &[0.0],
+            edge_flags: &[0],
+        });
+        assert_eq!(result, Err(SceneError::Length));
+    }
+
+    #[test]
+    fn browser_semantic_graph_fixture_compiles_with_dark_state_planes() {
+        assert!(encode_semantic_graph_scene(SemanticGraphSceneInput {
+            version: 1,
+            width: 800.0,
+            height: 600.0,
+            theme: THEME_DARK,
+            title: "Semantic graph",
+            x: &[0.0, 1.0, 0.5],
+            y: &[0.0, 0.0, 1.0],
+            node_classes: &[1, 2, 3],
+            node_epistemic: &[1, 0, 2],
+            node_statuses: &[0, 1, 2],
+            node_metric: &[0.0, 0.5, 1.0],
+            node_flags: &[2, 64, 0],
+            sources: &[0, 1],
+            targets: &[2, 2],
+            edge_classes: &[1, 2],
+            edge_epistemic: &[1, 3],
+            edge_statuses: &[1, 0],
+            edge_metric: &[1.0, 2.0],
+            edge_flags: &[0, 16],
+        })
+        .is_ok());
+    }
+
+    #[test]
+    fn semantic_graph_scene_fails_closed_before_unbounded_primitive_growth() {
+        let count = MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES + 1;
+        let x = vec![0.0; count];
+        let codes = vec![0; count];
+        let metric = vec![0.0; count];
+        let flags = vec![0; count];
+        assert_eq!(
+            encode_semantic_graph_scene(SemanticGraphSceneInput {
+                version: 1,
+                width: 800.0,
+                height: 600.0,
+                theme: 0,
+                title: "",
+                x: &x,
+                y: &x,
+                node_classes: &codes,
+                node_epistemic: &codes,
+                node_statuses: &codes,
+                node_metric: &metric,
+                node_flags: &flags,
+                sources: &[],
+                targets: &[],
+                edge_classes: &[],
+                edge_epistemic: &[],
+                edge_statuses: &[],
+                edge_metric: &[],
+                edge_flags: &[],
+            }),
+            Err(SceneError::Limit)
+        );
     }
 
     fn luminance(color: [u8; 4]) -> f64 {

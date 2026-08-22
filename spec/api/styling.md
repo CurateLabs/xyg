@@ -125,9 +125,18 @@ xyg.bar(
 
 Canonical GraphForge numeric semantic planes additionally have a versioned
 Rust-owned resolved-paint contract (graph-mark §7.1.1). The low-level Python
-and Node bindings expose v1 for parity and inspection; application-facing
-mapping names remain unreleased until the browser/export paint path consumes
-the same result.
+and Node bindings expose v1 for parity and inspection. The bounded direct-WASM
+`XYGG` compiler consumes the same resolver and emits one canonical Scene for
+browser, SVG, and native PNG; its thin TypeScript API is
+`encodeWasmSemanticGraph` / `renderWasmSemanticGraph`. Aggregate LOD rejects
+source-indexed semantic planes instead of styling aggregate identities by
+accident. Application-facing Python/Node composition mapping names remain
+unreleased.
+
+Layered/dashed/routed edge primitives keep their canonical source-edge stable
+ID for browser picking and export parity. Rust supplies the semantic Scene's
+opaque light/dark chart and plot backgrounds and contrasting axis/grid/label
+chrome; consumers do not substitute transparent or CSS theme defaults.
 
 Legacy appearance arguments such as `color=`, `width=`, and `opacity=` remain
 supported; a CSS `style` declaration is the final override when both are set.

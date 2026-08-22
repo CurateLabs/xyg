@@ -10,6 +10,8 @@ import {
   renderWasmChart,
   renderWasmColumns,
   renderWasmScene,
+  encodeWasmSemanticGraph,
+  renderWasmSemanticGraph,
   XygWasmError,
   XygWasmTemporalController,
   XygWasmTemporalGraph,
@@ -914,6 +916,72 @@ async function run() {
   columnView.destroy();
   columnHost.remove();
   await columnWorker.dispose();
+
+  const semanticWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await semanticWorker.ready;
+  const semanticGraph = {
+    width: 800, height: 600, theme: "dark", title: "Semantic graph", tier: "direct",
+    x: [0, 1, 0.5], y: [0, 0, 1],
+    nodeClass: [1, 2, 3], nodeEpistemic: [1, 0, 2], nodeStatus: [0, 1, 2],
+    nodeMetric: [0, 0.5, 1], nodeFlags: [2, 64, 0],
+    sources: [0n, 0n, 2n], targets: [2n, 2n, 2n],
+    edgeClass: [1, 2, 3], edgeEpistemic: [1, 3, 2], edgeStatus: [1, 0, 2],
+    edgeMetric: [1, 2, 3], edgeFlags: [0, 16, 0],
+  };
+  const semanticPacked = encodeWasmSemanticGraph(semanticGraph);
+  if (new Uint8Array(semanticPacked).subarray(0, 4).join(",") !== "88,89,71,71") {
+    throw new Error("semantic graph encoder did not emit XYGG");
+  }
+  const semanticHost = document.body.appendChild(document.createElement("div"));
+  const semanticView = await renderWasmSemanticGraph({
+    el: semanticHost, graph: semanticGraph, worker: semanticWorker, transfer: false,
+  });
+  const legendLabels = [...semanticHost.querySelectorAll('[data-xy-slot="legend_label"]')]
+    .map((node) => node.textContent);
+  const legend = semanticHost.querySelector('[data-xy-slot="legend"][role="list"]');
+  const legendRows = [...semanticHost.querySelectorAll('[data-xy-slot="legend_item"][role="listitem"]')];
+  if (!semanticHost.querySelector("canvas") || semanticView.gpuTraces.length < 3
+      || !legend || legendRows.length !== legendLabels.length
+      || legendRows.some((row, index) => row.getAttribute("aria-label") !== legendLabels[index])
+      || legendLabels.join("|") !== "Class 1|Class 2|Class 3|Epistemic 0|Epistemic 1|Epistemic 2|Epistemic 3|Status 0|Status 1|Status 2") {
+    throw new Error(`semantic graph did not hydrate Rust painter/legend parity: ${legendLabels.join("|")}`);
+  }
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const semanticCanvas = semanticHost.querySelector("canvas");
+  const semanticPixels = semanticCanvas.getContext("2d").getImageData(0, 0, semanticCanvas.width, semanticCanvas.height).data;
+  const paints = new Set();
+  for (let index=0; index<semanticPixels.length; index+=4) {
+    if (semanticPixels[index+3]) paints.add(`${semanticPixels[index]},${semanticPixels[index+1]},${semanticPixels[index+2]},${semanticPixels[index+3]}`);
+  }
+  const semanticTracePaints = new Set(semanticView.spec.traces.map((trace) => JSON.stringify(trace.style)));
+  const edgeIds = [];
+  semanticView.gpuTraces.forEach((trace, traceIndex) => {
+    if (trace.trace.kind !== "line") return;
+    for (let row=0; row<trace._sceneIds.lo.length; row++) edgeIds.push(semanticView.sceneStableId(traceIndex, row));
+  });
+  if (paints.size < 2 || semanticTracePaints.size < 4) {
+    throw new Error(`semantic graph visual probe found ${paints.size} canvas colors / ${semanticTracePaints.size} resolved trace paints`);
+  }
+  if (!edgeIds.length || edgeIds.some((id) => id < 1n || id > 3n)
+      || edgeIds.filter((id) => id === 1n).length < 4) {
+    throw new Error(`semantic parallel/self-loop layers lost source identity: ${edgeIds.join("|")}`);
+  }
+  const semanticRoot = semanticHost.firstElementChild;
+  if (!semanticRoot || getComputedStyle(semanticRoot).backgroundColor !== "rgb(3, 7, 18)"
+      || semanticView.spec.dom.style["--chart-bg"] !== "rgba(17 24 39 / 1)") {
+    throw new Error("dark semantic Scene did not apply its theme-owned chart/plot backgrounds");
+  }
+  try {
+    encodeWasmSemanticGraph({ ...semanticGraph, tier: "aggregate" });
+    throw new Error("aggregate semantic metadata was accepted");
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+  }
+  semanticView.destroy(); semanticHost.remove(); await semanticWorker.dispose();
 
   const chartWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

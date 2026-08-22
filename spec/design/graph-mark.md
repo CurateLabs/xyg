@@ -462,10 +462,30 @@ dash. Unknown interaction bits fail the complete resolution atomically. Rust als
 `xyg_graph_semantic_legend`: its capacity-safe query/copy ABI de-duplicates
 present values and emits stable field-then-code order with the exact resolved
 theme palette and class shape descriptor. Python and Node only materialize
-those returned descriptors. This
-slice exposes resolved paint through native Python and Node bindings. Wiring
-the same resolver into the direct-WASM scene entry and graph composition paint
-path is required before claiming browser/export acceptance for #34.
+those returned descriptors.
+
+The direct-browser/export seam accepts packed `XYGG` v1 for the **direct tier
+only**. TypeScript checks representation, aligned lengths, closed codes, and
+the 1,024-element ingress ceiling, then transfers canonical f64 coordinates,
+u64 endpoints, and semantic planes. Rust resolves node and edge paint, expands
+halo rings, screen-space dash spans, and arrowheads, and emits at most 1,024
+painter traces in canonical Scene v11. Source-indexed semantic planes are
+rejected for aggregate LOD rather than being attached to cluster identities.
+The same Scene bytes drive direct-WASM WebGL, native SVG, and native
+raster/PNG, including the Rust-ordered `Class`, `Epistemic`, and `Status`
+legend. No browser or export renderer owns a second palette, state, dash,
+arrow, or legend policy.
+
+Every expanded edge layer, dash span, loop segment, and arrow wing retains the
+one source-edge stable ID; a separate paint-identical style/run boundary keeps
+disconnected primitives disconnected without manufacturing identities. Rust
+rejects viewports above 16,384 px per side and charges every expanded primitive
+before allocation or append. The Scene also carries opaque theme-owned chart
+and plot backgrounds plus axis/grid/label chrome for both light and dark.
+
+Application-facing Python/Node composition mapping names and
+aggregate-specific semantic summaries remain follow-up work; aggregate
+omission is already enforced at this seam.
 
 ---
 
@@ -473,7 +493,8 @@ path is required before claiming browser/export acceptance for #34.
 
 - HTML / WebGL interactive: primary (shared `GLHost`, §1.6).
 - SVG: circles + polylines from screen-bounded positions (host SVG writer).
-- Native PNG display-list graph ops: follow-up; do not block interactive MVP.
+- Native PNG: canonical semantic graph Scenes use the same Rust display-list
+  records as SVG and browser paint; there is no graph-specific raster style path.
 
 ---
 
