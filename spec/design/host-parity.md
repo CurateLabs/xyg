@@ -339,4 +339,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   RGBA8 pick attachment; canonical Scene data and source identity stay intact,
   and picking recreates the attachment lazily. Python, Reflex, and Node HTML
   inherit this browser compositor when they use the packaged client; none owns
-  a parallel admission policy.
+  a parallel admission policy. The same `GLHost` coalesces registered charts'
+  color paints into one animation-frame batch without ranking them in the host;
+  this browser execution mechanism therefore preserves the Rust-owned
+  admission decision across Python, Reflex, Node HTML, and direct-browser use.

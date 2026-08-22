@@ -1806,8 +1806,7 @@ export class ChartView {
       // Incrementing seq makes pre-loss kernel/worker replies stale, so they
       // cannot populate the newly restored context with an old view.
       this.seq += 1;
-      if (this._raf) cancelAnimationFrame(this._raf);
-      this._raf = null;
+      this._cancelDrawFrame();
       if (this._wheelZoomRaf) cancelAnimationFrame(this._wheelZoomRaf);
       this._wheelZoomRaf = null;
       this._pendingWheelZoom = null;
@@ -1982,8 +1981,7 @@ export class ChartView {
     this._glLost = true; // synchronous: the lost *event* arrives as a task
     this._ctxLostPending = true; // ...and restoreContext() must wait for it
     this.canvas.dataset.xyCtx = "released";
-    if (this._raf) cancelAnimationFrame(this._raf);
-    this._raf = null;
+    this._cancelDrawFrame();
     ext.loseContext();
     XY_CONTEXT_GOVERNOR._announceLive(); // one fewer live context on this frame
     return true;
@@ -1997,8 +1995,7 @@ export class ChartView {
   // copy — the default drawing buffer does not persist between frames.
   _snapshotBeforeRelease() {
     try {
-      if (this._raf) cancelAnimationFrame(this._raf);
-      this._raf = null;
+      this._cancelDrawFrame();
       this._rafKeepPick = true; // pick FBO stays valid; only the color buffer is read
       this._drawNow();
       let snap = this._ctxSnapshot;
@@ -2399,8 +2396,7 @@ export class ChartView {
     // Changing a canvas backing-store dimension clears it immediately. Resize
     // work is already coalesced into one animation frame, so paint in that same
     // frame instead of exposing cleared canvases until a second rAF callback.
-    if (this._raf) cancelAnimationFrame(this._raf);
-    this._raf = null;
+    this._cancelDrawFrame();
     this._drawNow();
     this._scheduleViewRequest();
   }
@@ -5556,6 +5552,13 @@ export class ChartView {
   // snapshot stays valid and the frame must not invalidate it. Coalescing is
   // conservative: if any caller of a pending frame needs invalidation, the
   // frame invalidates (§17 — steady hover must not re-render N-point picks).
+  _cancelDrawFrame() {
+    if (!this._raf) return;
+    if (this._glHost) this._glHost.cancelFrame(this);
+    else cancelAnimationFrame(this._raf);
+    this._raf = null;
+  }
+
   draw(keepPick = false) {
     if (this._destroyed || this._glLost || !this.gl) return;
     this._updateZoomMenuLabel?.();
@@ -5564,11 +5567,17 @@ export class ChartView {
       return;
     }
     this._rafKeepPick = keepPick;
-    this._raf = requestAnimationFrame(() => {
+    const paint = () => {
       this._raf = null;
       if (this._destroyed) return;
       this._drawNow();
-    });
+    };
+    if (this._glHost) {
+      this._raf = -1;
+      if (!this._glHost.scheduleFrame(this, paint)) this._raf = null;
+    } else {
+      this._raf = requestAnimationFrame(paint);
+    }
   }
 
 
@@ -8242,8 +8251,7 @@ export class ChartView {
     this._wheelGesture = null;
     this._linkChannel?.close?.();
     this._linkChannel = null;
-    if (this._raf) cancelAnimationFrame(this._raf);
-    this._raf = null;
+    this._cancelDrawFrame();
     if (this._resizeRaf) cancelAnimationFrame(this._resizeRaf);
     this._resizeRaf = null;
     this._pendingResize = null;

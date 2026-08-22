@@ -1151,6 +1151,21 @@ async function run() {
     if (performance.now() >= settleDeadline) throw new Error("dashboard admission views did not settle");
     await new Promise((resolve) => requestAnimationFrame(resolve));
   }
+  semanticView._cancelDrawFrame();
+  peerView._cancelDrawFrame();
+  const frameBefore = sharedHost.frameSnapshot();
+  semanticView.draw();
+  peerView.draw();
+  if (sharedHost.frameSnapshot().pending !== 2) {
+    throw new Error("shared frame scheduler did not coalesce two chart paints");
+  }
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const frameAfter = sharedHost.frameSnapshot();
+  if (frameAfter.batches !== frameBefore.batches + 1
+      || frameAfter.callbacks !== frameBefore.callbacks + 2 || frameAfter.maxBatch < 2
+      || frameAfter.pending !== 0) {
+    throw new Error(`shared frame scheduler diagnostics drifted: ${JSON.stringify(frameAfter)}`);
+  }
   // Freeze observer-driven visibility before assigning the deterministic
   // dashboard state; hosted Chromium can deliver its first observation while
   // the worker is planning, which is a legitimate stale-plan rejection.
@@ -1189,7 +1204,15 @@ async function run() {
   if (sharedHost.applyDashboardResidency(staleSnapshot, stalePlan.retained)) {
     throw new Error("shared host applied a Rust dashboard plan after visibility changed");
   }
+  const cancelBefore = sharedHost.frameSnapshot();
+  peerView.draw();
+  if (sharedHost.frameSnapshot().pending !== 1) throw new Error("shared frame cancellation probe was not queued");
   peerView.destroy(); peerHost.remove();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const cancelAfter = sharedHost.frameSnapshot();
+  if (cancelAfter.pending !== 0 || cancelAfter.callbacks !== cancelBefore.callbacks) {
+    throw new Error("destroyed chart executed queued shared-frame GPU work");
+  }
   semanticView.destroy();
   if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) {
     throw new Error("updated semantic graph destroy retained its label layer");

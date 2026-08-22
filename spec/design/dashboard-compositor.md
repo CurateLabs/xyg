@@ -69,10 +69,27 @@ clients, and removal invalidates any in-flight plan. TypeScript measures and
 deletes WebGL allocations but does not rank clients or reinterpret Rust's
 residency bits.
 
+## Shared frame scheduling
+
+Charts registered on one `GLHost` submit their next color paint to one
+document animation-frame queue. The host coalesces at most one callback per
+chart and executes the batch serially against the shared WebGL context; it
+does not introduce a host-side priority or admission policy. Rust's dashboard
+plan remains the only cross-chart resource-ranking decision. Per-chart input,
+DOM chrome, accessibility, clipping, viewport, and DPR state remain isolated.
+
+`GLHost.frameSnapshot()` exposes frozen logical scheduler diagnostics:
+completed batch count, executed callback count, maximum batch width, and
+currently pending charts. Client removal cancels its queued callback, and the
+final client cancels the shared animation frame before releasing the context.
+The strict-CSP direct-WASM evidence schedules two real views in one batch and
+proves that destroying a queued view executes no GPU work.
+
 ## Current slice and remaining closure
 
-This slice establishes the safe Rust policy, direct-WASM packed boundary, and
-explicit application to shared pick resources. It does not yet claim automatic
+The delivered foundation establishes the safe Rust policy, direct-WASM packed
+boundary, explicit application to shared pick resources, and one shared frame
+queue for multi-chart WebGL execution. It does not yet claim automatic
 visibility-driven replanning, a public default budget setting, native
 Python/Node orchestration, or the 30-chart acceptance evidence. Those remain
 required before #111 can close: complete buffer/texture accounting, context-loss recovery, rapid
