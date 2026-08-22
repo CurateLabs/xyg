@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 85;
+pub const ABI_VERSION: u32 = 87;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7534,6 +7534,196 @@ pub unsafe extern "C" fn xyg_graph_visual_state_resolve(
     })
 }
 
+/// Resolve versioned canonical GraphForge semantic fields into painter values (#34).
+///
+/// RGBA outputs address `n * 4` bytes; every other array addresses `n` elements.
+/// The resolver validates the complete input before writing any output.
+///
+/// # Safety
+/// Every non-empty pointer must address the documented readable/writable extent.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
+    version: u32,
+    theme: u32,
+    n: u64,
+    classes: *const u8,
+    epistemic: *const u8,
+    statuses: *const u8,
+    metric: *const f64,
+    flags: *const u32,
+    edge: i32,
+    fill_rgba: *mut u8,
+    stroke_rgba: *mut u8,
+    halo_rgba: *mut u8,
+    size: *mut f32,
+    width: *mut f32,
+    opacity: *mut f32,
+    shape: *mut u8,
+    dash: *mut u8,
+    arrow: *mut u8,
+    state: *mut u8,
+    out_domain_lo: *mut f64,
+    out_domain_hi: *mut f64,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if version != xyg_engine::graph_style::RESOLVED_STYLE_VERSION
+        || out_domain_lo.is_null()
+        || out_domain_hi.is_null()
+        || (n > 0 && [classes, epistemic, statuses].iter().any(|p| p.is_null()))
+        || (n > 0
+            && (metric.is_null()
+                || flags.is_null()
+                || fill_rgba.is_null()
+                || stroke_rgba.is_null()
+                || halo_rgba.is_null()
+                || size.is_null()
+                || width.is_null()
+                || opacity.is_null()
+                || shape.is_null()
+                || dash.is_null()
+                || arrow.is_null()
+                || state.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($p:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, n)
+                }
+            };
+        }
+        let mut resolved = vec![
+            xyg_engine::graph_style::ResolvedGraphStyle {
+                fill: [0; 4],
+                stroke: [0; 4],
+                halo: [0; 4],
+                size: 0.0,
+                width: 0.0,
+                opacity: 0.0,
+                shape: 0,
+                dash: 0,
+                arrow: 0,
+                state: 0,
+            };
+            n
+        ];
+        let Ok(theme) = u8::try_from(theme) else {
+            return -1;
+        };
+        let Some(domain) = xyg_engine::graph_style::resolve_semantic_styles(
+            xyg_engine::graph_style::SemanticStyleInput {
+                classes: input!(classes),
+                epistemic: input!(epistemic),
+                statuses: input!(statuses),
+                metric: input!(metric),
+                flags: input!(flags),
+                edge: edge != 0,
+                theme,
+            },
+            &mut resolved,
+        ) else {
+            return -1;
+        };
+        for (i, style) in resolved.iter().enumerate() {
+            std::ptr::copy_nonoverlapping(style.fill.as_ptr(), fill_rgba.add(i * 4), 4);
+            std::ptr::copy_nonoverlapping(style.stroke.as_ptr(), stroke_rgba.add(i * 4), 4);
+            std::ptr::copy_nonoverlapping(style.halo.as_ptr(), halo_rgba.add(i * 4), 4);
+            *size.add(i) = style.size;
+            *width.add(i) = style.width;
+            *opacity.add(i) = style.opacity;
+            *shape.add(i) = style.shape;
+            *dash.add(i) = style.dash;
+            *arrow.add(i) = style.arrow;
+            *state.add(i) = style.state;
+        }
+        *out_domain_lo = domain.0;
+        *out_domain_hi = domain.1;
+        0
+    })
+}
+
+/// Query/copy deterministic v1 GraphForge semantic legend descriptors (#34).
+///
+/// `out_count` always receives the required count after valid input. A zero
+/// capacity is a query; insufficient nonzero capacity returns -2 atomically.
+/// RGBA output addresses `capacity * 4` bytes, other outputs `capacity`.
+///
+/// # Safety
+/// Inputs address `n` elements. Non-empty outputs address their declared capacity.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_semantic_legend(
+    version: u32,
+    theme: u32,
+    n: u64,
+    classes: *const u8,
+    epistemic: *const u8,
+    statuses: *const u8,
+    capacity: u64,
+    out_field: *mut u8,
+    out_value: *mut u8,
+    out_rgba: *mut u8,
+    out_shape: *mut u8,
+    out_count: *mut u64,
+) -> i32 {
+    let (Ok(n), Ok(capacity), Ok(theme)) = (
+        usize::try_from(n),
+        usize::try_from(capacity),
+        u8::try_from(theme),
+    ) else {
+        return -1;
+    };
+    if version != xyg_engine::graph_style::RESOLVED_STYLE_VERSION
+        || out_count.is_null()
+        || (n > 0 && (classes.is_null() || epistemic.is_null() || statuses.is_null()))
+        || (capacity > 0
+            && (out_field.is_null()
+                || out_value.is_null()
+                || out_rgba.is_null()
+                || out_shape.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($p:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, n)
+                }
+            };
+        }
+        let Some(entries) = xyg_engine::graph_style::semantic_legend(
+            input!(classes),
+            input!(epistemic),
+            input!(statuses),
+            theme,
+        ) else {
+            return -1;
+        };
+        *out_count = entries.len() as u64;
+        if capacity == 0 {
+            return 0;
+        }
+        if capacity < entries.len() {
+            return -2;
+        }
+        for (i, entry) in entries.iter().enumerate() {
+            *out_field.add(i) = entry.field;
+            *out_value.add(i) = entry.value;
+            *out_shape.add(i) = entry.shape;
+            std::ptr::copy_nonoverlapping(entry.color.as_ptr(), out_rgba.add(i * 4), 4);
+        }
+        0
+    })
+}
+
 /// Select graph labels under a deterministic Rust-owned budget (#34).
 ///
 /// # Safety
@@ -9753,5 +9943,61 @@ mod tests {
         assert_eq!(has_event, 1);
         assert_eq!(selection, [0, 7, u64::MAX]);
         assert!(temporal_controller::controller_remove(handle));
+    }
+
+    #[test]
+    fn semantic_legend_query_and_short_copy_are_capacity_safe() {
+        let classes = [2_u8, 1, 2];
+        let epistemic = [3_u8, 3, 1];
+        let statuses = [4_u8, 0, 4];
+        let mut count = 0_u64;
+        assert_eq!(
+            unsafe {
+                xyg_graph_semantic_legend(
+                    1,
+                    0,
+                    3,
+                    classes.as_ptr(),
+                    epistemic.as_ptr(),
+                    statuses.as_ptr(),
+                    0,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    &mut count,
+                )
+            },
+            0
+        );
+        assert_eq!(count, 6);
+        let mut field = [99_u8; 5];
+        let mut value = [99_u8; 5];
+        let mut rgba = [99_u8; 20];
+        let mut shape = [99_u8; 5];
+        assert_eq!(
+            unsafe {
+                xyg_graph_semantic_legend(
+                    1,
+                    0,
+                    3,
+                    classes.as_ptr(),
+                    epistemic.as_ptr(),
+                    statuses.as_ptr(),
+                    5,
+                    field.as_mut_ptr(),
+                    value.as_mut_ptr(),
+                    rgba.as_mut_ptr(),
+                    shape.as_mut_ptr(),
+                    &mut count,
+                )
+            },
+            -2
+        );
+        assert_eq!(count, 6);
+        assert_eq!(field, [99; 5]);
+        assert_eq!(value, [99; 5]);
+        assert_eq!(rgba, [99; 20]);
+        assert_eq!(shape, [99; 5]);
     }
 }

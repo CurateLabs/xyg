@@ -15,7 +15,258 @@ pub const FLAG_FILTERED: u32 = 1 << 3;
 pub const FLAG_PINNED: u32 = 1 << 4;
 pub const FLAG_AGGREGATE: u32 = 1 << 5;
 pub const FLAG_DISABLED: u32 = 1 << 6;
+pub const KNOWN_STATE_FLAGS: u32 = (1 << 7) - 1;
 pub const NO_COMPOUND: u64 = u64::MAX;
+pub const RESOLVED_STYLE_VERSION: u32 = 1;
+pub const MAX_SEMANTIC_CODE: u8 = 7;
+pub const THEME_LIGHT: u8 = 0;
+pub const THEME_DARK: u8 = 1;
+
+/// Complete painter-facing graph style. Hosts may customize the semantic input
+/// mapping, but never reinterpret these resolved values.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ResolvedGraphStyle {
+    pub fill: [u8; 4],
+    pub stroke: [u8; 4],
+    pub halo: [u8; 4],
+    pub size: f32,
+    pub width: f32,
+    pub opacity: f32,
+    pub shape: u8,
+    pub dash: u8,
+    pub arrow: u8,
+    pub state: u8,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct GraphLegendEntry {
+    pub field: u8,
+    pub value: u8,
+    pub color: [u8; 4],
+    pub shape: u8,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct SemanticStyleInput<'a> {
+    pub classes: &'a [u8],
+    pub epistemic: &'a [u8],
+    pub statuses: &'a [u8],
+    pub metric: &'a [f64],
+    pub flags: &'a [u32],
+    pub edge: bool,
+    pub theme: u8,
+}
+
+// Color-blind-safe, light/dark-background-tested semantic colors. Code zero is
+// deliberately neutral; unknown codes fail closed rather than being modulo-mapped.
+const LIGHT_PALETTE: [[u8; 4]; 8] = [
+    [75, 85, 99, 255],
+    [0, 90, 156, 255],
+    [156, 74, 0, 255],
+    [0, 107, 79, 255],
+    [122, 62, 107, 255],
+    [0, 109, 131, 255],
+    [155, 44, 0, 255],
+    [112, 92, 0, 255],
+];
+const DARK_PALETTE: [[u8; 4]; 8] = [
+    [170, 178, 191, 255],
+    [86, 180, 233, 255],
+    [230, 159, 0, 255],
+    [0, 184, 135, 255],
+    [204, 121, 167, 255],
+    [125, 211, 252, 255],
+    [240, 120, 69, 255],
+    [240, 228, 66, 255],
+];
+
+fn palette(theme: u8) -> Option<&'static [[u8; 4]; 8]> {
+    match theme {
+        THEME_LIGHT => Some(&LIGHT_PALETTE),
+        THEME_DARK => Some(&DARK_PALETTE),
+        _ => None,
+    }
+}
+
+fn metric_domain(metric: &[f64]) -> (f64, f64) {
+    let mut lo = f64::INFINITY;
+    let mut hi = f64::NEG_INFINITY;
+    for value in metric.iter().copied().filter(|v| v.is_finite()) {
+        lo = lo.min(value);
+        hi = hi.max(value);
+    }
+    if !lo.is_finite() {
+        (0.0, 0.0)
+    } else {
+        (lo, hi)
+    }
+}
+
+fn metric_unit(value: f64, domain: (f64, f64)) -> f32 {
+    if !value.is_finite() || domain.0 == domain.1 {
+        0.5
+    } else {
+        // Scaling first avoids `hi - lo == inf` for opposite-sign finite
+        // extrema while retaining a finite, monotonic unit coordinate.
+        let scale = domain.0.abs().max(domain.1.abs()).max(value.abs());
+        let unit =
+            ((value / scale) - (domain.0 / scale)) / ((domain.1 / scale) - (domain.0 / scale));
+        if unit.is_finite() {
+            unit.clamp(0.0, 1.0) as f32
+        } else {
+            0.5
+        }
+    }
+}
+
+/// Resolve canonical GraphForge class/epistemic/status/metric fields to paint.
+/// Input vocabularies are closed (0..=7), outputs are all-or-nothing, and the
+/// same routine serves nodes and edges (`edge=true`).
+pub fn resolve_semantic_styles(
+    input: SemanticStyleInput<'_>,
+    out: &mut [ResolvedGraphStyle],
+) -> Option<(f64, f64)> {
+    let SemanticStyleInput {
+        classes,
+        epistemic,
+        statuses,
+        metric,
+        flags,
+        edge,
+        theme,
+    } = input;
+    let n = classes.len();
+    if [
+        epistemic.len(),
+        statuses.len(),
+        metric.len(),
+        flags.len(),
+        out.len(),
+    ]
+    .iter()
+    .any(|&len| len != n)
+        || classes
+            .iter()
+            .chain(epistemic)
+            .chain(statuses)
+            .any(|&v| v > MAX_SEMANTIC_CODE)
+        || flags.iter().any(|&value| value & !KNOWN_STATE_FLAGS != 0)
+    {
+        return None;
+    }
+    let colors = palette(theme)?;
+    let domain = metric_domain(metric);
+    let mut resolved = Vec::with_capacity(n);
+    for i in 0..n {
+        let state = resolve_visual_state(flags[i]);
+        let unit = metric_unit(metric[i], domain);
+        let mut fill = colors[classes[i] as usize];
+        let mut stroke = colors[statuses[i] as usize];
+        let halo = colors[epistemic[i] as usize];
+        // Active semantic paint is opaque so its measured non-text contrast is
+        // preserved after composition. Filtered/disabled are intentional
+        // inactive-state exemptions below.
+        let mut opacity = 1.0;
+        let mut width = if edge {
+            0.75 + 3.25 * unit
+        } else {
+            1.0 + 1.5 * unit
+        };
+        if state == STATE_SELECTED {
+            stroke = if theme == THEME_LIGHT {
+                [0, 0, 0, 255]
+            } else {
+                [255, 255, 255, 255]
+            };
+            width += 2.5;
+        }
+        if state == STATE_HOVERED {
+            width += 1.25;
+        }
+        if state == STATE_NEIGHBOR {
+            width += 0.5;
+        }
+        if state == STATE_PINNED {
+            width += 1.75;
+        }
+        if state == STATE_AGGREGATE {
+            width += 0.75;
+        }
+        if state == STATE_FILTERED {
+            opacity = 0.08;
+        }
+        if state == STATE_DISABLED {
+            opacity = 0.28;
+            fill = colors[0];
+        }
+        resolved.push(ResolvedGraphStyle {
+            fill,
+            stroke,
+            halo,
+            size: if edge { 0.0 } else { 7.0 + 13.0 * unit },
+            width,
+            opacity,
+            shape: if edge {
+                0
+            } else if state == STATE_AGGREGATE {
+                5
+            } else {
+                classes[i] % 6
+            },
+            dash: if edge {
+                if state == STATE_PINNED {
+                    3
+                } else if state == STATE_AGGREGATE {
+                    2
+                } else {
+                    epistemic[i] % 4
+                }
+            } else {
+                0
+            },
+            arrow: u8::from(edge && statuses[i] != 0),
+            state,
+        });
+    }
+    out.copy_from_slice(&resolved);
+    Some(domain)
+}
+
+/// Deterministic, de-duplicated legend descriptors ordered field then code.
+pub fn semantic_legend(
+    classes: &[u8],
+    epistemic: &[u8],
+    statuses: &[u8],
+    theme: u8,
+) -> Option<Vec<GraphLegendEntry>> {
+    if classes
+        .iter()
+        .chain(epistemic)
+        .chain(statuses)
+        .any(|&v| v > MAX_SEMANTIC_CODE)
+    {
+        return None;
+    }
+    let colors = palette(theme)?;
+    let mut entries = Vec::new();
+    for (field, values) in [(0, classes), (1, epistemic), (2, statuses)] {
+        let mut seen = [false; 8];
+        for &value in values {
+            seen[value as usize] = true;
+        }
+        for (value, present) in seen.into_iter().enumerate() {
+            if present {
+                entries.push(GraphLegendEntry {
+                    field,
+                    value: value as u8,
+                    color: colors[value],
+                    shape: if field == 0 { value as u8 % 6 } else { 0 },
+                });
+            }
+        }
+    }
+    Some(entries)
+}
 
 #[must_use]
 pub fn resolve_visual_state(flags: u32) -> u8 {
@@ -175,6 +426,23 @@ pub fn compound_bounds(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    macro_rules! resolve {
+        ($classes:expr, $epistemic:expr, $statuses:expr, $metric:expr, $flags:expr, $edge:expr, $theme:expr, $out:expr $(,)?) => {
+            resolve_semantic_styles(
+                SemanticStyleInput {
+                    classes: $classes,
+                    epistemic: $epistemic,
+                    statuses: $statuses,
+                    metric: $metric,
+                    flags: $flags,
+                    edge: $edge,
+                    theme: $theme,
+                },
+                $out,
+            )
+        };
+    }
     #[test]
     fn precedence_is_stable() {
         assert_eq!(
@@ -246,5 +514,295 @@ mod tests {
         assert_eq!(ic, [12; 3]);
         assert_eq!(xmin, [13.; 3]);
         assert_eq!(ymax, [16.; 3]);
+    }
+
+    #[test]
+    fn semantic_style_golden_and_state_precedence_are_stable() {
+        let mut out = [ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        }; 3];
+        let domain = resolve!(
+            &[1, 2, 3],
+            &[2, 3, 4],
+            &[1, 2, 3],
+            &[10.0, 20.0, 30.0],
+            &[0, FLAG_HOVERED | FLAG_SELECTED, FLAG_DISABLED],
+            false,
+            THEME_LIGHT,
+            &mut out,
+        )
+        .unwrap();
+        assert_eq!(domain, (10.0, 30.0));
+        assert_eq!(out[0].fill, [0, 90, 156, 255]);
+        assert_eq!((out[0].size, out[0].shape), (7.0, 1));
+        assert_eq!(
+            (out[1].state, out[1].stroke),
+            (STATE_SELECTED, [0, 0, 0, 255])
+        );
+        assert_eq!((out[2].state, out[2].opacity), (STATE_DISABLED, 0.28));
+    }
+
+    #[test]
+    fn edge_style_and_legend_are_deterministic() {
+        let mut out = [ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        }; 2];
+        resolve!(
+            &[2, 2],
+            &[3, 1],
+            &[0, 4],
+            &[f64::NAN, 8.0],
+            &[0, 0],
+            true,
+            THEME_LIGHT,
+            &mut out,
+        )
+        .unwrap();
+        assert_eq!(out[0].size, 0.0);
+        assert_eq!((out[0].dash, out[0].arrow), (3, 0));
+        assert_eq!((out[1].dash, out[1].arrow), (1, 1));
+        let legend = semantic_legend(&[2, 1, 2], &[3, 3, 1], &[4, 0, 4], THEME_LIGHT).unwrap();
+        assert_eq!(
+            legend
+                .iter()
+                .map(|e| (e.field, e.value))
+                .collect::<Vec<_>>(),
+            vec![(0, 1), (0, 2), (1, 1), (1, 3), (2, 0), (2, 4)]
+        );
+    }
+
+    #[test]
+    fn semantic_resolution_is_atomic_and_bounded() {
+        let sentinel = ResolvedGraphStyle {
+            fill: [9; 4],
+            stroke: [9; 4],
+            halo: [9; 4],
+            size: 9.0,
+            width: 9.0,
+            opacity: 9.0,
+            shape: 9,
+            dash: 9,
+            arrow: 9,
+            state: 9,
+        };
+        let mut out = [sentinel];
+        assert_eq!(
+            resolve!(&[8], &[0], &[0], &[0.0], &[0], false, THEME_LIGHT, &mut out),
+            None
+        );
+        assert_eq!(out, [sentinel]);
+    }
+
+    fn luminance(color: [u8; 4]) -> f64 {
+        let linear = |byte: u8| {
+            let c = f64::from(byte) / 255.0;
+            if c <= 0.04045 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * linear(color[0]) + 0.7152 * linear(color[1]) + 0.0722 * linear(color[2])
+    }
+
+    fn contrast(a: [u8; 4], b: [u8; 4]) -> f64 {
+        let (lo, hi) = {
+            let x = luminance(a);
+            let y = luminance(b);
+            (x.min(y), x.max(y))
+        };
+        (hi + 0.05) / (lo + 0.05)
+    }
+
+    fn composite(color: [u8; 4], opacity: f32, background: [u8; 4]) -> [u8; 4] {
+        let alpha = (f32::from(color[3]) / 255.0) * opacity;
+        let channel = |index| {
+            ((f32::from(color[index]) * alpha) + (f32::from(background[index]) * (1.0 - alpha)))
+                .round() as u8
+        };
+        [channel(0), channel(1), channel(2), 255]
+    }
+
+    fn blank_style() -> ResolvedGraphStyle {
+        ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        }
+    }
+
+    #[test]
+    fn actual_active_styles_meet_non_text_contrast_in_both_themes() {
+        let active = [
+            0,
+            FLAG_AGGREGATE,
+            FLAG_PINNED,
+            FLAG_NEIGHBOR,
+            FLAG_HOVERED,
+            FLAG_SELECTED,
+        ];
+        for (theme, background) in [
+            (THEME_LIGHT, [255, 255, 255, 255]),
+            (THEME_DARK, [17, 24, 39, 255]),
+        ] {
+            for edge in [false, true] {
+                for code in 0..=MAX_SEMANTIC_CODE {
+                    for flags in active {
+                        let mut out = [blank_style()];
+                        resolve!(
+                            &[code],
+                            &[code],
+                            &[code],
+                            &[1.0],
+                            &[flags],
+                            edge,
+                            theme,
+                            &mut out,
+                        )
+                        .unwrap();
+                        for color in [out[0].fill, out[0].stroke, out[0].halo] {
+                            let painted = composite(color, out[0].opacity, background);
+                            assert!(contrast(painted, background) >= 3.0, "theme={theme} edge={edge} code={code} flags={flags} color={color:?}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn inactive_states_are_explicit_contrast_exemptions() {
+        for (flag, expected) in [(FLAG_FILTERED, 0.08), (FLAG_DISABLED, 0.28)] {
+            let mut out = [blank_style()];
+            resolve!(
+                &[1],
+                &[1],
+                &[1],
+                &[1.0],
+                &[flag],
+                false,
+                THEME_LIGHT,
+                &mut out,
+            )
+            .unwrap();
+            assert_eq!(out[0].opacity, expected);
+        }
+    }
+
+    #[test]
+    fn every_winning_active_state_changes_node_and_edge_paint() {
+        for edge in [false, true] {
+            let mut styles = Vec::new();
+            for flag in [
+                0,
+                FLAG_AGGREGATE,
+                FLAG_PINNED,
+                FLAG_NEIGHBOR,
+                FLAG_HOVERED,
+                FLAG_SELECTED,
+            ] {
+                let mut out = [blank_style()];
+                resolve!(
+                    &[1],
+                    &[1],
+                    &[1],
+                    &[1.0],
+                    &[flag],
+                    edge,
+                    THEME_LIGHT,
+                    &mut out,
+                )
+                .unwrap();
+                styles.push(out[0]);
+            }
+            for i in 0..styles.len() {
+                for j in i + 1..styles.len() {
+                    assert_ne!(styles[i], styles[j], "edge={edge} states {i}/{j}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn unknown_interaction_bits_fail_atomically() {
+        let sentinel = ResolvedGraphStyle {
+            state: 99,
+            ..blank_style()
+        };
+        let mut out = [sentinel];
+        assert_eq!(
+            resolve!(
+                &[1],
+                &[1],
+                &[1],
+                &[1.0],
+                &[1 << 7],
+                false,
+                THEME_LIGHT,
+                &mut out
+            ),
+            None
+        );
+        assert_eq!(out, [sentinel]);
+    }
+
+    #[test]
+    fn extreme_finite_metric_domain_emits_only_finite_paint() {
+        let blank = ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        };
+        let mut out = [blank; 3];
+        resolve!(
+            &[1; 3],
+            &[1; 3],
+            &[1; 3],
+            &[-f64::MAX, 0.0, f64::MAX],
+            &[0; 3],
+            false,
+            THEME_DARK,
+            &mut out,
+        )
+        .unwrap();
+        assert!(out.iter().all(|style| style.size.is_finite()
+            && style.width.is_finite()
+            && style.opacity.is_finite()));
+        assert_eq!(
+            out.iter().map(|style| style.size).collect::<Vec<_>>(),
+            vec![7.0, 13.5, 20.0]
+        );
     }
 }

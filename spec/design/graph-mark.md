@@ -433,8 +433,39 @@ accessibility surface. It deliberately does **not** paint label text or
 compound AABBs yet: zoom acceptance, screen clipping, collision, truncation,
 and final text placement must first become Rust-emitted bounded paint
 primitives. TypeScript must not infer those decisions from the source-indexed
-metadata. Nested transitive bounds, collapse/expand, style scales, legends,
-browser/static text and bounds, and visual goldens remain.
+metadata. Nested transitive bounds, collapse/expand, browser/static text and
+bounds, and visual goldens remain.
+
+#### 7.1.1 Versioned GraphForge resolved style v1
+
+ABI 87 adds `xyg_graph_semantic_style_resolve(version=1, theme)`. It is the sole
+resolver for the closed canonical numeric planes `class`, `epistemic`,
+`status`, `metric`, and interaction flags, for both nodes and edges. Codes are
+bounded to `0..=7`; an unknown code or mismatched plane rejects the entire
+call before any output changes. Rust computes the finite metric domain and
+overflow-safe linear clamped size/width scale, applies the §7.1 state precedence to actual
+paint, and emits fill/stroke/halo RGBA, node size/shape, edge width/dash/arrow,
+opacity, and resolved state. Hosts serialize these painter values and do not
+recreate palettes, domains, ordering, or state overlays.
+
+The v1 class, epistemic, and status tables use explicit light and dark
+color-blind-safe vocabularies with a neutral zero value. Every palette color
+and the theme-specific selected overlay has measured WCAG 2.x non-text
+contrast of at least 3:1 against its declared background (`#fff` light,
+`#111827` dark); Rust fixtures resolve and composite every active
+theme × node/edge × winning-state style and enforce that property for emitted
+fill, stroke, and halo. Filtered (`0.08`) and disabled (`0.28`) are deliberate
+inactive-state opacity exemptions and make no contrast claim. Selected uses a
+theme-opposite stroke; hovered and neighbor have distinct width deltas; pinned
+has a larger width plus an edge dash; aggregate has its own node shape and edge
+dash. Unknown interaction bits fail the complete resolution atomically. Rust also owns
+`xyg_graph_semantic_legend`: its capacity-safe query/copy ABI de-duplicates
+present values and emits stable field-then-code order with the exact resolved
+theme palette and class shape descriptor. Python and Node only materialize
+those returned descriptors. This
+slice exposes resolved paint through native Python and Node bindings. Wiring
+the same resolver into the direct-WASM scene entry and graph composition paint
+path is required before claiming browser/export acceptance for #34.
 
 ---
 
