@@ -358,7 +358,7 @@ the zoom story in §1.4:
 | Direct | Draw all nodes/edges under budget — sole tier that may expose per-element V/E to WebGL |
 | Edge sample | Rust samples edges when edge count E is over budget; record §28 |
 | Cluster / aggregate | Rust `xyg_graph_build_render` (and `xyg_graph_cluster_aggregate`) write centroids / reps when node count V exceeds `node_budget`, collapse multi-edges into cluster index space at Aggregate tier only, and record §28; Direct / EdgeSample keep parallels and self-loops; hosts keep `member_of` for drill / hover |
-| Labels | Hide below zoom / over label budget |
+| Labels | Hide below zoom / over label budget; Rust emits the accepted mask |
 
 Budgets and tier choice live in Rust decision helpers (render-graph emission);
 hosts do not fork tier policy. Past direct tier, WebGL sees only the emitted
@@ -396,6 +396,25 @@ draws uploaded buffers only. Edge routing expands some edges into multiple
 segments (loops / arrow wings) while preserving source edge identity via
 `render_edge_index`.
 
+### 7.1 Label, visual-state, and compound foundation (#34)
+
+`graph_style` is the single policy owner for three host-neutral decisions:
+
+- `xyg_graph_label_accept` ranks finite label priorities, uses stable source
+  index as the tie-breaker, and applies a viewport budget and optional floor;
+- `xyg_graph_visual_state_resolve` applies disabled, filtered, selected,
+  hovered, neighbor, pinned, aggregate, then normal precedence; and
+- `xyg_graph_compound_bounds` preserves each child's dense identity while
+  emitting direct parent membership and parent AABBs. The validity plane alone
+  governs membership: invalid parent payload is ignored, including canonical
+  zero-filled `GraphProjection` slots; `NO_COMPOUND` is an output sentinel.
+
+Node exposes thin typed-array utilities; Python currently exposes equivalent
+private `_native` utilities for composition work. Neither utility is wired
+into the composed graph scene yet, so browser/export consumption remains part
+of #34. Nested transitive bounds, collapse/expand, style scales, legends, and
+visual goldens also remain.
+
 ---
 
 ## 8. Export
@@ -420,6 +439,9 @@ segments (loops / arrow wings) while preserving source edge identity via
 | `xyg_graph_lod_decision` | Recorded tier decision (§28) / render-graph inputs |
 | `xyg_graph_cluster_aggregate` | LOD node centroid clusters + node→cluster membership + recorded tier |
 | `xyg_graph_build_render` | Perceptually bounded render graph: centroids/`member_of` + cluster-space edges ≤ budgets; recorded §28 |
+| `xyg_graph_visual_state_resolve` | Interaction flags to winning visual state (#34) |
+| `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |
+| `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
 | `xyg_graph_projection_create` / `counts` / `copy_*` / `destroy` | Opaque canonical GraphForge identity/topology handle; validates UUID uniqueness, endpoints, optional parents, and resource bounds |
 
 Element counts and indices are `u64` / `uint64_t`.

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 84
-SIGNATURE_SHA256 = "6a2a0a1190a5008c6a47d3cce518071a188394105cc21f40b722873a33d425e4"
+ABI_VERSION = 85
+SIGNATURE_SHA256 = "c3158a4adaa116aafc5ef6ffbe2f3789cdb93e5a07c85e0527f169e7b4b74e0d"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -166,6 +166,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_cluster_aggregate
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_graph_compound_bounds(uint64_t n, const double * x, const double * y, const uint64_t * parents, const uint8_t * validity, uint64_t * parent_of, uint8_t * is_compound, double * xmin, double * xmax, double * ymin, double * ymax)
+    function = lib.xyg_graph_compound_bounds
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments)
     function = lib.xyg_graph_edge_route_segments
     function.restype = ctypes.c_int32
@@ -186,6 +190,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_force_tick
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_graph_label_accept(uint64_t n, const double * priorities, uint64_t budget, double floor, uint8_t * out, uint64_t * out_count)
+    function = lib.xyg_graph_label_accept
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, const uint64_t * roots, uint64_t n_roots, uint64_t seed, double * out_x, double * out_y)
     function = lib.xyg_graph_layout
     function.restype = ctypes.c_int32
@@ -226,6 +234,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_sample_edges
     function.restype = ctypes.c_uint64
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out)
+    function = lib.xyg_graph_visual_state_resolve
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
     function = lib.xyg_heatmap_rgba
     function.restype = ctypes.c_int32

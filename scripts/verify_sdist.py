@@ -103,6 +103,7 @@ REQUIRED_FILES = {
     "crates/xyg-engine/src/css.rs",
     "crates/xyg-engine/src/font.rs",
     "crates/xyg-engine/src/graph.rs",
+    "crates/xyg-engine/src/graph_style.rs",
     "crates/xyg-engine/src/hexbin.rs",
     "crates/xyg-engine/src/kernels.rs",
     "crates/xyg-engine/benches/kernels.rs",
