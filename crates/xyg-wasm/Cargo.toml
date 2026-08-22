@@ -17,6 +17,10 @@ xyg-engine = { path = "../xyg-engine", default-features = false }
 
 [dev-dependencies]
 divan = { version = "5.0.1", package = "codspeed-divan-compat" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+# Native-only ABI parity tests call the shipped C seam. Keep xyg-core and its
+# raster feature completely outside the direct-browser dependency graph.
 xyg-core = { path = "../xyg-core" }
 
 [[bench]]
