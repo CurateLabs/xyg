@@ -5037,9 +5037,6 @@ def graph_compound_bounds(
         or len(validity_arr) != n
     ):
         raise ValueError("compound inputs must be 1-D arrays of equal length")
-    no_compound = np.uint64(0xFFFF_FFFF_FFFF_FFFF)
-    if np.any((validity_arr == 0) & (parent_arr != no_compound)):
-        raise ValueError("invalid parent entries must use the uint64 NO_COMPOUND sentinel")
     parent_of = np.empty(n, dtype=np.uint64)
     compounds = np.empty(n, dtype=np.uint8)
     xmin = np.empty(n, dtype=np.float64)

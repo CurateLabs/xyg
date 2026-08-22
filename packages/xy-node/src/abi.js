@@ -1549,7 +1549,6 @@ export function graphCompoundBounds(x, y, parents, parentValidity) {
   requireEqualLength(xa, ya, "x", "y"); requireEqualLength(xa, pa, "x", "parents"); requireEqualLength(xa, va, "x", "parentValidity");
   for (let index = 0; index < pa.length; index += 1) {
     if (va[index] !== 0 && va[index] !== 1) throw new RangeError("parentValidity must contain only 0 or 1");
-    if (va[index] === 0 && pa[index] !== U64_MAX) throw new RangeError("invalid parent entries must use the uint64 NO_COMPOUND sentinel");
   }
   const n = xa.length; const parentOf = new BigUint64Array(n); const isCompound = new Uint8Array(n);
   const xmin = new Float64Array(n); const xmax = new Float64Array(n); const ymin = new Float64Array(n); const ymax = new Float64Array(n);

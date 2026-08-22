@@ -289,4 +289,6 @@ client must not grow a parallel “JS layout/LOD” product path.
   utilities call `xyg_graph_label_accept`, `xyg_graph_visual_state_resolve`,
   and `xyg_graph_compound_bounds`. Wiring these results into composed scenes,
   browser paint, and export remains open under #34.
+  Compound validity governs ingress, so zero-filled invalid projection slots
+  pass directly without host rewrite or copy.
   follow-up; curved edge rendering is not MVP-blocking.

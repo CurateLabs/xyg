@@ -343,7 +343,7 @@ test("graph style policies consume the shared Rust ABI", () => {
   assert.equal(labels.count, 2n);
   const compounds = graphCompoundBounds(
     new Float64Array([0, -1, 2, 9]), new Float64Array([0, 1, 3, 9]),
-    new BigUint64Array([(1n << 64n) - 1n, 0n, 0n, (1n << 64n) - 1n]), new Uint8Array([0, 1, 1, 0]),
+    new BigUint64Array([0n, 0n, 0n, 0n]), new Uint8Array([0, 1, 1, 0]),
   );
   assert.deepEqual([...compounds.parentOf], [(1n << 64n) - 1n, 0n, 0n, (1n << 64n) - 1n]);
   assert.deepEqual([...compounds.isCompound], [1, 0, 0, 0]);
@@ -351,7 +351,7 @@ test("graph style policies consume the shared Rust ABI", () => {
   assert.throws(() => graphVisualStates([true]), /exact uint32/);
   assert.throws(() => graphVisualStates([1.5]), /uint32/);
   assert.throws(() => graphLabelAccept([1], true), /non-negative safe integer/);
-  assert.throws(() => graphCompoundBounds([0, 0], [0, 0], [0n, 0n], [0, 1]), /NO_COMPOUND/);
+  assert.deepEqual([...graphCompoundBounds([0, 0], [0, 0], [0n, 0n], [0, 1]).parentOf], [(1n << 64n) - 1n, 0n]);
   assert.throws(() => graphCompoundBounds([0, 0, 0], [0, 0, 0], [1n, 2n, 0n], [1, 1, 1]), /failed/);
 });
 

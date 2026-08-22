@@ -405,7 +405,9 @@ segments (loops / arrow wings) while preserving source edge identity via
 - `xyg_graph_visual_state_resolve` applies disabled, filtered, selected,
   hovered, neighbor, pinned, aggregate, then normal precedence; and
 - `xyg_graph_compound_bounds` preserves each child's dense identity while
-  emitting direct parent membership and parent AABBs.
+  emitting direct parent membership and parent AABBs. The validity plane alone
+  governs membership: invalid parent payload is ignored, including canonical
+  zero-filled `GraphProjection` slots; `NO_COMPOUND` is an output sentinel.
 
 Node exposes thin typed-array utilities; Python currently exposes equivalent
 private `_native` utilities for composition work. Neither utility is wired
