@@ -7500,6 +7500,9 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
 }
 
 /// Resolve graph interaction flags using the shared visual-state precedence (#34).
+///
+/// # Safety
+/// Non-empty input and output pointers must address `n` readable/writable elements.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_visual_state_resolve(
     n: u64,
@@ -7532,6 +7535,9 @@ pub unsafe extern "C" fn xyg_graph_visual_state_resolve(
 }
 
 /// Select graph labels under a deterministic Rust-owned budget (#34).
+///
+/// # Safety
+/// Non-empty array pointers must address `n` elements and `out_count` must be writable.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_label_accept(
     n: u64,
@@ -7568,6 +7574,9 @@ pub unsafe extern "C" fn xyg_graph_label_accept(
 }
 
 /// Compute direct compound membership and AABBs from the canonical parent map (#34).
+///
+/// # Safety
+/// Every non-empty input/output pointer must address `n` elements of its declared type.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn xyg_graph_compound_bounds(
