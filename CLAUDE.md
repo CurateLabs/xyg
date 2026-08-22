@@ -149,3 +149,40 @@ PRs, or code. Set `git config user.name/user.email` to the human author
   cache (§27). NaN never reaches vertex buffers (§19).
 - f32 uploads are offset-encoded; tick/hover math stays f64 (§4/§16).
 - Every decimation/tier decision is recorded in the spec, never silent (§28).
+
+## Cursor Cloud specific instructions
+
+This section is for Cloud Agents. The startup update script already runs
+`uv sync --extra reflex --group dev`, `cargo build --release`, `npm ci`,
+`node js/build.mjs`, and `npm ci --prefix packages/xy-node`, so dependencies,
+the native core, and the paint bundles are refreshed before you start. Standard
+per-service commands live in the `## Commands` section and the `Makefile`; the
+notes below are the non-obvious caveats.
+
+- **Toolchain locations.** `uv` is installed under `~/.local/bin` and is already
+  on the login `PATH` (its env file is sourced from `~/.bashrc`/`~/.profile`).
+  Rust (`1.96.0`, pinned by `rust-toolchain.toml`), Node 22, `npm`, `pnpm`, and
+  `google-chrome-stable` are preinstalled in the base image.
+- **Native core is mandatory.** `import xyg` is lazy, but `import xyg.kernels`
+  (and any chart compile/export) needs `target/release/libxyg_core.so`; there is
+  no NumPy fallback (it raises `ImportError`). After editing any Rust under
+  `crates/`, rerun `cargo build --release` before exercising Python. Verify with
+  `uv run python -c "import xyg.kernels as k; print(k.BACKEND)"` → `native`.
+- **Browser bundles are generated, not committed.** `node js/build.mjs`
+  regenerates `python/xyg/static/{index,standalone}.js` (git-ignored, §33), which
+  `to_html()`/notebooks/Reflex need. Re-run it after editing anything under
+  `js/src/`; a stale or missing bundle silently ships old client behavior.
+- **Run Python tooling through `uv`** (`uv run pytest`, `uv run ruff …`,
+  `uv run ty check`) so it uses the project `.venv`. Running bare `pytest`/`ruff`
+  from an arbitrary CWD will miss the environment.
+- **The full `uv run pytest` suite is very long (~1 hour):** it drives hundreds
+  of headless `google-chrome-stable` renders sequentially (each with an ~8s
+  virtual-time budget). It is not hung — watch progress via the `--dump-dom`
+  Chrome args. For fast iteration, scope to specific paths (e.g.
+  `uv run pytest tests/pyplot -q`) and reserve the full run for final validation.
+- **Browser smokes need an explicit Chrome path:** the non-numpy render smokes
+  (`scripts/render_smoke_nonumpy.py`, `scripts/abi_smoke.py`,
+  `scripts/append_stream_smoke.py`) and `make check-browser CHROMIUM=
+  /usr/bin/google-chrome-stable` use the system Chrome. Playwright's *browser
+  binaries* are not preinstalled — `make check-conformance` additionally needs
+  `npx playwright install chromium firefox webkit`.
