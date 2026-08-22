@@ -1902,10 +1902,39 @@ def validate_release_workflow(path: Path = DEFAULT_RELEASE_WORKFLOW) -> list[str
         "import importlib.metadata as m, reflex_xy",
         "assert reflex_xy.__version__ == m.version('xyg')",
         "assert k.BACKEND=='native'",
+        "scripts/plain_python_smoke.py",
         "actions/upload-artifact@",
         "dist/*.whl",
     )
     wheels_job = jobs.get("wheels", "")
+    plain_smoke_name = "Prove plain Python wheel needs no optional host framework"
+    plain_smoke_steps = []
+    for step in _step_sequence_blocks(wheels_job):
+        names, names_unsafe = _step_direct_key_values(step, "name")
+        if not names_unsafe and names == [plain_smoke_name]:
+            plain_smoke_steps.append(step)
+    if len(plain_smoke_steps) != 1:
+        errors.append(
+            "release wheels job must contain exactly one active named plain-Python wheel smoke step"
+        )
+    else:
+        plain_smoke = plain_smoke_steps[0]
+        conditions, conditions_unsafe = _step_direct_key_values(plain_smoke, "if")
+        if conditions_unsafe or conditions != ["matrix.native"]:
+            errors.append(
+                "plain-Python wheel smoke step must use exact if: matrix.native condition"
+            )
+        expected_commands = [
+            "uv venv plain-smoke",
+            "uv pip install -p plain-smoke dist/*.whl",
+            'cp scripts/plain_python_smoke.py "$RUNNER_TEMP/plain-python-smoke.py"',
+            '(cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/plain-smoke/bin/python" -I plain-python-smoke.py) \\',
+            '|| (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/plain-smoke/Scripts/python.exe" -I plain-python-smoke.py)',
+        ]
+        if _step_run_lines(plain_smoke) != expected_commands:
+            errors.append(
+                "plain-Python wheel smoke step must run the exact isolated installed-wheel commands"
+            )
     if "continue-on-error:" in wheels_job:
         errors.append(
             "release wheels job must block publishing when any native wheel build or "

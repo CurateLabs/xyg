@@ -28,6 +28,17 @@ Three **runtime surfaces** remain ([host-parity.md](host-parity.md) §0). The
 bug is treating the Python wheel as the only way to obtain the shared client
 or the native engine.
 
+Every host-architecture release wheel is also exercised from a directory
+outside the checkout by `scripts/plain_python_smoke.py`. The smoke blocks
+Python `subprocess.Popen` calls across import, chart construction, and export;
+builds a chart through the installed Rust-backed Python API; emits
+self-contained strict-offline HTML; verifies the bundled client assets; and
+fails if Reflex is installed or plain `xyg` loads `reflex` or `reflex_xy`.
+The process check is deliberately scoped to Python subprocess creation rather
+than presented as an operating-system sandbox. Together with the installed
+asset checks, it keeps Node a build-time tool for generated assets and Reflex
+an explicit extra, never an implicit Python runtime requirement.
+
 ### What stays Python forever
 
 - Composition API (`python/xyg/components.py`) and the matplotlib shim

@@ -234,7 +234,7 @@ def test_verify_sdist_rejects_missing_pkg_info(tmp_path: Path) -> None:
         ),
         (
             DEFAULT_PKG_INFO + "Requires-Dist: reflex>=0.8\n",
-            "only xy base dependencies",
+            "only XYG base dependencies",
         ),
         (
             DEFAULT_PKG_INFO.replace("reflex>=0.9.6", "reflex>=0.8"),
@@ -250,12 +250,12 @@ def test_verify_sdist_rejects_missing_pkg_info(tmp_path: Path) -> None:
         ),
         (
             DEFAULT_PKG_INFO.replace("; extra == 'reflex'", ""),
-            "only xy base dependencies",
+            "only XYG base dependencies",
         ),
         (
             DEFAULT_PKG_INFO
             + "Requires-Dist: plotly>=5; extra == 'bench'\nProvides-Extra: bench\n",
-            "only xy base dependencies",
+            "only XYG base dependencies",
         ),
         (
             DEFAULT_PKG_INFO.replace("Provides-Extra: reflex", "Provides-Extra: dev"),

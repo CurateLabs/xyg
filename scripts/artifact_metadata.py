@@ -77,7 +77,7 @@ def dependency_metadata_errors(metadata: Message) -> list[str]:
         unexpected_requirements.append(requirement)
     if unexpected_requirements:
         errors.append(
-            "only xy base dependencies plus the Reflex extra in Requires-Dist "
+            "only XYG base dependencies plus the Reflex extra in Requires-Dist "
             f"({unexpected_requirements})"
         )
 
