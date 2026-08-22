@@ -1471,7 +1471,7 @@ mod tests {
     }
 
     #[test]
-    fn compound_semantic_graph_is_byte_exact_with_the_native_compiler() {
+    fn compound_semantic_graph_is_byte_exact_with_native_abi89() {
         let mut request = pack_semantic_graph();
         let offsets = semantic_graph_offsets(&request).unwrap();
         for (index, parent) in [0u64, 0, 0].into_iter().enumerate() {
@@ -1482,39 +1482,78 @@ mod tests {
         request[offsets.collapsed..offsets.collapsed + 3].copy_from_slice(&[1, 0, 0]);
 
         let compiled = compile_scene_request(&request, 1 << 20).unwrap();
-        let node_labels = ["Selected node", "Disabled node", "Third node"];
-        let edge_labels = ["parallel edge", "pinned edge"];
-        let graph = SemanticGraphSceneInput {
+        let x = [0.0, 1.0, 0.5];
+        let y = [0.0, 0.0, 1.0];
+        let node_classes = [1, 2, 3];
+        let node_epistemic = [1, 0, 2];
+        let node_statuses = [0, 1, 2];
+        let node_metric = [0.0, 0.5, 1.0];
+        let node_flags = [2, 64, 0];
+        let sources = [0, 2];
+        let targets = [2, 1];
+        let edge_classes = [1, 2];
+        let edge_epistemic = [1, 3];
+        let edge_statuses = [1, 0];
+        let edge_metric = [1.0, 2.0];
+        let edge_flags = [0, 16];
+        let node_label_lengths = [13, 13, 10];
+        let edge_label_lengths = [13, 11];
+        let label_payload = b"Selected nodeDisabled nodeThird nodeparallel edgepinned edge";
+        let parents = [0, 0, 0];
+        let parent_validity = [0, 1, 0];
+        let collapsed = [1, 0, 0];
+        let title = b"Semantic graph";
+        let descriptor = xyg_core::XygGraphCompoundSceneDescriptor {
             version: SEMANTIC_GRAPH_SCENE_VERSION,
+            theme: 1,
             width: 800.0,
             height: 600.0,
-            theme: 1,
-            title: "Semantic graph",
-            x: &[0.0, 1.0, 0.5],
-            y: &[0.0, 0.0, 1.0],
-            node_classes: &[1, 2, 3],
-            node_epistemic: &[1, 0, 2],
-            node_statuses: &[0, 1, 2],
-            node_metric: &[0.0, 0.5, 1.0],
-            node_flags: &[2, 64, 0],
-            node_labels: &node_labels,
-            sources: &[0, 2],
-            targets: &[2, 1],
-            edge_classes: &[1, 2],
-            edge_epistemic: &[1, 3],
-            edge_statuses: &[1, 0],
-            edge_metric: &[1.0, 2.0],
-            edge_flags: &[0, 16],
-            edge_labels: &edge_labels,
+            node_count: 3,
+            edge_count: 2,
+            title: title.as_ptr(),
+            title_len: title.len() as u64,
+            x: x.as_ptr(),
+            y: y.as_ptr(),
+            node_classes: node_classes.as_ptr(),
+            node_epistemic: node_epistemic.as_ptr(),
+            node_statuses: node_statuses.as_ptr(),
+            node_metric: node_metric.as_ptr(),
+            node_flags: node_flags.as_ptr(),
+            node_label_lengths: node_label_lengths.as_ptr(),
+            sources: sources.as_ptr(),
+            targets: targets.as_ptr(),
+            edge_classes: edge_classes.as_ptr(),
+            edge_epistemic: edge_epistemic.as_ptr(),
+            edge_statuses: edge_statuses.as_ptr(),
+            edge_metric: edge_metric.as_ptr(),
+            edge_flags: edge_flags.as_ptr(),
+            edge_label_lengths: edge_label_lengths.as_ptr(),
+            label_payload: label_payload.as_ptr(),
+            label_payload_len: label_payload.len() as u64,
+            parents: parents.as_ptr(),
+            parent_validity: parent_validity.as_ptr(),
+            collapsed: collapsed.as_ptr(),
+            reserved: 0,
         };
-        let native = encode_compound_graph_scene(CompoundGraphSceneInput {
-            graph,
-            parents: &[0, 0, 0],
-            parent_validity: &[0, 1, 0],
-            collapsed: &[1, 0, 0],
-        })
-        .unwrap();
+        let needed =
+            unsafe { xyg_core::xyg_graph_compound_scene(&descriptor, std::ptr::null_mut(), 0) };
+        assert_ne!(needed, usize::MAX);
+        let mut native = vec![0; needed];
+        assert_eq!(
+            unsafe {
+                xyg_core::xyg_graph_compound_scene(&descriptor, native.as_mut_ptr(), native.len())
+            },
+            needed
+        );
         assert_eq!(compiled.bytes, native);
+        let document = scene::SceneDocument::decode(&native).unwrap();
+        assert_eq!(
+            document.to_browser_painter(1 << 20).unwrap(),
+            scene::SceneDocument::decode(&compiled.bytes)
+                .unwrap()
+                .to_browser_painter(1 << 20)
+                .unwrap()
+        );
     }
 
     #[test]
