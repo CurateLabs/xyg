@@ -91,6 +91,7 @@ export {
   graphSemanticLegend,
   graphLabelAccept,
   graphCompoundBounds,
+  graphCompoundScene,
   graphSampleEdges,
   graphBuildCsr,
   sankeyLayout,

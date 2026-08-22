@@ -308,6 +308,16 @@ pub struct SemanticGraphSceneInput<'a> {
     pub edge_labels: &'a [&'a str],
 }
 
+/// Optional compound planes for native/Scene consumers. The direct-WASM XYGG
+/// framing remains unchanged until its separately owned ABI can advance.
+#[derive(Clone, Copy, Debug)]
+pub struct CompoundGraphSceneInput<'a> {
+    pub graph: SemanticGraphSceneInput<'a>,
+    pub parents: &'a [u64],
+    pub parent_validity: &'a [u8],
+    pub collapsed: &'a [u8],
+}
+
 const MAX_GRAPH_LABEL_CHARS: usize = 32;
 const GRAPH_LABEL_FONT_SIZE: f64 = 12.0;
 
@@ -430,6 +440,32 @@ impl SemanticSceneColumns {
         }
         Ok(())
     }
+
+    #[allow(clippy::too_many_arguments)]
+    fn rect(
+        &mut self,
+        stable_id: u64,
+        style_ref: u32,
+        x0: f64,
+        y0: f64,
+        x1: f64,
+        y1: f64,
+    ) -> Result<(), SceneError> {
+        self.primitives = self.primitives.checked_add(1).ok_or(SceneError::Limit)?;
+        if self.primitives > MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES {
+            return Err(SceneError::Limit);
+        }
+        self.kinds.push(SceneRecordKind::Rect as u8);
+        self.stable_ids.push(stable_id);
+        self.style_refs.push(style_ref);
+        self.diameter.push(0.0);
+        self.symbols.push(0);
+        self.x0.push(x0);
+        self.y0.push(y0);
+        self.x1.push(x1);
+        self.y1.push(y1);
+        Ok(())
+    }
 }
 
 fn alpha(color: [u8; 4], opacity: f32, factor: f32) -> [u8; 4] {
@@ -469,6 +505,24 @@ fn semantic_legend_label(field: u8, value: u8) -> String {
 /// screen-bounded primitives chosen here; browser/SVG/raster only paint them.
 pub fn encode_semantic_graph_scene(
     input: SemanticGraphSceneInput<'_>,
+) -> Result<Vec<u8>, SceneError> {
+    encode_semantic_graph_scene_internal(input, None)
+}
+
+/// Resolve strict compound/collapse planes into the same canonical Scene used
+/// by browser painting, picking, accessibility labels, SVG, and raster export.
+pub fn encode_compound_graph_scene(
+    input: CompoundGraphSceneInput<'_>,
+) -> Result<Vec<u8>, SceneError> {
+    encode_semantic_graph_scene_internal(
+        input.graph,
+        Some((input.parents, input.parent_validity, input.collapsed)),
+    )
+}
+
+fn encode_semantic_graph_scene_internal(
+    input: SemanticGraphSceneInput<'_>,
+    compound: Option<(&[u64], &[u8], &[u8])>,
 ) -> Result<Vec<u8>, SceneError> {
     if input.version != SEMANTIC_GRAPH_SCENE_VERSION
         || !input.width.is_finite()
@@ -521,6 +575,44 @@ pub fn encode_semantic_graph_scene(
     {
         return Err(SceneError::Length);
     }
+    if compound.is_some_and(|(parents, validity, collapsed)| {
+        parents.len() != n || validity.len() != n || collapsed.len() != n
+    }) {
+        return Err(SceneError::Length);
+    }
+    let mut hierarchy = if let Some((parents, validity, collapsed)) = compound {
+        compound_hierarchy(parents, validity, collapsed).ok_or(SceneError::Length)?
+    } else {
+        CompoundHierarchy {
+            direct_parent: vec![None; n],
+            representative: (0..n).collect(),
+            visible: vec![true; n],
+            is_compound: vec![false; n],
+            bounds: vec![[f64::NAN; 4]; n],
+            depth: vec![0; n],
+        }
+    };
+    for index in 0..n {
+        hierarchy.bounds[index] = [
+            input.x[index],
+            input.x[index],
+            input.y[index],
+            input.y[index],
+        ];
+    }
+    let mut hierarchy_order: Vec<usize> = (0..n).collect();
+    hierarchy_order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    for index in hierarchy_order {
+        let Some(parent) = hierarchy.direct_parent[index] else {
+            continue;
+        };
+        let child = hierarchy.bounds[index];
+        let bounds = &mut hierarchy.bounds[parent];
+        bounds[0] = bounds[0].min(child[0]);
+        bounds[1] = bounds[1].max(child[1]);
+        bounds[2] = bounds[2].min(child[2]);
+        bounds[3] = bounds[3].max(child[3]);
+    }
     let mut nodes = vec![
         ResolvedGraphStyle {
             fill: [0; 4],
@@ -551,13 +643,15 @@ pub fn encode_semantic_graph_scene(
         };
         e
     ];
+    let effective_node_flags =
+        collapsed_node_flags(input.node_flags, &hierarchy).ok_or(SceneError::Length)?;
     resolve_semantic_styles(
         SemanticStyleInput {
             classes: input.node_classes,
             epistemic: input.node_epistemic,
             statuses: input.node_statuses,
             metric: input.node_metric,
-            flags: input.node_flags,
+            flags: &effective_node_flags,
             edge: false,
             theme: input.theme,
         },
@@ -578,8 +672,22 @@ pub fn encode_semantic_graph_scene(
     )
     .ok_or(SceneError::Length)?;
 
-    let x_domain = padded_domain(input.x).ok_or(SceneError::NonFinite)?;
-    let y_domain = padded_domain(input.y).ok_or(SceneError::NonFinite)?;
+    let mut visible_x = Vec::with_capacity(n.saturating_mul(2));
+    let mut visible_y = Vec::with_capacity(n.saturating_mul(2));
+    for index in 0..n {
+        if !hierarchy.visible[index] {
+            continue;
+        }
+        if hierarchy.is_compound[index] {
+            visible_x.extend_from_slice(&hierarchy.bounds[index][..2]);
+            visible_y.extend_from_slice(&hierarchy.bounds[index][2..]);
+        } else {
+            visible_x.push(input.x[index]);
+            visible_y.push(input.y[index]);
+        }
+    }
+    let x_domain = padded_domain(&visible_x).ok_or(SceneError::NonFinite)?;
+    let y_domain = padded_domain(&visible_y).ok_or(SceneError::NonFinite)?;
     let layout = PlotLayout::new(input.width, input.height, 52.0, 16.0, 24.0, 44.0)?;
     let x_scale = AxisScale::new(
         ScaleKind::Linear,
@@ -617,12 +725,22 @@ pub fn encode_semantic_graph_scene(
     let mut route_x1 = vec![0.0; route_capacity];
     let mut route_y1 = vec![0.0; route_capacity];
     let mut route_edge = vec![0; route_capacity];
+    let routed_sources: Vec<u64> = input
+        .sources
+        .iter()
+        .map(|&index| hierarchy.representative[index as usize] as u64)
+        .collect();
+    let routed_targets: Vec<u64> = input
+        .targets
+        .iter()
+        .map(|&index| hierarchy.representative[index as usize] as u64)
+        .collect();
     let route_count = edge_route_segments(
         n as u64,
         input.x,
         input.y,
-        input.sources,
-        input.targets,
+        &routed_sources,
+        &routed_targets,
         false,
         0.08,
         0.35,
@@ -660,7 +778,10 @@ pub fn encode_semantic_graph_scene(
     };
     let mut candidates = Vec::with_capacity(n.saturating_add(e));
     for (index, text) in input.node_labels.iter().enumerate() {
-        if nodes[index].state == STATE_AGGREGATE || nodes[index].state == STATE_FILTERED {
+        if !hierarchy.visible[index]
+            || nodes[index].state == STATE_AGGREGATE
+            || nodes[index].state == STATE_FILTERED
+        {
             continue;
         }
         let (px, py) = to_px(input.x[index], input.y[index]);
@@ -680,6 +801,7 @@ pub fn encode_semantic_graph_scene(
         if edges[index].state == STATE_AGGREGATE
             || edges[index].state == STATE_FILTERED
             || routes[index].is_empty()
+            || routed_sources[index] == routed_targets[index]
         {
             continue;
         }
@@ -734,7 +856,7 @@ pub fn encode_semantic_graph_scene(
     // Rust first routes multiedges and loops, then expands resolved dash and
     // arrow geometry in screen space. Hosts never see raw topology decisions.
     for (index, style) in edges.iter().enumerate() {
-        if style.opacity <= 0.0 {
+        if style.opacity <= 0.0 || routed_sources[index] == routed_targets[index] {
             continue;
         }
         let layer_count = 1
@@ -846,8 +968,26 @@ pub fn encode_semantic_graph_scene(
             }
         }
     }
+    for (index, style) in nodes.iter().copied().enumerate() {
+        if !hierarchy.visible[index] || !hierarchy.is_compound[index] {
+            continue;
+        }
+        let bounds = hierarchy.bounds[index];
+        if bounds.iter().any(|value| !value.is_finite()) {
+            continue;
+        }
+        let outline = columns.style([0; 4], alpha(style.stroke, style.opacity, 0.72), 1.5);
+        columns.rect(
+            (1u64 << 32) + index as u64,
+            outline,
+            bounds[0],
+            bounds[2],
+            bounds[1],
+            bounds[3],
+        )?;
+    }
     for (index, style) in nodes.iter().enumerate() {
-        if style.opacity <= 0.0 {
+        if !hierarchy.visible[index] || style.opacity <= 0.0 {
             continue;
         }
         let stable = (1u64 << 32) + index as u64;
@@ -1032,7 +1172,123 @@ pub fn label_accept(priorities: &[f64], budget: u64, floor: f64, out: &mut [u8])
     Some(take as u64)
 }
 
+#[derive(Debug)]
+struct CompoundHierarchy {
+    direct_parent: Vec<Option<usize>>,
+    representative: Vec<usize>,
+    visible: Vec<bool>,
+    is_compound: Vec<bool>,
+    bounds: Vec<[f64; 4]>,
+    depth: Vec<usize>,
+}
+
+fn compound_hierarchy(
+    parents: &[u64],
+    validity: &[u8],
+    collapsed: &[u8],
+) -> Option<CompoundHierarchy> {
+    let n = parents.len();
+    if validity.len() != n
+        || collapsed.len() != n
+        || validity.iter().chain(collapsed).any(|&value| value > 1)
+    {
+        return None;
+    }
+    let mut direct_parent = vec![None; n];
+    let mut is_compound = vec![false; n];
+    for index in 0..n {
+        if validity[index] == 0 {
+            continue;
+        }
+        let parent = usize::try_from(parents[index])
+            .ok()
+            .filter(|&value| value < n)?;
+        if parent == index {
+            return None;
+        }
+        direct_parent[index] = Some(parent);
+        is_compound[parent] = true;
+    }
+    if collapsed
+        .iter()
+        .enumerate()
+        .any(|(index, &value)| value != 0 && !is_compound[index])
+    {
+        return None;
+    }
+    let mut color = vec![0u8; n];
+    let mut depth = vec![0usize; n];
+    for start in 0..n {
+        if color[start] == 2 {
+            continue;
+        }
+        let mut node = start;
+        let mut path = Vec::new();
+        loop {
+            if color[node] == 1 {
+                return None;
+            }
+            if color[node] == 2 {
+                break;
+            }
+            color[node] = 1;
+            path.push(node);
+            let Some(parent) = direct_parent[node] else {
+                break;
+            };
+            node = parent;
+        }
+        let mut next_depth = if color[node] == 2 {
+            depth[node].checked_add(1)?
+        } else {
+            0
+        };
+        for &visited in path.iter().rev() {
+            depth[visited] = next_depth;
+            next_depth = next_depth.checked_add(1)?;
+            color[visited] = 2;
+        }
+    }
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&index| (depth[index], index));
+    let mut representative: Vec<usize> = (0..n).collect();
+    let mut visible = vec![true; n];
+    for &index in &order {
+        let Some(parent) = direct_parent[index] else {
+            continue;
+        };
+        if collapsed[parent] != 0 || !visible[parent] {
+            visible[index] = false;
+            representative[index] = representative[parent];
+        }
+    }
+    Some(CompoundHierarchy {
+        direct_parent,
+        representative,
+        visible,
+        is_compound,
+        bounds: vec![[f64::NAN; 4]; n],
+        depth,
+    })
+}
+
+fn collapsed_node_flags(flags: &[u32], hierarchy: &CompoundHierarchy) -> Option<Vec<u32>> {
+    if flags.len() != hierarchy.visible.len() {
+        return None;
+    }
+    const PROPAGATED: u32 = FLAG_SELECTED | FLAG_HOVERED | FLAG_NEIGHBOR | FLAG_PINNED;
+    let mut effective = flags.to_vec();
+    for index in 0..flags.len() {
+        if !hierarchy.visible[index] {
+            effective[hierarchy.representative[index]] |= flags[index] & PROPAGATED;
+        }
+    }
+    Some(effective)
+}
+
 #[allow(clippy::too_many_arguments)]
+/// Validate one parent forest and emit direct membership plus transitive bounds.
+/// Outputs remain untouched when any shape, validity, parent, or cycle is invalid.
 pub fn compound_bounds(
     x: &[f64],
     y: &[f64],
@@ -1062,74 +1318,48 @@ pub fn compound_bounds(
     {
         return None;
     }
-    // Validate the complete parent graph before writing any membership/bounds.
-    // A compound cycle has no meaningful root and must fail atomically.
-    let mut direct_parent = vec![None; n];
-    for i in 0..n {
-        if validity[i] == 0 {
-            continue;
-        }
-        let parent = usize::try_from(parents[i]).ok().filter(|&p| p < n)?;
-        if parent == i {
-            return None;
-        }
-        direct_parent[i] = Some(parent);
-    }
-    let mut color = vec![0u8; n];
-    for start in 0..n {
-        let mut node = start;
-        let mut path = Vec::new();
-        let mut reached_root = false;
-        while color[node] == 0 {
-            color[node] = 1;
-            path.push(node);
-            let Some(parent) = direct_parent[node] else {
-                reached_root = true;
-                break;
-            };
-            node = parent;
-        }
-        if !reached_root && color[node] == 1 && path.contains(&node) {
-            return None;
-        }
-        for visited in path {
-            color[visited] = 2;
-        }
-    }
+    let mut hierarchy = compound_hierarchy(parents, validity, &vec![0; n])?;
     parent_of.fill(NO_COMPOUND);
     is_compound.fill(0);
     xmin.fill(f64::NAN);
     xmax.fill(f64::NAN);
     ymin.fill(f64::NAN);
     ymax.fill(f64::NAN);
-    let mut expand = |p: usize, px: f64, py: f64| {
+    let expand = |bounds: &mut [f64; 4], px: f64, py: f64| {
         if !px.is_finite() || !py.is_finite() {
             return;
         }
-        if xmin[p].is_nan() {
-            xmin[p] = px;
-            xmax[p] = px;
-            ymin[p] = py;
-            ymax[p] = py;
+        if bounds[0].is_nan() {
+            *bounds = [px, px, py, py];
         } else {
-            xmin[p] = xmin[p].min(px);
-            xmax[p] = xmax[p].max(px);
-            ymin[p] = ymin[p].min(py);
-            ymax[p] = ymax[p].max(py);
+            bounds[0] = bounds[0].min(px);
+            bounds[1] = bounds[1].max(px);
+            bounds[2] = bounds[2].min(py);
+            bounds[3] = bounds[3].max(py);
         }
     };
     for i in 0..n {
-        if validity[i] == 0 {
-            continue;
+        expand(&mut hierarchy.bounds[i], x[i], y[i]);
+        if let Some(parent) = hierarchy.direct_parent[i] {
+            parent_of[i] = parent as u64;
         }
-        let p = direct_parent[i]?;
-        parent_of[i] = parents[i];
-        is_compound[p] = 1;
-        expand(p, x[i], y[i]);
+        is_compound[i] = u8::from(hierarchy.is_compound[i]);
+    }
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    for index in order {
+        let Some(parent) = hierarchy.direct_parent[index] else {
+            continue;
+        };
+        let child = hierarchy.bounds[index];
+        if child[0].is_finite() {
+            expand(&mut hierarchy.bounds[parent], child[0], child[2]);
+            expand(&mut hierarchy.bounds[parent], child[1], child[3]);
+        }
     }
     for i in 0..n {
-        if is_compound[i] != 0 {
-            expand(i, x[i], y[i]);
+        if hierarchy.is_compound[i] {
+            [xmin[i], xmax[i], ymin[i], ymax[i]] = hierarchy.bounds[i];
         }
     }
     Some(())
@@ -1200,6 +1430,44 @@ mod tests {
         assert_eq!((xmin[0], xmax[0], ymin[0], ymax[0]), (-1., 2., 0., 3.));
     }
     #[test]
+    fn compound_bounds_are_transitive_and_deep_chains_stay_bounded() {
+        let n = 1024;
+        let x: Vec<f64> = (0..n).map(|index| index as f64).collect();
+        let y: Vec<f64> = (0..n).map(|index| -(index as f64)).collect();
+        let mut parents = vec![0; n];
+        let mut validity = vec![1; n];
+        validity[0] = 0;
+        for (index, parent) in parents.iter_mut().enumerate().skip(1) {
+            *parent = (index - 1) as u64;
+        }
+        let mut parent_of = vec![0; n];
+        let mut is_compound = vec![0; n];
+        let mut xmin = vec![0.0; n];
+        let mut xmax = vec![0.0; n];
+        let mut ymin = vec![0.0; n];
+        let mut ymax = vec![0.0; n];
+        compound_bounds(
+            &x,
+            &y,
+            &parents,
+            &validity,
+            &mut parent_of,
+            &mut is_compound,
+            &mut xmin,
+            &mut xmax,
+            &mut ymin,
+            &mut ymax,
+        )
+        .unwrap();
+        assert_eq!(
+            [xmin[0], xmax[0], ymin[0], ymax[0]],
+            [0.0, 1023.0, -1023.0, 0.0]
+        );
+        assert_eq!([xmin[512], xmax[512]], [512.0, 1023.0]);
+        assert_eq!(parent_of[1023], 1022);
+        assert_eq!(is_compound[1023], 0);
+    }
+    #[test]
     fn compound_cycles_fail_before_writing_outputs() {
         let mut po = [11; 3];
         let mut ic = [12; 3];
@@ -1226,6 +1494,33 @@ mod tests {
         assert_eq!(ic, [12; 3]);
         assert_eq!(xmin, [13.; 3]);
         assert_eq!(ymax, [16.; 3]);
+    }
+
+    #[test]
+    fn collapse_visibility_is_transitive_deterministic_and_strict() {
+        let hierarchy =
+            compound_hierarchy(&[0, 0, 1, 0, 0], &[0, 1, 1, 1, 0], &[1, 0, 0, 0, 0]).unwrap();
+        assert_eq!(hierarchy.visible, [true, false, false, false, true]);
+        assert_eq!(hierarchy.representative, [0, 0, 0, 0, 4]);
+        assert_eq!(hierarchy.is_compound, [true, true, false, false, false]);
+        assert_eq!(
+            collapsed_node_flags(
+                &[0, 0, FLAG_SELECTED | FLAG_DISABLED, FLAG_PINNED, 0],
+                &hierarchy
+            )
+            .unwrap(),
+            [
+                FLAG_SELECTED | FLAG_PINNED,
+                0,
+                FLAG_SELECTED | FLAG_DISABLED,
+                FLAG_PINNED,
+                0
+            ]
+        );
+        assert!(compound_hierarchy(&[0, 0], &[0, 2], &[0, 0]).is_none());
+        assert!(compound_hierarchy(&[0, 0], &[0, 1], &[0, 2]).is_none());
+        assert!(compound_hierarchy(&[0, 0], &[0, 0], &[0, 1]).is_none());
+        assert!(compound_hierarchy(&[1, 0], &[1, 1], &[0, 0]).is_none());
     }
 
     #[test]
@@ -1404,6 +1699,145 @@ mod tests {
             assert_eq!(&rgba[..4], &[255, 255, 255, 255]);
             let plot_pixel = (100 * 800 + 100) * 4;
             assert_eq!(&rgba[plot_pixel..plot_pixel + 4], &[248, 250, 252, 255]);
+        }
+    }
+
+    #[test]
+    fn collapsed_nested_scene_hides_descendants_and_remaps_only_boundary_edges() {
+        let graph = SemanticGraphSceneInput {
+            version: SEMANTIC_GRAPH_SCENE_VERSION,
+            width: 640.0,
+            height: 480.0,
+            theme: THEME_LIGHT,
+            title: "Collapsed hierarchy",
+            x: &[0.0, 1.0, 2.0, -1.0, -3.0],
+            y: &[0.0, 1.0, 2.0, -1.0, 0.0],
+            node_classes: &[1, 1, 1, 1, 2],
+            node_epistemic: &[0; 5],
+            node_statuses: &[0; 5],
+            node_metric: &[0.0; 5],
+            node_flags: &[0, 0, FLAG_SELECTED, 0, 0],
+            node_labels: &[
+                "Collapsed group",
+                "Hidden child",
+                "Hidden grandchild",
+                "Hidden sibling",
+                "Outside",
+            ],
+            sources: &[2, 2],
+            targets: &[3, 4],
+            edge_classes: &[1, 1],
+            edge_epistemic: &[0, 0],
+            edge_statuses: &[0, 0],
+            edge_metric: &[0.0, 0.0],
+            edge_flags: &[0, 0],
+            edge_labels: &["internal edge", "boundary edge"],
+        };
+        let bytes = encode_compound_graph_scene(CompoundGraphSceneInput {
+            graph,
+            parents: &[0, 0, 1, 0, 0],
+            parent_validity: &[0, 1, 1, 1, 0],
+            collapsed: &[1, 0, 0, 0, 0],
+        })
+        .unwrap();
+        for (parents, validity, collapsed) in [
+            (
+                &[0, 0, 1, 0][..],
+                &[0, 1, 1, 1, 0][..],
+                &[1, 0, 0, 0, 0][..],
+            ),
+            (
+                &[0, 0, 1, 0, 0, 0][..],
+                &[0, 1, 1, 1, 0][..],
+                &[1, 0, 0, 0, 0][..],
+            ),
+            (
+                &[0, 0, 1, 0, 0][..],
+                &[0, 1, 1, 1][..],
+                &[1, 0, 0, 0, 0][..],
+            ),
+            (
+                &[0, 0, 1, 0, 0][..],
+                &[0, 1, 1, 1, 0][..],
+                &[1, 0, 0, 0, 0, 0][..],
+            ),
+        ] {
+            assert_eq!(
+                encode_compound_graph_scene(CompoundGraphSceneInput {
+                    graph,
+                    parents,
+                    parent_validity: validity,
+                    collapsed,
+                }),
+                Err(SceneError::Length),
+            );
+        }
+        let document = crate::scene::SceneDocument::decode(&bytes).unwrap();
+        let svg = document.to_svg();
+        let painter = document.to_browser_painter(1 << 20).unwrap();
+        let raster = document.to_raster_commands(1.0).unwrap();
+        assert!(svg.contains("Collapsed group"));
+        assert!(svg.contains("Outside"));
+        assert!(svg.contains("boundary edge"));
+        assert!(!svg.contains("Hidden child"));
+        assert!(!svg.contains("Hidden grandchild"));
+        assert!(!svg.contains("Hidden sibling"));
+        assert!(!svg.contains("internal edge"));
+        assert!(svg.contains("data-xy-stable-id=\"4294967296\""));
+        assert!(painter.windows(4).any(|window| window == b"XYLB"));
+        assert!(painter
+            .windows("Collapsed group".len())
+            .any(|window| window == b"Collapsed group"));
+        assert!(!painter
+            .windows("Hidden child".len())
+            .any(|window| window == b"Hidden child"));
+        let trace_count = u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize;
+        let mut painter_ids = Vec::new();
+        for trace in 0..trace_count {
+            let descriptor = crate::scene::BROWSER_PAINTER_HEADER_BYTES
+                + trace * crate::scene::BROWSER_PAINTER_TRACE_BYTES;
+            let count =
+                u32::from_le_bytes(painter[descriptor + 4..descriptor + 8].try_into().unwrap())
+                    as usize;
+            let low = u32::from_le_bytes(
+                painter[descriptor + 24..descriptor + 28]
+                    .try_into()
+                    .unwrap(),
+            ) as usize;
+            let high = u32::from_le_bytes(
+                painter[descriptor + 28..descriptor + 32]
+                    .try_into()
+                    .unwrap(),
+            ) as usize;
+            for row in 0..count {
+                let lo = u32::from_le_bytes(
+                    painter[low + row * 4..low + row * 4 + 4]
+                        .try_into()
+                        .unwrap(),
+                ) as u64;
+                let hi = u32::from_le_bytes(
+                    painter[high + row * 4..high + row * 4 + 4]
+                        .try_into()
+                        .unwrap(),
+                ) as u64;
+                painter_ids.push((hi << 32) | lo);
+            }
+        }
+        assert!(painter_ids.contains(&(1_u64 << 32)));
+        assert!(painter_ids.contains(&((1_u64 << 32) + 4)));
+        assert!(painter_ids.contains(&2));
+        assert!(!painter_ids.contains(&1));
+        assert!(!(1_u64..=3).any(|index| painter_ids.contains(&((1_u64 << 32) + index))));
+        assert!(!raster
+            .windows("Hidden child".len())
+            .any(|window| window == b"Hidden child"));
+        #[cfg(feature = "raster")]
+        {
+            let mut rgba = vec![0; 640 * 480 * 4];
+            assert!(crate::raster::rasterize_into(&raster, 640, 480, &mut rgba));
+            assert!(rgba
+                .chunks_exact(4)
+                .any(|pixel| pixel != [255, 255, 255, 255] && pixel != [248, 250, 252, 255]));
         }
     }
 

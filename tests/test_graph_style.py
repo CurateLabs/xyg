@@ -93,6 +93,80 @@ def test_compound_bounds_keep_membership_and_child_identity() -> None:
     assert np.isnan(bounds[1]).all()
 
 
+def test_compound_bounds_include_transitive_descendants() -> None:
+    parent_of, compounds, bounds = _native.graph_compound_bounds(
+        np.array([0.0, 1.0, 4.0, -2.0]),
+        np.array([0.0, 1.0, 3.0, -1.0]),
+        np.array([0, 0, 1, 0], dtype=np.uint64),
+        np.array([0, 1, 1, 1], dtype=np.uint8),
+    )
+    assert parent_of.tolist() == [2**64 - 1, 0, 1, 0]
+    assert compounds.tolist() == [True, True, False, False]
+    np.testing.assert_allclose(bounds[0], [-2.0, 4.0, -1.0, 3.0])
+    np.testing.assert_allclose(bounds[1], [1.0, 4.0, 1.0, 3.0])
+
+
+def test_compound_scene_is_public_native_and_shared_by_browser_and_exports() -> None:
+    scene = _native.graph_compound_scene(
+        width=640,
+        height=480,
+        theme=0,
+        title="Compound",
+        x=[0.0, 1.0, 3.0],
+        y=[0.0, 1.0, 0.0],
+        node_classes=[1, 1, 2],
+        node_epistemic=[0, 0, 0],
+        node_statuses=[0, 0, 0],
+        node_metric=[0.0, 0.0, 0.0],
+        node_flags=[0, 2, 0],
+        node_labels=["Group", "Hidden", "Outside"],
+        sources=[1],
+        targets=[2],
+        edge_classes=[1],
+        edge_epistemic=[0],
+        edge_statuses=[0],
+        edge_metric=[0.0],
+        edge_flags=[0],
+        edge_labels=["boundary"],
+        parents=[0, 0, 0],
+        parent_validity=[0, 1, 0],
+        collapsed=[1, 0, 0],
+    )
+    svg = _native.scene_svg(scene)
+    painter = _native.scene_browser_painter(scene)
+    raster = _native.scene_raster_commands(scene)
+    assert "Group" in svg and "Hidden" not in svg
+    assert painter[:4] == b"XYPB" and b"Hidden" not in painter
+    assert raster and b"Hidden" not in raster
+    for parents, collapsed in (([0, 0], [1, 0, 0]), ([0, 0, 0, 0], [1, 0, 0])):
+        with np.testing.assert_raises_regex(ValueError, "exactly node_count"):
+            _native.graph_compound_scene(
+                width=640,
+                height=480,
+                theme=0,
+                title="Compound",
+                x=[0.0, 1.0, 3.0],
+                y=[0.0, 1.0, 0.0],
+                node_classes=[1, 1, 2],
+                node_epistemic=[0, 0, 0],
+                node_statuses=[0, 0, 0],
+                node_metric=[0.0, 0.0, 0.0],
+                node_flags=[0, 0, 0],
+                node_labels=["a", "b", "c"],
+                sources=[],
+                targets=[],
+                edge_classes=[],
+                edge_epistemic=[],
+                edge_statuses=[],
+                edge_metric=[],
+                edge_flags=[],
+                edge_labels=[],
+                parents=parents,
+                parent_validity=[0, 1, 0],
+                collapsed=collapsed,
+            )
+
+
 def test_graph_style_python_ingress_rejects_lossy_values_before_ffi() -> None:
     for flags in ([True], [1.5], [-1], [2**32]):
         with np.testing.assert_raises((TypeError, ValueError, OverflowError)):

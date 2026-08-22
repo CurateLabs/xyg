@@ -14,6 +14,7 @@ import {
   graphSemanticLegend,
   graphLabelAccept,
   graphCompoundBounds,
+  graphCompoundScene,
   graphClusterAggregate,
   graphForceCreate,
   graphForceDestroy,
@@ -27,10 +28,45 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 88);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 89);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
+});
+
+test("compound bounds include transitive descendants without host traversal", () => {
+  const result = graphCompoundBounds(
+    new Float64Array([0, 1, 4, -2]),
+    new Float64Array([0, 1, 3, -1]),
+    new BigUint64Array([0n, 0n, 1n, 0n]),
+    new Uint8Array([0, 1, 1, 1]),
+  );
+  assert.deepEqual([...result.parentOf], [(1n << 64n) - 1n, 0n, 1n, 0n]);
+  assert.deepEqual([...result.isCompound], [1, 1, 0, 0]);
+  assert.deepEqual([result.xmin[0], result.xmax[0], result.ymin[0], result.ymax[0]], [-2, 4, -1, 3]);
+  assert.deepEqual([result.xmin[1], result.xmax[1], result.ymin[1], result.ymax[1]], [1, 4, 1, 3]);
+});
+
+test("compound collapse compiles through native Rust to canonical Scene", () => {
+  const scene = graphCompoundScene({
+    width: 640, height: 480, theme: "light", title: "Compound",
+    x: new Float64Array([0, 1, 3]), y: new Float64Array([0, 1, 0]),
+    nodeClasses: new Uint8Array([1, 1, 2]), nodeEpistemic: new Uint8Array(3), nodeStatuses: new Uint8Array(3),
+    nodeMetric: new Float64Array(3), nodeFlags: new Uint32Array([0, 2, 0]), nodeLabels: ["Group", "Hidden", "Outside"],
+    sources: new BigUint64Array([1n]), targets: new BigUint64Array([2n]), edgeClasses: new Uint8Array([1]),
+    edgeEpistemic: new Uint8Array(1), edgeStatuses: new Uint8Array(1), edgeMetric: new Float64Array(1),
+    edgeFlags: new Uint32Array(1), edgeLabels: ["boundary"], parents: new BigUint64Array([0n, 0n, 0n]),
+    parentValidity: new Uint8Array([0, 1, 0]), collapsed: new Uint8Array([1, 0, 0]),
+  });
+  assert.equal(Buffer.from(scene.subarray(0, 4)).toString(), "XYGS");
+  assert.equal(Buffer.from(scene).includes(Buffer.from("Hidden")), false);
+  assert.throws(() => graphCompoundScene({
+    width: 640, height: 480, title: "bad", x: new Float64Array(3), y: new Float64Array(3),
+    nodeClasses: new Uint8Array(3), nodeEpistemic: new Uint8Array(3), nodeStatuses: new Uint8Array(3),
+    nodeMetric: new Float64Array(3), nodeFlags: new Uint32Array(3), nodeLabels: ["a", "b", "c"],
+    sources: new BigUint64Array(), targets: new BigUint64Array(), edgeClasses: new Uint8Array(), edgeEpistemic: new Uint8Array(), edgeStatuses: new Uint8Array(), edgeMetric: new Float64Array(), edgeFlags: new Uint32Array(), edgeLabels: [],
+    parents: new BigUint64Array(2), parentValidity: new Uint8Array(3), collapsed: new Uint8Array(3),
+  }), /exactly node_count/);
 });
 
 test("GraphForge semantic styles are identical to the native golden", () => {

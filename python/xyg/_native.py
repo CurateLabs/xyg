@@ -51,6 +51,49 @@ class _GraphProjectionDescriptor(ctypes.Structure):
     ]
 
 
+class _GraphCompoundSceneDescriptor(ctypes.Structure):
+    _fields_ = [
+        (name, kind)
+        for name, kind in [
+            ("version", ctypes.c_uint32),
+            ("theme", ctypes.c_uint32),
+            ("width", ctypes.c_double),
+            ("height", ctypes.c_double),
+            ("node_count", ctypes.c_uint64),
+            ("edge_count", ctypes.c_uint64),
+            ("title", ctypes.c_void_p),
+            ("title_len", ctypes.c_uint64),
+            *[
+                (name, ctypes.c_void_p)
+                for name in (
+                    "x",
+                    "y",
+                    "node_classes",
+                    "node_epistemic",
+                    "node_statuses",
+                    "node_metric",
+                    "node_flags",
+                    "node_label_lengths",
+                    "sources",
+                    "targets",
+                    "edge_classes",
+                    "edge_epistemic",
+                    "edge_statuses",
+                    "edge_metric",
+                    "edge_flags",
+                    "edge_label_lengths",
+                    "label_payload",
+                )
+            ],
+            ("label_payload_len", ctypes.c_uint64),
+            ("parents", ctypes.c_void_p),
+            ("parent_validity", ctypes.c_void_p),
+            ("collapsed", ctypes.c_void_p),
+            ("reserved", ctypes.c_uint64),
+        ]
+    ]
+
+
 class _CoseDescriptor(ctypes.Structure):
     _fields_ = [
         ("in_x", ctypes.c_void_p),
@@ -5210,6 +5253,149 @@ def graph_compound_bounds(
     if status != 0:
         raise ValueError("native graph_compound_bounds failed")
     return parent_of, compounds.astype(np.bool_), np.column_stack((xmin, xmax, ymin, ymax))
+
+
+def graph_compound_scene(
+    *,
+    width,
+    height,
+    theme,
+    title,
+    x,
+    y,
+    node_classes,
+    node_epistemic,
+    node_statuses,
+    node_metric,
+    node_flags,
+    node_labels,
+    sources,
+    targets,
+    edge_classes,
+    edge_epistemic,
+    edge_statuses,
+    edge_metric,
+    edge_flags,
+    edge_labels,
+    parents,
+    parent_validity,
+    collapsed,
+) -> bytes:
+    """Compile Rust-owned compound/collapse policy to one canonical Scene."""
+    xa, ya = _as_f64(np.asarray(x), "x"), _as_f64(np.asarray(y), "y")
+    arrays = {
+        "node_classes": np.ascontiguousarray(node_classes, dtype=np.uint8),
+        "node_epistemic": np.ascontiguousarray(node_epistemic, dtype=np.uint8),
+        "node_statuses": np.ascontiguousarray(node_statuses, dtype=np.uint8),
+        "node_metric": _as_f64(np.asarray(node_metric), "node_metric"),
+        "node_flags": np.ascontiguousarray(node_flags, dtype=np.uint32),
+        "sources": np.ascontiguousarray(sources, dtype=np.uint64),
+        "targets": np.ascontiguousarray(targets, dtype=np.uint64),
+        "edge_classes": np.ascontiguousarray(edge_classes, dtype=np.uint8),
+        "edge_epistemic": np.ascontiguousarray(edge_epistemic, dtype=np.uint8),
+        "edge_statuses": np.ascontiguousarray(edge_statuses, dtype=np.uint8),
+        "edge_metric": _as_f64(np.asarray(edge_metric), "edge_metric"),
+        "edge_flags": np.ascontiguousarray(edge_flags, dtype=np.uint32),
+        "parents": np.ascontiguousarray(parents, dtype=np.uint64),
+        "parent_validity": np.ascontiguousarray(parent_validity, dtype=np.uint8),
+        "collapsed": np.ascontiguousarray(collapsed, dtype=np.uint8),
+    }
+    n, e = len(xa), len(arrays["sources"])
+    if (
+        len(ya) != n
+        or any(
+            len(arrays[name]) != n
+            for name in (
+                "node_classes",
+                "node_epistemic",
+                "node_statuses",
+                "node_metric",
+                "node_flags",
+                "parents",
+                "parent_validity",
+                "collapsed",
+            )
+        )
+        or len(node_labels) != n
+    ):
+        raise ValueError("node and compound planes must have exactly node_count values")
+    if (
+        any(
+            len(arrays[name]) != e
+            for name in (
+                "targets",
+                "edge_classes",
+                "edge_epistemic",
+                "edge_statuses",
+                "edge_metric",
+                "edge_flags",
+            )
+        )
+        or len(edge_labels) != e
+    ):
+        raise ValueError("edge planes must have exactly edge_count values")
+    if not isinstance(title, str) or any(
+        not isinstance(value, str) for value in (*node_labels, *edge_labels)
+    ):
+        raise TypeError("title and graph labels must be strings")
+    encoded_labels = [value.encode() for value in (*node_labels, *edge_labels)]
+    payload = b"".join(encoded_labels)
+    node_lengths = np.asarray([len(value) for value in encoded_labels[:n]], dtype=np.uint32)
+    edge_lengths = np.asarray([len(value) for value in encoded_labels[n:]], dtype=np.uint32)
+    title_bytes = title.encode()
+    title_buffer, payload_buffer = (
+        ctypes.create_string_buffer(title_bytes),
+        ctypes.create_string_buffer(payload),
+    )
+    descriptor = _GraphCompoundSceneDescriptor(
+        2,
+        int(theme),
+        float(width),
+        float(height),
+        n,
+        e,
+        ctypes.addressof(title_buffer),
+        len(title_bytes),
+        xa.ctypes.data,
+        ya.ctypes.data,
+        *[
+            arrays[name].ctypes.data
+            for name in (
+                "node_classes",
+                "node_epistemic",
+                "node_statuses",
+                "node_metric",
+                "node_flags",
+            )
+        ],
+        node_lengths.ctypes.data,
+        *[
+            arrays[name].ctypes.data
+            for name in (
+                "sources",
+                "targets",
+                "edge_classes",
+                "edge_epistemic",
+                "edge_statuses",
+                "edge_metric",
+                "edge_flags",
+            )
+        ],
+        edge_lengths.ctypes.data if e else None,
+        ctypes.addressof(payload_buffer) if payload else None,
+        len(payload),
+        arrays["parents"].ctypes.data,
+        arrays["parent_validity"].ctypes.data,
+        arrays["collapsed"].ctypes.data,
+        0,
+    )
+    needed = int(_lib.xyg_graph_compound_scene(ctypes.byref(descriptor), None, 0))
+    if needed == ctypes.c_size_t(-1).value:
+        raise ValueError("invalid compound graph Scene input")
+    output = (ctypes.c_uint8 * needed)()
+    if int(_lib.xyg_graph_compound_scene(ctypes.byref(descriptor), output, needed)) != needed:
+        raise ValueError("compound graph Scene changed between bounded copies")
+    return bytes(output)
 
 
 def graph_cluster_positions(
