@@ -954,6 +954,7 @@ async function run() {
   const semanticCanvas = semanticView.canvas;
   const semanticGl = semanticView.gl;
   if (!semanticGl) throw new Error("semantic graph canvas has no WebGL2 context");
+  semanticView.draw();
   const semanticPixels = new Uint8Array(semanticCanvas.width * semanticCanvas.height * 4);
   semanticGl.readPixels(0, 0, semanticCanvas.width, semanticCanvas.height,
     semanticGl.RGBA, semanticGl.UNSIGNED_BYTE, semanticPixels);
