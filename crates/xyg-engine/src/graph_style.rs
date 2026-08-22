@@ -23,6 +23,11 @@ pub const FLAG_AGGREGATE: u32 = 1 << 5;
 pub const FLAG_DISABLED: u32 = 1 << 6;
 pub const KNOWN_STATE_FLAGS: u32 = (1 << 7) - 1;
 pub const NO_COMPOUND: u64 = u64::MAX;
+pub const COMPOUND_ACTION_EXPAND: u8 = 0;
+pub const COMPOUND_ACTION_COLLAPSE: u8 = 1;
+pub const COMPOUND_ACTION_TOGGLE: u8 = 2;
+pub const GRAPH_LOD_DIRECT: u8 = 0;
+pub const MAX_COMPOUND_TRANSITION_NODES: usize = 1_024;
 pub const RESOLVED_STYLE_VERSION: u32 = 1;
 pub const MAX_SEMANTIC_CODE: u8 = 7;
 pub const THEME_LIGHT: u8 = 0;
@@ -1275,6 +1280,59 @@ fn compound_hierarchy(
     })
 }
 
+/// Apply one public compound disclosure transition without exposing hierarchy
+/// or LOD policy to a host. The complete forest and stable-ID plane are
+/// validated before `out` changes; aggregate representations refuse source-ID
+/// transitions because their identities are not one-to-one with source nodes.
+pub fn compound_collapse_transition(
+    node_ids: &[u64],
+    parents: &[u64],
+    validity: &[u8],
+    collapsed: &[u8],
+    target_id: u64,
+    action: u8,
+    lod_tier: u8,
+    out: &mut [u8],
+) -> Option<bool> {
+    let n = node_ids.len();
+    if n == 0
+        || n > MAX_COMPOUND_TRANSITION_NODES
+        || parents.len() != n
+        || validity.len() != n
+        || collapsed.len() != n
+        || out.len() != n
+        || lod_tier != GRAPH_LOD_DIRECT
+        || action > COMPOUND_ACTION_TOGGLE
+    {
+        return None;
+    }
+    let hierarchy = compound_hierarchy(parents, validity, collapsed)?;
+    let mut target = None;
+    let mut ids = node_ids.to_vec();
+    ids.sort_unstable();
+    if ids.windows(2).any(|pair| pair[0] == pair[1]) {
+        return None;
+    }
+    for (index, &id) in node_ids.iter().enumerate() {
+        if id == target_id {
+            target = Some(index);
+            break;
+        }
+    }
+    let target = target.filter(|&index| hierarchy.is_compound[index])?;
+    let next = match action {
+        COMPOUND_ACTION_EXPAND => 0,
+        COMPOUND_ACTION_COLLAPSE => 1,
+        COMPOUND_ACTION_TOGGLE => 1 - collapsed[target],
+        _ => unreachable!(),
+    };
+    let changed = next != collapsed[target];
+    let mut resolved = collapsed.to_vec();
+    resolved[target] = next;
+    out.copy_from_slice(&resolved);
+    Some(changed)
+}
+
 fn collapsed_node_flags(flags: &[u32], hierarchy: &CompoundHierarchy) -> Option<Vec<u32>> {
     if flags.len() != hierarchy.visible.len() {
         return None;
@@ -2125,5 +2183,96 @@ mod tests {
             out.iter().map(|style| style.size).collect::<Vec<_>>(),
             vec![7.0, 13.5, 20.0]
         );
+    }
+
+    #[test]
+    fn compound_transition_is_stable_id_owned_atomic_and_direct_only() {
+        let ids = [91, 17, 44, 63];
+        let parents = [0, 0, 1, 0];
+        let validity = [0, 1, 1, 1];
+        let collapsed = [0, 0, 0, 0];
+        let mut out = [9; 4];
+        assert_eq!(
+            compound_collapse_transition(
+                &ids,
+                &parents,
+                &validity,
+                &collapsed,
+                17,
+                COMPOUND_ACTION_COLLAPSE,
+                GRAPH_LOD_DIRECT,
+                &mut out,
+            ),
+            Some(true)
+        );
+        assert_eq!(out, [0, 1, 0, 0]);
+        assert_eq!(
+            compound_collapse_transition(
+                &ids,
+                &parents,
+                &validity,
+                &out,
+                17,
+                COMPOUND_ACTION_TOGGLE,
+                GRAPH_LOD_DIRECT,
+                &mut [0; 4],
+            ),
+            Some(true)
+        );
+
+        for (bad_ids, target, action, tier) in [
+            (&[91, 17, 17, 63][..], 17, COMPOUND_ACTION_COLLAPSE, 0),
+            (&ids[..], 44, COMPOUND_ACTION_COLLAPSE, 0),
+            (&ids[..], 999, COMPOUND_ACTION_COLLAPSE, 0),
+            (&ids[..], 17, 9, 0),
+            (&ids[..], 17, COMPOUND_ACTION_COLLAPSE, 1),
+        ] {
+            let mut guarded = [7; 4];
+            assert_eq!(
+                compound_collapse_transition(
+                    bad_ids,
+                    &parents,
+                    &validity,
+                    &collapsed,
+                    target,
+                    action,
+                    tier,
+                    &mut guarded,
+                ),
+                None
+            );
+            assert_eq!(guarded, [7; 4]);
+        }
+        let mut guarded = [7; 3];
+        assert_eq!(
+            compound_collapse_transition(
+                &[1, 2, 3],
+                &[1, 2, 0],
+                &[1, 1, 1],
+                &[0, 0, 0],
+                1,
+                COMPOUND_ACTION_COLLAPSE,
+                GRAPH_LOD_DIRECT,
+                &mut guarded,
+            ),
+            None
+        );
+        assert_eq!(guarded, [7; 3]);
+        let oversized = vec![0u64; MAX_COMPOUND_TRANSITION_NODES + 1];
+        let mut oversized_out = vec![7; oversized.len()];
+        assert_eq!(
+            compound_collapse_transition(
+                &oversized,
+                &oversized,
+                &vec![0; oversized.len()],
+                &vec![0; oversized.len()],
+                0,
+                COMPOUND_ACTION_COLLAPSE,
+                GRAPH_LOD_DIRECT,
+                &mut oversized_out,
+            ),
+            None
+        );
+        assert!(oversized_out.iter().all(|&value| value == 7));
     }
 }

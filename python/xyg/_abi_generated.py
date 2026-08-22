@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 89
-SIGNATURE_SHA256 = "a32acbe5da9109b580144f0d8522051d676e3684e192824d843008f3705957bb"
+ABI_VERSION = 90
+SIGNATURE_SHA256 = "e729f676d0c7be99e5ab70076a43c14e396ae0b03ba198f9f871afc4b11bfee5"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -174,6 +174,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_compound_scene
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_graph_compound_transition(uint64_t n, const uint64_t * node_ids, const uint64_t * parents, const uint8_t * validity, const uint8_t * collapsed, uint64_t target_id, uint32_t action, uint32_t lod_tier, uint8_t * out, uint8_t * out_changed)
+    function = lib.xyg_graph_compound_transition
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments)
     function = lib.xyg_graph_edge_route_segments
     function.restype = ctypes.c_int32

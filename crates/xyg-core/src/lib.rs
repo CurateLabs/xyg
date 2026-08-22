@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 89;
+pub const ABI_VERSION: u32 = 90;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -8027,6 +8027,75 @@ pub unsafe extern "C" fn xyg_graph_compound_bounds(
         } else {
             -1
         }
+    })
+}
+
+/// Apply one Rust-owned compound expand/collapse/toggle transition by stable
+/// source-node identity. Aggregate LOD is rejected because its identities do
+/// not correspond one-to-one with the source plane.
+///
+/// # Safety
+/// Every non-empty plane addresses `n` elements; `out_changed` is writable.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_graph_compound_transition(
+    n: u64,
+    node_ids: *const u64,
+    parents: *const u64,
+    validity: *const u8,
+    collapsed: *const u8,
+    target_id: u64,
+    action: u32,
+    lod_tier: u32,
+    out: *mut u8,
+    out_changed: *mut u8,
+) -> i32 {
+    let (Ok(n), Ok(action), Ok(lod_tier)) = (
+        usize::try_from(n),
+        u8::try_from(action),
+        u8::try_from(lod_tier),
+    ) else {
+        return -1;
+    };
+    if out_changed.is_null()
+        || (n > 0
+            && (node_ids.is_null()
+                || parents.is_null()
+                || validity.is_null()
+                || collapsed.is_null()
+                || out.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($ptr:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($ptr, n)
+                }
+            };
+        }
+        let output = if n == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out, n)
+        };
+        let Some(changed) = xyg_engine::graph_style::compound_collapse_transition(
+            input!(node_ids),
+            input!(parents),
+            input!(validity),
+            input!(collapsed),
+            target_id,
+            action,
+            lod_tier,
+            output,
+        ) else {
+            return -1;
+        };
+        *out_changed = u8::from(changed);
+        0
     })
 }
 

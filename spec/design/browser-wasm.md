@@ -153,7 +153,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 13. ABI 13 adds exact compound planes to `XYGG` v3 and
+`WASM_ABI_VERSION` is 14. ABI 13 adds exact compound planes to `XYGG` v3 and
 routes them through the canonical Rust compound Scene compiler while retaining
 the Scene v12/painter v9 contract. ABI 12 added the bounded `XYDP` dashboard
 resource planner. Earlier revisions added Scene
@@ -162,6 +162,10 @@ resumable Tier-2 aggregation, and packed `XYTC`/`XYTR` temporal-controller
 commands and snapshots. ABI 8 adds
 packed `XYTG` temporal-graph binding/frame commands and Rust-produced `XYTF`
 visibility, UUID membership, and remapped visible topology for layout.
+ABI 14 adds packed `XYGC` → `XYCO` disclosure transitions. Stable IDs
+(`u64[n]`), parents (`u64[n]`), validity (`u8[n]`), and collapse state
+(`u8[n]`) are exact and bounded to 1,024 nodes. Rust alone validates the group,
+forest, action, and Direct-LOD eligibility and computes the atomic next state.
 The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as

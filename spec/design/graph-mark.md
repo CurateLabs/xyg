@@ -447,6 +447,14 @@ identity is unchanged. Direct-WASM authoring uses the same compiler through
 XYGG v3; TypeScript only frames the three exact planes and does not synthesize
 collapse policy.
 
+ABI 90 adds `xyg_graph_compound_transition`, the public disclosure-state
+transaction. A host supplies exact stable node IDs, canonical parent and
+collapse planes, a target ID, and expand/collapse/toggle. Rust validates the
+whole forest, rejects duplicate/missing/non-group targets and every non-Direct
+LOD tier, and copies the next collapse plane only after all checks succeed.
+The operation is bounded to 1,024 source nodes; thin hosts do not traverse the
+hierarchy or decide aggregate eligibility.
+
 #### 7.1.1 Versioned GraphForge resolved style v1
 
 ABI 87 adds `xyg_graph_semantic_style_resolve(version=1, theme)`. It is the sole
@@ -548,6 +556,7 @@ boundary edges retain their canonical source identity.
 | `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
 | `xyg_graph_compound_scene` | ABI 89 bounded semantic compound/collapse compile to canonical Scene v12 (#34) |
+| `xyg_graph_compound_transition` | ABI 90 atomic stable-ID expand/collapse/toggle; Direct LOD only (#34) |
 | `xyg_graph_projection_create` / `counts` / `copy_*` / `destroy` | Opaque canonical GraphForge identity/topology handle; validates UUID uniqueness, endpoints, optional parents, and resource bounds |
 
 Element counts and indices are `u64` / `uint64_t`.

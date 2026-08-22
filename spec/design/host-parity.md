@@ -329,6 +329,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   browser worker smoke consumes the same semantic and compound fields on XYGG v3 and proves
   real WebGL paint plus deterministic label/legend accessibility and stable
   IDs plus collapsed descendant omission.
+  ABI 90 and WASM ABI 14 expose the same Rust-owned atomic stable-ID
+  expand/collapse/toggle transaction. Native, Python, Node, and WASM only
+  frame exact planes; aggregate LOD, malformed forests, duplicate IDs, and
+  leaf or missing targets are refused before output changes.
   follow-up; curved edge rendering is not MVP-blocking.
 - **Shared dashboard admission:** the browser-only
   `ChartView.applyDashboardResourceBudget(worker, budgetBytes)` surface and

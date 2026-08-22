@@ -1,0 +1,128 @@
+//! Packed thin-WASM compound disclosure transition framing (#34).
+
+use crate::{fail, Instance, STATUS_INVALID_ARGUMENT, STATUS_OK, STATUS_RESOURCE_LIMIT};
+use xyg_engine::graph_style::compound_collapse_transition;
+
+const HEADER_BYTES: usize = 40;
+const VERSION: u32 = 1;
+
+fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
+    Some(u32::from_le_bytes(
+        bytes.get(offset..offset + 4)?.try_into().ok()?,
+    ))
+}
+
+fn u64_at(bytes: &[u8], offset: usize) -> Option<u64> {
+    Some(u64::from_le_bytes(
+        bytes.get(offset..offset + 8)?.try_into().ok()?,
+    ))
+}
+
+pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> i32 {
+    instance.output = Vec::new();
+    let Some(end) = offset.checked_add(length) else {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "compound transition range overflow",
+        );
+    };
+    let Some(request) = instance.arena.get(offset..end) else {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "compound transition range lies outside the arena",
+        );
+    };
+    if request.get(..4) != Some(b"XYGC")
+        || u32_at(request, 4) != Some(VERSION)
+        || u32_at(request, 8) != Some(HEADER_BYTES as u32)
+        || u64_at(request, 32) != Some(0)
+    {
+        return fail(instance, STATUS_INVALID_ARGUMENT, "malformed XYGC header");
+    }
+    let (Some(action), Some(lod_tier), Some(n), Some(target_id)) = (
+        u32_at(request, 12),
+        u32_at(request, 16),
+        u32_at(request, 20).map(|value| value as usize),
+        u64_at(request, 24),
+    ) else {
+        return fail(instance, STATUS_INVALID_ARGUMENT, "truncated XYGC header");
+    };
+    let Some(expected) = n
+        .checked_mul(18)
+        .and_then(|planes| HEADER_BYTES.checked_add(planes))
+    else {
+        return fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "XYGC plane length overflow",
+        );
+    };
+    let output_len = 16usize.saturating_add(n);
+    let peak = expected
+        .checked_add(n.saturating_mul(128))
+        .and_then(|value| value.checked_add(output_len));
+    if n == 0
+        || expected != request.len()
+        || peak.is_none_or(|value| value > instance.max_arena_bytes)
+    {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "XYGC planes have invalid lengths",
+        );
+    }
+    let ids_start = HEADER_BYTES;
+    let parents_start = ids_start + n * 8;
+    let validity_start = parents_start + n * 8;
+    let collapsed_start = validity_start + n;
+    let decode_u64 = |start: usize| -> Option<Vec<u64>> {
+        (0..n)
+            .map(|index| u64_at(request, start + index * 8))
+            .collect()
+    };
+    let (Some(node_ids), Some(parents)) = (decode_u64(ids_start), decode_u64(parents_start)) else {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "truncated XYGC integer plane",
+        );
+    };
+    let validity = &request[validity_start..collapsed_start];
+    let collapsed = &request[collapsed_start..collapsed_start + n];
+    let (Ok(action), Ok(lod_tier)) = (u8::try_from(action), u8::try_from(lod_tier)) else {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "XYGC action or LOD tier is out of range",
+        );
+    };
+    let mut next = vec![0; n];
+    let Some(changed) = compound_collapse_transition(
+        &node_ids, &parents, validity, collapsed, target_id, action, lod_tier, &mut next,
+    ) else {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "compound transition was refused",
+        );
+    };
+    if output_len > instance.max_arena_bytes
+        || instance.output.try_reserve_exact(output_len).is_err()
+    {
+        return fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "compound transition output exceeds budget",
+        );
+    }
+    instance.output.extend_from_slice(b"XYCO");
+    instance.output.extend_from_slice(&VERSION.to_le_bytes());
+    instance.output.extend_from_slice(&(16u32).to_le_bytes());
+    instance.output.push(u8::from(changed));
+    instance.output.extend_from_slice(&[0; 3]);
+    instance.output.extend_from_slice(&next);
+    instance.last_error.clear();
+    STATUS_OK
+}

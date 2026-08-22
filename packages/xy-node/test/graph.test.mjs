@@ -14,6 +14,8 @@ import {
   graphSemanticLegend,
   graphLabelAccept,
   graphCompoundBounds,
+  graphCompoundTransition,
+  GRAPH_COMPOUND_COLLAPSE,
   graphCompoundScene,
   graphClusterAggregate,
   graphForceCreate,
@@ -28,7 +30,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 89);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 90);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -45,6 +47,22 @@ test("compound bounds include transitive descendants without host traversal", ()
   assert.deepEqual([...result.isCompound], [1, 1, 0, 0]);
   assert.deepEqual([result.xmin[0], result.xmax[0], result.ymin[0], result.ymax[0]], [-2, 4, -1, 3]);
   assert.deepEqual([result.xmin[1], result.xmax[1], result.ymin[1], result.ymax[1]], [1, 4, 1, 3]);
+});
+
+test("compound disclosure transition is Rust-owned and refuses aggregate LOD", () => {
+  const args = [
+    new BigUint64Array([91n, 17n, 44n]),
+    new BigUint64Array([0n, 0n, 1n]),
+    new Uint8Array([0, 1, 1]),
+    new Uint8Array([0, 0, 0]),
+    17n,
+    GRAPH_COMPOUND_COLLAPSE,
+  ];
+  const result = graphCompoundTransition(...args);
+  assert.equal(result.changed, true);
+  assert.deepEqual([...result.collapsed], [0, 1, 0]);
+  assert.throws(() => graphCompoundTransition(...args, 1), /failed/);
+  assert.throws(() => graphCompoundTransition(...args.slice(0, 4), 44n, GRAPH_COMPOUND_COLLAPSE), /failed/);
 });
 
 test("compound collapse compiles through native Rust to canonical Scene", () => {
