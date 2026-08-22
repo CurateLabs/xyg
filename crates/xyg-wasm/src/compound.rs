@@ -20,6 +20,9 @@ fn u64_at(bytes: &[u8], offset: usize) -> Option<u64> {
 
 pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> i32 {
     instance.output = Vec::new();
+    // Staging is single-use. Taking the arena before validation ensures both
+    // successful and rejected requests release their backing allocation.
+    let arena = std::mem::take(&mut instance.arena);
     let Some(end) = offset.checked_add(length) else {
         return fail(
             instance,
@@ -27,7 +30,7 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "compound transition range overflow",
         );
     };
-    let Some(request) = instance.arena.get(offset..end) else {
+    let Some(request) = arena.get(offset..end) else {
         return fail(
             instance,
             STATUS_INVALID_ARGUMENT,
@@ -63,14 +66,18 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
     let peak = expected
         .checked_add(n.saturating_mul(128))
         .and_then(|value| value.checked_add(output_len));
-    if n == 0
-        || expected != request.len()
-        || peak.is_none_or(|value| value > instance.max_arena_bytes)
-    {
+    if n == 0 || expected != request.len() {
         return fail(
             instance,
             STATUS_INVALID_ARGUMENT,
             "XYGC planes have invalid lengths",
+        );
+    }
+    if peak.is_none_or(|value| value > instance.max_arena_bytes) {
+        return fail(
+            instance,
+            STATUS_RESOURCE_LIMIT,
+            "compound transition peak memory exceeds budget",
         );
     }
     let ids_start = HEADER_BYTES;

@@ -1233,6 +1233,7 @@ mod tests {
             assert_eq!(&instance.output[..4], b"XYCO");
             assert_eq!(instance.output[12], 1);
             assert_eq!(&instance.output[16..], &[0, 1, 0]);
+            assert_eq!(instance.arena.capacity(), 0);
         })
         .unwrap();
 
@@ -1243,7 +1244,22 @@ mod tests {
             STATUS_INVALID_ARGUMENT
         );
         assert_eq!(xyg_wasm_output_len(handle), 0);
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+
+        let bounded = xyg_wasm_instance_new(128);
+        let request = compound_request(1, 0);
+        write_arena(bounded, &request);
+        assert_eq!(
+            xyg_wasm_compound_transition(bounded, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        with_instance_mut(bounded, |instance| {
+            assert_eq!(instance.arena.capacity(), 0);
+            assert_eq!(instance.output.capacity(), 0);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(bounded), STATUS_OK);
     }
 
     fn fragmented_scene(count: usize) -> Vec<u8> {

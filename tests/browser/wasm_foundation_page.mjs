@@ -1205,7 +1205,13 @@ async function run() {
   semanticView.destroy();
   if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) throw new Error("collapse update retained a stale label layer");
   semanticView = await renderWasmSemanticGraph({ el: semanticHost, graph: { ...semanticGraph, collapsed: recollapsed.collapsed }, worker: semanticWorker, transfer: false });
+  const recollapsedIds = [];
+  semanticView.gpuTraces.forEach((trace, traceIndex) => {
+    if (trace.trace.kind !== "scatter") return;
+    for (let row=0; row<trace._sceneIds.lo.length; row++) recollapsedIds.push(semanticView.sceneStableId(traceIndex, row));
+  });
   if (semanticHost.querySelectorAll('[data-xy-chrome="graph_labels"]').length !== 1
+      || recollapsedIds.includes(collapsedChildId)
       || [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"]')].some((label) => BigInt(label.dataset.xyStableId) === collapsedChildId)) throw new Error("recollapse retained descendant a11y identity or duplicate layers");
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const semanticCanvas = semanticView.canvas;
