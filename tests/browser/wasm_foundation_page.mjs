@@ -379,6 +379,26 @@ function rawInit(requestId, source) {
 
 let foundationStage = "startup";
 async function run() {
+  foundationStage = "failure diagnostics snapshot contract";
+  const diagnosticInput = {
+    abiVersion: 11, sceneVersion: 11, arenaBytes: 8, arenaHighWaterBytes: 16,
+    memoryBytes: 32, memoryHighWaterBytes: 64, copyCount: 1, copyBytesLo: 8,
+    copyBytesHi: 0, records: 2, styles: 1,
+  };
+  const diagnosticError = new XygWasmError("TEST", "test", 2, diagnosticInput);
+  diagnosticInput.copyCount = 99;
+  if (diagnosticError.diagnostics?.copyCount !== 1
+      || !Object.isFrozen(diagnosticError.diagnostics)
+      || Reflect.set(diagnosticError.diagnostics, "copyCount", 7)) {
+    throw new Error("failure diagnostics are not an immutable cloned snapshot");
+  }
+  for (const invalid of [[], { ...diagnosticInput, records: Number.NaN }, { abiVersion: 11 },
+    { ...diagnosticInput, styles: "1" }]) {
+    if (new XygWasmError("TEST", "test", 2, invalid).diagnostics !== null) {
+      throw new Error(`invalid failure diagnostics were accepted: ${JSON.stringify(invalid)}`);
+    }
+  }
+
   const sharedFixture = await fetch("/tests/fixtures/figure_scene_v3.json").then((response) => response.json());
   const xytsFixture = await fetch("/tests/fixtures/xyts_cross_host.json").then((response) => response.json());
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
