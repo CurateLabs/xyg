@@ -792,7 +792,7 @@ const { chromium } = require("playwright");
 (async () => {
   const browser = await chromium.launch({
     headless: true,
-    executablePath: process.env.XY_CHROMIUM,
+    executablePath: process.env.XYG_CHROMIUM,
     args: JSON.parse(process.env.XY_CHROME_ARGS || "[]"),
   });
   try {
@@ -816,7 +816,7 @@ const { chromium } = require("playwright");
         page = Path(td) / "worker.html"
         page.write_text(html, encoding="utf-8")
         env = os.environ.copy()
-        env["XY_CHROMIUM"] = exe
+        env["XYG_CHROMIUM"] = exe
         env["XY_PROBE"] = page.as_uri()
         env["XY_CHROME_ARGS"] = json.dumps(chromium_gl_flags())
         try:

@@ -116,11 +116,11 @@ Engine.chromium  # installed Chrome/Chromium/Edge/chrome-headless-shell
 - Deprecated string values `"native"`, `"chromium"`, `"browser"` still resolve,
   with a `DeprecationWarning` (`_png_engine`).
 
-Browser discovery (`find_browser`) searches `XY_BROWSER`, the legacy
-`XY_CHROMIUM`, `PATH` over nine known executable names, then platform install
+Browser discovery (`find_browser`) searches `XYG_BROWSER`, the legacy
+`XYG_CHROMIUM`, `PATH` over nine known executable names, then platform install
 locations. An explicit non-`"auto"` value is treated as a path or executable
 name and is never silently replaced with a different browser. With no browser
-found, browser-resolved export raises `RuntimeError` naming `XY_BROWSER` — it
+found, browser-resolved export raises `RuntimeError` naming `XYG_BROWSER` — it
 does **not** fall back to native, because the caller asked for browser fidelity
 (or passed `custom_css`, which native cannot honor).
 

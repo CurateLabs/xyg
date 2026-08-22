@@ -158,7 +158,7 @@ jobs:
           python3 scripts/append_stream_smoke.py "$CHROME"
 
       - name: Static PNG export smoke (stdlib + Chromium)
-        run: XY_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" python3 scripts/png_export_smoke.py
+        run: XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" python3 scripts/png_export_smoke.py
 
       - name: Native benchmark (stdlib only — executed numbers, no PyPI needed)
         run: python3 scripts/bench_native.py --sizes 1e5,1e6
@@ -214,7 +214,7 @@ jobs:
         # Point PNG-export tests at the Playwright Chromium (not on PATH) so the
         # full Figure.to_png path runs here rather than skipping.
         run: |
-          export XY_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
           # Chromium is installed here, so a probe that cannot launch it is a
           # defect: fail rather than skip, so the browser layer cannot pass by
           # absence. (A crash or non-zero exit already fails unconditionally.)

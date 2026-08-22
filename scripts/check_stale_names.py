@@ -124,6 +124,8 @@ NEEDLES = (
     ("XY_ALLOW_PYPI_PUBLISH", re.compile(_ENV + r"XY_ALLOW_PYPI_PUBLISH\b")),
     ("XY_SIMD", re.compile(_ENV + r"XY_SIMD\b")),
     ("XY_EXPECTED_ABI", re.compile(_ENV + r"XY_EXPECTED_ABI\b")),
+    ("XY_BROWSER", re.compile(_ENV + r"XY_BROWSER\b")),
+    ("XY_CHROMIUM", re.compile(_ENV + r"XY_CHROMIUM\b")),
     ("@xy/node", re.compile(r"['\"]@xy/node['\"]")),
     ("xy_abi_version", re.compile(r"(?<![A-Za-z0-9_])xy_abi_version\b")),
     ("lib.xy_ FFI", re.compile(r"(?<![A-Za-z0-9_])lib\.xy_[a-z]")),
@@ -283,6 +285,8 @@ _HISTORICAL_IDENTITY_ALLOWLIST = {
 _NEGATIVE_TEST_LINE_FRAGMENTS = (
     "libxy_core",
     "XY_NATIVE_LIB",
+    "XY_BROWSER",
+    "XY_CHROMIUM",
     "import xy",
     "python/xy",
     "xy Python module reference",

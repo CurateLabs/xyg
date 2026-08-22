@@ -86,7 +86,7 @@ again after appending, or use a live widget/adapter.
 ## Export
 
 **Chromium cannot be found.** Install Chrome, Chromium, Edge, or
-`chrome-headless-shell`, or set `XY_BROWSER` to its executable. Use the default
+`chrome-headless-shell`, or set `XYG_BROWSER` to its executable. Use the default
 native PNG engine when browser CSS and WebGL fidelity are unnecessary.
 
 **`custom_css` is rejected for PNG.** CSS injection requires

@@ -144,7 +144,7 @@ browser fonts, author CSS, or WebGL screenshot fidelity. Ordinary
 `export_chart.write_image("weekly-signups.png")` remains browser-free, uses the
 native engine, and inherits the chart's configured dimensions and background.
 
-Set the `XY_BROWSER` environment variable to a Chrome/Chromium/Edge executable
+Set the `XYG_BROWSER` environment variable to a Chrome/Chromium/Edge executable
 when browser discovery should not use the platform defaults. `custom_css` is
 valid for standalone HTML and Chromium-backed PNG, JPEG, WebP, and PDF exports.
 SVG is native-only.

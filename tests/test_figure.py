@@ -1823,8 +1823,8 @@ def test_find_browser_checks_standard_macos_app_paths(monkeypatch):
     from xyg import export
 
     chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    monkeypatch.delenv("XY_BROWSER", raising=False)
-    monkeypatch.delenv("XY_CHROMIUM", raising=False)
+    monkeypatch.delenv("XYG_BROWSER", raising=False)
+    monkeypatch.delenv("XYG_CHROMIUM", raising=False)
     monkeypatch.setattr(export.shutil, "which", lambda _name: None)
     monkeypatch.setattr(export.Path, "exists", lambda path: str(path) == chrome)
 
@@ -1845,21 +1845,45 @@ def test_find_browser_explicit_missing_path_does_not_fall_back(monkeypatch):
     assert export.find_browser("/missing/browser") is None
 
 
-def test_find_browser_prefers_new_environment_variable(monkeypatch):
+def test_find_browser_prefers_general_xyg_environment_variable(monkeypatch):
     from xyg import export
 
-    monkeypatch.setenv("XY_BROWSER", "/new/browser")
-    monkeypatch.setenv("XY_CHROMIUM", "/legacy/browser")
-    monkeypatch.setattr(export.Path, "exists", lambda path: str(path) == "/new/browser")
+    monkeypatch.setenv("XYG_BROWSER", "/general/browser")
+    monkeypatch.setenv("XYG_CHROMIUM", "/chromium/browser")
+    monkeypatch.setattr(export.Path, "exists", lambda path: str(path) == "/general/browser")
 
-    assert export.find_browser() == "/new/browser"
+    assert export.find_browser() == "/general/browser"
+
+
+def test_find_browser_accepts_xyg_chromium_specific_override(monkeypatch):
+    from xyg import export
+
+    monkeypatch.delenv("XYG_BROWSER", raising=False)
+    monkeypatch.setenv("XYG_CHROMIUM", "/chromium/browser")
+    monkeypatch.setattr(export.Path, "exists", lambda path: str(path) == "/chromium/browser")
+
+    assert export.find_browser() == "/chromium/browser"
+
+
+def test_find_browser_does_not_accept_retired_xy_environment_aliases(monkeypatch):
+    from xyg import export
+
+    monkeypatch.delenv("XYG_BROWSER", raising=False)
+    monkeypatch.delenv("XYG_CHROMIUM", raising=False)
+    monkeypatch.setenv("XY_BROWSER", "/retired/browser")  # xyg-stale-name: allow
+    monkeypatch.setenv("XY_CHROMIUM", "/retired/chromium")  # xyg-stale-name: allow
+    monkeypatch.setattr(export.Path, "exists", lambda _path: False)
+    monkeypatch.setattr(export.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(export, "_BROWSER_FALLBACKS", ())
+
+    assert export.find_browser() is None
 
 
 def test_find_browser_discovers_edge_on_path(monkeypatch):
     from xyg import export
 
-    monkeypatch.delenv("XY_BROWSER", raising=False)
-    monkeypatch.delenv("XY_CHROMIUM", raising=False)
+    monkeypatch.delenv("XYG_BROWSER", raising=False)
+    monkeypatch.delenv("XYG_CHROMIUM", raising=False)
     monkeypatch.setattr(export.Path, "exists", lambda _path: False)
     monkeypatch.setattr(
         export.shutil,

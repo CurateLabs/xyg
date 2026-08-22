@@ -27,11 +27,16 @@ def test_repository_has_no_stale_native_identity() -> None:
 
 
 def test_flags_retired_artifact_and_env_names(tmp_path: Path) -> None:
-    (tmp_path / "note.md").write_text("load libxy_core.so via XY_NATIVE_LIB\n", encoding="utf-8")
+    (tmp_path / "note.md").write_text(
+        "load libxy_core.so via XY_NATIVE_LIB; never XY_BROWSER or XY_CHROMIUM\n",
+        encoding="utf-8",
+    )
     errors = check_stale_names.check_stale_names(tmp_path)
     joined = "\n".join(errors)
     assert "libxy_core" in joined
     assert "XY_NATIVE_LIB" in joined
+    assert "XY_BROWSER" in joined
+    assert "XY_CHROMIUM" in joined
 
 
 def test_flags_retired_python_import_path_and_public_modules(tmp_path: Path) -> None:

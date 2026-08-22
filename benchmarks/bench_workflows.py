@@ -337,8 +337,8 @@ def _export_rows(n: int, reps: int, chromium: str | None) -> list[dict[str, Any]
             )
         )
     if chromium:
-        previous_browser = os.environ.get("XY_BROWSER")
-        os.environ["XY_BROWSER"] = chromium
+        previous_browser = os.environ.get("XYG_BROWSER")
+        os.environ["XYG_BROWSER"] = chromium
         try:
             rows.append(
                 _measure(
@@ -355,9 +355,9 @@ def _export_rows(n: int, reps: int, chromium: str | None) -> list[dict[str, Any]
             )
         finally:
             if previous_browser is None:
-                os.environ.pop("XY_BROWSER", None)
+                os.environ.pop("XYG_BROWSER", None)
             else:
-                os.environ["XY_BROWSER"] = previous_browser
+                os.environ["XYG_BROWSER"] = previous_browser
     return rows
 
 

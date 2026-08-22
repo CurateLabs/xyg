@@ -392,7 +392,7 @@ const requireFromRepo = createRequire(process.env.XY_PACKAGE_JSON);
 const { chromium } = requireFromRepo('playwright');
 (async () => {
   const browser = await chromium.launch({
-    executablePath: process.env.XY_CHROMIUM,
+    executablePath: process.env.XYG_CHROMIUM,
     headless: true,
     args: JSON.parse(process.env.XY_CHROME_ARGS || '[]'),
   });
@@ -417,7 +417,7 @@ const { chromium } = requireFromRepo('playwright');
         env.update(
             {
                 "XY_PACKAGE_JSON": str(Path(__file__).resolve().parents[1] / "package.json"),
-                "XY_CHROMIUM": executable,
+                "XYG_CHROMIUM": executable,
                 "XY_CHROME_ARGS": json.dumps(
                     [
                         "--no-sandbox",
