@@ -45,6 +45,11 @@ _EXPORTS = {
     "ExportConfig": ".components",
     "FacetChart": ".components",
     "GraphData": "._graph",
+    "GraphLayoutCheckpoint": ".graph_layout",
+    "GraphLayoutController": ".graph_layout",
+    "GraphLayoutDisposed": ".graph_layout",
+    "GraphLayoutError": ".graph_layout",
+    "GraphLayoutSuperseded": ".graph_layout",
     "GraphProjectionError": "._graph",
     "Interaction": ".components",
     "Legend": ".components",
@@ -158,6 +163,11 @@ __all__ = [
     "ExportConfig",
     "FacetChart",
     "GraphData",
+    "GraphLayoutCheckpoint",
+    "GraphLayoutController",
+    "GraphLayoutDisposed",
+    "GraphLayoutError",
+    "GraphLayoutSuperseded",
     "GraphProjectionError",
     "Interaction",
     "Legend",
@@ -402,6 +412,13 @@ if TYPE_CHECKING:
     )
     from .dom import CHART_DOM_SLOTS
     from .export import Engine, write_images
+    from .graph_layout import (
+        GraphLayoutCheckpoint,
+        GraphLayoutController,
+        GraphLayoutDisposed,
+        GraphLayoutError,
+        GraphLayoutSuperseded,
+    )
     from .plugins import (
         MarkContext,
         MarkPlugin,

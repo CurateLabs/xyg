@@ -300,9 +300,18 @@ Any unknown scheduler mode fails closed; only the exact, explicitly authored
 `"immediate"` escape hatch can select caller-thread execution. Callback,
 AbortSignal, and job identity shapes are rejected before allocating a Worker.
 
-Python off-event-loop scheduling, drag/pin reheating and the full browser/native
-deterministic tolerance plus first-paint/cadence size-ladder evidence remain the
-explicit #35 closure gate. Hosts must not emulate the shipped CoSE policy.
+Python exposes a per-graph `GraphLayoutController` that owns one dedicated
+worker thread and advances the same native Rust force handle in bounded chunks.
+It delivers revision-tagged initial/update/complete checkpoints on the caller's
+asyncio loop, cancels superseded jobs, rejects stale completion, and makes
+disposal terminal. Independent controllers have independent queues and cannot
+exchange revisions or positions. `reheat` restarts Rust CoSE from the current
+drag coordinates and pin mask; Python transports those buffers but performs no
+force or position math.
+
+The full browser/native deterministic tolerance plus first-paint/cadence
+size-ladder evidence remains an explicit #35 closure gate. Hosts must not
+emulate the shipped CoSE policy.
 Above the 500-node exact tier, repulsion uses a bounded uniform-grid
 approximation: at most 32 members per neighboring cell are evaluated exactly;
 denser neighboring cells and the complete far field are represented by mass
