@@ -17,6 +17,10 @@ const REQUEST_RESERVED_OFFSET: usize = 32;
 const OUTPUT_MAGIC: &[u8; 4] = b"XYCO";
 const OUTPUT_VERSION: u32 = 1;
 const OUTPUT_HEADER_BYTES: usize = 16;
+const OUTPUT_VERSION_OFFSET: usize = 4;
+const OUTPUT_HEADER_BYTES_OFFSET: usize = 8;
+const OUTPUT_CHANGED_OFFSET: usize = 12;
+const OUTPUT_COLLAPSED_OFFSET: usize = 16;
 
 fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(
@@ -136,16 +140,14 @@ pub(crate) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "compound transition output exceeds budget",
         );
     }
-    instance.output.extend_from_slice(OUTPUT_MAGIC);
-    instance
-        .output
-        .extend_from_slice(&OUTPUT_VERSION.to_le_bytes());
-    instance
-        .output
-        .extend_from_slice(&(OUTPUT_HEADER_BYTES as u32).to_le_bytes());
-    instance.output.push(u8::from(changed));
-    instance.output.extend_from_slice(&[0; 3]);
-    instance.output.extend_from_slice(&next);
+    instance.output.resize(output_len, 0);
+    instance.output[..4].copy_from_slice(OUTPUT_MAGIC);
+    instance.output[OUTPUT_VERSION_OFFSET..OUTPUT_VERSION_OFFSET + 4]
+        .copy_from_slice(&OUTPUT_VERSION.to_le_bytes());
+    instance.output[OUTPUT_HEADER_BYTES_OFFSET..OUTPUT_HEADER_BYTES_OFFSET + 4]
+        .copy_from_slice(&(OUTPUT_HEADER_BYTES as u32).to_le_bytes());
+    instance.output[OUTPUT_CHANGED_OFFSET] = u8::from(changed);
+    instance.output[OUTPUT_COLLAPSED_OFFSET..].copy_from_slice(&next);
     instance.last_error.clear();
     STATUS_OK
 }

@@ -586,6 +586,11 @@ def verify_rust(manifest: dict[str, object]) -> None:
         match = re.search(rf"const {rust_name}: usize = ([0-9_]+);", compound_source)
         if not match or int(match.group(1).replace("_", "")) != int(offset_value):
             raise SystemExit(f"xyg-wasm {rust_name} differs from compound_transition manifest")
+    for offset_name, offset_value in compound["output_offsets"].items():
+        rust_name = f"OUTPUT_{str(offset_name).upper()}_OFFSET"
+        match = re.search(rf"const {rust_name}: usize = ([0-9_]+);", compound_source)
+        if not match or int(match.group(1).replace("_", "")) != int(offset_value):
+            raise SystemExit(f"xyg-wasm {rust_name} differs from compound_transition manifest")
     for rust_name, manifest_name in (
         ("REQUEST_MAGIC", "request_magic"),
         ("OUTPUT_MAGIC", "output_magic"),
@@ -593,6 +598,25 @@ def verify_rust(manifest: dict[str, object]) -> None:
         match = re.search(rf'const {rust_name}: &\[u8; 4\] = b"([A-Z]{{4}})";', compound_source)
         if not match or match.group(1) != compound[manifest_name]:
             raise SystemExit(f"xyg-wasm {rust_name} differs from compound_transition manifest")
+    for action_name, action_value in compound["actions"].items():
+        rust_name = f"COMPOUND_ACTION_{str(action_name).upper()}"
+        match = re.search(rf"pub const {rust_name}: u8 = ([0-9_]+);", graph_style)
+        if not match or int(match.group(1).replace("_", "")) != int(action_value):
+            raise SystemExit(f"xyg-engine {rust_name} differs from compound_transition manifest")
+    for tier_name, tier_value in compound["lod_tiers"].items():
+        rust_name = f"GRAPH_LOD_{str(tier_name).upper()}"
+        match = re.search(rf"pub const {rust_name}: u8 = ([0-9_]+);", graph_style)
+        if not match or int(match.group(1).replace("_", "")) != int(tier_value):
+            raise SystemExit(f"xyg-engine {rust_name} differs from compound_transition manifest")
+    max_nodes_match = re.search(
+        r"pub const MAX_COMPOUND_TRANSITION_NODES: usize = ([0-9_]+);", graph_style
+    )
+    if not max_nodes_match or int(max_nodes_match.group(1).replace("_", "")) != int(
+        compound["max_nodes"]
+    ):
+        raise SystemExit(
+            "xyg-engine MAX_COMPOUND_TRANSITION_NODES differs from compound_transition manifest"
+        )
     for name, value in manifest["statuses"].items():
         match = re.search(rf"pub const STATUS_{re.escape(str(name))}: i32 = (\d+);", source)
         if not match or int(match.group(1)) != int(value):

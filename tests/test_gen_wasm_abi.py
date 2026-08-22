@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -75,6 +76,49 @@ def test_rust_decoder_consumes_generated_contract_without_wire_constants() -> No
     assert 'SERIES_MAGIC: &[u8; 4] = b"XYTS"' not in source
     assert "flags & !DESCRIPTOR_FLAG_KNOWN" in source
     assert "KIND_SCATTER | KIND_LINE | KIND_BAR | KIND_AREA" in source
+
+
+@pytest.mark.parametrize(
+    ("suffix", "before", "after"),
+    [
+        (
+            "crates/xyg-wasm/src/compound.rs",
+            "OUTPUT_CHANGED_OFFSET: usize = 12",
+            "OUTPUT_CHANGED_OFFSET: usize = 13",
+        ),
+        (
+            "crates/xyg-engine/src/graph_style.rs",
+            "COMPOUND_ACTION_TOGGLE: u8 = 2",
+            "COMPOUND_ACTION_TOGGLE: u8 = 3",
+        ),
+        (
+            "crates/xyg-engine/src/graph_style.rs",
+            "GRAPH_LOD_DIRECT: u8 = 0",
+            "GRAPH_LOD_DIRECT: u8 = 1",
+        ),
+        (
+            "crates/xyg-engine/src/graph_style.rs",
+            "MAX_COMPOUND_TRANSITION_NODES: usize = 1_024",
+            "MAX_COMPOUND_TRANSITION_NODES: usize = 2_048",
+        ),
+    ],
+)
+def test_check_rejects_compound_rust_protocol_drift(
+    monkeypatch: pytest.MonkeyPatch, suffix: str, before: str, after: str
+) -> None:
+    original = Path.read_text
+
+    def drifted(path: Path, *args, **kwargs) -> str:
+        source = original(path, *args, **kwargs)
+        if str(path).endswith(suffix):
+            assert before in source
+            return source.replace(before, after, 1)
+        return source
+
+    monkeypatch.setattr(Path, "read_text", drifted)
+    monkeypatch.setattr(sys, "argv", ["gen_wasm_abi.py", "--check"])
+    with pytest.raises(SystemExit):
+        GEN.main()
 
 
 def test_dashboard_planner_export_is_generated_and_signature_checked() -> None:
