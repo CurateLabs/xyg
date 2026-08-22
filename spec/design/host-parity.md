@@ -308,10 +308,10 @@ client must not grow a parallel “JS layout/LOD” product path.
 - **Graph style foundation:** Node utilities and private Python `_native`
   utilities call `xyg_graph_label_accept`, `xyg_graph_visual_state_resolve`,
   and `xyg_graph_compound_bounds`. Python and Node graph composition serialize
-  those Rust results into the same `spec.graph` fields. The browser consumes
-  only counts on its accessibility surface. Browser/HTML/SVG label and bounds
-  paint remains open until Rust emits zoom-, clip-, collision-, and
-  truncation-resolved bounded paint primitives; TypeScript must not derive it.
+  those Rust results into the same `spec.graph` fields. Canonical Scene v12 now
+  carries Rust-resolved label text/placement, theme chrome, semantic paint,
+  legends, and compound bounds to browser, HTML/SVG, and raster consumers;
+  TypeScript must not derive them.
   Compound validity governs ingress, so zero-filled invalid projection slots
   pass directly without host rewrite or copy.
   ABI 89 `xyg_graph_compound_scene` is the native canonical-Scene compound
@@ -324,4 +324,9 @@ client must not grow a parallel “JS layout/LOD” product path.
   no host walks ancestors or recomputes collapsed endpoints. Direct-WASM XYGG
   authoring waits for its separately owned ABI revision; this slice does not
   overload an existing semantic plane or introduce a TypeScript fallback.
+  `tests/fixtures/graphforge/semantic_compound.json` anchors exact native Scene,
+  painter, SVG, raster-command, and PNG bytes for both themes. The strict-CSP
+  browser worker smoke consumes the same semantic fields on XYGG v2 and proves
+  real WebGL paint plus deterministic label/legend accessibility and stable
+  IDs; it does not claim direct-WASM compound ingress.
   follow-up; curved edge rendering is not MVP-blocking.

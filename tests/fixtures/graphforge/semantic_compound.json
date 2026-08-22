@@ -1,0 +1,155 @@
+{
+  "contract": "graphforge-semantic-compound-v1",
+  "title": "GraphForge semantic compound",
+  "width": 640,
+  "height": 480,
+  "nodes": {
+    "node_uuid": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000002",
+      "00000000-0000-0000-0000-000000000003",
+      "00000000-0000-0000-0000-000000000004",
+      "00000000-0000-0000-0000-000000000005"
+    ],
+    "x": [
+      0.0,
+      1.0,
+      2.0,
+      -1.0,
+      -3.0
+    ],
+    "y": [
+      0.0,
+      1.0,
+      2.0,
+      -1.0,
+      -1.5
+    ],
+    "class": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "epistemic": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "status": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "metric": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "state_flags": [
+      0,
+      0,
+      2,
+      0,
+      16
+    ],
+    "label": [
+      "Collapsed evidence group",
+      "Hidden child",
+      "Hidden selected grandchild",
+      "Hidden sibling",
+      "Visible pinned outside"
+    ],
+    "parent_index": [
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "parent_validity": [
+      0,
+      1,
+      1,
+      1,
+      0
+    ],
+    "collapsed": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "edges": {
+    "edge_uuid": [
+      "10000000-0000-0000-0000-000000000001",
+      "10000000-0000-0000-0000-000000000002",
+      "10000000-0000-0000-0000-000000000003"
+    ],
+    "source_index": [
+      2,
+      2,
+      4
+    ],
+    "target_index": [
+      3,
+      4,
+      4
+    ],
+    "class": [
+      1,
+      2,
+      3
+    ],
+    "epistemic": [
+      1,
+      2,
+      3
+    ],
+    "status": [
+      1,
+      2,
+      3
+    ],
+    "metric": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "state_flags": [
+      0,
+      0,
+      0
+    ],
+    "label": [
+      "omitted internal",
+      "remapped boundary",
+      "outside loop"
+    ]
+  },
+  "goldens": {
+    "light": {
+      "scene_sha256": "c00ed8a9a5f1a958570bcfcd913a8b4c8cf2dc4dec049a88a47a2e90a4cda4c9",
+      "painter_sha256": "1cfc60a3611a12858aca9e0f0d9bd4ed9386a2be2b2242c124c43354d746e3dd",
+      "svg_sha256": "285ceda146bac53d32e4901c5e9d8b934713331e113333083fa6d059acb2a4e6",
+      "raster_sha256": "d1e1ae5ae5bbf900adf91e9072fe17e4d1af148c5fc839781ab3aef3b8f1ab4b",
+      "png_sha256": "64f1dd32a1ee4fbf30d284ddd4c46c4bda9b66ca3fa956b9e956a38a13c41dd6"
+    },
+    "dark": {
+      "scene_sha256": "5336f96fcf8e92ce1bcf36920abf37ca4ade50a5d14f2d6191860d7077948752",
+      "painter_sha256": "565792dfa65047191a8d952c7f294a65d8553cb4bd62220a429d819a65d4450b",
+      "svg_sha256": "088cdea00787658fdde3d055dc2b4b9758ff6af147fa75301d927831649e27ff",
+      "raster_sha256": "57bb4f5738283e45b3d34ebeed369a0442ab8aaac1bf0d80d1da451820e899b1",
+      "png_sha256": "86674338c47aa604c889b0e108e7a1b1d15ac7f8257aa3e2113b3606c5bb5eec"
+    }
+  }
+}
