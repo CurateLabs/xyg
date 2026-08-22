@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 88;
+pub const ABI_VERSION: u32 = 89;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -8027,6 +8027,190 @@ pub unsafe extern "C" fn xyg_graph_compound_bounds(
         } else {
             -1
         }
+    })
+}
+
+/// Pointer-only descriptor for Rust-owned semantic compound Scene compilation.
+#[repr(C)]
+pub struct XygGraphCompoundSceneDescriptor {
+    pub version: u32,
+    pub theme: u32,
+    pub width: f64,
+    pub height: f64,
+    pub node_count: u64,
+    pub edge_count: u64,
+    pub title: *const u8,
+    pub title_len: u64,
+    pub x: *const f64,
+    pub y: *const f64,
+    pub node_classes: *const u8,
+    pub node_epistemic: *const u8,
+    pub node_statuses: *const u8,
+    pub node_metric: *const f64,
+    pub node_flags: *const u32,
+    pub node_label_lengths: *const u32,
+    pub sources: *const u64,
+    pub targets: *const u64,
+    pub edge_classes: *const u8,
+    pub edge_epistemic: *const u8,
+    pub edge_statuses: *const u8,
+    pub edge_metric: *const f64,
+    pub edge_flags: *const u32,
+    pub edge_label_lengths: *const u32,
+    pub label_payload: *const u8,
+    pub label_payload_len: u64,
+    pub parents: *const u64,
+    pub parent_validity: *const u8,
+    pub collapsed: *const u8,
+    pub reserved: u64,
+}
+
+/// Compile semantic graph and compound/collapse planes to canonical Scene v12.
+/// Returns required bytes, or `usize::MAX` for any malformed or over-limit input.
+///
+/// # Safety
+/// The descriptor and every non-null plane must cover its declared count. If
+/// `out_cap` is sufficient, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_compound_scene(
+    descriptor: *const XygGraphCompoundSceneDescriptor,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if descriptor.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let d = &*descriptor;
+        let Ok(n) = usize::try_from(d.node_count) else {
+            return usize::MAX;
+        };
+        let Ok(e) = usize::try_from(d.edge_count) else {
+            return usize::MAX;
+        };
+        let Ok(title_len) = usize::try_from(d.title_len) else {
+            return usize::MAX;
+        };
+        let Ok(label_len) = usize::try_from(d.label_payload_len) else {
+            return usize::MAX;
+        };
+        if d.reserved != 0
+            || d.theme > u8::MAX as u32
+            || n == 0
+            || n.checked_add(e)
+                .is_none_or(|v| v > xyg_engine::graph_style::MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES)
+            || title_len > 4096
+            || label_len > 8192
+            || d.title.is_null()
+            || d.x.is_null()
+            || d.y.is_null()
+            || d.node_classes.is_null()
+            || d.node_epistemic.is_null()
+            || d.node_statuses.is_null()
+            || d.node_metric.is_null()
+            || d.node_flags.is_null()
+            || d.node_label_lengths.is_null()
+            || d.parents.is_null()
+            || d.parent_validity.is_null()
+            || d.collapsed.is_null()
+            || (e > 0
+                && (d.sources.is_null()
+                    || d.targets.is_null()
+                    || d.edge_classes.is_null()
+                    || d.edge_epistemic.is_null()
+                    || d.edge_statuses.is_null()
+                    || d.edge_metric.is_null()
+                    || d.edge_flags.is_null()
+                    || d.edge_label_lengths.is_null()))
+            || (label_len > 0 && d.label_payload.is_null())
+        {
+            return usize::MAX;
+        }
+        let title_bytes = std::slice::from_raw_parts(d.title, title_len);
+        let Ok(title) = std::str::from_utf8(title_bytes) else {
+            return usize::MAX;
+        };
+        let node_lengths = std::slice::from_raw_parts(d.node_label_lengths, n);
+        let edge_lengths = if e == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(d.edge_label_lengths, e)
+        };
+        let payload = if label_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(d.label_payload, label_len)
+        };
+        let mut cursor = 0usize;
+        let mut decode = |lengths: &[u32]| -> Option<Vec<&str>> {
+            lengths
+                .iter()
+                .map(|&length| {
+                    let end = cursor.checked_add(length as usize)?;
+                    let text = std::str::from_utf8(payload.get(cursor..end)?).ok()?;
+                    cursor = end;
+                    Some(text)
+                })
+                .collect()
+        };
+        let Some(node_labels) = decode(node_lengths) else {
+            return usize::MAX;
+        };
+        let Some(edge_labels) = decode(edge_lengths) else {
+            return usize::MAX;
+        };
+        if cursor != payload.len() {
+            return usize::MAX;
+        }
+        macro_rules! slice {
+            ($ptr:expr, $len:expr) => {{
+                if $len == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($ptr, $len)
+                }
+            }};
+        }
+        let encoded = xyg_engine::graph_style::encode_compound_graph_scene(
+            xyg_engine::graph_style::CompoundGraphSceneInput {
+                graph: xyg_engine::graph_style::SemanticGraphSceneInput {
+                    version: d.version,
+                    width: d.width,
+                    height: d.height,
+                    theme: d.theme as u8,
+                    title,
+                    x: slice!(d.x, n),
+                    y: slice!(d.y, n),
+                    node_classes: slice!(d.node_classes, n),
+                    node_epistemic: slice!(d.node_epistemic, n),
+                    node_statuses: slice!(d.node_statuses, n),
+                    node_metric: slice!(d.node_metric, n),
+                    node_flags: slice!(d.node_flags, n),
+                    node_labels: &node_labels,
+                    sources: slice!(d.sources, e),
+                    targets: slice!(d.targets, e),
+                    edge_classes: slice!(d.edge_classes, e),
+                    edge_epistemic: slice!(d.edge_epistemic, e),
+                    edge_statuses: slice!(d.edge_statuses, e),
+                    edge_metric: slice!(d.edge_metric, e),
+                    edge_flags: slice!(d.edge_flags, e),
+                    edge_labels: &edge_labels,
+                },
+                parents: slice!(d.parents, n),
+                parent_validity: slice!(d.parent_validity, n),
+                collapsed: slice!(d.collapsed, n),
+            },
+        );
+        let Ok(encoded) = encoded else {
+            return usize::MAX;
+        };
+        if out_cap >= encoded.len() {
+            if !encoded.is_empty() && out.is_null() {
+                return usize::MAX;
+            }
+            std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, encoded.len());
+        }
+        encoded.len()
     })
 }
 

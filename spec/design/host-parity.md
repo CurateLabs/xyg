@@ -314,7 +314,9 @@ client must not grow a parallel “JS layout/LOD” product path.
   truncation-resolved bounded paint primitives; TypeScript must not derive it.
   Compound validity governs ingress, so zero-filled invalid projection slots
   pass directly without host rewrite or copy.
-  The native canonical-Scene compound seam additionally validates the complete
+  ABI 89 `xyg_graph_compound_scene` is the native canonical-Scene compound
+  seam used by thin Python and Node helpers. It requires each compound plane
+  to equal node count and additionally validates the complete
   parent forest in linear traversal, derives transitive descendant bounds, and
   resolves collapse visibility plus boundary-edge representatives before any
   painter/export allocation. Browser painter, SVG, and raster consume those

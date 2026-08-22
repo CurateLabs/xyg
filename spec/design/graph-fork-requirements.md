@@ -311,6 +311,8 @@ Slice B is intentionally broad: product MVP is not â€œgraph only, Sankey later.â
 > collapsed ancestor, omits newly internal edges, and propagates hidden
 > selected/hovered/neighbor/pinned state to that ancestor. This reverses the
 > earlier compound-node non-goal without adding a host-side policy path.
+> ABI 89 exposes that compiler to Python and Node as canonical Scene bytes;
+> compound planes are exact-length and hosts do not traverse the hierarchy.
 
 - Reimplementing GraphForge (or peer) analysis algorithms inside the charting
   stack.

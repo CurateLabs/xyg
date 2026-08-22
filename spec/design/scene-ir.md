@@ -338,7 +338,10 @@ collapsed representative are absent, so browser paint/pick, the `XYLB`
 accessibility label plane, SVG, and native raster cannot disagree about hidden
 content. Work is bounded by the direct-tier element/primitive ceilings and
 malformed validity, collapse, parent, self-parent, and cycle inputs fail before
-Scene output.
+Scene output. Native ABI 89 exposes this exact compiler as
+`xyg_graph_compound_scene`; Python and Node only frame typed source planes and
+then feed its returned bytes to the existing browser-painter/SVG/raster seams.
+All three compound planes must have exactly one value per node.
 
 Legends, colorbars, and annotations are deliberately not part of this slice
 and remain loud Scene-compile errors for later issue-#116 work. Category,

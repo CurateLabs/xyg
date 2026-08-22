@@ -434,7 +434,10 @@ aggregate/filtered labels, truncates to a bounded 32-character/plot-width
 budget, greedily rejects overlapping screen boxes, and emits final position,
 font, paint, text, and source identity. Browser, SVG, and raster consumers do
 not repeat acceptance, collision, or truncation. The canonical native compound
-Scene seam additionally accepts strict parent-validity and collapse planes.
+Scene seam is exposed in ABI 89 as `xyg_graph_compound_scene`; thin Python and
+Node authoring helpers pass exact source planes and receive canonical Scene v12
+bytes. Parent, validity, and collapse planes must each equal node count; short
+and trailing values fail closed before traversal. The seam additionally accepts strict parent-validity and collapse planes.
 Rust validates the entire acyclic forest before output, leaves a collapsed
 group visible, hides all descendants, maps crossing edges to the nearest
 visible collapsed ancestor, omits edges that become internal, propagates
@@ -522,6 +525,7 @@ omission is already enforced at this seam.
 | `xyg_graph_visual_state_resolve` | Interaction flags to winning visual state (#34) |
 | `xyg_graph_label_accept` | Stable priority and budget label mask (#34) |
 | `xyg_graph_compound_bounds` | Direct parent membership and AABBs (#34) |
+| `xyg_graph_compound_scene` | ABI 89 bounded semantic compound/collapse compile to canonical Scene v12 (#34) |
 | `xyg_graph_projection_create` / `counts` / `copy_*` / `destroy` | Opaque canonical GraphForge identity/topology handle; validates UUID uniqueness, endpoints, optional parents, and resource bounds |
 
 Element counts and indices are `u64` / `uint64_t`.

@@ -1,9 +1,9 @@
 {
-  "abi_version": 88,
+  "abi_version": 89,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "7eede87030812d3f6ab19fbdba3aa889a8b17c53d74fb4e39675dcd6bd0f9952",
+  "signature_sha256": "a32acbe5da9109b580144f0d8522051d676e3684e192824d843008f3705957bb",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -5457,6 +5457,73 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_graph_compound_bounds(uint64_t n, const double * x, const double * y, const uint64_t * parents, const uint8_t * validity, uint64_t * parent_of, uint8_t * is_compound, double * xmin, double * xmax, double * ymin, double * ymax)"
+    },
+    {
+      "name": "xyg_graph_compound_scene",
+      "node_name": "xyGraphCompoundScene",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "descriptor",
+          "type": {
+            "rust": "*const XygGraphCompoundSceneDescriptor",
+            "c": "const void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_graph_compound_scene(const void * descriptor, uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_graph_edge_route_segments",

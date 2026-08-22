@@ -575,6 +575,11 @@ fn encode_semantic_graph_scene_internal(
     {
         return Err(SceneError::Length);
     }
+    if compound.is_some_and(|(parents, validity, collapsed)| {
+        parents.len() != n || validity.len() != n || collapsed.len() != n
+    }) {
+        return Err(SceneError::Length);
+    }
     let mut hierarchy = if let Some((parents, validity, collapsed)) = compound {
         compound_hierarchy(parents, validity, collapsed).ok_or(SceneError::Length)?
     } else {
@@ -1699,41 +1704,74 @@ mod tests {
 
     #[test]
     fn collapsed_nested_scene_hides_descendants_and_remaps_only_boundary_edges() {
+        let graph = SemanticGraphSceneInput {
+            version: SEMANTIC_GRAPH_SCENE_VERSION,
+            width: 640.0,
+            height: 480.0,
+            theme: THEME_LIGHT,
+            title: "Collapsed hierarchy",
+            x: &[0.0, 1.0, 2.0, -1.0, -3.0],
+            y: &[0.0, 1.0, 2.0, -1.0, 0.0],
+            node_classes: &[1, 1, 1, 1, 2],
+            node_epistemic: &[0; 5],
+            node_statuses: &[0; 5],
+            node_metric: &[0.0; 5],
+            node_flags: &[0, 0, FLAG_SELECTED, 0, 0],
+            node_labels: &[
+                "Collapsed group",
+                "Hidden child",
+                "Hidden grandchild",
+                "Hidden sibling",
+                "Outside",
+            ],
+            sources: &[2, 2],
+            targets: &[3, 4],
+            edge_classes: &[1, 1],
+            edge_epistemic: &[0, 0],
+            edge_statuses: &[0, 0],
+            edge_metric: &[0.0, 0.0],
+            edge_flags: &[0, 0],
+            edge_labels: &["internal edge", "boundary edge"],
+        };
         let bytes = encode_compound_graph_scene(CompoundGraphSceneInput {
-            graph: SemanticGraphSceneInput {
-                version: SEMANTIC_GRAPH_SCENE_VERSION,
-                width: 640.0,
-                height: 480.0,
-                theme: THEME_LIGHT,
-                title: "Collapsed hierarchy",
-                x: &[0.0, 1.0, 2.0, -1.0, -3.0],
-                y: &[0.0, 1.0, 2.0, -1.0, 0.0],
-                node_classes: &[1, 1, 1, 1, 2],
-                node_epistemic: &[0; 5],
-                node_statuses: &[0; 5],
-                node_metric: &[0.0; 5],
-                node_flags: &[0, 0, FLAG_SELECTED, 0, 0],
-                node_labels: &[
-                    "Collapsed group",
-                    "Hidden child",
-                    "Hidden grandchild",
-                    "Hidden sibling",
-                    "Outside",
-                ],
-                sources: &[2, 2],
-                targets: &[3, 4],
-                edge_classes: &[1, 1],
-                edge_epistemic: &[0, 0],
-                edge_statuses: &[0, 0],
-                edge_metric: &[0.0, 0.0],
-                edge_flags: &[0, 0],
-                edge_labels: &["internal edge", "boundary edge"],
-            },
+            graph,
             parents: &[0, 0, 1, 0, 0],
             parent_validity: &[0, 1, 1, 1, 0],
             collapsed: &[1, 0, 0, 0, 0],
         })
         .unwrap();
+        for (parents, validity, collapsed) in [
+            (
+                &[0, 0, 1, 0][..],
+                &[0, 1, 1, 1, 0][..],
+                &[1, 0, 0, 0, 0][..],
+            ),
+            (
+                &[0, 0, 1, 0, 0, 0][..],
+                &[0, 1, 1, 1, 0][..],
+                &[1, 0, 0, 0, 0][..],
+            ),
+            (
+                &[0, 0, 1, 0, 0][..],
+                &[0, 1, 1, 1][..],
+                &[1, 0, 0, 0, 0][..],
+            ),
+            (
+                &[0, 0, 1, 0, 0][..],
+                &[0, 1, 1, 1, 0][..],
+                &[1, 0, 0, 0, 0, 0][..],
+            ),
+        ] {
+            assert_eq!(
+                encode_compound_graph_scene(CompoundGraphSceneInput {
+                    graph,
+                    parents,
+                    parent_validity: validity,
+                    collapsed,
+                }),
+                Err(SceneError::Length),
+            );
+        }
         let document = crate::scene::SceneDocument::decode(&bytes).unwrap();
         let svg = document.to_svg();
         let painter = document.to_browser_painter(1 << 20).unwrap();

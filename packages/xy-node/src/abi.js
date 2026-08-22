@@ -25,6 +25,7 @@ import {
   xyGraphBuildRender,
   xyGraphEdgeRouteSegments,
   xyGraphCompoundBounds,
+  xyGraphCompoundScene,
   xyGraphLabelAccept,
   xyGraphSemanticStyleResolve,
   xyGraphSemanticLegend,
@@ -185,6 +186,18 @@ const GraphProjectionDescriptor = koffi.struct("XygGraphProjectionDescriptor", {
   parent_validity: "const void *",
   directed: "uint32_t",
   reserved: "uint32_t",
+});
+
+const GraphCompoundSceneDescriptor = koffi.struct("XygGraphCompoundSceneDescriptor", {
+  version: "uint32_t", theme: "uint32_t", width: "double", height: "double",
+  node_count: "uint64_t", edge_count: "uint64_t", title: "const void *", title_len: "uint64_t",
+  x: "const void *", y: "const void *", node_classes: "const void *", node_epistemic: "const void *",
+  node_statuses: "const void *", node_metric: "const void *", node_flags: "const void *",
+  node_label_lengths: "const void *", sources: "const void *", targets: "const void *",
+  edge_classes: "const void *", edge_epistemic: "const void *", edge_statuses: "const void *",
+  edge_metric: "const void *", edge_flags: "const void *", edge_label_lengths: "const void *",
+  label_payload: "const void *", label_payload_len: "uint64_t", parents: "const void *",
+  parent_validity: "const void *", collapsed: "const void *", reserved: "uint64_t",
 });
 
 const CoseDescriptor = koffi.struct("XygCoseDescriptor", {
@@ -1594,6 +1607,46 @@ export function graphCompoundBounds(x, y, parents, parentValidity) {
   const code = xyGraphCompoundBounds(toU64(n, "x.length"), f64Ptr(xa), f64Ptr(ya), u64Ptr(pa), u8Ptr(va), u64Ptr(parentOf), u8Ptr(isCompound), f64Ptr(xmin), f64Ptr(xmax), f64Ptr(ymin), f64Ptr(ymax));
   if (code !== 0) throw new Error(`xyg_graph_compound_bounds failed with code ${code}`);
   return { parentOf, isCompound, xmin, xmax, ymin, ymax };
+}
+
+export function graphCompoundScene(input) {
+  if (input == null || typeof input !== "object" || Array.isArray(input)) throw new TypeError("compound Scene input must be an object");
+  const text = new TextEncoder();
+  if (typeof input.title !== "string" || !Array.isArray(input.nodeLabels) || !Array.isArray(input.edgeLabels)
+      || input.nodeLabels.some((value) => typeof value !== "string") || input.edgeLabels.some((value) => typeof value !== "string")) {
+    throw new TypeError("title and graph labels must be strings");
+  }
+  const x = asF64Array(input.x, "x"), y = asF64Array(input.y, "y"), n = x.length;
+  const sources = asU64Array(input.sources, "sources"), e = sources.length;
+  const planes = {
+    node_classes: asU8Array(input.nodeClasses, "nodeClasses"), node_epistemic: asU8Array(input.nodeEpistemic, "nodeEpistemic"),
+    node_statuses: asU8Array(input.nodeStatuses, "nodeStatuses"), node_metric: asF64Array(input.nodeMetric, "nodeMetric"),
+    node_flags: asU32Array(input.nodeFlags, "nodeFlags"), targets: asU64Array(input.targets, "targets"),
+    edge_classes: asU8Array(input.edgeClasses, "edgeClasses"), edge_epistemic: asU8Array(input.edgeEpistemic, "edgeEpistemic"),
+    edge_statuses: asU8Array(input.edgeStatuses, "edgeStatuses"), edge_metric: asF64Array(input.edgeMetric, "edgeMetric"),
+    edge_flags: asU32Array(input.edgeFlags, "edgeFlags"), parents: asU64Array(input.parents, "parents"),
+    parent_validity: asU8Array(input.parentValidity, "parentValidity"), collapsed: asU8Array(input.collapsed, "collapsed"),
+  };
+  if (y.length !== n || input.nodeLabels.length !== n || ["node_classes", "node_epistemic", "node_statuses", "node_metric", "node_flags", "parents", "parent_validity", "collapsed"].some((name) => planes[name].length !== n)) throw new RangeError("node and compound planes must have exactly node_count values");
+  if (input.edgeLabels.length !== e || ["targets", "edge_classes", "edge_epistemic", "edge_statuses", "edge_metric", "edge_flags"].some((name) => planes[name].length !== e)) throw new RangeError("edge planes must have exactly edge_count values");
+  const labels = [...input.nodeLabels, ...input.edgeLabels].map((value) => text.encode(value));
+  const payload = new Uint8Array(labels.reduce((sum, value) => sum + value.length, 0)); let cursor = 0;
+  for (const value of labels) { payload.set(value, cursor); cursor += value.length; }
+  const nodeLengths = Uint32Array.from(labels.slice(0, n), (value) => value.length), edgeLengths = Uint32Array.from(labels.slice(n), (value) => value.length);
+  const title = text.encode(input.title), encoded = Buffer.alloc(koffi.sizeof(GraphCompoundSceneDescriptor));
+  koffi.encode(encoded, GraphCompoundSceneDescriptor, {
+    version: 2, theme: input.theme === "dark" ? 1 : input.theme === "light" || input.theme == null ? 0 : 0xffffffff,
+    width: Number(input.width), height: Number(input.height), node_count: BigInt(n), edge_count: BigInt(e), title: pointer(title, "uint8_t *"), title_len: BigInt(title.length),
+    x: f64Ptr(x), y: f64Ptr(y), sources: u64Ptr(sources), ...Object.fromEntries(Object.entries(planes).map(([name, value]) => [name, pointer(value, "void *")])),
+    node_label_lengths: u32Ptr(nodeLengths), edge_label_lengths: e ? u32Ptr(edgeLengths) : null,
+    label_payload: payload.length ? u8Ptr(payload) : null, label_payload_len: BigInt(payload.length), reserved: 0n,
+  });
+  const descriptor = koffi.as(encoded, "const void *");
+  const needed = Number(xyGraphCompoundScene(descriptor, null, 0));
+  if (!Number.isSafeInteger(needed) || needed <= 0) throw new Error(`invalid compound graph Scene input (${needed})`);
+  const output = new Uint8Array(needed);
+  if (Number(xyGraphCompoundScene(descriptor, u8Ptr(output), output.length)) !== needed) throw new Error("compound graph Scene changed between bounded copies");
+  return output;
 }
 
 export function graphSampleEdges(nEdges, budget) {
