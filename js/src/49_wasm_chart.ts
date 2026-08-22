@@ -218,6 +218,8 @@ export class XygWasmChartHandle {
     return this.view.sceneStableId(traceIndex, rowIndex);
   }
   get gpuTraces() { return this.view?.gpuTraces ?? []; }
+  /** Cancel the active compile/update without disposing a borrowed Worker. */
+  cancel(): void { this.task?.cancel(); }
   async dispose(): Promise<void> {
     if (this.disposed) return; this.disposed = true; this.task?.cancel(); this.task = null;
     this.view?.destroy(); this.view = null;
