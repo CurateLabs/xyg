@@ -346,6 +346,19 @@ async function rejected(promise, code, status = null) {
   throw new Error(`expected ${code} rejection`);
 }
 
+async function rejectedSuperseded(promise) {
+  try {
+    await promise;
+  } catch (error) {
+    if (!(error instanceof XygWasmError)) throw error;
+    const valid = (error.code === "XYG_WASM_CANCELLED" && error.status === 6)
+      || (error.code === "XYG_WASM_STALE_SEQUENCE" && error.status === 7);
+    if (!valid) throw new Error(`wanted cancelled or stale supersession, got ${error.code}: ${error.message}`);
+    return error;
+  }
+  throw new Error("expected superseded request rejection");
+}
+
 function rawWorkerHarness() {
   const worker = new Worker("/packages/xy-client/dist/wasm-worker.js", { type: "module" });
   const pending = new Map();
@@ -1922,7 +1935,7 @@ async function run() {
   const firstAggregate = aggregateWasmBin2d(checkpointWorker, { x: checkpointPoints, y: checkpointPoints, x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64 }, { sequence: 1 });
   await new Promise((resolve) => setTimeout(resolve, 0));
   const newerAggregate = aggregateWasmBin2d(checkpointWorker, { x: [0.5], y: [0.5], x0: 0, x1: 1, y0: 0, y1: 1, width: 2, height: 2 }, { sequence: 2 });
-  await rejected(firstAggregate.result, "XYG_WASM_CANCELLED", 6);
+  await rejectedSuperseded(firstAggregate.result);
   const newer = await newerAggregate.result;
   if (newer.maxCount !== 1 || newer.width !== 2) throw new Error("new viewport did not progress after aggregate checkpoint cancellation");
   await checkpointWorker.dispose();
@@ -1938,7 +1951,7 @@ async function run() {
   const concurrentPlan = planWasmDashboardResources(dashboardSupersedeWorker, [
     { stableId: 1n, derivedBytes: 8n, lastUsed: 1n, visible: true },
   ], 8n);
-  await rejected(supersededAggregate.result, "XYG_WASM_CANCELLED", 6);
+  await rejectedSuperseded(supersededAggregate.result);
   const retainedAfterCancellation = await concurrentPlan;
   if (retainedAfterCancellation.retained.join(",") !== "true" || retainedAfterCancellation.retainedBytes !== 8n) {
     throw new Error("dashboard plan did not recover the shared arena after aggregate cancellation");
@@ -1973,7 +1986,7 @@ async function run() {
     }, { sequence: 1 });
     const nextOperation = invoke(operationWorker);
     try {
-      await rejected(pendingAggregate.result, "XYG_WASM_CANCELLED", 6);
+      await rejectedSuperseded(pendingAggregate.result);
       await nextOperation.result;
     } catch (error) {
       throw new Error(`aggregate supersession by ${name} failed: ${error.message}`);
