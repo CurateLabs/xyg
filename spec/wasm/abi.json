@@ -18,6 +18,14 @@
   "typed_series_peak_bytes_per_record": 256,
   "typed_series_peak_bytes_per_series": 1024,
   "typed_series_peak_input_multiplier": 2,
+  "typed_series": {
+    "request_magic": "XYTS",
+    "header_offsets": {"version": 4, "header_bytes": 8, "flags": 12, "series_count": 16, "record_count": 20, "title_bytes": 24, "x_label_bytes": 28, "y_label_bytes": 32, "reserved0": 36, "width": 40, "height": 48, "margins": 56, "x_axis_id": 88, "y_axis_id": 96, "x_scale_kind": 104, "y_scale_kind": 108, "x_mask_nonpositive": 112, "y_mask_nonpositive": 116, "x_lo": 120, "x_hi": 128, "x_constant": 136, "y_lo": 144, "y_hi": 152, "y_constant": 160, "reserved_tail": 168},
+    "header_flags": {"auto_margins": 1, "auto_domain": 2},
+    "descriptor_offsets": {"kind": 0, "symbol": 4, "record_count": 8, "flags": 12, "stable_id_base": 16, "diameter": 24, "stroke_width": 32, "fill_rgba": 40, "stroke_rgba": 44, "x": 48, "y": 52, "y0": 56, "y1": 60, "diameters": 64},
+    "flags": {"diameters": 1, "y0": 2, "y1": 4, "fill_rgba": 8, "stroke_rgba": 16, "stable_id_base": 32},
+    "kinds": {"scatter": 0, "line": 1, "bar": 2, "area": 3}
+  },
   "max_arena_bytes": 402653184,
   "painter_max_legend_bytes": 57424,
   "aggregate": {

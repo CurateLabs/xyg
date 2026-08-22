@@ -12,6 +12,7 @@ pub mod compile;
 mod graph;
 mod temporal;
 mod temporal_graph;
+mod typed_series_abi_generated;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};

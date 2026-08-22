@@ -15,6 +15,132 @@ RUST = ROOT / "crates" / "xyg-wasm" / "src" / "lib.rs"
 AGGREGATE_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "aggregate.rs"
 GRAPH_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "graph.rs"
 OUTPUT = ROOT / "js" / "src" / "wasm_abi_generated.ts"
+RUST_TYPED_SERIES_OUTPUT = ROOT / "crates" / "xyg-wasm" / "src" / "typed_series_abi_generated.rs"
+
+TYPED_SERIES_KEYS = {
+    "request_magic",
+    "header_offsets",
+    "header_flags",
+    "descriptor_offsets",
+    "flags",
+    "kinds",
+}
+HEADER_WIDTHS = {
+    "version": 4,
+    "header_bytes": 4,
+    "flags": 4,
+    "series_count": 4,
+    "record_count": 4,
+    "title_bytes": 4,
+    "x_label_bytes": 4,
+    "y_label_bytes": 4,
+    "reserved0": 4,
+    "width": 8,
+    "height": 8,
+    "margins": 32,
+    "x_axis_id": 8,
+    "y_axis_id": 8,
+    "x_scale_kind": 4,
+    "y_scale_kind": 4,
+    "x_mask_nonpositive": 4,
+    "y_mask_nonpositive": 4,
+    "x_lo": 8,
+    "x_hi": 8,
+    "x_constant": 8,
+    "y_lo": 8,
+    "y_hi": 8,
+    "y_constant": 8,
+    "reserved_tail": 24,
+}
+DESCRIPTOR_WIDTHS = {
+    "kind": 4,
+    "symbol": 4,
+    "record_count": 4,
+    "flags": 4,
+    "stable_id_base": 8,
+    "diameter": 8,
+    "stroke_width": 8,
+    "fill_rgba": 4,
+    "stroke_rgba": 4,
+    "x": 4,
+    "y": 4,
+    "y0": 4,
+    "y1": 4,
+    "diameters": 4,
+}
+HEADER_FLAG_KEYS = {"auto_margins", "auto_domain"}
+DESCRIPTOR_FLAG_KEYS = {"diameters", "y0", "y1", "fill_rgba", "stroke_rgba", "stable_id_base"}
+KIND_CODES = {"scatter": 0, "line": 1, "bar": 2, "area": 3}
+TYPED_SERIES_NUMERIC_KEYS = {
+    "typed_series_version",
+    "typed_series_header_bytes",
+    "typed_series_descriptor_bytes",
+    "typed_series_max_series",
+    "typed_series_max_records",
+    "typed_series_max_text_bytes",
+    "typed_series_max_symbol_code",
+    "typed_series_peak_fixed_bytes",
+    "typed_series_peak_bytes_per_record",
+    "typed_series_peak_bytes_per_series",
+    "typed_series_peak_input_multiplier",
+}
+
+
+def validate_typed_series(manifest: dict[str, object]) -> None:
+    for name in TYPED_SERIES_NUMERIC_KEYS:
+        if type(manifest.get(name)) is not int:
+            raise SystemExit(f"{name} must be an integer")
+    contract = manifest.get("typed_series")
+    if not isinstance(contract, dict):
+        raise SystemExit("typed_series must be a structured value")
+    if set(contract) != TYPED_SERIES_KEYS:
+        raise SystemExit("typed_series has missing or unknown keys")
+    magic = contract.get("request_magic")
+    try:
+        magic_bytes = magic.encode("ascii") if isinstance(magic, str) else b""
+    except UnicodeEncodeError:
+        magic_bytes = b""
+    if len(magic_bytes) != 4:
+        raise SystemExit("typed_series request_magic must be four ASCII bytes")
+    for name, bound_key, widths in (
+        ("header_offsets", "typed_series_header_bytes", HEADER_WIDTHS),
+        ("descriptor_offsets", "typed_series_descriptor_bytes", DESCRIPTOR_WIDTHS),
+    ):
+        offsets = contract.get(name)
+        if not isinstance(offsets, dict) or set(offsets) != set(widths):
+            raise SystemExit(f"typed_series {name} has missing or unknown fields")
+        bound = int(manifest[bound_key])
+        occupied: list[tuple[int, int, str]] = []
+        for field, raw in offsets.items():
+            if type(raw) is not int:
+                raise SystemExit(f"typed_series {name}.{field} must be an integer")
+            value = int(raw)
+            width = widths[field]
+            alignment = min(width, 8)
+            if value < 0 or value + width > bound or value % alignment:
+                raise SystemExit(f"typed_series {name}.{field} is outside its record")
+            for start, end, other in occupied:
+                if value < end and start < value + width:
+                    raise SystemExit(f"typed_series {name}.{field} overlaps {other}")
+            occupied.append((value, value + width, field))
+    for name, expected in (("header_flags", HEADER_FLAG_KEYS), ("flags", DESCRIPTOR_FLAG_KEYS)):
+        values = contract.get(name)
+        if not isinstance(values, dict) or set(values) != expected:
+            raise SystemExit(f"typed_series {name} has missing or unknown fields")
+        if any(type(value) is not int for value in values.values()):
+            raise SystemExit(f"typed_series {name} values must be integers")
+        parsed = [int(value) for value in values.values()]
+        if len(parsed) != len(set(parsed)) or any(
+            value <= 0 or value > 0xFFFFFFFF or value & (value - 1) for value in parsed
+        ):
+            raise SystemExit(f"typed_series {name} values must be unique one-hot u32 flags")
+    kinds = contract.get("kinds")
+    if (
+        not isinstance(kinds, dict)
+        or any(type(value) is not int for value in kinds.values())
+        or kinds != KIND_CODES
+    ):
+        raise SystemExit("typed_series kinds must be the exact bounded mark-kind map")
 
 
 def render(manifest: dict[str, object]) -> str:
@@ -36,6 +162,7 @@ def render(manifest: dict[str, object]) -> str:
     typed_series_peak_bytes_per_record = int(manifest["typed_series_peak_bytes_per_record"])
     typed_series_peak_bytes_per_series = int(manifest["typed_series_peak_bytes_per_series"])
     typed_series_peak_input_multiplier = int(manifest["typed_series_peak_input_multiplier"])
+    typed_series = manifest["typed_series"]
     max_arena_bytes = int(manifest["max_arena_bytes"])
     painter_max_legend_bytes = int(manifest["painter_max_legend_bytes"])
     aggregate = manifest["aggregate"]
@@ -47,6 +174,7 @@ def render(manifest: dict[str, object]) -> str:
         not isinstance(statuses, dict)
         or not isinstance(exports, list)
         or not isinstance(aggregate, dict)
+        or not isinstance(typed_series, dict)
         or not isinstance(graph, dict)
         or not isinstance(temporal_graph, dict)
     ):
@@ -74,6 +202,12 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_RECORD = {typed_series_peak_bytes_per_record} as const;",
         f"export const XYG_WASM_TYPED_SERIES_PEAK_BYTES_PER_SERIES = {typed_series_peak_bytes_per_series} as const;",
         f"export const XYG_WASM_TYPED_SERIES_PEAK_INPUT_MULTIPLIER = {typed_series_peak_input_multiplier} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_MAGIC = {json.dumps(typed_series['request_magic'])} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_HEADER_OFFSETS = {json.dumps(typed_series['header_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_HEADER_FLAGS = {json.dumps(typed_series['header_flags'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_DESCRIPTOR_OFFSETS = {json.dumps(typed_series['descriptor_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_FLAGS = {json.dumps(typed_series['flags'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TYPED_SERIES_KINDS = {json.dumps(typed_series['kinds'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_MAX_ARENA_BYTES = {max_arena_bytes} as const;",
         f"export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = {painter_max_legend_bytes} as const;",
         f"export const XYG_WASM_AGGREGATE_VERSION = {int(aggregate['version'])} as const;",
@@ -200,7 +334,57 @@ def render(manifest: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def render_typed_series_rust(manifest: dict[str, object]) -> str:
+    contract = manifest["typed_series"]
+    assert isinstance(contract, dict)
+    lines = [
+        "// Generated by scripts/gen_wasm_abi.py from spec/wasm/abi.json.",
+        "// Do not hand-edit this typed-series wire contract.",
+        "",
+        f'pub const SERIES_MAGIC: &[u8; 4] = b"{contract["request_magic"]}";',
+        f"pub const SERIES_VERSION: u32 = {int(manifest['typed_series_version'])};",
+        f"pub const COMPILE_HEADER_BYTES: usize = {int(manifest['typed_series_header_bytes'])};",
+        f"pub const SERIES_DESCRIPTOR_BYTES: usize = {int(manifest['typed_series_descriptor_bytes'])};",
+        f"pub const MAX_SERIES: usize = {int(manifest['typed_series_max_series']):_};",
+        f"pub const MAX_RECORDS: usize = {int(manifest['typed_series_max_records']):_};",
+        f"pub const MAX_TEXT_BYTES: usize = {int(manifest['typed_series_max_text_bytes']):_};",
+        f"pub const MAX_SYMBOL_CODE: u32 = {int(manifest['typed_series_max_symbol_code'])};",
+        f"pub const SERIES_PEAK_FIXED_BYTES: usize = {int(manifest['typed_series_peak_fixed_bytes']):_};",
+        f"pub const SERIES_PEAK_BYTES_PER_RECORD: usize = {int(manifest['typed_series_peak_bytes_per_record']):_};",
+        f"pub const SERIES_PEAK_BYTES_PER_SERIES: usize = {int(manifest['typed_series_peak_bytes_per_series']):_};",
+        f"pub const SERIES_PEAK_INPUT_MULTIPLIER: usize = {int(manifest['typed_series_peak_input_multiplier'])};",
+    ]
+    for group, prefix in (
+        ("header_offsets", "HEADER"),
+        ("descriptor_offsets", "DESCRIPTOR"),
+        ("header_flags", "HEADER_FLAG"),
+        ("flags", "DESCRIPTOR_FLAG"),
+        ("kinds", "KIND"),
+    ):
+        values = contract[group]
+        assert isinstance(values, dict)
+        for name, value in values.items():
+            ty = "usize" if "offsets" in group else "u32"
+            lines.append(f"pub const {prefix}_{name.upper()}: {ty} = {int(value)};")
+    lines.extend(
+        [
+            "pub const HEADER_FLAG_KNOWN: u32 = HEADER_FLAG_AUTO_MARGINS | HEADER_FLAG_AUTO_DOMAIN;",
+            "pub const DESCRIPTOR_FLAG_KNOWN: u32 = DESCRIPTOR_FLAG_DIAMETERS",
+            "    | DESCRIPTOR_FLAG_Y0",
+            "    | DESCRIPTOR_FLAG_Y1",
+            "    | DESCRIPTOR_FLAG_FILL_RGBA",
+            "    | DESCRIPTOR_FLAG_STROKE_RGBA",
+            "    | DESCRIPTOR_FLAG_STABLE_ID_BASE;",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def verify_rust(manifest: dict[str, object]) -> None:
+    typed_series = manifest["typed_series"]
+    if not isinstance(typed_series, dict):
+        raise SystemExit("typed_series must be a structured value")
     source = RUST.read_text(encoding="utf-8")
     constants = {
         "WASM_ABI_VERSION": int(manifest["abi_version"]),
@@ -229,22 +413,13 @@ def verify_rust(manifest: dict[str, object]) -> None:
     compile_source = (ROOT / "crates" / "xyg-wasm" / "src" / "compile.rs").read_text(
         encoding="utf-8"
     )
-    for rust_name, manifest_name in (
-        ("SERIES_VERSION", "typed_series_version"),
-        ("COMPILE_HEADER_BYTES", "typed_series_header_bytes"),
-        ("SERIES_DESCRIPTOR_BYTES", "typed_series_descriptor_bytes"),
-        ("MAX_SERIES", "typed_series_max_series"),
-        ("MAX_RECORDS", "typed_series_max_records"),
-        ("MAX_TEXT_BYTES", "typed_series_max_text_bytes"),
-        ("MAX_SYMBOL_CODE", "typed_series_max_symbol_code"),
-        ("SERIES_PEAK_FIXED_BYTES", "typed_series_peak_fixed_bytes"),
-        ("SERIES_PEAK_BYTES_PER_RECORD", "typed_series_peak_bytes_per_record"),
-        ("SERIES_PEAK_BYTES_PER_SERIES", "typed_series_peak_bytes_per_series"),
-        ("SERIES_PEAK_INPUT_MULTIPLIER", "typed_series_peak_input_multiplier"),
+    if "use crate::typed_series_abi_generated::*;" not in compile_source:
+        raise SystemExit("xyg-wasm compile decoder does not consume the generated XYTS contract")
+    if re.search(
+        r"pub const (?:SERIES_|MAX_(?:SERIES|RECORDS|TEXT|SYMBOL)|COMPILE_HEADER_BYTES)",
+        compile_source,
     ):
-        match = re.search(rf"pub const {rust_name}: (?:u32|usize) = ([0-9_]+);", compile_source)
-        if not match or int(match.group(1).replace("_", "")) != int(manifest[manifest_name]):
-            raise SystemExit(f"xyg-wasm {rust_name} differs from spec/wasm/abi.json")
+        raise SystemExit("xyg-wasm compile decoder contains a handwritten XYTS wire constant")
     for name, value in manifest["statuses"].items():
         match = re.search(rf"pub const STATUS_{re.escape(str(name))}: i32 = (\d+);", source)
         if not match or int(match.group(1)) != int(value):
@@ -371,14 +546,24 @@ def main() -> int:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     if manifest.get("schema_version") != 1:
         raise SystemExit("unsupported WASM ABI manifest schema")
+    validate_typed_series(manifest)
     verify_rust(manifest)
     expected = render(manifest)
+    expected_rust = render_typed_series_rust(manifest)
     if args.check:
         actual = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
         if actual != expected:
             raise SystemExit(f"generated WASM adapter is stale: run {Path(__file__).name}")
+        actual_rust = (
+            RUST_TYPED_SERIES_OUTPUT.read_text(encoding="utf-8")
+            if RUST_TYPED_SERIES_OUTPUT.exists()
+            else ""
+        )
+        if actual_rust != expected_rust:
+            raise SystemExit(f"generated Rust XYTS contract is stale: run {Path(__file__).name}")
     else:
         OUTPUT.write_text(expected, encoding="utf-8")
+        RUST_TYPED_SERIES_OUTPUT.write_text(expected_rust, encoding="utf-8")
     return 0
 
 
