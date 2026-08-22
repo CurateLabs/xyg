@@ -44,6 +44,8 @@ def main(*, require_installed: bool = True) -> int:
     original_popen = subprocess.Popen
     subprocess.Popen = _reject_process  # type: ignore[assignment]
     try:
+        if require_installed:
+            _assert_reflex_not_installed()
         import xyg
 
         module_path = Path(xyg.__file__).resolve()
@@ -51,8 +53,6 @@ def main(*, require_installed: bool = True) -> int:
             raise AssertionError(
                 f"plain XYG smoke imported {module_path} outside isolated environment {sys.prefix}"
             )
-        if require_installed:
-            _assert_reflex_not_installed()
         eager = _new_optional_modules(modules_before)
         if eager:
             raise AssertionError(f"plain import loaded optional host frameworks: {eager}")
