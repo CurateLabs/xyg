@@ -385,6 +385,7 @@ Forbidden:
 | `python/xyg/dom.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/export.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/facets.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/graph_layout.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/interaction.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/kernels.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/lod.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
