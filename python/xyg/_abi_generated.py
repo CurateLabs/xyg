@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 85
-SIGNATURE_SHA256 = "c3158a4adaa116aafc5ef6ffbe2f3789cdb93e5a07c85e0527f169e7b4b74e0d"
+ABI_VERSION = 86
+SIGNATURE_SHA256 = "03a633a8aa1e7a7b99e2803fda6dd711dfac4e25eccf2dd50d846bb600513623"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -234,6 +234,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_graph_sample_edges
     function.restype = ctypes.c_uint64
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p]
+    # int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * fill_rgba, uint8_t * stroke_rgba, uint8_t * halo_rgba, float * size, float * width, float * opacity, uint8_t * shape, uint8_t * dash, uint8_t * arrow, uint8_t * state, double * out_domain_lo, double * out_domain_hi)
+    function = lib.xyg_graph_semantic_style_resolve
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint32, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out)
     function = lib.xyg_graph_visual_state_resolve
     function.restype = ctypes.c_int32

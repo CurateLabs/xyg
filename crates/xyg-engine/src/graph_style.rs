@@ -16,6 +16,203 @@ pub const FLAG_PINNED: u32 = 1 << 4;
 pub const FLAG_AGGREGATE: u32 = 1 << 5;
 pub const FLAG_DISABLED: u32 = 1 << 6;
 pub const NO_COMPOUND: u64 = u64::MAX;
+pub const RESOLVED_STYLE_VERSION: u32 = 1;
+pub const MAX_SEMANTIC_CODE: u8 = 7;
+
+/// Complete painter-facing graph style. Hosts may customize the semantic input
+/// mapping, but never reinterpret these resolved values.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ResolvedGraphStyle {
+    pub fill: [u8; 4],
+    pub stroke: [u8; 4],
+    pub halo: [u8; 4],
+    pub size: f32,
+    pub width: f32,
+    pub opacity: f32,
+    pub shape: u8,
+    pub dash: u8,
+    pub arrow: u8,
+    pub state: u8,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct GraphLegendEntry {
+    pub field: u8,
+    pub value: u8,
+    pub color: [u8; 4],
+    pub shape: u8,
+}
+
+// Color-blind-safe, light/dark-background-tested semantic colors. Code zero is
+// deliberately neutral; unknown codes fail closed rather than being modulo-mapped.
+const CLASS_PALETTE: [[u8; 4]; 8] = [
+    [110, 118, 129, 255],
+    [0, 114, 178, 255],
+    [230, 159, 0, 255],
+    [0, 158, 115, 255],
+    [204, 121, 167, 255],
+    [86, 180, 233, 255],
+    [213, 94, 0, 255],
+    [240, 228, 66, 255],
+];
+const EPISTEMIC_PALETTE: [[u8; 4]; 8] = [
+    [110, 118, 129, 255],
+    [0, 114, 178, 255],
+    [0, 158, 115, 255],
+    [230, 159, 0, 255],
+    [213, 94, 0, 255],
+    [204, 121, 167, 255],
+    [86, 180, 233, 255],
+    [45, 45, 45, 255],
+];
+const STATUS_PALETTE: [[u8; 4]; 8] = [
+    [110, 118, 129, 255],
+    [0, 158, 115, 255],
+    [230, 159, 0, 255],
+    [213, 94, 0, 255],
+    [0, 114, 178, 255],
+    [204, 121, 167, 255],
+    [86, 180, 233, 255],
+    [45, 45, 45, 255],
+];
+
+fn metric_domain(metric: &[f64]) -> (f64, f64) {
+    let mut lo = f64::INFINITY;
+    let mut hi = f64::NEG_INFINITY;
+    for value in metric.iter().copied().filter(|v| v.is_finite()) {
+        lo = lo.min(value);
+        hi = hi.max(value);
+    }
+    if !lo.is_finite() {
+        (0.0, 0.0)
+    } else {
+        (lo, hi)
+    }
+}
+
+fn metric_unit(value: f64, domain: (f64, f64)) -> f32 {
+    if !value.is_finite() || domain.0 == domain.1 {
+        0.5
+    } else {
+        ((value - domain.0) / (domain.1 - domain.0)).clamp(0.0, 1.0) as f32
+    }
+}
+
+/// Resolve canonical GraphForge class/epistemic/status/metric fields to paint.
+/// Input vocabularies are closed (0..=7), outputs are all-or-nothing, and the
+/// same routine serves nodes and edges (`edge=true`).
+pub fn resolve_semantic_styles(
+    classes: &[u8],
+    epistemic: &[u8],
+    statuses: &[u8],
+    metric: &[f64],
+    flags: &[u32],
+    edge: bool,
+    out: &mut [ResolvedGraphStyle],
+) -> Option<(f64, f64)> {
+    let n = classes.len();
+    if [
+        epistemic.len(),
+        statuses.len(),
+        metric.len(),
+        flags.len(),
+        out.len(),
+    ]
+    .iter()
+    .any(|&len| len != n)
+        || classes
+            .iter()
+            .chain(epistemic)
+            .chain(statuses)
+            .any(|&v| v > MAX_SEMANTIC_CODE)
+    {
+        return None;
+    }
+    let domain = metric_domain(metric);
+    let mut resolved = Vec::with_capacity(n);
+    for i in 0..n {
+        let state = resolve_visual_state(flags[i]);
+        let unit = metric_unit(metric[i], domain);
+        let mut fill = CLASS_PALETTE[classes[i] as usize];
+        let mut stroke = STATUS_PALETTE[statuses[i] as usize];
+        let halo = EPISTEMIC_PALETTE[epistemic[i] as usize];
+        let mut opacity = if edge { 0.68 } else { 0.92 };
+        let mut width = if edge {
+            0.75 + 3.25 * unit
+        } else {
+            1.0 + 1.5 * unit
+        };
+        if state == STATE_SELECTED {
+            stroke = [255, 255, 255, 255];
+            width += 2.0;
+        }
+        if state == STATE_HOVERED {
+            width += 1.25;
+        }
+        if state == STATE_NEIGHBOR {
+            opacity = 1.0;
+        }
+        if state == STATE_FILTERED {
+            opacity = 0.08;
+        }
+        if state == STATE_DISABLED {
+            opacity = 0.28;
+            fill = [110, 118, 129, 255];
+        }
+        resolved.push(ResolvedGraphStyle {
+            fill,
+            stroke,
+            halo,
+            size: if edge { 0.0 } else { 7.0 + 13.0 * unit },
+            width,
+            opacity,
+            shape: if edge { 0 } else { classes[i] % 6 },
+            dash: if edge { epistemic[i] % 4 } else { 0 },
+            arrow: u8::from(edge && statuses[i] != 0),
+            state,
+        });
+    }
+    out.copy_from_slice(&resolved);
+    Some(domain)
+}
+
+/// Deterministic, de-duplicated legend descriptors ordered field then code.
+pub fn semantic_legend(
+    classes: &[u8],
+    epistemic: &[u8],
+    statuses: &[u8],
+) -> Option<Vec<GraphLegendEntry>> {
+    if classes
+        .iter()
+        .chain(epistemic)
+        .chain(statuses)
+        .any(|&v| v > MAX_SEMANTIC_CODE)
+    {
+        return None;
+    }
+    let mut entries = Vec::new();
+    for (field, values, palette) in [
+        (0, classes, &CLASS_PALETTE),
+        (1, epistemic, &EPISTEMIC_PALETTE),
+        (2, statuses, &STATUS_PALETTE),
+    ] {
+        let mut seen = [false; 8];
+        for &value in values {
+            seen[value as usize] = true;
+        }
+        for (value, present) in seen.into_iter().enumerate() {
+            if present {
+                entries.push(GraphLegendEntry {
+                    field,
+                    value: value as u8,
+                    color: palette[value],
+                    shape: if field == 0 { value as u8 % 6 } else { 0 },
+                });
+            }
+        }
+    }
+    Some(entries)
+}
 
 #[must_use]
 pub fn resolve_visual_state(flags: u32) -> u8 {
@@ -246,5 +443,95 @@ mod tests {
         assert_eq!(ic, [12; 3]);
         assert_eq!(xmin, [13.; 3]);
         assert_eq!(ymax, [16.; 3]);
+    }
+
+    #[test]
+    fn semantic_style_golden_and_state_precedence_are_stable() {
+        let mut out = [ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        }; 3];
+        let domain = resolve_semantic_styles(
+            &[1, 2, 3],
+            &[2, 3, 4],
+            &[1, 2, 3],
+            &[10.0, 20.0, 30.0],
+            &[0, FLAG_HOVERED | FLAG_SELECTED, FLAG_DISABLED],
+            false,
+            &mut out,
+        )
+        .unwrap();
+        assert_eq!(domain, (10.0, 30.0));
+        assert_eq!(out[0].fill, [0, 114, 178, 255]);
+        assert_eq!((out[0].size, out[0].shape), (7.0, 1));
+        assert_eq!((out[1].state, out[1].stroke), (STATE_SELECTED, [255; 4]));
+        assert_eq!((out[2].state, out[2].opacity), (STATE_DISABLED, 0.28));
+    }
+
+    #[test]
+    fn edge_style_and_legend_are_deterministic() {
+        let mut out = [ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
+        }; 2];
+        resolve_semantic_styles(
+            &[2, 2],
+            &[3, 1],
+            &[0, 4],
+            &[f64::NAN, 8.0],
+            &[0, 0],
+            true,
+            &mut out,
+        )
+        .unwrap();
+        assert_eq!(out[0].size, 0.0);
+        assert_eq!((out[0].dash, out[0].arrow), (3, 0));
+        assert_eq!((out[1].dash, out[1].arrow), (1, 1));
+        let legend = semantic_legend(&[2, 1, 2], &[3, 3, 1], &[4, 0, 4]).unwrap();
+        assert_eq!(
+            legend
+                .iter()
+                .map(|e| (e.field, e.value))
+                .collect::<Vec<_>>(),
+            vec![(0, 1), (0, 2), (1, 1), (1, 3), (2, 0), (2, 4)]
+        );
+    }
+
+    #[test]
+    fn semantic_resolution_is_atomic_and_bounded() {
+        let sentinel = ResolvedGraphStyle {
+            fill: [9; 4],
+            stroke: [9; 4],
+            halo: [9; 4],
+            size: 9.0,
+            width: 9.0,
+            opacity: 9.0,
+            shape: 9,
+            dash: 9,
+            arrow: 9,
+            state: 9,
+        };
+        let mut out = [sentinel];
+        assert_eq!(
+            resolve_semantic_styles(&[8], &[0], &[0], &[0.0], &[0], false, &mut out),
+            None
+        );
+        assert_eq!(out, [sentinel]);
     }
 }

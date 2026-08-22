@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 85;
+pub const ABI_VERSION: u32 = 86;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7531,6 +7531,113 @@ pub unsafe extern "C" fn xyg_graph_visual_state_resolve(
         } else {
             -1
         }
+    })
+}
+
+/// Resolve versioned canonical GraphForge semantic fields into painter values (#34).
+///
+/// RGBA outputs address `n * 4` bytes; every other array addresses `n` elements.
+/// The resolver validates the complete input before writing any output.
+///
+/// # Safety
+/// Every non-empty pointer must address the documented readable/writable extent.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
+    version: u32,
+    n: u64,
+    classes: *const u8,
+    epistemic: *const u8,
+    statuses: *const u8,
+    metric: *const f64,
+    flags: *const u32,
+    edge: i32,
+    fill_rgba: *mut u8,
+    stroke_rgba: *mut u8,
+    halo_rgba: *mut u8,
+    size: *mut f32,
+    width: *mut f32,
+    opacity: *mut f32,
+    shape: *mut u8,
+    dash: *mut u8,
+    arrow: *mut u8,
+    state: *mut u8,
+    out_domain_lo: *mut f64,
+    out_domain_hi: *mut f64,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if version != xyg_engine::graph_style::RESOLVED_STYLE_VERSION
+        || out_domain_lo.is_null()
+        || out_domain_hi.is_null()
+        || (n > 0 && [classes, epistemic, statuses].iter().any(|p| p.is_null()))
+        || (n > 0
+            && (metric.is_null()
+                || flags.is_null()
+                || fill_rgba.is_null()
+                || stroke_rgba.is_null()
+                || halo_rgba.is_null()
+                || size.is_null()
+                || width.is_null()
+                || opacity.is_null()
+                || shape.is_null()
+                || dash.is_null()
+                || arrow.is_null()
+                || state.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($p:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, n)
+                }
+            };
+        }
+        let mut resolved = vec![
+            xyg_engine::graph_style::ResolvedGraphStyle {
+                fill: [0; 4],
+                stroke: [0; 4],
+                halo: [0; 4],
+                size: 0.0,
+                width: 0.0,
+                opacity: 0.0,
+                shape: 0,
+                dash: 0,
+                arrow: 0,
+                state: 0,
+            };
+            n
+        ];
+        let Some(domain) = xyg_engine::graph_style::resolve_semantic_styles(
+            input!(classes),
+            input!(epistemic),
+            input!(statuses),
+            input!(metric),
+            input!(flags),
+            edge != 0,
+            &mut resolved,
+        ) else {
+            return -1;
+        };
+        for (i, style) in resolved.iter().enumerate() {
+            std::ptr::copy_nonoverlapping(style.fill.as_ptr(), fill_rgba.add(i * 4), 4);
+            std::ptr::copy_nonoverlapping(style.stroke.as_ptr(), stroke_rgba.add(i * 4), 4);
+            std::ptr::copy_nonoverlapping(style.halo.as_ptr(), halo_rgba.add(i * 4), 4);
+            *size.add(i) = style.size;
+            *width.add(i) = style.width;
+            *opacity.add(i) = style.opacity;
+            *shape.add(i) = style.shape;
+            *dash.add(i) = style.dash;
+            *arrow.add(i) = style.arrow;
+            *state.add(i) = style.state;
+        }
+        *out_domain_lo = domain.0;
+        *out_domain_hi = domain.1;
+        0
     })
 }
 

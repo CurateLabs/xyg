@@ -15,6 +15,30 @@ def test_visual_state_and_label_budget_are_rust_owned() -> None:
     assert accepted.flags.c_contiguous
 
 
+def test_graphforge_semantic_style_contract_golden() -> None:
+    resolved = _native.graph_semantic_styles(
+        np.array([1, 2, 3], dtype=np.uint8),
+        np.array([2, 3, 4], dtype=np.uint8),
+        np.array([1, 2, 3], dtype=np.uint8),
+        np.array([10.0, 20.0, 30.0]),
+        np.array([0, 2 | 1, 64], dtype=np.uint32),
+    )
+    assert resolved["version"] == 1
+    assert resolved["metric_domain"] == (10.0, 30.0)
+    assert resolved["fill_rgba"].tolist()[0] == [0, 114, 178, 255]
+    assert resolved["size"].tolist() == [7.0, 13.5, 20.0]
+    assert resolved["state"].tolist() == [0, 5, 7]
+    assert resolved["stroke_rgba"].tolist()[1] == [255, 255, 255, 255]
+    assert np.isclose(resolved["opacity"][2], np.float32(0.28))
+
+
+def test_graphforge_semantic_style_rejects_unknown_vocabularies() -> None:
+    with np.testing.assert_raises_regex(ValueError, "closed range"):
+        _native.graph_semantic_styles([8], [0], [0], [0.0], [0])
+    with np.testing.assert_raises_regex(ValueError, "equal"):
+        _native.graph_semantic_styles([1], [0, 1], [0], [0.0], [0])
+
+
 def test_compound_bounds_keep_membership_and_child_identity() -> None:
     parent_of, compounds, bounds = _native.graph_compound_bounds(
         np.array([0.0, -1.0, 2.0, 9.0]),

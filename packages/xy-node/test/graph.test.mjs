@@ -10,6 +10,7 @@ import {
   graphBuildRender,
   graphEdgeRouteSegments,
   graphVisualStates,
+  graphSemanticStyles,
   graphLabelAccept,
   graphCompoundBounds,
   graphClusterAggregate,
@@ -25,10 +26,23 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 85);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 86);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
+});
+
+test("GraphForge semantic styles are identical to the native golden", () => {
+  const resolved = graphSemanticStyles(
+    Uint8Array.from([1, 2, 3]), Uint8Array.from([2, 3, 4]), Uint8Array.from([1, 2, 3]),
+    Float64Array.from([10, 20, 30]), Uint32Array.from([0, 3, 64]),
+  );
+  assert.equal(resolved.version, 1);
+  assert.deepEqual([...resolved.metricDomain], [10, 30]);
+  assert.deepEqual([...resolved.fillRgba.slice(0, 4)], [0, 114, 178, 255]);
+  assert.deepEqual([...resolved.size], [7, 13.5, 20]);
+  assert.deepEqual([...resolved.state], [0, 5, 7]);
+  assert.throws(() => graphSemanticStyles([8], [0], [0], [0], [0]), /closed range/);
 });
 
 test("GraphForge tables preserve UUID identity, parents, and provenance through Rust", () => {

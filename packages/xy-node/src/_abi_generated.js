@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 85;
-export const SIGNATURE_SHA256 = "c3158a4adaa116aafc5ef6ffbe2f3789cdb93e5a07c85e0527f169e7b4b74e0d";
+export const ABI_VERSION = 86;
+export const SIGNATURE_SHA256 = "03a633a8aa1e7a7b99e2803fda6dd711dfac4e25eccf2dd50d846bb600513623";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -61,6 +61,7 @@ export let xyGraphProjectionCounts;
 export let xyGraphProjectionCreate;
 export let xyGraphProjectionDestroy;
 export let xyGraphSampleEdges;
+export let xyGraphSemanticStyleResolve;
 export let xyGraphVisualStateResolve;
 export let xyHeatmapRgba;
 export let xyHexbin;
@@ -245,6 +246,7 @@ export function bindGeneratedAbi(lib) {
   xyGraphProjectionCreate = lib.func("int32_t xyg_graph_projection_create(const void * descriptor, uint64_t * out_handle)");
   xyGraphProjectionDestroy = lib.func("int32_t xyg_graph_projection_destroy(uint64_t handle)");
   xyGraphSampleEdges = lib.func("uint64_t xyg_graph_sample_edges(uint64_t n_edges, uint64_t budget, uint64_t * out_indices)");
+  xyGraphSemanticStyleResolve = lib.func("int32_t xyg_graph_semantic_style_resolve(uint32_t version, uint64_t n, const uint8_t * classes, const uint8_t * epistemic, const uint8_t * statuses, const double * metric, const uint32_t * flags, int32_t edge, uint8_t * fill_rgba, uint8_t * stroke_rgba, uint8_t * halo_rgba, float * size, float * width, float * opacity, uint8_t * shape, uint8_t * dash, uint8_t * arrow, uint8_t * state, double * out_domain_lo, double * out_domain_hi)");
   xyGraphVisualStateResolve = lib.func("int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out)");
   xyHeatmapRgba = lib.func("int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyHexbin = lib.func("size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy)");

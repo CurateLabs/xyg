@@ -433,8 +433,28 @@ accessibility surface. It deliberately does **not** paint label text or
 compound AABBs yet: zoom acceptance, screen clipping, collision, truncation,
 and final text placement must first become Rust-emitted bounded paint
 primitives. TypeScript must not infer those decisions from the source-indexed
-metadata. Nested transitive bounds, collapse/expand, style scales, legends,
-browser/static text and bounds, and visual goldens remain.
+metadata. Nested transitive bounds, collapse/expand, browser/static text and
+bounds, and visual goldens remain.
+
+#### 7.1.1 Versioned GraphForge resolved style v1
+
+ABI 86 adds `xyg_graph_semantic_style_resolve(version=1)`. It is the sole
+resolver for the closed canonical numeric planes `class`, `epistemic`,
+`status`, `metric`, and interaction flags, for both nodes and edges. Codes are
+bounded to `0..=7`; an unknown code or mismatched plane rejects the entire
+call before any output changes. Rust computes the finite metric domain and
+linear clamped size/width scale, applies the §7.1 state precedence to actual
+paint, and emits fill/stroke/halo RGBA, node size/shape, edge width/dash/arrow,
+opacity, and resolved state. Hosts serialize these painter values and do not
+recreate palettes, domains, ordering, or state overlays.
+
+The v1 class, epistemic, and status tables use a fixed color-blind-safe
+Okabe-Ito-derived vocabulary with a neutral zero value. Rust also owns
+`semantic_legend`: present values are de-duplicated and emitted in stable
+field-then-code order with the same palette and class shape descriptor. This
+slice exposes resolved paint through native Python and Node bindings. Wiring
+the same resolver into the direct-WASM scene entry and graph composition paint
+path is required before claiming browser/export acceptance for #34.
 
 ---
 

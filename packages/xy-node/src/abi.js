@@ -26,6 +26,7 @@ import {
   xyGraphEdgeRouteSegments,
   xyGraphCompoundBounds,
   xyGraphLabelAccept,
+  xyGraphSemanticStyleResolve,
   xyGraphVisualStateResolve,
   xyGraphClusterAggregate,
   xyGraphForceCreate,
@@ -1533,6 +1534,25 @@ export function graphVisualStates(flags) {
   return out;
 }
 
+export function graphSemanticStyles(classes, epistemic, statuses, metric, flags, opts = {}) {
+  const ca = asU8Array(classes, "classes"); const ea = asU8Array(epistemic, "epistemic");
+  const sa = asU8Array(statuses, "statuses"); const ma = asF64Array(metric, "metric");
+  const fa = asU32Array(flags, "flags"); const n = ca.length;
+  for (const [name, value] of [["epistemic", ea], ["statuses", sa], ["metric", ma], ["flags", fa]]) {
+    requireEqualLength(ca, value, "classes", name);
+  }
+  for (const [name, value] of [["classes", ca], ["epistemic", ea], ["statuses", sa]]) {
+    if (value.some((code) => code > 7)) throw new RangeError(`${name} codes must be in the closed range 0..7`);
+  }
+  const fillRgba = new Uint8Array(n * 4); const strokeRgba = new Uint8Array(n * 4); const haloRgba = new Uint8Array(n * 4);
+  const size = new Float32Array(n); const width = new Float32Array(n); const opacity = new Float32Array(n);
+  const shape = new Uint8Array(n); const dash = new Uint8Array(n); const arrow = new Uint8Array(n); const state = new Uint8Array(n);
+  const domain = new Float64Array(2);
+  const code = xyGraphSemanticStyleResolve(1, toU64(n, "classes.length"), u8Ptr(ca), u8Ptr(ea), u8Ptr(sa), f64Ptr(ma), u32Ptr(fa), opts.edge ? 1 : 0, u8Ptr(fillRgba), u8Ptr(strokeRgba), u8Ptr(haloRgba), f32Ptr(size), f32Ptr(width), f32Ptr(opacity), u8Ptr(shape), u8Ptr(dash), u8Ptr(arrow), u8Ptr(state), f64Ptr(domain.subarray(0, 1)), f64Ptr(domain.subarray(1)));
+  if (code !== 0) throw new Error(`xyg_graph_semantic_style_resolve failed with code ${code}`);
+  return { version: 1, fillRgba, strokeRgba, haloRgba, size, width, opacity, shape, dash, arrow, state, metricDomain: domain };
+}
+
 export function graphLabelAccept(priorities, budget, opts = {}) {
   const input = priorities instanceof Float64Array ? priorities : Float64Array.from(priorities ?? [], Number);
   const out = new Uint8Array(input.length);
@@ -1877,4 +1897,8 @@ function i32Ptr(view) {
 
 function f64Ptr(view) {
   return pointer(view, "double *");
+}
+
+function f32Ptr(view) {
+  return pointer(view, "float *");
 }

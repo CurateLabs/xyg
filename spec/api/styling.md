@@ -123,6 +123,12 @@ xyg.bar(
 | triangle mesh | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 | heatmap, hexbin | `fill-opacity`, `opacity` |
 
+Canonical GraphForge numeric semantic planes additionally have a versioned
+Rust-owned resolved-paint contract (graph-mark §7.1.1). The low-level Python
+and Node bindings expose v1 for parity and inspection; application-facing
+mapping names remain unreleased until the browser/export paint path consumes
+the same result.
+
 Legacy appearance arguments such as `color=`, `width=`, and `opacity=` remain
 supported; a CSS `style` declaration is the final override when both are set.
 Within `style`, use the standard paint property for the geometry: `stroke` for
