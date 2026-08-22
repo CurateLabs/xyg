@@ -9,6 +9,7 @@
 
 pub mod aggregate;
 pub mod compile;
+mod compound;
 mod dashboard;
 mod graph;
 mod temporal;
@@ -18,7 +19,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 13;
+pub const WASM_ABI_VERSION: u32 = 14;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -249,6 +250,15 @@ pub extern "C" fn xyg_wasm_temporal_graph_execute(
 ) -> i32 {
     with_instance_mut(handle, |instance| {
         temporal_graph::execute(instance, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Execute one packed `XYGC` compound disclosure transition and write `XYCO`.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_compound_transition(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |instance| {
+        compound::execute(instance, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
@@ -1188,6 +1198,68 @@ mod tests {
     fn write_arena(handle: u32, bytes: &[u8]) {
         assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
         with_instance_mut(handle, |instance| instance.arena.copy_from_slice(bytes)).unwrap();
+    }
+
+    fn compound_request(action: u32, lod_tier: u32) -> Vec<u8> {
+        let mut out = vec![0u8; 40];
+        out[..4].copy_from_slice(b"XYGC");
+        out[4..8].copy_from_slice(&1u32.to_le_bytes());
+        out[8..12].copy_from_slice(&40u32.to_le_bytes());
+        out[12..16].copy_from_slice(&action.to_le_bytes());
+        out[16..20].copy_from_slice(&lod_tier.to_le_bytes());
+        out[20..24].copy_from_slice(&3u32.to_le_bytes());
+        out[24..32].copy_from_slice(&17u64.to_le_bytes());
+        for value in [91u64, 17, 44] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        for value in [0u64, 0, 1] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&[0, 1, 1]);
+        out.extend_from_slice(&[0, 0, 0]);
+        out
+    }
+
+    #[test]
+    fn compound_transition_uses_rust_policy_and_refuses_aggregate_lod_atomically() {
+        let handle = xyg_wasm_instance_new(4096);
+        let request = compound_request(1, 0);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_compound_transition(handle, 0, request.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYCO");
+            assert_eq!(instance.output[12], 1);
+            assert_eq!(&instance.output[16..], &[0, 1, 0]);
+            assert_eq!(instance.arena.capacity(), 0);
+        })
+        .unwrap();
+
+        let aggregate = compound_request(1, 1);
+        write_arena(handle, &aggregate);
+        assert_eq!(
+            xyg_wasm_compound_transition(handle, 0, aggregate.len()),
+            STATUS_INVALID_ARGUMENT
+        );
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+        with_instance_mut(handle, |instance| assert_eq!(instance.arena.capacity(), 0)).unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+
+        let bounded = xyg_wasm_instance_new(128);
+        let request = compound_request(1, 0);
+        write_arena(bounded, &request);
+        assert_eq!(
+            xyg_wasm_compound_transition(bounded, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        with_instance_mut(bounded, |instance| {
+            assert_eq!(instance.arena.capacity(), 0);
+            assert_eq!(instance.output.capacity(), 0);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(bounded), STATUS_OK);
     }
 
     fn fragmented_scene(count: usize) -> Vec<u8> {

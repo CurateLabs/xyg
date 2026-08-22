@@ -247,6 +247,7 @@ Forbidden:
 | --- | --- | --- | --- | ---: |
 | `crates/xyg-core/src/lib.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-wasm/src/lib.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+| `crates/xyg-wasm/src/compound.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/dashboard.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/compile.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/bin/xyts_conformance.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
@@ -292,6 +293,7 @@ Forbidden:
 | `js/src/46_worker.ts` | Shared TypeScript fallback compute | `browser-wasm-migration` | `replace-with-rust-wasm` | #59 |
 | `js/src/47_wasm.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/48_wasm_scene.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/49_wasm_compound.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_dashboard.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_columns.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |

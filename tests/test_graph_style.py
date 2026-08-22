@@ -15,6 +15,25 @@ def test_visual_state_and_label_budget_are_rust_owned() -> None:
     assert accepted.flags.c_contiguous
 
 
+def test_compound_disclosure_transition_is_atomic_and_lod_aware() -> None:
+    args = (
+        np.array([91, 17, 44], dtype=np.uint64),
+        np.array([0, 0, 1], dtype=np.uint64),
+        np.array([0, 1, 1], dtype=np.uint8),
+        np.array([0, 0, 0], dtype=np.uint8),
+    )
+    collapsed, changed = _native.graph_compound_transition(*args, 17, 1)
+    assert changed is True
+    assert collapsed.tolist() == [False, True, False]
+    same, changed = _native.graph_compound_transition(*args[:3], collapsed, 17, 1)
+    assert changed is False
+    assert same.tolist() == collapsed.tolist()
+    with np.testing.assert_raises_regex(ValueError, "failed"):
+        _native.graph_compound_transition(*args, 17, 1, lod_tier=1)
+    with np.testing.assert_raises_regex(ValueError, "failed"):
+        _native.graph_compound_transition(*args, 44, 1)
+
+
 def test_graphforge_semantic_style_contract_golden() -> None:
     resolved = _native.graph_semantic_styles(
         np.array([1, 2, 3], dtype=np.uint8),

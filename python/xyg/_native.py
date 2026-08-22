@@ -5255,6 +5255,68 @@ def graph_compound_bounds(
     return parent_of, compounds.astype(np.bool_), np.column_stack((xmin, xmax, ymin, ymax))
 
 
+def graph_compound_transition(
+    node_ids: npt.ArrayLike,
+    parents: npt.ArrayLike,
+    parent_validity: npt.ArrayLike,
+    collapsed: npt.ArrayLike,
+    target_id: int,
+    action: int,
+    lod_tier: int = 0,
+) -> tuple[npt.NDArray[np.bool_], bool]:
+    """Apply one Rust-owned compound disclosure transition by stable identity."""
+
+    def exact_unsigned(
+        values: npt.ArrayLike,
+        name: str,
+        dtype: npt.DTypeLike,
+        maximum: int,
+        *,
+        allow_bool: bool = False,
+    ):
+        raw = np.asarray(values)
+        if raw.ndim != 1 or raw.dtype.kind not in ("iub" if allow_bool else "iu"):
+            raise ValueError(f"{name} must be a 1-D exact integer array")
+        if any(int(value) < 0 or int(value) > maximum for value in raw):
+            raise ValueError(f"{name} contains an out-of-range value")
+        return np.ascontiguousarray(raw, dtype=dtype)
+
+    ids = exact_unsigned(node_ids, "node_ids", np.uint64, 0xFFFF_FFFF_FFFF_FFFF)
+    parent_arr = exact_unsigned(parents, "parents", np.uint64, 0xFFFF_FFFF_FFFF_FFFF)
+    validity = exact_unsigned(parent_validity, "parent_validity", np.uint8, 1, allow_bool=True)
+    state = exact_unsigned(collapsed, "collapsed", np.uint8, 1, allow_bool=True)
+    if not (len(parent_arr) == len(validity) == len(state) == len(ids)):
+        raise ValueError("compound transition planes must have equal length")
+    if (
+        isinstance(target_id, (bool, np.bool_))
+        or not 0 <= operator.index(target_id) <= 0xFFFF_FFFF_FFFF_FFFF
+    ):
+        raise ValueError("target_id must be an exact uint64 integer")
+    if isinstance(action, (bool, np.bool_)) or isinstance(lod_tier, (bool, np.bool_)):
+        raise TypeError("action and lod_tier must be exact integers")
+    action_value = operator.index(action)
+    lod_value = operator.index(lod_tier)
+    if not 0 <= action_value <= 0xFFFF_FFFF or not 0 <= lod_value <= 0xFFFF_FFFF:
+        raise ValueError("action and lod_tier must fit uint32")
+    out = np.empty(len(ids), dtype=np.uint8)
+    changed = ctypes.c_uint8()
+    status = _lib.xyg_graph_compound_transition(
+        ctypes.c_uint64(len(ids)),
+        ids.ctypes.data if len(ids) else None,
+        parent_arr.ctypes.data if len(ids) else None,
+        validity.ctypes.data if len(ids) else None,
+        state.ctypes.data if len(ids) else None,
+        ctypes.c_uint64(operator.index(target_id)),
+        ctypes.c_uint32(action_value),
+        ctypes.c_uint32(lod_value),
+        out.ctypes.data if len(ids) else None,
+        ctypes.byref(changed),
+    )
+    if status != 0:
+        raise ValueError("native graph_compound_transition failed")
+    return out.astype(np.bool_), bool(changed.value)
+
+
 def graph_compound_scene(
     *,
     width,

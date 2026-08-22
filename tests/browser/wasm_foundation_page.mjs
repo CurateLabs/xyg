@@ -15,6 +15,7 @@ import {
   renderWasmScene,
   encodeWasmSemanticGraph,
   renderWasmSemanticGraph,
+  transitionWasmCompound,
   XygWasmError,
   XygWasmTemporalController,
   XygWasmTemporalGraph,
@@ -270,6 +271,7 @@ async function fixtureModule({
     "xyg_wasm_scene_compile_records_processed",
     "xyg_wasm_scene_compile_phase",
     "xyg_wasm_dashboard_plan",
+    "xyg_wasm_compound_transition",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -283,7 +285,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -294,7 +296,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    13, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    14, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -304,8 +306,11 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0,
   ];
+  if (names.length !== functionTypes.length || names.length !== values.length) {
+    throw new Error("fake WASM export tables are misaligned");
+  }
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
       || (cancelTrap && index === 8)
@@ -339,6 +344,19 @@ async function rejected(promise, code, status = null) {
     return error;
   }
   throw new Error(`expected ${code} rejection`);
+}
+
+async function rejectedSuperseded(promise) {
+  try {
+    await promise;
+  } catch (error) {
+    if (!(error instanceof XygWasmError)) throw error;
+    const valid = (error.code === "XYG_WASM_CANCELLED" && error.status === 6)
+      || (error.code === "XYG_WASM_STALE_SEQUENCE" && error.status === 7);
+    if (!valid) throw new Error(`wanted cancelled or stale supersession, got ${error.code}: ${error.message}`);
+    return error;
+  }
+  throw new Error("expected superseded request rejection");
 }
 
 function rawWorkerHarness() {
@@ -386,7 +404,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 13,
+    expectedAbiVersion: 14,
     expectedSceneVersion: 12,
   };
 }
@@ -545,7 +563,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 13 || ready.sceneVersion !== 12) {
+  if (ready.abiVersion !== 14 || ready.sceneVersion !== 12) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1175,6 +1193,42 @@ async function run() {
       || !graphLabels.some((label) => label.textContent.endsWith("…"))) {
     throw new Error(`semantic graph labels lost Rust placement/truncation/a11y: ${graphLabels.map((label) => label.textContent).join("|")}`);
   }
+  foundationStage = "public compound disclosure lifecycle";
+  const transitionInput = {
+    nodeIds: [visibleParentId, collapsedChildId, visiblePeerId],
+    parents: semanticGraph.parents,
+    parentValidity: semanticGraph.parentValidity,
+    collapsed: semanticGraph.collapsed,
+    targetId: visibleParentId,
+    action: "expand",
+    tier: "direct",
+  };
+  const expanded = await transitionWasmCompound(semanticWorker, transitionInput).result;
+  if (!expanded.changed || expanded.collapsed.join(",") !== "0,0,0") throw new Error("Rust expand transition returned the wrong atomic state");
+  semanticView.destroy();
+  if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) throw new Error("expand update retained a stale label layer");
+  semanticView = await renderWasmSemanticGraph({ el: semanticHost, graph: { ...semanticGraph, collapsed: expanded.collapsed }, worker: semanticWorker, transfer: false });
+  const expandedIds = [];
+  semanticView.gpuTraces.forEach((trace, traceIndex) => {
+    if (trace.trace.kind !== "scatter") return;
+    for (let row=0; row<trace._sceneIds.lo.length; row++) expandedIds.push(semanticView.sceneStableId(traceIndex, row));
+  });
+  const expandedLabels = [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"][role="listitem"]')];
+  if (!expandedIds.includes(collapsedChildId) || !expandedLabels.some((label) => BigInt(label.dataset.xyStableId) === collapsedChildId)
+      || semanticHost.querySelectorAll('[data-xy-chrome="graph_labels"]').length !== 1) throw new Error("expanded child identity did not reach GPU and a11y consumers");
+  const recollapsed = await transitionWasmCompound(semanticWorker, { ...transitionInput, collapsed: expanded.collapsed, action: "toggle" }).result;
+  if (!recollapsed.changed || recollapsed.collapsed.join(",") !== "1,0,0") throw new Error("Rust toggle transition returned the wrong atomic state");
+  semanticView.destroy();
+  if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) throw new Error("collapse update retained a stale label layer");
+  semanticView = await renderWasmSemanticGraph({ el: semanticHost, graph: { ...semanticGraph, collapsed: recollapsed.collapsed }, worker: semanticWorker, transfer: false });
+  const recollapsedIds = [];
+  semanticView.gpuTraces.forEach((trace, traceIndex) => {
+    if (trace.trace.kind !== "scatter") return;
+    for (let row=0; row<trace._sceneIds.lo.length; row++) recollapsedIds.push(semanticView.sceneStableId(traceIndex, row));
+  });
+  if (semanticHost.querySelectorAll('[data-xy-chrome="graph_labels"]').length !== 1
+      || recollapsedIds.includes(collapsedChildId)
+      || [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"]')].some((label) => BigInt(label.dataset.xyStableId) === collapsedChildId)) throw new Error("recollapse retained descendant a11y identity or duplicate layers");
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const semanticCanvas = semanticView.canvas;
   const semanticGl = semanticView.gl;
@@ -1881,7 +1935,7 @@ async function run() {
   const firstAggregate = aggregateWasmBin2d(checkpointWorker, { x: checkpointPoints, y: checkpointPoints, x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64 }, { sequence: 1 });
   await new Promise((resolve) => setTimeout(resolve, 0));
   const newerAggregate = aggregateWasmBin2d(checkpointWorker, { x: [0.5], y: [0.5], x0: 0, x1: 1, y0: 0, y1: 1, width: 2, height: 2 }, { sequence: 2 });
-  await rejected(firstAggregate.result, "XYG_WASM_CANCELLED", 6);
+  await rejectedSuperseded(firstAggregate.result);
   const newer = await newerAggregate.result;
   if (newer.maxCount !== 1 || newer.width !== 2) throw new Error("new viewport did not progress after aggregate checkpoint cancellation");
   await checkpointWorker.dispose();
@@ -1897,7 +1951,7 @@ async function run() {
   const concurrentPlan = planWasmDashboardResources(dashboardSupersedeWorker, [
     { stableId: 1n, derivedBytes: 8n, lastUsed: 1n, visible: true },
   ], 8n);
-  await rejected(supersededAggregate.result, "XYG_WASM_CANCELLED", 6);
+  await rejectedSuperseded(supersededAggregate.result);
   const retainedAfterCancellation = await concurrentPlan;
   if (retainedAfterCancellation.retained.join(",") !== "true" || retainedAfterCancellation.retainedBytes !== 8n) {
     throw new Error("dashboard plan did not recover the shared arena after aggregate cancellation");
@@ -1932,7 +1986,7 @@ async function run() {
     }, { sequence: 1 });
     const nextOperation = invoke(operationWorker);
     try {
-      await rejected(pendingAggregate.result, "XYG_WASM_CANCELLED", 6);
+      await rejectedSuperseded(pendingAggregate.result);
       await nextOperation.result;
     } catch (error) {
       throw new Error(`aggregate supersession by ${name} failed: ${error.message}`);

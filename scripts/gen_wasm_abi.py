@@ -209,6 +209,34 @@ def validate_semantic_graph(manifest: dict[str, object]) -> None:
             raise SystemExit(f"semantic_graph {key} must be a positive integer")
 
 
+def validate_compound_transition(manifest: dict[str, object]) -> None:
+    expected = {
+        "request_magic": "XYGC",
+        "request_version": 1,
+        "request_header_bytes": 40,
+        "request_offsets": {
+            "version": 4,
+            "header_bytes": 8,
+            "action": 12,
+            "lod_tier": 16,
+            "node_count": 20,
+            "target_id": 24,
+            "reserved": 32,
+        },
+        "request_plane_bytes_per_node": 18,
+        "request_planes": ["node_ids_u64", "parents_u64", "parent_validity_u8", "collapsed_u8"],
+        "output_magic": "XYCO",
+        "output_version": 1,
+        "output_header_bytes": 16,
+        "output_offsets": {"version": 4, "header_bytes": 8, "changed": 12, "collapsed": 16},
+        "actions": {"expand": 0, "collapse": 1, "toggle": 2},
+        "lod_tiers": {"direct": 0},
+        "max_nodes": 1024,
+    }
+    if manifest.get("compound_transition") != expected:
+        raise SystemExit("compound_transition differs from the exact XYGC/XYCO v1 contract")
+
+
 def render(manifest: dict[str, object]) -> str:
     abi_version = int(manifest["abi_version"])
     scene_version = int(manifest["scene_version"])
@@ -235,6 +263,7 @@ def render(manifest: dict[str, object]) -> str:
     graph = manifest["graph"]
     temporal_graph = manifest["temporal_graph"]
     semantic_graph = manifest["semantic_graph"]
+    compound_transition = manifest["compound_transition"]
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if (
@@ -285,6 +314,18 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_SEMANTIC_GRAPH_THEMES = {json.dumps(semantic_graph['themes'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_CODE = {int(semantic_graph['semantic_code_max'])} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_STATE_FLAG_MASK = {int(semantic_graph['state_flag_mask'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_MAX_NODES = {int(compound_transition['max_nodes'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_MAGIC = {json.dumps(compound_transition['request_magic'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_VERSION = {int(compound_transition['request_version'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_HEADER_BYTES = {int(compound_transition['request_header_bytes'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_OFFSETS = {json.dumps(compound_transition['request_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_PLANE_BYTES_PER_NODE = {int(compound_transition['request_plane_bytes_per_node'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_OUTPUT_MAGIC = {json.dumps(compound_transition['output_magic'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_OUTPUT_VERSION = {int(compound_transition['output_version'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_OUTPUT_HEADER_BYTES = {int(compound_transition['output_header_bytes'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_OUTPUT_OFFSETS = {json.dumps(compound_transition['output_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_ACTIONS = {json.dumps(compound_transition['actions'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_LOD_TIERS = {json.dumps(compound_transition['lod_tiers'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_MAX_ARENA_BYTES = {max_arena_bytes} as const;",
         f"export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = {painter_max_legend_bytes} as const;",
         f"export const XYG_WASM_AGGREGATE_VERSION = {int(aggregate['version'])} as const;",
@@ -525,6 +566,57 @@ def verify_rust(manifest: dict[str, object]) -> None:
         compile_source,
     ):
         raise SystemExit("xyg-wasm compile decoder contains a handwritten XYTS wire constant")
+    compound = manifest["compound_transition"]
+    assert isinstance(compound, dict)
+    compound_source = (ROOT / "crates" / "xyg-wasm" / "src" / "compound.rs").read_text(
+        encoding="utf-8"
+    )
+    for rust_name, manifest_name in (
+        ("REQUEST_VERSION", "request_version"),
+        ("REQUEST_HEADER_BYTES", "request_header_bytes"),
+        ("REQUEST_PLANE_BYTES_PER_NODE", "request_plane_bytes_per_node"),
+        ("OUTPUT_VERSION", "output_version"),
+        ("OUTPUT_HEADER_BYTES", "output_header_bytes"),
+    ):
+        match = re.search(rf"const {rust_name}: (?:u32|usize) = ([0-9_]+);", compound_source)
+        if not match or int(match.group(1).replace("_", "")) != int(compound[manifest_name]):
+            raise SystemExit(f"xyg-wasm {rust_name} differs from compound_transition manifest")
+    for offset_name, offset_value in compound["request_offsets"].items():
+        rust_name = f"REQUEST_{str(offset_name).upper()}_OFFSET"
+        match = re.search(rf"const {rust_name}: usize = ([0-9_]+);", compound_source)
+        if not match or int(match.group(1).replace("_", "")) != int(offset_value):
+            raise SystemExit(f"xyg-wasm {rust_name} differs from compound_transition manifest")
+    for offset_name, offset_value in compound["output_offsets"].items():
+        rust_name = f"OUTPUT_{str(offset_name).upper()}_OFFSET"
+        match = re.search(rf"const {rust_name}: usize = ([0-9_]+);", compound_source)
+        if not match or int(match.group(1).replace("_", "")) != int(offset_value):
+            raise SystemExit(f"xyg-wasm {rust_name} differs from compound_transition manifest")
+    for rust_name, manifest_name in (
+        ("REQUEST_MAGIC", "request_magic"),
+        ("OUTPUT_MAGIC", "output_magic"),
+    ):
+        match = re.search(rf'const {rust_name}: &\[u8; 4\] = b"([A-Z]{{4}})";', compound_source)
+        if not match or match.group(1) != compound[manifest_name]:
+            raise SystemExit(f"xyg-wasm {rust_name} differs from compound_transition manifest")
+    for action_name, action_value in compound["actions"].items():
+        rust_name = f"COMPOUND_ACTION_{str(action_name).upper()}"
+        match = re.search(rf"pub const {rust_name}: u8 = ([0-9_]+);", graph_style)
+        if not match or int(match.group(1).replace("_", "")) != int(action_value):
+            raise SystemExit(f"xyg-engine {rust_name} differs from compound_transition manifest")
+    for tier_name, tier_value in compound["lod_tiers"].items():
+        rust_name = f"GRAPH_LOD_{str(tier_name).upper()}"
+        match = re.search(rf"pub const {rust_name}: u8 = ([0-9_]+);", graph_style)
+        if not match or int(match.group(1).replace("_", "")) != int(tier_value):
+            raise SystemExit(f"xyg-engine {rust_name} differs from compound_transition manifest")
+    max_nodes_match = re.search(
+        r"pub const MAX_COMPOUND_TRANSITION_NODES: usize = ([0-9_]+);", graph_style
+    )
+    if not max_nodes_match or int(max_nodes_match.group(1).replace("_", "")) != int(
+        compound["max_nodes"]
+    ):
+        raise SystemExit(
+            "xyg-engine MAX_COMPOUND_TRANSITION_NODES differs from compound_transition manifest"
+        )
     for name, value in manifest["statuses"].items():
         match = re.search(rf"pub const STATUS_{re.escape(str(name))}: i32 = (\d+);", source)
         if not match or int(match.group(1)) != int(value):
@@ -653,6 +745,7 @@ def main() -> int:
         raise SystemExit("unsupported WASM ABI manifest schema")
     validate_typed_series(manifest)
     validate_semantic_graph(manifest)
+    validate_compound_transition(manifest)
     verify_rust(manifest)
     expected = render(manifest)
     expected_rust = render_typed_series_rust(manifest)

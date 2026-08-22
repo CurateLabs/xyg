@@ -25,6 +25,7 @@ import {
   xyGraphBuildRender,
   xyGraphEdgeRouteSegments,
   xyGraphCompoundBounds,
+  xyGraphCompoundTransition,
   xyGraphCompoundScene,
   xyGraphLabelAccept,
   xyGraphSemanticStyleResolve,
@@ -1607,6 +1608,22 @@ export function graphCompoundBounds(x, y, parents, parentValidity) {
   const code = xyGraphCompoundBounds(toU64(n, "x.length"), f64Ptr(xa), f64Ptr(ya), u64Ptr(pa), u8Ptr(va), u64Ptr(parentOf), u8Ptr(isCompound), f64Ptr(xmin), f64Ptr(xmax), f64Ptr(ymin), f64Ptr(ymax));
   if (code !== 0) throw new Error(`xyg_graph_compound_bounds failed with code ${code}`);
   return { parentOf, isCompound, xmin, xmax, ymin, ymax };
+}
+
+export const GRAPH_COMPOUND_EXPAND = 0;
+export const GRAPH_COMPOUND_COLLAPSE = 1;
+export const GRAPH_COMPOUND_TOGGLE = 2;
+
+export function graphCompoundTransition(nodeIds, parents, parentValidity, collapsed, targetId, action, lodTier = 0) {
+  const ids = asU64Array(nodeIds, "nodeIds"); const pa = asU64Array(parents, "parents");
+  const va = asU8Array(parentValidity, "parentValidity"); const ca = asU8Array(collapsed, "collapsed");
+  requireEqualLength(ids, pa, "nodeIds", "parents"); requireEqualLength(ids, va, "nodeIds", "parentValidity"); requireEqualLength(ids, ca, "nodeIds", "collapsed");
+  for (const plane of [va, ca]) for (const value of plane) if (value !== 0 && value !== 1) throw new RangeError("compound validity and collapse planes must contain only 0 or 1");
+  if (!Number.isInteger(action) || action < 0 || action > 0xffffffff || !Number.isInteger(lodTier) || lodTier < 0 || lodTier > 0xffffffff) throw new RangeError("action and lodTier must be exact uint32 integers");
+  const out = new Uint8Array(ids.length); const changed = new Uint8Array(1);
+  const code = xyGraphCompoundTransition(toU64(ids.length, "nodeIds.length"), u64Ptr(ids), u64Ptr(pa), u8Ptr(va), u8Ptr(ca), toU64(targetId, "targetId"), action, lodTier, u8Ptr(out), u8Ptr(changed));
+  if (code !== 0) throw new Error(`xyg_graph_compound_transition failed with code ${code}`);
+  return { collapsed: out, changed: changed[0] !== 0 };
 }
 
 export function graphCompoundScene(input) {

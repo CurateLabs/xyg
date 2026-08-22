@@ -732,6 +732,40 @@ function runDashboardPlan(message: any) {
   }
 }
 
+function runCompoundTransition(message: any) {
+  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
+  try {
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < 58 || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "compound transition request is malformed"); return; }
+    if (activeCompile) terminateActiveCompile("a compound transition");
+    if (activeGraph) {
+      const previous = activeGraph; clearTimeout(previous.timer); queued.delete(previous.requestId);
+      exports.xyg_wasm_cancel(handle, previous.sequence); activeGraph = null;
+      error(previous.requestId, "XYG_WASM_CANCELLED", "graph layout was superseded by a compound transition", XYG_WASM_STATUS.CANCELLED);
+    }
+    if (activeAggregate) {
+      const previous = activeAggregate; clearTimeout(previous.timer); queued.delete(previous.requestId);
+      exports.xyg_wasm_cancel(handle, previous.sequence);
+      const cancelled = exports.xyg_wasm_aggregate_step(handle, previous.sequence, 1);
+      if (cancelled !== XYG_WASM_STATUS.CANCELLED) throw new Error("Rust aggregate cancellation cleanup returned an invalid status");
+      activeAggregate = null;
+      error(previous.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by a compound transition", XYG_WASM_STATUS.CANCELLED);
+    }
+    let status = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) { rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
+    if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("invalid compound transition staging range");
+    new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
+    status = exports.xyg_wasm_compound_transition(handle, 0, message.request.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) { rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0, outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
+    if (!outputPtr || outputLen < 17 || outputPtr + outputLen > exports.memory.buffer.byteLength) throw new Error("Rust compound transition returned an invalid range");
+    const response = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
+    reply(message.requestId, response, [response]);
+  } catch (cause) {
+    lifecycle = "failed"; disposeRust(); error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM compound transition trapped");
+  }
+}
+
 scope.onmessage = (event: MessageEvent<any>) => {
   const message = event.data;
   if (message?.type === "init") {
@@ -741,7 +775,8 @@ scope.onmessage = (event: MessageEvent<any>) => {
   const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint"
     || message?.type === "scene.compile" || message?.type === "scene.compile_paint"
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
-    || message?.type === "graph.cose" || message?.type === "dashboard.plan";
+    || message?.type === "graph.cose" || message?.type === "dashboard.plan"
+    || message?.type === "compound.transition";
   if (sequenced) {
     const sequence = Number(message.sequence);
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
@@ -778,6 +813,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
   }
   if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
+  if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
   if (message?.type === "graph.cose") { const timer = setTimeout(() => runGraph(message), 0); queued.set(message.requestId, timer as unknown as number); return; }
   if (message?.type === "cancel") {
     const timer = queued.get(message.requestId);
