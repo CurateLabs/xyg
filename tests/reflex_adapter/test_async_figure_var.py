@@ -13,7 +13,7 @@ from reflex.istate.manager.memory import StateManagerMemory
 from reflex_base.vars.base import AsyncComputedVar
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.state_bridge import make_rebuild_hook
 from reflex_xy.tokens import build_state_token
 from reflex_xy.vars import AsyncFigureVar, FigureVar

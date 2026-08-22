@@ -35,8 +35,8 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
-import xy
-from xy.export import _bundled_js, _javascript_for_inline_script
+import xyg
+from xyg.export import _bundled_js, _javascript_for_inline_script
 
 CHROMIUM_CANDIDATES = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",

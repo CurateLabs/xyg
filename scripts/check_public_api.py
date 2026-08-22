@@ -4,7 +4,7 @@
 `xy.__init__` intentionally hand-maintains two things:
 
 - `__all__`, the names users can import from `xy`
-- `_EXPORTS`, the lazy export map that keeps `import xy` lightweight
+- `_EXPORTS`, the lazy export map that keeps `import xyg` lightweight
 
 That is a good shape for import-time performance, but it is easy to forget one
 side when adding a chart family. This stdlib-only check catches drift before a
@@ -197,7 +197,7 @@ def validate_component_public_api(
         try:
             components_module = importlib.import_module(".components", pkg.__name__)
         except Exception as exc:
-            return [f"cannot import xy.components for public API validation: {exc!r}"]
+            return [f"cannot import xyg.components for public API validation: {exc!r}"]
 
     names = _string_list(
         getattr(components_module, "__all__", None),
@@ -250,7 +250,7 @@ def validate_declarative_api_contract(
         try:
             components_module = importlib.import_module(".components", pkg.__name__)
         except Exception as exc:
-            return [f"cannot import xy.components for declarative API validation: {exc!r}"]
+            return [f"cannot import xyg.components for declarative API validation: {exc!r}"]
 
     component_names = set(
         _string_list(
@@ -262,7 +262,7 @@ def validate_declarative_api_contract(
 
     for name in DECLARATIVE_API_EXPORTS:
         if name not in public_names:
-            errors.append(f"declarative API export {name!r} is missing from xy.__all__")
+            errors.append(f"declarative API export {name!r} is missing from xyg.__all__")
         if exports.get(name) != ".components":
             errors.append(
                 f"declarative API export {name!r} must map to '.components', "
@@ -323,7 +323,7 @@ def validate_version_consistency(pkg: ModuleType, distribution: str = "xyg") -> 
 
 
 def validate_pep561_marker(
-    marker_path: Path = ROOT / "python" / "xy" / "py.typed",
+    marker_path: Path = ROOT / "python" / "xyg" / "py.typed",
 ) -> list[str]:
     """Ensure the source package advertises full-package typing support."""
     try:
@@ -337,7 +337,7 @@ def validate_pep561_marker(
 
 def validate_static_typing_surface(
     pkg: ModuleType,
-    init_path: Path = ROOT / "python" / "xy" / "__init__.py",
+    init_path: Path = ROOT / "python" / "xyg" / "__init__.py",
 ) -> list[str]:
     """Ensure every lazy root export also has a static declaration.
 
@@ -404,16 +404,16 @@ def _format_eager_import_findings(label: str, eager: Any) -> list[str]:
     errors: list[str] = []
     if third_party:
         errors.append(
-            f"{label} import xy eagerly loaded third-party modules before "
+            f"{label} import xyg eagerly loaded third-party modules before "
             f"chart API use: {third_party}"
         )
     if xy_modules:
         errors.append(
-            f"{label} import xy eagerly loaded xy submodules before chart API use: {xy_modules}"
+            f"{label} import xyg eagerly loaded xy submodules before chart API use: {xy_modules}"
         )
     if other:
         errors.append(
-            f"{label} import xy eagerly loaded unexpected modules before chart API use: {other}"
+            f"{label} import xyg eagerly loaded unexpected modules before chart API use: {other}"
         )
     return errors
 
@@ -461,7 +461,7 @@ def check_fresh_import_budget(
 
         third_party_imports = {sorted(HEAVY_THIRD_PARTY_IMPORTS)!r}
         t0 = time.perf_counter()
-        import xy
+        import xyg
         elapsed_ms = (time.perf_counter() - t0) * 1000
         public_all = list(xy.__all__)
         dir_names = set(dir(xy))
@@ -513,7 +513,7 @@ def check_fresh_import_budget(
         )
     elif elapsed_ms > IMPORT_BUDGET_MS:
         errors.append(
-            f"{label} import xy took {elapsed_ms:.1f} ms; budget is {IMPORT_BUDGET_MS:.0f} ms"
+            f"{label} import xyg took {elapsed_ms:.1f} ms; budget is {IMPORT_BUDGET_MS:.0f} ms"
         )
     if not result.get("version"):
         errors.append(f"{label} fresh import-budget probe did not expose xy.__version__")
@@ -526,7 +526,7 @@ def check_all_fresh_import_budgets() -> list[str]:
 
 def check_public_api(*, check_lazy_import: bool = True) -> list[str]:
     before = set(_loaded_import_budget_modules())
-    pkg = importlib.import_module("xy")
+    pkg = importlib.import_module("xyg")
     after_import = set(_loaded_import_budget_modules())
 
     errors = check_all_fresh_import_budgets() if check_lazy_import else []

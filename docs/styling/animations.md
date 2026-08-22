@@ -24,7 +24,7 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 import reflex as rx
 import reflex_components_internal as ui
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.chart(
     xy.column(
@@ -152,7 +152,7 @@ active_teams = [28, 32, 31, 38, 43, 41, 49, 55, 53, 61, 66, 72]
 import reflex as rx
 import reflex_components_internal as ui
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.area_chart(
     xy.area(
@@ -247,7 +247,7 @@ let XY distinguish each case:
 import reflex as rx
 import reflex_components_internal as ui
 import reflex_xy
-import xy
+import xyg
 
 
 class KeyedAnimationDemo(rx.State):
@@ -389,7 +389,7 @@ rows = {
 import reflex as rx
 import reflex_components_internal as ui
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.chart(
     xy.area(
@@ -489,7 +489,7 @@ import random
 import reflex as rx
 import reflex_components_internal as ui
 import reflex_xy
-import xy
+import xyg
 
 
 class StreamingAnimationDemo(rx.State):
@@ -612,7 +612,7 @@ configuration, not serialized chart data:
 import reflex as rx
 import reflex_components_internal as ui
 import reflex_xy
-import xy
+import xyg
 
 
 class AnimationLifecycleDemo(rx.State):

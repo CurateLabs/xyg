@@ -32,8 +32,8 @@ import math
 import numpy as np
 import pytest
 
-import xy
-from xy import kernels as k
+import xyg
+from xyg import kernels as k
 
 #: Angular samples for the line row: enough to make the projection and the
 #: per-vertex cull the dominant term rather than figure setup.

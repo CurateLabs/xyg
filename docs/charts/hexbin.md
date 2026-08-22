@@ -26,7 +26,7 @@ a readable density map:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(21)
 points_x = rng.normal(size=100_000)
@@ -59,7 +59,7 @@ add an `xy.colorbar()` so the count scale is readable:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 hx_rng = np.random.default_rng(5)
 cluster_a = hx_rng.normal(loc=(-1.5, -1.0), scale=(0.5, 0.9), size=(60_000, 2))
@@ -94,7 +94,7 @@ that land in it, turning scattered measurements into a surface:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 survey_rng = np.random.default_rng(9)
 site_x = survey_rng.uniform(-2.5, 2.5, size=40_000)

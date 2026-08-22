@@ -21,10 +21,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-from xy import _svg, _textblock, components
-from xy._svg import layout
-from xy.config import (
+import xyg
+from xyg import _svg, _textblock, components
+from xyg._svg import layout
+from xyg.config import (
     POLAR_BAR_SEGMENTS,
     POLAR_BAR_SEGMENTS_MIN,
     polar_bar_segments,

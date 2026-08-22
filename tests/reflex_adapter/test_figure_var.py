@@ -9,7 +9,7 @@ import pytest
 import reflex as rx
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.tokens import builder_of, parse_token
 
 from .conftest import make_router_data

@@ -115,7 +115,7 @@ function calendarTicks(lo, hi, rough) {
 // Angular tick ladders. niceStep's [1, 2, 2.5, 5, 10] cannot reach 15, 30, 45
 // or 90, so feeding it degrees gives 0/50/100/150 — a grid nobody reads angles
 // on. Fixed ladders instead, like TIME_STEPS.
-// Mirrored by _DEGREE_STEPS/_RADIAN_STEPS in python/xy/_svg.py.
+// Mirrored by _DEGREE_STEPS/_RADIAN_STEPS in python/xyg/_svg.py.
 const DEGREE_STEPS = [1, 2, 5, 10, 15, 30, 45, 60, 90, 120, 180, 360];
 const RADIAN_STEPS = [1 / 12, 1 / 8, 1 / 6, 1 / 4, 1 / 3, 1 / 2, 2 / 3, 1, 2].map((f) => Math.PI * f);
 
@@ -138,7 +138,7 @@ export function angularTicks(lo, hi, unit, target = 6) {
   return { ticks: out, step };
 }
 
-// Mirrored by _fmt_angle in python/xy/_svg.py. `step` sets the degree
+// Mirrored by _fmt_angle in python/xyg/_svg.py. `step` sets the degree
 // precision: the generated ladder is all integers, but authored fractional
 // tick_values (a 22.5-degree compass grid) mislabel under a hardcoded 1.
 export function fmtAngle(v, unit, step = 1) {
@@ -259,7 +259,7 @@ function fmtTimeSpec(ms, format) {
 // Decade ticks are multiplicative, so the linear formatter's step-derived
 // precision rounds every decade under 1.0 to a bare "0" — 0.001 and 0.01 read
 // as two identical, wrong labels. Label these from their own magnitude.
-// Mirrored by `_fmt_log` in python/xy/_svg.py.
+// Mirrored by `_fmt_log` in python/xyg/_svg.py.
 export function fmtLog(v) {
   const av = Math.abs(v);
   if (av >= 1e6 || (av !== 0 && av < 1e-4)) return v.toExponential(1).replace("e+", "e");
@@ -273,7 +273,7 @@ export function fmtLog(v) {
 // affixed string gave `Number("$0") === NaN`, so this side shipped the
 // collapsed label while Python's `float("$0")` raised outright — two different
 // wrong answers from the layer that exists to keep them identical.
-// Mirrored by `_collapsed_to_zero` in python/xy/_svg.py.
+// Mirrored by `_collapsed_to_zero` in python/xyg/_svg.py.
 function collapsedToZero(formatted) {
   if (formatted === null) return true;
   const core = String(formatted).replace(/[^0-9eE+.\-]/g, "");
@@ -291,7 +291,7 @@ export function fmtAxis(axis, v, tickStep) {
   // angular branch ran first, so `theta_axis(format=".0f°")` shipped, was
   // accepted, and was then overwritten by the built-in degree/radian text in
   // every renderer. The default only applies when nothing was authored.
-  // Mirrored by the same branch in `_fmt_axis` (python/xy/_svg.py).
+  // Mirrored by the same branch in `_fmt_axis` (python/xyg/_svg.py).
   if (axis && axis.theta_unit) {
     const authored = fmtNumberSpec(v, axis.format);
     return authored || fmtAngle(v, axis.theta_unit, tickStep);

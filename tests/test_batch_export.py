@@ -11,8 +11,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import export
-from xy._figure import Figure
+from xyg import export
+from xyg._figure import Figure
 
 
 def _fig(seed: int) -> Figure:
@@ -76,7 +76,7 @@ def test_write_images_chromium_engine_is_deprecated_alias(tmp_path, monkeypatch)
 
 
 def test_write_images_chromium_threads_custom_css(tmp_path, monkeypatch):
-    from xy import _chromium
+    from xyg import _chromium
 
     seen = []
 

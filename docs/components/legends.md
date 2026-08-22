@@ -12,7 +12,7 @@ the built-in legend's placement, columns, title, visibility, and DOM styling.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 legend_intro_chart = xy.line_chart(
     xy.line([1, 2, 3], [4, 7, 6], name="Actual"),
@@ -41,7 +41,7 @@ into the default placement for the named series.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 basic_legend_chart = xy.line_chart(
     xy.line([0, 1, 2, 3, 4], [12, 15, 14, 18, 21], name="North", color="#6e56cf"),
@@ -64,7 +64,7 @@ heading above the entries.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 positioned_legend_chart = xy.line_chart(
     xy.line([0, 1, 2, 3, 4], [3, 6, 5, 9, 12], name="Alpha", color="#6e56cf"),
@@ -88,7 +88,7 @@ baseline mark has no `name=`, so it stays out of the legend entirely.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 multi_column_legend_chart = xy.line_chart(
     xy.line([0, 1, 2, 3, 4, 5], [10, 12, 15, 14, 18, 22], name="us-east", color="#6e56cf"),
@@ -125,7 +125,7 @@ framework adapter:
 
 ~~~python
 import reflex as rx
-import xy
+import xyg
 
 my_framework_legend = rx.hstack(
     rx.box(width="0.75rem", height="0.75rem", background="#6e56cf"),

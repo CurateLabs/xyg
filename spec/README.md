@@ -39,7 +39,7 @@ The public surface: what callers can build, style, export, and interact with.
   type: what the shared machinery provides and what a new kind must supply.
 - [`capability-matrix.md`](api/capability-matrix.md) — **generated**: the
   inventory of what can be styled and extended, per renderer, from
-  `python/xy/styling/capabilities.py`.
+  `python/xyg/styling/capabilities.py`.
   Regenerate with `scripts/gen_capability_matrix.py --write`; the test suite
   fails if it is stale.
 - [`chart-roadmap.md`](api/chart-roadmap.md) — the staged chart-type coverage
@@ -102,7 +102,7 @@ Machine-checkable C ABI contract for `libxyg_core`.
   ordered names, widths, pointer direction/depth, and buffer metadata.
 - [`xyg.h`](abi/xyg.h) — generated C header for the same contract.
 
-The same command generates `python/xy/_abi_generated.py` and
+The same command generates `python/xyg/_abi_generated.py` and
 `packages/xy-node/src/_abi_generated.js`. `scripts/check_abi_parity.py`
 checks all artifacts byte-for-byte; do not hand-edit any of them.
 

@@ -28,7 +28,7 @@ series. Each mark supplies exactly one value per category:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 capabilities = ["Speed", "Range", "Payload", "Efficiency", "Comfort"]
 
@@ -71,7 +71,7 @@ chart to turn every area into an outline without rewriting the series:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 outline = xy.radar_chart(
     ["Reliability", "Speed", "Efficiency", "Comfort"],
@@ -145,7 +145,7 @@ so repeated benchmarks stay directly comparable:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 benchmark_axes = ["Latency", "Throughput", "Accuracy", "Cost", "Memory", "Setup"]
 

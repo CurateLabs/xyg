@@ -10,7 +10,7 @@ xy is early alpha. The goal is Plotly-class chart breadth with a
 screen-bounded performance core, but the stable commitments today are narrower:
 
 - Python 3.11+ only.
-- `import xy` stays lightweight and does not import NumPy or load the
+- `import xyg` stays lightweight and does not import NumPy or load the
   native core. The public API
   gate verifies this in fresh interpreters and keeps package import under a
   200 ms budget. Chart-building APIs are the compute import boundary; notebook
@@ -377,7 +377,7 @@ final release.
 The repository has one release line: the `xyg` distribution, including its
 bundled `reflex_xy` integration, ships from `xyg-vX.Y.Z` tags through
 `publish.yaml`. The `xyg[reflex]` extra is dependency metadata in those same
-artifacts, not another package or release. Python import remains `import xy`
+artifacts, not another package or release. Python import remains `import xyg`
 until the staged `python/xyg/` cutover in [xyg-naming.md](../design/xyg-naming.md).
 
 ### Fork release posture (CurateLabs/xyg, issue #13)
@@ -436,7 +436,7 @@ run via `python3 scripts/verify_node_packages.py` (CI Test job; `--require-nativ
 after staging; `--sbom` emits a CycloneDX-lite document from local manifests).
 Never publish `@xy/node`.
 
-Python import `xy` / `python/xy/` is still the in-tree namespace; the
+Python import `xy` / `python/xyg/` is still the in-tree namespace; the
 distribution name and `importlib.metadata` lookups are `xyg`. The clean-break
 `import xyg` / `python/xyg/` cutover is tracked by GitHub #51 with the checklist
 in [xyg-naming.md](../design/xyg-naming.md) §5; `reflex_xy` stays for that

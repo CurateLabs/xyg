@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _graph, _native
-from xy._figure import Figure
+import xyg
+from xyg import _graph, _native
+from xyg._figure import Figure
 
 
 def test_graph_layout_circle_deterministic():

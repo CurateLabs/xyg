@@ -30,7 +30,7 @@ Use canonical CSS kebab-case when sharing styles with web code; Python
 snake_case aliases remain accepted.
 
 ~~~python
-import xy
+import xyg
 
 line = xy.line(
     [0, 1, 2, 3],
@@ -135,7 +135,7 @@ dashed line, bordered diamond markers, and explicitly styled axes.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 x = [0, 1, 2, 3, 4, 5]
 y = [2, 4, 3, 6, 5, 8]

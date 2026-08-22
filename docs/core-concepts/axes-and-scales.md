@@ -19,7 +19,7 @@ direction without changing the source values.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 x = np.logspace(0, 6, 240)
 rank = 96 - np.log10(x) * 11.5
@@ -54,7 +54,7 @@ Use `tick_count` as a target, or provide exact `tick_values` with optional
 `tick_labels`:
 
 ~~~python demo exec
-import xy
+import xyg
 
 axis = xy.y_axis(
     label="Conversion",
@@ -99,7 +99,7 @@ matching `id` on the axis component, and use `side="right"` or `side="top"`
 for an opposite-side axis:
 
 ~~~python demo exec
-import xy
+import xyg
 
 chart = xy.chart(
     xy.line([1, 10, 100], [80, 70, 60], name="Rank"),

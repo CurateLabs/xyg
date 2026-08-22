@@ -25,10 +25,10 @@ from pathlib import Path
 from _protocol import PROTOCOL_VERSION
 
 ROOT = Path(__file__).resolve().parent.parent
-STATIC = ROOT / "python" / "xy" / "static"
+STATIC = ROOT / "python" / "xyg" / "static"
 sys.path.insert(0, str(ROOT / "python"))
 
-from xy._chromium import ChromiumSession  # noqa: E402
+from xyg._chromium import ChromiumSession  # noqa: E402
 
 CHROMIUM_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",

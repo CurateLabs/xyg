@@ -49,7 +49,7 @@ def _parse_counts(text: str) -> list[int]:
 def _dashboard_figures(count: int) -> list[Any]:
     if np is None:
         raise SystemExit("numpy is required for benchmarks/bench_dashboard.py")
-    import xy
+    import xyg
 
     rng = np.random.default_rng(91_337)
     figures: list[Any] = []

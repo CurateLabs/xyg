@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 from scripts.sync_matplotlib_compat import _corpus_calls
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -36,7 +36,7 @@ def test_corpus_coverage_ignores_calls_on_unrelated_receivers(tmp_path, monkeypa
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "01_false_credit.py").write_text(
-        "import xy.pyplot as plt\nthing.fill([1, 2])\nfig, ax = plt.subplots()\nax.plot([1])\n"
+        "import xyg.pyplot as plt\nthing.fill([1, 2])\nfig, ax = plt.subplots()\nax.plot([1])\n"
     )
     monkeypatch.setattr("scripts.sync_matplotlib_compat.CORPUS", corpus)
     calls = _corpus_calls()

@@ -18,7 +18,7 @@ Save this as `first_chart.py`:
 ~~~python
 import random
 
-import xy
+import xyg
 
 rng = random.Random(7)
 x = [rng.random() for _ in range(200)]
@@ -46,7 +46,7 @@ This is the chart it produces, live:
 import random
 
 import reflex_xy
-import xy
+import xyg
 
 rng = random.Random(7)
 x = [rng.random() for _ in range(200)]
@@ -77,7 +77,7 @@ compatible anywidget frontend:
 ~~~python
 import random
 
-import xy
+import xyg
 
 rng = random.Random(7)
 x = [rng.random() for _ in range(200)]
@@ -115,7 +115,7 @@ to a screen-bounded density view and keeps pan, zoom, and hover smooth.
 
 ~~~python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(0)
 x = rng.normal(size=2_500_000)
@@ -132,7 +132,7 @@ chart.to_html("big_scatter.html")
 ~~~python demo-only exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 big_rng = np.random.default_rng(0)
 big_x = big_rng.normal(size=2_500_000)

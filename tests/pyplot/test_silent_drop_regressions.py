@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._colors import Cmap
+import xyg.pyplot as plt
+from xyg.pyplot._colors import Cmap
 
 
 def test_public_adapters_cannot_discard_parameters_without_an_explicit_marker():
@@ -20,7 +20,7 @@ def test_public_adapters_cannot_discard_parameters_without_an_explicit_marker():
     parameters otherwise fail automatically; no hand-maintained keyword list
     is involved.
     """
-    root = Path(__file__).resolve().parents[2] / "python" / "xy" / "pyplot"
+    root = Path(__file__).resolve().parents[2] / "python" / "xyg" / "pyplot"
     violations = []
     for path in root.glob("*.py"):
         source = path.read_text()
@@ -405,7 +405,7 @@ def test_data_artists_reject_fraction_space_transforms():
 
 
 def test_set_transform_rejects_singular_matrices_immediately():
-    from xy.pyplot._transforms import Affine2D
+    from xyg.pyplot._transforms import Affine2D
 
     _, ax = plt.subplots()
     (line,) = ax.plot([0.0, 1.0], [0.0, 1.0])

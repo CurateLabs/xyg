@@ -18,7 +18,7 @@ Use one for relationships, clusters, outliers, and multichannel point data.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(7)
 x = rng.normal(size=20_000)
@@ -57,7 +57,7 @@ Map a value array to color with a fixed `color_domain`, pick a non-default
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 style_rng = np.random.default_rng(11)
 angle = style_rng.uniform(0, 4 * np.pi, 3_000)
@@ -96,7 +96,7 @@ cluster its own named series and `symbol`, and let `xy.legend()` label them.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 bubble_rng = np.random.default_rng(42)
 cluster_specs = [

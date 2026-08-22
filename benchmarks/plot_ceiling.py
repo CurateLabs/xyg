@@ -20,7 +20,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-import xy
+import xyg
 
 GIB = 2**30
 

@@ -35,7 +35,7 @@ active_teams = [28, 32, 31, 38, 43, 41, 49, 55, 53, 61, 66, 72]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def layered_momentum():
@@ -96,7 +96,7 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def solar_fleet_output():
@@ -171,7 +171,7 @@ enterprise_base = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def stacked_product_mix():
@@ -248,7 +248,7 @@ data = {
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def normalized_traffic_share():
@@ -343,7 +343,7 @@ offsets = [-0.30, -0.18, -0.06, 0.06, 0.18, 0.30]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def regional_product_demand():
@@ -418,7 +418,7 @@ colors = ["#2b7fff", "#00bc7d", "#8e51ff", "#fe9a00", "#6a7282"]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def conversion_by_stage():
@@ -484,7 +484,7 @@ pullbacks = [value if value < 0 else float("nan") for value in change]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def monthly_balance():
@@ -552,7 +552,7 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 dashboard_combo = xy.chart(
     xy.column(
@@ -649,7 +649,7 @@ products = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def product_constellation():
@@ -741,7 +741,7 @@ preview = {
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def release_velocity():

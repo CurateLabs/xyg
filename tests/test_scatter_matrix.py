@@ -10,9 +10,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy._figure import DIRECT_SOFT_CEILING, SCATTER_DENSITY_THRESHOLD, Figure
-from xy.interaction import _decode_log_u8
+import xyg
+from xyg._figure import DIRECT_SOFT_CEILING, SCATTER_DENSITY_THRESHOLD, Figure
+from xyg.interaction import _decode_log_u8
 
 
 def _payload(fig):
@@ -303,7 +303,7 @@ def test_tier_just_below_and_above_threshold():
 
 
 def test_per_item_channels_share_the_direct_density_ceiling(monkeypatch):
-    import xy._trace as trace_module
+    import xyg._trace as trace_module
 
     monkeypatch.setattr(trace_module, "SCATTER_DENSITY_THRESHOLD", 2)
     monkeypatch.setattr(trace_module, "DIRECT_SOFT_CEILING", 4)
@@ -336,7 +336,7 @@ def test_per_item_channels_share_the_direct_density_ceiling(monkeypatch):
 
 
 def test_style_only_density_warning_and_payload_list_exact_dropped_channels(monkeypatch):
-    import xy.marks as marks_module
+    import xyg.marks as marks_module
 
     monkeypatch.setattr(marks_module, "DIRECT_SOFT_CEILING", 4)
     x = np.arange(5.0)

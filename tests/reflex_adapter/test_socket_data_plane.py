@@ -24,7 +24,7 @@ import socketio
 import uvicorn
 from reflex_base.utils import format as reflex_format
 
-import xy
+import xyg
 from reflex_xy.app import wire
 from reflex_xy.namespace import XYNamespace
 from reflex_xy.registry import registry

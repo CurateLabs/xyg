@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 ROOT = Path(__file__).resolve().parents[1]
 _RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'

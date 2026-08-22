@@ -13,7 +13,7 @@ import hashlib
 import numpy as np
 import pytest
 
-import xy
+import xyg
 
 DENSITY_N = 250_000  # comfortably over SCATTER_DENSITY_THRESHOLD (200k)
 

@@ -20,7 +20,7 @@ Create `build_report.py`:
 ~~~python
 from pathlib import Path
 
-import xy
+import xyg
 
 chart = xy.line_chart(
     xy.line([1, 2, 3, 4], [12, 18, 15, 23], name="orders", color="#2563eb"),
@@ -126,7 +126,7 @@ python -m pip install \
   "xy==0.0.1"
 
 python -m pip check
-python -c "import xy, xy.kernels as k; print(xy.__version__, k.BACKEND)"
+python -c "import xyg, xy.kernels as k; print(xy.__version__, k.BACKEND)"
 ~~~
 
 Use an internal package index instead of a directory when that is your

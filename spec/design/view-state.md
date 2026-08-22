@@ -7,7 +7,7 @@ the wire messages; this document records the rationale and the §13
 implementation divergences. The implementation lives in
 `js/src/57_viewstate.ts` (state document, history, axis bands, hover payload)
 plus hooks in `50_chartview.ts`/`52_tooltip.ts`/`53_interaction.ts`/
-`54_kernel.ts`, `python/xy/_figure.py` (message builders, `view_state()`
+`54_kernel.ts`, `python/xyg/_figure.py` (message builders, `view_state()`
 cache), `widget.py`, `channel.py`, and
 `python/reflex_xy/` (registry push path, `on_hover`, tooltip
 mount). It builds directly on the per-axis

@@ -26,7 +26,7 @@ use a [stem plot](/docs/xy/charts/stem-plot/).
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.linspace(0, 12, 240)
 plan = 48 + 1.8 * x
@@ -69,7 +69,7 @@ support `where="pre"`, `"mid"`, or `"post"` to control where transitions occur.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.chart(
     xy.step(
@@ -108,7 +108,7 @@ boundary readable:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_stack = np.random.default_rng(5)
 months = np.arange(0, 12, dtype=float)

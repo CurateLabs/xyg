@@ -1,6 +1,6 @@
 """Interactive browser viewer for an out-of-core OSM node scatter.
 
-Serves xy's real WebGL render client (`python/xy/static/index.js`) against a
+Serves xy's real WebGL render client (`python/xyg/static/index.js`) against a
 disk-backed density-scatter Figure. Pan/zoom drive the same kernel protocol the
 notebook widget uses (`channel.handle_message`), so every viewport is
 re-aggregated from the density pyramid — screen-bounded, at 1B+ points.
@@ -32,13 +32,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # examples/osm/ → repo root is two levels up; the package lives in python/.
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "python"))
-import xy  # noqa: E402
-from xy import channel  # noqa: E402
-from xy._ooc import open_f64  # noqa: E402
+import xyg  # noqa: E402
+from xyg import channel  # noqa: E402
+from xyg._ooc import open_f64  # noqa: E402
 
 # The anywidget ESM bundle. It is built (not committed — see #214) by
 # `node js/build.mjs`; the viewer errors clearly below if it is missing.
-STATIC = os.path.join(_REPO_ROOT, "python", "xy", "static", "index.js")
+STATIC = os.path.join(_REPO_ROOT, "python", "xyg", "static", "index.js")
 
 # Client /msg bodies are small JSON; reject anything larger (defensive bound).
 _MAX_MSG_BYTES = 1 << 20
@@ -104,7 +104,7 @@ def build_figure(out_dir: str):
     # exact street-level detail from just the in-window points.
     idx_prefix = os.path.join(out_dir, "osm_spatial")
     if os.path.exists(idx_prefix + ".idx"):
-        from xy._spatial import SpatialIndex
+        from xyg._spatial import SpatialIndex
 
         fig.traces[0]._spatial_index = SpatialIndex.load(idx_prefix)
         print(f"spatial index attached ({idx_prefix}.idx)", flush=True)

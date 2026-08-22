@@ -21,7 +21,7 @@ inverters = [2338, 2103, 2194, 2108, 1812, 1726, 1982, 2012, 2342, 2473, 3848, 3
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 overview_area = xy.area_chart(
     xy.area(
@@ -154,7 +154,7 @@ enterprise_base = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.column_chart(
     xy.column(

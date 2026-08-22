@@ -18,7 +18,7 @@ toward the baseline:
 ~~~python demo exec toggle preview-code id=dashboard-sparkline-recipe
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.arange(12)
 y = np.array([42, 45, 44, 49, 53, 51, 58, 61, 60, 66, 70, 74])
@@ -80,7 +80,7 @@ and round only the value end:
 
 ~~~python demo exec toggle preview-code id=rounded-gradient-columns-recipe
 import reflex_xy
-import xy
+import xyg
 
 gradient_columns = xy.column_chart(
     xy.column(
@@ -133,7 +133,7 @@ clear legend so each series has multiple visual identifiers:
 
 ~~~python demo exec toggle preview-code id=accessible-monochrome-comparison-recipe
 import reflex_xy
-import xy
+import xyg
 
 periods = ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"]
 
@@ -221,7 +221,7 @@ columns remain easy to compare at a glance.
 
 ~~~python demo exec toggle preview-code id=dense-categorical-labels-recipe
 import reflex_xy
-import xy
+import xyg
 
 dense_categories = xy.column_chart(
     xy.column(
@@ -280,7 +280,7 @@ tokens follow the host's light or dark mode:
 
 ~~~python demo exec toggle preview-code id=dark-chart-card-recipe
 import reflex_xy
-import xy
+import xyg
 
 dark_card = xy.scatter_chart(
     xy.scatter(
@@ -349,7 +349,7 @@ from the page that happened to contain the chart.
 
 ~~~python demo exec toggle preview-code id=export-safe-brand-theme-recipe
 import reflex_xy
-import xy
+import xyg
 
 branded = xy.area_chart(
     xy.area(
@@ -425,7 +425,7 @@ legend, and horizontal guides keep both measures easy to compare.
 
 ~~~python demo exec toggle preview-code id=responsive-dashboard-card-recipe
 import reflex_xy
-import xy
+import xyg
 
 months = [
     "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",

@@ -25,7 +25,7 @@ chart:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 month = np.arange(12)
 revenue = np.array([12, 15, 14, 19, 22, 21, 27, 30, 29, 34, 38, 41])
@@ -58,7 +58,7 @@ forecast comparisons.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.linspace(0, 12, 240)
 plan = 48 + 1.8 * x
@@ -96,7 +96,7 @@ and for the performance model see
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(0)
 t = np.linspace(0, 100, 200_000)

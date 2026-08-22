@@ -12,11 +12,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
-import xy.components as components_module
-import xy.export as export_module
-from xy._figure import Figure
-from xy.components import (
+import xyg
+import xyg.components as components_module
+import xyg.export as export_module
+from xyg._figure import Figure
+from xyg.components import (
     Annotation,
     Axis,
     Chart,
@@ -28,7 +28,7 @@ from xy.components import (
     Theme,
     Tooltip,
 )
-from xy.widget import Selection
+from xyg.widget import Selection
 
 
 class FakeFrame:

@@ -10,9 +10,9 @@ that one governs the rationale. Where another spec describes an interaction as
 "free" or "always on" (e.g. [chart-kind-contract.md](chart-kind-contract.md)
 §"What you get for free"), this document governs.
 
-Implementation: `python/xy/components.py` (`interaction_config`, `Chart`,
-`FacetChart`), `python/xy/_figure.py` (`set_interaction`,
-`_interaction_spec`), `python/xy/channel.py` (kernel-side dispatch),
+Implementation: `python/xyg/components.py` (`interaction_config`, `Chart`,
+`FacetChart`), `python/xyg/_figure.py` (`set_interaction`,
+`_interaction_spec`), `python/xyg/channel.py` (kernel-side dispatch),
 `js/src/53_interaction.ts` (gestures, modebar, view state machine),
 `js/src/50_chartview.ts` (flag resolution, link channel),
 `python/reflex_xy/` (Reflex event props).
@@ -41,7 +41,7 @@ together with `hover=False` yields `hover=True`.
 
 ## 2. `xy.interaction_config(...)`
 
-`python/xy/components.py:2437`. The boolean switches below are `Optional[bool]`
+`python/xyg/components.py:2437`. The boolean switches below are `Optional[bool]`
 and default to `None` (leave unset). "Default" is the client-side behavior when
 the switch is never set. The non-boolean viewport keys — `default_drag_action`,
 `pan_axes`, `zoom_axes`, `zoom_limits`, and `reset_axes` — are in §2.1.
@@ -209,7 +209,7 @@ Those nine are the whole `xy:` surface — every one goes through
 `_dispatchChartEvent` (`50_chartview.ts:451`), and there is no other
 `CustomEvent` dispatch in `js/src/`.
 
-Kernel-side callbacks (`python/xy/channel.py`), wired through
+Kernel-side callbacks (`python/xyg/channel.py`), wired through
 `Chart(on_hover=…, on_click=…, on_brush=…, on_select=…, on_view_change=…)`:
 
 - `on_hover(row)` / `on_click(row)` — the picked row dict resolved by
@@ -356,7 +356,7 @@ gestures keep working without it.
 
 ## 6. Facet-level linking
 
-`facet_chart(..., link=…, link_select=…)` (`python/xy/components.py:4480`; normalization in `FacetChart.__init__`,
+`facet_chart(..., link=…, link_select=…)` (`python/xyg/components.py:4480`; normalization in `FacetChart.__init__`,
 `components.py:3514`).
 `link` accepts `True` (normalized to `"both"`), `False`/`None`, `"x"`, `"y"`,
 or `"both"`; anything else raises. `link_select` is a strict bool.

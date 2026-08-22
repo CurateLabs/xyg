@@ -7,7 +7,7 @@ import io
 import numpy as np
 import pytest
 
-from xy import _jpeg
+from xyg import _jpeg
 
 Image = pytest.importorskip("PIL.Image")
 

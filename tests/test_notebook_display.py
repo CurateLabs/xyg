@@ -18,8 +18,8 @@ import types
 
 import pytest
 
-import xy
-from xy import export
+import xyg
+from xyg import export
 
 
 @pytest.fixture(autouse=True)

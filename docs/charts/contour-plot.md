@@ -25,7 +25,7 @@ shade between them:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 contour_x = np.linspace(-3, 3, 100)
 contour_y = np.linspace(-2.5, 2.5, 90)
@@ -63,7 +63,7 @@ place contours at exact values — useful when specific thresholds matter — wi
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 ridge_x = np.linspace(-3, 3, 110)
 ridge_y = np.linspace(-2.5, 2.5, 90)
@@ -101,7 +101,7 @@ are dashed, use more `levels` to resolve the structure, and add an
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 dipole_x = np.linspace(-3, 3, 120)
 dipole_y = np.linspace(-3, 3, 120)
@@ -196,7 +196,7 @@ equivalent Python/NumPy syntax shown here:
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(-3, 3, 100)
 y = np.linspace(-2.5, 2.5, 90)

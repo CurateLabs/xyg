@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from xy import pyplot as plt
+from xyg import pyplot as plt
 
 
 def test_anscombe_gridspec_spacing_reaches_subplot_rects() -> None:

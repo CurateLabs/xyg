@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 t = np.arange(0, 10, 0.5)
 fig, ax1 = plt.subplots()

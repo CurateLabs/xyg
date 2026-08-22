@@ -36,7 +36,7 @@ kind. Public builders that reuse an existing kind add no registry entry:
 A chart kind `K` is defined by a kernel emitter and a client renderer, matched
 by the string `K` on the wire (`trace.kind`).
 
-### 1. Kernel — `python/xy/`
+### 1. Kernel — `python/xyg/`
 
 - **`_payload.py`: `_emit_<K>(self, t, pw, xr, yr, px_width) -> dict`.** Dispatched
   by `_emit_trace` via `getattr(self, f"_emit_{t.kind}")` — no edit to the
@@ -149,15 +149,15 @@ internal placement coordinates.
 #### Shared-geometry marks: the hexbin centers-only contract
 
 A mark whose cells all share one geometry ships **centers plus channels**, not
-expanded vertices. `_emit_hexbin` (`python/xy/_payload.py:420-447`) ships one
+expanded vertices. `_emit_hexbin` (`python/xyg/_payload.py:420-447`) ships one
 (x, y) center and one scalar color value per cell; the hexagon itself is a style
 constant (`hex_dx`/`hex_dy`). Each renderer expands the six-triangle fan locally,
 so the wire cost stays O(cells) instead of O(cells × vertices × channels).
 
 Three renderers expand it today and must agree exactly: `_buildHexbinMark`
 (`js/src/50_chartview.ts:2038`, WebGL), `HEX_RING`/`hexbin_ring()`
-(`python/xy/_svg.py:2074`, the reference ring), and `_emit_hexbin`
-(`python/xy/_raster.py:1413`, raster export, consuming `hexbin_ring`). Only code
+(`python/xyg/_svg.py:2074`, the reference ring), and `_emit_hexbin`
+(`python/xyg/_raster.py:1413`, raster export, consuming `hexbin_ring`). Only code
 comments bind them; changing one without the others silently desynchronizes
 exports from the live chart, which has already produced a CI-red payload
 regression once. The rest of this section is normative — a fourth renderer
@@ -174,7 +174,7 @@ needs:
 | `n_marks` | occupied cell count — the length of `x`/`y` |
 | `n_points` | input row count before binning; reporting only |
 | `color` | channel record from `_ship_channels`: `constant`, `continuous` (`buf` + `colormap`), or `categorical` (`buf` + `palette`), one value per **cell** |
-| `style.hex_dx`, `style.hex_dy` | data-space cell pitch — the x/y range divided by `gridsize` (`python/xy/marks.py`) |
+| `style.hex_dx`, `style.hex_dy` | data-space cell pitch — the x/y range divided by `gridsize` (`python/xyg/marks.py`) |
 
 There is no size channel (`_emit_hexbin` resolves one and discards it), and no
 vertex, index, or per-triangle column ever ships.
@@ -298,7 +298,7 @@ colors, §36). The registry and `markOf()` are exported (`xy.MARK_KINDS`)
 
 The checklist above is for kinds that join the core: six touch points across
 Python, the client, and the docs. A kind that only needs to *compose* existing
-primitives does not have to pay it. `xy.register_mark` (`python/xy/plugins.py`,
+primitives does not have to pay it. `xy.register_mark` (`python/xyg/plugins.py`,
 dossier §24) takes a `calc` over declared columns plus a `build` that returns
 built-in `Mark` objects, and `components._plugin_applier` runs the result
 through the same appliers, axis assignment, and post-processing as a hand-built

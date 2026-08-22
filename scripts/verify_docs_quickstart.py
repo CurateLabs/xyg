@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_PACKAGE = (REPO_ROOT / "python" / "xy").resolve()
+SOURCE_PACKAGE = (REPO_ROOT / "python" / "xyg").resolve()
 QUICKSTART_PAGES = (("first-chart page", REPO_ROOT / "docs" / "overview" / "first-chart.md"),)
 PYTHON_FENCE_RE = re.compile(
     r"^~~~python[^\n]*\n(?P<code>.*?)^~~~\s*$",

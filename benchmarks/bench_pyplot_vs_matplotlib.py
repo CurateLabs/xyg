@@ -193,8 +193,8 @@ def make_cases(profile: str) -> tuple[list[Case], Any, Any]:
     matplotlib.use("Agg", force=True)
     import matplotlib.pyplot as matplotlib_plt
 
-    import xy.pyplot as xy_plt
-    from xy import kernels
+    import xyg.pyplot as xy_plt
+    from xyg import kernels
 
     if kernels.BACKEND != "native":
         raise SystemExit(f"benchmark requires xy native backend, got {kernels.BACKEND!r}")

@@ -14,7 +14,7 @@ import re
 import numpy as np
 import pytest
 
-import xy
+import xyg
 
 
 def _hilo_plugin(name: str = "hilo") -> xy.MarkPlugin:
@@ -98,7 +98,7 @@ def test_plugin_traces_reach_every_renderer(hilo) -> None:
     ).figure()
 
     assert "#ff0000" in fig.to_svg()
-    from xy import _raster
+    from xyg import _raster
 
     image = _raster.render_raster(*fig.build_payload(), scale=1)
     assert np.any(image[:, :, 0] > image[:, :, 2])

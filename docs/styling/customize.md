@@ -32,7 +32,7 @@ y = [22, 31, 29, 44, 51, 63]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_mark_paint_preview():
@@ -130,7 +130,7 @@ revenue = [38, 46, 43, 57, 54, 65, 72]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_horizontal_grid_preview():
@@ -200,7 +200,7 @@ orders = [32, 47, 41, 58, 54, 68]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_axis_details_preview():
@@ -268,7 +268,7 @@ partner = [22, 28, 34, 31, 39, 44, 53, 61]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_clean_dashboard_axis_preview():
@@ -474,7 +474,7 @@ throughput = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 palette_chart = xy.line_chart(
     *[
@@ -509,7 +509,7 @@ conversion = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_colorbar_preview():
@@ -583,7 +583,7 @@ mobile = [22, 27, 32, 29, 38, 42, 49, 57]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_legend_preview():
@@ -683,7 +683,7 @@ data = {
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_tooltip_preview():
@@ -780,7 +780,7 @@ y = [3, 5, 4, 7, 6, 9]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_annotations_preview():
@@ -889,7 +889,7 @@ y = [2, 5, 3, 7, 6, 9, 8, 11]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 
 def customize_interaction_preview():

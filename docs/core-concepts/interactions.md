@@ -15,7 +15,7 @@ an event.
 Set flags directly on a chart or compose an `interaction_config()` child:
 
 ~~~python demo exec
-import xy
+import xyg
 
 x = [0, 1, 2, 3]
 y = [1, 3, 2, 5]
@@ -97,7 +97,7 @@ point click or completed selection:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 x = [0, 1, 2, 3, 4, 5, 6]
 y = [2, 4, 3, 5, 4, 6, 5]
@@ -163,7 +163,7 @@ but XY keeps canonical rows in Python:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 exact_readout_x = list(range(16))
 exact_readout_y = [1, 3, 2, 5, 4, 6, 3, 7, 5, 8, 6, 9, 7, 10, 8, 11]
@@ -284,7 +284,7 @@ canonical row.
 Give related charts the same `link_group` and choose which axes participate:
 
 ~~~python demo exec
-import xy
+import xyg
 
 x = list(range(16))
 overview_y = [2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10, 9, 11]

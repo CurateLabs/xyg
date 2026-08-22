@@ -1,7 +1,7 @@
 # matplotlib compatibility (`xy.pyplot`)
 
 ```python
-import xy.pyplot as plt   # the one-line change
+import xyg.pyplot as plt   # the one-line change
 ```
 
 `xy.pyplot` is a shim over the declarative composition API: every
@@ -66,7 +66,7 @@ dependency-free `triangles=` shorthand into Matplotlib's equivalent
 | `tripcolor`, `triplot`, `tricontour`, `tricontourf` | Explicit topology or native dependency-free Delaunay triangulation; indexed geometry and isolines stay in Rust |
 | `pie` / `pie_label` | Native pie/donut tessellation and the Matplotlib 3.11 `PieContainer` (`values`, `fracs`, grouped text labels), including dtype-preserving value formats, radial label rotation/alignment, and common text properties |
 | `axhline` / `axvline` / `axhspan` / `axvspan`, `text`, `annotate`, `table` | Fractional span bounds plus data/axes/figure text coordinates are supported. `annotate(arrowprops=)` draws real arrows in every output: offset-point text becomes an engine callout (arrow pinned from label to point across zoom), data-coordinate text an arrow annotation; date-string coordinates convert on datetime axes. Arrowstyles map to head/tail shapes (`->` open V, `-\|>` filled, `\|-\|`/brackets bar caps, `fancy`/`simple`/`wedge` filled tapered shafts sized by the text's mutation scale) and `connectionstyle` arc3/angle3/angle become quadratic curves (corner rounding approximated); `alpha` dims the arrow only. `bbox=` becomes label box styles (fill/edge/round corners/`pad`) in browser and static exports; its `alpha` is the *patch* alpha and dims face and edge together, as Matplotlib's element `opacity` does, and `boxstyle="round"`/`round4` corners are rounded in SVG (`rx`) and native PNG as well as in the browser. An arrow-less `text`/`annotate` label is painted with `rcParams["text.color"]` in all three renderers rather than each renderer's own annotation-label default. Text is unclipped like Matplotlib (`clip_on=False`), and axes-fraction text right of the axes box (x > 1, e.g. seaborn-style row titles) reserves right margin in every exporter. `rotation=90/270` renders vertical text in browser, PNG, and SVG with Matplotlib's rotate-then-align box semantics; other angles rotate in browser and SVG output only (native PNG draws them horizontally) |
-| `from xy.pyplot import FacetGrid` (seaborn-shaped) | Row/column small multiples with seaborn's `map` contract (subset → activate panel → call the pyplot function), shared domains, edge-only axis labels, top-row column titles, and `margin_titles=True` rotated row titles. `hue=`/`palette=`, `col_wrap=`, `map_dataframe`, and `add_legend` fail loudly |
+| `from xyg.pyplot import FacetGrid` (seaborn-shaped) | Row/column small multiples with seaborn's `map` contract (subset → activate panel → call the pyplot function), shared domains, edge-only axis labels, top-row column titles, and `margin_titles=True` rotated row titles. `hue=`/`palette=`, `col_wrap=`, `map_dataframe`, and `add_legend` fail loudly |
 | `xlabel` / `ylabel` / `title` / `suptitle` | Suptitles are retained in HTML and multi-panel PNG/SVG. `ylabel` sits clear of the y tick labels in every renderer: the left gutter is reserved from the measured advances of the tick labels and the rotated title rather than from a fixed constant, leaving Matplotlib's `0.4 em` (5.6 px at the 10 pt/100 dpi default) title-to-tick gap — see *Measured left gutter and the rotated y-axis title* in `spec/api/styling.md` for the formula and its two documented asymmetries |
 | `legend()` | `loc`, columns, title/font size/colors, frame styling, `borderpad`, `labelspacing`, `borderaxespad`, `fancybox`, `framealpha`, and `shadow` are retained across browser and static output. `loc='best'` scores the measured displayed legend box in Matplotlib location-code order using path vertices/crossings, collection offsets, and bar-rectangle overlaps. It resolves before the wire; pyplot rejects misspelled Matplotlib locations without narrowing core `xy.legend()`'s independent location vocabulary. Text-box scoring and bounded long-path sampling are documented in `spec/api/styling.md` § Legend placement |
 | `grid(True/False)` | toggles the grid via the theme |
@@ -147,7 +147,7 @@ past the triangulator's 10,000-vertex cap draws its outline and warns.
 
 ## Boundaries (enforced by `tests/pyplot/test_boundaries.py`)
 
-The shim lives entirely in `python/xy/pyplot/`; no engine module
+The shim lives entirely in `python/xyg/pyplot/`; no engine module
 imports it, importing `xy` never loads it, and importing the shim
 never loads the widget stack or real matplotlib.
 

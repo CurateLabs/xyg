@@ -25,7 +25,7 @@ Pass a list of arrays — one per group — to `violin`, and label each group wi
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 violin_rng = np.random.default_rng(31)
 violin_groups = [
@@ -72,7 +72,7 @@ Raise `bins` for a finer density trace, turn the plot sideways with
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 wind_rng = np.random.default_rng(13)
 season_wind = [
@@ -109,7 +109,7 @@ Compose `violin` and a narrow `box` on the same groups inside a neutral
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 raincloud_rng = np.random.default_rng(101)
 model_errors = [

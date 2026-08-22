@@ -52,7 +52,7 @@ relative mass, not as a budget (see §3 on why a line count failed as a metric).
 ### Shared browser client surfaces
 
 The same minified client (`@curatelabs/xyg`: `dist/index.js` ESM +
-`dist/standalone.js` IIFE; Python copies both into `python/xy/static/` for the
+`dist/standalone.js` IIFE; Python copies both into `python/xyg/static/` for the
 wheel) is the shared renderer for:
 
 - Python notebooks via **anywidget** (`index.js` as `_esm` from the wheel copy);
@@ -97,7 +97,7 @@ socket.io `/_xy`, or none for static HTML); mark paint stays identical.
   the screen: `DECIMATION_THRESHOLD` = 10_000 for lines/areas,
   `SCATTER_DENSITY_THRESHOLD` = 200_000 for scatter, raised to
   `DIRECT_SOFT_CEILING` = 2_000_000 when a per-point color or size channel is
-  present (`python/xy/config.py`). Dossier §31 states the same claim
+  present (`python/xyg/config.py`). Dossier §31 states the same claim
   mode-scoped: 12–24 bytes/point in direct modes, screen-bounded *resident*
   memory in the aggregated ones.
 - **Two first-paint wire layouts**, and the renderer branches on the spec, not
@@ -106,10 +106,10 @@ socket.io `/_xy`, or none for static HTML); mark paint stays identical.
   buffer per column, each column carrying an integer `buf` index into the
   buffer list — this skips the join copy, the largest allocation of a
   direct-tier build. Split is what both shipping hosts use
-  (`build_payload_split` in `python/xy/widget.py` and
+  (`build_payload_split` in `python/xyg/widget.py` and
   `python/reflex_xy/namespace.py`); packed remains for standalone
   export and for streaming `append`, which always re-ships packed
-  (`python/xy/interaction.py`). `payloadBuffers` (`60_entries.ts`) and
+  (`python/xyg/interaction.py`). `payloadBuffers` (`60_entries.ts`) and
   `_columnView` (`50_chartview.ts`) treat any spec/transport disagreement as a
   thrown error — fail loud, never a silent fallback.
 - **DPR correctness**: backing stores sized `css × devicePixelRatio`
@@ -445,7 +445,7 @@ a low decade is not labelled as a row of zeros.
 `fmtNumberSpec` returns `null` on anything the regex rejects, and `fmtAxis`
 treats that as "no format" — it silently uses the automatic formatter. No
 warning is raised anywhere on the path: the Python side stores `format` as free
-text with no validation (`python/xy/_figure.py:204` via `_optional_text`), so
+text with no validation (`python/xyg/_figure.py:204` via `_optional_text`), so
 an unsupported spec survives the whole pipeline and simply does nothing.
 
 The in-tree example is `tests/test_components.py:555`, which sets

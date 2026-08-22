@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
-_CONFIG = _ROOT / "python" / "xy" / "config.py"
+_CONFIG = _ROOT / "python" / "xyg" / "config.py"
 _MATCH = re.search(
     r"^PROTOCOL_VERSION\s*=\s*(\d+)\s*$",
     _CONFIG.read_text(encoding="utf-8"),

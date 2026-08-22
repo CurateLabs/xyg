@@ -12,8 +12,8 @@ import re
 import numpy as np
 import pytest
 
-import xy
-from xy import _legendfit
+import xyg
+from xyg import _legendfit
 
 
 def _loc(figure) -> str:
@@ -147,7 +147,7 @@ def test_sparse_finite_points_survive_the_stride() -> None:
 def test_the_core_and_the_pyplot_shim_agree() -> None:
     # Two copies of this scoring exist (see xy/_legendfit.py's module docstring).
     # Pin them to the same answer so folding one onto the other stays safe.
-    from xy import pyplot as plt
+    from xyg import pyplot as plt
 
     xs = [0.0, 1.0, 2.0, 3.0]
     ys = [0.0, 1.0, 2.0, 3.0]

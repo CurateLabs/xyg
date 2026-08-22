@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 @pytest.fixture(autouse=True)
@@ -111,7 +111,7 @@ def test_fill_between_uses_a_faint_full_perimeter_not_an_opaque_lower_line() -> 
 
 
 def test_fill_betweenx_static_export_joins_dense_triangle_strip(monkeypatch) -> None:
-    from xy import _raster
+    from xyg import _raster
 
     fig, ax = plt.subplots()
     y = np.arange(0.0, 2.0, 0.01)
@@ -468,7 +468,7 @@ def test_streamplot_translates_lines_and_arrowheads_to_xy_marks() -> None:
 
 
 def test_default_streamplot_uses_the_native_integrator(monkeypatch) -> None:
-    from xy import kernels
+    from xyg import kernels
 
     called = False
     native = kernels.streamlines
@@ -490,7 +490,7 @@ def test_default_streamplot_uses_the_native_integrator(monkeypatch) -> None:
 
 
 def test_native_streamplot_keeps_trajectories_for_arrows_and_widths(monkeypatch) -> None:
-    from xy import kernels
+    from xyg import kernels
 
     def native_segments(*_args, **_kwargs):
         # Native output is ordered by seed, then backward/forward integration.
@@ -543,7 +543,7 @@ def test_native_streamplot_keeps_trajectories_for_arrows_and_widths(monkeypatch)
 
 
 def test_native_streamplot_preserves_mask_as_nan_topology(monkeypatch) -> None:
-    from xy import kernels
+    from xyg import kernels
 
     seen_u = None
 
@@ -568,7 +568,7 @@ def test_native_streamplot_preserves_mask_as_nan_topology(monkeypatch) -> None:
 
 
 def test_native_streamplot_rejects_cell_sized_fragments(monkeypatch) -> None:
-    from xy import kernels
+    from xyg import kernels
 
     def native_fragments(*_args, **_kwargs):
         return (

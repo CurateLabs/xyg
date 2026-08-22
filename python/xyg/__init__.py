@@ -7,7 +7,7 @@ density aggregation, and a WebGL2 render client. See spec/design-dossier.md.
 One declarative API over one engine — Reflex-flavored composition with
 `on_*` event props:
 
-      import xy
+      import xyg
       xy.scatter_chart(
           xy.scatter(x="gdp", y="life", color="continent", size="pop", data=df),
           xy.x_axis(label="GDP"), xy.y_axis(label="life expectancy"),
@@ -16,7 +16,7 @@ One declarative API over one engine — Reflex-flavored composition with
       )
 
 Import does no heavy work (§33 import-time budget). Public symbols below are
-exported lazily so `import xy` does not import NumPy or dlopen the
+exported lazily so `import xyg` does not import NumPy or dlopen the
 native core; those initialize when a chart-building API is first imported/used.
 """
 
@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any
 
 # ``__getattr__`` materializes this lazily at runtime.  The declaration keeps
 # the PEP 561 surface concrete for static consumers without paying the
-# ``importlib.metadata`` lookup during ``import xy``.
+# ``importlib.metadata`` lookup during ``import xyg``.
 __version__: str
 
 _EXPORTS = {
@@ -268,7 +268,7 @@ def _load_version() -> str:
     only place that can answer this at runtime.
 
     Resolved lazily, like every other export: `importlib.metadata` costs tens
-    of milliseconds against a 200 ms `import xy` budget (§33), which is a poor
+    of milliseconds against a 200 ms `import xyg` budget (§33), which is a poor
     trade for a string most callers never read. A source tree that was never
     installed has no metadata to read, and reports the same unreal `0.0.0` the
     build-time fallback uses.

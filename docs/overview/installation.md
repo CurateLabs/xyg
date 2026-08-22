@@ -33,12 +33,12 @@ npm install @curatelabs/xyg
 From a source checkout, build it once with `npm ci && node js/build.mjs`.
 Node host bindings (`packages/xy-node`, `@curatelabs/xyg-node`) compose
 charts and call `toHtml()` against that client — they do not read
-`python/xy/static`.
+`python/xyg/static`.
 
 Confirm the Python package imports from the environment where your code will run:
 
 ~~~bash
-python -c "import xy; print(xy.__version__)"
+python -c "import xyg; print(xy.__version__)"
 ~~~
 
 ## Supported platforms
@@ -84,7 +84,7 @@ display and HTML, native PNG, and SVG export do not require separate
 Use the PyPI wheel when your platform is supported. A working source install
 must compile the native compute core, so it requires a Rust toolchain with
 `cargo` and `rustc`. The browser client is generated (`node js/build.mjs` →
-`packages/xy-client/dist`, copied into `python/xy/static`); published wheels
+`packages/xy-client/dist`, copied into `python/xyg/static`); published wheels
 already carry the copy, so Node and npm are not required just to `pip install`
 a wheel.
 

@@ -23,10 +23,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import channel
-from xy import kernels as k
-from xy._figure import Figure  # harness type annotations only
+import xyg
+from xyg import channel
+from xyg import kernels as k
+from xyg._figure import Figure  # harness type annotations only
 
 PX_WIDTH = 2048
 SELECT_N = 1_000_000

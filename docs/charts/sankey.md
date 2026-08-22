@@ -27,7 +27,7 @@ This example follows an investment inflow through allocations and outcomes:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 investment_flows = [
     ("Inflow", "Equities", 78_000),
@@ -85,7 +85,7 @@ color to its target node color:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 energy_flows = [
     ("Grid supply", "Homes", 48),
@@ -171,7 +171,7 @@ edge. Compare the position of **Direct purchase**:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 conversion_flows = [
     ("Visitors", "Browse", 820),
@@ -232,7 +232,7 @@ that `sankey_chart` normally adds for you:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 material_flows = [
     ("Virgin material", "Manufacturing", 72),

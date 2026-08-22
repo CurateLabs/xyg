@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 class _Cycle:

@@ -18,7 +18,7 @@ Quickstart::
     # dash/dash.py
     import numpy as np
     import reflex as rx
-    import xy
+    import xyg
     import reflex_xy
 
     class Dash(rx.State):

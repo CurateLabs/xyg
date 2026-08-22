@@ -7,7 +7,7 @@ import pathlib
 from scripts.js_exports import missing_esm_exports
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.assets import _client_source, _link_client
 
 ADAPTER_ASSETS = pathlib.Path(reflex_xy.__file__).parent / "assets"

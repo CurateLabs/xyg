@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from xy._figure import Figure
-from xy._payload import PayloadMixin
+from xyg._figure import Figure
+from xyg._payload import PayloadMixin
 
 
 def test_attach_tooltip_rows_none_is_noop():

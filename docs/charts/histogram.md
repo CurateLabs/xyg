@@ -25,7 +25,7 @@ This is the minimal Python histogram:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(3)
 latency = rng.gamma(shape=2.0, scale=40.0, size=100_000)
@@ -58,7 +58,7 @@ window with `range`, and soften the bars with `corner_radius` and `opacity`.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 density_rng = np.random.default_rng(9)
 response_times = density_rng.lognormal(mean=3.4, sigma=0.45, size=60_000)
@@ -91,7 +91,7 @@ each with `name=`, lower `opacity` so both stay readable, and add `xy.legend()`.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 overlay_rng = np.random.default_rng(17)
 baseline_scores = overlay_rng.normal(64, 11, 40_000)

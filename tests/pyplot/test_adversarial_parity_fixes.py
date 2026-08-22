@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +56,7 @@ def test_axes_title_keeps_absolute_panel_plot_rect():
     # Multi-panel figures place every plot box at its gridspec rectangle;
     # matplotlib does not move an axes when a title is added, so the title
     # must widen the panel chrome instead of eating 26-30px of plot height.
-    from xy._svg import layout
+    from xyg._svg import layout
 
     fig, axs = plt.subplots(2, 1, figsize=(6.4, 4.8))
     for ax in axs:

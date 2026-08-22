@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from xy.channel import decode_frame, encode_frame
+from xyg.channel import decode_frame, encode_frame
 
 hypothesis = pytest.importorskip("hypothesis")
 st = pytest.importorskip("hypothesis.strategies")

@@ -8,7 +8,7 @@ from collections.abc import Sequence
 import reflex as rx
 
 import reflex_xy
-import xy
+import xyg
 
 BERRY_PALETTE = ("#8e51ff", "#2b7fff", "#00b8db")
 INDIGO_PALETTE = ("#2b7fff", "#8e51ff", "#6a7282")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy._figure import Figure
+from xyg._figure import Figure
 
 
 def test_contour_accepts_numeric_zero_dimensional_width_arrays() -> None:

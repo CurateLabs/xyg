@@ -131,7 +131,7 @@ def test_fastapi_app_serves_live_charts_and_code() -> None:
     # same seam the browser's xy.decodeFrame uses; density grids ride as raw
     # buffers beside the compact JSON metadata.
     assert drill.headers["content-type"] == "application/octet-stream"
-    from xy.channel import decode_frame
+    from xyg.channel import decode_frame
 
     frame = decode_frame(drill.content)
     assert frame.message["type"] == "density_update"

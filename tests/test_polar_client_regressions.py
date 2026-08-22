@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-import xy
+import xyg
 from conftest import probe_document, run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 ROOT = Path(__file__).resolve().parents[1]
 

@@ -75,8 +75,8 @@ def _gen(n: int):
 def run_xy_native(n: int) -> dict[str, object]:
     import warnings
 
-    import xy
-    from xy import _raster
+    import xyg
+    from xyg import _raster
 
     x, y = _gen(n)
 
@@ -102,7 +102,7 @@ def run_xy_native(n: int) -> dict[str, object]:
     t0 = time.perf_counter()
     png = _raster.render_raster(spec, blob, 1.0)
     if not isinstance(png, bytes):
-        from xy import _png
+        from xyg import _png
 
         png = _png.encode(png)
     raster_ms = (time.perf_counter() - t0) * 1000

@@ -102,7 +102,7 @@ inside this frame; changing any of it means editing this section first.
 ### D2 — Byte-budget knob: `PYRAMID_RESIDENT_BYTES`
 
 - **Name/default:** `PYRAMID_RESIDENT_BYTES = 512 * 2**20` (512 MiB) in
-  `python/xy/config.py`, mirrored in the Node constants
+  `python/xyg/config.py`, mirrored in the Node constants
   (`packages/xy-node/src/pyramid.js` exports, like the four existing
   `PYRAMID_*` knobs). Scope is **process-wide across all pyramids** —
   the motivating cliff is multi-trace apps sharing RAM, so a per-pyramid
@@ -202,7 +202,7 @@ inside this frame; changing any of it means editing this section first.
 
 - [x] Finalize tile key `(level, tx, ty)`, on-disk layout (fixed mmap slabs;
   Arrow/Parquet deferred with a migration note), and the
-  `PYRAMID_RESIDENT_BYTES` byte-budget knob for `python/xy/config.py` /
+  `PYRAMID_RESIDENT_BYTES` byte-budget knob for `python/xyg/config.py` /
   Node constants → locked decisions D1–D2 above.
 - [x] Eviction/pinning semantics, append + domain-growth policy, zone-map
   tile index, filter/legend rule, nonlinear-axes exclusion → D3–D7 above.

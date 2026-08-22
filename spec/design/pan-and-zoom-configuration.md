@@ -21,7 +21,7 @@ Viewport navigation is five independent concerns:
 The target Python API stays flat and declarative:
 
 ```python
-import xy
+import xyg
 
 chart = xy.histogram_chart(
     xy.hist(latency_ms, bins=120),

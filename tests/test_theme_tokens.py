@@ -12,8 +12,8 @@ import re
 
 import pytest
 
-import xy
-from xy.components import _THEME_TOKEN_NAMES
+import xyg
+from xyg.components import _THEME_TOKEN_NAMES
 
 
 @pytest.mark.parametrize("token", sorted(_THEME_TOKEN_NAMES))

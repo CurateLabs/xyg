@@ -6,8 +6,8 @@ import re
 
 import pytest
 
-import xy
-from xy._figure import Figure
+import xyg
+from xyg._figure import Figure
 
 VALUES = [1.0, 2.0, 3.0, 4.0, 100.0]
 GROUPS = ["cohort"] * len(VALUES)

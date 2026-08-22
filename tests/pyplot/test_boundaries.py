@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from xy.pyplot._translate import check_unsupported, not_implemented
+from xyg.pyplot._translate import check_unsupported, not_implemented
 
-PACKAGE = Path(__file__).resolve().parents[2] / "python" / "xy"
+PACKAGE = Path(__file__).resolve().parents[2] / "python" / "xyg"
 SUPPORT_REQUEST_URL = "https://github.com/CurateLabs/xyg/issues"
 
 
@@ -30,7 +30,7 @@ def _run_fresh(code: str) -> None:
 
 
 def test_core_never_imports_the_shim() -> None:
-    """No module outside python/xy/pyplot/ may reference it."""
+    """No module outside python/xyg/pyplot/ may reference it."""
     offenders: list[str] = []
     for path in PACKAGE.rglob("*.py"):
         if "pyplot" in path.parts:
@@ -55,7 +55,7 @@ def test_importing_xy_does_not_load_the_shim() -> None:
     _run_fresh(
         """
         import sys
-        import xy
+        import xyg
         assert not any("pyplot" in name for name in sys.modules), [
             n for n in sys.modules if "pyplot" in n
         ]
@@ -68,7 +68,7 @@ def test_shim_import_stays_light() -> None:
     _run_fresh(
         """
         import sys
-        import xy.pyplot as plt
+        import xyg.pyplot as plt
         assert "matplotlib" not in sys.modules
         assert "xy.widget" not in sys.modules
         assert "anywidget" not in sys.modules
@@ -121,10 +121,10 @@ def test_complete_supported_corpus_runs_when_matplotlib_imports_fail() -> None:
             return real_import(name, *args, **kwargs)
         builtins.__import__ = blocked_import
 
-        import xy.pyplot as plt
+        import xyg.pyplot as plt
         for path in sorted(pathlib.Path({str(corpus)!r}).glob("[0-9][0-9]_*.py")):
             runpy.run_path(path, run_name="__main__")
-            for figure in tuple(__import__("xy.pyplot._state", fromlist=["all_figures"]).all_figures()):
+            for figure in tuple(__import__("xyg.pyplot._state", fromlist=["all_figures"]).all_figures()):
                 assert figure._repr_html_().startswith('<iframe class="xy-notebook-frame"')
             plt.close("all")
         """

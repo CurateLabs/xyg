@@ -91,17 +91,17 @@ fallback-version = "0.0.0"
 # The render-client bundles are a generated artifact — built by hatch_build.py
 # (`node js/build.mjs`) and git-ignored (§33), never committed. Canonical
 # output is the host-neutral `@curatelabs/xyg` dist; Python copies into
-# `python/xy/static` for the wheel. `artifacts` re-includes them even though
+# `python/xyg/static` for the wheel. `artifacts` re-includes them even though
 # the VCS ignores them; the build hook guarantees they exist on disk first.
 artifacts = [
     "packages/xy-client/dist/index.js",
     "packages/xy-client/dist/standalone.js",
-    "python/xy/static/index.js",
-    "python/xy/static/standalone.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["python/xy", "python/reflex_xy"]
+packages = ["python/xyg", "python/reflex_xy"]
 dev-mode-dirs = ["python"]
 
 [tool.hatch.build.targets.wheel.hooks.custom]
@@ -122,7 +122,7 @@ include = [
     # Both Python packages published by the xyg distribution. The bundled adapter
     # is selected by the `reflex` extra; the retired python/reflex-xy project
     # and its independent lock/release material must not ride in this sdist.
-    "/python/xy/**",
+    "/python/xyg/**",
     "/python/reflex_xy/**",
     "/crates/**",
     # Engine `[[bench]]` sources live under crates/xyg-engine/benches/; they
@@ -226,7 +226,7 @@ exclude = ["examples/pdsh/*.ipynb"]
 "tests/reflex_adapter/*.py" = ["RUF012"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["reflex_xy", "xy"]
+known-first-party = ["reflex_xy", "xyg"]
 
 [tool.ty.environment]
 python = ".venv"

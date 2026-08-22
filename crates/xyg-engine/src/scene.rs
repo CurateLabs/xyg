@@ -3048,7 +3048,7 @@ fn push_regular_polygon(
 }
 
 /// DejaVu Sans advances at BASE_PX=16 for printable ASCII (matches
-/// `python/xy/_fontmetrics.py` / `font.rs` so native and WASM gutters agree
+/// `python/xyg/_fontmetrics.py` / `font.rs` so native and WASM gutters agree
 /// without pulling the raster coverage atlas into the browser adapter).
 const ASCII_ADVANCES: [i32; 95] = [
     5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,

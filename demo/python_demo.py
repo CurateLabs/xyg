@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
+import xyg
 
 
 def spiral_galaxy_scatter() -> xy.Chart:

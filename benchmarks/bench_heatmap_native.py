@@ -24,10 +24,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import xy  # noqa: E402
+import xyg  # noqa: E402
 from categories import BENCHMARK_CATEGORIES, categories_for  # noqa: E402
 from environment import SCHEMA_VERSION, collect_environment_metadata  # noqa: E402
-from xy import _raster  # noqa: E402
+from xyg import _raster  # noqa: E402
 
 RENDER_W, RENDER_H = 900, 420
 CATEGORY_IDS = ("core_2d_chart_breadth", "static_export", "payload_export_size")

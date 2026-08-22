@@ -137,7 +137,7 @@ before placing it inside a stricter application policy.
 signatures:
 
 ~~~python
-from xy import Engine
+from xyg import Engine
 
 chart.to_png("chart.png", width=1200, height=630, scale=2)
 chart.to_png(
@@ -163,7 +163,7 @@ Use one batch call instead of exporting in a loop — formats can be mixed, and
 every Chromium-resolved file in the batch shares a single browser session:
 
 ~~~python
-import xy
+import xyg
 
 xy.write_images(
     figures=[overview, detail],

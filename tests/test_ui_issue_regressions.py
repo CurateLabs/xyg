@@ -9,10 +9,10 @@ from xml.etree import ElementTree
 
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy import _svg
-from xy.export import find_chromium
+from xyg import _svg
+from xyg.export import find_chromium
 
 # Browser renderer rule: rotated y titles clear the tick-label union by this
 # multiple of the title's font size.

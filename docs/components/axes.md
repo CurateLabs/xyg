@@ -20,7 +20,7 @@ a requested `tick_count=` so the view stays put regardless of the data:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 ax_hours = np.arange(0, 25, 3)
 ax_temp = np.array([12.1, 11.4, 13.0, 17.6, 21.3, 23.8, 22.0, 17.2, 13.9])
@@ -42,7 +42,7 @@ def axes_domain_demo():
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 log_x = np.logspace(0, 6, 240)
 log_y = 96 - np.log10(log_x) * 11.5
@@ -94,7 +94,7 @@ rotated with `tick_label_angle=` and anchored at their ends, while
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 tick_stage = np.arange(5)
 tick_rate = np.array([1.0, 0.62, 0.38, 0.21, 0.09])
@@ -160,7 +160,7 @@ temperature keeps the primary y-axis:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 dual_month = np.arange(1, 13)
 dual_temp = np.array(

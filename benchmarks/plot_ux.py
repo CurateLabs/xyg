@@ -17,8 +17,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-import xy
-from xy._benchmark_theme import BENCHMARK_DARK_THEME, BENCHMARK_LIGHT_THEME
+import xyg
+from xyg._benchmark_theme import BENCHMARK_DARK_THEME, BENCHMARK_LIGHT_THEME
 
 GIB = 2**30
 

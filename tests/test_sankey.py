@@ -16,11 +16,11 @@ from pathlib import Path
 
 import pytest
 
-import xy
-from xy._figure import Figure
-from xy._sankey import compute_layout
-from xy._scene import RIBBON_STEPS, ribbon_polygon
-from xy.config import PROTOCOL_VERSION
+import xyg
+from xyg._figure import Figure
+from xyg._sankey import compute_layout
+from xyg._scene import RIBBON_STEPS, ribbon_polygon
+from xyg.config import PROTOCOL_VERSION
 
 LINKS = [
     ("Inflow", "Equities", 78000.0),
@@ -248,8 +248,8 @@ def test_numeric_ribbon_color_resolves_to_direct_rgba_at_the_factory() -> None:
     live chart silently paints the constant fallback."""
     import numpy as np
 
-    from xy import channels
-    from xy._svg import _lut
+    from xyg import channels
+    from xyg._svg import _lut
 
     values = np.array([0.0, 5.0, 10.0])
     f = Figure(width=300, height=200)
@@ -275,8 +275,8 @@ def test_numeric_ribbon_color_resolves_to_direct_rgba_at_the_factory() -> None:
 def test_categorical_ribbon_color_resolves_through_the_shared_palette() -> None:
     import numpy as np
 
-    from xy import channels
-    from xy.config import DEFAULT_PALETTE
+    from xyg import channels
+    from xyg.config import DEFAULT_PALETTE
 
     f = Figure(width=300, height=200)
     f.ribbon(
@@ -366,7 +366,7 @@ def test_raster_ink_lands_on_the_reference_polygon() -> None:
     f.ribbon([0.05], [0.95], [0.05], [0.25], [0.7], [0.9], color="#000000", opacity=1.0)
     pixels = _decode_rgba(f.to_image(format="png", scale=1))
 
-    from xy._svg import _Scale, layout
+    from xyg._svg import _Scale, layout
 
     spec, _ = f.build_payload_split()
     _w, _h, _c, plot = layout(spec)
@@ -402,7 +402,7 @@ def test_raster_ribbon_curves_in_axis_transformed_space_on_log_axes() -> None:
     f.ribbon([0.05], [0.95], [1.0], [10.0], [100.0], [1000.0], color="#000000", opacity=1.0)
     pixels = _decode_rgba(f.to_image(format="png", scale=1))
 
-    from xy._svg import _Scale, layout
+    from xyg._svg import _Scale, layout
 
     spec, _ = f.build_payload_split()
     _w, _h, _c, plot = layout(spec)
@@ -525,7 +525,7 @@ def test_raster_ribbon_ramps_alpha_along_the_flow() -> None:
     )
     pixels = _decode_rgba(f.to_image(format="png", scale=1))
 
-    from xy._svg import _Scale, layout
+    from xyg._svg import _Scale, layout
 
     spec, _ = f.build_payload_split()
     _w, _h, _c, plot = layout(spec)
@@ -603,7 +603,7 @@ def test_ribbon_raster_outline_matches_each_bands_own_colour() -> None:
 def test_ribbon_style_stroke_compiles_to_the_outline_not_the_fill() -> None:
     """style={'stroke': ...} must reach the trace outline; before the ribbon
     kinds joined the stroke target sets it silently repainted the band."""
-    from xy import styles
+    from xyg import styles
 
     css = styles.compile_mark_style(
         "ribbon", {"stroke": "#112233", "stroke-width": "2px", "stroke-opacity": 0.5}

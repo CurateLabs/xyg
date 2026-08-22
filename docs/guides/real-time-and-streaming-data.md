@@ -10,7 +10,7 @@ structure. Marks and axes remain declarative; appended rows extend an existing
 line or scatter trace.
 
 ~~~python
-import xy
+import xyg
 
 chart = xy.scatter_chart(
     xy.scatter([0.0, 1.0, 2.0], [0.0, 2.0, 4.0], name="stream"),

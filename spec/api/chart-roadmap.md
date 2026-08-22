@@ -262,7 +262,7 @@ per view; deck.gl documents why 10M visible markers die on fill-rate/overdraw.
 
 **Where the machinery lives (reuse seams for new chart kinds):** the tier
 logic is chart-agnostic and factored out on both sides of the wire —
-`python/xy/lod.py` (visible-window mask, hysteresis drill decision,
+`python/xyg/lod.py` (visible-window mask, hysteresis drill decision,
 drilled-subset bookkeeping incl. `drill_seq`, §16 window-centered encoding,
 screen-derived grid shape, per-point local log-density, wire-buffer packing)
 and `js/src/45_lod.ts` (drill lifecycle with entry/exit fades and the dying
@@ -438,7 +438,7 @@ Parallel, non-chart-type tracks:
 ## Near-Term API Sketch
 
 ```python
-import xy
+import xyg
 
 # shipped
 xy.histogram_chart(xy.hist(values, bins=512, density=False, cumulative=False))

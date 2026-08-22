@@ -17,8 +17,8 @@ from reflex_site_shared.components.docs_api import (
 )
 
 import reflex_xy
-import xy
-from xy.components import _POLAR_INERT_AXIS_KEYWORDS
+import xyg
+from xyg.components import _POLAR_INERT_AXIS_KEYWORDS
 
 COMPONENT_API_METADATA_KEY = "components"
 API_REFERENCE_HEADING = "API Reference"

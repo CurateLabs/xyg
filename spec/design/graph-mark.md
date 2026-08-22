@@ -350,7 +350,7 @@ Element counts and indices are `u64` / `uint64_t`.
 ```
 src/graph/
   mod.rs       # public layout + force + csr + lod + render-graph decisions
-python/xy/
+python/xyg/
   _graph.py    # ingest helpers, id map, from_networkx thin
   marks.py     # graph() → layout/LOD ABI → segments + scatter
 packages/xy-node/

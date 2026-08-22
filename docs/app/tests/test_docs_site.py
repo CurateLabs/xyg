@@ -93,8 +93,8 @@ from xy_docs.sidebar import (
 from xy_docs.xy_docs import _CHART_STYLE, _DOCS_ROUTES, app
 
 import reflex_xy
-import xy
-from xy.components import _MARK_APPLIERS, _POLAR_INERT_AXIS_KEYWORDS
+import xyg
+from xyg.components import _MARK_APPLIERS, _POLAR_INERT_AXIS_KEYWORDS
 
 SITEMAP_NAMESPACE = {"sitemap": "https://www.sitemaps.org/schemas/sitemap/0.9"}
 DOCS_APP_ROOT = Path(__file__).resolve().parent.parent
@@ -314,7 +314,7 @@ def test_docs_app_configures_the_reflex_xy_adapter() -> None:
 def test_benchmark_demo_uses_the_shared_theme() -> None:
     from xy_docs.demos import benchmark_charts
 
-    from xy._benchmark_theme import (
+    from xyg._benchmark_theme import (
         benchmark_chart_class,
         benchmark_live_theme,
     )
@@ -894,7 +894,7 @@ def test_public_docs_use_the_xy_namespace_without_the_legacy_alias() -> None:
     """Keep examples, generated references, and docs tests on the public name."""
     legacy_alias = "".join(("f", "c"))
     forbidden = (
-        f"import xy as {legacy_alias}",
+        f"import xyg as {legacy_alias}",
         f"{legacy_alias}.",
         f"data-{legacy_alias}-",
         f".{legacy_alias}-",

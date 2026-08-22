@@ -143,7 +143,7 @@ def child_run(library: str, n: int, artifact: Path | None) -> dict[str, Any]:
     # arrays ready, matching the existing exact-render benchmark and normal
     # repeated plotting work. Their resident memory remains included.
     if library == "xy":
-        from xy import scatter, scatter_chart
+        from xyg import scatter, scatter_chart
     elif library == "plotly":
         import plotly.express as px
     elif library == "matplotlib":

@@ -6,8 +6,8 @@ import re
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._plot_types import _contour_visible_segments, _joined_contour_paths
+import xyg.pyplot as plt
+from xyg.pyplot._plot_types import _contour_visible_segments, _joined_contour_paths
 
 
 def _gaussian_difference() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -273,7 +273,7 @@ def test_clabel_replacement_scales_negative_dashes_by_rendered_width() -> None:
 
 
 def test_constrained_layout_reserves_contour_colorbar_inside_canvas() -> None:
-    from xy.pyplot._rc import rc_figsize_px
+    from xyg.pyplot._rc import rc_figsize_px
 
     fig, ax = plt.subplots(layout="constrained")
     values = np.arange(16.0).reshape(4, 4)
@@ -301,7 +301,7 @@ def test_constrained_layout_reserves_contour_colorbar_inside_canvas() -> None:
 
 def test_tight_layout_does_not_steal_pre_reserved_colorbar_room_twice() -> None:
     """A later measured-layout solve may already contain the colorbar panel."""
-    from xy.pyplot._rc import rc_figsize_px
+    from xyg.pyplot._rc import rc_figsize_px
 
     fig, ax = plt.subplots()
     filled = ax.contourf(np.arange(16.0).reshape(4, 4), levels=[2.0, 6.0, 10.0])

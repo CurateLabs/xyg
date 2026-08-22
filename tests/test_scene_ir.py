@@ -6,8 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
-from xy import _native, _svg
-from xy._figure import Figure
+from xyg import _native, _svg
+from xyg._figure import Figure
 
 EXPECTED_SCATTER = (
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" '

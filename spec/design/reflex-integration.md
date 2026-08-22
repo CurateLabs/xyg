@@ -53,10 +53,10 @@ proved it — but each piece costs something the socket gets free: reverse
 proxies must be taught each route; every `/msg` pays request setup + headers;
 SSE is a second long-lived connection per chart with its own reconnect
 logic; and none of it inherits app-plane auth. The XYBF binary frame format
-(`python/xy/_framing.py`; versioning in [wire-protocol.md](wire-protocol.md)
+(`python/xyg/_framing.py`; versioning in [wire-protocol.md](wire-protocol.md)
 §7) exists because HTTP bodies need framing — socket.io attachments
 already carry length-delimited binary, so on this transport the framing
-layer disappears too. XYBF remains in `python/xy/_framing.py` (re-exported
+layer disappears too. XYBF remains in `python/xyg/_framing.py` (re-exported
 from `xy.channel`) for HTTP/export hosts; the namespace does not use it.
 
 ### The cost we accept (recorded, §28 spirit)
@@ -721,7 +721,7 @@ tests/reflex_adapter/        token/registry/var/bridge/payload-asset units,
 `inline()` (content-addressed pinned tokens, §3.4) lives in the package
 root beside `register()`/`release()`.
 
-The core `python/xy` package itself stays Reflex-free (CLAUDE.md rule).
+The core `python/xyg` package itself stays Reflex-free (CLAUDE.md rule).
 `xy[reflex]` adds full `reflex>=0.9.6` for now — the `reflex-base` split covers
 components/vars but not yet App/state-manager access; revisit when a smaller
 supported surface exists.
@@ -735,9 +735,9 @@ creating another distribution or release pipeline.
 
 The previous revision of this document specified `GET /_xy/{token}/payload`,
 `POST /_xy/{token}/msg`, an SSE `/events` invalidation stream, and the XYBF
-binary frame (`python/xy/_framing.py`). What survives: `handle_message`
+binary frame (`python/xyg/_framing.py`). What survives: `handle_message`
 extraction (shipped as
-`xy.channel`), the XYBF frame helpers (still in `python/xy/_framing.py`,
+`xy.channel`), the XYBF frame helpers (still in `python/xyg/_framing.py`,
 re-exported from `xy.channel`, for HTTP/export hosts), the registry API
 shape, and the two-planes analysis. What
 changed: transport (§1–§2) and the multi-worker story — the old draft called

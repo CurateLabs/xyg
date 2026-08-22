@@ -127,7 +127,7 @@ original Python or Markdown file to Tailwind's source configuration.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.area_chart(
     xy.area(

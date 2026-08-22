@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-import xy
+import xyg
 
 
 def test_explicit_axis_bounds_ship_separately_from_initial_domain() -> None:

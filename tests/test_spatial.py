@@ -11,9 +11,9 @@ import struct
 
 import numpy as np
 
-import xy
-from xy import kernels
-from xy._spatial import SpatialIndex
+import xyg
+from xyg import kernels
+from xyg._spatial import SpatialIndex
 
 _MAGIC = b"XYSPIDX1"
 

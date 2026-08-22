@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.logspace(0, 3, 30)
 plt.plot(x, x**2)

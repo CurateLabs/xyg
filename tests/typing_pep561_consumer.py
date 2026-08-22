@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, assert_type
 
-import xy
+import xyg
 
 
 def _build_plugin(context: xy.MarkContext) -> Sequence[xy.Mark]:

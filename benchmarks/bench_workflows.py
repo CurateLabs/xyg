@@ -21,13 +21,13 @@ from typing import Any
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import xy  # noqa: E402
+import xyg  # noqa: E402
 from _browser import find_chromium  # noqa: E402
 from categories import BENCHMARK_CATEGORIES, categories_for  # noqa: E402
 from environment import SCHEMA_VERSION, collect_environment_metadata  # noqa: E402
-from xy import kernels as k  # noqa: E402
-from xy._figure import Figure  # noqa: E402  (harness oracles/annotations only)
-from xy.interaction import _ensure_pyramid  # noqa: E402
+from xyg import kernels as k  # noqa: E402
+from xyg._figure import Figure  # noqa: E402  (harness oracles/annotations only)
+from xyg.interaction import _ensure_pyramid  # noqa: E402
 
 WORKFLOW_CATEGORY_IDS = ("input_ingestion", "streaming_updates", "log_autorange", "static_export")
 

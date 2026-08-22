@@ -123,7 +123,7 @@ registry/assets, run:
 make check-examples
 ```
 
-When you touch `python/xy/pyplot/` or the matplotlib compatibility corpus, run:
+When you touch `python/xyg/pyplot/` or the matplotlib compatibility corpus, run:
 
 ```bash
 make check-pyplot
@@ -250,7 +250,7 @@ the `<CHROMIUM>` placeholder, name it explicitly, for example
 - Public errors are actionable and name the bad parameter.
 - Failed public builder calls leave the internal `_figure.Figure` traces,
   `ColumnStore`, and category axes unchanged.
-- `import xy` stays lazy and under budget in fresh interpreters; no
+- `import xyg` stays lazy and under budget in fresh interpreters; no
   NumPy/native-core import on package import.
 - Standalone HTML handles hostile user strings in every text surface touched by
   the patch; run `make check-security` for export/client text-sink changes.

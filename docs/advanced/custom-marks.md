@@ -25,7 +25,7 @@ reimplementing them.
 
 ~~~python
 import numpy as np
-import xy
+import xyg
 
 
 def _calc(columns):

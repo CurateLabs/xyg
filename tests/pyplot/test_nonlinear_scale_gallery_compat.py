@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._ticker import AsinhLocator, LogitFormatter, SymmetricalLogLocator
+import xyg.pyplot as plt
+from xyg.pyplot._ticker import AsinhLocator, LogitFormatter, SymmetricalLogLocator
 
 
 def teardown_function() -> None:

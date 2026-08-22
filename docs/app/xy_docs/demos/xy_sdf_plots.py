@@ -11,7 +11,7 @@ import reflex as rx
 from PIL import Image, ImageDraw, ImageFont
 
 import reflex_xy
-import xy
+import xyg
 
 
 @dataclass(frozen=True)

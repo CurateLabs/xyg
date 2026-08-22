@@ -17,7 +17,7 @@ The same data can use defaults in one chart and a chart-local theme,
 interaction policy, axes, and layout in another:
 
 ~~~python demo exec
-import xy
+import xyg
 
 traffic = {
     "hour": list(range(8, 20)),
@@ -102,8 +102,8 @@ a file at chart construction time. Hover the chart, then open its Export menu
 to see the configured PNG, SVG, and CSV options:
 
 ~~~python demo exec
-import xy
-from xy import Engine
+import xyg
+from xyg import Engine
 
 days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 signups = [320, 460, 510, 620, 780, 690, 540]

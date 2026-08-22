@@ -19,7 +19,7 @@ bubble and wind-rose charts are composed. Neither ships a "radar renderer".
 
 So `xy` adds a coordinate system and lets the existing mark registry render
 through it. `MARK_KINDS` (`js/src/55_marks.ts`) gains no entries, and no
-`_emit_<K>` in `python/xy/_payload.py` is rewritten. This follows the standing
+`_emit_<K>` in `python/xyg/_payload.py` is rewritten. This follows the standing
 rule in [`../api/chart-kind-contract.md`](../api/chart-kind-contract.md):
 organize by primitive, not by chart name.
 
@@ -183,7 +183,7 @@ xyAxisCoord(...)          →  apply the scale (log / symlog / linear)
 ```
 
 and in Python, `_Scale.coord()` then `_Scale.__call__()` in
-`python/xy/_svg.py` do the same two steps.
+`python/xyg/_svg.py` do the same two steps.
 
 **Polar replaces only the last step**, and replaces it with a *joint* map over
 both axes. Decode and scale are untouched. After `xyAxisCoord` yields θ and r
@@ -271,7 +271,7 @@ Three consumers must agree with that file:
    transform test.
 
 This is deliberately stronger than the existing tick-math arrangement, where
-`js/src/30_ticks.ts` and its hand port in `python/xy/_svg.py` are bound by
+`js/src/30_ticks.ts` and its hand port in `python/xyg/_svg.py` are bound by
 nothing executable. Polar does not repeat that gap.
 
 ## 5. Chord versus arc
@@ -407,7 +407,7 @@ are DOM `<div>`s with a background colour**, which can express a rectangle and
 nothing else. The polar frame circle and its radial ticks therefore move to the
 2D chrome canvas.
 
-### Exporters (`python/xy/_svg.py`, `python/xy/_raster.py`)
+### Exporters (`python/xyg/_svg.py`, `python/xyg/_raster.py`)
 
 The raster exporter imports ~45 symbols from `_svg` — including `_Scale`,
 `_axis_scales`, `layout` and `axis_ticks` — precisely so the two static outputs
@@ -438,7 +438,7 @@ grid blits will silently project through a straight-line map.
 
 **Legal under `coords="polar"`:** `line`, `scatter`, `area`, `bar`, `column`,
 `heatmap`, `contour`, and `errorbar` (`POLAR_MARK_KINDS`,
-`python/xy/config.py`).
+`python/xyg/config.py`).
 
 `area` uses chord-bounded fill geometry, which supports the categorical
 composition built by `xy.radar_chart(...)`. Each radar series closes at a full

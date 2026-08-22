@@ -50,7 +50,7 @@ corner of this chart to see the pan, zoom, reset, and export controls:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_signal = np.random.default_rng(11)
 signal_walk = np.cumsum(rng_signal.normal(0.0, 1.0, 60)).round(2)
@@ -68,7 +68,7 @@ def default_toolbar_demo():
 Use `modebar()` to hide or style the toolbar:
 
 ~~~python
-import xy
+import xyg
 
 chart = xy.scatter_chart(
     xy.scatter([0, 1, 2, 3], [1, 3, 2, 5]),
@@ -139,7 +139,7 @@ chart removes the toolbar entirely with `modebar(show=False)`:
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 rng_pair = np.random.default_rng(5)
 toolbar_x = list(range(30))
@@ -265,7 +265,7 @@ double-click reset, while the right chart disables all local navigation with
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 rng_nav = np.random.default_rng(17)
 nav_x = rng_nav.uniform(0.0, 10.0, 80)

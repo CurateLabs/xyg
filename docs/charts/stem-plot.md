@@ -26,7 +26,7 @@ anchored to the baseline with a marker at its tip:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.arange(10)
 values = np.array([2, 5, 3, 7, 6, 9, 8, 11, 10, 13])
@@ -49,7 +49,7 @@ Values may swing above and below the baseline, and `width`, `opacity`,
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 n_taps = np.arange(24)
 impulse_response = 9.0 * np.sin(n_taps * 0.9) * 0.72**n_taps
@@ -85,7 +85,7 @@ for context:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_sig = np.random.default_rng(3)
 k = np.arange(16)

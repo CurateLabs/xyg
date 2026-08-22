@@ -33,7 +33,7 @@ python - <<'PY'
 import platform
 import sys
 
-import xy
+import xyg
 
 print("xy:", xy.__version__)
 print("python:", sys.version.replace("\n", " "))
@@ -41,7 +41,7 @@ print("platform:", platform.platform())
 print("machine:", platform.machine())
 
 try:
-    import xy.kernels as kernels
+    import xyg.kernels as kernels
 
     print("backend:", kernels.BACKEND)
 except Exception as error:
@@ -61,7 +61,7 @@ not a version and can refer to different code by the time someone investigates.
 Remove application code until the failure still occurs with a small chart:
 
 ~~~python
-import xy
+import xyg
 
 chart = xy.scatter_chart(
     xy.scatter([1, 2, 3], [3, 5, 4]),

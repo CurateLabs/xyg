@@ -11,8 +11,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy._figure import DECIMATION_THRESHOLD, Figure, Selection
-from xy.channel import ChannelCallbacks, handle_message
+from xyg._figure import DECIMATION_THRESHOLD, Figure, Selection
+from xyg.channel import ChannelCallbacks, handle_message
 
 
 def handle(fig, content, **cbs):

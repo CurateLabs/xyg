@@ -390,7 +390,7 @@ def make_cases(profile: str) -> list[Case]:
 
     go = _plotly_or_none()
     seaborn = _seaborn_or_none()
-    from xy import area, bar, chart, column, heatmap, hist
+    from xyg import area, bar, chart, column, heatmap, hist
 
     rng = np.random.default_rng(42)
     cases: list[Case] = []
@@ -786,7 +786,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             "",
         ]
     try:
-        import xy.kernels as kernels
+        import xyg.kernels as kernels
 
         lines += [f"xy backend: `{kernels.BACKEND}`", ""]
     except Exception:

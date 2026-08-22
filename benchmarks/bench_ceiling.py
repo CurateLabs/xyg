@@ -335,7 +335,7 @@ def child_run(arm: str, n: int, artifact: Path | None) -> dict[str, Any]:
     t0 = time.perf_counter()
 
     if arm in ("xy", "xy-exact"):
-        from xy import scatter, scatter_chart
+        from xyg import scatter, scatter_chart
 
         exact = arm == "xy-exact"
         mark = scatter(x=x, y=y, density=False) if exact else scatter(x=x, y=y)

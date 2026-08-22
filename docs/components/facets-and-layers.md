@@ -21,7 +21,7 @@ The live example layers different mark types in one coordinate system.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.chart(
     xy.bar(["A", "B", "C"], [4, 7, 5], color="#c4b5fd"),
@@ -46,7 +46,7 @@ system. Declare broad fills first, followed by lines, points, and annotations.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 facet_detail_data = {
     "x": [0, 1, 2, 0, 1, 2],
@@ -92,7 +92,7 @@ dashed forecast `line`, a solid actuals `line` with `scatter` markers, and an
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 layer_months = list(range(1, 13))
 layer_actual = [4.2, 4.8, 5.1, 4.6, 5.9, 6.4, 7.1, 6.8, 7.6, 8.2, 7.9, 8.8]

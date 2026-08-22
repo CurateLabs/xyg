@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import numpy as np
 
-import xy
-from xy import kernels
-from xy.config import DENSITY_GRID, PYRAMID_MIN_POINTS
+import xyg
+from xyg import kernels
+from xyg.config import DENSITY_GRID, PYRAMID_MIN_POINTS
 
 
 def test_first_paint_records_pyramid_binning():
@@ -44,7 +44,7 @@ def test_pyramid_compose_mass_matches_bin2d():
 
 
 def test_pyramid_resident_bytes_far_below_raw_xy():
-    from xy.interaction import _pyramid_resident_bytes
+    from xyg.interaction import _pyramid_resident_bytes
 
     n = 1_000_000
     resident = _pyramid_resident_bytes(256, colored=False)

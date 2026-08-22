@@ -23,7 +23,7 @@ Pass a 1-D array of samples to `ecdf`. This is the minimal Python ECDF:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(11)
 response_time = rng.lognormal(mean=4.2, sigma=0.38, size=2_000)
@@ -54,7 +54,7 @@ directly as a shift in that percentile:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(7)
 control_latency = rng.gamma(shape=3.0, scale=40.0, size=1_500)
@@ -89,7 +89,7 @@ exact step per observation — here 500,000 points collapse to 512 steps while
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 noise_rng = np.random.default_rng(42)
 sensor_noise = np.concatenate(

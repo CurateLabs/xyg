@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(-5, 5, 200)
 plt.plot(x, np.tanh(x))

@@ -57,7 +57,7 @@ jobs:
       - name: Verify native benchmark backend
         run: |
           .venv/bin/python - <<'PY'
-          import xy.kernels as k
+          import xyg.kernels as k
           assert k.BACKEND == "native", f"CodSpeed requires native backend, got {k.BACKEND!r}"
           PY
 

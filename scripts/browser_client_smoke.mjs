@@ -20,7 +20,7 @@ import { createServer } from "node:http";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const clientDir = join(root, "packages", "xy-client", "dist");
-const staticDir = join(root, "python", "xy", "static");
+const staticDir = join(root, "python", "xyg", "static");
 const standalonePath = join(clientDir, "standalone.js");
 const indexPath = join(clientDir, "index.js");
 const pyStandalonePath = join(staticDir, "standalone.js");
@@ -71,7 +71,7 @@ function assertBundlesExist() {
   }
   if (!existsSync(pyStandalonePath) || !existsSync(pyIndexPath)) {
     fail(
-      `missing Python wheel copy of the client (js/build.mjs copies into python/xy/static)\n` +
+      `missing Python wheel copy of the client (js/build.mjs copies into python/xyg/static)\n` +
         `  standalone: ${existsSync(pyStandalonePath)}\n` +
         `  index: ${existsSync(pyIndexPath)}`
     );
@@ -83,7 +83,7 @@ function assertBundlesExist() {
     const host = readFileSync(a);
     const py = readFileSync(b);
     if (Buffer.compare(host, py) !== 0) {
-      fail(`python/xy/static/${label} drifted from packages/xy-client/dist/${label}`);
+      fail(`python/xyg/static/${label} drifted from packages/xy-client/dist/${label}`);
     }
   }
   const nodeCheck = spawnSync(process.execPath, ["--check", standalonePath], {

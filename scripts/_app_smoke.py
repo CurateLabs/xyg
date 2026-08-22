@@ -29,7 +29,7 @@ FASTAPI_APP_DIR = REPO_ROOT / "examples" / "fastapi"
 
 sys.path.insert(0, str(REPO_ROOT / "python"))
 
-from xy._chromium import ChromiumSession  # noqa: E402
+from xyg._chromium import ChromiumSession  # noqa: E402
 
 CHROMIUM_CANDIDATES = (
     "/opt/pw-browsers/chromium",

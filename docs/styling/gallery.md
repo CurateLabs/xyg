@@ -21,7 +21,7 @@ remain inside the plot.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 months = [
     "Jan 23", "Feb 23", "Mar 23", "Apr 23", "May 23", "Jun 23",
@@ -147,7 +147,7 @@ color is data-driven.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 field = [
     [0.0, 0.2, 0.4, 0.1],
@@ -284,7 +284,7 @@ palette separates each geometry without adding decorative chart chrome.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 x = [0, 1, 2, 3, 4, 5]
 estimate = [3, 4, 4.5, 6, 6.5, 8]
@@ -412,7 +412,7 @@ reduction.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(17)
 x = rng.normal(size=12_000)
@@ -462,7 +462,7 @@ layout selectors belong in export CSS.
 
 ~~~python demo exec
 import reflex as rx
-import xy
+import xyg
 
 facet_data = {
     "x": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
@@ -549,7 +549,7 @@ the cursor without additional positioning data.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 
 class StyledChromeState(rx.State):

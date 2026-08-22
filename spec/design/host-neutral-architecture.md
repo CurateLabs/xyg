@@ -21,7 +21,7 @@ host / identity / store / client-packaging graph.
 | User | What they install | What they must not need |
 | --- | --- | --- |
 | Python (notebooks, pyplot, Reflex, `to_html`) | Python distribution (`pip install`; name in #13/#18) | Node, npm, or a CDN at install/export time |
-| JS / browser | `@curatelabs/xyg` | Python runtime or `python/xy/` as the ship vehicle |
+| JS / browser | `@curatelabs/xyg` | Python runtime or `python/xyg/` as the ship vehicle |
 | Node / VS Code | `@curatelabs/xyg-node` (loads the same `libxyg_core`) plus the paint client for HTML/webview | Python package tree |
 
 Three **runtime surfaces** remain ([host-parity.md](host-parity.md) §0). The
@@ -30,8 +30,8 @@ or the native engine.
 
 ### What stays Python forever
 
-- Composition API (`python/xy/components.py`) and the matplotlib shim
-  (`python/xy/pyplot/`).
+- Composition API (`python/xyg/components.py`) and the matplotlib shim
+  (`python/xyg/pyplot/`).
 - Reflex integration (`python/reflex_xy/`) — may keep linking
   `xy/static/index.js` from the *installed Python package*.
 - Notebook / anywidget / `Chart.to_html()` embedding a **copy** of the paint
@@ -83,7 +83,7 @@ Node-shaped host (native ABI + composition), the owned replacement for
 own the npm scope `@curatelabs` before a real publish. Record that under #13;
 do not invent `@xy/*` as a fallback.
 
-In-repo directories (`packages/xy-node`, `js/src`, `python/xy/`) may keep
+In-repo directories (`packages/xy-node`, `js/src`, `python/xyg/`) may keep
 current paths until #18’s mechanical rename; **published** `package.json`
 `name` fields must use the table above.
 
@@ -195,7 +195,7 @@ the npm `@curatelabs` org. Do not publish `@xy/node`.
 
 1. **#23** — host-neutral paint client: `js/build.mjs` writes a non-Python
    artifact; Python wheel *copies* it; Node `toHtml` + demos + VS Code
-   contract stop reading `python/xy/static`; README/`docs/overview/installation.md`
+   contract stop reading `python/xyg/static`; README/`docs/overview/installation.md`
    document `npm install @curatelabs/xyg` beside `pip install`. Package
    `name` is `@curatelabs/xyg` even before a registry publish.
 2. **#18** — crate split + XYG identity, including renaming

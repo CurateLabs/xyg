@@ -10,7 +10,7 @@ They describe data geometry, coordinate systems, annotations, and browser
 chrome; they do not render independently.
 
 ~~~python
-import xy
+import xyg
 
 chart = xy.line_chart(
     xy.line([0, 1, 2, 3], [2, 5, 3, 8], name="observed"),

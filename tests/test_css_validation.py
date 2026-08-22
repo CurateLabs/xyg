@@ -12,10 +12,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import kernels
-from xy._figure import Figure
-from xy._raster import _parse_color
+import xyg
+from xyg import kernels
+from xyg._figure import Figure
+from xyg._raster import _parse_color
 
 X = np.arange(8.0)
 Y = X * 0.5

@@ -3,9 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _paint
-from xy._figure import Figure
+import xyg
+from xyg import _paint
+from xyg._figure import Figure
 
 
 def test_error_band_and_errorbar_use_compact_geometry() -> None:
@@ -179,7 +179,7 @@ def _step_value(sx: np.ndarray, sy: np.ndarray, q: float) -> float:
 
 
 def test_stairs_ships_compact_form_and_renders_correct_bins() -> None:
-    from xy._svg import _step_arrays
+    from xyg._svg import _step_arrays
 
     edges = np.array([0.0, 1.0, 3.0, 6.0])
     vals = np.array([2.0, 5.0, 1.0])
@@ -234,7 +234,7 @@ def test_categorical_group_keeps_first_appearance_order() -> None:
 
 
 def test_box_whiskers_end_at_observations_inside_fence() -> None:
-    from xy.marks import _distribution_stats
+    from xyg.marks import _distribution_stats
 
     vals = np.array([0.0, 10.0, 11.0, 12.0, 13.0, 14.0, 40.0])
     q1, _med, q3, low, high, outliers = _distribution_stats(vals)

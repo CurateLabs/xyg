@@ -13,7 +13,7 @@ children share a table.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 hours = np.linspace(0, 24, 288, endpoint=False)
 temperature = (
@@ -94,7 +94,7 @@ campaign_data = {
 }
 
 # --- chart ---
-import xy
+import xyg
 
 named_column_chart = xy.scatter_chart(
     xy.scatter(
@@ -158,7 +158,7 @@ separately (`uv add pyarrow` or `pip install pyarrow`) and pass an Array or
 ChunkedArray directly:
 
 ~~~python demo exec
-import xy
+import xyg
 
 try:
     import pyarrow as pa
@@ -238,7 +238,7 @@ end.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 dates = np.arange("2026-07-01", "2026-07-22", dtype="datetime64[D]")
 active_users = np.array(

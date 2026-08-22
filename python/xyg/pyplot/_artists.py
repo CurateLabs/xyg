@@ -38,7 +38,7 @@ class _PatchFacade:
 def unit_converted_values(values: Any) -> Any:
     """Datetime-like values in the engine's converted unit — f64 ms since
     epoch (columns.py); every other dtype is already its own converted form."""
-    from xy.columns import _datetime_to_float_ms, _is_datetime_object_array
+    from xyg.columns import _datetime_to_float_ms, _is_datetime_object_array
 
     array = np.asanyarray(values)
     if np.issubdtype(array.dtype, np.datetime64) or _is_datetime_object_array(array.reshape(-1)):
@@ -738,7 +738,7 @@ class AxesImage(Artist):
             # texture, where NaN cannot carry alpha reliably.  Convert the
             # transformed result to RGBA so pixels outside the transformed
             # image are genuinely transparent rather than a black rectangle.
-            from xy._svg import _lut
+            from xyg._svg import _lut
 
             finite = warped[np.isfinite(warped)]
             domain = self._entry["kwargs"].get("domain")
@@ -1120,7 +1120,7 @@ class ContourSet(Artist):
                 None,
             )
             if effect is not None:
-                from xy import kernels
+                from xyg import kernels
 
                 z = np.asarray(self._entry["args"][0], dtype=np.float64)
                 x = self._entry["kwargs"].get("x")

@@ -5,10 +5,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import xy
-from xy import _raster, _svg
-from xy._figure import Figure
-from xy.styles import compile_mark_style, normalize_css_style
+import xyg
+from xyg import _raster, _svg
+from xyg._figure import Figure
+from xyg.styles import compile_mark_style, normalize_css_style
 
 
 def test_renderer_style_capabilities_are_not_a_public_schema() -> None:

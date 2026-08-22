@@ -6,10 +6,10 @@ from xml.etree import ElementTree
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy import _raster, _svg
-from xy._svg import _LEGEND_CHAR_WIDTH, _legend_layout, _legend_text_width, layout
-from xy.pyplot import Legend
+import xyg.pyplot as plt
+from xyg import _raster, _svg
+from xyg._svg import _LEGEND_CHAR_WIDTH, _legend_layout, _legend_text_width, layout
+from xyg.pyplot import Legend
 
 
 def teardown_function():

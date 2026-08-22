@@ -37,7 +37,7 @@ Pass arrays directly for small, local examples:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 signal_chart = xy.line_chart(
     xy.line([0, 1, 2, 3], [2, 5, 3, 8], name="signal"),
@@ -96,7 +96,7 @@ them:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 layer_month = np.arange(1, 9)
 layer_volume = np.array([32, 38, 35, 44, 41, 52, 49, 57])
@@ -147,7 +147,7 @@ mark uses plain paint options — `name=`, `color=`, `dash=`, and `opacity=`:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 style_rng = np.random.default_rng(7)
 style_x = style_rng.uniform(0, 10, 60)
@@ -188,7 +188,7 @@ rates binds to a named right-hand axis:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 compose_rng = np.random.default_rng(11)
 compose_day = np.arange(1, 31)

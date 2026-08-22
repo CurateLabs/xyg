@@ -2,7 +2,7 @@
  * Standalone HTML export for the Node host.
  *
  * Inlines the host-neutral `@curatelabs/xyg` IIFE (`packages/xy-client/dist/standalone.js`),
- * never the Python wheel copy. Mirrors `python/xy/export.py` `to_html` enough
+ * never the Python wheel copy. Mirrors `python/xyg/export.py` `to_html` enough
  * for a self-contained document: client + chunked base64 payload +
  * `xy.renderStandalone`.
  *

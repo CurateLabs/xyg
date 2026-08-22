@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import base64
 
-from xy import export
+from xyg import export
 
 
 def _roundtrip(blob: bytes) -> bytes:

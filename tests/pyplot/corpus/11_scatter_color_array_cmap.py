@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 rng = np.random.default_rng(0)
 x = rng.random(100)

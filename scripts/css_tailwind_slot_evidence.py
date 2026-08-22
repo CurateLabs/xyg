@@ -9,8 +9,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-import xy
-from xy import export
+import xyg
+from xyg import export
 
 SLOT_CLASSES = {
     "annotation_layer": "tw-annotation-layer",

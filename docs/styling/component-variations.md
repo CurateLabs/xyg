@@ -58,7 +58,7 @@ swatches, and tooltip use independent styling surfaces.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 data = {
     "month": [1, 2, 3, 4, 5, 6],
@@ -180,7 +180,7 @@ annotation style when that label should also be translucent.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 annotation_chart = xy.line_chart(
     xy.line(
@@ -344,7 +344,7 @@ selection rectangle.
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 interaction_chart = xy.scatter_chart(
     xy.scatter(
@@ -532,7 +532,7 @@ XY's built-in legend:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 custom_legend_chart = xy.line_chart(
     xy.line(

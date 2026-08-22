@@ -21,8 +21,8 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
-from xy.export import _bundled_js
+import xyg
+from xyg.export import _bundled_js
 
 CHROMIUM_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",

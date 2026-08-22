@@ -29,7 +29,7 @@ clockwise. The helper applies that convention automatically:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng = np.random.default_rng(14)
 wind_direction = np.mod(
@@ -99,7 +99,7 @@ enough to read:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 coarse_rng = np.random.default_rng(7)
 coarse_directions = np.mod(coarse_rng.normal(270.0, 45.0, 500), 360.0)
@@ -127,7 +127,7 @@ band labels where you want them:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 met_rng = np.random.default_rng(2024)
 met_directions = np.mod(

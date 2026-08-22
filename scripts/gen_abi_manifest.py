@@ -19,8 +19,8 @@ from typing import Any, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE_LIB = ROOT / "crates" / "xyg-core" / "src" / "lib.rs"
-NATIVE_PY = ROOT / "python" / "xy" / "_native.py"
-GENERATED_PY = ROOT / "python" / "xy" / "_abi_generated.py"
+NATIVE_PY = ROOT / "python" / "xyg" / "_native.py"
+GENERATED_PY = ROOT / "python" / "xyg" / "_abi_generated.py"
 NATIVE_JS = ROOT / "packages" / "xy-node" / "src" / "native.js"
 GENERATED_JS = ROOT / "packages" / "xy-node" / "src" / "_abi_generated.js"
 NATIVE_PATH_JS = ROOT / "packages" / "xy-node" / "src" / "native-path.js"
@@ -430,7 +430,7 @@ def generated_outputs(root: Path = ROOT) -> dict[Path, str]:
     manifest = generate_manifest(root)
     return {
         root / "spec/abi/xyg-abi.json": render_manifest(manifest),
-        root / "python/xy/_abi_generated.py": render_python_bindings(manifest),
+        root / "python/xyg/_abi_generated.py": render_python_bindings(manifest),
         root / "packages/xy-node/src/_abi_generated.js": render_node_bindings(manifest),
         root / "spec/abi/xyg.h": render_c_header(manifest),
     }

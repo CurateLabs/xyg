@@ -29,7 +29,7 @@ from io import StringIO
 from pathlib import Path
 
 import pandas as pd
-import xy
+import xyg
 
 SAMPLE = """day,channel,revenue,orders
 2026-07-01,direct,1240.50,31

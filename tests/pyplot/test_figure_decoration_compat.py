@@ -3,11 +3,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import _textblock
-from xy import pyplot as plt
-from xy._svg import _decode_title_geometry, render_svg
-from xy.pyplot._grid import _figure_label_baseline, _html_figure_labels
-from xy.pyplot._mplfig import Figure
+from xyg import _textblock
+from xyg import pyplot as plt
+from xyg._svg import _decode_title_geometry, render_svg
+from xyg.pyplot._grid import _figure_label_baseline, _html_figure_labels
+from xyg.pyplot._mplfig import Figure
 
 
 def test_three_axes_title_slots_survive_in_one_renderer_payload() -> None:

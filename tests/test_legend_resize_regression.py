@@ -22,8 +22,8 @@ from conftest import run_browser_probe
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-import xy  # noqa: E402
-from xy.export import find_chromium  # noqa: E402
+import xyg  # noqa: E402
+from xyg.export import find_chromium  # noqa: E402
 
 # Capture the standalone render call's return value so the probe can drive the
 # view directly (the same swap the visual-regression smoke uses).

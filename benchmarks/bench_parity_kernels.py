@@ -25,7 +25,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
-from xy import _native  # noqa: E402
+from xyg import _native  # noqa: E402
 
 BASELINE_PATH = Path(__file__).resolve().parent / "baseline.json"
 DEFAULT_SIZES = (1_000_000,)

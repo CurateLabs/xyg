@@ -125,7 +125,7 @@ def test_missing_generated_consumers_return_actionable_errors(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     generated = {"abi_version": 1, "signature_sha256": "hash", "symbols": []}
-    generated_py = tmp_path / "python/xy/_abi_generated.py"
+    generated_py = tmp_path / "python/xyg/_abi_generated.py"
     generated_js = tmp_path / "packages/xy-node/src/_abi_generated.js"
     monkeypatch.setattr(check_abi_parity, "generate_manifest", lambda _root: generated)
     monkeypatch.setattr(check_abi_parity, "render_manifest", lambda _manifest: "{}\n")
@@ -137,7 +137,7 @@ def test_missing_generated_consumers_return_actionable_errors(
 
     errors = check_abi_parity.check_abi_parity(tmp_path)
 
-    assert any("python/xy/_abi_generated.py is stale" in error for error in errors)
+    assert any("python/xyg/_abi_generated.py is stale" in error for error in errors)
     assert any("packages/xy-node/src/_abi_generated.js is stale" in error for error in errors)
     assert any("scripts/abi_smoke.py is missing" in error for error in errors)
 
@@ -154,7 +154,7 @@ def test_abi_smoke_reports_missing_generated_declarations(
 def test_bazel_abi_lookup_falls_back_when_generated_constant_is_unparseable(
     tmp_path: Path,
 ) -> None:
-    generated = tmp_path / "python/xy/_abi_generated.py"
+    generated = tmp_path / "python/xyg/_abi_generated.py"
     generated.parent.mkdir(parents=True)
     generated.write_text("ABI_VERSION: int = 59\n", encoding="utf-8")
     rust = tmp_path / "crates/xyg-core/src/lib.rs"
@@ -180,9 +180,9 @@ def test_bazel_abi_lookup_falls_back_when_generated_constant_is_unparseable(
 
 
 def test_low_level_signatures_exist_only_in_generated_modules() -> None:
-    python_host = (ROOT / "python/xy/_native.py").read_text(encoding="utf-8")
+    python_host = (ROOT / "python/xyg/_native.py").read_text(encoding="utf-8")
     node_host = (ROOT / "packages/xy-node/src/native.js").read_text(encoding="utf-8")
-    generated_python = (ROOT / "python/xy/_abi_generated.py").read_text(encoding="utf-8")
+    generated_python = (ROOT / "python/xyg/_abi_generated.py").read_text(encoding="utf-8")
     generated_node = (ROOT / "packages/xy-node/src/_abi_generated.js").read_text(encoding="utf-8")
     assert ".argtypes" not in python_host and ".restype" not in python_host
     assert "lib.func(" not in node_host

@@ -20,7 +20,7 @@ This interactive example combines bars, a line, an annotation, axes, a legend,
 a shared tooltip, and crosshair behavior in one panel:
 
 ~~~python demo exec
-import xy
+import xyg
 
 pipeline_data = {
     "month": [
@@ -120,7 +120,7 @@ container:
 ~~~python demo exec
 import random
 
-import xy
+import xyg
 
 campaign_rng = random.Random(11)
 campaign_spend_k = [round(campaign_rng.uniform(8, 80), 1) for _ in range(60)]

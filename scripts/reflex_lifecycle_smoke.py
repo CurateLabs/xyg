@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "examples" / "fasta
 import charts  # noqa: E402  (examples/fastapi/charts.py)
 
 from _app_smoke import ChromiumSession, Probe, find_chromium, serve_fastapi_app
-from xy.dom import CHART_DOM_SLOTS  # noqa: E402
+from xyg.dom import CHART_DOM_SLOTS  # noqa: E402
 
 GALLERY_IDS: tuple[str, ...] = tuple(info.id for info in charts.GALLERY)
 DRILLDOWN_PATH = "/drilldown"

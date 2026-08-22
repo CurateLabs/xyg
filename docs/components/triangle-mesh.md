@@ -25,7 +25,7 @@ the `colormap`:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 triangle_mesh_detail_chart = xy.triangle_mesh_chart(
     xy.triangle_mesh(
@@ -62,7 +62,7 @@ centroid, mapped through `colormap` over an explicit `domain` with no stroke:
 import math
 
 import reflex_xy
-import xy
+import xyg
 
 mesh_grid_nx, mesh_grid_ny = 7, 5
 mesh_grid_x0, mesh_grid_y0 = [], []
@@ -116,7 +116,7 @@ constant-fill outer ring whose edges are drawn via `stroke` and `stroke_width`:
 import math
 
 import reflex_xy
-import xy
+import xyg
 
 fan_inner = {"x0": [], "y0": [], "x1": [], "y1": [], "x2": [], "y2": [], "c": []}
 fan_outer = {"x0": [], "y0": [], "x1": [], "y1": [], "x2": [], "y2": []}

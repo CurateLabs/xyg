@@ -5,7 +5,7 @@ description: Find XY chart factories, components, methods, callbacks, types, and
 
 # API Reference
 
-XY exports its supported declarative surface from `import xy`. Prefer
+XY exports its supported declarative surface from `import xyg`. Prefer
 lowercase factories such as `xy.scatter()` and `xy.x_axis()`; public node types
 are primarily useful for inspection and annotations.
 

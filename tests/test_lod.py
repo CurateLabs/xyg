@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import kernels, lod
+from xyg import kernels, lod
 
 
 def test_viewport_request_normalizes_ranges_and_clamps_screen_shape() -> None:
@@ -69,8 +69,8 @@ def test_plan_view_lod_supports_non_scatter_representations() -> None:
 
 
 def test_scatter_density_view_routes_through_shared_lod_primitives(monkeypatch) -> None:
-    from xy import interaction
-    from xy._figure import Figure
+    from xyg import interaction
+    from xyg._figure import Figure
 
     calls: dict[str, list[object]] = {
         "request": [],
@@ -140,8 +140,8 @@ def test_scatter_density_view_routes_through_shared_lod_primitives(monkeypatch) 
 
 
 def test_density_view_rejects_bad_viewport_before_mutating_drill_state(monkeypatch) -> None:
-    from xy import interaction
-    from xy._figure import Figure
+    from xyg import interaction
+    from xyg._figure import Figure
 
     monkeypatch.setattr(interaction, "SCATTER_DENSITY_THRESHOLD", 80)
     monkeypatch.setattr(interaction, "PYRAMID_MIN_POINTS", 1_000_000)
@@ -165,9 +165,9 @@ def test_density_view_rejects_bad_viewport_before_mutating_drill_state(monkeypat
 
 
 def test_line_area_decimate_view_routes_through_shared_buffer_writer(monkeypatch) -> None:
-    from xy import interaction
-    from xy._figure import Figure
-    from xy.config import DECIMATION_THRESHOLD
+    from xyg import interaction
+    from xyg._figure import Figure
+    from xyg.config import DECIMATION_THRESHOLD
 
     calls: list[dict[str, object]] = []
     original_writer = interaction.lod.BufferWriter
@@ -417,7 +417,7 @@ def test_bin_2d_sample_row_range_matches_separate_operations() -> None:
     grid, rows = lod.bin_2d_sample_row_range_for_target(
         x, y, *args, 4096, level=2, growth=1.5, seed=23
     )
-    from xy import kernels
+    from xyg import kernels
 
     np.testing.assert_array_equal(grid, kernels.bin_2d(x, y, *args))
     np.testing.assert_array_equal(
@@ -449,7 +449,7 @@ def test_bin_2d_stratified_sample_row_range_matches_separate_operations() -> Non
         seed=23,
         min_per_category=3,
     )
-    from xy import kernels
+    from xyg import kernels
 
     np.testing.assert_array_equal(grid, kernels.bin_2d(x, y, *args))
     np.testing.assert_array_equal(

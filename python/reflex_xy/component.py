@@ -42,7 +42,7 @@ from typing import Annotated, Any, Optional
 
 import reflex as rx
 
-from xy.facets import FacetGrid
+from xyg.facets import FacetGrid
 
 from .assets import WRAPPER_TAG, register
 from .payload_asset import payload_asset

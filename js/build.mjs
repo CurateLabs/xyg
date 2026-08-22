@@ -5,7 +5,7 @@
 // artifact `@curatelabs/xyg` (`packages/xy-client/dist/`) — the minified
 // bundles are what ships to the client (§33: vite/typescript are the only,
 // dev-time-only, npm deps). Python then *copies* those bundles into
-// `python/xy/static/` so notebooks / to_html() / Reflex stay Node-free.
+// `python/xyg/static/` so notebooks / to_html() / Reflex stay Node-free.
 // The bundles are NOT committed to git; hatch_build.py runs this script at
 // packaging time and force-includes both locations into the wheel/sdist, and
 // a source checkout runs it once (`npm ci && node js/build.mjs`) before use:
@@ -21,7 +21,7 @@ import { spawnSync } from "node:child_process";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const clientDir = join(root, "packages", "xy-client", "dist");
-const staticDir = join(root, "python", "xy", "static");
+const staticDir = join(root, "python", "xyg", "static");
 const PYTHON_BUNDLES = ["index.js", "standalone.js"];
 
 // Typecheck first: a bundle must never be built from source tsc rejects
@@ -162,5 +162,5 @@ for (const name of PYTHON_BUNDLES) {
   copyFileSync(join(clientDir, name), join(staticDir, name));
 }
 console.log(
-  "built minified @curatelabs/xyg plus static WASM worker; copied paint bundles into python/xy/static",
+  "built minified @curatelabs/xyg plus static WASM worker; copied paint bundles into python/xyg/static",
 );

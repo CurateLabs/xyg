@@ -11,10 +11,10 @@ import pytest
 import reflex as rx
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.payload_asset import payload_asset
 from reflex_xy.tokens import parse_token
-from xy.channel import decode_frame
+from xyg.channel import decode_frame
 
 
 def make_chart(n: int = 32, seed: float = 1.0):

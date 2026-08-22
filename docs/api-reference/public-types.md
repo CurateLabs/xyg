@@ -5,7 +5,7 @@ description: Inventory XY's root-exported declarative, output, selection, and co
 
 # Public Types
 
-The supported root surface is available from `import xy`. Most users
+The supported root surface is available from `import xyg`. Most users
 construct lowercase factory results and only name these types in annotations.
 
 ## Declarative Types

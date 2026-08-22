@@ -38,8 +38,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 
-import xy  # noqa: E402
-from xy import _graph, _native  # noqa: E402
+import xyg  # noqa: E402
+from xyg import _graph, _native  # noqa: E402
 
 BASELINE_PATH = Path(__file__).resolve().parent / "baseline.json"
 REGRESSION_FACTOR = 3.0

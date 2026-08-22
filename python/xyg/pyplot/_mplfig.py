@@ -253,7 +253,7 @@ def _colorbar_tick_labels(formatter: Any, ticks: list[float]) -> list[str]:
 
 def _png_with_metadata(data: bytes, metadata: dict[Any, Any]) -> bytes:
     """Insert standards-compliant PNG text chunks before IEND."""
-    from xy import _png
+    from xyg import _png
 
     chunks = []
     for raw_key, raw_value in metadata.items():
@@ -2285,7 +2285,7 @@ class Figure:
         return f'<div style="background-color:{fill}">{doc}</div>'
 
     def _repr_html_(self) -> str:
-        from xy import export
+        from xyg import export
 
         doc, width, height = self._to_notebook_html()
         return export.notebook_iframe(self._facecolor_wrapped(doc), width=width, height=height)

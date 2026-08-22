@@ -11,7 +11,7 @@ The verifier inventories tracked source only. Tests, examples, benchmarks, gener
 Migration status: Scene v4 now moves canonical viewport/plot bounds, numeric
 axis transforms, default numeric tick/label/grid/spine chrome, clipping
 visibility, and scatter/polyline/rectangle record
-encoding into `crates/xyg-engine/src/scene.rs`. `python/xy/_native.py` and
+encoding into `crates/xyg-engine/src/scene.rs`. `python/xyg/_native.py` and
 `packages/xy-node/src/scene.js` only coerce typed arrays and call the generated
 batch ABI. Their remaining migration classification covers figure-to-record
 assembly, additional mark families, and legacy static-export consumers.
@@ -328,71 +328,71 @@ Forbidden:
 | `python/reflex_xy/state_bridge.py` | Python host | `python-host` | `keep-host` | — |
 | `python/reflex_xy/tokens.py` | Python host | `python-host` | `keep-host` | — |
 | `python/reflex_xy/vars.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/__init__.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_abi_generated.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
-| `python/xy/_annotations.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_arrowgeom.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_benchmark_theme.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_chromium.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_figure.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_fontmetrics.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_framing.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_graph.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_hosts.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_jpeg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_legendfit.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_native.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_ooc.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_pdf.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_png.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_sankey.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_scene.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_scene_v3.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_spatial.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_textblock.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/_trace.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_typing.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_validate.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/_webp.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/channel.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/channels.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/columns.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/components.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/config.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/dom.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/export.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/facets.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/interaction.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/kernels.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/lod.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/marks.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xy/plugins.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/__init__.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_artists.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_axes.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_axisgrid.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_colors.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_fmt.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_grid.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_markers.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_mathtext.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_mplfig.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_plot_types.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_rc.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_state.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_ticker.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_transforms.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/_translate.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/pyplot/dates.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/styles.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/styling/__init__.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/styling/capabilities.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xy/widget.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/__init__.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_abi_generated.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
+| `python/xyg/_annotations.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_arrowgeom.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_benchmark_theme.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_chromium.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_figure.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_fontmetrics.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_framing.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_geoarrow.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_graph.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_hosts.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_jpeg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_legendfit.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_pdf.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_png.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_sankey.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_scene.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_scene_v3.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_spatial.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_textblock.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_trace.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_typing.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_validate.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_webp.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/channel.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/channels.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/columns.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/components.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/config.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/dom.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/export.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/facets.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/interaction.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/kernels.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/lod.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/marks.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/plugins.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/__init__.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_artists.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_axes.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_axisgrid.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_colors.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_fmt.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_grid.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_markers.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_mathtext.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_mplfig.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_plot_types.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_rc.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_state.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_ticker.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_transforms.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/_translate.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/pyplot/dates.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/styles.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/styling/__init__.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/styling/capabilities.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/widget.py` | Python host | `python-host` | `keep-host` | — |
 
 ## Contributor rule
 

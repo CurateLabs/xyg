@@ -61,7 +61,7 @@ OUT = ROOT / "crates" / "xyg-engine" / "src" / "font.rs"
 # can reserve a gutter for it, and the rasterizer that draws it is the Rust
 # core. Emitting the same numbers from the same generator keeps the reservation
 # and the ink from drifting apart (there is no font library in either process).
-OUT_PY = ROOT / "python" / "xy" / "_fontmetrics.py"
+OUT_PY = ROOT / "python" / "xyg" / "_fontmetrics.py"
 
 
 def _load_face() -> ImageFont.FreeTypeFont:

@@ -14,7 +14,7 @@ decisions stay in Rust; hosts only coerce inputs.
 ## xy-native inputs
 
 ```python
-import xy
+import xyg
 
 chart = xy.graph_chart(
     xy.graph(["a", "b", "c"], [("a", "b"), ("b", "c")], layout="force", seed=1),
@@ -30,7 +30,7 @@ required. Python accepts `pyarrow.Table` (optional) or plain column mappings;
 Node accepts Arrow JS tables or plain `{ column: values }` objects.
 
 ```python
-import xy
+import xyg
 
 nodes = {
     "node_uuid": ["…", "…"],

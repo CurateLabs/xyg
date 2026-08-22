@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-STATIC = ROOT / "python" / "xy" / "static"
+STATIC = ROOT / "python" / "xyg" / "static"
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -183,7 +183,7 @@ def bench_production(
     """Time the real Figure -> spec/blob path and assert its reduction contract."""
     import numpy as np
 
-    import xy
+    import xyg
 
     _warm_production_path(xy, np)
 
@@ -264,7 +264,7 @@ def bench_production(
         "categorical_groups": 0 if color is None else len(np.unique(color[: min(n, 4096)])),
     }
     if native_png:
-        from xy import _raster
+        from xyg import _raster
 
         samples = []
         png = b""

@@ -12,13 +12,13 @@ routing contract.
 
 | Entry point | Location | Notes |
 |---|---|---|
-| `Figure.to_image(format="png", ...)` | `python/xy/_figure.py:1310` | bytes |
-| `Figure.write_image(path, format=None, ...)` | `python/xy/_figure.py:1346` | atomic write, extension-inferred |
-| `xy.export.to_image(fig, ...)` | `python/xy/export.py:1006` | the implementation both methods delegate to |
-| `xy.export.write_image(fig, path, ...)` | `python/xy/export.py:1069` | |
-| `xy.write_images(figs, paths, ...)` | `python/xy/export.py:533` | batch, §8 |
-| `xy.export_config(...)` | `python/xy/components.py:2301` | declarative defaults, no I/O |
-| `xy.Engine` | `python/xy/export.py:27` | §3 |
+| `Figure.to_image(format="png", ...)` | `python/xyg/_figure.py:1310` | bytes |
+| `Figure.write_image(path, format=None, ...)` | `python/xyg/_figure.py:1346` | atomic write, extension-inferred |
+| `xy.export.to_image(fig, ...)` | `python/xyg/export.py:1006` | the implementation both methods delegate to |
+| `xy.export.write_image(fig, path, ...)` | `python/xyg/export.py:1069` | |
+| `xy.write_images(figs, paths, ...)` | `python/xyg/export.py:533` | batch, §8 |
+| `xy.export_config(...)` | `python/xyg/components.py:2301` | declarative defaults, no I/O |
+| `xy.Engine` | `python/xyg/export.py:27` | §3 |
 
 `to_image` / `write_image` are **methods**, not package-level functions:
 `xy.__init__` re-exports only `Engine`, `export_config`, and `write_images`

@@ -74,7 +74,7 @@ and [Benchmarks](/docs/xy/overview/benchmarks/) for scoped evidence.
 
 The per-renderer inventory of what can be styled, and how far each mechanism
 travels, is the [Capability Matrix](/docs/xy/styling/capabilities/) — generated
-from `python/xy/styling/capabilities.py` and checked against the
+from `python/xyg/styling/capabilities.py` and checked against the
 implementation. The bullets below are the boundaries that page's rows imply.
 
 - Browser chrome accepts CSS and Tailwind classes through stable DOM slots.

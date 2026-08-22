@@ -7,9 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy
+import xyg
 from conftest import run_browser_probe
-from xy.export import find_chromium
+from xyg.export import find_chromium
 
 
 def test_heatmap_colorbar_uses_compiled_scale_and_public_chrome_options() -> None:

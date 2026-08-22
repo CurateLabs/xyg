@@ -17,8 +17,8 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy import _svg, _textblock
+import xyg.pyplot as plt
+from xyg import _svg, _textblock
 
 
 def teardown_function():
@@ -27,7 +27,7 @@ def teardown_function():
 
 def _plot_rects(fig) -> list[tuple[float, float, float, float]]:
     """Absolute (x0, y0_from_top, w, h) px of every panel's plot rect."""
-    from xy.pyplot._rc import rc_figsize_px
+    from xyg.pyplot._rc import rc_figsize_px
 
     canvas = rc_figsize_px(fig._figsize, fig._dpi)
     charts = fig._charts()
@@ -49,7 +49,7 @@ def _plot_rects(fig) -> list[tuple[float, float, float, float]]:
 
 def _reported_rects(fig) -> list[tuple[float, float, float, float]]:
     """The same rectangles as scripts read them, converted to top-origin px."""
-    from xy.pyplot._rc import rc_figsize_px
+    from xyg.pyplot._rc import rc_figsize_px
 
     width, height = rc_figsize_px(fig._figsize, fig._dpi)
     out = []
@@ -328,7 +328,7 @@ def test_subplots_adjust_restores_a_set_position_axes_to_its_grid_cell():
 
 
 def test_rgba_composition_preserves_straight_alpha_on_transparent_figures():
-    from xy.pyplot._grid import _composite_rgba
+    from xyg.pyplot._grid import _composite_rgba
 
     destination = np.asarray([[[0, 0, 255, 128]]], dtype=np.uint8)
     source = np.asarray([[[255, 0, 0, 128]]], dtype=np.uint8)
@@ -368,7 +368,7 @@ def test_explicit_rects_and_set_position_still_win():
 def test_dense_grid_composite_draws_every_panel(monkeypatch):
     """Panels are wider than their gridspec cell, so the compositor must
     alpha-blend them; an opaque paste left only the last column visible."""
-    from xy import _png
+    from xyg import _png
 
     captured: list[np.ndarray] = []
     real_encode = _png.encode

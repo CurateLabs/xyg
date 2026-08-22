@@ -36,7 +36,7 @@ shade from the purple palette used throughout these docs:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 RADIAL_DATA = [
     ("Direct", 0, 6, "#5b3cc4"),
@@ -93,7 +93,7 @@ table repeats the values for exact lookup:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 ALLOCATION_DATA = [
     ("Platform", 44, 880_000, "#6e56cf"),
@@ -250,7 +250,7 @@ measurements and the narrow side column preserves quick operational context:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 TRAINING_METRICS = [
     ("Elevation", 312, "m", 68, "#6e56cf"),
@@ -427,7 +427,7 @@ used fraction of the shared 180-degree track:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 CACHE_TIERS = [
     ("Memory", 610, 1_000, "#6e56cf", "#9d8df1"),

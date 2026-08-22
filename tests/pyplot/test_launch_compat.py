@@ -6,8 +6,8 @@ from io import BytesIO
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy._svg import COLORMAP_STOPS, _lut
+import xyg.pyplot as plt
+from xyg._svg import COLORMAP_STOPS, _lut
 
 
 def test_hist_weights_horizontal_and_stacked_return_matplotlib_geometry() -> None:
@@ -491,7 +491,7 @@ def test_transforming_a_filled_patch_moves_its_outline_too() -> None:
     pytest.importorskip("matplotlib")
     from matplotlib.patches import Rectangle
 
-    from xy.pyplot._transforms import Affine2D
+    from xyg.pyplot._transforms import Affine2D
 
     _fig, ax = plt.subplots()
     handle = ax.add_patch(Rectangle((0, 0), 2, 1, facecolor="tab:blue", edgecolor="red"))

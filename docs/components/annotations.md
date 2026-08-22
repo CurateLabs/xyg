@@ -32,7 +32,7 @@ markers, arrows, and callouts draw attention to individual observations.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.line_chart(
     xy.line([0, 1, 2, 3, 4], [38, 41, 43, 46, 52], color="#6e56cf"),
@@ -57,7 +57,7 @@ boundary on either axis.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 threshold_detail_chart = xy.column_chart(
     xy.column(["A", "B", "C", "D"], [62, 74, 68, 83], color="#6e56cf"),
@@ -77,7 +77,7 @@ def threshold_demo():
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 horizontal_line_detail_chart = xy.line_chart(
     xy.line([0, 1, 2, 3, 4], [42, 48, 51, 57, 63], color="#6e56cf"),
@@ -103,7 +103,7 @@ axis.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 bands_detail_chart = xy.line_chart(
     xy.line([0, 1, 2, 3, 4, 5], [3, 5, 4, 7, 6, 8], color="#6e56cf"),
@@ -140,7 +140,7 @@ and `dy` offsets.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 arrow_detail_chart = xy.line_chart(
     xy.line([0, 1, 2, 3, 4], [2, 3, 4, 7, 8], color="#94a3b8"),
@@ -161,7 +161,7 @@ def arrow_demo():
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 label_detail_chart = xy.scatter_chart(
     xy.scatter([1, 2, 3, 4], [3, 6, 4, 8], color="#6e56cf", size=8),
@@ -183,7 +183,7 @@ needed.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 text_detail_chart = xy.scatter_chart(
     xy.scatter([1, 2, 3, 4], [2, 5, 4, 7], color="#94a3b8", size=7),

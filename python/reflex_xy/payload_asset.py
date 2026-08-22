@@ -38,7 +38,7 @@ import secrets
 from pathlib import Path
 from typing import Any
 
-from xy.channel import encode_frame
+from xyg.channel import encode_frame
 
 from .registry import _figure_of
 

@@ -1,7 +1,7 @@
 """Lock the pre-#51 Python package identity split.
 
 Distribution is already ``xyg``; the import namespace remains ``xy`` until the
-mechanical ``python/xy`` → ``python/xyg`` cutover. This suite prevents silent
+mechanical ``python/xyg`` → ``python/xyg`` cutover. This suite prevents silent
 regression of either side of that split.
 """
 
@@ -35,14 +35,14 @@ def test_distribution_name_is_xyg_not_xy() -> None:
 def test_hatch_still_packages_python_xy_until_cutover() -> None:
     data = _pyproject()
     packages = data["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"]
-    assert "python/xy" in packages
+    assert "python/xyg" in packages
     assert "python/xyg" not in packages
-    assert (ROOT / "python" / "xy").is_dir()
+    assert (ROOT / "python" / "xyg").is_dir()
     assert not (ROOT / "python" / "xyg").exists()
 
 
 def test_import_xy_works_and_reports_xyg_distribution_version() -> None:
-    import xy
+    import xyg
 
     assert xy.__name__ == "xy"
     # Installed editable/dev or wheel: version comes from the xyg distribution.

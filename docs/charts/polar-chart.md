@@ -34,7 +34,7 @@ by default:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 theta = np.linspace(0.0, 2.0 * np.pi, 361)
 radius = 1.0 + 0.28 * np.cos(5.0 * theta) + 0.12 * np.sin(2.0 * theta)
@@ -75,7 +75,7 @@ import math
 
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 field_theta = np.linspace(0.0, 360.0, 24, endpoint=False)
 field_radius = np.geomspace(1.0, 100.0, 8)
@@ -212,7 +212,7 @@ clips the marks to a shared inner hole:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 error_theta = [-90.0, -45.0, 0.0, 45.0, 90.0]
 error_radius = [2.0, 3.0, 2.5, 4.0, 3.2]
@@ -299,7 +299,7 @@ large lobe squashes the rest of the pattern against the middle of the disc:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 bearing = np.linspace(0.0, 360.0, 721)
 offset = (bearing + 180.0) % 360.0 - 180.0
@@ -362,7 +362,7 @@ same renderer:
 
 ~~~python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 theta = np.linspace(0.0, 2.0 * np.pi, 361)
 radius = 1.0 + 0.25 * np.cos(4.0 * theta)

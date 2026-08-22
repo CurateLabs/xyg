@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x, y = np.meshgrid(np.arange(5), np.arange(4))
 u = np.cos(x)

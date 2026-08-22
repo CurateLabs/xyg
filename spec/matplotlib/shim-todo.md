@@ -12,7 +12,7 @@ fast, browser-oriented design.
 - Upstream checkout: `ignore/matplotlib`.
 - Upstream revision: `bde111fb4e`, described by Git as
   `v3.11.0-348-gbde111fb4e` (2026-07-10).
-- Shim: `python/xy/pyplot/`.
+- Shim: `python/xyg/pyplot/`.
 - Contract test: `tests/pyplot/test_axes_charts.py::`
   `test_official_matplotlib_311_2d_plotting_surface_is_complete`.
 - Executable examples: `tests/pyplot/corpus/`.
@@ -440,7 +440,7 @@ method accepts the call.
       visual approximation, accepted no-op, optional interop, and unsupported.
 - [x] Add a compatibility changelog tied to upstream Matplotlib releases.
 - [x] Re-run the source inventory whenever the pinned Matplotlib revision moves.
-- [x] Keep all shim code inside `python/xy/pyplot/` and preserve the one-way
+- [x] Keep all shim code inside `python/xyg/pyplot/` and preserve the one-way
       dependency boundary enforced by `tests/pyplot/test_boundaries.py`.
 
 ## Explicitly out of scope

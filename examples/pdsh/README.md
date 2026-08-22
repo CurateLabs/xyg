@@ -3,7 +3,7 @@
 These notebooks are the matplotlib chapter of Jake VanderPlas's
 [Python Data Science Handbook](https://github.com/jakevdp/PythonDataScienceHandbook),
 with one systematic change: `import matplotlib.pyplot as plt` became
-`import xy.pyplot as plt`. They exist to answer, on popular real-world
+`import xyg.pyplot as plt`. They exist to answer, on popular real-world
 code, "can I just change the import?"
 
 ## Run the comparison in one notebook

@@ -46,7 +46,7 @@ revenue = [32, 45, 41, 58, 63, 74]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 chart = xy.area_chart(
     xy.area(
@@ -152,7 +152,7 @@ series = [
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 columns = [
     xy.column(
@@ -381,7 +381,7 @@ revenue = [3, 6, 4, 8, 7]
 
 # --- chart ---
 import reflex_xy
-import xy
+import xyg
 
 font_chart = xy.column_chart(
     xy.column(
@@ -482,8 +482,8 @@ author intent, so it remains the most reliable option for portable exports and
 intentionally outranks a normal class.
 
 ~~~python
-from xy import Engine
-import xy
+from xyg import Engine
+import xyg
 
 font_css = """
   @font-face {

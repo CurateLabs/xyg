@@ -25,7 +25,7 @@ for the grid edges. This is the minimal Python heatmap:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.linspace(-3, 3, 80)
 y = np.linspace(-2, 2, 60)
@@ -50,7 +50,7 @@ the scale is visible:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 wave_x = np.linspace(0, 4 * np.pi, 120)
 wave_y = np.linspace(0, 2 * np.pi, 80)
@@ -79,7 +79,7 @@ coordinates for `x` and `y`, relabel the ticks with feature names, fix
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 corr_rng = np.random.default_rng(3)
 factors = corr_rng.normal(size=(300, 2))

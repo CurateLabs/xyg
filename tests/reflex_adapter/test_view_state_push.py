@@ -14,7 +14,7 @@ import threading
 import numpy as np
 import pytest
 
-import xy
+import xyg
 from reflex_xy.registry import FigureRegistry
 
 

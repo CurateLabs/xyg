@@ -1,6 +1,6 @@
 /**
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
- * Bit-identical to python/xy/lod.encode_f32_values when calling xyg_encode_f32.
+ * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
 import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
@@ -12,7 +12,7 @@ export const DIRECT_SOFT_CEILING = 2_000_000;
 export const DENSITY_GRID = Object.freeze([512, 384]);
 export const DENSITY_TARGET_POINTS_PER_CELL = 16;
 export const DRILL_EXIT_FACTOR = 1.15;
-/** Tier-3 pyramid thresholds — lockstep with `python/xy/config.py`. */
+/** Tier-3 pyramid thresholds — lockstep with `python/xyg/config.py`. */
 export const PYRAMID_MIN_POINTS = 2_000_000;
 export const PYRAMID_BASE_DIM = 2048;
 export const PYRAMID_NO_RESCAN_ROWS = 200_000_000;

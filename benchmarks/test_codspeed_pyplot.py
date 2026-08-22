@@ -27,9 +27,9 @@ import io
 import numpy as np
 import pytest
 
-import xy
-import xy.pyplot as plt
-from xy import kernels as k
+import xyg
+import xyg.pyplot as plt
+from xyg import kernels as k
 
 N_BUCKETS = 2048
 # plt.subplots() defaults to 6.4 x 4.8 inches at dpi=100; the raw arm pins the

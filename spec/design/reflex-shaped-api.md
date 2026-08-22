@@ -16,7 +16,7 @@ and overlays; this one defines the public API shape and styling contract.
 XY should expose a small framework-agnostic component model:
 
 ```python
-import xy
+import xyg
 
 chart = xy.chart(
     xy.scatter(
@@ -609,7 +609,7 @@ still works like today's notebook-friendly XY objects.
 ```python
 import numpy as np
 import pandas as pd
-import xy
+import xyg
 
 rng = np.random.default_rng(7)
 df = pd.DataFrame(
@@ -656,7 +656,7 @@ This example shows the styling contract: Tailwind classes style the wrapper and
 DOM chrome, while marks use props and CSS variables that the renderer resolves.
 
 ```python
-import xy
+import xyg
 
 chart = xy.chart(
     xy.histogram(
@@ -708,7 +708,7 @@ charting package depends on Reflex.
 
 ```python
 import reflex as rx
-import xy
+import xyg
 import reflex_xy as rfc
 
 

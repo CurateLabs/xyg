@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 
 @pytest.fixture(autouse=True)

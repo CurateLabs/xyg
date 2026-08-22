@@ -9,7 +9,7 @@
     {
       "id": "python",
       "name": "Python host",
-      "paths": ["python/xy/", "python/reflex_xy/"],
+      "paths": ["python/xyg/", "python/reflex_xy/"],
       "abi_loader": "ctypes",
       "consumers": [
         "notebooks (anywidget / show())",
@@ -54,8 +54,8 @@
         "js/src/",
         "packages/xy-client/dist/index.js",
         "packages/xy-client/dist/standalone.js",
-        "python/xy/static/index.js",
-        "python/xy/static/standalone.js"
+        "python/xyg/static/index.js",
+        "python/xyg/static/standalone.js"
       ],
       "abi_loader": null,
       "consumers": [
@@ -130,7 +130,7 @@
       "layer": "Shared WebGL browser paint",
       "python": "ready",
       "node": "ready",
-      "shared_artifact": "GLHost (dossier §18); @curatelabs/xyg packages/xy-client/dist/{index,standalone}.js (Python copies into python/xy/static)",
+      "shared_artifact": "GLHost (dossier §18); @curatelabs/xyg packages/xy-client/dist/{index,standalone}.js (Python copies into python/xyg/static)",
       "notes": "Paint / pick / gestures only; no raw V/E past direct tier; no JS layout/LOD/encode product path"
     }
   ],

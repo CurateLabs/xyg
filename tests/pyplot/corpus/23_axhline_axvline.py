@@ -1,6 +1,6 @@
 import numpy as np
 
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(0, 4, 80)
 plt.plot(x, np.exp(-x) * np.cos(6 * x))

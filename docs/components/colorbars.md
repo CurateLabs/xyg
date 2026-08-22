@@ -20,7 +20,7 @@ chrome additionally exposes the class and slot styling shown here:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 vertical_scale = xy.heatmap_chart(
     xy.heatmap(
@@ -86,7 +86,7 @@ of the data extent, so the scale stays comparable across refreshes:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_load = np.random.default_rng(7)
 cpu_load = (rng_load.random((6, 6)) * 60 + 20).round(1)
@@ -113,7 +113,7 @@ viridis), not the heatmap beneath it:
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 rng_bins = np.random.default_rng(21)
 hexbin_density = xy.hexbin_chart(
@@ -163,7 +163,7 @@ def derived_scale_sources():
 
 ~~~python
 import reflex as rx
-import xy
+import xyg
 
 my_color_scale = rx.vstack(
     rx.text("Intensity", weight="bold"),

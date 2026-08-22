@@ -15,15 +15,15 @@ IMPORT_REPLACEMENTS = {
     # xy.pyplot serves as both `plt` and `mpl` (it carries the `dates` module
     # etc.); the reference engine needs the real top-level package for `mpl`.
     # Ordered before the generic rule so it wins for the `mpl` alias.
-    "import xy.pyplot as mpl\n": "import matplotlib as mpl\n",
-    "import xy.pyplot as ": "import matplotlib.pyplot as ",
-    "from xy.pyplot import LinearSegmentedColormap": (
+    "import xyg.pyplot as mpl\n": "import matplotlib as mpl\n",
+    "import xyg.pyplot as ": "import matplotlib.pyplot as ",
+    "from xyg.pyplot import LinearSegmentedColormap": (
         "from matplotlib.colors import LinearSegmentedColormap"
     ),
-    "from xy.pyplot import Legend": "from matplotlib.legend import Legend",
-    "from xy.pyplot import Triangulation": "from matplotlib.tri import Triangulation",
-    "from xy.pyplot import cycler": "from matplotlib import cycler",
-    "from xy.pyplot import FacetGrid": "from seaborn import FacetGrid",
+    "from xyg.pyplot import Legend": "from matplotlib.legend import Legend",
+    "from xyg.pyplot import Triangulation": "from matplotlib.tri import Triangulation",
+    "from xyg.pyplot import cycler": "from matplotlib import cycler",
+    "from xyg.pyplot import FacetGrid": "from seaborn import FacetGrid",
 }
 ENGINE_NAMES = (
     "plt",

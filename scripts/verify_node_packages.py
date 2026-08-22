@@ -87,7 +87,7 @@ FORBIDDEN_PATTERNS = (
     re.compile(r"cdnjs\.cloudflare\.com", re.I),
     re.compile(r"/usr/lib"),
     re.compile(r"/usr/local/lib"),
-    re.compile(r"python/xy/static"),
+    re.compile(r"python/xyg/static"),
     re.compile(r"LD_LIBRARY_PATH"),
     re.compile(r"DYLD_LIBRARY_PATH"),
 )

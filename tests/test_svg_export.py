@@ -16,10 +16,10 @@ import numpy as np
 import pytest
 from tests.svg_test_utils import tick_label_positions
 
-import xy
-from xy import channels
-from xy._figure import Figure
-from xy._svg import (
+import xyg
+from xyg import channels
+from xyg._figure import Figure
+from xyg._svg import (
     COLORMAP_STOPS,
     _axis_tick_label_layout,
     _colormap_stops,
@@ -148,7 +148,7 @@ def test_svg_honors_tick_label_anchor() -> None:
 
 
 def test_svg_tick_padding_starts_after_the_outward_tick() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.line_chart(
         xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
@@ -353,7 +353,7 @@ def test_svg_axes_chrome_and_hiding() -> None:
 
 
 def test_svg_long_legend_is_clamped_and_ellipsized_inside_plot() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     names = [f"series-{index}-" + "very-long-operational-label-" * 2 for index in range(4)]
     chart = xy.line_chart(
@@ -387,7 +387,7 @@ def test_svg_long_legend_is_clamped_and_ellipsized_inside_plot() -> None:
 
 
 def test_svg_secondary_y_axis_scales_trace_and_renders_right_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.chart(
         xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb"),
@@ -456,7 +456,7 @@ def test_svg_short_chart_with_titled_legend_emits_no_empty_legend_box() -> None:
 
 
 def test_svg_vertical_colorbar_clears_right_named_axis_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.chart(
         xy.heatmap([[0.0, 1.0], [2.0, 3.0]], name="field", colormap="viridis"),
@@ -485,7 +485,7 @@ def test_svg_vertical_colorbar_label_is_rotated_beside_the_bar_inside_the_canvas
     """SVG places a vertical colorbar's label like Matplotlib — rotated 90° CCW,
     centered beside the bar, on canvas — and the native PNG exporter must agree
     on the baseline so the two static paths cannot drift apart."""
-    from xy import _raster, _svg
+    from xyg import _raster, _svg
 
     chart = xy.heatmap_chart(
         xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
@@ -532,7 +532,7 @@ def test_svg_vertical_colorbar_label_is_rotated_beside_the_bar_inside_the_canvas
 
 
 def test_svg_colorbar_clears_primary_right_axis_and_bottom_axis_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     vertical = xy.heatmap_chart(
         xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis"),
@@ -576,7 +576,7 @@ def test_svg_colorbar_clears_primary_right_axis_and_bottom_axis_chrome() -> None
 
 
 def test_svg_secondary_x_axis_scales_trace_and_renders_top_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.chart(
         xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb"),
@@ -711,7 +711,7 @@ def test_svg_rotated_x_tick_labels_anchor_away_from_plot(
 
 
 def test_static_named_axes_handle_reverse_silence_and_tick_count() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     base = xy.chart(xy.line([0.0, 1.0], [0.0, 1.0]), width=400, height=240)
     silent = xy.chart(
@@ -840,7 +840,7 @@ def test_colormap_stops_stay_in_sync_with_js_client() -> None:
 
 
 def test_matplotlib_gallery_colormap_stops_and_reversal() -> None:
-    from xy.pyplot._colors import resolve_cmap
+    from xyg.pyplot._colors import resolve_cmap
 
     expected = {
         "reds": [
@@ -972,7 +972,7 @@ def test_matplotlib_gallery_colormap_stops_and_reversal() -> None:
 
 def test_flag_colormap_matches_matplotlib_lut_and_gray_aliases() -> None:
     """Gallery cmap names resolve without flattening flag's rapid color cycle."""
-    from xy.pyplot._colors import resolve_cmap
+    from xyg.pyplot._colors import resolve_cmap
 
     flag = COLORMAP_STOPS["flag"]
     assert len(flag) == 256

@@ -15,9 +15,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import lod
-from xy._figure import Figure
-from xy.config import DRILL_PAD_SPAN_CAP, SCATTER_DENSITY_THRESHOLD
+from xyg import lod
+from xyg._figure import Figure
+from xyg.config import DRILL_PAD_SPAN_CAP, SCATTER_DENSITY_THRESHOLD
 
 
 def _uniform_fig(n: int, seed: int = 3) -> tuple[Figure, np.ndarray, np.ndarray]:

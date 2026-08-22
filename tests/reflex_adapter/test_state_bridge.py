@@ -11,7 +11,7 @@ import reflex as rx
 from reflex.istate.manager.memory import StateManagerMemory
 
 import reflex_xy
-import xy
+import xyg
 from reflex_xy.state_bridge import make_rebuild_hook
 from reflex_xy.tokens import build_state_token, parse_token
 

@@ -12,8 +12,8 @@ import pytest
 
 pa = pytest.importorskip("pyarrow")
 
-from xy._figure import Figure  # noqa: E402
-from xy.columns import ColumnStore  # noqa: E402
+from xyg._figure import Figure  # noqa: E402
+from xyg.columns import ColumnStore  # noqa: E402
 
 
 def _buf_addr(arr: "pa.Array") -> int:

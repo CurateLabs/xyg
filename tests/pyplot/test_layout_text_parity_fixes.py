@@ -14,8 +14,8 @@ import re
 import numpy as np
 import pytest
 
-import xy.pyplot as plt
-from xy.pyplot._mathtext import mathtext_to_unicode
+import xyg.pyplot as plt
+from xyg.pyplot._mathtext import mathtext_to_unicode
 
 
 @pytest.fixture(autouse=True)
@@ -299,7 +299,7 @@ def test_errorbar_color_and_ecolor_resolve_independently() -> None:
 
 
 def test_rdbu_is_colorbrewer_not_coolwarm() -> None:
-    from xy._svg import COLORMAP_STOPS
+    from xyg._svg import COLORMAP_STOPS
 
     assert COLORMAP_STOPS["rdbu"][0] == (103, 0, 31)
     assert COLORMAP_STOPS["rdbu"][-1] == (5, 48, 97)
@@ -308,7 +308,7 @@ def test_rdbu_is_colorbrewer_not_coolwarm() -> None:
 def test_colormap_stop_tables_track_matplotlib_bands() -> None:
     # plasma's top-of-ramp anchors were once padded duplicates, merging the
     # last discrete bands; the tail must stay distinct and orange-then-yellow.
-    from xy._svg import COLORMAP_STOPS
+    from xyg._svg import COLORMAP_STOPS
 
     tail = COLORMAP_STOPS["plasma"][-3:]
     assert len({tuple(anchor) for anchor in tail}) == 3

@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape as stdlib_escape
 
 import pytest
 
-from xy._svg import escape
+from xyg._svg import escape
 
 # Characters that matter for XML escaping, plus neighbours that must NOT change.
 ALPHABET = "&<>\"'; abc\\/=\n\té中\U0001f600"
@@ -74,7 +74,7 @@ def test_svg_export_does_not_import_urllib_or_ssl() -> None:
     code = (
         "import sys; import numpy as np\n"
         "before = set(sys.modules)\n"
-        "import xy\n"
+        "import xyg\n"
         "fig = xy.scatter_chart(xy.scatter(x=np.arange(5.0), y=np.arange(5.0)),\n"
         "                       title='a & b < c > d').figure()\n"
         "svg = fig.to_svg(width=200, height=150)\n"

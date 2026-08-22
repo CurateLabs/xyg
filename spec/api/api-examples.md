@@ -78,7 +78,7 @@ resolving to a browser engine for SVG — by `engine=Engine.chromium` or by
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 x = np.logspace(0, 6, 240)
 rank = 96 - np.log10(x) * 11.5
@@ -98,7 +98,7 @@ chart
 ## Small Business Chart
 
 ```python
-import xy
+import xyg
 
 month_number = [1, 2, 3, 4, 5, 6]
 revenue = [42, 45, 48, 51, 55, 59]
@@ -118,7 +118,7 @@ chart
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(0)
 x = np.arange(1_000_000, dtype=np.float64)
@@ -137,7 +137,7 @@ chart
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(1)
 x = rng.normal(size=500_000)
@@ -160,7 +160,7 @@ xy.scatter_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 x = np.linspace(0, 10, 100_000)
 y = np.sin(x) + 0.15 * x
@@ -175,7 +175,7 @@ xy.area_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(2)
 values = np.concatenate(
@@ -193,7 +193,7 @@ Pass `cumulative=True` to accumulate bins left-to-right. Combined with
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(3)
 latency_ms = rng.gamma(shape=2.0, scale=40.0, size=100_000)
@@ -209,7 +209,7 @@ xy.histogram_chart(
 ## Bar
 
 ```python
-import xy
+import xyg
 
 channels = ["Search", "Ads", "Email", "Direct", "Partner", "Social"]
 conversions = [120, 94, 72, 66, 43, 31]
@@ -225,7 +225,7 @@ xy.bar_chart(
 ## Column
 
 ```python
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 revenue = [42, 47, 51, 58]
@@ -242,7 +242,7 @@ xy.column_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 channels = ["Search", "Ads", "Email", "Direct", "Partner", "Social"]
 values = np.array(
@@ -272,7 +272,7 @@ xy.bar_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 values = np.array(
@@ -303,7 +303,7 @@ category renders the series' share of the whole (segments sum to 1):
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 values = np.array(
@@ -331,7 +331,7 @@ xy.bar_chart(
 ## Horizontal Bars
 
 ```python
-import xy
+import xyg
 
 teams = ["Platform", "Growth", "Data", "Support"]
 latency_ms = [42, 56, 31, 73]
@@ -351,7 +351,7 @@ xy.bar_chart(
 
 ```python
 import numpy as np
-import xy
+import xyg
 
 x = np.linspace(-3, 3, 160)
 y = np.linspace(-2, 2, 120)
@@ -372,7 +372,7 @@ The statistical marks keep their source arrays in the canonical column store,
 then ship compact segment, rectangle, or occupied-bin geometry:
 
 ```python
-import xy
+import xyg
 
 x = [0, 1, 2, 3]
 lower = [0.8, 1.1, 1.4, 1.9]
@@ -403,7 +403,7 @@ Small multiples repeat a composition over a table column and share domains by
 default:
 
 ```python
-import xy
+import xyg
 
 data = {
     "x": [0, 1, 2, 0, 1, 2],
@@ -431,7 +431,7 @@ Marks resolve column names through `data=`, so charts can bind straight to a
 dict, DataFrame, or any mapping of columns:
 
 ```python
-import xy
+import xyg
 
 data = {
     "channel": ["Search", "Ads", "Email", "Direct"],
@@ -479,7 +479,7 @@ or selections from Python. Structure stays declarative: adding marks, axes,
 or annotations means composing a new chart.
 
 ```python
-import xy
+import xyg
 
 chart = xy.scatter_chart(
     xy.scatter(x=[0.0, 1.0, 2.0, 3.0], y=[0.0, 2.0, 4.0, 6.0], name="stream"),
@@ -510,7 +510,7 @@ Children are painted in order, and rules, bands, and text annotations live in
 the chart chrome instead of becoming data traces.
 
 ```python
-import xy
+import xyg
 
 data = {
     "month": ["Jan", "Feb", "Mar", "Apr"],
@@ -539,7 +539,7 @@ chart
 ```
 
 ```python
-import xy
+import xyg
 
 z = [
     [0.2, 0.4, 0.5],
@@ -566,7 +566,7 @@ without making `xy` depend on that framework. The objects are kept on
 the Python `Chart` and never serialized into standalone HTML.
 
 ```python
-import xy
+import xyg
 
 # In a Reflex app these could be rx.box(...), rx.vstack(...), etc.
 class FrameworkComponent:

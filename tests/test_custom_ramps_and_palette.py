@@ -16,9 +16,9 @@ import warnings
 import numpy as np
 import pytest
 
-import xy
-from xy import _svg, channels
-from xy.config import DEFAULT_PALETTE
+import xyg
+from xyg import _svg, channels
+from xyg.config import DEFAULT_PALETTE
 
 RAMP = ["#0b1220", "#2563eb", "#22d3ee", "#fde68a"]
 PALETTE = ["#38bdf8", "#e879f9", "#fbbf24", "#34d399"]

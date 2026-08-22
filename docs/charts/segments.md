@@ -26,7 +26,7 @@ through the `colormap`:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 segments_detail_chart = xy.segments_chart(
     xy.segments(
@@ -56,7 +56,7 @@ per category — and use a constant `color` with a thick `width` and reduced
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 task_row = [0, 1, 2, 3, 4]
 start_day = [0.0, 2.0, 3.5, 6.0, 8.5]
@@ -95,7 +95,7 @@ colored by gradient:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 grid_x, grid_y = np.meshgrid(np.linspace(-2, 2, 9), np.linspace(-2, 2, 9))
 gx = grid_x.ravel()

@@ -60,7 +60,7 @@ A chart is a container plus the marks inside it. Any sequence works; NumPy is
 optional.
 
 ```python
-import xy
+import xyg
 
 chart = xy.line_chart(xy.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]))
 # chart.to_html("chart.html")
@@ -81,7 +81,7 @@ The same API scales to a hundred million points as a density surface:
 ```python
 import numpy as np
 
-import xy
+import xyg
 
 rng = np.random.default_rng(7)
 n = 100_000_000
@@ -117,7 +117,7 @@ For common pyplot workflows, change the import and keep the plotting code:
 
 ```python
 import numpy as np
-import xy.pyplot as plt
+import xyg.pyplot as plt
 
 x = np.linspace(0, 10, 200)
 fig, ax = plt.subplots()
@@ -241,7 +241,7 @@ Then add a chart anywhere in the component tree:
 ```python
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 signups = xy.line_chart(
     xy.line([1, 2, 3, 4, 5], [120, 180, 165, 240, 310]),

@@ -24,7 +24,7 @@ Pass a list of arrays — one per group — to `box`, and label each group with
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 box_rng = np.random.default_rng(23)
 box_groups = [
@@ -96,7 +96,7 @@ enlarge the flagged points with `show_outliers` plus `outlier_size`.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 latency_rng = np.random.default_rng(5)
 service_latency = [
@@ -146,7 +146,7 @@ When observations arrive as one long array, pass a matching label array to
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 plant_rng = np.random.default_rng(77)
 site_names = ["North", "East", "South", "West", "Central"]

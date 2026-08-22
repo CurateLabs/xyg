@@ -2,11 +2,11 @@
 
 **Status:** API design proposal. Goal: fix the composition model **before**
 the catalog grows to 40 kinds, so nothing here forces a public-API rewrite
-later. Grounded in what ships today (`python/xy/components.py`: `Chart` +
-`Mark` + `Axis` + `Legend`, `_MARK_APPLIERS` registry; `python/xy/marks.py`:
+later. Grounded in what ships today (`python/xyg/components.py`: `Chart` +
+`Mark` + `Axis` + `Legend`, `_MARK_APPLIERS` registry; `python/xyg/marks.py`:
 the mark implementations, bound as `Figure`'s fluent methods at
-`python/xy/_figure.py:340-362` so `Figure.scatter is marks.scatter`;
-`python/xy/_payload.py:278`: the `_emit_<kind>` dispatch
+`python/xyg/_figure.py:340-362` so `Figure.scatter is marks.scatter`;
+`python/xyg/_payload.py:278`: the `_emit_<kind>` dispatch
 (`getattr(self, f"_emit_{t.kind}", None)`), reachable on `Figure` through
 `PayloadMixin`) — the proposal is an *extension* of that shape, not a
 replacement.
@@ -41,17 +41,17 @@ not break.
 - **G2 — One shared coordinate space per panel.** All marks in a panel share
   x and y scales; autorange is the union of every mark's contributing columns.
   The per-kind hook is `Figure._range_columns(trace, axis_id)`
-  (`python/xy/_figure.py:1024`), which switches on `trace.kind` — area and
+  (`python/xyg/_figure.py:1024`), which switches on `trace.kind` — area and
   error_band contribute `[y, base]`, triangle_mesh `[x0, x1, x]`, rect-like
   kinds `[x0, x1]` — and the union, padding, and log clamping happen in
-  `Figure._range` (`python/xy/_figure.py:840`). The hook lives on `Figure`,
+  `Figure._range` (`python/xyg/_figure.py:840`). The hook lives on `Figure`,
   not on `Trace`. A mark never gets a private scale — the escape hatch is a
   second *panel*, or an explicit named scale ★: `xy.y_axis(id="y2",
   side="right")` plus `mark(..., y_axis="y2")`. Silent dual axes are how
   charts lie, so y2 is loud by construction: every mark factory takes
   `x_axis`/`y_axis` id strings, and referencing an id with no matching axis
   node is a build error (`… has no matching xy.y_axis(id='y2')`,
-  `python/xy/components.py:3828`).
+  `python/xyg/components.py:3828`).
 - **G3 — Scale type is a panel decision** (`linear | time | log | category`),
   auto-inferred from marks (time columns → time; bar categories → category)
   but overridable on the axis node. Mixing marks whose natural scales
@@ -69,7 +69,7 @@ not break.
 ## 3. The 10 common charts (all expressible today or with planned nodes)
 
 ```python
-import xy
+import xyg
 
 # 1. line
 xy.chart(xy.line(x="date", y="close", data=df), title="Price")
@@ -152,7 +152,7 @@ panes is layout the Figure grid owns.
   `x_band`/`y_band`/`threshold_zone`, and `label`/`text`/`marker`/`arrow`/
   `callout`. These are not literally Mark nodes: they compile to an
   `Annotation` node dispatched through `_ANNOTATION_APPLIERS`
-  (`python/xy/components.py:4370`), a sibling registry to `_MARK_APPLIERS`
+  (`python/xyg/components.py:4370`), a sibling registry to `_MARK_APPLIERS`
   (`components.py:4347`) with the same kind→applier shape.
 - Chrome: `x_axis`/`y_axis` ★ (take `id=`, so named secondary scales are
   already expressible; grows `type_="log"|"symlog"|"category"` ★partial —
@@ -162,8 +162,8 @@ panes is layout the Figure grid owns.
   `legend` ★, `title` (prop today, node later if styling demands).
 - Events ★: `on_hover`, `on_click`, `on_brush`, `on_select`,
   `on_view_change`. All five are `Chart` constructor params
-  (`python/xy/components.py:2559-2563`), fields of `ChannelCallbacks`
-  (`python/xy/channel.py:90-94`), and dispatched by the channel layer
+  (`python/xyg/components.py:2559-2563`), fields of `ChannelCallbacks`
+  (`python/xyg/channel.py:90-94`), and dispatched by the channel layer
   (`handle_message` for hover/click/view_change, `_selection_reply` for
   brush/select);
   `on_view_change` carries the viewport for server-driven cross-filtering
@@ -179,7 +179,7 @@ panes is layout the Figure grid owns.
 
 ### 5.1 `interaction_config` — the gesture and event switchboard
 
-`xy.interaction_config(...)` (`python/xy/components.py:2424`) builds an
+`xy.interaction_config(...)` (`python/xyg/components.py:2424`) builds an
 `Interaction` node (`components.py:291`) carrying nine behavioral switches
 plus two cross-chart linking props. Every switch defaults to `None`, meaning
 "unset"; the renderer resolves an unset switch through
@@ -250,13 +250,13 @@ broadcast view are copied onto the receiving chart. Semantics that matter:
 ### 5.2 `facet_chart` — small multiples
 
 `xy.facet_chart(*children, by, cols=3, share_x=True, share_y=True, link=None,
-link_select=False, gap=12)` (`python/xy/components.py:4480`, class at
+link_select=False, gap=12)` (`python/xyg/components.py:4480`, class at
 `:3511`) repeats the child composition once per distinct value of `by`.
 `by` is required (`TypeError` when omitted), `cols` must be a positive
 integer, and `gap` a non-negative one.
 
 - **Panel derivation and order.** `by` resolves to a column of the
-  chart-level data or to a per-row array (`python/xy/facets.py:79`). Rows
+  chart-level data or to a per-row array (`python/xyg/facets.py:79`). Rows
   group by their `category_label` display string — matching categorical
   channels — and panels appear in **first-seen row order**, not sorted order;
   the `np.unique` fast path explicitly restores first-seen order
@@ -321,19 +321,19 @@ geometry (theming stays on the `--chart-*` token path).
   bundled with the view-message unification the contract already schedules).
 - The wire spec keeps its current per-trace shape; panels reference traces by
   id. Axes are already explicit spec objects keyed by axis id
-  (`"axes": {axis_id: …}`, `python/xy/_payload.py:238`); hoisting scale type
+  (`"axes": {axis_id: …}`, `python/xyg/_payload.py:238`); hoisting scale type
   and domain into a separate `scales` object rides the same bump.
 - The `Chart(kind_str, ...)` wrappers never encoded behavior (kind string is
   cosmetic) — safe to keep forever.
 
 ## 8. Implementation order
 
-1. ★ Done. `xy.chart` (`python/xy/components.py:4380`) plus the annotation
+1. ★ Done. `xy.chart` (`python/xyg/components.py:4380`) plus the annotation
    set — rules, bands, and text nodes shipped under the names in §5, through
    `_ANNOTATION_APPLIERS` rather than as `Mark` nodes.
 2. Partial. Per-axis spec objects ship: `build_payload` emits
    `"axes": {axis_id: …}` over `self.axis_options`
-   (`python/xy/_payload.py:238`). Still pending: hoisting scale type and
+   (`python/xyg/_payload.py:238`). Still pending: hoisting scale type and
    domain into a distinct `scales` object, and completing `category`/`log`.
 3. Pending. `panel`/`figure` grid + `link_x` view sync (enables the finance
    pair and subplot grids; carries the protocol bump). No `xy.panel` or

@@ -40,7 +40,7 @@ value to an angular width, and `base=0` makes every sector reach the center:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 PIE_DATA = [
     ("Direct", 40),
@@ -100,7 +100,7 @@ values without crowding the ring:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 MARKET_SERIES = [
     ("Skyline", 27, "#0a0a0a"),
@@ -251,7 +251,7 @@ rounded dashes gives the display a lighter rhythm than one continuous arc:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 PROGRESS_STATS = [
     (48, "Additional support requests from users."),
@@ -365,7 +365,7 @@ answers the primary question while the aligned legend supports exact lookup:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 REVENUE_SERIES = [
     ("Direct", 52_400, "#7c3aed", "#a855f7"),
@@ -500,7 +500,7 @@ for exact threshold lookup:
 ~~~python demo exec
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 RELIABILITY_BANDS = [
     ("At risk", 450, "#e11d48"),

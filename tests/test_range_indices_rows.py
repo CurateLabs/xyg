@@ -12,8 +12,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from xy import interaction, kernels
-from xy._figure import Figure
+from xyg import interaction, kernels
+from xyg._figure import Figure
 
 
 def _reference(

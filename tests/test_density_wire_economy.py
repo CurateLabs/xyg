@@ -17,9 +17,9 @@ import math
 
 import numpy as np
 
-from xy import interaction
-from xy._figure import Figure
-from xy.config import PYRAMID_BASE_DIM
+from xyg import interaction
+from xyg._figure import Figure
+from xyg.config import PYRAMID_BASE_DIM
 
 
 def test_pyramid_source_shape_math() -> None:

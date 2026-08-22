@@ -12,9 +12,9 @@ import zlib
 import numpy as np
 import pytest
 
-import xy
-from xy import _png, _raster
-from xy._figure import Figure
+import xyg
+from xyg import _png, _raster
+from xyg._figure import Figure
 
 
 def _ihdr(png: bytes) -> tuple[int, int, int]:
@@ -185,7 +185,7 @@ def test_png_is_screen_bounded_for_large_lines() -> None:
 
 
 def test_render_paints_figure_background() -> None:
-    import xy
+    import xyg
 
     chart = xy.line_chart(
         xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
@@ -202,7 +202,7 @@ def test_render_paints_figure_background() -> None:
 
 
 def test_render_composites_translucent_figure_background() -> None:
-    import xy
+    import xyg
 
     chart = xy.line_chart(
         xy.line(x=[0.0, 1.0], y=[0.0, 1.0]),
@@ -218,7 +218,7 @@ def test_render_composites_translucent_figure_background() -> None:
 
 
 def test_raster_honors_tick_label_anchor() -> None:
-    import xy
+    import xyg
 
     def render(**axis_kwargs):
         chart = xy.line_chart(
@@ -306,7 +306,7 @@ def test_render_is_non_blank_and_has_background() -> None:
 def test_colormap_matches_lut() -> None:
     # The grid RGBA the rasterizer blits comes straight from `_lut`, so the
     # hottest heatmap cell is the colormap's top color (before blit/compositing).
-    from xy import _scene
+    from xyg import _scene
 
     rng = np.random.default_rng(2)
     fig = Figure(width=300, height=300).heatmap(rng.random((8, 8)), colormap="viridis")
@@ -369,7 +369,7 @@ def test_fast_native_png_is_pixel_identical_to_balanced_export() -> None:
 
 def test_native_and_svg_share_layout() -> None:
     # Both exporters compute the same plot rect / tick labels from one spec.
-    from xy import _svg
+    from xyg import _svg
 
     fig = Figure(width=640, height=360, title="t", x_label="xx").line([0.0, 5.0], [0.0, 5.0])
     spec, _ = fig.build_payload()
@@ -381,7 +381,7 @@ def test_native_and_svg_share_layout() -> None:
 
 
 def test_native_long_legend_is_clamped_and_ellipsized_inside_plot(monkeypatch) -> None:
-    from xy import _svg
+    from xyg import _svg
 
     names = [f"series-{index}-" + "very-long-operational-label-" * 2 for index in range(4)]
     chart = xy.line_chart(
@@ -416,7 +416,7 @@ def test_native_long_legend_is_clamped_and_ellipsized_inside_plot(monkeypatch) -
 
 
 def test_native_secondary_y_axis_scales_trace_and_renders_right_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.chart(
         xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb", width=3),
@@ -464,7 +464,7 @@ def test_native_secondary_y_axis_scales_trace_and_renders_right_chrome() -> None
 
 
 def test_native_secondary_x_axis_scales_trace_and_renders_top_chrome() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.chart(
         xy.line([0.0, 1.0], [0.0, 1.0], color="#2563eb", width=3),
@@ -557,7 +557,7 @@ def test_native_mixed_primary_and_named_x_axis_kinds_render_independently(monkey
 
 
 def test_native_named_axis_collision_and_title_placement_controls(monkeypatch) -> None:
-    from xy import _svg
+    from xyg import _svg
 
     values = list(range(30))
     tick_labels = [f"very-long-native-label-{value}" for value in values]
@@ -602,7 +602,7 @@ def test_native_vertical_colorbar_label_is_rotated_beside_the_bar_inside_the_can
     It previously rendered horizontally above the bar at `plot.y - 5`, so the
     glyph ascent overflowed the canvas top edge and the label was clipped.
     """
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.heatmap_chart(
         xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
@@ -646,7 +646,7 @@ def test_native_vertical_colorbar_label_leaves_the_canvas_edges_unpainted() -> N
 
 def test_native_horizontal_colorbar_label_stays_upright_below_the_bar(monkeypatch) -> None:
     """The horizontal orientation reads left-to-right, so it must not rotate."""
-    from xy import _svg
+    from xyg import _svg
 
     chart = xy.heatmap_chart(
         xy.heatmap([[0.0, 1.0], [2.0, 3.0]], colormap="viridis", domain=(0.0, 3.0)),
@@ -699,7 +699,7 @@ def test_native_diagonal_tick_angle_keeps_all_labels_when_they_fit(monkeypatch) 
 
 
 def test_native_smooth_stroke_matches_reference_polyline() -> None:
-    from xy import _scene, _svg, kernels
+    from xyg import _scene, _svg, kernels
 
     x = np.array([0.0, 0.7, 0.7, 2.0, 2.8, 4.0])
     y = np.array([1.0, 3.0, 2.0, 2.5, -1.0, 1.0])
@@ -720,7 +720,7 @@ def test_native_smooth_stroke_matches_reference_polyline() -> None:
 
 
 def test_native_shape_batches_match_individual_commands() -> None:
-    from xy import kernels
+    from xyg import kernels
 
     x0 = np.array([10.25, 45.0, 80.75])
     y0 = np.array([12.5, 30.25, 8.0])
@@ -757,7 +757,7 @@ def test_native_shape_batches_match_individual_commands() -> None:
 
 
 def test_borrowed_affine_points_match_expanded_batch() -> None:
-    from xy import _native, _svg, kernels
+    from xyg import _native, _svg, kernels
 
     encoded_x = np.tile(np.array([-2.25, -0.5, 0.75, 2.0, np.nan], dtype="<f4"), 8)
     encoded_y = np.tile(np.array([1.5, -1.0, 0.25, 2.25, 0.0], dtype="<f4"), 8)
@@ -830,7 +830,7 @@ def test_static_scatter_affine_fast_path_keeps_general_fallbacks(monkeypatch) ->
 
 
 def test_affine_static_scatter_full_render_matches_expanded(monkeypatch) -> None:
-    from xy import _svg
+    from xyg import _svg
 
     rng = np.random.default_rng(2026)
     x = 1e12 + rng.normal(scale=3.0, size=2_000)
@@ -913,7 +913,7 @@ def test_stroked_triangle_mesh_batch_matches_expanded_commands(monkeypatch) -> N
 
 
 def test_static_log_scale_reads_serialized_scale_field() -> None:
-    from xy import _svg
+    from xyg import _svg
 
     axis = {"kind": "linear", "scale": "log", "range": [1.0, 1_000.0]}
     scale = _svg._Scale(axis, 0.0, 300.0)
@@ -924,7 +924,7 @@ def test_static_log_scale_reads_serialized_scale_field() -> None:
 
 
 def test_compact_density_command_matches_expanded_image() -> None:
-    from xy import _native, kernels
+    from xyg import _native, kernels
 
     w, h = 31, 17
     encoded = ((np.arange(w * h, dtype=np.uint16) * 47 + 13) % 256).astype(np.uint8)
@@ -945,7 +945,7 @@ def test_compact_density_command_matches_expanded_image() -> None:
 
 
 def test_direct_heatmap_command_matches_expanded_image() -> None:
-    from xy import _native, kernels
+    from xyg import _native, kernels
 
     w, h = 31, 17
     values = ((np.arange(w * h, dtype=np.uint16) * 47 + 13) % 256).astype(np.float32) / 255
@@ -1001,7 +1001,7 @@ def test_raster_payload_borrows_canonical_heatmap_with_exact_pixels() -> None:
 
 
 def test_public_native_heatmap_png_skips_browser_normalization(monkeypatch) -> None:
-    from xy import _payload
+    from xyg import _payload
 
     figure = Figure(width=180, height=120).heatmap(
         np.arange(20_000, dtype=np.float64).reshape(100, 200),
@@ -1213,7 +1213,7 @@ def test_raster_uniform_anchor_legends_keep_their_whole_frame_clip_decision(
 def test_the_raster_exporter_draws_annotation_labels_and_marker_glyphs() -> None:
     """The PNG path had the same gap as SVG: rule/band/arrow/marker labels were
     never emitted, and `xy.marker()` drew nothing at all."""
-    import xy._raster as raster
+    import xyg._raster as raster
 
     chart = xy.line_chart(
         xy.line([1, 2, 3, 4], [1, 3, 2, 3.4], name="signal"),
@@ -1248,7 +1248,7 @@ def test_the_raster_exporter_draws_annotation_labels_and_marker_glyphs() -> None
 
 
 def test_the_raster_exporter_expands_categorical_legend_rows() -> None:
-    import xy._raster as raster
+    import xyg._raster as raster
 
     species = ["setosa"] * 4 + ["versicolor"] * 4 + ["virginica"] * 4
     chart = xy.scatter_chart(
@@ -1327,7 +1327,7 @@ def test_chunk_parts_join_to_the_canonical_chunk():
     import struct
     import zlib
 
-    from xy import _png
+    from xyg import _png
 
     for tag, data in (
         (b"IHDR", b"\x00" * 13),

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from xy._figure import DECIMATION_THRESHOLD, Figure
-from xy.widget import FigureWidget
+from xyg._figure import DECIMATION_THRESHOLD, Figure
+from xyg.widget import FigureWidget
 
 
 def _capturing_widget(fig: Figure, **kwargs):

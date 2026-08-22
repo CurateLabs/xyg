@@ -28,7 +28,7 @@ and `y_kind`. Depending on the mark's channels, they can also contain
 not DOM event objects or formatted tooltip strings.
 
 ~~~python
-import xy
+import xyg
 
 
 def selected(selection: xy.Selection) -> None:

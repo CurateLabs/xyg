@@ -28,7 +28,7 @@ Explicit `title=` and `fields=` continue to control a customized readout.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 default_tooltip_chart = xy.scatter_chart(
     xy.scatter(
@@ -55,7 +55,7 @@ be used as tooltip fields:
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 tooltip_fields_data = {
     "month": [1, 2, 3, 4],
@@ -100,7 +100,7 @@ dashed forecast line and the margin-sized revenue points below.
 
 ~~~python demo exec
 import reflex_xy
-import xy
+import xyg
 
 tooltip_title_data = {
     "day": [1, 2, 3, 4, 5],

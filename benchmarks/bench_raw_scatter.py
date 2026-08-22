@@ -94,8 +94,8 @@ def build_page(n: int, seed: int) -> tuple[str, dict[str, float]]:
     """Standalone-style page for N direct-mode points + Python-stage timings."""
     import numpy as np
 
-    import xy
-    from xy import export
+    import xyg
+    from xyg import export
 
     rng = np.random.default_rng(seed)
     # Shared-data methodology: generation is excluded from every timing.

@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATE = (ROOT / "graph_page_template.html").read_text(encoding="utf-8")
-CLIENT_JS = (ROOT.parent / "python" / "xy" / "static" / "standalone.js").read_text(encoding="utf-8")
+CLIENT_JS = (ROOT.parent / "python" / "xyg" / "static" / "standalone.js").read_text(encoding="utf-8")
 
 
 def write_graph_page(

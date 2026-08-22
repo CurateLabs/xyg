@@ -30,7 +30,7 @@ Python bar chart:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 channels = ["Email", "Social", "Search", "Direct", "Referral"]
 sessions = np.array([38, 27, 21, 14, 9])
@@ -57,7 +57,7 @@ off to place bars side by side.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 teams = ["Alpha", "Beta", "Gamma", "Delta"]
 open_ = np.array([12, 9, 15, 7])
@@ -88,7 +88,7 @@ series.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 signups = np.array([120, 145, 138, 172, 190, 210])
@@ -111,7 +111,7 @@ Stack several `column` marks the same way as bars — pass a pair to
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 quarters = ["Q1", "Q2", "Q3", "Q4"]
 values = np.array([

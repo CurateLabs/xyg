@@ -63,7 +63,7 @@ backend connection.
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 t = np.linspace(0, 4 * np.pi, 800)
 
@@ -95,7 +95,7 @@ the app's existing websocket rather than through Reflex state JSON.
 import numpy as np
 import reflex as rx
 import reflex_xy
-import xy
+import xyg
 
 
 class Dashboard(rx.State):
@@ -196,7 +196,7 @@ kernel-backed fixed-data tier; passing a Chart directly is the static tier.
 Legend, tooltip, and colorbar components can retain opaque framework objects:
 
 ~~~python
-import xy
+import xyg
 
 custom_legend = object()
 custom_tooltip = object()

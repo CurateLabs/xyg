@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-import xy
-from xy import _graph
-from xy._figure import Figure
+import xyg
+from xyg import _graph
+from xyg._figure import Figure
 
 pytest.importorskip("pyarrow")
 import pyarrow as pa  # noqa: E402

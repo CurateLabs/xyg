@@ -1284,7 +1284,7 @@ Object.assign(ChartView.prototype, {
       || (canZoom && this._axisPolicy("zoom_axes").length > 0);
     const canHistory = canNavigate && this._historyEnabled() && canRecordHistory;
     const hasZoomMenu = canHistory || canZoomButtons || canBoxZoom || canReset;
-    // Declarative export config (spec.export, from xy.export_config): the
+    // Declarative export config (spec.export, from xyg.export_config): the
     // formats list governs menu availability and order. Only the client-safe
     // subset renders here — pdf/html entries are Python-side formats.
     const EXPORT_ITEMS = {

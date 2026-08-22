@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-import xy
+import xyg
 
 
 def samples() -> list[np.ndarray]:

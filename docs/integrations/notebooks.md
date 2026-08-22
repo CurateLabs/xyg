@@ -10,7 +10,7 @@ Jupyter, JupyterLab, VS Code, Colab, or Marimo cell.
 
 ~~~python
 import numpy as np
-import xy
+import xyg
 
 x = np.linspace(0, 8, 400)
 chart = xy.line_chart(
@@ -78,7 +78,7 @@ chart container. Supplying a callback enables the corresponding interaction
 and routes its semantic payload to Python.
 
 ~~~python
-import xy
+import xyg
 
 
 def selected(selection):

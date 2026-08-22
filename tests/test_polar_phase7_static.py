@@ -8,9 +8,9 @@ import re
 import numpy as np
 import pytest
 
-import xy
-from xy import _raster, _svg
-from xy._svg import (
+import xyg
+from xyg import _raster, _svg
+from xyg._svg import (
     _annotation_connector_unclipped,
     _PolarProjection,
     _Scale,

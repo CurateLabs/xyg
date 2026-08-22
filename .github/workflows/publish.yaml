@@ -245,8 +245,8 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xy
-          import xy.kernels as kernels
+          import xyg
+          import xyg.kernels as kernels
 
           version = metadata.version("xyg")
           assert xy.__version__ == version
@@ -265,13 +265,13 @@ jobs:
           import importlib.metadata as metadata
 
           import reflex_xy
-          import xy
+          import xyg
 
           version = metadata.version("xyg")
           assert xy.__version__ == version
           assert reflex_xy.__version__ == version
           try:
-              import xy.kernels  # noqa: F401
+              import xyg.kernels  # noqa: F401
           except ImportError as err:
               msg = str(err)
               assert "native Rust core" in msg, msg

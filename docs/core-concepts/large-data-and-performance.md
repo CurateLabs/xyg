@@ -39,7 +39,7 @@ source ingest and validation still depend on the source grid.
 
 ~~~python demo exec
 import numpy as np
-import xy
+import xyg
 
 rng = np.random.default_rng(9)
 x = rng.normal(size=1_000_000)

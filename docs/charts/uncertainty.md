@@ -20,7 +20,7 @@ the region between lower and upper bounds and layers naturally with a line.
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 x = np.arange(12, dtype=float)
 estimate = 30 + 2.2 * x + 3 * np.sin(x)
@@ -52,7 +52,7 @@ either axis, and use `cap_size` to draw end caps:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_dose = np.random.default_rng(7)
 dose = np.array([1.0, 2.0, 4.0, 8.0, 16.0])
@@ -90,7 +90,7 @@ intervals that widen with distance from the last observation:
 ~~~python demo exec
 import numpy as np
 import reflex_xy
-import xy
+import xyg
 
 rng_fan = np.random.default_rng(11)
 history_x = np.arange(24, dtype=float)

@@ -36,7 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "python"))
 
-from xy._chromium import ChromiumSession  # noqa: E402
+from xyg._chromium import ChromiumSession  # noqa: E402
 
 CHROMIUM_CANDIDATES = [
     "/opt/pw-browsers/chromium",

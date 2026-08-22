@@ -1101,7 +1101,7 @@ def test_ci_workflow_rejects_benchmark_job_without_native_backend_assertion(
         "      - name: Verify native benchmark backend\n"
         "        run: |\n"
         "          .venv/bin/python - <<'PY'\n"
-        "          import xy.kernels as k\n"
+        "          import xyg.kernels as k\n"
         '          assert k.BACKEND == "native", f"benchmark job requires native backend, got {k.BACKEND!r}"\n'
         "          PY\n"
     )
@@ -1142,7 +1142,7 @@ def test_codspeed_workflow_rejects_missing_native_backend_assertion(tmp_path: Pa
         "      - name: Verify native benchmark backend\n"
         "        run: |\n"
         "          .venv/bin/python - <<'PY'\n"
-        "          import xy.kernels as k\n"
+        "          import xyg.kernels as k\n"
         '          assert k.BACKEND == "native", f"CodSpeed requires native backend, got {k.BACKEND!r}"\n'
         "          PY\n\n"
     )

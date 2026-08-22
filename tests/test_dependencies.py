@@ -6,7 +6,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CORE_PACKAGE = ROOT / "python" / "xy"
+CORE_PACKAGE = ROOT / "python" / "xyg"
 
 
 def _dependency_name(requirement: str) -> str:
@@ -72,6 +72,6 @@ def test_core_package_does_not_import_reflex() -> None:
                     violations.append(f"{path.relative_to(ROOT)} imports from {node.module}")
 
     assert violations == [], (
-        "python/xy must stay framework-free; Reflex imports belong in the "
+        "python/xyg must stay framework-free; Reflex imports belong in the "
         f"bundled python/reflex_xy integration: {violations}"
     )
