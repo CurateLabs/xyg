@@ -17,7 +17,19 @@ def _reject_process(*args: object, **kwargs: object) -> NoReturn:
     raise AssertionError("plain XYG Python unexpectedly launched an external process")
 
 
+def _new_optional_modules(before: set[str]) -> list[str]:
+    return sorted(
+        name
+        for name in sys.modules.keys() - before
+        if name == "anywidget"
+        or any(
+            name == prefix or name.startswith(f"{prefix}.") for prefix in FORBIDDEN_MODULE_PREFIXES
+        )
+    )
+
+
 def main(*, require_installed: bool = True) -> int:
+    modules_before = set(sys.modules)
     original_popen = subprocess.Popen
     subprocess.Popen = _reject_process  # type: ignore[assignment]
     try:
@@ -28,15 +40,7 @@ def main(*, require_installed: bool = True) -> int:
             raise AssertionError(
                 f"plain XYG smoke imported {module_path} outside isolated environment {sys.prefix}"
             )
-        eager = sorted(
-            name
-            for name in sys.modules
-            if name == "anywidget"
-            or any(
-                name == prefix or name.startswith(f"{prefix}.")
-                for prefix in FORBIDDEN_MODULE_PREFIXES
-            )
-        )
+        eager = _new_optional_modules(modules_before)
         if eager:
             raise AssertionError(f"plain import loaded optional host frameworks: {eager}")
         chart = xyg.scatter_chart(xyg.scatter(x=[0.0, 1.0], y=[1.0, 0.0]))
@@ -47,14 +51,7 @@ def main(*, require_installed: bool = True) -> int:
         for name in ("index.js", "standalone.js"):
             if not (static / name).is_file():
                 raise AssertionError(f"installed xyg is missing bundled offline asset {name}")
-        leaked = sorted(
-            name
-            for name in sys.modules
-            if any(
-                name == prefix or name.startswith(f"{prefix}.")
-                for prefix in FORBIDDEN_MODULE_PREFIXES
-            )
-        )
+        leaked = _new_optional_modules(modules_before)
         if leaked:
             raise AssertionError(f"plain chart/export loaded Reflex: {leaked}")
     finally:
