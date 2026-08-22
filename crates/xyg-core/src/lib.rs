@@ -7617,13 +7617,15 @@ pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
             return -1;
         };
         let Some(domain) = xyg_engine::graph_style::resolve_semantic_styles(
-            input!(classes),
-            input!(epistemic),
-            input!(statuses),
-            input!(metric),
-            input!(flags),
-            edge != 0,
-            theme,
+            xyg_engine::graph_style::SemanticStyleInput {
+                classes: input!(classes),
+                epistemic: input!(epistemic),
+                statuses: input!(statuses),
+                metric: input!(metric),
+                flags: input!(flags),
+                edge: edge != 0,
+                theme,
+            },
             &mut resolved,
         ) else {
             return -1;

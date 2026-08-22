@@ -46,6 +46,17 @@ pub struct GraphLegendEntry {
     pub shape: u8,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct SemanticStyleInput<'a> {
+    pub classes: &'a [u8],
+    pub epistemic: &'a [u8],
+    pub statuses: &'a [u8],
+    pub metric: &'a [f64],
+    pub flags: &'a [u32],
+    pub edge: bool,
+    pub theme: u8,
+}
+
 // Color-blind-safe, light/dark-background-tested semantic colors. Code zero is
 // deliberately neutral; unknown codes fail closed rather than being modulo-mapped.
 const LIGHT_PALETTE: [[u8; 4]; 8] = [
@@ -112,15 +123,18 @@ fn metric_unit(value: f64, domain: (f64, f64)) -> f32 {
 /// Input vocabularies are closed (0..=7), outputs are all-or-nothing, and the
 /// same routine serves nodes and edges (`edge=true`).
 pub fn resolve_semantic_styles(
-    classes: &[u8],
-    epistemic: &[u8],
-    statuses: &[u8],
-    metric: &[f64],
-    flags: &[u32],
-    edge: bool,
-    theme: u8,
+    input: SemanticStyleInput<'_>,
     out: &mut [ResolvedGraphStyle],
 ) -> Option<(f64, f64)> {
+    let SemanticStyleInput {
+        classes,
+        epistemic,
+        statuses,
+        metric,
+        flags,
+        edge,
+        theme,
+    } = input;
     let n = classes.len();
     if [
         epistemic.len(),
@@ -412,6 +426,23 @@ pub fn compound_bounds(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    macro_rules! resolve {
+        ($classes:expr, $epistemic:expr, $statuses:expr, $metric:expr, $flags:expr, $edge:expr, $theme:expr, $out:expr $(,)?) => {
+            resolve_semantic_styles(
+                SemanticStyleInput {
+                    classes: $classes,
+                    epistemic: $epistemic,
+                    statuses: $statuses,
+                    metric: $metric,
+                    flags: $flags,
+                    edge: $edge,
+                    theme: $theme,
+                },
+                $out,
+            )
+        };
+    }
     #[test]
     fn precedence_is_stable() {
         assert_eq!(
@@ -499,7 +530,7 @@ mod tests {
             arrow: 0,
             state: 0,
         }; 3];
-        let domain = resolve_semantic_styles(
+        let domain = resolve!(
             &[1, 2, 3],
             &[2, 3, 4],
             &[1, 2, 3],
@@ -534,7 +565,7 @@ mod tests {
             arrow: 0,
             state: 0,
         }; 2];
-        resolve_semantic_styles(
+        resolve!(
             &[2, 2],
             &[3, 1],
             &[0, 4],
@@ -574,7 +605,7 @@ mod tests {
         };
         let mut out = [sentinel];
         assert_eq!(
-            resolve_semantic_styles(&[8], &[0], &[0], &[0.0], &[0], false, THEME_LIGHT, &mut out),
+            resolve!(&[8], &[0], &[0], &[0.0], &[0], false, THEME_LIGHT, &mut out),
             None
         );
         assert_eq!(out, [sentinel]);
@@ -643,7 +674,7 @@ mod tests {
                 for code in 0..=MAX_SEMANTIC_CODE {
                     for flags in active {
                         let mut out = [blank_style()];
-                        resolve_semantic_styles(
+                        resolve!(
                             &[code],
                             &[code],
                             &[code],
@@ -668,7 +699,7 @@ mod tests {
     fn inactive_states_are_explicit_contrast_exemptions() {
         for (flag, expected) in [(FLAG_FILTERED, 0.08), (FLAG_DISABLED, 0.28)] {
             let mut out = [blank_style()];
-            resolve_semantic_styles(
+            resolve!(
                 &[1],
                 &[1],
                 &[1],
@@ -696,7 +727,7 @@ mod tests {
                 FLAG_SELECTED,
             ] {
                 let mut out = [blank_style()];
-                resolve_semantic_styles(
+                resolve!(
                     &[1],
                     &[1],
                     &[1],
@@ -725,7 +756,7 @@ mod tests {
         };
         let mut out = [sentinel];
         assert_eq!(
-            resolve_semantic_styles(
+            resolve!(
                 &[1],
                 &[1],
                 &[1],
@@ -755,7 +786,7 @@ mod tests {
             state: 0,
         };
         let mut out = [blank; 3];
-        resolve_semantic_styles(
+        resolve!(
             &[1; 3],
             &[1; 3],
             &[1; 3],
