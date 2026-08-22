@@ -1555,13 +1555,15 @@ async function run() {
     7,
   );
 
-  const cancelled = worker.validateScene(canonicalSceneV9(), { sequence: 14 });
+  const beforeRejected = await worker.validateScene(canonicalSceneV9(), { sequence: 14 }).result;
+  const cancelled = worker.validateScene(canonicalSceneV9(), { sequence: 15 });
   cancelled.cancel();
   await rejected(cancelled.result, "XYG_WASM_CANCELLED", 6);
-  const afterRejected = await worker.validateScene(canonicalSceneV9(), { sequence: 15 }).result;
-  // Cancellation may suppress the deferred staging copy when it wins the race.
-  // Count every completed arena resize; bytes must match the canonical scene size.
-  if (afterRejected.copyCount < 6 || afterRejected.copyCount > 7
+  const afterRejected = await worker.validateScene(canonicalSceneV9(), { sequence: 16 }).result;
+  // The final success copies exactly once; cancellation may suppress its
+  // deferred copy when it wins the race. Stale work copies zero.
+  const rejectedCopies = afterRejected.copyCount - beforeRejected.copyCount;
+  if (rejectedCopies < 1 || rejectedCopies > 2
       || afterRejected.copyBytesLo !== 472 * afterRejected.copyCount) {
     throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
