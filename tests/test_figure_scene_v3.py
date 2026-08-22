@@ -281,6 +281,40 @@ def test_scene_v8_axis_line_visibility_does_not_hide_independent_ticks() -> None
     assert chrome[24 + 16 : 24 + 20] == bytes((32, 32, 32, 140))
 
 
+def test_scene_v10_explicit_hidden_cartesian_chrome_stays_cartesian() -> None:
+    figure = default_style_figure("scatter")
+    hidden = {
+        "axis_width": 0,
+        "tick_width": 0,
+        "tick_length": 0,
+        "grid_width": 0,
+        "axis_color": "#00000000",
+        "grid_color": "#00000000",
+        "tick_color": "#00000000",
+        "tick_label_color": "#00000000",
+        "label_color": "#00000000",
+    }
+    hidden_minor = {
+        "grid_width": 0,
+        "tick_width": 0,
+        "tick_length": 0,
+        "grid_color": "#00000000",
+        "tick_color": "#00000000",
+    }
+    figure.set_axis("x", style=hidden, minor_style=hidden_minor, tick_sides=[], tick_label_sides=[])
+    figure.set_axis("y", style=hidden, minor_style=hidden_minor, tick_sides=[], tick_label_sides=[])
+    figure.title = "Cartesian title"
+    svg = _native.scene_svg(figure.to_scene())
+    assert 'data-xy-chrome="grid"' not in svg
+    assert 'data-xy-chrome="axes"' not in svg
+    assert 'data-xy-chrome="title"' in svg
+    assert "Cartesian title" in svg
+
+    figure.coords = "polar"
+    with pytest.raises(UnsupportedSceneV3, match="supports Cartesian coordinates only"):
+        figure.to_scene()
+
+
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
     with pytest.raises(ValueError, match="invalid canonical scene"):
         _native.scene_svg(b"not-a-scene")

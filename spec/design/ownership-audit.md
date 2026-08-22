@@ -19,6 +19,9 @@ batch ABI. Their remaining migration classification covers figure-to-record
 assembly, additional mark families, and legacy static-export consumers. ABI 84
 also makes Rust authoritative for the ordered, stable failure reason attached
 to deferred authored Scene features; hosts only pack the versioned presence mask.
+Rust also owns whether resolved Cartesian Scene chrome produces SVG/raster
+primitives. Host paint alpha is data, not an implicit polar-mode signal; both
+hosts reject polar Scene compilation until the Scene schema records that mode.
 
 ## Binding seam decision
 

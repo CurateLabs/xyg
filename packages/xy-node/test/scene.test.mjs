@@ -87,6 +87,27 @@ test("Node figure defaults match Python Scene bytes and canonical values", () =>
   assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
 });
 
+test("Node explicit hidden Cartesian chrome omits invisible groups without implying polar", () => {
+  const chrome = new Uint8Array(200);
+  new DataView(chrome.buffer).setFloat64(16, 12, true);
+  const encoded = sceneBatchEncode({
+    viewport: [200, 120], margins: [40, 20, 20, 30],
+    xAxis: { id: 1, kind: "linear", domain: [0, 1] },
+    yAxis: { id: 2, kind: "linear", domain: [0, 1] },
+    kinds: [], stableIds: [], styleRefs: [], styles: [], diameter: [], symbols: [],
+    x0: [], y0: [], x1: [], y1: [], chromeStyle: chrome, title: "Cartesian title",
+  });
+  const svg = sceneSvg(encoded);
+  assert.doesNotMatch(svg, /data-xy-chrome="grid"/);
+  assert.doesNotMatch(svg, /data-xy-chrome="axes"/);
+  assert.match(svg, /data-xy-chrome="title"/);
+  assert.match(svg, /Cartesian title/);
+
+  const polar = new Figure({ coords: "polar" });
+  polar.scatter([0], [1]);
+  assert.throws(() => polar.toScene(), /supports Cartesian coordinates only/);
+});
+
 test("Node Scene v9 primary legend matches Python bytes and rejects unsupported variants", () => {
   const figure = new Figure({ width: 200, height: 120, legend: { loc: "lower left", title: "Series" } });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
