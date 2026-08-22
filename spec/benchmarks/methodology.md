@@ -270,7 +270,9 @@ backgrounds, a top axis, mirrored major ticks, 100 explicit major positions,
 and 99 explicit minor positions. The historical `scene_v4_*` row names remain
 stable for CodSpeed baseline continuity even though they consume the current
 versioned Scene. Three Scene v9 rows exercise SVG, raster-command, and browser-
-painter lowering together at 4, 32, and the 128-entry primary-legend ceiling.
+painter lowering together at 4, 32, and the 128-entry primary-legend ceiling;
+their viewport expands to contain the complete legend under the Scene's normal
+Rust-owned frame, title, margin, and inset bounds.
 `zone_map_threads` already forces the serial path under
 `CODSPEED_ENV`, so the instruction count these report is the representative
 single-thread one (§22).
