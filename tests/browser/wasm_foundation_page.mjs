@@ -5,8 +5,10 @@ import {
   encodeWasmAggregate,
   encodeWasmCose,
   encodeWasmColumns,
+  encodeWasmDashboardPlan,
   hydrateWasmPainter,
   layoutWasmCose,
+  planWasmDashboardResources,
   renderWasmChart,
   renderWasmColumns,
   renderWasmScene,
@@ -256,6 +258,7 @@ async function fixtureModule({
     "xyg_wasm_scene_compile_step",
     "xyg_wasm_scene_compile_records_processed",
     "xyg_wasm_scene_compile_phase",
+    "xyg_wasm_dashboard_plan",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -269,7 +272,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -280,7 +283,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    11, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    12, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -290,7 +293,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0,
   ];
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
@@ -372,7 +375,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 11,
+    expectedAbiVersion: 12,
     expectedSceneVersion: 12,
   };
 }
@@ -530,10 +533,42 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 11 || ready.sceneVersion !== 12) {
+  if (ready.abiVersion !== 12 || ready.sceneVersion !== 12) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
+  foundationStage = "Rust dashboard resource plan";
+  const sparseDashboard = new Array(1);
+  for (const invalid of [
+    sparseDashboard,
+    [null],
+    [{}],
+    [{ stableId: 1, derivedBytes: 1n, lastUsed: 1n }],
+    [{ stableId: 1n, derivedBytes: 1n, lastUsed: 1n, visible: 1 }],
+    [{ stableId: 1n, derivedBytes: 1n, lastUsed: 1n, interacting: "yes" }],
+  ]) {
+    let refused = false;
+    try { encodeWasmDashboardPlan(invalid, 1n); } catch (error) { refused = error instanceof TypeError; }
+    if (!refused) throw new Error("dashboard encoder accepted a sparse, nonobject, or coercible resource");
+  }
+  let invalidBudgetRefused = false;
+  try { encodeWasmDashboardPlan([], 1); } catch (error) { invalidBudgetRefused = error instanceof TypeError; }
+  if (!invalidBudgetRefused) throw new Error("dashboard encoder accepted a non-bigint budget");
+  const dashboardWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
+  });
+  await dashboardWorker.ready;
+  const dashboardPlan = await planWasmDashboardResources(dashboardWorker, [
+    { stableId: 9n, derivedBytes: 40n, lastUsed: 99n },
+    { stableId: 4n, derivedBytes: 40n, lastUsed: 1n, visible: true },
+    { stableId: 7n, derivedBytes: 40n, lastUsed: 0n, interacting: true },
+  ], 80n);
+  if (dashboardPlan.retained.join(",") !== "false,true,true"
+      || dashboardPlan.retainedBytes !== 80n
+      || !Object.isFrozen(dashboardPlan) || !Object.isFrozen(dashboardPlan.retained)) {
+    throw new Error(`Rust dashboard priority/byte plan drifted: ${dashboardPlan.retained.join(",")}/${dashboardPlan.retainedBytes}`);
+  }
+  await dashboardWorker.dispose();
 
   const temporalEvents = [];
   const temporalWorker = createXygWasmWorker({
@@ -1589,6 +1624,24 @@ async function run() {
   const newer = await newerAggregate.result;
   if (newer.maxCount !== 1 || newer.width !== 2) throw new Error("new viewport did not progress after aggregate checkpoint cancellation");
   await checkpointWorker.dispose();
+
+  const dashboardSupersedeWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8 * 1024 * 1024,
+  });
+  await dashboardSupersedeWorker.ready;
+  const supersededAggregate = aggregateWasmBin2d(dashboardSupersedeWorker, {
+    x: checkpointPoints, y: checkpointPoints, x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
+  }, { sequence: 1 });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const concurrentPlan = planWasmDashboardResources(dashboardSupersedeWorker, [
+    { stableId: 1n, derivedBytes: 8n, lastUsed: 1n, visible: true },
+  ], 8n);
+  await rejected(supersededAggregate.result, "XYG_WASM_CANCELLED", 6);
+  const retainedAfterCancellation = await concurrentPlan;
+  if (retainedAfterCancellation.retained.join(",") !== "true" || retainedAfterCancellation.retainedBytes !== 8n) {
+    throw new Error("dashboard plan did not recover the shared arena after aggregate cancellation");
+  }
+  await dashboardSupersedeWorker.dispose();
 
   const staleWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8 * 1024 * 1024,

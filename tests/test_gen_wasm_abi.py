@@ -75,3 +75,19 @@ def test_rust_decoder_consumes_generated_contract_without_wire_constants() -> No
     assert 'SERIES_MAGIC: &[u8; 4] = b"XYTS"' not in source
     assert "flags & !DESCRIPTOR_FLAG_KNOWN" in source
     assert "KIND_SCATTER | KIND_LINE | KIND_BAR | KIND_AREA" in source
+
+
+def test_dashboard_planner_export_is_generated_and_signature_checked() -> None:
+    value = manifest()
+    export = next(item for item in value["exports"] if item["name"] == "xyg_wasm_dashboard_plan")
+    assert export == {
+        "name": "xyg_wasm_dashboard_plan",
+        "params": ["u32", "u32", "usize", "usize"],
+        "result": "i32",
+    }
+    generated = (ROOT / "js/src/wasm_abi_generated.ts").read_text()
+    assert (
+        "xyg_wasm_dashboard_plan(arg0: number, arg1: number, arg2: number, arg3: number): number;"
+        in generated
+    )
+    assert "raw.xyg_wasm_dashboard_plan" in generated

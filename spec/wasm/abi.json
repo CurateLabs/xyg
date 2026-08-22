@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 11,
+  "abi_version": 12,
   "scene_version": 12,
   "painter_version": 9,
   "painter_header_bytes": 288,
@@ -184,6 +184,11 @@
         "usize",
         "usize"
       ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_dashboard_plan",
+      "params": ["u32", "u32", "usize", "usize"],
       "result": "i32"
     },
     {

@@ -57,6 +57,11 @@ export interface XygWasmScenePaint extends XygWasmSceneValidation {
   painter: ArrayBuffer;
 }
 
+export interface XygWasmDashboardPlan {
+  retained: readonly boolean[];
+  retainedBytes: bigint;
+}
+
 export interface XygWasmCompiledScene extends XygWasmSceneValidation {
   /** Canonical Scene batch bytes produced by Rust from typed columns. */
   scene: ArrayBuffer;
@@ -330,6 +335,25 @@ export class XygWasmWorker {
     options: XygWasmAggregateTaskOptions = {},
   ): XygWasmTask<XygWasmSceneValidation & { aggregate: ArrayBuffer }> {
     return this.sceneTask("aggregate.bin2d", request, options);
+  }
+
+  /** Submit one packed Rust-owned `XYDP` dashboard resource plan. */
+  dashboardPlan(request: ArrayBuffer, options: { sequence?: number } = {}): XygWasmTask<ArrayBuffer> {
+    this.assertLive();
+    if (!(request instanceof ArrayBuffer) || request.byteLength < 32 || request.byteLength > this.maxArenaBytes) {
+      throw new TypeError("dashboard plan must be a bounded ArrayBuffer");
+    }
+    const sequence = options.sequence ?? this.nextSequence++;
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
+    this.nextSequence = Math.max(this.nextSequence, sequence + 1);
+    const requestId = this.allocateRequest();
+    const result = this.promiseFor<ArrayBuffer>(requestId);
+    this.worker.postMessage({ type: "dashboard.plan", requestId, sequence, request }, [request]);
+    return { requestId, sequence, result, cancel: () => {
+      const pending = this.pending.get(requestId); if (!pending) return;
+      this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "dashboard plan was cancelled", 6));
+      if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
+    } };
   }
 
   /** Submit one packed temporal command to the shared Rust state machine. */

@@ -9,6 +9,7 @@
 
 pub mod aggregate;
 pub mod compile;
+mod dashboard;
 mod graph;
 mod temporal;
 mod temporal_graph;
@@ -17,7 +18,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 11;
+pub const WASM_ABI_VERSION: u32 = 12;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -794,6 +795,73 @@ pub extern "C" fn xyg_wasm_scene_compile_prepare(
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
+/// Plan global dashboard derived-resource residency from one packed `XYDP` request.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_dashboard_plan(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        instance.output = Vec::new();
+        if sequence == 0 {
+            instance.arena = Vec::new();
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "sequence zero is reserved",
+            );
+        }
+        if sequence <= instance.cancelled_through {
+            instance.arena = Vec::new();
+            return fail(instance, STATUS_CANCELLED, "request was cancelled");
+        }
+        if sequence <= instance.latest_sequence {
+            instance.arena = Vec::new();
+            return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
+        }
+        instance.clear_aggregate();
+        let arena = std::mem::take(&mut instance.arena);
+        let Some(end) = offset.checked_add(length) else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "dashboard plan request is malformed",
+            );
+        };
+        let Some(request) = arena.get(offset..end) else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "dashboard plan request is malformed",
+            );
+        };
+        let result = dashboard::plan(request);
+        drop(arena);
+        instance.latest_sequence = sequence;
+        match result {
+            Ok(output) if output.len() <= instance.max_arena_bytes => {
+                instance.output = output;
+                instance.latest_sequence = sequence;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Ok(_) | Err(dashboard::DashboardError::Limit) => fail(
+                instance,
+                STATUS_RESOURCE_LIMIT,
+                "dashboard plan exceeds its resource bound",
+            ),
+            Err(dashboard::DashboardError::Malformed) => fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "dashboard plan request is malformed",
+            ),
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
 fn map_aggregate_error(instance: &mut Instance, error: aggregate::AggregateError) -> i32 {
     match error {
         aggregate::AggregateError::Limit => fail(
@@ -1327,6 +1395,24 @@ mod tests {
             assert_eq!(instance.aggregate_sequence, 0);
         })
         .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn zero_sequence_dashboard_plan_consumes_staging_before_rejection() {
+        let handle = xyg_wasm_instance_new(1024);
+        assert_eq!(xyg_wasm_arena_resize(handle, 64), STATUS_OK);
+        with_instance_mut(handle, |instance| {
+            instance.arena.fill(0xa5);
+        })
+        .unwrap();
+
+        assert_eq!(
+            xyg_wasm_dashboard_plan(handle, 0, 0, 64),
+            STATUS_INVALID_ARGUMENT
+        );
+        assert_eq!(xyg_wasm_arena_len(handle), 0);
+        assert_eq!(xyg_wasm_output_len(handle), 0);
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
