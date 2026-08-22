@@ -415,6 +415,29 @@ migration diagnostic. In particular, a marker label never disappears silently.
 Those deferred kinds are the next #116 annotation slice. Existing nightly
 `scene_v3_batch_encode`, SVG, raster-command, and browser-painter benchmark rows
 exercise the same record paths; no per-PR CodSpeed job is added.
+
+### Versioned authored-feature support predicate
+
+ABI 84 adds `xyg_scene_support_reason(request_version, features, out, cap)`.
+Request version 1 is a bounded u64 presence record for polar coordinates,
+custom fonts, browser-only CSS/classes, gradients, colorbars, extra legends,
+authored tick-label strings, labeled annotations, and callout/arrow behavior.
+Rust owns both the ordered support decision and the stable actionable UTF-8
+diagnostic (`XYG_SCENE_UNSUPPORTED_*`); Python and Node only project literal
+feature-presence bits and relay the returned text. Zero required bytes means
+the request uses none of those deferred features. Unknown request versions or
+bits fail closed rather than being treated as supported. This predicate does
+not make a partial Scene: callers must reject the authoring request before
+encoding any records.
+
+Both bindings validate request version 1 and the u64 feature mask before FFI
+coercion: booleans, strings, fractions, negatives, unsafe JavaScript numbers,
+and values outside the matching integer width are host errors rather than
+wrapped native values. Their figure compilers project the same normalized authoring
+representations—Cartesian versus polar coordinates, kebab/camel font keys,
+root/chrome/annotation CSS classes, object-valued fills and two-ended ribbon
+paint—before any older host-local unsupported branch can run. Cross-host tests
+pin the identical Rust diagnostic for each representable case.
 Authored solid chart/plot backgrounds, axis sides, and major/minor tick
 geometry/styles are Scene v8.
 Category, angular, and time/calendar tick ladders already move

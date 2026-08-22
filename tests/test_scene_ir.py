@@ -11,6 +11,7 @@ import pytest
 from xyg import _native, _svg
 from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3
+from xyg.channels import ColorChannel
 
 EXPECTED_SCATTER = (
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" '
@@ -18,6 +19,46 @@ EXPECTED_SCATTER = (
     'M 20 16.5 V 25.5" fill="none" stroke="rgb(17,24,39)" '
     'stroke-opacity="0.25" stroke-width="1"/></g>'
 )
+
+
+def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
+    assert _native.scene_support_reason(0) == ""
+    assert _native.scene_support_reason((1 << 6) | (1 << 1)) == (
+        "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources"
+    )
+    with pytest.raises(ValueError, match="version or feature mask"):
+        _native.scene_support_reason(1 << 63)
+    for invalid_features in (True, "1", -1, 1.0, 1 << 64):
+        with pytest.raises(ValueError, match="features must be a u64 bit mask"):
+            _native.scene_support_reason(invalid_features)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="version or feature mask"):
+        _native.scene_support_reason(0, request_version=2)
+    for invalid in (True, -1, 1.5, 1 << 32):
+        with pytest.raises(ValueError, match="request_version must be a u32 integer"):
+            _native.scene_support_reason(0, request_version=invalid)  # type: ignore[arg-type]
+
+    polar = Figure(coords="polar").line([0.0, 1.0], [0.0, 1.0])
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
+        polar.to_scene()
+
+    custom_font = Figure().line([0.0, 1.0], [0.0, 1.0])
+    custom_font.chrome_styles = {"title": {"font-family": "Example Sans"}}
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"):
+        custom_font.to_scene()
+
+    browser_css = Figure().line([0.0, 1.0], [0.0, 1.0])
+    browser_css.marker(0.5, 0.5, class_name="browser-only")
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_BROWSER_CSS"):
+        browser_css.to_scene()
+
+    data_color = Figure().scatter([0.0, 1.0], [0.0, 1.0], color=[0.0, 1.0])
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
+        data_color.to_scene()
+
+    missing_constant = Figure().scatter([0.0], [0.0])
+    missing_constant.traces[0].color_ch = ColorChannel(mode="constant", constant=None)
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
+        missing_constant.to_scene()
 
 
 def test_scene_v10_primary_annotations_are_canonical_and_ordered() -> None:
@@ -49,9 +90,9 @@ def test_scene_v10_primary_annotations_are_canonical_and_ordered() -> None:
 
 
 def test_scene_v10_annotations_fail_closed_for_deferred_content() -> None:
-    with pytest.raises(UnsupportedSceneV3, match="labels are deferred"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL"):
         Figure().vline(1.0, text="limit").to_scene()
-    with pytest.raises(UnsupportedSceneV3, match=r"arrow.*deferred"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW"):
         Figure().arrow(0.0, 0.0, 1.0, 1.0).to_scene()
     with pytest.raises(UnsupportedSceneV3, match="does not encode"):
         Figure().vline(1.0, style={"dash": "2,2"}).to_scene()

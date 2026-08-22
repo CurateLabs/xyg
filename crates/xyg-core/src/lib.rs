@@ -97,12 +97,41 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 83;
+pub const ABI_VERSION: u32 = 84;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
 pub extern "C" fn xyg_scene_version() -> u32 {
     scene::SCENE_VERSION
+}
+
+/// Query Rust's stable support diagnostic for a literal authored-feature mask.
+/// Returns the required UTF-8 byte count (zero means supported), or
+/// `usize::MAX` for an unknown request version/feature bit. When `out_cap` is
+/// sufficient, writes the diagnostic without a trailing NUL.
+///
+/// # Safety
+/// When `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_support_reason(
+    request_version: u32,
+    features: u64,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if out_cap > 0 && out.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let Ok(reason) = scene::scene_support_reason(request_version, features) else {
+            return usize::MAX;
+        };
+        let bytes = reason.as_bytes();
+        if out_cap >= bytes.len() && !bytes.is_empty() {
+            std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
+        }
+        bytes.len()
+    })
 }
 
 /// Compute Cartesian default gutters for the Scene-eligible export subset.
@@ -342,7 +371,7 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
     })
 }
 
-/// Encode a bounded backend-neutral Scene v9 batch. Record kinds are scatter
+/// Encode a bounded backend-neutral Scene v10 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
 /// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
 /// null when the corresponding length is zero. Returns required bytes or
@@ -615,7 +644,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     required
 }
 
-/// Serialize one validated Scene v9 document as a complete SVG image.
+/// Serialize one validated Scene v10 document as a complete SVG image.
 /// Returns required bytes or `usize::MAX` for malformed input.
 ///
 /// # Safety
@@ -649,7 +678,7 @@ pub unsafe extern "C" fn xyg_scene_svg(
     required
 }
 
-/// Compile one validated Scene v9 document to the existing raster display-list
+/// Compile one validated Scene v10 document to the existing raster display-list
 /// command stream. Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -8425,6 +8454,50 @@ pub unsafe extern "C" fn xyg_geo_column_crs(handle: u64) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scene_support_abi_queries_copies_and_rejects_unknown_bits() {
+        let features = scene::SCENE_FEATURE_AUTHORED_TICK_LABELS;
+        let required = unsafe {
+            xyg_scene_support_reason(
+                scene::SCENE_SUPPORT_REQUEST_VERSION,
+                features,
+                std::ptr::null_mut(),
+                0,
+            )
+        };
+        assert!(required > 0 && required < 256);
+        let mut output = vec![0; required];
+        assert_eq!(
+            unsafe {
+                xyg_scene_support_reason(
+                    scene::SCENE_SUPPORT_REQUEST_VERSION,
+                    features,
+                    output.as_mut_ptr(),
+                    output.len(),
+                )
+            },
+            required
+        );
+        assert!(std::str::from_utf8(&output)
+            .unwrap()
+            .starts_with("XYG_SCENE_UNSUPPORTED_TICK_LABELS:"));
+        assert_eq!(
+            unsafe {
+                xyg_scene_support_reason(
+                    scene::SCENE_SUPPORT_REQUEST_VERSION,
+                    1 << 63,
+                    std::ptr::null_mut(),
+                    0,
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(
+            unsafe { xyg_scene_support_reason(1, 0, std::ptr::null_mut(), 1) },
+            usize::MAX
+        );
+    }
 
     #[test]
     fn scene_scale_abi_rejects_malformed_boundaries() {

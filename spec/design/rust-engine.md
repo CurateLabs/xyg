@@ -538,6 +538,11 @@ reduced, retains canonical u64 row identity, and records available points, sourc
 rows, and zero detail rows read. Fully non-finite overview windows are omitted
 without rejecting an otherwise valid detail chunk.
 
+ABI v84 adds the versioned `xyg_scene_support_reason` authored-feature
+predicate. It returns Rust's stable ordered diagnostic verbatim, so Python and
+Node cannot silently diverge on polar, custom-font, browser-CSS, gradient, or
+deferred chrome support policy.
+
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,
 and larger-than-RAM browser evidence remain open.
