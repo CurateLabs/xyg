@@ -283,7 +283,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    12, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    13, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -375,7 +375,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 12,
+    expectedAbiVersion: 13,
     expectedSceneVersion: 12,
   };
 }
@@ -534,7 +534,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 12 || ready.sceneVersion !== 12) {
+  if (ready.abiVersion !== 13 || ready.sceneVersion !== 12) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1042,10 +1042,11 @@ async function run() {
     nodeClass: [1, 2, 3], nodeEpistemic: [1, 0, 2], nodeStatus: [0, 1, 2],
     nodeMetric: [0, 0.5, 1], nodeFlags: [2, 64, 0],
     nodeLabels: ["Selected node with an intentionally long label that truncates", "Disabled node", "Third node"],
-    sources: [0n, 0n, 2n], targets: [2n, 2n, 2n],
-    edgeClass: [1, 2, 3], edgeEpistemic: [1, 3, 2], edgeStatus: [1, 0, 2],
-    edgeMetric: [1, 2, 3], edgeFlags: [0, 16, 0],
-    edgeLabels: ["parallel edge", "pinned edge", "self loop"],
+    parents: [0n, 0n, 0n], parentValidity: [0, 1, 0], collapsed: [1, 0, 0],
+    sources: [0n, 0n, 2n, 2n], targets: [2n, 2n, 2n, 1n],
+    edgeClass: [1, 2, 3, 1], edgeEpistemic: [1, 3, 2, 0], edgeStatus: [1, 0, 2, 0],
+    edgeMetric: [1, 2, 3, 1], edgeFlags: [0, 16, 0, 0],
+    edgeLabels: ["parallel edge", "pinned edge", "self loop", "collapsed boundary"],
   };
   const semanticPacked = encodeWasmSemanticGraph(semanticGraph);
   if (new Uint8Array(semanticPacked).subarray(0, 4).join(",") !== "88,89,71,71") {
@@ -1066,9 +1067,21 @@ async function run() {
     throw new Error(`semantic graph did not hydrate Rust painter/legend parity: ${legendLabels.join("|")}`);
   }
   const graphLabels = [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"][role="listitem"]')];
+  const collapsedChildId = (1n << 32n) + 1n;
+  const visibleParentId = 1n << 32n;
+  const visiblePeerId = (1n << 32n) + 2n;
+  const nodeIds = [];
+  semanticView.gpuTraces.forEach((trace, traceIndex) => {
+    if (trace.trace.kind !== "scatter") return;
+    for (let row=0; row<trace._sceneIds.lo.length; row++) nodeIds.push(semanticView.sceneStableId(traceIndex, row));
+  });
   if (!semanticHost.querySelector('[data-xy-chrome="graph_labels"][role="list"][aria-label="Graph labels"]')
       || graphLabels.length < 2
       || graphLabels.some((label) => !label.dataset.xyStableId || !label.textContent)
+      || !nodeIds.includes(visibleParentId) || !nodeIds.includes(visiblePeerId)
+      || nodeIds.includes(collapsedChildId)
+      || !graphLabels.some((label) => BigInt(label.dataset.xyStableId) === visibleParentId)
+      || graphLabels.some((label) => BigInt(label.dataset.xyStableId) === collapsedChildId)
       || !graphLabels.some((label) => label.textContent.endsWith("…"))) {
     throw new Error(`semantic graph labels lost Rust placement/truncation/a11y: ${graphLabels.map((label) => label.textContent).join("|")}`);
   }
@@ -1093,8 +1106,9 @@ async function run() {
   if (paints.size < 2 || semanticTracePaints.size < 4) {
     throw new Error(`semantic graph visual probe found ${paints.size} canvas colors / ${semanticTracePaints.size} resolved trace paints`);
   }
-  if (!edgeIds.length || edgeIds.some((id) => id < 1n || id > 3n)
-      || edgeIds.filter((id) => id === 1n).length < 4) {
+  if (!edgeIds.length || edgeIds.some((id) => id < 1n || id > 4n)
+      || edgeIds.filter((id) => id === 1n).length < 4
+      || !edgeIds.includes(3n) || !edgeIds.includes(4n)) {
     throw new Error(`semantic parallel/self-loop layers lost source identity: ${edgeIds.join("|")}`);
   }
   const semanticRoot = semanticHost.firstElementChild;
@@ -1108,15 +1122,22 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  for (const malformed of [
+  for (const [malformedIndex, malformed] of [
     { ...semanticGraph, x: ["0", 1, 0.5] },
     { ...semanticGraph, sources: ["0", 0n, 2n] },
     { ...semanticGraph, nodeLabels: [1, null, "valid"] },
-    { ...semanticGraph, edgeLabels: [{ toString: () => "coercible" }, null, "valid"] },
-  ]) {
+    { ...semanticGraph, edgeLabels: [{ toString: () => "coercible" }, null, "valid", null] },
+    { ...semanticGraph, parents: [0n, 0n] },
+    { ...semanticGraph, parents: [0n, 0n, 0n, 0n] },
+    { ...semanticGraph, parents: [0n, "0", 0n] },
+    { ...semanticGraph, parents: Object.assign(new Array(3), {0: 0n, 2: 0n}) },
+    { ...semanticGraph, parentValidity: [0, 2, 0] },
+    { ...semanticGraph, collapsed: [0, 0] },
+    { ...semanticGraph, collapsed: [0, 0, 0, 0] },
+  ].entries()) {
     try {
       encodeWasmSemanticGraph(malformed);
-      throw new Error("coercible semantic graph input was accepted");
+      throw new Error(`coercible semantic graph input ${malformedIndex} was accepted`);
     } catch (error) {
       if (!(error instanceof TypeError)) throw error;
     }
@@ -1127,7 +1148,7 @@ async function run() {
   }
   semanticView = await renderWasmSemanticGraph({
     el: semanticHost,
-    graph: { ...semanticGraph, nodeLabels: ["Updated node", null, null], edgeLabels: [null, null, null] },
+    graph: { ...semanticGraph, nodeLabels: ["Updated node", null, null], edgeLabels: [null, null, null, null] },
     worker: semanticWorker,
     transfer: false,
   });

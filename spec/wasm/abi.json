@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 12,
+  "abi_version": 13,
   "scene_version": 12,
   "painter_version": 9,
   "painter_header_bytes": 288,
@@ -329,7 +329,7 @@
   },
   "semantic_graph": {
     "request_magic": "XYGG",
-    "version": 2,
+    "version": 3,
     "header_bytes": 64,
     "header_offsets": {"version": 4, "header_bytes": 8, "theme": 12, "node_count": 16, "edge_count": 20, "title_bytes": 24, "reserved0": 28, "width": 32, "height": 40, "reserved_tail": 48},
     "max_input_elements": 1024,
@@ -337,6 +337,14 @@
     "themes": {"light": 0, "dark": 1},
     "semantic_code_max": 7,
     "state_flag_mask": 127,
+    "compound_planes": {
+      "order": ["parents", "parent_validity", "collapsed"],
+      "parents": {"type": "u64", "count": "node_count", "default": 0},
+      "parent_validity": {"type": "u8", "count": "node_count", "default": 0},
+      "collapsed": {"type": "u8", "count": "node_count", "default": 0},
+      "presence": "all-three-together-or-zero-defaults",
+      "placement": "align8-after-edge-flags; align8-after-collapsed-before-node-label-lengths"
+    },
     "tier": "direct-only"
   },
   "temporal_graph": {

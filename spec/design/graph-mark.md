@@ -443,8 +443,9 @@ group visible, hides all descendants, maps crossing edges to the nearest
 visible collapsed ancestor, omits edges that become internal, propagates
 hidden selected/hovered/neighbor/pinned state to the representative, and emits
 visible transitive group bounds as Rect primitives. Stable node/edge source
-identity is unchanged. Direct-WASM authoring is gated on its separately owned
-XYGG ABI revision; TypeScript does not synthesize a temporary policy.
+identity is unchanged. Direct-WASM authoring uses the same compiler through
+XYGG v3; TypeScript only frames the three exact planes and does not synthesize
+collapse policy.
 
 #### 7.1.1 Versioned GraphForge resolved style v1
 
@@ -474,10 +475,11 @@ present values and emits stable field-then-code order with the exact resolved
 theme palette and class shape descriptor. Python and Node only materialize
 those returned descriptors.
 
-The direct-browser/export seam accepts packed `XYGG` v2 for the **direct tier
+The direct-browser/export seam accepts packed `XYGG` v3 for the **direct tier
 only**. TypeScript checks representation, aligned lengths, closed codes, and
 the 1,024-element ingress ceiling, then transfers canonical f64 coordinates,
-u64 endpoints, and semantic planes. Rust resolves node and edge paint, expands
+u64 endpoints, semantic planes, and exact compound planes. Rust resolves the
+compound forest and node/edge paint, expands
 halo rings, screen-space dash spans, and arrowheads, and emits at most 1,024
 painter traces plus bounded label primitives in canonical Scene v12. Source-indexed semantic planes are
 rejected for aggregate LOD rather than being attached to cluster identities.
@@ -513,9 +515,9 @@ edge ID and label; only a non-loop boundary whose distinct endpoints both map
 to the same collapsed representative is omitted as newly internal. Regenerate
 or verify every committed consumer hash with
 `scripts/gen_graphforge_semantic_fixture.py --write` or without `--write`.
-The browser check intentionally exercises the current direct-only XYGG v2
-contract; transitive compound authoring through direct WASM remains gated on a
-future ABI revision and must not be inferred from this fixture.
+The browser check exercises the direct-only XYGG v3 compound contract and
+asserts that collapsed descendants are absent from visible/a11y output while
+boundary edges retain their canonical source identity.
 
 ---
 

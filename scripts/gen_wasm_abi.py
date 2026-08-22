@@ -164,6 +164,7 @@ def validate_semantic_graph(manifest: dict[str, object]) -> None:
         "themes",
         "semantic_code_max",
         "state_flag_mask",
+        "compound_planes",
         "tier",
     }
     if not isinstance(contract, dict) or set(contract) != required:
@@ -172,6 +173,16 @@ def validate_semantic_graph(manifest: dict[str, object]) -> None:
         raise SystemExit("semantic_graph magic/tier contract is invalid")
     if contract["themes"] != {"light": 0, "dark": 1}:
         raise SystemExit("semantic_graph themes must be the exact closed map")
+    expected_compound = {
+        "order": ["parents", "parent_validity", "collapsed"],
+        "parents": {"type": "u64", "count": "node_count", "default": 0},
+        "parent_validity": {"type": "u8", "count": "node_count", "default": 0},
+        "collapsed": {"type": "u8", "count": "node_count", "default": 0},
+        "presence": "all-three-together-or-zero-defaults",
+        "placement": "align8-after-edge-flags; align8-after-collapsed-before-node-label-lengths",
+    }
+    if contract["compound_planes"] != expected_compound:
+        raise SystemExit("semantic_graph compound planes differ from XYGG v3")
     expected_offsets = {
         "version": 4,
         "header_bytes": 8,

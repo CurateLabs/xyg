@@ -308,8 +308,7 @@ pub struct SemanticGraphSceneInput<'a> {
     pub edge_labels: &'a [&'a str],
 }
 
-/// Optional compound planes for native/Scene consumers. The direct-WASM XYGG
-/// framing remains unchanged until its separately owned ABI can advance.
+/// Optional compound planes for native and direct-WASM Scene consumers.
 #[derive(Clone, Copy, Debug)]
 pub struct CompoundGraphSceneInput<'a> {
     pub graph: SemanticGraphSceneInput<'a>,
