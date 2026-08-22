@@ -379,6 +379,26 @@ function rawInit(requestId, source) {
 
 let foundationStage = "startup";
 async function run() {
+  foundationStage = "failure diagnostics snapshot contract";
+  const diagnosticInput = {
+    abiVersion: 11, sceneVersion: 11, arenaBytes: 8, arenaHighWaterBytes: 16,
+    memoryBytes: 32, memoryHighWaterBytes: 64, copyCount: 1, copyBytesLo: 8,
+    copyBytesHi: 0, records: 2, styles: 1,
+  };
+  const diagnosticError = new XygWasmError("TEST", "test", 2, diagnosticInput);
+  diagnosticInput.copyCount = 99;
+  if (diagnosticError.diagnostics?.copyCount !== 1
+      || !Object.isFrozen(diagnosticError.diagnostics)
+      || Reflect.set(diagnosticError.diagnostics, "copyCount", 7)) {
+    throw new Error("failure diagnostics are not an immutable cloned snapshot");
+  }
+  for (const invalid of [[], { ...diagnosticInput, records: Number.NaN }, { abiVersion: 11 },
+    { ...diagnosticInput, styles: "1" }]) {
+    if (new XygWasmError("TEST", "test", 2, invalid).diagnostics !== null) {
+      throw new Error(`invalid failure diagnostics were accepted: ${JSON.stringify(invalid)}`);
+    }
+  }
+
   const sharedFixture = await fetch("/tests/fixtures/figure_scene_v3.json").then((response) => response.json());
   const xytsFixture = await fetch("/tests/fixtures/xyts_cross_host.json").then((response) => response.json());
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
@@ -463,17 +483,30 @@ async function run() {
     throw new Error(`combined typed-series length did not fail closed: ${JSON.stringify(malformedCombined)}`);
   }
   const afterMalformedCombined = await malformedSeriesWorker.request({
-    type: "series.compile_paint",
+    type: "scene.validate",
     requestId: 105,
     sequence: 2,
-    prefix: rawSeries.prefix,
-    columns: rawSeries.columns,
-    byteLength: rawSeries.byteLength,
+    scene: canonicalSceneV9().buffer,
   });
   if (!afterMalformedCombined.ok) {
     throw new Error(`combined-length rejection destroyed worker: ${JSON.stringify(afterMalformedCombined)}`);
   }
-  await malformedSeriesWorker.request({ type: "dispose", requestId: 106 });
+  if (afterMalformedCombined.value?.copyCount !== 1) {
+    throw new Error(`successful raw Scene request omitted its Rust copy: ${JSON.stringify(afterMalformedCombined)}`);
+  }
+  const localAfterCopy = await malformedSeriesWorker.request({
+    type: "series.compile_paint",
+    requestId: 106,
+    sequence: 3,
+    prefix: rawSeries.prefix,
+    columns: rawSeries.columns,
+    byteLength: rawSeries.byteLength + 1,
+  });
+  if (localAfterCopy.ok || localAfterCopy.error?.code !== "XYG_WASM_INVALID_ARGUMENT"
+      || localAfterCopy.error?.diagnostics !== null) {
+    throw new Error(`local rejection inherited unrelated Rust counters: ${JSON.stringify(localAfterCopy)}`);
+  }
+  await malformedSeriesWorker.request({ type: "dispose", requestId: 107 });
   malformedSeriesWorker.worker.terminate();
 
   const disposedDuringInit = rawWorkerHarness();
@@ -1243,6 +1276,40 @@ async function run() {
     throw new Error("explicit typed-series transfer did not detach caller buffers");
   }
   await transferWorker.dispose();
+
+  foundationStage = "typed-series fragmentation diagnostics";
+  const fragmentationWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 8 * 1024 * 1024,
+  });
+  await fragmentationWorker.ready;
+  const fragmentedChartSeries = Array.from({ length: 1025 }, (_, index) => ({
+    kind: "scatter",
+    x: new Float64Array([(index + 0.5) / 1025]),
+    y: new Float64Array([(index + 0.5) / 1025]),
+  }));
+  const fragmentedRequest = frameWasmChart({
+    width: 320,
+    height: 240,
+    series: fragmentedChartSeries,
+  });
+  try {
+    await fragmentationWorker.compilePrepareSeries(fragmentedRequest).result;
+    throw new Error("fragmented typed series unexpectedly produced painter resources");
+  } catch (error) {
+    if (!(error instanceof XygWasmError)
+        || error.code !== "XYG_WASM_RESOURCE_LIMIT"
+        || error.status !== 3
+        || !String(error.message).includes("more than 1024 browser traces")) throw error;
+    const failure = error.diagnostics;
+    if (!failure || failure.copyCount !== 1 || failure.copyBytesHi !== 0
+        || failure.copyBytesLo !== fragmentedRequest.byteLength
+        || failure.arenaBytes !== 0 || failure.records !== 1025 || failure.styles !== 1025) {
+      throw new Error(`fragmentation failure omitted Rust transfer diagnostics: ${JSON.stringify(failure)}`);
+    }
+  }
+  await fragmentationWorker.dispose();
 
   foundationStage = "checkpointed typed-series compile lifecycle";
   const compileWorker = createXygWasmWorker({

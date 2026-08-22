@@ -116,6 +116,15 @@ because WebAssembly memory cannot shrink), ABI version, and scene version.
 The Worker normalizes semantically unsigned wasm32 results before exposing
 them, so a set high bit in either copied-byte half remains a non-negative u32.
 They never log user values.
+Successful results expose this snapshot directly. Worker-reported failures
+after instance initialization attach the same snapshot to
+`XygWasmError.diagnostics`; locally rejected or pre-initialization failures use
+`null`. The error snapshot is captured after
+fail-closed staging cleanup, so `arenaBytes` is zero while cumulative copy and
+high-water counters remain inspectable. Rust tests and the strict-CSP Worker
+test pin the typed-series fragmentation boundary at 1,025 painter traces: the
+request returns `RESOURCE_LIMIT`, publishes no painter output, and reports the
+one staging copy and exact copied byte count without host-side inference.
 `XYTS` is the canonical authoring/compile ingress, not the live §29 paint wire
 and not an `XYBF` transport envelope. Its column attachments are exact raw
 `Float64Array` source values, matching the CPU-side f64 authority. The main
@@ -406,7 +415,6 @@ Issue `#59` can close; raw local timings are not performance evidence.
 ## Remaining #59 work
 
 - aggregate production paths beyond direct Scene records;
-- native Python/Node/WASM/Pyodide conformance fixtures;
 - small-through-massive CodSpeed and browser budget evidence; and
 - replacement (not expansion) of `46_worker.ts` only after WASM covers its
   density contract without regression.

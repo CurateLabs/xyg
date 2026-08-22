@@ -1065,6 +1065,58 @@ mod tests {
         typed_series_points(1)
     }
 
+    fn fragmented_typed_series(series_count: usize) -> Vec<u8> {
+        let data_start =
+            compile::COMPILE_HEADER_BYTES + series_count * compile::SERIES_DESCRIPTOR_BYTES;
+        let mut out = vec![0u8; data_start];
+        out[..4].copy_from_slice(compile::SERIES_MAGIC);
+        out[4..8].copy_from_slice(&compile::SERIES_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&(compile::COMPILE_HEADER_BYTES as u32).to_le_bytes());
+        out[12..16].copy_from_slice(&3u32.to_le_bytes());
+        out[16..20].copy_from_slice(&(series_count as u32).to_le_bytes());
+        out[20..24].copy_from_slice(&(series_count as u32).to_le_bytes());
+        for (offset, value) in [
+            (40, 100.0f64),
+            (48, 80.0),
+            (120, 0.0),
+            (128, 1.0),
+            (136, 1.0),
+            (144, 0.0),
+            (152, 1.0),
+            (160, 1.0),
+        ] {
+            out[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        out[88..96].copy_from_slice(&1u64.to_le_bytes());
+        out[96..104].copy_from_slice(&2u64.to_le_bytes());
+        let mut column_offset = data_start;
+        for series_index in 0..series_count {
+            let descriptor =
+                compile::COMPILE_HEADER_BYTES + series_index * compile::SERIES_DESCRIPTOR_BYTES;
+            out[descriptor + compile::DESCRIPTOR_RECORD_COUNT
+                ..descriptor + compile::DESCRIPTOR_RECORD_COUNT + 4]
+                .copy_from_slice(&1u32.to_le_bytes());
+            out[descriptor + compile::DESCRIPTOR_DIAMETER
+                ..descriptor + compile::DESCRIPTOR_DIAMETER + 8]
+                .copy_from_slice(&f64::NAN.to_le_bytes());
+            out[descriptor + compile::DESCRIPTOR_STROKE_WIDTH
+                ..descriptor + compile::DESCRIPTOR_STROKE_WIDTH + 8]
+                .copy_from_slice(&f64::NAN.to_le_bytes());
+            out[descriptor + compile::DESCRIPTOR_X..descriptor + compile::DESCRIPTOR_X + 4]
+                .copy_from_slice(&(column_offset as u32).to_le_bytes());
+            column_offset += 8;
+            out[descriptor + compile::DESCRIPTOR_Y..descriptor + compile::DESCRIPTOR_Y + 4]
+                .copy_from_slice(&(column_offset as u32).to_le_bytes());
+            column_offset += 8;
+        }
+        for series_index in 0..series_count {
+            let value = (series_index as f64 + 0.5) / series_count as f64;
+            out.extend_from_slice(&value.to_le_bytes());
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out
+    }
+
     fn write_arena(handle: u32, bytes: &[u8]) {
         assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
         with_instance_mut(handle, |instance| instance.arena.copy_from_slice(bytes)).unwrap();
@@ -1638,6 +1690,29 @@ mod tests {
                 instance.last_error,
                 "canonical scene fragments into more than 1024 browser traces"
             );
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn fragmented_typed_series_returns_stable_resource_limit_without_output() {
+        let request = fragmented_typed_series(scene::MAX_BROWSER_PAINTER_TRACES + 1);
+        let handle = xyg_wasm_instance_new(8 * 1024 * 1024);
+        write_arena(handle, &request);
+        assert_eq!(xyg_wasm_copy_count(handle), 1);
+        assert_eq!(xyg_wasm_copy_bytes_lo(handle), request.len() as u32);
+        assert_eq!(
+            xyg_wasm_scene_compile_prepare(handle, 1, 0, request.len()),
+            STATUS_RESOURCE_LIMIT
+        );
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+        with_instance_mut(handle, |instance| {
+            assert_eq!(
+                instance.last_error,
+                "compiled scene fragments into more than 1024 browser traces"
+            );
+            assert_eq!(instance.arena.len(), 0);
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);

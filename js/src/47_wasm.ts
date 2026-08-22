@@ -34,6 +34,20 @@ export interface XygWasmDiagnostics {
   styles: number;
 }
 
+const DIAGNOSTIC_FIELDS = [
+  "abiVersion", "sceneVersion", "arenaBytes", "arenaHighWaterBytes", "memoryBytes",
+  "memoryHighWaterBytes", "copyCount", "copyBytesLo", "copyBytesHi", "records", "styles",
+] as const satisfies readonly (keyof XygWasmDiagnostics)[];
+
+function diagnosticsSnapshot(value: unknown): XygWasmDiagnostics | null {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (!DIAGNOSTIC_FIELDS.every((field) => Number.isFinite(candidate[field]))) return null;
+  return Object.freeze(Object.fromEntries(
+    DIAGNOSTIC_FIELDS.map((field) => [field, candidate[field]]),
+  ) as unknown as XygWasmDiagnostics);
+}
+
 export interface XygWasmSceneValidation extends XygWasmDiagnostics {
   sequence: number;
 }
@@ -70,12 +84,20 @@ type AggregateTransferMustRemainTrue = AssertTrue<AggregateTransferContract>;
 export class XygWasmError extends Error {
   readonly code: string;
   readonly status: number | null;
+  /** Rust-owned counters captured at the failure boundary, when initialization completed. */
+  readonly diagnostics: XygWasmDiagnostics | null;
 
-  constructor(code: string, message: string, status: number | null = null) {
+  constructor(
+    code: string,
+    message: string,
+    status: number | null = null,
+    diagnostics: XygWasmDiagnostics | null = null,
+  ) {
     super(message);
     this.name = "XygWasmError";
     this.code = code;
     this.status = status;
+    this.diagnostics = diagnosticsSnapshot(diagnostics);
   }
 }
 
@@ -91,6 +113,7 @@ function workerError(value: any): XygWasmError {
     typeof value?.code === "string" ? value.code : "XYG_WASM_WORKER_ERROR",
     typeof value?.message === "string" ? value.message : "XYG WASM worker failed",
     Number.isInteger(value?.status) ? value.status : null,
+    value?.diagnostics,
   );
 }
 

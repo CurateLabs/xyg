@@ -41,7 +41,17 @@ function reply(requestId: number, value: unknown, transfer: Transferable[] = [])
 }
 
 function error(requestId: number, code: string, message: string, status: number | null = null) {
-  scope.postMessage({ requestId, ok: false, error: { code, message, status } });
+  scope.postMessage({ requestId, ok: false, error: { code, message, status, diagnostics: null } });
+}
+
+function rustError(requestId: number, code: string, message: string, status: number) {
+  let snapshot = null;
+  try {
+    if (exports && handle) snapshot = diagnostics();
+  } catch {
+    // A trapped instance may reject diagnostic reads; preserve the root error.
+  }
+  scope.postMessage({ requestId, ok: false, error: { code, message, status, diagnostics: snapshot } });
 }
 
 function statusCode(status: number): string {
@@ -170,7 +180,7 @@ function advanceAggregate(message: any) {
     if (activeAggregate?.requestId === message.requestId) activeAggregate = null;
     queued.delete(message.requestId);
     if (status !== XYG_WASM_STATUS.OK) {
-      error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+      rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
       return;
     }
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
@@ -205,7 +215,7 @@ function finishCompile(message: any, status: number) {
   activeCompile = null;
   queued.delete(message.requestId);
   if (status !== XYG_WASM_STATUS.OK) {
-    error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+    rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
     return;
   }
   const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
@@ -350,7 +360,7 @@ function advanceGraph(message: any) {
     const steps = active.first ? XYG_WASM_GRAPH_FIRST_PAINT_STEPS : active.chunkSteps; active.first = false;
     const status = exports.xyg_wasm_graph_step(handle, active.sequence, active.revision, steps);
     if (status !== XYG_WASM_STATUS.OK && status !== XYG_WASM_STATUS.PENDING) {
-      activeGraph = null; error(active.requestId, statusCode(status), readXygWasmError(exports, handle), status); return;
+      activeGraph = null; rustError(active.requestId, statusCode(status), readXygWasmError(exports, handle), status); return;
     }
     const checkpoint = decodeWasmGraphCheckpoint(graphOutput());
     if (status === XYG_WASM_STATUS.OK) { activeGraph = null; reply(active.requestId, checkpoint); return; }
@@ -380,11 +390,11 @@ function runGraph(message: any) {
       error(activeAggregate.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by graph layout", XYG_WASM_STATUS.CANCELLED); activeAggregate = null;
     }
     let status = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
-    if (status !== XYG_WASM_STATUS.OK) { error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    if (status !== XYG_WASM_STATUS.OK) { rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
     new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
     status = exports.xyg_wasm_graph_begin(handle, Number(message.sequence), Number(message.revision), 0, message.request.byteLength);
-    if (status !== XYG_WASM_STATUS.OK) { error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    if (status !== XYG_WASM_STATUS.OK) { rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
     const chunkSteps = Number(message.chunkSteps ?? XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS), maxWallMs = Number(message.maxWallMs ?? XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS);
     if (!Number.isInteger(chunkSteps) || chunkSteps <= 0 || chunkSteps > 1000 || !Number.isFinite(maxWallMs) || maxWallMs <= 0 || maxWallMs > 300000) { exports.xyg_wasm_cancel(handle, Number(message.sequence)); error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "graph scheduler bounds are invalid"); return; }
     activeGraph = { requestId: message.requestId, sequence: Number(message.sequence), revision: Number(message.revision), timer: 0, chunkSteps, started: performance.now(), maxWallMs, first: true };
@@ -477,7 +487,7 @@ function runSceneOp(message: any) {
     }
     let status = exports.xyg_wasm_arena_resize(handle, inputLength);
     if (status !== XYG_WASM_STATUS.OK) {
-      error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+      rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
       return;
     }
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
@@ -533,7 +543,7 @@ function runSceneOp(message: any) {
     const value = { sequence: Number(message.sequence), ...diagnostics() };
     if (status !== XYG_WASM_STATUS.OK) {
       exports.xyg_wasm_arena_resize(handle, 0);
-      error(message.requestId, statusCode(status), detail, status);
+      rustError(message.requestId, statusCode(status), detail, status);
       return;
     }
     if (paint || message.type === "scene.compile" || aggregate) {
@@ -613,7 +623,7 @@ function runTemporalCommand(message: any) {
     }
     let status = exports.xyg_wasm_arena_resize(handle, message.command.byteLength);
     if (status !== XYG_WASM_STATUS.OK) {
-      error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+      rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
       return;
     }
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
@@ -625,7 +635,7 @@ function runTemporalCommand(message: any) {
     if (status !== XYG_WASM_STATUS.OK) {
       const detail = readXygWasmError(exports, handle);
       exports.xyg_wasm_arena_resize(handle, 0);
-      error(message.requestId, statusCode(status), detail, status);
+      rustError(message.requestId, statusCode(status), detail, status);
       return;
     }
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
@@ -665,12 +675,12 @@ function runTemporalGraphCommand(message: any) {
       error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "temporal graph command is malformed"); return;
     }
     let status = exports.xyg_wasm_arena_resize(handle, message.command.byteLength);
-    if (status !== XYG_WASM_STATUS.OK) { error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
+    if (status !== XYG_WASM_STATUS.OK) { rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0; const end = ptr + message.command.byteLength;
     if (!ptr || end > exports.memory.buffer.byteLength) throw new Error("invalid temporal graph staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.command.byteLength).set(new Uint8Array(message.command));
     status = exports.xyg_wasm_temporal_graph_execute(handle, 0, message.command.byteLength);
-    if (status !== XYG_WASM_STATUS.OK) { const detail = readXygWasmError(exports, handle); exports.xyg_wasm_arena_resize(handle, 0); error(message.requestId, statusCode(status), detail, status); return; }
+    if (status !== XYG_WASM_STATUS.OK) { const detail = readXygWasmError(exports, handle); exports.xyg_wasm_arena_resize(handle, 0); rustError(message.requestId, statusCode(status), detail, status); return; }
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0; const outputLen = exports.xyg_wasm_output_len(handle) >>> 0; const outputEnd = outputPtr + outputLen;
     if (outputLen !== 0 && (!outputPtr || outputLen < 64 || outputLen > operationBudgetBytes || outputEnd > exports.memory.buffer.byteLength)) throw new Error("Rust temporal graph response returned an invalid range");
     const response = outputLen === 0 ? new ArrayBuffer(0) : new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
