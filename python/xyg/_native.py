@@ -2033,6 +2033,14 @@ def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
     return _scene_bytes_output(encoded, _lib.xyg_scene_raster_commands, "raster commands", factor)
 
 
+def scene_browser_painter(encoded: bytes, max_bytes: int = 64 * 1024 * 1024) -> bytes:
+    """Lower Scene v11 through Rust to the canonical painter-v8 stream."""
+    limit = int(max_bytes)
+    if limit <= 0:
+        raise ValueError("scene painter byte limit must be positive")
+    return _scene_bytes_output(encoded, _lib.xyg_scene_browser_painter, "browser painter", limit)
+
+
 def scene_scatter_svg(
     x: npt.ArrayLike,
     y: npt.ArrayLike,

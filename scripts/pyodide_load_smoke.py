@@ -57,10 +57,28 @@ for case in fixture["successful"]:
     assert scene[:4] == b"XYGS"
     assert len(_native.scene_raster_commands(scene)) > 16
     assert _native.scene_svg(scene).startswith('<svg xmlns="http://www.w3.org/2000/svg"')
-f"{k.BACKEND}|{abi}|{mn}|{mx}|{len(fixture['successful'])}|{fixture['scene_version']}|{fixture['painter_version']}"
+    assert _native.scene_browser_painter(scene) == bytes.fromhex(case["painter_hex"])
+lib = _native._lib
+usize_max = (1 << (8 * __import__("ctypes").sizeof(__import__("ctypes").c_size_t))) - 1
+assert lib.xyg_pyramid_spill(0) == 0
+assert lib.xyg_tile_store_fetch(0, 0, 0, 0, None, None) == 0
+assert lib.xyg_tile_store_compose(0, 0, 1, 0, 1, 1, 1, 1, None) == -1
+assert lib.xyg_tile_store_compose_color(0, 0, 1, 0, 1, 1, 1, 1, None, None) == -1
+assert lib.xyg_tile_store_append(0, None, None, 0) == 0
+assert lib.xyg_tile_store_stats(0, None) == 0
+assert lib.xyg_tile_budget_set(0) == 0
+assert lib.xyg_tile_store_free(0) == 0
+assert lib.xyg_chunked_columns_open(None, 0) == 0
+assert lib.xyg_chunked_columns_cancel_before(0, 0) == 0
+assert lib.xyg_chunked_columns_rows(0) == (1 << 64) - 1
+assert lib.xyg_chunked_columns_overview(0, 0, None, None, None, None) == usize_max
+assert lib.xyg_chunked_columns_read(0, 0, 1, 0, 1, 0, 0, 0, None, None, 0, None) == usize_max
+assert lib.xyg_chunked_columns_read_page(0, 0, 1, 0, 1, 0, 0, 0, 0, None, None, 0, None) == usize_max
+assert lib.xyg_chunked_columns_free(0) == 0
+f"{k.BACKEND}|{abi}|{mn}|{mx}|{len(fixture['successful'])}|{fixture['scene_version']}|{fixture['painter_version']}|15"
 `);
-  const [backend, abi, mn, mx, cases, sceneVersion, painterVersion] = r.split("|");
-  out({ ok: true, backend, abi: Number(abi), min: Number(mn), max: Number(mx), cases: Number(cases), sceneVersion: Number(sceneVersion), painterVersion: Number(painterVersion) });
+  const [backend, abi, mn, mx, cases, sceneVersion, painterVersion, filesystemStubs] = r.split("|");
+  out({ ok: true, backend, abi: Number(abi), min: Number(mn), max: Number(mx), cases: Number(cases), sceneVersion: Number(sceneVersion), painterVersion: Number(painterVersion), filesystemStubs: Number(filesystemStubs) });
 } catch (e) {
   out({ ok: false, error: String(e.message || e).split("\n").slice(-4).join(" ") });
 }
@@ -117,6 +135,7 @@ def main() -> int:
             f"abi={result['abi']} min_max=({result['min']},{result['max']}) "
             f"xyts_cases={result['cases']} Scene=v{result['sceneVersion']} "
             f"painter=v{result['painterVersion']}"
+            f" filesystem_stubs={result['filesystemStubs']}"
         )
         return 0
     print(f"FAIL: pyodide could not load/run the wheel: {result.get('error')}")

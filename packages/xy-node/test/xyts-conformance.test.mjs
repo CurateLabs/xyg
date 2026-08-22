@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-import { sceneRasterCommands, sceneSvg } from "../src/index.js";
+import { sceneBrowserPainter, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const fixture = JSON.parse(fs.readFileSync(
   new URL("../../../tests/fixtures/xyts_cross_host.json", import.meta.url), "utf8",
@@ -21,6 +21,7 @@ test("native Node consumes exact Rust-generated XYTS Scene v11 output", () => {
     assert.equal(Number(view.getBigUint64(24, true)), value.styles, value.name);
     assert.match(sceneSvg(scene), /^<svg xmlns=/, value.name);
     assert.ok(sceneRasterCommands(scene).length > 16, value.name);
+    assert.deepEqual(Buffer.from(sceneBrowserPainter(scene)), Buffer.from(value.painter_hex, "hex"), value.name);
   }
 });
 

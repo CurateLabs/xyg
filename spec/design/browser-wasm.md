@@ -246,7 +246,9 @@ singleton bar defaults; explicit area bounds; incompatible versions,
 unsupported kinds, nonfinite geometry, and identity overflow. The committed
 request, exact Scene v11 bytes, and exact painter v8 bytes are checked by the
 strict-CSP direct-WASM runtime. Native Python, native Node, and real Pyodide
-consume the same generated Scene bytes through their Rust bindings. They do
+consume the same generated Scene bytes through the shared native
+`xyg_scene_browser_painter` ABI and byte-compare its painter-v8 result with the
+Rust-generated golden. They do
 not decode XYTS: XYTS is the direct-browser authoring ingress, while Scene is
 the portable cross-host output contract. Exact Scene and painter bytes are
 portable for the pinned little-endian IEEE-754 targets; SVG text/raster pixels

@@ -44,6 +44,7 @@ def test_native_python_consumes_exact_rust_generated_xyts_scenes() -> None:
         )
         assert _native.scene_svg(scene).startswith('<svg xmlns="http://www.w3.org/2000/svg"')
         assert len(_native.scene_raster_commands(scene)) > 16
+        assert _native.scene_browser_painter(scene) == bytes.fromhex(fixture["painter_hex"])
 
 
 def test_rust_fixture_pins_exact_u64_identity_and_mark_semantics() -> None:
