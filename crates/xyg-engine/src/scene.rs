@@ -51,15 +51,15 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v10 supports Cartesian coordinates only"),
-        (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources"),
-        (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v10 does not encode browser-only CSS or class behavior"),
-        (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v10 supports solid literal paints only"),
-        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v10 does not yet encode colorbars"),
-        (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v10 supports one primary static legend only"),
-        (SCENE_FEATURE_AUTHORED_TICK_LABELS, "XYG_SCENE_UNSUPPORTED_TICK_LABELS: Scene v10 does not yet encode authored tick-label strings"),
-        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v10 annotations do not yet encode text labels"),
-        (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v10 does not yet encode callouts or arrows"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v11 supports Cartesian coordinates only"),
+        (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources"),
+        (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v11 does not encode browser-only CSS or class behavior"),
+        (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v11 supports solid literal paints only"),
+        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v11 does not yet encode colorbars"),
+        (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v11 supports one primary static legend only"),
+        (SCENE_FEATURE_AUTHORED_TICK_LABELS, "XYG_SCENE_UNSUPPORTED_TICK_LABELS: Scene v11 does not yet encode authored tick-label strings"),
+        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v11 annotations do not yet encode text labels"),
+        (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v11 does not yet encode callouts or arrows"),
     ];
     Ok(reasons
         .into_iter()
@@ -1767,7 +1767,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
     }
 
     // Keep this allocation-free seam equivalent to SceneDocument::decode for
-    // the reserved Scene v10 annotation namespace. A batch that validates here
+    // the reserved Scene v11 annotation namespace. A batch that validates here
     // must never fail later only because its annotation runs were malformed.
     let mut annotation_cursor = 0;
     let mut annotations_started = false;
@@ -2198,7 +2198,7 @@ impl<'a> SceneBatch<'a> {
                 return Err(SceneError::Length);
             }
         }
-        // Scene v10 annotation records use ordinary paint primitives but a
+        // Scene v11 annotation records use ordinary paint primitives but a
         // reserved identity namespace. Validate their complete geometry here,
         // before any consumer can mistake a malformed annotation for a trace.
         let mut annotation_index = 0;
@@ -6888,7 +6888,7 @@ mod tests {
                 1,
                 SCENE_FEATURE_AUTHORED_TICK_LABELS | SCENE_FEATURE_CUSTOM_FONT,
             ),
-            Ok("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources")
+            Ok("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources")
         );
         assert_eq!(scene_support_reason(2, 0), Err(SceneError::Version));
         assert_eq!(scene_support_reason(1, 1 << 63), Err(SceneError::Version));

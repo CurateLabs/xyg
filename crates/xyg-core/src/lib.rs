@@ -371,7 +371,7 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
     })
 }
 
-/// Encode a bounded backend-neutral Scene v10 batch. Record kinds are scatter
+/// Encode a bounded backend-neutral Scene v11 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
 /// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
 /// null when the corresponding length is zero. Returns required bytes or
@@ -644,7 +644,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     required
 }
 
-/// Serialize one validated Scene v10 document as a complete SVG image.
+/// Serialize one validated Scene v11 document as a complete SVG image.
 /// Returns required bytes or `usize::MAX` for malformed input.
 ///
 /// # Safety
@@ -678,7 +678,7 @@ pub unsafe extern "C" fn xyg_scene_svg(
     required
 }
 
-/// Compile one validated Scene v10 document to the existing raster display-list
+/// Compile one validated Scene v11 document to the existing raster display-list
 /// command stream. Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety

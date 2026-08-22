@@ -13,7 +13,7 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal(sceneSupportReason(0), "");
   assert.equal(
     sceneSupportReason((1n << 6n) | (1n << 1n)),
-    "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources",
+    "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources",
   );
   assert.throws(() => sceneSupportReason(1n << 63n), /version or feature mask/);
   assert.throws(() => sceneSupportReason(0, 2), /version or feature mask/);
@@ -155,7 +155,7 @@ test("Node Scene v11 compiles bounded primary annotations and fails closed", () 
     { opacity: "opaque" }, { width: null }, { width: false },
   ]) {
     figure.annotations = [{ kind: "rule", axis: "x", value: 0.25, style }];
-    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+    assert.throws(() => figure.toScene(), /Scene v11 annotation/);
   }
   for (const annotation of [
     { kind: "rule", axis: "x", value: null },
@@ -167,7 +167,7 @@ test("Node Scene v11 compiles bounded primary annotations and fails closed", () 
     { kind: "marker", x: 0, y: 1, symbol: 2 },
   ]) {
     figure.annotations = [annotation];
-    assert.throws(() => figure.toScene(), /Scene v10 annotation/);
+    assert.throws(() => figure.toScene(), /Scene v11 annotation/);
   }
 });
 

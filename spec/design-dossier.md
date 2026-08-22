@@ -539,7 +539,7 @@ F3, still pending (above).
   are fixed little-endian bytes, never JSON. The legacy version-1 scatter SVG
   wrapper remains only as a migration consumer. The first #58 whole-scene slice
   compiles constant-style cartesian scatter/line/bar figures in Python and Node,
-  then exposes the exact same Scene v10 bytes to explicit Rust SVG and
+  then exposes the exact same Scene v11 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports keep their compatibility
   renderers until canonical layout and authored text/style records land. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
