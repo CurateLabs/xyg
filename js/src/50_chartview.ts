@@ -5,6 +5,7 @@ import { angularTicks, categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtLog, fm
 import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, RIBBON_FS, RIBBON_STEPS, RIBBON_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
 import { acquireGLHost } from "./42_glhost";
 import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
+import { applyWasmDashboardResourceBudget } from "./49_wasm_dashboard";
 import { markOf } from "./55_marks";
 
 // ---------------------------------------------------------------------------
@@ -5083,6 +5084,31 @@ export class ChartView {
     this._pickDirty = true;
   }
 
+  _dashboardResourceState() {
+    const width = this.pickTex ? this._pickW || this.canvas.width : 0;
+    const height = this.pickTex ? this._pickH || this.canvas.height : 0;
+    return {
+      derivedBytes: BigInt(width) * BigInt(height) * 4n,
+      visible: this._ctxVisible === true,
+      interacting: !!this._hoverTarget || this._interactionTransitionActive(),
+    };
+  }
+
+  applyDashboardResourceBudget(worker, budgetBytes) {
+    return applyWasmDashboardResourceBudget(worker, this._glHost, budgetBytes);
+  }
+
+  _applyDashboardResidency(retained) {
+    if (retained || !this.gl || !this.pickTex) return;
+    if (this.pickFbo) this.gl.deleteFramebuffer(this.pickFbo);
+    this.gl.deleteTexture(this.pickTex);
+    this.pickFbo = null;
+    this.pickTex = null;
+    this._pickW = 0;
+    this._pickH = 0;
+    this._pickDirty = true;
+  }
+
   _allocPickTex() {
     // Sized to the canvas backing store; called again lazily after a resize
     // (from _renderPick, not _resize — no FBO churn during a drag-resize).
@@ -7699,6 +7725,8 @@ export class ChartView {
       !this.gl ||
       this.gl.isContextLost()
     ) return null;
+    this._glHost?.markDashboardResourceUsed(this);
+    if (!this.pickFbo || !this.pickTex) this._initPickTarget();
     if (this._pickDirty) {
       try {
         if (!this._renderPick()) return null;

@@ -1,4 +1,5 @@
 import type { XygWasmDashboardPlan, XygWasmWorker } from "./47_wasm";
+import type { GLHost } from "./42_glhost";
 
 export interface XygWasmDashboardResource {
   stableId: bigint;
@@ -42,4 +43,37 @@ export function decodeWasmDashboardPlan(buffer: ArrayBuffer, count: number): Xyg
 export async function planWasmDashboardResources(worker: XygWasmWorker, resources: readonly XygWasmDashboardResource[], budgetBytes: bigint): Promise<XygWasmDashboardPlan> {
   const result = await worker.dashboardPlan(encodeWasmDashboardPlan(resources, budgetBytes)).result;
   return decodeWasmDashboardPlan(result, resources.length);
+}
+
+export async function applyWasmDashboardResourceBudget(
+  worker: XygWasmWorker,
+  host: GLHost,
+  budgetBytes: bigint,
+): Promise<Readonly<{
+  plan: XygWasmDashboardPlan;
+  applied: boolean;
+  beforeBytes: bigint;
+  afterBytes: bigint;
+}>> {
+  if (!host || typeof host.dashboardResourceSnapshot !== "function"
+      || typeof host.applyDashboardResidency !== "function") {
+    throw new TypeError("a shared GLHost is required");
+  }
+  // Rendering may finish a transition while Rust is planning. Re-snapshot a
+  // bounded number of times so one ordinary lifecycle edge does not turn a
+  // valid public request into a no-op; every individual apply remains atomic.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const snapshot = host.dashboardResourceSnapshot();
+    const beforeBytes = snapshot.resources.reduce((sum, resource) => sum + resource.derivedBytes, 0n);
+    const plan = await planWasmDashboardResources(worker, snapshot.resources, budgetBytes);
+    const applied = host.applyDashboardResidency(snapshot, plan.retained);
+    if (applied) {
+      const afterBytes = host.dashboardResourceSnapshot().resources.reduce(
+        (sum, resource) => sum + resource.derivedBytes, 0n,
+      );
+      return Object.freeze({ plan, applied, beforeBytes, afterBytes });
+    }
+    if (attempt === 2) return Object.freeze({ plan, applied, beforeBytes, afterBytes: beforeBytes });
+  }
+  throw new Error("unreachable dashboard admission retry state");
 }

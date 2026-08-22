@@ -44,12 +44,37 @@ derived caches. It does not claim that browser drivers expose exact physical
 VRAM usage. Hosts account the bytes they request from WebGL and label those
 figures as logical allocation diagnostics.
 
+## Applied shared-context admission
+
+The first applied resource class is each shared-host chart's lazily rebuilt
+RGBA8 picking attachment. The browser reports its exact requested backing
+bytes (`width * height * 4`), visibility, interaction activity, and monotonic
+last-use value to the Rust `XYDP` planner. Last use advances on active picking
+and hover/interaction independently of visibility observation, so using one of
+two already-visible charts makes that chart the more recent admission candidate.
+A returned `ChartView` exposes
+`applyDashboardResourceBudget(worker, budgetBytes)`; its underlying
+`applyWasmDashboardResourceBudget` boundary applies Rust's retain bits to all registered clients on that `GLHost` and
+returns frozen logical `beforeBytes`/`afterBytes` diagnostics. An evicted pick
+texture and framebuffer are deleted immediately; the next pick recreates them
+from the unchanged canonical Scene while preserving source identity.
+
+Planning is asynchronous, so application is conditional on an exact host
+snapshot. Membership, byte size, visibility, interaction, or last-use drift
+causes that result to be discarded without mutation. The public coordinator
+may re-snapshot and re-plan at most three times to cross an ordinary render
+transition; persistent churn returns `applied: false` without eviction. Client registration uses
+host-local monotonic u64 identities, snapshot/application are capped at 4,096
+clients, and removal invalidates any in-flight plan. TypeScript measures and
+deletes WebGL allocations but does not rank clients or reinterpret Rust's
+residency bits.
+
 ## Current slice and remaining closure
 
-This slice establishes the safe Rust policy and direct-WASM packed boundary.
-It does not yet claim automatic `GLHost` eviction, a public budget setting,
-native Python/Node orchestration, or the 30-chart acceptance evidence. Those
-remain required before #111 can close: compositor application, byte-accounted
-resource hooks, visibility-driven replanning, context-loss recovery, rapid
+This slice establishes the safe Rust policy, direct-WASM packed boundary, and
+explicit application to shared pick resources. It does not yet claim automatic
+visibility-driven replanning, a public default budget setting, native
+Python/Node orchestration, or the 30-chart acceptance evidence. Those remain
+required before #111 can close: complete buffer/texture accounting, context-loss recovery, rapid
 mount/unmount and leak coverage, per-chart accessibility/focus verification,
 and Chromium/WebKit dashboard reports.
