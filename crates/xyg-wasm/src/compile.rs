@@ -1470,6 +1470,7 @@ mod tests {
         assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn compound_semantic_graph_is_byte_exact_with_native_abi89() {
         let mut request = pack_semantic_graph();
