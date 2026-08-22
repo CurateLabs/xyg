@@ -18,6 +18,12 @@ import {
 import { XygWasmTemporalController } from "./49_wasm_temporal";
 import { XygWasmTemporalGraph, decodeWasmTemporalGraphFrame, encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 import { decodeWasmGraphCheckpoint, encodeWasmCose, layoutWasmCose } from "./49_wasm_graph";
+import {
+  compilePrepareWasmSemanticGraph,
+  compileWasmSemanticGraph,
+  encodeWasmSemanticGraph,
+  renderWasmSemanticGraph,
+} from "./49_wasm_semantic_graph";
 // Prototype-augmentation modules: imported for their side effect of attaching
 // methods to ChartView.prototype. Every entry point must load them before the
 // first ChartView is constructed.
@@ -144,6 +150,10 @@ export {
   encodeWasmCose,
   decodeWasmGraphCheckpoint,
   layoutWasmCose,
+  encodeWasmSemanticGraph,
+  compileWasmSemanticGraph,
+  compilePrepareWasmSemanticGraph,
+  renderWasmSemanticGraph,
 };
 export type { XygWasmAggregateTaskOptions } from "./47_wasm";
 export type {
@@ -154,4 +164,5 @@ export type {
 } from "./49_wasm_temporal";
 export type { XygWasmCoseOptions, XygWasmGraphCheckpoint, XygWasmGraphRequest } from "./49_wasm_graph";
 export type { XygTemporalPlane, XygWasmTemporalGraphBinding, XygWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
+export type { XygWasmSemanticGraphInput } from "./49_wasm_semantic_graph";
 export default { render, decodeFrame };

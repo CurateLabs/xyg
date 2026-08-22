@@ -26,7 +26,7 @@ Machine-readable twin: [`dual-host-parity.json`](dual-host-parity.json)
 | Interval / uncertainty | errorbar, error_band | same |
 | Categorical / flow | bar, column, pie, sankey (ribbon), funnel* | `barChart` / `sankeyChart` / polar |
 | Polar | polar, radar, wind_rose | `polarChart` / `radarChart` / `windRoseChart` |
-| Graph | graph | `graphChart` / `composeGraph` |
+| Graph | graph | `graphChart` / `composeGraph`; direct browser `renderWasmSemanticGraph` consumes Rust-owned semantic Scene paint |
 | GraphForge canonical graph | `from_graphforge_tables` | `fromGraphForgeTables`; ABI 60 UUID/topology/parent parity |
 | Layout | facet | `facetChart` |
 
@@ -52,7 +52,7 @@ Every profile records screen-bounded budgets; Tier-3 CI proves pyramid compose
 is O(grid) with modest N — it does not allocate a billion points. Phase-4
 disk-resident 256² tile spill is the next residency milestone —
 [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md) /
-[#5](https://github.com/CurateLabs/graphforge-xy/issues/5).
+[#5](https://github.com/CurateLabs/xyg/issues/5).
 
 ## Tests
 
@@ -62,6 +62,7 @@ disk-resident 256² tile spill is the next residency milestone —
 | `packages/xy-node/test/marks.test.mjs` | Encode / M4 / hist / box / violin / polar goldens |
 | `tests/test_node_mark_parity.py` | Live Python↔Node bit parity |
 | `tests/test_graph_node_parity.py` | Graph layout goldens |
+| `tests/browser/wasm_foundation_page.mjs` | Direct-WASM semantic graph paint, identity, legend, theme, and accessibility parity |
 | Browser mark table | `js/src/55_marks.ts` includes contour, errorbar, stem, triangle_mesh, error_band |
 
 ## Invariants (do not regress)

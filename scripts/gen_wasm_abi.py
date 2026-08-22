@@ -152,6 +152,52 @@ def validate_typed_series(manifest: dict[str, object]) -> None:
         raise SystemExit("typed_series kinds must be the exact bounded mark-kind map")
 
 
+def validate_semantic_graph(manifest: dict[str, object]) -> None:
+    contract = manifest.get("semantic_graph")
+    required = {
+        "request_magic",
+        "version",
+        "header_bytes",
+        "header_offsets",
+        "max_input_elements",
+        "max_painter_traces",
+        "themes",
+        "semantic_code_max",
+        "state_flag_mask",
+        "tier",
+    }
+    if not isinstance(contract, dict) or set(contract) != required:
+        raise SystemExit("semantic_graph has missing or unknown fields")
+    if contract["request_magic"] != "XYGG" or contract["tier"] != "direct-only":
+        raise SystemExit("semantic_graph magic/tier contract is invalid")
+    if contract["themes"] != {"light": 0, "dark": 1}:
+        raise SystemExit("semantic_graph themes must be the exact closed map")
+    expected_offsets = {
+        "version": 4,
+        "header_bytes": 8,
+        "theme": 12,
+        "node_count": 16,
+        "edge_count": 20,
+        "title_bytes": 24,
+        "reserved0": 28,
+        "width": 32,
+        "height": 40,
+        "reserved_tail": 48,
+    }
+    if contract["header_offsets"] != expected_offsets:
+        raise SystemExit("semantic_graph header offsets differ from XYGG v1")
+    for key in (
+        "version",
+        "header_bytes",
+        "max_input_elements",
+        "max_painter_traces",
+        "semantic_code_max",
+        "state_flag_mask",
+    ):
+        if type(contract[key]) is not int or int(contract[key]) <= 0:
+            raise SystemExit(f"semantic_graph {key} must be a positive integer")
+
+
 def render(manifest: dict[str, object]) -> str:
     abi_version = int(manifest["abi_version"])
     scene_version = int(manifest["scene_version"])
@@ -177,6 +223,7 @@ def render(manifest: dict[str, object]) -> str:
     aggregate = manifest["aggregate"]
     graph = manifest["graph"]
     temporal_graph = manifest["temporal_graph"]
+    semantic_graph = manifest["semantic_graph"]
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if (
@@ -186,6 +233,7 @@ def render(manifest: dict[str, object]) -> str:
         or not isinstance(typed_series, dict)
         or not isinstance(graph, dict)
         or not isinstance(temporal_graph, dict)
+        or not isinstance(semantic_graph, dict)
     ):
         raise ValueError("aggregate, statuses, and exports must be structured values")
 
@@ -217,6 +265,15 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_TYPED_SERIES_DESCRIPTOR_OFFSETS = {json.dumps(typed_series['descriptor_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TYPED_SERIES_FLAGS = {json.dumps(typed_series['flags'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TYPED_SERIES_KINDS = {json.dumps(typed_series['kinds'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_MAGIC = {json.dumps(semantic_graph['request_magic'])} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_VERSION = {int(semantic_graph['version'])} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES = {int(semantic_graph['header_bytes'])} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS = {int(semantic_graph['max_input_elements'])} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_PAINTER_TRACES = {int(semantic_graph['max_painter_traces'])} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS = {json.dumps(semantic_graph['header_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_THEMES = {json.dumps(semantic_graph['themes'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_CODE = {int(semantic_graph['semantic_code_max'])} as const;",
+        f"export const XYG_WASM_SEMANTIC_GRAPH_STATE_FLAG_MASK = {int(semantic_graph['state_flag_mask'])} as const;",
         f"export const XYG_WASM_MAX_ARENA_BYTES = {max_arena_bytes} as const;",
         f"export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = {painter_max_legend_bytes} as const;",
         f"export const XYG_WASM_AGGREGATE_VERSION = {int(aggregate['version'])} as const;",
@@ -386,6 +443,18 @@ def render_typed_series_rust(manifest: dict[str, object]) -> str:
             "",
         ]
     )
+    semantic = manifest["semantic_graph"]
+    assert isinstance(semantic, dict)
+    lines.extend(
+        [
+            f'pub const SEMANTIC_GRAPH_MAGIC: &[u8; 4] = b"{semantic["request_magic"]}";',
+            f"pub const SEMANTIC_GRAPH_REQUEST_VERSION: u32 = {int(semantic['version'])};",
+            f"pub const SEMANTIC_GRAPH_HEADER_BYTES: usize = {int(semantic['header_bytes'])};",
+            f"pub const SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS: usize = {int(semantic['max_input_elements']):_};",
+            f"pub const SEMANTIC_GRAPH_MAX_PAINTER_TRACES: usize = {int(semantic['max_painter_traces']):_};",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -405,6 +474,23 @@ def verify_rust(manifest: dict[str, object]) -> None:
     scene_match = re.search(r"pub const SCENE_VERSION: u32 = (\d+);", engine)
     if not scene_match or int(scene_match.group(1)) != constants["SCENE_VERSION"]:
         raise SystemExit("xyg-engine SCENE_VERSION differs from spec/wasm/abi.json")
+    semantic = manifest["semantic_graph"]
+    assert isinstance(semantic, dict)
+    graph_style = (ROOT / "crates" / "xyg-engine" / "src" / "graph_style.rs").read_text(
+        encoding="utf-8"
+    )
+    code_match = re.search(r"pub const MAX_SEMANTIC_CODE: u8 = ([0-9_]+);", graph_style)
+    flags_match = re.search(
+        r"pub const KNOWN_STATE_FLAGS: u32 = \(1 << ([0-9_]+)\) - 1;", graph_style
+    )
+    if not code_match or int(code_match.group(1).replace("_", "")) != int(
+        semantic["semantic_code_max"]
+    ):
+        raise SystemExit("xyg-engine MAX_SEMANTIC_CODE differs from semantic_graph manifest")
+    if not flags_match or (1 << int(flags_match.group(1).replace("_", ""))) - 1 != int(
+        semantic["state_flag_mask"]
+    ):
+        raise SystemExit("xyg-engine KNOWN_STATE_FLAGS differs from semantic_graph manifest")
     painter_match = re.search(r"pub const BROWSER_PAINTER_VERSION: u32 = (\d+);", engine)
     if not painter_match or int(painter_match.group(1)) != int(manifest["painter_version"]):
         raise SystemExit("xyg-engine BROWSER_PAINTER_VERSION differs from spec/wasm/abi.json")
@@ -555,6 +641,7 @@ def main() -> int:
     if manifest.get("schema_version") != 1:
         raise SystemExit("unsupported WASM ABI manifest schema")
     validate_typed_series(manifest)
+    validate_semantic_graph(manifest)
     verify_rust(manifest)
     expected = render(manifest)
     expected_rust = render_typed_series_rust(manifest)

@@ -322,6 +322,18 @@
     "default_chunk_steps": 8,
     "default_max_wall_ms": 30000
   },
+  "semantic_graph": {
+    "request_magic": "XYGG",
+    "version": 1,
+    "header_bytes": 64,
+    "header_offsets": {"version": 4, "header_bytes": 8, "theme": 12, "node_count": 16, "edge_count": 20, "title_bytes": 24, "reserved0": 28, "width": 32, "height": 40, "reserved_tail": 48},
+    "max_input_elements": 1024,
+    "max_painter_traces": 1024,
+    "themes": {"light": 0, "dark": 1},
+    "semantic_code_max": 7,
+    "state_flag_mask": 127,
+    "tier": "direct-only"
+  },
   "temporal_graph": {
     "request_magic": "XYTG",
     "version": 1,
