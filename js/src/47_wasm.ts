@@ -70,12 +70,20 @@ type AggregateTransferMustRemainTrue = AssertTrue<AggregateTransferContract>;
 export class XygWasmError extends Error {
   readonly code: string;
   readonly status: number | null;
+  /** Rust-owned counters captured at the failure boundary, when initialization completed. */
+  readonly diagnostics: XygWasmDiagnostics | null;
 
-  constructor(code: string, message: string, status: number | null = null) {
+  constructor(
+    code: string,
+    message: string,
+    status: number | null = null,
+    diagnostics: XygWasmDiagnostics | null = null,
+  ) {
     super(message);
     this.name = "XygWasmError";
     this.code = code;
     this.status = status;
+    this.diagnostics = diagnostics ? { ...diagnostics } : null;
   }
 }
 
@@ -91,6 +99,7 @@ function workerError(value: any): XygWasmError {
     typeof value?.code === "string" ? value.code : "XYG_WASM_WORKER_ERROR",
     typeof value?.message === "string" ? value.message : "XYG WASM worker failed",
     Number.isInteger(value?.status) ? value.status : null,
+    value?.diagnostics && typeof value.diagnostics === "object" ? value.diagnostics : null,
   );
 }
 

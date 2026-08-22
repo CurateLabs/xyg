@@ -1244,6 +1244,40 @@ async function run() {
   }
   await transferWorker.dispose();
 
+  foundationStage = "typed-series fragmentation diagnostics";
+  const fragmentationWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 8 * 1024 * 1024,
+  });
+  await fragmentationWorker.ready;
+  const fragmentedChartSeries = Array.from({ length: 1025 }, (_, index) => ({
+    kind: "scatter",
+    x: new Float64Array([(index + 0.5) / 1025]),
+    y: new Float64Array([(index + 0.5) / 1025]),
+  }));
+  const fragmentedRequest = frameWasmChart({
+    width: 320,
+    height: 240,
+    series: fragmentedChartSeries,
+  });
+  try {
+    await fragmentationWorker.compilePrepareSeries(fragmentedRequest).result;
+    throw new Error("fragmented typed series unexpectedly produced painter resources");
+  } catch (error) {
+    if (!(error instanceof XygWasmError)
+        || error.code !== "XYG_WASM_RESOURCE_LIMIT"
+        || error.status !== 3
+        || !String(error.message).includes("more than 1024 browser traces")) throw error;
+    const failure = error.diagnostics;
+    if (!failure || failure.copyCount !== 1 || failure.copyBytesHi !== 0
+        || failure.copyBytesLo !== fragmentedRequest.byteLength
+        || failure.arenaBytes !== 0 || failure.records !== 1025 || failure.styles !== 1025) {
+      throw new Error(`fragmentation failure omitted Rust transfer diagnostics: ${JSON.stringify(failure)}`);
+    }
+  }
+  await fragmentationWorker.dispose();
+
   foundationStage = "checkpointed typed-series compile lifecycle";
   const compileWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",

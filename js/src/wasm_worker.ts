@@ -41,7 +41,13 @@ function reply(requestId: number, value: unknown, transfer: Transferable[] = [])
 }
 
 function error(requestId: number, code: string, message: string, status: number | null = null) {
-  scope.postMessage({ requestId, ok: false, error: { code, message, status } });
+  let snapshot = null;
+  try {
+    if (exports && handle) snapshot = diagnostics();
+  } catch {
+    // A trapped instance may reject diagnostic reads; preserve the root error.
+  }
+  scope.postMessage({ requestId, ok: false, error: { code, message, status, diagnostics: snapshot } });
 }
 
 function statusCode(status: number): string {

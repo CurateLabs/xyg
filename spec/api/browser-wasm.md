@@ -23,6 +23,16 @@ await chart.dispose();
 await worker.dispose(); // required for the default borrowed ownership
 ```
 
+Every Worker-reported `XygWasmError` after the Rust instance initializes
+carries a read-only `diagnostics` snapshot. Locally rejected argument,
+messaging, cancellation, and initialization errors use `null`. The snapshot
+exposes Rust's cumulative staging `copyCount`, split-u64
+`copyBytesLo` / `copyBytesHi`, arena and linear-memory high-water bytes, and
+the last Scene record/style counts without exposing source values. This makes
+resource-limit failures inspectable without logging user data. Callers must
+null-check `diagnostics`; initialization, messaging, or pre-Worker argument
+failures have no authoritative Rust snapshot.
+
 Cancellation, supersession, and disposal clear bounded staging and suppress
 late paint. Compile work runs in an isolated same-origin module Worker so
 termination can interrupt Rust expansion, Scene encoding, or painter lowering

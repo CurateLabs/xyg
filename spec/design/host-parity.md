@@ -64,6 +64,10 @@ f64 source columns move JS → Worker and undergo one bounded copy into WASM.
 They are not the live paint wire and are not `XYBF`. Rust alone validates and
 lowers them to the shared offset-f32/u8 painter buffer consumed by WebGL; the
 browser host has no per-record conversion or policy fallback.
+Rust also owns staging-copy and resource accounting. The Worker returns those
+counters unchanged on success and attaches them to public `XygWasmError`
+failures after initialization; TypeScript neither reconstructs byte counts nor
+estimates retained Rust resources.
 
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
