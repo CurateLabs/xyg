@@ -355,6 +355,65 @@ test("graph style policies consume the shared Rust ABI", () => {
   assert.throws(() => graphCompoundBounds([0, 0, 0], [0, 0, 0], [1n, 2n, 0n], [1, 1, 1]), /failed/);
 });
 
+test("composeGraph serializes Rust-owned labels, visual states, and compounds", () => {
+  const compoundNodes = {
+    ...AIRPORTS_NODES,
+    parent_uuid: [null, AIRPORTS_NODES.node_uuid[0], AIRPORTS_NODES.node_uuid[0]],
+  };
+  const composed = composeGraph(compoundNodes, AIRPORTS_EDGES, {
+    layout: "grid",
+    nodeLabel: "labels",
+    labelPriority: [1, 5, 5],
+    labelBudget: 2,
+    visualStateFlags: new Uint32Array([0, 2, 66]),
+  });
+  assert.deepEqual(composed.graphMeta.node_labels, [null, "Airport", "City"]);
+  assert.deepEqual(composed.graphMeta.label_accepted, [false, true, true]);
+  assert.deepEqual(composed.graphMeta.visual_states, [0, 5, 7]);
+  assert.deepEqual(composed.graphMeta.parent_of, [null, 0, 0]);
+  assert.deepEqual(composed.graphMeta.compound_nodes, [true, false, false]);
+  assert.equal(composed.graphMeta.compound_bounds[0].length, 4);
+  assert.ok(composed.graphMeta.compound_bounds[0].every(Number.isFinite));
+});
+
+test("composeGraph label text has exact null fallback and rejects scalar coercion", () => {
+  const base = { id: ["node-a", "node-b"], label: [null, "Beta"] };
+  const edges = [["node-a", "node-b"]];
+  const composed = composeGraph(base, edges, { layout: "grid" });
+  assert.deepEqual(composed.graphMeta.node_labels, ["node-a", "Beta"]);
+  for (const invalid of [true, 1, Number.NaN]) {
+    assert.throws(
+      () => composeGraph(base, edges, { layout: "grid", nodeLabel: [invalid, "Beta"] }),
+      /strings or null/,
+    );
+  }
+});
+
+test("Aggregate graph composition omits source-indexed label and state planes", () => {
+  const nodes = { id: ["a", "b", "c", "d"], label: ["A", "B", "C", "D"] };
+  const composed = composeGraph(nodes, [["a", "b"], ["b", "c"], ["c", "d"]], {
+    layout: "grid", nodeBudget: 2, edgeBudget: 2,
+  });
+  assert.equal(composed.graphMeta.tier_name, "aggregate");
+  assert.equal(Object.hasOwn(composed.graphMeta, "node_labels"), false);
+  assert.equal(Object.hasOwn(composed.graphMeta, "visual_states"), false);
+  assert.equal(Object.hasOwn(composed.graphMeta, "compound_bounds"), false);
+});
+
+test("composeGraph numeric identity fallback is safe and exact", () => {
+  const numeric = composeGraph([1, 2], [[1, 2]], { layout: "grid" });
+  assert.deepEqual(numeric.graphMeta.node_labels, ["1", "2"]);
+
+  const unsafe = Number.MAX_SAFE_INTEGER + 1;
+  const mixed = composeGraph([unsafe, "safe"], [[unsafe, "safe"]], { layout: "grid" });
+  assert.deepEqual(mixed.graphMeta.node_labels, [null, "safe"]);
+  assert.deepEqual(mixed.graphMeta.label_accepted, [false, true]);
+
+  const objectId = {};
+  const ambiguous = composeGraph([objectId, "safe"], [[objectId, "safe"]], { layout: "grid" });
+  assert.deepEqual(ambiguous.graphMeta.node_labels, [null, "safe"]);
+});
+
 test("composeGraph GraphForge tables preserve edge identity and node tooltips", () => {
   const composed = composeGraph(AIRPORTS_NODES, AIRPORTS_EDGES, { layout: "grid", seed: 1 });
   assert.equal(composed.traces[0].kind, "segments");

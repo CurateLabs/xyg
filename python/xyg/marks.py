@@ -698,6 +698,11 @@ def graph(
     opacity: Any = 1.0,
     style: styles.StyleMapping | None = None,
     mapping: dict[str, str] | None = None,
+    node_label: Union[str, ArrayLike, None] = None,
+    label_priority: Union[str, ArrayLike, None] = None,
+    label_budget: int = 64,
+    label_priority_floor: float | None = None,
+    visual_state_flags: Union[str, ArrayLike, None] = None,
 ) -> "Figure":
     """Add a node–link graph: Rust layout, then segments (edges) + scatter (nodes).
 
@@ -717,6 +722,9 @@ def graph(
     size = _graph.resolve_encoding_values(data, size, where="node")
     pinned = _graph.resolve_encoding_values(data, pinned, where="node")
     edge_color = _graph.resolve_encoding_values(data, edge_color, where="edge")
+    node_label = _graph.resolve_encoding_values(data, node_label, where="node")
+    label_priority = _graph.resolve_encoding_values(data, label_priority, where="node")
+    visual_state_flags = _graph.resolve_encoding_values(data, visual_state_flags, where="node")
     px, py, meta = _graph.run_layout(
         data,
         layout=layout,
@@ -817,6 +825,101 @@ def graph(
         "node_trace": len(self.traces) - 1,
         "edge_trace": len(self.traces) - 2,
     }
+    # Rust owns acceptance, precedence, and compound membership. Hosts only
+    # serialize the accepted paint contract; Aggregate LOD has a different
+    # identity plane and therefore intentionally omits source-node metadata.
+    if len(px) == data.n_nodes:
+        if node_label is None:
+            node_label = data.node_attrs.get(
+                "label", data.node_attrs.get("name", [None] * data.n_nodes)
+            )
+        raw_labels = (
+            [node_label] * data.n_nodes if isinstance(node_label, str) else list(node_label)
+        )
+        fallback_names = data.node_attrs.get("name")
+        labels: list[str | None] = []
+        for index, value in enumerate(raw_labels):
+            if value is None and fallback_names is not None:
+                value = fallback_names[index]
+            if value is None:
+                identity = data.ids[index]
+                if isinstance(identity, str):
+                    value = identity
+                elif (
+                    isinstance(identity, (int, np.integer))
+                    and not isinstance(identity, (bool, np.bool_))
+                    and -(2**53 - 1) <= int(identity) <= 2**53 - 1
+                ):
+                    value = str(int(identity))
+                else:
+                    value = None
+            if value is not None and not isinstance(value, str):
+                raise TypeError("graph labels must be strings or null")
+            labels.append(value)
+        if len(labels) != data.n_nodes:
+            raise ValueError("graph node_label must match node count")
+        if label_priority is None:
+            label_priority = data.node_attrs.get("label_priority", np.zeros(data.n_nodes))
+        priorities = np.asarray(label_priority, dtype=np.float64)
+        if priorities.ndim == 0:
+            priorities = np.full(data.n_nodes, priorities.item(), dtype=np.float64)
+        priorities = np.ascontiguousarray(priorities)
+        if priorities.ndim != 1 or len(priorities) != data.n_nodes:
+            raise ValueError("graph label_priority must match node count")
+        priorities = priorities.copy()
+        priorities[[label is None for label in labels]] = np.nan
+        if isinstance(label_budget, bool) or not isinstance(label_budget, (int, np.integer)):
+            raise TypeError("graph label_budget must be an exact integer")
+        if int(label_budget) < 0 or int(label_budget) > 4096:
+            raise ValueError("graph label_budget must be between 0 and 4096")
+        accepted = _native.graph_label_accept(
+            priorities, label_budget, min_priority=label_priority_floor
+        )
+        if any(
+            label is not None and len(label.encode("utf-8")) > 4096
+            for label, keep in zip(labels, accepted, strict=True)
+            if keep
+        ):
+            raise ValueError("accepted graph labels are limited to 4096 UTF-8 bytes each")
+        if visual_state_flags is None:
+            visual_state_flags = data.node_attrs.get(
+                "visual_state_flags",
+                data.node_attrs.get("state_flags", np.zeros(data.n_nodes, dtype=np.uint32)),
+            )
+        flags = np.asarray(visual_state_flags)
+        if flags.ndim == 0:
+            flags = np.full(data.n_nodes, flags.item())
+        if flags.ndim != 1 or len(flags) != data.n_nodes:
+            raise ValueError("graph visual_state_flags must match node count")
+        states = _native.graph_visual_states(flags)
+        graph_meta.update(
+            {
+                "node_labels": [
+                    label if bool(accepted[i]) else None for i, label in enumerate(labels)
+                ],
+                "label_accepted": accepted.astype(bool).tolist(),
+                "label_budget": int(label_budget),
+                "visual_states": states.astype(np.uint8).tolist(),
+            }
+        )
+        if data.parent_indices is not None:
+            validity = (
+                np.ones(data.n_nodes, dtype=np.uint8)
+                if data.parent_validity is None
+                else np.asarray(data.parent_validity, dtype=np.uint8)
+            )
+            parent_of, compounds, bounds = _native.graph_compound_bounds(
+                px, py, data.parent_indices, validity
+            )
+            sentinel = np.iinfo(np.uint64).max
+            graph_meta["parent_of"] = [
+                None if value == sentinel else int(value) for value in parent_of
+            ]
+            graph_meta["compound_nodes"] = compounds.astype(bool).tolist()
+            graph_meta["compound_bounds"] = [
+                None if not bool(compounds[i]) else [float(v) for v in bounds[i]]
+                for i in range(data.n_nodes)
+            ]
     if data.edge_ids:
         # Source-indexed identity; Aggregate LOD may collapse multi-edges/self-loops.
         source_edge_ids = [str(edge_id) for edge_id in data.edge_ids]

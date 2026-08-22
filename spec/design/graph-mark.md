@@ -409,11 +409,32 @@ segments (loops / arrow wings) while preserving source edge identity via
   governs membership: invalid parent payload is ignored, including canonical
   zero-filled `GraphProjection` slots; `NO_COMPOUND` is an output sentinel.
 
-Node exposes thin typed-array utilities; Python currently exposes equivalent
-private `_native` utilities for composition work. Neither utility is wired
-into the composed graph scene yet, so browser/export consumption remains part
-of #34. Nested transitive bounds, collapse/expand, style scales, legends, and
-visual goldens also remain.
+Node exposes thin typed-array utilities; Python exposes equivalent private
+`_native` utilities. Canonical `graph()` composition in both hosts now calls
+those utilities for Direct-tier nodes and records `node_labels`,
+`label_accepted`, `visual_states`, `parent_of`, `compound_nodes`, and
+`compound_bounds` in `spec.graph`. The default label fallback is the `label`
+column, then `name`, then canonical node identity. Identity fallback accepts
+strings and exact integers in the shared JavaScript safe range; unsafe
+integers, non-finite numbers, booleans, bytes, and object identities produce
+no label candidate without invalidating the graph. Label cells are either
+strings or null; null advances through that fallback chain, while booleans,
+numbers (including non-finite values), bytes, and objects fail closed instead
+of receiving host-language-specific stringification. A missing candidate gets
+a non-finite priority before the Rust acceptance call, so it cannot consume
+the viewport budget. The default budget is
+64 (hard maximum 4096), rejected labels serialize as `null`, accepted strings
+are limited to 4096 UTF-8 bytes, and equal priorities retain source order.
+Aggregate LOD intentionally omits
+source-indexed style metadata rather than attaching it to cluster identities.
+
+The browser reports resolved state/group/accepted-label counts on its
+accessibility surface. It deliberately does **not** paint label text or
+compound AABBs yet: zoom acceptance, screen clipping, collision, truncation,
+and final text placement must first become Rust-emitted bounded paint
+primitives. TypeScript must not infer those decisions from the source-indexed
+metadata. Nested transitive bounds, collapse/expand, style scales, legends,
+browser/static text and bounds, and visual goldens remain.
 
 ---
 

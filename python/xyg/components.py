@@ -1174,6 +1174,11 @@ def graph(
     style: Optional[dict[str, StyleValue]] = None,
     class_name: Optional[str] = None,
     mapping: Optional[dict[str, str]] = None,
+    node_label: Union[str, ArrayLike, None] = None,
+    label_priority: Union[str, ArrayLike, None] = None,
+    label_budget: int = 64,
+    label_priority_floor: float | None = None,
+    visual_state_flags: Union[str, ArrayLike, None] = None,
 ) -> Mark:
     """A node–link graph: Rust layout, edges as segments, nodes as scatter.
 
@@ -1203,6 +1208,12 @@ def graph(
         style: Mark style overrides.
         class_name: Adapter-only trace metadata.
         mapping: Optional GraphForge column-name overrides.
+        node_label: Label values or a node-column name; falls back to label,
+            name, then stable node identity.
+        label_priority: Rust-ranked label priority values or node-column name.
+        label_budget: Maximum accepted labels for this composed viewport.
+        label_priority_floor: Optional minimum finite accepted priority.
+        visual_state_flags: Rust visual-state bit flags or node-column name.
     """
     return Mark(
         kind="graph",
@@ -1229,6 +1240,11 @@ def graph(
             "edge_curve": edge_curve,
             "opacity": opacity,
             "mapping": mapping,
+            "node_label": node_label,
+            "label_priority": label_priority,
+            "label_budget": label_budget,
+            "label_priority_floor": label_priority_floor,
+            "visual_state_flags": visual_state_flags,
         },
     )
 
@@ -5941,6 +5957,11 @@ def _apply_graph(fig: Figure, m: Mark, data: Any) -> None:
         opacity=m.props["opacity"],
         style=m.style,
         mapping=m.props.get("mapping"),
+        node_label=m.props.get("node_label"),
+        label_priority=m.props.get("label_priority"),
+        label_budget=m.props.get("label_budget", 64),
+        label_priority_floor=m.props.get("label_priority_floor"),
+        visual_state_flags=m.props.get("visual_state_flags"),
     )
 
 
@@ -7102,6 +7123,14 @@ def graph_chart(*children: Component, **props: Any) -> Chart:
         "opacity",
         "style",
         "class_name",
+        "mapping",
+        "cose",
+        "pinned",
+        "node_label",
+        "label_priority",
+        "label_budget",
+        "label_priority_floor",
+        "visual_state_flags",
     )
     mark_kwargs = {key: props.pop(key) for key in mark_keys if key in props}
     if "nodes" in mark_kwargs or "edges" in mark_kwargs:
