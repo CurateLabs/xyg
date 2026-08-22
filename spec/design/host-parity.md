@@ -154,7 +154,7 @@ closure, interaction persistence, revision ordering, or work budgets. Node
 retains revisions and timestamps as exact `bigint`; Python performs bounded
 integer conversion before the C ABI call.
 
-The direct browser uses the same engine through WASM ABI 8 `XYTG`/`XYTF`
+The direct browser uses the same engine through WASM ABI 9 `XYTG`/`XYTF`
 frames. Rust emits visible UUID membership and remapped topology before layout;
 the TypeScript coordinator only owns transfer, latest-wins cancellation,
 stale-reply rejection, and disposal.

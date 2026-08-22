@@ -85,7 +85,11 @@ async function run() {
     const started = performance.now();
     const handle = await renderWasmChart({ el: host, worker: chartWorker, dataOwnership: "transfer", workerOwnership: "own", chart: { width: 800, height: 600, series: [{ kind: "scatter", x, y }] } });
     await frame(); await frame();
-    rows.push({ count, typedSeries: true, firstPaintMs: performance.now() - started, ...handle.diagnostics() });
+    const diagnostics = handle.diagnostics();
+    if (diagnostics?.mainThreadRecordVisits !== 0 || diagnostics.framedSeries !== 1) {
+      throw new Error(`typed-series framing scanned records on the main thread: ${JSON.stringify(diagnostics)}`);
+    }
+    rows.push({ count, typedSeries: true, firstPaintMs: performance.now() - started, ...diagnostics });
     await handle.dispose(); host.remove();
   }
   const fragmentedHost = document.body.appendChild(document.createElement("div"));

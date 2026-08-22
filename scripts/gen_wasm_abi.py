@@ -67,9 +67,18 @@ DESCRIPTOR_WIDTHS = {
     "y0": 4,
     "y1": 4,
     "diameters": 4,
+    "stable_ids": 4,
 }
 HEADER_FLAG_KEYS = {"auto_margins", "auto_domain"}
-DESCRIPTOR_FLAG_KEYS = {"diameters", "y0", "y1", "fill_rgba", "stroke_rgba", "stable_id_base"}
+DESCRIPTOR_FLAG_KEYS = {
+    "diameters",
+    "y0",
+    "y1",
+    "fill_rgba",
+    "stroke_rgba",
+    "stable_id_base",
+    "stable_ids",
+}
 KIND_CODES = {"scatter": 0, "line": 1, "bar": 2, "area": 3}
 TYPED_SERIES_NUMERIC_KEYS = {
     "typed_series_version",
@@ -369,12 +378,11 @@ def render_typed_series_rust(manifest: dict[str, object]) -> str:
     lines.extend(
         [
             "pub const HEADER_FLAG_KNOWN: u32 = HEADER_FLAG_AUTO_MARGINS | HEADER_FLAG_AUTO_DOMAIN;",
-            "pub const DESCRIPTOR_FLAG_KNOWN: u32 = DESCRIPTOR_FLAG_DIAMETERS",
-            "    | DESCRIPTOR_FLAG_Y0",
-            "    | DESCRIPTOR_FLAG_Y1",
-            "    | DESCRIPTOR_FLAG_FILL_RGBA",
-            "    | DESCRIPTOR_FLAG_STROKE_RGBA",
-            "    | DESCRIPTOR_FLAG_STABLE_ID_BASE;",
+            "pub const DESCRIPTOR_FLAG_KNOWN: u32 = "
+            + "\n    | ".join(
+                f"DESCRIPTOR_FLAG_{name.upper()}" for name in sorted(contract["flags"])
+            )
+            + ";",
             "",
         ]
     )

@@ -122,7 +122,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 8 for Scene paint, packed typed-column compile,
+`WASM_ABI_VERSION` is 9 for Scene paint, packed typed-column compile,
 transferable `XYTS` series descriptors, resumable Tier-2 aggregation, and
 packed `XYTC`/`XYTR` temporal-controller commands and snapshots. ABI 8 adds
 packed `XYTG` temporal-graph binding/frame commands and Rust-produced `XYTF`
@@ -215,6 +215,14 @@ production, density replacement, and cross-host conformance remain later #59
 slices. The two version numbers are
 checked independently so rebasing the axis/chrome work cannot silently widen
 this consumer.
+
+`XYTS` version 2 adds an optional exact `BigUint64Array` stable-ID column. The
+main thread validates only its type, length, ownership, and distinct buffer;
+Rust consumes the transferred values, preserves arbitrary identities, and
+advances later generated IDs beyond the greatest authored identity. The column
+is mutually exclusive with `stableIdBase`, and overflow fails with the stable
+resource-limit status. Version 1 requests fail closed rather than being
+reinterpreted with the wider descriptor contract.
 
 ## Lifecycle and failure model
 

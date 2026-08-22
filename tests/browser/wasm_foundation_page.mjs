@@ -274,7 +274,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    8, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    9, 10, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -366,7 +366,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 8,
+    expectedAbiVersion: 9,
     expectedSceneVersion: 10,
   };
 }
@@ -448,7 +448,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 8 || ready.sceneVersion !== 10) {
+  if (ready.abiVersion !== 9 || ready.sceneVersion !== 10) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -926,7 +926,7 @@ async function run() {
         kind: "scatter",
         x: new Float64Array([0.2, 0.8]),
         y: new Float64Array([0.3, 0.7]),
-        stableIdBase: 70n,
+        stableIds: new BigUint64Array([70n, 73n]),
         diameter: 8,
       },
       {
@@ -958,7 +958,7 @@ async function run() {
     throw new Error("chart ergonomics framer did not emit XYTS");
   }
   const fixtureMagic = new TextDecoder().decode(new Uint8Array(chartPacked.prefix, 0, 4));
-  if (fixtureMagic !== sharedFixture.wasm_typed_series_v1.magic) {
+  if (fixtureMagic !== sharedFixture.wasm_typed_series_v2.magic) {
     throw new Error("browser typed-series framing drifted from the shared Python/Node fixture");
   }
   const aliased = new Float64Array([0, 1]);
@@ -974,6 +974,7 @@ async function run() {
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: -1 },
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: [2] },
     { kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style: { fillRgba: [1, 2, 3, 4] } },
+    { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), stableIdBase: 1n, stableIds: new BigUint64Array([2n]) },
   ]) {
     try {
       frameWasmChart({ width: 10, height: 10, series: [malformedSeries] });
@@ -1030,6 +1031,9 @@ async function run() {
   if (chartView.sceneStableId(0, 0) !== 70n) {
     throw new Error("chart ergonomics stable id was not preserved through painter hydration");
   }
+  if (chartView.sceneStableId(0, 1) !== 73n) {
+    throw new Error("chart ergonomics did not preserve a non-sequential transferred stable id");
+  }
   const defaultLine = chartView.gpuTraces.find((gpu) => gpu.trace?.kind === "line")?.trace;
   if (defaultLine?.style?.color !== "rgba(37 99 235 / 1)" || defaultLine.style.width !== 1.5) {
     throw new Error(`Rust line defaults drifted from the shared fixture: ${JSON.stringify(defaultLine?.style)}`);
@@ -1040,7 +1044,8 @@ async function run() {
   }
   const chartDiagnostics = chartView.diagnostics();
   if (!chartDiagnostics || chartDiagnostics.arenaHighWaterBytes < chartPacked.byteLength
-      || chartDiagnostics.memoryHighWaterBytes !== chartDiagnostics.memoryBytes) {
+      || chartDiagnostics.memoryHighWaterBytes !== chartDiagnostics.memoryBytes
+      || chartDiagnostics.mainThreadRecordVisits !== 0 || chartDiagnostics.framedSeries !== 4) {
     throw new Error(`chart ergonomics did not report arena high-water: ${JSON.stringify(chartDiagnostics)}`);
   }
   const updateInput = (stableIdBase) => ({
@@ -1063,6 +1068,9 @@ async function run() {
   }
   if (chart.series.some((series) => series.x.byteLength === 0 || series.y.byteLength === 0)) {
     throw new Error("default chart rendering detached caller-owned arrays");
+  }
+  if (chart.series[0].stableIds.byteLength === 0) {
+    throw new Error("default chart rendering detached caller-owned stable IDs");
   }
   foundationStage = "failed chart update clears painter state";
   try {
@@ -1090,11 +1098,12 @@ async function run() {
   });
   await transferWorker.ready;
   const transferredX = new Float64Array([0.2, 0.8]), transferredY = new Float64Array([0.8, 0.2]);
+  const transferredIds = new BigUint64Array([11n, 17n]);
   foundationStage = "explicit typed-series transfer";
   await transferWorker.compilePrepareSeries(frameWasmChart({
-    width: 320, height: 240, series: [{ kind: "scatter", x: transferredX, y: transferredY }],
+    width: 320, height: 240, series: [{ kind: "scatter", x: transferredX, y: transferredY, stableIds: transferredIds }],
   }), { transfer: true }).result;
-  if (transferredX.byteLength !== 0 || transferredY.byteLength !== 0) {
+  if (transferredX.byteLength !== 0 || transferredY.byteLength !== 0 || transferredIds.byteLength !== 0) {
     throw new Error("explicit typed-series transfer did not detach caller buffers");
   }
   await transferWorker.dispose();

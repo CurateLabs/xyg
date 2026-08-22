@@ -11,6 +11,8 @@ export interface XygWasmChartSeries {
   symbol?: number;
   style?: { fillRgba?: Uint8Array | number[]; strokeRgba?: Uint8Array | number[]; strokeWidth?: number };
   stableIdBase?: bigint | number;
+  /** Exact per-record identities; transferred without a main-thread row scan. */
+  stableIds?: BigUint64Array;
 }
 export interface XygWasmChartCompileInput {
   width: number; height: number; margins?: [number, number, number, number];
@@ -19,7 +21,14 @@ export interface XygWasmChartCompileInput {
   y?: { kind?: XygWasmScaleKind; lo?: number; hi?: number; constant?: number; maskNonpositive?: boolean };
   title?: string; xLabel?: string; yLabel?: string; series: XygWasmChartSeries[];
 }
-export interface XygWasmTypedSeriesRequest { prefix: ArrayBuffer; columns: ArrayBuffer[]; byteLength: number; peakBytes: number }
+export interface XygWasmTypedSeriesRequest {
+  prefix: ArrayBuffer; columns: ArrayBuffer[]; byteLength: number; peakBytes: number;
+  /** Instrumented contract: framing visits descriptors, never records. */
+  framedSeries: number; mainThreadRecordVisits: 0;
+}
+export interface XygWasmChartDiagnostics extends XygWasmDiagnostics {
+  framedSeries: number; mainThreadRecordVisits: 0;
+}
 
 const align8 = (value: number) => (value + 7) & ~7;
 function finite(view: DataView, offset: number, value: number, label: string) {
@@ -46,6 +55,15 @@ function kind(value: XygWasmChartSeriesKind) {
 function column(value: unknown, count: number, label: string) {
   if (!(value instanceof Float64Array) || value.length !== count) throw new TypeError(`${label} must be a Float64Array matching x length`);
   if (!(value.buffer instanceof ArrayBuffer) || value.byteOffset || value.byteLength !== value.buffer.byteLength) throw new TypeError(`${label} must own an exact transferable ArrayBuffer`);
+  return value;
+}
+function stableIdColumn(value: unknown, count: number) {
+  if (!(value instanceof BigUint64Array) || value.length !== count) {
+    throw new TypeError("stableIds must be a BigUint64Array matching x length");
+  }
+  if (!(value.buffer instanceof ArrayBuffer) || value.byteOffset || value.byteLength !== value.buffer.byteLength) {
+    throw new TypeError("stableIds must own an exact transferable ArrayBuffer");
+  }
   return value;
 }
 function rgba(value: Uint8Array | number[] | undefined, label: string) {
@@ -84,7 +102,7 @@ export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSer
   let textOffset = HEADER + input.series.length * DESCRIPTOR;
   bytes.set(title, textOffset); textOffset += title.length; bytes.set(xLabel, textOffset); textOffset += xLabel.length; bytes.set(yLabel, textOffset);
   const columns: ArrayBuffer[] = [], transferred = new Set<ArrayBuffer>(); let dataOffset = prefixLength, records = 0;
-  const add = (value: Float64Array) => {
+  const add = (value: Float64Array | BigUint64Array) => {
     const buffer = value.buffer as ArrayBuffer;
     if (transferred.has(buffer)) throw new TypeError("typed-series columns must own distinct transferable buffers");
     const end = dataOffset + value.byteLength;
@@ -120,6 +138,9 @@ export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSer
     if (diameters) flags |= F.diameters; if (lower) flags |= F.y0; if (upper) flags |= F.y1;
     const fill = rgba(series.style?.fillRgba, "fillRgba"), stroke = rgba(series.style?.strokeRgba, "strokeRgba");
     if (fill) { flags |= F.fill_rgba; bytes.set(fill, base + D.fill_rgba); } if (stroke) { flags |= F.stroke_rgba; bytes.set(stroke, base + D.stroke_rgba); }
+    if (series.stableIdBase !== undefined && series.stableIds !== undefined) {
+      throw new TypeError("stableIdBase and stableIds are mutually exclusive");
+    }
     if (series.stableIdBase !== undefined) { flags |= F.stable_id_base; u64(view, base + D.stable_id_base, series.stableIdBase, "stableIdBase"); }
     view.setUint32(base + D.flags, flags, true);
     if (typeof series.diameter === "number") {
@@ -132,12 +153,17 @@ export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSer
     } else view.setFloat64(base + D.stroke_width, Number.NaN, true);
     view.setUint32(base + D.x, add(x), true); view.setUint32(base + D.y, add(y), true);
     if (lower) view.setUint32(base + D.y0, add(lower), true); if (upper) view.setUint32(base + D.y1, add(upper), true); if (diameters) view.setUint32(base + D.diameters, add(diameters), true);
+    if (series.stableIds !== undefined) {
+      flags |= F.stable_ids;
+      view.setUint32(base + D.stable_ids, add(stableIdColumn(series.stableIds, count)), true);
+      view.setUint32(base + D.flags, flags, true);
+    }
   });
   view.setUint32(H.record_count, records, true);
   const peakBytes = dataOffset * PEAK_INPUT + records * PEAK_RECORD
     + input.series.length * PEAK_SERIES + PEAK_FIXED;
   if (!Number.isSafeInteger(peakBytes)) throw new RangeError("typed-series peak byte estimate overflowed");
-  return { prefix, columns, byteLength: dataOffset, peakBytes };
+  return { prefix, columns, byteLength: dataOffset, peakBytes, framedSeries: input.series.length, mainThreadRecordVisits: 0 };
 }
 
 export interface RenderWasmChartOptions {
@@ -150,7 +176,7 @@ export interface RenderWasmChartOptions {
 export class XygWasmChartHandle {
   private view: XygWasmSceneView | null = null;
   private task: XygWasmTask<XygWasmScenePaint> | null = null;
-  private latest: XygWasmDiagnostics | null = null;
+  private latest: XygWasmChartDiagnostics | null = null;
   private disposed = false;
   constructor(
     private readonly el: HTMLElement,
@@ -164,14 +190,17 @@ export class XygWasmChartHandle {
     const started = performance.now();
     let task: XygWasmTask<XygWasmScenePaint> | null = null;
     try {
-      task = this.worker.compilePrepareSeries(frameWasmChart(chart), {
+      const framed = frameWasmChart(chart);
+      task = this.worker.compilePrepareSeries(framed, {
         transfer: this.transferData,
       });
       this.task = task;
       const prepared = await task.result;
       if (this.disposed || this.task !== task) throw new Error("XYG WASM chart update became stale");
       const next = hydrateWasmPainter(this.el, prepared, { workerPrepareMs: performance.now() - started });
-      this.view?.destroy(); this.view = next; this.latest = prepared; this.task = null;
+      this.view?.destroy(); this.view = next;
+      this.latest = { ...prepared, framedSeries: framed.framedSeries, mainThreadRecordVisits: framed.mainThreadRecordVisits };
+      this.task = null;
       return this;
     } catch (cause) {
       // Only the newest update owns visible-state cleanup. An older cancelled
@@ -183,7 +212,7 @@ export class XygWasmChartHandle {
       throw cause;
     }
   }
-  diagnostics(): XygWasmDiagnostics | null { return this.latest ? { ...this.latest } : null; }
+  diagnostics(): XygWasmChartDiagnostics | null { return this.latest ? { ...this.latest } : null; }
   sceneStableId(traceIndex: number, rowIndex: number): bigint | null {
     if (!this.view) throw new Error("XYG WASM chart has not painted");
     return this.view.sceneStableId(traceIndex, rowIndex);

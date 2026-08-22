@@ -16,7 +16,7 @@
   "default_line_sha256": "250bd206608db92ebf51e6f4b2cef0bebae09531c1df80fdf14d60b0eb138416",
   "primary_legend_sha256": "495eccbc7316895d08b96c2da901ccc3f3976efca0c48414edd8035ca3bbee11",
   "primary_annotations_sha256": "090454c4e029226724ef3ecf38750c5d0525d753fe21ca09753c18dbadafdca7",
-  "wasm_typed_series_v1": {
+  "wasm_typed_series_v2": {
     "magic": "XYTS",
     "scatter_diameter": 8,
     "line_stroke_width": 1.5,
@@ -24,6 +24,7 @@
     "bar_baseline": 0,
     "area_baseline": 0,
     "default_stable_id_base": 1,
+    "arbitrary_stable_ids": [91, 7],
     "joined_series_share_stable_id": true,
     "default_fill_rgba": [37, 99, 235, 255],
     "default_line_stroke_rgba": [37, 99, 235, 255]

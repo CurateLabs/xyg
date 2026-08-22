@@ -2,7 +2,7 @@
 // Do not hand-edit this typed-series wire contract.
 
 pub const SERIES_MAGIC: &[u8; 4] = b"XYTS";
-pub const SERIES_VERSION: u32 = 1;
+pub const SERIES_VERSION: u32 = 2;
 pub const COMPILE_HEADER_BYTES: usize = 192;
 pub const SERIES_DESCRIPTOR_BYTES: usize = 96;
 pub const MAX_SERIES: usize = 4_096;
@@ -52,6 +52,7 @@ pub const DESCRIPTOR_Y: usize = 52;
 pub const DESCRIPTOR_Y0: usize = 56;
 pub const DESCRIPTOR_Y1: usize = 60;
 pub const DESCRIPTOR_DIAMETERS: usize = 64;
+pub const DESCRIPTOR_STABLE_IDS: usize = 68;
 pub const HEADER_FLAG_AUTO_MARGINS: u32 = 1;
 pub const HEADER_FLAG_AUTO_DOMAIN: u32 = 2;
 pub const DESCRIPTOR_FLAG_DIAMETERS: u32 = 1;
@@ -60,14 +61,16 @@ pub const DESCRIPTOR_FLAG_Y1: u32 = 4;
 pub const DESCRIPTOR_FLAG_FILL_RGBA: u32 = 8;
 pub const DESCRIPTOR_FLAG_STROKE_RGBA: u32 = 16;
 pub const DESCRIPTOR_FLAG_STABLE_ID_BASE: u32 = 32;
+pub const DESCRIPTOR_FLAG_STABLE_IDS: u32 = 64;
 pub const KIND_SCATTER: u32 = 0;
 pub const KIND_LINE: u32 = 1;
 pub const KIND_BAR: u32 = 2;
 pub const KIND_AREA: u32 = 3;
 pub const HEADER_FLAG_KNOWN: u32 = HEADER_FLAG_AUTO_MARGINS | HEADER_FLAG_AUTO_DOMAIN;
 pub const DESCRIPTOR_FLAG_KNOWN: u32 = DESCRIPTOR_FLAG_DIAMETERS
-    | DESCRIPTOR_FLAG_Y0
-    | DESCRIPTOR_FLAG_Y1
     | DESCRIPTOR_FLAG_FILL_RGBA
+    | DESCRIPTOR_FLAG_STABLE_ID_BASE
+    | DESCRIPTOR_FLAG_STABLE_IDS
     | DESCRIPTOR_FLAG_STROKE_RGBA
-    | DESCRIPTOR_FLAG_STABLE_ID_BASE;
+    | DESCRIPTOR_FLAG_Y0
+    | DESCRIPTOR_FLAG_Y1;

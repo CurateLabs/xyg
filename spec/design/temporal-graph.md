@@ -71,7 +71,7 @@ Both hosts preserve opaque UUIDs as `(n, 16)`/packed `Uint8Array` values and
 preserve Node `u64`/`i64`
 scalars as `bigint`. The native cancellation endpoint remains callable from
 another thread while frame work is active. Destroy removes the handle first
-and cancels owned work. WASM ABI 8 retains these guarantees through packed
+and cancels owned work. WASM ABI 9 retains these guarantees through packed
 `XYTG` create/frame commands and `XYTF` frame output. It transports typed
 i64/u8/u64 buffers and opaque UUID bytes, never graph or temporal numbers
 through JSON. Rust emits visibility, visible UUID membership, and remapped

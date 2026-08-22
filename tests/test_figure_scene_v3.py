@@ -54,7 +54,7 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
 
 
 def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
-    assert FIXTURE["wasm_typed_series_v1"] == {
+    assert FIXTURE["wasm_typed_series_v2"] == {
         "magic": "XYTS",
         "scatter_diameter": 8,
         "line_stroke_width": 1.5,
@@ -62,6 +62,7 @@ def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
         "bar_baseline": 0,
         "area_baseline": 0,
         "default_stable_id_base": 1,
+        "arbitrary_stable_ids": [91, 7],
         "joined_series_share_stable_id": True,
         "default_fill_rgba": [37, 99, 235, 255],
         "default_line_stroke_rgba": [37, 99, 235, 255],

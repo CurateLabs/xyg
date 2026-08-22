@@ -215,7 +215,9 @@ Allowed:
 - Explicit static Worker/WASM asset loading, bounded memory copies, stable
   status transport, cancellation, trap handling, and disposal.
 - O(series) validation and framing for transferable typed columns. Rust owns
-  per-record expansion, stable identities, and default mark/bar geometry.
+  per-record expansion, stable identities, and default mark/bar geometry. Exact
+  per-record u64 identities remain an attached transferable column; TypeScript
+  does not inspect their values.
 - Generated `XYTS` offsets, flags, and kind codes from the versioned WASM
   manifest; handwritten wire-layout numbers are forbidden in the adapter.
 

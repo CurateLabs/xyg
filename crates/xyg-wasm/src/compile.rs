@@ -424,6 +424,34 @@ fn next_series_f64s(
     Ok(values)
 }
 
+fn next_series_u64s(
+    bytes: &[u8],
+    offset: u32,
+    count: usize,
+    data_start: usize,
+    cursor: &mut usize,
+) -> Result<Vec<u64>, SceneError> {
+    if offset as usize != *cursor || !(offset as usize).is_multiple_of(8) {
+        return Err(SceneError::Length);
+    }
+    let byte_len = count.checked_mul(8).ok_or(SceneError::Limit)?;
+    let end = cursor.checked_add(byte_len).ok_or(SceneError::Limit)?;
+    let raw = bytes.get(*cursor..end).ok_or(SceneError::Length)?;
+    let values = raw
+        .chunks_exact(8)
+        .map(|chunk| {
+            Ok(u64::from_le_bytes(
+                chunk.try_into().map_err(|_| SceneError::Length)?,
+            ))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if *cursor < data_start {
+        return Err(SceneError::Length);
+    }
+    *cursor = end;
+    Ok(values)
+}
+
 /// Expand packed transferable typed-series descriptors in Rust, then compile
 /// through the canonical typed-column path. TypeScript never assigns stable
 /// ids, chooses mark defaults, or performs per-record expansion.
@@ -530,6 +558,9 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         if count == 0 || flags & !DESCRIPTOR_FLAG_KNOWN != 0 {
             return Err(SceneError::Length);
         }
+        if flags & DESCRIPTOR_FLAG_STABLE_ID_BASE != 0 && flags & DESCRIPTOR_FLAG_STABLE_IDS != 0 {
+            return Err(SceneError::Length);
+        }
         let stable_base = if flags & DESCRIPTOR_FLAG_STABLE_ID_BASE != 0 {
             u64_at(bytes, base + DESCRIPTOR_STABLE_ID_BASE)?
         } else {
@@ -540,9 +571,6 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else {
             count as u64
         };
-        next_default_id = stable_base
-            .checked_add(identity_count)
-            .ok_or(SceneError::Limit)?;
         let scalar_diameter = f64_at(bytes, base + DESCRIPTOR_DIAMETER)?;
         let authored_stroke = f64_at(bytes, base + DESCRIPTOR_STROKE_WIDTH)?;
         if flags & DESCRIPTOR_FLAG_FILL_RGBA != 0 {
@@ -623,6 +651,31 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         } else {
             None
         };
+        let authored_stable_ids = if flags & DESCRIPTOR_FLAG_STABLE_IDS != 0 {
+            Some(next_series_u64s(
+                bytes,
+                u32_at(bytes, base + DESCRIPTOR_STABLE_IDS)?,
+                count,
+                data_start,
+                &mut data_cursor,
+            )?)
+        } else {
+            None
+        };
+        next_default_id = if let Some(ids) = &authored_stable_ids {
+            ids.iter()
+                .copied()
+                .max()
+                .unwrap_or(0)
+                .checked_add(1)
+                .ok_or(SceneError::Limit)?
+                .max(next_default_id)
+        } else {
+            stable_base
+                .checked_add(identity_count)
+                .ok_or(SceneError::Limit)?
+                .max(next_default_id)
+        };
         let bar_half_width = if kind == KIND_BAR {
             Some(default_bar_half_width(&xs, domain_x_lo, domain_x_hi)?)
         } else {
@@ -630,7 +683,9 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
         };
         for index in 0..count {
             kinds.push(kind as u8);
-            stable_ids.push(if matches!(kind, KIND_LINE | KIND_AREA) {
+            stable_ids.push(if let Some(ids) = &authored_stable_ids {
+                ids[index]
+            } else if matches!(kind, KIND_LINE | KIND_AREA) {
                 stable_base
             } else {
                 stable_base
@@ -925,6 +980,34 @@ mod tests {
         wrong_header[8..12].copy_from_slice(&0u32.to_le_bytes());
         assert!(matches!(
             compile_scene_request(&wrong_header, usize::MAX),
+            Err(SceneError::Length)
+        ));
+    }
+
+    #[test]
+    fn typed_series_preserves_transferred_per_record_stable_ids() {
+        let mut request = pack_typed_series();
+        let descriptor = COMPILE_HEADER_BYTES;
+        let ids_offset = request.len();
+        request[descriptor + DESCRIPTOR_FLAGS..descriptor + DESCRIPTOR_FLAGS + 4]
+            .copy_from_slice(&DESCRIPTOR_FLAG_STABLE_IDS.to_le_bytes());
+        request[descriptor + DESCRIPTOR_STABLE_IDS..descriptor + DESCRIPTOR_STABLE_IDS + 4]
+            .copy_from_slice(&(ids_offset as u32).to_le_bytes());
+        request.extend_from_slice(&91u64.to_le_bytes());
+        request.extend_from_slice(&7u64.to_le_bytes());
+
+        let compiled = compile_scene_request(&request, usize::MAX).unwrap();
+        let first = scene::SCENE_BATCH_HEADER_BYTES + 16;
+        let second = first + scene::SCENE_BATCH_RECORD_BYTES;
+        assert_eq!(u64_at(&compiled.bytes, first + 8).unwrap(), 91);
+        assert_eq!(u64_at(&compiled.bytes, second + 8).unwrap(), 7);
+
+        let mut conflicting = request;
+        let flags = DESCRIPTOR_FLAG_STABLE_IDS | DESCRIPTOR_FLAG_STABLE_ID_BASE;
+        conflicting[descriptor + DESCRIPTOR_FLAGS..descriptor + DESCRIPTOR_FLAGS + 4]
+            .copy_from_slice(&flags.to_le_bytes());
+        assert!(matches!(
+            compile_scene_request(&conflicting, usize::MAX),
             Err(SceneError::Length)
         ));
     }
