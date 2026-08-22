@@ -310,6 +310,11 @@ policy, custom fonts, dashed grids, and advanced label placement remain
 unsupported and fail closed at host compilation. Visibility is the existing
 public resolved-style contract: zero width/length and transparent paint hide
 line, tick, grid, or text independently, including `show=False` shorthands.
+Rust omits fully invisible grid/axis primitives from SVG and native raster
+lowering while retaining backgrounds, marks, titles, and legends. Paint alpha
+is never a coordinate-system discriminator: a Cartesian Scene with hidden
+chrome remains Cartesian. Polar projection and polar chrome require an explicit
+versioned Scene semantic and remain rejected by the v10 host support predicate.
 
 Python and Node mechanically pack the same 200-byte block and tick arrays;
 their non-default fixture is exact-byte identical. Rust SVG and raster consume

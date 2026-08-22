@@ -546,6 +546,9 @@ F3, still pending (above).
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;
+  fully hidden Cartesian chrome is omitted by Rust lowering without changing
+  coordinate semantics—polar Scene projection remains an explicit unsupported
+  boundary rather than an inference from transparent paint;
   unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. ABI 84 adds a versioned
   authored-feature presence predicate whose ordered actionable diagnostic is

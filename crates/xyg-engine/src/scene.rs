@@ -408,6 +408,26 @@ pub struct SceneAxisChromeStyle {
 }
 
 impl SceneAxisChromeStyle {
+    #[inline]
+    fn visible_stroke(rgba: [u8; 4], width: f64) -> bool {
+        rgba[3] != 0 && width > 0.0
+    }
+
+    fn has_visible_grid(self) -> bool {
+        Self::visible_stroke(self.grid_rgba, self.grid_width)
+            || Self::visible_stroke(self.minor_grid_rgba, self.minor_grid_width)
+    }
+
+    fn has_visible_axis(self) -> bool {
+        Self::visible_stroke(self.axis_rgba, self.axis_width)
+            || (self.tick_sides != 0
+                && self.tick_length > 0.0
+                && Self::visible_stroke(self.tick_rgba, self.tick_width))
+            || (self.minor_tick_length > 0.0
+                && Self::visible_stroke(self.minor_tick_rgba, self.minor_tick_width))
+            || (self.tick_label_sides != 0 && self.label_rgba[3] != 0)
+    }
+
     fn default_style(side: AxisSide) -> Self {
         Self {
             side,
@@ -3043,6 +3063,52 @@ impl SceneDocument {
         out.push_str("</g>");
     }
 
+    fn append_svg_grid(&self, out: &mut String, x_ticks: &AxisTicks, y_ticks: &AxisTicks) {
+        for (ticks, scale, style, is_x) in [
+            (x_ticks, self.x_scale, self.chrome.x_axis, true),
+            (y_ticks, self.y_scale, self.chrome.y_axis, false),
+        ] {
+            if SceneAxisChromeStyle::visible_stroke(style.grid_rgba, style.grid_width) {
+                for value in &ticks.labeled {
+                    let p = scale.pixel(*value);
+                    let (x1, y1, x2, y2) = if is_x {
+                        (p, self.layout.top, p, self.layout.bottom)
+                    } else {
+                        (self.layout.left, p, self.layout.right, p)
+                    };
+                    push_svg_line(
+                        out,
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        &rgba_css(style.grid_rgba),
+                        style.grid_width,
+                    );
+                }
+            }
+            if SceneAxisChromeStyle::visible_stroke(style.minor_grid_rgba, style.minor_grid_width) {
+                for value in Self::minor_ticks(ticks) {
+                    let p = scale.pixel(value);
+                    let (x1, y1, x2, y2) = if is_x {
+                        (p, self.layout.top, p, self.layout.bottom)
+                    } else {
+                        (self.layout.left, p, self.layout.right, p)
+                    };
+                    push_svg_line(
+                        out,
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        &rgba_css(style.minor_grid_rgba),
+                        style.minor_grid_width,
+                    );
+                }
+            }
+        }
+    }
+
     pub fn to_svg(&self) -> String {
         let mut out = String::with_capacity(self.records.len().saturating_mul(96));
         out.push_str("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"");
@@ -3094,7 +3160,6 @@ impl SceneDocument {
             out.push_str(&rgba_css(paint));
             out.push_str("\"/>");
         }
-        out.push_str("<g data-xy-chrome=\"grid\">");
         let x_ticks = self.resolved_axis_ticks(true).unwrap_or(AxisTicks {
             ticks: Vec::new(),
             labeled: Vec::new(),
@@ -3105,55 +3170,12 @@ impl SceneDocument {
             labeled: Vec::new(),
             step: 1.0,
         });
-        for value in &x_ticks.labeled {
-            let x = self.x_scale.pixel(*value);
-            push_svg_line(
-                &mut out,
-                x,
-                self.layout.top,
-                x,
-                self.layout.bottom,
-                &rgba_css(self.chrome.x_axis.grid_rgba),
-                self.chrome.x_axis.grid_width,
-            );
+        if self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid() {
+            out.push_str("<g data-xy-chrome=\"grid\">");
+            self.append_svg_grid(&mut out, &x_ticks, &y_ticks);
+            out.push_str("</g>");
         }
-        for value in Self::minor_ticks(&x_ticks) {
-            let x = self.x_scale.pixel(value);
-            push_svg_line(
-                &mut out,
-                x,
-                self.layout.top,
-                x,
-                self.layout.bottom,
-                &rgba_css(self.chrome.x_axis.minor_grid_rgba),
-                self.chrome.x_axis.minor_grid_width,
-            );
-        }
-        for value in &y_ticks.labeled {
-            let y = self.y_scale.pixel(*value);
-            push_svg_line(
-                &mut out,
-                self.layout.left,
-                y,
-                self.layout.right,
-                y,
-                &rgba_css(self.chrome.y_axis.grid_rgba),
-                self.chrome.y_axis.grid_width,
-            );
-        }
-        for value in Self::minor_ticks(&y_ticks) {
-            let y = self.y_scale.pixel(value);
-            push_svg_line(
-                &mut out,
-                self.layout.left,
-                y,
-                self.layout.right,
-                y,
-                &rgba_css(self.chrome.y_axis.minor_grid_rgba),
-                self.chrome.y_axis.minor_grid_width,
-            );
-        }
-        out.push_str("</g><g clip-path=\"url(#xy-scene-plot)\">");
+        out.push_str("<g clip-path=\"url(#xy-scene-plot)\">");
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -3322,17 +3344,96 @@ impl SceneDocument {
                 }
             }
         }
-        out.push_str("</g><g data-xy-chrome=\"axes\">");
-        for (is_x, ticks, scale, style) in [
-            (true, &x_ticks, self.x_scale, self.chrome.x_axis),
-            (false, &y_ticks, self.y_scale, self.chrome.y_axis),
-        ] {
-            let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
-            let (minor_in, minor_out) = tick_span(style.minor_direction, style.minor_tick_length);
-            for side_code in 0..2 {
-                if style.tick_sides & (1 << side_code) != 0 {
-                    for value in &ticks.labeled {
-                        let p = scale.pixel(*value);
+        out.push_str("</g>");
+        if self.chrome.x_axis.has_visible_axis() || self.chrome.y_axis.has_visible_axis() {
+            out.push_str("<g data-xy-chrome=\"axes\">");
+            for (is_x, ticks, scale, style) in [
+                (true, &x_ticks, self.x_scale, self.chrome.x_axis),
+                (false, &y_ticks, self.y_scale, self.chrome.y_axis),
+            ] {
+                let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
+                let (minor_in, minor_out) =
+                    tick_span(style.minor_direction, style.minor_tick_length);
+                for side_code in 0..2 {
+                    if style.tick_sides & (1 << side_code) != 0
+                        && style.tick_length > 0.0
+                        && SceneAxisChromeStyle::visible_stroke(style.tick_rgba, style.tick_width)
+                    {
+                        for value in &ticks.labeled {
+                            let p = scale.pixel(*value);
+                            let edge = if is_x {
+                                if side_code == 0 {
+                                    self.layout.bottom
+                                } else {
+                                    self.layout.top
+                                }
+                            } else if side_code == 0 {
+                                self.layout.left
+                            } else {
+                                self.layout.right
+                            };
+                            let sign = if side_code == 0 { 1.0 } else { -1.0 };
+                            let (x1, y1, x2, y2) = if is_x {
+                                (p, edge - sign * major_in, p, edge + sign * major_out)
+                            } else {
+                                (edge - sign * major_out, p, edge + sign * major_in, p)
+                            };
+                            push_svg_line(
+                                &mut out,
+                                x1,
+                                y1,
+                                x2,
+                                y2,
+                                &rgba_css(style.tick_rgba),
+                                style.tick_width,
+                            );
+                        }
+                    }
+                    if style.tick_label_sides & (1 << side_code) != 0 && style.label_rgba[3] != 0 {
+                        for value in &ticks.labeled {
+                            let p = scale.pixel(*value);
+                            let edge = if is_x {
+                                if side_code == 0 {
+                                    self.layout.bottom + 16.0
+                                } else {
+                                    self.layout.top - 7.0
+                                }
+                            } else if side_code == 0 {
+                                self.layout.left - 8.0
+                            } else {
+                                self.layout.right + 8.0
+                            };
+                            out.push_str("<text x=\"");
+                            push_num(&mut out, if is_x { p } else { edge });
+                            out.push_str("\" y=\"");
+                            push_num(&mut out, if is_x { edge } else { p + 4.0 });
+                            out.push_str("\" fill=\"");
+                            out.push_str(&rgba_css(style.label_rgba));
+                            out.push_str("\" font-size=\"");
+                            push_num(&mut out, self.chrome.label_font_size);
+                            out.push_str("\" text-anchor=\"");
+                            out.push_str(if is_x {
+                                "middle"
+                            } else if side_code == 0 {
+                                "end"
+                            } else {
+                                "start"
+                            });
+                            out.push_str("\">");
+                            out.push_str(&format_tick(*value, ticks.step, scale.kind));
+                            out.push_str("</text>");
+                        }
+                    }
+                }
+                let side_code = style.side as u8;
+                if style.minor_tick_length > 0.0
+                    && SceneAxisChromeStyle::visible_stroke(
+                        style.minor_tick_rgba,
+                        style.minor_tick_width,
+                    )
+                {
+                    for value in Self::minor_ticks(ticks) {
+                        let p = scale.pixel(value);
                         let edge = if is_x {
                             if side_code == 0 {
                                 self.layout.bottom
@@ -3346,9 +3447,9 @@ impl SceneDocument {
                         };
                         let sign = if side_code == 0 { 1.0 } else { -1.0 };
                         let (x1, y1, x2, y2) = if is_x {
-                            (p, edge - sign * major_in, p, edge + sign * major_out)
+                            (p, edge - sign * minor_in, p, edge + sign * minor_out)
                         } else {
-                            (edge - sign * major_out, p, edge + sign * major_in, p)
+                            (edge - sign * minor_out, p, edge + sign * minor_in, p)
                         };
                         push_svg_line(
                             &mut out,
@@ -3356,104 +3457,41 @@ impl SceneDocument {
                             y1,
                             x2,
                             y2,
-                            &rgba_css(style.tick_rgba),
-                            style.tick_width,
+                            &rgba_css(style.minor_tick_rgba),
+                            style.minor_tick_width,
                         );
                     }
                 }
-                if style.tick_label_sides & (1 << side_code) != 0 {
-                    for value in &ticks.labeled {
-                        let p = scale.pixel(*value);
-                        let edge = if is_x {
-                            if side_code == 0 {
-                                self.layout.bottom + 16.0
-                            } else {
-                                self.layout.top - 7.0
-                            }
-                        } else if side_code == 0 {
-                            self.layout.left - 8.0
-                        } else {
-                            self.layout.right + 8.0
-                        };
-                        out.push_str("<text x=\"");
-                        push_num(&mut out, if is_x { p } else { edge });
-                        out.push_str("\" y=\"");
-                        push_num(&mut out, if is_x { edge } else { p + 4.0 });
-                        out.push_str("\" fill=\"");
-                        out.push_str(&rgba_css(style.label_rgba));
-                        out.push_str("\" font-size=\"");
-                        push_num(&mut out, self.chrome.label_font_size);
-                        out.push_str("\" text-anchor=\"");
-                        out.push_str(if is_x {
-                            "middle"
-                        } else if side_code == 0 {
-                            "end"
-                        } else {
-                            "start"
-                        });
-                        out.push_str("\">");
-                        out.push_str(&format_tick(*value, ticks.step, scale.kind));
-                        out.push_str("</text>");
-                    }
-                }
-            }
-            let side_code = style.side as u8;
-            for value in Self::minor_ticks(ticks) {
-                let p = scale.pixel(value);
                 let edge = if is_x {
-                    if side_code == 0 {
+                    if style.side == AxisSide::Low {
                         self.layout.bottom
                     } else {
                         self.layout.top
                     }
-                } else if side_code == 0 {
+                } else if style.side == AxisSide::Low {
                     self.layout.left
                 } else {
                     self.layout.right
                 };
-                let sign = if side_code == 0 { 1.0 } else { -1.0 };
                 let (x1, y1, x2, y2) = if is_x {
-                    (p, edge - sign * minor_in, p, edge + sign * minor_out)
+                    (self.layout.left, edge, self.layout.right, edge)
                 } else {
-                    (edge - sign * minor_out, p, edge + sign * minor_in, p)
+                    (edge, self.layout.top, edge, self.layout.bottom)
                 };
-                push_svg_line(
-                    &mut out,
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    &rgba_css(style.minor_tick_rgba),
-                    style.minor_tick_width,
-                );
-            }
-            let edge = if is_x {
-                if style.side == AxisSide::Low {
-                    self.layout.bottom
-                } else {
-                    self.layout.top
+                if SceneAxisChromeStyle::visible_stroke(style.axis_rgba, style.axis_width) {
+                    push_svg_line(
+                        &mut out,
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        &rgba_css(style.axis_rgba),
+                        style.axis_width,
+                    );
                 }
-            } else if style.side == AxisSide::Low {
-                self.layout.left
-            } else {
-                self.layout.right
-            };
-            let (x1, y1, x2, y2) = if is_x {
-                (self.layout.left, edge, self.layout.right, edge)
-            } else {
-                (edge, self.layout.top, edge, self.layout.bottom)
-            };
-            push_svg_line(
-                &mut out,
-                x1,
-                y1,
-                x2,
-                y2,
-                &rgba_css(style.axis_rgba),
-                style.axis_width,
-            );
+            }
+            out.push_str("</g>");
         }
-        out.push_str("</g>");
         push_svg_chrome_text(&mut out, self);
         self.append_svg_legend(&mut out);
         out.push_str("</svg>");
@@ -3468,45 +3506,65 @@ impl SceneDocument {
         x_ticks: &AxisTicks,
         y_ticks: &AxisTicks,
     ) -> Result<(), SceneError> {
-        for value in &x_ticks.labeled {
-            let x = self.x_scale.pixel(*value);
-            push_raster_stroke(
-                out,
-                [(x, self.layout.top), (x, self.layout.bottom)],
-                self.chrome.x_axis.grid_width,
-                self.chrome.x_axis.grid_rgba,
-                scale,
-            )?;
+        if SceneAxisChromeStyle::visible_stroke(
+            self.chrome.x_axis.grid_rgba,
+            self.chrome.x_axis.grid_width,
+        ) {
+            for value in &x_ticks.labeled {
+                let x = self.x_scale.pixel(*value);
+                push_raster_stroke(
+                    out,
+                    [(x, self.layout.top), (x, self.layout.bottom)],
+                    self.chrome.x_axis.grid_width,
+                    self.chrome.x_axis.grid_rgba,
+                    scale,
+                )?;
+            }
         }
-        for value in Self::minor_ticks(x_ticks) {
-            let x = self.x_scale.pixel(value);
-            push_raster_stroke(
-                out,
-                [(x, self.layout.top), (x, self.layout.bottom)],
-                self.chrome.x_axis.minor_grid_width,
-                self.chrome.x_axis.minor_grid_rgba,
-                scale,
-            )?;
+        if SceneAxisChromeStyle::visible_stroke(
+            self.chrome.x_axis.minor_grid_rgba,
+            self.chrome.x_axis.minor_grid_width,
+        ) {
+            for value in Self::minor_ticks(x_ticks) {
+                let x = self.x_scale.pixel(value);
+                push_raster_stroke(
+                    out,
+                    [(x, self.layout.top), (x, self.layout.bottom)],
+                    self.chrome.x_axis.minor_grid_width,
+                    self.chrome.x_axis.minor_grid_rgba,
+                    scale,
+                )?;
+            }
         }
-        for value in &y_ticks.labeled {
-            let y = self.y_scale.pixel(*value);
-            push_raster_stroke(
-                out,
-                [(self.layout.left, y), (self.layout.right, y)],
-                self.chrome.y_axis.grid_width,
-                self.chrome.y_axis.grid_rgba,
-                scale,
-            )?;
+        if SceneAxisChromeStyle::visible_stroke(
+            self.chrome.y_axis.grid_rgba,
+            self.chrome.y_axis.grid_width,
+        ) {
+            for value in &y_ticks.labeled {
+                let y = self.y_scale.pixel(*value);
+                push_raster_stroke(
+                    out,
+                    [(self.layout.left, y), (self.layout.right, y)],
+                    self.chrome.y_axis.grid_width,
+                    self.chrome.y_axis.grid_rgba,
+                    scale,
+                )?;
+            }
         }
-        for value in Self::minor_ticks(y_ticks) {
-            let y = self.y_scale.pixel(value);
-            push_raster_stroke(
-                out,
-                [(self.layout.left, y), (self.layout.right, y)],
-                self.chrome.y_axis.minor_grid_width,
-                self.chrome.y_axis.minor_grid_rgba,
-                scale,
-            )?;
+        if SceneAxisChromeStyle::visible_stroke(
+            self.chrome.y_axis.minor_grid_rgba,
+            self.chrome.y_axis.minor_grid_width,
+        ) {
+            for value in Self::minor_ticks(y_ticks) {
+                let y = self.y_scale.pixel(value);
+                push_raster_stroke(
+                    out,
+                    [(self.layout.left, y), (self.layout.right, y)],
+                    self.chrome.y_axis.minor_grid_width,
+                    self.chrome.y_axis.minor_grid_rgba,
+                    scale,
+                )?;
+            }
         }
         Ok(())
     }
@@ -3548,10 +3606,15 @@ impl SceneDocument {
             } else {
                 [(edge, self.layout.top), (edge, self.layout.bottom)]
             };
-            push_raster_stroke(out, spine, style.axis_width, style.axis_rgba, scale)?;
+            if SceneAxisChromeStyle::visible_stroke(style.axis_rgba, style.axis_width) {
+                push_raster_stroke(out, spine, style.axis_width, style.axis_rgba, scale)?;
+            }
             let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
             for side_code in 0..2 {
-                if style.tick_sides & (1 << side_code) != 0 {
+                if style.tick_sides & (1 << side_code) != 0
+                    && style.tick_length > 0.0
+                    && SceneAxisChromeStyle::visible_stroke(style.tick_rgba, style.tick_width)
+                {
                     let tick_edge = if is_x {
                         if side_code == 0 {
                             self.layout.bottom
@@ -3587,23 +3650,30 @@ impl SceneDocument {
             } else {
                 -1.0
             };
-            for value in Self::minor_ticks(ticks) {
-                let p = axis_scale.pixel(value);
-                let segment = if is_x {
-                    [(p, edge - sign * minor_in), (p, edge + sign * minor_out)]
-                } else {
-                    [(edge - sign * minor_out, p), (edge + sign * minor_in, p)]
-                };
-                push_raster_stroke(
-                    out,
-                    segment,
-                    style.minor_tick_width,
+            if style.minor_tick_length > 0.0
+                && SceneAxisChromeStyle::visible_stroke(
                     style.minor_tick_rgba,
-                    scale,
-                )?;
+                    style.minor_tick_width,
+                )
+            {
+                for value in Self::minor_ticks(ticks) {
+                    let p = axis_scale.pixel(value);
+                    let segment = if is_x {
+                        [(p, edge - sign * minor_in), (p, edge + sign * minor_out)]
+                    } else {
+                        [(edge - sign * minor_out, p), (edge + sign * minor_in, p)]
+                    };
+                    push_raster_stroke(
+                        out,
+                        segment,
+                        style.minor_tick_width,
+                        style.minor_tick_rgba,
+                        scale,
+                    )?;
+                }
             }
             for side_code in 0..2 {
-                if style.tick_label_sides & (1 << side_code) == 0 {
+                if style.tick_label_sides & (1 << side_code) == 0 || style.label_rgba[3] == 0 {
                     continue;
                 }
                 for value in &ticks.labeled {
@@ -6197,6 +6267,78 @@ mod tests {
         assert!(svg.contains("Hello"));
         assert!(svg.contains("data-xy-chrome=\"x-label\""));
         assert!(svg.contains("data-xy-chrome=\"y-label\""));
+    }
+
+    #[test]
+    fn explicit_hidden_cartesian_chrome_is_not_emitted_or_mistaken_for_polar() {
+        let layout = PlotLayout::new(200.0, 120.0, 40.0, 20.0, 20.0, 30.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let mut chrome = SceneChromeStyle::default();
+        for axis in [&mut chrome.x_axis, &mut chrome.y_axis] {
+            axis.tick_sides = 0;
+            axis.tick_label_sides = 0;
+            axis.axis_rgba[3] = 0;
+            axis.grid_rgba[3] = 0;
+            axis.minor_grid_rgba[3] = 0;
+            axis.minor_tick_rgba[3] = 0;
+            axis.label_rgba[3] = 0;
+            axis.axis_width = 0.0;
+            axis.grid_width = 0.0;
+            axis.tick_width = 0.0;
+            axis.tick_length = 0.0;
+            axis.minor_grid_width = 0.0;
+            axis.minor_tick_width = 0.0;
+            axis.minor_tick_length = 0.0;
+        }
+        let encoded = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            chrome,
+            SceneChromeText::from_parts("Cartesian title", "", "").unwrap(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(!svg.contains("data-xy-chrome=\"grid\""));
+        assert!(!svg.contains("data-xy-chrome=\"axes\""));
+        assert!(svg.contains("data-xy-chrome=\"title\""));
+        assert!(svg.contains("Cartesian title"));
+        assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
     }
 
     #[test]
