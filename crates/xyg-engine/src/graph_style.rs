@@ -1284,6 +1284,7 @@ fn compound_hierarchy(
 /// or LOD policy to a host. The complete forest and stable-ID plane are
 /// validated before `out` changes; aggregate representations refuse source-ID
 /// transitions because their identities are not one-to-one with source nodes.
+#[allow(clippy::too_many_arguments)] // complete validated public transition planes
 pub fn compound_collapse_transition(
     node_ids: &[u64],
     parents: &[u64],
