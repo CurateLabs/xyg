@@ -939,6 +939,7 @@ def test_shared_host_loss_restores_every_client_and_zoom(tmp_path: Path) -> None
 def test_shared_glhost_source_contract() -> None:
     host = (ROOT / "js/src/42_glhost.ts").read_text(encoding="utf-8")
     chartview = (ROOT / "js/src/50_chartview.ts").read_text(encoding="utf-8")
+    dashboard = (ROOT / "js/src/49_wasm_dashboard.ts").read_text(encoding="utf-8")
 
     # Document identity owns the singleton, and releasing the final registered
     # client removes it so a later chart cannot receive a disposed host.
@@ -996,6 +997,27 @@ def test_shared_glhost_source_contract() -> None:
     assert "host.release(this);" in destroy
     assert "loseExt.loseContext();" in destroy
     assert destroy.index("if (this._glHost)") < destroy.index("loseExt.loseContext();")
+
+    # Automatic admission observes measurements only. It coalesces changes,
+    # serializes Rust plans, and delegates every retain/evict decision to the
+    # same packed XYDP boundary used by explicit application.
+    for marker in (
+        "subscribeDashboardResources(listener: () => void)",
+        "dashboardResourceChanged(client: GLHostClient)",
+        "this._dashboardRevision += 1;",
+        "this._notifyDashboardListeners();",
+    ):
+        assert marker in host, f"automatic dashboard lifecycle marker missing: {marker}"
+    for marker in (
+        "watchWasmDashboardResourceBudget(",
+        "await applyWasmDashboardResourceBudget(worker, host, budgetBytes);",
+        "if (running) { rerun = true; return; }",
+        "const unsubscribe = host.subscribeDashboardResources(request);",
+        "unsubscribe();",
+    ):
+        assert marker in dashboard, f"automatic Rust admission marker missing: {marker}"
+    assert "watchDashboardResourceBudget(worker, budgetBytes)" in chartview
+    assert "dashboardResourceChanged(this)" in chartview
 
 
 def test_shared_glhost_texture_unit_reset_contract() -> None:

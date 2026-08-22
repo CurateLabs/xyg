@@ -889,6 +889,13 @@ only after every pass is independently state-complete. Before rendering a client
 host binds that client's target and establishes the viewport, scissor, and WebGL state
 required by the chart; client switches cannot rely on state left by the previous chart.
 
+Shared hosts may opt into automatic derived-resource admission with one bounded
+Rust `XYDP` coordinator. Client registration/removal, visibility, interaction,
+and measured allocation changes coalesce into serialized plans; a change during
+an in-flight plan requests one fresh snapshot afterward. TypeScript only reports
+measurements and applies the returned retain bits. It never duplicates Rust's
+priority ordering, and stale snapshots remain non-mutating.
+
 A loss of the shared context is host-wide. The `GLHost` restores or replaces its
 detached context, fullscreen quad, and empty shader cache, then directs every client to
 rebuild its programs and per-chart render and pick resources from CPU-backed scene

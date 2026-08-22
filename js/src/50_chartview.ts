@@ -5,7 +5,7 @@ import { angularTicks, categoryTicks, fmtAxis, fmtGeneral, fmtLinear, fmtLog, fm
 import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, RIBBON_FS, RIBBON_STEPS, RIBBON_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
 import { acquireGLHost } from "./42_glhost";
 import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
-import { applyWasmDashboardResourceBudget } from "./49_wasm_dashboard";
+import { applyWasmDashboardResourceBudget, watchWasmDashboardResourceBudget } from "./49_wasm_dashboard";
 import { markOf } from "./55_marks";
 
 // ---------------------------------------------------------------------------
@@ -2264,7 +2264,9 @@ export class ChartView {
     this._ctxIo = new IntersectionObserver(
       (entries) => {
         const entry = entries[entries.length - 1];
+        const wasVisible = this._ctxVisible;
         this._ctxVisible = entry.isIntersecting || entry.intersectionRatio > 0;
+        if (this._ctxVisible !== wasVisible) this._glHost?.dashboardResourceChanged(this);
         if (this._ctxVisible) {
           this._ctxSeenSeq = XY_CONTEXT_GOVERNOR.seq++;
           if (this._glLost && !this._destroyed) this._recoverContext();
@@ -5094,6 +5096,10 @@ export class ChartView {
     return applyWasmDashboardResourceBudget(worker, this._glHost, budgetBytes);
   }
 
+  watchDashboardResourceBudget(worker, budgetBytes) {
+    return watchWasmDashboardResourceBudget(worker, this._glHost, budgetBytes);
+  }
+
   _applyDashboardResidency(retained) {
     if (retained || !this.gl || !this.pickTex) return;
     if (this.pickFbo) this.gl.deleteFramebuffer(this.pickFbo);
@@ -5103,6 +5109,7 @@ export class ChartView {
     this._pickW = 0;
     this._pickH = 0;
     this._pickDirty = true;
+    this._glHost?.dashboardResourceChanged(this);
   }
 
   _allocPickTex() {
@@ -5116,6 +5123,7 @@ export class ChartView {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     this._pickW = this.canvas.width;
     this._pickH = this.canvas.height;
+    this._glHost?.dashboardResourceChanged(this);
   }
 
   // -- drawing --------------------------------------------------------------
@@ -8107,6 +8115,7 @@ export class ChartView {
       const hadHover = this._hoverId !== -1;
       this._hoverId = -1;
       this._hoverTarget = null;
+      if (hadHover) this._glHost?.dashboardResourceChanged(this);
       this._lastHoverXY = null;
       this._pickSeq = (this._pickSeq || 0) + 1;
       this._hideTooltip();
@@ -8121,6 +8130,7 @@ export class ChartView {
       const hadHover = this._hoverId !== -1;
       this._hoverId = -1;
       this._hoverTarget = null;
+      if (hadHover) this._glHost?.dashboardResourceChanged(this);
       this._lastHoverXY = null;
       this._pickSeq = (this._pickSeq || 0) + 1;
       this._hideTooltip();
@@ -8143,6 +8153,7 @@ export class ChartView {
     }
     this._hoverId = id;
     this._hoverTarget = hit;
+    this._glHost?.dashboardResourceChanged(this);
     this._showTooltip(hit, e.clientX, e.clientY);
     this._drawKeepPick();
   }
