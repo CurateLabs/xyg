@@ -75,9 +75,11 @@ Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
 compatibility renderer until Rust owns every remaining layout/gutter and Scene
 record. Scene v10 now covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
-  single-column primary static legend for named constant-style traces; extra
-  legends, colorbars, annotations, custom tick strings, and advanced text layout remain
-  loud unsupported boundaries. ABI 84's versioned support predicate makes the
+  single-column primary static legend for named constant-style traces, plus
+  rule, band, and unlabeled marker annotations. Extra legends, colorbars,
+  annotation labels/callouts/arrows and other deferred annotation forms, custom
+  tick strings, and advanced text layout remain loud unsupported boundaries.
+  ABI 84's versioned support predicate makes the
   ordered `XYG_SCENE_UNSUPPORTED_*` reason Rust-owned and byte-identical across
   Python and Node instead of allowing host-specific fallback policy. Both host
   compilers route real polar, custom-font, CSS/class, and normalized gradient

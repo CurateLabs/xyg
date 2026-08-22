@@ -34,6 +34,18 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.throws(() => browserCss.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
   const gradient = new Figure(); gradient.bar([0], [1]); gradient.traces[0].style.fill = { type: "linear", colors: ["#000", "#fff"] };
   assert.throws(() => gradient.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
+  for (const color of [
+    { mode: "continuous", values: new Float64Array([0, 1]) },
+    { mode: "direct_rgba", rgba: new Uint8Array(8) },
+    { mode: "constant" },
+  ]) {
+    const colorChannel = new Figure(); colorChannel.scatter([0, 1], [0, 1]);
+    colorChannel.traces[0].color = color;
+    assert.throws(() => colorChannel.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
+  }
+  const constantColor = new Figure(); constantColor.scatter([0], [0]);
+  constantColor.traces[0].color = { mode: "constant", color: "#3987e5" };
+  assert.doesNotThrow(() => constantColor.toScene());
 });
 
 test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture", () => {

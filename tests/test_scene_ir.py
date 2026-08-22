@@ -11,6 +11,7 @@ import pytest
 from xyg import _native, _svg
 from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3
+from xyg.channels import ColorChannel
 
 EXPECTED_SCATTER = (
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" '
@@ -49,6 +50,15 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     browser_css.marker(0.5, 0.5, class_name="browser-only")
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_BROWSER_CSS"):
         browser_css.to_scene()
+
+    data_color = Figure().scatter([0.0, 1.0], [0.0, 1.0], color=[0.0, 1.0])
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
+        data_color.to_scene()
+
+    missing_constant = Figure().scatter([0.0], [0.0])
+    missing_constant.traces[0].color_ch = ColorChannel(mode="constant", constant=None)
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
+        missing_constant.to_scene()
 
 
 def test_scene_v10_primary_annotations_are_canonical_and_ordered() -> None:

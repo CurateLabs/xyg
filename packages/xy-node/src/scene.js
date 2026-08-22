@@ -472,6 +472,11 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   if ((figure.traces ?? []).some((trace) => (
     trace.color_target != null
     || (trace.style?.fill != null && typeof trace.style.fill === "object")
+    || (
+      trace.color != null
+      && typeof trace.color === "object"
+      && (trace.color.mode !== "constant" || trace.color.color == null)
+    )
   ))) features |= 1n << 3n;
   if (figure.colorbarOptions ?? figure.colorbar_options) features |= 1n << 4n;
   if ((figure.extraLegends ?? figure.extra_legends ?? []).length) features |= 1n << 5n;

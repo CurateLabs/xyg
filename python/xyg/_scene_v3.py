@@ -373,6 +373,10 @@ def figure_scene(
     if any(
         isinstance((getattr(trace, "style", None) or {}).get("fill"), dict)
         or getattr(trace, "color2_ch", None) is not None
+        or (
+            getattr(trace, "color_ch", None) is not None
+            and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
+        )
         for trace in figure.traces
     ):
         features |= 1 << 3
