@@ -30,6 +30,13 @@ export interface GLHostDashboardSnapshot {
   }[];
 }
 
+export interface GLHostFrameSnapshot {
+  readonly batches: number;
+  readonly callbacks: number;
+  readonly maxBatch: number;
+  readonly pending: number;
+}
+
 type DrawCallback<T> = (gl: WebGL2RenderingContext) => T;
 
 type GLHostSurface = {
@@ -128,6 +135,11 @@ export class GLHost {
   private _capacityWidth = 1;
   private _capacityHeight = 1;
   private _activeClient: GLHostClient | null = null;
+  private readonly _frameCallbacks = new Map<GLHostClient, () => void>();
+  private _frameRaf: number | null = null;
+  private _frameBatches = 0;
+  private _frameCallbackCount = 0;
+  private _frameMaxBatch = 0;
   private readonly _shaderCache = new Map<number, Map<string, WebGLShader>>();
   private _disposed = false;
   private _recoveryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -230,6 +242,43 @@ export class GLHost {
       throw new RangeError("xy: shared dashboard resource-use sequence exhausted u64");
     }
     this._clientLastUsed.set(client, this._nextResourceUse++);
+  }
+
+  /** Coalesce every registered chart's next paint into one document frame. */
+  scheduleFrame(client: GLHostClient, callback: () => void): boolean {
+    if (this._disposed || !this._clients.has(client) || typeof callback !== "function") return false;
+    this._frameCallbacks.set(client, callback);
+    if (this._frameRaf !== null) return true;
+    this._frameRaf = requestAnimationFrame(() => {
+      this._frameRaf = null;
+      const callbacks = [...this._frameCallbacks.entries()];
+      this._frameCallbacks.clear();
+      this._frameBatches += 1;
+      this._frameMaxBatch = Math.max(this._frameMaxBatch, callbacks.length);
+      for (const [scheduledClient, draw] of callbacks) {
+        if (!this._clients.has(scheduledClient)) continue;
+        this._frameCallbackCount += 1;
+        try { draw(); } catch (error) { setTimeout(() => { throw error; }, 0); }
+      }
+    });
+    return true;
+  }
+
+  cancelFrame(client: GLHostClient): void {
+    this._frameCallbacks.delete(client);
+    if (this._frameCallbacks.size === 0 && this._frameRaf !== null) {
+      cancelAnimationFrame(this._frameRaf);
+      this._frameRaf = null;
+    }
+  }
+
+  frameSnapshot(): GLHostFrameSnapshot {
+    return Object.freeze({
+      batches: this._frameBatches,
+      callbacks: this._frameCallbackCount,
+      maxBatch: this._frameMaxBatch,
+      pending: this._frameCallbacks.size,
+    });
   }
 
   /** Apply only the exact snapshot Rust planned; changed state retries later. */
@@ -369,6 +418,7 @@ export class GLHost {
    * when the final registered ChartView leaves. */
   release(client: GLHostClient): void {
     if (this._disposed || !this._clients.delete(client)) return;
+    this.cancelFrame(client);
     this._clientIds.delete(client);
     this._clientLastUsed.delete(client);
     this._dashboardRevision += 1;
@@ -679,6 +729,9 @@ export class GLHost {
   private _dispose(): void {
     if (this._disposed || this._clients.size) return;
     this._disposed = true;
+    if (this._frameRaf !== null) cancelAnimationFrame(this._frameRaf);
+    this._frameRaf = null;
+    this._frameCallbacks.clear();
     this.ready = false;
     this._activeClient = null;
     this._clearRecoveryTimer();
