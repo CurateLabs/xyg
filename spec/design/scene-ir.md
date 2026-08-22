@@ -72,7 +72,7 @@ static exporters or the browser Worker consume canonical scenes. One generated
 little-endian byte batch; it never places numeric data in JSON. The same exact
 batch is accepted by `xyg_scene_svg` for a complete SVG, by
 `xyg_scene_raster_commands` for the existing native raster display list, and
-by `xyg_scene_browser_painter` for the exact painter-v8 byte stream. These
+by `xyg_scene_browser_painter` for the exact painter-v9 byte stream. These
 consumers fail closed on malformed version, widths, length, reserved fields,
 kinds, styles, coordinates, or bounds. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
 two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64
@@ -385,7 +385,7 @@ nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
 bytes, and every count/length overflow.
 
 Rust owns entry order, location resolution, frame/text/swatch geometry and
-paint ordering for SVG and native raster. Browser painter v8 appends the exact
+paint ordering for SVG and native raster. Browser painter v9 appends the exact
 validated `XYLG` record; TypeScript projects it into the existing selectable
 and accessible DOM legend without deriving entries or defaults. Direct-Scene
 legends are static (`toggle=false`, `highlight=false`). Python and Node only
@@ -398,7 +398,7 @@ that occupancy policy moves into Rust. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
 declarations fail closed. Colorbars remain explicit later issue-#116 work;
-Scene v11 additionally supports the bounded primary annotations below and does
+Scene v12 additionally supports the bounded primary annotations below and does
 not approximate richer forms.
 
 ## Version 11 identity metadata for primary Cartesian annotations
@@ -409,7 +409,7 @@ existing canonical Polyline, Rect, and Scatter records. Annotation records are
 always appended after data records, so Rust SVG, raster, and browser-painter
 consumers share exact projection, clipping, marker geometry, style validation,
 resource bounds, and paint order. Python and Node only coerce the same author
-values and produce byte-identical records. Painter v8 consumes the explicit
+values and produce byte-identical records. Painter v9 consumes the explicit
 descriptor annotation byte and projects records into the existing browser annotation layer; TypeScript
 does not derive geometry or defaults. It also adds a literal, visually hidden
 `role=note` description for each direct-WASM annotation. These descriptions name
@@ -453,6 +453,24 @@ representations—Cartesian versus polar coordinates, kebab/camel font keys,
 root/chrome/annotation CSS classes, object-valued fills and two-ended ribbon
 paint—before any older host-local unsupported branch can run. Cross-host tests
 pin the identical Rust diagnostic for each representable case.
+## Version 12 bounded semantic graph labels
+
+The chrome trailer uses bytes 232–235 for an appended label-block length and
+keeps bytes 236–239 reserved zero. A nonempty `XYLB` v1 block contains at most
+128 records and 8,192 total UTF-8 bytes. Each fixed record carries the final
+screen-space x/y baseline, font size, literal RGBA, source u64 identity, and
+text length; the text table is contiguous and exact. Rust rejects nonfinite or
+out-of-viewport geometry, invalid UTF-8/NUL, empty text, count/byte overflow,
+and trailing data before any consumer allocation.
+
+For `XYGG` v2 direct semantic graphs, Rust alone ranks state and stable source
+identity, omits aggregate/filtered labels, truncates to the 32-character and
+remaining-plot-width bound, and greedily accepts nonoverlapping boxes. SVG,
+native raster, and browser painter v9 consume those final records verbatim.
+The browser may expose the text as accessible DOM, but cannot reposition,
+retruncate, or rerun collision policy. Aggregate LOD continues to omit all
+source-indexed labels.
+
 Authored solid chart/plot backgrounds, axis sides, and major/minor tick
 geometry/styles are Scene v8.
 Category, angular, and time/calendar tick ladders already move

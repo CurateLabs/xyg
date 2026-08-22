@@ -1,7 +1,7 @@
 //! Generate the canonical XYTS cross-host fixture from the Rust authority.
 //!
 //! The committed JSON is deliberately generated here, beside the only XYTS
-//! decoder. Native Python/Node/Pyodide consume the resulting Scene v11 bytes;
+//! decoder. Native Python/Node/Pyodide consume the resulting Scene v12 bytes;
 //! they do not grow a second XYTS policy implementation.
 
 use std::{env, fs, path::PathBuf};

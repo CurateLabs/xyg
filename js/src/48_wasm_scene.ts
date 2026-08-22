@@ -131,8 +131,8 @@ function compilePainter(painter: ArrayBuffer) {
     catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter tick label is invalid UTF-8"); }
     tickValues.push(position); tickLabels.push(label); tickMajor.push(major === 1); nextString += labelLength;
   }
-  const legendLength = u32(280);
-  if (bytes.subarray(284, 288).some((value) => value !== 0) || legendLength > XYG_WASM_PAINTER_MAX_LEGEND_BYTES || nextString + legendLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter legend range is invalid");
+  const legendLength = u32(280), sceneLabelLength = u32(284);
+  if (legendLength > XYG_WASM_PAINTER_MAX_LEGEND_BYTES || sceneLabelLength > 14_000 || nextString + legendLength + sceneLabelLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter decoration range is invalid");
   let legend: any = null;
   if (legendLength) {
     const start = nextString;
@@ -177,6 +177,24 @@ function compilePainter(painter: ArrayBuffer) {
     legend = { resolved: { bounds, title: titlePosition }, title: title || null, items, toggle: false, highlight: false, style: { color: rgba(bytes.subarray(start + 32, start + 36)), background: rgba(bytes.subarray(start + 36, start + 40)), border: rgba(bytes.subarray(start + 40, start + 44)), "font-size": fontSize }, title_style: { "font-size": titleFontSize } };
   }
   nextString += legendLength;
+  const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; text: string}> = [];
+  if (sceneLabelLength) {
+    const start = nextString, end = start + sceneLabelLength;
+    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || u32(start + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
+    const count = u32(start + 8), textBytes = u32(start + 12), tableEnd = start + 16 + count * 40;
+    if (count > 128 || textBytes > 8192 || tableEnd + textBytes !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label table is invalid");
+    let textOffset = tableEnd;
+    for (let index = 0; index < count; index++) {
+      const record = start + 16 + index * 40, x = f64(record + 8), y = f64(record + 16), fontSize = f64(record + 24), length = u32(record + 36);
+      if (!(x >= 0 && x <= width && y >= 0 && y <= height && fontSize >= 1 && fontSize <= 1000) || textOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label geometry is invalid");
+      let label: string; try { label = decoder.decode(bytes.subarray(textOffset, textOffset + length)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid UTF-8"); }
+      if (!label || label.includes("\0")) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid");
+      sceneLabels.push({stableId: view.getBigUint64(record, true), x, y, fontSize, color: rgba(bytes.subarray(record + 32, record + 36)), text: label});
+      textOffset += length;
+    }
+    if (textOffset !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text has trailing bytes");
+  }
+  nextString += sceneLabelLength;
   if (nextString !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter output has trailing bytes");
   const chrome = 64;
   if (bytes.subarray(chrome + 12, chrome + 16).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter chrome reserved bytes are nonzero");
@@ -199,7 +217,7 @@ function compilePainter(painter: ArrayBuffer) {
   };
   const xAxis = { ...axis("x", [left, right], 0, xTickCount, true, chrome + 24), label: text[1] };
   const yAxis = { ...axis("y", [bottom, top], xTickCount, yTickCount, false, chrome + 112), label: text[2] };
-  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: text[0] || null, x_axis: xAxis, y_axis: yAxis, axes: { x: xAxis, y: yAxis }, traces, annotations, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) }, styles: { title: { color: rgba(bytes.subarray(chrome + 8, chrome + 12)), "font-size": labelSize + 2 }, ...(legend ? { legend_title: { color: legend.style.color, "font-size": legend.title_style["font-size"] }, legend_label: { color: legend.style.color, "font-size": legend.style["font-size"] } } : {}) } }, legend, show_legend: legend != null, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes };
+  return { spec: { protocol: PROTOCOL, width, height, padding: [top, width - right, height - bottom, left], title: text[0] || null, x_axis: xAxis, y_axis: yAxis, axes: { x: xAxis, y: yAxis }, traces, annotations, columns, dom: { style: { background: rgba(bytes.subarray(chrome, chrome + 4)), "--chart-bg": rgba(bytes.subarray(chrome + 4, chrome + 8)) }, styles: { title: { color: rgba(bytes.subarray(chrome + 8, chrome + 12)), "font-size": labelSize + 2 }, ...(legend ? { legend_title: { color: legend.style.color, "font-size": legend.title_style["font-size"] }, legend_label: { color: legend.style.color, "font-size": legend.style["font-size"] } } : {}) } }, legend, show_legend: legend != null, show_modebar: false, show_tooltip: false, frame_sides: [xAxis.side, yAxis.side], interaction: { drag_action: "none" }, view: { ranges: { x: [left, right], y: [bottom, top] } } }, payload: bytes, sceneLabels };
 }
 
 export interface RenderWasmSceneOptions { el: HTMLElement; scene: ArrayBuffer | Uint8Array; worker: XygWasmWorker; transfer?: boolean }
@@ -217,6 +235,18 @@ export function hydrateWasmPainter(
   const preparedAt = performance.now();
   const compiled = compilePainter(prepared.painter);
   const view = new ChartView(el, compiled.spec, compiled.payload, null);
+  if (compiled.sceneLabels.length) {
+    const layer = document.createElement("div");
+    Object.assign(layer.style, {position:"absolute", inset:"0", pointerEvents:"none"});
+    layer.dataset.xyChrome = "graph_labels"; layer.setAttribute("role", "list"); layer.setAttribute("aria-label", "Graph labels");
+    for (const label of compiled.sceneLabels) {
+      const item = document.createElement("span");
+      item.dataset.xySlot = "graph_label"; item.dataset.xyStableId = label.stableId.toString(); item.setAttribute("role", "listitem"); item.textContent = label.text;
+      Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, whiteSpace:"nowrap"});
+      layer.appendChild(item);
+    }
+    view.root.appendChild(layer);
+  }
   (view as any).wasmMetrics = {
     workerPrepareMs: timing.workerPrepareMs,
     hydrateUploadMs: performance.now() - preparedAt,

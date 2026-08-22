@@ -24,7 +24,7 @@ EXPECTED_SCATTER = (
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     assert _native.scene_support_reason(0) == ""
     assert _native.scene_support_reason((1 << 6) | (1 << 1)) == (
-        "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources"
+        "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"
     )
     with pytest.raises(ValueError, match="version or feature mask"):
         _native.scene_support_reason(1 << 63)
@@ -68,7 +68,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 11
+    assert int.from_bytes(encoded[4:8], "little") == 12
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -115,7 +115,7 @@ def test_scene_v10_annotation_style_falsey_values_do_not_become_defaults(
 ) -> None:
     figure = Figure().vline(1.0)
     figure.annotations[0]["style"] = style
-    with pytest.raises(ValueError, match="Scene v11"):
+    with pytest.raises(ValueError, match="Scene v12"):
         figure.to_scene()
 
 
@@ -136,7 +136,7 @@ def test_scene_v10_annotation_geometry_is_strict_across_hosts(
 ) -> None:
     figure = Figure()
     figure.annotations = [annotation]
-    with pytest.raises(ValueError, match="Scene v11"):
+    with pytest.raises(ValueError, match="Scene v12"):
         figure.to_scene()
 
 
@@ -162,7 +162,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 11
+    assert int.from_bytes(encoded[4:8], "little") == 12
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -473,7 +473,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 11
+    assert _native.scene_version() == 12
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

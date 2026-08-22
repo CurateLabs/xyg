@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 11;
+pub const SCENE_VERSION: u32 = 12;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -20,7 +20,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 240;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 8;
+pub const BROWSER_PAINTER_VERSION: u32 = 9;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 288;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -30,6 +30,10 @@ pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 pub const MAX_BROWSER_PAINTER_TRACES: usize = 1024;
 pub const MAX_SCENE_LEGEND_ENTRIES: usize = 128;
 pub const MAX_SCENE_LEGEND_TEXT_BYTES: usize = 16_384;
+pub const MAX_SCENE_LABELS: usize = 128;
+pub const MAX_SCENE_LABEL_TEXT_BYTES: usize = 8_192;
+const SCENE_LABEL_HEADER_BYTES: usize = 16;
+const SCENE_LABEL_RECORD_BYTES: usize = 40;
 pub const SCENE_SUPPORT_REQUEST_VERSION: u32 = 1;
 pub const SCENE_FEATURE_POLAR: u64 = 1 << 0;
 pub const SCENE_FEATURE_CUSTOM_FONT: u64 = 1 << 1;
@@ -51,15 +55,15 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v11 supports Cartesian coordinates only"),
-        (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources"),
-        (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v11 does not encode browser-only CSS or class behavior"),
-        (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v11 supports solid literal paints only"),
-        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v11 does not yet encode colorbars"),
-        (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v11 supports one primary static legend only"),
-        (SCENE_FEATURE_AUTHORED_TICK_LABELS, "XYG_SCENE_UNSUPPORTED_TICK_LABELS: Scene v11 does not yet encode authored tick-label strings"),
-        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v11 annotations do not yet encode text labels"),
-        (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v11 does not yet encode callouts or arrows"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only"),
+        (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
+        (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
+        (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
+        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v12 does not yet encode colorbars"),
+        (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v12 supports one primary static legend only"),
+        (SCENE_FEATURE_AUTHORED_TICK_LABELS, "XYG_SCENE_UNSUPPORTED_TICK_LABELS: Scene v12 does not yet encode authored tick-label strings"),
+        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v12 annotations do not yet encode text labels"),
+        (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v12 does not yet encode callouts or arrows"),
     ];
     Ok(reasons
         .into_iter()
@@ -89,6 +93,102 @@ const _: () = assert!(
             + 32
             + MAX_SCENE_LEGEND_ENTRIES * (40 + MAX_BROWSER_LEGEND_PATH_BYTES)
 );
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SceneLabel {
+    pub stable_id: u64,
+    pub x: f64,
+    pub y: f64,
+    pub font_size: f64,
+    pub rgba: [u8; 4],
+    pub text: String,
+}
+
+fn encode_scene_labels(labels: &[SceneLabel]) -> Result<Vec<u8>, SceneError> {
+    if labels.is_empty() {
+        return Ok(Vec::new());
+    }
+    let text_bytes = labels.iter().try_fold(0usize, |total, label| {
+        total.checked_add(label.text.len()).ok_or(SceneError::Limit)
+    })?;
+    if labels.len() > MAX_SCENE_LABELS || text_bytes > MAX_SCENE_LABEL_TEXT_BYTES {
+        return Err(SceneError::Limit);
+    }
+    let mut out = Vec::with_capacity(
+        SCENE_LABEL_HEADER_BYTES + labels.len() * SCENE_LABEL_RECORD_BYTES + text_bytes,
+    );
+    out.extend_from_slice(b"XYLB");
+    out.extend_from_slice(&1u32.to_le_bytes());
+    out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
+    out.extend_from_slice(&(text_bytes as u32).to_le_bytes());
+    for label in labels {
+        if label.text.is_empty()
+            || label.text.contains('\0')
+            || !label.x.is_finite()
+            || !label.y.is_finite()
+            || !label.font_size.is_finite()
+            || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&label.font_size)
+        {
+            return Err(SceneError::NonFinite);
+        }
+        out.extend_from_slice(&label.stable_id.to_le_bytes());
+        out.extend_from_slice(&label.x.to_le_bytes());
+        out.extend_from_slice(&label.y.to_le_bytes());
+        out.extend_from_slice(&label.font_size.to_le_bytes());
+        out.extend_from_slice(&label.rgba);
+        out.extend_from_slice(&(label.text.len() as u32).to_le_bytes());
+    }
+    for label in labels {
+        out.extend_from_slice(label.text.as_bytes());
+    }
+    Ok(out)
+}
+
+fn decode_scene_labels(bytes: &[u8]) -> Result<Vec<SceneLabel>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < SCENE_LABEL_HEADER_BYTES || &bytes[..4] != b"XYLB" || batch_u32(bytes, 4)? != 1
+    {
+        return Err(SceneError::Length);
+    }
+    let count = batch_u32(bytes, 8)? as usize;
+    let text_bytes = batch_u32(bytes, 12)? as usize;
+    if count > MAX_SCENE_LABELS || text_bytes > MAX_SCENE_LABEL_TEXT_BYTES {
+        return Err(SceneError::Limit);
+    }
+    let table_end = SCENE_LABEL_HEADER_BYTES
+        .checked_add(
+            count
+                .checked_mul(SCENE_LABEL_RECORD_BYTES)
+                .ok_or(SceneError::Limit)?,
+        )
+        .ok_or(SceneError::Limit)?;
+    if table_end.checked_add(text_bytes) != Some(bytes.len()) {
+        return Err(SceneError::Length);
+    }
+    let mut text_at = table_end;
+    let mut labels = Vec::with_capacity(count);
+    for index in 0..count {
+        let at = SCENE_LABEL_HEADER_BYTES + index * SCENE_LABEL_RECORD_BYTES;
+        let len = batch_u32(bytes, at + 36)? as usize;
+        let end = text_at.checked_add(len).ok_or(SceneError::Limit)?;
+        let text = std::str::from_utf8(bytes.get(text_at..end).ok_or(SceneError::Length)?)
+            .map_err(|_| SceneError::Length)?
+            .to_owned();
+        labels.push(SceneLabel {
+            stable_id: batch_u64(bytes, at)?,
+            x: batch_f64(bytes, at + 8)?,
+            y: batch_f64(bytes, at + 16)?,
+            font_size: batch_f64(bytes, at + 24)?,
+            rgba: bytes[at + 32..at + 36].try_into().unwrap(),
+            text,
+        });
+        text_at = end;
+    }
+    encode_scene_labels(&labels)?;
+    Ok(labels)
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -1318,22 +1418,19 @@ fn batch_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
     Ok(f64::from_le_bytes(raw))
 }
 
-fn read_chrome_trailer(
-    bytes: &[u8],
-    body_end: usize,
-) -> Result<
-    (
-        SceneChromeStyle,
-        SceneChromeText,
-        Option<SceneLegend>,
-        usize,
-    ),
-    SceneError,
-> {
+type SceneChromeTrailer = (
+    SceneChromeStyle,
+    SceneChromeText,
+    Option<SceneLegend>,
+    Vec<SceneLabel>,
+    usize,
+);
+
+fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrailer, SceneError> {
     let trailer = bytes
         .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
         .ok_or(SceneError::Length)?;
-    if trailer[12..16] != [0; 4] || trailer[232..240] != [0; 8] {
+    if trailer[12..16] != [0; 4] || trailer[236..240] != [0; 4] {
         return Err(SceneError::Length);
     }
     let label_font_size = f64::from_le_bytes(trailer[16..24].try_into().unwrap());
@@ -1376,6 +1473,7 @@ fn read_chrome_trailer(
     let counts = [212, 216, 220, 224]
         .map(|offset| u32::from_le_bytes(trailer[offset..offset + 4].try_into().unwrap()));
     let legend_len = u32::from_le_bytes(trailer[228..232].try_into().unwrap()) as usize;
+    let label_len = u32::from_le_bytes(trailer[232..236].try_into().unwrap()) as usize;
     if legend_len > MAX_SCENE_LEGEND_INPUT_BYTES {
         return Err(SceneError::Limit);
     }
@@ -1405,8 +1503,11 @@ fn read_chrome_trailer(
         .and_then(|value| value.checked_add(ylabel_len))
         .and_then(|value| value.checked_add(tick_count.checked_mul(8)?))
         .ok_or(SceneError::Limit)?;
-    let total = content_end
+    let label_start = content_end
         .checked_add(legend_len)
+        .ok_or(SceneError::Limit)?;
+    let total = label_start
+        .checked_add(label_len)
         .ok_or(SceneError::Limit)?;
     if bytes.len() < total {
         return Err(SceneError::Length);
@@ -1456,8 +1557,9 @@ fn read_chrome_trailer(
         y_minor_ticks,
     }
     .validated()?;
-    let legend = SceneLegend::from_canonical(&bytes[content_end..total], usize::MAX)?;
-    Ok((chrome, text, legend, total))
+    let legend = SceneLegend::from_canonical(&bytes[content_end..label_start], usize::MAX)?;
+    let labels = decode_scene_labels(&bytes[label_start..total])?;
+    Ok((chrome, text, legend, labels, total))
 }
 
 fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
@@ -1504,6 +1606,7 @@ fn write_chrome_trailer(
     chrome: &SceneChromeStyle,
     text: &SceneChromeText,
     legend: Option<&SceneLegend>,
+    label_bytes: &[u8],
 ) {
     write_chrome_style_input(out, chrome);
     out.extend_from_slice(&(text.title.len() as u32).to_le_bytes());
@@ -1532,7 +1635,8 @@ fn write_chrome_trailer(
     }
     let legend_bytes = legend.map(SceneLegend::encode).unwrap_or_default();
     out.extend_from_slice(&(legend_bytes.len() as u32).to_le_bytes());
-    out.extend_from_slice(&[0; 8]);
+    out.extend_from_slice(&(label_bytes.len() as u32).to_le_bytes());
+    out.extend_from_slice(&[0; 4]);
     out.extend_from_slice(text.title.as_bytes());
     out.extend_from_slice(text.x_label.as_bytes());
     out.extend_from_slice(text.y_label.as_bytes());
@@ -1547,6 +1651,7 @@ fn write_chrome_trailer(
         }
     }
     out.extend_from_slice(&legend_bytes);
+    out.extend_from_slice(label_bytes);
 }
 
 fn resolved_legend_bounds(
@@ -1636,7 +1741,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 .and_then(|record_bytes| value.checked_add(record_bytes))
         })
         .ok_or(SceneError::Limit)?;
-    let (_chrome, _text, legend, total) = read_chrome_trailer(bytes, body)?;
+    let (_chrome, _text, legend, _labels, total) = read_chrome_trailer(bytes, body)?;
     if let Some(legend) = legend {
         if legend.entries.iter().any(|entry| entry.style_ref >= styles) {
             return Err(SceneError::Length);
@@ -1767,7 +1872,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
     }
 
     // Keep this allocation-free seam equivalent to SceneDocument::decode for
-    // the reserved Scene v11 annotation namespace. A batch that validates here
+    // the reserved Scene v12 annotation namespace. A batch that validates here
     // must never fail later only because its annotation runs were malformed.
     let mut annotation_cursor = 0;
     let mut annotations_started = false;
@@ -1921,6 +2026,7 @@ pub struct SceneBatch<'a> {
     chrome: SceneChromeStyle,
     text: SceneChromeText,
     legend: Option<SceneLegend>,
+    labels: Vec<SceneLabel>,
     kinds: &'a [u8],
     stable_ids: &'a [u64],
     style_refs: &'a [u32],
@@ -2058,6 +2164,57 @@ impl<'a> SceneBatch<'a> {
             chrome,
             text,
             legend,
+            Vec::new(),
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+            true,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_decorations_and_labels(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        chrome: SceneChromeStyle,
+        text: SceneChromeText,
+        legend: Option<SceneLegend>,
+        labels: Vec<SceneLabel>,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        Self::new_with_decorations_impl(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            legend,
+            labels,
             kinds,
             stable_ids,
             style_refs,
@@ -2105,6 +2262,7 @@ impl<'a> SceneBatch<'a> {
             chrome,
             text,
             None,
+            Vec::new(),
             kinds,
             stable_ids,
             style_refs,
@@ -2131,6 +2289,7 @@ impl<'a> SceneBatch<'a> {
         chrome: SceneChromeStyle,
         text: SceneChromeText,
         legend: Option<SceneLegend>,
+        labels: Vec<SceneLabel>,
         kinds: &'a [u8],
         stable_ids: &'a [u64],
         style_refs: &'a [u32],
@@ -2146,6 +2305,15 @@ impl<'a> SceneBatch<'a> {
         annotations_from_ids: bool,
     ) -> Result<Self, SceneError> {
         let chrome = chrome.validated()?;
+        encode_scene_labels(&labels)?;
+        if labels.iter().any(|label| {
+            label.x < 0.0
+                || label.x > layout.viewport_width
+                || label.y < 0.0
+                || label.y > layout.viewport_height
+        }) {
+            return Err(SceneError::Length);
+        }
         let len = kinds.len();
         if len > MAX_SCENE_MARKS {
             return Err(SceneError::Limit);
@@ -2198,7 +2366,7 @@ impl<'a> SceneBatch<'a> {
                 return Err(SceneError::Length);
             }
         }
-        // Scene v11 annotation records use ordinary paint primitives but a
+        // Scene v12 annotation records use ordinary paint primitives but a
         // reserved identity namespace. Validate their complete geometry here,
         // before any consumer can mistake a malformed annotation for a trace.
         let mut annotation_index = 0;
@@ -2294,6 +2462,7 @@ impl<'a> SceneBatch<'a> {
             chrome,
             text,
             legend,
+            labels,
             kinds,
             stable_ids,
             style_refs,
@@ -2311,12 +2480,14 @@ impl<'a> SceneBatch<'a> {
     }
 
     pub fn encode(&self) -> Vec<u8> {
+        let label_bytes = encode_scene_labels(&self.labels).expect("validated Scene labels");
         let mut out = Vec::with_capacity(
             SCENE_BATCH_HEADER_BYTES
                 + self.stroke_width.len() * SCENE_STYLE_RECORD_BYTES
                 + self.kinds.len() * SCENE_BATCH_RECORD_BYTES
                 + self.text.encoded_bytes()
                 + self.legend.as_ref().map_or(0, |value| value.encode().len())
+                + label_bytes.len()
                 + [
                     self.chrome.x_major_ticks.as_deref().unwrap_or(&[]).len(),
                     self.chrome.x_minor_ticks.len(),
@@ -2442,7 +2613,13 @@ impl<'a> SceneBatch<'a> {
             }
             out.extend_from_slice(&self.diameter[index].to_le_bytes());
         }
-        write_chrome_trailer(&mut out, &self.chrome, &self.text, self.legend.as_ref());
+        write_chrome_trailer(
+            &mut out,
+            &self.chrome,
+            &self.text,
+            self.legend.as_ref(),
+            &label_bytes,
+        );
         out
     }
 }
@@ -2466,7 +2643,7 @@ struct EncodedRecord {
     annotation_tag: u8,
 }
 
-// Scene v11 tag 0x80 marks literal per-row identity, so it is intentionally
+// Scene v12 tag 0x80 marks literal per-row identity, so it is intentionally
 // excluded from grouping: callers use kind/style for those run boundaries,
 // while legacy and annotation records additionally require stable-ID equality.
 fn same_record_run(left: EncodedRecord, right: EncodedRecord) -> bool {
@@ -2596,6 +2773,7 @@ pub struct SceneDocument {
     chrome: SceneChromeStyle,
     text: SceneChromeText,
     legend: Option<SceneLegend>,
+    labels: Vec<SceneLabel>,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
@@ -2740,7 +2918,7 @@ impl SceneDocument {
                 value.checked_add(record_count.checked_mul(SCENE_BATCH_RECORD_BYTES)?)
             })
             .ok_or(SceneError::Limit)?;
-        let (chrome, text, legend, total) = read_chrome_trailer(bytes, body)?;
+        let (chrome, text, legend, labels, total) = read_chrome_trailer(bytes, body)?;
         if bytes.len() != total {
             return Err(SceneError::Length);
         }
@@ -2758,6 +2936,14 @@ impl SceneDocument {
             top,
             viewport_height - bottom,
         )?;
+        if labels.iter().any(|label| {
+            label.x < 0.0
+                || label.x > layout.viewport_width
+                || label.y < 0.0
+                || label.y > layout.viewport_height
+        }) {
+            return Err(SceneError::Length);
+        }
         if let Some(value) = &legend {
             resolved_legend_bounds(layout, value)?;
         }
@@ -3032,6 +3218,7 @@ impl SceneDocument {
             chrome,
             text,
             legend,
+            labels,
             styles,
             records,
             raster_mark_capacity,
@@ -3176,6 +3363,31 @@ impl SceneDocument {
             push_escaped_attribute(out, &entry.label);
             out.push_str("</text>");
             row_y += 6.0;
+        }
+        out.push_str("</g>");
+    }
+
+    fn append_svg_labels(&self, out: &mut String) {
+        if self.labels.is_empty() {
+            return;
+        }
+        out.push_str(
+            "<g data-xy-chrome=\"graph_labels\" role=\"list\" aria-label=\"Graph labels\">",
+        );
+        for label in &self.labels {
+            out.push_str("<text data-xy-slot=\"graph_label\" data-xy-stable-id=\"");
+            out.push_str(&label.stable_id.to_string());
+            out.push_str("\" role=\"listitem\" x=\"");
+            push_num(out, label.x);
+            out.push_str("\" y=\"");
+            push_num(out, label.y);
+            out.push_str("\" fill=\"");
+            out.push_str(&rgba_css(label.rgba));
+            out.push_str("\" font-size=\"");
+            push_num(out, label.font_size);
+            out.push_str("\">");
+            push_escaped_attribute(out, &label.text);
+            out.push_str("</text>");
         }
         out.push_str("</g>");
     }
@@ -3607,6 +3819,7 @@ impl SceneDocument {
             out.push_str("</g>");
         }
         push_svg_chrome_text(&mut out, self);
+        self.append_svg_labels(&mut out);
         self.append_svg_legend(&mut out);
         out.push_str("</svg>");
         out
@@ -3924,9 +4137,27 @@ impl SceneDocument {
                     .sum(),
             )
         });
+        let label_capacity = self.labels.iter().fold(0usize, |total, label| {
+            total.saturating_add(22).saturating_add(label.text.len())
+        });
         self.raster_mark_capacity
             .saturating_add(chrome_capacity)
             .saturating_add(legend_capacity)
+            .saturating_add(label_capacity)
+    }
+
+    fn append_raster_labels(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+        for label in &self.labels {
+            out.push(6);
+            push_raster_f32(out, label.x, scale)?;
+            push_raster_f32(out, label.y, scale)?;
+            out.push(0);
+            push_raster_f32(out, label.font_size, scale)?;
+            out.extend_from_slice(&label.rgba);
+            out.extend_from_slice(&(label.text.len() as u32).to_le_bytes());
+            out.extend_from_slice(label.text.as_bytes());
+        }
+        Ok(())
     }
 
     fn append_raster_legend(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
@@ -4292,6 +4523,7 @@ impl SceneDocument {
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
+        self.append_raster_labels(&mut out, scale)?;
         self.append_raster_legend(&mut out, scale)?;
         if out.len() > reserved_capacity {
             return Err(SceneError::Limit);
@@ -4490,8 +4722,10 @@ impl SceneDocument {
             .and_then(|value| value.checked_add(self.text.y_label.len()))
             .ok_or(SceneError::Limit)?;
         let legend_bytes = self.painter_legend_bytes()?;
+        let label_bytes = encode_scene_labels(&self.labels)?;
         required = required
             .checked_add(legend_bytes.len())
+            .and_then(|value| value.checked_add(label_bytes.len()))
             .ok_or(SceneError::Limit)?;
         if required > max_bytes {
             return Err(SceneError::Limit);
@@ -4598,6 +4832,7 @@ impl SceneDocument {
             out[offset..offset + 4].copy_from_slice(&(value as u32).to_le_bytes());
         }
         out[280..284].copy_from_slice(&(legend_bytes.len() as u32).to_le_bytes());
+        out[284..288].copy_from_slice(&(label_bytes.len() as u32).to_le_bytes());
         out.resize(string_offset, 0);
         out.extend_from_slice(self.text.title.as_bytes());
         out.extend_from_slice(self.text.x_label.as_bytes());
@@ -4614,6 +4849,7 @@ impl SceneDocument {
             out.extend_from_slice(label.as_bytes());
         }
         out.extend_from_slice(&legend_bytes);
+        out.extend_from_slice(&label_bytes);
         debug_assert_eq!(out.len(), required);
         Ok(out)
     }
@@ -5248,7 +5484,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 11);
+        assert_eq!(SCENE_VERSION, 12);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -6891,7 +7127,7 @@ mod tests {
                 1,
                 SCENE_FEATURE_AUTHORED_TICK_LABELS | SCENE_FEATURE_CUSTOM_FONT,
             ),
-            Ok("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources")
+            Ok("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources")
         );
         assert_eq!(scene_support_reason(2, 0), Err(SceneError::Version));
         assert_eq!(scene_support_reason(1, 1 << 63), Err(SceneError::Version));
