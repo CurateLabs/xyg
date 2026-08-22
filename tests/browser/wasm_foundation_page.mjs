@@ -1067,10 +1067,21 @@ async function run() {
     throw new Error(`semantic graph did not hydrate Rust painter/legend parity: ${legendLabels.join("|")}`);
   }
   const graphLabels = [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"][role="listitem"]')];
+  const collapsedChildId = (1n << 32n) + 1n;
+  const visibleParentId = 1n << 32n;
+  const visiblePeerId = (1n << 32n) + 2n;
+  const nodeIds = [];
+  semanticView.gpuTraces.forEach((trace, traceIndex) => {
+    if (trace.trace.kind !== "scatter") return;
+    for (let row=0; row<trace._sceneIds.lo.length; row++) nodeIds.push(semanticView.sceneStableId(traceIndex, row));
+  });
   if (!semanticHost.querySelector('[data-xy-chrome="graph_labels"][role="list"][aria-label="Graph labels"]')
       || graphLabels.length < 2
       || graphLabels.some((label) => !label.dataset.xyStableId || !label.textContent)
-      || graphLabels.some((label) => label.textContent === "Disabled node")
+      || !nodeIds.includes(visibleParentId) || !nodeIds.includes(visiblePeerId)
+      || nodeIds.includes(collapsedChildId)
+      || !graphLabels.some((label) => BigInt(label.dataset.xyStableId) === visibleParentId)
+      || graphLabels.some((label) => BigInt(label.dataset.xyStableId) === collapsedChildId)
       || !graphLabels.some((label) => label.textContent.endsWith("…"))) {
     throw new Error(`semantic graph labels lost Rust placement/truncation/a11y: ${graphLabels.map((label) => label.textContent).join("|")}`);
   }

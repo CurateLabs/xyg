@@ -337,6 +337,14 @@
     "themes": {"light": 0, "dark": 1},
     "semantic_code_max": 7,
     "state_flag_mask": 127,
+    "compound_planes": {
+      "order": ["parents", "parent_validity", "collapsed"],
+      "parents": {"type": "u64", "count": "node_count", "default": 0},
+      "parent_validity": {"type": "u8", "count": "node_count", "default": 0},
+      "collapsed": {"type": "u8", "count": "node_count", "default": 0},
+      "presence": "all-three-together-or-zero-defaults",
+      "placement": "align8-after-edge-flags; align8-after-collapsed-before-node-label-lengths"
+    },
     "tier": "direct-only"
   },
   "temporal_graph": {

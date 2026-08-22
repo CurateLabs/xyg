@@ -65,10 +65,13 @@ mechanics host-visible while leaving identities, mark defaults, geometry, and
 all per-record decisions exclusively in Rust.
 
 `XYGG` v3 is the bounded semantic-graph compile ingress. Its source count is
-limited to 1,024 direct-tier nodes plus edges, and Rust separately enforces the
+limited to a combined 1,024 direct-tier nodes and edges (`n + e <= 1,024`),
+and Rust separately enforces the
 1,024 emitted-painter-trace ceiling after expanding resolved halo, dash, and
-arrow primitives. The framer validates only exact numeric representation and
-aligned lengths. Rust owns semantic domains, state precedence, light/dark
+arrow primitives. The framer validates the direct tier, combined element
+count, viewport dimensions, bounded string labels, finite coordinates, exact
+codes and flags, compound-plane shape/representation, and final aligned buffer
+length. Rust owns semantic interpretation, domains, state precedence, light/dark
 paint, legend ordering, final node/edge label placement and truncation,
 transitive compound/collapse resolution, and all screen-space expansion. The
 thin framer requires exact node-count parent, parent-validity, and collapse
