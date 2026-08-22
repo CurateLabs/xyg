@@ -80,10 +80,7 @@ impl SceneChromeText {
     }
 
     fn encoded_bytes(&self) -> usize {
-        SCENE_CHROME_TRAILER_BYTES
-            + self.title.len()
-            + self.x_label.len()
-            + self.y_label.len()
+        SCENE_CHROME_TRAILER_BYTES + self.title.len() + self.x_label.len() + self.y_label.len()
     }
 }
 
@@ -412,11 +409,7 @@ pub fn angular_ticks(
             step: 1.0,
         });
     }
-    let ladder = if degrees {
-        DEGREE_STEPS
-    } else {
-        RADIAN_STEPS
-    };
+    let ladder = if degrees { DEGREE_STEPS } else { RADIAN_STEPS };
     let rough = (b - a) / target as f64;
     let step = ladder
         .iter()
@@ -771,8 +764,8 @@ fn read_chrome_trailer(
     }
     let title_bytes = &bytes[text_start..text_start + title_len];
     let xlabel_bytes = &bytes[text_start + title_len..text_start + title_len + xlabel_len];
-    let ylabel_bytes =
-        &bytes[text_start + title_len + xlabel_len..text_start + title_len + xlabel_len + ylabel_len];
+    let ylabel_bytes = &bytes
+        [text_start + title_len + xlabel_len..text_start + title_len + xlabel_len + ylabel_len];
     if title_bytes.contains(&0) || xlabel_bytes.contains(&0) || ylabel_bytes.contains(&0) {
         return Err(SceneError::Length);
     }
@@ -1158,9 +1151,9 @@ impl<'a> SceneBatch<'a> {
             !x0[index].is_finite()
                 || !y0[index].is_finite()
                 || (matches!(
-                        SceneRecordKind::from_code(*kind),
-                        Ok(SceneRecordKind::Rect | SceneRecordKind::Band)
-                    ) && (!x1[index].is_finite() || !y1[index].is_finite()))
+                    SceneRecordKind::from_code(*kind),
+                    Ok(SceneRecordKind::Rect | SceneRecordKind::Band)
+                ) && (!x1[index].is_finite() || !y1[index].is_finite()))
         }) || diameter
             .iter()
             .chain(stroke_width)
@@ -2935,10 +2928,10 @@ fn push_regular_polygon(
 /// `python/xy/_fontmetrics.py` / `font.rs` so native and WASM gutters agree
 /// without pulling the raster coverage atlas into the browser adapter).
 const ASCII_ADVANCES: [i32; 95] = [
-    5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-    5, 5, 13, 13, 13, 8, 16, 11, 11, 11, 12, 10, 9, 12, 12, 5, 5, 10, 9, 14, 12, 13, 10, 13, 11,
-    10, 10, 12, 11, 16, 11, 10, 11, 6, 5, 6, 13, 8, 8, 10, 10, 9, 10, 10, 6, 10, 10, 4, 4, 9, 4,
-    16, 10, 10, 10, 10, 7, 8, 6, 10, 9, 13, 9, 9, 8, 10, 5, 10, 13,
+    5, 6, 7, 13, 10, 15, 12, 4, 6, 6, 8, 13, 5, 6, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 5,
+    5, 13, 13, 13, 8, 16, 11, 11, 11, 12, 10, 9, 12, 12, 5, 5, 10, 9, 14, 12, 13, 10, 13, 11, 10,
+    10, 12, 11, 16, 11, 10, 11, 6, 5, 6, 13, 8, 8, 10, 10, 9, 10, 10, 6, 10, 10, 4, 4, 9, 4, 16,
+    10, 10, 10, 10, 7, 8, 6, 10, 9, 13, 9, 9, 8, 10, 5, 10, 13,
 ];
 const FONT_BASE_PX: f64 = 16.0;
 const MISSING_ADVANCE: i32 = 16; // U+FFFD width at BASE_PX
@@ -3015,7 +3008,10 @@ pub fn cartesian_scene_margins(
         return Err(SceneError::NonFinite);
     }
     if let Some(padding) = authored_padding {
-        if padding.iter().any(|value| !value.is_finite() || *value < 0.0) {
+        if padding
+            .iter()
+            .any(|value| !value.is_finite() || *value < 0.0)
+        {
             return Err(SceneError::NonFinite);
         }
     }
@@ -3078,10 +3074,7 @@ pub fn cartesian_scene_margins(
     let left_needed = if y_label.is_empty() {
         y_tick_room
     } else {
-        AXIS_TEXT_EDGE_PAD
-            + LABEL_FONT_PX * 1.2
-            + Y_TITLE_TICK_GAP * LABEL_FONT_PX
-            + y_tick_room
+        AXIS_TEXT_EDGE_PAD + LABEL_FONT_PX * 1.2 + Y_TITLE_TICK_GAP * LABEL_FONT_PX + y_tick_room
     };
     left = left.max(left_needed);
 
@@ -3252,7 +3245,10 @@ mod tests {
         .unwrap();
         let encoded = batch.encode();
         assert_eq!(&encoded[..4], b"XYGS");
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), SCENE_VERSION);
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            SCENE_VERSION
+        );
         assert_eq!(u64::from_le_bytes(encoded[16..24].try_into().unwrap()), 4);
         assert_eq!(
             encoded.len(),
@@ -3996,8 +3992,26 @@ mod tests {
     #[test]
     fn scene_v6_band_fills_closed_path_from_top_and_base() {
         let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
-        let x = AxisScale::new(ScaleKind::Linear, 0.0, 2.0, layout.left, layout.right, 1.0, false).unwrap();
-        let y = AxisScale::new(ScaleKind::Linear, 0.0, 2.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            2.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            2.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
         let batch = SceneBatch::new(
             layout,
             1,
@@ -4036,8 +4050,26 @@ mod tests {
     #[test]
     fn scene_v5_encodes_authored_chrome_text() {
         let layout = PlotLayout::new(200.0, 120.0, 40.0, 20.0, 20.0, 30.0).unwrap();
-        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false).unwrap();
-        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
         let text = SceneChromeText::from_parts("Hello", "x", "y").unwrap();
         let batch = SceneBatch::new_with_chrome(
             layout,
@@ -4062,7 +4094,10 @@ mod tests {
         )
         .unwrap();
         let encoded = batch.encode();
-        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), SCENE_VERSION);
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            SCENE_VERSION
+        );
         assert!(encoded.ends_with(b"Helloxy"));
         let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
         assert!(svg.contains("data-xy-chrome=\"title\""));
