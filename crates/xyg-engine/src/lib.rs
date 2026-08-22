@@ -14,6 +14,7 @@ mod simd;
 #[cfg(not(target_family = "wasm"))]
 pub mod chunked_columns;
 pub mod css;
+pub mod dashboard;
 pub mod edge_route;
 pub mod geo;
 pub mod geo_viewport;

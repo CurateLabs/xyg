@@ -147,16 +147,18 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 11 for Scene paint, packed typed-column compile,
-transferable `XYTS` series descriptors, resumable Tier-2 aggregation, and
-packed `XYTC`/`XYTR` temporal-controller commands and snapshots. ABI 8 adds
+`WASM_ABI_VERSION` is 12. ABI 12 adds the bounded `XYDP` dashboard resource
+planner to the Scene v12/painter v9 contract. Earlier revisions added Scene
+paint, packed typed-column compile, transferable `XYTS` series descriptors,
+resumable Tier-2 aggregation, and packed `XYTC`/`XYTR` temporal-controller
+commands and snapshots. ABI 8 adds
 packed `XYTG` temporal-graph binding/frame commands and Rust-produced `XYTF`
 visibility, UUID membership, and remapped visible topology for layout.
 The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 11 for this contract.
+`SCENE_VERSION` remains independently versioned and is 12 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
