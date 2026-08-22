@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 86;
+pub const ABI_VERSION: u32 = 87;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7544,6 +7544,7 @@ pub unsafe extern "C" fn xyg_graph_visual_state_resolve(
 #[no_mangle]
 pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
     version: u32,
+    theme: u32,
     n: u64,
     classes: *const u8,
     epistemic: *const u8,
@@ -7612,6 +7613,9 @@ pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
             };
             n
         ];
+        let Ok(theme) = u8::try_from(theme) else {
+            return -1;
+        };
         let Some(domain) = xyg_engine::graph_style::resolve_semantic_styles(
             input!(classes),
             input!(epistemic),
@@ -7619,6 +7623,7 @@ pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
             input!(metric),
             input!(flags),
             edge != 0,
+            theme,
             &mut resolved,
         ) else {
             return -1;
@@ -7637,6 +7642,82 @@ pub unsafe extern "C" fn xyg_graph_semantic_style_resolve(
         }
         *out_domain_lo = domain.0;
         *out_domain_hi = domain.1;
+        0
+    })
+}
+
+/// Query/copy deterministic v1 GraphForge semantic legend descriptors (#34).
+///
+/// `out_count` always receives the required count after valid input. A zero
+/// capacity is a query; insufficient nonzero capacity returns -2 atomically.
+/// RGBA output addresses `capacity * 4` bytes, other outputs `capacity`.
+///
+/// # Safety
+/// Inputs address `n` elements. Non-empty outputs address their declared capacity.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_semantic_legend(
+    version: u32,
+    theme: u32,
+    n: u64,
+    classes: *const u8,
+    epistemic: *const u8,
+    statuses: *const u8,
+    capacity: u64,
+    out_field: *mut u8,
+    out_value: *mut u8,
+    out_rgba: *mut u8,
+    out_shape: *mut u8,
+    out_count: *mut u64,
+) -> i32 {
+    let (Ok(n), Ok(capacity), Ok(theme)) = (
+        usize::try_from(n),
+        usize::try_from(capacity),
+        u8::try_from(theme),
+    ) else {
+        return -1;
+    };
+    if version != xyg_engine::graph_style::RESOLVED_STYLE_VERSION
+        || out_count.is_null()
+        || (n > 0 && (classes.is_null() || epistemic.is_null() || statuses.is_null()))
+        || (capacity > 0
+            && (out_field.is_null()
+                || out_value.is_null()
+                || out_rgba.is_null()
+                || out_shape.is_null()))
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($p:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, n)
+                }
+            };
+        }
+        let Some(entries) = xyg_engine::graph_style::semantic_legend(
+            input!(classes),
+            input!(epistemic),
+            input!(statuses),
+            theme,
+        ) else {
+            return -1;
+        };
+        *out_count = entries.len() as u64;
+        if capacity == 0 {
+            return 0;
+        }
+        if capacity < entries.len() {
+            return -2;
+        }
+        for (i, entry) in entries.iter().enumerate() {
+            *out_field.add(i) = entry.field;
+            *out_value.add(i) = entry.value;
+            *out_shape.add(i) = entry.shape;
+            std::ptr::copy_nonoverlapping(entry.color.as_ptr(), out_rgba.add(i * 4), 4);
+        }
         0
     })
 }
@@ -9860,5 +9941,61 @@ mod tests {
         assert_eq!(has_event, 1);
         assert_eq!(selection, [0, 7, u64::MAX]);
         assert!(temporal_controller::controller_remove(handle));
+    }
+
+    #[test]
+    fn semantic_legend_query_and_short_copy_are_capacity_safe() {
+        let classes = [2_u8, 1, 2];
+        let epistemic = [3_u8, 3, 1];
+        let statuses = [4_u8, 0, 4];
+        let mut count = 0_u64;
+        assert_eq!(
+            unsafe {
+                xyg_graph_semantic_legend(
+                    1,
+                    0,
+                    3,
+                    classes.as_ptr(),
+                    epistemic.as_ptr(),
+                    statuses.as_ptr(),
+                    0,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    &mut count,
+                )
+            },
+            0
+        );
+        assert_eq!(count, 6);
+        let mut field = [99_u8; 5];
+        let mut value = [99_u8; 5];
+        let mut rgba = [99_u8; 20];
+        let mut shape = [99_u8; 5];
+        assert_eq!(
+            unsafe {
+                xyg_graph_semantic_legend(
+                    1,
+                    0,
+                    3,
+                    classes.as_ptr(),
+                    epistemic.as_ptr(),
+                    statuses.as_ptr(),
+                    5,
+                    field.as_mut_ptr(),
+                    value.as_mut_ptr(),
+                    rgba.as_mut_ptr(),
+                    shape.as_mut_ptr(),
+                    &mut count,
+                )
+            },
+            -2
+        );
+        assert_eq!(count, 6);
+        assert_eq!(field, [99; 5]);
+        assert_eq!(value, [99; 5]);
+        assert_eq!(rgba, [99; 20]);
+        assert_eq!(shape, [99; 5]);
     }
 }

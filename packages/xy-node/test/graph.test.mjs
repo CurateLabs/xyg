@@ -11,6 +11,7 @@ import {
   graphEdgeRouteSegments,
   graphVisualStates,
   graphSemanticStyles,
+  graphSemanticLegend,
   graphLabelAccept,
   graphCompoundBounds,
   graphClusterAggregate,
@@ -26,7 +27,7 @@ import {
   sankeyLayout,
 } from "../src/index.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 86);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 87);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
@@ -39,10 +40,18 @@ test("GraphForge semantic styles are identical to the native golden", () => {
   );
   assert.equal(resolved.version, 1);
   assert.deepEqual([...resolved.metricDomain], [10, 30]);
-  assert.deepEqual([...resolved.fillRgba.slice(0, 4)], [0, 114, 178, 255]);
+  assert.deepEqual([...resolved.fillRgba.slice(0, 4)], [0, 90, 156, 255]);
   assert.deepEqual([...resolved.size], [7, 13.5, 20]);
   assert.deepEqual([...resolved.state], [0, 5, 7]);
   assert.throws(() => graphSemanticStyles([8], [0], [0], [0], [0]), /closed range/);
+  assert.throws(() => graphSemanticStyles([1], [0], [0], [0], [0], { edge: "yes" }), /bool/);
+  const extreme = graphSemanticStyles([1, 1, 1], [1, 1, 1], [1, 1, 1], [-Number.MAX_VALUE, 0, Number.MAX_VALUE], [0, 0, 0], { theme: "dark" });
+  assert.ok([...extreme.size, ...extreme.width, ...extreme.opacity].every(Number.isFinite));
+  assert.deepEqual([...extreme.size], [7, 13.5, 20]);
+  const legend = graphSemanticLegend([2, 1, 2], [3, 3, 1], [4, 0, 4], { theme: "dark" });
+  assert.deepEqual([...legend.field], [0, 0, 1, 1, 2, 2]);
+  assert.deepEqual([...legend.value], [1, 2, 1, 3, 0, 4]);
+  assert.deepEqual([...legend.rgba.slice(0, 4)], [86, 180, 233, 255]);
 });
 
 test("GraphForge tables preserve UUID identity, parents, and provenance through Rust", () => {

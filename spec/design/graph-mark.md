@@ -438,20 +438,25 @@ bounds, and visual goldens remain.
 
 #### 7.1.1 Versioned GraphForge resolved style v1
 
-ABI 86 adds `xyg_graph_semantic_style_resolve(version=1)`. It is the sole
+ABI 87 adds `xyg_graph_semantic_style_resolve(version=1, theme)`. It is the sole
 resolver for the closed canonical numeric planes `class`, `epistemic`,
 `status`, `metric`, and interaction flags, for both nodes and edges. Codes are
 bounded to `0..=7`; an unknown code or mismatched plane rejects the entire
 call before any output changes. Rust computes the finite metric domain and
-linear clamped size/width scale, applies the §7.1 state precedence to actual
+overflow-safe linear clamped size/width scale, applies the §7.1 state precedence to actual
 paint, and emits fill/stroke/halo RGBA, node size/shape, edge width/dash/arrow,
 opacity, and resolved state. Hosts serialize these painter values and do not
 recreate palettes, domains, ordering, or state overlays.
 
-The v1 class, epistemic, and status tables use a fixed color-blind-safe
-Okabe-Ito-derived vocabulary with a neutral zero value. Rust also owns
-`semantic_legend`: present values are de-duplicated and emitted in stable
-field-then-code order with the same palette and class shape descriptor. This
+The v1 class, epistemic, and status tables use explicit light and dark
+color-blind-safe vocabularies with a neutral zero value. Every palette color
+and the theme-specific selected overlay has measured WCAG 2.x non-text
+contrast of at least 3:1 against its declared background (`#fff` light,
+`#111827` dark); Rust fixtures enforce that property. Rust also owns
+`xyg_graph_semantic_legend`: its capacity-safe query/copy ABI de-duplicates
+present values and emits stable field-then-code order with the exact resolved
+theme palette and class shape descriptor. Python and Node only materialize
+those returned descriptors. This
 slice exposes resolved paint through native Python and Node bindings. Wiring
 the same resolver into the direct-WASM scene entry and graph composition paint
 path is required before claiming browser/export acceptance for #34.

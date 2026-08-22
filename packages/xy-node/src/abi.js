@@ -27,6 +27,7 @@ import {
   xyGraphCompoundBounds,
   xyGraphLabelAccept,
   xyGraphSemanticStyleResolve,
+  xyGraphSemanticLegend,
   xyGraphVisualStateResolve,
   xyGraphClusterAggregate,
   xyGraphForceCreate,
@@ -1535,6 +1536,9 @@ export function graphVisualStates(flags) {
 }
 
 export function graphSemanticStyles(classes, epistemic, statuses, metric, flags, opts = {}) {
+  if (opts.edge !== undefined && typeof opts.edge !== "boolean") throw new TypeError("edge must be a bool");
+  const theme = opts.theme ?? "light"; const themeId = theme === "light" ? 0 : theme === "dark" ? 1 : -1;
+  if (themeId < 0) throw new RangeError("theme must be 'light' or 'dark'");
   const ca = asU8Array(classes, "classes"); const ea = asU8Array(epistemic, "epistemic");
   const sa = asU8Array(statuses, "statuses"); const ma = asF64Array(metric, "metric");
   const fa = asU32Array(flags, "flags"); const n = ca.length;
@@ -1548,9 +1552,24 @@ export function graphSemanticStyles(classes, epistemic, statuses, metric, flags,
   const size = new Float32Array(n); const width = new Float32Array(n); const opacity = new Float32Array(n);
   const shape = new Uint8Array(n); const dash = new Uint8Array(n); const arrow = new Uint8Array(n); const state = new Uint8Array(n);
   const domain = new Float64Array(2);
-  const code = xyGraphSemanticStyleResolve(1, toU64(n, "classes.length"), u8Ptr(ca), u8Ptr(ea), u8Ptr(sa), f64Ptr(ma), u32Ptr(fa), opts.edge ? 1 : 0, u8Ptr(fillRgba), u8Ptr(strokeRgba), u8Ptr(haloRgba), f32Ptr(size), f32Ptr(width), f32Ptr(opacity), u8Ptr(shape), u8Ptr(dash), u8Ptr(arrow), u8Ptr(state), f64Ptr(domain.subarray(0, 1)), f64Ptr(domain.subarray(1)));
+  const code = xyGraphSemanticStyleResolve(1, themeId, toU64(n, "classes.length"), u8Ptr(ca), u8Ptr(ea), u8Ptr(sa), f64Ptr(ma), u32Ptr(fa), opts.edge ? 1 : 0, u8Ptr(fillRgba), u8Ptr(strokeRgba), u8Ptr(haloRgba), f32Ptr(size), f32Ptr(width), f32Ptr(opacity), u8Ptr(shape), u8Ptr(dash), u8Ptr(arrow), u8Ptr(state), f64Ptr(domain.subarray(0, 1)), f64Ptr(domain.subarray(1)));
   if (code !== 0) throw new Error(`xyg_graph_semantic_style_resolve failed with code ${code}`);
-  return { version: 1, fillRgba, strokeRgba, haloRgba, size, width, opacity, shape, dash, arrow, state, metricDomain: domain };
+  return { version: 1, theme, fillRgba, strokeRgba, haloRgba, size, width, opacity, shape, dash, arrow, state, metricDomain: domain };
+}
+
+export function graphSemanticLegend(classes, epistemic, statuses, opts = {}) {
+  const theme = opts.theme ?? "light"; const themeId = theme === "light" ? 0 : theme === "dark" ? 1 : -1;
+  if (themeId < 0) throw new RangeError("theme must be 'light' or 'dark'");
+  const ca = asU8Array(classes, "classes"); const ea = asU8Array(epistemic, "epistemic"); const sa = asU8Array(statuses, "statuses");
+  requireEqualLength(ca, ea, "classes", "epistemic"); requireEqualLength(ca, sa, "classes", "statuses");
+  for (const [name, input] of [["classes", ca], ["epistemic", ea], ["statuses", sa]]) if (input.some((code) => code > 7)) throw new RangeError(`${name} codes must be in the closed range 0..7`);
+  const count = new BigUint64Array(1); const n = ca.length;
+  let code = xyGraphSemanticLegend(1, themeId, toU64(n, "classes.length"), u8Ptr(ca), u8Ptr(ea), u8Ptr(sa), 0n, null, null, null, null, u64Ptr(count));
+  if (code !== 0 || count[0] > 24n) throw new Error(`xyg_graph_semantic_legend query failed with code ${code}`);
+  const cap = Number(count[0]); const field = new Uint8Array(cap); const value = new Uint8Array(cap); const rgba = new Uint8Array(cap * 4); const shape = new Uint8Array(cap);
+  code = xyGraphSemanticLegend(1, themeId, toU64(n, "classes.length"), u8Ptr(ca), u8Ptr(ea), u8Ptr(sa), BigInt(cap), u8Ptr(field), u8Ptr(value), u8Ptr(rgba), u8Ptr(shape), u64Ptr(count));
+  if (code !== 0 || count[0] !== BigInt(cap)) throw new Error(`xyg_graph_semantic_legend copy failed with code ${code}`);
+  return { version: 1, theme, field, value, rgba, shape };
 }
 
 export function graphLabelAccept(priorities, budget, opts = {}) {

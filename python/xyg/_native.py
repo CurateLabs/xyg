@@ -4987,8 +4987,14 @@ def graph_semantic_styles(
     flags: Any,
     *,
     edge: bool = False,
+    theme: str = "light",
 ) -> dict[str, Any]:
     """Resolve the v1 GraphForge semantic style contract in Rust."""
+    if not isinstance(edge, (bool, np.bool_)):
+        raise TypeError("edge must be a bool")
+    theme_id = {"light": 0, "dark": 1}.get(theme)
+    if theme_id is None:
+        raise ValueError("theme must be 'light' or 'dark'")
     inputs = [np.asarray(value) for value in (classes, epistemic, statuses)]
     if any(value.ndim != 1 or value.dtype.kind not in "iu" for value in inputs):
         raise ValueError("semantic codes must be 1-D integer arrays")
@@ -5018,6 +5024,7 @@ def graph_semantic_styles(
 
     status = _lib.xyg_graph_semantic_style_resolve(
         ctypes.c_uint32(1),
+        ctypes.c_uint32(theme_id),
         ctypes.c_uint64(n),
         *(ptr(value) for value in codes),
         ptr(metric_arr),
@@ -5044,6 +5051,70 @@ def graph_semantic_styles(
         "arrow": bytes_out[2],
         "state": bytes_out[3],
         "metric_domain": (lo.value, hi.value),
+    }
+
+
+def graph_semantic_legend(
+    classes: Any, epistemic: Any, statuses: Any, *, theme: str = "light"
+) -> dict[str, Any]:
+    """Return bounded deterministic v1 GraphForge legend descriptors."""
+    theme_id = {"light": 0, "dark": 1}.get(theme)
+    if theme_id is None:
+        raise ValueError("theme must be 'light' or 'dark'")
+    values = [np.asarray(value) for value in (classes, epistemic, statuses)]
+    if any(value.ndim != 1 or value.dtype.kind not in "iu" for value in values):
+        raise ValueError("semantic codes must be 1-D integer arrays")
+    if any(any(int(code) < 0 or int(code) > 7 for code in value) for value in values):
+        raise ValueError("semantic codes must be in the closed range 0..7")
+    codes = [np.ascontiguousarray(value, dtype=np.uint8) for value in values]
+    n = len(codes[0])
+    if any(len(value) != n for value in codes[1:]):
+        raise ValueError("semantic legend fields must have equal lengths")
+    count = ctypes.c_uint64()
+
+    def ptr(value: np.ndarray) -> int | None:
+        return value.ctypes.data if len(value) else None
+
+    status = _lib.xyg_graph_semantic_legend(
+        1,
+        theme_id,
+        n,
+        *(ptr(value) for value in codes),
+        0,
+        None,
+        None,
+        None,
+        None,
+        ctypes.byref(count),
+    )
+    if status != 0 or count.value > 24:
+        raise ValueError("native graph_semantic_legend query failed")
+    cap = int(count.value)
+    field = np.empty(cap, dtype=np.uint8)
+    value = np.empty(cap, dtype=np.uint8)
+    rgba = np.empty((cap, 4), dtype=np.uint8)
+    shape = np.empty(cap, dtype=np.uint8)
+    status = _lib.xyg_graph_semantic_legend(
+        1,
+        theme_id,
+        n,
+        *(ptr(item) for item in codes),
+        cap,
+        ptr(field),
+        ptr(value),
+        ptr(rgba),
+        ptr(shape),
+        ctypes.byref(count),
+    )
+    if status != 0 or count.value != cap:
+        raise ValueError("native graph_semantic_legend copy failed")
+    return {
+        "version": 1,
+        "theme": theme,
+        "field": field,
+        "value": value,
+        "rgba": rgba,
+        "shape": shape,
     }
 
 

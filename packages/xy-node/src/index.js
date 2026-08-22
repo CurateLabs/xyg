@@ -88,6 +88,7 @@ export {
   graphEdgeRouteSegments,
   graphVisualStates,
   graphSemanticStyles,
+  graphSemanticLegend,
   graphLabelAccept,
   graphCompoundBounds,
   graphSampleEdges,

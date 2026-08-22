@@ -25,10 +25,10 @@ def test_graphforge_semantic_style_contract_golden() -> None:
     )
     assert resolved["version"] == 1
     assert resolved["metric_domain"] == (10.0, 30.0)
-    assert resolved["fill_rgba"].tolist()[0] == [0, 114, 178, 255]
+    assert resolved["fill_rgba"].tolist()[0] == [0, 90, 156, 255]
     assert resolved["size"].tolist() == [7.0, 13.5, 20.0]
     assert resolved["state"].tolist() == [0, 5, 7]
-    assert resolved["stroke_rgba"].tolist()[1] == [255, 255, 255, 255]
+    assert resolved["stroke_rgba"].tolist()[1] == [0, 0, 0, 255]
     assert np.isclose(resolved["opacity"][2], np.float32(0.28))
 
 
@@ -37,6 +37,27 @@ def test_graphforge_semantic_style_rejects_unknown_vocabularies() -> None:
         _native.graph_semantic_styles([8], [0], [0], [0.0], [0])
     with np.testing.assert_raises_regex(ValueError, "equal"):
         _native.graph_semantic_styles([1], [0, 1], [0], [0.0], [0])
+    with np.testing.assert_raises_regex(TypeError, "bool"):
+        _native.graph_semantic_styles([1], [0], [0], [0.0], [0], edge="yes")  # type: ignore[arg-type]
+
+
+def test_graphforge_semantic_extremes_and_dark_legend_are_host_parity_safe() -> None:
+    resolved = _native.graph_semantic_styles(
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [-np.finfo(float).max, 0.0, np.finfo(float).max],
+        [0, 0, 0],
+        theme="dark",
+    )
+    assert np.isfinite(
+        np.concatenate([resolved["size"], resolved["width"], resolved["opacity"]])
+    ).all()
+    assert resolved["size"].tolist() == [7.0, 13.5, 20.0]
+    legend = _native.graph_semantic_legend([2, 1, 2], [3, 3, 1], [4, 0, 4], theme="dark")
+    assert legend["field"].tolist() == [0, 0, 1, 1, 2, 2]
+    assert legend["value"].tolist() == [1, 2, 1, 3, 0, 4]
+    assert legend["rgba"][0].tolist() == [86, 180, 233, 255]
 
 
 def test_compound_bounds_keep_membership_and_child_identity() -> None:
