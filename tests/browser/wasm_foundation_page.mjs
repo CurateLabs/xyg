@@ -15,6 +15,7 @@ import {
   renderWasmScene,
   encodeWasmSemanticGraph,
   renderWasmSemanticGraph,
+  transitionWasmCompound,
   XygWasmError,
   XygWasmTemporalController,
   XygWasmTemporalGraph,
@@ -270,6 +271,7 @@ async function fixtureModule({
     "xyg_wasm_scene_compile_records_processed",
     "xyg_wasm_scene_compile_phase",
     "xyg_wasm_dashboard_plan",
+    "xyg_wasm_compound_transition",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -283,7 +285,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -294,7 +296,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    13, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    14, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -304,7 +306,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0,
   ];
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
@@ -386,7 +388,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 13,
+    expectedAbiVersion: 14,
     expectedSceneVersion: 12,
   };
 }
@@ -545,7 +547,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 13 || ready.sceneVersion !== 12) {
+  if (ready.abiVersion !== 14 || ready.sceneVersion !== 12) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1175,6 +1177,36 @@ async function run() {
       || !graphLabels.some((label) => label.textContent.endsWith("…"))) {
     throw new Error(`semantic graph labels lost Rust placement/truncation/a11y: ${graphLabels.map((label) => label.textContent).join("|")}`);
   }
+  foundationStage = "public compound disclosure lifecycle";
+  const transitionInput = {
+    nodeIds: [visibleParentId, collapsedChildId, visiblePeerId],
+    parents: semanticGraph.parents,
+    parentValidity: semanticGraph.parentValidity,
+    collapsed: semanticGraph.collapsed,
+    targetId: visibleParentId,
+    action: "expand",
+    tier: "direct",
+  };
+  const expanded = await transitionWasmCompound(semanticWorker, transitionInput).result;
+  if (!expanded.changed || expanded.collapsed.join(",") !== "0,0,0") throw new Error("Rust expand transition returned the wrong atomic state");
+  semanticView.destroy();
+  if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) throw new Error("expand update retained a stale label layer");
+  semanticView = await renderWasmSemanticGraph({ el: semanticHost, graph: { ...semanticGraph, collapsed: expanded.collapsed }, worker: semanticWorker, transfer: false });
+  const expandedIds = [];
+  semanticView.gpuTraces.forEach((trace, traceIndex) => {
+    if (trace.trace.kind !== "scatter") return;
+    for (let row=0; row<trace._sceneIds.lo.length; row++) expandedIds.push(semanticView.sceneStableId(traceIndex, row));
+  });
+  const expandedLabels = [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"][role="listitem"]')];
+  if (!expandedIds.includes(collapsedChildId) || !expandedLabels.some((label) => BigInt(label.dataset.xyStableId) === collapsedChildId)
+      || semanticHost.querySelectorAll('[data-xy-chrome="graph_labels"]').length !== 1) throw new Error("expanded child identity did not reach GPU and a11y consumers");
+  const recollapsed = await transitionWasmCompound(semanticWorker, { ...transitionInput, collapsed: expanded.collapsed, action: "toggle" }).result;
+  if (!recollapsed.changed || recollapsed.collapsed.join(",") !== "1,0,0") throw new Error("Rust toggle transition returned the wrong atomic state");
+  semanticView.destroy();
+  if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) throw new Error("collapse update retained a stale label layer");
+  semanticView = await renderWasmSemanticGraph({ el: semanticHost, graph: { ...semanticGraph, collapsed: recollapsed.collapsed }, worker: semanticWorker, transfer: false });
+  if (semanticHost.querySelectorAll('[data-xy-chrome="graph_labels"]').length !== 1
+      || [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"]')].some((label) => BigInt(label.dataset.xyStableId) === collapsedChildId)) throw new Error("recollapse retained descendant a11y identity or duplicate layers");
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const semanticCanvas = semanticView.canvas;
   const semanticGl = semanticView.gl;

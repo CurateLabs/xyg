@@ -34,6 +34,7 @@ export const XYG_WASM_SEMANTIC_GRAPH_HEADER_OFFSETS = {"version":4,"header_bytes
 export const XYG_WASM_SEMANTIC_GRAPH_THEMES = {"light":0,"dark":1} as const;
 export const XYG_WASM_SEMANTIC_GRAPH_MAX_CODE = 7 as const;
 export const XYG_WASM_SEMANTIC_GRAPH_STATE_FLAG_MASK = 127 as const;
+export const XYG_WASM_COMPOUND_TRANSITION_MAX_NODES = 1024 as const;
 export const XYG_WASM_MAX_ARENA_BYTES = 402653184 as const;
 export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = 57424 as const;
 export const XYG_WASM_AGGREGATE_VERSION = 1 as const;

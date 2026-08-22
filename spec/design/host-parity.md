@@ -333,6 +333,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   expand/collapse/toggle transaction. Native, Python, Node, and WASM only
   frame exact planes; aggregate LOD, malformed forests, duplicate IDs, and
   leaf or missing targets are refused before output changes.
+  The packaged browser entry exposes the same transition through
+  `transitionWasmCompound`; browser lifecycle evidence verifies one current
+  label layer across expand and recollapse without duplicating hierarchy
+  traversal in TypeScript.
   follow-up; curved edge rendering is not MVP-blocking.
 - **Shared dashboard admission:** the browser-only
   `ChartView.applyDashboardResourceBudget(worker, budgetBytes)` surface and

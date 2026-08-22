@@ -166,6 +166,11 @@ ABI 14 adds packed `XYGC` → `XYCO` disclosure transitions. Stable IDs
 (`u64[n]`), parents (`u64[n]`), validity (`u8[n]`), and collapse state
 (`u8[n]`) are exact and bounded to 1,024 nodes. Rust alone validates the group,
 forest, action, and Direct-LOD eligibility and computes the atomic next state.
+The public `transitionWasmCompound` helper performs strict structural framing
+and delegates the transition to that worker export. The strict-CSP browser
+evidence expands and recollapses a real semantic graph, proving descendant
+identity appears and disappears together in GPU traces and the single current
+accessibility label layer.
 The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as

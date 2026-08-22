@@ -26,6 +26,7 @@ import {
   encodeWasmSemanticGraph,
   renderWasmSemanticGraph,
 } from "./49_wasm_semantic_graph";
+import { decodeWasmCompoundTransition, encodeWasmCompoundTransition, transitionWasmCompound } from "./49_wasm_compound";
 // Prototype-augmentation modules: imported for their side effect of attaching
 // methods to ChartView.prototype. Every entry point must load them before the
 // first ChartView is constructed.
@@ -156,6 +157,9 @@ export {
   compileWasmSemanticGraph,
   compilePrepareWasmSemanticGraph,
   renderWasmSemanticGraph,
+  encodeWasmCompoundTransition,
+  decodeWasmCompoundTransition,
+  transitionWasmCompound,
 };
 export type { XygWasmAggregateTaskOptions } from "./47_wasm";
 export type {
@@ -167,4 +171,5 @@ export type {
 export type { XygWasmCoseOptions, XygWasmGraphCheckpoint, XygWasmGraphRequest } from "./49_wasm_graph";
 export type { XygTemporalPlane, XygWasmTemporalGraphBinding, XygWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 export type { XygWasmSemanticGraphInput } from "./49_wasm_semantic_graph";
+export type { XygCompoundAction, XygWasmCompoundTransitionInput, XygWasmCompoundTransitionResult } from "./49_wasm_compound";
 export default { render, decodeFrame };

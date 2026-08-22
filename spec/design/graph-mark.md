@@ -454,6 +454,10 @@ whole forest, rejects duplicate/missing/non-group targets and every non-Direct
 LOD tier, and copies the next collapse plane only after all checks succeed.
 The operation is bounded to 1,024 source nodes; thin hosts do not traverse the
 hierarchy or decide aggregate eligibility.
+Direct-browser callers use the public `transitionWasmCompound` task and feed
+its returned plane back through ordinary semantic Scene compilation. This
+keeps ChartView lifecycle, WebGL identity, and DOM accessibility plumbing in
+the browser while the disclosure and LOD decision remains Rust-owned.
 
 #### 7.1.1 Versioned GraphForge resolved style v1
 

@@ -209,6 +209,23 @@ def validate_semantic_graph(manifest: dict[str, object]) -> None:
             raise SystemExit(f"semantic_graph {key} must be a positive integer")
 
 
+def validate_compound_transition(manifest: dict[str, object]) -> None:
+    expected = {
+        "request_magic": "XYGC",
+        "request_version": 1,
+        "request_header_bytes": 40,
+        "request_planes": ["node_ids_u64", "parents_u64", "parent_validity_u8", "collapsed_u8"],
+        "output_magic": "XYCO",
+        "output_version": 1,
+        "output_header_bytes": 16,
+        "actions": {"expand": 0, "collapse": 1, "toggle": 2},
+        "lod_tiers": {"direct": 0},
+        "max_nodes": 1024,
+    }
+    if manifest.get("compound_transition") != expected:
+        raise SystemExit("compound_transition differs from the exact XYGC/XYCO v1 contract")
+
+
 def render(manifest: dict[str, object]) -> str:
     abi_version = int(manifest["abi_version"])
     scene_version = int(manifest["scene_version"])
@@ -235,6 +252,7 @@ def render(manifest: dict[str, object]) -> str:
     graph = manifest["graph"]
     temporal_graph = manifest["temporal_graph"]
     semantic_graph = manifest["semantic_graph"]
+    compound_transition = manifest["compound_transition"]
     statuses = manifest["statuses"]
     exports = manifest["exports"]
     if (
@@ -285,6 +303,7 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_SEMANTIC_GRAPH_THEMES = {json.dumps(semantic_graph['themes'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_MAX_CODE = {int(semantic_graph['semantic_code_max'])} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_STATE_FLAG_MASK = {int(semantic_graph['state_flag_mask'])} as const;",
+        f"export const XYG_WASM_COMPOUND_TRANSITION_MAX_NODES = {int(compound_transition['max_nodes'])} as const;",
         f"export const XYG_WASM_MAX_ARENA_BYTES = {max_arena_bytes} as const;",
         f"export const XYG_WASM_PAINTER_MAX_LEGEND_BYTES = {painter_max_legend_bytes} as const;",
         f"export const XYG_WASM_AGGREGATE_VERSION = {int(aggregate['version'])} as const;",
@@ -653,6 +672,7 @@ def main() -> int:
         raise SystemExit("unsupported WASM ABI manifest schema")
     validate_typed_series(manifest)
     validate_semantic_graph(manifest)
+    validate_compound_transition(manifest)
     verify_rust(manifest)
     expected = render(manifest)
     expected_rust = render_typed_series_rust(manifest)
