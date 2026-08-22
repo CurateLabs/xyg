@@ -10,6 +10,24 @@ import { ATTR_SLOTS } from "./40_gl";
 export interface GLHostClient {
   _onGlHostContextLost?: () => void;
   _onGlHostContextRestored?: () => void;
+  _dashboardResourceState?: () => {
+    derivedBytes: bigint;
+    visible: boolean;
+    interacting: boolean;
+  };
+  _applyDashboardResidency?: (retained: boolean) => void;
+}
+
+export interface GLHostDashboardSnapshot {
+  readonly revision: number;
+  readonly clients: readonly GLHostClient[];
+  readonly resources: readonly {
+    stableId: bigint;
+    derivedBytes: bigint;
+    lastUsed: bigint;
+    visible: boolean;
+    interacting: boolean;
+  }[];
 }
 
 type DrawCallback<T> = (gl: WebGL2RenderingContext) => T;
@@ -100,6 +118,11 @@ export class GLHost {
   ready = false;
 
   private readonly _clients = new Set<GLHostClient>();
+  private readonly _clientIds = new Map<GLHostClient, bigint>();
+  private readonly _clientLastUsed = new Map<GLHostClient, bigint>();
+  private _nextClientId = 1n;
+  private _nextResourceUse = 1n;
+  private _dashboardRevision = 1;
   private _maxViewport: [number, number];
   private _maxVertexAttribs: number;
   private _capacityWidth = 1;
@@ -167,7 +190,65 @@ export class GLHost {
    * obtain an uncounted live host that would never be disposed. */
   _register(client: GLHostClient): void {
     if (this._disposed) throw new Error("xy: shared WebGL host is disposed");
+    if (!this._clients.has(client)) {
+      if (this._nextClientId > 0xffffffffffffffffn || this._nextResourceUse > 0xffffffffffffffffn) {
+        throw new RangeError("xy: shared dashboard identity or resource-use sequence exhausted u64");
+      }
+      this._clientIds.set(client, this._nextClientId++);
+      this._clientLastUsed.set(client, this._nextResourceUse++);
+      this._dashboardRevision += 1;
+    }
     this._clients.add(client);
+  }
+
+  /** Capture measured rebuildable client resources for one Rust-owned plan. */
+  dashboardResourceSnapshot(): GLHostDashboardSnapshot {
+    if (this._disposed || this._clients.size > 4096) {
+      throw new RangeError("xy: shared dashboard resource snapshot exceeds its bound");
+    }
+    const clients: GLHostClient[] = [];
+    const resources: GLHostDashboardSnapshot["resources"][number][] = [];
+    for (const client of this._clients) {
+      const state = client._dashboardResourceState?.();
+      const stableId = this._clientIds.get(client);
+      const lastUsed = this._clientLastUsed.get(client);
+      if (!state || stableId === undefined || lastUsed === undefined) continue;
+      clients.push(client);
+      resources.push(Object.freeze({ stableId, lastUsed, ...state }));
+    }
+    return Object.freeze({
+      revision: this._dashboardRevision,
+      clients: Object.freeze(clients),
+      resources: Object.freeze(resources),
+    });
+  }
+
+  /** Record actual chart resource use independently of visibility changes. */
+  markDashboardResourceUsed(client: GLHostClient): void {
+    if (this._disposed || !this._clients.has(client)) return;
+    if (this._nextResourceUse > 0xffffffffffffffffn) {
+      throw new RangeError("xy: shared dashboard resource-use sequence exhausted u64");
+    }
+    this._clientLastUsed.set(client, this._nextResourceUse++);
+  }
+
+  /** Apply only the exact snapshot Rust planned; changed state retries later. */
+  applyDashboardResidency(snapshot: GLHostDashboardSnapshot, retained: readonly boolean[]): boolean {
+    if (this._disposed || this._activeClient || snapshot.revision !== this._dashboardRevision
+        || retained.length !== snapshot.clients.length) return false;
+    const current = this.dashboardResourceSnapshot();
+    if (current.clients.length !== snapshot.clients.length
+        || current.resources.some((resource, index) => {
+          const expected = snapshot.resources[index];
+          return current.clients[index] !== snapshot.clients[index]
+            || resource.stableId !== expected.stableId
+            || resource.derivedBytes !== expected.derivedBytes
+            || resource.lastUsed !== expected.lastUsed
+            || resource.visible !== expected.visible
+            || resource.interacting !== expected.interacting;
+        })) return false;
+    snapshot.clients.forEach((client, index) => client._applyDashboardResidency?.(retained[index] === true));
+    return true;
   }
 
   /** Resolve one immutable compiled shader for this host context. Programs
@@ -288,6 +369,9 @@ export class GLHost {
    * when the final registered ChartView leaves. */
   release(client: GLHostClient): void {
     if (this._disposed || !this._clients.delete(client)) return;
+    this._clientIds.delete(client);
+    this._clientLastUsed.delete(client);
+    this._dashboardRevision += 1;
     if (this._activeClient === client) this._activeClient = null;
     if (this._clients.size === 0) this._dispose();
   }

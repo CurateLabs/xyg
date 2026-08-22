@@ -1136,6 +1136,60 @@ async function run() {
   if (updatedLayers.length !== 1 || updatedItems.length !== 1 || updatedItems[0].textContent !== "Updated node") {
     throw new Error("semantic graph update did not retain exactly one current Rust label layer");
   }
+
+  foundationStage = "Rust dashboard admission applied to shared GPU pick resources";
+  const peerHost = document.body.appendChild(document.createElement("div"));
+  const peerView = await renderWasmSemanticGraph({
+    el: peerHost, graph: semanticGraph, worker: semanticWorker, transfer: false,
+  });
+  const sharedHost = semanticView._glHost;
+  if (!sharedHost || peerView._glHost !== sharedHost || !semanticView.pickTex || !peerView.pickTex) {
+    throw new Error("dashboard admission probe did not start with two pickable clients on one shared host");
+  }
+  const settleDeadline = performance.now() + 2000;
+  while (semanticView._interactionTransitionActive() || peerView._interactionTransitionActive()) {
+    if (performance.now() >= settleDeadline) throw new Error("dashboard admission views did not settle");
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+  // Freeze observer-driven visibility before assigning the deterministic
+  // dashboard state; hosted Chromium can deliver its first observation while
+  // the worker is planning, which is a legitimate stale-plan rejection.
+  semanticView._ctxIo?.disconnect();
+  peerView._ctxIo?.disconnect();
+  semanticView._ctxVisible = true;
+  peerView._ctxVisible = true;
+  sharedHost.markDashboardResourceUsed(peerView);
+  sharedHost.markDashboardResourceUsed(semanticView);
+  const admittedBytes = semanticView._dashboardResourceState().derivedBytes;
+  const peerIds = peerView.gpuTraces.map((trace, traceIndex) =>
+    Array.from(trace._sceneIds.lo, (_, row) => peerView.sceneStableId(traceIndex, row)));
+  const applyResidency = sharedHost.applyDashboardResidency.bind(sharedHost);
+  let admissionAttempts = 0;
+  sharedHost.applyDashboardResidency = (...args) => {
+    admissionAttempts += 1;
+    return admissionAttempts === 1 ? false : applyResidency(...args);
+  };
+  const admission = await semanticView.applyDashboardResourceBudget(semanticWorker, admittedBytes);
+  sharedHost.applyDashboardResidency = applyResidency;
+  if (!admission.applied || admissionAttempts < 2 || admission.plan.retained.join(",") !== "true,false"
+      || admission.beforeBytes !== admittedBytes * 2n || admission.afterBytes !== admittedBytes
+      || !semanticView.pickTex || peerView.pickTex || peerView.pickFbo) {
+    throw new Error(`Rust dashboard recency admission was not applied to two visible pick resources: retained=${admission.plan.retained} applied=${admission.applied} bytes=${admission.beforeBytes}/${admission.afterBytes}/${admittedBytes} textures=${!!semanticView.pickTex}/${!!peerView.pickTex}/${!!peerView.pickFbo}`);
+  }
+  peerView._pickAt(-1, -1);
+  const rebuiltPeerIds = peerView.gpuTraces.map((trace, traceIndex) =>
+    Array.from(trace._sceneIds.lo, (_, row) => peerView.sceneStableId(traceIndex, row)));
+  if (!peerView.pickTex || JSON.stringify(peerIds, (_, value) => typeof value === "bigint" ? value.toString() : value)
+      !== JSON.stringify(rebuiltPeerIds, (_, value) => typeof value === "bigint" ? value.toString() : value)) {
+    throw new Error("evicted pick resources did not rebuild with stable source identity");
+  }
+  const staleSnapshot = sharedHost.dashboardResourceSnapshot();
+  const stalePlan = await planWasmDashboardResources(semanticWorker, staleSnapshot.resources, admittedBytes);
+  peerView._ctxVisible = false;
+  if (sharedHost.applyDashboardResidency(staleSnapshot, stalePlan.retained)) {
+    throw new Error("shared host applied a Rust dashboard plan after visibility changed");
+  }
+  peerView.destroy(); peerHost.remove();
   semanticView.destroy();
   if (semanticHost.querySelector('[data-xy-chrome="graph_labels"]')) {
     throw new Error("updated semantic graph destroy retained its label layer");
@@ -1565,7 +1619,15 @@ async function run() {
   if (graphResult.x[0] !== -0.5 || graphResult.y[0] !== 0) throw new Error("browser WASM CoSE moved a Rust-owned pin");
   const staleGraph = graphWorker.layoutCose(graphInput(), { sequence: 30, revision: 30, chunkSteps: 1 });
   const currentGraph = graphWorker.layoutCose(graphInput(), { sequence: 31, revision: 31, chunkSteps: 8 });
-  await rejected(staleGraph.result, "XYG_WASM_CANCELLED", 6);
+  try {
+    await staleGraph.result;
+    throw new Error("superseded graph request unexpectedly published");
+  } catch (error) {
+    const validSupersession = error instanceof XygWasmError
+      && ((error.code === "XYG_WASM_CANCELLED" && error.status === 6)
+        || (error.code === "XYG_WASM_STALE_SEQUENCE" && error.status === 7));
+    if (!validSupersession) throw error;
+  }
   if ((await currentGraph.result).revision !== 31) throw new Error("superseded graph reply crossed revisions");
   const callbackFailure = graphWorker.layoutCose(graphInput(), {
     sequence: 32,

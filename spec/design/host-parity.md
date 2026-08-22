@@ -330,3 +330,13 @@ client must not grow a parallel “JS layout/LOD” product path.
   real WebGL paint plus deterministic label/legend accessibility and stable
   IDs; it does not claim direct-WASM compound ingress.
   follow-up; curved edge rendering is not MVP-blocking.
+- **Shared dashboard admission:** the browser-only
+  `ChartView.applyDashboardResourceBudget(worker, budgetBytes)` surface and
+  its `applyWasmDashboardResourceBudget` boundary
+  snapshots logical bytes and lifecycle signals from one document-scoped
+  `GLHost`, obtains retain bits from Rust `XYDP`, and applies them only if the
+  exact snapshot is still current. The first evictable class is the per-chart
+  RGBA8 pick attachment; canonical Scene data and source identity stay intact,
+  and picking recreates the attachment lazily. Python, Reflex, and Node HTML
+  inherit this browser compositor when they use the packaged client; none owns
+  a parallel admission policy.
