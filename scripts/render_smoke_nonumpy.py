@@ -474,11 +474,15 @@ try{{
     const exportThemePreserved = themedExport.includes("#123456")
       && themedExport.includes("Smoke Export Sans");
     const shortcutHintsAbsent = !v.root.querySelector("[data-xy-modebar-menu-shortcut]");
+    const defaultExportName = v._exportFilename.call({{
+      spec: {{}},
+      _exportConfig: () => ({{}}),
+    }}, "svg") === "xyg-chart.svg";
     const modebarExport = exportOpened && typeof v._exportCsvText === "function"
       && typeof v._exportSvgMarkup === "function" && typeof v._exportPng === "function"
       && exportMenu.style.display === "none"
       && exportButton.getAttribute("aria-expanded") === "false"
-      && exportThemePreserved && shortcutHintsAbsent ? 1 : 0;
+      && exportThemePreserved && shortcutHintsAbsent && defaultExportName ? 1 : 0;
     v._setDragMode("pan");
     const lockedView = JSON.stringify(v.view);
     if (panButton) panButton.dispatchEvent(new MouseEvent("click", {{bubbles:true}}));

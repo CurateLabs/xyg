@@ -1,6 +1,6 @@
 # Bazel + Blacksmith CI (graph dual-host)
 
-The graphforge-xy dual-host graph MVP is gated by **Bazel + Blacksmith**,
+The XYG dual-host graph MVP is gated by **Bazel + Blacksmith**,
 not by converting every existing GitHub Actions workflow.
 
 ## Scope

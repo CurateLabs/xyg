@@ -2405,11 +2405,11 @@ Object.assign(ChartView.prototype, {
   _exportFilename(extension) {
     const configured = this._exportConfig().filename;
     if (typeof configured === "string" && configured) return `${configured}.${extension}`;
-    const title = String(this.spec.title || "xy-chart")
+    const title = String(this.spec.title || "xyg-chart")
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "xy-chart";
+      .replace(/^-+|-+$/g, "") || "xyg-chart";
     return `${title}.${extension}`;
   },
 

@@ -62,7 +62,7 @@ export function assertSupportedPlatform(
         "XYG Node does not support Windows arm64.",
         "Install on win32-x64, or use the Python/browser hosts on this machine.",
         "Supported Node native packages: darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64.",
-        "Remediation: run GraphForge/XYG Node on a supported architecture, or set XYG_NATIVE_LIB only on a supported platform during development.",
+        "Remediation: run XYG Node on a supported architecture, or set XYG_NATIVE_LIB only on a supported platform during development.",
       ].join(" "),
     );
   }
