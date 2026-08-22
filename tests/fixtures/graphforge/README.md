@@ -16,4 +16,8 @@ Regenerate with:
 
 ```bash
 PYTHONPATH=python uv run python scripts/gen_graphforge_ipc_fixtures.py
+cargo build --release -p xyg-core
+XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.dylib" uv run python scripts/gen_graphforge_semantic_fixture.py --write
 ```
+
+Omit `--write` in the second command to verify the committed semantic hashes.

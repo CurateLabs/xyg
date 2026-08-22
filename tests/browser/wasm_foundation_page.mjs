@@ -1168,6 +1168,7 @@ async function run() {
     const expectedBackground = theme === "dark" ? "rgb(3, 7, 18)" : "rgb(255, 255, 255)";
     if (getComputedStyle(fixtureHost.firstElementChild).backgroundColor !== expectedBackground
         || items.length < 2 || items.some((item) => !item.dataset.xyStableId || !item.textContent)
+        || !items.some((item) => item.textContent === "outside loop" && item.dataset.xyStableId === "3")
         || legendLabels.join("|") !== expectedLegendLabels.join("|")
         || legendItems.some((item) => item.getAttribute("aria-label") !== item.textContent)) {
       throw new Error(`GraphForge ${theme} visual/a11y golden drifted: labels=${items.length} legends=${legendItems.length}`);
@@ -1175,7 +1176,7 @@ async function run() {
     const ids = fixtureView.gpuTraces.flatMap((trace, traceIndex) =>
       Array.from(trace._sceneIds.lo, (_, row) => fixtureView.sceneStableId(traceIndex, row)));
     const uniqueIds = [...new Set(ids)].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
-    const expectedIds = [1n, 2n, 1n << 32n, (1n << 32n) + 1n, (1n << 32n) + 2n,
+    const expectedIds = [1n, 2n, 3n, 1n << 32n, (1n << 32n) + 1n, (1n << 32n) + 2n,
       (1n << 32n) + 3n, (1n << 32n) + 4n];
     if (uniqueIds.join("|") !== expectedIds.join("|")) {
       throw new Error(`GraphForge ${theme} source identities drifted: ${uniqueIds.join("|")}`);

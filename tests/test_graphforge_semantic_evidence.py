@@ -69,14 +69,16 @@ def test_graphforge_semantic_fixture_has_exact_cross_consumer_goldens() -> None:
         }
         assert actual == expected
         assert b"Collapsed evidence group" in svg
-        # The outside label is deliberately truncated by Rust's bounded label policy.
-        assert b">\xe2\x80\xa6</text>" in svg
+        assert b"Visible pinned outside" in svg
         assert b"Hidden child" not in svg and b"Hidden selected grandchild" not in svg
         assert b"omitted internal" not in svg
         assert b"remapped boundary" in svg
+        assert b"outside loop" in svg
         assert b'data-xy-stable-id="4294967296"' in svg
         assert b'data-xy-stable-id="4294967300"' in svg
         assert b'data-xy-stable-id="2"' in svg
+        assert b'data-xy-stable-id="3"' in svg
+        assert b'data-xy-stable-id="1"' not in svg
         pixels = _native.rasterize(raster, int(fixture["width"]), int(fixture["height"]))
         assert np.unique(pixels.reshape(-1, 4), axis=0).shape[0] >= 8
 

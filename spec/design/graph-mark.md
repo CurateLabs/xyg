@@ -504,10 +504,15 @@ a transitive collapsed hierarchy; a boundary edge; an internal omitted edge;
 and a self-loop. Exact SHA-256 goldens cover Scene v12, browser-painter bytes,
 SVG, raster commands, and PNG in light and dark themes. The native evidence
 asserts preserved node/edge source IDs, collapse remapping, omitted descendants,
-bounded label truncation, and non-flat raster output. The browser smoke reuses
+accepted label output, and non-flat raster output. The browser smoke reuses
 the same semantic columns through the packaged direct-WASM worker and public
 API, and checks theme backgrounds, resolved visual diversity, stable source
 IDs, deterministic 15-row legend order, and label/legend accessibility roles.
+An authored visible self-loop remains routed loop geometry with its original
+edge ID and label; only a non-loop boundary whose distinct endpoints both map
+to the same collapsed representative is omitted as newly internal. Regenerate
+or verify every committed consumer hash with
+`scripts/gen_graphforge_semantic_fixture.py --write` or without `--write`.
 The browser check intentionally exercises the current direct-only XYGG v2
 contract; transitive compound authoring through direct WASM remains gated on a
 future ABI revision and must not be inferred from this fixture.

@@ -801,7 +801,8 @@ fn encode_semantic_graph_scene_internal(
         if edges[index].state == STATE_AGGREGATE
             || edges[index].state == STATE_FILTERED
             || routes[index].is_empty()
-            || routed_sources[index] == routed_targets[index]
+            || (routed_sources[index] == routed_targets[index]
+                && input.sources[index] != input.targets[index])
         {
             continue;
         }
@@ -856,7 +857,10 @@ fn encode_semantic_graph_scene_internal(
     // Rust first routes multiedges and loops, then expands resolved dash and
     // arrow geometry in screen space. Hosts never see raw topology decisions.
     for (index, style) in edges.iter().enumerate() {
-        if style.opacity <= 0.0 || routed_sources[index] == routed_targets[index] {
+        if style.opacity <= 0.0
+            || (routed_sources[index] == routed_targets[index]
+                && input.sources[index] != input.targets[index])
+        {
             continue;
         }
         let layer_count = 1
@@ -1685,6 +1689,7 @@ mod tests {
         }
         assert!(edge_ids.iter().all(|id| (1..=3).contains(id)));
         assert!(edge_ids.iter().filter(|&&id| id == 1).count() > 4);
+        assert!(edge_ids.iter().filter(|&&id| id == 3).count() >= 3);
         assert!(painter.windows(4).any(|window| window == b"XYLG"));
         assert!(painter.windows(4).any(|window| window == b"XYLB"));
         assert!(raster
