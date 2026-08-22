@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Prove an installed XYG Python host needs no Node, browser, or Reflex runtime."""
+"""Prove an installed plain-XYG wheel needs no optional host framework."""
 
 from __future__ import annotations
 
 import subprocess
 import sys
-from importlib import resources
+from importlib import metadata, resources
 from pathlib import Path
 from typing import NoReturn
 
@@ -28,6 +28,17 @@ def _new_optional_modules(before: set[str]) -> list[str]:
     )
 
 
+def _assert_reflex_not_installed() -> None:
+    try:
+        distribution = metadata.distribution("reflex")
+    except metadata.PackageNotFoundError:
+        return
+    raise AssertionError(
+        "plain XYG smoke environment unexpectedly contains the optional "
+        f"Reflex distribution {distribution.version}"
+    )
+
+
 def main(*, require_installed: bool = True) -> int:
     modules_before = set(sys.modules)
     original_popen = subprocess.Popen
@@ -40,6 +51,8 @@ def main(*, require_installed: bool = True) -> int:
             raise AssertionError(
                 f"plain XYG smoke imported {module_path} outside isolated environment {sys.prefix}"
             )
+        if require_installed:
+            _assert_reflex_not_installed()
         eager = _new_optional_modules(modules_before)
         if eager:
             raise AssertionError(f"plain import loaded optional host frameworks: {eager}")
@@ -56,7 +69,10 @@ def main(*, require_installed: bool = True) -> int:
             raise AssertionError(f"plain chart/export loaded Reflex: {leaked}")
     finally:
         subprocess.Popen = original_popen
-    print("plain XYG Python host OK: native Rust + bundled offline client; no Node/browser/Reflex")
+    print(
+        "plain XYG Python host OK: native Rust + bundled offline client; "
+        "no Python subprocess or Reflex import"
+    )
     return 0
 
 

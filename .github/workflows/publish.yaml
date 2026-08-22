@@ -136,7 +136,7 @@ jobs:
           uv pip install -p smoke dist/*.whl numpy anywidget "reflex>=0.9.6"
           ./smoke/bin/python -c "import importlib.metadata as m, reflex_xy, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native', k.__file__)" \
             || ./smoke/Scripts/python.exe -c "import importlib.metadata as m, reflex_xy, xyg.kernels as k; assert k.BACKEND=='native', k.BACKEND; assert reflex_xy.__version__ == m.version('xyg'); print('native')"
-      - name: Prove plain Python needs no Node, browser, or Reflex runtime
+      - name: Prove plain Python wheel needs no optional host framework
         if: matrix.native
         shell: bash
         run: |

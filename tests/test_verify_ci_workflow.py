@@ -2328,6 +2328,53 @@ def test_release_workflow_accepts_current_gates() -> None:
     assert verify_ci_workflow.validate_release_workflow() == []
 
 
+def test_release_workflow_rejects_duplicate_plain_python_smoke(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    marker = "      - name: Prove plain Python wheel needs no optional host framework\n"
+    start = workflow.index(marker)
+    end = workflow.index("      - uses: actions/upload-artifact@", start)
+    step = workflow[start:end]
+    path = tmp_path / "publish.yaml"
+    path.write_text(workflow[:end] + step + workflow[end:], encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("exactly one active named plain-Python" in error for error in errors)
+
+
+def test_release_workflow_rejects_unconditioned_plain_python_smoke(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    marker = "      - name: Prove plain Python wheel needs no optional host framework\n"
+    start = workflow.index(marker)
+    condition = "        if: matrix.native\n"
+    condition_start = workflow.index(condition, start)
+    path = tmp_path / "publish.yaml"
+    path.write_text(
+        workflow[:condition_start] + workflow[condition_start + len(condition) :],
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("exact if: matrix.native" in error for error in errors)
+
+
+def test_release_workflow_rejects_plain_python_command_hidden_in_heredoc(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
+    command = '          cp scripts/plain_python_smoke.py "$RUNNER_TEMP/plain-python-smoke.py"\n'
+    hidden = (
+        "          python - <<'PY'\n"
+        '          cp scripts/plain_python_smoke.py "$RUNNER_TEMP/plain-python-smoke.py"\n'
+        "          PY\n"
+    )
+    path = tmp_path / "publish.yaml"
+    path.write_text(workflow.replace(command, hidden, 1), encoding="utf-8")
+
+    errors = verify_ci_workflow.validate_release_workflow(path)
+
+    assert any("exact isolated installed-wheel commands" in error for error in errors)
+
+
 def test_release_workflow_rejects_inherited_upstream_tag_trigger(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/publish.yaml").read_text(encoding="utf-8")
     path = tmp_path / "publish.yaml"
