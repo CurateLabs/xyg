@@ -136,6 +136,7 @@ export class GLHost {
   private _capacityHeight = 1;
   private _activeClient: GLHostClient | null = null;
   private readonly _frameCallbacks = new Map<GLHostClient, () => void>();
+  private readonly _dashboardListeners = new Set<() => void>();
   private _frameRaf: number | null = null;
   private _frameBatches = 0;
   private _frameCallbackCount = 0;
@@ -209,8 +210,9 @@ export class GLHost {
       this._clientIds.set(client, this._nextClientId++);
       this._clientLastUsed.set(client, this._nextResourceUse++);
       this._dashboardRevision += 1;
+      this._clients.add(client);
+      this._notifyDashboardListeners();
     }
-    this._clients.add(client);
   }
 
   /** Capture measured rebuildable client resources for one Rust-owned plan. */
@@ -242,6 +244,23 @@ export class GLHost {
       throw new RangeError("xy: shared dashboard resource-use sequence exhausted u64");
     }
     this._clientLastUsed.set(client, this._nextResourceUse++);
+    this._dashboardRevision += 1;
+    this._notifyDashboardListeners();
+  }
+
+  /** Observe measurement/lifecycle changes without moving admission policy
+   * into the host. The listener only asks the Rust-backed coordinator to take
+   * a new snapshot; it never ranks or evicts clients itself. */
+  subscribeDashboardResources(listener: () => void): () => void {
+    if (this._disposed || typeof listener !== "function") return () => {};
+    this._dashboardListeners.add(listener);
+    return () => { this._dashboardListeners.delete(listener); };
+  }
+
+  dashboardResourceChanged(client: GLHostClient): void {
+    if (this._disposed || !this._clients.has(client)) return;
+    this._dashboardRevision += 1;
+    this._notifyDashboardListeners();
   }
 
   /** Coalesce every registered chart's next paint into one document frame. */
@@ -424,6 +443,11 @@ export class GLHost {
     this._dashboardRevision += 1;
     if (this._activeClient === client) this._activeClient = null;
     if (this._clients.size === 0) this._dispose();
+    else this._notifyDashboardListeners();
+  }
+
+  private _notifyDashboardListeners(): void {
+    for (const listener of this._dashboardListeners) listener();
   }
 
   private _canRun(client: GLHostClient): boolean {
@@ -729,6 +753,7 @@ export class GLHost {
   private _dispose(): void {
     if (this._disposed || this._clients.size) return;
     this._disposed = true;
+    this._dashboardListeners.clear();
     if (this._frameRaf !== null) cancelAnimationFrame(this._frameRaf);
     this._frameRaf = null;
     this._frameCallbacks.clear();

@@ -343,3 +343,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   color paints into one animation-frame batch without ranking them in the host;
   this browser execution mechanism therefore preserves the Rust-owned
   admission decision across Python, Reflex, Node HTML, and direct-browser use.
+  `ChartView.watchDashboardResourceBudget(worker, budgetBytes)` adds opt-in
+  continuous enforcement: shared-host lifecycle and measured-resource changes
+  coalesce into serialized calls through that same Rust boundary. The watcher
+  performs no ranking, and its controller can be disposed without destroying
+  any chart or canonical state.

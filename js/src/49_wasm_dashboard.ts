@@ -77,3 +77,75 @@ export async function applyWasmDashboardResourceBudget(
   }
   throw new Error("unreachable dashboard admission retry state");
 }
+
+export interface XygWasmDashboardAdmissionController {
+  readonly settled: Promise<void>;
+  request(): void;
+  dispose(): void;
+}
+
+/** Keep one shared host under a Rust-owned resource budget as its measured
+ * client state changes. Notifications are coalesced and never overlap; a
+ * change during an in-flight plan schedules exactly one fresh snapshot. */
+export function watchWasmDashboardResourceBudget(
+  worker: XygWasmWorker,
+  host: GLHost,
+  budgetBytes: bigint,
+): XygWasmDashboardAdmissionController {
+  // Validate before installing a lifecycle listener.
+  encodeWasmDashboardPlan([], budgetBytes);
+  if (!host || typeof host.subscribeDashboardResources !== "function") {
+    throw new TypeError("a shared GLHost is required");
+  }
+  let disposed = false, scheduled = false, running = false, rerun = false;
+  let resolveSettled: (() => void) | null = null;
+  let rejectSettled: ((reason: unknown) => void) | null = null;
+  let settled = Promise.resolve();
+  const request = () => {
+    if (disposed) return;
+    if (running) { rerun = true; return; }
+    if (scheduled) return;
+    scheduled = true;
+    settled = new Promise<void>((resolve, reject) => { resolveSettled = resolve; rejectSettled = reject; });
+    // Automatic passes may happen long after the caller last awaited
+    // `settled`; mark the rejection observed while preserving it for callers
+    // that do await the original promise.
+    void settled.catch(() => {});
+    queueMicrotask(async () => {
+      scheduled = false;
+      if (disposed) { resolveSettled?.(); return; }
+      running = true;
+      let failure: unknown = null;
+      try {
+        do {
+          rerun = false;
+          await applyWasmDashboardResourceBudget(worker, host, budgetBytes);
+        } while (rerun && !disposed);
+      } catch (error) {
+        failure = error;
+        rejectSettled?.(error);
+      } finally {
+        running = false;
+        const resolve = resolveSettled;
+        resolveSettled = null;
+        rejectSettled = null;
+        if (failure === null) resolve?.();
+      }
+    });
+  };
+  const unsubscribe = host.subscribeDashboardResources(request);
+  request();
+  return Object.freeze({
+    get settled() { return settled; },
+    request,
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      rerun = false;
+      unsubscribe();
+      resolveSettled?.();
+      resolveSettled = null;
+      rejectSettled = null;
+    },
+  });
+}

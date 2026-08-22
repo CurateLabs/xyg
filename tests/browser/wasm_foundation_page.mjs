@@ -9,6 +9,7 @@ import {
   hydrateWasmPainter,
   layoutWasmCose,
   planWasmDashboardResources,
+  watchWasmDashboardResourceBudget,
   renderWasmChart,
   renderWasmColumns,
   renderWasmScene,
@@ -18,6 +19,16 @@ import {
   XygWasmTemporalController,
   XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
+
+function dashboardPlanResponse(retained = true) {
+  const bytes = new Uint8Array(25), view = new DataView(bytes.buffer);
+  bytes.set([88, 89, 68, 79]);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, 1, true);
+  view.setBigUint64(16, retained ? 4n : 0n, true);
+  bytes[24] = retained ? 1 : 0;
+  return bytes.buffer;
+}
 
 function writeDefaultSceneV9Chrome(bytes, view, body) {
   bytes.set([32, 32, 32, 217], body + 8);
@@ -570,6 +581,85 @@ async function run() {
     throw new Error(`Rust dashboard priority/byte plan drifted: ${dashboardPlan.retained.join(",")}/${dashboardPlan.retainedBytes}`);
   }
   await dashboardWorker.dispose();
+
+  foundationStage = "automatic dashboard admission concurrency lifecycle";
+  let dashboardListener = null, planCalls = 0, inFlightPlans = 0, maxInFlightPlans = 0, appliedPlans = 0;
+  const pendingPlans = [];
+  const instrumentedWorker = {
+    dashboardPlan() {
+      planCalls += 1;
+      inFlightPlans += 1;
+      maxInFlightPlans = Math.max(maxInFlightPlans, inFlightPlans);
+      let resolveResult, rejectResult;
+      const result = new Promise((resolve, reject) => { resolveResult = resolve; rejectResult = reject; });
+      pendingPlans.push({
+        resolve() { inFlightPlans -= 1; resolveResult(dashboardPlanResponse()); },
+        reject(error) { inFlightPlans -= 1; rejectResult(error); },
+      });
+      return { result };
+    },
+  };
+  const instrumentedHost = {
+    subscribeDashboardResources(listener) {
+      dashboardListener = listener;
+      return () => { if (dashboardListener === listener) dashboardListener = null; };
+    },
+    dashboardResourceSnapshot() {
+      return Object.freeze({
+        revision: 1,
+        clients: Object.freeze([{}]),
+        resources: Object.freeze([Object.freeze({
+          stableId: 1n, derivedBytes: 4n, lastUsed: 1n, visible: true, interacting: false,
+        })]),
+      });
+    },
+    applyDashboardResidency(_snapshot, retained) {
+      appliedPlans += 1;
+      return retained.length === 1 && retained[0] === true;
+    },
+  };
+  const waitForPlanCall = async (count) => {
+    for (let turn = 0; turn < 20 && planCalls < count; turn++) await Promise.resolve();
+    if (planCalls !== count) throw new Error(`automatic admission expected ${count} plan calls, saw ${planCalls}`);
+  };
+  const watcher = watchWasmDashboardResourceBudget(instrumentedWorker, instrumentedHost, 4n);
+  const coalescedCycle = watcher.settled;
+  await waitForPlanCall(1);
+  for (let index = 0; index < 8; index++) dashboardListener();
+  pendingPlans.shift().resolve();
+  await waitForPlanCall(2);
+  if (maxInFlightPlans !== 1 || pendingPlans.length !== 1) {
+    throw new Error(`automatic admission overlapped or failed to coalesce: ${maxInFlightPlans}/${pendingPlans.length}`);
+  }
+  pendingPlans.shift().resolve();
+  await coalescedCycle;
+  if (planCalls !== 2 || appliedPlans !== 2 || inFlightPlans !== 0) {
+    throw new Error(`automatic admission follow-up drifted: ${planCalls}/${appliedPlans}/${inFlightPlans}`);
+  }
+  dashboardListener();
+  const disposedCycle = watcher.settled;
+  watcher.dispose();
+  await disposedCycle;
+  await Promise.resolve();
+  if (dashboardListener !== null || planCalls !== 2) {
+    throw new Error("automatic admission disposal retained or executed queued work");
+  }
+  const recoveringWatcher = watchWasmDashboardResourceBudget(instrumentedWorker, instrumentedHost, 4n);
+  const rejectedCycle = recoveringWatcher.settled;
+  await waitForPlanCall(3);
+  pendingPlans.shift().reject(new Error("deterministic planner rejection"));
+  let sawPlannerRejection = false;
+  try { await rejectedCycle; } catch (error) { sawPlannerRejection = error?.message === "deterministic planner rejection"; }
+  if (!sawPlannerRejection) throw new Error("automatic admission did not expose planner rejection");
+  dashboardListener();
+  const recoveredCycle = recoveringWatcher.settled;
+  await waitForPlanCall(4);
+  pendingPlans.shift().resolve();
+  await recoveredCycle;
+  if (planCalls !== 4 || appliedPlans !== 3 || maxInFlightPlans !== 1) {
+    throw new Error(`automatic admission did not recover: ${planCalls}/${appliedPlans}/${maxInFlightPlans}`);
+  }
+  recoveringWatcher.dispose();
 
   const temporalEvents = [];
   const temporalWorker = createXygWasmWorker({
@@ -1219,6 +1309,17 @@ async function run() {
       !== JSON.stringify(rebuiltPeerIds, (_, value) => typeof value === "bigint" ? value.toString() : value)) {
     throw new Error("evicted pick resources did not rebuild with stable source identity");
   }
+  const automaticAdmission = semanticView.watchDashboardResourceBudget(semanticWorker, admittedBytes);
+  await automaticAdmission.settled;
+  if (semanticView.pickTex || !peerView.pickTex) {
+    throw new Error("automatic Rust admission did not retain the most recently used peer");
+  }
+  semanticView._pickAt(-1, -1);
+  await automaticAdmission.settled;
+  if (!semanticView.pickTex || peerView.pickTex || peerView.pickFbo) {
+    throw new Error("automatic Rust admission did not replan after active resource use");
+  }
+  automaticAdmission.dispose();
   const staleSnapshot = sharedHost.dashboardResourceSnapshot();
   const stalePlan = await planWasmDashboardResources(semanticWorker, staleSnapshot.resources, admittedBytes);
   peerView._ctxVisible = false;

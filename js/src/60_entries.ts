@@ -2,8 +2,8 @@ import { bytesToSpan, decodeFrame, payloadBuffers, payloadCoherent } from "./00_
 import { ChartView } from "./50_chartview";
 import { MARK_KINDS, markOf } from "./55_marks";
 import { createXygWasmWorker, XygWasmError, XygWasmWorker } from "./47_wasm";
-export { encodeWasmDashboardPlan, decodeWasmDashboardPlan, planWasmDashboardResources, applyWasmDashboardResourceBudget } from "./49_wasm_dashboard";
-export type { XygWasmDashboardResource } from "./49_wasm_dashboard";
+export { encodeWasmDashboardPlan, decodeWasmDashboardPlan, planWasmDashboardResources, applyWasmDashboardResourceBudget, watchWasmDashboardResourceBudget } from "./49_wasm_dashboard";
+export type { XygWasmDashboardResource, XygWasmDashboardAdmissionController } from "./49_wasm_dashboard";
 import { hydrateWasmPainter, renderWasmScene } from "./48_wasm_scene";
 import {
   compilePrepareWasmScene,
