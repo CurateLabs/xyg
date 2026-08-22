@@ -556,7 +556,15 @@ Before tagging an `xyg-v*` release:
   Rust panics from unwinding across the Python/`ctypes` C ABI boundary.
   `scripts/pyodide_load_smoke.py` installs the exact built artifact with
   micropip, loads the C ABI through `ctypes`, verifies `xyg_abi_version`, and
-  calls the native `min_max` kernel. PEP 783 platform tags are accepted by
+  calls the native `min_max` kernel. It then disables network access and makes
+  the actual Pyodide runtime consume every Rust-generated XYTS conformance
+  Scene, exercising Scene v11 SVG and raster-command lowering. Dependency and
+  wheel provisioning precede that offline boundary; browser CSP is separately
+  proven by the local-only direct-WASM smoke because CSP does not apply to the
+  Node-hosted Pyodide runtime. Filesystem-backed XYGC/tile-store ABI entries
+  remain present but fail closed on Emscripten, where that native filesystem
+  product surface is unsupported; otherwise one omitted symbol would prevent
+  every supported in-memory kernel from loading. PEP 783 platform tags are accepted by
   PyPI, so the runtime-verified wheel joins the same trusted-publishing batch
   as the native wheels and sdist; Pyodide 314 users can install it with
   `await micropip.install("xyg")`. The wasm job is release-blocking so an ABI or

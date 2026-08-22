@@ -287,7 +287,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: wasm-playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Verify generated WASM adapter
-        run: python3 scripts/gen_wasm_abi.py --check
+        run: |
+          python3 scripts/gen_wasm_abi.py --check
+          cargo run -p xyg-wasm --bin xyts_conformance -- --check
       - name: Test raw lifecycle adapter natively
         run: cargo test -p xyg-wasm
       - name: Build raw browser adapter without raster or PNG

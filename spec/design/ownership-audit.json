@@ -523,6 +523,14 @@
       "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
     },
     {
+      "path": "crates/xyg-wasm/src/bin/xyts_conformance.rs",
+      "current_owner": "Rust WASM lifecycle adapter",
+      "policy": "rust-wasm-abi",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
       "path": "crates/xyg-wasm/src/graph.rs",
       "current_owner": "Rust WASM lifecycle adapter",
       "policy": "rust-wasm-abi",

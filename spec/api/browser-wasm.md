@@ -29,3 +29,13 @@ termination can interrupt Rust expansion, Scene encoding, or painter lowering
 without disposing the caller's lifecycle Worker. Rust remains authoritative for identities, defaults, domains,
 geometry, canonical Scene encoding, and painter lowering; TypeScript only
 frames transferable columns and schedules lifecycle checkpoints.
+
+## Cross-host fixture contract
+
+Regenerate `tests/fixtures/xyts_cross_host.json` with
+`cargo run -p xyg-wasm --bin xyts_conformance`; use `-- --check` in validation.
+The JSON carries canonical XYTS requests plus exact Scene v11 and painter v8
+bytes. Browser tests submit the requests to a real Worker/WASM instance. Native
+Python, native Node, and Pyodide validate the resulting Scene through their
+Rust consumers, because XYTS itself is browser-only ingress. Consumers must
+not copy its default, identity, overflow, or bar-width policy.

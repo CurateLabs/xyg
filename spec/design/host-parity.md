@@ -65,6 +65,19 @@ They are not the live paint wire and are not `XYBF`. Rust alone validates and
 lowers them to the shared offset-f32/u8 painter buffer consumed by WebGL; the
 browser host has no per-record conversion or policy fallback.
 
+`tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
+never authored by a host. Direct WASM recompiles every request and matches the
+exact Scene v11 output under a local-only strict CSP. Native Python and Node
+load those Scene bytes through the shared C ABI, and the Pyodide release wheel
+does the same inside an actual Pyodide runtime with network access disabled for
+the conformance operation. This is intentionally asymmetric: adding an XYTS
+decoder to Python or Node would duplicate browser-ingress policy rather than
+prove host parity.
+Filesystem-backed XYGC chunk reads and tile-store spills are intentionally
+unavailable in Pyodide. The Emscripten library exports the shared ABI symbols
+as fail-closed stubs so supported in-memory kernels and Scene consumers still
+load; it never emulates filesystem policy in Python or JavaScript.
+
 The #58 scene migration is active: scene schema version 9 provides one
 backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,
 scatter, polyline, and rectangle records through both host bindings. The v1

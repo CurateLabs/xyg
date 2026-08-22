@@ -380,9 +380,52 @@ function rawInit(requestId, source) {
 let foundationStage = "startup";
 async function run() {
   const sharedFixture = await fetch("/tests/fixtures/figure_scene_v3.json").then((response) => response.json());
+  const xytsFixture = await fetch("/tests/fixtures/xyts_cross_host.json").then((response) => response.json());
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
   const wasmBytes = await wasmResponse.arrayBuffer();
   const wasmModule = await WebAssembly.compile(wasmBytes);
+
+  const fromHex = (value) => Uint8Array.from(value.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
+  const fixtureWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 16 * 1024 * 1024,
+  });
+  await fixtureWorker.ready;
+  let fixtureSequence = 1;
+  for (const fixture of xytsFixture.successful) {
+    const compiled = await fixtureWorker.compileScene(fromHex(fixture.request_hex), {
+      sequence: fixtureSequence++, transfer: false,
+    }).result;
+    const expected = fromHex(fixture.scene_hex), actual = new Uint8Array(compiled.scene);
+    if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
+      throw new Error(`direct WASM drifted from Rust-generated XYTS fixture ${fixture.name}`);
+    }
+    if (compiled.records !== fixture.records || compiled.styles !== fixture.styles) {
+      throw new Error(`direct WASM summary drifted for ${fixture.name}`);
+    }
+    const prepared = await fixtureWorker.prepareScene(actual, {
+      sequence: fixtureSequence++, transfer: false,
+    }).result;
+    const expectedPainter = fromHex(fixture.painter_hex), actualPainter = new Uint8Array(prepared.painter);
+    if (actualPainter.length !== expectedPainter.length
+        || actualPainter.some((value, index) => value !== expectedPainter[index])) {
+      throw new Error(`direct WASM painter v8 drifted from Rust-generated fixture ${fixture.name}`);
+    }
+  }
+  const failureContract = {
+    wrong_version: ["XYG_WASM_SCENE_VERSION", 4],
+    unsupported_kind: ["XYG_WASM_INVALID_ARGUMENT", 2],
+    stable_id_overflow: ["XYG_WASM_RESOURCE_LIMIT", 3],
+    nonfinite_geometry: ["XYG_WASM_INVALID_ARGUMENT", 2],
+  };
+  for (const fixture of xytsFixture.failures) {
+    const [code, status] = failureContract[fixture.name];
+    await rejected(fixtureWorker.compileScene(fromHex(fixture.request_hex), {
+      sequence: fixtureSequence++, transfer: false,
+    }).result, code, status);
+  }
+  await fixtureWorker.dispose();
 
   const duplicate = rawWorkerHarness();
   const firstInit = duplicate.request(rawInit(100, { kind: "url", value: "/delayed.wasm" }));
