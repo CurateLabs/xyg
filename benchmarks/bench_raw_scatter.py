@@ -191,7 +191,7 @@ def main() -> int:
 
     chromium = default_chromium()
     if chromium is None:
-        print("no chromium found (set $XY_CHROMIUM)", file=sys.stderr)
+        print("no chromium found (set $XYG_CHROMIUM)", file=sys.stderr)
         return 2
 
     t0 = time.perf_counter()

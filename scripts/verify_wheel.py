@@ -352,7 +352,7 @@ def verify_wheel(path: Path, *, expect_native: Optional[bool]) -> None:
                 "_javascript_for_inline_script",
                 "def html_to_png(",
                 "def to_png(",
-                "XY_CHROMIUM",
+                "XYG_CHROMIUM",
             },
         )
         _require_text_markers(

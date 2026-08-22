@@ -859,7 +859,7 @@ rasterizer and its latency-oriented PNG encoder; `optimize=True` selects the
 slower, smaller-file path. `engine=Engine.chromium` remains available when
 browser CSS/WebGL fidelity is required (Chrome, Chromium, Edge, or
 `chrome-headless-shell` discovered via
-`XY_BROWSER`, PATH, and common application locations). Both modes are covered
+`XYG_BROWSER`, PATH, and common application locations). Both modes are covered
 by the PNG tests; HTML export (`to_html`) needs nothing extra.
 
 ---

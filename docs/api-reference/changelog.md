@@ -27,7 +27,7 @@ contract at 1.0. Before 1.0, a minor release can contain breaking changes.
 - Chromium PNG accepts `custom_css=`. Native PNG rejects author CSS; complete
   chart-level tokens can still resolve through renderable chart styles.
 - Browser executable parameters were replaced by automatic discovery or the
-  `XY_BROWSER` environment variable.
+  `XYG_BROWSER` environment variable.
 
 ## Recent Additions
 

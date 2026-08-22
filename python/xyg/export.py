@@ -61,8 +61,8 @@ _B64_CHUNK_BYTES = 48 * 2**20
 # headless shell), all of which share the command line + CDP surface used here.
 # The public enum deliberately selects the fidelity tier rather than exposing
 # executable paths; discovery remains an implementation detail.
-_BROWSER_ENV = "XY_BROWSER"
-_CHROMIUM_ENV = "XY_CHROMIUM"
+_BROWSER_ENV = "XYG_BROWSER"
+_CHROMIUM_ENV = "XYG_CHROMIUM"
 _BROWSER_NAMES = (
     "chrome-headless-shell",
     "chromium",
@@ -482,8 +482,9 @@ def _installed_browser(candidate: object) -> Optional[str]:
 def find_browser(explicit: Optional[str] = None) -> Optional[str]:
     """Locate a supported installed browser executable, or return ``None``.
 
-    ``None`` and ``"auto"`` search ``XY_BROWSER``, the legacy
-    ``XY_CHROMIUM`` variable, ``PATH``, and common application locations.
+    ``None`` and ``"auto"`` search the general ``XYG_BROWSER`` override,
+    the Chromium-specific ``XYG_CHROMIUM`` override, ``PATH``, and common
+    application locations.
     Any other value is treated as an explicit path or executable name and is
     not silently replaced with a different installed browser when missing.
     """
@@ -801,7 +802,7 @@ def to_png(
     `engine=Engine.chromium` renders the standalone HTML in an installed
     browser and screenshots it, so CSS, fonts, and WebGL use that browser's
     implementation. It automatically discovers Chrome, Chromium, Edge, or
-    `chrome-headless-shell` via `XY_BROWSER`, PATH, and common install locations,
+    `chrome-headless-shell` via `XYG_BROWSER`, PATH, and common install locations,
     and honors `sandbox`/`gl` (see `html_to_png`). `custom_css` injects an
     author stylesheet into that browser document and is rejected by the native
     engine. Former string engine values remain deprecated aliases.

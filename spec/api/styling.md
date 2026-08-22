@@ -1501,7 +1501,7 @@ locale-independent substitution.
 
 For browser CSS, font, and WebGL fidelity, `engine=xyg.Engine.chromium`
 screenshots the standalone HTML with an installed Chrome, Chromium, Edge, or
-`chrome-headless-shell`. Set `XY_BROWSER` to an executable path to override
+`chrome-headless-shell`. Set `XYG_BROWSER` to an executable path to override
 automatic discovery. Pass `custom_css="..."` to inject an author stylesheet
 into the captured standalone document. Since native export has no browser
 cascade, it rejects `custom_css`. Legacy string engine values remain deprecated

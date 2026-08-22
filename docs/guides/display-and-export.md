@@ -51,7 +51,7 @@ path unless `custom_css` is passed, which forces Chromium because utility-class
 CSS needs a real CSS engine. `engine=Engine.chromium` opts into browser CSS,
 font, and WebGL fidelity for any format except SVG. Native exports never
 install or launch a browser; when Chromium is requested but not found, the
-error names `XY_BROWSER` and the supported browsers.
+error names `XYG_BROWSER` and the supported browsers.
 
 Polar line/area/bar geometry, heatmaps, contours, error bars, partial sectors,
 holes/origins, log/symlog radius, polygonal grids, and point-anchored
@@ -153,7 +153,7 @@ The default PNG engine is XYG's browser-free native rasterizer; set
 is browser-free and screen-bounded: long lines are decimated before vector
 generation, while density and heatmap representations embed compact raster
 data where appropriate. For Chromium exports, XYG searches for Chrome,
-Chromium, Edge, or `chrome-headless-shell`; set `XY_BROWSER` to select an
+Chromium, Edge, or `chrome-headless-shell`; set `XYG_BROWSER` to select an
 executable explicitly. The browser sandbox is enabled by default; disable it
 only for trusted input in an environment where the caller accepts that risk.
 

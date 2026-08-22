@@ -136,7 +136,7 @@ Rust tooling beyond the commands above.
 
 - Native PNG is the default static raster path and does not launch a browser.
   Chromium-based PNG export is optional and discovers Chrome, Chromium, Edge,
-  or `chrome-headless-shell` on the machine; set `XY_BROWSER` to an executable
+  or `chrome-headless-shell` on the machine; set `XYG_BROWSER` to an executable
   path when automatic discovery is not appropriate.
 
 Next, build [your first chart](/docs/xy/overview/first-chart/).

@@ -323,4 +323,4 @@ def default_chromium() -> str | None:
     """Reuse the export-time discovery (env var, PATH, common installs)."""
     from xyg.export import find_chromium
 
-    return find_chromium(os.environ.get("XY_CHROMIUM"))
+    return find_chromium(os.environ.get("XYG_CHROMIUM"))

@@ -43,7 +43,7 @@ author CSS needs a real CSS engine. `to_png(..., engine=Engine.chromium)` uses
 an installed Chrome, Chromium, Edge, or `chrome-headless-shell` executable
 because it screenshots
 the same standalone HTML document for browser CSS/WebGL fidelity. Automatic
-discovery can be overridden with `XY_BROWSER`. Native raster export
+discovery can be overridden with `XYG_BROWSER`. Native raster export
 intentionally rejects browser-only stylesheets, and SVG is native-only:
 resolving to a browser engine for SVG — by `engine=Engine.chromium` or by
 `custom_css=` — raises, because a screenshot cannot emit vector SVG.

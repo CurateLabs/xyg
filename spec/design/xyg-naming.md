@@ -51,6 +51,8 @@ divergence is permanent product divergence, not temporary fork cleanup.
 | Release publish guard | `XY_ALLOW_PYPI_PUBLISH` (#13) | **`XYG_ALLOW_PYPI_PUBLISH`** | decided |
 | SIMD kill switch (read by the engine) | `XY_SIMD` | **`XYG_SIMD`** | decided |
 | Expected-ABI test override | `XY_EXPECTED_ABI` | **`XYG_EXPECTED_ABI`** | decided |
+| Browser executable override | `XY_BROWSER` | **`XYG_BROWSER`** | landed; public export configuration, no retired alias |
+| Chromium-specific executable override | `XY_CHROMIUM` | **`XYG_CHROMIUM`** | landed; public export configuration, no retired alias |
 | Bazel cdylib target | `//:xy_core` → `libxy_core.so` | **`//:xyg_core`** → `libxyg_core.so` | decided |
 | Repository slug | `CurateLabs/graphforge-xy` (fork of `reflex-dev/xy`) | **`CurateLabs/xyg`** (renamed server-side 2026-08-11; old URLs redirect) | decided (owner, 2026-08-11) |
 | Release publish-guard repo condition | `github.repository == 'CurateLabs/graphforge-xy'` | **`github.repository == 'CurateLabs/xyg'`** | decided |
@@ -73,7 +75,7 @@ stage lands. Proposed targets are recorded so the later rename is mechanical.
 | Root DOM class / CSS namespace | `class="xy"` (`js/src/50_chartview.ts`) | `class="xyg"` | browser/branding stage (#14) — public styling surface, coordinate with docs |
 | Wire-protocol constants | `XY_FRAME_MAGIC`, `XY_FRAME_VERSION`, `XY_PAYLOAD_MAGIC`, … (Python + TS) | `XYG_*` with a protocol-version bump | wire-protocol stage — byte-level magic changes need migration evidence (`spec/design/wire-protocol.md`) |
 | Widget/anywidget module + static bundle names | `python/xyg/static/{index,standalone}.js` internals | unchanged paths until `import xyg`; internal names follow browser stage | browser/branding stage (#14) |
-| Dev/test/bench env knobs | `XY_BROWSER`, `XY_CHROMIUM`, `XY_LIVE_POINTS`, `XY_CONTEXT_GOVERNOR`, `XY_NOTEBOOK_DISPLAY`, `XY_SHARED_WEBGL`, `XY_POLAR_AA`, and other dev-only `XY_*` knobs | `XYG_*` sweep | branding stage (#14) — dev-only, no product artifact depends on them |
+| Dev/test/bench env knobs | `XY_LIVE_POINTS`, `XY_CONTEXT_GOVERNOR`, `XY_NOTEBOOK_DISPLAY`, `XY_SHARED_WEBGL`, `XY_POLAR_AA`, and other dev-only `XY_*` knobs | `XYG_*` sweep | branding stage (#14) — dev-only, no product artifact depends on them |
 | Benchmark/report arm keys | `xy`, `xy-exact` in committed benchmark schemas, CLI selectors, and historical result assets | `xyg`, `xyg-exact` with an explicit report-schema migration | cross-host release evidence (#40) — display labels must say XYG now; machine keys remain stable until readers and baselines migrate together |
 | Python-internal constant prefixes | `XY_OK`, `XY_ERROR`, `XY_VERSION`, … (module-level constants) | `XYG_*` | with the wire/branding stages that own each constant |
 | README, user docs, branding sweep | README branding, docs-app copy | — | #14 (explicitly out of scope here) |
