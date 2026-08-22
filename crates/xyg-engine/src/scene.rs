@@ -1418,19 +1418,15 @@ fn batch_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
     Ok(f64::from_le_bytes(raw))
 }
 
-fn read_chrome_trailer(
-    bytes: &[u8],
-    body_end: usize,
-) -> Result<
-    (
-        SceneChromeStyle,
-        SceneChromeText,
-        Option<SceneLegend>,
-        Vec<SceneLabel>,
-        usize,
-    ),
-    SceneError,
-> {
+type SceneChromeTrailer = (
+    SceneChromeStyle,
+    SceneChromeText,
+    Option<SceneLegend>,
+    Vec<SceneLabel>,
+    usize,
+);
+
+fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrailer, SceneError> {
     let trailer = bytes
         .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
         .ok_or(SceneError::Length)?;
