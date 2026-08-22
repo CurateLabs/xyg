@@ -4983,7 +4983,11 @@ def graph_label_accept(
     priorities: npt.NDArray[np.float64], budget: int, *, min_priority: float | None = None
 ) -> npt.NDArray[np.bool_]:
     """Return the deterministic Rust-owned label mask for the viewport budget."""
-    priority_arr = _as_f64(priorities, "priorities")
+    # Priorities deliberately use their own converter: non-finite values are
+    # valid missing candidates that Rust rejects from the accepted mask.
+    priority_arr = np.ascontiguousarray(priorities, dtype=np.float64)
+    if priority_arr.ndim != 1:
+        raise ValueError(f"priorities must be 1-D, got shape {priority_arr.shape}")
     if isinstance(budget, (bool, np.bool_)):
         raise TypeError("budget must be an exact uint64 integer")
     try:

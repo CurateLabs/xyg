@@ -338,8 +338,8 @@ test("graphEdgeRouteSegments separates parallels and keeps source indices", () =
 
 test("graph style policies consume the shared Rust ABI", () => {
   assert.deepEqual([...graphVisualStates(new Uint32Array([0, 2, 3, 66]))], [0, 5, 5, 7]);
-  const labels = graphLabelAccept(new Float64Array([1, 5, 5, Number.NaN]), 2);
-  assert.deepEqual([...labels.accepted], [0, 1, 1, 0]);
+  const labels = graphLabelAccept(new Float64Array([1, 5, 5, Number.NaN, Infinity, -Infinity]), 2);
+  assert.deepEqual([...labels.accepted], [0, 1, 1, 0, 0, 0]);
   assert.equal(labels.count, 2n);
   const compounds = graphCompoundBounds(
     new Float64Array([0, -1, 2, 9]), new Float64Array([0, 1, 3, 9]),

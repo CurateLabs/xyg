@@ -8,8 +8,9 @@ from xyg import _native
 def test_visual_state_and_label_budget_are_rust_owned() -> None:
     states = _native.graph_visual_states(np.array([0, 2, 3, 64 | 2], dtype=np.uint32))
     assert states.tolist() == [0, 5, 5, 7]
-    accepted = _native.graph_label_accept(np.array([1.0, 5.0, 5.0, np.nan]), 2)
-    assert accepted.tolist() == [False, True, True, False]
+    accepted = _native.graph_label_accept(np.array([1.0, 5.0, 5.0, np.nan, np.inf, -np.inf]), 2)
+    assert accepted.tolist() == [False, True, True, False, False, False]
+    assert accepted.flags.c_contiguous
 
 
 def test_compound_bounds_keep_membership_and_child_identity() -> None:
