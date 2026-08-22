@@ -24,7 +24,7 @@ EXPECTED_SCATTER = (
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     assert _native.scene_support_reason(0) == ""
     assert _native.scene_support_reason((1 << 6) | (1 << 1)) == (
-        "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v11 does not encode custom font resources"
+        "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"
     )
     with pytest.raises(ValueError, match="version or feature mask"):
         _native.scene_support_reason(1 << 63)
@@ -115,7 +115,7 @@ def test_scene_v10_annotation_style_falsey_values_do_not_become_defaults(
 ) -> None:
     figure = Figure().vline(1.0)
     figure.annotations[0]["style"] = style
-    with pytest.raises(ValueError, match="Scene v11"):
+    with pytest.raises(ValueError, match="Scene v12"):
         figure.to_scene()
 
 
@@ -136,7 +136,7 @@ def test_scene_v10_annotation_geometry_is_strict_across_hosts(
 ) -> None:
     figure = Figure()
     figure.annotations = [annotation]
-    with pytest.raises(ValueError, match="Scene v11"):
+    with pytest.raises(ValueError, match="Scene v12"):
         figure.to_scene()
 
 

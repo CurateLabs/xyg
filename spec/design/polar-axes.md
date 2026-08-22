@@ -440,7 +440,7 @@ grid blits will silently project through a straight-line map.
 `heatmap`, `contour`, and `errorbar` (`POLAR_MARK_KINDS`,
 `python/xyg/config.py`).
 
-This public polar renderer support does not imply canonical Scene v11 support.
+This public polar renderer support does not imply canonical Scene v12 support.
 Python and Node Scene compilation reject `coords="polar"` until Rust owns an
 explicit polar projection/chrome record. Transparent Cartesian axis/grid paint
 must not be used to infer polar coordinates; it means only independently hidden

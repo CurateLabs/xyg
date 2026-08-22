@@ -8,7 +8,7 @@ const fixture = JSON.parse(fs.readFileSync(
   new URL("../../../tests/fixtures/xyts_cross_host.json", import.meta.url), "utf8",
 ));
 
-test("native Node consumes exact Rust-generated XYTS Scene v11 output", () => {
+test("native Node consumes exact Rust-generated XYTS Scene v12 output", () => {
   assert.equal(fixture.authority, "crates/xyg-wasm/src/compile.rs");
   assert.equal(fixture.scene_version, 11);
   assert.equal(fixture.painter_version, 8);

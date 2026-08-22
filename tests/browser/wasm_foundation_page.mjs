@@ -430,7 +430,7 @@ async function run() {
     const expectedPainter = fromHex(fixture.painter_hex), actualPainter = new Uint8Array(prepared.painter);
     if (actualPainter.length !== expectedPainter.length
         || actualPainter.some((value, index) => value !== expectedPainter[index])) {
-      throw new Error(`direct WASM painter v8 drifted from Rust-generated fixture ${fixture.name}`);
+      throw new Error(`direct WASM painter v9 drifted from Rust-generated fixture ${fixture.name}`);
     }
   }
   const failureContract = {
@@ -772,10 +772,10 @@ async function run() {
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const labels = [...host.querySelectorAll('[data-xy-label-kind="tick"]')].map((node) => node.textContent);
   if (labels.length < 6 || !labels.includes("0.0") || !labels.includes("0.5") || !labels.includes("1.0")) {
-    throw new Error(`Rust-authored Scene v11 chrome labels were not painted: ${JSON.stringify(labels)}`);
+    throw new Error(`Rust-authored Scene v12 chrome labels were not painted: ${JSON.stringify(labels)}`);
   }
   if (host.querySelectorAll('[data-xy-axis-side="bottom"], [data-xy-axis-side="left"]').length < 2) {
-    throw new Error("Rust-authored Scene v11 axis chrome was not painted");
+    throw new Error("Rust-authored Scene v12 axis chrome was not painted");
   }
   if (rendered.sceneStableId(0, 0) !== 7n) throw new Error("canonical stable id was not preserved through painter hydration");
   rendered.destroy();
