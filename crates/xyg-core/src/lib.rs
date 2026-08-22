@@ -20,7 +20,7 @@
 
 #![allow(clippy::too_many_arguments)] // C ABI entry points; arity is the contract
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 use xyg_engine::chunked_columns;
 use xyg_engine::css;
 use xyg_engine::geo;
@@ -39,7 +39,7 @@ use xyg_engine::svg;
 use xyg_engine::temporal;
 use xyg_engine::temporal_controller;
 use xyg_engine::temporal_graph;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 use xyg_engine::tile_store;
 use xyg_engine::tiles;
 use xyg_engine::transition;
@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 87;
+pub const ABI_VERSION: u32 = 88;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -710,6 +710,41 @@ pub unsafe extern "C" fn xyg_scene_raster_commands(
         return usize::MAX;
     }
     std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&commands);
+    required
+}
+
+/// Lower one validated Scene v11 document to the canonical browser painter-v8
+/// byte stream. Returns required bytes or `usize::MAX` on error.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_browser_painter(
+    encoded: *const u8,
+    encoded_len: usize,
+    max_bytes: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(painter) = ffi_guard(None, || {
+        scene::SceneDocument::decode(std::slice::from_raw_parts(encoded, encoded_len))
+            .ok()?
+            .to_browser_painter(max_bytes)
+            .ok()
+    }) else {
+        return usize::MAX;
+    };
+    let required = painter.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&painter);
     required
 }
 const FACTORIZE_CAPACITY_EXCEEDED: usize = usize::MAX - 1;
@@ -4143,6 +4178,7 @@ pub unsafe extern "C" fn xyg_pyramid_append_from_stream(
 /// # Safety
 /// No pointer arguments; safe for any handle value.
 #[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_pyramid_spill(handle: u64) -> u64 {
     ffi_guard(0, || {
         match tiles::reg_with(handle, tile_store::TileStore::spill) {
@@ -4162,6 +4198,7 @@ pub unsafe extern "C" fn xyg_pyramid_spill(handle: u64) -> u64 {
 /// `out_counts` must address 65 536 writable u32s; `out_color`, when
 /// non-null, 65 536 × 4 writable u16s.
 #[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_store_fetch(
     store: u64,
     level: u32,
@@ -4202,6 +4239,7 @@ pub unsafe extern "C" fn xyg_tile_store_fetch(
 /// `out` must point to `w * h` writable f32s.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_store_compose(
     store: u64,
     lo_x: f64,
@@ -4242,6 +4280,7 @@ pub unsafe extern "C" fn xyg_tile_store_compose(
 /// `out` must address `w*h` writable f32s and `out_rgba` `w*h*4` writable bytes.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_store_compose_color(
     store: u64,
     lo_x: f64,
@@ -4290,6 +4329,7 @@ pub unsafe extern "C" fn xyg_tile_store_compose_color(
 /// # Safety
 /// `x`/`y` must point to `len` readable f64s (or may be null when `len == 0`).
 #[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_store_append(
     store: u64,
     x: *const f64,
@@ -4328,6 +4368,7 @@ pub unsafe extern "C" fn xyg_tile_store_append(
 /// # Safety
 /// `out` must address 6 writable u64s.
 #[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_store_stats(store: u64, out: *mut u64) -> i32 {
     if out.is_null() {
         return 0;
@@ -4353,6 +4394,7 @@ pub unsafe extern "C" fn xyg_tile_store_stats(store: u64, out: *mut u64) -> i32 
 /// # Safety
 /// No pointer arguments.
 #[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_budget_set(bytes: u64) -> i32 {
     ffi_guard(0, || {
         tile_store::budget_set(bytes);
@@ -4366,8 +4408,157 @@ pub unsafe extern "C" fn xyg_tile_budget_set(bytes: u64) -> i32 {
 /// # Safety
 /// No pointer arguments; safe for any handle value.
 #[no_mangle]
+#[cfg(not(target_os = "emscripten"))]
 pub unsafe extern "C" fn xyg_tile_store_free(store: u64) -> i32 {
     ffi_guard(0, || if tile_store::reg_remove(store) { 1 } else { 0 })
+}
+
+// Pyodide cannot provide the native filesystem-backed tile store, but the
+// shared generated ABI must remain loadable. Export fail-closed stubs rather
+// than omitting symbols and making every otherwise-supported kernel unusable.
+#[cfg(target_os = "emscripten")]
+mod wasm_tile_store_stubs {
+    #[export_name = "xyg_pyramid_spill"]
+    pub unsafe extern "C" fn pyramid_spill(_handle: u64) -> u64 {
+        0
+    }
+
+    #[export_name = "xyg_tile_store_fetch"]
+    pub unsafe extern "C" fn tile_store_fetch(
+        _store: u64,
+        _level: u32,
+        _tx: u32,
+        _ty: u32,
+        _out_counts: *mut u32,
+        _out_color: *mut u16,
+    ) -> i32 {
+        0
+    }
+
+    #[export_name = "xyg_tile_store_compose"]
+    pub unsafe extern "C" fn tile_store_compose(
+        _store: u64,
+        _lo_x: f64,
+        _hi_x: f64,
+        _lo_y: f64,
+        _hi_y: f64,
+        _w: usize,
+        _h: usize,
+        _max_upsample: usize,
+        _out: *mut f32,
+    ) -> i32 {
+        -1
+    }
+
+    #[export_name = "xyg_tile_store_compose_color"]
+    pub unsafe extern "C" fn tile_store_compose_color(
+        _store: u64,
+        _lo_x: f64,
+        _hi_x: f64,
+        _lo_y: f64,
+        _hi_y: f64,
+        _w: usize,
+        _h: usize,
+        _max_upsample: usize,
+        _out: *mut f32,
+        _out_rgba: *mut u8,
+    ) -> i32 {
+        -1
+    }
+
+    #[export_name = "xyg_tile_store_append"]
+    pub unsafe extern "C" fn tile_store_append(
+        _store: u64,
+        _x: *const f64,
+        _y: *const f64,
+        _len: usize,
+    ) -> i32 {
+        0
+    }
+
+    #[export_name = "xyg_tile_store_stats"]
+    pub unsafe extern "C" fn tile_store_stats(_store: u64, _out: *mut u64) -> i32 {
+        0
+    }
+
+    #[export_name = "xyg_tile_budget_set"]
+    pub unsafe extern "C" fn tile_budget_set(_bytes: u64) -> i32 {
+        0
+    }
+
+    #[export_name = "xyg_tile_store_free"]
+    pub unsafe extern "C" fn tile_store_free(_store: u64) -> i32 {
+        0
+    }
+
+    #[export_name = "xyg_chunked_columns_open"]
+    pub unsafe extern "C" fn chunked_columns_open(_path: *const u8, _path_len: usize) -> u64 {
+        0
+    }
+
+    #[export_name = "xyg_chunked_columns_cancel_before"]
+    pub extern "C" fn chunked_columns_cancel_before(_store: u64, _generation: u64) -> i32 {
+        0
+    }
+
+    #[export_name = "xyg_chunked_columns_rows"]
+    pub extern "C" fn chunked_columns_rows(_store: u64) -> u64 {
+        u64::MAX
+    }
+
+    #[export_name = "xyg_chunked_columns_overview"]
+    pub unsafe extern "C" fn chunked_columns_overview(
+        _store: u64,
+        _max_points: usize,
+        _out_rows: *mut u64,
+        _out_x: *mut f64,
+        _out_y: *mut f64,
+        _out_stats: *mut u64,
+    ) -> usize {
+        usize::MAX
+    }
+
+    #[export_name = "xyg_chunked_columns_read"]
+    pub unsafe extern "C" fn chunked_columns_read(
+        _store: u64,
+        _x0: f64,
+        _x1: f64,
+        _y0: f64,
+        _y1: f64,
+        _use_y: i32,
+        _budget_bytes: u64,
+        _generation: u64,
+        _out_x: *mut f64,
+        _out_y: *mut f64,
+        _capacity: usize,
+        _out_stats: *mut u64,
+    ) -> usize {
+        usize::MAX
+    }
+
+    #[export_name = "xyg_chunked_columns_read_page"]
+    pub unsafe extern "C" fn chunked_columns_read_page(
+        _store: u64,
+        _x0: f64,
+        _x1: f64,
+        _y0: f64,
+        _y1: f64,
+        _use_y: i32,
+        _budget_bytes: u64,
+        _generation: u64,
+        _cursor: u32,
+        _out_x: *mut f64,
+        _out_y: *mut f64,
+        _capacity: usize,
+        _out_stats: *mut u64,
+    ) -> usize {
+        usize::MAX
+    }
+
+    #[export_name = "xyg_chunked_columns_free"]
+    pub extern "C" fn chunked_columns_free(_store: u64) -> i32 {
+        0
+    }
 }
 
 /// Open a checked local XYGC canonical-column artifact. Returns a nonzero
@@ -4375,7 +4566,7 @@ pub unsafe extern "C" fn xyg_tile_store_free(store: u64) -> i32 {
 ///
 /// # Safety
 /// `path` must address `path_len` readable bytes when `path_len > 0`.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 #[no_mangle]
 pub unsafe extern "C" fn xyg_chunked_columns_open(path: *const u8, path_len: usize) -> u64 {
     ffi_guard(0, || {
@@ -4392,7 +4583,7 @@ pub unsafe extern "C" fn xyg_chunked_columns_open(path: *const u8, path_len: usi
 
 /// Set the newest viewport generation. An in-flight older read observes this
 /// between chunk reads and fails closed rather than publishing stale data.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 #[no_mangle]
 pub extern "C" fn xyg_chunked_columns_cancel_before(store: u64, generation: u64) -> i32 {
     ffi_guard(0, || match chunked_columns::reg_get(store) {
@@ -4405,7 +4596,7 @@ pub extern "C" fn xyg_chunked_columns_cancel_before(store: u64, generation: u64)
 }
 
 /// Return the canonical row count, or `u64::MAX` for a stale handle.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 #[no_mangle]
 pub extern "C" fn xyg_chunked_columns_rows(store: u64) -> u64 {
     ffi_guard(u64::MAX, || {
@@ -4420,7 +4611,7 @@ pub extern "C" fn xyg_chunked_columns_rows(store: u64) -> u64 {
 /// # Safety
 /// Each output pointer must address `max_points` writable values and
 /// `out_stats` must address two writable u64 values.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 #[no_mangle]
 pub unsafe extern "C" fn xyg_chunked_columns_overview(
     store: u64,
@@ -4467,7 +4658,7 @@ pub unsafe extern "C" fn xyg_chunked_columns_overview(
 /// # Safety
 /// `out_x` and `out_y` must each address `capacity` writable f64 values.
 /// `out_stats` must address six writable u64 values.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 #[no_mangle]
 pub unsafe extern "C" fn xyg_chunked_columns_read(
     store: u64,
@@ -4532,7 +4723,7 @@ pub unsafe extern "C" fn xyg_chunked_columns_read(
 /// # Safety
 /// `out_x` and `out_y` must each address `capacity` writable f64 values;
 /// `out_stats` must address eight writable u64 values.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 #[no_mangle]
 pub unsafe extern "C" fn xyg_chunked_columns_read_page(
     store: u64,
@@ -4590,7 +4781,7 @@ pub unsafe extern "C" fn xyg_chunked_columns_read_page(
     })
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(not(target_os = "emscripten"))]
 #[no_mangle]
 pub extern "C" fn xyg_chunked_columns_free(store: u64) -> i32 {
     ffi_guard(0, || i32::from(chunked_columns::reg_remove(store)))

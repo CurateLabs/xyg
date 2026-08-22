@@ -3,6 +3,7 @@ import {
   pointer,
   xySceneAxisTicks,
   xySceneBatchEncode,
+  xySceneBrowserPainter,
   xyScenePlotLayout,
   xySceneRasterCommands,
   xySceneScaleMap,
@@ -300,6 +301,12 @@ export function sceneRasterCommands(encoded, scale = 1) {
   const factor = Number(scale);
   if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("scene raster scale must be positive and finite");
   return sceneOutput(encoded, xySceneRasterCommands, "raster commands", [factor]);
+}
+
+export function sceneBrowserPainter(encoded, maxBytes = 64 * 1024 * 1024) {
+  const limit = Number(maxBytes);
+  if (!Number.isSafeInteger(limit) || limit <= 0) throw new RangeError("scene painter byte limit must be a positive safe integer");
+  return sceneOutput(encoded, xySceneBrowserPainter, "browser painter", [BigInt(limit)]);
 }
 
 function rgba8(css, opacity, name) {

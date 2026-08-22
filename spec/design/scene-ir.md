@@ -70,8 +70,9 @@ Version 3 establishes the renderer-independent contract required before whole
 static exporters or the browser Worker consume canonical scenes. One generated
 `xyg_scene_batch_encode` ABI accepts bounded typed arrays and emits a stable
 little-endian byte batch; it never places numeric data in JSON. The same exact
-batch is accepted by `xyg_scene_svg` for a complete SVG and by
-`xyg_scene_raster_commands` for the existing native raster display list. Both
+batch is accepted by `xyg_scene_svg` for a complete SVG, by
+`xyg_scene_raster_commands` for the existing native raster display list, and
+by `xyg_scene_browser_painter` for the exact painter-v8 byte stream. These
 consumers fail closed on malformed version, widths, length, reserved fields,
 kinds, styles, coordinates, or bounds. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
 two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64

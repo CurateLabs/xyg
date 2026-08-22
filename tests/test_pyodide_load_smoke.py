@@ -32,7 +32,7 @@ def test_remote_wheel_url_is_installed_directly(monkeypatch, tmp_path: Path) -> 
         return subprocess.CompletedProcess(
             command,
             0,
-            stdout='RESULT {"ok":true,"backend":"native","abi":34,"min":1,"max":3}\n',
+            stdout='RESULT {"ok":true,"backend":"native","abi":88,"min":1,"max":3,"cases":3,"sceneVersion":11,"painterVersion":8,"filesystemStubs":15}\n',
             stderr="",
         )
 
@@ -41,6 +41,10 @@ def test_remote_wheel_url_is_installed_directly(monkeypatch, tmp_path: Path) -> 
     monkeypatch.setattr(sys, "argv", ["pyodide_load_smoke.py", url])
 
     assert pyodide_load_smoke.main() == 0
-    assert observed["command"][-1] == url
+    assert observed["command"][2] == url
+    assert observed["command"][3].endswith("tests/fixtures/xyts_cross_host.json")
     assert "await micropip.install(wheelPath)" in observed["driver"]
+    assert "offline XYTS fixture attempted fetch" in observed["driver"]
+    assert "scene_browser_painter" in observed["driver"]
+    assert "xyg_chunked_columns_read_page" in observed["driver"]
     assert not (tmp_path / "_pyodide_load_driver.mjs").exists()

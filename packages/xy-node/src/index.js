@@ -157,7 +157,7 @@ export function createEngine(opts = {}) {
 
 export { Figure, PayloadWriter, figure, toHtml };
 
-export { axisTicks, figureSceneV3, scaleMap, sceneBatchEncode, sceneRasterCommands, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg } from "./scene.js";
+export { axisTicks, figureSceneV3, scaleMap, sceneBatchEncode, sceneBrowserPainter, sceneRasterCommands, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg } from "./scene.js";
 
 export { runForceTicks, runForceTicks as runForceAnimation } from "./force_scheduler.js";
 

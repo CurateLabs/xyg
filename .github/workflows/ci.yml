@@ -30,6 +30,7 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
+          version: "0.10.9"
           enable-cache: false
       # The editable install below builds the render client from source via the
       # hatch hook (generated, not committed; §33) — the pyplot corpus exports
@@ -277,7 +278,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
           toolchain: 1.96.0
-          targets: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown,wasm32-unknown-emscripten
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          enable-cache: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
@@ -287,7 +291,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: wasm-playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
       - name: Verify generated WASM adapter
-        run: python3 scripts/gen_wasm_abi.py --check
+        run: |
+          python3 scripts/gen_wasm_abi.py --check
+          cargo run -p xyg-wasm --bin xyts_conformance -- --check
       - name: Test raw lifecycle adapter natively
         run: cargo test -p xyg-wasm
       - name: Build raw browser adapter without raster or PNG
@@ -314,6 +320,25 @@ jobs:
       - name: Strict-CSP local-only lifecycle smoke
         timeout-minutes: 10
         run: node scripts/wasm_foundation_smoke.mjs
+      - name: Build and run exact Pyodide wheel (non-publishing)
+        timeout-minutes: 20
+        env:
+          CIBW_PLATFORM: pyodide
+          CIBW_BUILD: cp314-pyodide_wasm32
+          CIBW_PYODIDE_VERSION: "314.0.0"
+          CIBW_BEFORE_BUILD_PYODIDE: cargo build --release --target wasm32-unknown-emscripten
+          CIBW_ENVIRONMENT_PYODIDE: >-
+            XYG_REQUIRE_CARGO=1
+            XYG_SKIP_CARGO=1
+            XYG_CARGO_TARGET=wasm32-unknown-emscripten
+            XYG_WHEEL_PLATFORM=pyemscripten_2026_0_wasm32
+            RUSTFLAGS="-C panic=abort"
+        run: |
+          uvx --from 'cibuildwheel==4.1.0' cibuildwheel --platform pyodide --output-dir wheelhouse
+          npm install --no-save --package-lock=false pyodide@314.0.0
+          wheel=$(find wheelhouse -maxdepth 1 -name '*.whl' -print -quit)
+          test -n "$wheel"
+          python3 scripts/pyodide_load_smoke.py "$wheel"
       - name: Upload direct-browser foundation artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
