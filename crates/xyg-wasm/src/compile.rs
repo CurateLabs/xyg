@@ -107,12 +107,47 @@ fn semantic_graph_offsets(bytes: &[u8]) -> Result<SemanticGraphOffsets, SceneErr
     let edge_flags = edge_metric
         .checked_add(edges.checked_mul(8).ok_or(SceneError::Limit)?)
         .ok_or(SceneError::Limit)?;
-    let end = align8(
+    let label_lengths = align8(
         edge_flags
             .checked_add(edges.checked_mul(4).ok_or(SceneError::Limit)?)
             .ok_or(SceneError::Limit)?,
     );
+    let label_count = nodes.checked_add(edges).ok_or(SceneError::Limit)?;
+    let edge_label_lengths = align8(
+        label_lengths
+            .checked_add(nodes.checked_mul(4).ok_or(SceneError::Limit)?)
+            .ok_or(SceneError::Limit)?,
+    );
+    let label_payload = edge_label_lengths
+        .checked_add(edges.checked_mul(4).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let mut label_bytes = 0usize;
+    for index in 0..label_count {
+        let table = if index < nodes {
+            label_lengths + index * 4
+        } else {
+            edge_label_lengths + (index - nodes) * 4
+        };
+        label_bytes = label_bytes
+            .checked_add(u32_at(bytes, table)? as usize)
+            .ok_or(SceneError::Limit)?;
+    }
+    if label_bytes > 8_192 {
+        return Err(SceneError::Limit);
+    }
+    let payload_end = label_payload
+        .checked_add(label_bytes)
+        .ok_or(SceneError::Limit)?;
+    let end = align8(payload_end);
     if end != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    if bytes
+        .get(payload_end..end)
+        .ok_or(SceneError::Length)?
+        .iter()
+        .any(|&value| value != 0)
+    {
         return Err(SceneError::Length);
     }
     Ok(SemanticGraphOffsets {
@@ -216,6 +251,39 @@ fn compile_semantic_graph_request(
     let edge_metric = take_f64s(bytes, &mut cursor, edge_count)?;
     let edge_flags = take_u32s(bytes, &mut cursor, edge_count)?;
     align_zero(bytes, &mut cursor)?;
+    let node_label_lengths = take_u32s(bytes, &mut cursor, node_count)?;
+    let edge_label_lengths = take_u32s(bytes, &mut cursor, edge_count)?;
+    let label_bytes = node_label_lengths
+        .iter()
+        .chain(&edge_label_lengths)
+        .try_fold(0usize, |total, &len| total.checked_add(len as usize))
+        .ok_or(SceneError::Limit)?;
+    if label_bytes > 8_192 {
+        return Err(SceneError::Limit);
+    }
+    let label_payload = take(bytes, &mut cursor, label_bytes)?;
+    let mut label_cursor = 0usize;
+    let mut decode_labels = |lengths: &[u32]| -> Result<Vec<&str>, SceneError> {
+        lengths
+            .iter()
+            .map(|&len| {
+                let end = label_cursor
+                    .checked_add(len as usize)
+                    .ok_or(SceneError::Limit)?;
+                let text = std::str::from_utf8(
+                    label_payload
+                        .get(label_cursor..end)
+                        .ok_or(SceneError::Length)?,
+                )
+                .map_err(|_| SceneError::Length)?;
+                label_cursor = end;
+                Ok(text)
+            })
+            .collect()
+    };
+    let node_labels = decode_labels(&node_label_lengths)?;
+    let edge_labels = decode_labels(&edge_label_lengths)?;
+    align_zero(bytes, &mut cursor)?;
     if cursor != bytes.len() {
         return Err(SceneError::Length);
     }
@@ -232,6 +300,7 @@ fn compile_semantic_graph_request(
         node_statuses: &node_statuses,
         node_metric: &node_metric,
         node_flags: &node_flags,
+        node_labels: &node_labels,
         sources: &sources,
         targets: &targets,
         edge_classes: &edge_classes,
@@ -239,6 +308,7 @@ fn compile_semantic_graph_request(
         edge_statuses: &edge_statuses,
         edge_metric: &edge_metric,
         edge_flags: &edge_flags,
+        edge_labels: &edge_labels,
     })?;
     if scene
         .len()
@@ -1316,6 +1386,28 @@ mod tests {
         }
         for value in [0u32, 16] {
             out.extend_from_slice(&value.to_le_bytes());
+        }
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
+        let labels = [
+            "Selected node",
+            "Disabled node",
+            "Third node",
+            "parallel edge",
+            "pinned edge",
+        ];
+        for label in &labels[..3] {
+            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+        }
+        while !out.len().is_multiple_of(8) {
+            out.push(0);
+        }
+        for label in &labels[3..] {
+            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+        }
+        for label in labels {
+            out.extend_from_slice(label.as_bytes());
         }
         while !out.len().is_multiple_of(8) {
             out.push(0);

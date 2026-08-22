@@ -29,6 +29,7 @@ export interface XygWasmSemanticGraphInput {
   nodeStatus: ArrayLike<number>;
   nodeMetric: ArrayLike<number>;
   nodeFlags: ArrayLike<number>;
+  nodeLabels?: ArrayLike<string | null>;
   sources: ArrayLike<bigint | number>;
   targets: ArrayLike<bigint | number>;
   edgeClass: ArrayLike<number>;
@@ -36,6 +37,7 @@ export interface XygWasmSemanticGraphInput {
   edgeStatus: ArrayLike<number>;
   edgeMetric: ArrayLike<number>;
   edgeFlags: ArrayLike<number>;
+  edgeLabels?: ArrayLike<string | null>;
 }
 
 function align8(value: number): number { return (value + 7) & ~7; }
@@ -101,8 +103,17 @@ export function encodeWasmSemanticGraph(input: XygWasmSemanticGraphInput): Array
   }
   const title = new TextEncoder().encode(input.title ?? "");
   if (title.byteLength > 4096 || title.includes(0)) throw new RangeError("semantic graph title exceeds the Rust text bound");
+  const encoder = new TextEncoder();
+  const nodeLabels = Array.from({length:n}, (_, i) => encoder.encode(input.nodeLabels?.[i] ?? ""));
+  const edgeLabels = Array.from({length:e}, (_, i) => encoder.encode(input.edgeLabels?.[i] ?? ""));
+  if (input.nodeLabels && input.nodeLabels.length !== n || input.edgeLabels && input.edgeLabels.length !== e
+      || nodeLabels.concat(edgeLabels).some((label) => label.byteLength > 4096 || label.includes(0))
+      || nodeLabels.concat(edgeLabels).reduce((sum, label) => sum + label.byteLength, 0) > 8192) {
+    throw new RangeError("semantic graph labels exceed the Rust text bounds");
+  }
   let length = align8(XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES + title.byteLength);
   for (const bytes of [16*n, 3*n, 8*n, 4*n, 16*e, 3*e, 8*e, 4*e]) length = align8(length + bytes);
+  length = align8(align8(length + 4*n) + 4*e + nodeLabels.concat(edgeLabels).reduce((sum, label) => sum + label.byteLength, 0));
   if (!Number.isSafeInteger(length)) throw new RangeError("semantic graph request byte length overflow");
   const buffer = new ArrayBuffer(length);
   const bytes = new Uint8Array(buffer);
@@ -152,6 +163,11 @@ export function encodeWasmSemanticGraph(input: XygWasmSemanticGraphInput): Array
     view.setFloat64(offset, value, true);
   }
   for (let i=0; i<e; i++, offset+=4) view.setUint32(offset, exactFlags(input.edgeFlags[i], "edgeFlags"), true);
+  offset = align8(offset);
+  for (const label of nodeLabels) { view.setUint32(offset, label.byteLength, true); offset += 4; }
+  offset = align8(offset);
+  for (const label of edgeLabels) { view.setUint32(offset, label.byteLength, true); offset += 4; }
+  for (const label of nodeLabels.concat(edgeLabels)) { bytes.set(label, offset); offset += label.byteLength; }
   if (align8(offset) !== length) throw new Error("semantic graph framing length mismatch");
   return buffer;
 }

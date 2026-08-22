@@ -2,8 +2,8 @@
 // Do not hand-edit raw WASM signatures or status numbers here.
 
 export const XYG_WASM_ABI_VERSION = 11 as const;
-export const XYG_WASM_SCENE_VERSION = 11 as const;
-export const XYG_WASM_PAINTER_VERSION = 8 as const;
+export const XYG_WASM_SCENE_VERSION = 12 as const;
+export const XYG_WASM_PAINTER_VERSION = 9 as const;
 export const XYG_WASM_PAINTER_HEADER_BYTES = 288 as const;
 export const XYG_WASM_PAINTER_TRACE_BYTES = 64 as const;
 export const XYG_WASM_PAINTER_TICK_BYTES = 16 as const;
@@ -26,7 +26,7 @@ export const XYG_WASM_TYPED_SERIES_DESCRIPTOR_OFFSETS = {"kind":0,"symbol":4,"re
 export const XYG_WASM_TYPED_SERIES_FLAGS = {"diameters":1,"y0":2,"y1":4,"fill_rgba":8,"stroke_rgba":16,"stable_id_base":32,"stable_ids":64} as const;
 export const XYG_WASM_TYPED_SERIES_KINDS = {"scatter":0,"line":1,"bar":2,"area":3} as const;
 export const XYG_WASM_SEMANTIC_GRAPH_MAGIC = "XYGG" as const;
-export const XYG_WASM_SEMANTIC_GRAPH_VERSION = 1 as const;
+export const XYG_WASM_SEMANTIC_GRAPH_VERSION = 2 as const;
 export const XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES = 64 as const;
 export const XYG_WASM_SEMANTIC_GRAPH_MAX_INPUT_ELEMENTS = 1024 as const;
 export const XYG_WASM_SEMANTIC_GRAPH_MAX_PAINTER_TRACES = 1024 as const;

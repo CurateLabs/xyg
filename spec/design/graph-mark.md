@@ -428,13 +428,13 @@ are limited to 4096 UTF-8 bytes, and equal priorities retain source order.
 Aggregate LOD intentionally omits
 source-indexed style metadata rather than attaching it to cluster identities.
 
-The browser reports resolved state/group/accepted-label counts on its
-accessibility surface. It deliberately does **not** paint label text or
-compound AABBs yet: zoom acceptance, screen clipping, collision, truncation,
-and final text placement must first become Rust-emitted bounded paint
-primitives. TypeScript must not infer those decisions from the source-indexed
-metadata. Nested transitive bounds, collapse/expand, browser/static text and
-bounds, and visual goldens remain.
+The direct semantic Scene now paints node and edge label text. Rust ranks the
+resolved visual state with stable source identity as its tie-breaker, omits
+aggregate/filtered labels, truncates to a bounded 32-character/plot-width
+budget, greedily rejects overlapping screen boxes, and emits final position,
+font, paint, text, and source identity. Browser, SVG, and raster consumers do
+not repeat acceptance, collision, or truncation. Nested transitive compound
+bounds and collapse/expand remain.
 
 #### 7.1.1 Versioned GraphForge resolved style v1
 
@@ -464,17 +464,17 @@ present values and emits stable field-then-code order with the exact resolved
 theme palette and class shape descriptor. Python and Node only materialize
 those returned descriptors.
 
-The direct-browser/export seam accepts packed `XYGG` v1 for the **direct tier
+The direct-browser/export seam accepts packed `XYGG` v2 for the **direct tier
 only**. TypeScript checks representation, aligned lengths, closed codes, and
 the 1,024-element ingress ceiling, then transfers canonical f64 coordinates,
 u64 endpoints, and semantic planes. Rust resolves node and edge paint, expands
 halo rings, screen-space dash spans, and arrowheads, and emits at most 1,024
-painter traces in canonical Scene v11. Source-indexed semantic planes are
+painter traces plus bounded label primitives in canonical Scene v12. Source-indexed semantic planes are
 rejected for aggregate LOD rather than being attached to cluster identities.
 The same Scene bytes drive direct-WASM WebGL, native SVG, and native
 raster/PNG, including the Rust-ordered `Class`, `Epistemic`, and `Status`
 legend. No browser or export renderer owns a second palette, state, dash,
-arrow, or legend policy.
+arrow, legend, label collision, or truncation policy.
 
 Every expanded edge layer, dash span, loop segment, and arrow wing retains the
 one source-edge stable ID; a separate paint-identical style/run boundary keeps

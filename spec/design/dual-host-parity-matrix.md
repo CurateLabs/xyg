@@ -48,7 +48,7 @@ runtime may still be landing).
 | Viewport + graph LOD + edge LOD | Rust | Rust | `xyg_graph_lod_*` / cluster / sample | Recorded §28; Rust emits render graph |
 | Encode → §29 f32 | Rust | Rust | Same binary payloads | Offset-encoded; no JSON numbers |
 | Shared WebGL browser paint | shared client | shared client | `GLHost` (dossier §18) | Paint / pick / gestures only; no raw V/E past direct tier |
-| Direct semantic graph Scene | canonical Scene | canonical Scene | `XYGG` → Rust style/legend/primitives → `XYGS` | Same bytes paint in WebGL, SVG, and native PNG; aggregate input omitted |
+| Direct semantic graph Scene | canonical Scene | canonical Scene | `XYGG` → Rust style/legend/label/primitives → `XYGS` | Same final labels and paint render in WebGL, SVG, and native PNG; aggregate input omitted |
 
 Complexity budgets (both hosts inherit the same Rust costs):
 

@@ -3,7 +3,7 @@
 use crate::edge_route::{edge_route_segments, EDGE_ROUTE_SEGMENTS_PER_EDGE};
 use crate::scene::{
     AxisScale, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
-    SceneChromeText, SceneError, SceneLegend, SceneLegendEntry, SceneRecordKind,
+    SceneChromeText, SceneError, SceneLabel, SceneLegend, SceneLegendEntry, SceneRecordKind,
 };
 
 pub const STATE_NORMAL: u8 = 0;
@@ -27,7 +27,7 @@ pub const RESOLVED_STYLE_VERSION: u32 = 1;
 pub const MAX_SEMANTIC_CODE: u8 = 7;
 pub const THEME_LIGHT: u8 = 0;
 pub const THEME_DARK: u8 = 1;
-pub const SEMANTIC_GRAPH_SCENE_VERSION: u32 = 1;
+pub const SEMANTIC_GRAPH_SCENE_VERSION: u32 = 2;
 /// Browser painter traces, not source rows, are the governing bound. A dashed
 /// edge may lower to several line primitives, so the compiler checks the
 /// emitted primitive count rather than trusting an input-node ceiling.
@@ -297,6 +297,7 @@ pub struct SemanticGraphSceneInput<'a> {
     pub node_statuses: &'a [u8],
     pub node_metric: &'a [f64],
     pub node_flags: &'a [u32],
+    pub node_labels: &'a [&'a str],
     pub sources: &'a [u64],
     pub targets: &'a [u64],
     pub edge_classes: &'a [u8],
@@ -304,6 +305,29 @@ pub struct SemanticGraphSceneInput<'a> {
     pub edge_statuses: &'a [u8],
     pub edge_metric: &'a [f64],
     pub edge_flags: &'a [u32],
+    pub edge_labels: &'a [&'a str],
+}
+
+const MAX_GRAPH_LABEL_CHARS: usize = 32;
+const GRAPH_LABEL_FONT_SIZE: f64 = 12.0;
+
+fn bounded_label(text: &str, available_width: f64) -> Option<String> {
+    if text.is_empty() || text.contains('\0') || text.len() > 4_096 || available_width < 8.0 {
+        return None;
+    }
+    let max_chars = ((available_width / (GRAPH_LABEL_FONT_SIZE * 0.62)).floor() as usize)
+        .min(MAX_GRAPH_LABEL_CHARS);
+    if max_chars == 0 {
+        return None;
+    }
+    let count = text.chars().count();
+    if count <= max_chars {
+        return Some(text.to_owned());
+    }
+    if max_chars == 1 {
+        return Some("…".to_owned());
+    }
+    Some(text.chars().take(max_chars - 1).collect::<String>() + "…")
 }
 
 #[derive(Default)]
@@ -473,6 +497,7 @@ pub fn encode_semantic_graph_scene(
             input.node_statuses.len(),
             input.node_metric.len(),
             input.node_flags.len(),
+            input.node_labels.len(),
         ]
         .iter()
         .any(|&len| len != n)
@@ -483,6 +508,7 @@ pub fn encode_semantic_graph_scene(
             input.edge_statuses.len(),
             input.edge_metric.len(),
             input.edge_flags.len(),
+            input.edge_labels.len(),
         ]
         .iter()
         .any(|&len| len != e)
@@ -616,6 +642,93 @@ pub fn encode_semantic_graph_scene(
             route_x1[route],
             route_y1[route],
         ));
+    }
+
+    #[derive(Clone)]
+    struct Candidate {
+        state: u8,
+        stable_id: u64,
+        x: f64,
+        y: f64,
+        rgba: [u8; 4],
+        text: String,
+    }
+    let foreground = if input.theme == THEME_LIGHT {
+        [31, 41, 55, 255]
+    } else {
+        [229, 231, 235, 255]
+    };
+    let mut candidates = Vec::with_capacity(n.saturating_add(e));
+    for (index, text) in input.node_labels.iter().enumerate() {
+        if nodes[index].state == STATE_AGGREGATE || nodes[index].state == STATE_FILTERED {
+            continue;
+        }
+        let (px, py) = to_px(input.x[index], input.y[index]);
+        let x = px + f64::from(nodes[index].size) * 0.5 + 4.0;
+        if let Some(text) = bounded_label(text, layout.right - x) {
+            candidates.push(Candidate {
+                state: nodes[index].state,
+                stable_id: (1_u64 << 32) + index as u64,
+                x,
+                y: py + 4.0,
+                rgba: foreground,
+                text,
+            });
+        }
+    }
+    for (index, text) in input.edge_labels.iter().enumerate() {
+        if edges[index].state == STATE_AGGREGATE
+            || edges[index].state == STATE_FILTERED
+            || routes[index].is_empty()
+        {
+            continue;
+        }
+        let segment = routes[index][routes[index].len() / 2];
+        let (px, py) = to_px((segment.0 + segment.2) * 0.5, (segment.1 + segment.3) * 0.5);
+        if let Some(text) = bounded_label(text, layout.right - px) {
+            candidates.push(Candidate {
+                state: edges[index].state,
+                stable_id: index as u64 + 1,
+                x: px,
+                y: py - 4.0,
+                rgba: foreground,
+                text,
+            });
+        }
+    }
+    candidates.sort_by_key(|candidate| (std::cmp::Reverse(candidate.state), candidate.stable_id));
+    let mut occupied: Vec<(f64, f64, f64, f64)> = Vec::new();
+    let mut labels = Vec::new();
+    for candidate in candidates {
+        if labels.len() == crate::scene::MAX_SCENE_LABELS {
+            break;
+        }
+        let width = candidate.text.chars().count() as f64 * GRAPH_LABEL_FONT_SIZE * 0.62;
+        let bounds = (
+            candidate.x,
+            candidate.y - GRAPH_LABEL_FONT_SIZE,
+            candidate.x + width,
+            candidate.y + 2.0,
+        );
+        if bounds.0 < layout.left
+            || bounds.1 < layout.top
+            || bounds.2 > layout.right
+            || bounds.3 > layout.bottom
+            || occupied.iter().any(|other| {
+                bounds.0 < other.2 && bounds.2 > other.0 && bounds.1 < other.3 && bounds.3 > other.1
+            })
+        {
+            continue;
+        }
+        occupied.push(bounds);
+        labels.push(SceneLabel {
+            stable_id: candidate.stable_id,
+            x: candidate.x,
+            y: candidate.y,
+            font_size: GRAPH_LABEL_FONT_SIZE,
+            rgba: candidate.rgba,
+            text: candidate.text,
+        });
     }
 
     // Rust first routes multiedges and loops, then expands resolved dash and
@@ -841,7 +954,7 @@ pub fn encode_semantic_graph_scene(
         axis.label_rgba = foreground;
         axis.grid_rgba = grid;
     }
-    SceneBatch::new_with_decorations(
+    SceneBatch::new_with_decorations_and_labels(
         layout,
         1,
         2,
@@ -850,6 +963,7 @@ pub fn encode_semantic_graph_scene(
         chrome,
         SceneChromeText::from_parts(input.title, "", "")?,
         legend,
+        labels,
         &columns.kinds,
         &columns.stable_ids,
         &columns.style_refs,
@@ -1212,7 +1326,7 @@ mod tests {
     #[test]
     fn semantic_graph_scene_is_one_exact_browser_svg_and_raster_contract() {
         let bytes = encode_semantic_graph_scene(SemanticGraphSceneInput {
-            version: 1,
+            version: SEMANTIC_GRAPH_SCENE_VERSION,
             width: 800.0,
             height: 600.0,
             theme: THEME_LIGHT,
@@ -1224,6 +1338,7 @@ mod tests {
             node_statuses: &[0, 1, 2],
             node_metric: &[0.0, 0.5, 1.0],
             node_flags: &[FLAG_SELECTED, FLAG_DISABLED, 0],
+            node_labels: &["Selected node", "Disabled node", "Third node"],
             // Parallel edges and a self-loop prove Rust-owned routing is not
             // silently omitted by any Scene consumer.
             sources: &[0, 0, 2],
@@ -1233,6 +1348,7 @@ mod tests {
             edge_statuses: &[1, 0, 2],
             edge_metric: &[1.0, 2.0, 3.0],
             edge_flags: &[0, FLAG_PINNED, 0],
+            edge_labels: &["first edge", "pinned edge", "loop"],
         })
         .unwrap();
         let document = crate::scene::SceneDocument::decode(&bytes).unwrap();
@@ -1243,6 +1359,9 @@ mod tests {
         assert!(svg.contains("Graph semantics"));
         assert!(svg.contains("Class 1"));
         assert!(svg.contains("data-xy-chrome=\"chart-background\""));
+        assert!(svg.contains("data-xy-chrome=\"graph_labels\""));
+        assert!(svg.contains("Selected node"));
+        assert!(svg.contains("data-xy-stable-id=\"4294967296\""));
         assert!(document.record_count() > 10); // dash + arrowheads + halos
         assert_eq!(&painter[..4], b"XYPB");
         let trace_count = u32::from_le_bytes(painter[20..24].try_into().unwrap()) as usize;
@@ -1272,6 +1391,10 @@ mod tests {
         assert!(edge_ids.iter().all(|id| (1..=3).contains(id)));
         assert!(edge_ids.iter().filter(|&&id| id == 1).count() > 4);
         assert!(painter.windows(4).any(|window| window == b"XYLG"));
+        assert!(painter.windows(4).any(|window| window == b"XYLB"));
+        assert!(raster
+            .windows("Selected node".len())
+            .any(|window| window == b"Selected node"));
         assert!(!raster.is_empty());
         #[cfg(feature = "raster")]
         {
@@ -1287,7 +1410,7 @@ mod tests {
     #[test]
     fn semantic_graph_scene_rejects_huge_finite_viewports_before_geometry_allocation() {
         let result = encode_semantic_graph_scene(SemanticGraphSceneInput {
-            version: 1,
+            version: SEMANTIC_GRAPH_SCENE_VERSION,
             width: MAX_SEMANTIC_GRAPH_VIEWPORT + 1.0,
             height: 600.0,
             theme: THEME_LIGHT,
@@ -1299,6 +1422,7 @@ mod tests {
             node_statuses: &[0, 0],
             node_metric: &[0.0, 1.0],
             node_flags: &[0, 0],
+            node_labels: &["", ""],
             sources: &[0],
             targets: &[1],
             edge_classes: &[1],
@@ -1306,6 +1430,7 @@ mod tests {
             edge_statuses: &[1],
             edge_metric: &[0.0],
             edge_flags: &[0],
+            edge_labels: &[""],
         });
         assert_eq!(result, Err(SceneError::Length));
     }
@@ -1313,7 +1438,7 @@ mod tests {
     #[test]
     fn browser_semantic_graph_fixture_compiles_with_dark_state_planes() {
         assert!(encode_semantic_graph_scene(SemanticGraphSceneInput {
-            version: 1,
+            version: SEMANTIC_GRAPH_SCENE_VERSION,
             width: 800.0,
             height: 600.0,
             theme: THEME_DARK,
@@ -1325,6 +1450,7 @@ mod tests {
             node_statuses: &[0, 1, 2],
             node_metric: &[0.0, 0.5, 1.0],
             node_flags: &[2, 64, 0],
+            node_labels: &["", "", ""],
             sources: &[0, 1],
             targets: &[2, 2],
             edge_classes: &[1, 2],
@@ -1332,6 +1458,7 @@ mod tests {
             edge_statuses: &[1, 0],
             edge_metric: &[1.0, 2.0],
             edge_flags: &[0, 16],
+            edge_labels: &["", ""],
         })
         .is_ok());
     }
@@ -1341,7 +1468,7 @@ mod tests {
         let edges = 6;
         assert_eq!(
             encode_semantic_graph_scene(SemanticGraphSceneInput {
-                version: 1,
+                version: SEMANTIC_GRAPH_SCENE_VERSION,
                 width: MAX_SEMANTIC_GRAPH_VIEWPORT,
                 height: 600.0,
                 theme: 0,
@@ -1353,6 +1480,7 @@ mod tests {
                 node_statuses: &[0, 0],
                 node_metric: &[0.0, 1.0],
                 node_flags: &[0, 0],
+                node_labels: &["", ""],
                 sources: &vec![0; edges],
                 targets: &vec![1; edges],
                 edge_classes: &vec![1; edges],
@@ -1360,6 +1488,7 @@ mod tests {
                 edge_statuses: &vec![1; edges],
                 edge_metric: &vec![0.0; edges],
                 edge_flags: &vec![0; edges],
+                edge_labels: &vec![""; edges],
             }),
             Err(SceneError::Limit)
         );

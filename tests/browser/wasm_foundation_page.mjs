@@ -67,7 +67,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 240 + textBytes + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 11, true);
+  view.setUint32(4, 12, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -130,7 +130,7 @@ function primaryAnnotationSceneV10() {
   const body = records + recordCount * 56;
   const bytes = new Uint8Array(body + 240), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 11, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 12, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -162,7 +162,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 240);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 11, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 12, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -280,7 +280,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    11, 11, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    11, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -373,7 +373,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 11,
-    expectedSceneVersion: 11,
+    expectedSceneVersion: 12,
   };
 }
 
@@ -530,7 +530,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 11 || ready.sceneVersion !== 11) {
+  if (ready.abiVersion !== 11 || ready.sceneVersion !== 12) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -993,6 +993,7 @@ async function run() {
   columnHost.remove();
   await columnWorker.dispose();
 
+  foundationStage = "semantic graph labels";
   const semanticWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,
@@ -1004,9 +1005,11 @@ async function run() {
     x: [0, 1, 0.5], y: [0, 0, 1],
     nodeClass: [1, 2, 3], nodeEpistemic: [1, 0, 2], nodeStatus: [0, 1, 2],
     nodeMetric: [0, 0.5, 1], nodeFlags: [2, 64, 0],
+    nodeLabels: ["Selected node with an intentionally long label that truncates", "Disabled node", "Third node"],
     sources: [0n, 0n, 2n], targets: [2n, 2n, 2n],
     edgeClass: [1, 2, 3], edgeEpistemic: [1, 3, 2], edgeStatus: [1, 0, 2],
     edgeMetric: [1, 2, 3], edgeFlags: [0, 16, 0],
+    edgeLabels: ["parallel edge", "pinned edge", "self loop"],
   };
   const semanticPacked = encodeWasmSemanticGraph(semanticGraph);
   if (new Uint8Array(semanticPacked).subarray(0, 4).join(",") !== "88,89,71,71") {
@@ -1025,6 +1028,13 @@ async function run() {
       || legendRows.some((row, index) => row.getAttribute("aria-label") !== legendLabels[index])
       || legendLabels.join("|") !== "Class 1|Class 2|Class 3|Epistemic 0|Epistemic 1|Epistemic 2|Epistemic 3|Status 0|Status 1|Status 2") {
     throw new Error(`semantic graph did not hydrate Rust painter/legend parity: ${legendLabels.join("|")}`);
+  }
+  const graphLabels = [...semanticHost.querySelectorAll('[data-xy-slot="graph_label"][role="listitem"]')];
+  if (!semanticHost.querySelector('[data-xy-chrome="graph_labels"][role="list"][aria-label="Graph labels"]')
+      || graphLabels.length < 2
+      || graphLabels.some((label) => !label.dataset.xyStableId || !label.textContent)
+      || !graphLabels.some((label) => label.textContent.endsWith("…"))) {
+    throw new Error(`semantic graph labels lost Rust placement/truncation/a11y: ${graphLabels.map((label) => label.textContent).join("|")}`);
   }
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const semanticCanvas = semanticView.canvas;

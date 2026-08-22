@@ -62,7 +62,7 @@ disk-resident 256² tile spill is the next residency milestone —
 | `packages/xy-node/test/marks.test.mjs` | Encode / M4 / hist / box / violin / polar goldens |
 | `tests/test_node_mark_parity.py` | Live Python↔Node bit parity |
 | `tests/test_graph_node_parity.py` | Graph layout goldens |
-| `tests/browser/wasm_foundation_page.mjs` | Direct-WASM semantic graph paint, identity, legend, theme, and accessibility parity |
+| `tests/browser/wasm_foundation_page.mjs` | Direct-WASM semantic graph paint, identity, Rust-placed labels/truncation, legend, theme, and accessibility parity |
 | Browser mark table | `js/src/55_marks.ts` includes contour, errorbar, stem, triangle_mesh, error_band |
 
 ## Invariants (do not regress)

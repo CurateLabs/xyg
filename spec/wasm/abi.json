@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "abi_version": 11,
-  "scene_version": 11,
-  "painter_version": 8,
+  "scene_version": 12,
+  "painter_version": 9,
   "painter_header_bytes": 288,
   "painter_trace_bytes": 64,
   "painter_tick_bytes": 16,
@@ -324,7 +324,7 @@
   },
   "semantic_graph": {
     "request_magic": "XYGG",
-    "version": 1,
+    "version": 2,
     "header_bytes": 64,
     "header_offsets": {"version": 4, "header_bytes": 8, "theme": 12, "node_count": 16, "edge_count": 20, "title_bytes": 24, "reserved0": 28, "width": 32, "height": 40, "reserved_tail": 48},
     "max_input_elements": 1024,
