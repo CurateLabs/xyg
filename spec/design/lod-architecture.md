@@ -771,7 +771,7 @@ cache and dedicated 100M latency gate still open)**
 **Phase 4 — Tier-3 residency (disk-resident 256² tiles)**
 
 Roadmap: [tier3-phase4-roadmap.md](tier3-phase4-roadmap.md). Tracked by
-[#5](https://github.com/CurateLabs/graphforge-xy/issues/5).
+[#5](https://github.com/CurateLabs/xyg/issues/5).
 
 10. Tile spill/load under byte budget; zone-map-pruned tile index for
     unordered scatter (chunk zone maps prune per tile rect; `SpatialIndex`

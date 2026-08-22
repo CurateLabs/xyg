@@ -63,7 +63,7 @@ must spill:
 - Shipping Arrow/Parquet ingest as a hard dependency of the first spill MVP
   if a simpler mmap tile format lands first — document the format choice.
 
-## Locked decisions (WP0 — [#7](https://github.com/CurateLabs/graphforge-xy/issues/7))
+## Locked decisions (WP0 — [#7](https://github.com/CurateLabs/xyg/issues/7))
 
 Every decision below is the authoritative record (§28 culture: recorded,
 never silent). Dossier-level summary: design-dossier.md §32b. WP1–WP4 build
@@ -198,7 +198,7 @@ inside this frame; changing any of it means editing this section first.
 
 ## Work packages
 
-### WP0 — Spec lock ([#7](https://github.com/CurateLabs/graphforge-xy/issues/7))
+### WP0 — Spec lock ([#7](https://github.com/CurateLabs/xyg/issues/7))
 
 - [x] Finalize tile key `(level, tx, ty)`, on-disk layout (fixed mmap slabs;
   Arrow/Parquet deferred with a migration note), and the
@@ -250,12 +250,12 @@ inside this frame; changing any of it means editing this section first.
 - [x] First paint + `density_view` prefer spilled tiles when the resident pyramid
   would exceed budget.
 
-### WP3 — Client (optional follow-on, [#10](https://github.com/CurateLabs/graphforge-xy/issues/10))
+### WP3 — Client (optional follow-on, [#10](https://github.com/CurateLabs/xyg/issues/10))
 
 - Tile-keyed density cache in `js/src/45_lod.ts` (Phase-3 item 8) so pan
   reuses textures keyed by `(level, tx, ty)`.
 
-### WP4 — Evidence ([#11](https://github.com/CurateLabs/graphforge-xy/issues/11))
+### WP4 — Evidence ([#11](https://github.com/CurateLabs/xyg/issues/11))
 
 - Extend [tier3-testing.md](tier3-testing.md) with spill cases:
   - synthetic tile directory fixture (MBs, not TBs);
