@@ -93,7 +93,7 @@ jobs:
         run: cargo install cargo-codspeed --locked --version 4.6.0
 
       - name: Build Rust kernel benchmarks
-        run: cargo codspeed build -m simulation --bench kernels --bench aggregate
+        run: cargo codspeed build -m simulation --bench kernels --bench aggregate --bench typed_series
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8 # v5.0.3
@@ -111,5 +111,48 @@ jobs:
           # The codspeed dependency group installs pytest-codspeed for this run.
           run: |
             set -euo pipefail
-            cargo codspeed run --bench kernels --bench aggregate
+            cargo codspeed run --bench kernels --bench aggregate --bench typed_series
             .venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed
+
+  typed-series-browser-evidence:
+    name: Typed-series browser evidence
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: detect
+    if: needs.detect.outputs.should_run == 'true'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: 1.96.0
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Cache Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: typed-series-playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - name: Build strict-CSP direct-browser assets
+        run: |
+          npm ci
+          cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+          node js/build.mjs
+          node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
+          npx playwright install chromium
+      - name: Measure and validate four-size typed-series first paint
+        env:
+          XYG_EVIDENCE_PATH: typed-series-browser-${{ github.sha }}.json
+        run: |
+          node benchmarks/bench_wasm_scene.mjs > "$XYG_EVIDENCE_PATH"
+          python3 scripts/verify_wasm_scene_benchmark.py "$XYG_EVIDENCE_PATH" --sha "${{ github.sha }}"
+      - name: Upload SHA-keyed raw typed-series evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: typed-series-browser-${{ github.sha }}
+          if-no-files-found: error
+          path: typed-series-browser-${{ github.sha }}.json

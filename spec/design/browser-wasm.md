@@ -428,16 +428,20 @@ The opt-in Chromium benchmark reports 10k/100k/1M mixed scatter/line/rect
 worker preparation, hydration/upload, two-frame first paint, Scene/painter
 bytes, and JS heap delta when Chromium exposes it. It asserts three grouped
 traces and stable-ID survival. Results are environmental measurements, not a
-committed win claim. The hosted Rust benchmark isolates the same conversion at
-those three sizes. This slice makes no startup, throughput, memory, or
-bundle-size win claim. Those budgets and comparisons
-must be established through the repository's hosted CodSpeed workflow before
-Issue `#59` can close; raw local timings are not performance evidence.
+committed win claim. The hosted Rust benchmark isolates typed-series conversion
+at 100, 10k, 100k, and 1M records. The existing changed-main nightly/manual
+CodSpeed workflow runs those simulation rows and a separate strict-CSP Chromium
+job at the same four sizes. The browser job validates the zero-record-visit
+contract and copy/memory metrics, then uploads SHA-keyed raw JSON. It is not PR
+CI. This slice makes no startup, throughput, memory, bundle-size, or
+competitive-win claim before a hosted artifact is available; raw local timings
+are not performance evidence.
 
 ## Remaining #59 work
 
 - aggregate production paths beyond direct Scene records;
-- small-through-massive CodSpeed and browser budget evidence; and
+- interpreted budgets/comparisons after collecting the SHA-keyed
+  small-through-massive CodSpeed and browser artifacts; and
 - replacement (not expansion) of `46_worker.ts` only after WASM covers its
   density contract without regression.
 
