@@ -20,6 +20,37 @@ EXPECTED_SCATTER = (
 )
 
 
+def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
+    assert _native.scene_support_reason(0) == ""
+    assert _native.scene_support_reason((1 << 6) | (1 << 1)) == (
+        "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources"
+    )
+    with pytest.raises(ValueError, match="version or feature mask"):
+        _native.scene_support_reason(1 << 63)
+    for invalid_features in (True, "1", -1, 1.0, 1 << 64):
+        with pytest.raises(ValueError, match="features must be a u64 bit mask"):
+            _native.scene_support_reason(invalid_features)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="version or feature mask"):
+        _native.scene_support_reason(0, request_version=2)
+    for invalid in (True, -1, 1.5, 1 << 32):
+        with pytest.raises(ValueError, match="request_version must be a u32 integer"):
+            _native.scene_support_reason(0, request_version=invalid)  # type: ignore[arg-type]
+
+    polar = Figure(coords="polar").line([0.0, 1.0], [0.0, 1.0])
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
+        polar.to_scene()
+
+    custom_font = Figure().line([0.0, 1.0], [0.0, 1.0])
+    custom_font.chrome_styles = {"title": {"font-family": "Example Sans"}}
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"):
+        custom_font.to_scene()
+
+    browser_css = Figure().line([0.0, 1.0], [0.0, 1.0])
+    browser_css.marker(0.5, 0.5, class_name="browser-only")
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_BROWSER_CSS"):
+        browser_css.to_scene()
+
+
 def test_scene_v10_primary_annotations_are_canonical_and_ordered() -> None:
     figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
     figure.vline(0.25, color="#ff0000", width=2.0)
@@ -49,9 +80,9 @@ def test_scene_v10_primary_annotations_are_canonical_and_ordered() -> None:
 
 
 def test_scene_v10_annotations_fail_closed_for_deferred_content() -> None:
-    with pytest.raises(UnsupportedSceneV3, match="labels are deferred"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL"):
         Figure().vline(1.0, text="limit").to_scene()
-    with pytest.raises(UnsupportedSceneV3, match=r"arrow.*deferred"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW"):
         Figure().arrow(0.0, 0.0, 1.0, 1.0).to_scene()
     with pytest.raises(UnsupportedSceneV3, match="does not encode"):
         Figure().vline(1.0, style={"dash": "2,2"}).to_scene()

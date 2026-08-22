@@ -3,11 +3,38 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneVersion } from "../src/index.js";
+import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneSupportReason, sceneVersion } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
+
+test("Node projects Rust-owned Scene support decisions verbatim", () => {
+  assert.equal(sceneSupportReason(0), "");
+  assert.equal(
+    sceneSupportReason((1n << 6n) | (1n << 1n)),
+    "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources",
+  );
+  assert.throws(() => sceneSupportReason(1n << 63n), /version or feature mask/);
+  assert.throws(() => sceneSupportReason(0, 2), /version or feature mask/);
+  for (const features of [true, "1", -1, -1n, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => sceneSupportReason(features), /exact nonnegative u64 integer|u64 bit mask/);
+  }
+  assert.throws(() => sceneSupportReason(1n << 64n), /u64 bit mask/);
+  for (const version of [true, -1, 1.5, 2 ** 32]) {
+    assert.throws(() => sceneSupportReason(0, version), /requestVersion must be a u32 integer/);
+  }
+
+  const polar = new Figure({ coords: "polar" }); polar.line([0, 1], [0, 1]);
+  assert.throws(() => polar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
+  customFont.chromeStyles = { title: { fontFamily: "Example Sans" } };
+  assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
+  const browserCss = new Figure(); browserCss.line([0, 1], [0, 1]); browserCss.className = "browser-only";
+  assert.throws(() => browserCss.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
+  const gradient = new Figure(); gradient.bar([0], [1]); gradient.traces[0].style.fill = { type: "linear", colors: ["#000", "#fff"] };
+  assert.throws(() => gradient.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
+});
 
 test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture", () => {
   const figure = new Figure({ width: 320, height: 240 });
@@ -89,7 +116,7 @@ test("Node Scene v10 compiles bounded primary annotations and fails closed", () 
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
-  assert.throws(() => figure.toScene(), /labels are deferred/);
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL/);
   for (const style of [
     { color: "" }, { color: null }, { opacity: null }, { opacity: "" },
     { opacity: "opaque" }, { width: null }, { width: false },

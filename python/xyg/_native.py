@@ -1659,6 +1659,32 @@ def scene_version() -> int:
     return int(_lib.xyg_scene_version())
 
 
+def scene_support_reason(features: int, *, request_version: int = 1) -> str:
+    """Return Rust's stable diagnostic for authored Scene feature bits."""
+    if (
+        isinstance(request_version, bool)
+        or not isinstance(request_version, int)
+        or not 0 <= request_version <= 0xFFFF_FFFF
+    ):
+        raise ValueError("scene support request_version must be a u32 integer")
+    if (
+        isinstance(features, bool)
+        or not isinstance(features, int)
+        or not 0 <= features <= 0xFFFF_FFFF_FFFF_FFFF
+    ):
+        raise ValueError("scene support features must be a u64 bit mask")
+    required = int(_lib.xyg_scene_support_reason(request_version, features, None, 0))
+    if required == _USIZE_MAX:
+        raise ValueError("invalid Scene support request version or feature mask")
+    if required == 0:
+        return ""
+    output = ctypes.create_string_buffer(required)
+    written = int(_lib.xyg_scene_support_reason(request_version, features, output, required))
+    if written != required:
+        raise RuntimeError("native Scene support predicate returned an inconsistent length")
+    return output.raw.decode("utf-8")
+
+
 def scene_axis_ticks(
     kind: int,
     lo: float,
@@ -1826,7 +1852,7 @@ def scene_batch_encode(
     y_minor_ticks: npt.ArrayLike = (),
     legend_input: bytes = b"",
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v9 typed batch."""
+    """Encode the bounded backend-neutral Scene v10 typed batch."""
 
     def scene_uint(
         value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
@@ -1995,12 +2021,12 @@ def _scene_bytes_output(encoded: bytes, function: Any, label: str, *extra: Any) 
 
 
 def scene_svg(encoded: bytes) -> str:
-    """Render one validated Scene v9 document as a complete SVG."""
+    """Render one validated Scene v10 document as a complete SVG."""
     return _scene_bytes_output(encoded, _lib.xyg_scene_svg, "SVG").decode("utf-8")
 
 
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
-    """Compile Scene v9 into the existing native raster display list."""
+    """Compile Scene v10 into the existing native raster display list."""
     factor = float(scale)
     if not math.isfinite(factor) or factor <= 0.0:
         raise ValueError("scene raster scale must be positive and finite")

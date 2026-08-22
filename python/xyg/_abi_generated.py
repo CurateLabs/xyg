@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 83
-SIGNATURE_SHA256 = "7131945d01d59094e90a3617b6a4841796a187d3eb11139791db04c6fe8a95aa"
+ABI_VERSION = 84
+SIGNATURE_SHA256 = "6a2a0a1190a5008c6a47d3cce518071a188394105cc21f40b722873a33d425e4"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -426,6 +426,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_scatter_svg
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_scene_support_reason(uint32_t request_version, uint64_t features, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_support_reason
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint32, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_scene_svg(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_svg
     function.restype = ctypes.c_size_t

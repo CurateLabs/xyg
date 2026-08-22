@@ -355,8 +355,44 @@ def figure_scene(
     margins: tuple[float, float, float, float] | None = None,
 ) -> bytes:
     """Compile migrated cartesian marks plus x/y axes to Scene v10."""
+    annotations = list(getattr(figure, "annotations", None) or [])
+    features = 0
     if figure.coords != "cartesian":
-        raise UnsupportedSceneV3("Scene v10 figure compilation currently supports cartesian only")
+        features |= 1 << 0
+    chrome_styles = getattr(figure, "chrome_styles", None) or {}
+    if any("font-family" in (style or {}) for style in chrome_styles.values()):
+        features |= 1 << 1
+    if (
+        getattr(figure, "class_name", None)
+        or getattr(figure, "class_names", None)
+        or chrome_styles
+        or set(getattr(figure, "style", None) or {}) - {"background", "--chart-bg"}
+        or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
+    ):
+        features |= 1 << 2
+    if any(
+        isinstance((getattr(trace, "style", None) or {}).get("fill"), dict)
+        or getattr(trace, "color2_ch", None) is not None
+        for trace in figure.traces
+    ):
+        features |= 1 << 3
+    if figure.colorbar_options:
+        features |= 1 << 4
+    if figure.extra_legends:
+        features |= 1 << 5
+    if any(options.get("tick_labels") is not None for options in figure.axis_options.values()):
+        features |= 1 << 6
+    if any(
+        annotation.get("kind") not in {"callout", "arrow"}
+        and annotation.get("text") not in (None, "")
+        for annotation in annotations
+    ):
+        features |= 1 << 7
+    if any(annotation.get("kind") in {"callout", "arrow"} for annotation in annotations):
+        features |= 1 << 8
+    reason = _native.scene_support_reason(features)
+    if reason:
+        raise UnsupportedSceneV3(reason)
     if set(figure.axis_options) != {"x", "y"}:
         raise UnsupportedSceneV3("Scene v10 figure compilation currently supports exactly x/y axes")
     for options in figure.axis_options.values():
@@ -381,9 +417,6 @@ def figure_scene(
             raise UnsupportedSceneV3(
                 "Scene v10 does not yet encode tick formatting, collision policy, or advanced axis layout"
             )
-    annotations = list(getattr(figure, "annotations", None) or [])
-    if figure.colorbar_options or figure.extra_legends:
-        raise UnsupportedSceneV3("Scene v10 does not yet encode colorbars or extra legends")
     unsupported = next(
         (trace.kind for trace in figure.traces if trace.kind not in _SUPPORTED_KINDS), None
     )

@@ -202,7 +202,7 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     assert "Vertical" in svg
     assert "two" in svg
     assert "#123456" in svg
-    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_TICK_LABELS"):
         figure.to_scene()
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
@@ -312,7 +312,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     gradient.ribbon(
         [0.0], [1.0], [0.0], [0.3], [0.2], [0.5], color="#7c3aed", color_target="#34d399"
     )
-    with pytest.raises(UnsupportedSceneV3, match="two-ended ribbon gradients"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
         gradient.to_scene()
 
 
@@ -386,11 +386,11 @@ def test_python_scene_compiles_rule_and_band_annotations() -> None:
 def test_python_scene_still_rejects_labeled_and_rich_annotations() -> None:
     labeled = representative_figure()
     labeled.vline(1.0, text="threshold")
-    with pytest.raises(UnsupportedSceneV3, match="labels are deferred"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL"):
         labeled.to_scene()
     figure = representative_figure()
     figure.annotations.append({"kind": "text", "x": 1, "y": 2, "text": "note"})
-    with pytest.raises(UnsupportedSceneV3, match="is deferred"):
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL"):
         figure.to_scene()
 
 

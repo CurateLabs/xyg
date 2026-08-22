@@ -7,6 +7,7 @@ import {
   xySceneRasterCommands,
   xySceneScaleMap,
   xySceneScatterSvg,
+  xySceneSupportReason,
   xySceneSvg,
   xySceneVersion,
 } from "./native.js";
@@ -332,6 +333,30 @@ const SUPPORTED_KINDS = new Set([
   "segments", "errorbar", "stem", "contour", "box_whisker", "box_median",
   "area", "error_band", "ribbon", "triangle_mesh",
 ]);
+
+/** Return Rust's stable diagnostic for authored Scene feature bits. */
+export function sceneSupportReason(features, requestVersion = 1) {
+  if (
+    typeof requestVersion !== "number"
+    || !Number.isInteger(requestVersion)
+    || requestVersion < 0
+    || requestVersion >= 0x1_0000_0000
+  ) throw new TypeError("scene support requestVersion must be a u32 integer");
+  if (
+    typeof features !== "bigint"
+    && (typeof features !== "number" || !Number.isSafeInteger(features) || features < 0)
+  ) throw new TypeError("scene support features must be an exact nonnegative u64 integer");
+  const mask = BigInt(features);
+  if (mask < 0n || mask > 0xffff_ffff_ffff_ffffn) throw new RangeError("scene support features must be a u64 bit mask");
+  const requiredRaw = xySceneSupportReason(Number(requestVersion), mask, 0, 0n);
+  if (requiredRaw === USIZE_MAX_64) throw new RangeError("invalid Scene support request version or feature mask");
+  const required = Number(requiredRaw);
+  if (required === 0) return "";
+  const output = new Uint8Array(required);
+  const written = xySceneSupportReason(Number(requestVersion), mask, u8Ptr(output), BigInt(required));
+  if (Number(written) !== required) throw new Error("native Scene support predicate returned an inconsistent length");
+  return new TextDecoder("utf-8", { fatal: true }).decode(output);
+}
 const RIBBON_STEPS = 96;
 
 const LEGEND_LOCATIONS = new Map([["upper right", 0], ["upper left", 1], ["lower left", 2], ["lower right", 3], ["center right", 4], ["center left", 5], ["upper center", 6], ["lower center", 7], ["center", 8]]);
@@ -432,7 +457,29 @@ function requireEqualColumns(columns, kind, label) {
 
 /** Compile migrated cartesian marks to Scene v10. */
 export function figureSceneV3(figure, { margins = null } = {}) {
-  if (figure.coords !== "cartesian") throw new RangeError("Scene v10 figure compilation currently supports cartesian coordinates only");
+  const chromeStyles = figure.chromeStyles ?? figure.chrome_styles ?? {};
+  let features = 0n;
+  if (figure.coords !== "cartesian") features |= 1n << 0n;
+  if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) features |= 1n << 1n;
+  if (
+    figure.className
+    || figure.class_name
+    || Object.keys(figure.classNames ?? figure.class_names ?? {}).length
+    || Object.keys(chromeStyles).length
+    || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
+    || (figure.annotations ?? []).some((annotation) => annotation.className || annotation.class_name)
+  ) features |= 1n << 2n;
+  if ((figure.traces ?? []).some((trace) => (
+    trace.color_target != null
+    || (trace.style?.fill != null && typeof trace.style.fill === "object")
+  ))) features |= 1n << 3n;
+  if (figure.colorbarOptions ?? figure.colorbar_options) features |= 1n << 4n;
+  if ((figure.extraLegends ?? figure.extra_legends ?? []).length) features |= 1n << 5n;
+  if ([figure.xAxis, figure.yAxis, figure.x_axis, figure.y_axis].some((axis) => axis?.tickLabels != null || axis?.tick_labels != null)) features |= 1n << 6n;
+  if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
+  if ((figure.annotations ?? []).some((annotation) => ["callout", "arrow"].includes(annotation.kind))) features |= 1n << 8n;
+  const reason = sceneSupportReason(features);
+  if (reason) throw new RangeError(reason);
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
   if (unsupported) throw new RangeError(`Scene v10 figure compilation does not yet support ${unsupported.kind}`);
   const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [];
@@ -607,8 +654,8 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
     const kind = annotation.kind;
     if (!["rule", "band", "marker"].includes(kind)) throw new RangeError(`Scene v10 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
-    if (annotation.text != null && annotation.text !== "") throw new RangeError(`Scene v10 ${kind} annotation labels are deferred; remove text or use the legacy renderer`);
-    if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError("Scene v10 annotations do not encode class_name");
+    if (annotation.text != null && annotation.text !== "") throw new RangeError(sceneSupportReason(1n << 7n));
+    if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError(sceneSupportReason(1n << 2n));
     const style = { ...(annotation.style ?? {}) };
     const allowed = new Set(kind === "rule" ? ["color", "opacity", "width"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
     const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();

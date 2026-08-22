@@ -30,6 +30,42 @@ pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 pub const MAX_BROWSER_PAINTER_TRACES: usize = 1024;
 pub const MAX_SCENE_LEGEND_ENTRIES: usize = 128;
 pub const MAX_SCENE_LEGEND_TEXT_BYTES: usize = 16_384;
+pub const SCENE_SUPPORT_REQUEST_VERSION: u32 = 1;
+pub const SCENE_FEATURE_POLAR: u64 = 1 << 0;
+pub const SCENE_FEATURE_CUSTOM_FONT: u64 = 1 << 1;
+pub const SCENE_FEATURE_BROWSER_CSS: u64 = 1 << 2;
+pub const SCENE_FEATURE_GRADIENT: u64 = 1 << 3;
+pub const SCENE_FEATURE_COLORBAR: u64 = 1 << 4;
+pub const SCENE_FEATURE_EXTRA_LEGEND: u64 = 1 << 5;
+pub const SCENE_FEATURE_AUTHORED_TICK_LABELS: u64 = 1 << 6;
+pub const SCENE_FEATURE_LABELED_ANNOTATION: u64 = 1 << 7;
+pub const SCENE_FEATURE_CALLOUT_OR_ARROW: u64 = 1 << 8;
+pub const SCENE_FEATURE_MASK: u64 = (1 << 9) - 1;
+
+/// Return Rust's stable, ordered diagnostic for the first unsupported authored
+/// Scene feature. An empty slice means the bounded Cartesian subset is
+/// supported. Hosts only project literal feature-presence bits; they do not
+/// choose support policy or wording.
+pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str, SceneError> {
+    if version != SCENE_SUPPORT_REQUEST_VERSION || features & !SCENE_FEATURE_MASK != 0 {
+        return Err(SceneError::Version);
+    }
+    let reasons = [
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v10 supports Cartesian coordinates only"),
+        (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources"),
+        (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v10 does not encode browser-only CSS or class behavior"),
+        (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v10 supports solid literal paints only"),
+        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v10 does not yet encode colorbars"),
+        (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v10 supports one primary static legend only"),
+        (SCENE_FEATURE_AUTHORED_TICK_LABELS, "XYG_SCENE_UNSUPPORTED_TICK_LABELS: Scene v10 does not yet encode authored tick-label strings"),
+        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v10 annotations do not yet encode text labels"),
+        (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v10 does not yet encode callouts or arrows"),
+    ];
+    Ok(reasons
+        .into_iter()
+        .find_map(|(flag, reason)| (features & flag != 0).then_some(reason))
+        .unwrap_or(""))
+}
 const SCENE_ANNOTATION_ID_MASK: u64 = 0xffff_0000_0000_0000;
 const SCENE_ANNOTATION_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
 
@@ -6589,5 +6625,19 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn scene_support_predicate_is_stable_ordered_and_fail_closed() {
+        assert_eq!(scene_support_reason(1, 0), Ok(""));
+        assert_eq!(
+            scene_support_reason(
+                1,
+                SCENE_FEATURE_AUTHORED_TICK_LABELS | SCENE_FEATURE_CUSTOM_FONT,
+            ),
+            Ok("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v10 does not encode custom font resources")
+        );
+        assert_eq!(scene_support_reason(2, 0), Err(SceneError::Version));
+        assert_eq!(scene_support_reason(1, 1 << 63), Err(SceneError::Version));
     }
 }
