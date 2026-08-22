@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 82;
+pub const ABI_VERSION: u32 = 83;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4490,6 +4490,74 @@ pub unsafe extern "C" fn xyg_chunked_columns_read(
             read.bytes_read,
         ]);
         read.x.len()
+    })
+}
+
+/// Read one bounded, resumable viewport page. `cursor` is zero for the first
+/// page or the exact `out_stats[5]` returned previously. Stats are generation,
+/// first chunk, chunks considered/read, bytes read, next cursor, done, error.
+/// Read error slot 7 first: on budget errors slots 4 and 5 instead contain the
+/// required bytes and configured budget; on capacity errors slot 4 contains
+/// the required element count.
+///
+/// # Safety
+/// `out_x` and `out_y` must each address `capacity` writable f64 values;
+/// `out_stats` must address eight writable u64 values.
+#[cfg(not(target_family = "wasm"))]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_chunked_columns_read_page(
+    store: u64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    use_y: i32,
+    budget_bytes: u64,
+    generation: u64,
+    cursor: u32,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+    out_stats: *mut u64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_x.is_null() || out_y.is_null() || out_stats.is_null() {
+            return usize::MAX;
+        }
+        let stats = std::slice::from_raw_parts_mut(out_stats, 8);
+        stats.fill(0);
+        let Some(s) = chunked_columns::reg_get(store) else {
+            return usize::MAX;
+        };
+        let y = if use_y == 0 { None } else { Some((y0, y1)) };
+        let page = match s.read_page(x0, x1, y, budget_bytes, generation, cursor) {
+            Ok(v) => v,
+            Err(e) => {
+                if let chunked_columns::Error::BudgetExceeded { needed, budget } = &e {
+                    stats[4] = *needed;
+                    stats[5] = *budget;
+                }
+                stats[7] = e.code();
+                return usize::MAX;
+            }
+        };
+        if page.read.x.len() > capacity {
+            stats[4] = page.read.x.len() as u64;
+            stats[7] = 6;
+            return usize::MAX;
+        }
+        std::ptr::copy_nonoverlapping(page.read.x.as_ptr(), out_x, page.read.x.len());
+        std::ptr::copy_nonoverlapping(page.read.y.as_ptr(), out_y, page.read.y.len());
+        stats[0..7].copy_from_slice(&[
+            page.read.generation,
+            u64::from(page.read.first_chunk),
+            u64::from(page.read.chunks_considered),
+            u64::from(page.read.chunks_read),
+            page.read.bytes_read,
+            u64::from(page.next_chunk),
+            u64::from(page.done),
+        ]);
+        page.read.x.len()
     })
 }
 

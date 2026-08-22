@@ -1,7 +1,7 @@
 /** Thin Node host for Rust-owned ordered Tier-3 XYGC range reads. */
 import {
   pointer, xyChunkedColumnsCancelBefore, xyChunkedColumnsFree,
-  xyChunkedColumnsOpen, xyChunkedColumnsOverview, xyChunkedColumnsRead,
+  xyChunkedColumnsOpen, xyChunkedColumnsOverview, xyChunkedColumnsRead, xyChunkedColumnsReadPage,
   xyChunkedColumnsRows,
 } from "./native.js";
 
@@ -39,6 +39,25 @@ export class ChunkedColumns {
     }
     const n = Number(written);
     return { x: x.slice(0, n), y: y.slice(0, n), provenance: { generation: stats[0], firstChunk: stats[1], chunksConsidered: stats[2], chunksRead: stats[3], bytesRead: stats[4] } };
+  }
+  *pages([x0, x1], { yRange = null, pageBytes = 4 << 20, generation = 0 } = {}) {
+    if (!Number.isSafeInteger(pageBytes) || pageBytes < 16) throw new RangeError("chunked-column pageBytes must be at least 16 bytes");
+    this.cancelBefore(generation);
+    let cursor = 0;
+    for (;;) {
+      const capacity = Math.floor(pageBytes / 16), x = new Float64Array(capacity), y = new Float64Array(capacity), stats = new BigUint64Array(8);
+      const [y0, y1] = yRange ?? [0, 0];
+      const written = xyChunkedColumnsReadPage(this.handle, x0, x1, y0, y1, yRange === null ? 0 : 1, BigInt(pageBytes), BigInt(generation), cursor, pointer(x, "double *"), pointer(y, "double *"), capacity, pointer(stats, "uint64_t *"));
+      if (written === BigInt("18446744073709551615")) {
+        if (stats[7] === 4n) throw new Error(`chunked-column page needs ${stats[4]} bytes, exceeding the ${stats[5]}-byte page budget`);
+        const reason = ({ 1: "I/O failure", 2: "corrupt artifact", 3: "invalid cursor or viewport bounds", 5: "cancelled by newer viewport", 6: "output capacity too small" })[Number(stats[7])] ?? "invalid request";
+        throw new Error(`chunked-column page read failed: ${reason}`);
+      }
+      const n = Number(written), progress = { generation: stats[0], firstChunk: stats[1], chunksConsidered: stats[2], chunksRead: stats[3], bytesRead: stats[4], nextCursor: stats[5], done: stats[6] === 1n };
+      yield { x: x.slice(0, n), y: y.slice(0, n), progress };
+      if (progress.done) return;
+      cursor = Number(progress.nextCursor);
+    }
   }
   cancelBefore(generation) {
     if (!Number.isSafeInteger(generation) || generation < 0) throw new RangeError("chunked-column generation must be a non-negative safe integer");

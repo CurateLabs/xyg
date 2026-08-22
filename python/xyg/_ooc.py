@@ -192,6 +192,31 @@ class ChunkedColumns:
         """
         return _native.chunked_columns_overview(self._handle, max_points)
 
+    def pages(
+        self,
+        x_range: tuple[float, float],
+        y_range: tuple[float, float] | None = None,
+        *,
+        page_bytes: int = 4 << 20,
+        generation: int = 0,
+    ):
+        """Yield exact viewport pages on demand under a hard native byte cap."""
+        self.cancel_before(generation)
+        cursor = 0
+        while True:
+            x, y, progress = _native.chunked_columns_read_page(
+                self._handle,
+                x_range,
+                y_range,
+                budget_bytes=page_bytes,
+                generation=generation,
+                cursor=cursor,
+            )
+            yield x, y, progress
+            if progress["done"]:
+                return
+            cursor = int(progress["next_cursor"])
+
     def cancel_before(self, generation: int) -> None:
         _native.chunked_columns_cancel_before(self._handle, generation)
 

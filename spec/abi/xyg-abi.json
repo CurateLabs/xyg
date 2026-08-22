@@ -1,9 +1,9 @@
 {
-  "abi_version": 82,
+  "abi_version": 83,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "86f4b0cb4e33c2281060cca9c03fce8aa36f4df922beea756deae2d724e7ed44",
+  "signature_sha256": "7131945d01d59094e90a3617b6a4841796a187d3eb11139791db04c6fe8a95aa",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -2129,6 +2129,224 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)"
+    },
+    {
+      "name": "xyg_chunked_columns_read_page",
+      "node_name": "xyChunkedColumnsReadPage",
+      "nargs": 13,
+      "arguments": [
+        {
+          "name": "store",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "x0",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "x1",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "y0",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "y1",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "use_y",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "budget_bytes",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "generation",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "rust": "u32",
+            "c": "uint32_t",
+            "ctypes": "ctypes.c_uint32",
+            "koffi": "uint32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_x",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_y",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_stats",
+          "type": {
+            "rust": "*mut u64",
+            "c": "uint64_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint64_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)"
     },
     {
       "name": "xyg_chunked_columns_rows",

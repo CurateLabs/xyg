@@ -56,3 +56,28 @@ test("chunked columns overview is bounded and preserves canonical row IDs", () =
   assert.deepEqual(got.provenance, { availablePoints: 12n, sourceRows: 12n, detailRowsRead: 0n });
   columns.close(); rmSync(dir, { recursive: true });
 });
+
+test("chunked columns pages apply pull backpressure and preserve exact order", () => {
+  const dir = mkdtempSync(join(tmpdir(), "xyg-pages-")), path = join(dir, "ordered.xygc"), rows = artifact(path);
+  const columns = new ChunkedColumns(path), pages = Array.from(columns.pages([1, 10], { yRange: [1, 2], pageBytes: 64, generation: 9 }));
+  assert.deepEqual(pages.flatMap(({ x, y }) => Array.from(x, (value, i) => [value, y[i]])), rows.filter(([x, y]) => x >= 1 && x <= 10 && y >= 1 && y <= 2));
+  assert.ok(pages.length >= 3 && pages.every(({ progress }) => progress.bytesRead <= 64n));
+  assert.equal(pages.at(-1).progress.done, true);
+  columns.close(); rmSync(dir, { recursive: true });
+});
+
+test("chunked column pages expose budget and stale-generation diagnostics", () => {
+  const dir = mkdtempSync(join(tmpdir(), "xyg-page-errors-")), path = join(dir, "ordered.xygc");
+  artifact(path);
+  const columns = new ChunkedColumns(path);
+  assert.throws(
+    () => Array.from(columns.pages([0, 11], { pageBytes: 16, generation: 1 })),
+    /needs 64 bytes, exceeding the 16-byte page budget/,
+  );
+  columns.cancelBefore(3);
+  assert.throws(
+    () => Array.from(columns.pages([0, 11], { pageBytes: 64, generation: 2 })),
+    /cancelled by newer viewport/,
+  );
+  columns.close(); rmSync(dir, { recursive: true });
+});
