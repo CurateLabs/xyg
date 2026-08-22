@@ -269,9 +269,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   force/layout decision.
   Browser callers use `encodeWasmCose` and `XygWasmWorker.layoutCose`; the
   static Worker transports packed columns into the same Rust `ForceState` and
-  emits revision-tagged f64 checkpoints. Python background scheduling, reheat
-  ergonomics, and complete size-ladder timing evidence remain #35 closure
-  gates.
+  emits revision-tagged f64 checkpoints. Python's per-graph
+  `GraphLayoutController` likewise schedules bounded native ticks on its own
+  worker thread and restarts Rust CoSE from drag coordinates plus the current
+  pin mask. Complete size-ladder timing evidence remains a #35 closure gate.
 - **Box-select:** reuses the existing scatter/segments selection path — no
   graph-specific selection ABI for MVP.
 - **Node shapes:** via scatter `symbol=` (same mark as other scatter charts).
