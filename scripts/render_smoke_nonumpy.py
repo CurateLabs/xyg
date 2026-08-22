@@ -273,6 +273,15 @@ def build_payload():
         "traces": traces,
         "columns": cols,
         "backend": "none",
+        "graph": [
+            {
+                "node_trace": 2,
+                "node_labels": [None, "alpha", "beta"],
+                "label_accepted": [False, True, True],
+                "visual_states": [0, 5, 7],
+                "compound_nodes": [True, False, False],
+            }
+        ],
     }
     return spec, bytes(blob)
 
@@ -1220,7 +1229,9 @@ try{{
     const meancolor=(lpx[0]>60 && lpx[0]>lpx[2]*3 && rpx[2]>60 && rpx[2]>rpx[0]*3)?1:0;
     vMc.destroy();holderMc.remove();
     const base=`XY_OK lit=${{lit}} total=${{w*h}} labels=${{labels}} pick=${{hits}} row=${{hasXY}} selAll=${{selAll}} selSome=${{selSome}} active=${{active}} btns=${{btns}} modebarHidden=${{modebarHiddenAtRest}} modebarTopLeft=${{modebarTopLeft}} modebarHover=${{modebarHoverReveal}} modebarNoCollapse=${{modebarNoCollapse}} modebarMenu=${{modebarMenu}} modebarDrag=${{modebarDrag}} modebarSelect=${{modebarSelect}} lassoEdit=${{lassoEdit}} modebarExport=${{modebarExport}} panToggle=${{panToggle}} zin=${{zin}} smooth=${{smooth}} labelThrottle=${{labelThrottle}} hoverSkip=${{hoverSkip}} zanch=${{zanch}} retarget=${{retarget}} nosnap=${{nosnap}} prefetch=${{prefetch}} maxwait=${{maxwait}} box=${{boxOk}} xonly=${{xonly}} zmode=${{zmode}} densityLit=${{densityLit}} drill=${{drilled}} pending=${{pending}} dblend=${{dblend}} dseq=${{dseq}} hov=${{hov}} sstale=${{sstale}} sfresh=${{sfresh}} srestore=${{srestore}} plut=${{plut}} reg=${{reg}} refresh=${{refresh}} dpick=${{dpick}} hold=${{hold}} zoomout=${{zoomout}} broad=${{broadfallback}} dying=${{dying}} dback=${{dback}} dnorm=${{dnorm}} dnormDone=${{dnormDone}} stale=${{stale}} thrash=${{thrash}} qwire=${{qwire}} stream=${{stream}} tj=${{Math.round(maxJump*100)}} td=${{Math.round(reviveDip*100)}} malformed=${{malformed}} pixdet=${{pixdet}} splitbuf=${{splitbuf}} barBase=${{barBase}} histBase=${{histBase}} edgepad=${{edgepad}} mgrad=${{mgrad}} axisontop=${{axisontop}} mtipbase=${{mtipbase}} mcorner=${{mcorner}} mstroke=${{mstroke}} bgrad=${{bgrad}} bcorner=${{bcorner}} msmooth=${{msmooth}} bgocc=${{bgocc}} meancolor=${{meancolor}} dretire=${{dretire}}`;
-    const baseWithStyle=`${{base}} vstyle=${{vstyle}}`;
+    const graphSummary=v._a11ySummaryText();
+    const graphA11y=graphSummary.includes("Graph: 3 nodes, 2 visible labels, 1 compound groups, 1 selected, 1 disabled.")?1:0;
+    const baseWithStyle=`${{base}} graphA11y=${{graphA11y}} vstyle=${{vstyle}}`;
     // Responsive: 100%-by-100% chart in a 400x300 container tracks its parent;
     // growing the container must fire the ResizeObserver and re-render bigger.
     const spec2=JSON.parse(JSON.stringify(spec));
@@ -1377,6 +1388,7 @@ try{{
     lit = int(re.search(r"lit=(\d+)", title).group(1))
     total = int(re.search(r"total=(\d+)", title).group(1))
     labels = int(re.search(r"labels=(\d+)", title).group(1))
+    graph_a11y = int(re.search(r"graphA11y=(\d+)", title).group(1))
     pick = int(re.search(r"pick=(\d+)", title).group(1))
     rowok = int(re.search(r"row=(\d+)", title).group(1))
     sel_all = int(re.search(r"selAll=(\d+)", title).group(1))
@@ -1474,6 +1486,8 @@ try{{
         raise SystemExit(f"suspicious lit fraction {frac}")
     if labels < 6:
         raise SystemExit(f"too few DOM tick labels: {labels}")
+    if graph_a11y != 1:
+        raise SystemExit("graph accessibility summary did not consume Rust-owned policy metadata")
     if pick < 1:
         raise SystemExit("GPU picking found no scatter point")
     if rowok < 1:

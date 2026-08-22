@@ -18,6 +18,9 @@ import {
   graphProjectionCreate,
   graphProjectionDestroy,
   graphProjectionRead,
+  graphCompoundBounds,
+  graphLabelAccept,
+  graphVisualStates,
 } from "./abi.js";
 import { resolveColorChannel } from "./color.js";
 
@@ -853,6 +856,78 @@ export function composeGraph(nodes, edges, opts = {}) {
     node_trace: 1,
     edge_trace: 0,
   };
+  if (nodesOneToOne) {
+    const resolveNodeOption = (value) =>
+      typeof value === "string" && Object.hasOwn(data.nodeAttrs, value)
+        ? data.nodeAttrs[value]
+        : value;
+    const rawLabels = resolveNodeOption(resolvedOpts.nodeLabel ?? resolvedOpts.node_label)
+      ?? data.nodeAttrs.label ?? data.nodeAttrs.name ?? new Array(nNodes).fill(null);
+    const rawLabelRows = typeof rawLabels === "string"
+      ? new Array(nNodes).fill(rawLabels)
+      : Array.from(rawLabels);
+    const labels = rawLabelRows.map((raw, index) => {
+      let value = raw;
+      if (value == null && data.nodeAttrs.name != null) value = data.nodeAttrs.name[index];
+      if (value == null) {
+        const identity = data.ids[index];
+        if (typeof identity === "string") value = identity;
+        else if (typeof identity === "number" && Number.isSafeInteger(identity)) value = String(identity);
+        else if (typeof identity === "bigint" && identity >= BigInt(Number.MIN_SAFE_INTEGER)
+          && identity <= BigInt(Number.MAX_SAFE_INTEGER)) value = identity.toString();
+        else value = null;
+      }
+      if (value != null && typeof value !== "string") throw new TypeError("graph labels must be strings or null");
+      return value;
+    });
+    if (labels.length !== nNodes) throw new RangeError("graph nodeLabel must match node count");
+    const rawPriorities = resolveNodeOption(
+      resolvedOpts.labelPriority ?? resolvedOpts.label_priority,
+    ) ?? data.nodeAttrs.label_priority ?? new Float64Array(nNodes);
+    const priorities = typeof rawPriorities === "number"
+      ? new Float64Array(nNodes).fill(rawPriorities)
+      : Float64Array.from(rawPriorities, Number);
+    if (priorities.length !== nNodes) throw new RangeError("graph labelPriority must match node count");
+    for (let index = 0; index < nNodes; index += 1) {
+      if (labels[index] == null) priorities[index] = Number.NaN;
+    }
+    const budget = resolvedOpts.labelBudget ?? resolvedOpts.label_budget ?? 64;
+    if (!Number.isSafeInteger(budget) || budget < 0 || budget > 4096) {
+      throw new RangeError("graph labelBudget must be a safe integer from 0 through 4096");
+    }
+    const accepted = graphLabelAccept(priorities, budget, {
+      minPriority: resolvedOpts.labelPriorityFloor ?? resolvedOpts.label_priority_floor ?? Number.NaN,
+    }).accepted;
+    const rawFlags = resolveNodeOption(
+      resolvedOpts.visualStateFlags ?? resolvedOpts.visual_state_flags,
+    ) ?? data.nodeAttrs.visual_state_flags ?? data.nodeAttrs.state_flags ?? new Uint32Array(nNodes);
+    const flags = typeof rawFlags === "number"
+      ? new Uint32Array(nNodes).fill(rawFlags)
+      : rawFlags;
+    const states = graphVisualStates(flags);
+    const encoder = new TextEncoder();
+    if (labels.some((label, index) => accepted[index] && encoder.encode(label).length > 4096)) {
+      throw new RangeError("accepted graph labels are limited to 4096 UTF-8 bytes each");
+    }
+    graphMeta.node_labels = labels.map((label, index) => accepted[index] ? label : null);
+    graphMeta.label_accepted = [...accepted].map(Boolean);
+    graphMeta.label_budget = Number(budget);
+    graphMeta.visual_states = [...states];
+    if (data.parentIndices != null) {
+      const validity = data.parentValidity ?? new Uint8Array(nNodes).fill(1);
+      const compounds = graphCompoundBounds(
+        nodePositions.x, nodePositions.y, data.parentIndices, validity,
+      );
+      const noCompound = (1n << 64n) - 1n;
+      graphMeta.parent_of = [...compounds.parentOf].map((value) => value === noCompound ? null : Number(value));
+      graphMeta.compound_nodes = [...compounds.isCompound].map(Boolean);
+      graphMeta.compound_bounds = graphMeta.compound_nodes.map((isCompound, index) =>
+        isCompound
+          ? [compounds.xmin[index], compounds.xmax[index], compounds.ymin[index], compounds.ymax[index]]
+          : null,
+      );
+    }
+  }
   if (data.edgeIds?.length) {
     // Source-indexed identity; Aggregate LOD may collapse multi-edges/self-loops.
     graphMeta.source_edge_ids = data.edgeIds.map(String);

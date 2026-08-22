@@ -14,6 +14,9 @@ import { ChartView } from "./50_chartview";
 Object.assign(ChartView.prototype, {
   _cacheGraphsFromSpec(spec = this.spec) {
     this._graphs = Array.isArray(spec?.graph) ? spec.graph : [];
+    if (this.a11ySummary && typeof this._a11ySummaryText === "function") {
+      this.a11ySummary.textContent = this._a11ySummaryText();
+    }
   },
 
   _graphMetaForNodeTrace(traceId) {
@@ -86,6 +89,7 @@ Object.assign(ChartView.prototype, {
     if (g) g.selActive = false;
     return true;
   },
+
 });
 
 // Cache graph meta on mount and whenever the figure spec is replaced.
@@ -125,4 +129,17 @@ const _drawKeepPick = ChartView.prototype._drawKeepPick;
 ChartView.prototype._drawKeepPick = function () {
   this._syncGraphNeighborhoodHighlight();
   return _drawKeepPick.apply(this, arguments);
+};
+
+const _a11ySummaryText = ChartView.prototype._a11ySummaryText;
+ChartView.prototype._a11ySummaryText = function () {
+  const base = _a11ySummaryText.apply(this, arguments);
+  const graphs = this._graphs || [];
+  if (!graphs.length) return base;
+  const nodes = graphs.reduce((sum, meta) => sum + (meta.node_labels?.length || 0), 0);
+  const labels = graphs.reduce((sum, meta) => sum + (meta.label_accepted || []).filter(Boolean).length, 0);
+  const compounds = graphs.reduce((sum, meta) => sum + (meta.compound_nodes || []).filter(Boolean).length, 0);
+  const selected = graphs.reduce((sum, meta) => sum + (meta.visual_states || []).filter((state) => state === 5).length, 0);
+  const disabled = graphs.reduce((sum, meta) => sum + (meta.visual_states || []).filter((state) => state === 7).length, 0);
+  return `${base} Graph: ${nodes} nodes, ${labels} visible labels, ${compounds} compound groups, ${selected} selected, ${disabled} disabled.`;
 };
