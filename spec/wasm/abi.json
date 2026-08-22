@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 10,
+  "abi_version": 11,
   "scene_version": 11,
   "painter_version": 8,
   "painter_header_bytes": 288,
@@ -185,6 +185,26 @@
         "usize"
       ],
       "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_begin",
+      "params": ["u32", "u32", "usize", "usize", "u32"],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_step",
+      "params": ["u32", "u32", "usize"],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_records_processed",
+      "params": ["u32"],
+      "result": "usize"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_phase",
+      "params": ["u32"],
+      "result": "u32"
     },
     {
       "name": "xyg_wasm_aggregate_bin2d",

@@ -315,6 +315,7 @@ mod tests {
             temporal: None,
             temporal_graph: None,
             graph_job: None,
+            compile_job: None,
         };
         instance.arena[..4].copy_from_slice(COMMAND_MAGIC);
         put_u32(&mut instance.arena, 4, VERSION);

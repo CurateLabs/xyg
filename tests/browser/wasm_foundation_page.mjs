@@ -250,6 +250,10 @@ async function fixtureModule({
     "xyg_wasm_last_scene_styles",
     "xyg_wasm_temporal_execute",
     "xyg_wasm_temporal_graph_execute",
+    "xyg_wasm_scene_compile_begin",
+    "xyg_wasm_scene_compile_step",
+    "xyg_wasm_scene_compile_records_processed",
+    "xyg_wasm_scene_compile_phase",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -263,7 +267,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -274,7 +278,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    10, 11, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    11, 11, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -284,7 +288,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0,
   ];
   const bodies = names.map((_, index) => {
     const instructions = (trap && index === 9) || (disposeTrap && index === 4)
@@ -366,7 +370,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 10,
+    expectedAbiVersion: 11,
     expectedSceneVersion: 11,
   };
 }
@@ -448,7 +452,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 10 || ready.sceneVersion !== 11) {
+  if (ready.abiVersion !== 11 || ready.sceneVersion !== 11) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1112,6 +1116,118 @@ async function run() {
     throw new Error("explicit typed-series transfer did not detach caller buffers");
   }
   await transferWorker.dispose();
+
+  foundationStage = "checkpointed typed-series compile lifecycle";
+  const compileWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 64 * 1024 * 1024,
+  });
+  await compileWorker.ready;
+  const largeChartInput = () => {
+    const x = new Float64Array(100_000), y = new Float64Array(100_000);
+    for (let index = 0; index < x.length; index += 1) { x[index] = index; y[index] = index % 997; }
+    return { width: 640, height: 480, series: [{ kind: "scatter", x, y }] };
+  };
+  const massiveChartInput = () => {
+    const x = new Float64Array(200_000), y = new Float64Array(200_000);
+    for (let index = 0; index < x.length; index += 1) { x[index] = index; y[index] = index % 1543; }
+    return { width: 640, height: 480, series: [{ kind: "scatter", x, y }] };
+  };
+  let compileHeartbeat = null;
+  let cancelledCompile;
+  cancelledCompile = compileWorker.compilePrepareSeries(frameWasmChart(largeChartInput()), {
+    sequence: 1, transfer: true,
+    onProgress(progress) {
+      compileHeartbeat = progress;
+      if (progress.phase === 3) cancelledCompile.cancel();
+    },
+  });
+  await rejected(cancelledCompile.result, "XYG_WASM_CANCELLED", 6);
+  if (!compileHeartbeat || compileHeartbeat.recordsProcessed !== 100_000 || compileHeartbeat.phase !== 3) {
+    throw new Error(`compile cancellation did not follow real Rust record progress: ${JSON.stringify(compileHeartbeat)}`);
+  }
+  const fragmentedSeries = Array.from({ length: 5 }, (_, series) => ({
+    kind: "scatter",
+    x: Float64Array.from({ length: 1_000 }, (_, index) => index + series * 1_000),
+    y: Float64Array.from({ length: 1_000 }, (_, index) => (index + series) % 7),
+  }));
+  const fragmentedFrame = frameWasmChart({ width: 64, height: 48, series: fragmentedSeries });
+  if (fragmentedFrame.byteLength >= 256 * 1024) throw new Error("fragmented heartbeat fixture is not sub-256KiB");
+  let fragmentedHeartbeat = null;
+  let fragmentedCompile;
+  fragmentedCompile = compileWorker.compilePrepareSeries(fragmentedFrame, {
+    sequence: 2, transfer: true,
+    onProgress(progress) { fragmentedHeartbeat = progress; fragmentedCompile.cancel(); },
+  });
+  await rejected(fragmentedCompile.result, "XYG_WASM_CANCELLED", 6);
+  if (!fragmentedHeartbeat || fragmentedHeartbeat.recordsProcessed !== 4096) {
+    throw new Error("sub-256KiB fragmented compile had no real progress heartbeat");
+  }
+  const currentCompile = compileWorker.compilePrepareSeries(frameWasmChart({
+    width: 64, height: 48, series: [{ kind: "scatter", x: new Float64Array([1]), y: new Float64Array([2]) }],
+  }), { sequence: 3, transfer: true });
+  if ((await currentCompile.result).sequence !== 3) throw new Error("cancelled compile published late paint over its replacement");
+  await rejected(compileWorker.compilePrepareSeries(frameWasmChart({
+    width: 64, height: 48, series: [{ kind: "scatter", x: new Float64Array([3]), y: new Float64Array([4]) }],
+  }), { sequence: 3, transfer: true }).result, "XYG_WASM_STALE_SEQUENCE", 7);
+  const lifecycleHost = document.body.appendChild(document.createElement("div"));
+  const lifecycleHandle = await renderWasmChart({
+    el: lifecycleHost, worker: compileWorker,
+    chart: { width: 64, height: 48, series: [{ kind: "scatter", x: new Float64Array([1]), y: new Float64Array([2]) }] },
+  });
+  const cancelledUpdate = lifecycleHandle.update(largeChartInput());
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  lifecycleHandle.cancel();
+  await rejected(cancelledUpdate, "XYG_WASM_CANCELLED", 6);
+  if (lifecycleHost.querySelector("canvas")) throw new Error("cancelled chart update retained late paint resources");
+  await lifecycleHandle.dispose(); lifecycleHost.remove();
+  const disposedCompile = compileWorker.compilePrepareSeries(frameWasmChart(largeChartInput()), { sequence: 6, transfer: true });
+  const disposedCompileResult = rejected(disposedCompile.result, "XYG_WASM_DISPOSED");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await compileWorker.dispose();
+  await disposedCompileResult;
+
+  const phase3Supersession = async (label, invoke) => {
+    foundationStage = `phase-3 ${label} supersession`;
+    try {
+    const operationWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 384 * 1024 * 1024 });
+    await operationWorker.ready;
+    let replacement = null;
+    const compile = operationWorker.compilePrepareSeries(frameWasmChart(massiveChartInput()), {
+      sequence: 10, transfer: true,
+      onProgress(progress) { if (progress.phase === 3 && replacement === null) replacement = Promise.resolve(invoke(operationWorker)).catch(() => undefined); },
+    });
+    try { await rejected(compile.result, "XYG_WASM_CANCELLED", 6); }
+    catch (error) { throw new Error(`${label} compile rejection: ${error}`); }
+    if (replacement === null) throw new Error(`${label} did not supersede phase-3 compile`);
+    await replacement;
+    try { await operationWorker.validateScene(canonicalSceneV9(), { sequence: 12 }).result; }
+    catch (error) { throw new Error(`${label} cleanup validation: ${error}`); }
+    await operationWorker.dispose();
+    } catch (error) { throw new Error(`${label} phase helper: ${error}`); }
+  };
+  await phase3Supersession("scene", (worker) => worker.validateScene(canonicalSceneV9(), { sequence: 11 }).result);
+  await phase3Supersession("temporal", (worker) => XygWasmTemporalController.create(worker, {
+    instanceId: 70n, groupId: 90n, domain: [0n, 100n], cursor: 10n,
+  }));
+  await phase3Supersession("temporal graph", (worker) => XygWasmTemporalGraph.create(worker, {
+    nodeIds: uuidBytes(1, 2), edgeIds: uuidBytes(11),
+    sourceIds: uuidBytes(1), targetIds: uuidBytes(2),
+  }));
+
+  foundationStage = "compile-to-scene global watermark";
+  const compileThenStaleScene = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024 });
+  await compileThenStaleScene.ready;
+  await compileThenStaleScene.compilePrepareSeries(frameWasmChart({ width: 64, height: 48, series: [{ kind: "scatter", x: new Float64Array([1]), y: new Float64Array([2]) }] }), { sequence: 10, transfer: true }).result;
+  await rejected(compileThenStaleScene.validateScene(canonicalSceneV9(), { sequence: 9 }).result, "XYG_WASM_STALE_SEQUENCE", 7);
+  await compileThenStaleScene.dispose();
+  foundationStage = "scene-to-compile global watermark";
+  const sceneThenStaleCompile = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024 });
+  await sceneThenStaleCompile.ready;
+  await sceneThenStaleCompile.validateScene(canonicalSceneV9(), { sequence: 10 }).result;
+  await rejected(sceneThenStaleCompile.compilePrepareSeries(frameWasmChart({ width: 64, height: 48, series: [{ kind: "scatter", x: new Float64Array([1]), y: new Float64Array([2]) }] }), { sequence: 9, transfer: true }).result, "XYG_WASM_STALE_SEQUENCE", 7);
+  await sceneThenStaleCompile.dispose();
 
   foundationStage = "progressive CoSE worker scheduling";
   const graphWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024 });

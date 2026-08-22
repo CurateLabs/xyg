@@ -54,6 +54,8 @@ export interface XygWasmTask<T> {
   result: Promise<T>;
   cancel(): void;
 }
+export interface XygWasmCompileProgress { sequence: number; recordsProcessed: number; phase: number }
+type SceneTaskOptions = { sequence?: number; transfer?: boolean; onProgress?: (progress: XygWasmCompileProgress) => void };
 
 export interface XygWasmAggregateTaskOptions {
   sequence?: number;
@@ -224,7 +226,7 @@ export class XygWasmWorker {
   /** Compile a packed `XYCC` typed-column request into canonical Scene bytes. */
   compileScene(
     request: ArrayBuffer | Uint8Array,
-    options: { sequence?: number; transfer?: boolean } = {},
+    options: SceneTaskOptions = {},
   ): XygWasmTask<XygWasmCompiledScene> {
     return this.sceneTask("scene.compile", request, options);
   }
@@ -232,7 +234,7 @@ export class XygWasmWorker {
   /** Compile packed typed columns and lower the Scene for browser paint. */
   compilePrepareScene(
     request: ArrayBuffer | Uint8Array,
-    options: { sequence?: number; transfer?: boolean } = {},
+    options: SceneTaskOptions = {},
   ): XygWasmTask<XygWasmScenePaint> {
     return this.sceneTask("scene.compile_paint", request, options);
   }
@@ -240,7 +242,7 @@ export class XygWasmWorker {
   /** Transfer typed columns without main-thread record expansion. */
   compilePrepareSeries(
     request: XygWasmTypedSeriesRequest,
-    options: { sequence?: number; transfer?: boolean } = {},
+    options: SceneTaskOptions = {},
   ): XygWasmTask<XygWasmScenePaint> {
     this.assertLive();
     if (!(request?.prefix instanceof ArrayBuffer) || !Array.isArray(request.columns)) {
@@ -273,7 +275,8 @@ export class XygWasmWorker {
     }
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const requestId = this.allocateRequest();
-    const result = this.promiseFor<XygWasmScenePaint>(requestId);
+    if (options.onProgress !== undefined && typeof options.onProgress !== "function") throw new TypeError("onProgress must be a function");
+    const result = new Promise<XygWasmScenePaint>((resolve, reject) => this.pending.set(requestId, { resolve, reject, progress: options.onProgress, sequence }));
     const transfer = options.transfer === true ? buffers : [];
     try {
       this.worker.postMessage(
@@ -390,7 +393,7 @@ export class XygWasmWorker {
       | "scene.compile_paint"
       | "aggregate.bin2d",
     scene: ArrayBuffer | Uint8Array,
-    options: { sequence?: number; transfer?: boolean },
+    options: SceneTaskOptions,
   ): XygWasmTask<T> {
     this.assertLive();
     if (type === "aggregate.bin2d") {
@@ -410,7 +413,8 @@ export class XygWasmWorker {
     }
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const payload = sceneMessage(scene, transfer);
-    const result = this.promiseFor<T>(requestId);
+    if (options.onProgress !== undefined && typeof options.onProgress !== "function") throw new TypeError("onProgress must be a function");
+    const result = new Promise<T>((resolve, reject) => this.pending.set(requestId, { resolve, reject, progress: options.onProgress, sequence }));
     try {
       this.worker.postMessage(
         { type, requestId, sequence, scene: payload.buffer },
@@ -485,7 +489,7 @@ export class XygWasmWorker {
         this.pending.delete(message.requestId);
         pending.reject(new XygWasmError(
           "XYG_WASM_PROGRESS_CALLBACK_FAILED",
-          cause instanceof Error ? cause.message : "graph progress callback failed",
+          cause instanceof Error ? cause.message : "worker progress callback failed",
         ));
         if (!this.disposed && pending.sequence !== undefined) {
           this.worker.postMessage({

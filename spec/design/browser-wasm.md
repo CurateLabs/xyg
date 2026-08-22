@@ -122,7 +122,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 10 for Scene paint, packed typed-column compile,
+`WASM_ABI_VERSION` is 11 for Scene paint, packed typed-column compile,
 transferable `XYTS` series descriptors, resumable Tier-2 aggregation, and
 packed `XYTC`/`XYTR` temporal-controller commands and snapshots. ABI 8 adds
 packed `XYTG` temporal-graph binding/frame commands and Rust-produced `XYTF`
@@ -253,9 +253,26 @@ reinterpreted with the wider descriptor contract.
   capacity across operations; a large rejected request cannot inflate a later
   small request's unaccounted resident baseline.
 - Sequence zero is reserved. Lower/repeated sequences fail as stale. Cancelled
-  sequences fail with a stable cancelled status. The Worker defers queued work
-  one task turn so already-posted cancellation can suppress it; future long
-  Rust operations must add cooperative checkpoints.
+  sequences fail with a stable cancelled status. ABI 11 starts `XYTS`/`XYCC`
+  compiles with `xyg_wasm_scene_compile_begin` and advances real Rust geometry
+  decode/validation in 4,096-record Worker checkpoints. Progress reports the
+  completed record count and phase; it is not inferred from elapsed bytes.
+  Cancellation, a newer sequence,
+  or disposal can therefore retire a compile after work has begun, before it
+  publishes Scene/painter output; each exit clears staging and suppresses late
+  paint. The final canonical Scene lowering remains one Rust-owned operation,
+  so no TypeScript policy or record expansion is introduced. The scheduler
+  yields once more after all records validate and before canonical build/lower,
+  including requests smaller than the old byte checkpoint. Each compile runs
+  in a short-lived, same-origin static module Worker with its own Rust/WASM
+  instance. The lifecycle Worker remains responsive while canonical expansion,
+  Scene encode/decode, or painter lowering is executing and can terminate that
+  instance immediately on cancel, supersession, or disposal. Termination is
+  the cancellation boundary inside those otherwise synchronous engine loops;
+  it drops all partial Rust/WASM memory and cannot publish a late response.
+  Progress phase 1 reports bounded record decoding, phase 2 is the yield after
+  all records decode, and phase 3 is emitted immediately before entering
+  canonical expansion/Scene encode/painter lowering in the isolated instance.
 - Traps invalidate and dispose the Worker-side Rust instance. Callers must
   create a fresh Worker rather than continue with uncertain engine state.
 - Invalid sources fail before Worker allocation. Initialization-send failures
@@ -289,6 +306,11 @@ const chartView = await renderWasmChart({
     series: [{ kind: "scatter", x: xs, y: ys }],
   },
 });
+// `update()` is sequence-safe; cancel an in-flight compile without disposing
+// the caller-owned Worker.
+const pendingUpdate = chartView.update(nextChart);
+chartView.cancel();
+await pendingUpdate; // rejects with XygWasmError code XYG_WASM_CANCELLED
 // Or progressive Rust CoSE. `onUpdate` receives the one-tick initial placement
 // and later coalescible checkpoints; only revision 42 may update this view.
 const layout = layoutWasmCose(engine, {
@@ -314,6 +336,12 @@ under that CSP and tests explicit Module/bytes/URL loading, transfer and copy
 diagnostics, lifecycle, cancellation, stale sequence, malformed module/scene,
 resource bounds, redirect rejection, a real runtime trap, public Scene paint,
 existing-painter hydration, and disposal. It
+also starts large `XYTS` work before exercising task and chart-handle cancel,
+newer-update supersession, disposal, stable errors, and no-late-paint cleanup. It
+waits for the real Rust record phase and the pre-lowering phase heartbeat, then
+terminates the isolated compile instance while expensive lowering is eligible
+to run. A fragmented request below 256 KiB separately proves the old byte-sized
+zero-cancellation window is gone.
 also exercises progressive CoSE initial/update/completion phases, pins,
 revision-safe supersession, and two concurrent graph workers. It
 also verifies unsigned split-u64 accounting across the `0x80000000` boundary
@@ -346,7 +374,6 @@ Issue `#59` can close; raw local timings are not performance evidence.
 
 - aggregate production paths beyond direct Scene records;
 - native Python/Node/WASM/Pyodide conformance fixtures;
-- cooperative cancellation inside long Rust operations;
 - small-through-massive CodSpeed and browser budget evidence; and
 - replacement (not expansion) of `46_worker.ts` only after WASM covers its
   density contract without regression.

@@ -4,6 +4,8 @@ import {
   bindXygWasmExports,
   readXygWasmError,
   XYG_WASM_STATUS,
+  XYG_WASM_ABI_VERSION,
+  XYG_WASM_SCENE_VERSION,
   XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
   XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
   XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS,
@@ -21,9 +23,14 @@ let handle = 0;
 type Lifecycle = "idle" | "initializing" | "initialized" | "failed" | "disposed";
 let lifecycle: Lifecycle = "idle";
 let operationBudgetBytes = 0;
+let initializedModule: WebAssembly.Module | null = null;
+let compileLeaf = false;
+let operationSequenceWatermark = 0;
 const queued = new Map<number, number>();
 let activeAggregate: { requestId: number; sequence: number; timer: number } | null = null;
 let activeGraph: { requestId: number; sequence: number; revision: number; timer: number; chunkSteps: number; started: number; maxWallMs: number; first: boolean } | null = null;
+let activeCompile: { requestId: number; sequence: number; timer: number; paint: boolean; leaf?: Worker; loweringAnnounced?: boolean } | null = null;
+const COMPILE_CHECKPOINT_RECORDS = 4096;
 
 function isDisposed(): boolean {
   return lifecycle === "disposed";
@@ -113,6 +120,8 @@ async function initialize(message: any) {
       return;
     }
     exports = bound;
+    initializedModule = module;
+    compileLeaf = message.compileLeaf === true;
     handle = created;
     operationBudgetBytes = max;
     created = 0;
@@ -191,6 +200,145 @@ function graphOutput(): ArrayBuffer {
   return new Uint8Array(exports.memory.buffer, ptr, len).slice().buffer;
 }
 
+function finishCompile(message: any, status: number) {
+  if (!exports || !handle) return;
+  activeCompile = null;
+  queued.delete(message.requestId);
+  if (status !== XYG_WASM_STATUS.OK) {
+    error(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+    return;
+  }
+  const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
+  const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
+  if (!outputPtr || !outputLen || outputPtr + outputLen > exports.memory.buffer.byteLength) {
+    throw new Error("Rust compile output returned an invalid range");
+  }
+  const transferred = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
+  exports.xyg_wasm_arena_resize(handle, 0);
+  const value = { sequence: Number(message.sequence), ...diagnostics(), arenaBytes: 0 };
+  if (activeCompile?.paint ?? (message.type === "series.compile_paint" || message.type === "scene.compile_paint")) {
+    reply(message.requestId, { ...value, painter: transferred }, [transferred]);
+  } else {
+    reply(message.requestId, { ...value, scene: transferred }, [transferred]);
+  }
+}
+
+function advanceCompile(message: any) {
+  const active = activeCompile;
+  if (!active || active.requestId !== message.requestId || !exports || !handle) return;
+  try {
+    if ((exports.xyg_wasm_scene_compile_phase(handle) >>> 0) === 2 && !active.loweringAnnounced) {
+      // Publish immediately before entering the synchronous canonical
+      // expansion/Scene encode/painter lower call. A parent lifecycle Worker
+      // can terminate this isolated instance while that O(N) work is running.
+      scope.postMessage({ requestId: active.requestId, ok: true, progress: true, value: {
+        sequence: active.sequence,
+        recordsProcessed: exports.xyg_wasm_scene_compile_records_processed(handle) >>> 0,
+        phase: 3,
+      } });
+      active.loweringAnnounced = true;
+      active.timer = setTimeout(() => advanceCompile(message), 0) as unknown as number;
+      queued.set(active.requestId, active.timer);
+      return;
+    }
+    const status = exports.xyg_wasm_scene_compile_step(handle, active.sequence, COMPILE_CHECKPOINT_RECORDS);
+    if (status === XYG_WASM_STATUS.PENDING) {
+      scope.postMessage({ requestId: active.requestId, ok: true, progress: true, value: {
+        sequence: active.sequence,
+        recordsProcessed: exports.xyg_wasm_scene_compile_records_processed(handle) >>> 0,
+        phase: exports.xyg_wasm_scene_compile_phase(handle) >>> 0,
+      } });
+      active.timer = setTimeout(() => advanceCompile(message), 0) as unknown as number;
+      queued.set(active.requestId, active.timer);
+      return;
+    }
+    finishCompile(message, status);
+  } catch (cause) {
+    activeCompile = null; queued.delete(message.requestId); lifecycle = "failed"; disposeRust();
+    error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM compile checkpoint trapped");
+  }
+}
+
+function terminateActiveCompile(label: string, report = true) {
+  if (!activeCompile || !exports || !handle) return;
+  const active = activeCompile;
+  clearTimeout(active.timer);
+  operationSequenceWatermark = Math.max(operationSequenceWatermark, active.sequence);
+  active.leaf?.terminate();
+  if (!active.leaf) exports.xyg_wasm_cancel(handle, active.sequence);
+  activeCompile = null;
+  if (report) error(active.requestId, "XYG_WASM_CANCELLED", `compile was superseded by ${label}`, XYG_WASM_STATUS.CANCELLED);
+}
+
+function supersedeCompile(sequence: number, label: string): boolean {
+  if (!activeCompile || !exports || !handle) return true;
+  if (sequence <= activeCompile.sequence) return false;
+  terminateActiveCompile(label);
+  return true;
+}
+
+function runIsolatedCompile(message: any) {
+  queued.delete(message.requestId);
+  if (!initializedModule || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
+  const sequence = Number(message.sequence);
+  if (!supersedeCompile(sequence, "a newer request")) {
+    error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return;
+  }
+  if (activeGraph) {
+    if (sequence <= activeGraph.sequence) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
+    clearTimeout(activeGraph.timer); exports?.xyg_wasm_cancel(handle, activeGraph.sequence);
+    error(activeGraph.requestId, "XYG_WASM_CANCELLED", "graph layout was superseded by compile", XYG_WASM_STATUS.CANCELLED); activeGraph = null;
+  }
+  if (activeAggregate) {
+    if (sequence <= activeAggregate.sequence) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
+    clearTimeout(activeAggregate.timer); exports?.xyg_wasm_cancel(handle, activeAggregate.sequence);
+    exports?.xyg_wasm_aggregate_step(handle, activeAggregate.sequence, 1);
+    error(activeAggregate.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by compile", XYG_WASM_STATUS.CANCELLED); activeAggregate = null;
+  }
+  const leaf = new Worker(import.meta.url, { type: "module", name: "xyg-wasm-compile" });
+  const paint = message.type === "series.compile_paint" || message.type === "scene.compile_paint";
+  activeCompile = { requestId: message.requestId, sequence, timer: 0, paint, leaf };
+  leaf.onerror = (event) => {
+    if (activeCompile?.leaf !== leaf) return;
+    activeCompile = null; leaf.terminate();
+    error(message.requestId, "XYG_WASM_WORKER_TRAP", event.message || "isolated compile worker trapped");
+  };
+  leaf.onmessageerror = () => {
+    if (activeCompile?.leaf !== leaf) return;
+    activeCompile = null; leaf.terminate();
+    error(message.requestId, "XYG_WASM_MESSAGE_ERROR", "isolated compile worker returned an unreadable message");
+  };
+  leaf.onmessage = (event) => {
+    const response = event.data;
+    if (response?.requestId === 1) {
+      if (activeCompile?.leaf !== leaf) { leaf.terminate(); return; }
+      if (!response.ok) {
+        activeCompile = null; leaf.terminate();
+        error(message.requestId, response.error?.code ?? "XYG_WASM_INIT_FAILED", response.error?.message ?? "isolated compile initialization failed", response.error?.status ?? null);
+        return;
+      }
+      const transfer = message.type === "series.compile_paint"
+        ? [message.prefix, ...message.columns]
+        : [message.scene];
+      leaf.postMessage(message, transfer);
+      return;
+    }
+    if (response?.requestId !== message.requestId || activeCompile?.leaf !== leaf) return;
+    if (response.progress) { scope.postMessage(response); return; }
+    operationSequenceWatermark = Math.max(operationSequenceWatermark, sequence);
+    activeCompile = null; leaf.terminate();
+    const value = response.value;
+    const transfer: Transferable[] = value?.painter instanceof ArrayBuffer ? [value.painter]
+      : value?.scene instanceof ArrayBuffer ? [value.scene] : [];
+    scope.postMessage(response, transfer);
+  };
+  leaf.postMessage({
+    type: "init", requestId: 1, source: { kind: "module", value: initializedModule },
+    maxArenaBytes: operationBudgetBytes, expectedAbiVersion: XYG_WASM_ABI_VERSION,
+    expectedSceneVersion: XYG_WASM_SCENE_VERSION, compileLeaf: true,
+  });
+}
+
 function advanceGraph(message: any) {
   const active = activeGraph;
   if (!active || active.requestId !== message.requestId || !exports || !handle) return;
@@ -218,6 +366,7 @@ function runGraph(message: any) {
   queued.delete(message.requestId);
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
+    if (!supersedeCompile(Number(message.sequence), "graph layout")) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "graph request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
     if (!(message.request instanceof ArrayBuffer) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "graph request is malformed or over budget"); return; }
     if (activeGraph) {
       if (Number(message.sequence) <= activeGraph.sequence) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "graph request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
@@ -251,6 +400,12 @@ function runSceneOp(message: any) {
   }
   let superseded: typeof activeAggregate = null;
   try {
+    if (activeCompile && activeCompile.requestId !== message.requestId) {
+      if (Number(message.sequence) <= activeCompile.sequence) {
+        error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return;
+      }
+      terminateActiveCompile("a newer request");
+    }
     if (activeGraph && activeGraph.requestId !== message.requestId) {
       if (Number(message.sequence) <= activeGraph.sequence) { error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return; }
       clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
@@ -347,18 +502,20 @@ function runSceneOp(message: any) {
     const paint = series || message.type === "scene.paint" || message.type === "scene.compile_paint";
     const compile = series || message.type === "scene.compile" || message.type === "scene.compile_paint";
     const aggregate = message.type === "aggregate.bin2d";
-    status = aggregate
+    if (compile) {
+      status = exports.xyg_wasm_scene_compile_begin(
+        handle, Number(message.sequence), 0, inputLength, paint ? 1 : 0,
+      );
+      if (status === XYG_WASM_STATUS.PENDING) {
+        const timer = setTimeout(() => advanceCompile(message), 0) as unknown as number;
+        activeCompile = { requestId: message.requestId, sequence: Number(message.sequence), timer, paint };
+        queued.set(message.requestId, timer);
+        return;
+      }
+    } else status = aggregate
       ? exports.xyg_wasm_aggregate_bin2d(
         handle, Number(message.sequence), 0, inputLength,
       )
-      : compile
-      ? (paint
-        ? exports.xyg_wasm_scene_compile_prepare(
-          handle, Number(message.sequence), 0, inputLength,
-        )
-        : exports.xyg_wasm_scene_compile(
-          handle, Number(message.sequence), 0, inputLength,
-        ))
       : (paint
         ? exports.xyg_wasm_scene_prepare(
           handle, Number(message.sequence), 0, inputLength,
@@ -430,6 +587,9 @@ function runTemporalCommand(message: any) {
     return;
   }
   try {
+    if (activeCompile) {
+      terminateActiveCompile("temporal work");
+    }
     // One WASM instance owns one staging/output arena. A temporal command is
     // newer work on that instance, so retire any progressive job before it
     // can publish another checkpoint into the shared output buffer.
@@ -496,6 +656,7 @@ function runTemporalCommand(message: any) {
 function runTemporalGraphCommand(message: any) {
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
+    if (activeCompile) terminateActiveCompile("a temporal graph frame");
     if (activeGraph) {
       clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
       error(activeGraph.requestId, "XYG_WASM_CANCELLED", "graph layout was superseded by a temporal graph frame", XYG_WASM_STATUS.CANCELLED); activeGraph = null;
@@ -525,6 +686,20 @@ scope.onmessage = (event: MessageEvent<any>) => {
     void initialize(message);
     return;
   }
+  const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint"
+    || message?.type === "scene.compile" || message?.type === "scene.compile_paint"
+    || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
+    || message?.type === "graph.cose";
+  if (sequenced) {
+    const sequence = Number(message.sequence);
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
+      error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "sequence must be a nonzero u32", XYG_WASM_STATUS.INVALID_ARGUMENT); return;
+    }
+    if (sequence <= operationSequenceWatermark) {
+      error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return;
+    }
+    operationSequenceWatermark = sequence;
+  }
   if (
     message?.type === "scene.validate"
     || message?.type === "scene.paint"
@@ -533,6 +708,12 @@ scope.onmessage = (event: MessageEvent<any>) => {
     || message?.type === "series.compile_paint"
     || message?.type === "aggregate.bin2d"
   ) {
+    const compile = message?.type === "scene.compile" || message?.type === "scene.compile_paint" || message?.type === "series.compile_paint";
+    if (compile && !compileLeaf) {
+      const timer = setTimeout(() => runIsolatedCompile(message), 0);
+      queued.set(message.requestId, timer as unknown as number);
+      return;
+    }
     // Deferring one task turn gives a cancellation already queued by the main
     // thread a chance to suppress work before a synchronous WASM call starts.
     const timer = setTimeout(() => runSceneOp(message), 0);
@@ -552,13 +733,16 @@ scope.onmessage = (event: MessageEvent<any>) => {
       queued.delete(message.requestId);
     }
     try {
-      if (exports && handle) exports.xyg_wasm_cancel(handle, Number(message.sequence));
+      if (activeCompile?.requestId === message.requestId && activeCompile.leaf) {
+        terminateActiveCompile("cancellation", false);
+      } else if (exports && handle) exports.xyg_wasm_cancel(handle, Number(message.sequence));
       if (activeAggregate?.requestId === message.requestId && exports && handle) {
         clearTimeout(activeAggregate.timer);
         exports.xyg_wasm_aggregate_step(handle, Number(message.sequence), 1);
         activeAggregate = null;
       }
       if (activeGraph?.requestId === message.requestId) { clearTimeout(activeGraph.timer); activeGraph = null; }
+      if (activeCompile?.requestId === message.requestId) terminateActiveCompile("cancellation", false);
     } catch (cause) {
       activeAggregate = null;
       lifecycle = "failed";
@@ -575,7 +759,9 @@ scope.onmessage = (event: MessageEvent<any>) => {
     lifecycle = "disposed";
     for (const timer of queued.values()) clearTimeout(timer);
     if (activeGraph) clearTimeout(activeGraph.timer);
+    if (activeCompile) terminateActiveCompile("disposal", false);
     activeGraph = null;
+    activeCompile = null;
     queued.clear();
     disposeRust();
     reply(message.requestId, undefined);

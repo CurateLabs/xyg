@@ -17,7 +17,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 10;
+pub const WASM_ABI_VERSION: u32 = 11;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -59,6 +59,18 @@ struct Instance {
     temporal: Option<xyg_engine::temporal_controller::TemporalController>,
     temporal_graph: Option<temporal_graph::WasmTemporalGraph>,
     graph_job: Option<graph::GraphJob>,
+    compile_job: Option<CompileJob>,
+}
+
+#[derive(Debug)]
+struct CompileJob {
+    sequence: u32,
+    offset: usize,
+    length: usize,
+    records_total: usize,
+    records_processed: usize,
+    phase: u32,
+    paint: bool,
 }
 
 impl Instance {
@@ -146,6 +158,7 @@ impl Registry {
                 temporal: None,
                 temporal_graph: None,
                 graph_job: None,
+                compile_job: None,
             }),
         };
         (generation << HANDLE_SLOT_BITS) | (slot_index as u32 + 1)
@@ -254,6 +267,7 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
             );
         }
         instance.clear_aggregate();
+        instance.compile_job = None;
         if length > instance.arena.capacity()
             && instance
                 .arena
@@ -307,10 +321,152 @@ pub extern "C" fn xyg_wasm_cancel(handle: u32, sequence: u32) -> i32 {
         {
             instance.graph_job = None;
         }
+        if instance
+            .compile_job
+            .as_ref()
+            .is_some_and(|job| job.sequence <= sequence)
+        {
+            instance.compile_job = None;
+            instance.arena = Vec::new();
+        }
         instance.last_error.clear();
         STATUS_OK
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Start a checkpointed typed-column compile. The request remains in the
+/// bounded Rust staging arena until `xyg_wasm_scene_compile_step` completes,
+/// is superseded, cancelled, or disposed.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_compile_begin(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+    paint: u32,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        instance.output.clear();
+        if sequence == 0 || paint > 1 {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "compile scheduler arguments are invalid",
+            );
+        }
+        if sequence <= instance.cancelled_through {
+            instance.arena = Vec::new();
+            return fail(instance, STATUS_CANCELLED, "request was cancelled");
+        }
+        if sequence <= instance.latest_sequence {
+            instance.arena = Vec::new();
+            return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
+        }
+        let Some(end) = offset.checked_add(length) else {
+            return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
+        };
+        if length == 0 || end > instance.arena.len() {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "staging range lies outside the arena",
+            );
+        }
+        let records_total = match compile::checkpoint_record_count(&instance.arena[offset..end]) {
+            Ok(value) => value,
+            Err(error) => return map_compile_error(instance, error),
+        };
+        instance.clear_aggregate();
+        instance.compile_job = Some(CompileJob {
+            sequence,
+            offset,
+            length,
+            records_total,
+            records_processed: 0,
+            phase: 1,
+            paint: paint != 0,
+        });
+        instance.last_error.clear();
+        STATUS_PENDING
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Advance real record decoding by at most `record_budget` rows, then run the
+/// canonical build/lower phase after a separate cancellation heartbeat.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_compile_step(
+    handle: u32,
+    sequence: u32,
+    record_budget: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        if record_budget == 0 {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "compile record budget must be nonzero",
+            );
+        }
+        let Some(job) = instance.compile_job.as_mut() else {
+            return fail(
+                instance,
+                STATUS_STALE_SEQUENCE,
+                "compile job is no longer active",
+            );
+        };
+        if job.sequence != sequence {
+            return fail(
+                instance,
+                STATUS_STALE_SEQUENCE,
+                "compile request sequence is stale",
+            );
+        }
+        if job.phase == 1 {
+            let count = record_budget.min(job.records_total.saturating_sub(job.records_processed));
+            let request_end = job.offset + job.length;
+            if let Err(error) = compile::checkpoint_validate_records(
+                &instance.arena[job.offset..request_end],
+                job.records_processed,
+                count,
+            ) {
+                instance.compile_job = None;
+                instance.arena = Vec::new();
+                return map_compile_error(instance, error);
+            }
+            job.records_processed += count;
+            if job.records_processed < job.records_total {
+                instance.last_error.clear();
+                return STATUS_PENDING;
+            }
+            job.phase = 2;
+            instance.last_error.clear();
+            return STATUS_PENDING;
+        }
+        let job = instance.compile_job.take().expect("checked above");
+        compile_from_arena(instance, job.sequence, job.offset, job.length, job.paint)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_compile_records_processed(handle: u32) -> usize {
+    with_instance_mut(handle, |instance| {
+        instance
+            .compile_job
+            .as_ref()
+            .map_or(0, |job| job.records_processed)
+    })
+    .unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_compile_phase(handle: u32) -> u32 {
+    with_instance_mut(handle, |instance| {
+        instance.compile_job.as_ref().map_or(0, |job| job.phase)
+    })
+    .unwrap_or(0)
 }
 
 /// Start a Rust-owned progressive graph layout from one packed `XYGL` request.
@@ -1168,6 +1324,42 @@ mod tests {
                 .unwrap()
                 .contains("byte budget")
         );
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn checkpointed_compile_can_cancel_after_progress_and_releases_staging() {
+        let request = one_point_typed_series();
+        let handle = xyg_wasm_instance_new(1024 * 1024);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_scene_compile_begin(handle, 1, 0, request.len(), 1),
+            STATUS_PENDING
+        );
+        assert_eq!(xyg_wasm_scene_compile_step(handle, 1, 1), STATUS_PENDING);
+        assert_eq!(xyg_wasm_scene_compile_records_processed(handle), 1);
+        assert_eq!(xyg_wasm_scene_compile_phase(handle), 2);
+        assert_eq!(xyg_wasm_cancel(handle, 1), STATUS_OK);
+        assert_eq!(xyg_wasm_arena_len(handle), 0);
+        assert_eq!(
+            xyg_wasm_scene_compile_step(handle, 1, request.len()),
+            STATUS_STALE_SEQUENCE
+        );
+
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_scene_compile_begin(handle, 2, 0, request.len(), 1),
+            STATUS_PENDING
+        );
+        assert_eq!(
+            xyg_wasm_scene_compile_step(handle, 2, request.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(
+            xyg_wasm_scene_compile_step(handle, 2, request.len()),
+            STATUS_OK
+        );
+        assert!(xyg_wasm_output_len(handle) > 0);
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 

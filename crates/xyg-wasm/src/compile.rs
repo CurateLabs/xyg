@@ -812,6 +812,133 @@ pub fn compile_scene_request(
     }
 }
 
+/// Return the declared record count for checkpoint scheduling after validating
+/// the common magic/header/version envelope. Full decoding remains fail-closed
+/// in `compile_scene_request`.
+pub fn checkpoint_record_count(bytes: &[u8]) -> Result<usize, SceneError> {
+    if bytes.len() < COMPILE_HEADER_BYTES {
+        return Err(SceneError::Length);
+    }
+    match bytes.get(..4) {
+        Some(magic) if magic == SERIES_MAGIC => {
+            if u32_at(bytes, HEADER_VERSION)? != SERIES_VERSION {
+                return Err(SceneError::Version);
+            }
+            Ok(u32_at(bytes, HEADER_RECORD_COUNT)? as usize)
+        }
+        Some(magic) if magic == COMPILE_MAGIC => {
+            if u32_at(bytes, HEADER_VERSION)? != COMPILE_VERSION {
+                return Err(SceneError::Version);
+            }
+            Ok(u32_at(bytes, HEADER_SERIES_COUNT)? as usize)
+        }
+        _ => Err(SceneError::Length),
+    }
+}
+
+/// Perform real bounded record decoding before the canonical build phase.
+/// This catches malformed/non-finite geometry at a deterministic checkpoint;
+/// it intentionally does not create a host-side policy or alternate output.
+pub fn checkpoint_validate_records(
+    bytes: &[u8],
+    first: usize,
+    count: usize,
+) -> Result<(), SceneError> {
+    let total = checkpoint_record_count(bytes)?;
+    let end = first
+        .checked_add(count)
+        .ok_or(SceneError::Limit)?
+        .min(total);
+    if first > end {
+        return Err(SceneError::Length);
+    }
+    if bytes.get(..4) == Some(SERIES_MAGIC) {
+        let series_count = u32_at(bytes, HEADER_SERIES_COUNT)? as usize;
+        let data_start = align8(
+            COMPILE_HEADER_BYTES
+                + series_count
+                    .checked_mul(SERIES_DESCRIPTOR_BYTES)
+                    .ok_or(SceneError::Limit)?
+                + u32_at(bytes, HEADER_TITLE_BYTES)? as usize
+                + u32_at(bytes, HEADER_X_LABEL_BYTES)? as usize
+                + u32_at(bytes, HEADER_Y_LABEL_BYTES)? as usize,
+        );
+        let mut base_record = 0usize;
+        for series_index in 0..series_count {
+            let base = COMPILE_HEADER_BYTES + series_index * SERIES_DESCRIPTOR_BYTES;
+            let records = u32_at(bytes, base + DESCRIPTOR_RECORD_COUNT)? as usize;
+            let local_first = first.saturating_sub(base_record).min(records);
+            let local_end = end.saturating_sub(base_record).min(records);
+            if local_first < local_end {
+                for descriptor_offset in [DESCRIPTOR_X, DESCRIPTOR_Y] {
+                    let offset = u32_at(bytes, base + descriptor_offset)? as usize;
+                    if offset < data_start || !offset.is_multiple_of(8) {
+                        return Err(SceneError::Length);
+                    }
+                    for index in local_first..local_end {
+                        let value = f64_at(bytes, offset + index * 8)?;
+                        if !value.is_finite() {
+                            return Err(SceneError::NonFinite);
+                        }
+                    }
+                }
+            }
+            base_record = base_record.checked_add(records).ok_or(SceneError::Limit)?;
+        }
+        if base_record != total {
+            return Err(SceneError::Length);
+        }
+        return Ok(());
+    }
+
+    let mut offset = COMPILE_HEADER_BYTES;
+    let kinds = take(bytes, &mut offset, total)?;
+    offset = align8(offset);
+    let stable = offset;
+    offset += total.checked_mul(8).ok_or(SceneError::Limit)?;
+    offset = align8(offset);
+    let styles = offset;
+    offset += total.checked_mul(4).ok_or(SceneError::Limit)?;
+    offset = align8(offset);
+    let diameters = offset;
+    offset += total.checked_mul(8).ok_or(SceneError::Limit)?;
+    let symbols = offset;
+    offset += total;
+    offset = align8(offset);
+    let x0 = offset;
+    offset += total.checked_mul(8).ok_or(SceneError::Limit)?;
+    let y0 = offset;
+    offset += total.checked_mul(8).ok_or(SceneError::Limit)?;
+    let x1 = offset;
+    offset += total.checked_mul(8).ok_or(SceneError::Limit)?;
+    let y1 = offset;
+    for index in first..end {
+        let kind = *kinds.get(index).ok_or(SceneError::Length)?;
+        let _identity = u64_at(bytes, stable + index * 8)?;
+        let _style = u32_at(bytes, styles + index * 4)?;
+        let diameter = f64_at(bytes, diameters + index * 8)?;
+        let _symbol = *bytes.get(symbols + index).ok_or(SceneError::Length)?;
+        let coordinates = [
+            f64_at(bytes, x0 + index * 8)?,
+            f64_at(bytes, y0 + index * 8)?,
+        ];
+        if !diameter.is_finite() || diameter < 0.0 || coordinates.iter().any(|v| !v.is_finite()) {
+            return Err(SceneError::NonFinite);
+        }
+        if matches!(kind as u32, KIND_BAR | KIND_AREA)
+            && [
+                f64_at(bytes, x1 + index * 8)?,
+                f64_at(bytes, y1 + index * 8)?,
+            ]
+            .iter()
+            .any(|v| !v.is_finite())
+        {
+            return Err(SceneError::NonFinite);
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
