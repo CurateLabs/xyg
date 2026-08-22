@@ -9,6 +9,9 @@ import {
   graphBuildCsr,
   graphBuildRender,
   graphEdgeRouteSegments,
+  graphVisualStates,
+  graphLabelAccept,
+  graphCompoundBounds,
   graphClusterAggregate,
   graphForceCreate,
   graphForceDestroy,
@@ -331,6 +334,20 @@ test("graphEdgeRouteSegments separates parallels and keeps source indices", () =
   assert.notEqual(routed.y0[0], routed.y0[3]);
   const loopCount = [...routed.edgeIndex].filter((v) => Number(v) === 2).length;
   assert.equal(loopCount, 3);
+});
+
+test("graph style policies consume the shared Rust ABI", () => {
+  assert.deepEqual([...graphVisualStates(new Uint32Array([0, 2, 3, 66]))], [0, 5, 5, 7]);
+  const labels = graphLabelAccept(new Float64Array([1, 5, 5, Number.NaN]), 2);
+  assert.deepEqual([...labels.accepted], [0, 1, 1, 0]);
+  assert.equal(labels.count, 2n);
+  const compounds = graphCompoundBounds(
+    new Float64Array([0, -1, 2, 9]), new Float64Array([0, 1, 3, 9]),
+    new BigUint64Array([0n, 0n, 0n, 0n]), new Uint8Array([0, 1, 1, 0]),
+  );
+  assert.deepEqual([...compounds.parentOf], [(1n << 64n) - 1n, 0n, 0n, (1n << 64n) - 1n]);
+  assert.deepEqual([...compounds.isCompound], [1, 0, 0, 0]);
+  assert.deepEqual([compounds.xmin[0], compounds.xmax[0], compounds.ymin[0], compounds.ymax[0]], [-1, 2, 0, 3]);
 });
 
 test("composeGraph GraphForge tables preserve edge identity and node tooltips", () => {

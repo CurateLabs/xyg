@@ -4960,6 +4960,88 @@ def graph_edge_route_segments(
     )
 
 
+def graph_visual_states(flags: npt.NDArray[np.uint32]) -> npt.NDArray[np.uint8]:
+    """Resolve interaction flags with the shared Rust precedence contract."""
+    flags_arr = np.ascontiguousarray(flags, dtype=np.uint32)
+    if flags_arr.ndim != 1:
+        raise ValueError("flags must be 1-D")
+    out = np.empty(len(flags_arr), dtype=np.uint8)
+    status = _lib.xyg_graph_visual_state_resolve(
+        ctypes.c_uint64(len(flags_arr)),
+        flags_arr.ctypes.data if len(flags_arr) else None,
+        out.ctypes.data if len(out) else None,
+    )
+    if status != 0:
+        raise ValueError("native graph_visual_states failed")
+    return out
+
+
+def graph_label_accept(
+    priorities: npt.NDArray[np.float64], budget: int, *, min_priority: float | None = None
+) -> npt.NDArray[np.bool_]:
+    """Return the deterministic Rust-owned label mask for the viewport budget."""
+    priority_arr = _as_f64(priorities, "priorities")
+    if budget < 0:
+        raise ValueError("budget must be non-negative")
+    out = np.empty(len(priority_arr), dtype=np.uint8)
+    count = ctypes.c_uint64()
+    status = _lib.xyg_graph_label_accept(
+        ctypes.c_uint64(len(priority_arr)),
+        priority_arr.ctypes.data if len(priority_arr) else None,
+        ctypes.c_uint64(budget),
+        ctypes.c_double(math.nan if min_priority is None else float(min_priority)),
+        out.ctypes.data if len(out) else None,
+        ctypes.byref(count),
+    )
+    if status != 0:
+        raise ValueError("native graph_label_accept failed")
+    return out.astype(np.bool_)
+
+
+def graph_compound_bounds(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    parents: npt.NDArray[np.uint64],
+    parent_validity: npt.NDArray[np.uint8],
+) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.bool_], npt.NDArray[np.float64]]:
+    """Return parent membership, compound mask, and ``[xmin,xmax,ymin,ymax]`` bounds."""
+    x_arr = _as_f64(x, "x")
+    y_arr = _as_f64(y, "y")
+    parent_arr = _as_u64(parents, "parents")
+    validity_arr = np.ascontiguousarray(parent_validity, dtype=np.uint8)
+    n = len(x_arr)
+    if (
+        y_arr.ndim != 1
+        or validity_arr.ndim != 1
+        or len(y_arr) != n
+        or len(parent_arr) != n
+        or len(validity_arr) != n
+    ):
+        raise ValueError("compound inputs must be 1-D arrays of equal length")
+    parent_of = np.empty(n, dtype=np.uint64)
+    compounds = np.empty(n, dtype=np.uint8)
+    xmin = np.empty(n, dtype=np.float64)
+    xmax = np.empty(n, dtype=np.float64)
+    ymin = np.empty(n, dtype=np.float64)
+    ymax = np.empty(n, dtype=np.float64)
+    status = _lib.xyg_graph_compound_bounds(
+        ctypes.c_uint64(n),
+        x_arr.ctypes.data if n else None,
+        y_arr.ctypes.data if n else None,
+        parent_arr.ctypes.data if n else None,
+        validity_arr.ctypes.data if n else None,
+        parent_of.ctypes.data if n else None,
+        compounds.ctypes.data if n else None,
+        xmin.ctypes.data if n else None,
+        xmax.ctypes.data if n else None,
+        ymin.ctypes.data if n else None,
+        ymax.ctypes.data if n else None,
+    )
+    if status != 0:
+        raise ValueError("native graph_compound_bounds failed")
+    return parent_of, compounds.astype(np.bool_), np.column_stack((xmin, xmax, ymin, ymax))
+
+
 def graph_cluster_positions(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],

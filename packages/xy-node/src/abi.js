@@ -24,6 +24,9 @@ import {
   xyGraphBuildCsr,
   xyGraphBuildRender,
   xyGraphEdgeRouteSegments,
+  xyGraphCompoundBounds,
+  xyGraphLabelAccept,
+  xyGraphVisualStateResolve,
   xyGraphClusterAggregate,
   xyGraphForceCreate,
   xyGraphForceCreateCose,
@@ -1522,6 +1525,35 @@ export function graphEdgeRouteSegments(x, y, sources, targets, opts = {}) {
   };
 }
 
+export function graphVisualStates(flags) {
+  const input = asU32Array(flags, "flags");
+  const out = new Uint8Array(input.length);
+  const code = xyGraphVisualStateResolve(toU64(input.length, "flags.length"), u32Ptr(input), u8Ptr(out));
+  if (code !== 0) throw new Error(`xyg_graph_visual_state_resolve failed with code ${code}`);
+  return out;
+}
+
+export function graphLabelAccept(priorities, budget, opts = {}) {
+  const input = priorities instanceof Float64Array ? priorities : Float64Array.from(priorities ?? [], Number);
+  const out = new Uint8Array(input.length);
+  const count = new BigUint64Array(1);
+  const floor = opts.minPriority == null ? Number.NaN : Number(opts.minPriority);
+  const code = xyGraphLabelAccept(toU64(input.length, "priorities.length"), f64Ptr(input), toU64(budget, "budget"), floor, u8Ptr(out), u64Ptr(count));
+  if (code !== 0) throw new Error(`xyg_graph_label_accept failed with code ${code}`);
+  return { accepted: out, count: count[0] };
+}
+
+export function graphCompoundBounds(x, y, parents, parentValidity) {
+  const xa = asF64Array(x, "x"); const ya = asF64Array(y, "y");
+  const pa = asU64Array(parents, "parents"); const va = asU8Array(parentValidity, "parentValidity");
+  requireEqualLength(xa, ya, "x", "y"); requireEqualLength(xa, pa, "x", "parents"); requireEqualLength(xa, va, "x", "parentValidity");
+  const n = xa.length; const parentOf = new BigUint64Array(n); const isCompound = new Uint8Array(n);
+  const xmin = new Float64Array(n); const xmax = new Float64Array(n); const ymin = new Float64Array(n); const ymax = new Float64Array(n);
+  const code = xyGraphCompoundBounds(toU64(n, "x.length"), f64Ptr(xa), f64Ptr(ya), u64Ptr(pa), u8Ptr(va), u64Ptr(parentOf), u8Ptr(isCompound), f64Ptr(xmin), f64Ptr(xmax), f64Ptr(ymin), f64Ptr(ymax));
+  if (code !== 0) throw new Error(`xyg_graph_compound_bounds failed with code ${code}`);
+  return { parentOf, isCompound, xmin, xmax, ymin, ymax };
+}
+
 export function graphSampleEdges(nEdges, budget) {
   const requested = toLength(budget, "budget");
   const out = new BigUint64Array(requested);
@@ -1827,6 +1859,10 @@ function u64Ptr(view) {
 
 function u32Ptr(view) {
   return pointer(view, "uint32_t *");
+}
+
+function u8Ptr(view) {
+  return pointer(view, "uint8_t *");
 }
 
 function i32Ptr(view) {

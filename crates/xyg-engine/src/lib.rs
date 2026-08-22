@@ -18,6 +18,7 @@ pub mod edge_route;
 pub mod geo;
 pub mod geo_viewport;
 pub mod graph;
+pub mod graph_style;
 pub mod hexbin;
 pub mod kernels;
 pub mod lod_plan;

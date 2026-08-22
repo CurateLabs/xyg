@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 84;
-export const SIGNATURE_SHA256 = "6a2a0a1190a5008c6a47d3cce518071a188394105cc21f40b722873a33d425e4";
+export const ABI_VERSION = 85;
+export const SIGNATURE_SHA256 = "c3158a4adaa116aafc5ef6ffbe2f3789cdb93e5a07c85e0527f169e7b4b74e0d";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -44,11 +44,13 @@ export let xyGeoColumnVertexCount;
 export let xyGraphBuildCsr;
 export let xyGraphBuildRender;
 export let xyGraphClusterAggregate;
+export let xyGraphCompoundBounds;
 export let xyGraphEdgeRouteSegments;
 export let xyGraphForceCreate;
 export let xyGraphForceCreateCose;
 export let xyGraphForceDestroy;
 export let xyGraphForceTick;
+export let xyGraphLabelAccept;
 export let xyGraphLayout;
 export let xyGraphLodDecision;
 export let xyGraphProjectionCopyEdgeIds;
@@ -59,6 +61,7 @@ export let xyGraphProjectionCounts;
 export let xyGraphProjectionCreate;
 export let xyGraphProjectionDestroy;
 export let xyGraphSampleEdges;
+export let xyGraphVisualStateResolve;
 export let xyHeatmapRgba;
 export let xyHexbin;
 export let xyHistogram2d;
@@ -225,11 +228,13 @@ export function bindGeneratedAbi(lib) {
   xyGraphBuildCsr = lib.func("int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len)");
   xyGraphBuildRender = lib.func("int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept)");
   xyGraphClusterAggregate = lib.func("int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, uint64_t node_budget, uint64_t edge_budget, double * out_x, double * out_y, uint64_t * out_count, uint64_t * out_member_of, uint32_t * out_tier, uint64_t * out_edges_kept)");
+  xyGraphCompoundBounds = lib.func("int32_t xyg_graph_compound_bounds(uint64_t n, const double * x, const double * y, const uint64_t * parents, const uint8_t * validity, uint64_t * parent_of, uint8_t * is_compound, double * xmin, double * xmax, double * ymin, double * ymax)");
   xyGraphEdgeRouteSegments = lib.func("int32_t xyg_graph_edge_route_segments(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, int32_t directed, double separation, double loop_radius, double arrow_size, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint64_t * out_edge_index, uint64_t * out_n_segments)");
   xyGraphForceCreate = lib.func("int32_t xyg_graph_force_create(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, uint64_t seed, uint32_t algorithm, uint64_t * out_handle)");
   xyGraphForceCreateCose = lib.func("int32_t xyg_graph_force_create_cose(const void * descriptor, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, uint64_t seed, uint64_t * out_handle)");
   xyGraphForceDestroy = lib.func("int32_t xyg_graph_force_destroy(uint64_t handle)");
   xyGraphForceTick = lib.func("int32_t xyg_graph_force_tick(uint64_t handle, uint64_t n_nodes, uint32_t steps, double * out_x, double * out_y, double * out_alpha)");
+  xyGraphLabelAccept = lib.func("int32_t xyg_graph_label_accept(uint64_t n, const double * priorities, uint64_t budget, double floor, uint8_t * out, uint64_t * out_count)");
   xyGraphLayout = lib.func("int32_t xyg_graph_layout(uint32_t layout, uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, const double * in_x, const double * in_y, const uint64_t * roots, uint64_t n_roots, uint64_t seed, double * out_x, double * out_y)");
   xyGraphLodDecision = lib.func("int32_t xyg_graph_lod_decision(uint64_t n_nodes, uint64_t n_edges, uint64_t node_budget, uint64_t edge_budget, uint32_t * out_tier, uint64_t * out_edges_kept)");
   xyGraphProjectionCopyEdgeIds = lib.func("int32_t xyg_graph_projection_copy_edge_ids(uint64_t handle, uint8_t * output, uint64_t capacity)");
@@ -240,6 +245,7 @@ export function bindGeneratedAbi(lib) {
   xyGraphProjectionCreate = lib.func("int32_t xyg_graph_projection_create(const void * descriptor, uint64_t * out_handle)");
   xyGraphProjectionDestroy = lib.func("int32_t xyg_graph_projection_destroy(uint64_t handle)");
   xyGraphSampleEdges = lib.func("uint64_t xyg_graph_sample_edges(uint64_t n_edges, uint64_t budget, uint64_t * out_indices)");
+  xyGraphVisualStateResolve = lib.func("int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out)");
   xyHeatmapRgba = lib.func("int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyHexbin = lib.func("size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy)");
   xyHistogram2d = lib.func("int32_t xyg_histogram2d(const double * x, const double * y, const double * weights, size_t len, const double * x_edges, size_t x_edge_len, const double * y_edges, size_t y_edge_len, double * out)");

@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 84;
+pub const ABI_VERSION: u32 = 85;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7495,6 +7495,147 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
                 0
             }
             None => -1,
+        }
+    })
+}
+
+/// Resolve graph interaction flags using the shared visual-state precedence (#34).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_visual_state_resolve(
+    n: u64,
+    flags: *const u32,
+    out: *mut u8,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if n > 0 && (flags.is_null() || out.is_null()) {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let input = if n == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(flags, n)
+        };
+        let output = if n == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out, n)
+        };
+        if xyg_engine::graph_style::resolve_visual_states(input, output).is_some() {
+            0
+        } else {
+            -1
+        }
+    })
+}
+
+/// Select graph labels under a deterministic Rust-owned budget (#34).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_graph_label_accept(
+    n: u64,
+    priorities: *const f64,
+    budget: u64,
+    floor: f64,
+    out: *mut u8,
+    out_count: *mut u64,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if out_count.is_null() || (n > 0 && (priorities.is_null() || out.is_null())) {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let input = if n == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(priorities, n)
+        };
+        let output = if n == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out, n)
+        };
+        if let Some(count) = xyg_engine::graph_style::label_accept(input, budget, floor, output) {
+            *out_count = count;
+            0
+        } else {
+            -1
+        }
+    })
+}
+
+/// Compute direct compound membership and AABBs from the canonical parent map (#34).
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_graph_compound_bounds(
+    n: u64,
+    x: *const f64,
+    y: *const f64,
+    parents: *const u64,
+    validity: *const u8,
+    parent_of: *mut u64,
+    is_compound: *mut u8,
+    xmin: *mut f64,
+    xmax: *mut f64,
+    ymin: *mut f64,
+    ymax: *mut f64,
+) -> i32 {
+    let Ok(n) = usize::try_from(n) else {
+        return -1;
+    };
+    if n > 0
+        && (x.is_null()
+            || y.is_null()
+            || parents.is_null()
+            || validity.is_null()
+            || parent_of.is_null()
+            || is_compound.is_null()
+            || xmin.is_null()
+            || xmax.is_null()
+            || ymin.is_null()
+            || ymax.is_null())
+    {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        macro_rules! input {
+            ($p:expr) => {
+                if n == 0 {
+                    &[]
+                } else {
+                    std::slice::from_raw_parts($p, n)
+                }
+            };
+        }
+        macro_rules! output {
+            ($p:expr) => {
+                if n == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut($p, n)
+                }
+            };
+        }
+        if xyg_engine::graph_style::compound_bounds(
+            input!(x),
+            input!(y),
+            input!(parents),
+            input!(validity),
+            output!(parent_of),
+            output!(is_compound),
+            output!(xmin),
+            output!(xmax),
+            output!(ymin),
+            output!(ymax),
+        )
+        .is_some()
+        {
+            0
+        } else {
+            -1
         }
     })
 }

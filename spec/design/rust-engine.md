@@ -180,6 +180,7 @@ crates/
     graph.rs            # graph display layouts, progressive force ticks, CSR,
                         #   graph LOD/cluster/render-graph decisions
                         #   ([graph-mark.md](graph-mark.md)).
+    graph_style.rs      # graph label budgets, visual-state precedence, compounds
     sankey.rs           # sankey layout (`xyg_sankey_layout`), dual-host.
     transition.rs       # stable animation-key encoding (`xyg_transition_keys_fixed`).
     stats.rs            # quantiles + Tukey box_stats + violin_density +

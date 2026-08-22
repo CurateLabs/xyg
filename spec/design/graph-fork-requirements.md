@@ -303,10 +303,15 @@ Slice B is intentionally broad: product MVP is not “graph only, Sankey later.�
 
 ## 6. Explicit non-goals
 
+> **Amendment (#34):** Compound and nested node presentation is now in scope.
+> Rust owns direct parent membership, compound bounds, label budgets, and
+> visual-state precedence through the versioned shared ABI. This reverses the
+> earlier compound-node non-goal without adding a host-side policy path.
+
 - Reimplementing GraphForge (or peer) analysis algorithms inside the charting
   stack.
 - Graph editors, manipulation GUIs, collaborative editing.
-- Search/filter chrome, compounds/nested nodes, node-image programs.
+- Search/filter chrome, node-image programs.
 - Cytoscape Desktop / CX, Neo4j connectors, GEXF-as-platform.
 - D3-level SVG DIY; shipping vis-network or Cytoscape.js.
 - Unaggregated “billions of elements” claims without the same LOD discipline xy
