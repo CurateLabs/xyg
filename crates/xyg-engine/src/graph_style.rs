@@ -15,6 +15,7 @@ pub const FLAG_FILTERED: u32 = 1 << 3;
 pub const FLAG_PINNED: u32 = 1 << 4;
 pub const FLAG_AGGREGATE: u32 = 1 << 5;
 pub const FLAG_DISABLED: u32 = 1 << 6;
+pub const KNOWN_STATE_FLAGS: u32 = (1 << 7) - 1;
 pub const NO_COMPOUND: u64 = u64::MAX;
 pub const RESOLVED_STYLE_VERSION: u32 = 1;
 pub const MAX_SEMANTIC_CODE: u8 = 7;
@@ -135,6 +136,7 @@ pub fn resolve_semantic_styles(
             .chain(epistemic)
             .chain(statuses)
             .any(|&v| v > MAX_SEMANTIC_CODE)
+        || flags.iter().any(|&value| value & !KNOWN_STATE_FLAGS != 0)
     {
         return None;
     }
@@ -147,7 +149,10 @@ pub fn resolve_semantic_styles(
         let mut fill = colors[classes[i] as usize];
         let mut stroke = colors[statuses[i] as usize];
         let halo = colors[epistemic[i] as usize];
-        let mut opacity = if edge { 0.68 } else { 0.92 };
+        // Active semantic paint is opaque so its measured non-text contrast is
+        // preserved after composition. Filtered/disabled are intentional
+        // inactive-state exemptions below.
+        let mut opacity = 1.0;
         let mut width = if edge {
             0.75 + 3.25 * unit
         } else {
@@ -159,13 +164,19 @@ pub fn resolve_semantic_styles(
             } else {
                 [255, 255, 255, 255]
             };
-            width += 2.0;
+            width += 2.5;
         }
         if state == STATE_HOVERED {
             width += 1.25;
         }
         if state == STATE_NEIGHBOR {
-            opacity = 1.0;
+            width += 0.5;
+        }
+        if state == STATE_PINNED {
+            width += 1.75;
+        }
+        if state == STATE_AGGREGATE {
+            width += 0.75;
         }
         if state == STATE_FILTERED {
             opacity = 0.08;
@@ -181,8 +192,24 @@ pub fn resolve_semantic_styles(
             size: if edge { 0.0 } else { 7.0 + 13.0 * unit },
             width,
             opacity,
-            shape: if edge { 0 } else { classes[i] % 6 },
-            dash: if edge { epistemic[i] % 4 } else { 0 },
+            shape: if edge {
+                0
+            } else if state == STATE_AGGREGATE {
+                5
+            } else {
+                classes[i] % 6
+            },
+            dash: if edge {
+                if state == STATE_PINNED {
+                    3
+                } else if state == STATE_AGGREGATE {
+                    2
+                } else {
+                    epistemic[i] % 4
+                }
+            } else {
+                0
+            },
             arrow: u8::from(edge && statuses[i] != 0),
             state,
         });
@@ -574,20 +601,143 @@ mod tests {
         (hi + 0.05) / (lo + 0.05)
     }
 
-    #[test]
-    fn every_theme_palette_and_selected_overlay_meets_non_text_contrast() {
-        for (theme, background, selected) in [
-            (THEME_LIGHT, [255, 255, 255, 255], [0, 0, 0, 255]),
-            (THEME_DARK, [17, 24, 39, 255], [255, 255, 255, 255]),
-        ] {
-            for &color in palette(theme).unwrap() {
-                assert!(
-                    contrast(color, background) >= 3.0,
-                    "theme={theme} color={color:?}"
-                );
-            }
-            assert!(contrast(selected, background) >= 3.0);
+    fn composite(color: [u8; 4], opacity: f32, background: [u8; 4]) -> [u8; 4] {
+        let alpha = (f32::from(color[3]) / 255.0) * opacity;
+        let channel = |index| {
+            ((f32::from(color[index]) * alpha) + (f32::from(background[index]) * (1.0 - alpha)))
+                .round() as u8
+        };
+        [channel(0), channel(1), channel(2), 255]
+    }
+
+    fn blank_style() -> ResolvedGraphStyle {
+        ResolvedGraphStyle {
+            fill: [0; 4],
+            stroke: [0; 4],
+            halo: [0; 4],
+            size: 0.0,
+            width: 0.0,
+            opacity: 0.0,
+            shape: 0,
+            dash: 0,
+            arrow: 0,
+            state: 0,
         }
+    }
+
+    #[test]
+    fn actual_active_styles_meet_non_text_contrast_in_both_themes() {
+        let active = [
+            0,
+            FLAG_AGGREGATE,
+            FLAG_PINNED,
+            FLAG_NEIGHBOR,
+            FLAG_HOVERED,
+            FLAG_SELECTED,
+        ];
+        for (theme, background) in [
+            (THEME_LIGHT, [255, 255, 255, 255]),
+            (THEME_DARK, [17, 24, 39, 255]),
+        ] {
+            for edge in [false, true] {
+                for code in 0..=MAX_SEMANTIC_CODE {
+                    for flags in active {
+                        let mut out = [blank_style()];
+                        resolve_semantic_styles(
+                            &[code],
+                            &[code],
+                            &[code],
+                            &[1.0],
+                            &[flags],
+                            edge,
+                            theme,
+                            &mut out,
+                        )
+                        .unwrap();
+                        for color in [out[0].fill, out[0].stroke, out[0].halo] {
+                            let painted = composite(color, out[0].opacity, background);
+                            assert!(contrast(painted, background) >= 3.0, "theme={theme} edge={edge} code={code} flags={flags} color={color:?}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn inactive_states_are_explicit_contrast_exemptions() {
+        for (flag, expected) in [(FLAG_FILTERED, 0.08), (FLAG_DISABLED, 0.28)] {
+            let mut out = [blank_style()];
+            resolve_semantic_styles(
+                &[1],
+                &[1],
+                &[1],
+                &[1.0],
+                &[flag],
+                false,
+                THEME_LIGHT,
+                &mut out,
+            )
+            .unwrap();
+            assert_eq!(out[0].opacity, expected);
+        }
+    }
+
+    #[test]
+    fn every_winning_active_state_changes_node_and_edge_paint() {
+        for edge in [false, true] {
+            let mut styles = Vec::new();
+            for flag in [
+                0,
+                FLAG_AGGREGATE,
+                FLAG_PINNED,
+                FLAG_NEIGHBOR,
+                FLAG_HOVERED,
+                FLAG_SELECTED,
+            ] {
+                let mut out = [blank_style()];
+                resolve_semantic_styles(
+                    &[1],
+                    &[1],
+                    &[1],
+                    &[1.0],
+                    &[flag],
+                    edge,
+                    THEME_LIGHT,
+                    &mut out,
+                )
+                .unwrap();
+                styles.push(out[0]);
+            }
+            for i in 0..styles.len() {
+                for j in i + 1..styles.len() {
+                    assert_ne!(styles[i], styles[j], "edge={edge} states {i}/{j}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn unknown_interaction_bits_fail_atomically() {
+        let sentinel = ResolvedGraphStyle {
+            state: 99,
+            ..blank_style()
+        };
+        let mut out = [sentinel];
+        assert_eq!(
+            resolve_semantic_styles(
+                &[1],
+                &[1],
+                &[1],
+                &[1.0],
+                &[1 << 7],
+                false,
+                THEME_LIGHT,
+                &mut out
+            ),
+            None
+        );
+        assert_eq!(out, [sentinel]);
     }
 
     #[test]

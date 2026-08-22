@@ -39,6 +39,8 @@ def test_graphforge_semantic_style_rejects_unknown_vocabularies() -> None:
         _native.graph_semantic_styles([1], [0, 1], [0], [0.0], [0])
     with np.testing.assert_raises_regex(TypeError, "bool"):
         _native.graph_semantic_styles([1], [0], [0], [0.0], [0], edge="yes")  # type: ignore[arg-type]
+    with np.testing.assert_raises_regex(ValueError, "native"):
+        _native.graph_semantic_styles([1], [0], [0], [0.0], [1 << 7])
 
 
 def test_graphforge_semantic_extremes_and_dark_legend_are_host_parity_safe() -> None:
@@ -58,6 +60,24 @@ def test_graphforge_semantic_extremes_and_dark_legend_are_host_parity_safe() -> 
     assert legend["field"].tolist() == [0, 0, 1, 1, 2, 2]
     assert legend["value"].tolist() == [1, 2, 1, 3, 0, 4]
     assert legend["rgba"][0].tolist() == [86, 180, 233, 255]
+
+
+def test_graphforge_pinned_and_aggregate_are_painter_visible_for_nodes_and_edges() -> None:
+    for edge in (False, True):
+        resolved = _native.graph_semantic_styles(
+            [1, 1, 1], [1, 1, 1], [1, 1, 1], [1.0, 1.0, 1.0], [0, 1 << 4, 1 << 5], edge=edge
+        )
+        assert (
+            len(
+                {
+                    tuple(row)
+                    for row in zip(
+                        resolved["width"], resolved["shape"], resolved["dash"], strict=True
+                    )
+                }
+            )
+            == 3
+        )
 
 
 def test_compound_bounds_keep_membership_and_child_identity() -> None:

@@ -452,7 +452,13 @@ The v1 class, epistemic, and status tables use explicit light and dark
 color-blind-safe vocabularies with a neutral zero value. Every palette color
 and the theme-specific selected overlay has measured WCAG 2.x non-text
 contrast of at least 3:1 against its declared background (`#fff` light,
-`#111827` dark); Rust fixtures enforce that property. Rust also owns
+`#111827` dark); Rust fixtures resolve and composite every active
+theme × node/edge × winning-state style and enforce that property for emitted
+fill, stroke, and halo. Filtered (`0.08`) and disabled (`0.28`) are deliberate
+inactive-state opacity exemptions and make no contrast claim. Selected uses a
+theme-opposite stroke; hovered and neighbor have distinct width deltas; pinned
+has a larger width plus an edge dash; aggregate has its own node shape and edge
+dash. Unknown interaction bits fail the complete resolution atomically. Rust also owns
 `xyg_graph_semantic_legend`: its capacity-safe query/copy ABI de-duplicates
 present values and emits stable field-then-code order with the exact resolved
 theme palette and class shape descriptor. Python and Node only materialize

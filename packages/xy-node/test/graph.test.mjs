@@ -45,6 +45,7 @@ test("GraphForge semantic styles are identical to the native golden", () => {
   assert.deepEqual([...resolved.state], [0, 5, 7]);
   assert.throws(() => graphSemanticStyles([8], [0], [0], [0], [0]), /closed range/);
   assert.throws(() => graphSemanticStyles([1], [0], [0], [0], [0], { edge: "yes" }), /bool/);
+  assert.throws(() => graphSemanticStyles([1], [0], [0], [0], [1 << 7]), /failed/);
   const extreme = graphSemanticStyles([1, 1, 1], [1, 1, 1], [1, 1, 1], [-Number.MAX_VALUE, 0, Number.MAX_VALUE], [0, 0, 0], { theme: "dark" });
   assert.ok([...extreme.size, ...extreme.width, ...extreme.opacity].every(Number.isFinite));
   assert.deepEqual([...extreme.size], [7, 13.5, 20]);
@@ -52,6 +53,10 @@ test("GraphForge semantic styles are identical to the native golden", () => {
   assert.deepEqual([...legend.field], [0, 0, 1, 1, 2, 2]);
   assert.deepEqual([...legend.value], [1, 2, 1, 3, 0, 4]);
   assert.deepEqual([...legend.rgba.slice(0, 4)], [86, 180, 233, 255]);
+  for (const edge of [false, true]) {
+    const states = graphSemanticStyles([1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [0, 1 << 4, 1 << 5], { edge });
+    assert.equal(new Set([...states.width].map((width, i) => `${width}/${states.shape[i]}/${states.dash[i]}`)).size, 3);
+  }
 });
 
 test("GraphForge tables preserve UUID identity, parents, and provenance through Rust", () => {
