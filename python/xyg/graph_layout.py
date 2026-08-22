@@ -11,6 +11,7 @@ import asyncio
 from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from numbers import Integral
 from threading import Event, Lock
 from time import monotonic
 from typing import Any
@@ -94,18 +95,8 @@ class GraphLayoutController:
         if job_id is not None and not isinstance(job_id, (str, int)):
             raise TypeError("job_id must be a string or integer")
 
-        cancel = Event()
-        with self._lock:
-            if self._disposed:
-                raise GraphLayoutDisposed("graph layout controller is disposed")
-            if revision <= self._revision:
-                raise ValueError("revision must be newer than the active revision")
-            if self._cancel is not None:
-                self._cancel.set()
-            self._cancel = cancel
-            self._revision = revision
-
         loop = asyncio.get_running_loop()
+        cancel = Event()
 
         def publish(checkpoint: GraphLayoutCheckpoint) -> None:
             if on_update is None:
@@ -121,29 +112,48 @@ class GraphLayoutController:
 
             asyncio.run_coroutine_threadsafe(deliver(), loop).result()
 
-        future = loop.run_in_executor(
-            self._executor,
-            self._run,
-            revision,
-            layout,
-            seed,
-            total_steps,
-            chunk_steps,
-            float(max_wall_ms),
-            cose,
-            x,
-            y,
-            pinned,
-            job_id,
-            cancel,
-            publish,
-        )
+        with self._lock:
+            if self._disposed:
+                raise GraphLayoutDisposed("graph layout controller is disposed")
+            if revision <= self._revision:
+                raise ValueError("revision must be newer than the active revision")
+            if self._cancel is not None:
+                self._cancel.set()
+            self._cancel = cancel
+            self._revision = revision
+            # Submission is part of the active-state transition. Holding the
+            # lifecycle lock prevents dispose() from shutting down the executor
+            # between publishing the revision and enqueuing its native job.
+            future = loop.run_in_executor(
+                self._executor,
+                self._run,
+                revision,
+                layout,
+                seed,
+                total_steps,
+                chunk_steps,
+                float(max_wall_ms),
+                cose,
+                x,
+                y,
+                pinned,
+                job_id,
+                cancel,
+                publish,
+            )
+
         try:
             result = await future
         except asyncio.CancelledError:
             cancel.set()
+            with self._lock:
+                if self._disposed:
+                    raise GraphLayoutDisposed("graph layout controller was disposed") from None
             raise
         except GraphLayoutSuperseded:
+            with self._lock:
+                if self._disposed:
+                    raise GraphLayoutDisposed("graph layout controller was disposed") from None
             raise
         except Exception as exc:
             raise GraphLayoutError(f"progressive graph layout failed: {exc}") from exc
@@ -229,6 +239,8 @@ class GraphLayoutController:
                     raise TimeoutError("graph layout exceeded max_wall_ms")
                 take = 1 if step == 0 else min(chunk_steps, total_steps - step)
                 out_x, out_y, alpha = _native.graph_force_tick(handle, data.n_nodes, take)
+                out_x.setflags(write=False)
+                out_y.setflags(write=False)
                 step += take
                 phase = (
                     "complete"
@@ -246,6 +258,8 @@ class GraphLayoutController:
 
 
 def _positive_u32(value: int, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise TypeError(f"{name} must be an integer")
     value = int(value)
     if value <= 0 or value > 0xFFFFFFFF:
         raise ValueError(f"{name} must be a nonzero u32")
@@ -253,6 +267,8 @@ def _positive_u32(value: int, name: str) -> int:
 
 
 def _bounded_int(value: int, name: str, minimum: int, maximum: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise TypeError(f"{name} must be an integer")
     value = int(value)
     if value < minimum or value > maximum:
         raise ValueError(f"{name} must be in [{minimum}, {maximum}]")

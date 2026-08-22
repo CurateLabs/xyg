@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import pytest
@@ -114,5 +116,111 @@ def test_callback_failure_is_stable_and_worker_remains_usable() -> None:
         result = await controller.layout(revision=2, total_steps=2)
         assert result.revision == 2
         controller.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("value", [True, "1", 1.9])
+def test_revision_identity_rejects_coercion(value: object) -> None:
+    async def scenario() -> None:
+        controller = GraphLayoutController(_data())
+        with pytest.raises(TypeError, match="revision must be an integer"):
+            await controller.layout(revision=value)  # type: ignore[arg-type]
+        controller.dispose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("field", "value"), [("total_steps", False), ("total_steps", "2"), ("chunk_steps", 1.5)]
+)
+def test_step_counts_reject_coercion(field: str, value: object) -> None:
+    async def scenario() -> None:
+        controller = GraphLayoutController(_data())
+        with pytest.raises(TypeError, match=f"{field} must be an integer"):
+            await controller.layout(revision=1, **{field: value})
+        controller.dispose()
+
+    asyncio.run(scenario())
+
+
+def test_checkpoints_expose_read_only_rust_coordinates() -> None:
+    async def scenario() -> None:
+        controller = GraphLayoutController(_data())
+        updates = []
+        result = await controller.layout(revision=1, total_steps=2, on_update=updates.append)
+        for checkpoint in [*updates, result]:
+            assert not checkpoint.x.flags.writeable
+            assert not checkpoint.y.flags.writeable
+            with pytest.raises(ValueError, match="read-only"):
+                checkpoint.x[0] = 42.0
+        controller.dispose()
+
+    asyncio.run(scenario())
+
+
+def test_dispose_cannot_split_active_state_from_executor_submission() -> None:
+    class PausingExecutor(ThreadPoolExecutor):
+        def __init__(self) -> None:
+            super().__init__(max_workers=1, thread_name_prefix="xyg-layout-test")
+            self.entered = threading.Event()
+            self.release = threading.Event()
+
+        def submit(self, fn, /, *args, **kwargs):
+            self.entered.set()
+            assert self.release.wait(timeout=5)
+            return super().submit(fn, *args, **kwargs)
+
+    async def scenario() -> None:
+        controller = GraphLayoutController(_data(600))
+        original = controller._executor
+        executor = PausingExecutor()
+        controller._executor = executor
+        original.shutdown(wait=True)
+        callbacks = []
+        disposal_threads = []
+
+        def coordinate_dispose() -> None:
+            assert executor.entered.wait(timeout=5)
+            dispose_thread = threading.Thread(target=controller.dispose)
+            disposal_threads.append(dispose_thread)
+            dispose_thread.start()
+            executor.release.set()
+
+        coordinator = threading.Thread(target=coordinate_dispose)
+        coordinator.start()
+        task = asyncio.create_task(
+            controller.layout(
+                revision=1, total_steps=100_000, chunk_steps=1, on_update=callbacks.append
+            )
+        )
+        await asyncio.to_thread(coordinator.join, 5)
+        await asyncio.to_thread(disposal_threads[0].join, 5)
+        with pytest.raises(GraphLayoutDisposed):
+            await task
+        delivered = len(callbacks)
+        await asyncio.sleep(0)
+        assert len(callbacks) == delivered
+
+    asyncio.run(scenario())
+
+
+def test_active_dispose_is_terminal_and_suppresses_late_callbacks() -> None:
+    async def scenario() -> None:
+        controller = GraphLayoutController(_data(600))
+        callbacks = []
+        task = asyncio.create_task(
+            controller.layout(
+                revision=1, total_steps=100_000, chunk_steps=1, on_update=callbacks.append
+            )
+        )
+        while not callbacks:
+            await asyncio.sleep(0)
+        controller.dispose()
+        with pytest.raises(GraphLayoutDisposed):
+            await task
+        delivered = len(callbacks)
+        await asyncio.sleep(0)
+        assert len(callbacks) == delivered
 
     asyncio.run(scenario())
