@@ -175,11 +175,13 @@ notes below are the non-obvious caveats.
 - **Run Python tooling through `uv`** (`uv run pytest`, `uv run ruff …`,
   `uv run ty check`) so it uses the project `.venv`. Running bare `pytest`/`ruff`
   from an arbitrary CWD will miss the environment.
-- **The full `uv run pytest` suite is very long (~1 hour):** it drives hundreds
-  of headless `google-chrome-stable` renders sequentially (each with an ~8s
-  virtual-time budget). It is not hung — watch progress via the `--dump-dom`
-  Chrome args. For fast iteration, scope to specific paths (e.g.
-  `uv run pytest tests/pyplot -q`) and reserve the full run for final validation.
+- **The full `uv run pytest` suite is very long (well over an hour, ~2–3 h on
+  this VM):** it drives many hundreds of headless `google-chrome-stable` renders
+  sequentially (each with an ~8s virtual-time budget), so most of the wall time
+  is Chrome, not Python. It is not hung — watch progress via the running
+  `--dump-dom file://…` Chrome args (the target `.html`/test name advances). For
+  fast iteration, scope to specific paths (e.g. `uv run pytest tests/pyplot -q`)
+  and reserve the full run for final validation.
 - **Browser smokes need an explicit Chrome path:** the non-numpy render smokes
   (`scripts/render_smoke_nonumpy.py`, `scripts/abi_smoke.py`,
   `scripts/append_stream_smoke.py`) and `make check-browser CHROMIUM=
