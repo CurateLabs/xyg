@@ -463,17 +463,30 @@ async function run() {
     throw new Error(`combined typed-series length did not fail closed: ${JSON.stringify(malformedCombined)}`);
   }
   const afterMalformedCombined = await malformedSeriesWorker.request({
-    type: "series.compile_paint",
+    type: "scene.validate",
     requestId: 105,
     sequence: 2,
-    prefix: rawSeries.prefix,
-    columns: rawSeries.columns,
-    byteLength: rawSeries.byteLength,
+    scene: canonicalSceneV9().buffer,
   });
   if (!afterMalformedCombined.ok) {
     throw new Error(`combined-length rejection destroyed worker: ${JSON.stringify(afterMalformedCombined)}`);
   }
-  await malformedSeriesWorker.request({ type: "dispose", requestId: 106 });
+  if (afterMalformedCombined.value?.copyCount !== 1) {
+    throw new Error(`successful raw Scene request omitted its Rust copy: ${JSON.stringify(afterMalformedCombined)}`);
+  }
+  const localAfterCopy = await malformedSeriesWorker.request({
+    type: "series.compile_paint",
+    requestId: 106,
+    sequence: 3,
+    prefix: rawSeries.prefix,
+    columns: rawSeries.columns,
+    byteLength: rawSeries.byteLength + 1,
+  });
+  if (localAfterCopy.ok || localAfterCopy.error?.code !== "XYG_WASM_INVALID_ARGUMENT"
+      || localAfterCopy.error?.diagnostics !== null) {
+    throw new Error(`local rejection inherited unrelated Rust counters: ${JSON.stringify(localAfterCopy)}`);
+  }
+  await malformedSeriesWorker.request({ type: "dispose", requestId: 107 });
   malformedSeriesWorker.worker.terminate();
 
   const disposedDuringInit = rawWorkerHarness();
