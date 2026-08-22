@@ -93,6 +93,19 @@ def test_compound_bounds_keep_membership_and_child_identity() -> None:
     assert np.isnan(bounds[1]).all()
 
 
+def test_compound_bounds_include_transitive_descendants() -> None:
+    parent_of, compounds, bounds = _native.graph_compound_bounds(
+        np.array([0.0, 1.0, 4.0, -2.0]),
+        np.array([0.0, 1.0, 3.0, -1.0]),
+        np.array([0, 0, 1, 0], dtype=np.uint64),
+        np.array([0, 1, 1, 1], dtype=np.uint8),
+    )
+    assert parent_of.tolist() == [2**64 - 1, 0, 1, 0]
+    assert compounds.tolist() == [True, True, False, False]
+    np.testing.assert_allclose(bounds[0], [-2.0, 4.0, -1.0, 3.0])
+    np.testing.assert_allclose(bounds[1], [1.0, 4.0, 1.0, 3.0])
+
+
 def test_graph_style_python_ingress_rejects_lossy_values_before_ffi() -> None:
     for flags in ([True], [1.5], [-1], [2**32]):
         with np.testing.assert_raises((TypeError, ValueError, OverflowError)):

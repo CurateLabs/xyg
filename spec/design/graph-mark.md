@@ -405,7 +405,7 @@ segments (loops / arrow wings) while preserving source edge identity via
 - `xyg_graph_visual_state_resolve` applies disabled, filtered, selected,
   hovered, neighbor, pinned, aggregate, then normal precedence; and
 - `xyg_graph_compound_bounds` preserves each child's dense identity while
-  emitting direct parent membership and parent AABBs. The validity plane alone
+  emitting direct parent membership and transitive descendant AABBs. The validity plane alone
   governs membership: invalid parent payload is ignored, including canonical
   zero-filled `GraphProjection` slots; `NO_COMPOUND` is an output sentinel.
 
@@ -433,8 +433,15 @@ resolved visual state with stable source identity as its tie-breaker, omits
 aggregate/filtered labels, truncates to a bounded 32-character/plot-width
 budget, greedily rejects overlapping screen boxes, and emits final position,
 font, paint, text, and source identity. Browser, SVG, and raster consumers do
-not repeat acceptance, collision, or truncation. Nested transitive compound
-bounds and collapse/expand remain.
+not repeat acceptance, collision, or truncation. The canonical native compound
+Scene seam additionally accepts strict parent-validity and collapse planes.
+Rust validates the entire acyclic forest before output, leaves a collapsed
+group visible, hides all descendants, maps crossing edges to the nearest
+visible collapsed ancestor, omits edges that become internal, propagates
+hidden selected/hovered/neighbor/pinned state to the representative, and emits
+visible transitive group bounds as Rect primitives. Stable node/edge source
+identity is unchanged. Direct-WASM authoring is gated on its separately owned
+XYGG ABI revision; TypeScript does not synthesize a temporary policy.
 
 #### 7.1.1 Versioned GraphForge resolved style v1
 

@@ -33,6 +33,19 @@ test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
 });
 
+test("compound bounds include transitive descendants without host traversal", () => {
+  const result = graphCompoundBounds(
+    new Float64Array([0, 1, 4, -2]),
+    new Float64Array([0, 1, 3, -1]),
+    new BigUint64Array([0n, 0n, 1n, 0n]),
+    new Uint8Array([0, 1, 1, 1]),
+  );
+  assert.deepEqual([...result.parentOf], [(1n << 64n) - 1n, 0n, 1n, 0n]);
+  assert.deepEqual([...result.isCompound], [1, 1, 0, 0]);
+  assert.deepEqual([result.xmin[0], result.xmax[0], result.ymin[0], result.ymax[0]], [-2, 4, -1, 3]);
+  assert.deepEqual([result.xmin[1], result.xmax[1], result.ymin[1], result.ymax[1]], [1, 4, 1, 3]);
+});
+
 test("GraphForge semantic styles are identical to the native golden", () => {
   const resolved = graphSemanticStyles(
     Uint8Array.from([1, 2, 3]), Uint8Array.from([2, 3, 4]), Uint8Array.from([1, 2, 3]),

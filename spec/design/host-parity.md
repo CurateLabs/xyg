@@ -314,4 +314,12 @@ client must not grow a parallel “JS layout/LOD” product path.
   truncation-resolved bounded paint primitives; TypeScript must not derive it.
   Compound validity governs ingress, so zero-filled invalid projection slots
   pass directly without host rewrite or copy.
+  The native canonical-Scene compound seam additionally validates the complete
+  parent forest in linear traversal, derives transitive descendant bounds, and
+  resolves collapse visibility plus boundary-edge representatives before any
+  painter/export allocation. Browser painter, SVG, and raster consume those
+  identical Rect/Polyline/Scatter records and the same accepted-label plane;
+  no host walks ancestors or recomputes collapsed endpoints. Direct-WASM XYGG
+  authoring waits for its separately owned ABI revision; this slice does not
+  overload an existing semantic plane or introduce a TypeScript fallback.
   follow-up; curved edge rendering is not MVP-blocking.

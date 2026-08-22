@@ -329,6 +329,17 @@ validates and projects those values and texts into existing DOM/WebGL and
 accessibility paint surfaces without generating tick positions, sides, or
 style defaults.
 
+Compound graph presentation follows the same one-Scene rule. Rust validates an
+acyclic parent forest, computes each group's transitive descendant bounds, and
+resolves collapse before encoding. Visible group bounds are ordinary `Rect`
+records; visible nodes and remapped boundary edges retain their canonical
+source stable IDs. Descendant nodes/labels and edges that become internal to a
+collapsed representative are absent, so browser paint/pick, the `XYLB`
+accessibility label plane, SVG, and native raster cannot disagree about hidden
+content. Work is bounded by the direct-tier element/primitive ceilings and
+malformed validity, collapse, parent, self-parent, and cycle inputs fail before
+Scene output.
+
 Legends, colorbars, and annotations are deliberately not part of this slice
 and remain loud Scene-compile errors for later issue-#116 work. Category,
 angular, time/calendar ticks, arbitrary tick-label strings, gradients, CSS

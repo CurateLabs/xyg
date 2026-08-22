@@ -304,8 +304,12 @@ Slice B is intentionally broad: product MVP is not â€œgraph only, Sankey later.â
 ## 6. Explicit non-goals
 
 > **Amendment (#34):** Compound and nested node presentation is now in scope.
-> Rust owns direct parent membership, compound bounds, label budgets, and
-> visual-state precedence through the versioned shared ABI. This reverses the
+> Rust owns parent-forest validation, transitive compound bounds, collapse
+> visibility/representatives, label budgets, and visual-state precedence
+> through the canonical Scene path. Collapsing keeps the group node visible,
+> hides every descendant, remaps boundary-edge endpoints to the nearest visible
+> collapsed ancestor, omits newly internal edges, and propagates hidden
+> selected/hovered/neighbor/pinned state to that ancestor. This reverses the
 > earlier compound-node non-goal without adding a host-side policy path.
 
 - Reimplementing GraphForge (or peer) analysis algorithms inside the charting
