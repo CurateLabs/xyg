@@ -404,7 +404,7 @@ function colorbarInput(figure) {
   const options = figure.colorbarOptions ?? figure.colorbar_options;
   if (options == null) return new Uint8Array();
   if (typeof options !== "object" || Array.isArray(options)) throw new RangeError("Scene v13 colorbar requires literal RGBA stops");
-  const allowed = new Set(["domain", "stops", "side", "banded", "minor_ticks", "title", "text_rgba"]);
+  const allowed = new Set(["domain", "stops", "side", "banded", "title", "text_rgba"]);
   if (Object.keys(options).some((key) => !allowed.has(key))) throw new RangeError("Scene v13 colorbar requires bounded literal RGBA stops");
   const domain = options.domain, stops = options.stops;
   if (!Array.isArray(domain) || domain.length !== 2 || !Array.isArray(stops) || stops.length < 2 || stops.length > 16) throw new RangeError("Scene v13 colorbar requires a domain and 2–16 stops");
@@ -417,7 +417,7 @@ function colorbarInput(figure) {
   const out = new Uint8Array(56 + stops.length * 12 + titleBytes.length), view = new DataView(out.buffer);
   out.set([88, 89, 67, 66]); view.setUint32(4, 1, true);
   const side = options.side ?? "right"; if (side !== "right" && side !== "bottom") throw new RangeError("Scene v13 colorbar side is right or bottom");
-  out[8] = Number(side === "bottom") | (Number(Boolean(options.banded)) << 1) | (Number(Boolean(options.minor_ticks)) << 2);
+  out[8] = Number(side === "bottom") | (Number(Boolean(options.banded)) << 1);
   view.setUint32(12, stops.length, true); view.setUint32(20, titleBytes.length, true); view.setFloat64(24, lo, true); view.setFloat64(32, hi, true); out.set(text, 40);
   let previous = -Infinity;
   for (const [index, stop] of stops.entries()) { if (!Array.isArray(stop) || stop.length !== 2) throw new TypeError("colorbar stops are [value, RGBA]"); const value = Number(stop[0]), rgba = asUnsignedArray(stop[1], `colorbar stops[${index}]`, 255, Uint8Array); requireLength(rgba, 4, `colorbar stops[${index}]`); if (!Number.isFinite(value) || value < lo || value > hi || value <= previous) throw new RangeError("colorbar stops must be ordered within the domain"); previous = value; view.setFloat64(56 + index * 12, value, true); out.set(rgba, 64 + index * 12); }

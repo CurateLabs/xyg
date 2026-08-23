@@ -426,15 +426,16 @@ declarations fail closed.
 
 Scene v13 adds one optional `XYCB` colorbar decoration. Its only authorable
 paint is a literal, ordered table of 2–16 RGBA stops spanning a finite ordered
-domain; it may be rendered as a continuous ramp or bands. The record permits
-at most 32 numeric major ticks, an optional minor-tick flag, a bounded UTF-8
-title, and the literal `right` or `bottom` side. Rust rejects named colormaps,
-arbitrary CSS/fonts, axes placement, extensions, explicit tick-label strings,
+domain; it may be rendered as a continuous ramp or bands, with a bounded UTF-8
+title and the literal `right` or `bottom` side. This deliberately does **not**
+encode colorbar major ticks, tick labels, or minor ticks: zero is required for
+the tick count and any minor-tick flag is invalid. Rust rejects named colormaps,
+arbitrary CSS/fonts, axes placement, extensions, all tick customisation,
 unknown flags, malformed UTF-8, unsorted values, and all size overflows before
-allocation. Rust resolves the gutter, screen-space bar bounds, default ticks,
-minor ticks, labels, and paint order. SVG, raster, and browser painter consume
-that exact resolved geometry; Python and Node only pack the record. Rich
-annotation/tick-label work remains deferred.
+allocation. Rust resolves the gutter, screen-space bar bounds and paint order.
+SVG, raster, and browser painter consume that exact resolved geometry; Python
+and Node only pack the record. Rich colorbar tick/label and annotation work
+remain deferred.
 
 ## Version 11 identity metadata for primary Cartesian annotations
 

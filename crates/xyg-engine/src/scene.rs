@@ -35,7 +35,6 @@ pub const MAX_SCENE_LABEL_TEXT_BYTES: usize = 8_192;
 /// Literal color tables are deliberately small so every renderer can consume
 /// exactly the same resolved Scene decoration without a host colormap registry.
 pub const MAX_SCENE_COLORBAR_STOPS: usize = 16;
-pub const MAX_SCENE_COLORBAR_TICKS: usize = 32;
 pub const MAX_SCENE_COLORBAR_TEXT_BYTES: usize = 4_096;
 const SCENE_LABEL_HEADER_BYTES: usize = 16;
 const SCENE_LABEL_RECORD_BYTES: usize = 40;
@@ -459,7 +458,6 @@ const SCENE_COLORBAR_HEADER_BYTES: usize = 56;
 const SCENE_COLORBAR_STOP_BYTES: usize = 12;
 pub const MAX_SCENE_COLORBAR_INPUT_BYTES: usize = SCENE_COLORBAR_HEADER_BYTES
     + MAX_SCENE_COLORBAR_STOPS * SCENE_COLORBAR_STOP_BYTES
-    + MAX_SCENE_COLORBAR_TICKS * 8
     + MAX_SCENE_COLORBAR_TEXT_BYTES;
 
 /// A bounded, host-neutral colour scale.  The author supplies only literal
@@ -469,7 +467,6 @@ pub const MAX_SCENE_COLORBAR_INPUT_BYTES: usize = SCENE_COLORBAR_HEADER_BYTES
 pub struct SceneColorbar {
     pub horizontal: bool,
     pub banded: bool,
-    pub minor_ticks: bool,
     pub domain: [f64; 2],
     pub stops: Vec<(f64, [u8; 4])>,
     pub major_ticks: Option<Vec<f64>>,
@@ -491,14 +488,14 @@ impl SceneColorbar {
             return Err(SceneError::Length);
         }
         let flags = bytes[8];
-        if flags & !0x07 != 0 {
+        if flags & !0x03 != 0 {
             return Err(SceneError::Length);
         }
         let stop_count = u32::from_le_bytes(bytes[12..16].try_into().unwrap()) as usize;
         let tick_count = u32::from_le_bytes(bytes[16..20].try_into().unwrap()) as usize;
         let title_len = u32::from_le_bytes(bytes[20..24].try_into().unwrap()) as usize;
         if !(2..=MAX_SCENE_COLORBAR_STOPS).contains(&stop_count)
-            || tick_count > MAX_SCENE_COLORBAR_TICKS
+            || tick_count != 0
             || title_len > MAX_SCENE_COLORBAR_TEXT_BYTES
         {
             return Err(SceneError::Limit);
@@ -536,16 +533,6 @@ impl SceneColorbar {
         if stops.first().unwrap().0 != domain[0] || stops.last().unwrap().0 != domain[1] {
             return Err(SceneError::Length);
         }
-        let mut ticks = Vec::with_capacity(tick_count);
-        previous = f64::NEG_INFINITY;
-        for index in 0..tick_count {
-            let value = f64_at(table_end + index * 8);
-            if !value.is_finite() || value < domain[0] || value > domain[1] || value <= previous {
-                return Err(SceneError::Length);
-            }
-            previous = value;
-            ticks.push(value);
-        }
         let title = std::str::from_utf8(&bytes[ticks_end..end])
             .map_err(|_| SceneError::Length)?
             .to_owned();
@@ -555,10 +542,9 @@ impl SceneColorbar {
         Ok(Some(Self {
             horizontal: flags & 1 != 0,
             banded: flags & 2 != 0,
-            minor_ticks: flags & 4 != 0,
             domain,
             stops,
-            major_ticks: (!ticks.is_empty()).then_some(ticks),
+            major_ticks: None,
             title,
             text_rgba: bytes[40..44].try_into().unwrap(),
         }))
@@ -573,11 +559,7 @@ impl SceneColorbar {
         );
         out.extend_from_slice(b"XYCB");
         out.extend_from_slice(&1u32.to_le_bytes());
-        out.push(
-            u8::from(self.horizontal)
-                | (u8::from(self.banded) << 1)
-                | (u8::from(self.minor_ticks) << 2),
-        );
+        out.push(u8::from(self.horizontal) | (u8::from(self.banded) << 1));
         out.extend_from_slice(&[0; 3]);
         out.extend_from_slice(&(self.stops.len() as u32).to_le_bytes());
         out.extend_from_slice(
@@ -7547,17 +7529,22 @@ mod tests {
         let colorbar = SceneColorbar {
             horizontal: false,
             banded: true,
-            minor_ticks: true,
             domain: [0.0, 1.0],
             stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
-            major_ticks: Some(vec![0.0, 0.5, 1.0]),
+            major_ticks: None,
             title: "Intensity".to_owned(),
             text_rgba: [32, 32, 32, 255],
         };
         let encoded = colorbar.encode().unwrap();
-        assert_eq!(SceneColorbar::from_input(&encoded), Ok(Some(colorbar)));
+        assert_eq!(
+            SceneColorbar::from_input(&encoded),
+            Ok(Some(colorbar.clone()))
+        );
         let mut malformed = encoded;
         malformed[68..76].copy_from_slice(&(-1.0f64).to_le_bytes());
         assert!(SceneColorbar::from_input(&malformed).is_err());
+        let mut unsupported_ticks = colorbar.encode().unwrap();
+        unsupported_ticks[8] |= 4;
+        assert!(SceneColorbar::from_input(&unsupported_ticks).is_err());
     }
 }
