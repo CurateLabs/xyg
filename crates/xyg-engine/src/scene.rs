@@ -468,7 +468,6 @@ pub struct SceneColorbar {
     pub horizontal: bool,
     pub domain: [f64; 2],
     pub stops: Vec<(f64, [u8; 4])>,
-    pub major_ticks: Option<Vec<f64>>,
     pub title: String,
     pub text_rgba: [u8; 4],
 }
@@ -542,7 +541,6 @@ impl SceneColorbar {
             horizontal: flags & 1 != 0,
             domain,
             stops,
-            major_ticks: None,
             title,
             text_rgba: bytes[40..44].try_into().unwrap(),
         }))
@@ -552,7 +550,6 @@ impl SceneColorbar {
         let mut out = Vec::with_capacity(
             SCENE_COLORBAR_HEADER_BYTES
                 + self.stops.len() * SCENE_COLORBAR_STOP_BYTES
-                + self.major_ticks.as_ref().map_or(0, Vec::len) * 8
                 + self.title.len(),
         );
         out.extend_from_slice(b"XYCB");
@@ -560,9 +557,7 @@ impl SceneColorbar {
         out.push(u8::from(self.horizontal) | 2);
         out.extend_from_slice(&[0; 3]);
         out.extend_from_slice(&(self.stops.len() as u32).to_le_bytes());
-        out.extend_from_slice(
-            &(self.major_ticks.as_ref().map_or(0, Vec::len) as u32).to_le_bytes(),
-        );
+        out.extend_from_slice(&0u32.to_le_bytes());
         out.extend_from_slice(&(self.title.len() as u32).to_le_bytes());
         for value in self.domain {
             out.extend_from_slice(&value.to_le_bytes());
@@ -572,9 +567,6 @@ impl SceneColorbar {
         for (value, rgba) in &self.stops {
             out.extend_from_slice(&value.to_le_bytes());
             out.extend_from_slice(rgba);
-        }
-        for value in self.major_ticks.as_deref().unwrap_or(&[]) {
-            out.extend_from_slice(&value.to_le_bytes());
         }
         out.extend_from_slice(self.title.as_bytes());
         // Reuse the strict decoder as the single validation authority.
@@ -7528,7 +7520,6 @@ mod tests {
             horizontal: false,
             domain: [0.0, 1.0],
             stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
-            major_ticks: None,
             title: "Intensity".to_owned(),
             text_rgba: [32, 32, 32, 255],
         };
@@ -7543,6 +7534,9 @@ mod tests {
         let mut unsupported_ticks = colorbar.encode().unwrap();
         unsupported_ticks[8] |= 4;
         assert!(SceneColorbar::from_input(&unsupported_ticks).is_err());
+        let mut nonzero_tick_count = colorbar.encode().unwrap();
+        nonzero_tick_count[16..20].copy_from_slice(&1u32.to_le_bytes());
+        assert!(SceneColorbar::from_input(&nonzero_tick_count).is_err());
         let mut unsupported_continuous = colorbar.encode().unwrap();
         unsupported_continuous[8] &= !2;
         assert!(SceneColorbar::from_input(&unsupported_continuous).is_err());
