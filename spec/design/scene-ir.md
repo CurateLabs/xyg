@@ -377,6 +377,15 @@ chrome and CSS-spelling parity with ``_svg.py`` is covered; ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` are the opt-in helpers. Unlabeled
 cartesian annotations remain rejected rather than being approximated as marks.
 
+The public router the auto-routing slice wires consults one support predicate,
+``_scene_v3.scene_export_support_reason``, which returns the stable
+``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's bounded message) for a
+figure outside the migrated subset and ``None`` when the Rust Scene path
+applies. Parity with the compiler is by construction — the predicate runs
+``figure_scene`` — so a router built on it can never disagree with the encoder it
+guards, and it never triggers a silent fallback: input errors (for example a
+non-finite opacity) propagate rather than being reported as a routing reason.
+
 ## Version 9: bounded primary static legends
 
 Version 9 keeps the fixed header, style, and mark widths from version 8 and

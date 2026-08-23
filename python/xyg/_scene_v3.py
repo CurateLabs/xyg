@@ -886,6 +886,33 @@ def figure_raster_commands(figure: Any, *, scale: float = 1.0, **options: Any) -
     return _native.scene_raster_commands(figure_scene(figure, **options), scale)
 
 
+def scene_export_support_reason(
+    figure: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> str | None:
+    """Return why a figure cannot compile to the canonical Rust Scene, or ``None``.
+
+    This is the single support predicate the #117 public static-export router
+    consults before selecting the Rust Scene path over the compatibility
+    ``_svg`` / ``_raster`` renderers. Unlike :func:`try_public_svg`, which only
+    signals success by returning output, this reports the stable
+    ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
+    message) so callers can log or surface an actionable reason for the fallback.
+
+    Parity with :func:`figure_scene` is by construction: the same compiler
+    decides support here. Only feature-support decisions are reported; input
+    errors (for example a non-finite opacity) are not a routing question and
+    propagate unchanged.
+    """
+    try:
+        figure_scene(figure, width=width, height=height)
+    except UnsupportedSceneV3 as unsupported:
+        return str(unsupported)
+    return None
+
+
 def try_public_svg(figure: Any, **options: Any) -> str | None:
     """Return Scene SVG when the figure is in the migrated subset, else ``None``.
 
