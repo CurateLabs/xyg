@@ -20,6 +20,7 @@ use xyg_engine::kernels::{self, DEFAULT_CHUNK};
 use xyg_engine::scene::{
     AxisScale, AxisSide, LegendLocation, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
     SceneChromeText, SceneDocument, SceneLegend, SceneLegendEntry, SceneRecordKind, TickDirection,
+    BROWSER_PAINTER_VERSION,
 };
 
 fn main() {
@@ -359,7 +360,10 @@ fn scene_v4_browser_painter(bencher: Bencher, n: usize) {
     let document = browser_scene_document(n, false);
     let output = document.to_browser_painter(64 * 1024 * 1024).unwrap();
     assert_eq!(&output[..4], b"XYPB");
-    assert_eq!(u32::from_le_bytes(output[4..8].try_into().unwrap()), 4);
+    assert_eq!(
+        u32::from_le_bytes(output[4..8].try_into().unwrap()),
+        BROWSER_PAINTER_VERSION
+    );
     assert!(u32::from_le_bytes(output[48..52].try_into().unwrap()) >= 3);
     assert!(u32::from_le_bytes(output[52..56].try_into().unwrap()) >= 3);
     assert!(output.len() > n * 16);
