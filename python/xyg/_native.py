@@ -34,6 +34,7 @@ _MAX_SCENE_MARKS = 2_000_000
 _MAX_SCENE_STYLES = 65_536
 _MAX_SCENE_TEXT_BYTES = 4_096
 MAX_SCENE_LEGEND_INPUT_BYTES = 48 + 128 * 24 + 16_384
+MAX_SCENE_COLORBAR_INPUT_BYTES = 56 + 16 * 12 + 32 * 8 + 4_096
 
 
 class _GraphProjectionDescriptor(ctypes.Structure):
@@ -1894,6 +1895,7 @@ def scene_batch_encode(
     y_major_ticks: npt.ArrayLike | None = None,
     y_minor_ticks: npt.ArrayLike = (),
     legend_input: bytes = b"",
+    colorbar_input: bytes = b"",
 ) -> bytes:
     """Encode the bounded backend-neutral Scene v12 typed batch."""
 
@@ -1983,8 +1985,11 @@ def scene_batch_encode(
     )
     y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
     legend_array = np.frombuffer(legend_input, dtype=np.uint8)
+    colorbar_array = np.frombuffer(colorbar_input, dtype=np.uint8)
     if len(legend_array) > MAX_SCENE_LEGEND_INPUT_BYTES:
         raise ValueError(f"scene legend input is limited to {MAX_SCENE_LEGEND_INPUT_BYTES:,} bytes")
+    if len(colorbar_array) > MAX_SCENE_COLORBAR_INPUT_BYTES:
+        raise ValueError(f"scene colorbar input is limited to {MAX_SCENE_COLORBAR_INPUT_BYTES:,} bytes")
     tick_arrays = (x_major, x_minor, y_major, y_minor)
     if any(value is not None and len(value) > 200 for value in tick_arrays):
         raise ValueError("scene axis tick lists are limited to 200 values")
@@ -1998,6 +2003,7 @@ def scene_batch_encode(
         + len(ylabel_b)
         + sum(0 if value is None else len(value) * 8 for value in tick_arrays)
         + len(legend_array)
+        + len(colorbar_array)
     )
     while True:
         out = ctypes.create_string_buffer(capacity)
@@ -2038,6 +2044,8 @@ def scene_batch_encode(
             len(ylabel_b),
             _ptr_u8(legend_array) if len(legend_array) else 0,
             len(legend_array),
+            _ptr_u8(colorbar_array) if len(colorbar_array) else 0,
+            len(colorbar_array),
             out,
             capacity,
         )

@@ -420,9 +420,21 @@ to `upper right`). Automatic `loc="best"` placement remains unsupported until
 that occupancy policy moves into Rust. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
-declarations fail closed. Colorbars remain explicit later issue-#116 work;
-Scene v12 additionally supports the bounded primary annotations below and does
-not approximate richer forms.
+declarations fail closed.
+
+## Version 13 bounded literal colorbar
+
+Scene v13 adds one optional `XYCB` colorbar decoration. Its only authorable
+paint is a literal, ordered table of 2–16 RGBA stops spanning a finite ordered
+domain; it may be rendered as a continuous ramp or bands. The record permits
+at most 32 numeric major ticks, an optional minor-tick flag, a bounded UTF-8
+title, and the literal `right` or `bottom` side. Rust rejects named colormaps,
+arbitrary CSS/fonts, axes placement, extensions, explicit tick-label strings,
+unknown flags, malformed UTF-8, unsorted values, and all size overflows before
+allocation. Rust resolves the gutter, screen-space bar bounds, default ticks,
+minor ticks, labels, and paint order. SVG, raster, and browser painter consume
+that exact resolved geometry; Python and Node only pack the record. Rich
+annotation/tick-label work remains deferred.
 
 ## Version 11 identity metadata for primary Cartesian annotations
 

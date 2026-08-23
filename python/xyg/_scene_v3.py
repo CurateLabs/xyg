@@ -47,6 +47,47 @@ _LEGEND_LOCATIONS = {
 }
 
 
+def _colorbar_input(figure: Any) -> bytes:
+    """Frame only the small literal XYCB subset; Rust resolves all policy."""
+    options = getattr(figure, "colorbar_options", None)
+    if not options:
+        return b""
+    if not isinstance(options, dict) or set(options) - {"domain", "stops", "side", "banded", "minor_ticks", "title", "text_rgba"}:
+        raise UnsupportedSceneV3("Scene v13 colorbars require literal bounded RGBA stops")
+    domain = options.get("domain")
+    stops = options.get("stops")
+    if not (isinstance(domain, (list, tuple)) and len(domain) == 2 and isinstance(stops, (list, tuple)) and 2 <= len(stops) <= 16):
+        raise UnsupportedSceneV3("Scene v13 colorbars require a two-value domain and 2–16 literal stops")
+    try:
+        lo, hi = (float(domain[0]), float(domain[1]))
+        parsed = [(float(item[0]), bytes(item[1])) for item in stops]
+    except (TypeError, ValueError, IndexError):
+        raise UnsupportedSceneV3("Scene v13 colorbar stops are (finite value, RGBA[4]) pairs") from None
+    if not np.isfinite([lo, hi]).all() or lo >= hi or any(len(rgba) != 4 for _, rgba in parsed):
+        raise UnsupportedSceneV3("Scene v13 colorbar values must be finite and RGBA literals exactly four bytes")
+    horizontal = options.get("side", "right") == "bottom"
+    if options.get("side", "right") not in {"right", "bottom"}:
+        raise UnsupportedSceneV3("Scene v13 colorbars support only right or bottom placement")
+    title = options.get("title", "")
+    if not isinstance(title, str):
+        raise UnsupportedSceneV3("Scene v13 colorbar title must be a string")
+    title_b = title.encode("utf-8")
+    text_rgba = bytes(options.get("text_rgba", (32, 32, 32, 255)))
+    if len(title_b) > 4096 or len(text_rgba) != 4:
+        raise UnsupportedSceneV3("Scene v13 colorbar text is bounded and uses literal RGBA")
+    out = bytearray(56 + len(parsed) * 12 + len(title_b))
+    out[:4] = b"XYCB"
+    struct.pack_into("<I", out, 4, 1)
+    out[8] = int(horizontal) | (int(bool(options.get("banded", False))) << 1) | (int(bool(options.get("minor_ticks", False))) << 2)
+    struct.pack_into("<III2d", out, 12, len(parsed), 0, len(title_b), lo, hi)
+    out[40:44] = text_rgba
+    for index, (value, rgba) in enumerate(parsed):
+        struct.pack_into("<d", out, 56 + index * 12, value)
+        out[64 + index * 12 : 68 + index * 12] = rgba
+    out[56 + len(parsed) * 12 :] = title_b
+    return bytes(out)
+
+
 def _legend_input(
     figure: Any, entries: list[tuple[int, int, int, str]], styles: list[Any]
 ) -> bytes:
@@ -380,7 +421,10 @@ def figure_scene(
         for trace in figure.traces
     ):
         features |= 1 << 3
-    if figure.colorbar_options:
+    try:
+        colorbar_input = _colorbar_input(figure)
+    except UnsupportedSceneV3:
+        colorbar_input = b""
         features |= 1 << 4
     if figure.extra_legends:
         features |= 1 << 5
@@ -875,6 +919,7 @@ def figure_scene(
         y_major_ticks=figure.axis_options["y"].get("tick_values"),
         y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
         legend_input=_legend_input(figure, legend_entries, styles),
+        colorbar_input=colorbar_input,
     )
 
 

@@ -3646,6 +3646,19 @@ export class ChartView {
   _positionColorbar() {
     if (!this._colorbar) return;
     const cb = this.spec.colorbar || {};
+    // Canonical Scene colorbars arrive with Rust-resolved screen-space bounds.
+    // Do not run the compatibility gutter/shrink policy for this path.
+    if (cb.placement === "scene" && Array.isArray(cb.resolved?.bounds)) {
+      const [x, y, width, height] = cb.resolved.bounds.map(Number);
+      if ([x, y, width, height].every(Number.isFinite) && width > 0 && height > 0) {
+        this._colorbar.style.left = `${x}px`;
+        this._colorbar.style.top = `${y}px`;
+        this._colorbar.style.width = `${width}px`;
+        this._colorbar.style.height = `${height}px`;
+        this._colorbar.dataset.xyCompact = "false";
+        return;
+      }
+    }
     const horizontal = this._colorbarHorizontal;
     const axesPlacement = cb.placement === "axes";
     const compactVertical = !horizontal && this._compactVerticalColorbar;

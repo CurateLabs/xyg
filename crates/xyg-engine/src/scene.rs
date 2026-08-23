@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 12;
+pub const SCENE_VERSION: u32 = 13;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -20,8 +20,8 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 240;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 9;
-pub const BROWSER_PAINTER_HEADER_BYTES: usize = 288;
+pub const BROWSER_PAINTER_VERSION: u32 = 10;
+pub const BROWSER_PAINTER_HEADER_BYTES: usize = 292;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
 /// Hard ceiling on browser-side trace objects created from one painter output.
@@ -32,6 +32,11 @@ pub const MAX_SCENE_LEGEND_ENTRIES: usize = 128;
 pub const MAX_SCENE_LEGEND_TEXT_BYTES: usize = 16_384;
 pub const MAX_SCENE_LABELS: usize = 128;
 pub const MAX_SCENE_LABEL_TEXT_BYTES: usize = 8_192;
+/// Literal color tables are deliberately small so every renderer can consume
+/// exactly the same resolved Scene decoration without a host colormap registry.
+pub const MAX_SCENE_COLORBAR_STOPS: usize = 16;
+pub const MAX_SCENE_COLORBAR_TICKS: usize = 32;
+pub const MAX_SCENE_COLORBAR_TEXT_BYTES: usize = 4_096;
 const SCENE_LABEL_HEADER_BYTES: usize = 16;
 const SCENE_LABEL_RECORD_BYTES: usize = 40;
 pub const SCENE_SUPPORT_REQUEST_VERSION: u32 = 1;
@@ -59,7 +64,9 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
         (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
         (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
-        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v12 does not yet encode colorbars"),
+        // A host sets this bit only when its literal XYCB framing is malformed
+        // or outside the bounded Scene subset; valid XYCB is consumed by Rust.
+        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: colorbar requires bounded literal RGBA Scene framing"),
         (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v12 supports one primary static legend only"),
         (SCENE_FEATURE_AUTHORED_TICK_LABELS, "XYG_SCENE_UNSUPPORTED_TICK_LABELS: Scene v12 does not yet encode authored tick-label strings"),
         (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v12 annotations do not yet encode text labels"),
@@ -445,6 +452,154 @@ impl SceneLegend {
             text_offset += entry.label.len();
         }
         out
+    }
+}
+
+const SCENE_COLORBAR_HEADER_BYTES: usize = 56;
+const SCENE_COLORBAR_STOP_BYTES: usize = 12;
+pub const MAX_SCENE_COLORBAR_INPUT_BYTES: usize = SCENE_COLORBAR_HEADER_BYTES
+    + MAX_SCENE_COLORBAR_STOPS * SCENE_COLORBAR_STOP_BYTES
+    + MAX_SCENE_COLORBAR_TICKS * 8
+    + MAX_SCENE_COLORBAR_TEXT_BYTES;
+
+/// A bounded, host-neutral colour scale.  The author supplies only literal
+/// RGBA stops (or bands) and optional numeric major ticks; Rust resolves every
+/// placement, default, minor tick, and label before the Scene reaches a host.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SceneColorbar {
+    pub horizontal: bool,
+    pub banded: bool,
+    pub minor_ticks: bool,
+    pub domain: [f64; 2],
+    pub stops: Vec<(f64, [u8; 4])>,
+    pub major_ticks: Option<Vec<f64>>,
+    pub title: String,
+    pub text_rgba: [u8; 4],
+}
+
+impl SceneColorbar {
+    pub fn from_input(bytes: &[u8]) -> Result<Option<Self>, SceneError> {
+        if bytes.is_empty() {
+            return Ok(None);
+        }
+        if bytes.len() < SCENE_COLORBAR_HEADER_BYTES
+            || &bytes[..4] != b"XYCB"
+            || u32::from_le_bytes(bytes[4..8].try_into().unwrap()) != 1
+            || bytes[9..12] != [0; 3]
+            || bytes[52..56] != [0; 4]
+        {
+            return Err(SceneError::Length);
+        }
+        let flags = bytes[8];
+        if flags & !0x07 != 0 {
+            return Err(SceneError::Length);
+        }
+        let stop_count = u32::from_le_bytes(bytes[12..16].try_into().unwrap()) as usize;
+        let tick_count = u32::from_le_bytes(bytes[16..20].try_into().unwrap()) as usize;
+        let title_len = u32::from_le_bytes(bytes[20..24].try_into().unwrap()) as usize;
+        if !(2..=MAX_SCENE_COLORBAR_STOPS).contains(&stop_count)
+            || tick_count > MAX_SCENE_COLORBAR_TICKS
+            || title_len > MAX_SCENE_COLORBAR_TEXT_BYTES
+        {
+            return Err(SceneError::Limit);
+        }
+        let f64_at = |offset| f64::from_le_bytes(bytes[offset..offset + 8].try_into().unwrap());
+        let domain = [f64_at(24), f64_at(32)];
+        if !domain[0].is_finite() || !domain[1].is_finite() || domain[0] >= domain[1] {
+            return Err(SceneError::NonFinite);
+        }
+        let table_end = SCENE_COLORBAR_HEADER_BYTES
+            .checked_add(
+                stop_count
+                    .checked_mul(SCENE_COLORBAR_STOP_BYTES)
+                    .ok_or(SceneError::Limit)?,
+            )
+            .ok_or(SceneError::Limit)?;
+        let ticks_end = table_end
+            .checked_add(tick_count.checked_mul(8).ok_or(SceneError::Limit)?)
+            .ok_or(SceneError::Limit)?;
+        let end = ticks_end.checked_add(title_len).ok_or(SceneError::Limit)?;
+        if end != bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let mut stops = Vec::with_capacity(stop_count);
+        let mut previous = f64::NEG_INFINITY;
+        for index in 0..stop_count {
+            let at = SCENE_COLORBAR_HEADER_BYTES + index * SCENE_COLORBAR_STOP_BYTES;
+            let value = f64_at(at);
+            if !value.is_finite() || value < domain[0] || value > domain[1] || value <= previous {
+                return Err(SceneError::Length);
+            }
+            previous = value;
+            stops.push((value, bytes[at + 8..at + 12].try_into().unwrap()));
+        }
+        if stops.first().unwrap().0 != domain[0] || stops.last().unwrap().0 != domain[1] {
+            return Err(SceneError::Length);
+        }
+        let mut ticks = Vec::with_capacity(tick_count);
+        previous = f64::NEG_INFINITY;
+        for index in 0..tick_count {
+            let value = f64_at(table_end + index * 8);
+            if !value.is_finite() || value < domain[0] || value > domain[1] || value <= previous {
+                return Err(SceneError::Length);
+            }
+            previous = value;
+            ticks.push(value);
+        }
+        let title = std::str::from_utf8(&bytes[ticks_end..end])
+            .map_err(|_| SceneError::Length)?
+            .to_owned();
+        if title.contains('\0') {
+            return Err(SceneError::Length);
+        }
+        Ok(Some(Self {
+            horizontal: flags & 1 != 0,
+            banded: flags & 2 != 0,
+            minor_ticks: flags & 4 != 0,
+            domain,
+            stops,
+            major_ticks: (!ticks.is_empty()).then_some(ticks),
+            title,
+            text_rgba: bytes[40..44].try_into().unwrap(),
+        }))
+    }
+
+    fn encode(&self) -> Result<Vec<u8>, SceneError> {
+        let mut out = Vec::with_capacity(
+            SCENE_COLORBAR_HEADER_BYTES
+                + self.stops.len() * SCENE_COLORBAR_STOP_BYTES
+                + self.major_ticks.as_ref().map_or(0, Vec::len) * 8
+                + self.title.len(),
+        );
+        out.extend_from_slice(b"XYCB");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.push(
+            u8::from(self.horizontal)
+                | (u8::from(self.banded) << 1)
+                | (u8::from(self.minor_ticks) << 2),
+        );
+        out.extend_from_slice(&[0; 3]);
+        out.extend_from_slice(&(self.stops.len() as u32).to_le_bytes());
+        out.extend_from_slice(
+            &(self.major_ticks.as_ref().map_or(0, Vec::len) as u32).to_le_bytes(),
+        );
+        out.extend_from_slice(&(self.title.len() as u32).to_le_bytes());
+        for value in self.domain {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&self.text_rgba);
+        out.extend_from_slice(&[0; 12]);
+        for (value, rgba) in &self.stops {
+            out.extend_from_slice(&value.to_le_bytes());
+            out.extend_from_slice(rgba);
+        }
+        for value in self.major_ticks.as_deref().unwrap_or(&[]) {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(self.title.as_bytes());
+        // Reuse the strict decoder as the single validation authority.
+        Self::from_input(&out)?;
+        Ok(out)
     }
 }
 
@@ -1422,6 +1577,7 @@ type SceneChromeTrailer = (
     SceneChromeStyle,
     SceneChromeText,
     Option<SceneLegend>,
+    Option<SceneColorbar>,
     Vec<SceneLabel>,
     usize,
 );
@@ -1430,7 +1586,7 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     let trailer = bytes
         .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
         .ok_or(SceneError::Length)?;
-    if trailer[12..16] != [0; 4] || trailer[236..240] != [0; 4] {
+    if trailer[12..16] != [0; 4] {
         return Err(SceneError::Length);
     }
     let label_font_size = f64::from_le_bytes(trailer[16..24].try_into().unwrap());
@@ -1474,7 +1630,8 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
         .map(|offset| u32::from_le_bytes(trailer[offset..offset + 4].try_into().unwrap()));
     let legend_len = u32::from_le_bytes(trailer[228..232].try_into().unwrap()) as usize;
     let label_len = u32::from_le_bytes(trailer[232..236].try_into().unwrap()) as usize;
-    if legend_len > MAX_SCENE_LEGEND_INPUT_BYTES {
+    let colorbar_len = u32::from_le_bytes(trailer[236..240].try_into().unwrap()) as usize;
+    if legend_len > MAX_SCENE_LEGEND_INPUT_BYTES || colorbar_len > MAX_SCENE_COLORBAR_INPUT_BYTES {
         return Err(SceneError::Limit);
     }
     if counts[1] == u32::MAX || counts[3] == u32::MAX {
@@ -1503,8 +1660,11 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
         .and_then(|value| value.checked_add(ylabel_len))
         .and_then(|value| value.checked_add(tick_count.checked_mul(8)?))
         .ok_or(SceneError::Limit)?;
-    let label_start = content_end
+    let colorbar_start = content_end
         .checked_add(legend_len)
+        .ok_or(SceneError::Limit)?;
+    let label_start = colorbar_start
+        .checked_add(colorbar_len)
         .ok_or(SceneError::Limit)?;
     let total = label_start
         .checked_add(label_len)
@@ -1557,9 +1717,10 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
         y_minor_ticks,
     }
     .validated()?;
-    let legend = SceneLegend::from_canonical(&bytes[content_end..label_start], usize::MAX)?;
+    let legend = SceneLegend::from_canonical(&bytes[content_end..colorbar_start], usize::MAX)?;
+    let colorbar = SceneColorbar::from_input(&bytes[colorbar_start..label_start])?;
     let labels = decode_scene_labels(&bytes[label_start..total])?;
-    Ok((chrome, text, legend, labels, total))
+    Ok((chrome, text, legend, colorbar, labels, total))
 }
 
 fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
@@ -1606,6 +1767,7 @@ fn write_chrome_trailer(
     chrome: &SceneChromeStyle,
     text: &SceneChromeText,
     legend: Option<&SceneLegend>,
+    colorbar: Option<&SceneColorbar>,
     label_bytes: &[u8],
 ) {
     write_chrome_style_input(out, chrome);
@@ -1634,9 +1796,14 @@ fn write_chrome_trailer(
         );
     }
     let legend_bytes = legend.map(SceneLegend::encode).unwrap_or_default();
+    let colorbar_bytes = colorbar
+        .map(SceneColorbar::encode)
+        .transpose()
+        .expect("validated Scene colorbar")
+        .unwrap_or_default();
     out.extend_from_slice(&(legend_bytes.len() as u32).to_le_bytes());
     out.extend_from_slice(&(label_bytes.len() as u32).to_le_bytes());
-    out.extend_from_slice(&[0; 4]);
+    out.extend_from_slice(&(colorbar_bytes.len() as u32).to_le_bytes());
     out.extend_from_slice(text.title.as_bytes());
     out.extend_from_slice(text.x_label.as_bytes());
     out.extend_from_slice(text.y_label.as_bytes());
@@ -1651,6 +1818,7 @@ fn write_chrome_trailer(
         }
     }
     out.extend_from_slice(&legend_bytes);
+    out.extend_from_slice(&colorbar_bytes);
     out.extend_from_slice(label_bytes);
 }
 
@@ -1706,6 +1874,42 @@ fn resolved_legend_bounds(
     Ok((x, y, width, height))
 }
 
+/// Resolved screen-space bounds for the bounded right/bottom colorbar. This is
+/// intentionally the only placement policy; hosts receive the result, never
+/// margins or a colormap layout decision.
+fn resolved_colorbar_bounds(
+    layout: PlotLayout,
+    colorbar: &SceneColorbar,
+) -> Result<(f64, f64, f64, f64), SceneError> {
+    let title = text_advance(&colorbar.title, 11.0);
+    let (x, y, width, height) = if colorbar.horizontal {
+        (
+            layout.left,
+            layout.bottom + 28.0,
+            layout.right - layout.left,
+            14.0,
+        )
+    } else {
+        (
+            layout.right + 28.0,
+            layout.top,
+            14.0,
+            layout.bottom - layout.top,
+        )
+    };
+    if ![x, y, width, height, title].into_iter().all(f64::is_finite)
+        || width < 16.0
+        || height < 16.0
+        || x < 0.0
+        || y < 0.0
+        || x + width > layout.viewport_width
+        || y + height > layout.viewport_height
+    {
+        return Err(SceneError::Limit);
+    }
+    Ok((x, y, width, height))
+}
+
 /// Validate a serialized canonical Scene v9 batch without allocating.
 ///
 /// The direct-browser adapter uses this decoder as its first exact scene seam:
@@ -1741,7 +1945,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 .and_then(|record_bytes| value.checked_add(record_bytes))
         })
         .ok_or(SceneError::Limit)?;
-    let (_chrome, _text, legend, _labels, total) = read_chrome_trailer(bytes, body)?;
+    let (_chrome, _text, legend, _colorbar, _labels, total) = read_chrome_trailer(bytes, body)?;
     if let Some(legend) = legend {
         if legend.entries.iter().any(|entry| entry.style_ref >= styles) {
             return Err(SceneError::Length);
@@ -2026,6 +2230,7 @@ pub struct SceneBatch<'a> {
     chrome: SceneChromeStyle,
     text: SceneChromeText,
     legend: Option<SceneLegend>,
+    colorbar: Option<SceneColorbar>,
     labels: Vec<SceneLabel>,
     kinds: &'a [u8],
     stable_ids: &'a [u64],
@@ -2164,6 +2369,7 @@ impl<'a> SceneBatch<'a> {
             chrome,
             text,
             legend,
+            None,
             Vec::new(),
             kinds,
             stable_ids,
@@ -2214,7 +2420,63 @@ impl<'a> SceneBatch<'a> {
             chrome,
             text,
             legend,
+            None,
             labels,
+            kinds,
+            stable_ids,
+            style_refs,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            diameter,
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+            true,
+        )
+    }
+
+    /// Identical to `new_with_decorations_and_labels`, with the already
+    /// framed literal colorbar supplied by a thin binding.  Keeping this
+    /// separate preserves older internal callers while making colorbar
+    /// admission explicit at the Rust authority boundary.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_decorations_colorbar(
+        layout: PlotLayout,
+        x_axis_id: u64,
+        y_axis_id: u64,
+        x_scale: AxisScale,
+        y_scale: AxisScale,
+        chrome: SceneChromeStyle,
+        text: SceneChromeText,
+        legend: Option<SceneLegend>,
+        colorbar: Option<SceneColorbar>,
+        kinds: &'a [u8],
+        stable_ids: &'a [u64],
+        style_refs: &'a [u32],
+        fill_rgba: &'a [u8],
+        stroke_rgba: &'a [u8],
+        stroke_width: &'a [f64],
+        diameter: &'a [f64],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+    ) -> Result<Self, SceneError> {
+        Self::new_with_decorations_impl(
+            layout,
+            x_axis_id,
+            y_axis_id,
+            x_scale,
+            y_scale,
+            chrome,
+            text,
+            legend,
+            colorbar,
+            Vec::new(),
             kinds,
             stable_ids,
             style_refs,
@@ -2262,6 +2524,7 @@ impl<'a> SceneBatch<'a> {
             chrome,
             text,
             None,
+            None,
             Vec::new(),
             kinds,
             stable_ids,
@@ -2289,6 +2552,7 @@ impl<'a> SceneBatch<'a> {
         chrome: SceneChromeStyle,
         text: SceneChromeText,
         legend: Option<SceneLegend>,
+        colorbar: Option<SceneColorbar>,
         labels: Vec<SceneLabel>,
         kinds: &'a [u8],
         stable_ids: &'a [u64],
@@ -2336,6 +2600,10 @@ impl<'a> SceneBatch<'a> {
                 return Err(SceneError::Length);
             }
             resolved_legend_bounds(layout, value)?;
+        }
+        if let Some(value) = &colorbar {
+            value.encode()?;
+            resolved_colorbar_bounds(layout, value)?;
         }
         if [
             stable_ids.len(),
@@ -2462,6 +2730,7 @@ impl<'a> SceneBatch<'a> {
             chrome,
             text,
             legend,
+            colorbar,
             labels,
             kinds,
             stable_ids,
@@ -2618,6 +2887,7 @@ impl<'a> SceneBatch<'a> {
             &self.chrome,
             &self.text,
             self.legend.as_ref(),
+            self.colorbar.as_ref(),
             &label_bytes,
         );
         out
@@ -2773,6 +3043,7 @@ pub struct SceneDocument {
     chrome: SceneChromeStyle,
     text: SceneChromeText,
     legend: Option<SceneLegend>,
+    colorbar: Option<SceneColorbar>,
     labels: Vec<SceneLabel>,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
@@ -2780,6 +3051,19 @@ pub struct SceneDocument {
 }
 
 impl SceneDocument {
+    fn painter_colorbar_bytes(&self) -> Result<Vec<u8>, SceneError> {
+        let Some(colorbar) = &self.colorbar else {
+            return Ok(Vec::new());
+        };
+        let mut out = colorbar.encode()?;
+        let (x, y, width, height) = resolved_colorbar_bounds(self.layout, colorbar)?;
+        out.extend_from_slice(b"XYRG");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        for value in [x, y, width, height] {
+            out.extend_from_slice(&checked_f32(value)?.to_le_bytes());
+        }
+        Ok(out)
+    }
     fn painter_legend_bytes(&self) -> Result<Vec<u8>, SceneError> {
         let Some(legend) = &self.legend else {
             return Ok(Vec::new());
@@ -2918,7 +3202,7 @@ impl SceneDocument {
                 value.checked_add(record_count.checked_mul(SCENE_BATCH_RECORD_BYTES)?)
             })
             .ok_or(SceneError::Limit)?;
-        let (chrome, text, legend, labels, total) = read_chrome_trailer(bytes, body)?;
+        let (chrome, text, legend, colorbar, labels, total) = read_chrome_trailer(bytes, body)?;
         if bytes.len() != total {
             return Err(SceneError::Length);
         }
@@ -2946,6 +3230,9 @@ impl SceneDocument {
         }
         if let Some(value) = &legend {
             resolved_legend_bounds(layout, value)?;
+        }
+        if let Some(value) = &colorbar {
+            resolved_colorbar_bounds(layout, value)?;
         }
         if bytes[96] > ScaleKind::SymLog as u8
             || bytes[104] > ScaleKind::SymLog as u8
@@ -3218,6 +3505,7 @@ impl SceneDocument {
             chrome,
             text,
             legend,
+            colorbar,
             labels,
             styles,
             records,
@@ -3363,6 +3651,66 @@ impl SceneDocument {
             push_escaped_attribute(out, &entry.label);
             out.push_str("</text>");
             row_y += 6.0;
+        }
+        out.push_str("</g>");
+    }
+
+    fn append_svg_colorbar(&self, out: &mut String) {
+        let Some(colorbar) = &self.colorbar else {
+            return;
+        };
+        let (x, y, width, height) =
+            resolved_colorbar_bounds(self.layout, colorbar).expect("validated colorbar fit");
+        out.push_str("<g data-xy-chrome=\"colorbar\" role=\"img\" aria-label=\"Color scale");
+        if !colorbar.title.is_empty() {
+            out.push_str(": ");
+            push_escaped_attribute(out, &colorbar.title);
+        }
+        out.push_str("\">");
+        for index in 0..colorbar.stops.len() - 1 {
+            let (lo, paint) = colorbar.stops[index];
+            let (hi, _) = colorbar.stops[index + 1];
+            let fraction = (lo - colorbar.domain[0]) / (colorbar.domain[1] - colorbar.domain[0]);
+            let next = (hi - colorbar.domain[0]) / (colorbar.domain[1] - colorbar.domain[0]);
+            let (rx, ry, rw, rh) = if colorbar.horizontal {
+                (x + width * fraction, y, width * (next - fraction), height)
+            } else {
+                (
+                    x,
+                    y + height * (1.0 - next),
+                    width,
+                    height * (next - fraction),
+                )
+            };
+            out.push_str("<rect data-xy-slot=\"colorbar_band\" x=\"");
+            push_num(out, rx);
+            out.push_str("\" y=\"");
+            push_num(out, ry);
+            out.push_str("\" width=\"");
+            push_num(out, rw);
+            out.push_str("\" height=\"");
+            push_num(out, rh);
+            out.push_str("\" fill=\"");
+            out.push_str(&rgba_css(paint));
+            out.push_str("\"/>");
+        }
+        if !colorbar.title.is_empty() {
+            out.push_str("<text data-xy-slot=\"colorbar_title\" x=\"");
+            push_num(out, x);
+            out.push_str("\" y=\"");
+            push_num(
+                out,
+                if colorbar.horizontal {
+                    y + height + 14.0
+                } else {
+                    y - 6.0
+                },
+            );
+            out.push_str("\" fill=\"");
+            out.push_str(&rgba_css(colorbar.text_rgba));
+            out.push_str("\" font-size=\"11\">");
+            push_escaped_attribute(out, &colorbar.title);
+            out.push_str("</text>");
         }
         out.push_str("</g>");
     }
@@ -3821,6 +4169,7 @@ impl SceneDocument {
         push_svg_chrome_text(&mut out, self);
         self.append_svg_labels(&mut out);
         self.append_svg_legend(&mut out);
+        self.append_svg_colorbar(&mut out);
         out.push_str("</svg>");
         out
     }
@@ -4140,9 +4489,19 @@ impl SceneDocument {
         let label_capacity = self.labels.iter().fold(0usize, |total, label| {
             total.saturating_add(22).saturating_add(label.text.len())
         });
+        let colorbar_capacity = self.colorbar.as_ref().map_or(0, |value| {
+            value
+                .stops
+                .len()
+                .saturating_sub(1)
+                .saturating_mul(37)
+                .saturating_add(value.title.len())
+                .saturating_add(64)
+        });
         self.raster_mark_capacity
             .saturating_add(chrome_capacity)
             .saturating_add(legend_capacity)
+            .saturating_add(colorbar_capacity)
             .saturating_add(label_capacity)
     }
 
@@ -4278,6 +4637,51 @@ impl SceneDocument {
             out.extend_from_slice(&(entry.label.len() as u32).to_le_bytes());
             out.extend_from_slice(entry.label.as_bytes());
             row_y += 6.0;
+        }
+        Ok(())
+    }
+
+    fn append_raster_colorbar(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+        let Some(colorbar) = &self.colorbar else {
+            return Ok(());
+        };
+        let (x, y, width, height) = resolved_colorbar_bounds(self.layout, colorbar)?;
+        let span = colorbar.domain[1] - colorbar.domain[0];
+        for index in 0..colorbar.stops.len() - 1 {
+            let (lo, rgba) = colorbar.stops[index];
+            let (hi, _) = colorbar.stops[index + 1];
+            let a = (lo - colorbar.domain[0]) / span;
+            let b = (hi - colorbar.domain[0]) / span;
+            let (rx, ry, rw, rh) = if colorbar.horizontal {
+                (x + width * a, y, width * (b - a), height)
+            } else {
+                (x, y + height * (1.0 - b), width, height * (b - a))
+            };
+            out.push(1);
+            out.extend_from_slice(&4u32.to_le_bytes());
+            for (px, py) in [(rx, ry), (rx + rw, ry), (rx + rw, ry + rh), (rx, ry + rh)] {
+                push_raster_f32(out, px, scale)?;
+                push_raster_f32(out, py, scale)?;
+            }
+            out.extend_from_slice(&rgba);
+        }
+        if !colorbar.title.is_empty() {
+            out.push(6);
+            push_raster_f32(out, x, scale)?;
+            push_raster_f32(
+                out,
+                if colorbar.horizontal {
+                    y + height + 14.0
+                } else {
+                    y - 6.0
+                },
+                scale,
+            )?;
+            out.push(0);
+            push_raster_f32(out, 11.0, scale)?;
+            out.extend_from_slice(&colorbar.text_rgba);
+            out.extend_from_slice(&(colorbar.title.len() as u32).to_le_bytes());
+            out.extend_from_slice(colorbar.title.as_bytes());
         }
         Ok(())
     }
@@ -4525,6 +4929,7 @@ impl SceneDocument {
         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
         self.append_raster_labels(&mut out, scale)?;
         self.append_raster_legend(&mut out, scale)?;
+        self.append_raster_colorbar(&mut out, scale)?;
         if out.len() > reserved_capacity {
             return Err(SceneError::Limit);
         }
@@ -4722,9 +5127,11 @@ impl SceneDocument {
             .and_then(|value| value.checked_add(self.text.y_label.len()))
             .ok_or(SceneError::Limit)?;
         let legend_bytes = self.painter_legend_bytes()?;
+        let colorbar_bytes = self.painter_colorbar_bytes()?;
         let label_bytes = encode_scene_labels(&self.labels)?;
         required = required
             .checked_add(legend_bytes.len())
+            .and_then(|value| value.checked_add(colorbar_bytes.len()))
             .and_then(|value| value.checked_add(label_bytes.len()))
             .ok_or(SceneError::Limit)?;
         if required > max_bytes {
@@ -4832,7 +5239,8 @@ impl SceneDocument {
             out[offset..offset + 4].copy_from_slice(&(value as u32).to_le_bytes());
         }
         out[280..284].copy_from_slice(&(legend_bytes.len() as u32).to_le_bytes());
-        out[284..288].copy_from_slice(&(label_bytes.len() as u32).to_le_bytes());
+        out[284..288].copy_from_slice(&(colorbar_bytes.len() as u32).to_le_bytes());
+        out[288..292].copy_from_slice(&(label_bytes.len() as u32).to_le_bytes());
         out.resize(string_offset, 0);
         out.extend_from_slice(self.text.title.as_bytes());
         out.extend_from_slice(self.text.x_label.as_bytes());
@@ -4849,6 +5257,7 @@ impl SceneDocument {
             out.extend_from_slice(label.as_bytes());
         }
         out.extend_from_slice(&legend_bytes);
+        out.extend_from_slice(&colorbar_bytes);
         out.extend_from_slice(&label_bytes);
         debug_assert_eq!(out.len(), required);
         Ok(out)
@@ -5484,7 +5893,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 12);
+        assert_eq!(SCENE_VERSION, 13);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -7131,5 +7540,24 @@ mod tests {
         );
         assert_eq!(scene_support_reason(2, 0), Err(SceneError::Version));
         assert_eq!(scene_support_reason(1, 1 << 63), Err(SceneError::Version));
+    }
+
+    #[test]
+    fn scene_v13_colorbar_is_literal_bounded_and_rejects_unsorted_stops() {
+        let colorbar = SceneColorbar {
+            horizontal: false,
+            banded: true,
+            minor_ticks: true,
+            domain: [0.0, 1.0],
+            stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+            major_ticks: Some(vec![0.0, 0.5, 1.0]),
+            title: "Intensity".to_owned(),
+            text_rgba: [32, 32, 32, 255],
+        };
+        let encoded = colorbar.encode().unwrap();
+        assert_eq!(SceneColorbar::from_input(&encoded), Ok(Some(colorbar)));
+        let mut malformed = encoded;
+        malformed[68..76].copy_from_slice(&(-1.0f64).to_le_bytes());
+        assert!(SceneColorbar::from_input(&malformed).is_err());
     }
 }
