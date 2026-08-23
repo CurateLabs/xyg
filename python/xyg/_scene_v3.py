@@ -69,7 +69,7 @@ def _colorbar_input(figure: Any) -> bytes:
         and 2 <= len(stops) <= 16
     ):
         raise UnsupportedSceneV3(
-            "Scene v13 colorbars require a two-value domain and 2–16 literal stops"
+            "Scene v13 colorbars require a two-value domain and 2-16 literal stops"
         )
     try:
         lo, hi = (float(domain[0]), float(domain[1]))
