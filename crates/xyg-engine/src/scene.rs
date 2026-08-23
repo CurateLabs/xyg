@@ -8,11 +8,13 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 12;
+pub const SCENE_VERSION: u32 = 13;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
 pub const MAX_SCENE_TEXT_BYTES: usize = 4_096;
+/// Cap on total authored tick-label UTF-8 bytes across both axes (Scene v13).
+pub const MAX_SCENE_TICK_LABEL_BYTES: usize = 16_384;
 pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
 pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
@@ -55,15 +57,14 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only"),
-        (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
-        (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
-        (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
-        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v12 does not yet encode colorbars"),
-        (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v12 supports one primary static legend only"),
-        (SCENE_FEATURE_AUTHORED_TICK_LABELS, "XYG_SCENE_UNSUPPORTED_TICK_LABELS: Scene v12 does not yet encode authored tick-label strings"),
-        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v12 annotations do not yet encode text labels"),
-        (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v12 does not yet encode callouts or arrows"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v13 supports Cartesian coordinates only"),
+        (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v13 does not encode custom font resources"),
+        (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v13 does not encode browser-only CSS or class behavior"),
+        (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v13 supports solid literal paints only"),
+        (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: Scene v13 does not yet encode colorbars"),
+        (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v13 supports one primary static legend only"),
+        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v13 annotations do not yet encode text labels"),
+        (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v13 does not yet encode callouts or arrows"),
     ];
     Ok(reasons
         .into_iter()
@@ -587,6 +588,10 @@ pub struct SceneChromeStyle {
     pub x_minor_ticks: Vec<f64>,
     pub y_major_ticks: Option<Vec<f64>>,
     pub y_minor_ticks: Vec<f64>,
+    /// Author-supplied major tick-label strings aligned to `x_major_ticks`
+    /// (Scene v13, §116). `Some` requires `x_major_ticks = Some` of equal length.
+    pub x_tick_labels: Option<Vec<String>>,
+    pub y_tick_labels: Option<Vec<String>>,
 }
 
 impl SceneChromeStyle {
@@ -602,6 +607,8 @@ impl SceneChromeStyle {
             x_minor_ticks: Vec::new(),
             y_major_ticks: None,
             y_minor_ticks: Vec::new(),
+            x_tick_labels: None,
+            y_tick_labels: None,
         }
     }
 
@@ -624,15 +631,42 @@ impl SceneChromeStyle {
                 return Err(SceneError::Limit);
             }
         }
+        // Authored tick labels (Scene v13, §116): each label set must align to
+        // that axis's authored major ticks, carry no interior NUL, and the total
+        // authored bytes across both axes must stay within the bounded cap.
+        let mut tick_label_bytes = 0usize;
+        for (labels, major) in [
+            (&self.x_tick_labels, &self.x_major_ticks),
+            (&self.y_tick_labels, &self.y_major_ticks),
+        ] {
+            if let Some(labels) = labels {
+                match major {
+                    Some(m) if m.len() == labels.len() => {}
+                    _ => return Err(SceneError::Length),
+                }
+                for label in labels {
+                    if label.bytes().any(|b| b == 0) {
+                        return Err(SceneError::Length);
+                    }
+                    tick_label_bytes = tick_label_bytes.saturating_add(label.len());
+                }
+            }
+        }
+        if tick_label_bytes > MAX_SCENE_TICK_LABEL_BYTES {
+            return Err(SceneError::Limit);
+        }
         Ok(self)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_style_input(
         bytes: &[u8],
         x_major_ticks: Option<Vec<f64>>,
         x_minor_ticks: Vec<f64>,
         y_major_ticks: Option<Vec<f64>>,
         y_minor_ticks: Vec<f64>,
+        x_tick_labels: Option<Vec<String>>,
+        y_tick_labels: Option<Vec<String>>,
     ) -> Result<Self, SceneError> {
         if bytes.len() != SCENE_CHROME_STYLE_INPUT_BYTES || bytes[12..16] != [0; 4] {
             return Err(SceneError::Length);
@@ -649,6 +683,8 @@ impl SceneChromeStyle {
             x_minor_ticks,
             y_major_ticks,
             y_minor_ticks,
+            x_tick_labels,
+            y_tick_labels,
         }
         .validated()
     }
@@ -726,6 +762,9 @@ fn read_axis_chrome_style(bytes: &[u8], offset: usize) -> Result<SceneAxisChrome
 pub struct AxisTicks {
     pub ticks: Vec<f64>,
     pub labeled: Vec<f64>,
+    /// Author-supplied label per `labeled` position (always the same length as
+    /// `labeled`); `None` means "format the numeric value" (Scene v13, §116).
+    pub labeled_text: Vec<Option<String>>,
     pub step: f64,
 }
 
@@ -887,6 +926,7 @@ impl AxisScale {
                 }
                 Ok(AxisTicks {
                     labeled: ticks.clone(),
+                    labeled_text: vec![None; ticks.len()],
                     ticks,
                     step: self.value(coordinates.step).abs(),
                 })
@@ -900,6 +940,7 @@ impl AxisScale {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn resolved_axis_ticks(
     scale: AxisScale,
     length: f64,
@@ -908,16 +949,31 @@ fn resolved_axis_ticks(
     pixel_max: f64,
     authored_major: Option<&[f64]>,
     authored_minor: &[f64],
+    authored_labels: Option<&[String]>,
 ) -> Result<AxisTicks, SceneError> {
     let automatic = scale.ticks(length, is_x)?;
-    let mut labeled = authored_major
-        .map(ToOwned::to_owned)
-        .unwrap_or_else(|| automatic.labeled.clone());
+    // Pair each labeled position with its optional authored string so an
+    // out-of-plot drop removes the position and its label in lockstep (§116).
+    let mut pairs: Vec<(f64, Option<String>)> = match authored_major {
+        Some(major) => major
+            .iter()
+            .enumerate()
+            .map(|(i, value)| (*value, authored_labels.map(|labels| labels[i].clone())))
+            .collect(),
+        None => automatic
+            .labeled
+            .iter()
+            .map(|value| (*value, None))
+            .collect(),
+    };
     let in_plot = |value: &f64| {
         let pixel = scale.pixel(*value);
         pixel.is_finite() && pixel >= pixel_min && pixel <= pixel_max
     };
-    labeled.retain(in_plot);
+    pairs.retain(|(value, _)| in_plot(value));
+    let labeled: Vec<f64> = pairs.iter().map(|(value, _)| *value).collect();
+    let labeled_text: Vec<Option<String>> =
+        pairs.into_iter().map(|(_, label)| label).collect();
     let mut ticks = labeled.clone();
     let minor = if authored_minor.is_empty() && authored_major.is_none() {
         automatic
@@ -941,6 +997,7 @@ fn resolved_axis_ticks(
     Ok(AxisTicks {
         ticks,
         labeled,
+        labeled_text,
         step,
     })
 }
@@ -954,6 +1011,7 @@ pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneE
         return Ok(AxisTicks {
             ticks: vec![a],
             labeled: vec![a],
+            labeled_text: vec![None],
             step: 1.0,
         });
     }
@@ -976,6 +1034,7 @@ pub fn linear_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneE
     }
     Ok(AxisTicks {
         labeled: ticks.clone(),
+        labeled_text: vec![None; ticks.len()],
         ticks,
         step,
     })
@@ -1022,6 +1081,7 @@ pub fn log_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneErro
     }
     Ok(AxisTicks {
         ticks,
+        labeled_text: vec![None; labeled.len()],
         labeled,
         step: 1.0,
     })
@@ -1049,6 +1109,7 @@ pub fn category_ticks(
         return Ok(AxisTicks {
             ticks: Vec::new(),
             labeled: Vec::new(),
+            labeled_text: Vec::new(),
             step: 1.0,
         });
     }
@@ -1062,6 +1123,7 @@ pub fn category_ticks(
     }
     Ok(AxisTicks {
         labeled: ticks.clone(),
+        labeled_text: vec![None; ticks.len()],
         ticks,
         step: step as f64,
     })
@@ -1097,6 +1159,7 @@ pub fn angular_ticks(
         return Ok(AxisTicks {
             ticks: vec![a],
             labeled: vec![a],
+            labeled_text: vec![None],
             step: 1.0,
         });
     }
@@ -1127,6 +1190,7 @@ pub fn angular_ticks(
     }
     Ok(AxisTicks {
         labeled: ticks.clone(),
+        labeled_text: vec![None; ticks.len()],
         ticks,
         step,
     })
@@ -1234,6 +1298,7 @@ fn calendar_ticks(lo: f64, hi: f64, rough: f64) -> AxisTicks {
     }
     AxisTicks {
         labeled: ticks.clone(),
+        labeled_text: vec![None; ticks.len()],
         ticks,
         step: f64::from(step_m) * 30.0 * MS_D,
     }
@@ -1265,6 +1330,7 @@ pub fn time_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneErr
     }
     Ok(AxisTicks {
         labeled: ticks.clone(),
+        labeled_text: vec![None; ticks.len()],
         ticks,
         step,
     })
@@ -1430,9 +1496,12 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     let trailer = bytes
         .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
         .ok_or(SceneError::Length)?;
-    if trailer[12..16] != [0; 4] || trailer[236..240] != [0; 4] {
+    if trailer[12..16] != [0; 4] {
         return Err(SceneError::Length);
     }
+    // Scene v13 repurposes the reserved trailer word at [236..240] as the byte
+    // length of an optional appended XYTL authored-tick-label block (§116).
+    let tick_label_block_len = u32::from_le_bytes(trailer[236..240].try_into().unwrap()) as usize;
     let label_font_size = f64::from_le_bytes(trailer[16..24].try_into().unwrap());
     let read_axis = |offset: usize| -> Result<SceneAxisChromeStyle, SceneError> {
         if trailer[offset + 5..offset + 8] != [0; 3] {
@@ -1509,7 +1578,11 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     let total = label_start
         .checked_add(label_len)
         .ok_or(SceneError::Limit)?;
-    if bytes.len() < total {
+    // The XYTL block (Scene v13) is appended after the XYLB labels block.
+    let grand_total = total
+        .checked_add(tick_label_block_len)
+        .ok_or(SceneError::Limit)?;
+    if bytes.len() < grand_total {
         return Err(SceneError::Length);
     }
     let title_bytes = &bytes[text_start..text_start + title_len];
@@ -1544,6 +1617,8 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     let x_minor_ticks = read_values(counts[1])?.unwrap_or_default();
     let y_major_ticks = read_values(counts[2])?;
     let y_minor_ticks = read_values(counts[3])?.unwrap_or_default();
+    let (x_tick_labels, y_tick_labels) =
+        read_tick_label_block(&bytes[total..grand_total], tick_label_block_len)?;
     let chrome = SceneChromeStyle {
         chart_background_rgba: trailer[0..4].try_into().unwrap(),
         plot_background_rgba: trailer[4..8].try_into().unwrap(),
@@ -1555,11 +1630,76 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
         x_minor_ticks,
         y_major_ticks,
         y_minor_ticks,
+        x_tick_labels,
+        y_tick_labels,
     }
     .validated()?;
     let legend = SceneLegend::from_canonical(&bytes[content_end..label_start], usize::MAX)?;
     let labels = decode_scene_labels(&bytes[label_start..total])?;
-    Ok((chrome, text, legend, labels, total))
+    Ok((chrome, text, legend, labels, grand_total))
+}
+
+type TickLabelBlock = (Option<Vec<String>>, Option<Vec<String>>);
+
+/// Parse the canonical Scene v13 `XYTL` authored-tick-label block (§116).
+///
+/// `block` is exactly the bytes at `[total .. total + block_len]`. When
+/// `block_len == 0` both axes have no authored labels. The parse fails closed
+/// on any malformed magic/version/count/length, and requires the block to be
+/// consumed exactly (no trailing or short bytes).
+fn read_tick_label_block(block: &[u8], block_len: usize) -> Result<TickLabelBlock, SceneError> {
+    if block_len == 0 {
+        return Ok((None, None));
+    }
+    if block.len() != block_len {
+        return Err(SceneError::Length);
+    }
+    if block_len < 16 || &block[0..4] != b"XYTL" {
+        return Err(SceneError::Length);
+    }
+    if u32::from_le_bytes(block[4..8].try_into().unwrap()) != 1 {
+        return Err(SceneError::Version);
+    }
+    let x_count = u32::from_le_bytes(block[8..12].try_into().unwrap());
+    let y_count = u32::from_le_bytes(block[12..16].try_into().unwrap());
+    let mut cursor = 16usize;
+    let mut total_label_bytes = 0usize;
+    let mut read_labels = |count: u32| -> Result<Option<Vec<String>>, SceneError> {
+        if count == u32::MAX {
+            return Ok(None);
+        }
+        let count = count as usize;
+        if count > MAX_AXIS_TICKS {
+            return Err(SceneError::Limit);
+        }
+        let mut labels = Vec::with_capacity(count);
+        for _ in 0..count {
+            let len_bytes = block.get(cursor..cursor + 4).ok_or(SceneError::Length)?;
+            let len = u32::from_le_bytes(len_bytes.try_into().unwrap()) as usize;
+            cursor += 4;
+            if len > MAX_SCENE_TEXT_BYTES {
+                return Err(SceneError::Limit);
+            }
+            total_label_bytes = total_label_bytes.saturating_add(len);
+            if total_label_bytes > MAX_SCENE_TICK_LABEL_BYTES {
+                return Err(SceneError::Limit);
+            }
+            let text_bytes = block.get(cursor..cursor + len).ok_or(SceneError::Length)?;
+            if text_bytes.contains(&0) {
+                return Err(SceneError::Length);
+            }
+            let label = String::from_utf8(text_bytes.to_vec()).map_err(|_| SceneError::Length)?;
+            labels.push(label);
+            cursor += len;
+        }
+        Ok(Some(labels))
+    };
+    let x_tick_labels = read_labels(x_count)?;
+    let y_tick_labels = read_labels(y_count)?;
+    if cursor != block_len {
+        return Err(SceneError::Length);
+    }
+    Ok((x_tick_labels, y_tick_labels))
 }
 
 fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
@@ -1634,9 +1774,10 @@ fn write_chrome_trailer(
         );
     }
     let legend_bytes = legend.map(SceneLegend::encode).unwrap_or_default();
+    let tick_label_block = build_tick_label_block(chrome);
     out.extend_from_slice(&(legend_bytes.len() as u32).to_le_bytes());
     out.extend_from_slice(&(label_bytes.len() as u32).to_le_bytes());
-    out.extend_from_slice(&[0; 4]);
+    out.extend_from_slice(&(tick_label_block.len() as u32).to_le_bytes());
     out.extend_from_slice(text.title.as_bytes());
     out.extend_from_slice(text.x_label.as_bytes());
     out.extend_from_slice(text.y_label.as_bytes());
@@ -1652,6 +1793,38 @@ fn write_chrome_trailer(
     }
     out.extend_from_slice(&legend_bytes);
     out.extend_from_slice(label_bytes);
+    out.extend_from_slice(&tick_label_block);
+}
+
+/// Build the canonical Scene v13 `XYTL` authored-tick-label block (§116).
+///
+/// Empty when both axes' labels are `None`, so output stays byte-identical to a
+/// v12 trailer (aside from the header version).
+fn build_tick_label_block(chrome: &SceneChromeStyle) -> Vec<u8> {
+    if chrome.x_tick_labels.is_none() && chrome.y_tick_labels.is_none() {
+        return Vec::new();
+    }
+    let mut block = Vec::new();
+    block.extend_from_slice(b"XYTL");
+    block.extend_from_slice(&1u32.to_le_bytes());
+    let count = |labels: &Option<Vec<String>>| {
+        labels
+            .as_ref()
+            .map(|l| l.len() as u32)
+            .unwrap_or(u32::MAX)
+    };
+    block.extend_from_slice(&count(&chrome.x_tick_labels).to_le_bytes());
+    block.extend_from_slice(&count(&chrome.y_tick_labels).to_le_bytes());
+    for labels in [&chrome.x_tick_labels, &chrome.y_tick_labels]
+        .into_iter()
+        .flatten()
+    {
+        for label in labels {
+            block.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            block.extend_from_slice(label.as_bytes());
+        }
+    }
+    block
 }
 
 fn resolved_legend_bounds(
@@ -2443,6 +2616,7 @@ impl<'a> SceneBatch<'a> {
             layout.right,
             chrome.x_major_ticks.as_deref(),
             &chrome.x_minor_ticks,
+            None,
         )?;
         resolved_axis_ticks(
             y_scale,
@@ -2452,6 +2626,7 @@ impl<'a> SceneBatch<'a> {
             layout.bottom,
             chrome.y_major_ticks.as_deref(),
             &chrome.y_minor_ticks,
+            None,
         )?;
         Ok(Self {
             layout,
@@ -3234,25 +3409,28 @@ impl SceneDocument {
     }
 
     fn resolved_axis_ticks(&self, is_x: bool) -> Result<AxisTicks, SceneError> {
-        let (scale, length, pixel_min, pixel_max, authored_major, authored_minor) = if is_x {
-            (
-                self.x_scale,
-                self.layout.right - self.layout.left,
-                self.layout.left,
-                self.layout.right,
-                self.chrome.x_major_ticks.as_deref(),
-                self.chrome.x_minor_ticks.as_slice(),
-            )
-        } else {
-            (
-                self.y_scale,
-                self.layout.bottom - self.layout.top,
-                self.layout.top,
-                self.layout.bottom,
-                self.chrome.y_major_ticks.as_deref(),
-                self.chrome.y_minor_ticks.as_slice(),
-            )
-        };
+        let (scale, length, pixel_min, pixel_max, authored_major, authored_minor, authored_labels) =
+            if is_x {
+                (
+                    self.x_scale,
+                    self.layout.right - self.layout.left,
+                    self.layout.left,
+                    self.layout.right,
+                    self.chrome.x_major_ticks.as_deref(),
+                    self.chrome.x_minor_ticks.as_slice(),
+                    self.chrome.x_tick_labels.as_deref(),
+                )
+            } else {
+                (
+                    self.y_scale,
+                    self.layout.bottom - self.layout.top,
+                    self.layout.top,
+                    self.layout.bottom,
+                    self.chrome.y_major_ticks.as_deref(),
+                    self.chrome.y_minor_ticks.as_slice(),
+                    self.chrome.y_tick_labels.as_deref(),
+                )
+            };
         resolved_axis_ticks(
             scale,
             length,
@@ -3261,6 +3439,7 @@ impl SceneDocument {
             pixel_max,
             authored_major,
             authored_minor,
+            authored_labels,
         )
     }
 
@@ -3492,11 +3671,13 @@ impl SceneDocument {
         let x_ticks = self.resolved_axis_ticks(true).unwrap_or(AxisTicks {
             ticks: Vec::new(),
             labeled: Vec::new(),
+            labeled_text: Vec::new(),
             step: 1.0,
         });
         let y_ticks = self.resolved_axis_ticks(false).unwrap_or(AxisTicks {
             ticks: Vec::new(),
             labeled: Vec::new(),
+            labeled_text: Vec::new(),
             step: 1.0,
         });
         if self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid() {
@@ -3716,7 +3897,7 @@ impl SceneDocument {
                         }
                     }
                     if style.tick_label_sides & (1 << side_code) != 0 && style.label_rgba[3] != 0 {
-                        for value in &ticks.labeled {
+                        for (i, value) in ticks.labeled.iter().enumerate() {
                             let p = scale.pixel(*value);
                             let edge = if is_x {
                                 if side_code == 0 {
@@ -3746,7 +3927,12 @@ impl SceneDocument {
                                 "start"
                             });
                             out.push_str("\">");
-                            out.push_str(&format_tick(*value, ticks.step, scale.kind));
+                            let label = ticks
+                                .labeled_text
+                                .get(i)
+                                .and_then(|o| o.clone())
+                                .unwrap_or_else(|| format_tick(*value, ticks.step, scale.kind));
+                            push_escaped_attribute(&mut out, &label);
                             out.push_str("</text>");
                         }
                     }
@@ -4003,7 +4189,7 @@ impl SceneDocument {
                 if style.tick_label_sides & (1 << side_code) == 0 || style.label_rgba[3] == 0 {
                     continue;
                 }
-                for value in &ticks.labeled {
+                for (i, value) in ticks.labeled.iter().enumerate() {
                     let p = axis_scale.pixel(*value);
                     let (x, y, anchor) = if is_x {
                         (
@@ -4020,7 +4206,11 @@ impl SceneDocument {
                     } else {
                         (self.layout.right + 8.0, p + 4.0, 0)
                     };
-                    let text = format_tick(*value, ticks.step, axis_scale.kind);
+                    let text = ticks
+                        .labeled_text
+                        .get(i)
+                        .and_then(|o| o.clone())
+                        .unwrap_or_else(|| format_tick(*value, ticks.step, axis_scale.kind));
                     out.push(6);
                     push_raster_f32(out, x, scale)?;
                     push_raster_f32(out, y, scale)?;
@@ -4564,13 +4754,14 @@ impl SceneDocument {
                 .iter()
                 .copied()
                 .map(|value| {
-                    let major = axis.labeled.contains(&value);
-                    let label = if major {
-                        format_tick(value, axis.step, scale.kind)
-                    } else {
-                        String::new()
+                    let major = axis.labeled.iter().position(|v| *v == value);
+                    let label = match major {
+                        Some(idx) => axis.labeled_text[idx]
+                            .clone()
+                            .unwrap_or_else(|| format_tick(value, axis.step, scale.kind)),
+                        None => String::new(),
                     };
-                    Ok((f32_value(scale.pixel(value))?, label, major))
+                    Ok((f32_value(scale.pixel(value))?, label, major.is_some()))
                 })
                 .collect::<Result<Vec<_>, SceneError>>()
         };
@@ -5484,7 +5675,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 12);
+        assert_eq!(SCENE_VERSION, 13);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -6382,6 +6573,7 @@ mod tests {
             AxisTicks {
                 ticks: vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
                 labeled: vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+                labeled_text: vec![None; 6],
                 step: 1.0,
             }
         );
@@ -7127,9 +7319,100 @@ mod tests {
                 1,
                 SCENE_FEATURE_AUTHORED_TICK_LABELS | SCENE_FEATURE_CUSTOM_FONT,
             ),
-            Ok("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources")
+            Ok("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v13 does not encode custom font resources")
         );
         assert_eq!(scene_support_reason(2, 0), Err(SceneError::Version));
         assert_eq!(scene_support_reason(1, 1 << 63), Err(SceneError::Version));
+    }
+
+    #[test]
+    fn scene_v13_authored_tick_labels_render_and_round_trip() {
+        let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            4.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let mut chrome = SceneChromeStyle {
+            x_major_ticks: Some(vec![0.0, 2.0, 4.0]),
+            x_tick_labels: Some(vec!["zero".into(), "two".into(), "four".into()]),
+            ..SceneChromeStyle::default()
+        };
+        // Keep the numeric y labels out of the SVG so the >0</>2</>4< assertions
+        // below only observe the x axis's authored strings.
+        chrome.y_axis.tick_label_sides = 0;
+        let encoded = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            chrome.clone(),
+            SceneChromeText::default(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap()
+        .encode();
+
+        // (a) The decoder preserves authored labels byte-for-byte, and the XYTL
+        // block is consumed exactly (returned total equals the buffer length).
+        validate_scene_batch(&encoded).unwrap();
+        let (decoded_chrome, _text, _legend, _labels, total) =
+            read_chrome_trailer(&encoded, SCENE_BATCH_HEADER_BYTES).unwrap();
+        assert_eq!(total, encoded.len());
+        assert_eq!(decoded_chrome.x_major_ticks, chrome.x_major_ticks);
+        assert_eq!(decoded_chrome.x_tick_labels, chrome.x_tick_labels);
+        assert_eq!(decoded_chrome.y_tick_labels, None);
+
+        // (b) SVG renders the authored strings, not the numeric format.
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(svg.contains(">zero<"));
+        assert!(svg.contains(">two<"));
+        assert!(svg.contains(">four<"));
+        assert!(!svg.contains(">0<"));
+        assert!(!svg.contains(">2<"));
+        assert!(!svg.contains(">4<"));
+
+        // (c) Authored labels without authored majors are rejected.
+        let no_major = SceneChromeStyle {
+            x_tick_labels: Some(vec!["a".into()]),
+            ..SceneChromeStyle::default()
+        };
+        assert_eq!(no_major.validated().err(), Some(SceneError::Length));
+
+        // (d) A label/major length mismatch is rejected.
+        let mismatch = SceneChromeStyle {
+            x_major_ticks: Some(vec![0.0, 1.0]),
+            x_tick_labels: Some(vec!["only-one".into()]),
+            ..SceneChromeStyle::default()
+        };
+        assert_eq!(mismatch.validated().err(), Some(SceneError::Length));
     }
 }
