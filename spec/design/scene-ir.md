@@ -426,8 +426,9 @@ declarations fail closed.
 
 Scene v13 adds one optional `XYCB` colorbar decoration. Its only authorable
 paint is a literal, ordered table of 2–16 RGBA stops spanning a finite ordered
-domain; it may be rendered as a continuous ramp or bands, with a bounded UTF-8
-title and the literal `right` or `bottom` side. This deliberately does **not**
+domain; it is always rendered as literal bands, with a bounded UTF-8 title and
+the literal `right` or `bottom` side. Continuous ramps/gradients are rejected.
+This deliberately does **not**
 encode colorbar major ticks, tick labels, or minor ticks: zero is required for
 the tick count and any minor-tick flag is invalid. Rust rejects named colormaps,
 arbitrary CSS/fonts, axes placement, extensions, all tick customisation,

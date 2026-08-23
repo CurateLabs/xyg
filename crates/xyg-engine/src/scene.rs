@@ -466,7 +466,6 @@ pub const MAX_SCENE_COLORBAR_INPUT_BYTES: usize = SCENE_COLORBAR_HEADER_BYTES
 #[derive(Clone, Debug, PartialEq)]
 pub struct SceneColorbar {
     pub horizontal: bool,
-    pub banded: bool,
     pub domain: [f64; 2],
     pub stops: Vec<(f64, [u8; 4])>,
     pub major_ticks: Option<Vec<f64>>,
@@ -488,7 +487,7 @@ impl SceneColorbar {
             return Err(SceneError::Length);
         }
         let flags = bytes[8];
-        if flags & !0x03 != 0 {
+        if flags & !0x03 != 0 || flags & 2 == 0 {
             return Err(SceneError::Length);
         }
         let stop_count = u32::from_le_bytes(bytes[12..16].try_into().unwrap()) as usize;
@@ -541,7 +540,6 @@ impl SceneColorbar {
         }
         Ok(Some(Self {
             horizontal: flags & 1 != 0,
-            banded: flags & 2 != 0,
             domain,
             stops,
             major_ticks: None,
@@ -559,7 +557,7 @@ impl SceneColorbar {
         );
         out.extend_from_slice(b"XYCB");
         out.extend_from_slice(&1u32.to_le_bytes());
-        out.push(u8::from(self.horizontal) | (u8::from(self.banded) << 1));
+        out.push(u8::from(self.horizontal) | 2);
         out.extend_from_slice(&[0; 3]);
         out.extend_from_slice(&(self.stops.len() as u32).to_le_bytes());
         out.extend_from_slice(
@@ -7528,7 +7526,6 @@ mod tests {
     fn scene_v13_colorbar_is_literal_bounded_and_rejects_unsorted_stops() {
         let colorbar = SceneColorbar {
             horizontal: false,
-            banded: true,
             domain: [0.0, 1.0],
             stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
             major_ticks: None,
@@ -7546,5 +7543,8 @@ mod tests {
         let mut unsupported_ticks = colorbar.encode().unwrap();
         unsupported_ticks[8] |= 4;
         assert!(SceneColorbar::from_input(&unsupported_ticks).is_err());
+        let mut unsupported_continuous = colorbar.encode().unwrap();
+        unsupported_continuous[8] &= !2;
+        assert!(SceneColorbar::from_input(&unsupported_continuous).is_err());
     }
 }

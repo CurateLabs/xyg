@@ -52,7 +52,7 @@ def _colorbar_input(figure: Any) -> bytes:
     options = getattr(figure, "colorbar_options", None)
     if not options:
         return b""
-    if not isinstance(options, dict) or set(options) - {"domain", "stops", "side", "banded", "title", "text_rgba"}:
+    if not isinstance(options, dict) or set(options) - {"domain", "stops", "side", "title", "text_rgba"}:
         raise UnsupportedSceneV3("Scene v13 colorbars require literal bounded RGBA stops")
     domain = options.get("domain")
     stops = options.get("stops")
@@ -78,7 +78,7 @@ def _colorbar_input(figure: Any) -> bytes:
     out = bytearray(56 + len(parsed) * 12 + len(title_b))
     out[:4] = b"XYCB"
     struct.pack_into("<I", out, 4, 1)
-    out[8] = int(horizontal) | (int(bool(options.get("banded", False))) << 1)
+    out[8] = int(horizontal) | 2
     struct.pack_into("<III2d", out, 12, len(parsed), 0, len(title_b), lo, hi)
     out[40:44] = text_rgba
     for index, (value, rgba) in enumerate(parsed):

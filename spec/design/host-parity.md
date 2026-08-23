@@ -96,7 +96,7 @@ compatibility renderer until Rust owns every remaining layout/gutter and Scene
 record. Scene v13 now covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a
-  bounded literal RGBA colorbar (right/bottom continuous or banded, without
+  bounded literal RGBA banded colorbar (right/bottom, without
   colorbar tick or minor-tick chrome), and
   rule, band, and unlabeled marker annotations. Extra legends, named/advanced colorbars,
   annotation labels/callouts/arrows and other deferred annotation forms, custom
