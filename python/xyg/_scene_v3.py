@@ -52,19 +52,36 @@ def _colorbar_input(figure: Any) -> bytes:
     options = getattr(figure, "colorbar_options", None)
     if not options:
         return b""
-    if not isinstance(options, dict) or set(options) - {"domain", "stops", "side", "title", "text_rgba"}:
+    if not isinstance(options, dict) or set(options) - {
+        "domain",
+        "stops",
+        "side",
+        "title",
+        "text_rgba",
+    }:
         raise UnsupportedSceneV3("Scene v13 colorbars require literal bounded RGBA stops")
     domain = options.get("domain")
     stops = options.get("stops")
-    if not (isinstance(domain, (list, tuple)) and len(domain) == 2 and isinstance(stops, (list, tuple)) and 2 <= len(stops) <= 16):
-        raise UnsupportedSceneV3("Scene v13 colorbars require a two-value domain and 2–16 literal stops")
+    if not (
+        isinstance(domain, (list, tuple))
+        and len(domain) == 2
+        and isinstance(stops, (list, tuple))
+        and 2 <= len(stops) <= 16
+    ):
+        raise UnsupportedSceneV3(
+            "Scene v13 colorbars require a two-value domain and 2–16 literal stops"
+        )
     try:
         lo, hi = (float(domain[0]), float(domain[1]))
         parsed = [(float(item[0]), bytes(item[1])) for item in stops]
     except (TypeError, ValueError, IndexError):
-        raise UnsupportedSceneV3("Scene v13 colorbar stops are (finite value, RGBA[4]) pairs") from None
+        raise UnsupportedSceneV3(
+            "Scene v13 colorbar stops are (finite value, RGBA[4]) pairs"
+        ) from None
     if not np.isfinite([lo, hi]).all() or lo >= hi or any(len(rgba) != 4 for _, rgba in parsed):
-        raise UnsupportedSceneV3("Scene v13 colorbar values must be finite and RGBA literals exactly four bytes")
+        raise UnsupportedSceneV3(
+            "Scene v13 colorbar values must be finite and RGBA literals exactly four bytes"
+        )
     horizontal = options.get("side", "right") == "bottom"
     if options.get("side", "right") not in {"right", "bottom"}:
         raise UnsupportedSceneV3("Scene v13 colorbars support only right or bottom placement")

@@ -1989,7 +1989,9 @@ def scene_batch_encode(
     if len(legend_array) > MAX_SCENE_LEGEND_INPUT_BYTES:
         raise ValueError(f"scene legend input is limited to {MAX_SCENE_LEGEND_INPUT_BYTES:,} bytes")
     if len(colorbar_array) > MAX_SCENE_COLORBAR_INPUT_BYTES:
-        raise ValueError(f"scene colorbar input is limited to {MAX_SCENE_COLORBAR_INPUT_BYTES:,} bytes")
+        raise ValueError(
+            f"scene colorbar input is limited to {MAX_SCENE_COLORBAR_INPUT_BYTES:,} bytes"
+        )
     tick_arrays = (x_major, x_minor, y_major, y_minor)
     if any(value is not None and len(value) > 200 for value in tick_arrays):
         raise ValueError("scene axis tick lists are limited to 200 values")
