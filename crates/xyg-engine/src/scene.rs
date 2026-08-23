@@ -460,9 +460,9 @@ pub const MAX_SCENE_COLORBAR_INPUT_BYTES: usize = SCENE_COLORBAR_HEADER_BYTES
     + MAX_SCENE_COLORBAR_STOPS * SCENE_COLORBAR_STOP_BYTES
     + MAX_SCENE_COLORBAR_TEXT_BYTES;
 
-/// A bounded, host-neutral colour scale.  The author supplies only literal
-/// RGBA stops (or bands) and optional numeric major ticks; Rust resolves every
-/// placement, default, minor tick, and label before the Scene reaches a host.
+/// A bounded, host-neutral banded colour scale. The author supplies only
+/// literal RGBA stops, a bounded title, and a right/bottom side; the record
+/// has no tick, label, minor-tick, or continuous-gradient semantics.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SceneColorbar {
     pub horizontal: bool,
