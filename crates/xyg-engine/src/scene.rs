@@ -68,7 +68,6 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         // or outside the bounded Scene subset; valid XYCB is consumed by Rust.
         (SCENE_FEATURE_COLORBAR, "XYG_SCENE_UNSUPPORTED_COLORBAR: colorbar requires bounded literal RGBA Scene framing"),
         (SCENE_FEATURE_EXTRA_LEGEND, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND: Scene v12 supports one primary static legend only"),
-        (SCENE_FEATURE_LABELED_ANNOTATION, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL: Scene v12 annotations do not yet encode text labels"),
         (SCENE_FEATURE_CALLOUT_OR_ARROW, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW: Scene v12 does not yet encode callouts or arrows"),
     ];
     Ok(reasons

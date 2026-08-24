@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 11 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 15 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -448,6 +448,17 @@ uses the same strings in SVG, native raster, and painter output. Python and
 Node only forward byte-identical length-prefixed frames. Automatic ticks retain
 Rust formatting. Rotation, collision/ellipsis/wrapping policies, markup, custom
 fonts, and secondary/polar axis labels remain outside this slice.
+
+## Version 15 bounded plain Cartesian text annotations
+
+Scene v15 accepts `XYAT` v1 only as bounded host framing of Cartesian f64 data
+coordinates, literal RGBA, and nonempty NUL-free UTF-8 text. Rust validates,
+projects, clips, orders, and lowers the text into the canonical `XYLB` label
+decoration used by SVG, raster, and browser consumers; Python and Node never
+provide resolved pixels. At most 128 labels and 4,096 text bytes are accepted.
+Only the fixed built-in 12px anchor is supported. Attached rule/band/marker
+labels, callouts, arrows, boxes, offsets, collision, rotation, wrapping,
+markup, custom fonts, and CSS remain fail-closed.
 
 ## Version 11 identity metadata for primary Cartesian annotations
 
