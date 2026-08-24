@@ -1903,8 +1903,9 @@ def scene_batch_encode(
     y_tick_labels: list[str] | tuple[str, ...] | None = None,
     legend_input: bytes = b"",
     colorbar_input: bytes = b"",
+    authored_text_annotations: bytes = b"",
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v12 typed batch."""
+    """Encode the bounded backend-neutral Scene v15 typed batch."""
 
     def scene_uint(
         value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str
@@ -1962,6 +1963,9 @@ def scene_batch_encode(
     title_b = title.encode("utf-8")
     xlabel_b = x_label.encode("utf-8")
     ylabel_b = y_label.encode("utf-8")
+    if not isinstance(authored_text_annotations, bytes):
+        raise TypeError("authored_text_annotations must be bytes")
+    authored_text_array = np.frombuffer(authored_text_annotations, dtype=np.uint8)
     if any(len(value) > _MAX_SCENE_TEXT_BYTES for value in (title_b, xlabel_b, ylabel_b)):
         raise ValueError(
             f"scene title and axis labels are limited to {_MAX_SCENE_TEXT_BYTES:,} UTF-8 bytes each"
@@ -2035,6 +2039,7 @@ def scene_batch_encode(
         + len(colorbar_array)
         + len(x_tick_label_array)
         + len(y_tick_label_array)
+        + len(authored_text_array)
     )
     while True:
         out = ctypes.create_string_buffer(capacity)
@@ -2060,6 +2065,8 @@ def scene_batch_encode(
             len(x_tick_label_array),
             _ptr_u8(y_tick_label_array) if len(y_tick_label_array) else 0,
             len(y_tick_label_array),
+            _ptr_u8(authored_text_array) if len(authored_text_array) else 0,
+            len(authored_text_array),
             kind_array.ctypes.data if n else 0,
             ids.ctypes.data if n else 0,
             styles.ctypes.data if n else 0,

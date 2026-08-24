@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 93;
+pub const ABI_VERSION: u32 = 94;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -431,6 +431,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     x_tick_labels_len: usize,
     y_tick_labels: *const u8,
     y_tick_labels_len: usize,
+    authored_text_annotations: *const u8,
+    authored_text_annotations_len: usize,
     kinds: *const u8,
     stable_ids: *const u64,
     style_refs: *const u32,
@@ -479,6 +481,9 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || y_tick_labels_len > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AXIS_TICKS * 4 + 12
         || (x_tick_labels_len > 0 && x_tick_labels.is_null())
         || (y_tick_labels_len > 0 && y_tick_labels.is_null())
+        || authored_text_annotations_len
+            > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AUTHORED_TEXT_ANNOTATIONS * 24 + 12
+        || (authored_text_annotations_len > 0 && authored_text_annotations.is_null())
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
         || y_label_len > scene::MAX_SCENE_TEXT_BYTES
@@ -527,6 +532,11 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             std::slice::from_raw_parts(y_tick_labels, y_tick_labels_len)
         })
         .ok()?;
+        let authored_text_bytes = if authored_text_annotations_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(authored_text_annotations, authored_text_annotations_len)
+        };
         // Final canonical gutters belong to Rust, after it has validated the
         // exact strings that all consumers will paint.  No host font/layout
         // measurement participates in this decision.
@@ -686,6 +696,9 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         chrome.x_tick_labels = x_tick_label_values;
         chrome.y_tick_labels = y_tick_label_values;
         let chrome = chrome.validated().ok()?;
+        let labels =
+            scene::decode_authored_text_annotations(authored_text_bytes, x_scale, y_scale, layout)
+                .ok()?;
         scene::SceneBatch::new_with_decorations_colorbar(
             layout,
             x_axis_id,
@@ -696,6 +709,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             text,
             legend,
             colorbar,
+            labels,
             kinds,
             stable_ids,
             style_refs,
@@ -9572,6 +9586,8 @@ mod tests {
                 0,
                 std::ptr::null(),
                 0,
+                std::ptr::null(),
+                0,
                 kinds_ptr,
                 ids.as_ptr(),
                 styles.as_ptr(),
@@ -9675,6 +9691,8 @@ mod tests {
                     std::ptr::null(),
                     0,
                     1,
+                    std::ptr::null(),
+                    0,
                     std::ptr::null(),
                     0,
                     std::ptr::null(),

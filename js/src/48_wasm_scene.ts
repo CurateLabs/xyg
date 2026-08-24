@@ -254,7 +254,8 @@ export function hydrateWasmPainter(
     layer.dataset.xyChrome = "graph_labels"; layer.setAttribute("role", "list"); layer.setAttribute("aria-label", "Graph labels");
     for (const label of compiled.sceneLabels) {
       const item = document.createElement("span");
-      item.dataset.xySlot = "graph_label"; item.dataset.xyStableId = label.stableId.toString(); item.setAttribute("role", "listitem"); item.textContent = label.text;
+      const annotation = (label.stableId & 0xffff_ff00_0000_0000n) === 0x5859_0400_0000_0000n;
+      item.dataset.xySlot = annotation ? "annotation_label" : "graph_label"; item.dataset.xyStableId = label.stableId.toString(); item.setAttribute("role", annotation ? "note" : "listitem"); item.textContent = label.text;
       Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, whiteSpace:"nowrap"});
       layer.appendChild(item);
     }

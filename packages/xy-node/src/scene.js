@@ -205,7 +205,7 @@ export function sceneBatchEncode({
   title = "", xLabel = "", yLabel = "", chromeStyle = null,
   xMajorTicks = null, xMinorTicks = [], yMajorTicks = null, yMinorTicks = [],
   xTickLabels = null, yTickLabels = null,
-  legendInput = null, colorbarInput = null,
+  legendInput = null, colorbarInput = null, authoredTextAnnotations = null,
 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
@@ -263,9 +263,10 @@ export function sceneBatchEncode({
   const yTickLabelBytes = frameTickLabels(yTickLabels, "yTickLabels");
   const legend = legendInput == null ? new Uint8Array() : asUnsignedArray(legendInput, "legendInput", 255, Uint8Array);
   const colorbar = colorbarInput == null ? new Uint8Array() : asUnsignedArray(colorbarInput, "colorbarInput", 255, Uint8Array);
+  const authoredText = authoredTextAnnotations == null ? new Uint8Array() : asUnsignedArray(authoredTextAnnotations, "authoredTextAnnotations", 255, Uint8Array);
   if (colorbar.length > 4_600) throw new RangeError("scene colorbar input is limited to 4,600 bytes");
   if (tickArrays.some((value) => value != null && value.length > 200)) throw new RangeError("scene axis tick lists are limited to 200 values");
-  let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
+  let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + authoredText.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
@@ -277,6 +278,7 @@ export function sceneBatchEncode({
       f64Ptr(tickArrays[3]), BigInt(tickArrays[3]?.length ?? 0),
       xTickLabelBytes.length ? u8Ptr(xTickLabelBytes) : 0, BigInt(xTickLabelBytes.length),
       yTickLabelBytes.length ? u8Ptr(yTickLabelBytes) : 0, BigInt(yTickLabelBytes.length),
+      authoredText.length ? u8Ptr(authoredText) : 0, BigInt(authoredText.length),
       u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
       u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
       f64Ptr(diameters), u8Ptr(symbolCodes),
@@ -532,7 +534,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   ))) features |= 1n << 3n;
   if (colorbarUnsupported) features |= 1n << 4n;
   if ((figure.extraLegends ?? figure.extra_legends ?? []).length) features |= 1n << 5n;
-  if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
+  if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
   if ((figure.annotations ?? []).some((annotation) => ["callout", "arrow"].includes(annotation.kind))) features |= 1n << 8n;
   const reason = sceneSupportReason(features);
   if (reason) throw new RangeError(reason);
@@ -709,6 +711,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const annotationPrefix = 0x5859000000000000n;
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
     const kind = annotation.kind;
+    if (kind === "text") continue;
     if (!["rule", "band", "marker"].includes(kind)) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
     if (annotation.text != null && annotation.text !== "") throw new RangeError(sceneSupportReason(1n << 7n));
     if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError(sceneSupportReason(1n << 2n));
@@ -748,6 +751,21 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       append(0, annotationNumber(annotation, "x", undefined, `${kind} x`), annotationNumber(annotation, "y", undefined, `${kind} y`), 0, 0, size, annotationSymbolCode(annotation.symbol ?? "circle"));
     }
   }
+  const textAnnotations = (figure.annotations ?? []).filter((annotation) => annotation.kind === "text");
+  const textEncoder = new TextEncoder();
+  const authoredText = (() => {
+    if (!textAnnotations.length) return new Uint8Array();
+    if (textAnnotations.length > 128) throw new RangeError("Scene v15 text annotations are limited to 128 entries");
+    const rows = textAnnotations.map((annotation) => {
+      if (typeof annotation.text !== "string" || !annotation.text || annotation.text.includes("\0")) throw new RangeError("Scene v15 text annotations require nonempty NUL-free text");
+      const text = textEncoder.encode(annotation.text); if (text.length > 4096) throw new RangeError("Scene v15 text annotations are bounded");
+      const x = annotationNumber(annotation, "x", undefined, "text x"), y = annotationNumber(annotation, "y", undefined, "text y");
+      const style = { ...(annotation.style ?? {}) }; if (Object.keys(style).some((key) => !["color", "opacity"].includes(key))) throw new RangeError("Scene v15 text annotations support only color and opacity");
+      return { x, y, rgba: rgba8(annotationColor(style, "color", "#667085", "text color"), annotationNumber(style, "opacity", 1, "text opacity"), "text"), text };
+    });
+    const out = new Uint8Array(12 + rows.reduce((n, row) => n + 24 + row.text.length, 0)); const view = new DataView(out.buffer); out.set(textEncoder.encode("XYAT")); view.setUint32(4, 1, true); view.setUint32(8, rows.length, true); let at = 12;
+    for (const row of rows) { view.setFloat64(at, row.x, true); view.setFloat64(at + 8, row.y, true); out.set(row.rgba, at + 16); view.setUint32(at + 20, row.text.length, true); out.set(row.text, at + 24); at += 24 + row.text.length; } return out;
+  })();
   const title = figure.title ?? "";
   const xLabel = figure.xLabel ?? figure.x_label ?? "";
   const yLabel = figure.yLabel ?? figure.y_label ?? "";
@@ -773,7 +791,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
     kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-    title, xLabel, yLabel, xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar,
+    title, xLabel, yLabel, xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.x_axis)?.tick_values ?? null, xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
   });
 }
 

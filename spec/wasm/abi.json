@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "abi_version": 15,
-  "scene_version": 14,
+  "abi_version": 16,
+  "scene_version": 15,
   "painter_version": 11,
   "painter_header_bytes": 300,
   "painter_trace_bytes": 64,
@@ -182,6 +182,16 @@
     },
     {
       "name": "xyg_wasm_scene_prepare",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_scene_prepare_annotations",
       "params": [
         "u32",
         "u32",
