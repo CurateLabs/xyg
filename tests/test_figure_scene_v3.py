@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from xyg import _native, kernels
+from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3
 
@@ -424,6 +424,56 @@ def test_python_scene_admits_plain_and_attached_text_but_rejects_rich_annotation
     figure = representative_figure()
     figure.annotations.append({"kind": "text", "x": 1, "y": 2, "text": "note"})
     assert ">note<" in _native.scene_svg(figure.to_scene())
+
+
+def test_python_scene_frames_attached_label_rgba_in_xyal_v2(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    figure = representative_figure()
+    figure.vline(1.0, text="default")
+    figure.x_band(
+        1.0,
+        2.0,
+        text="custom",
+        style={"label_color": "#102030", "label_opacity": 0.5},
+    )
+    captured: dict[str, bytes] = {}
+
+    def capture_scene_batch_encode(**kwargs: object) -> bytes:
+        captured["annotations"] = kwargs["authored_text_annotations"]  # type: ignore[assignment]
+        return b"captured-scene"
+
+    monkeypatch.setattr(_scene_v3._native, "scene_batch_encode", capture_scene_batch_encode)
+    assert figure.to_scene() == b"captured-scene"
+
+    envelope = captured["annotations"]
+    assert envelope[:8] == b"XYAD\x01\x00\x00\x00"
+    xyat_len = int.from_bytes(envelope[8:12], "little")
+    xyal = envelope[20 + xyat_len :]
+    assert xyal[:12] == b"XYAL\x02\x00\x00\x00\x02\x00\x00\x00"
+    first_id, first_rgba, first_len = struct.unpack_from("<Q4sI", xyal, 12)
+    first_text_at = 28
+    assert first_id == 0x5859010000000000
+    assert first_rgba == bytes((102, 112, 133, 255))
+    assert xyal[first_text_at : first_text_at + first_len] == b"default"
+    second_at = first_text_at + first_len
+    second_id, second_rgba, second_len = struct.unpack_from("<Q4sI", xyal, second_at)
+    second_text_at = second_at + 16
+    assert second_id == 0x5859020000000001
+    assert second_rgba == bytes((16, 32, 48, 128))
+    assert xyal[second_text_at : second_text_at + second_len] == b"custom"
+
+
+def test_python_scene_rejects_attached_label_style_without_a_label() -> None:
+    figure = representative_figure()
+    figure.vline(1.0, style={"label_color": "#102030"})
+    with pytest.raises(UnsupportedSceneV3, match="label_color"):
+        figure.to_scene()
+
+    figure = representative_figure()
+    figure.vline(1.0, text="threshold", style={"label_opacity": 1.1})
+    with pytest.raises(ValueError, match="label opacity"):
+        figure.to_scene()
 
 
 @pytest.mark.parametrize("kind", ["column", "histogram"])
