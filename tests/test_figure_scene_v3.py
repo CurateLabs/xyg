@@ -38,6 +38,25 @@ def default_style_figure(kind: str) -> Figure:
     return figure
 
 
+def cartesian_callout_figure() -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter([0.0, 1.0], [0.0, 1.0])
+    # Python's default trace identity differs from Node's. Pin the author
+    # identity so this is a true cross-host transport fixture.
+    figure.traces[-1].id = 0
+    figure.callout(
+        0.5,
+        0.5,
+        "Rust",
+        dx=-12,
+        dy=-18,
+        style={"color": "#344054", "label_background": "#ffffff"},
+    )
+    return figure
+
+
 def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     scene = representative_figure().to_scene()
     assert hashlib.sha256(scene).hexdigest() == FIXTURE["expected_sha256"]
@@ -74,6 +93,16 @@ def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
     assert np.frombuffer(memoryview(scatter)[168:176], dtype="<f8")[0] == 0.0
     assert np.frombuffer(memoryview(scatter)[224:232], dtype="<f8")[0] == 4.0
     assert np.frombuffer(memoryview(line)[168:176], dtype="<f8")[0] == 1.5
+
+
+def test_python_scene_v20_cartesian_callout_matches_node_bytes_and_consumers() -> None:
+    scene = cartesian_callout_figure().to_scene()
+    assert hashlib.sha256(scene).hexdigest() == FIXTURE["cartesian_callout_sha256"]
+    svg = _native.scene_svg(scene)
+    assert "Rust" in svg
+    assert 'data-xy-stable-id="6366126145334673408"' in svg
+    assert b"Rust" in _native.scene_raster_commands(scene)
+    assert b"XYLB" in _native.scene_browser_painter(scene)
 
 
 def test_python_scene_v9_primary_legend_matches_node_bytes_and_consumers() -> None:

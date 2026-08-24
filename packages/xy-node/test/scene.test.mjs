@@ -267,6 +267,21 @@ test("Node frames callout label backgrounds as XYAC v2 and retains v1 otherwise"
   assert.throws(() => mixed.toScene(), /callout label background/);
 });
 
+test("Node Scene v20 Cartesian callout matches the Python exact-byte fixture", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.scatter([0, 1], [0, 1], { id: 0 });
+  figure.annotations = [{
+    kind: "callout", x: 0.5, y: 0.5, text: "Rust", dx: -12, dy: -18,
+    style: { color: "#344054", label_background: "#ffffff" },
+  }];
+  const scene = figure.toScene();
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.cartesian_callout_sha256);
+  assert.match(sceneSvg(scene), /Rust/);
+  assert.ok(sceneRasterCommands(scene).length > 0);
+  assert.ok(Buffer.from(sceneBrowserPainter(scene)).includes(Buffer.from("XYLB")));
+});
+
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
   const ribbon = new Figure({ width: 320, height: 200 });
   ribbon.setAxisDomain("x", [0, 1]); ribbon.setAxisDomain("y", [0, 1]);
