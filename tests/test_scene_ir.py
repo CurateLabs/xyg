@@ -372,9 +372,10 @@ def test_python_figure_authored_chrome_matches_node_figure_fixture_bytes() -> No
     figure.set_axis("y", **fixture["y_axis"])
     figure.scatter(fixture["scatter"]["x"], fixture["scatter"]["y"])
     figure.traces[-1].id = fixture["scatter"]["id"]
-    assert hashlib.sha256(
-        scene_v3.figure_scene(figure, margins=tuple(fixture["margins"]))
-    ).hexdigest() == fixture["sha256"]
+    assert (
+        hashlib.sha256(scene_v3.figure_scene(figure, margins=tuple(fixture["margins"]))).hexdigest()
+        == fixture["sha256"]
+    )
 
 
 def test_python_scene_v3_rejects_malformed_batches() -> None:
