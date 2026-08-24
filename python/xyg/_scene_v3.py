@@ -767,7 +767,9 @@ def figure_scene(
             raise ValueError(f"Scene v12 annotation {label} must be a nonempty CSS color")
         return raw
 
-    attached_labels: list[tuple[int, str]] = []
+    # XYAL v2 carries only literal RGBA paint with the annotation identity and
+    # text. Rust still owns the anchor, clipping, typography, and paint order.
+    attached_labels: list[tuple[int, tuple[int, int, int, int], str]] = []
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
         if kind == "text":
@@ -785,6 +787,8 @@ def figure_scene(
             raise UnsupportedSceneV3("Scene v12 annotations do not encode class_name")
         style = dict(annotation.get("style") or {})
         allowed = {"color", "opacity"}
+        if attached_text not in (None, ""):
+            allowed |= {"label_color", "label_opacity"}
         if kind == "rule":
             allowed.add("width")
         elif kind == "marker":
@@ -827,7 +831,13 @@ def figure_scene(
                 raise UnsupportedSceneV3(
                     "Scene v16 annotation labels are limited to 4,096 UTF-8 bytes"
                 )
-            attached_labels.append((stable_id, attached_text))
+            label_opacity = annotation_number(style, "label_opacity", 1.0, f"{kind} label opacity")
+            if not np.isfinite(label_opacity) or not 0.0 <= label_opacity <= 1.0:
+                raise ValueError(
+                    f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
+                )
+            label_color = annotation_color(style, "label_color", "#667085", f"{kind} label color")
+            attached_labels.append((stable_id, _rgba(label_color, label_opacity), attached_text))
 
         def append_record(
             record_kind: int,
@@ -961,11 +971,11 @@ def figure_scene(
         xyat.extend(struct.pack("<dd4sI", x, y, bytes(rgba), len(encoded)))
         xyat.extend(encoded)
     xyal = bytearray(
-        b"XYAL" + (1).to_bytes(4, "little") + len(attached_labels).to_bytes(4, "little")
+        b"XYAL" + (2).to_bytes(4, "little") + len(attached_labels).to_bytes(4, "little")
     )
-    for stable_id, value in attached_labels:
+    for stable_id, rgba, value in attached_labels:
         encoded = value.encode("utf-8")
-        xyal.extend(struct.pack("<QI", stable_id, len(encoded)))
+        xyal.extend(struct.pack("<Q4sI", stable_id, bytes(rgba), len(encoded)))
         xyal.extend(encoded)
     framed_annotations = bytearray(
         b"XYAD"

@@ -1718,14 +1718,18 @@ fn decode_xyat(
     Ok(labels)
 }
 
-/// Decode labels attached to existing canonical Scene v12 annotation records.
-/// `XYAL` contains identities and text only: Rust derives every anchor from the
-/// validated Scene geometry, so hosts cannot choose pixels or placement policy.
-fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>, SceneError> {
+/// Decode the bounded, host-authored literal paint for labels attached to
+/// canonical Scene annotation records. Rust retains placement and typography
+/// policy; hosts only supply an already-resolved RGBA literal and text.
+fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<(u64, [u8; 4], String)>, SceneError> {
     if bytes.is_empty() {
         return Ok(Vec::new());
     }
-    if bytes.len() < 12 || &bytes[..4] != b"XYAL" || batch_u32(bytes, 4)? != 1 {
+    if bytes.len() < 12 || &bytes[..4] != b"XYAL" {
+        return Err(SceneError::Length);
+    }
+    let version = batch_u32(bytes, 4)?;
+    if version != 1 && version != 2 {
         return Err(SceneError::Length);
     }
     let count = batch_u32(bytes, 8)? as usize;
@@ -1735,12 +1739,19 @@ fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>
     let mut at = 12usize;
     let mut total = 0usize;
     let mut seen = std::collections::BTreeSet::new();
-    let mut labels = Vec::with_capacity(count);
-    for index in 0..count {
-        let fixed_end = at.checked_add(12).ok_or(SceneError::Limit)?;
+    let mut rows = Vec::with_capacity(count);
+    for _ in 0..count {
+        let fixed_bytes = if version == 1 { 12 } else { 16 };
+        let fixed_end = at.checked_add(fixed_bytes).ok_or(SceneError::Limit)?;
         let fixed = bytes.get(at..fixed_end).ok_or(SceneError::Length)?;
         let stable_id = u64::from_le_bytes(fixed[..8].try_into().unwrap());
-        let len = u32::from_le_bytes(fixed[8..12].try_into().unwrap()) as usize;
+        let rgba = if version == 1 {
+            [102, 112, 133, 255]
+        } else {
+            fixed[8..12].try_into().unwrap()
+        };
+        let len_at = if version == 1 { 8 } else { 12 };
+        let len = u32::from_le_bytes(fixed[len_at..len_at + 4].try_into().unwrap()) as usize;
         let end = fixed_end.checked_add(len).ok_or(SceneError::Limit)?;
         let text = std::str::from_utf8(bytes.get(fixed_end..end).ok_or(SceneError::Length)?)
             .map_err(|_| SceneError::Length)?;
@@ -1752,6 +1763,22 @@ fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>
         {
             return Err(SceneError::Limit);
         }
+        rows.push((stable_id, rgba, text.to_owned()));
+        at = end;
+    }
+    if at != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(rows)
+}
+
+/// Decode labels attached to existing canonical Scene v12 annotation records.
+/// `XYAL` contains identities, literal paint, and text only: Rust derives every
+/// anchor from validated Scene geometry, so hosts cannot choose pixels or placement policy.
+fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>, SceneError> {
+    let rows = decode_xyal_rows(bytes)?;
+    let mut labels = Vec::with_capacity(rows.len());
+    for (index, (stable_id, rgba, text)) in rows.into_iter().enumerate() {
         let records: Vec<_> = document
             .records
             .iter()
@@ -1787,13 +1814,9 @@ fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>
             x,
             y,
             font_size: 12.0,
-            rgba: [102, 112, 133, 255],
-            text: text.to_owned(),
+            rgba,
+            text,
         });
-        at = end;
-    }
-    if at != bytes.len() {
-        return Err(SceneError::Length);
     }
     Ok(labels)
 }
@@ -2583,36 +2606,7 @@ impl<'a> SceneBatch<'a> {
         )?;
         let attached = &bytes[xyat_end..end];
         if !attached.is_empty() {
-            if attached.len() < 12 || &attached[..4] != b"XYAL" || batch_u32(attached, 4)? != 1 {
-                return Err(SceneError::Length);
-            }
-            let count = batch_u32(attached, 8)? as usize;
-            if count > MAX_AUTHORED_TEXT_ANNOTATIONS {
-                return Err(SceneError::Limit);
-            }
-            let mut at = 12usize;
-            let mut total = 0usize;
-            let mut seen = std::collections::BTreeSet::new();
-            for index in 0..count {
-                let fixed_end = at.checked_add(12).ok_or(SceneError::Limit)?;
-                let fixed = attached.get(at..fixed_end).ok_or(SceneError::Length)?;
-                let stable_id = u64::from_le_bytes(fixed[..8].try_into().unwrap());
-                let len = u32::from_le_bytes(fixed[8..12].try_into().unwrap()) as usize;
-                let text_end = fixed_end.checked_add(len).ok_or(SceneError::Limit)?;
-                let text = std::str::from_utf8(
-                    attached
-                        .get(fixed_end..text_end)
-                        .ok_or(SceneError::Length)?,
-                )
-                .map_err(|_| SceneError::Length)?;
-                total = total.checked_add(len).ok_or(SceneError::Limit)?;
-                if !seen.insert(stable_id)
-                    || text.is_empty()
-                    || text.contains('\0')
-                    || total > MAX_SCENE_TEXT_BYTES
-                {
-                    return Err(SceneError::Limit);
-                }
+            for (index, (stable_id, rgba, text)) in decode_xyal_rows(attached)?.into_iter().enumerate() {
                 let indices: Vec<_> = self
                     .stable_ids
                     .iter()
@@ -2669,13 +2663,9 @@ impl<'a> SceneBatch<'a> {
                     x,
                     y,
                     font_size: 12.0,
-                    rgba: [102, 112, 133, 255],
-                    text: text.to_owned(),
+                    rgba,
+                    text,
                 });
-                at = text_end;
-            }
-            if at != attached.len() {
-                return Err(SceneError::Length);
             }
         }
         if labels.len() > MAX_SCENE_LABELS {

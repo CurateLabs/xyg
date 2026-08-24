@@ -200,6 +200,15 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   assert.throws(() => figure.toScene(), /nonempty NUL-free text/);
 });
 
+test("Node frames literal attached-label paint and rejects it without a label", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "peak", style: { label_color: "#ff0000", label_opacity: 0.5 } }];
+  assert.match(sceneSvg(figure.toScene()), /fill="rgba\(255,0,0,0\.501961\)"[^>]*>peak</);
+  figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, style: { label_color: "#ff0000" } }];
+  assert.throws(() => figure.toScene(), /does not encode/);
+});
+
 test("Node Scene v16 accepts both independently bounded annotation text frames", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
