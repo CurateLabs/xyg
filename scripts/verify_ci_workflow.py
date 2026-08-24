@@ -1068,6 +1068,9 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "Install Node host bindings",
         "npm ci --prefix packages/xy-node",
         "scripts/verify_node_packages.py",
+        "Node XYTS cross-host conformance",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        "node --test packages/xy-node/test/xyts-conformance.test.mjs",
         "scripts/abi_smoke.py",
         "scripts/check_abi_parity.py",
         "scripts/gen_abi_manifest.py --check",
@@ -1107,6 +1110,14 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "if-no-files-found: warn",
         "spec/benchmarks/metrics.md",
         "transport.json",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Node XYTS cross-host conformance",
+        "active native Node XYTS cross-host conformance",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        "node --test packages/xy-node/test/xyts-conformance.test.mjs",
     )
     _require_job_contains(
         errors,

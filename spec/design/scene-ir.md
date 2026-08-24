@@ -72,7 +72,7 @@ static exporters or the browser Worker consume canonical scenes. One generated
 little-endian byte batch; it never places numeric data in JSON. The same exact
 batch is accepted by `xyg_scene_svg` for a complete SVG, by
 `xyg_scene_raster_commands` for the existing native raster display list, and
-by `xyg_scene_browser_painter` for the exact painter-v9 byte stream. These
+by `xyg_scene_browser_painter` for the exact painter-v10 byte stream. These
 consumers fail closed on malformed version, widths, length, reserved fields,
 kinds, styles, coordinates, or bounds. The fixed header contains `Viewport`, canonical `PlotLayout` bounds, and
 two `AxisScene` records (stable u64 id, scale kind, mask policy, transformed f64
@@ -408,7 +408,7 @@ nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
 bytes, and every count/length overflow.
 
 Rust owns entry order, location resolution, frame/text/swatch geometry and
-paint ordering for SVG and native raster. Browser painter v9 appends the exact
+paint ordering for SVG and native raster. Browser painter v10 appends the exact
 validated `XYLG` record; TypeScript projects it into the existing selectable
 and accessible DOM legend without deriving entries or defaults. Direct-Scene
 legends are static (`toggle=false`, `highlight=false`). Python and Node only
@@ -446,7 +446,7 @@ existing canonical Polyline, Rect, and Scatter records. Annotation records are
 always appended after data records, so Rust SVG, raster, and browser-painter
 consumers share exact projection, clipping, marker geometry, style validation,
 resource bounds, and paint order. Python and Node only coerce the same author
-values and produce byte-identical records. Painter v9 consumes the explicit
+values and produce byte-identical records. Painter v10 consumes the explicit
 descriptor annotation byte and projects records into the existing browser annotation layer; TypeScript
 does not derive geometry or defaults. It also adds a literal, visually hidden
 `role=note` description for each direct-WASM annotation. These descriptions name
@@ -504,7 +504,7 @@ For `XYGG` v3 direct semantic graphs, Rust alone resolves compound visibility,
 then ranks state and stable source
 identity, omits aggregate/filtered labels, truncates to the 32-character and
 remaining-plot-width bound, and greedily accepts nonoverlapping boxes. SVG,
-native raster, and browser painter v9 consume those final records verbatim.
+native raster, and browser painter v10 consume those final records verbatim.
 The browser may expose the text as accessible DOM, but cannot reposition,
 retruncate, or rerun collision policy. Aggregate LOD continues to omit all
 source-indexed labels.

@@ -2212,6 +2212,54 @@ def test_ci_workflow_rejects_missing_cross_browser_conformance(tmp_path: Path) -
     assert any("browser_conformance" in error and "conformance gate" in error for error in errors)
 
 
+def test_ci_workflow_rejects_missing_node_xyts_cross_host_conformance(tmp_path: Path) -> None:
+    workflow = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "          node --test packages/xy-node/test/xyts-conformance.test.mjs\n",
+            "",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("test" in error and "xyts-conformance.test.mjs" in error for error in errors)
+
+
+def test_ci_workflow_rejects_disabled_node_xyts_cross_host_conformance(tmp_path: Path) -> None:
+    workflow = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            "      - name: Node XYTS cross-host conformance\n        run: |\n",
+            "      - name: Node XYTS cross-host conformance\n        if: false\n        run: |\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("Node XYTS cross-host conformance" in error for error in errors)
+
+
+def test_ci_workflow_rejects_unexported_node_xyts_native_library(tmp_path: Path) -> None:
+    workflow = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
+    path = tmp_path / "ci.yml"
+    path.write_text(
+        workflow.replace(
+            '          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"\n',
+            '          XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"\n',
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+
+    assert any("Node XYTS cross-host conformance" in error for error in errors)
+
+
 def test_ci_workflow_rejects_missing_playwright_browser_cache(tmp_path: Path) -> None:
     text = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text(encoding="utf-8")
     path = tmp_path / "ci.yml"
