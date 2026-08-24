@@ -459,7 +459,7 @@ def figure_scene(
     if figure.extra_legends:
         features |= 1 << 5
     if any(
-        annotation.get("kind") not in {"callout", "arrow"}
+        annotation.get("kind") not in {"callout", "arrow", "text"}
         and annotation.get("text") not in (None, "")
         for annotation in annotations
     ):
@@ -769,6 +769,8 @@ def figure_scene(
 
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
+        if kind == "text":
+            continue
         if kind not in {"rule", "band", "marker"}:
             raise UnsupportedSceneV3(
                 f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
@@ -925,6 +927,23 @@ def figure_scene(
         )
     else:
         left, right, top, bottom = margins
+    text_annotations = [annotation for annotation in annotations if annotation.get("kind") == "text"]
+    framed_annotations = bytearray(b"XYAT" + (1).to_bytes(4, "little") + len(text_annotations).to_bytes(4, "little"))
+    for annotation in text_annotations:
+        value = annotation.get("text")
+        if not isinstance(value, str) or not value or "\0" in value:
+            raise UnsupportedSceneV3("Scene v15 text annotations require nonempty NUL-free text")
+        encoded = value.encode("utf-8")
+        if len(encoded) > 4096:
+            raise UnsupportedSceneV3("Scene v15 text annotations are limited to 4,096 UTF-8 bytes")
+        x = annotation_number(annotation, "x", None, "text x")
+        y = annotation_number(annotation, "y", None, "text y")
+        style = dict(annotation.get("style") or {})
+        if set(style) - {"color", "opacity"}:
+            raise UnsupportedSceneV3("Scene v15 text annotations support only color and opacity")
+        rgba = _rgba(annotation_color(style, "color", "#667085", "text color"), annotation_number(style, "opacity", 1.0, "text opacity"))
+        framed_annotations.extend(struct.pack("<dd4sI", x, y, bytes(rgba), len(encoded)))
+        framed_annotations.extend(encoded)
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),
@@ -954,6 +973,7 @@ def figure_scene(
         y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
+        authored_text_annotations=bytes(framed_annotations) if text_annotations else b"",
     )
 
 
