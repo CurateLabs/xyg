@@ -9322,7 +9322,7 @@ mod tests {
 
     #[test]
     fn scene_support_abi_queries_copies_and_rejects_unknown_bits() {
-        let features = scene::SCENE_FEATURE_AUTHORED_TICK_LABELS;
+        let features = scene::SCENE_FEATURE_CUSTOM_FONT;
         let required = unsafe {
             xyg_scene_support_reason(
                 scene::SCENE_SUPPORT_REQUEST_VERSION,
@@ -9346,7 +9346,7 @@ mod tests {
         );
         assert!(std::str::from_utf8(&output)
             .unwrap()
-            .starts_with("XYG_SCENE_UNSUPPORTED_TICK_LABELS:"));
+            .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:"));
         assert_eq!(
             unsafe {
                 xyg_scene_support_reason(
@@ -9568,6 +9568,10 @@ mod tests {
                 1,
                 std::ptr::null(),
                 0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
                 kinds_ptr,
                 ids.as_ptr(),
                 styles.as_ptr(),
@@ -9596,7 +9600,7 @@ mod tests {
                 output.len(),
             )
         };
-        assert_eq!(call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1), 472);
+        assert_eq!(call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1), 480);
         assert_eq!(
             call(99, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1),
             usize::MAX
@@ -9639,7 +9643,7 @@ mod tests {
         let reserved_or_corner = [0.0f64; 4];
         let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
         let log_symbols = [0u8; 4];
-        let mut log_output = [0u8; 640];
+        let mut log_output = [0u8; 648];
         assert_eq!(
             unsafe {
                 xyg_scene_batch_encode(
@@ -9671,6 +9675,10 @@ mod tests {
                     std::ptr::null(),
                     0,
                     1,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
                     std::ptr::null(),
                     0,
                     log_kinds.as_ptr(),
