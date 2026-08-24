@@ -2688,7 +2688,7 @@ impl<'a> SceneBatch<'a> {
             return Err(SceneError::Limit);
         }
         for (index, label) in labels.iter_mut().enumerate() {
-            if label.stable_id >> 40 == 0x5859_04 {
+            if label.stable_id >> 40 == 0x0058_5904 {
                 label.stable_id = 0x5859_0400_0000_0000 | index as u64;
             }
         }
