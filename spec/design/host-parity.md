@@ -71,9 +71,9 @@ estimates retained Rust resources.
 
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
-exact Scene v19 output under a local-only strict CSP. Native Python and Node
+exact Scene v20 output under a local-only strict CSP. Native Python and Node
 load those Scene bytes through the shared `xyg_scene_browser_painter` C ABI and
-byte-compare Rust's painter-v12 lowering; the Pyodide wheel executes that same
+byte-compare Rust's painter-v13 lowering; the Pyodide wheel executes that same
 native ABI inside an actual Pyodide runtime with network access disabled for
 the conformance operation. This is intentionally asymmetric: adding an XYTS
 decoder to Python or Node would duplicate browser-ingress policy rather than
@@ -102,7 +102,8 @@ record. Scene v13 covers solid chart/plot backgrounds, authored
   consumers, and
   rule, band, marker annotations, bounded Rust-anchored attached labels, and
   bounded Rust-projected literal straight arrows, and bounded Rust-resolved
-  Cartesian callouts. Extra legends, named/advanced colorbars, other deferred
+  Cartesian callouts. Scene v20 adds only fixed Rust-resolved literal
+  callout-label backgrounds; rich label-box styling remains unsupported. Extra legends, named/advanced colorbars, other deferred
   annotation forms, custom
   tick strings, and advanced text layout remain loud unsupported boundaries.
   ABI 84's versioned support predicate makes the

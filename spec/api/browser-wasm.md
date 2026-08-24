@@ -44,7 +44,7 @@ frames transferable columns and schedules lifecycle checkpoints.
 
 Regenerate `tests/fixtures/xyts_cross_host.json` with
 `cargo run -p xyg-wasm --bin xyts_conformance`; use `-- --check` in validation.
-The JSON carries canonical XYTS requests plus exact Scene v19 and painter v12
+The JSON carries canonical XYTS requests plus exact Scene v20 and painter v13
 bytes. Browser tests submit the requests to a real Worker/WASM instance. Native
 Python, native Node, and Pyodide validate the resulting Scene through their
 Rust consumers, because XYTS itself is browser-only ingress. Consumers must

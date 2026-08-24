@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 19;
+pub const SCENE_VERSION: u32 = 20;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -20,7 +20,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 12;
+pub const BROWSER_PAINTER_VERSION: u32 = 13;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 300;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -43,8 +43,7 @@ pub const MAX_SCENE_COLORBAR_TEXT_BYTES: usize = 4_096;
 /// `format_tick` has a short, bounded finite-f64 representation; keep the
 /// painter frame ceiling explicit so every decoder can reject before allocating.
 pub const MAX_SCENE_COLORBAR_TICK_LABEL_BYTES: usize = 32;
-pub const MAX_SCENE_COLORBAR_MINOR_TICKS: usize =
-    (MAX_SCENE_COLORBAR_TICKS - 1) * 4;
+pub const MAX_SCENE_COLORBAR_MINOR_TICKS: usize = (MAX_SCENE_COLORBAR_TICKS - 1) * 4;
 pub const MAX_SCENE_COLORBAR_PAINTER_BYTES: usize = MAX_SCENE_COLORBAR_INPUT_BYTES
     + 24 // XYRG v1
     + 16 // XYCT v1 header
@@ -52,6 +51,8 @@ pub const MAX_SCENE_COLORBAR_PAINTER_BYTES: usize = MAX_SCENE_COLORBAR_INPUT_BYT
     + MAX_SCENE_COLORBAR_TICKS * MAX_SCENE_COLORBAR_TICK_LABEL_BYTES;
 const SCENE_LABEL_HEADER_BYTES: usize = 16;
 const SCENE_LABEL_RECORD_BYTES: usize = 40;
+const SCENE_LABEL_BOX_RECORD_BYTES: usize = 84;
+const CALLOUT_LABEL_BOX_INSET: f64 = 3.0;
 pub const SCENE_SUPPORT_REQUEST_VERSION: u32 = 1;
 pub const SCENE_FEATURE_POLAR: u64 = 1 << 0;
 pub const SCENE_FEATURE_CUSTOM_FONT: u64 = 1 << 1;
@@ -117,6 +118,15 @@ const _: () = assert!(
 );
 
 #[derive(Clone, Debug, PartialEq)]
+struct SceneLabelBox {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    rgba: [u8; 4],
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct SceneLabel {
     pub stable_id: u64,
     pub x: f64,
@@ -129,7 +139,13 @@ pub struct SceneLabel {
     pub text: String,
 }
 
-fn encode_scene_labels(labels: &[SceneLabel]) -> Result<Vec<u8>, SceneError> {
+fn encode_scene_labels(
+    labels: &[SceneLabel],
+    backgrounds: &[Option<SceneLabelBox>],
+) -> Result<Vec<u8>, SceneError> {
+    if labels.len() != backgrounds.len() {
+        return Err(SceneError::Length);
+    }
     if labels.is_empty() {
         return Ok(Vec::new());
     }
@@ -139,14 +155,26 @@ fn encode_scene_labels(labels: &[SceneLabel]) -> Result<Vec<u8>, SceneError> {
     if labels.len() > MAX_SCENE_LABELS || text_bytes > MAX_SCENE_LABEL_TEXT_BYTES {
         return Err(SceneError::Limit);
     }
-    let version = if labels.iter().any(|label| label.anchor != 0) { 2 } else { 1 };
-    let record_bytes = if version == 1 { SCENE_LABEL_RECORD_BYTES } else { 44 };
-    let mut out = Vec::with_capacity(SCENE_LABEL_HEADER_BYTES + labels.len() * record_bytes + text_bytes);
+    let version = if backgrounds.iter().any(Option::is_some) {
+        3
+    } else if labels.iter().any(|label| label.anchor != 0) {
+        2
+    } else {
+        1
+    };
+    let record_bytes = match version {
+        1 => SCENE_LABEL_RECORD_BYTES,
+        2 => 44,
+        3 => SCENE_LABEL_BOX_RECORD_BYTES,
+        _ => unreachable!(),
+    };
+    let mut out =
+        Vec::with_capacity(SCENE_LABEL_HEADER_BYTES + labels.len() * record_bytes + text_bytes);
     out.extend_from_slice(b"XYLB");
     out.extend_from_slice(&(version as u32).to_le_bytes());
     out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
     out.extend_from_slice(&(text_bytes as u32).to_le_bytes());
-    for label in labels {
+    for (label, background) in labels.iter().zip(backgrounds) {
         if label.text.is_empty()
             || label.text.contains('\0')
             || !label.x.is_finite()
@@ -154,6 +182,18 @@ fn encode_scene_labels(labels: &[SceneLabel]) -> Result<Vec<u8>, SceneError> {
             || !label.font_size.is_finite()
             || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&label.font_size)
             || label.anchor > 2
+            || background.as_ref().is_some_and(|background| {
+                ![
+                    background.x,
+                    background.y,
+                    background.width,
+                    background.height,
+                ]
+                .into_iter()
+                .all(f64::is_finite)
+                    || background.width <= 0.0
+                    || background.height <= 0.0
+            })
         {
             return Err(SceneError::NonFinite);
         }
@@ -162,11 +202,25 @@ fn encode_scene_labels(labels: &[SceneLabel]) -> Result<Vec<u8>, SceneError> {
         out.extend_from_slice(&label.y.to_le_bytes());
         out.extend_from_slice(&label.font_size.to_le_bytes());
         out.extend_from_slice(&label.rgba);
-        if version == 2 {
+        if version >= 2 {
             out.push(label.anchor);
             out.extend_from_slice(&[0; 3]);
         }
         out.extend_from_slice(&(label.text.len() as u32).to_le_bytes());
+        if version == 3 {
+            let background = background.as_ref();
+            out.push(u8::from(background.is_some()));
+            out.extend_from_slice(&[0; 3]);
+            if let Some(background) = background {
+                out.extend_from_slice(&background.x.to_le_bytes());
+                out.extend_from_slice(&background.y.to_le_bytes());
+                out.extend_from_slice(&background.width.to_le_bytes());
+                out.extend_from_slice(&background.height.to_le_bytes());
+                out.extend_from_slice(&background.rgba);
+            } else {
+                out.extend_from_slice(&[0; 36]);
+            }
+        }
     }
     for label in labels {
         out.extend_from_slice(label.text.as_bytes());
@@ -174,41 +228,84 @@ fn encode_scene_labels(labels: &[SceneLabel]) -> Result<Vec<u8>, SceneError> {
     Ok(out)
 }
 
-fn decode_scene_labels(bytes: &[u8]) -> Result<Vec<SceneLabel>, SceneError> {
+fn decode_scene_labels(
+    bytes: &[u8],
+) -> Result<(Vec<SceneLabel>, Vec<Option<SceneLabelBox>>), SceneError> {
     if bytes.is_empty() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), Vec::new()));
     }
-    if bytes.len() < SCENE_LABEL_HEADER_BYTES || &bytes[..4] != b"XYLB"
-    {
+    if bytes.len() < SCENE_LABEL_HEADER_BYTES || &bytes[..4] != b"XYLB" {
         return Err(SceneError::Length);
     }
     let version = batch_u32(bytes, 4)?;
-    if version != 1 && version != 2 { return Err(SceneError::Length); }
-    let record_bytes = if version == 1 { SCENE_LABEL_RECORD_BYTES } else { 44 };
+    if !(1..=3).contains(&version) {
+        return Err(SceneError::Length);
+    }
+    let record_bytes = match version {
+        1 => SCENE_LABEL_RECORD_BYTES,
+        2 => 44,
+        3 => SCENE_LABEL_BOX_RECORD_BYTES,
+        _ => unreachable!(),
+    };
     let count = batch_u32(bytes, 8)? as usize;
     let text_bytes = batch_u32(bytes, 12)? as usize;
     if count > MAX_SCENE_LABELS || text_bytes > MAX_SCENE_LABEL_TEXT_BYTES {
         return Err(SceneError::Limit);
     }
     let table_end = SCENE_LABEL_HEADER_BYTES
-        .checked_add(
-            count
-                .checked_mul(record_bytes)
-                .ok_or(SceneError::Limit)?,
-        )
+        .checked_add(count.checked_mul(record_bytes).ok_or(SceneError::Limit)?)
         .ok_or(SceneError::Limit)?;
     if table_end.checked_add(text_bytes) != Some(bytes.len()) {
         return Err(SceneError::Length);
     }
     let mut text_at = table_end;
     let mut labels = Vec::with_capacity(count);
+    let mut backgrounds = Vec::with_capacity(count);
     for index in 0..count {
         let at = SCENE_LABEL_HEADER_BYTES + index * record_bytes;
-        let anchor = if version == 1 { 0 } else {
-            if bytes[at + 37..at + 40] != [0; 3] || bytes[at + 36] > 2 { return Err(SceneError::Length); }
+        let anchor = if version == 1 {
+            0
+        } else {
+            if bytes[at + 37..at + 40] != [0; 3] || bytes[at + 36] > 2 {
+                return Err(SceneError::Length);
+            }
             bytes[at + 36]
         };
         let len = batch_u32(bytes, at + if version == 1 { 36 } else { 40 })? as usize;
+        let background = if version == 3 {
+            let flags = bytes[at + 44];
+            if flags & !1 != 0 || bytes[at + 45..at + 48] != [0; 3] {
+                return Err(SceneError::Length);
+            }
+            let values = [
+                batch_f64(bytes, at + 48)?,
+                batch_f64(bytes, at + 56)?,
+                batch_f64(bytes, at + 64)?,
+                batch_f64(bytes, at + 72)?,
+            ];
+            let rgba: [u8; 4] = bytes[at + 80..at + 84].try_into().unwrap();
+            if flags == 0 {
+                if values != [0.0; 4] || rgba != [0; 4] {
+                    return Err(SceneError::Length);
+                }
+                None
+            } else if !values.into_iter().all(f64::is_finite)
+                || values[2] <= 0.0
+                || values[3] <= 0.0
+            {
+                return Err(SceneError::Length);
+            } else {
+                Some(SceneLabelBox {
+                    x: values[0],
+                    y: values[1],
+                    width: values[2],
+                    height: values[3],
+                    rgba,
+                })
+            }
+        } else {
+            None
+        };
         let end = text_at.checked_add(len).ok_or(SceneError::Limit)?;
         let text = std::str::from_utf8(bytes.get(text_at..end).ok_or(SceneError::Length)?)
             .map_err(|_| SceneError::Length)?
@@ -222,10 +319,11 @@ fn decode_scene_labels(bytes: &[u8]) -> Result<Vec<SceneLabel>, SceneError> {
             anchor,
             text,
         });
+        backgrounds.push(background);
         text_at = end;
     }
-    encode_scene_labels(&labels)?;
-    Ok(labels)
+    encode_scene_labels(&labels, &backgrounds)?;
+    Ok((labels, backgrounds))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -607,7 +705,12 @@ impl SceneColorbar {
         out.extend_from_slice(b"XYCB");
         out.extend_from_slice(&2u32.to_le_bytes());
         let ticks = self.ticks.as_deref().unwrap_or_default();
-        out.push(u8::from(self.horizontal) | 2 | (u8::from(self.minor_ticks) << 2) | (u8::from(!ticks.is_empty()) << 3));
+        out.push(
+            u8::from(self.horizontal)
+                | 2
+                | (u8::from(self.minor_ticks) << 2)
+                | (u8::from(!ticks.is_empty()) << 3),
+        );
         out.extend_from_slice(&[0; 3]);
         out.extend_from_slice(&(self.stops.len() as u32).to_le_bytes());
         out.extend_from_slice(&(ticks.len() as u32).to_le_bytes());
@@ -1893,22 +1996,34 @@ fn decode_annotation_envelope(
     document: &SceneDocument,
 ) -> Result<AnnotationEnvelope, SceneError> {
     if bytes.is_empty() {
-        return Ok(AnnotationEnvelope { labels: Vec::new(), arrows: Vec::new(), callouts: Vec::new() });
+        return Ok(AnnotationEnvelope {
+            labels: Vec::new(),
+            arrows: Vec::new(),
+            callouts: Vec::new(),
+        });
     }
     if bytes.len() < 20 || &bytes[..4] != b"XYAD" {
         return Err(SceneError::Length);
     }
     let version = batch_u32(bytes, 4)?;
-    if version != 1 && version != 2 { return Err(SceneError::Length); }
+    if version != 1 && version != 2 {
+        return Err(SceneError::Length);
+    }
     let xyat_len = batch_u32(bytes, 8)? as usize;
     let xyal_len = batch_u32(bytes, 12)? as usize;
     let xyar_len = batch_u32(bytes, 16)? as usize;
-    let xyac_len = if version == 1 { 0 } else {
-        if bytes.len() < 24 { return Err(SceneError::Length); }
+    let xyac_len = if version == 1 {
+        0
+    } else {
+        if bytes.len() < 24 {
+            return Err(SceneError::Length);
+        }
         batch_u32(bytes, 20)? as usize
     };
     let payload_start: usize = if version == 1 { 20 } else { 24 };
-    let xyat_end = payload_start.checked_add(xyat_len).ok_or(SceneError::Limit)?;
+    let xyat_end = payload_start
+        .checked_add(xyat_len)
+        .ok_or(SceneError::Limit)?;
     let xyal_end = xyat_end.checked_add(xyal_len).ok_or(SceneError::Limit)?;
     let xyar_end = xyal_end.checked_add(xyar_len).ok_or(SceneError::Limit)?;
     let end = xyar_end.checked_add(xyac_len).ok_or(SceneError::Limit)?;
@@ -1938,11 +2053,18 @@ fn decode_annotation_envelope(
     }
     labels.append(&mut attached);
     let callouts = decode_xyac(
-        &bytes[xyar_end..end], document.x_scale, document.y_scale, document.layout,
+        &bytes[xyar_end..end],
+        document.x_scale,
+        document.y_scale,
+        document.layout,
     )?;
-    if labels.iter().chain(callouts.iter().map(|callout| &callout.label)).try_fold(0usize, |total, label| {
-        total.checked_add(label.text.len()).ok_or(SceneError::Limit)
-    })? > MAX_SCENE_LABEL_TEXT_BYTES
+    if labels
+        .iter()
+        .chain(callouts.iter().map(|callout| &callout.label))
+        .try_fold(0usize, |total, label| {
+            total.checked_add(label.text.len()).ok_or(SceneError::Limit)
+        })?
+        > MAX_SCENE_LABEL_TEXT_BYTES
     {
         return Err(SceneError::Limit);
     }
@@ -1959,6 +2081,7 @@ type SceneChromeTrailer = (
     Option<SceneLegend>,
     Option<SceneColorbar>,
     Vec<SceneLabel>,
+    Vec<Option<SceneLabelBox>>,
     usize,
 );
 
@@ -2113,8 +2236,16 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     .validated()?;
     let legend = SceneLegend::from_canonical(&bytes[content_end..colorbar_start], usize::MAX)?;
     let colorbar = SceneColorbar::from_input(&bytes[colorbar_start..label_start])?;
-    let labels = decode_scene_labels(&bytes[label_start..total])?;
-    Ok((chrome, text, legend, colorbar, labels, total))
+    let (labels, label_backgrounds) = decode_scene_labels(&bytes[label_start..total])?;
+    Ok((
+        chrome,
+        text,
+        legend,
+        colorbar,
+        labels,
+        label_backgrounds,
+        total,
+    ))
 }
 
 fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
@@ -2337,12 +2468,14 @@ fn resolved_colorbar_ticks(
     let length = if colorbar.horizontal { width } else { height };
     let values = match &colorbar.ticks {
         Some(values) => values.clone(),
-        None => linear_ticks(
-            colorbar.domain[0],
-            colorbar.domain[1],
-            ((length / 48.0).floor() as usize + 1).clamp(2, 8),
-        )?
-        .labeled,
+        None => {
+            linear_ticks(
+                colorbar.domain[0],
+                colorbar.domain[1],
+                ((length / 48.0).floor() as usize + 1).clamp(2, 8),
+            )?
+            .labeled
+        }
     };
     if values.len() > MAX_SCENE_COLORBAR_TICKS {
         return Err(SceneError::Limit);
@@ -2417,7 +2550,8 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 .and_then(|record_bytes| value.checked_add(record_bytes))
         })
         .ok_or(SceneError::Limit)?;
-    let (_chrome, _text, legend, _colorbar, _labels, total) = read_chrome_trailer(bytes, body)?;
+    let (_chrome, _text, legend, _colorbar, _labels, _label_backgrounds, total) =
+        read_chrome_trailer(bytes, body)?;
     if let Some(legend) = legend {
         if legend.entries.iter().any(|entry| entry.style_ref >= styles) {
             return Err(SceneError::Length);
@@ -2758,16 +2892,24 @@ impl<'a> SceneBatch<'a> {
         if bytes.is_empty() {
             return Ok(self);
         }
-        if bytes.len() < 20 || &bytes[..4] != b"XYAD"
-        {
+        if bytes.len() < 20 || &bytes[..4] != b"XYAD" {
             return Err(SceneError::Length);
         }
         let version = batch_u32(bytes, 4)?;
-        if version != 1 && version != 2 { return Err(SceneError::Length); }
+        if version != 1 && version != 2 {
+            return Err(SceneError::Length);
+        }
         let xyat_len = batch_u32(bytes, 8)? as usize;
         let xyal_len = batch_u32(bytes, 12)? as usize;
         let xyar_len = batch_u32(bytes, 16)? as usize;
-        let xyac_len = if version == 1 { 0 } else { if bytes.len() < 24 { return Err(SceneError::Length); } batch_u32(bytes, 20)? as usize };
+        let xyac_len = if version == 1 {
+            0
+        } else {
+            if bytes.len() < 24 {
+                return Err(SceneError::Length);
+            }
+            batch_u32(bytes, 20)? as usize
+        };
         let start: usize = if version == 1 { 20 } else { 24 };
         let xyat_end = start.checked_add(xyat_len).ok_or(SceneError::Limit)?;
         let xyal_end = xyat_end.checked_add(xyal_len).ok_or(SceneError::Limit)?;
@@ -2784,7 +2926,9 @@ impl<'a> SceneBatch<'a> {
         )?;
         let attached = &bytes[xyat_end..xyal_end];
         if !attached.is_empty() {
-            for (index, (stable_id, rgba, text)) in decode_xyal_rows(attached)?.into_iter().enumerate() {
+            for (index, (stable_id, rgba, text)) in
+                decode_xyal_rows(attached)?.into_iter().enumerate()
+            {
                 let indices: Vec<_> = self
                     .stable_ids
                     .iter()
@@ -2863,8 +3007,18 @@ impl<'a> SceneBatch<'a> {
         }
         self.labels = labels;
         let arrows = decode_xyar(&bytes[xyal_end..xyar_end])?;
-        if self.stroke_width.len().checked_add(arrows.len()).ok_or(SceneError::Limit)? > MAX_SCENE_STYLES
-            || self.kinds.len().checked_add(arrows.len().checked_mul(5).ok_or(SceneError::Limit)?).ok_or(SceneError::Limit)? > MAX_SCENE_MARKS
+        if self
+            .stroke_width
+            .len()
+            .checked_add(arrows.len())
+            .ok_or(SceneError::Limit)?
+            > MAX_SCENE_STYLES
+            || self
+                .kinds
+                .len()
+                .checked_add(arrows.len().checked_mul(5).ok_or(SceneError::Limit)?)
+                .ok_or(SceneError::Limit)?
+                > MAX_SCENE_MARKS
             || arrows.iter().any(|arrow| {
                 self.stable_ids.contains(&arrow.stable_id)
                     || !self.x_scale.pixel(arrow.x0).is_finite()
@@ -2872,23 +3026,51 @@ impl<'a> SceneBatch<'a> {
                     || !self.x_scale.pixel(arrow.x1).is_finite()
                     || !self.y_scale.pixel(arrow.y1).is_finite()
                     || straight_arrow_points(
-                        self.x_scale.pixel(arrow.x0), self.y_scale.pixel(arrow.y0),
-                        self.x_scale.pixel(arrow.x1), self.y_scale.pixel(arrow.y1),
-                    ).is_err()
+                        self.x_scale.pixel(arrow.x0),
+                        self.y_scale.pixel(arrow.y0),
+                        self.x_scale.pixel(arrow.x1),
+                        self.y_scale.pixel(arrow.y1),
+                    )
+                    .is_err()
             })
         {
             return Err(SceneError::Length);
         }
         self.arrows = arrows;
-        let callouts = decode_xyac(&bytes[xyar_end..end], self.x_scale, self.y_scale, self.layout)?;
+        let callouts = decode_xyac(
+            &bytes[xyar_end..end],
+            self.x_scale,
+            self.y_scale,
+            self.layout,
+        )?;
         let callout_records = callouts.len().checked_mul(5).ok_or(SceneError::Limit)?;
-        let total_styles = self.stroke_width.len().checked_add(self.arrows.len()).and_then(|value| value.checked_add(callouts.len())).ok_or(SceneError::Limit)?;
-        let total_records = self.kinds.len().checked_add(self.arrows.len().checked_mul(5).ok_or(SceneError::Limit)?).and_then(|value| value.checked_add(callout_records)).ok_or(SceneError::Limit)?;
+        let total_styles = self
+            .stroke_width
+            .len()
+            .checked_add(self.arrows.len())
+            .and_then(|value| value.checked_add(callouts.len()))
+            .ok_or(SceneError::Limit)?;
+        let total_records = self
+            .kinds
+            .len()
+            .checked_add(self.arrows.len().checked_mul(5).ok_or(SceneError::Limit)?)
+            .and_then(|value| value.checked_add(callout_records))
+            .ok_or(SceneError::Limit)?;
         if total_styles > MAX_SCENE_STYLES
             || total_records > MAX_SCENE_MARKS
-            || self.labels.len().checked_add(callouts.len()).ok_or(SceneError::Limit)? > MAX_SCENE_LABELS
-        { return Err(SceneError::Limit); }
-        self.labels.extend(callouts.iter().map(|callout| callout.label.clone()));
+            || self
+                .labels
+                .len()
+                .checked_add(callouts.len())
+                .ok_or(SceneError::Limit)?
+                > MAX_SCENE_LABELS
+        {
+            return Err(SceneError::Limit);
+        }
+        // Callout labels are carried by `callouts` until encoding, where their
+        // resolved backgrounds are emitted in the matching XYLB entries.  Do
+        // not also append them to `self.labels`: that would duplicate labels
+        // and lose the background on the first copy during a Scene round trip.
         self.callouts = callouts;
         Ok(self)
     }
@@ -3215,7 +3397,7 @@ impl<'a> SceneBatch<'a> {
         annotations_from_ids: bool,
     ) -> Result<Self, SceneError> {
         let chrome = chrome.validated()?;
-        encode_scene_labels(&labels)?;
+        encode_scene_labels(&labels, &vec![None; labels.len()])?;
         if labels.iter().any(|label| {
             label.x < 0.0
                 || label.x > layout.viewport_width
@@ -3397,11 +3579,20 @@ impl<'a> SceneBatch<'a> {
     }
 
     pub fn encode(&self) -> Vec<u8> {
-        let label_bytes = encode_scene_labels(&self.labels).expect("validated Scene labels");
+        let mut labels = self.labels.clone();
+        let mut label_backgrounds = vec![None; labels.len()];
+        for callout in &self.callouts {
+            labels.push(callout.label.clone());
+            label_backgrounds.push(callout.label_background.clone());
+        }
+        let label_bytes =
+            encode_scene_labels(&labels, &label_backgrounds).expect("validated Scene labels");
         let mut out = Vec::with_capacity(
             SCENE_BATCH_HEADER_BYTES
-                + (self.stroke_width.len() + self.arrows.len() + self.callouts.len()) * SCENE_STYLE_RECORD_BYTES
-                + (self.kinds.len() + (self.arrows.len() + self.callouts.len()) * 5) * SCENE_BATCH_RECORD_BYTES
+                + (self.stroke_width.len() + self.arrows.len() + self.callouts.len())
+                    * SCENE_STYLE_RECORD_BYTES
+                + (self.kinds.len() + (self.arrows.len() + self.callouts.len()) * 5)
+                    * SCENE_BATCH_RECORD_BYTES
                 + self.text.encoded_bytes()
                 + encode_tick_labels(self.chrome.x_tick_labels.as_deref())
                     .map_or(0, |value| value.len())
@@ -3423,8 +3614,14 @@ impl<'a> SceneBatch<'a> {
         out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
         out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
         out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
-        out.extend_from_slice(&((self.kinds.len() + (self.arrows.len() + self.callouts.len()) * 5) as u64).to_le_bytes());
-        out.extend_from_slice(&((self.stroke_width.len() + self.arrows.len() + self.callouts.len()) as u64).to_le_bytes());
+        out.extend_from_slice(
+            &((self.kinds.len() + (self.arrows.len() + self.callouts.len()) * 5) as u64)
+                .to_le_bytes(),
+        );
+        out.extend_from_slice(
+            &((self.stroke_width.len() + self.arrows.len() + self.callouts.len()) as u64)
+                .to_le_bytes(),
+        );
         for value in [
             self.layout.viewport_width,
             self.layout.viewport_height,
@@ -3550,8 +3747,8 @@ impl<'a> SceneBatch<'a> {
             let start_y = self.y_scale.pixel(arrow.y0);
             let tip_x = self.x_scale.pixel(arrow.x1);
             let tip_y = self.y_scale.pixel(arrow.y1);
-            let (base, head) = straight_arrow_points(start_x, start_y, tip_x, tip_y)
-                .expect("validated arrow");
+            let (base, head) =
+                straight_arrow_points(start_x, start_y, tip_x, tip_y).expect("validated arrow");
             let style_ref = (self.stroke_width.len() + arrow_index) as u32;
             let write = |out: &mut Vec<u8>, kind: SceneRecordKind, point: [f64; 2]| {
                 out.push(kind as u8);
@@ -3568,19 +3765,37 @@ impl<'a> SceneBatch<'a> {
             };
             write(&mut out, SceneRecordKind::Polyline, [start_x, start_y]);
             write(&mut out, SceneRecordKind::Polyline, base);
-            for point in head { write(&mut out, SceneRecordKind::PolyFill, point); }
+            for point in head {
+                write(&mut out, SceneRecordKind::PolyFill, point);
+            }
         }
         for (callout_index, callout) in self.callouts.iter().enumerate() {
-            let (base, head) = straight_arrow_points(callout.tip[0], callout.tip[1], callout.start[0], callout.start[1]).expect("validated callout");
+            let (base, head) = straight_arrow_points(
+                callout.tip[0],
+                callout.tip[1],
+                callout.start[0],
+                callout.start[1],
+            )
+            .expect("validated callout");
             let style_ref = (self.stroke_width.len() + self.arrows.len() + callout_index) as u32;
             let write = |out: &mut Vec<u8>, kind: SceneRecordKind, point: [f64; 2]| {
-                out.push(kind as u8); out.push(1); out.push(0); out.push(SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT);
-                out.extend_from_slice(&style_ref.to_le_bytes()); out.extend_from_slice(&callout.stable_id.to_le_bytes());
-                out.extend_from_slice(&point[0].to_le_bytes()); out.extend_from_slice(&point[1].to_le_bytes());
-                out.extend_from_slice(&0.0f64.to_le_bytes()); out.extend_from_slice(&0.0f64.to_le_bytes()); out.extend_from_slice(&0.0f64.to_le_bytes());
+                out.push(kind as u8);
+                out.push(1);
+                out.push(0);
+                out.push(SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT);
+                out.extend_from_slice(&style_ref.to_le_bytes());
+                out.extend_from_slice(&callout.stable_id.to_le_bytes());
+                out.extend_from_slice(&point[0].to_le_bytes());
+                out.extend_from_slice(&point[1].to_le_bytes());
+                out.extend_from_slice(&0.0f64.to_le_bytes());
+                out.extend_from_slice(&0.0f64.to_le_bytes());
+                out.extend_from_slice(&0.0f64.to_le_bytes());
             };
-            write(&mut out, SceneRecordKind::Polyline, callout.tip); write(&mut out, SceneRecordKind::Polyline, base);
-            for point in head { write(&mut out, SceneRecordKind::PolyFill, point); }
+            write(&mut out, SceneRecordKind::Polyline, callout.tip);
+            write(&mut out, SceneRecordKind::Polyline, base);
+            for point in head {
+                write(&mut out, SceneRecordKind::PolyFill, point);
+            }
         }
         write_chrome_trailer(
             &mut out,
@@ -3682,15 +3897,27 @@ fn decode_xyar(bytes: &[u8]) -> Result<Vec<StraightArrow>, SceneError> {
         let at = 12 + index * 60;
         let arrow = StraightArrow {
             stable_id: batch_u64(bytes, at)?,
-            x0: batch_f64(bytes, at + 8)?, y0: batch_f64(bytes, at + 16)?,
-            x1: batch_f64(bytes, at + 24)?, y1: batch_f64(bytes, at + 32)?,
+            x0: batch_f64(bytes, at + 8)?,
+            y0: batch_f64(bytes, at + 16)?,
+            x1: batch_f64(bytes, at + 24)?,
+            y1: batch_f64(bytes, at + 32)?,
             rgba: bytes[at + 40..at + 44].try_into().unwrap(),
-            opacity: batch_f64(bytes, at + 44)?, width: batch_f64(bytes, at + 52)?,
+            opacity: batch_f64(bytes, at + 44)?,
+            width: batch_f64(bytes, at + 52)?,
         };
         if !ids.insert(arrow.stable_id)
-            || ![arrow.x0, arrow.y0, arrow.x1, arrow.y1, arrow.opacity, arrow.width]
-                .iter().all(|value| value.is_finite())
-            || !(0.0..=1.0).contains(&arrow.opacity) || arrow.width <= 0.0
+            || ![
+                arrow.x0,
+                arrow.y0,
+                arrow.x1,
+                arrow.y1,
+                arrow.opacity,
+                arrow.width,
+            ]
+            .iter()
+            .all(|value| value.is_finite())
+            || !(0.0..=1.0).contains(&arrow.opacity)
+            || arrow.width <= 0.0
         {
             return Err(SceneError::Length);
         }
@@ -3710,30 +3937,84 @@ struct CartesianCallout {
     rgba: [u8; 4],
     width: f64,
     label: SceneLabel,
+    label_background: Option<SceneLabelBox>,
 }
 
-/// Decode XYAC v1. One row is `dddd4sddB3xI` (60 bytes) plus UTF-8 text.
-/// No identity crosses this seam: Rust assigns the tag-6 identity in wire
-/// order, preventing host records from selecting canonical Scene IDs.
+fn resolved_callout_label_background(
+    x: f64,
+    y: f64,
+    font_size: f64,
+    anchor: u8,
+    text: &str,
+    rgba: [u8; 4],
+    layout: PlotLayout,
+) -> Result<Option<SceneLabelBox>, SceneError> {
+    if rgba[3] == 0 {
+        return Ok(None);
+    }
+    let advance = text_advance(text, font_size);
+    let left = match anchor {
+        0 => x,
+        1 => x - advance * 0.5,
+        2 => x - advance,
+        _ => return Err(SceneError::Length),
+    } - CALLOUT_LABEL_BOX_INSET;
+    let top = y - font_size - CALLOUT_LABEL_BOX_INSET;
+    let width = advance + 2.0 * CALLOUT_LABEL_BOX_INSET;
+    let height = font_size * 1.2 + 2.0 * CALLOUT_LABEL_BOX_INSET;
+    if ![left, top, width, height].into_iter().all(f64::is_finite)
+        || width <= 0.0
+        || height <= 0.0
+        || left < 0.0
+        || top < 0.0
+        || left + width > layout.viewport_width
+        || top + height > layout.viewport_height
+    {
+        return Err(SceneError::Limit);
+    }
+    Ok(Some(SceneLabelBox {
+        x: left,
+        y: top,
+        width,
+        height,
+        rgba,
+    }))
+}
+
+/// Decode XYAC v1/v2. Version 1 has a 60-byte fixed row; version 2 adds a
+/// literal callout-label background RGBA at bytes 60..64. No identity crosses
+/// this seam: Rust assigns the tag-6 identity in wire order, preventing host
+/// records from selecting canonical Scene IDs.
 fn decode_xyac(
     bytes: &[u8],
     x_scale: AxisScale,
     y_scale: AxisScale,
     layout: PlotLayout,
 ) -> Result<Vec<CartesianCallout>, SceneError> {
-    if bytes.is_empty() { return Ok(Vec::new()); }
-    if bytes.len() < 12 || &bytes[..4] != b"XYAC" || batch_u32(bytes, 4)? != 1 {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < 12 || &bytes[..4] != b"XYAC" {
         return Err(SceneError::Length);
     }
+    let version = batch_u32(bytes, 4)?;
+    if version != 1 && version != 2 {
+        return Err(SceneError::Length);
+    }
+    let fixed_bytes = if version == 1 { 60 } else { 64 };
     let count = batch_u32(bytes, 8)? as usize;
-    if count > MAX_AUTHORED_TEXT_ANNOTATIONS { return Err(SceneError::Limit); }
+    if count > MAX_AUTHORED_TEXT_ANNOTATIONS {
+        return Err(SceneError::Limit);
+    }
     let mut at = 12usize;
     let mut total = 0usize;
     let mut out = Vec::with_capacity(count);
     for index in 0..count {
-        let fixed_end = at.checked_add(60).ok_or(SceneError::Limit)?;
+        let fixed_end = at.checked_add(fixed_bytes).ok_or(SceneError::Limit)?;
         let fixed = bytes.get(at..fixed_end).ok_or(SceneError::Length)?;
-        if fixed[53..56] != [0; 3] { return Err(SceneError::Length); }
+        if fixed[53..56] != [0; 3] {
+            return Err(SceneError::Length);
+        }
         let x = f64::from_le_bytes(fixed[0..8].try_into().unwrap());
         let y = f64::from_le_bytes(fixed[8..16].try_into().unwrap());
         let dx = f64::from_le_bytes(fixed[16..24].try_into().unwrap());
@@ -3743,38 +4024,78 @@ fn decode_xyac(
         let width = f64::from_le_bytes(fixed[44..52].try_into().unwrap());
         let anchor = fixed[52];
         let text_len = u32::from_le_bytes(fixed[56..60].try_into().unwrap()) as usize;
+        let label_background = if version == 2 {
+            fixed[60..64].try_into().unwrap()
+        } else {
+            [0; 4]
+        };
         let end = fixed_end.checked_add(text_len).ok_or(SceneError::Limit)?;
         let text = std::str::from_utf8(bytes.get(fixed_end..end).ok_or(SceneError::Length)?)
             .map_err(|_| SceneError::Length)?;
         total = total.checked_add(text_len).ok_or(SceneError::Limit)?;
-        if ![x, y, dx, dy, opacity, width].iter().all(|value| value.is_finite())
+        if ![x, y, dx, dy, opacity, width]
+            .iter()
+            .all(|value| value.is_finite())
             || !(0.0..=1.0).contains(&opacity)
             || width <= 0.0
             || anchor > 2
             || text.is_empty()
             || text.contains('\0')
             || total > MAX_SCENE_LABEL_TEXT_BYTES
-        { return Err(SceneError::Length); }
+        {
+            return Err(SceneError::Length);
+        }
         let start = [x_scale.pixel(x), y_scale.pixel(y)];
         let tip = [start[0] + dx, start[1] + dy];
-        if !start.iter().chain(tip.iter()).all(|value| value.is_finite())
-            || start[0] < layout.left || start[0] > layout.right || start[1] < layout.top || start[1] > layout.bottom
-            || tip[0] < layout.left || tip[0] > layout.right || tip[1] < layout.top || tip[1] > layout.bottom
-        { return Err(SceneError::Length); }
+        if !start
+            .iter()
+            .chain(tip.iter())
+            .all(|value| value.is_finite())
+            || start[0] < layout.left
+            || start[0] > layout.right
+            || start[1] < layout.top
+            || start[1] > layout.bottom
+            || tip[0] < layout.left
+            || tip[0] > layout.right
+            || tip[1] < layout.top
+            || tip[1] > layout.bottom
+        {
+            return Err(SceneError::Length);
+        }
         // Validate the fixed canonical head before any output state is built.
         straight_arrow_points(tip[0], tip[1], start[0], start[1])?;
         let stable_id = 0x5859_0600_0000_0000 | index as u64;
+        let label_rgba = straight_arrow_alpha(rgba, opacity)?;
         out.push(CartesianCallout {
             stable_id,
             start,
             tip,
-            rgba: straight_arrow_alpha(rgba, opacity)?,
+            rgba: label_rgba,
             width,
-            label: SceneLabel { stable_id, x: tip[0], y: tip[1], font_size: 12.0, rgba: straight_arrow_alpha(rgba, opacity)?, anchor, text: text.to_owned() },
+            label: SceneLabel {
+                stable_id,
+                x: tip[0],
+                y: tip[1],
+                font_size: 12.0,
+                rgba: label_rgba,
+                anchor,
+                text: text.to_owned(),
+            },
+            label_background: resolved_callout_label_background(
+                tip[0],
+                tip[1],
+                12.0,
+                anchor,
+                text,
+                label_background,
+                layout,
+            )?,
         });
         at = end;
     }
-    if at != bytes.len() { return Err(SceneError::Length); }
+    if at != bytes.len() {
+        return Err(SceneError::Length);
+    }
     Ok(out)
 }
 
@@ -3790,8 +4111,10 @@ fn valid_straight_arrow_run(records: &[EncodedRecord]) -> bool {
     }
     let first = records[0];
     if records.iter().any(|record| {
-        !matches!(record.annotation_tag, SCENE_ANNOTATION_TAG_STRAIGHT_ARROW | SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT)
-            || record.stable_id != first.stable_id
+        !matches!(
+            record.annotation_tag,
+            SCENE_ANNOTATION_TAG_STRAIGHT_ARROW | SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT
+        ) || record.stable_id != first.stable_id
             || record.style_ref != first.style_ref
             || record.visible != first.visible
             || record.symbol != 0
@@ -3955,6 +4278,7 @@ pub struct SceneDocument {
     legend: Option<SceneLegend>,
     colorbar: Option<SceneColorbar>,
     labels: Vec<SceneLabel>,
+    label_backgrounds: Vec<Option<SceneLabelBox>>,
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
@@ -3964,29 +4288,85 @@ impl SceneDocument {
     /// Add Rust-resolved Cartesian callout leaders and their shared labels.
     /// The leader is the same fixed-head primitive contract as an authored
     /// arrow, but tag 6 makes its semantic identity explicit to all consumers.
-    fn with_cartesian_callouts(mut self, callouts: &[CartesianCallout]) -> Result<Self, SceneError> {
+    fn with_cartesian_callouts(
+        mut self,
+        callouts: &[CartesianCallout],
+    ) -> Result<Self, SceneError> {
         if callouts.len() > MAX_AUTHORED_TEXT_ANNOTATIONS
-            || self.records.len().checked_add(callouts.len().checked_mul(5).ok_or(SceneError::Limit)?).ok_or(SceneError::Limit)? > MAX_SCENE_MARKS
-            || self.styles.len().checked_add(callouts.len()).ok_or(SceneError::Limit)? > MAX_SCENE_STYLES
-            || self.labels.len().checked_add(callouts.len()).ok_or(SceneError::Limit)? > MAX_SCENE_LABELS
-        { return Err(SceneError::Limit); }
+            || self
+                .records
+                .len()
+                .checked_add(callouts.len().checked_mul(5).ok_or(SceneError::Limit)?)
+                .ok_or(SceneError::Limit)?
+                > MAX_SCENE_MARKS
+            || self
+                .styles
+                .len()
+                .checked_add(callouts.len())
+                .ok_or(SceneError::Limit)?
+                > MAX_SCENE_STYLES
+            || self
+                .labels
+                .len()
+                .checked_add(callouts.len())
+                .ok_or(SceneError::Limit)?
+                > MAX_SCENE_LABELS
+        {
+            return Err(SceneError::Limit);
+        }
         for callout in callouts {
-            if self.records.iter().any(|record| record.stable_id == callout.stable_id)
-                || self.labels.iter().any(|label| label.stable_id == callout.stable_id)
+            if self
+                .records
+                .iter()
+                .any(|record| record.stable_id == callout.stable_id)
+                || self
+                    .labels
+                    .iter()
+                    .any(|label| label.stable_id == callout.stable_id)
                 || callout.label.stable_id != callout.stable_id
                 || callout.label.anchor > 2
-            { return Err(SceneError::Length); }
-            let (base, head) = straight_arrow_points(callout.tip[0], callout.tip[1], callout.start[0], callout.start[1])?;
+            {
+                return Err(SceneError::Length);
+            }
+            let (base, head) = straight_arrow_points(
+                callout.tip[0],
+                callout.tip[1],
+                callout.start[0],
+                callout.start[1],
+            )?;
             let style_ref = self.styles.len();
-            self.styles.push(EncodedStyle { fill: callout.rgba, stroke: callout.rgba, stroke_width: callout.width });
+            self.styles.push(EncodedStyle {
+                fill: callout.rgba,
+                stroke: callout.rgba,
+                stroke_width: callout.width,
+            });
             let record = |kind, coordinates| EncodedRecord {
-                kind, visible: true, symbol: 0, style_ref, stable_id: callout.stable_id,
-                coordinates, diameter: 0.0, annotation_tag: SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT,
+                kind,
+                visible: true,
+                symbol: 0,
+                style_ref,
+                stable_id: callout.stable_id,
+                coordinates,
+                diameter: 0.0,
+                annotation_tag: SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT,
             };
-            self.records.push(record(SceneRecordKind::Polyline, [callout.tip[0], callout.tip[1], 0.0, 0.0]));
-            self.records.push(record(SceneRecordKind::Polyline, [base[0], base[1], 0.0, 0.0]));
-            for point in head { self.records.push(record(SceneRecordKind::PolyFill, [point[0], point[1], 0.0, 0.0])); }
+            self.records.push(record(
+                SceneRecordKind::Polyline,
+                [callout.tip[0], callout.tip[1], 0.0, 0.0],
+            ));
+            self.records.push(record(
+                SceneRecordKind::Polyline,
+                [base[0], base[1], 0.0, 0.0],
+            ));
+            for point in head {
+                self.records.push(record(
+                    SceneRecordKind::PolyFill,
+                    [point[0], point[1], 0.0, 0.0],
+                ));
+            }
             self.labels.push(callout.label.clone());
+            self.label_backgrounds
+                .push(callout.label_background.clone());
         }
         Ok(self)
     }
@@ -4093,7 +4473,10 @@ impl SceneDocument {
         for (index, label) in labels.iter_mut().enumerate() {
             label.stable_id = 0x5859_0400_0000_0000 | (existing + index) as u64;
         }
+        let added_label_count = labels.len();
         self.labels.append(&mut labels);
+        self.label_backgrounds
+            .extend(std::iter::repeat_n(None, added_label_count));
         self = self.with_straight_arrows(&envelope.arrows)?;
         self = self.with_cartesian_callouts(&envelope.callouts)?;
         Ok(self)
@@ -4268,7 +4651,8 @@ impl SceneDocument {
                 value.checked_add(record_count.checked_mul(SCENE_BATCH_RECORD_BYTES)?)
             })
             .ok_or(SceneError::Limit)?;
-        let (chrome, text, legend, colorbar, labels, total) = read_chrome_trailer(bytes, body)?;
+        let (chrome, text, legend, colorbar, labels, label_backgrounds, total) =
+            read_chrome_trailer(bytes, body)?;
         if bytes.len() != total {
             return Err(SceneError::Length);
         }
@@ -4291,6 +4675,11 @@ impl SceneDocument {
                 || label.x > layout.viewport_width
                 || label.y < 0.0
                 || label.y > layout.viewport_height
+        }) || label_backgrounds.iter().flatten().any(|background| {
+            background.x < 0.0
+                || background.y < 0.0
+                || background.x + background.width > layout.viewport_width
+                || background.y + background.height > layout.viewport_height
         }) {
             return Err(SceneError::Length);
         }
@@ -4578,6 +4967,7 @@ impl SceneDocument {
             legend,
             colorbar,
             labels,
+            label_backgrounds,
             styles,
             records,
             raster_mark_capacity,
@@ -4821,9 +5211,25 @@ impl SceneDocument {
         }
         for (_, position, label) in &ticks.majors {
             let (x0, y0, x1, y1, tx, ty, anchor) = if colorbar.horizontal {
-                (*position, y + height, *position, y + height + 6.0, *position, y + height + 17.0, "middle")
+                (
+                    *position,
+                    y + height,
+                    *position,
+                    y + height + 6.0,
+                    *position,
+                    y + height + 17.0,
+                    "middle",
+                )
             } else {
-                (x + width, *position, x + width + 6.0, *position, x + width + 9.0, *position + 4.0, "start")
+                (
+                    x + width,
+                    *position,
+                    x + width + 6.0,
+                    *position,
+                    x + width + 9.0,
+                    *position + 4.0,
+                    "start",
+                )
             };
             out.push_str("<line data-xy-slot=\"colorbar_tick\" x1=\"");
             push_num(out, x0);
@@ -4876,7 +5282,22 @@ impl SceneDocument {
         out.push_str(
             "<g data-xy-chrome=\"graph_labels\" role=\"list\" aria-label=\"Graph labels\">",
         );
-        for label in &self.labels {
+        for (label, background) in self.labels.iter().zip(&self.label_backgrounds) {
+            if let Some(background) = background {
+                out.push_str(
+                    "<rect data-xy-slot=\"annotation_label_box\" aria-hidden=\"true\" x=\"",
+                );
+                push_num(out, background.x);
+                out.push_str("\" y=\"");
+                push_num(out, background.y);
+                out.push_str("\" width=\"");
+                push_num(out, background.width);
+                out.push_str("\" height=\"");
+                push_num(out, background.height);
+                out.push_str("\" fill=\"");
+                out.push_str(&rgba_css(background.rgba));
+                out.push_str("\"/>");
+            }
             out.push_str("<text data-xy-slot=\"graph_label\" data-xy-stable-id=\"");
             out.push_str(&label.stable_id.to_string());
             out.push_str("\" role=\"listitem\" x=\"");
@@ -4889,7 +5310,11 @@ impl SceneDocument {
             push_num(out, label.font_size);
             if label.anchor != 0 {
                 out.push_str("\" text-anchor=\"");
-                out.push_str(match label.anchor { 1 => "middle", 2 => "end", _ => unreachable!() });
+                out.push_str(match label.anchor {
+                    1 => "middle",
+                    2 => "end",
+                    _ => unreachable!(),
+                });
             }
             out.push_str("\">");
             push_escaped_attribute(out, &label.text);
@@ -5647,9 +6072,15 @@ impl SceneDocument {
                     .sum(),
             )
         });
-        let label_capacity = self.labels.iter().fold(0usize, |total, label| {
-            total.saturating_add(22).saturating_add(label.text.len())
-        });
+        let label_capacity = self.labels.iter().zip(&self.label_backgrounds).fold(
+            0usize,
+            |total, (label, background)| {
+                total
+                    .saturating_add(30)
+                    .saturating_add(label.text.len())
+                    .saturating_add(usize::from(background.is_some()).saturating_mul(41))
+            },
+        );
         let colorbar_capacity = self.colorbar.as_ref().map_or(0, |value| {
             let bands = value
                 .stops
@@ -5664,7 +6095,8 @@ impl SceneDocument {
             // four minors per adjacent major pair emit strokes. Reserve the
             // product ceiling so the append-only display list never reallocates
             // or rejects a valid bounded XYCB v2 record after validation.
-            bands.saturating_add(MAX_SCENE_COLORBAR_TICKS.saturating_mul(96))
+            bands
+                .saturating_add(MAX_SCENE_COLORBAR_TICKS.saturating_mul(96))
                 .saturating_add(
                     MAX_SCENE_COLORBAR_TICKS
                         .saturating_sub(1)
@@ -5680,7 +6112,24 @@ impl SceneDocument {
     }
 
     fn append_raster_labels(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
-        for label in &self.labels {
+        for (label, background) in self.labels.iter().zip(&self.label_backgrounds) {
+            if let Some(background) = background {
+                out.push(1);
+                out.extend_from_slice(&4u32.to_le_bytes());
+                for (x, y) in [
+                    (background.x, background.y),
+                    (background.x + background.width, background.y),
+                    (
+                        background.x + background.width,
+                        background.y + background.height,
+                    ),
+                    (background.x, background.y + background.height),
+                ] {
+                    push_raster_f32(out, x, scale)?;
+                    push_raster_f32(out, y, scale)?;
+                }
+                out.extend_from_slice(&background.rgba);
+            }
             out.push(6);
             push_raster_f32(out, label.x, scale)?;
             push_raster_f32(out, label.y, scale)?;
@@ -6342,7 +6791,7 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let legend_bytes = self.painter_legend_bytes()?;
         let colorbar_bytes = self.painter_colorbar_bytes()?;
-        let label_bytes = encode_scene_labels(&self.labels)?;
+        let label_bytes = encode_scene_labels(&self.labels, &self.label_backgrounds)?;
         required = required
             .checked_add(legend_bytes.len())
             .and_then(|value| value.checked_add(colorbar_bytes.len()))
@@ -7160,7 +7609,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 19);
+        assert_eq!(SCENE_VERSION, 20);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -7255,36 +7704,224 @@ mod tests {
         let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
         let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
         let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
-        let scene = SceneBatch::new(layout, 1, 2, x_scale, y_scale,
-            &[SceneRecordKind::Scatter as u8], &[7], &[0], &[1,2,3,255], &[1,2,3,255], &[0.0], &[4.0], &[0], &[0.5], &[0.5], &[0.0], &[0.0]).unwrap().encode();
+        let scene = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Scatter as u8],
+            &[7],
+            &[0],
+            &[1, 2, 3, 255],
+            &[1, 2, 3, 255],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .encode();
         let mut xyac = Vec::new();
-        xyac.extend_from_slice(b"XYAC"); xyac.extend_from_slice(&1u32.to_le_bytes()); xyac.extend_from_slice(&1u32.to_le_bytes());
-        for value in [0.5f64, 0.5, 36.0, -30.0] { xyac.extend_from_slice(&value.to_le_bytes()); }
-        xyac.extend_from_slice(&[10, 20, 30, 200]); xyac.extend_from_slice(&0.5f64.to_le_bytes()); xyac.extend_from_slice(&2.0f64.to_le_bytes());
-        xyac.push(2); xyac.extend_from_slice(&[0; 3]); xyac.extend_from_slice(&4u32.to_le_bytes()); xyac.extend_from_slice(b"note");
+        xyac.extend_from_slice(b"XYAC");
+        xyac.extend_from_slice(&1u32.to_le_bytes());
+        xyac.extend_from_slice(&1u32.to_le_bytes());
+        for value in [0.5f64, 0.5, 36.0, -30.0] {
+            xyac.extend_from_slice(&value.to_le_bytes());
+        }
+        xyac.extend_from_slice(&[10, 20, 30, 200]);
+        xyac.extend_from_slice(&0.5f64.to_le_bytes());
+        xyac.extend_from_slice(&2.0f64.to_le_bytes());
+        xyac.push(2);
+        xyac.extend_from_slice(&[0; 3]);
+        xyac.extend_from_slice(&4u32.to_le_bytes());
+        xyac.extend_from_slice(b"note");
         let mut envelope = Vec::new();
-        envelope.extend_from_slice(b"XYAD"); envelope.extend_from_slice(&2u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes()); envelope.extend_from_slice(&0u32.to_le_bytes()); envelope.extend_from_slice(&0u32.to_le_bytes()); envelope.extend_from_slice(&(xyac.len() as u32).to_le_bytes()); envelope.extend_from_slice(&xyac);
-        let document = SceneDocument::decode(&scene).unwrap().with_authored_annotations(&envelope).unwrap();
+        envelope.extend_from_slice(b"XYAD");
+        envelope.extend_from_slice(&2u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&(xyac.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&xyac);
+        let document = SceneDocument::decode(&scene)
+            .unwrap()
+            .with_authored_annotations(&envelope)
+            .unwrap();
         let run = &document.records[1..];
         assert!(valid_straight_arrow_run(run));
-        assert_eq!(run[0].annotation_tag, SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT);
+        assert_eq!(
+            run[0].annotation_tag,
+            SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT
+        );
         assert_eq!(run[0].stable_id, 0x5859_0600_0000_0000);
         assert_eq!(run[0].coordinates[..2], [156.0, 50.0]);
         assert_eq!(run[2].coordinates[..2], [120.0, 80.0]);
         assert_eq!(document.labels[0].anchor, 2);
         assert!(document.to_svg().contains("text-anchor=\"end\""));
         let painter = document.to_browser_painter(64 * 1024).unwrap();
-        assert_eq!(painter[BROWSER_PAINTER_HEADER_BYTES + BROWSER_PAINTER_TRACE_BYTES + 2], SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT);
+        assert_eq!(
+            painter[BROWSER_PAINTER_HEADER_BYTES + BROWSER_PAINTER_TRACE_BYTES + 2],
+            SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT
+        );
         assert!(painter.windows(4).any(|window| window == b"XYLB"));
         let mut malformed = envelope.clone();
         // XYAC's reserved bytes are fail-closed, not ignored future payload.
         malformed[24 + 12 + 53] = 1;
-        assert_eq!(SceneDocument::decode(&scene).unwrap().with_authored_annotations(&malformed).err(), Some(SceneError::Length));
-        let batch_scene = SceneBatch::new(layout, 1, 2, x_scale, y_scale,
-            &[SceneRecordKind::Scatter as u8], &[7], &[0], &[1,2,3,255], &[1,2,3,255], &[0.0], &[4.0], &[0], &[0.5], &[0.5], &[0.0], &[0.0])
-            .unwrap().with_authored_annotations(&envelope).unwrap().encode();
+        assert_eq!(
+            SceneDocument::decode(&scene)
+                .unwrap()
+                .with_authored_annotations(&malformed)
+                .err(),
+            Some(SceneError::Length)
+        );
+        let batch_scene = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Scatter as u8],
+            &[7],
+            &[0],
+            &[1, 2, 3, 255],
+            &[1, 2, 3, 255],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .with_authored_annotations(&envelope)
+        .unwrap()
+        .encode();
         assert_eq!(SceneDocument::decode(&batch_scene).err(), None);
+    }
+
+    #[test]
+    fn cartesian_callout_xyac_v2_resolves_and_serializes_literal_label_box() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let scene = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Scatter as u8],
+            &[7],
+            &[0],
+            &[1, 2, 3, 255],
+            &[1, 2, 3, 255],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .encode();
+        let mut xyac = Vec::new();
+        xyac.extend_from_slice(b"XYAC");
+        xyac.extend_from_slice(&2u32.to_le_bytes());
+        xyac.extend_from_slice(&1u32.to_le_bytes());
+        for value in [0.5f64, 0.5, 36.0, -30.0] {
+            xyac.extend_from_slice(&value.to_le_bytes());
+        }
+        xyac.extend_from_slice(&[10, 20, 30, 200]);
+        xyac.extend_from_slice(&0.5f64.to_le_bytes());
+        xyac.extend_from_slice(&2.0f64.to_le_bytes());
+        xyac.push(2);
+        xyac.extend_from_slice(&[0; 3]);
+        xyac.extend_from_slice(&4u32.to_le_bytes());
+        xyac.extend_from_slice(&[4, 5, 6, 128]);
+        xyac.extend_from_slice(b"note");
+        let mut envelope = Vec::new();
+        envelope.extend_from_slice(b"XYAD");
+        envelope.extend_from_slice(&2u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&(xyac.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&xyac);
+        let document = SceneDocument::decode(&scene)
+            .unwrap()
+            .with_authored_annotations(&envelope)
+            .unwrap();
+        let background = document.label_backgrounds[0].as_ref().unwrap();
+        assert_eq!(background.rgba, [4, 5, 6, 128]);
+        assert!(background.x < document.labels[0].x);
+        assert!(background.y < document.labels[0].y);
+        assert!(background.width > 0.0 && background.height > 0.0);
+        let svg = document.to_svg();
+        assert!(svg.contains("data-xy-slot=\"annotation_label_box\""));
+        assert!(
+            svg.find("<rect data-xy-slot=\"annotation_label_box\"")
+                .unwrap()
+                < svg.find("<text data-xy-slot=\"graph_label\"").unwrap()
+        );
+        let raster = document.to_raster_commands(1.0).unwrap();
+        assert!(raster.windows(4).any(|window| window == [4, 5, 6, 128]));
+        let painter = document.to_browser_painter(64 * 1024).unwrap();
+        let label = painter
+            .windows(4)
+            .position(|window| window == b"XYLB")
+            .unwrap();
+        assert_eq!(
+            u32::from_le_bytes(painter[label + 4..label + 8].try_into().unwrap()),
+            3
+        );
+        let record = label + SCENE_LABEL_HEADER_BYTES;
+        assert_eq!(painter[record + 44], 1);
+        assert_eq!(&painter[record + 80..record + 84], &[4, 5, 6, 128]);
+
+        let round_trip_scene = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Scatter as u8],
+            &[7],
+            &[0],
+            &[1, 2, 3, 255],
+            &[1, 2, 3, 255],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .with_authored_annotations(&envelope)
+        .unwrap()
+        .encode();
+        let round_trip = SceneDocument::decode(&round_trip_scene).unwrap();
+        assert_eq!(
+            round_trip.label_backgrounds[0].as_ref().unwrap().rgba,
+            [4, 5, 6, 128]
+        );
+
+        let mut malformed = envelope;
+        malformed[24 + 4..24 + 8].copy_from_slice(&3u32.to_le_bytes());
+        assert_eq!(
+            SceneDocument::decode(&scene)
+                .unwrap()
+                .with_authored_annotations(&malformed)
+                .err(),
+            Some(SceneError::Length)
+        );
     }
 
     #[test]
@@ -8953,7 +9590,10 @@ mod tests {
             minor_ticks: true,
             ..colorbar.clone()
         };
-        assert_eq!(SceneColorbar::from_input(&ticked.encode().unwrap()), Ok(Some(ticked)));
+        assert_eq!(
+            SceneColorbar::from_input(&ticked.encode().unwrap()),
+            Ok(Some(ticked))
+        );
         let resolved = resolved_colorbar_ticks(
             &SceneColorbar {
                 ticks: Some(vec![0.0, 0.5, 1.0]),
@@ -8963,19 +9603,33 @@ mod tests {
             (100.0, 10.0, 14.0, 80.0),
         )
         .unwrap();
-        assert_eq!(resolved.majors.iter().map(|tick| tick.2.as_str()).collect::<Vec<_>>(), ["0.0", "0.5", "1.0"]);
+        assert_eq!(
+            resolved
+                .majors
+                .iter()
+                .map(|tick| tick.2.as_str())
+                .collect::<Vec<_>>(),
+            ["0.0", "0.5", "1.0"]
+        );
         assert_eq!(resolved.minors.len(), 8);
         let maximum = SceneColorbar {
             stops: (0..MAX_SCENE_COLORBAR_STOPS)
                 .map(|index| (index as f64 / 15.0, [index as u8, 0, 0, 255]))
                 .collect(),
-            ticks: Some((0..MAX_SCENE_COLORBAR_TICKS).map(|index| index as f64 / 31.0).collect()),
+            ticks: Some(
+                (0..MAX_SCENE_COLORBAR_TICKS)
+                    .map(|index| index as f64 / 31.0)
+                    .collect(),
+            ),
             title: "x".repeat(MAX_SCENE_COLORBAR_TEXT_BYTES),
             ..colorbar.clone()
         };
         let maximum_encoded = maximum.encode().unwrap();
         assert_eq!(maximum_encoded.len(), MAX_SCENE_COLORBAR_INPUT_BYTES);
-        assert_eq!(SceneColorbar::from_input(&maximum_encoded), Ok(Some(maximum)));
+        assert_eq!(
+            SceneColorbar::from_input(&maximum_encoded),
+            Ok(Some(maximum))
+        );
         let mut nonzero_tick_count = colorbar.encode().unwrap();
         nonzero_tick_count[16..20].copy_from_slice(&1u32.to_le_bytes());
         assert!(SceneColorbar::from_input(&nonzero_tick_count).is_err());

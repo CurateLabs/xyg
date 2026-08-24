@@ -178,7 +178,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   ];
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 19);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 20);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -209,7 +209,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 19);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 20);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 2, y: 0.5, text: "outside" }];
@@ -248,6 +248,23 @@ test("Node frames bounded raw-coordinate straight arrows and rejects richer form
   assert.throws(() => figure.toScene(), /arrows do not encode text/);
   figure.annotations = [{ kind: "arrow", x0: 0, y0: 0, x1: 1, y1: 1, style: { dash: "2,2" } }];
   assert.throws(() => figure.toScene(), /arrow style does not encode/);
+});
+
+test("Node frames callout label backgrounds as XYAC v2 and retains v1 otherwise", () => {
+  const plain = new Figure({ width: 320, height: 240 });
+  plain.setAxisDomain("x", [0, 1]); plain.setAxisDomain("y", [0, 1]);
+  plain.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "plain" }];
+  assert.doesNotThrow(() => plain.toScene());
+
+  const mixed = new Figure({ width: 320, height: 240 });
+  mixed.setAxisDomain("x", [0, 1]); mixed.setAxisDomain("y", [0, 1]);
+  mixed.annotations = [
+    { kind: "callout", x: 0.25, y: 0.25, text: "clear" },
+    { kind: "callout", x: 0.75, y: 0.75, text: "filled", style: { label_background: "#123456" } },
+  ];
+  assert.doesNotThrow(() => mixed.toScene());
+  mixed.annotations[1].style.label_background = 7;
+  assert.throws(() => mixed.toScene(), /callout label background/);
 });
 
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
@@ -493,7 +510,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 19);
+  assert.equal(sceneVersion(), 20);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -534,7 +551,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 19);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 20);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });
