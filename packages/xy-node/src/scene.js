@@ -534,7 +534,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   ))) features |= 1n << 3n;
   if (colorbarUnsupported) features |= 1n << 4n;
   if ((figure.extraLegends ?? figure.extra_legends ?? []).length) features |= 1n << 5n;
-  if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
+  if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
   if ((figure.annotations ?? []).some((annotation) => ["callout", "arrow"].includes(annotation.kind))) features |= 1n << 8n;
   const reason = sceneSupportReason(features);
   if (reason) throw new RangeError(reason);
