@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import struct
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -61,7 +62,7 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
         missing_constant.to_scene()
 
 
-def test_scene_v13_colorbar_python_framer_matches_literal_stop_contract() -> None:
+def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> None:
     figure = Figure()
     figure.colorbar_options = {
         "domain": [0.0, 1.0],
@@ -87,6 +88,46 @@ def test_scene_v13_colorbar_python_framer_matches_literal_stop_contract() -> Non
         _colorbar_input(figure)
 
 
+def test_scene_v19_colorbar_python_framer_encodes_bounded_ticks_and_minor_flag() -> None:
+    figure = Figure()
+    figure.colorbar_options = {
+        "domain": [0.0, 1.0],
+        "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+        "ticks": [0.0, 0.5, 1.0],
+        "minor_ticks": True,
+    }
+    encoded = _colorbar_input(figure)
+    assert int.from_bytes(encoded[4:8], "little") == 2
+    assert encoded[8] == 0b1110
+    assert int.from_bytes(encoded[16:20], "little") == 3
+    assert struct.unpack_from("<3d", encoded, 80) == (0.0, 0.5, 1.0)
+
+    figure.colorbar_options["ticks"] = []
+    assert _colorbar_input(figure)[8] == 0b0110
+    figure.colorbar_options["ticks"] = [0.0, 0.0]
+    with pytest.raises(UnsupportedSceneV3, match="ticks"):
+        _colorbar_input(figure)
+    figure.colorbar_options["ticks"] = [0.0, 1.0]
+    figure.colorbar_options["minor_ticks"] = 1
+    with pytest.raises(UnsupportedSceneV3, match="minor_ticks"):
+        _colorbar_input(figure)
+
+
+def test_scene_v19_colorbar_maximum_frame_reaches_the_browser_painter() -> None:
+    figure = Figure(width=640, height=480).scatter([0.0, 1.0], [0.0, 1.0])
+    figure.colorbar_options = {
+        "domain": [0.0, 1.0],
+        "stops": [(index / 15.0, [index, 0, 0, 255]) for index in range(16)],
+        "ticks": [index / 31.0 for index in range(32)],
+        "minor_ticks": True,
+        "title": "x" * 4096,
+    }
+    painter = _native.scene_browser_painter(figure.to_scene())
+    colorbar_length = int.from_bytes(painter[284:288], "little")
+    assert colorbar_length > 4600
+    assert b"XYCB" in painter and b"XYCT" in painter
+
+
 def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
     figure.vline(0.25, color="#ff0000", width=2.0)
@@ -94,7 +135,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 18
+    assert int.from_bytes(encoded[4:8], "little") == 19
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -210,7 +251,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 18
+    assert int.from_bytes(encoded[4:8], "little") == 19
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -521,7 +562,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 18
+    assert _native.scene_version() == 19
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:

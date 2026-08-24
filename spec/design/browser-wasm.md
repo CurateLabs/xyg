@@ -153,7 +153,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 19. ABI 19 retains the bounded `XYSA` v1 envelope and
+`WASM_ABI_VERSION` is 20. ABI 20 retains the bounded `XYSA` v1 envelope and
 accepts `XYAD` v2 annotation decorations: existing `XYAT`/`XYAL`/`XYAR` slices
 plus bounded `XYAC` v1 Cartesian callouts. Rust decodes the complete canonical
 `XYGS` Scene first, then validates and projects raw Cartesian anchors through
@@ -181,7 +181,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 18 for this contract.
+`SCENE_VERSION` remains independently versioned and is 19 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -198,19 +198,19 @@ TypeScript does not scan Scene
 records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
-Scene v18 retains record metadata byte 3 explicitly: `0` retains legacy
+Scene v19 retains record metadata byte 3 explicitly: `0` retains legacy
 trace/run identity, `1..6` identifies the bounded annotation kinds (with `5`
 for Rust-projected straight arrows and `6` for Rust-resolved Cartesian
 callout leaders), and `128`
 marks literal per-row identity whose value must never classify annotations or
-split connected line/area geometry. Painter v11 carries only the annotation tag
+split connected line/area geometry. Painter v12 retains only the annotation tag
 in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
-Painter contract v11 begins with `XYPB`, independent painter version 11, canonical
-Scene v18 (`SCENE_VERSION = 18`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v12 begins with `XYPB`, independent painter version 12, canonical
+Scene v19 (`SCENE_VERSION = 19`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v18
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v19
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
 geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores
@@ -218,8 +218,11 @@ those three authored texts before formatted tick labels. Header bytes 280–283
 carry the exact appended legend byte length, 284–287 the bounded literal `XYCB`
 colorbar length, and 288–291 the bounded `XYLB` label-block length. The
 validated trailer order after tick-label strings is `XYLG` → `XYRG` → `XYCB` →
-`XYRG` → `XYLB`: Rust resolves the geometry of each optional legend/colorbar
-record before the following decoration. Rust writes the frame bounds, title and row baselines,
+`XYRG` → `XYCT` → `XYLB`: Rust resolves the geometry of each optional legend/colorbar
+record before the following decoration. `XYCB` v2 carries only bounded literal
+stops, optional major values, and a minor-tick request; the following `XYCT` v1
+contains Rust-resolved major/minor values, screen positions, and major-label UTF-8
+tables. Rust writes the frame bounds, title and row baselines,
 and literal line/marker/rectangle swatch geometry. TypeScript validates and
 projects those coordinates; it does not position, wrap, scroll, or fit the
 authored legend. `XYLB` stores Rust-final graph-label screen coordinates, font,
@@ -252,7 +255,7 @@ Callers may reduce fragmentation or split work into explicitly managed views;
 the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
-This is the public direct-browser entry for the stable Scene v18
+This is the public direct-browser entry for the stable Scene v19
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
 spine, major/minor tick, side, visibility, label paint, and bounded primary
 static legends, plain-text annotations, bounded Rust-projected straight
@@ -291,10 +294,10 @@ covers scatter, line, bar, and area; generated and authored arbitrary u64
 identities (including the legacy annotation-prefix range); reversed and
 singleton bar defaults; explicit area bounds; incompatible versions,
 unsupported kinds, nonfinite geometry, and identity overflow. The committed
-request, exact Scene v18 bytes, and exact painter v11 bytes are checked by the
+request, exact Scene v19 bytes, and exact painter v12 bytes are checked by the
 strict-CSP direct-WASM runtime. Native Python, native Node, and real Pyodide
 consume the same generated Scene bytes through the shared native
-`xyg_scene_browser_painter` ABI and byte-compare its painter-v11 result with the
+`xyg_scene_browser_painter` ABI and byte-compare its painter-v12 result with the
 Rust-generated golden. They do
 not decode XYTS: XYTS is the direct-browser authoring ingress, while Scene is
 the portable cross-host output contract. Exact Scene and painter bytes are

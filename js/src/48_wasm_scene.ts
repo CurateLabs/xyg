@@ -153,7 +153,11 @@ function compilePainter(painter: ArrayBuffer) {
     tickValues.push(position); tickLabels.push(label); tickMajor.push(major === 1); nextString += labelLength;
   }
   const legendLength = u32(280), colorbarLength = u32(284), sceneLabelLength = u32(288);
-  if (legendLength > XYG_WASM_PAINTER_MAX_LEGEND_BYTES || colorbarLength > 4_600 || sceneLabelLength > 14_000 || nextString + legendLength + colorbarLength + sceneLabelLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter decoration range is invalid");
+  // XYCB input (4,600 bytes) is followed by bounded XYRG/XYCT geometry and
+  // resolved labels. This is deliberately the Rust-owned painter ceiling, not
+  // merely the host-framed input ceiling.
+  const maxColorbarPainterBytes = 4_600 + 24 + 16 + (32 + 124) * 16 + 32 * 32;
+  if (legendLength > XYG_WASM_PAINTER_MAX_LEGEND_BYTES || colorbarLength > maxColorbarPainterBytes || sceneLabelLength > 14_000 || nextString + legendLength + colorbarLength + sceneLabelLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter decoration range is invalid");
   let legend: any = null;
   if (legendLength) {
     const start = nextString;
@@ -201,14 +205,28 @@ function compilePainter(painter: ArrayBuffer) {
   let colorbar: any = null;
   if (colorbarLength) {
     const start = nextString, end = start + colorbarLength;
-    if (colorbarLength < 80 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYCB" || u32(start + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar header is invalid");
+    if (colorbarLength < 120 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYCB" || u32(start + 4) !== 2) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar header is invalid");
     const flags = bytes[start + 8], count = u32(start + 12), tickCount = u32(start + 16), titleLength = u32(start + 20);
     const lo = f64(start + 24), hi = f64(start + 32), tableEnd = start + 56 + count * 12, ticksEnd = tableEnd + tickCount * 8, geometry = ticksEnd + titleLength;
-    if (flags > 3 || !(flags & 2) || count < 2 || count > 16 || tickCount !== 0 || titleLength > 4096 || !(lo < hi) || geometry + 24 !== end || String.fromCharCode(...bytes.subarray(geometry, geometry + 4)) !== "XYRG" || u32(geometry + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar payload is invalid");
+    if (flags > 15 || !(flags & 2) || Boolean(flags & 8) !== Boolean(tickCount) || count < 2 || count > 16 || tickCount > 32 || titleLength > 4096 || !(lo < hi) || geometry + 40 > end || String.fromCharCode(...bytes.subarray(geometry, geometry + 4)) !== "XYRG" || u32(geometry + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar payload is invalid");
     const stops = Array.from({length: count}, (_, index) => ({ value: f64(start + 56 + index * 12), color: rgba(bytes.subarray(start + 64 + index * 12, start + 68 + index * 12)) }));
     if (stops.some((stop, index) => !Number.isFinite(stop.value) || stop.value < lo || stop.value > hi || (index && stop.value <= stops[index - 1].value))) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar stops are invalid");
+    const authoredTicks = Array.from({length: tickCount}, (_, index) => f64(tableEnd + index * 8));
+    if (authoredTicks.some((value, index) => !Number.isFinite(value) || value < lo || value > hi || (index && value <= authoredTicks[index - 1]))) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar ticks are invalid");
     let title: string; try { title = decoder.decode(bytes.subarray(ticksEnd, geometry)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar title is invalid UTF-8"); }
-    colorbar = { domain: [lo, hi], orientation: flags & 1 ? "horizontal" : "vertical", placement: "scene", levels: count - 1, boundaries: stops.map((stop) => stop.value), band_colors: stops.slice(0, -1).map((_, index) => Array.from(bytes.subarray(start + 64 + index * 12, start + 68 + index * 12))), ticks: [], text_color: rgba(bytes.subarray(start + 40, start + 44)), label: title || null, resolved: { bounds: [f32(geometry + 8), f32(geometry + 12), f32(geometry + 16), f32(geometry + 20)] } };
+    const tickBlock = geometry + 24;
+    if (String.fromCharCode(...bytes.subarray(tickBlock, tickBlock + 4)) !== "XYCT" || u32(tickBlock + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar ticks are invalid");
+    const majorCount = u32(tickBlock + 8), minorCount = u32(tickBlock + 12), total = majorCount + minorCount, records = tickBlock + 16, labels = records + total * 16;
+    if (!Number.isSafeInteger(total) || majorCount > 32 || minorCount > 124 || labels > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar tick limits are invalid");
+    let labelOffset = labels;
+    const resolvedTicks = Array.from({length: total}, (_, index) => {
+      const at = records + index * 16, value = f64(at), position = f32(at + 8), length = u32(at + 12);
+      if (!Number.isFinite(value) || !Number.isFinite(position) || value < lo || value > hi || labelOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar tick record is invalid");
+      let label = ""; try { label = decoder.decode(bytes.subarray(labelOffset, labelOffset + length)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar tick label is invalid UTF-8"); }
+      labelOffset += length; return { value, position, label };
+    });
+    if (labelOffset !== end || resolvedTicks.slice(0, majorCount).some((tick, index, values) => index && tick.value <= values[index - 1].value) || resolvedTicks.slice(majorCount).some((tick, index, values) => index && tick.value <= values[index - 1].value)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter colorbar tick order is invalid");
+    colorbar = { domain: [lo, hi], orientation: flags & 1 ? "horizontal" : "vertical", placement: "scene", levels: count - 1, boundaries: stops.map((stop) => stop.value), band_colors: stops.slice(0, -1).map((_, index) => Array.from(bytes.subarray(start + 64 + index * 12, start + 68 + index * 12))), ticks: resolvedTicks.slice(0, majorCount).map((tick) => tick.value), minor_ticks: Boolean(flags & 4), text_color: rgba(bytes.subarray(start + 40, start + 44)), label: title || null, resolved: { bounds: [f32(geometry + 8), f32(geometry + 12), f32(geometry + 16), f32(geometry + 20)], major_ticks: resolvedTicks.slice(0, majorCount), minor_ticks: resolvedTicks.slice(majorCount) } };
   }
   nextString += colorbarLength;
   const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; anchor: number; text: string}> = [];

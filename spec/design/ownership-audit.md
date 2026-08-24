@@ -303,7 +303,7 @@ Forbidden:
 | `js/src/49_wasm_temporal.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_temporal_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/50_chartview.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
-| `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `literal-projection-only`; Scene v18 owns rule/band/marker geometry, order, clipping, defaults, bounded attached-label anchors, literal Cartesian straight-arrow projection/head geometry, and bounded Cartesian callout leader/label anchoring in Rust; rich annotation forms remain migration debt | #116 |
+| `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `literal-projection-only`; Scene v19 owns rule/band/marker geometry, order, clipping, defaults, bounded attached-label anchors, literal Cartesian straight-arrow projection/head geometry, and bounded Cartesian callout leader/label anchoring in Rust; rich annotation forms remain migration debt | #116 |
 | `js/src/52_tooltip.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/53_interaction.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/54_kernel.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |

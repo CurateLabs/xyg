@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneSupportReason, sceneVersion } from "../src/index.js";
+import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneSupportReason, sceneVersion } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -101,6 +101,24 @@ test("Node frames the literal Scene colorbar side before Rust reserves its lane"
   }
 });
 
+test("Node frames bounded Scene colorbar ticks and Rust renders shared major/minor chrome", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.scatter([0, 1], [0, 1]);
+  figure.colorbarOptions = {
+    domain: [0, 1], stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 255]]],
+    ticks: [0, 0.5, 1], minor_ticks: true,
+  };
+  const scene = figure.toScene(), offset = Buffer.from(scene).indexOf("XYCB"), view = new DataView(scene.buffer, scene.byteOffset + offset);
+  assert.equal(view.getUint32(4, true), 2);
+  assert.equal(view.getUint8(8), 0b1110);
+  assert.equal(view.getUint32(16, true), 3);
+  assert.deepEqual([view.getFloat64(80, true), view.getFloat64(88, true), view.getFloat64(96, true)], [0, 0.5, 1]);
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/data-xy-slot="colorbar_tick"/g) ?? []).length, 6);
+  assert.equal((svg.match(/data-xy-slot="colorbar_minor_tick"/g) ?? []).length, 8);
+  assert.ok(Buffer.from(sceneBrowserPainter(scene)).includes(Buffer.from("XYCT")));
+});
+
 test("Node explicit hidden Cartesian chrome omits invisible groups without implying polar", () => {
   const chrome = new Uint8Array(200);
   new DataView(chrome.buffer).setFloat64(16, 12, true);
@@ -160,7 +178,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   ];
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 18);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 19);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -191,7 +209,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 18);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 19);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 2, y: 0.5, text: "outside" }];
@@ -475,7 +493,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 18);
+  assert.equal(sceneVersion(), 19);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -516,7 +534,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 17);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 19);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

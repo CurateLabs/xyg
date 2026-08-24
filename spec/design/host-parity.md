@@ -71,9 +71,9 @@ estimates retained Rust resources.
 
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
-exact Scene v18 output under a local-only strict CSP. Native Python and Node
+exact Scene v19 output under a local-only strict CSP. Native Python and Node
 load those Scene bytes through the shared `xyg_scene_browser_painter` C ABI and
-byte-compare Rust's painter-v11 lowering; the Pyodide wheel executes that same
+byte-compare Rust's painter-v12 lowering; the Pyodide wheel executes that same
 native ABI inside an actual Pyodide runtime with network access disabled for
 the conformance operation. This is intentionally asymmetric: adding an XYTS
 decoder to Python or Node would duplicate browser-ingress policy rather than
@@ -93,11 +93,13 @@ and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
 compatibility renderer until Rust owns every remaining layout/gutter and Scene
-record. Scene v13 now covers solid chart/plot backgrounds, authored
+record. Scene v13 covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a
-  bounded literal RGBA banded colorbar (right/bottom, without
-  colorbar tick or minor-tick chrome), and
+  bounded literal RGBA banded colorbar (right/bottom). Scene v19 evolves that
+  colorbar to `XYCB` v2: hosts may frame bounded major values and a minor-tick
+  request, while Rust resolves labels and geometry in `XYCT` v1 for all three
+  consumers, and
   rule, band, marker annotations, bounded Rust-anchored attached labels, and
   bounded Rust-projected literal straight arrows, and bounded Rust-resolved
   Cartesian callouts. Extra legends, named/advanced colorbars, other deferred

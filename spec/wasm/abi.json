@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "abi_version": 19,
-  "scene_version": 18,
-  "painter_version": 11,
+  "abi_version": 20,
+  "scene_version": 19,
+  "painter_version": 12,
   "painter_header_bytes": 300,
   "painter_trace_bytes": 64,
   "painter_tick_bytes": 16,

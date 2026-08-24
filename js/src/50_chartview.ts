@@ -3571,8 +3571,17 @@ export class ChartView {
     const barLength = (horizontal ? this.plot.w : this.plot.h) * shrink;
     const tickTarget = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
     const tickResult = logScale ? logTicks(lo, hi, tickTarget) : linearTicks(lo, hi, tickTarget);
+    const sceneMajorTicks = scenePlacement && Array.isArray(cb.resolved?.major_ticks)
+      ? cb.resolved.major_ticks
+      : null;
+    const sceneBounds = scenePlacement && Array.isArray(cb.resolved?.bounds)
+      ? cb.resolved.bounds.map(Number)
+      : null;
+    const hasSceneBounds = sceneBounds?.length === 4 && sceneBounds.every(Number.isFinite);
     const hasExplicitTicks = Array.isArray(cb.ticks);
-    const tickValues = hasExplicitTicks
+    const tickValues = sceneMajorTicks
+      ? sceneMajorTicks.map((tick) => tick.value)
+      : hasExplicitTicks
       ? cb.ticks
       : (logScale ? (tickResult as any).labels : tickResult.ticks);
     const tickStep = tickResult.step;
@@ -3586,8 +3595,9 @@ export class ChartView {
       // `any` because the node carries the stashed beside-the-bar cssText below
       // (same reason as the legend box's `lg`).
       const tick: any = document.createElement("span");
-      tick.textContent =
-        hasExplicitTicks &&
+      tick.textContent = sceneMajorTicks
+          ? String(sceneMajorTicks[tickIndex].label)
+          : hasExplicitTicks &&
           Array.isArray(cb.tick_labels) &&
           cb.tick_labels.length === tickValues.length
           ? String(cb.tick_labels[tickIndex])
@@ -3602,16 +3612,44 @@ export class ChartView {
       // positioning decide — the tick VALUES are generated here, and which of
       // them survive is a responsive decision that changes with the container.
       tick.dataset.xyColorbarFraction = String(fraction);
-      tick.style.cssText = horizontal
-        ? `position:absolute;left:${100 * fraction}%;top:${barThickness + 2}px;transform:translateX(-50%);white-space:nowrap;`
-        : `position:absolute;left:${barThickness + 5}px;top:${100 * (1 - fraction)}%;transform:translateY(-50%);white-space:nowrap;`;
+      const scenePosition = Number(sceneMajorTicks?.[tickIndex]?.position);
+      tick.style.cssText = sceneMajorTicks && hasSceneBounds && Number.isFinite(scenePosition)
+        ? horizontal
+          ? `position:absolute;left:${scenePosition - sceneBounds[0]}px;top:${sceneBounds[3] + 6}px;transform:translateX(-50%);white-space:nowrap;`
+          : `position:absolute;left:${sceneBounds[2] + 9}px;top:${scenePosition - sceneBounds[1] + 4}px;white-space:nowrap;`
+        : horizontal
+          ? `position:absolute;left:${100 * fraction}%;top:${barThickness + 2}px;transform:translateX(-50%);white-space:nowrap;`
+          : `position:absolute;left:${barThickness + 5}px;top:${100 * (1 - fraction)}%;transform:translateY(-50%);white-space:nowrap;`;
       // The compact form restacks the two endpoints above/below the gradient, so
       // keep the beside-the-bar placement to restore when the container widens.
       tick._xyBesideCss = tick.style.cssText;
       this._applySlot(tick, "colorbar_tick");
       box.appendChild(tick);
     }
-    if (cb.minor_ticks) {
+    const sceneMinorTicks = scenePlacement && Array.isArray(cb.resolved?.minor_ticks)
+      ? cb.resolved.minor_ticks
+      : null;
+    if (sceneMinorTicks || cb.minor_ticks) {
+      if (sceneMinorTicks) {
+        for (const resolved of sceneMinorTicks) {
+          const value = Number(resolved.value);
+          if (!Number.isFinite(value)) continue;
+          const fraction = fractionFor(value);
+          const tick = document.createElement("i");
+          tick.dataset.xyColorbarMinor = "true";
+          tick.dataset.xyColorbarOrientation = horizontal ? "horizontal" : "vertical";
+          const scenePosition = Number(resolved.position);
+          tick.style.cssText = hasSceneBounds && Number.isFinite(scenePosition)
+            ? horizontal
+              ? `position:absolute;left:${scenePosition - sceneBounds[0]}px;top:${sceneBounds[3]}px;`
+              : `position:absolute;left:${sceneBounds[2]}px;top:${scenePosition - sceneBounds[1]}px;`
+            : horizontal
+              ? `position:absolute;left:${100 * fraction}%;top:${barThickness}px;`
+              : `position:absolute;left:${barThickness}px;top:${100 * (1 - fraction)}%;`;
+          this._applySlot(tick, "colorbar_minor_tick");
+          box.appendChild(tick);
+        }
+      } else {
       const orderedTicks = [...tickValues]
         .map(Number)
         .filter(Number.isFinite)
@@ -3633,13 +3671,18 @@ export class ChartView {
           box.appendChild(tick);
         }
       }
+      }
     }
     if (cb.label) {
       const label = document.createElement("span");
       label.textContent = String(cb.label);
-      label.style.cssText = horizontal
-        ? `position:absolute;left:50%;top:${barThickness + 18}px;transform:translateX(-50%);white-space:nowrap;`
-        : `position:absolute;left:${barThickness + 40}px;top:50%;writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg);white-space:nowrap;`;
+      label.style.cssText = scenePlacement && hasSceneBounds
+        ? horizontal
+          ? `position:absolute;left:0;top:${sceneBounds[3] + 14}px;white-space:nowrap;`
+          : "position:absolute;left:0;top:-6px;white-space:nowrap;"
+        : horizontal
+          ? `position:absolute;left:50%;top:${barThickness + 18}px;transform:translateX(-50%);white-space:nowrap;`
+          : `position:absolute;left:${barThickness + 40}px;top:50%;writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg);white-space:nowrap;`;
       this._applySlot(label, "colorbar_title");
       box.appendChild(label);
     }
