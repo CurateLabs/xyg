@@ -73,7 +73,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v17_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (17).to_bytes(4, "little")
+    assert encoded[4:8] == (18).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -103,7 +103,6 @@ UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
     "colorbar": (_colorbar, "XYG_SCENE_UNSUPPORTED_COLORBAR"),
     "extra_legend": (_extra_legend, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND"),
-    "callout": (_callout, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW"),
     "dashed_line": (_dashed_line, "dashed"),
 }
 
@@ -113,6 +112,12 @@ def test_supported_figure_has_no_reason() -> None:
     # Compiler accepts it, so the predicate must report None (route via Scene).
     figure_scene(figure)
     assert scene_export_support_reason(figure) is None
+
+
+def test_bounded_cartesian_callout_has_no_reason() -> None:
+    figure = _callout()
+    assert scene_export_support_reason(figure) is None
+    assert b"here" in figure_scene(figure)
 
 
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))

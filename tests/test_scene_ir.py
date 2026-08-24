@@ -94,7 +94,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 17
+    assert int.from_bytes(encoded[4:8], "little") == 18
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -138,8 +138,10 @@ def test_scene_v17_native_boundary_accepts_two_bounded_text_frames_and_straight_
     assert _native.scene_svg(scene).count(text) == 2
     arrow_scene = Figure().arrow(0.0, 0.0, 1.0, 1.0).to_scene()
     assert "rgb(102,112,133)" in _native.scene_svg(arrow_scene)
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW"):
-        Figure().callout(0.0, 0.0, "label").to_scene()
+    callout_scene = Figure().callout(0.5, 0.5, "label").to_scene()
+    callout_svg = _native.scene_svg(callout_scene)
+    assert "label" in callout_svg
+    assert 'data-xy-stable-id="6366126145334673408"' in callout_svg
     with pytest.raises(UnsupportedSceneV3, match="does not encode"):
         Figure().vline(1.0, style={"dash": "2,2"}).to_scene()
 
@@ -208,7 +210,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 17
+    assert int.from_bytes(encoded[4:8], "little") == 18
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -519,7 +521,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 17
+    assert _native.scene_version() == 18
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:

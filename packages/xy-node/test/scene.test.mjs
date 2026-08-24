@@ -160,7 +160,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   ];
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 17);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 18);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -191,7 +191,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 17);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 18);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 2, y: 0.5, text: "outside" }];
@@ -475,7 +475,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 17);
+  assert.equal(sceneVersion(), 18);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
