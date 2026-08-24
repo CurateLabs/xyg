@@ -19,7 +19,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 17;
+pub const WASM_ABI_VERSION: u32 = 18;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -1336,6 +1336,28 @@ mod tests {
         out
     }
 
+    fn straight_arrow_annotations() -> Vec<u8> {
+        let mut xyar = Vec::with_capacity(12 + 60);
+        xyar.extend_from_slice(b"XYAR");
+        xyar.extend_from_slice(&1u32.to_le_bytes());
+        xyar.extend_from_slice(&1u32.to_le_bytes());
+        xyar.extend_from_slice(&0x5859_0500_0000_0001u64.to_le_bytes());
+        for value in [0.1f64, 0.1, 0.9, 0.9] {
+            xyar.extend_from_slice(&value.to_le_bytes());
+        }
+        xyar.extend_from_slice(&[10, 20, 30, 200]);
+        xyar.extend_from_slice(&0.5f64.to_le_bytes());
+        xyar.extend_from_slice(&2.0f64.to_le_bytes());
+        let mut out = Vec::with_capacity(20 + xyar.len());
+        out.extend_from_slice(b"XYAD");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&(xyar.len() as u32).to_le_bytes());
+        out.extend_from_slice(&xyar);
+        out
+    }
+
     fn compound_request(action: u32, lod_tier: u32) -> Vec<u8> {
         let mut out = vec![0u8; 40];
         out[..4].copy_from_slice(b"XYGC");
@@ -1961,6 +1983,27 @@ mod tests {
                 .output
                 .windows(b"<Rust note>".len())
                 .any(|bytes| bytes == b"<Rust note>"));
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn scene_annotations_prepare_lowers_xyar_through_the_real_wasm_seam() {
+        let scene = valid_scene();
+        let request = scene_annotations_request(&scene, &straight_arrow_annotations());
+        let handle = xyg_wasm_instance_new(4096);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_scene_prepare_annotations(handle, 1, 0, request.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            assert_eq!(&instance.output[..4], b"XYPB");
+            assert_eq!(u32::from_le_bytes(instance.output[20..24].try_into().unwrap()), 3);
+            let head = scene::BROWSER_PAINTER_HEADER_BYTES + 2 * scene::BROWSER_PAINTER_TRACE_BYTES;
+            assert_eq!(instance.output[head], scene::SceneRecordKind::PolyFill as u8);
+            assert_eq!(instance.output[head + 2], 5);
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);

@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 16 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 17 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -477,6 +477,25 @@ all styling beyond literal color and opacity fail closed. Callouts, arrows,
 boxes, offsets, collision, rotation, wrapping, markup, custom fonts, and CSS
 remain outside this slice. The `XYAT` and `XYAL` contents share one 8,192-byte
 canonical text budget and a combined cap of 128 labels.
+
+## Version 17 bounded literal Cartesian straight arrows
+
+Scene v17 extends the `XYAD` v1 decoration envelope with an `XYAR` v1 payload.
+Each of at most 128 rows contains a unique stable id, two Cartesian f64 data
+endpoints, literal RGBA8 paint, opacity in `[0, 1]`, and a positive finite
+stroke width. The payload is exact-length (60 bytes per row); duplicate ids,
+nonfinite values, zero/too-short projected arrows, malformed frames, and ids
+that collide with canonical records fail closed. Python and Node only frame
+these bounded author values.
+
+Rust projects both endpoints, derives the fixed screen-space arrowhead after
+projection, applies literal alpha and clipping/paint order, and lowers the
+shaft plus head into the same canonical records consumed byte-identically by
+SVG, raster, and painter output. The slice has no text, label attachment,
+callout placement, offsets, curved/orthogonal routes, host-resolved pixels or
+head geometry, dash patterns, custom caps/joins, gradients, CSS, custom fonts,
+markup, collision, rotation, wrapping, or boxes. Those forms remain loud
+unsupported boundaries.
 
 ## Version 11 identity metadata for primary Cartesian annotations
 

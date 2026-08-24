@@ -464,7 +464,7 @@ def figure_scene(
         for annotation in annotations
     ):
         features |= 1 << 7
-    if any(annotation.get("kind") in {"callout", "arrow"} for annotation in annotations):
+    if any(annotation.get("kind") == "callout" for annotation in annotations):
         features |= 1 << 8
     reason = _native.scene_support_reason(features)
     if reason:
@@ -770,9 +770,48 @@ def figure_scene(
     # XYAL v2 carries only literal RGBA paint with the annotation identity and
     # text. Rust still owns the anchor, clipping, typography, and paint order.
     attached_labels: list[tuple[int, tuple[int, int, int, int], str]] = []
+    straight_arrows: list[
+        tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
+    ] = []
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
         if kind == "text":
+            continue
+        if kind == "arrow":
+            if annotation.get("text") not in (None, "") or annotation.get("class_name") not in (
+                None,
+                "",
+            ):
+                raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
+            style = dict(annotation.get("style") or {})
+            bad = sorted(
+                key
+                for key, value in style.items()
+                if key not in {"color", "opacity", "width"} and value is not None
+            )
+            if bad:
+                raise UnsupportedSceneV3(f"Scene arrow style does not encode {bad!r}")
+            opacity = annotation_number(style, "opacity", 1.0, "arrow opacity")
+            width_value = annotation_number(style, "width", 1.5, "arrow width")
+            if (
+                not np.isfinite(opacity)
+                or not 0 <= opacity <= 1
+                or not np.isfinite(width_value)
+                or width_value <= 0
+            ):
+                raise ValueError("Scene arrow opacity must be in [0, 1] and width must be positive")
+            straight_arrows.append(
+                (
+                    annotation_prefix | (5 << 40) | annotation_index,
+                    annotation_number(annotation, "x0", None, "arrow x0"),
+                    annotation_number(annotation, "y0", None, "arrow y0"),
+                    annotation_number(annotation, "x1", None, "arrow x1"),
+                    annotation_number(annotation, "y1", None, "arrow y1"),
+                    _rgba(annotation_color(style, "color", "#667085", "arrow color"), 1.0),
+                    opacity,
+                    width_value,
+                )
+            )
             continue
         if kind not in {"rule", "band", "marker"}:
             raise UnsupportedSceneV3(
@@ -977,15 +1016,23 @@ def figure_scene(
         encoded = value.encode("utf-8")
         xyal.extend(struct.pack("<Q4sI", stable_id, bytes(rgba), len(encoded)))
         xyal.extend(encoded)
+    xyar = bytearray(
+        b"XYAR" + (1).to_bytes(4, "little") + len(straight_arrows).to_bytes(4, "little")
+    )
+    for stable_id, x0, y0, x1, y1, rgba, opacity, width_value in straight_arrows:
+        xyar.extend(
+            struct.pack("<Qdddd4sdd", stable_id, x0, y0, x1, y1, bytes(rgba), opacity, width_value)
+        )
     framed_annotations = bytearray(
         b"XYAD"
         + (1).to_bytes(4, "little")
         + len(xyat).to_bytes(4, "little")
         + len(xyal).to_bytes(4, "little")
-        + (0).to_bytes(4, "little")
+        + len(xyar).to_bytes(4, "little")
     )
     framed_annotations.extend(xyat)
     framed_annotations.extend(xyal)
+    framed_annotations.extend(xyar)
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),
@@ -1016,7 +1063,7 @@ def figure_scene(
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
         authored_text_annotations=bytes(framed_annotations)
-        if text_annotations or attached_labels
+        if text_annotations or attached_labels or straight_arrows
         else b"",
     )
 

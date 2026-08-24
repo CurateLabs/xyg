@@ -153,12 +153,12 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 16. ABI 16 adds `XYSA` v1, a bounded envelope containing
-one complete canonical `XYGS` Scene and one `XYAT` v1 plain-text annotation
-payload. `xyg_wasm_scene_prepare_annotations` decodes that Scene first and
-projects the annotation data coordinates through its already validated Rust
-layout/scales before emitting the ordinary painter output; TypeScript only
-frames/transfers the two byte slices. ABI 13 adds exact compound planes to `XYGG` v3 and
+`WASM_ABI_VERSION` is 18. ABI 18 retains the bounded `XYSA` v1 envelope and
+extends its annotation payload with `XYAR` v1 straight arrows alongside `XYAT`
+plain-text annotations. Rust decodes the complete canonical `XYGS` Scene first,
+then validates and projects each raw Cartesian arrow endpoint through its
+already validated layout/scales before emitting the ordinary painter output;
+TypeScript only frames/transfers the byte slices. ABI 13 adds exact compound planes to `XYGG` v3 and
 routes them through the canonical Rust compound Scene compiler while retaining
 the Scene v16/painter v11 contract. ABI 12 added the bounded `XYDP` dashboard
 resource planner. Earlier revisions added Scene
@@ -180,7 +180,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 15 for this contract.
+`SCENE_VERSION` remains independently versioned and is 17 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -197,17 +197,18 @@ TypeScript does not scan Scene
 records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
-Scene v16 retains record metadata byte 3 explicitly: `0` retains legacy
-trace/run identity, `1..4` identifies the bounded annotation kinds, and `128`
+Scene v17 retains record metadata byte 3 explicitly: `0` retains legacy
+trace/run identity, `1..5` identifies the bounded annotation kinds (with `5`
+for Rust-projected straight arrows), and `128`
 marks literal per-row identity whose value must never classify annotations or
 split connected line/area geometry. Painter v11 carries only the annotation tag
 in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
 Painter contract v11 begins with `XYPB`, independent painter version 11, canonical
-Scene v16 (`SCENE_VERSION = 16`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
+Scene v17 (`SCENE_VERSION = 17`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v16
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v17
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
 geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores
@@ -248,10 +249,11 @@ Callers may reduce fragmentation or split work into explicitly managed views;
 the browser never silently merges runs because that would change line breaks,
 styles, symbols, or stable identity.
 
-This is the public direct-browser entry for the stable Scene v16
+This is the public direct-browser entry for the stable Scene v17
 subset with canonical solid chart/plot backgrounds and authored Cartesian grid,
 spine, major/minor tick, side, visibility, label paint, and bounded primary
-static legends and plain text annotations. Scene v14 adds bounded authored Cartesian major tick-label strings:
+static legends, plain-text annotations, and bounded Rust-projected straight
+arrows. Scene v14 adds bounded authored Cartesian major tick-label strings:
 the host frames only `XYTL` v1 length-prefixed UTF-8, while Rust validates pairing
 with explicit major positions, measures gutters, and emits SVG/raster/painter text.
 No custom fonts, rotation, collision policy, markup, or automatic-label override is
@@ -285,7 +287,7 @@ covers scatter, line, bar, and area; generated and authored arbitrary u64
 identities (including the legacy annotation-prefix range); reversed and
 singleton bar defaults; explicit area bounds; incompatible versions,
 unsupported kinds, nonfinite geometry, and identity overflow. The committed
-request, exact Scene v16 bytes, and exact painter v11 bytes are checked by the
+request, exact Scene v17 bytes, and exact painter v11 bytes are checked by the
 strict-CSP direct-WASM runtime. Native Python, native Node, and real Pyodide
 consume the same generated Scene bytes through the shared native
 `xyg_scene_browser_painter` ABI and byte-compare its painter-v11 result with the

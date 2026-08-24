@@ -94,7 +94,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 16
+    assert int.from_bytes(encoded[4:8], "little") == 17
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -127,7 +127,7 @@ def test_scene_v16_annotations_attach_bounded_labels_and_reject_richer_content()
     assert all(value in painter for value in (b"rule", b"band", b"marker"))
 
 
-def test_scene_v16_native_boundary_accepts_two_bounded_text_frames() -> None:
+def test_scene_v17_native_boundary_accepts_two_bounded_text_frames_and_straight_arrows() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
     figure.axis_options["y"]["domain"] = (0.0, 1.0)
@@ -136,8 +136,10 @@ def test_scene_v16_native_boundary_accepts_two_bounded_text_frames() -> None:
     figure.marker(0.5, 0.5, text=text)
     scene = figure.to_scene()
     assert _native.scene_svg(scene).count(text) == 2
+    arrow_scene = Figure().arrow(0.0, 0.0, 1.0, 1.0).to_scene()
+    assert "rgb(102,112,133)" in _native.scene_svg(arrow_scene)
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW"):
-        Figure().arrow(0.0, 0.0, 1.0, 1.0).to_scene()
+        Figure().callout(0.0, 0.0, "label").to_scene()
     with pytest.raises(UnsupportedSceneV3, match="does not encode"):
         Figure().vline(1.0, style={"dash": "2,2"}).to_scene()
 
@@ -206,7 +208,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 16
+    assert int.from_bytes(encoded[4:8], "little") == 17
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -517,7 +519,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 16
+    assert _native.scene_version() == 17
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
