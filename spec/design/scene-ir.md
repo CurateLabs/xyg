@@ -254,7 +254,8 @@ The public SVG/PNG/PDF router now selects these Rust consumers only for the
 proven constant-style Cartesian circle-scatter subset. Explicit Scene APIs may
 exercise broader migrating records, but line/rect/band/segment/ribbon marks,
 non-circle symbols, annotations, text, legends, themes/style tokens, customized
-axis chrome, export-only backgrounds, fluid or too-small viewports, and
+axis chrome (including the independent ``ticks=False`` / ``text=False``
+visibility switches), export-only backgrounds, fluid or too-small viewports, and
 screen-bounded LOD inputs remain on the compatibility renderer before
 compilation. Malformed input and Rust consumer failures propagate and never
 cause fallback.

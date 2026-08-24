@@ -1273,6 +1273,18 @@ def scene_export_support_reason(
     ):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND"
     for axis_id, options in figure.axis_options.items():
+        axis_style = options.get("style") or {}
+        # The public ``ticks=`` / ``text=`` switches lower to these exact
+        # compatibility-renderer style records.  Scene has not yet carried
+        # their independently visible semantics (ticks off must retain tick
+        # labels; text off must retain tick marks), so keep them out of the
+        # public route before compilation rather than accepting a partial
+        # chrome record merely because the Scene encoder can serialize it.
+        if (axis_style.get("tick_length") == 0 and axis_style.get("tick_width") == 0) or (
+            axis_style.get("tick_label_color") == "#00000000"
+            and axis_style.get("label_color") == "#00000000"
+        ):
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS_VISIBILITY"
         if options.get("label") is not None or options.get("side") != (
             "bottom" if axis_id == "x" else "left"
         ):

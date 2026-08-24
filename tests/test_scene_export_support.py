@@ -14,6 +14,7 @@ from collections.abc import Callable
 
 import pytest
 
+import xyg
 from xyg._figure import Figure
 from xyg._scene_v3 import (
     UnsupportedSceneV3,
@@ -176,3 +177,27 @@ def test_fluid_viewport_uses_compatibility_until_static_dimensions_are_given() -
     figure.scatter([1], [2])
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
     assert scene_export_support_reason(figure, width=320, height=240) is None
+
+
+@pytest.mark.parametrize("axis", [xyg.x_axis(ticks=False), xyg.x_axis(text=False)])
+def test_axis_visibility_switches_preflight_to_compatibility(
+    axis: xyg.Axis,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The legacy static raster owns independent ticks/text visibility today."""
+    chart = xyg.scatter_chart(
+        xyg.scatter([1, 2, 3], [1, 2, 3]),
+        axis,
+        width=420,
+        height=260,
+    )
+    figure = chart.figure()
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS_VISIBILITY"
+
+    from xyg import _native
+
+    def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
+        raise AssertionError("axis visibility must select compatibility before Scene compilation")
+
+    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
+    assert chart.to_png().startswith(b"\x89PNG\r\n\x1a\n")
