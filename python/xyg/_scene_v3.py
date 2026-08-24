@@ -1245,6 +1245,14 @@ def scene_export_support_reason(
     errors (for example a non-finite opacity) are not a routing question and
     propagate unchanged.
     """
+    # The compatibility exporter resolves fluid authoring dimensions at its
+    # document boundary.  Scene records require concrete viewport dimensions;
+    # keep fluid figures on that documented path unless a static override is
+    # supplied by the caller.
+    if (width is None and not isinstance(figure.width, int)) or (
+        height is None and not isinstance(figure.height, int)
+    ):
+        return "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
     try:
         figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:

@@ -390,7 +390,10 @@ guards, and it never triggers a silent fallback: input errors (for example a
 non-finite opacity) propagate rather than being reported as a routing reason.
 The one non-feature routing exception is a valid viewport too small to contain
 the bounded Scene chrome; it reports ``XYG_SCENE_UNSUPPORTED_VIEWPORT`` before
-a batch is constructed and uses the compatibility renderer.
+a batch is constructed and uses the compatibility renderer. A fluid figure
+without explicit static dimensions similarly reports
+``XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT``; a caller-provided width and height
+permit normal Scene preflight.
 
 ## Version 9: bounded primary static legends
 

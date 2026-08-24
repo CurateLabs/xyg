@@ -152,3 +152,10 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
     assert scene_export_support_reason(figure, width=64, height=32) == (
         "XYG_SCENE_UNSUPPORTED_VIEWPORT"
     )
+
+
+def test_fluid_viewport_uses_compatibility_until_static_dimensions_are_given() -> None:
+    figure = Figure(width="100%", height="100%")
+    figure.scatter([1], [2])
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
+    assert scene_export_support_reason(figure, width=320, height=240) is None
