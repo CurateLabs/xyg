@@ -708,12 +708,12 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       x0.push(xv[index]); y0.push(yv[index]); x1.push(0); y1.push(0);
     }
   }
-  const annotationPrefix = 0x5859000000000000n;
+  const annotationPrefix = 0x5859000000000000n, attachedLabels = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
     const kind = annotation.kind;
     if (kind === "text") continue;
     if (!["rule", "band", "marker"].includes(kind)) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
-    if (annotation.text != null && annotation.text !== "") throw new RangeError(`Scene v12 ${kind} annotation labels are deferred; remove text or use the legacy renderer`);
+    if (annotation.text != null && annotation.text !== "" && (typeof annotation.text !== "string" || annotation.text.includes("\0"))) throw new RangeError("Scene v16 annotation labels require nonempty NUL-free text");
     if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError(sceneSupportReason(1n << 2n));
     const style = { ...(annotation.style ?? {}) };
     const allowed = new Set(kind === "rule" ? ["color", "opacity", "width"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
@@ -730,6 +730,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const styleRef = styles.length - 1;
     const tag = kind === "band" && annotation.axis === "y" ? 4n : { rule: 1n, band: 2n, marker: 3n }[kind];
     const stableId = annotationPrefix | (tag << 40n) | BigInt(annotationIndex);
+    if (annotation.text != null && annotation.text !== "") { const label = new TextEncoder().encode(annotation.text); if (label.length > 4096) throw new RangeError("Scene v16 annotation labels are limited to 4,096 UTF-8 bytes"); attachedLabels.push({ stableId, text: label }); }
     const append = (recordKind, a, b, c = 0, d = 0, size = 0, symbol = 0) => {
       if (![a, b, c, d, size].every(Number.isFinite)) throw new RangeError(`Scene v12 ${kind} annotation geometry must be finite`);
       kinds.push(recordKind); stableIds.push(stableId); styleRefs.push(styleRef); diameter.push(size); symbols.push(symbol); x0.push(a); y0.push(b); x1.push(c); y1.push(d);
@@ -754,7 +755,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const textAnnotations = (figure.annotations ?? []).filter((annotation) => annotation.kind === "text");
   const textEncoder = new TextEncoder();
   const authoredText = (() => {
-    if (!textAnnotations.length) return new Uint8Array();
+    if (!textAnnotations.length && !attachedLabels.length) return new Uint8Array();
     if (textAnnotations.length > 128) throw new RangeError("Scene v15 text annotations are limited to 128 entries");
     const rows = textAnnotations.map((annotation) => {
       if (typeof annotation.text !== "string" || !annotation.text || annotation.text.includes("\0")) throw new RangeError("Scene v15 text annotations require nonempty NUL-free text");
@@ -763,8 +764,11 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       const style = { ...(annotation.style ?? {}) }; if (Object.keys(style).some((key) => !["color", "opacity"].includes(key))) throw new RangeError("Scene v15 text annotations support only color and opacity");
       return { x, y, rgba: rgba8(annotationColor(style, "color", "#667085", "text color"), annotationNumber(style, "opacity", 1, "text opacity"), "text"), text };
     });
-    const out = new Uint8Array(12 + rows.reduce((n, row) => n + 24 + row.text.length, 0)); const view = new DataView(out.buffer); out.set(textEncoder.encode("XYAT")); view.setUint32(4, 1, true); view.setUint32(8, rows.length, true); let at = 12;
-    for (const row of rows) { view.setFloat64(at, row.x, true); view.setFloat64(at + 8, row.y, true); out.set(row.rgba, at + 16); view.setUint32(at + 20, row.text.length, true); out.set(row.text, at + 24); at += 24 + row.text.length; } return out;
+    const xyat = new Uint8Array(12 + rows.reduce((n, row) => n + 24 + row.text.length, 0)); const xyatView = new DataView(xyat.buffer); xyat.set(textEncoder.encode("XYAT")); xyatView.setUint32(4, 1, true); xyatView.setUint32(8, rows.length, true); let at = 12;
+    for (const row of rows) { xyatView.setFloat64(at, row.x, true); xyatView.setFloat64(at + 8, row.y, true); xyat.set(row.rgba, at + 16); xyatView.setUint32(at + 20, row.text.length, true); xyat.set(row.text, at + 24); at += 24 + row.text.length; }
+    const xyal = new Uint8Array(12 + attachedLabels.reduce((n, row) => n + 12 + row.text.length, 0)); const xyalView = new DataView(xyal.buffer); xyal.set(textEncoder.encode("XYAL")); xyalView.setUint32(4, 1, true); xyalView.setUint32(8, attachedLabels.length, true); at = 12;
+    for (const row of attachedLabels) { xyalView.setBigUint64(at, row.stableId, true); xyalView.setUint32(at + 8, row.text.length, true); xyal.set(row.text, at + 12); at += 12 + row.text.length; }
+    const out = new Uint8Array(20 + xyat.length + xyal.length); const view = new DataView(out.buffer); out.set(textEncoder.encode("XYAD")); view.setUint32(4, 1, true); view.setUint32(8, xyat.length, true); view.setUint32(12, xyal.length, true); view.setUint32(16, 0, true); out.set(xyat, 20); out.set(xyal, 20 + xyat.length); return out;
   })();
   const title = figure.title ?? "";
   const xLabel = figure.xLabel ?? figure.x_label ?? "";

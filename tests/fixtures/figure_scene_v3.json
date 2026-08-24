@@ -11,11 +11,11 @@
     0,
     5
   ],
-  "expected_sha256": "a95d366b42ba1f94420e4515590c1383d133e685dc3459567c2105de0b5cf0be",
-  "default_scatter_sha256": "0ff67643c199863119d3a186910ae5829e76f267cf9e986bda8d42dcb60edd5e",
-  "default_line_sha256": "0cc9a9b426f8b316c9a97af4c44e340ef65e197b52c567abb788c7371347fb96",
+  "expected_sha256": "6af1849f14d3e49d651b35d7f0f3adf16a4071ba0bbc8f84b0dd235f2eccc3ca",
+  "default_scatter_sha256": "dccc79e27def384add6dbf36ae44cdd199b54afcec8adb760c500d41def80eaf",
+  "default_line_sha256": "2b1ec95200975f950bdd99555a2bf1cd78a66364572f124f8f6da4a86a5b09c0",
   "primary_legend_sha256": "495eccbc7316895d08b96c2da901ccc3f3976efca0c48414edd8035ca3bbee11",
-  "primary_annotations_sha256": "87663e4c88a59a82fd5564bb27e2921d04649802459b156daece0077bbf6e71b",
+  "primary_annotations_sha256": "8941f36f61d69d9c63fca664615e97b8d27b63ac80b4e580f06278af1999408e",
   "wasm_typed_series_v2": {
     "magic": "XYTS",
     "scatter_diameter": 8,

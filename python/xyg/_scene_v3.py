@@ -767,6 +767,7 @@ def figure_scene(
             raise ValueError(f"Scene v12 annotation {label} must be a nonempty CSS color")
         return raw
 
+    attached_labels: list[tuple[int, str]] = []
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
         if kind == "text":
@@ -775,10 +776,11 @@ def figure_scene(
             raise UnsupportedSceneV3(
                 f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
             )
-        if annotation.get("text") not in (None, ""):
-            raise UnsupportedSceneV3(
-                f"Scene v12 {kind} annotation labels are deferred; remove text or use the legacy renderer"
-            )
+        attached_text = annotation.get("text")
+        if attached_text not in (None, "") and (
+            not isinstance(attached_text, str) or "\0" in attached_text
+        ):
+            raise UnsupportedSceneV3("Scene v16 annotation labels require nonempty NUL-free text")
         if annotation.get("class_name") not in (None, ""):
             raise UnsupportedSceneV3("Scene v12 annotations do not encode class_name")
         style = dict(annotation.get("style") or {})
@@ -819,6 +821,13 @@ def figure_scene(
             else {"rule": 1, "band": 2, "marker": 3}[kind]
         )
         stable_id = annotation_prefix | (tag << 40) | annotation_index
+        if attached_text not in (None, ""):
+            encoded_text = attached_text.encode("utf-8")
+            if len(encoded_text) > 4096:
+                raise UnsupportedSceneV3(
+                    "Scene v16 annotation labels are limited to 4,096 UTF-8 bytes"
+                )
+            attached_labels.append((stable_id, attached_text))
 
         def append_record(
             record_kind: int,
@@ -930,7 +939,7 @@ def figure_scene(
     text_annotations = [
         annotation for annotation in annotations if annotation.get("kind") == "text"
     ]
-    framed_annotations = bytearray(
+    xyat = bytearray(
         b"XYAT" + (1).to_bytes(4, "little") + len(text_annotations).to_bytes(4, "little")
     )
     for annotation in text_annotations:
@@ -949,8 +958,24 @@ def figure_scene(
             annotation_color(style, "color", "#667085", "text color"),
             annotation_number(style, "opacity", 1.0, "text opacity"),
         )
-        framed_annotations.extend(struct.pack("<dd4sI", x, y, bytes(rgba), len(encoded)))
-        framed_annotations.extend(encoded)
+        xyat.extend(struct.pack("<dd4sI", x, y, bytes(rgba), len(encoded)))
+        xyat.extend(encoded)
+    xyal = bytearray(
+        b"XYAL" + (1).to_bytes(4, "little") + len(attached_labels).to_bytes(4, "little")
+    )
+    for stable_id, value in attached_labels:
+        encoded = value.encode("utf-8")
+        xyal.extend(struct.pack("<QI", stable_id, len(encoded)))
+        xyal.extend(encoded)
+    framed_annotations = bytearray(
+        b"XYAD"
+        + (1).to_bytes(4, "little")
+        + len(xyat).to_bytes(4, "little")
+        + len(xyal).to_bytes(4, "little")
+        + (0).to_bytes(4, "little")
+    )
+    framed_annotations.extend(xyat)
+    framed_annotations.extend(xyal)
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),
@@ -980,7 +1005,9 @@ def figure_scene(
         y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
-        authored_text_annotations=bytes(framed_annotations) if text_annotations else b"",
+        authored_text_annotations=bytes(framed_annotations)
+        if text_annotations or attached_labels
+        else b"",
     )
 
 
