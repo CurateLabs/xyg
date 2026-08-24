@@ -237,6 +237,14 @@ export class Figure {
     return this;
   }
 
+  /** Bounded Cartesian Scene axis authoring; Rust resolves layout and chrome. */
+  setAxis(axisId, options = {}) {
+    if (axisId !== "x" && axisId !== "y") throw new RangeError("axisId must be x or y");
+    this[`${axisId}Axis`] = { ...(this[`${axisId}Axis`] ?? {}), ...options };
+    if (options.domain != null) this.setAxisDomain(axisId, options.domain);
+    return this;
+  }
+
   scatter(x, y, opts = {}) {
     const forceDensity = opts.forceDensity ?? opts.force_density;
     const forceDirect = opts.forceDirect ?? opts.force_direct;

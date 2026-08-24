@@ -362,6 +362,21 @@ def test_python_scene_v8_authored_chrome_matches_node_fixture_bytes() -> None:
     assert 'stroke="rgba(23,24,25,1.000000)"' in svg
 
 
+def test_python_figure_authored_chrome_matches_node_figure_fixture_bytes() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "scene_v3.json").read_text())[
+        "figure_authored_chrome"
+    ]
+    figure = Figure(width=fixture["viewport"][0], height=fixture["viewport"][1])
+    figure.style = fixture["style"]
+    figure.set_axis("x", **fixture["x_axis"])
+    figure.set_axis("y", **fixture["y_axis"])
+    figure.scatter(fixture["scatter"]["x"], fixture["scatter"]["y"])
+    figure.traces[-1].id = fixture["scatter"]["id"]
+    assert hashlib.sha256(
+        scene_v3.figure_scene(figure, margins=tuple(fixture["margins"]))
+    ).hexdigest() == fixture["sha256"]
+
+
 def test_python_scene_v3_rejects_malformed_batches() -> None:
     options = dict(
         viewport=(100.0, 80.0),
