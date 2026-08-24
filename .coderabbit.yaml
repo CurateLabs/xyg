@@ -1,6 +1,6 @@
-language: en-US
-
+# Automatic PR reviews consume quota before the repository's real merge gates
+# have completed.  Reviews are requested deliberately by the final-review
+# workflow or `@coderabbitai review` only after those gates are green.
 reviews:
   auto_review:
     enabled: false
-    auto_incremental_review: false
