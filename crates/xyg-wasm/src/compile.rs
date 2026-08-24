@@ -603,6 +603,7 @@ fn compile_columns_request(bytes: &[u8], literal_ids: bool) -> Result<CompiledSc
                 y_hi,
                 y_constant,
                 y_mask_nonpositive: y_mask != 0,
+                colorbar_side: scene::ColorbarSide::None,
             })?
         } else {
             (margin_left, margin_right, margin_top, margin_bottom)

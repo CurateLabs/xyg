@@ -71,9 +71,9 @@ estimates retained Rust resources.
 
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
-exact Scene v12 output under a local-only strict CSP. Native Python and Node
+exact Scene v13 output under a local-only strict CSP. Native Python and Node
 load those Scene bytes through the shared `xyg_scene_browser_painter` C ABI and
-byte-compare Rust's painter-v9 lowering; the Pyodide wheel executes that same
+byte-compare Rust's painter-v10 lowering; the Pyodide wheel executes that same
 native ABI inside an actual Pyodide runtime with network access disabled for
 the conformance operation. This is intentionally asymmetric: adding an XYTS
 decoder to Python or Node would duplicate browser-ingress policy rather than
@@ -93,10 +93,12 @@ and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
 compatibility renderer until Rust owns every remaining layout/gutter and Scene
-record. Scene v12 now covers solid chart/plot backgrounds, authored
+record. Scene v13 now covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
-  single-column primary static legend for named constant-style traces, plus
-  rule, band, and unlabeled marker annotations. Extra legends, colorbars,
+  single-column primary static legend for named constant-style traces, plus a
+  bounded literal RGBA banded colorbar (right/bottom, without
+  colorbar tick or minor-tick chrome), and
+  rule, band, and unlabeled marker annotations. Extra legends, named/advanced colorbars,
   annotation labels/callouts/arrows and other deferred annotation forms, custom
   tick strings, and advanced text layout remain loud unsupported boundaries.
   ABI 84's versioned support predicate makes the

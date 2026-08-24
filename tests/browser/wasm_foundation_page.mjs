@@ -81,7 +81,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 240 + textBytes + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 12, true);
+  view.setUint32(4, 13, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -144,7 +144,7 @@ function primaryAnnotationSceneV10() {
   const body = records + recordCount * 56;
   const bytes = new Uint8Array(body + 240), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 12, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 13, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -176,7 +176,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 240);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 12, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 13, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -296,7 +296,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    14, 12, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    14, 13, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -405,7 +405,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 14,
-    expectedSceneVersion: 12,
+    expectedSceneVersion: 13,
   };
 }
 
@@ -563,7 +563,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 14 || ready.sceneVersion !== 12) {
+  if (ready.abiVersion !== 14 || ready.sceneVersion !== 13) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");

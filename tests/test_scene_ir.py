@@ -10,7 +10,7 @@ import pytest
 
 from xyg import _native, _svg
 from xyg._figure import Figure
-from xyg._scene_v3 import UnsupportedSceneV3
+from xyg._scene_v3 import UnsupportedSceneV3, _colorbar_input
 from xyg.channels import ColorChannel
 
 EXPECTED_SCATTER = (
@@ -61,6 +61,32 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
         missing_constant.to_scene()
 
 
+def test_scene_v13_colorbar_python_framer_matches_literal_stop_contract() -> None:
+    figure = Figure()
+    figure.colorbar_options = {
+        "domain": [0.0, 1.0],
+        "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 128])],
+    }
+    assert _colorbar_input(figure)[:4] == b"XYCB"
+
+    for stops in (
+        [(0.1, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+        [(0.0, [0, 0, 0, 255]), (0.0, [255, 255, 255, 255])],
+        [(0.0, [0, 0, 0, 255]), (0.9, [255, 255, 255, 255])],
+    ):
+        figure.colorbar_options["stops"] = stops
+        with pytest.raises(UnsupportedSceneV3, match="strictly increasing"):
+            _colorbar_input(figure)
+
+    figure.colorbar_options = {
+        "domain": [0.0, 1.0],
+        "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+        "text_rgba": object(),
+    }
+    with pytest.raises(UnsupportedSceneV3, match="uses literal RGBA"):
+        _colorbar_input(figure)
+
+
 def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
     figure.vline(0.25, color="#ff0000", width=2.0)
@@ -68,7 +94,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 12
+    assert int.from_bytes(encoded[4:8], "little") == 13
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -162,7 +188,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 12
+    assert int.from_bytes(encoded[4:8], "little") == 13
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -473,7 +499,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 12
+    assert _native.scene_version() == 13
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],
@@ -514,6 +540,19 @@ def test_scene_plot_layout_owns_cartesian_gutters() -> None:
     scene = Figure(width=320, height=240).scatter([1.0], [2.0]).to_scene()
     view = memoryview(scene)
     assert float(np.frombuffer(view[48:56], dtype="<f8")[0]) == left
+
+
+def test_scene_colorbar_side_is_framed_before_rust_resolves_gutters() -> None:
+    for side, edge_offset, viewport in (("right", 64, 320.0), ("bottom", 72, 240.0)):
+        figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
+        figure.colorbar_options = {
+            "domain": [0.0, 1.0],
+            "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 128])],
+            "side": side,
+        }
+        scene = figure.to_scene()
+        edge = np.frombuffer(scene[edge_offset : edge_offset + 8], dtype="<f8")[0]
+        assert viewport - edge >= 42.0
 
 
 def test_scene_rejects_malformed_host_arrays() -> None:

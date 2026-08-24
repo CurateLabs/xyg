@@ -652,9 +652,10 @@ export class ChartView {
     // label-aware defaults — zero padding gives an edge-to-edge sparkline.
     const pad = Array.isArray(this.spec.padding) ? this.spec.padding : null;
     const colorbar = this.spec.colorbar;
-    const verticalColorbar = colorbar && colorbar.orientation !== "horizontal";
-    const horizontalColorbar = colorbar && colorbar.orientation === "horizontal";
-    const axesColorbar = colorbar && colorbar.placement === "axes";
+    const sceneColorbar = colorbar && colorbar.placement === "scene";
+    const verticalColorbar = !sceneColorbar && colorbar && colorbar.orientation !== "horizontal";
+    const horizontalColorbar = !sceneColorbar && colorbar && colorbar.orientation === "horizontal";
+    const axesColorbar = !sceneColorbar && colorbar && colorbar.placement === "axes";
     // Fluid charts have to remain useful inside dashboard columns. On compact
     // widths, cap only oversized authored horizontal padding and collapse a
     // vertical colorbar to its gradient; the full tick/title chrome returns
@@ -3450,7 +3451,9 @@ export class ChartView {
     const box = document.createElement("div");
     const horizontal = cb.orientation === "horizontal";
     const axesPlacement = cb.placement === "axes";
+    const scenePlacement = cb.placement === "scene";
     box.style.cssText = "position:absolute;pointer-events:none;z-index:4;";
+    if (typeof cb.text_color === "string") box.style.color = cb.text_color;
     this._applySlot(box, "colorbar");
 
     const bar = document.createElement("div");
@@ -3484,7 +3487,7 @@ export class ChartView {
         const sample = Math.min(255, Math.round(255 * (index + 0.5) / levels));
         const row = exactColors && exactColors[index];
         const color = row
-          ? `rgb(${Number(row[0])},${Number(row[1])},${Number(row[2])})`
+          ? `rgba(${Number(row[0])} ${Number(row[1])} ${Number(row[2])} / ${Number(row[3] ?? 255) / 255})`
           : `rgb(${lut[sample * 4]},${lut[sample * 4 + 1]},${lut[sample * 4 + 2]})`;
         bands.push(`${color} ${100 * fractions[index]}% ${100 * fractions[index + 1]}%`);
       }
@@ -3494,10 +3497,14 @@ export class ChartView {
       gradient = `linear-gradient(to ${horizontal ? "right" : "top"},${stops.map((c) =>
         `rgb(${c[0]},${c[1]},${c[2]})`).join(",")})`;
     }
-    const barThickness = axesPlacement
+    const barThickness = scenePlacement
+      ? 0
+      : axesPlacement
       ? (horizontal ? this.plot.h : this.plot.w)
       : COLORBAR_THICKNESS;
-    bar.style.cssText = horizontal
+    bar.style.cssText = scenePlacement
+      ? "position:absolute;inset:0;"
+      : horizontal
       ? `position:absolute;inset:0 0 auto 0;height:${barThickness}px;`
       : `position:absolute;inset:0 auto 0 0;width:${barThickness}px;`;
     bar.style.setProperty("--xy-colorbar-gradient", gradient);
@@ -3646,6 +3653,19 @@ export class ChartView {
   _positionColorbar() {
     if (!this._colorbar) return;
     const cb = this.spec.colorbar || {};
+    // Canonical Scene colorbars arrive with Rust-resolved screen-space bounds.
+    // Do not run the compatibility gutter/shrink policy for this path.
+    if (cb.placement === "scene" && Array.isArray(cb.resolved?.bounds)) {
+      const [x, y, width, height] = cb.resolved.bounds.map(Number);
+      if ([x, y, width, height].every(Number.isFinite) && width > 0 && height > 0) {
+        this._colorbar.style.left = `${x}px`;
+        this._colorbar.style.top = `${y}px`;
+        this._colorbar.style.width = `${width}px`;
+        this._colorbar.style.height = `${height}px`;
+        this._colorbar.dataset.xyCompact = "false";
+        return;
+      }
+    }
     const horizontal = this._colorbarHorizontal;
     const axesPlacement = cb.placement === "axes";
     const compactVertical = !horizontal && this._compactVerticalColorbar;

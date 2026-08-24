@@ -204,7 +204,7 @@ export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
   title = "", xLabel = "", yLabel = "", chromeStyle = null,
   xMajorTicks = null, xMinorTicks = [], yMajorTicks = null, yMinorTicks = [],
-  legendInput = null,
+  legendInput = null, colorbarInput = null,
 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
@@ -249,8 +249,10 @@ export function sceneBatchEncode({
   requireLength(chrome, 200, "chromeStyle");
   const tickArrays = [xMajorTicks, xMinorTicks, yMajorTicks, yMinorTicks].map((value, index) => value == null ? null : asF64Array(value, ["xMajorTicks", "xMinorTicks", "yMajorTicks", "yMinorTicks"][index]));
   const legend = legendInput == null ? new Uint8Array() : asUnsignedArray(legendInput, "legendInput", 255, Uint8Array);
+  const colorbar = colorbarInput == null ? new Uint8Array() : asUnsignedArray(colorbarInput, "colorbarInput", 255, Uint8Array);
+  if (colorbar.length > 4_600) throw new RangeError("scene colorbar input is limited to 4,600 bytes");
   if (tickArrays.some((value) => value != null && value.length > 200)) throw new RangeError("scene axis tick lists are limited to 200 values");
-  let capacity = 160 + widths.length * 16 + length * 56 + 240 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + legend.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
+  let capacity = 160 + widths.length * 16 + length * 56 + 240 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
@@ -268,6 +270,7 @@ export function sceneBatchEncode({
       xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
       yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
       legend.length ? u8Ptr(legend) : 0, BigInt(legend.length),
+      colorbar.length ? u8Ptr(colorbar) : 0, BigInt(colorbar.length),
       u8Ptr(output), BigInt(capacity),
     );
     if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical scene batch");
@@ -397,6 +400,31 @@ function legendInput(figure, entries, styles) {
   return out;
 }
 
+function colorbarInput(figure) {
+  const options = figure.colorbarOptions ?? figure.colorbar_options;
+  if (options == null) return new Uint8Array();
+  if (typeof options !== "object" || Array.isArray(options)) throw new RangeError("Scene v13 colorbar requires literal RGBA stops");
+  const allowed = new Set(["domain", "stops", "side", "title", "text_rgba"]);
+  if (Object.keys(options).some((key) => !allowed.has(key))) throw new RangeError("Scene v13 colorbar requires bounded literal RGBA stops");
+  const domain = options.domain, stops = options.stops;
+  if (!Array.isArray(domain) || domain.length !== 2 || !Array.isArray(stops) || stops.length < 2 || stops.length > 16) throw new RangeError("Scene v13 colorbar requires a domain and 2–16 stops");
+  const lo = Number(domain[0]), hi = Number(domain[1]);
+  if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) throw new RangeError("Scene v13 colorbar domain must be finite and ordered");
+  const title = options.title ?? "";
+  if (typeof title !== "string") throw new TypeError("Scene v13 colorbar title must be a string");
+  const titleBytes = new TextEncoder().encode(title), text = asUnsignedArray(options.text_rgba ?? [32, 32, 32, 255], "colorbar text_rgba", 255, Uint8Array);
+  requireLength(text, 4, "colorbar text_rgba"); if (titleBytes.length > 4096) throw new RangeError("Scene v13 colorbar title is limited to 4,096 UTF-8 bytes");
+  const out = new Uint8Array(56 + stops.length * 12 + titleBytes.length), view = new DataView(out.buffer);
+  out.set([88, 89, 67, 66]); view.setUint32(4, 1, true);
+  const side = options.side ?? "right"; if (side !== "right" && side !== "bottom") throw new RangeError("Scene v13 colorbar side is right or bottom");
+  out[8] = Number(side === "bottom") | 2;
+  view.setUint32(12, stops.length, true); view.setUint32(20, titleBytes.length, true); view.setFloat64(24, lo, true); view.setFloat64(32, hi, true); out.set(text, 40);
+  let previous = -Infinity;
+  for (const [index, stop] of stops.entries()) { if (!Array.isArray(stop) || stop.length !== 2) throw new TypeError("colorbar stops are [value, RGBA]"); const value = Number(stop[0]), rgba = asUnsignedArray(stop[1], `colorbar stops[${index}]`, 255, Uint8Array); requireLength(rgba, 4, `colorbar stops[${index}]`); if (!Number.isFinite(value) || value < lo || value > hi || value <= previous) throw new RangeError("colorbar stops must be ordered within the domain"); previous = value; view.setFloat64(56 + index * 12, value, true); out.set(rgba, 64 + index * 12); }
+  if (view.getFloat64(56, true) !== lo || view.getFloat64(56 + (stops.length - 1) * 12, true) !== hi) throw new RangeError("colorbar stops must span the domain");
+  out.set(titleBytes, 56 + stops.length * 12); return out;
+}
+
 function ribbonEdge(x0, x1, ya, yb, steps = RIBBON_STEPS) {
   const outX = new Float64Array(steps + 1);
   const outY = new Float64Array(steps + 1);
@@ -465,6 +493,8 @@ function requireEqualColumns(columns, kind, label) {
 /** Compile migrated cartesian marks to Scene v12. */
 export function figureSceneV3(figure, { margins = null } = {}) {
   const chromeStyles = figure.chromeStyles ?? figure.chrome_styles ?? {};
+  let encodedColorbar = new Uint8Array(), colorbarUnsupported = false;
+  try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   let features = 0n;
   if (figure.coords !== "cartesian") features |= 1n << 0n;
   if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) features |= 1n << 1n;
@@ -485,7 +515,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       && (trace.color.mode !== "constant" || trace.color.color == null)
     )
   ))) features |= 1n << 3n;
-  if (figure.colorbarOptions ?? figure.colorbar_options) features |= 1n << 4n;
+  if (colorbarUnsupported) features |= 1n << 4n;
   if ((figure.extraLegends ?? figure.extra_legends ?? []).length) features |= 1n << 5n;
   if ([figure.xAxis, figure.yAxis, figure.x_axis, figure.y_axis].some((axis) => axis?.tickLabels != null || axis?.tick_labels != null)) features |= 1n << 6n;
   if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
@@ -720,6 +750,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
       xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
       yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
+      encodedColorbar.length ? (encodedColorbar[8] & 1 ? 2 : 1) : 0,
       f64Ptr(out),
     );
     if (written !== 4n && written !== 4) throw new RangeError("invalid canonical scene plot layout");
@@ -728,7 +759,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
     kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-    title, xLabel, yLabel, legendInput: legendInput(figure, legendEntries, styles),
+    title, xLabel, yLabel, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar,
   });
 }
 

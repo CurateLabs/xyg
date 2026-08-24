@@ -87,6 +87,20 @@ test("Node figure defaults match Python Scene bytes and canonical values", () =>
   assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
 });
 
+test("Node frames the literal Scene colorbar side before Rust reserves its lane", () => {
+  for (const [side, offset, viewport] of [["right", 64, 320], ["bottom", 72, 240]]) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.scatter([0, 1], [0, 1]);
+    figure.colorbarOptions = {
+      domain: [0, 1],
+      stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 128]]],
+      side,
+    };
+    const scene = figure.toScene();
+    assert.ok(viewport - new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getFloat64(offset, true) >= 42);
+  }
+});
+
 test("Node explicit hidden Cartesian chrome omits invisible groups without implying polar", () => {
   const chrome = new Uint8Array(200);
   new DataView(chrome.buffer).setFloat64(16, 12, true);
@@ -135,7 +149,7 @@ test("Node Scene v9 whole-scene consumers reject malformed and unsupported input
   assert.throws(() => figure.toScene(), /does not yet support heatmap/);
 });
 
-test("Node Scene v12 compiles bounded primary annotations and fails closed", () => {
+test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [
@@ -145,7 +159,7 @@ test("Node Scene v12 compiles bounded primary annotations and fails closed", () 
   ];
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 12);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 13);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -414,7 +428,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 12);
+  assert.equal(sceneVersion(), 13);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -455,7 +469,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 12);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 13);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });
