@@ -2230,16 +2230,19 @@ class Figure(AnnotationsMixin, PayloadMixin):
         width: Optional[int] = None,
         height: Optional[int] = None,
     ) -> str:
-        """Static SVG (_svg.py): a pure-Python render of the same decimated
-        payload the browser client consumes — resolution-independent, tiny
-        (screen-bounded regardless of source size), and dependency-free.
-        `width`/`height` override the figure's pixel size.
+        """Return static SVG, routing the supported subset through Rust Scene.
 
-        Scene SVG is available via ``_scene_v3.try_public_svg`` / explicit
-        ``to_scene()`` consumers; public auto-selection waits on chrome and
-        CSS-spelling parity with ``_svg.py``.
+        Unsupported features take the documented compatibility renderer before
+        compilation.  Invalid input and Rust-consumer failures propagate; they
+        are never converted into a fallback.
         """
-        from . import _svg
+        from . import _scene_v3, _svg
+
+        if _scene_v3.scene_export_support_reason(self, width=width, height=height) is None:
+            svg = _scene_v3.figure_svg(self, width=width, height=height)
+            if path is not None:
+                export._atomic_write_text(path, svg)
+            return svg
 
         return _svg.to_svg(self, path, width=width, height=height)
 

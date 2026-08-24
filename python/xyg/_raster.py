@@ -55,6 +55,7 @@ from ._svg import (
     _lut,
     _physical_density_alpha,
     _PolarProjection,
+    _preserve_scene_chrome_for_axis_visibility,
     _px_size,
     _resolve_static_css_vars,
     _Scale,
@@ -933,6 +934,7 @@ def render_raster(
     """Paint `spec` into an ``(h, w, 4)`` RGBA8 image via the native rasterizer."""
     spec = _decode_title_geometry(spec, blob)
     spec = _resolve_static_css_vars(spec)
+    spec = _preserve_scene_chrome_for_axis_visibility(spec)
     width, height, compact, plot = layout(spec)
     xa, ya = spec["x_axis"], spec["y_axis"]
     x_scales, y_scales, sx, sy, extra_x_axes, extra_y_axes = _axis_scales(spec, plot)
@@ -1203,7 +1205,8 @@ def render_raster(
         )
 
     def tick_span(style: dict[str, Any]) -> tuple[float, float]:
-        length = max(0.0, float(style.get("tick_length", 0)))
+        default_length = 4 if style.get("_scene_public_chrome_defaults") else 0
+        length = max(0.0, float(style.get("tick_length", default_length)))
         direction = str(style.get("tick_direction", "out"))
         if direction == "in":
             return length, 0.0
@@ -1351,7 +1354,15 @@ def render_raster(
                 label_offset = (
                     _axis_tick_label_offset(axis, 7.0, 0.2)
                     if side == "top"
-                    else _axis_tick_label_offset(axis, 15.0, 0.8)
+                    # Rust Scene uses a 16 px bottom baseline.  The legacy
+                    # raster's 15 px default remains for ordinary
+                    # compatibility-only figures, but a visibility-switch
+                    # fallback must retain the public Scene label position.
+                    else _axis_tick_label_offset(
+                        axis,
+                        16.0 if axis_style.get("_scene_public_chrome_defaults") else 15.0,
+                        0.8,
+                    )
                 )
             else:
                 label_offset = _axis_tick_label_offset(axis, 8.0)

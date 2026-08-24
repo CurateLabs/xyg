@@ -208,33 +208,105 @@ def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
         _native.scene_raster_commands(huge_width)
 
 
-def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.MonkeyPatch) -> None:
-    figure = representative_figure()
-    figure.title = "Compatibility title"
-    figure.set_axis(
-        "x",
-        label="Horizontal",
-        domain=(0, 4),
-        tick_values=[0, 2, 4],
-        tick_labels=["zero", "two", "four"],
-        style={"grid_color": "#123456"},
-    )
-    figure.set_axis("y", label="Vertical", domain=(0, 5))
+def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.MonkeyPatch) -> None:
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
 
-    def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("public export must not select incomplete Scene chrome")
+    scene_svg = _native.scene_svg
+    scene_raster_commands = _native.scene_raster_commands
+    calls = {"svg": 0, "raster": 0}
 
-    monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
-    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
+    def observed_scene_svg(*args: object, **kwargs: object) -> str:
+        calls["svg"] += 1
+        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+
+    def observed_scene_raster(*args: object, **kwargs: object) -> bytes:
+        calls["raster"] += 1
+        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
     svg = figure.to_svg()
-    assert "Compatibility title" in svg
-    assert "Horizontal" in svg
-    assert "Vertical" in svg
-    assert "two" in svg
-    assert "#123456" in svg
+    assert "XYGS" not in svg  # the public string is Rust's rendered SVG, not Scene bytes
     assert figure.to_scene()[:4] == b"XYGS"
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
+    assert calls["svg"] >= 2  # direct SVG plus PDF via Rust SVG
+    assert calls["raster"] >= 1
+
+
+def test_unsupported_public_exports_stay_on_compatibility_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    figure = Figure().heatmap([[0.0, 1.0], [1.0, 0.0]])
+
+    def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
+        raise AssertionError(
+            "unsupported export must select compatibility before Scene compilation"
+        )
+
+    monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
+    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
+    assert figure.to_svg().startswith("<svg")
+    assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
+    assert figure.to_image(format="pdf").startswith(b"%PDF-")
+
+
+@pytest.mark.parametrize(
+    "mutate,reason",
+    [
+        (lambda figure: setattr(figure, "title", "legacy text"), "PUBLIC_TEXT"),
+        (
+            lambda figure: figure.annotations.append({"kind": "marker", "x": 1, "y": 2}),
+            "PUBLIC_ANNOTATION",
+        ),
+        (lambda figure: figure.set_axis("x", label="legacy axis"), "PUBLIC_AXIS"),
+        (lambda figure: figure.line([0, 1], [0, 1], name="legacy legend"), "PUBLIC_LEGEND"),
+        (lambda figure: figure.line(range(10_001), range(10_001)), "PUBLIC_LOD"),
+    ],
+)
+def test_public_router_preflights_legacy_export_contracts(mutate, reason: str) -> None:
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    mutate(figure)
+    assert reason in (_scene_v3.scene_export_support_reason(figure) or "")
+
+
+def test_non_circle_symbols_keep_the_legacy_rust_scatter_svg_contract() -> None:
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], symbol="diamond")
+    assert "PUBLIC_SYMBOL" in (_scene_v3.scene_export_support_reason(figure) or "")
+
+
+def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> None:
+    """The public journey must not merely produce valid files beside Scene."""
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    svg = _scene_v3.figure_svg(figure)
+    png = _scene_v3.try_public_png(figure, scale=1)
+    pdf = _scene_v3.try_public_pdf(figure)
+
+    assert figure.to_svg() == svg
+    assert figure.to_svg() == figure.to_svg()
+    assert figure.to_png(scale=1) == png
+    assert figure.to_png(scale=1) == figure.to_png(scale=1)
+    assert figure.to_image(format="pdf") == pdf
+    assert figure.to_image(format="pdf") == figure.to_image(format="pdf")
+
+
+def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+
+    def broken_scene(*_args: object, **_kwargs: object) -> str:
+        raise ValueError("broken Scene consumer")
+
+    def unexpected_compatibility(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("a Scene consumer error must not select compatibility")
+
+    from xyg import _svg
+
+    monkeypatch.setattr(_native, "scene_svg", broken_scene)
+    monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
+    with pytest.raises(ValueError, match="broken Scene consumer"):
+        figure.to_svg()
+    with pytest.raises(ValueError, match="broken Scene consumer"):
+        figure.to_image(format="pdf")
 
 
 def test_try_public_scene_helpers_select_migrated_subset() -> None:

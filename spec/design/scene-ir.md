@@ -250,9 +250,18 @@ y-label with deterministic margin-relative anchors. Hosts may now compile
 figure titles and axis labels into the explicit Scene path; annotations,
 legends, custom sides, and authored tick geometry remain rejected until later
 slices. `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
-Public SVG/PNG/PDF still use the compatibility renderers until remaining
-chrome (backgrounds, density overlays, fuller measured rooms) can select
-Scene without dropping established export behavior.
+The public SVG/PNG/PDF router now selects these Rust consumers only for the
+proven constant-style Cartesian circle-scatter subset. Explicit Scene APIs may
+exercise broader migrating records, but line/rect/band/segment/ribbon marks,
+non-circle symbols, annotations, text, legends, themes/style tokens, customized
+axis chrome (including the independent ``ticks=False`` / ``text=False``
+visibility switches), export-only backgrounds, fluid or too-small viewports, and
+screen-bounded LOD inputs remain on the compatibility renderer before
+compilation. Malformed input and Rust consumer failures propagate and never
+cause fallback. For those visibility-switch exceptions, the compatibility SVG
+and raster consumers retain the otherwise-default Scene chrome (12 px labels
+and 4 px major ticks) so changing one switch does not visibly re-style the
+other axis merely by crossing the routing boundary.
 
 ## Version 6: Band filled polygons
 
@@ -371,11 +380,12 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining polar marks, annotation/colorbar records and richer
-legend variants, then select public SVG/PNG/PDF Scene auto-routing once
-chrome and CSS-spelling parity with ``_svg.py`` is covered; ``try_public_svg`` /
-``try_public_png`` / ``try_public_pdf`` are the opt-in helpers. Unlabeled
-cartesian annotations remain rejected rather than being approximated as marks.
+Remaining polar marks and richer legend variants stay explicit compatibility
+exceptions. Public SVG and native PNG auto-route supported figures through
+Rust Scene; PDF consumes that Rust SVG. ``try_public_svg`` /
+``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
+that need an optional result. Unlabeled cartesian annotations remain rejected
+rather than being approximated as marks.
 
 The public router the auto-routing slice wires consults one support predicate,
 ``_scene_v3.scene_export_support_reason``, which returns the stable
@@ -385,6 +395,17 @@ applies. Parity with the compiler is by construction — the predicate runs
 ``figure_scene`` — so a router built on it can never disagree with the encoder it
 guards, and it never triggers a silent fallback: input errors (for example a
 non-finite opacity) propagate rather than being reported as a routing reason.
+The one non-feature routing exception is a valid viewport too small to contain
+the bounded Scene chrome; it reports ``XYG_SCENE_UNSUPPORTED_VIEWPORT`` before
+a batch is constructed and uses the compatibility renderer. A fluid figure
+without explicit static dimensions similarly reports
+``XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT``; a caller-provided width and height
+permit normal Scene preflight.
+
+The public-route evidence pins byte-identical supported SVG/PNG/PDF output to
+the explicit Rust Scene consumers, repeated deterministic exports, hard
+consumer failures without compatibility fallback, and the pyplot browser-CSS
+compatibility exception.
 
 ## Version 9: bounded primary static legends
 

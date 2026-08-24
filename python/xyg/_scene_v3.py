@@ -1240,15 +1240,103 @@ def scene_export_support_reason(
     ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
     message) so callers can log or surface an actionable reason for the fallback.
 
-    Parity with :func:`figure_scene` is by construction: the same compiler
-    decides support here. Only feature-support decisions are reported; input
-    errors (for example a non-finite opacity) are not a routing question and
+    This is deliberately narrower than :func:`figure_scene`: the explicit
+    Scene API can exercise a migrating record before the public compatibility
+    renderer's complete output contract is modeled. Only the proven
+    constant-style circle-scatter subset routes automatically. Input errors
+    (for example a non-finite opacity) are not a routing question and
     propagate unchanged.
     """
+    # The compatibility exporter resolves fluid authoring dimensions at its
+    # document boundary.  Scene records require concrete viewport dimensions;
+    # keep fluid figures on that documented path unless a static override is
+    # supplied by the caller.
+    if (width is None and not isinstance(figure.width, int)) or (
+        height is None and not isinstance(figure.height, int)
+    ):
+        return "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
+    # ``figure_scene`` deliberately has a wider explicit-API contract than the
+    # public exporter: vertical migration lets its Rust consumers exercise
+    # newly framed records before every legacy static-output detail is proven.
+    # Public routing is narrower.  Keep any legacy styling, layout, annotation,
+    # legend, or screen-bounded LOD behavior on the compatibility renderer
+    # until it is modeled end-to-end, rather than accepting it merely because
+    # the Scene encoder can serialize part of it.
+    if getattr(figure, "style", None) or getattr(figure, "chrome_styles", None):
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    if getattr(figure, "title", None) or getattr(figure, "title_options", None):
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
+    if getattr(figure, "annotations", None):
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+    if getattr(figure, "legend_options", None) or any(
+        getattr(trace, "name", None) for trace in figure.traces
+    ):
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND"
+    for axis_id, options in figure.axis_options.items():
+        axis_style = options.get("style") or {}
+        # The public ``ticks=`` / ``text=`` switches lower to these exact
+        # compatibility-renderer style records.  Scene has not yet carried
+        # their independently visible semantics (ticks off must retain tick
+        # labels; text off must retain tick marks), so keep them out of the
+        # public route before compilation rather than accepting a partial
+        # chrome record merely because the Scene encoder can serialize it.
+        if (axis_style.get("tick_length") == 0 and axis_style.get("tick_width") == 0) or (
+            axis_style.get("tick_label_color") == "#00000000"
+            and axis_style.get("label_color") == "#00000000"
+        ):
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS_VISIBILITY"
+        if options.get("label") is not None or options.get("side") != (
+            "bottom" if axis_id == "x" else "left"
+        ):
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+        if any(
+            options.get(key) not in (None, False, [], {})
+            for key in ("style", "minor_style", "tick_values", "tick_labels", "minor_tick_values")
+        ) or any(options.get(key) for key in ("tick_sides", "tick_label_sides")):
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    # Until the compatibility raster's line/rect sampling, palette choices,
+    # and SVG spelling are represented in the whole-scene consumers, public
+    # auto-routing is deliberately limited to constant-style circle scatter.
+    # The broader mark set remains available through explicit ``to_scene``.
+    public_kinds = {"scatter"}
+    public_style_keys = {
+        "scatter": {"color", "opacity", "symbol", "size"},
+        "line": {"color", "opacity", "width", "step"},
+        "bar": {"color", "opacity", "role", "orientation"},
+        "column": {"color", "opacity", "role", "orientation"},
+        "histogram": {"color", "opacity", "role", "orientation"},
+    }
+    for trace in figure.traces:
+        opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            raise ValueError("trace opacity must be finite and in [0, 1]")
+        x_column = getattr(trace, "x", None)
+        if x_column is not None and len(x_column.values) > 10_000:
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+        if trace.kind not in public_kinds:
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
+        if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") != "circle":
+            # The long-standing public diamond/other-symbol route uses the
+            # compatibility scatter SVG wrapper, whose exact SVG spelling is
+            # part of the current export contract.
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL"
+        if any(
+            value is not None and key not in public_style_keys[trace.kind]
+            for key, value in (getattr(trace, "style", None) or {}).items()
+        ):
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
     try:
         figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:
         return str(unsupported)
+    except ValueError as exc:
+        # A valid public export can request a viewport smaller than the
+        # bounded Scene chrome can contain.  Treat that as an explicit routing
+        # exception before a Scene batch exists; other invalid inputs remain
+        # failures and must never select compatibility rendering.
+        if str(exc) == "invalid canonical scene plot layout":
+            return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
+        raise
     return None
 
 
@@ -1279,7 +1367,7 @@ def try_public_png(
     try:
         scene = figure_scene(figure, width=width, height=height, **options)
         commands = _native.scene_raster_commands(scene, scale)
-    except (UnsupportedSceneV3, ValueError):
+    except UnsupportedSceneV3:
         return None
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
@@ -1289,14 +1377,15 @@ def try_public_png(
 
 
 def try_public_pdf(figure: Any, **options: Any) -> bytes | None:
-    """Return Scene SVG→PDF when both Scene compilation and the PDF subset accept."""
+    """Return Scene SVG→PDF for a Scene-capable figure.
+
+    This is deliberately not a catch-all fallback boundary: a malformed Scene
+    or a failure in the Rust/PDF consumers is an export failure, not evidence
+    that the compatibility renderer should be selected.
+    """
     from . import _pdf
 
     svg = try_public_svg(figure, **options)
     if svg is None:
         return None
-    try:
-        return _pdf.svg_to_pdf(svg)
-    except ValueError:
-        # Scene SVG may use attributes outside the closed ``_pdf`` subset; fall back.
-        return None
+    return _pdf.svg_to_pdf(svg)

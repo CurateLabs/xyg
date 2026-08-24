@@ -2945,7 +2945,37 @@ def _axis_tick_label_strategy(axis: dict[str, Any]) -> str:
 
 def _axis_tick_font_size(axis: dict[str, Any]) -> float:
     style = axis.get("style") or {}
-    return max(8.0, float(style.get("tick_label_size", style.get("tick_size", 11))))
+    default = 12 if style.get("_scene_public_chrome_defaults") else 11
+    return max(8.0, float(style.get("tick_label_size", style.get("tick_size", default))))
+
+
+def _axis_visibility_switch(style: dict[str, Any]) -> bool:
+    """Whether an axis uses a public ticks/text visibility shorthand."""
+    return (style.get("tick_length") == 0 and style.get("tick_width") == 0) or (
+        style.get("tick_label_color") == "#00000000" and style.get("label_color") == "#00000000"
+    )
+
+
+def _preserve_scene_chrome_for_axis_visibility(spec: dict[str, Any]) -> dict[str, Any]:
+    """Keep a visibility-switch fallback visually continuous with public Scene.
+
+    A default circle-scatter export takes the Rust Scene path, whose bounded
+    chrome has 12 px tick labels and 4 px major ticks. ``ticks=False`` and
+    ``text=False`` deliberately fall back because Scene does not yet model
+    their independent visibility contract.  Preserve the otherwise-default
+    Scene chrome in that fallback, changing only the requested switch; without
+    this bridge the route itself resized every label and also erased the other
+    axis's default ticks.
+    """
+    primary = (spec.get("x_axis") or {}, spec.get("y_axis") or {})
+    if not any(_axis_visibility_switch(axis.get("style") or {}) for axis in primary):
+        return spec
+    copied = dict(spec)
+    for name in ("x_axis", "y_axis"):
+        axis = dict(spec[name])
+        axis["style"] = {**(axis.get("style") or {}), "_scene_public_chrome_defaults": True}
+        copied[name] = axis
+    return copied
 
 
 def _axis_tick_geometry_authored(axis: dict[str, Any]) -> bool:
@@ -3774,6 +3804,7 @@ def _polar_tick_labels(
 def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str:
     spec = _decode_title_geometry(spec, blob)
     spec = _resolve_static_css_vars(spec)
+    spec = _preserve_scene_chrome_for_axis_visibility(spec)
     width, height, compact, plot = layout(spec)
     xa, ya = spec["x_axis"], spec["y_axis"]
     x_scales, y_scales, sx, sy, extra_x_axes, extra_y_axes = _axis_scales(spec, plot)
@@ -4344,7 +4375,8 @@ def render_svg(spec: dict[str, Any], blob: bytes, *, id_prefix: str = "") -> str
         )
 
     def tick_span(style: dict[str, Any]) -> tuple[float, float, float]:
-        length = max(0.0, float(style.get("tick_length", 0)))
+        default_length = 4 if style.get("_scene_public_chrome_defaults") else 0
+        length = max(0.0, float(style.get("tick_length", default_length)))
         direction = str(style.get("tick_direction", "out"))
         if direction == "in":
             return length, 0.0, float(style.get("tick_width", 1))

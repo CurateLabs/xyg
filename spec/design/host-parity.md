@@ -116,6 +116,13 @@ record. Scene v13 covers solid chart/plot backgrounds, authored
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.
 
+For the migrated subset, public Python SVG and native PNG now use the Rust
+Scene consumers and public PDF consumes their Rust SVG. The shared predicate
+chooses the compatibility renderer only before Scene compilation for an
+explicit unsupported feature, an export-only background override, or a valid
+viewport too small for bounded Scene chrome. A malformed input or Rust
+consumer failure remains an error rather than a fallback signal.
+
 ### Contracts (MUST)
 
 - **Rust owns decisions for all marks.** Hosts are thin: coerce inputs, schedule

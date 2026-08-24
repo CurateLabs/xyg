@@ -18,7 +18,8 @@ import numpy as np
 import pytest
 
 import xyg.pyplot as plt
-from xyg import _svg, _textblock
+from xyg import _native, _svg, _textblock
+from xyg._scene_v3 import scene_export_support_reason
 
 
 def teardown_function():
@@ -67,6 +68,23 @@ def test_default_axes_renders_on_the_matplotlib_subplot_frame():
     assert ax.get_position().bounds == pytest.approx((0.125, 0.11, 0.775, 0.77))
     (rendered,) = _plot_rects(fig)
     assert rendered == pytest.approx((80.0, 57.6, 496.0, 369.6), abs=0.5)
+
+
+def test_pyplot_static_export_keeps_explicit_compatibility_route(monkeypatch: pytest.MonkeyPatch):
+    """Pyplot's browser-CSS metadata is a documented preflight exception."""
+    fig, ax = plt.subplots(figsize=(3.2, 2.4), dpi=100)
+    ax.plot([0, 1, 2], [1, 3, 2])
+    chart = fig._single({})
+    assert chart is not None
+    assert "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE" in scene_export_support_reason(chart.figure())
+
+    def unexpected_scene(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("pyplot fallback must be selected before Scene compilation")
+
+    monkeypatch.setattr(_native, "scene_svg", unexpected_scene)
+    output = io.BytesIO()
+    fig.savefig(output, format="svg")
+    assert output.getvalue().startswith(b"<svg ")
 
 
 def test_axes_title_does_not_move_the_rendered_frame():
