@@ -8,10 +8,11 @@ const fixture = JSON.parse(fs.readFileSync(
   new URL("../../../tests/fixtures/xyts_cross_host.json", import.meta.url), "utf8",
 ));
 
-test("native Node consumes exact Rust-generated XYTS Scene v12 output", () => {
+test("native Node consumes exact Rust-generated XYTS Scene output", () => {
   assert.equal(fixture.authority, "crates/xyg-wasm/src/compile.rs");
-  assert.equal(fixture.scene_version, 12);
-  assert.equal(fixture.painter_version, 9);
+  // These values originate in Rust and are regenerated with the fixture. Keep
+  // the assertion tied to the generated WASM contract, rather than duplicating
+  // a protocol version in this thin consumer.
   for (const value of fixture.successful) {
     const scene = Uint8Array.from(Buffer.from(value.scene_hex, "hex"));
     const view = new DataView(scene.buffer, scene.byteOffset, scene.byteLength);
@@ -21,7 +22,11 @@ test("native Node consumes exact Rust-generated XYTS Scene v12 output", () => {
     assert.equal(Number(view.getBigUint64(24, true)), value.styles, value.name);
     assert.match(sceneSvg(scene), /^<svg xmlns=/, value.name);
     assert.ok(sceneRasterCommands(scene).length > 16, value.name);
-    assert.deepEqual(Buffer.from(sceneBrowserPainter(scene)), Buffer.from(value.painter_hex, "hex"), value.name);
+    const painter = sceneBrowserPainter(scene);
+    const painterView = new DataView(painter.buffer, painter.byteOffset, painter.byteLength);
+    assert.equal(painterView.getUint32(4, true), fixture.painter_version, value.name);
+    assert.equal(painterView.getUint32(8, true), fixture.scene_version, value.name);
+    assert.deepEqual(Buffer.from(painter), Buffer.from(value.painter_hex, "hex"), value.name);
   }
 });
 

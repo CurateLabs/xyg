@@ -558,7 +558,7 @@ Before tagging an `xyg-v*` release:
   micropip, loads the C ABI through `ctypes`, verifies `xyg_abi_version`, and
   calls the native `min_max` kernel. It then disables network access and makes
   the actual Pyodide runtime consume every Rust-generated XYTS conformance
-  Scene, exercising Scene v12 SVG, raster-command, and exact painter-v9
+  Scene, exercising Scene v13 SVG, raster-command, and exact painter-v10
   lowering through the native `xyg_scene_browser_painter` ABI. It directly
   calls every Emscripten-only filesystem stub and verifies its fail-closed
   sentinel and generated signature. Dependency and
