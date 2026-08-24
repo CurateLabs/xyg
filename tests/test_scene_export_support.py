@@ -70,10 +70,10 @@ def _authored_tick_labels() -> Figure:
     return figure
 
 
-def test_authored_cartesian_tick_labels_are_a_supported_scene_v16_slice() -> None:
+def test_authored_cartesian_tick_labels_are_a_supported_scene_v17_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (16).to_bytes(4, "little")
+    assert encoded[4:8] == (17).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 

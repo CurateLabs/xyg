@@ -42,7 +42,7 @@ function compilePainter(painter: ArrayBuffer) {
   for (let index = 0; index < traceCount; index++) {
     const descriptor = HEADER_BYTES + index * TRACE_BYTES;
     const kind = bytes[descriptor], symbol = bytes[descriptor + 1], annotationKind = bytes[descriptor + 2], count = u32(descriptor + 4);
-    if (annotationKind > 4 || bytes[descriptor + 3] !== 0 || bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0) || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
+    if (annotationKind > 5 || bytes[descriptor + 3] !== 0 || bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0) || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
     const fill = rgba(bytes.subarray(descriptor + 32, descriptor + 36)), stroke = rgba(bytes.subarray(descriptor + 36, descriptor + 40));
     const strokeWidth = f32(descriptor + 40), diameter = f32(descriptor + 44);
     if (strokeWidth < 0 || diameter < 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter style is invalid");
@@ -96,10 +96,18 @@ function compilePainter(painter: ArrayBuffer) {
           : { kind: "band", axis: "y", start: y0, end: y1, style: { color: fill, opacity: 1 }, aria_label: "Horizontal reference band" });
       } else if (annotationKind === 3 && kind === 0 && count === 1) {
         annotations.push({ kind: "marker", x: px(x), y: px(y), size: diameter, symbol: SYMBOLS[symbol], style: { color: fill, stroke_color: stroke, stroke_width: strokeWidth, opacity: 1 }, aria_label: "Reference marker" });
+      } else if (annotationKind === 5 && kind === 1 && count === 2) {
+        // A straight arrow is emitted as its canonical shaft followed by its
+        // triangular head. Keep both primitives as painter traces so the
+        // Rust-authored geometry remains exact, and expose one semantic note.
+        annotations.push({ kind: "straight_arrow", aria_label: "Straight arrow annotation" });
+      } else if (annotationKind === 5 && kind === 4 && count === 3) {
+        // The matching arrow shaft owns the semantic note above; this is its
+        // fixed, Rust-authored triangular head.
       } else {
         throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust annotation descriptor is invalid");
       }
-      continue;
+      if (annotationKind !== 5) continue;
     }
     const markCount = kind === 4 ? 1 : count;
     Object.assign(trace, { id: index, name: null, tier: "direct", n_points: markCount, n_marks: markCount, x_axis: "x", y_axis: "y" });
