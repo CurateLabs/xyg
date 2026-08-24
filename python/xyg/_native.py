@@ -1826,6 +1826,7 @@ def scene_plot_layout(
     x_label: str = "",
     y_label: str = "",
     padding: tuple[float, float, float, float] | None = None,
+    colorbar_side: str | None = None,
 ) -> tuple[float, float, float, float]:
     """Rust-owned Cartesian gutters for the Scene-eligible export subset.
 
@@ -1841,6 +1842,9 @@ def scene_plot_layout(
     if padding is not None:
         pad_buf = (ctypes.c_double * 4)(*padding)
         pad_ptr = ctypes.cast(pad_buf, ctypes.POINTER(ctypes.c_double))
+    side = {None: 0, "right": 1, "bottom": 2}.get(colorbar_side)
+    if side is None:
+        raise ValueError("colorbar side must be right, bottom, or omitted")
     written = _lib.xyg_scene_plot_layout(
         float(viewport[0]),
         float(viewport[1]),
@@ -1861,6 +1865,7 @@ def scene_plot_layout(
         len(xlabel_b),
         ylabel_b if ylabel_b else None,
         len(ylabel_b),
+        side,
         out,
     )
     if written != 4:

@@ -433,7 +433,7 @@ encode colorbar major ticks, tick labels, or minor ticks: zero is required for
 the tick count and any minor-tick flag is invalid. Rust rejects named colormaps,
 arbitrary CSS/fonts, axes placement, extensions, all tick customisation,
 unknown flags, malformed UTF-8, unsorted values, and all size overflows before
-allocation. Rust resolves the gutter, screen-space bar bounds and paint order.
+allocation. Rust resolves the selected-side outer gutter, screen-space bar bounds and paint order.
 SVG, raster, and browser painter consume that exact resolved geometry; Python
 and Node only pack the record. Rich colorbar tick/label and annotation work
 remain deferred.
@@ -514,7 +514,7 @@ geometry/styles are Scene v8.
 Category, angular, and time/calendar tick ladders already move
 through `xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome
 paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
-gutters for Scene compilation. Cartesian rect-family hosts
+gutters, including the selected literal-colorbar outer lane, for Scene compilation. Cartesian rect-family hosts
 (`bar`, `column`, `histogram`, `violin`, `box`) share Scene Rect records;
 segment-family hosts (`segments`, `errorbar`, `stem`, `contour`,
 `box_whisker`, `box_median`) and stepped lines share Scene Polyline records;

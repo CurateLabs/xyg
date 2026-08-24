@@ -750,6 +750,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
       xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
       yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
+      encodedColorbar.length ? (encodedColorbar[8] & 1 ? 2 : 1) : 0,
       f64Ptr(out),
     );
     if (written !== 4n && written !== 4) throw new RangeError("invalid canonical scene plot layout");

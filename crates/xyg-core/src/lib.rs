@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 91;
+pub const ABI_VERSION: u32 = 92;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -140,6 +140,8 @@ pub unsafe extern "C" fn xyg_scene_support_reason(
 /// success and returns 4. `authored_padding` may be null (use compact/regular
 /// defaults) or address four f64 values in `(top, right, bottom, left)` order.
 /// Title and axis-label buffers may be null when the matching length is 0.
+/// `colorbar_side` is `0` for none, `1` for right, or `2` for bottom; Rust
+/// reserves the bounded outer lane when present.
 ///
 /// # Safety
 /// When non-null, text buffers must address the given UTF-8 byte counts.
@@ -165,6 +167,7 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
     x_label_len: usize,
     y_label: *const u8,
     y_label_len: usize,
+    colorbar_side: u32,
     out_margins: *mut f64,
 ) -> usize {
     if !matches!(x_mask_nonpositive, 0 | 1)
@@ -187,6 +190,12 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
     };
     let (Some(x_kind), Some(y_kind)) = (scale_kind(x_kind), scale_kind(y_kind)) else {
         return usize::MAX;
+    };
+    let colorbar_side = match colorbar_side {
+        0 => scene::ColorbarSide::None,
+        1 => scene::ColorbarSide::Right,
+        2 => scene::ColorbarSide::Bottom,
+        _ => return usize::MAX,
     };
     let padding = if authored_padding.is_null() {
         None
@@ -236,6 +245,7 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
             y_hi,
             y_constant,
             y_mask_nonpositive: y_mask_nonpositive != 0,
+            colorbar_side,
         })
         .ok()
     }) else {

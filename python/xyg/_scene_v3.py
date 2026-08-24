@@ -920,6 +920,9 @@ def figure_scene(
             x_label=x_label,
             y_label=y_label,
             padding=authored,
+            colorbar_side=("bottom" if colorbar_input[8] & 1 else "right")
+            if colorbar_input
+            else None,
         )
     else:
         left, right, top, bottom = margins

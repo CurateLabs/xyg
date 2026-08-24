@@ -1855,27 +1855,25 @@ fn resolved_colorbar_bounds(
 ) -> Result<(f64, f64, f64, f64), SceneError> {
     // The canonical colorbar occupies only the caller-provided outer gutter.
     // It must never shrink the already-resolved plot a second time.
-    const GUTTER: f64 = 28.0;
-    const THICKNESS: f64 = 14.0;
     let title = text_advance(&colorbar.title, 11.0);
     let (x, y, width, height) = if colorbar.horizontal {
-        if layout.viewport_height - layout.bottom < GUTTER + THICKNESS {
+        if layout.viewport_height - layout.bottom < COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS {
             return Err(SceneError::Limit);
         }
         (
             layout.left,
-            layout.bottom + GUTTER,
+            layout.bottom + COLORBAR_OUTER_GUTTER,
             layout.right - layout.left,
-            THICKNESS,
+            COLORBAR_THICKNESS,
         )
     } else {
-        if layout.viewport_width - layout.right < GUTTER + THICKNESS {
+        if layout.viewport_width - layout.right < COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS {
             return Err(SceneError::Limit);
         }
         (
-            layout.right + GUTTER,
+            layout.right + COLORBAR_OUTER_GUTTER,
             layout.top,
-            THICKNESS,
+            COLORBAR_THICKNESS,
             layout.bottom - layout.top,
         )
     };
@@ -5620,6 +5618,17 @@ fn text_advance(text: &str, font_size: f64) -> f64 {
 const AXIS_TEXT_EDGE_PAD: f64 = 4.0;
 const Y_TITLE_TICK_GAP: f64 = 0.4;
 const LABEL_FONT_PX: f64 = 12.0;
+const COLORBAR_OUTER_GUTTER: f64 = 28.0;
+const COLORBAR_THICKNESS: f64 = 14.0;
+
+/// Literal colorbar side supplied by thin host framing. Rust owns the
+/// resulting margin reservation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ColorbarSide {
+    None,
+    Right,
+    Bottom,
+}
 
 /// Inputs for [`cartesian_scene_margins`].
 #[derive(Clone, Copy, Debug)]
@@ -5640,6 +5649,7 @@ pub struct CartesianLayoutRequest<'a> {
     pub y_hi: f64,
     pub y_constant: f64,
     pub y_mask_nonpositive: bool,
+    pub colorbar_side: ColorbarSide,
 }
 
 /// Cartesian default gutters for the Scene-eligible export subset.
@@ -5668,6 +5678,7 @@ pub fn cartesian_scene_margins(
         y_hi,
         y_constant,
         y_mask_nonpositive,
+        colorbar_side,
     } = request;
     if ![viewport_width, viewport_height]
         .iter()
@@ -5757,6 +5768,12 @@ pub fn cartesian_scene_margins(
         (AXIS_TEXT_EDGE_PAD + 24.0 + LABEL_FONT_PX * 0.82 + LABEL_FONT_PX * 0.2).max(x_tick_room)
     };
     bottom = bottom.max(bottom_needed);
+
+    match colorbar_side {
+        ColorbarSide::None => {}
+        ColorbarSide::Right => right = right.max(COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS),
+        ColorbarSide::Bottom => bottom = bottom.max(COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS),
+    }
 
     // Terminal x-label overhang against the spine ends (two passes).
     for _ in 0..2 {
@@ -5853,6 +5870,7 @@ mod tests {
             y_hi: 5.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
+            colorbar_side: ColorbarSide::None,
         })
         .unwrap();
         assert!(left >= 46.0, "left={left}");
@@ -5860,6 +5878,33 @@ mod tests {
         assert!(top >= 6.0, "top={top}");
         assert!(bottom >= 36.0, "bottom={bottom}");
         PlotLayout::new(320.0, 240.0, left, right, top, bottom).unwrap();
+    }
+
+    #[test]
+    fn cartesian_scene_margins_reserve_the_literal_colorbar_lane() {
+        let request = |colorbar_side| CartesianLayoutRequest {
+            viewport_width: 320.0,
+            viewport_height: 240.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 0.0,
+            x_hi: 1.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            y_kind: ScaleKind::Linear,
+            y_lo: 0.0,
+            y_hi: 1.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+            colorbar_side,
+        };
+        let right = cartesian_scene_margins(request(ColorbarSide::Right)).unwrap();
+        let bottom = cartesian_scene_margins(request(ColorbarSide::Bottom)).unwrap();
+        assert!(right.1 >= COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS);
+        assert!(bottom.3 >= COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS);
     }
 
     #[test]

@@ -542,6 +542,19 @@ def test_scene_plot_layout_owns_cartesian_gutters() -> None:
     assert float(np.frombuffer(view[48:56], dtype="<f8")[0]) == left
 
 
+def test_scene_colorbar_side_is_framed_before_rust_resolves_gutters() -> None:
+    for side, edge_offset, viewport in (("right", 64, 320.0), ("bottom", 72, 240.0)):
+        figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])
+        figure.colorbar_options = {
+            "domain": [0.0, 1.0],
+            "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 128])],
+            "side": side,
+        }
+        scene = figure.to_scene()
+        edge = np.frombuffer(scene[edge_offset : edge_offset + 8], dtype="<f8")[0]
+        assert viewport - edge >= 42.0
+
+
 def test_scene_rejects_malformed_host_arrays() -> None:
     with np.testing.assert_raises_regex(ValueError, "one record per mark"):
         _native.scene_scatter_svg(
