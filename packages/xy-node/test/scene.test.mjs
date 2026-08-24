@@ -204,12 +204,12 @@ test("Node Scene v16 accepts both independently bounded annotation text frames",
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [];
-  const text = "both";
+  const text = "x".repeat(4096);
   for (let index = 0; index < 1; index += 1) {
     figure.annotations.push({ kind: "text", x: 0.5, y: 0.5, text });
     figure.annotations.push({ kind: "marker", x: 0.5, y: 0.5, text });
   }
-  assert.match(sceneSvg(figure.toScene()), /both/);
+  assert.match(sceneSvg(figure.toScene()), /x{4096}/);
 });
 
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {

@@ -481,9 +481,12 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || y_tick_labels_len > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AXIS_TICKS * 4 + 12
         || (x_tick_labels_len > 0 && x_tick_labels.is_null())
         || (y_tick_labels_len > 0 && y_tick_labels.is_null())
-        // `XYAD` carries two frames but one combined canonical label budget.
+        // `XYAD` carries two frames but one combined canonical label budget:
+        // outer/header bytes plus the worst (all-XYAT) per-label framing.
         || authored_text_annotations_len
-            > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AUTHORED_TEXT_ANNOTATIONS * 24 + 20
+            > scene::MAX_SCENE_LABEL_TEXT_BYTES
+                + scene::MAX_AUTHORED_TEXT_ANNOTATIONS * 24
+                + 44
         || (authored_text_annotations_len > 0 && authored_text_annotations.is_null())
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
