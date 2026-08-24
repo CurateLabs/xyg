@@ -446,7 +446,7 @@ existing canonical Polyline, Rect, and Scatter records. Annotation records are
 always appended after data records, so Rust SVG, raster, and browser-painter
 consumers share exact projection, clipping, marker geometry, style validation,
 resource bounds, and paint order. Python and Node only coerce the same author
-values and produce byte-identical records. Painter v9 consumes the explicit
+values and produce byte-identical records. Painter v10 consumes the explicit
 descriptor annotation byte and projects records into the existing browser annotation layer; TypeScript
 does not derive geometry or defaults. It also adds a literal, visually hidden
 `role=note` description for each direct-WASM annotation. These descriptions name

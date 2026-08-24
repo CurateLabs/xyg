@@ -1111,6 +1111,14 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "spec/benchmarks/metrics.md",
         "transport.json",
     )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Node XYTS cross-host conformance",
+        "active native Node XYTS cross-host conformance",
+        'XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        "node --test packages/xy-node/test/xyts-conformance.test.mjs",
+    )
     _require_job_contains(
         errors,
         jobs,

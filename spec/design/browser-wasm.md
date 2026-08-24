@@ -208,9 +208,10 @@ geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores
 those three authored texts before formatted tick labels. Header bytes 280–283
 carry the exact appended legend byte length, 284–287 the bounded literal `XYCB`
-colorbar length, and 288–291 the bounded `XYLB` label-block length; the
-validated `XYLG` record follows tick-label strings, then `XYCB`, and is followed by an `XYRG`
-resolved-geometry trailer. Rust writes the frame bounds, title and row baselines,
+colorbar length, and 288–291 the bounded `XYLB` label-block length. The
+validated trailer order after tick-label strings is `XYLG` → `XYRG` → `XYCB` →
+`XYRG` → `XYLB`: Rust resolves the geometry of each optional legend/colorbar
+record before the following decoration. Rust writes the frame bounds, title and row baselines,
 and literal line/marker/rectangle swatch geometry. TypeScript validates and
 projects those coordinates; it does not position, wrap, scroll, or fit the
 authored legend. `XYLB` stores Rust-final graph-label screen coordinates, font,
