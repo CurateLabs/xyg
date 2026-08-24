@@ -734,9 +734,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const stableId = annotationPrefix | (tag << 40n) | BigInt(annotationIndex);
     if (hasAttachedLabel) {
       const text = new TextEncoder().encode(annotation.text);
-      if (text.length > 4096) throw new RangeError("Scene v17 annotation labels are limited to 4,096 UTF-8 bytes");
+      if (text.length > 4096) throw new RangeError("Scene v16 annotation labels are limited to 4,096 UTF-8 bytes");
       const labelOpacity = annotationNumber(style, "label_opacity", 1, "label opacity");
-      if (!Number.isFinite(labelOpacity) || labelOpacity < 0 || labelOpacity > 1) throw new RangeError("Scene v17 annotation label opacity must be finite and in [0, 1]");
+      if (!Number.isFinite(labelOpacity) || labelOpacity < 0 || labelOpacity > 1) throw new RangeError("Scene v16 annotation label opacity must be finite and in [0, 1]");
       attachedLabels.push({ stableId, rgba: rgba8(annotationColor(style, "label_color", "#667085", "label color"), labelOpacity, "annotation label"), text });
     }
     const append = (recordKind, a, b, c = 0, d = 0, size = 0, symbol = 0) => {
