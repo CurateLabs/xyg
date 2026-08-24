@@ -1072,6 +1072,55 @@ async function run() {
   }
   textView.destroy(); textHost.remove(); await textWorker.dispose();
 
+  // `XYAC` v2 carries only a Cartesian data anchor, bounded pixel offset,
+  // literal paint, fixed leader width, anchor code, UTF-8 text, and optional
+  // label fill. Rust must derive the leader/head, stable identity, label box,
+  // and browser-facing geometry; this page never supplies resolved pixels.
+  const calloutText = "Rust";
+  foundationStage = "strict-CSP direct WASM XYAC callout";
+  const calloutTextBytes = new TextEncoder().encode(calloutText);
+  const xyatEmpty = new Uint8Array(12), xyalEmpty = new Uint8Array(12), xyarEmpty = new Uint8Array(12);
+  xyatEmpty.set([0x58, 0x59, 0x41, 0x54]); // XYAT v1
+  xyalEmpty.set([0x58, 0x59, 0x41, 0x4c]); // XYAL v2
+  xyarEmpty.set([0x58, 0x59, 0x41, 0x52]); // XYAR v1
+  new DataView(xyatEmpty.buffer).setUint32(4, 1, true);
+  new DataView(xyalEmpty.buffer).setUint32(4, 2, true);
+  new DataView(xyarEmpty.buffer).setUint32(4, 1, true);
+  const xyac = new Uint8Array(12 + 64 + calloutTextBytes.length);
+  xyac.set([0x58, 0x59, 0x41, 0x43]); // XYAC v2
+  const xyacView = new DataView(xyac.buffer);
+  xyacView.setUint32(4, 2, true); xyacView.setUint32(8, 1, true);
+  xyacView.setFloat64(12, 0.5, true); xyacView.setFloat64(20, 0.5, true);
+  xyacView.setFloat64(28, -12, true); xyacView.setFloat64(36, -18, true);
+  xyac.set([52, 64, 84, 255], 44); xyacView.setFloat64(48, 1, true); xyacView.setFloat64(56, 1.5, true);
+  xyac[64] = 0; // start anchor; 65..67 remain required zero bytes.
+  xyacView.setUint32(68, calloutTextBytes.length, true); xyac.set([255, 255, 255, 255], 72);
+  xyac.set(calloutTextBytes, 76);
+  const calloutEnvelope = new Uint8Array(24 + xyatEmpty.length + xyalEmpty.length + xyarEmpty.length + xyac.length);
+  calloutEnvelope.set([0x58, 0x59, 0x41, 0x44]); // XYAD v2
+  const calloutEnvelopeView = new DataView(calloutEnvelope.buffer);
+  calloutEnvelopeView.setUint32(4, 2, true); calloutEnvelopeView.setUint32(8, xyatEmpty.length, true);
+  calloutEnvelopeView.setUint32(12, xyalEmpty.length, true); calloutEnvelopeView.setUint32(16, xyarEmpty.length, true);
+  calloutEnvelopeView.setUint32(20, xyac.length, true);
+  let calloutAt = 24; for (const part of [xyatEmpty, xyalEmpty, xyarEmpty, xyac]) { calloutEnvelope.set(part, calloutAt); calloutAt += part.length; }
+  const calloutWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4096,
+  });
+  await calloutWorker.ready;
+  const calloutPaint = await calloutWorker.prepareSceneAnnotations(canonicalSceneV9(), calloutEnvelope, { transfer: false }).result;
+  const calloutHost = document.body.appendChild(document.createElement("div"));
+  const calloutView = hydrateWasmPainter(calloutHost, calloutPaint);
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const calloutNotes = [...calloutHost.querySelectorAll('[data-xy-slot="annotation_label"][role="note"]')];
+  const calloutNote = calloutNotes.find((node) => node.textContent === calloutText);
+  const calloutBox = calloutHost.querySelector('[data-xy-slot="annotation_label_box"][aria-hidden="true"]');
+  if (calloutNote?.textContent !== calloutText || !calloutBox
+      || getComputedStyle(calloutBox).backgroundColor !== "rgb(255, 255, 255)"
+      || calloutHost.querySelectorAll('[role="note"]').length !== 2) {
+    throw new Error("strict-CSP direct WASM XYAC callout did not preserve Rust-owned label semantics");
+  }
+  calloutView.destroy(); calloutHost.remove(); await calloutWorker.dispose();
+
   const annotationWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,

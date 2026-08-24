@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), ".."));
 const allowed = new Set(["/tests/browser/wasm_scene_benchmark_page.mjs", "/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"]);
+const authoredSceneDir = process.env.XYG_AUTHORED_SCENE_DIR ? resolve(process.env.XYG_AUTHORED_SCENE_DIR) : null;
+const authoredScenes = new Map([100, 10_000, 100_000, 1_000_000].map((count) => [
+  `/authored-scenes/authored-scene-${count}.bin`,
+  authoredSceneDir ? join(authoredSceneDir, `authored-scene-${count}.bin`) : null,
+]));
+if (!authoredSceneDir) throw new Error("XYG_AUTHORED_SCENE_DIR is required for authored-Scene browser evidence");
 const server = createServer(async (request, response) => {
   const path = new URL(request.url, "http://127.0.0.1").pathname;
   response.setHeader("Content-Security-Policy", "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'");
@@ -15,10 +21,11 @@ const server = createServer(async (request, response) => {
     response.end('<script type="module" src="/tests/browser/wasm_scene_benchmark_page.mjs"></script>');
     return;
   }
-  if (!allowed.has(path)) { response.statusCode = 404; response.end("not found"); return; }
+  const authoredScene = authoredScenes.get(path);
+  if (!allowed.has(path) && !authoredScene) { response.statusCode = 404; response.end("not found"); return; }
   try {
-    const body = await readFile(join(root, path));
-    response.setHeader("Content-Type", extname(path) === ".wasm" ? "application/wasm" : "text/javascript");
+    const body = await readFile(authoredScene ?? join(root, path));
+    response.setHeader("Content-Type", extname(path) === ".wasm" ? "application/wasm" : authoredScene ? "application/octet-stream" : "text/javascript");
     response.end(body);
   } catch (cause) {
     response.statusCode = 500;
@@ -38,7 +45,7 @@ try {
     new Promise((_, reject) => setTimeout(() => reject(new Error("WASM Scene benchmark timed out")), 60_000)),
   ]);
   if (pageErrors.length) throw new Error(`benchmark page errors: ${pageErrors.join(" | ")}`);
-  console.log(JSON.stringify({ schema: "xyg-wasm-scene-browser-v2", gitSha: process.env.GITHUB_SHA ?? null, measurements: rows }, null, 2));
+  console.log(JSON.stringify({ schema: "xyg-wasm-scene-browser-v3", gitSha: process.env.GITHUB_SHA ?? null, measurements: rows }, null, 2));
 } finally {
   await Promise.race([
     (async () => { await page.close(); await browser.close(); })(),
