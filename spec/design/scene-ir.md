@@ -258,7 +258,10 @@ axis chrome (including the independent ``ticks=False`` / ``text=False``
 visibility switches), export-only backgrounds, fluid or too-small viewports, and
 screen-bounded LOD inputs remain on the compatibility renderer before
 compilation. Malformed input and Rust consumer failures propagate and never
-cause fallback.
+cause fallback. For those visibility-switch exceptions, the compatibility SVG
+and raster consumers retain the otherwise-default Scene chrome (12 px labels
+and 4 px major ticks) so changing one switch does not visibly re-style the
+other axis merely by crossing the routing boundary.
 
 ## Version 6: Band filled polygons
 

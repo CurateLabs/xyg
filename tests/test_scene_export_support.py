@@ -10,6 +10,7 @@ preflight so the router cannot silently select a partial consumer.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 
 import pytest
@@ -201,3 +202,17 @@ def test_axis_visibility_switches_preflight_to_compatibility(
 
     monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
     assert chart.to_png().startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_ticks_off_compatibility_svg_keeps_scene_route_label_paint() -> None:
+    """A compatibility switch must not make the routed default labels disappear."""
+    chart = xyg.scatter_chart(
+        xyg.scatter([1, 2, 3], [1, 2, 3]),
+        xyg.x_axis(ticks=False),
+        width=420,
+        height=260,
+    )
+    labels = re.findall(r'<text[^>]+fill="([^"]+)"[^>]*>([123])</text>', chart.to_svg())
+    assert len(labels) == 6
+    assert all(paint != "#00000000" for paint, _text in labels)
+    assert {paint for paint, _text in labels} == {"rgba(32,32,32,0.85)"}
