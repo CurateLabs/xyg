@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 17 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 18 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -497,6 +497,37 @@ head geometry, dash patterns, custom caps/joins, gradients, CSS, custom fonts,
 markup, collision, rotation, wrapping, or boxes. Those forms remain loud
 unsupported boundaries.
 
+## Version 18 bounded Cartesian callouts
+
+Scene v18 adds a Rust-owned, bounded Cartesian callout seam. `XYAD` v2 has a
+24-byte header: magic `XYAD`, version `2`, then exact `u32` byte lengths for
+`XYAT`, `XYAL`, `XYAR`, and `XYAC`, at offsets 8, 12, 16, and 20 respectively.
+The payload order is exactly `XYAT` → `XYAL` → `XYAR` → `XYAC`; every declared
+length and the final envelope length must match. `XYAD` v1 remains decodable
+for existing labels and arrows, with its 20-byte header and no `XYAC` field.
+
+`XYAC` v1 is a 12-byte header (`XYAC`, version `1`, count), followed by at
+most 128 wire-order entries. Each entry is exactly 60 fixed bytes followed
+immediately by its UTF-8 text: Cartesian f64 `x`, `y`, screen-space f64 `dx`,
+`dy`, literal RGBA8, f64 opacity in `[0, 1]`, positive finite f64 width,
+one text-anchor byte (`start=0`, `middle=1`, `end=2`), three required-zero
+reserved bytes, and a u32 text length. Text is nonempty, NUL-free UTF-8 and
+shares the 8,192-byte annotation-label budget. Hosts do not send a stable ID,
+pixels, leader geometry, boxes, or layout decisions; Rust derives a tag-6
+identity in wire order and rejects malformed, nonfinite, out-of-plot, or
+too-short projected leaders before output allocation.
+
+Rust maps the raw data anchor once, applies `dx`/`dy` in screen space, and
+lowers the resulting fixed-head leader and its anchor-bearing label into
+canonical Scene records. Tag `6` identifies the callout leader; the output
+label travels in `XYLB` v2. `XYLB` v1 remains valid for start-anchored labels;
+v2 expands each fixed record from 40 to 44 bytes with anchor byte 36, three
+required-zero bytes, and the text length at byte 40. SVG, raster, and browser
+consumers must use that Rust-final baseline and anchor verbatim. Callout boxes,
+collision, wrapping, rich text, custom typography, CSS/classes, curves,
+orthogonal routes, start/tail heads, and host-resolved geometry remain
+fail-closed.
+
 ## Version 11 identity metadata for primary Cartesian annotations
 
 Version 11 records annotation kind explicitly in byte 3 and lowers the bounded
@@ -552,12 +583,15 @@ pin the identical Rust diagnostic for each representable case.
 ## Version 12 bounded semantic graph labels
 
 The chrome trailer uses bytes 232–235 for an appended label-block length and
-keeps bytes 236–239 reserved zero. A nonempty `XYLB` v1 block contains at most
-128 records and 8,192 total UTF-8 bytes. Each fixed record carries the final
-screen-space x/y baseline, font size, literal RGBA, source u64 identity, and
-text length; the text table is contiguous and exact. Rust rejects nonfinite or
-out-of-viewport geometry, invalid UTF-8/NUL, empty text, count/byte overflow,
-and trailing data before any consumer allocation.
+keeps bytes 236–239 reserved zero. A nonempty `XYLB` block contains at most
+128 records and 8,192 total UTF-8 bytes. v1 uses 40-byte records with the
+final screen-space x/y baseline, font size, literal RGBA, source u64 identity,
+and text length. v2 uses 44-byte records, inserting a text-anchor byte at 36
+(`start=0`, `middle=1`, `end=2`) plus three required-zero bytes before the
+text length at 40. The text table is contiguous and exact. Rust rejects
+nonfinite or out-of-viewport geometry, invalid UTF-8/NUL, empty text,
+count/byte overflow, invalid anchors/reserved bytes, and trailing data before
+any consumer allocation.
 
 For `XYGG` v3 direct semantic graphs, Rust alone resolves compound visibility,
 then ranks state and stable source

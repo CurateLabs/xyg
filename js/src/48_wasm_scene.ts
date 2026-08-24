@@ -31,6 +31,7 @@ function compilePainter(painter: ArrayBuffer) {
   if (!(width > 0 && height > 0 && right > left && bottom > top && left >= 0 && top >= 0 && right <= width && bottom <= height)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter viewport is invalid");
   const columns: any[] = [], traces: any[] = [], annotations: any[] = [];
   let expectedOffset = HEADER_BYTES + traceCount * TRACE_BYTES;
+  let awaitingCalloutHead = false;
   const column = (descriptor: number, slot: number, count: number, dtype = "f32") => {
     const offset = u32(descriptor + slot), end = offset + count * 4;
     if (offset !== expectedOffset || !Number.isSafeInteger(end) || end > bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter column range is invalid");
@@ -42,7 +43,8 @@ function compilePainter(painter: ArrayBuffer) {
   for (let index = 0; index < traceCount; index++) {
     const descriptor = HEADER_BYTES + index * TRACE_BYTES;
     const kind = bytes[descriptor], symbol = bytes[descriptor + 1], annotationKind = bytes[descriptor + 2], count = u32(descriptor + 4);
-    if (annotationKind > 5 || bytes[descriptor + 3] !== 0 || bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0) || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
+    if (annotationKind > 6 || bytes[descriptor + 3] !== 0 || bytes.subarray(descriptor + 48, descriptor + 64).some((value) => value !== 0) || count > 2_000_000) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter trace descriptor is invalid");
+    if (awaitingCalloutHead && !(annotationKind === 6 && kind === 4 && count === 3)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust Cartesian callout leader has no matching head");
     const fill = rgba(bytes.subarray(descriptor + 32, descriptor + 36)), stroke = rgba(bytes.subarray(descriptor + 36, descriptor + 40));
     const strokeWidth = f32(descriptor + 40), diameter = f32(descriptor + 44);
     if (strokeWidth < 0 || diameter < 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter style is invalid");
@@ -104,15 +106,26 @@ function compilePainter(painter: ArrayBuffer) {
       } else if (annotationKind === 5 && kind === 4 && count === 3) {
         // The matching arrow shaft owns the semantic note above; this is its
         // fixed, Rust-authored triangular head.
+      } else if (annotationKind === 6 && kind === 1 && count === 2) {
+        // A Cartesian callout is emitted as its Rust-authored leader followed
+        // by a fixed triangular head and a scene label. Keep the primitives in
+        // their exact painter order, but expose one semantic accessibility note.
+        if (awaitingCalloutHead) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust Cartesian callout leader has no matching head");
+        awaitingCalloutHead = true;
+        annotations.push({ kind: "cartesian_callout", aria_label: "Cartesian callout annotation" });
+      } else if (annotationKind === 6 && kind === 4 && count === 3) {
+        // The matching leader owns the semantic note above; this is its head.
+        awaitingCalloutHead = false;
       } else {
         throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust annotation descriptor is invalid");
       }
-      if (annotationKind !== 5) continue;
+      if (annotationKind !== 5 && annotationKind !== 6) continue;
     }
     const markCount = kind === 4 ? 1 : count;
     Object.assign(trace, { id: index, name: null, tier: "direct", n_points: markCount, n_marks: markCount, x_axis: "x", y_axis: "y" });
     traces.push(trace);
   }
+  if (awaitingCalloutHead) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust Cartesian callout leader has no matching head");
   const xTickCount = u32(48), yTickCount = u32(52), tickOffset = u32(56), stringOffset = u32(60);
   const tickCount = xTickCount + yTickCount;
   const tickBytes = tickCount * XYG_WASM_PAINTER_TICK_BYTES;
@@ -198,19 +211,22 @@ function compilePainter(painter: ArrayBuffer) {
     colorbar = { domain: [lo, hi], orientation: flags & 1 ? "horizontal" : "vertical", placement: "scene", levels: count - 1, boundaries: stops.map((stop) => stop.value), band_colors: stops.slice(0, -1).map((_, index) => Array.from(bytes.subarray(start + 64 + index * 12, start + 68 + index * 12))), ticks: [], text_color: rgba(bytes.subarray(start + 40, start + 44)), label: title || null, resolved: { bounds: [f32(geometry + 8), f32(geometry + 12), f32(geometry + 16), f32(geometry + 20)] } };
   }
   nextString += colorbarLength;
-  const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; text: string}> = [];
+  const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; anchor: number; text: string}> = [];
   if (sceneLabelLength) {
     const start = nextString, end = start + sceneLabelLength;
-    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || u32(start + 4) !== 1) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
-    const count = u32(start + 8), textBytes = u32(start + 12), tableEnd = start + 16 + count * 40;
+    const version = u32(start + 4);
+    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || (version !== 1 && version !== 2)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
+    const count = u32(start + 8), textBytes = u32(start + 12), recordBytes = version === 1 ? 40 : 44, tableEnd = start + 16 + count * recordBytes;
     if (count > 128 || textBytes > 8192 || tableEnd + textBytes !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label table is invalid");
     let textOffset = tableEnd;
     for (let index = 0; index < count; index++) {
-      const record = start + 16 + index * 40, x = f64(record + 8), y = f64(record + 16), fontSize = f64(record + 24), length = u32(record + 36);
-      if (!(x >= 0 && x <= width && y >= 0 && y <= height && fontSize >= 1 && fontSize <= 1000) || textOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label geometry is invalid");
+      const record = start + 16 + index * recordBytes, x = f64(record + 8), y = f64(record + 16), fontSize = f64(record + 24);
+      const anchor = version === 1 ? 0 : bytes[record + 36];
+      const length = u32(record + (version === 1 ? 36 : 40));
+      if (!(x >= 0 && x <= width && y >= 0 && y <= height && fontSize >= 1 && fontSize <= 1000) || anchor > 2 || (version === 2 && bytes.subarray(record + 37, record + 40).some((value) => value !== 0)) || textOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label geometry is invalid");
       let label: string; try { label = decoder.decode(bytes.subarray(textOffset, textOffset + length)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid UTF-8"); }
       if (!label || label.includes("\0")) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid");
-      sceneLabels.push({stableId: view.getBigUint64(record, true), x, y, fontSize, color: rgba(bytes.subarray(record + 32, record + 36)), text: label});
+      sceneLabels.push({stableId: view.getBigUint64(record, true), x, y, fontSize, color: rgba(bytes.subarray(record + 32, record + 36)), anchor, text: label});
       textOffset += length;
     }
     if (textOffset !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text has trailing bytes");
@@ -262,9 +278,11 @@ export function hydrateWasmPainter(
     layer.dataset.xyChrome = "graph_labels"; layer.setAttribute("role", "list"); layer.setAttribute("aria-label", "Graph labels");
     for (const label of compiled.sceneLabels) {
       const item = document.createElement("span");
-      const annotation = (label.stableId & 0xffff_ff00_0000_0000n) === 0x5859_0400_0000_0000n;
+      const labelType = label.stableId & 0xffff_ff00_0000_0000n;
+      const annotation = labelType === 0x5859_0400_0000_0000n || labelType === 0x5859_0600_0000_0000n;
       item.dataset.xySlot = annotation ? "annotation_label" : "graph_label"; item.dataset.xyStableId = label.stableId.toString(); item.setAttribute("role", annotation ? "note" : "listitem"); item.textContent = label.text;
-      Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, whiteSpace:"nowrap"});
+      const translateX = label.anchor === 0 ? "0" : label.anchor === 1 ? "-50%" : "-100%";
+      Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, transform:`translateX(${translateX})`, whiteSpace:"nowrap"});
       layer.appendChild(item);
     }
     view.root.appendChild(layer);

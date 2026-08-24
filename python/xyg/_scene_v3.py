@@ -464,8 +464,6 @@ def figure_scene(
         for annotation in annotations
     ):
         features |= 1 << 7
-    if any(annotation.get("kind") == "callout" for annotation in annotations):
-        features |= 1 << 8
     reason = _native.scene_support_reason(features)
     if reason:
         raise UnsupportedSceneV3(reason)
@@ -773,6 +771,16 @@ def figure_scene(
     straight_arrows: list[
         tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
     ] = []
+    # XYAC v1 is deliberately a compact host framing seam.  Every layout,
+    # projection, label placement, connector shape, clipping, and paint-order
+    # decision remains in Rust.  One row is little-endian
+    # ``dddd4sddB3xI`` (60 fixed bytes) followed by its UTF-8 text:
+    # data x/y, pixel dx/dy, literal RGBA, opacity, width, anchor code
+    # (start=0/middle=1/end=2), three required zero bytes, and u32 text
+    # byte length. Rust derives the callout identity from record order.
+    cartesian_callouts: list[
+        tuple[float, float, float, float, tuple[int, int, int, int], float, float, int, bytes]
+    ] = []
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
         if kind == "text":
@@ -810,6 +818,58 @@ def figure_scene(
                     _rgba(annotation_color(style, "color", "#667085", "arrow color"), 1.0),
                     opacity,
                     width_value,
+                )
+            )
+            continue
+        if kind == "callout":
+            if annotation.get("class_name") not in (None, ""):
+                raise UnsupportedSceneV3("Scene callouts do not encode class_name")
+            value = annotation.get("text")
+            if not isinstance(value, str) or not value or "\0" in value:
+                raise UnsupportedSceneV3("Scene callouts require nonempty NUL-free text")
+            encoded = value.encode("utf-8")
+            if len(encoded) > 4096:
+                raise UnsupportedSceneV3("Scene callouts are limited to 4,096 UTF-8 bytes")
+            style = dict(annotation.get("style") or {})
+            bad = sorted(
+                key
+                for key, style_value in style.items()
+                if key not in {"color", "opacity", "width"} and style_value is not None
+            )
+            if bad:
+                raise UnsupportedSceneV3(f"Scene callout style does not encode {bad!r}")
+            opacity = annotation_number(style, "opacity", 1.0, "callout opacity")
+            width_value = annotation_number(style, "width", 1.5, "callout width")
+            if (
+                not np.isfinite(opacity)
+                or not 0 <= opacity <= 1
+                or not np.isfinite(width_value)
+                or width_value <= 0
+            ):
+                raise ValueError(
+                    "Scene callout opacity must be in [0, 1] and width must be positive"
+                )
+            anchor = annotation.get("anchor", "start")
+            anchor_code = {"start": 0, "middle": 1, "end": 2}.get(anchor)
+            if anchor_code is None:
+                raise UnsupportedSceneV3("Scene callout anchor must be start, middle, or end")
+            x = annotation_number(annotation, "x", None, "callout x")
+            y = annotation_number(annotation, "y", None, "callout y")
+            dx = annotation_number(annotation, "dx", 36.0, "callout dx")
+            dy = annotation_number(annotation, "dy", -30.0, "callout dy")
+            if not all(np.isfinite(number) for number in (x, y, dx, dy)):
+                raise ValueError("Scene callout coordinates and offsets must be finite")
+            cartesian_callouts.append(
+                (
+                    x,
+                    y,
+                    dx,
+                    dy,
+                    _rgba(annotation_color(style, "color", "#344054", "callout color"), 1.0),
+                    opacity,
+                    width_value,
+                    anchor_code,
+                    encoded,
                 )
             )
             continue
@@ -988,6 +1048,8 @@ def figure_scene(
     text_annotations = [
         annotation for annotation in annotations if annotation.get("kind") == "text"
     ]
+    if len(cartesian_callouts) > 128:
+        raise UnsupportedSceneV3("Scene callouts are limited to 128 entries")
     xyat = bytearray(
         b"XYAT" + (1).to_bytes(4, "little") + len(text_annotations).to_bytes(4, "little")
     )
@@ -1023,16 +1085,37 @@ def figure_scene(
         xyar.extend(
             struct.pack("<Qdddd4sdd", stable_id, x0, y0, x1, y1, bytes(rgba), opacity, width_value)
         )
+    xyac = bytearray(
+        b"XYAC" + (1).to_bytes(4, "little") + len(cartesian_callouts).to_bytes(4, "little")
+    )
+    for x, y, dx, dy, rgba, opacity, width_value, anchor_code, encoded in cartesian_callouts:
+        xyac.extend(
+            struct.pack(
+                "<dddd4sddB3xI",
+                x,
+                y,
+                dx,
+                dy,
+                bytes(rgba),
+                opacity,
+                width_value,
+                anchor_code,
+                len(encoded),
+            )
+        )
+        xyac.extend(encoded)
     framed_annotations = bytearray(
         b"XYAD"
-        + (1).to_bytes(4, "little")
+        + (2).to_bytes(4, "little")
         + len(xyat).to_bytes(4, "little")
         + len(xyal).to_bytes(4, "little")
         + len(xyar).to_bytes(4, "little")
+        + len(xyac).to_bytes(4, "little")
     )
     framed_annotations.extend(xyat)
     framed_annotations.extend(xyal)
     framed_annotations.extend(xyar)
+    framed_annotations.extend(xyac)
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),
@@ -1063,7 +1146,7 @@ def figure_scene(
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
         authored_text_annotations=bytes(framed_annotations)
-        if text_annotations or attached_labels or straight_arrows
+        if text_annotations or attached_labels or straight_arrows or cartesian_callouts
         else b"",
     )
 
