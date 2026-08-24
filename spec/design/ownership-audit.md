@@ -24,6 +24,16 @@ Rust also owns whether resolved Cartesian Scene chrome produces SVG/raster
 primitives. Host paint alpha is data, not an implicit polar-mode signal; both
 hosts reject polar Scene compilation until the Scene schema records that mode.
 
+Static-export routing status (#117): `Figure.to_svg`, native `to_png`, and
+native `to_image(..., "svg"|"png"|"pdf")` now delegate the proven
+constant-style Cartesian circle-scatter public subset to the Rust Scene SVG and
+raster consumers (PDF consumes Rust SVG). `python/xyg/_scene_v3.py` is only a
+preflight/orchestration seam for that subset. `_svg.py`, `_raster.py`, and
+`_pdf.py` remain compatibility owners for text, legends, annotations, themes,
+custom axis chrome, non-circle symbols, non-scatter marks, LOD inputs, export
+background overrides, and any other unmodeled output contract; #58/#117 must
+retire each exception only with cross-host differential and performance proof.
+
 ## Binding seam decision
 
 XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ctypes and Node uses Koffi; Koffi itself is built on Node-API, but XYG is not an N-API addon. PyO3/abi3 and napi-rs would create separate host-specific native artifacts, packaging paths, and version seams. They are not the default while the product requires one core artifact usable by CPython versions, Node, VS Code, and future adapters. Issue #57 generated both low-level bindings and the C header from one typed ABI contract; measured evidence may revisit the seam later.
