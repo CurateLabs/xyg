@@ -472,7 +472,8 @@ endpoint, a band at its resolved rectangle centre, and a marker at its centre.
 Labels use the fixed built-in 12px `#667085` paint. Duplicate/unknown ids,
 malformed UTF-8, and all rich-label styling fail closed. Callouts, arrows,
 boxes, offsets, collision, rotation, wrapping, markup, custom fonts, and CSS
-remain outside this slice.
+remain outside this slice. The `XYAT` and `XYAL` contents share one 8,192-byte
+canonical text budget and a combined cap of 128 labels.
 
 ## Version 11 identity metadata for primary Cartesian annotations
 

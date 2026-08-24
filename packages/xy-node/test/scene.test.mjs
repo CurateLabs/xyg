@@ -152,6 +152,7 @@ test("Node Scene v9 whole-scene consumers reject malformed and unsupported input
 test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.annotations = [];
   figure.annotations = [
     { kind: "rule", axis: "x", value: 0.25, style: { color: "#ff0000", width: 2, opacity: 1 } },
     { kind: "band", axis: "y", start: 0.2, end: 0.4, style: { color: "#00ff00", opacity: 0.25 } },
@@ -197,6 +198,18 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   assert.throws(() => figure.toScene(), /invalid canonical scene batch/);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "" }];
   assert.throws(() => figure.toScene(), /nonempty NUL-free text/);
+});
+
+test("Node Scene v16 accepts both independently bounded annotation text frames", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.annotations = [];
+  const text = "both";
+  for (let index = 0; index < 1; index += 1) {
+    figure.annotations.push({ kind: "text", x: 0.5, y: 0.5, text });
+    figure.annotations.push({ kind: "marker", x: 0.5, y: 0.5, text });
+  }
+  assert.match(sceneSvg(figure.toScene()), /both/);
 });
 
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {

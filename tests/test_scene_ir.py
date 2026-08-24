@@ -125,6 +125,18 @@ def test_scene_v16_annotations_attach_bounded_labels_and_reject_richer_content()
     scene = figure.to_scene()
     painter = _native.scene_browser_painter(scene)
     assert all(value in painter for value in (b"rule", b"band", b"marker"))
+
+
+def test_scene_v16_native_boundary_accepts_two_bounded_text_frames() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    text = "both"
+    for index in range(1):
+        figure.text(0.5, 0.5, text, color="#667085")
+        figure.marker(0.5, 0.5, text=text)
+    scene = figure.to_scene()
+    assert _native.scene_svg(scene).count(text) == 2
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW"):
         Figure().arrow(0.0, 0.0, 1.0, 1.0).to_scene()
     with pytest.raises(UnsupportedSceneV3, match="does not encode"):

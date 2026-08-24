@@ -1842,6 +1842,12 @@ fn decode_annotation_envelope(
         label.stable_id = 0x5859_0500_0000_0000 | index as u64;
     }
     labels.append(&mut attached);
+    if labels.iter().try_fold(0usize, |total, label| {
+        total.checked_add(label.text.len()).ok_or(SceneError::Limit)
+    })? > MAX_SCENE_LABEL_TEXT_BYTES
+    {
+        return Err(SceneError::Limit);
+    }
     Ok(labels)
 }
 
@@ -2673,6 +2679,12 @@ impl<'a> SceneBatch<'a> {
             }
         }
         if labels.len() > MAX_SCENE_LABELS {
+            return Err(SceneError::Limit);
+        }
+        if labels.iter().try_fold(0usize, |total, label| {
+            total.checked_add(label.text.len()).ok_or(SceneError::Limit)
+        })? > MAX_SCENE_LABEL_TEXT_BYTES
+        {
             return Err(SceneError::Limit);
         }
         for (index, label) in labels.iter_mut().enumerate() {
