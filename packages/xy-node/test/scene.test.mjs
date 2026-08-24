@@ -185,6 +185,20 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   }
 });
 
+test("Node Scene v15 frames bounded plain text annotations and rejects malformed content", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 15);
+  assert.match(sceneSvg(scene), /&lt;safe&gt;/);
+  assert.ok(sceneRasterCommands(scene).length > 100);
+  figure.annotations = [{ kind: "text", x: 2, y: 0.5, text: "outside" }];
+  assert.throws(() => figure.toScene(), /invalid canonical scene batch/);
+  figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "" }];
+  assert.throws(() => figure.toScene(), /nonempty NUL-free text/);
+});
+
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
   const ribbon = new Figure({ width: 320, height: 200 });
   ribbon.setAxisDomain("x", [0, 1]); ribbon.setAxisDomain("y", [0, 1]);
