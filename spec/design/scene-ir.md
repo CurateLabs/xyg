@@ -194,6 +194,12 @@ disconnected Scene Polyline runs (unique stable id per segment), and
 band-family marks (`area`/`error_band`/solid `ribbon`) as Scene Band samples, and `triangle_mesh` as Scene PolyFill vertex runs. Gradient fills,
 non-zero `corner_radius`, and density-tier scatter are rejected until dedicated
 records exist. Their explicit Scene SVG/raster APIs exercise the Rust consumers.
+Node's public `Figure` accepts an `annotations` constructor array and exposes
+fluent `annotate(annotation)` authoring for the already-versioned bounded
+Cartesian annotation records. Those APIs only retain authored objects; they do
+not duplicate coordinate, style, resource-limit, or support-predicate policy.
+`figureSceneV3` remains the Node packing seam and Rust remains the decoder,
+layout, and rendering authority.
 Public Python SVG/PNG/PDF remain on the established compatibility renderers
 until Scene records encode canonical layout and authored text/style; they must
 not silently select a semantically incomplete scene. Missing/nonfinite

@@ -170,14 +170,9 @@ test("Node Scene v9 whole-scene consumers reject malformed and unsupported input
 test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
-  figure.annotations = [];
-  figure.annotations = [
-    { kind: "rule", axis: "x", value: 0.25, style: { color: "#ff0000", width: 2, opacity: 1 } },
-    { kind: "band", axis: "y", start: 0.2, end: 0.4, style: { color: "#00ff00", opacity: 0.25 } },
-    { kind: "marker", x: 0.75, y: 0.8, size: 10, symbol: "diamond", style: { color: "#0000ff", stroke_color: "#ffffff", stroke_width: 1.5, opacity: 1 } },
-  ];
+  for (const annotation of figureSceneFixture.node_public_annotations) figure.annotate(annotation);
   const scene = figure.toScene(), svg = sceneSvg(scene);
-  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.node_public_annotations_sha256);
   assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 20);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
@@ -202,6 +197,24 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
     figure.annotations = [annotation];
     assert.throws(() => figure.toScene(), /Scene v12 annotation/);
   }
+});
+
+test("Node Figure authoring accepts bounded annotations without exposing a second policy", () => {
+  const source = { kind: "text", x: 0.5, y: 0.5, text: "owned by Rust", style: { color: "#ff0000" } };
+  const fromConstructor = new Figure({ width: 320, height: 240, annotations: [source] });
+  fromConstructor.setAxisDomain("x", [0, 1]); fromConstructor.setAxisDomain("y", [0, 1]);
+  source.text = "caller mutation";
+  source.style.color = "#0000ff";
+  assert.match(sceneSvg(fromConstructor.toScene()), /owned by Rust/);
+  assert.match(sceneSvg(fromConstructor.toScene()), /rgba\(255,0,0,1\.000000\)/);
+
+  const fluent = new Figure({ width: 320, height: 240 });
+  fluent.setAxisDomain("x", [0, 1]); fluent.setAxisDomain("y", [0, 1]);
+  assert.equal(fluent.annotate({ kind: "text", x: 0.5, y: 0.5, text: "fluent" }), fluent);
+  assert.match(sceneSvg(fluent.toScene()), /fluent/);
+  assert.throws(() => fluent.annotate([]), /annotation must be an object/);
+  assert.throws(() => new Figure({ annotations: {} }), /annotations must be an array/);
+  assert.throws(() => new Figure({ annotations: [null] }), /annotation must be an object/);
 });
 
 test("Node Scene v16 frames bounded plain and attached text annotations and rejects malformed content", () => {

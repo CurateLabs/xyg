@@ -16,6 +16,35 @@
   "default_line_sha256": "31da9b756afcefe8e289fd687daa954c7a9479d20a10f4baa6334f4dc40e7d47",
   "primary_legend_sha256": "495eccbc7316895d08b96c2da901ccc3f3976efca0c48414edd8035ca3bbee11",
   "primary_annotations_sha256": "d0f0afe9836553997bab9e7d08f94ead0a5f2c6fcdaec5d8a467a0d9f23d2ae3",
+  "node_public_annotations": [
+    {
+      "kind": "rule",
+      "axis": "x",
+      "value": 0.25,
+      "style": { "color": "#ff0000", "width": 2, "opacity": 1 }
+    },
+    {
+      "kind": "band",
+      "axis": "y",
+      "start": 0.2,
+      "end": 0.4,
+      "style": { "color": "#00ff00", "opacity": 0.25 }
+    },
+    {
+      "kind": "marker",
+      "x": 0.75,
+      "y": 0.8,
+      "size": 10,
+      "symbol": "diamond",
+      "style": {
+        "color": "#0000ff",
+        "stroke_color": "#ffffff",
+        "stroke_width": 1.5,
+        "opacity": 1
+      }
+    }
+  ],
+  "node_public_annotations_sha256": "d0f0afe9836553997bab9e7d08f94ead0a5f2c6fcdaec5d8a467a0d9f23d2ae3",
   "cartesian_callout_sha256": "06d3eedaf487e62fc5d8da0c63b913ef74740ac5c79f021d4db33f872dabff05",
   "wasm_typed_series_v2": {
     "magic": "XYTS",
