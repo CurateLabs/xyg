@@ -3231,6 +3231,29 @@ pub struct SceneDocument {
 }
 
 impl SceneDocument {
+    /// Add bounded XYAT decorations to an already validated canonical Scene.
+    ///
+    /// The Scene remains the source of its layout and scales: the envelope
+    /// carries data coordinates only, which are projected here before any
+    /// browser consumer observes them.
+    pub fn with_authored_text_annotations(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
+        let existing = self.labels.len();
+        let mut labels =
+            decode_authored_text_annotations(bytes, self.x_scale, self.y_scale, self.layout)?;
+        if existing
+            .checked_add(labels.len())
+            .ok_or(SceneError::Limit)?
+            > MAX_SCENE_LABELS
+        {
+            return Err(SceneError::Limit);
+        }
+        for (index, label) in labels.iter_mut().enumerate() {
+            label.stable_id = 0x5859_0400_0000_0000 | (existing + index) as u64;
+        }
+        self.labels.append(&mut labels);
+        Ok(self)
+    }
+
     fn painter_colorbar_bytes(&self) -> Result<Vec<u8>, SceneError> {
         let Some(colorbar) = &self.colorbar else {
             return Ok(Vec::new());
@@ -6170,7 +6193,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 14);
+        assert_eq!(SCENE_VERSION, 15);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"

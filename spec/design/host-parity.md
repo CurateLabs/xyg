@@ -71,7 +71,7 @@ estimates retained Rust resources.
 
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
-exact Scene v14 output under a local-only strict CSP. Native Python and Node
+exact Scene v15 output under a local-only strict CSP. Native Python and Node
 load those Scene bytes through the shared `xyg_scene_browser_painter` C ABI and
 byte-compare Rust's painter-v11 lowering; the Pyodide wheel executes that same
 native ABI inside an actual Pyodide runtime with network access disabled for

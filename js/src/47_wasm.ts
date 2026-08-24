@@ -251,6 +251,28 @@ export class XygWasmWorker {
     return this.sceneTask("scene.paint", scene, options);
   }
 
+  /** Lower one complete canonical Scene with bounded Rust-projected XYAT labels. */
+  prepareSceneAnnotations(
+    scene: ArrayBuffer | Uint8Array,
+    annotations: ArrayBuffer | Uint8Array,
+    options: SceneTaskOptions = {},
+  ): XygWasmTask<XygWasmScenePaint> {
+    const sceneBytes = new Uint8Array(scene instanceof Uint8Array ? scene.buffer.slice(scene.byteOffset, scene.byteOffset + scene.byteLength) : scene);
+    const annotationBytes = new Uint8Array(annotations instanceof Uint8Array ? annotations.buffer.slice(annotations.byteOffset, annotations.byteOffset + annotations.byteLength) : annotations);
+    const length = 16 + sceneBytes.byteLength + annotationBytes.byteLength;
+    if (!Number.isSafeInteger(length) || length > this.maxArenaBytes) {
+      throw new RangeError("scene annotation envelope exceeds the worker arena byte budget");
+    }
+    const envelope = new Uint8Array(length);
+    envelope.set([0x58, 0x59, 0x53, 0x41]); // XYSA
+    new DataView(envelope.buffer).setUint32(4, 1, true);
+    new DataView(envelope.buffer).setUint32(8, sceneBytes.byteLength, true);
+    new DataView(envelope.buffer).setUint32(12, annotationBytes.byteLength, true);
+    envelope.set(sceneBytes, 16);
+    envelope.set(annotationBytes, 16 + sceneBytes.byteLength);
+    return this.sceneTask("scene.paint_annotations", envelope, options);
+  }
+
   /** Compile a packed `XYCC` typed-column request into canonical Scene bytes. */
   compileScene(
     request: ArrayBuffer | Uint8Array,
@@ -452,6 +474,7 @@ export class XygWasmWorker {
     type:
       | "scene.validate"
       | "scene.paint"
+      | "scene.paint_annotations"
       | "scene.compile"
       | "scene.compile_paint"
       | "aggregate.bin2d",

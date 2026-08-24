@@ -509,7 +509,7 @@ function runSceneOp(message: any) {
     } else {
       destination.set(new Uint8Array(message.scene));
     }
-    const paint = series || message.type === "scene.paint" || message.type === "scene.compile_paint";
+    const paint = series || message.type === "scene.paint" || message.type === "scene.paint_annotations" || message.type === "scene.compile_paint";
     const compile = series || message.type === "scene.compile" || message.type === "scene.compile_paint";
     const aggregate = message.type === "aggregate.bin2d";
     if (compile) {
@@ -527,9 +527,9 @@ function runSceneOp(message: any) {
         handle, Number(message.sequence), 0, inputLength,
       )
       : (paint
-        ? exports.xyg_wasm_scene_prepare(
-          handle, Number(message.sequence), 0, inputLength,
-        )
+        ? (message.type === "scene.paint_annotations"
+          ? exports.xyg_wasm_scene_prepare_annotations(handle, Number(message.sequence), 0, inputLength)
+          : exports.xyg_wasm_scene_prepare(handle, Number(message.sequence), 0, inputLength))
         : exports.xyg_wasm_scene_validate(
           handle, Number(message.sequence), 0, inputLength,
         ));
@@ -772,7 +772,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     void initialize(message);
     return;
   }
-  const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint"
+  const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint" || message?.type === "scene.paint_annotations"
     || message?.type === "scene.compile" || message?.type === "scene.compile_paint"
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
     || message?.type === "graph.cose" || message?.type === "dashboard.plan"
@@ -790,6 +790,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (
     message?.type === "scene.validate"
     || message?.type === "scene.paint"
+    || message?.type === "scene.paint_annotations"
     || message?.type === "scene.compile"
     || message?.type === "scene.compile_paint"
     || message?.type === "series.compile_paint"

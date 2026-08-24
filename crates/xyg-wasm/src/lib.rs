@@ -19,7 +19,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 15;
+pub const WASM_ABI_VERSION: u32 = 16;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -666,6 +666,110 @@ pub extern "C" fn xyg_wasm_scene_prepare(
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
+/// Lower an existing canonical Scene plus a bounded `XYAT` decoration payload.
+/// `XYSA` is an ownership-neutral envelope: it contains one complete `XYGS`
+/// document and one complete `XYAT` payload, and never carries host-resolved
+/// geometry or an alternate scene policy.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_scene_prepare_annotations(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        instance.output = Vec::new();
+        if sequence == 0 {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "sequence zero is reserved",
+            );
+        }
+        if sequence <= instance.cancelled_through {
+            if instance.aggregate_job.is_none() {
+                instance.arena = Vec::new();
+            }
+            return fail(instance, STATUS_CANCELLED, "request was cancelled");
+        }
+        if sequence <= instance.latest_sequence {
+            if instance.aggregate_job.is_none() {
+                instance.arena = Vec::new();
+            }
+            return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
+        }
+        instance.clear_aggregate();
+        let arena = std::mem::take(&mut instance.arena);
+        let Some(end) = offset.checked_add(length) else {
+            return fail(instance, STATUS_INVALID_ARGUMENT, "staging range overflow");
+        };
+        let Some(request) = arena.get(offset..end) else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "staging range lies outside the arena",
+            );
+        };
+        let parsed = (|| -> Result<(&[u8], &[u8]), SceneError> {
+            if request.len() < 16
+                || &request[..4] != b"XYSA"
+                || u32::from_le_bytes(request[4..8].try_into().unwrap()) != 1
+            {
+                return Err(SceneError::Length);
+            }
+            let scene_len = u32::from_le_bytes(request[8..12].try_into().unwrap()) as usize;
+            let annotations_len = u32::from_le_bytes(request[12..16].try_into().unwrap()) as usize;
+            let scene_end = 16usize.checked_add(scene_len).ok_or(SceneError::Limit)?;
+            let total = scene_end
+                .checked_add(annotations_len)
+                .ok_or(SceneError::Limit)?;
+            if total != request.len() {
+                return Err(SceneError::Length);
+            }
+            Ok((&request[16..scene_end], &request[scene_end..total]))
+        })();
+        let result = parsed.and_then(|(scene_bytes, annotations)| {
+            let document = scene::SceneDocument::decode(scene_bytes)?
+                .with_authored_text_annotations(annotations)?;
+            let counts = (document.record_count(), document.style_count());
+            let output = document.to_browser_painter(instance.max_arena_bytes)?;
+            Ok((counts, output))
+        });
+        drop(arena);
+        instance.latest_sequence = sequence;
+        match result {
+            Ok(((records, styles), output)) if output.len() <= instance.max_arena_bytes => {
+                instance.last_scene_records = records;
+                instance.last_scene_styles = styles;
+                instance.output = output;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Err(SceneError::PainterTraceLimit) => fail(
+                instance,
+                STATUS_RESOURCE_LIMIT,
+                "canonical scene fragments into more than 1024 browser traces",
+            ),
+            Ok(_) | Err(SceneError::Limit) => fail(
+                instance,
+                STATUS_RESOURCE_LIMIT,
+                "canonical scene output exceeds the instance byte budget",
+            ),
+            Err(SceneError::Version) => fail(
+                instance,
+                STATUS_SCENE_VERSION,
+                "canonical scene version is incompatible",
+            ),
+            Err(_) => fail(
+                instance,
+                STATUS_MALFORMED_SCENE,
+                "canonical scene or annotations are malformed",
+            ),
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
 fn map_compile_error(instance: &mut Instance, error: SceneError) -> i32 {
     match error {
         SceneError::Version => fail(
@@ -1198,6 +1302,31 @@ mod tests {
     fn write_arena(handle: u32, bytes: &[u8]) {
         assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
         with_instance_mut(handle, |instance| instance.arena.copy_from_slice(bytes)).unwrap();
+    }
+
+    fn scene_annotations_request(scene: &[u8], annotations: &[u8]) -> Vec<u8> {
+        let mut out = Vec::with_capacity(16 + scene.len() + annotations.len());
+        out.extend_from_slice(b"XYSA");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&(scene.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(annotations.len() as u32).to_le_bytes());
+        out.extend_from_slice(scene);
+        out.extend_from_slice(annotations);
+        out
+    }
+
+    fn text_annotations() -> Vec<u8> {
+        let text = b"<Rust note>";
+        let mut out = Vec::with_capacity(12 + 24 + text.len());
+        out.extend_from_slice(b"XYAT");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&0.5f64.to_le_bytes());
+        out.extend_from_slice(&0.5f64.to_le_bytes());
+        out.extend_from_slice(&[1, 2, 3, 255]);
+        out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+        out.extend_from_slice(text);
+        out
     }
 
     fn compound_request(action: u32, lod_tier: u32) -> Vec<u8> {
@@ -1808,6 +1937,26 @@ mod tests {
         assert!(xyg_wasm_output_len(handle) > 0);
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
         assert_eq!(xyg_wasm_output_len(handle), 0);
+    }
+
+    #[test]
+    fn scene_annotations_prepare_projects_xyat_against_decoded_scene() {
+        let scene = valid_scene();
+        let request = scene_annotations_request(&scene, &text_annotations());
+        let handle = xyg_wasm_instance_new(4096);
+        write_arena(handle, &request);
+        assert_eq!(
+            xyg_wasm_scene_prepare_annotations(handle, 1, 0, request.len()),
+            STATUS_OK
+        );
+        with_instance_mut(handle, |instance| {
+            assert!(instance
+                .output
+                .windows(b"<Rust note>".len())
+                .any(|bytes| bytes == b"<Rust note>"));
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
     #[test]
