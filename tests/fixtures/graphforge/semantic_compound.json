@@ -138,15 +138,15 @@
   },
   "goldens": {
     "light": {
-      "scene_sha256": "c00ed8a9a5f1a958570bcfcd913a8b4c8cf2dc4dec049a88a47a2e90a4cda4c9",
-      "painter_sha256": "1cfc60a3611a12858aca9e0f0d9bd4ed9386a2be2b2242c124c43354d746e3dd",
+      "scene_sha256": "69aef0b08d8e9974f0ba7610fdf1574f93f20eb098790a8d73f42dca1109d4fa",
+      "painter_sha256": "ab8497b8c2a6d2179352d05f9269b682523a0b5dc052ccb95f9310274df752b5",
       "svg_sha256": "285ceda146bac53d32e4901c5e9d8b934713331e113333083fa6d059acb2a4e6",
       "raster_sha256": "d1e1ae5ae5bbf900adf91e9072fe17e4d1af148c5fc839781ab3aef3b8f1ab4b",
       "png_sha256": "64f1dd32a1ee4fbf30d284ddd4c46c4bda9b66ca3fa956b9e956a38a13c41dd6"
     },
     "dark": {
-      "scene_sha256": "5336f96fcf8e92ce1bcf36920abf37ca4ade50a5d14f2d6191860d7077948752",
-      "painter_sha256": "565792dfa65047191a8d952c7f294a65d8553cb4bd62220a429d819a65d4450b",
+      "scene_sha256": "8ef5a48c5f15498279f061c1756fb1e5826cef5f39fe006ca167b0bd0b9ac825",
+      "painter_sha256": "3d871b05807d4a83f1991aff8040c36e02c22cfec5ffdd70aec99d21c548bd12",
       "svg_sha256": "088cdea00787658fdde3d055dc2b4b9758ff6af147fa75301d927831649e27ff",
       "raster_sha256": "57bb4f5738283e45b3d34ebeed369a0442ab8aaac1bf0d80d1da451820e899b1",
       "png_sha256": "86674338c47aa604c889b0e108e7a1b1d15ac7f8257aa3e2113b3606c5bb5eec"
