@@ -458,8 +458,6 @@ def figure_scene(
         features |= 1 << 4
     if figure.extra_legends:
         features |= 1 << 5
-    if any(options.get("tick_labels") is not None for options in figure.axis_options.values()):
-        features |= 1 << 6
     if any(
         annotation.get("kind") not in {"callout", "arrow"}
         and annotation.get("text") not in (None, "")
@@ -486,6 +484,7 @@ def figure_scene(
             "style",
             "minor_style",
             "tick_values",
+            "tick_labels",
             "minor_tick_values",
         }
         if any(
@@ -948,8 +947,10 @@ def figure_scene(
         y_label=y_label,
         chrome_style=_scene_chrome_style(figure),
         x_major_ticks=figure.axis_options["x"].get("tick_values"),
+        x_tick_labels=figure.axis_options["x"].get("tick_labels"),
         x_minor_ticks=figure.axis_options["x"].get("minor_tick_values") or (),
         y_major_ticks=figure.axis_options["y"].get("tick_values"),
+        y_tick_labels=figure.axis_options["y"].get("tick_labels"),
         y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,

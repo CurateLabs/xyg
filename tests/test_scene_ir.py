@@ -94,7 +94,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 13
+    assert int.from_bytes(encoded[4:8], "little") == 14
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -188,7 +188,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 13
+    assert int.from_bytes(encoded[4:8], "little") == 14
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -499,7 +499,23 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 13
+    assert _native.scene_version() == 14
+
+
+def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
+    figure = Figure(width=300, height=200).scatter([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"].update(
+        domain=(0.0, 1.0),
+        tick_values=[-1.0, 0.0],
+        tick_labels=["off-domain-long-label", "zero"],
+    )
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    raster = _native.scene_raster_commands(scene)
+    painter = _native.scene_browser_painter(scene)
+    for output in (svg.encode(), raster, painter):
+        assert b"zero" in output
+        assert b"off-domain-long-label" not in output
     assert (
         _native.scene_scatter_svg(
             [10.0, 20.0],

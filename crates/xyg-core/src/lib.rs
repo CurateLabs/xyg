@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 92;
+pub const ABI_VERSION: u32 = 93;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -427,6 +427,10 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     y_major_auto: i32,
     y_minor_ticks: *const f64,
     y_minor_count: usize,
+    x_tick_labels: *const u8,
+    x_tick_labels_len: usize,
+    y_tick_labels: *const u8,
+    y_tick_labels_len: usize,
     kinds: *const u8,
     stable_ids: *const u64,
     style_refs: *const u32,
@@ -471,6 +475,10 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || (x_minor_count > 0 && x_minor_ticks.is_null())
         || (y_major_count > 0 && y_major_ticks.is_null())
         || (y_minor_count > 0 && y_minor_ticks.is_null())
+        || x_tick_labels_len > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AXIS_TICKS * 4 + 12
+        || y_tick_labels_len > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AXIS_TICKS * 4 + 12
+        || (x_tick_labels_len > 0 && x_tick_labels.is_null())
+        || (y_tick_labels_len > 0 && y_tick_labels.is_null())
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
         || y_label_len > scene::MAX_SCENE_TEXT_BYTES
@@ -507,6 +515,55 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         return usize::MAX;
     };
     let Some(encoded) = ffi_guard(None, || {
+        let x_tick_label_values = scene::decode_tick_labels(if x_tick_labels_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(x_tick_labels, x_tick_labels_len)
+        })
+        .ok()?;
+        let y_tick_label_values = scene::decode_tick_labels(if y_tick_labels_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(y_tick_labels, y_tick_labels_len)
+        })
+        .ok()?;
+        // Final canonical gutters belong to Rust, after it has validated the
+        // exact strings that all consumers will paint.  No host font/layout
+        // measurement participates in this decision.
+        let mut margin_left = margin_left;
+        let mut margin_right = margin_right;
+        let mut margin_bottom = margin_bottom;
+        let visible_label_indices = |values: *const f64, count: usize, lo: f64, hi: f64| {
+            if values.is_null() {
+                return Vec::new();
+            }
+            let low = lo.min(hi);
+            let high = lo.max(hi);
+            std::slice::from_raw_parts(values, count)
+                .iter()
+                .enumerate()
+                .filter_map(|(index, value)| (*value >= low && *value <= high).then_some(index))
+                .collect::<Vec<_>>()
+        };
+        if let Some(labels) = &y_tick_label_values {
+            let indices = visible_label_indices(y_major_ticks, y_major_count, y_lo, y_hi);
+            let widest = indices
+                .iter()
+                .filter_map(|index| labels.get(*index))
+                .map(|label| scene::scene_text_advance(label, 12.0))
+                .fold(0.0, f64::max);
+            margin_left = margin_left.max(8.0 + widest);
+        }
+        if let Some(labels) = &x_tick_label_values {
+            let indices = visible_label_indices(x_major_ticks, x_major_count, x_lo, x_hi);
+            margin_bottom = margin_bottom.max(24.0);
+            if let Some(first) = indices.first().and_then(|index| labels.get(*index)) {
+                margin_left = margin_left.max(8.0 + scene::scene_text_advance(first, 12.0) * 0.5);
+            }
+            if let Some(last) = indices.last().and_then(|index| labels.get(*index)) {
+                margin_right = margin_right.max(8.0 + scene::scene_text_advance(last, 12.0) * 0.5);
+            }
+        }
         let layout = scene::PlotLayout::new(
             viewport_width,
             viewport_height,
@@ -618,7 +675,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
                 std::slice::from_raw_parts(pointer, count).to_vec()
             }
         };
-        let chrome = scene::SceneChromeStyle::from_style_input(
+        let mut chrome = scene::SceneChromeStyle::from_style_input(
             std::slice::from_raw_parts(chrome_style, chrome_style_len),
             (x_major_auto == 0).then(|| tick_values(x_major_ticks, x_major_count)),
             tick_values(x_minor_ticks, x_minor_count),
@@ -626,6 +683,9 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             tick_values(y_minor_ticks, y_minor_count),
         )
         .ok()?;
+        chrome.x_tick_labels = x_tick_label_values;
+        chrome.y_tick_labels = y_tick_label_values;
+        let chrome = chrome.validated().ok()?;
         scene::SceneBatch::new_with_decorations_colorbar(
             layout,
             x_axis_id,
@@ -9262,7 +9322,7 @@ mod tests {
 
     #[test]
     fn scene_support_abi_queries_copies_and_rejects_unknown_bits() {
-        let features = scene::SCENE_FEATURE_AUTHORED_TICK_LABELS;
+        let features = scene::SCENE_FEATURE_CUSTOM_FONT;
         let required = unsafe {
             xyg_scene_support_reason(
                 scene::SCENE_SUPPORT_REQUEST_VERSION,
@@ -9286,7 +9346,7 @@ mod tests {
         );
         assert!(std::str::from_utf8(&output)
             .unwrap()
-            .starts_with("XYG_SCENE_UNSUPPORTED_TICK_LABELS:"));
+            .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:"));
         assert_eq!(
             unsafe {
                 xyg_scene_support_reason(
@@ -9508,6 +9568,10 @@ mod tests {
                 1,
                 std::ptr::null(),
                 0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
                 kinds_ptr,
                 ids.as_ptr(),
                 styles.as_ptr(),
@@ -9536,7 +9600,7 @@ mod tests {
                 output.len(),
             )
         };
-        assert_eq!(call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1), 472);
+        assert_eq!(call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1), 480);
         assert_eq!(
             call(99, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1),
             usize::MAX
@@ -9579,7 +9643,7 @@ mod tests {
         let reserved_or_corner = [0.0f64; 4];
         let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
         let log_symbols = [0u8; 4];
-        let mut log_output = [0u8; 640];
+        let mut log_output = [0u8; 648];
         assert_eq!(
             unsafe {
                 xyg_scene_batch_encode(
@@ -9611,6 +9675,10 @@ mod tests {
                     std::ptr::null(),
                     0,
                     1,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
                     std::ptr::null(),
                     0,
                     log_kinds.as_ptr(),
