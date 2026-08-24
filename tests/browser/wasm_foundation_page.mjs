@@ -1,5 +1,7 @@
 import {
   aggregateWasmBin2d,
+  attachWasmDensity,
+  ChartView,
   createXygWasmWorker,
   frameWasmChart,
   encodeWasmAggregate,
@@ -20,6 +22,36 @@ import {
   XygWasmTemporalController,
   XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
+
+function directDensityFixture(host) {
+  const width = 16, height = 16;
+  const grid = new Float32Array(width * height);
+  grid[0] = 1;
+  const spec = {
+    protocol: 12, width: 320, height: 240, title: null,
+    x_axis: { id: "x", kind: "linear", label: null, range: [0, 1], side: "bottom" },
+    y_axis: { id: "y", kind: "linear", label: null, range: [0, 1], side: "left" },
+    axes: {
+      x: { id: "x", kind: "linear", label: null, range: [0, 1], side: "bottom" },
+      y: { id: "y", kind: "linear", label: null, range: [0, 1], side: "left" },
+    },
+    traces: [{
+      id: 0, kind: "scatter", name: null, style: { opacity: 0.8 }, tier: "density",
+      n_points: 4, n_marks: width * height, visible: 4, x_axis: "x", y_axis: "y",
+      density: {
+        buf: 0, w: width, h: height, max: 1, enc: "f32", colormap: "viridis",
+        x_range: [0, 1], y_range: [0, 1], binning: "exact", reduction: "bin2d",
+        channels_dropped: false, dropped_channels: [], color: "#3987e5",
+      },
+    }],
+    columns: [{ byte_offset: 0, len: grid.length, dtype: "f32" }],
+    backend: "native", show_legend: false,
+    view: { ranges: { x: [0, 1], y: [0, 1] } },
+  };
+  return new ChartView(host, spec, new Uint8Array(grid.buffer), null);
+}
+
+const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function dashboardPlanResponse(retained = true) {
   const bytes = new Uint8Array(25), view = new DataView(bytes.buffer);
@@ -581,6 +613,76 @@ async function run() {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
+
+  foundationStage = "direct WASM ChartView density supersession and disposal";
+  const densityHost = document.createElement("div");
+  densityHost.style.cssText = "width:320px;height:240px";
+  document.body.append(densityHost);
+  const densityView = directDensityFixture(densityHost);
+  const densityWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
+  });
+  const densityHandle = await attachWasmDensity(densityView, {
+    worker: densityWorker,
+    input: {
+      traceId: 0,
+      x: new Float64Array([0.05, 0.2, 0.75, 0.95]),
+      y: new Float64Array([0.05, 0.8, 0.25, 0.95]),
+    },
+    delay: 0,
+  });
+  const firstDensityRevision = densityHandle.schedule({ ranges: { x: [0, 0.75], y: [0, 0.75] } });
+  await nextTask(); // let the first aggregate enter the static Worker
+  const secondDensityRevision = densityHandle.schedule({ ranges: { x: [0.25, 1], y: [0.25, 1] } });
+  for (let attempt = 0; attempt < 100 && densityHandle.diagnostics() === null; attempt++) await nextTask();
+  const densityDiagnostics = densityHandle.diagnostics();
+  const densityTrace = densityView.gpuTraces.find((trace) => trace.tier === "density");
+  if (!densityDiagnostics || densityDiagnostics.sequence !== secondDensityRevision
+      || firstDensityRevision >= secondDensityRevision
+      || densityTrace.density.xRange.join(",") !== "0.25,1"
+      || densityTrace.density.yRange.join(",") !== "0.25,1"
+      || densityView._rebinWorker) {
+    throw new Error(`direct WASM density failed supersession: ${JSON.stringify({
+      firstDensityRevision, secondDensityRevision, densityDiagnostics,
+      xRange: densityTrace?.density?.xRange, yRange: densityTrace?.density?.yRange,
+      rebinWorker: !!densityView._rebinWorker,
+    })}`);
+  }
+  await densityHandle.dispose();
+  densityHandle.schedule({ ranges: { x: [0, 1], y: [0, 1] } });
+  await nextTask();
+  if (densityView._wasmDensity !== null || densityHandle.diagnostics()?.sequence !== secondDensityRevision) {
+    throw new Error("disposed direct WASM density handle retained ChartView or accepted work");
+  }
+  densityView.destroy();
+  await densityWorker.dispose();
+  densityHost.remove();
+
+  foundationStage = "direct WASM ChartView density resource diagnostic";
+  const constrainedHost = document.createElement("div");
+  constrainedHost.style.cssText = "width:320px;height:240px";
+  document.body.append(constrainedHost);
+  const constrainedView = directDensityFixture(constrainedHost);
+  const constrainedWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024,
+  });
+  const constrainedHandle = await attachWasmDensity(constrainedView, {
+    worker: constrainedWorker,
+    input: { traceId: 0, x: new Float64Array([0.25, 0.75]), y: new Float64Array([0.25, 0.75]) }, delay: 0,
+  });
+  const densityErrors = [];
+  constrainedView.root.addEventListener("xy:wasm_density_error", (event) => densityErrors.push(event.detail));
+  constrainedHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !densityErrors.length; attempt++) await nextTask();
+  if (densityErrors.length !== 1 || densityErrors[0]?.code !== "XYG_WASM_RESOURCE_LIMIT"
+      || !densityErrors[0]?.diagnostics || constrainedHandle.diagnostics() !== null) {
+    throw new Error(`direct WASM density resource diagnostics drifted: ${JSON.stringify(densityErrors)}`);
+  }
+  await constrainedHandle.dispose();
+  constrainedView.destroy();
+  await constrainedWorker.dispose();
+  constrainedHost.remove();
+
   foundationStage = "Rust dashboard resource plan";
   const sparseDashboard = new Array(1);
   for (const invalid of [
