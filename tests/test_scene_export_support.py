@@ -70,6 +70,13 @@ def _authored_tick_labels() -> Figure:
     return figure
 
 
+def test_authored_cartesian_tick_labels_are_a_supported_scene_v14_slice() -> None:
+    figure = _authored_tick_labels()
+    encoded = figure_scene(figure)
+    assert encoded[4:8] == (14).to_bytes(4, "little")
+    assert b"XYTL" in encoded
+
+
 def _labeled_annotation() -> Figure:
     figure = _supported()
     figure.annotations = [{"kind": "marker", "x": 1.0, "y": 2.0, "text": "peak"}]
@@ -96,7 +103,6 @@ UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
     "colorbar": (_colorbar, "XYG_SCENE_UNSUPPORTED_COLORBAR"),
     "extra_legend": (_extra_legend, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND"),
-    "tick_labels": (_authored_tick_labels, "XYG_SCENE_UNSUPPORTED_TICK_LABELS"),
     "labeled_annotation": (_labeled_annotation, "XYG_SCENE_UNSUPPORTED_ANNOTATION_LABEL"),
     "callout": (_callout, "XYG_SCENE_UNSUPPORTED_CALLOUT_ARROW"),
     "dashed_line": (_dashed_line, "dashed"),

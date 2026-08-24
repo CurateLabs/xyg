@@ -408,7 +408,7 @@ nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
 bytes, and every count/length overflow.
 
 Rust owns entry order, location resolution, frame/text/swatch geometry and
-paint ordering for SVG and native raster. Browser painter v10 appends the exact
+paint ordering for SVG and native raster. Browser painter v11 appends the exact
 validated `XYLG` record; TypeScript projects it into the existing selectable
 and accessible DOM legend without deriving entries or defaults. Direct-Scene
 legends are static (`toggle=false`, `highlight=false`). Python and Node only
@@ -437,6 +437,17 @@ allocation. Rust resolves the selected-side outer gutter, screen-space bar bound
 SVG, raster, and browser painter consume that exact resolved geometry; Python
 and Node only pack the record. Rich colorbar tick/label and annotation work
 remain deferred.
+
+## Version 14 bounded authored Cartesian major labels
+
+Scene v14 admits literal `XYTL` v1 label tables only when paired exactly with
+explicit primary Cartesian major positions. Each axis table has at most 200
+nonempty NUL-free UTF-8 strings and at most 4,096 total text bytes. Rust
+validates the table, measures its built-in-font advances for final gutters, and
+uses the same strings in SVG, native raster, and painter output. Python and
+Node only forward byte-identical length-prefixed frames. Automatic ticks retain
+Rust formatting. Rotation, collision/ellipsis/wrapping policies, markup, custom
+fonts, and secondary/polar axis labels remain outside this slice.
 
 ## Version 11 identity metadata for primary Cartesian annotations
 

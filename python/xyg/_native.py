@@ -1899,6 +1899,8 @@ def scene_batch_encode(
     x_minor_ticks: npt.ArrayLike = (),
     y_major_ticks: npt.ArrayLike | None = None,
     y_minor_ticks: npt.ArrayLike = (),
+    x_tick_labels: list[str] | tuple[str, ...] | None = None,
+    y_tick_labels: list[str] | tuple[str, ...] | None = None,
     legend_input: bytes = b"",
     colorbar_input: bytes = b"",
 ) -> bytes:
@@ -1991,6 +1993,26 @@ def scene_batch_encode(
     y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
     legend_array = np.frombuffer(legend_input, dtype=np.uint8)
     colorbar_array = np.frombuffer(colorbar_input, dtype=np.uint8)
+
+    def tick_label_input(labels: list[str] | tuple[str, ...] | None, name: str) -> np.ndarray:
+        if labels is None:
+            return np.empty(0, dtype=np.uint8)
+        if len(labels) > 200:
+            raise ValueError(f"{name} is limited to 200 strings")
+        encoded = [str(label).encode("utf-8") for label in labels]
+        if (
+            any(not label or b"\0" in label for label in encoded)
+            or sum(map(len, encoded)) > _MAX_SCENE_TEXT_BYTES
+        ):
+            raise ValueError(f"{name} must contain nonempty bounded UTF-8 strings")
+        out = bytearray(b"XYTL" + (1).to_bytes(4, "little") + len(encoded).to_bytes(4, "little"))
+        for label in encoded:
+            out.extend(len(label).to_bytes(4, "little"))
+            out.extend(label)
+        return np.frombuffer(bytes(out), dtype=np.uint8)
+
+    x_tick_label_array = tick_label_input(x_tick_labels, "scene x tick labels")
+    y_tick_label_array = tick_label_input(y_tick_labels, "scene y tick labels")
     if len(legend_array) > MAX_SCENE_LEGEND_INPUT_BYTES:
         raise ValueError(f"scene legend input is limited to {MAX_SCENE_LEGEND_INPUT_BYTES:,} bytes")
     if len(colorbar_array) > MAX_SCENE_COLORBAR_INPUT_BYTES:
@@ -2011,6 +2033,8 @@ def scene_batch_encode(
         + sum(0 if value is None else len(value) * 8 for value in tick_arrays)
         + len(legend_array)
         + len(colorbar_array)
+        + len(x_tick_label_array)
+        + len(y_tick_label_array)
     )
     while True:
         out = ctypes.create_string_buffer(capacity)
@@ -2032,6 +2056,10 @@ def scene_batch_encode(
             1 if y_major is None else 0,
             _ptr_f64(y_minor) if len(y_minor) else 0,
             len(y_minor),
+            _ptr_u8(x_tick_label_array) if len(x_tick_label_array) else 0,
+            len(x_tick_label_array),
+            _ptr_u8(y_tick_label_array) if len(y_tick_label_array) else 0,
+            len(y_tick_label_array),
             kind_array.ctypes.data if n else 0,
             ids.ctypes.data if n else 0,
             styles.ctypes.data if n else 0,

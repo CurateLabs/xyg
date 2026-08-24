@@ -204,6 +204,7 @@ export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
   title = "", xLabel = "", yLabel = "", chromeStyle = null,
   xMajorTicks = null, xMinorTicks = [], yMajorTicks = null, yMinorTicks = [],
+  xTickLabels = null, yTickLabels = null,
   legendInput = null, colorbarInput = null,
 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
@@ -248,11 +249,23 @@ export function sceneBatchEncode({
     : asUnsignedArray(chromeStyle, "chromeStyle", 255, Uint8Array);
   requireLength(chrome, 200, "chromeStyle");
   const tickArrays = [xMajorTicks, xMinorTicks, yMajorTicks, yMinorTicks].map((value, index) => value == null ? null : asF64Array(value, ["xMajorTicks", "xMinorTicks", "yMajorTicks", "yMinorTicks"][index]));
+  const frameTickLabels = (labels, name) => {
+    if (labels == null) return new Uint8Array();
+    if (!Array.isArray(labels) || labels.length > 200) throw new RangeError(`${name} must contain at most 200 strings`);
+    const texts = labels.map((value) => new TextEncoder().encode(String(value)));
+    if (texts.some((value) => value.length === 0 || value.includes(0)) || texts.reduce((sum, value) => sum + value.length, 0) > MAX_SCENE_TEXT_BYTES) throw new RangeError(`${name} must contain nonempty bounded UTF-8 strings`);
+    const out = new Uint8Array(12 + texts.reduce((sum, value) => sum + 4 + value.length, 0)); const view = new DataView(out.buffer);
+    out.set(new TextEncoder().encode("XYTL")); view.setUint32(4, 1, true); view.setUint32(8, texts.length, true); let at = 12;
+    for (const text of texts) { view.setUint32(at, text.length, true); at += 4; out.set(text, at); at += text.length; }
+    return out;
+  };
+  const xTickLabelBytes = frameTickLabels(xTickLabels, "xTickLabels");
+  const yTickLabelBytes = frameTickLabels(yTickLabels, "yTickLabels");
   const legend = legendInput == null ? new Uint8Array() : asUnsignedArray(legendInput, "legendInput", 255, Uint8Array);
   const colorbar = colorbarInput == null ? new Uint8Array() : asUnsignedArray(colorbarInput, "colorbarInput", 255, Uint8Array);
   if (colorbar.length > 4_600) throw new RangeError("scene colorbar input is limited to 4,600 bytes");
   if (tickArrays.some((value) => value != null && value.length > 200)) throw new RangeError("scene axis tick lists are limited to 200 values");
-  let capacity = 160 + widths.length * 16 + length * 56 + 240 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
+  let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
@@ -262,6 +275,8 @@ export function sceneBatchEncode({
       f64Ptr(tickArrays[1]), BigInt(tickArrays[1]?.length ?? 0),
       f64Ptr(tickArrays[2]), BigInt(tickArrays[2]?.length ?? 0), tickArrays[2] == null ? 1 : 0,
       f64Ptr(tickArrays[3]), BigInt(tickArrays[3]?.length ?? 0),
+      xTickLabelBytes.length ? u8Ptr(xTickLabelBytes) : 0, BigInt(xTickLabelBytes.length),
+      yTickLabelBytes.length ? u8Ptr(yTickLabelBytes) : 0, BigInt(yTickLabelBytes.length),
       u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
       u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
       f64Ptr(diameters), u8Ptr(symbolCodes),
@@ -517,7 +532,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   ))) features |= 1n << 3n;
   if (colorbarUnsupported) features |= 1n << 4n;
   if ((figure.extraLegends ?? figure.extra_legends ?? []).length) features |= 1n << 5n;
-  if ([figure.xAxis, figure.yAxis, figure.x_axis, figure.y_axis].some((axis) => axis?.tickLabels != null || axis?.tick_labels != null)) features |= 1n << 6n;
   if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
   if ((figure.annotations ?? []).some((annotation) => ["callout", "arrow"].includes(annotation.kind))) features |= 1n << 8n;
   const reason = sceneSupportReason(features);
@@ -759,7 +773,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
     kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-    title, xLabel, yLabel, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar,
+    title, xLabel, yLabel, xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar,
   });
 }
 

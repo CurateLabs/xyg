@@ -19,7 +19,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 14;
+pub const WASM_ABI_VERSION: u32 = 15;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -1742,7 +1742,7 @@ mod tests {
         write_arena(handle, &bytes);
         assert_eq!(xyg_wasm_scene_prepare(handle, 1, 0, bytes.len()), STATUS_OK);
         assert_ne!(xyg_wasm_output_ptr(handle), 0);
-        assert_eq!(xyg_wasm_output_len(handle), 486);
+        assert_eq!(xyg_wasm_output_len(handle), 494);
         assert_eq!(xyg_wasm_last_scene_records(handle), 1);
         with_instance_mut(handle, |instance| {
             assert_eq!(&instance.output[..4], b"XYPB");

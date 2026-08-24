@@ -76,12 +76,22 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
     ? ["Authored Cartesian chrome", "Horizontal measure", "Vertical measure"].map((value) => new TextEncoder().encode(value))
     : [new Uint8Array(), new Uint8Array(), new Uint8Array()];
   const textBytes = text.reduce((total, value) => total + value.length, 0);
+  const tickLabelFrame = (labels) => {
+    const encoded = labels.map((label) => new TextEncoder().encode(label));
+    const out = new Uint8Array(12 + encoded.reduce((total, label) => total + 4 + label.length, 0));
+    const frame = new DataView(out.buffer); out.set([88, 89, 84, 76]);
+    frame.setUint32(4, 1, true); frame.setUint32(8, encoded.length, true); let at = 12;
+    for (const label of encoded) { frame.setUint32(at, label.length, true); at += 4; out.set(label, at); at += label.length; }
+    return out;
+  };
+  const xTickLabels = authored ? tickLabelFrame(["zero", "one"]) : new Uint8Array();
+  const yTickLabels = authored ? tickLabelFrame(["low", "high"]) : new Uint8Array();
   const hasLegend = legend || legendSymbols != null;
   const legendBytes = hasLegend ? primaryLegend(legendSymbols || [0]) : new Uint8Array();
-  const bytes = new Uint8Array(body + 240 + textBytes + ticks.length * 8 + legendBytes.length);
+  const bytes = new Uint8Array(body + 248 + textBytes + xTickLabels.length + yTickLabels.length + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 13, true);
+  view.setUint32(4, 14, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -122,18 +132,21 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
     view.setUint32(body + 216, 1, true);
     view.setUint32(body + 220, 2, true);
     text.forEach((value, index) => view.setUint32(body + 200 + index * 4, value.length, true));
-    let tickOffset = body + 240;
+    view.setUint32(body + 240, xTickLabels.length, true); view.setUint32(body + 244, yTickLabels.length, true);
+    let tickOffset = body + 248;
     for (const value of text) {
       bytes.set(value, tickOffset);
       tickOffset += value.length;
     }
+    bytes.set(xTickLabels, tickOffset); tickOffset += xTickLabels.length;
+    bytes.set(yTickLabels, tickOffset); tickOffset += yTickLabels.length;
     for (const tick of ticks) {
       view.setFloat64(tickOffset, tick, true);
       tickOffset += 8;
     }
     bytes.set(legendBytes, tickOffset);
   } else {
-    bytes.set(legendBytes, body + 240);
+    bytes.set(legendBytes, body + 248);
   }
   return bytes;
 }
@@ -142,9 +155,9 @@ function primaryAnnotationSceneV10() {
   const recordCount = 5, styleCount = 3;
   const records = 160 + styleCount * 16;
   const body = records + recordCount * 56;
-  const bytes = new Uint8Array(body + 240), view = new DataView(bytes.buffer);
+  const bytes = new Uint8Array(body + 248), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 13, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 14, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -173,10 +186,10 @@ function primaryAnnotationSceneV10() {
 function fragmentedScene(count) {
   const records = 176;
   const body = records + count * 56;
-  const bytes = new Uint8Array(body + 240);
+  const bytes = new Uint8Array(body + 248);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 13, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 14, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -296,7 +309,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    14, 13, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
+    15, 14, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -404,8 +417,8 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 14,
-    expectedSceneVersion: 13,
+    expectedAbiVersion: 15,
+    expectedSceneVersion: 14,
   };
 }
 
@@ -563,7 +576,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 14 || ready.sceneVersion !== 13) {
+  if (ready.abiVersion !== 15 || ready.sceneVersion !== 14) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -900,7 +913,7 @@ async function run() {
   if (valid.records !== 1 || valid.styles !== 1 || valid.copyCount !== 1) {
     throw new Error(`unexpected diagnostics ${JSON.stringify(valid)}`);
   }
-  if (valid.copyBytesLo !== 472 || valid.copyBytesHi !== 0 || valid.arenaBytes !== 0) {
+  if (valid.copyBytesLo !== 480 || valid.copyBytesHi !== 0 || valid.arenaBytes !== 0) {
     throw new Error(`unexpected copy or arena diagnostics ${JSON.stringify(valid)}`);
   }
 
@@ -968,6 +981,9 @@ async function run() {
   }
   if (!authoredHost.querySelector('[data-xy-tick-kind="minor"]')) {
     throw new Error("Rust-authored minor tick was not consumed by the browser painter");
+  }
+  if (![...authoredHost.querySelectorAll('[data-xy-label-kind="tick"]')].some((node) => node.textContent === "zero")) {
+    throw new Error("Rust-authored tick-label strings were not consumed by the browser painter");
   }
   const authoredTitle = authoredHost.querySelector('[data-xy-slot="title"]');
   if (authoredTitle?.textContent !== "Authored Cartesian chrome") {
@@ -2073,7 +2089,7 @@ async function run() {
   // deferred copy when it wins the race. Stale work copies zero.
   const rejectedCopies = afterRejected.copyCount - beforeRejected.copyCount;
   if (rejectedCopies < 1 || rejectedCopies > 2
-      || afterRejected.copyBytesLo !== 472 * afterRejected.copyCount) {
+      || afterRejected.copyBytesLo !== 480 * afterRejected.copyCount) {
     throw new Error(`rejected staging copies were not counted: ${JSON.stringify(afterRejected)}`);
   }
   await worker.dispose();
