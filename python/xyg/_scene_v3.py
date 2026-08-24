@@ -945,15 +945,15 @@ def figure_scene(
     for annotation in text_annotations:
         value = annotation.get("text")
         if not isinstance(value, str) or not value or "\0" in value:
-            raise UnsupportedSceneV3("Scene v15 text annotations require nonempty NUL-free text")
+            raise UnsupportedSceneV3("Scene v16 text annotations require nonempty NUL-free text")
         encoded = value.encode("utf-8")
         if len(encoded) > 4096:
-            raise UnsupportedSceneV3("Scene v15 text annotations are limited to 4,096 UTF-8 bytes")
+            raise UnsupportedSceneV3("Scene v16 text annotations are limited to 4,096 UTF-8 bytes")
         x = annotation_number(annotation, "x", None, "text x")
         y = annotation_number(annotation, "y", None, "text y")
         style = dict(annotation.get("style") or {})
         if set(style) - {"color", "opacity"}:
-            raise UnsupportedSceneV3("Scene v15 text annotations support only color and opacity")
+            raise UnsupportedSceneV3("Scene v16 text annotations support only color and opacity")
         rgba = _rgba(
             annotation_color(style, "color", "#667085", "text color"),
             annotation_number(style, "opacity", 1.0, "text opacity"),

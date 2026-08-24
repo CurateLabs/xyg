@@ -756,12 +756,12 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const textEncoder = new TextEncoder();
   const authoredText = (() => {
     if (!textAnnotations.length && !attachedLabels.length) return new Uint8Array();
-    if (textAnnotations.length > 128) throw new RangeError("Scene v15 text annotations are limited to 128 entries");
+    if (textAnnotations.length > 128) throw new RangeError("Scene v16 text annotations are limited to 128 entries");
     const rows = textAnnotations.map((annotation) => {
-      if (typeof annotation.text !== "string" || !annotation.text || annotation.text.includes("\0")) throw new RangeError("Scene v15 text annotations require nonempty NUL-free text");
-      const text = textEncoder.encode(annotation.text); if (text.length > 4096) throw new RangeError("Scene v15 text annotations are bounded");
+      if (typeof annotation.text !== "string" || !annotation.text || annotation.text.includes("\0")) throw new RangeError("Scene v16 text annotations require nonempty NUL-free text");
+      const text = textEncoder.encode(annotation.text); if (text.length > 4096) throw new RangeError("Scene v16 text annotations are bounded");
       const x = annotationNumber(annotation, "x", undefined, "text x"), y = annotationNumber(annotation, "y", undefined, "text y");
-      const style = { ...(annotation.style ?? {}) }; if (Object.keys(style).some((key) => !["color", "opacity"].includes(key))) throw new RangeError("Scene v15 text annotations support only color and opacity");
+      const style = { ...(annotation.style ?? {}) }; if (Object.keys(style).some((key) => !["color", "opacity"].includes(key))) throw new RangeError("Scene v16 text annotations support only color and opacity");
       return { x, y, rgba: rgba8(annotationColor(style, "color", "#667085", "text color"), annotationNumber(style, "opacity", 1, "text opacity"), "text"), text };
     });
     const xyat = new Uint8Array(12 + rows.reduce((n, row) => n + 24 + row.text.length, 0)); const xyatView = new DataView(xyat.buffer); xyat.set(textEncoder.encode("XYAT")); xyatView.setUint32(4, 1, true); xyatView.setUint32(8, rows.length, true); let at = 12;
