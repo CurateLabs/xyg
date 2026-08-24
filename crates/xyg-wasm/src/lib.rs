@@ -19,7 +19,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 16;
+pub const WASM_ABI_VERSION: u32 = 17;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -666,7 +666,7 @@ pub extern "C" fn xyg_wasm_scene_prepare(
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
-/// Lower an existing canonical Scene plus a bounded `XYAT` decoration payload.
+/// Lower an existing canonical Scene plus bounded `XYAT`/`XYAL` decorations.
 /// `XYSA` is an ownership-neutral envelope: it contains one complete `XYGS`
 /// document and one complete `XYAT` payload, and never carries host-resolved
 /// geometry or an alternate scene policy.
@@ -730,7 +730,7 @@ pub extern "C" fn xyg_wasm_scene_prepare_annotations(
         })();
         let result = parsed.and_then(|(scene_bytes, annotations)| {
             let document = scene::SceneDocument::decode(scene_bytes)?
-                .with_authored_text_annotations(annotations)?;
+                .with_authored_annotations(annotations)?;
             let counts = (document.record_count(), document.style_count());
             let output = document.to_browser_painter(instance.max_arena_bytes)?;
             Ok((counts, output))
@@ -1317,15 +1317,22 @@ mod tests {
 
     fn text_annotations() -> Vec<u8> {
         let text = b"<Rust note>";
-        let mut out = Vec::with_capacity(12 + 24 + text.len());
-        out.extend_from_slice(b"XYAT");
+        let mut xyat = Vec::with_capacity(12 + 24 + text.len());
+        xyat.extend_from_slice(b"XYAT");
+        xyat.extend_from_slice(&1u32.to_le_bytes());
+        xyat.extend_from_slice(&1u32.to_le_bytes());
+        xyat.extend_from_slice(&0.5f64.to_le_bytes());
+        xyat.extend_from_slice(&0.5f64.to_le_bytes());
+        xyat.extend_from_slice(&[1, 2, 3, 255]);
+        xyat.extend_from_slice(&(text.len() as u32).to_le_bytes());
+        xyat.extend_from_slice(text);
+        let mut out = Vec::with_capacity(20 + xyat.len());
+        out.extend_from_slice(b"XYAD");
         out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&0.5f64.to_le_bytes());
-        out.extend_from_slice(&0.5f64.to_le_bytes());
-        out.extend_from_slice(&[1, 2, 3, 255]);
-        out.extend_from_slice(&(text.len() as u32).to_le_bytes());
-        out.extend_from_slice(text);
+        out.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&xyat);
         out
     }
 

@@ -251,7 +251,7 @@ export class XygWasmWorker {
     return this.sceneTask("scene.paint", scene, options);
   }
 
-  /** Lower one complete canonical Scene with bounded Rust-projected XYAT labels. */
+  /** Lower one complete canonical Scene with bounded Rust-projected XYAT/XYAL labels. */
   prepareSceneAnnotations(
     scene: ArrayBuffer | Uint8Array,
     annotations: ArrayBuffer | Uint8Array,

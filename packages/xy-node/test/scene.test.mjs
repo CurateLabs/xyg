@@ -152,6 +152,7 @@ test("Node Scene v9 whole-scene consumers reject malformed and unsupported input
 test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.annotations = [];
   figure.annotations = [
     { kind: "rule", axis: "x", value: 0.25, style: { color: "#ff0000", width: 2, opacity: 1 } },
     { kind: "band", axis: "y", start: 0.2, end: 0.4, style: { color: "#00ff00", opacity: 0.25 } },
@@ -159,11 +160,11 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   ];
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.primary_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 15);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 16);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
-  assert.throws(() => figure.toScene(), /marker annotation labels are deferred/);
+  assert.doesNotThrow(() => figure.toScene());
   for (const style of [
     { color: "" }, { color: null }, { opacity: null }, { opacity: "" },
     { opacity: "opaque" }, { width: null }, { width: false },
@@ -185,18 +186,30 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   }
 });
 
-test("Node Scene v15 frames bounded plain text annotations and rejects malformed content", () => {
+test("Node Scene v16 frames bounded plain and attached text annotations and rejects malformed content", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 15);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 16);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 2, y: 0.5, text: "outside" }];
   assert.throws(() => figure.toScene(), /invalid canonical scene batch/);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "" }];
   assert.throws(() => figure.toScene(), /nonempty NUL-free text/);
+});
+
+test("Node Scene v16 accepts both independently bounded annotation text frames", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.annotations = [];
+  const text = "x".repeat(4096);
+  for (let index = 0; index < 1; index += 1) {
+    figure.annotations.push({ kind: "text", x: 0.5, y: 0.5, text });
+    figure.annotations.push({ kind: "marker", x: 0.5, y: 0.5, text });
+  }
+  assert.match(sceneSvg(figure.toScene()), /x{4096}/);
 });
 
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
@@ -442,7 +455,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 15);
+  assert.equal(sceneVersion(), 16);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -483,7 +496,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 15);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 16);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

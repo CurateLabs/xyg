@@ -1905,7 +1905,7 @@ def scene_batch_encode(
     colorbar_input: bytes = b"",
     authored_text_annotations: bytes = b"",
 ) -> bytes:
-    """Encode the bounded backend-neutral Scene v15 typed batch."""
+    """Encode the bounded backend-neutral Scene v16 typed batch."""
 
     def scene_uint(
         value: npt.ArrayLike, dtype: npt.DTypeLike, maximum: int, name: str

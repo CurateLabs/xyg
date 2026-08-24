@@ -91,7 +91,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 248 + textBytes + xTickLabels.length + yTickLabels.length + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 15, true);
+  view.setUint32(4, 16, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -157,7 +157,7 @@ function primaryAnnotationSceneV10() {
   const body = records + recordCount * 56;
   const bytes = new Uint8Array(body + 248), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 15, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 16, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -189,7 +189,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 248);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 15, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 16, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -310,7 +310,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    16, 15, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    17, 16, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -418,8 +418,8 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 16,
-    expectedSceneVersion: 15,
+    expectedAbiVersion: 17,
+    expectedSceneVersion: 16,
   };
 }
 
@@ -577,7 +577,7 @@ async function run() {
     maxArenaBytes: 4096,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 16 || ready.sceneVersion !== 15) {
+  if (ready.abiVersion !== 17 || ready.sceneVersion !== 16) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -939,7 +939,7 @@ async function run() {
   rendered.destroy();
   host.remove();
 
-  // `XYAT` carries only data coordinates and plain text. The strict CSP page
+  // `XYAD` encloses `XYAT`, which carries only data coordinates and plain text. The strict CSP page
   // below proves the real worker/WASM path projects it through the decoded
   // Scene rather than evaluating or inserting host markup.
   const xyatText = "<Rust note>";
@@ -951,11 +951,16 @@ async function run() {
   xyatView.setFloat64(12, 0.5, true); xyatView.setFloat64(20, 0.5, true);
   xyat.set([1, 2, 3, 255], 28); xyatView.setUint32(32, xyatTextBytes.length, true);
   xyat.set(xyatTextBytes, 36);
+  const xyad = new Uint8Array(20 + xyat.length);
+  xyad.set([0x58, 0x59, 0x41, 0x44]); // XYAD
+  const xyadView = new DataView(xyad.buffer);
+  xyadView.setUint32(4, 1, true); xyadView.setUint32(8, xyat.length, true);
+  xyad.set(xyat, 20);
   const textWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4096,
   });
   await textWorker.ready;
-  const textPaint = await textWorker.prepareSceneAnnotations(canonicalSceneV9(), xyat, { transfer: false }).result;
+  const textPaint = await textWorker.prepareSceneAnnotations(canonicalSceneV9(), xyad, { transfer: false }).result;
   const textHost = document.body.appendChild(document.createElement("div"));
   const textView = hydrateWasmPainter(textHost, textPaint);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));

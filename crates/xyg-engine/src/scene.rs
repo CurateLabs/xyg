@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 15;
+pub const SCENE_VERSION: u32 = 16;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -1654,7 +1654,7 @@ pub fn encode_tick_labels(labels: Option<&[String]>) -> Result<Vec<u8>, SceneErr
 /// Rust. `XYAT` deliberately carries data coordinates, never host-resolved
 /// pixels; the returned `SceneLabel`s are the canonical SVG/raster/painter
 /// decoration shared by every consumer.
-pub fn decode_authored_text_annotations(
+fn decode_xyat(
     bytes: &[u8],
     x_scale: AxisScale,
     y_scale: AxisScale,
@@ -1714,6 +1714,139 @@ pub fn decode_authored_text_annotations(
     }
     if at != bytes.len() {
         return Err(SceneError::Length);
+    }
+    Ok(labels)
+}
+
+/// Decode labels attached to existing canonical Scene v12 annotation records.
+/// `XYAL` contains identities and text only: Rust derives every anchor from the
+/// validated Scene geometry, so hosts cannot choose pixels or placement policy.
+fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < 12 || &bytes[..4] != b"XYAL" || batch_u32(bytes, 4)? != 1 {
+        return Err(SceneError::Length);
+    }
+    let count = batch_u32(bytes, 8)? as usize;
+    if count > MAX_AUTHORED_TEXT_ANNOTATIONS {
+        return Err(SceneError::Limit);
+    }
+    let mut at = 12usize;
+    let mut total = 0usize;
+    let mut seen = std::collections::BTreeSet::new();
+    let mut labels = Vec::with_capacity(count);
+    for index in 0..count {
+        let fixed_end = at.checked_add(12).ok_or(SceneError::Limit)?;
+        let fixed = bytes.get(at..fixed_end).ok_or(SceneError::Length)?;
+        let stable_id = u64::from_le_bytes(fixed[..8].try_into().unwrap());
+        let len = u32::from_le_bytes(fixed[8..12].try_into().unwrap()) as usize;
+        let end = fixed_end.checked_add(len).ok_or(SceneError::Limit)?;
+        let text = std::str::from_utf8(bytes.get(fixed_end..end).ok_or(SceneError::Length)?)
+            .map_err(|_| SceneError::Length)?;
+        total = total.checked_add(len).ok_or(SceneError::Limit)?;
+        if !seen.insert(stable_id)
+            || text.is_empty()
+            || text.contains('\0')
+            || total > MAX_SCENE_TEXT_BYTES
+        {
+            return Err(SceneError::Limit);
+        }
+        let records: Vec<_> = document
+            .records
+            .iter()
+            .filter(|record| {
+                record.stable_id == stable_id
+                    && record.annotation_tag != 0
+                    && record.annotation_tag != 0x80
+            })
+            .collect();
+        let first = *records.first().ok_or(SceneError::Length)?;
+        let (x, y) = match first.annotation_tag {
+            1 if records.len() == 2 && first.kind == SceneRecordKind::Polyline => {
+                let next = *records.get(1).ok_or(SceneError::Length)?;
+                if first.coordinates[0] == next.coordinates[0] {
+                    (first.coordinates[0], document.layout.top)
+                } else if first.coordinates[1] == next.coordinates[1] {
+                    (document.layout.right, first.coordinates[1])
+                } else {
+                    return Err(SceneError::Length);
+                }
+            }
+            2 | 4 if records.len() == 1 && first.kind == SceneRecordKind::Rect => (
+                (first.coordinates[0] + first.coordinates[2]) / 2.0,
+                (first.coordinates[1] + first.coordinates[3]) / 2.0,
+            ),
+            3 if records.len() == 1 && first.kind == SceneRecordKind::Scatter => {
+                (first.coordinates[0], first.coordinates[1])
+            }
+            _ => return Err(SceneError::Length),
+        };
+        labels.push(SceneLabel {
+            stable_id: 0x5859_0500_0000_0000 | index as u64,
+            x,
+            y,
+            font_size: 12.0,
+            rgba: [102, 112, 133, 255],
+            text: text.to_owned(),
+        });
+        at = end;
+    }
+    if at != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(labels)
+}
+
+/// Decode the bounded annotation-decoration envelope.  The envelope keeps
+/// standalone `XYAT` and attached `XYAL` records independently versioned.
+fn decode_annotation_envelope(
+    bytes: &[u8],
+    document: &SceneDocument,
+) -> Result<Vec<SceneLabel>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < 20 || &bytes[..4] != b"XYAD" || batch_u32(bytes, 4)? != 1 {
+        return Err(SceneError::Length);
+    }
+    let xyat_len = batch_u32(bytes, 8)? as usize;
+    let xyal_len = batch_u32(bytes, 12)? as usize;
+    if batch_u32(bytes, 16)? != 0 {
+        return Err(SceneError::Length);
+    }
+    let xyat_end = 20usize.checked_add(xyat_len).ok_or(SceneError::Limit)?;
+    let end = xyat_end.checked_add(xyal_len).ok_or(SceneError::Limit)?;
+    if end != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    let mut labels = decode_xyat(
+        &bytes[20..xyat_end],
+        document.x_scale,
+        document.y_scale,
+        document.layout,
+    )?;
+    let mut attached = decode_xyal(&bytes[xyat_end..end], document)?;
+    if labels
+        .len()
+        .checked_add(attached.len())
+        .ok_or(SceneError::Limit)?
+        > MAX_SCENE_LABELS
+    {
+        return Err(SceneError::Limit);
+    }
+    for (index, label) in labels.iter_mut().enumerate() {
+        label.stable_id = 0x5859_0400_0000_0000 | index as u64;
+    }
+    for (index, label) in attached.iter_mut().enumerate() {
+        label.stable_id = 0x5859_0500_0000_0000 | index as u64;
+    }
+    labels.append(&mut attached);
+    if labels.iter().try_fold(0usize, |total, label| {
+        total.checked_add(label.text.len()).ok_or(SceneError::Limit)
+    })? > MAX_SCENE_LABEL_TEXT_BYTES
+    {
+        return Err(SceneError::Limit);
     }
     Ok(labels)
 }
@@ -2423,6 +2556,146 @@ pub struct SceneBatch<'a> {
 }
 
 impl<'a> SceneBatch<'a> {
+    /// Attach bounded authored decorations before canonical Scene encoding.
+    pub fn with_authored_annotations(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
+        if bytes.is_empty() {
+            return Ok(self);
+        }
+        if bytes.len() < 20
+            || &bytes[..4] != b"XYAD"
+            || batch_u32(bytes, 4)? != 1
+            || batch_u32(bytes, 16)? != 0
+        {
+            return Err(SceneError::Length);
+        }
+        let xyat_len = batch_u32(bytes, 8)? as usize;
+        let xyal_len = batch_u32(bytes, 12)? as usize;
+        let xyat_end = 20usize.checked_add(xyat_len).ok_or(SceneError::Limit)?;
+        let end = xyat_end.checked_add(xyal_len).ok_or(SceneError::Limit)?;
+        if end != bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let mut labels = decode_xyat(
+            &bytes[20..xyat_end],
+            self.x_scale,
+            self.y_scale,
+            self.layout,
+        )?;
+        let attached = &bytes[xyat_end..end];
+        if !attached.is_empty() {
+            if attached.len() < 12 || &attached[..4] != b"XYAL" || batch_u32(attached, 4)? != 1 {
+                return Err(SceneError::Length);
+            }
+            let count = batch_u32(attached, 8)? as usize;
+            if count > MAX_AUTHORED_TEXT_ANNOTATIONS {
+                return Err(SceneError::Limit);
+            }
+            let mut at = 12usize;
+            let mut total = 0usize;
+            let mut seen = std::collections::BTreeSet::new();
+            for index in 0..count {
+                let fixed_end = at.checked_add(12).ok_or(SceneError::Limit)?;
+                let fixed = attached.get(at..fixed_end).ok_or(SceneError::Length)?;
+                let stable_id = u64::from_le_bytes(fixed[..8].try_into().unwrap());
+                let len = u32::from_le_bytes(fixed[8..12].try_into().unwrap()) as usize;
+                let text_end = fixed_end.checked_add(len).ok_or(SceneError::Limit)?;
+                let text = std::str::from_utf8(
+                    attached
+                        .get(fixed_end..text_end)
+                        .ok_or(SceneError::Length)?,
+                )
+                .map_err(|_| SceneError::Length)?;
+                total = total.checked_add(len).ok_or(SceneError::Limit)?;
+                if !seen.insert(stable_id)
+                    || text.is_empty()
+                    || text.contains('\0')
+                    || total > MAX_SCENE_TEXT_BYTES
+                {
+                    return Err(SceneError::Limit);
+                }
+                let indices: Vec<_> = self
+                    .stable_ids
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, id)| (*id == stable_id).then_some(i))
+                    .collect();
+                let first_index = *indices.first().ok_or(SceneError::Length)?;
+                let tag = ((stable_id >> 40) & 0xff) as u8;
+                let (x, y) = match tag {
+                    1 if indices.len() == 2
+                        && self.kinds[first_index] == SceneRecordKind::Polyline as u8 =>
+                    {
+                        let next = indices[1];
+                        let x0 = self.x_scale.pixel(self.x0[first_index]);
+                        let y0 = self.y_scale.pixel(self.y0[first_index]);
+                        let x1 = self.x_scale.pixel(self.x0[next]);
+                        let y1 = self.y_scale.pixel(self.y0[next]);
+                        if x0 == x1 {
+                            (x0, self.layout.top)
+                        } else if y0 == y1 {
+                            (self.layout.right, y0)
+                        } else {
+                            return Err(SceneError::Length);
+                        }
+                    }
+                    2 | 4
+                        if indices.len() == 1
+                            && self.kinds[first_index] == SceneRecordKind::Rect as u8 =>
+                    {
+                        (
+                            (self.x_scale.pixel(self.x0[first_index])
+                                + self.x_scale.pixel(self.x1[first_index]))
+                                / 2.0,
+                            (self.y_scale.pixel(self.y0[first_index])
+                                + self.y_scale.pixel(self.y1[first_index]))
+                                / 2.0,
+                        )
+                    }
+                    3 if indices.len() == 1
+                        && self.kinds[first_index] == SceneRecordKind::Scatter as u8 =>
+                    {
+                        (
+                            self.x_scale.pixel(self.x0[first_index]),
+                            self.y_scale.pixel(self.y0[first_index]),
+                        )
+                    }
+                    _ => return Err(SceneError::Length),
+                };
+                if !x.is_finite() || !y.is_finite() {
+                    return Err(SceneError::Length);
+                }
+                labels.push(SceneLabel {
+                    stable_id: 0x5859_0500_0000_0000 | index as u64,
+                    x,
+                    y,
+                    font_size: 12.0,
+                    rgba: [102, 112, 133, 255],
+                    text: text.to_owned(),
+                });
+                at = text_end;
+            }
+            if at != attached.len() {
+                return Err(SceneError::Length);
+            }
+        }
+        if labels.len() > MAX_SCENE_LABELS {
+            return Err(SceneError::Limit);
+        }
+        if labels.iter().try_fold(0usize, |total, label| {
+            total.checked_add(label.text.len()).ok_or(SceneError::Limit)
+        })? > MAX_SCENE_LABEL_TEXT_BYTES
+        {
+            return Err(SceneError::Limit);
+        }
+        for (index, label) in labels.iter_mut().enumerate() {
+            if label.stable_id >> 40 == 0x0058_5904 {
+                label.stable_id = 0x5859_0400_0000_0000 | index as u64;
+            }
+        }
+        self.labels = labels;
+        Ok(self)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         layout: PlotLayout,
@@ -3236,10 +3509,9 @@ impl SceneDocument {
     /// The Scene remains the source of its layout and scales: the envelope
     /// carries data coordinates only, which are projected here before any
     /// browser consumer observes them.
-    pub fn with_authored_text_annotations(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
+    pub fn with_authored_annotations(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         let existing = self.labels.len();
-        let mut labels =
-            decode_authored_text_annotations(bytes, self.x_scale, self.y_scale, self.layout)?;
+        let mut labels = decode_annotation_envelope(bytes, &self)?;
         if existing
             .checked_add(labels.len())
             .ok_or(SceneError::Limit)?
@@ -6193,7 +6465,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 15);
+        assert_eq!(SCENE_VERSION, 16);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"

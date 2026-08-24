@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 15 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 16 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -459,6 +459,21 @@ provide resolved pixels. At most 128 labels and 4,096 text bytes are accepted.
 Only the fixed built-in 12px anchor is supported. Attached rule/band/marker
 labels, callouts, arrows, boxes, offsets, collision, rotation, wrapping,
 markup, custom fonts, and CSS remain fail-closed.
+
+## Version 16 bounded labels attached to primary annotations
+
+Scene v16 wraps optional `XYAT` v1 and `XYAL` v1 payloads in one `XYAD` v1
+decoration envelope. `XYAL` carries only a primary annotation stable id and
+nonempty NUL-free UTF-8 text: no host-resolved pixels, offsets, styles, or
+layout policy. Rust validates that each id names exactly one supported rule,
+x/y-band, or marker record run and derives the anchor deterministically: a
+vertical rule anchors at its top endpoint, a horizontal rule at its right
+endpoint, a band at its resolved rectangle centre, and a marker at its centre.
+Labels use the fixed built-in 12px `#667085` paint. Duplicate/unknown ids,
+malformed UTF-8, and all rich-label styling fail closed. Callouts, arrows,
+boxes, offsets, collision, rotation, wrapping, markup, custom fonts, and CSS
+remain outside this slice. The `XYAT` and `XYAL` contents share one 8,192-byte
+canonical text budget and a combined cap of 128 labels.
 
 ## Version 11 identity metadata for primary Cartesian annotations
 

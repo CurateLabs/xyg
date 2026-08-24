@@ -481,8 +481,12 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         || y_tick_labels_len > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AXIS_TICKS * 4 + 12
         || (x_tick_labels_len > 0 && x_tick_labels.is_null())
         || (y_tick_labels_len > 0 && y_tick_labels.is_null())
+        // `XYAD` carries two frames but one combined canonical label budget:
+        // outer/header bytes plus the worst (all-XYAT) per-label framing.
         || authored_text_annotations_len
-            > scene::MAX_SCENE_TEXT_BYTES + scene::MAX_AUTHORED_TEXT_ANNOTATIONS * 24 + 12
+            > scene::MAX_SCENE_LABEL_TEXT_BYTES
+                + scene::MAX_AUTHORED_TEXT_ANNOTATIONS * 24
+                + 44
         || (authored_text_annotations_len > 0 && authored_text_annotations.is_null())
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
@@ -696,9 +700,6 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         chrome.x_tick_labels = x_tick_label_values;
         chrome.y_tick_labels = y_tick_label_values;
         let chrome = chrome.validated().ok()?;
-        let labels =
-            scene::decode_authored_text_annotations(authored_text_bytes, x_scale, y_scale, layout)
-                .ok()?;
         scene::SceneBatch::new_with_decorations_colorbar(
             layout,
             x_axis_id,
@@ -709,7 +710,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             text,
             legend,
             colorbar,
-            labels,
+            Vec::new(),
             kinds,
             stable_ids,
             style_refs,
@@ -723,6 +724,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             f64s(x1),
             f64s(y1),
         )
+        .ok()?
+        .with_authored_annotations(authored_text_bytes)
         .ok()
         .map(|batch| batch.encode())
     }) else {
