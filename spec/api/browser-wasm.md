@@ -40,12 +40,13 @@ without disposing the caller's lifecycle Worker. Rust remains authoritative for 
 geometry, canonical Scene encoding, and painter lowering; TypeScript only
 frames transferable columns and schedules lifecycle checkpoints.
 
-## Opt-in standalone density refinement
+## Opt-in ChartView density refinement
 
 `attachWasmDensity(view, { worker, input })` attaches the Rust `XYAG` to
-`XYAO` aggregate seam to one already-painted, standalone Cartesian density
-trace. It is explicit: ordinary `renderStandalone()` output continues to use
-its existing fallback until an application attaches a handle. The source
+`XYAO` aggregate seam to one already-painted Cartesian density scatter. It is
+explicit: standalone and kernel-backed ChartViews retain their existing routes
+until an application attaches a handle. Once attached, it intercepts the
+normal viewport refinement before a kernel `density_view` fallback is sent. The source
 columns are canonical `Float64Array` values owned by the caller; an optional
 `Uint8Array` supplies four straight-alpha RGBA8 bytes per point. Rust owns
 binning, mean-color aggregation, aggregate bounds, and all resource counters.
@@ -58,7 +59,7 @@ const density = await attachWasmDensity(view, {
   workerOwnership: "borrow",
 });
 
-// ChartView calls this on its normal standalone viewport refinement path.
+// ChartView calls this on its normal viewport refinement path.
 // An application may request a specific view explicitly as well.
 density.schedule({ ranges: { x: [xmin, xmax], y: [ymin, ymax] } });
 const metrics = density.diagnostics();
@@ -78,9 +79,9 @@ Worker-reported failures dispatch a bubbling `xy:wasm_density_error`
 `CustomEvent` on the ChartView root. Its detail is `{ code, message,
 diagnostics }`, where `code` is the stable `XygWasmError` code and diagnostics
 is either the Rust snapshot or `null`. It never includes source values. The
-currently supported contract is one standalone density trace; multiple traces,
-kernel-backed charts, automatic attachment, fallback deletion, and claims of
-full-product density parity remain outside this API.
+currently supported contract is one explicitly attached density scatter trace;
+multiple traces, automatic source provisioning, fallback deletion, and claims
+of full-product density parity remain outside this API.
 
 ## Cross-host fixture contract
 

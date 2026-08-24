@@ -25,6 +25,10 @@ const APPEND_REFINE_MAX_WAIT_MS = 300;
 Object.assign(ChartView.prototype, {
   _scheduleViewRequest(viewOverride = this.view, opts: any = {}) {
     if (this._destroyed || this._glLost) return;
+    // An explicitly attached direct-WASM density handle is authoritative for
+    // its supported trace even when this ChartView has a kernel transport.
+    // Do not also send a density_view fallback that could race its XYAO grid.
+    if (this._wasmDensity) return this._wasmDensity.schedule(viewOverride, opts);
     if (!this.comm) {
       // Kernel-less (standalone HTML): density traces refine via the bundled
       // re-bin worker instead of a kernel round-trip.
