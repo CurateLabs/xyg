@@ -49,6 +49,13 @@ attachment. While automatic source provisioning and retirement of the legacy
 standalone worker remain outside this supported contract pending parity,
 strict-CSP browser, and performance evidence for #119.
 
+An `XYAO` reply that passes Worker transport but fails its generated header,
+length, or typed-plane validation reports `XYG_WASM_MALFORMED_OUTPUT`, rather
+than a caller argument error. The error retains the Worker accounting snapshot,
+leaves the last painted density surface intact, and clears the failed attempt
+before an owned Worker is disposed. A corrupt aggregate therefore cannot retain
+a pending task, upload a new texture, or expose source values.
+
 ## Runtime taxonomy
 
 Direct-browser WASM is the safe `xyg-engine` compiled for

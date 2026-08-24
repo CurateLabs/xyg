@@ -761,6 +761,58 @@ async function run() {
   await constrainedWorker.dispose();
   constrainedHost.remove();
 
+  foundationStage = "direct WASM ChartView density malformed-output cleanup";
+  const malformedDensityHost = document.createElement("div");
+  malformedDensityHost.style.cssText = "width:320px;height:240px";
+  document.body.append(malformedDensityHost);
+  const malformedDensityView = directDensityFixture(malformedDensityHost);
+  let malformedDensityWorkerDisposed = 0;
+  const malformedDensityWorker = {
+    ready: Promise.resolve({}),
+    aggregateBin2d(_request, { sequence }) {
+      return {
+        requestId: 1,
+        sequence,
+        cancel() {},
+        // Simulate a corrupted XYAO after a valid Worker transport response.
+        // This exercises the browser-side contract boundary without teaching
+        // the fixture WASM module a second aggregate implementation.
+        result: Promise.resolve({
+          sequence, aggregate: new ArrayBuffer(0), abiVersion: 21, sceneVersion: 20,
+          records: 0, styles: 0, copyCount: 1,
+          copyBytesLo: 48, copyBytesHi: 0, arenaBytes: 0,
+          arenaHighWaterBytes: 48, memoryBytes: 65536,
+          memoryHighWaterBytes: 65536,
+        }),
+      };
+    },
+    async dispose() { malformedDensityWorkerDisposed++; },
+  };
+  const malformedDensityHandle = await attachWasmDensity(malformedDensityView, {
+    worker: malformedDensityWorker,
+    input: { traceId: 0, x: new Float64Array([0.25]), y: new Float64Array([0.75]) },
+    workerOwnership: "own", delay: 0,
+  });
+  const malformedDensityErrors = [];
+  malformedDensityView.root.addEventListener("xy:wasm_density_error", (event) => malformedDensityErrors.push(event.detail));
+  malformedDensityHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !malformedDensityErrors.length; attempt++) await nextTask();
+  const malformedDensityTrace = malformedDensityView.gpuTraces.find((trace) => trace.tier === "density");
+  if (malformedDensityErrors.length !== 1 || malformedDensityErrors[0]?.code !== "XYG_WASM_MALFORMED_OUTPUT"
+      || malformedDensityErrors[0]?.diagnostics?.copyCount !== 1 || malformedDensityHandle.diagnostics() !== null
+      || malformedDensityTrace.density.xRange.join(",") !== "0,1" || malformedDensityView._rebinWorker) {
+    throw new Error(`direct WASM density malformed output retained state: ${JSON.stringify({
+      malformedDensityErrors, diagnostics: malformedDensityHandle.diagnostics(), xRange: malformedDensityTrace?.density?.xRange,
+      rebinWorker: !!malformedDensityView._rebinWorker,
+    })}`);
+  }
+  await malformedDensityHandle.dispose();
+  if (malformedDensityWorkerDisposed !== 1 || malformedDensityView._wasmDensity !== null) {
+    throw new Error("direct WASM density malformed output retained a worker or handle");
+  }
+  malformedDensityView.destroy();
+  malformedDensityHost.remove();
+
   foundationStage = "Rust dashboard resource plan";
   const sparseDashboard = new Array(1);
   for (const invalid of [

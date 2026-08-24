@@ -7,6 +7,7 @@
 
 import {
   XygWasmWorker,
+  XygWasmError,
   type XygWasmAggregateTaskOptions,
   type XygWasmDiagnostics,
   type XygWasmTask,
@@ -170,11 +171,24 @@ export function aggregateWasmBin2d(
     sequence: task.sequence,
     cancel: () => task.cancel(),
     result: task.result.then((value) => {
-      const decoded = decodeWasmAggregateOutput(value.aggregate);
-      return {
-        ...value,
-        ...decoded,
-      };
+      try {
+        const decoded = decodeWasmAggregateOutput(value.aggregate);
+        return {
+          ...value,
+          ...decoded,
+        };
+      } catch (cause) {
+        // The Worker returned a successful transport envelope, so this is a
+        // contract breach at the XYAO boundary rather than a caller error.
+        // Preserve the Rust-owned accounting snapshot while making the
+        // failure actionable to direct ChartView consumers.
+        throw new XygWasmError(
+          "XYG_WASM_MALFORMED_OUTPUT",
+          cause instanceof Error ? cause.message : "aggregate output is malformed",
+          null,
+          value,
+        );
+      }
     }),
   };
 }

@@ -90,6 +90,12 @@ active request and prevents the remaining old viewport inputs from publishing.
 While automatic source provisioning, fallback deletion, and claims of full-product
 density parity remain outside this API.
 
+If a Worker success response contains an invalid `XYAO` payload, the event code
+is `XYG_WASM_MALFORMED_OUTPUT`. Its diagnostics preserve the Worker accounting
+snapshot, `diagnostics()` remains `null`, and the last painted density surface
+is retained. This is a failed transport-contract boundary, not an invalid
+application request; disposing an owned attachment still releases its Worker.
+
 ## Cross-host fixture contract
 
 Regenerate `tests/fixtures/xyts_cross_host.json` with
