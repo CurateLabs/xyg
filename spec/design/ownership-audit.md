@@ -24,8 +24,9 @@ Rust also owns whether resolved Cartesian Scene chrome produces SVG/raster
 primitives. Host paint alpha is data, not an implicit polar-mode signal; both
 hosts reject polar Scene compilation until the Scene schema records that mode.
 
-Static-export routing status (#117): `Figure.to_svg`, native `to_png`, and
-native `to_image(..., "svg"|"png"|"pdf")` now delegate the proven
+Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
+`to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
+`write_images` now delegate the proven
 constant-style Cartesian circle-scatter public subset to the Rust Scene SVG and
 raster consumers (PDF consumes Rust SVG). `python/xyg/_scene_v3.py` is only a
 preflight/orchestration seam for that subset. `_svg.py`, `_raster.py`, and

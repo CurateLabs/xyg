@@ -62,11 +62,11 @@ raster-only option that was passed non-default.
 
 | Format | Native backend | Chromium backend |
 |---|---|---|
-| PNG | `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode`. Opt-in Scene PNG via `_scene_v3.try_public_png`. | `Page.captureScreenshot` |
+| PNG | Supported public Cartesian circle-scatter exports use the Rust Scene raster display list; every other supported native chart uses `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode`. | `Page.captureScreenshot` |
 | JPEG | `_raster.to_rgba` → `_jpeg.encode` (pure numpy/stdlib baseline JFIF, 4:4:4) | `Page.captureScreenshot` |
 | WebP | `_raster.to_rgba` → `_webp.encode` (pure numpy/stdlib VP8L, **lossless only**) | `Page.captureScreenshot` (lossy) |
-| SVG | `_svg.to_svg`; explicit `Figure.to_scene()` / `_scene_v3.try_public_svg` for Scene SVG until public auto-selection | none — SVG is native-only |
-| PDF | `_svg.to_svg` → `_pdf.svg_to_pdf`; opt-in Scene path via `_scene_v3.try_public_pdf` | `Page.printToPDF` |
+| SVG | Supported public Cartesian circle-scatter exports use Rust Scene SVG; `_svg.to_svg` remains the compatibility backend. | none — SVG is native-only |
+| PDF | Supported public Cartesian circle-scatter exports consume Rust Scene SVG through `_pdf.svg_to_pdf`; the compatibility path is `_svg.to_svg` → `_pdf.svg_to_pdf`. | `Page.printToPDF` |
 
 `_png.encode` auto-selects an indexed-palette PNG (color type 3 + `tRNS`) when
 the image has ≤256 distinct RGBA colors. `optimize=True` selects this
@@ -212,7 +212,11 @@ for trusted HTML.
 ## 8. Batch export
 
 `write_images(figs, paths, ...)` exports many figures — mixed formats included —
-through one amortized pipeline. Per-file format comes from the path extension,
+through one amortized pipeline. It invokes the same native Scene-routing helper
+as `to_image`/`write_image`: a supported file in a batch therefore consumes the
+same one Rust Scene SVG or raster display list as its single-file equivalent;
+batching changes only browser-session lifetime and atomic file I/O, never
+canonical export policy. Per-file format comes from the path extension,
 or from `formats=` (one string for all, or one per path). `figures=`/`files=`
 are keyword aliases for the positional pair, and composed charts (anything with
 a `.figure()`) are accepted directly, with their `export_config` defaults
