@@ -11,13 +11,13 @@ This document is the version contract for that migration.
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in version 11, so additive emission is not safe.
+bitmap or schema negotiation in Scene v18, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the exact version-11 layout (shared fixed
-header/mark widths since version 4), bounds,
+WASM lifecycle foundation; it validates the current Scene v18 batch layout,
+including the shared fixed header/mark widths retained since version 4, bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
 
