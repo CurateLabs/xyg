@@ -393,6 +393,19 @@ test("Node Scene v9 authored chrome matches Python exact bytes", () => {
   assert.match(sceneSvg(encoded), /stroke="rgba\(23,24,25,1\.000000\)"/);
 });
 
+test("Node Figure authored chrome matches the Python Figure fixture bytes", () => {
+  const fixture = sceneFixture.figure_authored_chrome;
+  const figure = new Figure({ width: fixture.viewport[0], height: fixture.viewport[1] });
+  figure.style = fixture.style;
+  figure.setAxis("x", fixture.x_axis);
+  figure.setAxis("y", fixture.y_axis);
+  figure.scatter(fixture.scatter.x, fixture.scatter.y, { id: fixture.scatter.id });
+  const encoded = figure.toScene({ margins: fixture.margins });
+  assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), fixture.sha256);
+  assert.match(sceneSvg(encoded), /data-xy-chrome="chart-background"/);
+  assert.match(sceneSvg(encoded), /stroke="rgba\(23,24,25,1\.000000\)"/);
+});
+
 test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {
   const input = {
     viewport: [100, 80], margins: [10, 10, 10, 10],

@@ -199,6 +199,25 @@ function defaultChromeStyle() {
   return bytes;
 }
 
+function figureChromeStyle(figure) {
+  const out = defaultChromeStyle(), view = new DataView(out.buffer);
+  const figureStyle = figure.style ?? {};
+  if (figureStyle.background != null) out.set(rgba8(figureStyle.background, 1, "chart background"), 0);
+  if (figureStyle["--chart-bg"] != null) out.set(rgba8(figureStyle["--chart-bg"], 1, "plot background"), 4);
+  for (const [axis, offset, sides] of [["x", 24, ["bottom", "top"]], ["y", 112, ["left", "right"]]]) {
+    const options = figure[`${axis}Axis`] ?? figure[`${axis}_axis`] ?? {}, style = options.style ?? {}, minor = options.minorStyle ?? options.minor_style ?? {};
+    const side = options.side ?? sides[0]; if (!sides.includes(side)) throw new RangeError(`Scene ${axis} axis side is invalid`);
+    const mask = (values, fallback) => values == null ? 1 << fallback : values.reduce((sum, value) => { const i = sides.indexOf(value); if (i < 0) throw new RangeError(`Scene ${axis} axis sides are invalid`); return sum | (1 << i); }, 0);
+    const direction = {out:0, in:1, inout:2};
+    out[offset] = sides.indexOf(side); out[offset + 1] = mask(options.tickSides ?? options.tick_sides, out[offset]); out[offset + 2] = mask(options.tickLabelSides ?? options.tick_label_sides, out[offset]);
+    out[offset + 3] = direction[style.tick_direction ?? style.tickDirection ?? "out"] ?? 255; out[offset + 4] = direction[minor.tick_direction ?? minor.tickDirection ?? "out"] ?? 255;
+    const paints = [[style.axis_color, .55], [style.grid_color, .14], [style.tick_color, .55], [minor.grid_color, 1], [minor.tick_color, .55], [style.tick_label_color ?? style.label_color, .85]];
+    paints.forEach(([paint], i) => { if (paint != null) out.set(rgba8(paint, 1, "axis paint"), offset + 8 + i * 4); });
+    const nums = [style.axis_width, style.grid_width, style.tick_width, style.tick_length, minor.grid_width, minor.tick_width, minor.tick_length]; nums.forEach((value, i) => { if (value != null) view.setFloat64(offset + 32 + i * 8, Number(value), true); });
+  }
+  return out;
+}
+
 /** Encode the shared backend-neutral Scene v12 typed batch. */
 export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
@@ -847,7 +866,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
     kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-    title, xLabel, yLabel, xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
   });
 }
 

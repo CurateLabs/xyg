@@ -143,5 +143,24 @@
   ],
   "expected_sha256": "a8b1564618660679ebb555b4c4185fdc94d1c1200e0c36cab8deb6eb68e45f13",
   "authored_chrome_style_hex": "0a141eff28323c80010203ff000000000000000000002a4001030202010000000b0c0dff0e0f10c8111213ff14151664171819ff1a1b1cff0000000000000040000000000000f83f000000000000f43f0000000000002040000000000000e83f000000000000e03f000000000000084000030102010000000b0c0dff0e0f10c8111213ff14151664171819ff1a1b1cff0000000000000040000000000000f83f000000000000f43f0000000000002040000000000000e83f000000000000e03f0000000000000840",
-  "authored_chrome_sha256": "6a2eab70ac8712fb5b3af67ab8e1885639c9fa20fbf0da46ac627e5dd4243baf"
+  "authored_chrome_sha256": "6a2eab70ac8712fb5b3af67ab8e1885639c9fa20fbf0da46ac627e5dd4243baf",
+  "figure_authored_chrome": {
+    "viewport": [100, 80],
+    "margins": [10, 10, 10, 10],
+    "style": {"background": "#0a141e", "--chart-bg": "#28323c"},
+    "x_axis": {
+      "domain": [0, 1], "side": "top", "tick_sides": ["bottom", "top"], "tick_label_sides": ["top"],
+      "tick_values": [0, 0.5, 1], "minor_tick_values": [0.25, 0.75],
+      "style": {"axis_color": "#0b0c0d", "grid_color": "#0e0f10", "tick_color": "#111213", "axis_width": 2, "grid_width": 1.25, "tick_width": 2.5, "tick_length": 7},
+      "minor_style": {"grid_color": "#141516", "tick_color": "#171819", "grid_width": 0.5, "tick_width": 1.25, "tick_length": 3, "tick_direction": "in"}
+    },
+    "y_axis": {
+      "domain": [0, 1], "side": "right", "tick_sides": ["left", "right"], "tick_label_sides": ["right"],
+      "tick_values": [], "minor_tick_values": [0.5],
+      "style": {"axis_color": "#0b0c0d", "grid_color": "#0e0f10", "tick_color": "#111213", "axis_width": 2, "grid_width": 1.25, "tick_width": 2.5, "tick_length": 7},
+      "minor_style": {"grid_color": "#141516", "tick_color": "#171819", "grid_width": 0.5, "tick_width": 1.25, "tick_length": 3, "tick_direction": "in"}
+    },
+    "scatter": {"x": [0.5], "y": [0.5], "id": 0},
+    "sha256": "94fb35260749541ead764c8c4f3bab772be77e5a7e5d9e8a40c5b8ed6d7d716c"
+  }
 }
