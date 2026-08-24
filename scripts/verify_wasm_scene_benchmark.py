@@ -11,7 +11,9 @@ from pathlib import Path
 EXPECTED_COUNTS = [100, 10_000, 100_000, 1_000_000]
 
 
-def require_non_negative_metrics(row: dict[str, object], *, kind: str, keys: tuple[str, ...]) -> None:
+def require_non_negative_metrics(
+    row: dict[str, object], *, kind: str, keys: tuple[str, ...]
+) -> None:
     for key in keys:
         value = row.get(key)
         if (

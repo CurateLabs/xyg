@@ -1,4 +1,4 @@
-import { createXygWasmWorker, renderWasmChart, XygWasmError } from "/packages/xy-client/dist/index.js";
+import { createXygWasmWorker, hydrateWasmPainter, renderWasmChart, XygWasmError } from "/packages/xy-client/dist/index.js";
 
 async function frame() { await new Promise((resolve) => requestAnimationFrame(resolve)); }
 
@@ -20,6 +20,40 @@ async function run() {
     }
     rows.push({ count, typedSeries: true, firstPaintMs: performance.now() - started, ...diagnostics });
     await handle.dispose(); host.remove();
+  }
+  for (const count of [100, 10_000, 100_000, 1_000_000]) {
+    const scene = await (await fetch(`/authored-scenes/authored-scene-${count}.bin`)).arrayBuffer();
+    const sceneBytes = scene.byteLength;
+    if (!sceneBytes) throw new Error(`authored Scene fixture for ${count} is empty`);
+    const sceneWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 384 * 1024 * 1024 });
+    await sceneWorker.ready;
+    const host = document.body.appendChild(document.createElement("div"));
+    const started = performance.now();
+    const prepared = await sceneWorker.prepareScene(scene, { transfer: false }).result;
+    const view = hydrateWasmPainter(host, prepared, { workerPrepareMs: performance.now() - started });
+    await frame(); await frame();
+    const legendSemantics = host.querySelector('[data-xy-slot="legend"][role="list"]') !== null
+      && host.querySelectorAll('[data-xy-slot="legend_item"][role="listitem"]').length > 0;
+    const colorbarSemantics = host.querySelectorAll('[data-xy-slot="colorbar_tick"]').length > 0
+      && host.querySelectorAll('[data-xy-slot="colorbar_minor_tick"]').length > 0;
+    const annotationSemantics = host.querySelector('[data-xy-slot="annotation_label"][role="note"]') !== null
+      && host.querySelector('[data-xy-slot="annotation_label_box"][aria-hidden="true"]') !== null;
+    if (!legendSemantics || !colorbarSemantics || !annotationSemantics) {
+      throw new Error(`authored Scene chrome/a11y did not hydrate for ${count}`);
+    }
+    rows.push({
+      count,
+      authoredScene: true,
+      sceneBytes,
+      painterBytes: prepared.painter.byteLength,
+      firstPaintMs: performance.now() - started,
+      legendSemantics,
+      colorbarSemantics,
+      annotationSemantics,
+      ...prepared,
+      ...view.wasmMetrics,
+    });
+    await view.destroy(); host.remove(); await sceneWorker.dispose();
   }
   const fragmentedHost = document.body.appendChild(document.createElement("div"));
   const fragmentedWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes: 16 * 1024 * 1024 });

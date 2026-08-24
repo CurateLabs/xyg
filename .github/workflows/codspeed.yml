@@ -114,8 +114,8 @@ jobs:
             cargo codspeed run --bench kernels --bench aggregate --bench typed_series
             .venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed
 
-  typed-series-browser-evidence:
-    name: Typed-series browser evidence
+  authored-scene-browser-evidence:
+    name: Authored-Scene browser evidence
     runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: detect
     if: needs.detect.outputs.should_run == 'true'
@@ -132,6 +132,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          enable-cache: false
       - name: Cache Playwright Chromium
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -140,19 +146,24 @@ jobs:
       - name: Build strict-CSP direct-browser assets
         run: |
           npm ci
+          cargo build --release
           cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+          uv venv .venv
+          uv pip install -p .venv/bin/python -e .
           node js/build.mjs
           node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
           npx playwright install chromium
-      - name: Measure and validate four-size typed-series first paint
+      - name: Generate and measure four-size authored-Scene first paint
         env:
-          XYG_EVIDENCE_PATH: typed-series-browser-${{ github.sha }}.json
+          XYG_AUTHORED_SCENE_DIR: authored-scenes
+          XYG_EVIDENCE_PATH: authored-scene-browser-${{ github.sha }}.json
         run: |
+          .venv/bin/python scripts/generate_authored_scene_benchmark.py --output-dir "$XYG_AUTHORED_SCENE_DIR"
           node benchmarks/bench_wasm_scene.mjs > "$XYG_EVIDENCE_PATH"
           python3 scripts/verify_wasm_scene_benchmark.py "$XYG_EVIDENCE_PATH" --sha "${{ github.sha }}"
-      - name: Upload SHA-keyed raw typed-series evidence
+      - name: Upload SHA-keyed raw authored-Scene evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: typed-series-browser-${{ github.sha }}
+          name: authored-scene-browser-${{ github.sha }}
           if-no-files-found: error
-          path: typed-series-browser-${{ github.sha }}.json
+          path: authored-scene-browser-${{ github.sha }}.json
