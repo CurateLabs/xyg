@@ -756,12 +756,13 @@ impl SceneChromeStyle {
                 return Err(SceneError::Limit);
             }
         }
-        for values in [self.x_major_ticks.as_deref(), self.y_major_ticks.as_deref()] {
-            if let Some(values) = values {
-                for (index, value) in values.iter().enumerate() {
-                    if values[..index].contains(value) {
-                        return Err(SceneError::Length);
-                    }
+        for values in [self.x_major_ticks.as_deref(), self.y_major_ticks.as_deref()]
+            .into_iter()
+            .flatten()
+        {
+            for (index, value) in values.iter().enumerate() {
+                if values[..index].contains(value) {
+                    return Err(SceneError::Length);
                 }
             }
         }
