@@ -8295,6 +8295,10 @@ export class ChartView {
     clearTimeout(this._glHostRecoveryTimer);
     this._glHostRecoveryTimer = null;
     clearTimeout(this._rebinTimer);
+    // Direct-WASM density may own a dedicated Worker; dispose its request and
+    // Worker lifecycle before the ChartView releases WebGL state.
+    this._wasmDensity?.destroy?.();
+    this._wasmDensity = null;
     if (this._rebinWorker) {
       this._rebinWorker.terminate();
       if (this._rebinWorker._fcUrl) URL.revokeObjectURL(this._rebinWorker._fcUrl);
