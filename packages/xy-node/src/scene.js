@@ -713,7 +713,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const kind = annotation.kind;
     if (kind === "text") continue;
     if (!["rule", "band", "marker"].includes(kind)) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
-    if (annotation.text != null && annotation.text !== "") throw new RangeError(sceneSupportReason(1n << 7n));
+    if (annotation.text != null && annotation.text !== "") throw new RangeError(`Scene v12 ${kind} annotation labels are deferred; remove text or use the legacy renderer`);
     if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError(sceneSupportReason(1n << 2n));
     const style = { ...(annotation.style ?? {}) };
     const allowed = new Set(kind === "rule" ? ["color", "opacity", "width"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
