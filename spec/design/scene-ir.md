@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 18 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 19 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v18, so additive emission is not safe.
+bitmap or schema negotiation in Scene v19, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v18 batch layout,
+WASM lifecycle foundation; it validates the current Scene v19 batch layout,
 including the shared fixed header/mark widths retained since version 4, bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -408,7 +408,7 @@ nonfinite/out-of-range sizes, NUL/invalid UTF-8, noncontiguous offsets, trailing
 bytes, and every count/length overflow.
 
 Rust owns entry order, location resolution, frame/text/swatch geometry and
-paint ordering for SVG and native raster. Browser painter v11 appends the exact
+paint ordering for SVG and native raster. Browser painter v12 appends the exact
 validated `XYLG` record; TypeScript projects it into the existing selectable
 and accessible DOM legend without deriving entries or defaults. Direct-Scene
 legends are static (`toggle=false`, `highlight=false`). Python and Node only
@@ -422,21 +422,24 @@ multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
 declarations fail closed.
 
-## Version 13 bounded literal colorbar
+## Version 19 Rust-owned bounded colorbar ticks
 
-Scene v13 adds one optional `XYCB` colorbar decoration. Its only authorable
+Scene v19 evolves the optional `XYCB` colorbar decoration to v2. Its only authorable
 paint is a literal, ordered table of 2–16 RGBA stops spanning a finite ordered
 domain; it is always rendered as literal bands, with a bounded UTF-8 title and
 the literal `right` or `bottom` side. Continuous ramps/gradients are rejected.
-This deliberately does **not**
-encode colorbar major ticks, tick labels, or minor ticks: zero is required for
-the tick count and any minor-tick flag is invalid. Rust rejects named colormaps,
-arbitrary CSS/fonts, axes placement, extensions, all tick customisation,
-unknown flags, malformed UTF-8, unsorted values, and all size overflows before
-allocation. Rust resolves the selected-side outer gutter, screen-space bar bounds and paint order.
-SVG, raster, and browser painter consume that exact resolved geometry; Python
-and Node only pack the record. Rich colorbar tick/label and annotation work
-remain deferred.
+Hosts may supply at most 32 finite, strictly increasing in-domain major values
+and a boolean minor-tick request, but never strings, formatter policy, or pixels.
+Absent major values select Rust's deterministic linear ticks; Rust formats their
+built-in-font labels, derives four minor positions between adjacent majors, and
+emits the resolved values, labels, and screen positions in the painter `XYCT` v1
+trailer. `XYCT` contains bounded major/minor record tables followed by the
+major-label UTF-8 bytes: each record is a Rust-resolved f64 value, f32 screen
+position, and label length (zero for minors). SVG, raster, and browser consume
+exactly that result. Rust rejects
+named colormaps, arbitrary CSS/fonts, axes placement, extensions, custom tick
+strings, unknown flags, malformed UTF-8, unsorted values, and all size overflows
+before allocation.
 
 ## Version 14 bounded authored Cartesian major labels
 

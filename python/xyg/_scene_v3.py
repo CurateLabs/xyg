@@ -58,8 +58,10 @@ def _colorbar_input(figure: Any) -> bytes:
         "side",
         "title",
         "text_rgba",
+        "ticks",
+        "minor_ticks",
     }:
-        raise UnsupportedSceneV3("Scene v13 colorbars require literal bounded RGBA stops")
+        raise UnsupportedSceneV3("Scene v19 colorbars require literal bounded RGBA stops")
     domain = options.get("domain")
     stops = options.get("stops")
     if not (
@@ -69,18 +71,18 @@ def _colorbar_input(figure: Any) -> bytes:
         and 2 <= len(stops) <= 16
     ):
         raise UnsupportedSceneV3(
-            "Scene v13 colorbars require a two-value domain and 2-16 literal stops"
+            "Scene v19 colorbars require a two-value domain and 2-16 literal stops"
         )
     try:
         lo, hi = (float(domain[0]), float(domain[1]))
         parsed = [(float(item[0]), bytes(item[1])) for item in stops]
     except (TypeError, ValueError, IndexError):
         raise UnsupportedSceneV3(
-            "Scene v13 colorbar stops are (finite value, RGBA[4]) pairs"
+            "Scene v19 colorbar stops are (finite value, RGBA[4]) pairs"
         ) from None
     if not np.isfinite([lo, hi]).all() or lo >= hi or any(len(rgba) != 4 for _, rgba in parsed):
         raise UnsupportedSceneV3(
-            "Scene v13 colorbar values must be finite and RGBA literals exactly four bytes"
+            "Scene v19 colorbar values must be finite and RGBA literals exactly four bytes"
         )
     if (
         parsed[0][0] != lo
@@ -88,33 +90,60 @@ def _colorbar_input(figure: Any) -> bytes:
         or any(value <= parsed[index - 1][0] for index, (value, _) in enumerate(parsed) if index)
     ):
         raise UnsupportedSceneV3(
-            "Scene v13 colorbar stops must be strictly increasing and match the domain endpoints"
+            "Scene v19 colorbar stops must be strictly increasing and match the domain endpoints"
         )
     horizontal = options.get("side", "right") == "bottom"
     if options.get("side", "right") not in {"right", "bottom"}:
-        raise UnsupportedSceneV3("Scene v13 colorbars support only right or bottom placement")
+        raise UnsupportedSceneV3("Scene v19 colorbars support only right or bottom placement")
     title = options.get("title", "")
     if not isinstance(title, str):
-        raise UnsupportedSceneV3("Scene v13 colorbar title must be a string")
+        raise UnsupportedSceneV3("Scene v19 colorbar title must be a string")
     title_b = title.encode("utf-8")
     try:
         text_rgba = bytes(options.get("text_rgba", (32, 32, 32, 255)))
     except (TypeError, ValueError):
         raise UnsupportedSceneV3(
-            "Scene v13 colorbar text is bounded and uses literal RGBA"
+            "Scene v19 colorbar text is bounded and uses literal RGBA"
         ) from None
     if len(title_b) > 4096 or len(text_rgba) != 4:
-        raise UnsupportedSceneV3("Scene v13 colorbar text is bounded and uses literal RGBA")
-    out = bytearray(56 + len(parsed) * 12 + len(title_b))
+        raise UnsupportedSceneV3("Scene v19 colorbar text is bounded and uses literal RGBA")
+    raw_ticks = options.get("ticks")
+    if raw_ticks is None:
+        ticks: list[float] = []
+    elif not isinstance(raw_ticks, (list, tuple)) or len(raw_ticks) > 32:
+        raise UnsupportedSceneV3("Scene v19 colorbar ticks are limited to 32 finite ordered values")
+    else:
+        try:
+            ticks = [float(value) for value in raw_ticks]
+        except (TypeError, ValueError):
+            raise UnsupportedSceneV3(
+                "Scene v19 colorbar ticks are limited to 32 finite ordered values"
+            ) from None
+        if (
+            not np.isfinite(ticks).all()
+            or any(value < lo or value > hi for value in ticks)
+            or any(value <= ticks[index - 1] for index, value in enumerate(ticks) if index)
+        ):
+            raise UnsupportedSceneV3(
+                "Scene v19 colorbar ticks are limited to 32 finite ordered values"
+            )
+    minor_ticks = options.get("minor_ticks", False)
+    if not isinstance(minor_ticks, bool):
+        raise UnsupportedSceneV3("Scene v19 colorbar minor_ticks must be a boolean")
+    authored_ticks = bool(ticks)
+    out = bytearray(56 + len(parsed) * 12 + len(ticks) * 8 + len(title_b))
     out[:4] = b"XYCB"
-    struct.pack_into("<I", out, 4, 1)
-    out[8] = int(horizontal) | 2
-    struct.pack_into("<III2d", out, 12, len(parsed), 0, len(title_b), lo, hi)
+    struct.pack_into("<I", out, 4, 2)
+    out[8] = int(horizontal) | 2 | (int(minor_ticks) << 2) | (int(authored_ticks) << 3)
+    struct.pack_into("<III2d", out, 12, len(parsed), len(ticks), len(title_b), lo, hi)
     out[40:44] = text_rgba
     for index, (value, rgba) in enumerate(parsed):
         struct.pack_into("<d", out, 56 + index * 12, value)
         out[64 + index * 12 : 68 + index * 12] = rgba
-    out[56 + len(parsed) * 12 :] = title_b
+    ticks_start = 56 + len(parsed) * 12
+    for index, value in enumerate(ticks):
+        struct.pack_into("<d", out, ticks_start + index * 8, value)
+    out[ticks_start + len(ticks) * 8 :] = title_b
     return bytes(out)
 
 

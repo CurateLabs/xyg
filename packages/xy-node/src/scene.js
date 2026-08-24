@@ -420,26 +420,35 @@ function legendInput(figure, entries, styles) {
 function colorbarInput(figure) {
   const options = figure.colorbarOptions ?? figure.colorbar_options;
   if (options == null) return new Uint8Array();
-  if (typeof options !== "object" || Array.isArray(options)) throw new RangeError("Scene v13 colorbar requires literal RGBA stops");
-  const allowed = new Set(["domain", "stops", "side", "title", "text_rgba"]);
-  if (Object.keys(options).some((key) => !allowed.has(key))) throw new RangeError("Scene v13 colorbar requires bounded literal RGBA stops");
+  if (typeof options !== "object" || Array.isArray(options)) throw new RangeError("Scene v19 colorbar requires literal RGBA stops");
+  const allowed = new Set(["domain", "stops", "side", "title", "text_rgba", "ticks", "minor_ticks"]);
+  if (Object.keys(options).some((key) => !allowed.has(key))) throw new RangeError("Scene v19 colorbar requires bounded literal RGBA stops");
   const domain = options.domain, stops = options.stops;
-  if (!Array.isArray(domain) || domain.length !== 2 || !Array.isArray(stops) || stops.length < 2 || stops.length > 16) throw new RangeError("Scene v13 colorbar requires a domain and 2–16 stops");
+  if (!Array.isArray(domain) || domain.length !== 2 || !Array.isArray(stops) || stops.length < 2 || stops.length > 16) throw new RangeError("Scene v19 colorbar requires a domain and 2–16 stops");
   const lo = Number(domain[0]), hi = Number(domain[1]);
-  if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) throw new RangeError("Scene v13 colorbar domain must be finite and ordered");
+  if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) throw new RangeError("Scene v19 colorbar domain must be finite and ordered");
   const title = options.title ?? "";
-  if (typeof title !== "string") throw new TypeError("Scene v13 colorbar title must be a string");
+  if (typeof title !== "string") throw new TypeError("Scene v19 colorbar title must be a string");
   const titleBytes = new TextEncoder().encode(title), text = asUnsignedArray(options.text_rgba ?? [32, 32, 32, 255], "colorbar text_rgba", 255, Uint8Array);
-  requireLength(text, 4, "colorbar text_rgba"); if (titleBytes.length > 4096) throw new RangeError("Scene v13 colorbar title is limited to 4,096 UTF-8 bytes");
-  const out = new Uint8Array(56 + stops.length * 12 + titleBytes.length), view = new DataView(out.buffer);
-  out.set([88, 89, 67, 66]); view.setUint32(4, 1, true);
-  const side = options.side ?? "right"; if (side !== "right" && side !== "bottom") throw new RangeError("Scene v13 colorbar side is right or bottom");
-  out[8] = Number(side === "bottom") | 2;
-  view.setUint32(12, stops.length, true); view.setUint32(20, titleBytes.length, true); view.setFloat64(24, lo, true); view.setFloat64(32, hi, true); out.set(text, 40);
+  requireLength(text, 4, "colorbar text_rgba"); if (titleBytes.length > 4096) throw new RangeError("Scene v19 colorbar title is limited to 4,096 UTF-8 bytes");
+  const rawTicks = options.ticks;
+  if (rawTicks != null && (!Array.isArray(rawTicks) || rawTicks.length > 32)) throw new RangeError("Scene v19 colorbar ticks are limited to 32 finite ordered values");
+  const ticks = rawTicks == null ? [] : rawTicks.map(Number);
+  if (ticks.some((value, index) => !Number.isFinite(value) || value < lo || value > hi || (index && value <= ticks[index - 1]))) throw new RangeError("Scene v19 colorbar ticks are limited to 32 finite ordered values");
+  const authoredTicks = ticks.length > 0;
+  const minorTicks = options.minor_ticks ?? false;
+  if (typeof minorTicks !== "boolean") throw new TypeError("Scene v19 colorbar minor_ticks must be a boolean");
+  const out = new Uint8Array(56 + stops.length * 12 + ticks.length * 8 + titleBytes.length), view = new DataView(out.buffer);
+  out.set([88, 89, 67, 66]); view.setUint32(4, 2, true);
+  const side = options.side ?? "right"; if (side !== "right" && side !== "bottom") throw new RangeError("Scene v19 colorbar side is right or bottom");
+  out[8] = Number(side === "bottom") | 2 | (Number(minorTicks) << 2) | (Number(authoredTicks) << 3);
+  view.setUint32(12, stops.length, true); view.setUint32(16, ticks.length, true); view.setUint32(20, titleBytes.length, true); view.setFloat64(24, lo, true); view.setFloat64(32, hi, true); out.set(text, 40);
   let previous = -Infinity;
   for (const [index, stop] of stops.entries()) { if (!Array.isArray(stop) || stop.length !== 2) throw new TypeError("colorbar stops are [value, RGBA]"); const value = Number(stop[0]), rgba = asUnsignedArray(stop[1], `colorbar stops[${index}]`, 255, Uint8Array); requireLength(rgba, 4, `colorbar stops[${index}]`); if (!Number.isFinite(value) || value < lo || value > hi || value <= previous) throw new RangeError("colorbar stops must be ordered within the domain"); previous = value; view.setFloat64(56 + index * 12, value, true); out.set(rgba, 64 + index * 12); }
   if (view.getFloat64(56, true) !== lo || view.getFloat64(56 + (stops.length - 1) * 12, true) !== hi) throw new RangeError("colorbar stops must span the domain");
-  out.set(titleBytes, 56 + stops.length * 12); return out;
+  const ticksStart = 56 + stops.length * 12;
+  for (const [index, value] of ticks.entries()) view.setFloat64(ticksStart + index * 8, value, true);
+  out.set(titleBytes, ticksStart + ticks.length * 8); return out;
 }
 
 function ribbonEdge(x0, x1, ya, yb, steps = RIBBON_STEPS) {
@@ -836,7 +845,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
     kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-    title, xLabel, yLabel, xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.x_axis)?.tick_values ?? null, xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
+    title, xLabel, yLabel, xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
   });
 }
 

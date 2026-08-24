@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 18;
+pub const SCENE_VERSION: u32 = 19;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -20,7 +20,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 11;
+pub const BROWSER_PAINTER_VERSION: u32 = 12;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 300;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -38,7 +38,18 @@ pub const MAX_AUTHORED_STRAIGHT_ARROWS: usize = 128;
 /// Literal color tables are deliberately small so every renderer can consume
 /// exactly the same resolved Scene decoration without a host colormap registry.
 pub const MAX_SCENE_COLORBAR_STOPS: usize = 16;
+pub const MAX_SCENE_COLORBAR_TICKS: usize = 32;
 pub const MAX_SCENE_COLORBAR_TEXT_BYTES: usize = 4_096;
+/// `format_tick` has a short, bounded finite-f64 representation; keep the
+/// painter frame ceiling explicit so every decoder can reject before allocating.
+pub const MAX_SCENE_COLORBAR_TICK_LABEL_BYTES: usize = 32;
+pub const MAX_SCENE_COLORBAR_MINOR_TICKS: usize =
+    (MAX_SCENE_COLORBAR_TICKS - 1) * 4;
+pub const MAX_SCENE_COLORBAR_PAINTER_BYTES: usize = MAX_SCENE_COLORBAR_INPUT_BYTES
+    + 24 // XYRG v1
+    + 16 // XYCT v1 header
+    + (MAX_SCENE_COLORBAR_TICKS + MAX_SCENE_COLORBAR_MINOR_TICKS) * 16
+    + MAX_SCENE_COLORBAR_TICKS * MAX_SCENE_COLORBAR_TICK_LABEL_BYTES;
 const SCENE_LABEL_HEADER_BYTES: usize = 16;
 const SCENE_LABEL_RECORD_BYTES: usize = 40;
 pub const SCENE_SUPPORT_REQUEST_VERSION: u32 = 1;
@@ -477,18 +488,23 @@ impl SceneLegend {
 
 const SCENE_COLORBAR_HEADER_BYTES: usize = 56;
 const SCENE_COLORBAR_STOP_BYTES: usize = 12;
+const SCENE_COLORBAR_TICK_BYTES: usize = 8;
 pub const MAX_SCENE_COLORBAR_INPUT_BYTES: usize = SCENE_COLORBAR_HEADER_BYTES
     + MAX_SCENE_COLORBAR_STOPS * SCENE_COLORBAR_STOP_BYTES
+    + MAX_SCENE_COLORBAR_TICKS * SCENE_COLORBAR_TICK_BYTES
     + MAX_SCENE_COLORBAR_TEXT_BYTES;
 
 /// A bounded, host-neutral banded colour scale. The author supplies only
-/// literal RGBA stops, a bounded title, and a right/bottom side; the record
-/// has no tick, label, minor-tick, or continuous-gradient semantics.
+/// literal RGBA stops, a bounded title, and a right/bottom side. Rust derives
+/// label text and screen geometry from the optional bounded major values.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SceneColorbar {
     pub horizontal: bool,
     pub domain: [f64; 2],
     pub stops: Vec<(f64, [u8; 4])>,
+    /// `None` means Rust selects deterministic linear major ticks.
+    pub ticks: Option<Vec<f64>>,
+    pub minor_ticks: bool,
     pub title: String,
     pub text_rgba: [u8; 4],
 }
@@ -500,21 +516,22 @@ impl SceneColorbar {
         }
         if bytes.len() < SCENE_COLORBAR_HEADER_BYTES
             || &bytes[..4] != b"XYCB"
-            || u32::from_le_bytes(bytes[4..8].try_into().unwrap()) != 1
+            || u32::from_le_bytes(bytes[4..8].try_into().unwrap()) != 2
             || bytes[9..12] != [0; 3]
             || bytes[52..56] != [0; 4]
         {
             return Err(SceneError::Length);
         }
         let flags = bytes[8];
-        if flags & !0x03 != 0 || flags & 2 == 0 {
+        if flags & !0x0f != 0 || flags & 2 == 0 {
             return Err(SceneError::Length);
         }
         let stop_count = u32::from_le_bytes(bytes[12..16].try_into().unwrap()) as usize;
         let tick_count = u32::from_le_bytes(bytes[16..20].try_into().unwrap()) as usize;
         let title_len = u32::from_le_bytes(bytes[20..24].try_into().unwrap()) as usize;
-        if !(2..=MAX_SCENE_COLORBAR_STOPS).contains(&stop_count)
-            || tick_count != 0
+        if (flags & 8 != 0) != (tick_count != 0)
+            || !(2..=MAX_SCENE_COLORBAR_STOPS).contains(&stop_count)
+            || tick_count > MAX_SCENE_COLORBAR_TICKS
             || title_len > MAX_SCENE_COLORBAR_TEXT_BYTES
         {
             return Err(SceneError::Limit);
@@ -552,6 +569,17 @@ impl SceneColorbar {
         if stops.first().unwrap().0 != domain[0] || stops.last().unwrap().0 != domain[1] {
             return Err(SceneError::Length);
         }
+        let mut ticks = Vec::with_capacity(tick_count);
+        let mut previous = f64::NEG_INFINITY;
+        for index in 0..tick_count {
+            let at = table_end + index * 8;
+            let value = f64_at(at);
+            if !value.is_finite() || value < domain[0] || value > domain[1] || value <= previous {
+                return Err(SceneError::Length);
+            }
+            previous = value;
+            ticks.push(value);
+        }
         let title = std::str::from_utf8(&bytes[ticks_end..end])
             .map_err(|_| SceneError::Length)?
             .to_owned();
@@ -562,6 +590,8 @@ impl SceneColorbar {
             horizontal: flags & 1 != 0,
             domain,
             stops,
+            ticks: (flags & 8 != 0).then_some(ticks),
+            minor_ticks: flags & 4 != 0,
             title,
             text_rgba: bytes[40..44].try_into().unwrap(),
         }))
@@ -571,14 +601,16 @@ impl SceneColorbar {
         let mut out = Vec::with_capacity(
             SCENE_COLORBAR_HEADER_BYTES
                 + self.stops.len() * SCENE_COLORBAR_STOP_BYTES
+                + self.ticks.as_ref().map_or(0, Vec::len) * 8
                 + self.title.len(),
         );
         out.extend_from_slice(b"XYCB");
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.push(u8::from(self.horizontal) | 2);
+        out.extend_from_slice(&2u32.to_le_bytes());
+        let ticks = self.ticks.as_deref().unwrap_or_default();
+        out.push(u8::from(self.horizontal) | 2 | (u8::from(self.minor_ticks) << 2) | (u8::from(!ticks.is_empty()) << 3));
         out.extend_from_slice(&[0; 3]);
         out.extend_from_slice(&(self.stops.len() as u32).to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&(ticks.len() as u32).to_le_bytes());
         out.extend_from_slice(&(self.title.len() as u32).to_le_bytes());
         for value in self.domain {
             out.extend_from_slice(&value.to_le_bytes());
@@ -588,6 +620,9 @@ impl SceneColorbar {
         for (value, rgba) in &self.stops {
             out.extend_from_slice(&value.to_le_bytes());
             out.extend_from_slice(rgba);
+        }
+        for value in ticks {
+            out.extend_from_slice(&value.to_le_bytes());
         }
         out.extend_from_slice(self.title.as_bytes());
         // Reuse the strict decoder as the single validation authority.
@@ -2283,6 +2318,68 @@ fn resolved_colorbar_bounds(
         return Err(SceneError::Limit);
     }
     Ok((x, y, width, height))
+}
+
+/// Fully resolved colorbar tick geometry. This is deliberately computed before
+/// every renderer so DOM/WASM consumers never select ticks, format labels, or
+/// subdivide minor intervals themselves.
+#[derive(Clone, Debug, PartialEq)]
+struct ResolvedColorbarTicks {
+    majors: Vec<(f64, f64, String)>,
+    minors: Vec<(f64, f64)>,
+}
+
+fn resolved_colorbar_ticks(
+    colorbar: &SceneColorbar,
+    bounds: (f64, f64, f64, f64),
+) -> Result<ResolvedColorbarTicks, SceneError> {
+    let (x, y, width, height) = bounds;
+    let length = if colorbar.horizontal { width } else { height };
+    let values = match &colorbar.ticks {
+        Some(values) => values.clone(),
+        None => linear_ticks(
+            colorbar.domain[0],
+            colorbar.domain[1],
+            ((length / 48.0).floor() as usize + 1).clamp(2, 8),
+        )?
+        .labeled,
+    };
+    if values.len() > MAX_SCENE_COLORBAR_TICKS {
+        return Err(SceneError::Limit);
+    }
+    let step = values
+        .windows(2)
+        .next()
+        .map(|pair| (pair[1] - pair[0]).abs())
+        .filter(|step| step.is_finite() && *step > 0.0)
+        .unwrap_or((colorbar.domain[1] - colorbar.domain[0]).abs());
+    let pixel = |value: f64| {
+        let fraction = (value - colorbar.domain[0]) / (colorbar.domain[1] - colorbar.domain[0]);
+        if colorbar.horizontal {
+            x + width * fraction
+        } else {
+            y + height * (1.0 - fraction)
+        }
+    };
+    let majors = values
+        .iter()
+        .map(|value| {
+            let label = format_tick(*value, step, ScaleKind::Linear);
+            (label.len() <= MAX_SCENE_COLORBAR_TICK_LABEL_BYTES)
+                .then_some((*value, pixel(*value), label))
+                .ok_or(SceneError::Limit)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut minors = Vec::new();
+    if colorbar.minor_ticks {
+        for pair in values.windows(2) {
+            for subdivision in 1..5 {
+                let value = pair[0] + (pair[1] - pair[0]) * subdivision as f64 / 5.0;
+                minors.push((value, pixel(value)));
+            }
+        }
+    }
+    Ok(ResolvedColorbarTicks { majors, minors })
 }
 
 /// Validate a serialized canonical Scene v9 batch without allocating.
@@ -4013,6 +4110,24 @@ impl SceneDocument {
         for value in [x, y, width, height] {
             out.extend_from_slice(&checked_f32(value)?.to_le_bytes());
         }
+        let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height))?;
+        out.extend_from_slice(b"XYCT");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&(ticks.majors.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(ticks.minors.len() as u32).to_le_bytes());
+        for (value, position, label) in &ticks.majors {
+            out.extend_from_slice(&value.to_le_bytes());
+            out.extend_from_slice(&checked_f32(*position)?.to_le_bytes());
+            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+        }
+        for (value, position) in &ticks.minors {
+            out.extend_from_slice(&value.to_le_bytes());
+            out.extend_from_slice(&checked_f32(*position)?.to_le_bytes());
+            out.extend_from_slice(&0u32.to_le_bytes());
+        }
+        for (_, _, label) in &ticks.majors {
+            out.extend_from_slice(label.as_bytes());
+        }
         Ok(out)
     }
     fn painter_legend_bytes(&self) -> Result<Vec<u8>, SceneError> {
@@ -4683,6 +4798,55 @@ impl SceneDocument {
             out.push_str("\" fill=\"");
             out.push_str(&rgba_css(paint));
             out.push_str("\"/>");
+        }
+        let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height))
+            .expect("validated colorbar tick geometry");
+        for (_, position) in &ticks.minors {
+            let (x0, y0, x1, y1) = if colorbar.horizontal {
+                (*position, y + height, *position, y + height + 3.0)
+            } else {
+                (x + width, *position, x + width + 3.0, *position)
+            };
+            out.push_str("<line data-xy-slot=\"colorbar_minor_tick\" x1=\"");
+            push_num(out, x0);
+            out.push_str("\" y1=\"");
+            push_num(out, y0);
+            out.push_str("\" x2=\"");
+            push_num(out, x1);
+            out.push_str("\" y2=\"");
+            push_num(out, y1);
+            out.push_str("\" stroke=\"");
+            out.push_str(&rgba_css(colorbar.text_rgba));
+            out.push_str("\" stroke-width=\"1\"/>");
+        }
+        for (_, position, label) in &ticks.majors {
+            let (x0, y0, x1, y1, tx, ty, anchor) = if colorbar.horizontal {
+                (*position, y + height, *position, y + height + 6.0, *position, y + height + 17.0, "middle")
+            } else {
+                (x + width, *position, x + width + 6.0, *position, x + width + 9.0, *position + 4.0, "start")
+            };
+            out.push_str("<line data-xy-slot=\"colorbar_tick\" x1=\"");
+            push_num(out, x0);
+            out.push_str("\" y1=\"");
+            push_num(out, y0);
+            out.push_str("\" x2=\"");
+            push_num(out, x1);
+            out.push_str("\" y2=\"");
+            push_num(out, y1);
+            out.push_str("\" stroke=\"");
+            out.push_str(&rgba_css(colorbar.text_rgba));
+            out.push_str("\" stroke-width=\"1\"/>");
+            out.push_str("<text data-xy-slot=\"colorbar_tick\" x=\"");
+            push_num(out, tx);
+            out.push_str("\" y=\"");
+            push_num(out, ty);
+            out.push_str("\" text-anchor=\"");
+            out.push_str(anchor);
+            out.push_str("\" fill=\"");
+            out.push_str(&rgba_css(colorbar.text_rgba));
+            out.push_str("\" font-size=\"11\">");
+            push_escaped_attribute(out, label);
+            out.push_str("</text>");
         }
         if !colorbar.title.is_empty() {
             out.push_str("<text data-xy-slot=\"colorbar_title\" x=\"");
@@ -5487,7 +5651,7 @@ impl SceneDocument {
             total.saturating_add(22).saturating_add(label.text.len())
         });
         let colorbar_capacity = self.colorbar.as_ref().map_or(0, |value| {
-            value
+            let bands = value
                 .stops
                 .len()
                 .saturating_sub(1)
@@ -5495,7 +5659,18 @@ impl SceneDocument {
                 // pairs + RGBA = 41 bytes per literal color band.
                 .saturating_mul(41)
                 .saturating_add(value.title.len())
-                .saturating_add(64)
+                .saturating_add(64);
+            // Each resolved major emits a stroke plus bounded built-in text;
+            // four minors per adjacent major pair emit strokes. Reserve the
+            // product ceiling so the append-only display list never reallocates
+            // or rejects a valid bounded XYCB v2 record after validation.
+            bands.saturating_add(MAX_SCENE_COLORBAR_TICKS.saturating_mul(96))
+                .saturating_add(
+                    MAX_SCENE_COLORBAR_TICKS
+                        .saturating_sub(1)
+                        .saturating_mul(4)
+                        .saturating_mul(35),
+                )
         });
         self.raster_mark_capacity
             .saturating_add(chrome_capacity)
@@ -5663,6 +5838,41 @@ impl SceneDocument {
                 push_raster_f32(out, py, scale)?;
             }
             out.extend_from_slice(&rgba);
+        }
+        let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height))?;
+        for (_, position) in &ticks.minors {
+            let points = if colorbar.horizontal {
+                [(*position, y + height), (*position, y + height + 3.0)]
+            } else {
+                [(x + width, *position), (x + width + 3.0, *position)]
+            };
+            push_raster_stroke(out, points, 1.0, colorbar.text_rgba, scale)?;
+        }
+        for (_, position, label) in &ticks.majors {
+            let (points, text_x, text_y, anchor) = if colorbar.horizontal {
+                (
+                    [(*position, y + height), (*position, y + height + 6.0)],
+                    *position,
+                    y + height + 17.0,
+                    1,
+                )
+            } else {
+                (
+                    [(x + width, *position), (x + width + 6.0, *position)],
+                    x + width + 9.0,
+                    *position + 4.0,
+                    0,
+                )
+            };
+            push_raster_stroke(out, points, 1.0, colorbar.text_rgba, scale)?;
+            out.push(6);
+            push_raster_f32(out, text_x, scale)?;
+            push_raster_f32(out, text_y, scale)?;
+            out.push(anchor);
+            push_raster_f32(out, 11.0, scale)?;
+            out.extend_from_slice(&colorbar.text_rgba);
+            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            out.extend_from_slice(label.as_bytes());
         }
         if !colorbar.title.is_empty() {
             out.push(6);
@@ -6950,7 +7160,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 18);
+        assert_eq!(SCENE_VERSION, 19);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -8720,11 +8930,13 @@ mod tests {
     }
 
     #[test]
-    fn scene_v13_colorbar_is_literal_bounded_and_rejects_unsorted_stops() {
+    fn scene_v19_colorbar_is_literal_bounded_and_rejects_unsorted_stops() {
         let colorbar = SceneColorbar {
             horizontal: false,
             domain: [0.0, 1.0],
             stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+            ticks: None,
+            minor_ticks: false,
             title: "Intensity".to_owned(),
             text_rgba: [32, 32, 32, 255],
         };
@@ -8736,9 +8948,34 @@ mod tests {
         let mut malformed = encoded;
         malformed[68..76].copy_from_slice(&(-1.0f64).to_le_bytes());
         assert!(SceneColorbar::from_input(&malformed).is_err());
-        let mut unsupported_ticks = colorbar.encode().unwrap();
-        unsupported_ticks[8] |= 4;
-        assert!(SceneColorbar::from_input(&unsupported_ticks).is_err());
+        let ticked = SceneColorbar {
+            ticks: Some(vec![0.0, 0.5, 1.0]),
+            minor_ticks: true,
+            ..colorbar.clone()
+        };
+        assert_eq!(SceneColorbar::from_input(&ticked.encode().unwrap()), Ok(Some(ticked)));
+        let resolved = resolved_colorbar_ticks(
+            &SceneColorbar {
+                ticks: Some(vec![0.0, 0.5, 1.0]),
+                minor_ticks: true,
+                ..colorbar.clone()
+            },
+            (100.0, 10.0, 14.0, 80.0),
+        )
+        .unwrap();
+        assert_eq!(resolved.majors.iter().map(|tick| tick.2.as_str()).collect::<Vec<_>>(), ["0.0", "0.5", "1.0"]);
+        assert_eq!(resolved.minors.len(), 8);
+        let maximum = SceneColorbar {
+            stops: (0..MAX_SCENE_COLORBAR_STOPS)
+                .map(|index| (index as f64 / 15.0, [index as u8, 0, 0, 255]))
+                .collect(),
+            ticks: Some((0..MAX_SCENE_COLORBAR_TICKS).map(|index| index as f64 / 31.0).collect()),
+            title: "x".repeat(MAX_SCENE_COLORBAR_TEXT_BYTES),
+            ..colorbar.clone()
+        };
+        let maximum_encoded = maximum.encode().unwrap();
+        assert_eq!(maximum_encoded.len(), MAX_SCENE_COLORBAR_INPUT_BYTES);
+        assert_eq!(SceneColorbar::from_input(&maximum_encoded), Ok(Some(maximum)));
         let mut nonzero_tick_count = colorbar.encode().unwrap();
         nonzero_tick_count[16..20].copy_from_slice(&1u32.to_le_bytes());
         assert!(SceneColorbar::from_input(&nonzero_tick_count).is_err());
@@ -8753,6 +8990,8 @@ mod tests {
             horizontal: false,
             domain: [0.0, 1.0],
             stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 128])],
+            ticks: None,
+            minor_ticks: false,
             title: String::new(),
             text_rgba: [32, 32, 32, 96],
         };
