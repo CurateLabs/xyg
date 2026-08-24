@@ -209,17 +209,7 @@ def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
 
 
 def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.MonkeyPatch) -> None:
-    figure = representative_figure()
-    figure.title = "Compatibility title"
-    figure.set_axis(
-        "x",
-        label="Horizontal",
-        domain=(0, 4),
-        tick_values=[0, 2, 4],
-        tick_labels=["zero", "two", "four"],
-        style={"grid_color": "#123456"},
-    )
-    figure.set_axis("y", label="Vertical", domain=(0, 5))
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
 
     scene_svg = _native.scene_svg
     scene_raster_commands = _native.scene_raster_commands
@@ -236,11 +226,7 @@ def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.M
     monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
     monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
     svg = figure.to_svg()
-    assert "Compatibility title" in svg
-    assert "Horizontal" in svg
-    assert "Vertical" in svg
-    assert "two" in svg
-    assert "rgba(18,52,86,1.000000)" in svg
+    assert "XYGS" not in svg  # the public string is Rust's rendered SVG, not Scene bytes
     assert figure.to_scene()[:4] == b"XYGS"
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
@@ -265,9 +251,33 @@ def test_unsupported_public_exports_stay_on_compatibility_path(
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
 
 
+@pytest.mark.parametrize(
+    "mutate,reason",
+    [
+        (lambda figure: setattr(figure, "title", "legacy text"), "PUBLIC_TEXT"),
+        (
+            lambda figure: figure.annotations.append({"kind": "marker", "x": 1, "y": 2}),
+            "PUBLIC_ANNOTATION",
+        ),
+        (lambda figure: figure.set_axis("x", label="legacy axis"), "PUBLIC_AXIS"),
+        (lambda figure: figure.line([0, 1], [0, 1], name="legacy legend"), "PUBLIC_LEGEND"),
+        (lambda figure: figure.line(range(10_001), range(10_001)), "PUBLIC_LOD"),
+    ],
+)
+def test_public_router_preflights_legacy_export_contracts(mutate, reason: str) -> None:
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    mutate(figure)
+    assert reason in (_scene_v3.scene_export_support_reason(figure) or "")
+
+
+def test_non_circle_symbols_keep_the_legacy_rust_scatter_svg_contract() -> None:
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], symbol="diamond")
+    assert "PUBLIC_SYMBOL" in (_scene_v3.scene_export_support_reason(figure) or "")
+
+
 def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> None:
     """The public journey must not merely produce valid files beside Scene."""
-    figure = representative_figure()
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
     svg = _scene_v3.figure_svg(figure)
     png = _scene_v3.try_public_png(figure, scale=1)
     pdf = _scene_v3.try_public_pdf(figure)
@@ -281,7 +291,7 @@ def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> N
 
 
 def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
-    figure = representative_figure()
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
 
     def broken_scene(*_args: object, **_kwargs: object) -> str:
         raise ValueError("broken Scene consumer")

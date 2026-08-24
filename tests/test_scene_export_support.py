@@ -1,12 +1,11 @@
 """Support-predicate parity for the #117 public static-export Scene router.
 
-`scene_export_support_reason` is the single seam the public exporter will use to
+`scene_export_support_reason` is the single seam the public exporter uses to
 decide whether a figure routes through the canonical Rust Scene or the
-compatibility renderers. It must agree exactly with `figure_scene`: whenever the
-compiler rejects a feature, the predicate reports that same reason, and whenever
-the compiler succeeds, the predicate returns ``None``. These tests pin that
-contract per unsupported feature so the router cannot silently disagree with the
-compiler it guards.
+compatibility renderers. It is intentionally narrower than `figure_scene`:
+explicit Scene APIs may exercise a migrating record before the public output
+contract is complete. These tests pin both compiler rejection and public
+preflight so the router cannot silently select a partial consumer.
 """
 
 from __future__ import annotations
@@ -27,9 +26,7 @@ def _supported() -> Figure:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
-    figure.scatter([1, 2], [2, 3], color="#3987e5", size=6, opacity=0.8, symbol="diamond")
-    figure.line([1, 2, 3], [1, 4, 2], color="#ef4444", width=2)
-    figure.bar([1, 2], [3, 2], color="#22c55e", opacity=0.85)
+    figure.scatter([1, 2], [2, 3], color="#3987e5", size=6, opacity=0.8)
     return figure
 
 
@@ -90,8 +87,8 @@ def _callout() -> Figure:
 
 
 def _dashed_line() -> Figure:
-    figure = _supported()
-    figure.traces[1].style["dash"] = "4,2"  # the line trace
+    figure = _supported().line([1, 2, 3], [1, 4, 2], color="#ef4444", width=2)
+    figure.traces[-1].style["dash"] = "4,2"
     return figure
 
 
@@ -114,9 +111,9 @@ def test_supported_figure_has_no_reason() -> None:
     assert scene_export_support_reason(figure) is None
 
 
-def test_bounded_cartesian_callout_has_no_reason() -> None:
+def test_bounded_cartesian_callout_remains_explicit_scene_only_until_public_parity() -> None:
     figure = _callout()
-    assert scene_export_support_reason(figure) is None
+    assert "PUBLIC_ANNOTATION" in (scene_export_support_reason(figure) or "")
     assert b"here" in figure_scene(figure)
 
 
@@ -125,17 +122,20 @@ def test_unsupported_feature_reported(name: str) -> None:
     factory, token = UNSUPPORTED[name]
     reason = scene_export_support_reason(factory())
     assert reason is not None
-    assert token in reason
+    # The public router may reject an otherwise Scene-serializable feature
+    # earlier, when the compatibility renderer carries output semantics the
+    # Scene consumers have not modeled yet.
+    assert token in reason or "XYG_SCENE_UNSUPPORTED_PUBLIC_" in reason
 
 
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))
-def test_predicate_matches_compiler_reason(name: str) -> None:
+def test_predicate_never_claims_public_support_when_the_compiler_rejects(name: str) -> None:
     factory, _token = UNSUPPORTED[name]
     predicate_reason = scene_export_support_reason(factory())
     with pytest.raises(UnsupportedSceneV3) as excinfo:
         figure_scene(factory())
-    # By-construction parity: the predicate surfaces exactly the compiler's reason.
-    assert predicate_reason == str(excinfo.value)
+    assert predicate_reason is not None
+    assert str(excinfo.value)
 
 
 def test_input_errors_are_not_support_decisions() -> None:
@@ -151,6 +151,23 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
     figure = _supported()
     assert scene_export_support_reason(figure, width=64, height=32) == (
         "XYG_SCENE_UNSUPPORTED_VIEWPORT"
+    )
+
+
+@pytest.mark.parametrize(
+    "factory,reason",
+    [
+        (lambda: _supported().line([0, 1], [0, 1]), "PUBLIC_MARK"),
+        (lambda: _supported().bar([0, 1], [1, 2]), "PUBLIC_MARK"),
+        (lambda: _supported().scatter([0, 1], [1, 2], symbol="diamond"), "PUBLIC_SYMBOL"),
+        (lambda: _supported(), None),
+    ],
+)
+def test_public_router_selects_only_the_proven_circle_scatter_subset(
+    factory, reason: str | None
+) -> None:
+    assert scene_export_support_reason(factory()) == (
+        None if reason is None else f"XYG_SCENE_UNSUPPORTED_{reason}"
     )
 
 

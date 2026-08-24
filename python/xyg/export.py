@@ -825,7 +825,7 @@ def to_png(
             raise ValueError("custom_css requires engine=Engine.chromium")
         from . import _raster, _scene_v3
 
-        if _scene_v3.scene_export_support_reason(fig, width=w, height=h) is None:
+        if not optimize and _scene_v3.scene_export_support_reason(fig, width=w, height=h) is None:
             data = _scene_v3.try_public_png(fig, width=w, height=h, scale=scale)
             assert data is not None  # predicate and compiler share one authority
         else:
@@ -1074,7 +1074,8 @@ def _native_image(
     # an explicit compatibility exception.  The normal public path below uses
     # the single Rust support predicate for SVG, PNG, and PDF.
     scene_supported = (
-        background is None
+        not optimize
+        and background is None
         and _scene_v3.scene_export_support_reason(fig, width=width, height=height) is None
     )
 

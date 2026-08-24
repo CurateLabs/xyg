@@ -250,11 +250,14 @@ y-label with deterministic margin-relative anchors. Hosts may now compile
 figure titles and axis labels into the explicit Scene path; annotations,
 legends, custom sides, and authored tick geometry remain rejected until later
 slices. `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
-The public SVG/PNG/PDF router now selects these Rust consumers whenever the
-single support predicate accepts the authored figure. Explicit export-only
-background overrides and features outside the bounded Scene remain on the
-compatibility renderer before compilation; malformed input and Rust consumer
-failures propagate and never cause fallback.
+The public SVG/PNG/PDF router now selects these Rust consumers only for the
+proven constant-style Cartesian circle-scatter subset. Explicit Scene APIs may
+exercise broader migrating records, but line/rect/band/segment/ribbon marks,
+non-circle symbols, annotations, text, legends, themes/style tokens, customized
+axis chrome, export-only backgrounds, fluid or too-small viewports, and
+screen-bounded LOD inputs remain on the compatibility renderer before
+compilation. Malformed input and Rust consumer failures propagate and never
+cause fallback.
 
 ## Version 6: Band filled polygons
 

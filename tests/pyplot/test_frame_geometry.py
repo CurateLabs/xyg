@@ -76,7 +76,7 @@ def test_pyplot_static_export_keeps_explicit_compatibility_route(monkeypatch: py
     ax.plot([0, 1, 2], [1, 3, 2])
     chart = fig._single({})
     assert chart is not None
-    assert "XYG_SCENE_UNSUPPORTED_BROWSER_CSS" in scene_export_support_reason(chart.figure())
+    assert "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE" in scene_export_support_reason(chart.figure())
 
     def unexpected_scene(*_args: object, **_kwargs: object) -> str:
         raise AssertionError("pyplot fallback must be selected before Scene compilation")
