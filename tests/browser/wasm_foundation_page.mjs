@@ -23,7 +23,7 @@ import {
   XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
 
-function directDensityFixture(host) {
+function directDensityFixture(host, comm = null) {
   const width = 16, height = 16;
   const grid = new Float32Array(width * height);
   grid[0] = 1;
@@ -48,7 +48,7 @@ function directDensityFixture(host) {
     backend: "native", show_legend: false,
     view: { ranges: { x: [0, 1], y: [0, 1] } },
   };
-  return new ChartView(host, spec, new Uint8Array(grid.buffer), null);
+  return new ChartView(host, spec, new Uint8Array(grid.buffer), comm);
 }
 
 const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -618,7 +618,11 @@ async function run() {
   const densityHost = document.createElement("div");
   densityHost.style.cssText = "width:320px;height:240px";
   document.body.append(densityHost);
-  const densityView = directDensityFixture(densityHost);
+  const kernelDensityRequests = [];
+  const densityView = directDensityFixture(densityHost, {
+    send: (message) => kernelDensityRequests.push(message),
+    onMessage: () => () => {},
+  });
   const densityWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
   });
@@ -631,9 +635,13 @@ async function run() {
     },
     delay: 0,
   });
-  const firstDensityRevision = densityHandle.schedule({ ranges: { x: [0, 0.75], y: [0, 0.75] } });
+  const firstDensityRevision = densityView._scheduleViewRequest(
+    { ranges: { x: [0, 0.75], y: [0, 0.75] } }, { delay: 0 },
+  );
   await nextTask(); // let the first aggregate enter the static Worker
-  const secondDensityRevision = densityHandle.schedule({ ranges: { x: [0.25, 1], y: [0.25, 1] } });
+  const secondDensityRevision = densityView._scheduleViewRequest(
+    { ranges: { x: [0.25, 1], y: [0.25, 1] } }, { delay: 0 },
+  );
   for (let attempt = 0; attempt < 100 && densityHandle.diagnostics() === null; attempt++) await nextTask();
   const densityDiagnostics = densityHandle.diagnostics();
   const densityTrace = densityView.gpuTraces.find((trace) => trace.tier === "density");
@@ -641,11 +649,11 @@ async function run() {
       || firstDensityRevision >= secondDensityRevision
       || densityTrace.density.xRange.join(",") !== "0.25,1"
       || densityTrace.density.yRange.join(",") !== "0.25,1"
-      || densityView._rebinWorker) {
+      || densityView._rebinWorker || kernelDensityRequests.length) {
     throw new Error(`direct WASM density failed supersession: ${JSON.stringify({
       firstDensityRevision, secondDensityRevision, densityDiagnostics,
       xRange: densityTrace?.density?.xRange, yRange: densityTrace?.density?.yRange,
-      rebinWorker: !!densityView._rebinWorker,
+      rebinWorker: !!densityView._rebinWorker, kernelDensityRequests,
     })}`);
   }
   await densityHandle.dispose();

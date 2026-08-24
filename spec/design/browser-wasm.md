@@ -26,7 +26,8 @@ Canonical scene dependency: [Scene IR](scene-ir.md).
 ### Supported ChartView density refinement
 
 `attachWasmDensity(view, { worker, input })` is the first supported product
-path for one already-painted, standalone Cartesian density trace. `input`
+path for one already-painted Cartesian density trace, including one explicitly
+attached kernel-backed scatter workload. `input`
 supplies canonical `Float64Array` x/y source columns and, optionally, resolved
 straight-alpha RGBA8 colors. On every ChartView viewport refinement it frames
 one bounded `XYAG` request, asks Rust for `XYAO`, and uploads that typed grid
@@ -40,9 +41,9 @@ monotonic viewport sequence, handle, ChartView, and GL lifecycle all still
 match. `destroy()` cancels any request; an explicitly owned Worker is then
 disposed. Worker failures emit the `wasm_density_error` chart event with the
 stable error code, corrective message, and resource/copy diagnostics, never
-user data. Multiple density traces, kernel-backed charts, and retirement of
-the legacy standalone worker remain outside this supported contract pending
-parity, strict-CSP browser, and performance evidence for #119.
+user data. Multiple density traces, automatic source provisioning, and
+retirement of the legacy standalone worker remain outside this supported
+contract pending parity, strict-CSP browser, and performance evidence for #119.
 
 ## Runtime taxonomy
 
