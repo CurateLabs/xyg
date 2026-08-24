@@ -40,6 +40,48 @@ without disposing the caller's lifecycle Worker. Rust remains authoritative for 
 geometry, canonical Scene encoding, and painter lowering; TypeScript only
 frames transferable columns and schedules lifecycle checkpoints.
 
+## Opt-in standalone density refinement
+
+`attachWasmDensity(view, { worker, input })` attaches the Rust `XYAG` to
+`XYAO` aggregate seam to one already-painted, standalone Cartesian density
+trace. It is explicit: ordinary `renderStandalone()` output continues to use
+its existing fallback until an application attaches a handle. The source
+columns are canonical `Float64Array` values owned by the caller; an optional
+`Uint8Array` supplies four straight-alpha RGBA8 bytes per point. Rust owns
+binning, mean-color aggregation, aggregate bounds, and all resource counters.
+
+```js
+const density = await attachWasmDensity(view, {
+  worker,
+  input: { traceId: 0, x, y, rgba },
+  // Borrowed by default: dispose `worker` separately.
+  workerOwnership: "borrow",
+});
+
+// ChartView calls this on its normal standalone viewport refinement path.
+// An application may request a specific view explicitly as well.
+density.schedule({ ranges: { x: [xmin, xmax], y: [ymin, ymax] } });
+const metrics = density.diagnostics();
+await density.dispose();
+```
+
+Each scheduled viewport cancels the preceding aggregate and only a result with
+the current viewport sequence may upload a grid. The existing density surface
+remains visible during the request; stale, destroyed, or lost-context results
+never paint. `dispose()` clears pending work and, with
+`workerOwnership: "own"`, disposes the dedicated Worker. `diagnostics()`
+returns the current successful sequence plus Rust-owned `copyCount`, split-u64
+copy bytes, arena bytes/high-water, and linear-memory bytes/high-water; it
+returns `null` before a successful aggregate or after a failure.
+
+Worker-reported failures dispatch a bubbling `xy:wasm_density_error`
+`CustomEvent` on the ChartView root. Its detail is `{ code, message,
+diagnostics }`, where `code` is the stable `XygWasmError` code and diagnostics
+is either the Rust snapshot or `null`. It never includes source values. The
+currently supported contract is one standalone density trace; multiple traces,
+kernel-backed charts, automatic attachment, fallback deletion, and claims of
+full-product density parity remain outside this API.
+
 ## Cross-host fixture contract
 
 Regenerate `tests/fixtures/xyts_cross_host.json` with
