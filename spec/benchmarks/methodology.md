@@ -288,14 +288,19 @@ codspeed run --mode simulation -- cargo codspeed run --bench kernels --bench agg
 `crates/xyg-wasm/benches/typed_series.rs` adds four Rust-owned typed-series
 expansion rows at 100, 10k, 100k, and 1M records (small, medium, large, and
 massive). Matching browser harness rows measure first paint, copy counters, and
-WASM memory high-water at the same sizes. The Rust rows run only in the existing
-changed-main nightly (or manually dispatched) CodSpeed workflow and are not a
-per-PR gate. That workflow also builds the exact direct-WASM artifact and runs
-`node benchmarks/bench_wasm_scene.mjs` under the harness's local-only strict
-CSP. `scripts/verify_wasm_scene_benchmark.py` requires the four canonical sizes,
-zero main-thread record visits, finite non-negative first-paint/copy/memory
-metrics, and allocation-free fragmentation refusal. CI uploads the raw report
-as `typed-series-browser-<git-sha>.json`; reproduce it locally with:
+WASM memory high-water at the same sizes. The same report also contains four
+public-Python-authored canonical Scene rows at those sizes, measuring worker
+preparation, painter hydration/upload, first paint, Scene/painter payload bytes,
+copy and memory high-water, and required legend, colorbar, and annotation
+semantics. The rows run only in the changed-main nightly (or a manual dispatch)
+CodSpeed workflow and are not a per-PR gate. That workflow builds the exact
+direct-WASM artifact and runs `node benchmarks/bench_wasm_scene.mjs` under the
+harness's local-only strict CSP. `scripts/verify_wasm_scene_benchmark.py`
+requires all eight canonical rows, finite non-negative timing/copy/memory/payload
+metrics, positive authored Scene and painter payloads, required authored chrome
+semantics, zero main-thread typed-series record visits, and allocation-free
+fragmentation refusal. CI uploads the raw report as
+`authored-scene-browser-<git-sha>.json`; reproduce it locally with:
 
 ```bash
 cargo build -p xyg-wasm --release --target wasm32-unknown-unknown

@@ -26,18 +26,21 @@ python benchmarks/bench_vs.py
 The xy-only arm also runs with no dependencies via
 `benchmarks/bench_scatter_native.py`.
 
-## Direct-browser typed-series evidence
+## Direct-browser WASM Scene evidence
 
-The changed-main nightly CodSpeed workflow owns the hosted #118 evidence path;
-it does not run for pull requests. Rust simulation rows cover 100, 10k, 100k,
-and 1M-record XYTS v2 expansion. A separate strict-CSP Chromium job measures the
-same four sizes through `renderWasmChart`, including two-frame first paint, Rust
-staging-copy counters, arena/WASM-memory high-water, and the asserted zero
-main-thread record-visit contract. Each run uploads its unmodified validated
-JSON as `typed-series-browser-<git-sha>.json`, so results remain tied to the
-exact source revision and runner rather than being copied into an environment-
-free headline table. Until the first post-merge artifact exists, this section
-makes no numeric performance or competitive-win claim.
+The changed-main nightly CodSpeed workflow owns the hosted #118 and #116 browser
+evidence paths; it does not run for pull requests. Rust simulation rows cover
+100, 10k, 100k, and 1M-record XYTS v2 expansion. A separate strict-CSP Chromium
+job measures those sizes both through `renderWasmChart` and through deterministic
+public-Python-authored canonical Scenes containing chart chrome, a legend,
+colorbar ticks/minors, and a bounded callout label background. The latter records
+worker preparation, painter hydration/upload, first paint, Scene/painter bytes,
+Rust staging-copy counters, arena/WASM-memory high-water, and semantic DOM
+assertions. Each nightly or manual run uploads its unmodified validated JSON as
+`authored-scene-browser-<git-sha>.json`, tied to the exact source revision and
+runner rather than copied into an environment-free headline table. Until the
+first post-merge artifact exists, this section makes no numeric performance or
+competitive-win claim.
 
 ## Competitive product goal
 

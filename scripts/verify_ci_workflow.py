@@ -1854,15 +1854,15 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
     _require_job_contains(
         errors,
         jobs,
-        "typed-series-browser-evidence",
+        "authored-scene-browser-evidence",
         "CodSpeed",
-        "changed-main typed-series browser evidence",
+        "changed-main authored-Scene browser evidence",
         "needs: detect",
         "needs.detect.outputs.should_run == 'true'",
         "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
         "node benchmarks/bench_wasm_scene.mjs",
         "scripts/verify_wasm_scene_benchmark.py",
-        "typed-series-browser-${{ github.sha }}.json",
+        "authored-scene-browser-${{ github.sha }}.json",
         "actions/upload-artifact@",
     )
     return errors
