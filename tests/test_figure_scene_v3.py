@@ -203,8 +203,7 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     assert "Vertical" in svg
     assert "two" in svg
     assert "#123456" in svg
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_TICK_LABELS"):
-        figure.to_scene()
+    assert figure.to_scene()[:4] == b"XYGS"
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
 
@@ -263,7 +262,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 13
+    assert int.from_bytes(encoded[4:8], "little") == 14
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -331,7 +330,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (13).to_bytes(4, "little")
+    assert scene[4:8] == (14).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -357,7 +356,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
     area.axis_options["y"]["domain"] = (0.0, 3.0)
     area.area([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], base=0.0, color="#3987e5", opacity=0.5)
     scene = area.to_scene()
-    assert scene[4:8] == (13).to_bytes(4, "little")
+    assert scene[4:8] == (14).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -439,7 +438,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (13).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (14).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg
