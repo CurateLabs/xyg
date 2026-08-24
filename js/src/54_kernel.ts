@@ -239,6 +239,10 @@ Object.assign(ChartView.prototype, {
   // off the main thread — and applies like a density_update.
   _scheduleSampleRebin(viewOverride = this.view, opts: any = {}) {
     if (this._destroyed || this._glLost || this._sampleRebinDisabled) return;
+    // A direct-WASM density attachment owns the exact same viewport lifecycle
+    // as the standalone re-bin path. It retains the existing surface while
+    // Rust aggregates and rejects obsolete viewport results by sequence.
+    if (this._wasmDensity) return this._wasmDensity.schedule(viewOverride, opts);
     const targets = (this.gpuTraces || []).filter(
       (g) => g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu
     );
