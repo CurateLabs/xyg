@@ -82,6 +82,14 @@ def _colorbar_input(figure: Any) -> bytes:
         raise UnsupportedSceneV3(
             "Scene v13 colorbar values must be finite and RGBA literals exactly four bytes"
         )
+    if (
+        parsed[0][0] != lo
+        or parsed[-1][0] != hi
+        or any(value <= parsed[index - 1][0] for index, (value, _) in enumerate(parsed) if index)
+    ):
+        raise UnsupportedSceneV3(
+            "Scene v13 colorbar stops must be strictly increasing and match the domain endpoints"
+        )
     horizontal = options.get("side", "right") == "bottom"
     if options.get("side", "right") not in {"right", "bottom"}:
         raise UnsupportedSceneV3("Scene v13 colorbars support only right or bottom placement")
@@ -89,7 +97,12 @@ def _colorbar_input(figure: Any) -> bytes:
     if not isinstance(title, str):
         raise UnsupportedSceneV3("Scene v13 colorbar title must be a string")
     title_b = title.encode("utf-8")
-    text_rgba = bytes(options.get("text_rgba", (32, 32, 32, 255)))
+    try:
+        text_rgba = bytes(options.get("text_rgba", (32, 32, 32, 255)))
+    except (TypeError, ValueError):
+        raise UnsupportedSceneV3(
+            "Scene v13 colorbar text is bounded and uses literal RGBA"
+        ) from None
     if len(title_b) > 4096 or len(text_rgba) != 4:
         raise UnsupportedSceneV3("Scene v13 colorbar text is bounded and uses literal RGBA")
     out = bytearray(56 + len(parsed) * 12 + len(title_b))

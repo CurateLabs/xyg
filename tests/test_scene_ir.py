@@ -10,7 +10,7 @@ import pytest
 
 from xyg import _native, _svg
 from xyg._figure import Figure
-from xyg._scene_v3 import UnsupportedSceneV3
+from xyg._scene_v3 import UnsupportedSceneV3, _colorbar_input
 from xyg.channels import ColorChannel
 
 EXPECTED_SCATTER = (
@@ -59,6 +59,32 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     missing_constant.traces[0].color_ch = ColorChannel(mode="constant", constant=None)
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
         missing_constant.to_scene()
+
+
+def test_scene_v13_colorbar_python_framer_matches_literal_stop_contract() -> None:
+    figure = Figure()
+    figure.colorbar_options = {
+        "domain": [0.0, 1.0],
+        "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 128])],
+    }
+    assert _colorbar_input(figure)[:4] == b"XYCB"
+
+    for stops in (
+        [(0.1, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+        [(0.0, [0, 0, 0, 255]), (0.0, [255, 255, 255, 255])],
+        [(0.0, [0, 0, 0, 255]), (0.9, [255, 255, 255, 255])],
+    ):
+        figure.colorbar_options["stops"] = stops
+        with pytest.raises(UnsupportedSceneV3, match="strictly increasing"):
+            _colorbar_input(figure)
+
+    figure.colorbar_options = {
+        "domain": [0.0, 1.0],
+        "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+        "text_rgba": object(),
+    }
+    with pytest.raises(UnsupportedSceneV3, match="uses literal RGBA"):
+        _colorbar_input(figure)
 
 
 def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:

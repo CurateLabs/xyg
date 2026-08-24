@@ -1853,25 +1853,35 @@ fn resolved_colorbar_bounds(
     layout: PlotLayout,
     colorbar: &SceneColorbar,
 ) -> Result<(f64, f64, f64, f64), SceneError> {
+    // The canonical colorbar occupies only the caller-provided outer gutter.
+    // It must never shrink the already-resolved plot a second time.
+    const GUTTER: f64 = 28.0;
+    const THICKNESS: f64 = 14.0;
     let title = text_advance(&colorbar.title, 11.0);
     let (x, y, width, height) = if colorbar.horizontal {
+        if layout.viewport_height - layout.bottom < GUTTER + THICKNESS {
+            return Err(SceneError::Limit);
+        }
         (
             layout.left,
-            layout.bottom + 28.0,
+            layout.bottom + GUTTER,
             layout.right - layout.left,
-            14.0,
+            THICKNESS,
         )
     } else {
+        if layout.viewport_width - layout.right < GUTTER + THICKNESS {
+            return Err(SceneError::Limit);
+        }
         (
-            layout.right + 28.0,
+            layout.right + GUTTER,
             layout.top,
-            14.0,
+            THICKNESS,
             layout.bottom - layout.top,
         )
     };
     if ![x, y, width, height, title].into_iter().all(f64::is_finite)
-        || width < 16.0
-        || height < 16.0
+        || (colorbar.horizontal && width < 16.0)
+        || (!colorbar.horizontal && height < 16.0)
         || x < 0.0
         || y < 0.0
         || x + width > layout.viewport_width
@@ -4466,7 +4476,9 @@ impl SceneDocument {
                 .stops
                 .len()
                 .saturating_sub(1)
-                .saturating_mul(37)
+                // Raster polygon: opcode + vertex count + four (x, y) f32
+                // pairs + RGBA = 41 bytes per literal color band.
+                .saturating_mul(41)
                 .saturating_add(value.title.len())
                 .saturating_add(64)
         });
@@ -7540,5 +7552,37 @@ mod tests {
         let mut unsupported_continuous = colorbar.encode().unwrap();
         unsupported_continuous[8] &= !2;
         assert!(SceneColorbar::from_input(&unsupported_continuous).is_err());
+    }
+
+    #[test]
+    fn scene_v13_colorbar_requires_the_selected_outer_gutter() {
+        let colorbar = SceneColorbar {
+            horizontal: false,
+            domain: [0.0, 1.0],
+            stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 128])],
+            title: String::new(),
+            text_rgba: [32, 32, 32, 96],
+        };
+        let insufficient = PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        assert_eq!(
+            resolved_colorbar_bounds(insufficient, &colorbar),
+            Err(SceneError::Limit)
+        );
+
+        let right_gutter = PlotLayout::new(140.0, 100.0, 10.0, 42.0, 10.0, 10.0).unwrap();
+        assert_eq!(
+            resolved_colorbar_bounds(right_gutter, &colorbar),
+            Ok((126.0, 10.0, 14.0, 80.0))
+        );
+
+        let bottom = SceneColorbar {
+            horizontal: true,
+            ..colorbar
+        };
+        let bottom_gutter = PlotLayout::new(140.0, 100.0, 10.0, 10.0, 10.0, 42.0).unwrap();
+        assert_eq!(
+            resolved_colorbar_bounds(bottom_gutter, &bottom),
+            Ok((10.0, 86.0, 120.0, 14.0))
+        );
     }
 }
