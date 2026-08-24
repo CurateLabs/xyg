@@ -29,7 +29,14 @@ def test_direct_wasm_density_rejects_stale_work_and_chart_destroy_disposes_it() 
 def test_direct_wasm_density_is_public_and_documented_as_single_trace_only() -> None:
     entries = (ROOT / "js" / "src" / "60_entries.ts").read_text(encoding="utf-8")
     doc = (ROOT / "spec" / "design" / "browser-wasm.md").read_text(encoding="utf-8")
+    api = (ROOT / "spec" / "api" / "browser-wasm.md").read_text(encoding="utf-8")
     assert "attachWasmDensity" in entries
     assert "XygWasmDensityHandle" in entries
     assert "one already-painted, standalone Cartesian density trace" in doc
     assert "legacy standalone worker remain outside this supported contract" in doc
+    assert "## Opt-in standalone density refinement" in api
+    assert "xy:wasm_density_error" in api
+    assert "multiple traces" in api
+    assert "kernel-backed charts" in api
+    assert "automatic attachment" in api
+    assert "fallback deletion" in api
