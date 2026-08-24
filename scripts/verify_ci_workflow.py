@@ -1069,7 +1069,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "npm ci --prefix packages/xy-node",
         "scripts/verify_node_packages.py",
         "Node XYTS cross-host conformance",
-        'XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
         "node --test packages/xy-node/test/xyts-conformance.test.mjs",
         "scripts/abi_smoke.py",
         "scripts/check_abi_parity.py",
@@ -1116,7 +1116,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         jobs.get("test", ""),
         "Node XYTS cross-host conformance",
         "active native Node XYTS cross-host conformance",
-        'XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
         "node --test packages/xy-node/test/xyts-conformance.test.mjs",
     )
     _require_job_contains(
