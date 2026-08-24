@@ -395,6 +395,11 @@ without explicit static dimensions similarly reports
 ``XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT``; a caller-provided width and height
 permit normal Scene preflight.
 
+The public-route evidence pins byte-identical supported SVG/PNG/PDF output to
+the explicit Rust Scene consumers, repeated deterministic exports, hard
+consumer failures without compatibility fallback, and the pyplot browser-CSS
+compatibility exception.
+
 ## Version 9: bounded primary static legends
 
 Version 9 keeps the fixed header, style, and mark widths from version 8 and

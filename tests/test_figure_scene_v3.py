@@ -265,6 +265,40 @@ def test_unsupported_public_exports_stay_on_compatibility_path(
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
 
 
+def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> None:
+    """The public journey must not merely produce valid files beside Scene."""
+    figure = representative_figure()
+    svg = _scene_v3.figure_svg(figure)
+    png = _scene_v3.try_public_png(figure, scale=1)
+    pdf = _scene_v3.try_public_pdf(figure)
+
+    assert figure.to_svg() == svg
+    assert figure.to_svg() == figure.to_svg()
+    assert figure.to_png(scale=1) == png
+    assert figure.to_png(scale=1) == figure.to_png(scale=1)
+    assert figure.to_image(format="pdf") == pdf
+    assert figure.to_image(format="pdf") == figure.to_image(format="pdf")
+
+
+def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    figure = representative_figure()
+
+    def broken_scene(*_args: object, **_kwargs: object) -> str:
+        raise ValueError("broken Scene consumer")
+
+    def unexpected_compatibility(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("a Scene consumer error must not select compatibility")
+
+    from xyg import _svg
+
+    monkeypatch.setattr(_native, "scene_svg", broken_scene)
+    monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
+    with pytest.raises(ValueError, match="broken Scene consumer"):
+        figure.to_svg()
+    with pytest.raises(ValueError, match="broken Scene consumer"):
+        figure.to_image(format="pdf")
+
+
 def test_try_public_scene_helpers_select_migrated_subset() -> None:
     from xyg import _scene_v3
 
