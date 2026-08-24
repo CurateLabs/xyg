@@ -208,7 +208,7 @@ def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
         _native.scene_raster_commands(huge_width)
 
 
-def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.MonkeyPatch) -> None:
     figure = representative_figure()
     figure.title = "Compatibility title"
     figure.set_axis(
@@ -221,18 +221,46 @@ def test_public_exports_preserve_compatibility_chrome(monkeypatch: pytest.Monkey
     )
     figure.set_axis("y", label="Vertical", domain=(0, 5))
 
-    def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("public export must not select incomplete Scene chrome")
+    scene_svg = _native.scene_svg
+    scene_raster_commands = _native.scene_raster_commands
+    calls = {"svg": 0, "raster": 0}
 
-    monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
-    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
+    def observed_scene_svg(*args: object, **kwargs: object) -> str:
+        calls["svg"] += 1
+        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+
+    def observed_scene_raster(*args: object, **kwargs: object) -> bytes:
+        calls["raster"] += 1
+        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
     svg = figure.to_svg()
     assert "Compatibility title" in svg
     assert "Horizontal" in svg
     assert "Vertical" in svg
     assert "two" in svg
-    assert "#123456" in svg
+    assert "rgba(18,52,86,1.000000)" in svg
     assert figure.to_scene()[:4] == b"XYGS"
+    assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
+    assert figure.to_image(format="pdf").startswith(b"%PDF-")
+    assert calls["svg"] >= 2  # direct SVG plus PDF via Rust SVG
+    assert calls["raster"] >= 1
+
+
+def test_unsupported_public_exports_stay_on_compatibility_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    figure = Figure().heatmap([[0.0, 1.0], [1.0, 0.0]])
+
+    def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
+        raise AssertionError(
+            "unsupported export must select compatibility before Scene compilation"
+        )
+
+    monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
+    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
+    assert figure.to_svg().startswith("<svg")
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
 

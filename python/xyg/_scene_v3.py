@@ -1249,6 +1249,14 @@ def scene_export_support_reason(
         figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:
         return str(unsupported)
+    except ValueError as exc:
+        # A valid public export can request a viewport smaller than the
+        # bounded Scene chrome can contain.  Treat that as an explicit routing
+        # exception before a Scene batch exists; other invalid inputs remain
+        # failures and must never select compatibility rendering.
+        if str(exc) == "invalid canonical scene plot layout":
+            return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
+        raise
     return None
 
 
@@ -1279,7 +1287,7 @@ def try_public_png(
     try:
         scene = figure_scene(figure, width=width, height=height, **options)
         commands = _native.scene_raster_commands(scene, scale)
-    except (UnsupportedSceneV3, ValueError):
+    except UnsupportedSceneV3:
         return None
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
@@ -1289,14 +1297,15 @@ def try_public_png(
 
 
 def try_public_pdf(figure: Any, **options: Any) -> bytes | None:
-    """Return Scene SVG→PDF when both Scene compilation and the PDF subset accept."""
+    """Return Scene SVG→PDF for a Scene-capable figure.
+
+    This is deliberately not a catch-all fallback boundary: a malformed Scene
+    or a failure in the Rust/PDF consumers is an export failure, not evidence
+    that the compatibility renderer should be selected.
+    """
     from . import _pdf
 
     svg = try_public_svg(figure, **options)
     if svg is None:
         return None
-    try:
-        return _pdf.svg_to_pdf(svg)
-    except ValueError:
-        # Scene SVG may use attributes outside the closed ``_pdf`` subset; fall back.
-        return None
+    return _pdf.svg_to_pdf(svg)

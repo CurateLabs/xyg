@@ -823,9 +823,14 @@ def to_png(
     if resolved_engine == "native":
         if custom_css is not None:
             raise ValueError("custom_css requires engine=Engine.chromium")
-        from . import _raster
+        from . import _raster, _scene_v3
 
-        data = _raster.to_png(fig, None, width=w, height=h, scale=scale, fast=not optimize)
+        if _scene_v3.scene_export_support_reason(fig, width=w, height=h) is None:
+            data = _scene_v3.try_public_png(fig, width=w, height=h, scale=scale)
+            assert data is not None  # predicate and compiler share one authority
+        else:
+            data = _raster.to_png(fig, None, width=w, height=h, scale=scale, fast=not optimize)
+
     else:
         doc = to_html(fig, custom_css=custom_css, animation_progress=1.0)
         data = html_to_png(
@@ -1063,9 +1068,21 @@ def _native_image(
     quality: Optional[int],
     optimize: bool,
 ) -> bytes:
-    from . import _raster
+    from . import _raster, _scene_v3
+
+    # An export-only backdrop is not yet an authored Scene field, so it remains
+    # an explicit compatibility exception.  The normal public path below uses
+    # the single Rust support predicate for SVG, PNG, and PDF.
+    scene_supported = (
+        background is None
+        and _scene_v3.scene_export_support_reason(fig, width=width, height=height) is None
+    )
 
     if fmt == "png":
+        if scene_supported:
+            data = _scene_v3.try_public_png(fig, width=width, height=height, scale=scale)
+            assert data is not None  # predicate and compiler share one authority
+            return data
         return _raster.to_png(
             fig,
             None,
@@ -1076,11 +1093,17 @@ def _native_image(
             background=background,
         )
     if fmt == "svg":
+        if scene_supported:
+            return _scene_v3.figure_svg(fig, width=width, height=height).encode("utf-8")
         from . import _svg
 
         svg = _svg.to_svg(fig, None, width=width, height=height, background=background)
         return svg.encode("utf-8")
     if fmt == "pdf":
+        if scene_supported:
+            data = _scene_v3.try_public_pdf(fig, width=width, height=height)
+            assert data is not None  # predicate and compiler share one authority
+            return data
         from . import _pdf, _svg
 
         svg = _svg.to_svg(fig, None, width=width, height=height, background=background)

@@ -145,3 +145,10 @@ def test_input_errors_are_not_support_decisions() -> None:
     # rather than be reported as a routing reason.
     with pytest.raises(ValueError):
         scene_export_support_reason(figure)
+
+
+def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> None:
+    figure = _supported()
+    assert scene_export_support_reason(figure, width=64, height=32) == (
+        "XYG_SCENE_UNSUPPORTED_VIEWPORT"
+    )

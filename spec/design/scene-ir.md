@@ -250,9 +250,11 @@ y-label with deterministic margin-relative anchors. Hosts may now compile
 figure titles and axis labels into the explicit Scene path; annotations,
 legends, custom sides, and authored tick geometry remain rejected until later
 slices. `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
-Public SVG/PNG/PDF still use the compatibility renderers until remaining
-chrome (backgrounds, density overlays, fuller measured rooms) can select
-Scene without dropping established export behavior.
+The public SVG/PNG/PDF router now selects these Rust consumers whenever the
+single support predicate accepts the authored figure. Explicit export-only
+background overrides and features outside the bounded Scene remain on the
+compatibility renderer before compilation; malformed input and Rust consumer
+failures propagate and never cause fallback.
 
 ## Version 6: Band filled polygons
 
@@ -371,11 +373,12 @@ Rust-authored ticks and labels to the existing canvas/DOM chrome surfaces. It
 performs no O(record) decode/re-encode and does not reproduce mapping, grouping,
 clipping, identity, tick generation, or label formatting policy.
 
-Next slices add remaining polar marks, annotation/colorbar records and richer
-legend variants, then select public SVG/PNG/PDF Scene auto-routing once
-chrome and CSS-spelling parity with ``_svg.py`` is covered; ``try_public_svg`` /
-``try_public_png`` / ``try_public_pdf`` are the opt-in helpers. Unlabeled
-cartesian annotations remain rejected rather than being approximated as marks.
+Remaining polar marks and richer legend variants stay explicit compatibility
+exceptions. Public SVG and native PNG auto-route supported figures through
+Rust Scene; PDF consumes that Rust SVG. ``try_public_svg`` /
+``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
+that need an optional result. Unlabeled cartesian annotations remain rejected
+rather than being approximated as marks.
 
 The public router the auto-routing slice wires consults one support predicate,
 ``_scene_v3.scene_export_support_reason``, which returns the stable
@@ -385,6 +388,9 @@ applies. Parity with the compiler is by construction — the predicate runs
 ``figure_scene`` — so a router built on it can never disagree with the encoder it
 guards, and it never triggers a silent fallback: input errors (for example a
 non-finite opacity) propagate rather than being reported as a routing reason.
+The one non-feature routing exception is a valid viewport too small to contain
+the bounded Scene chrome; it reports ``XYG_SCENE_UNSUPPORTED_VIEWPORT`` before
+a batch is constructed and uses the compatibility renderer.
 
 ## Version 9: bounded primary static legends
 
