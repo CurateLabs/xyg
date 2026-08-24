@@ -735,18 +735,19 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (typeof annotation.text !== "string" || !annotation.text || annotation.text.includes("\0")) throw new RangeError("Scene callouts require nonempty NUL-free text");
       const text = new TextEncoder().encode(annotation.text);
       if (text.length > 4096) throw new RangeError("Scene callouts are limited to 4,096 UTF-8 bytes");
-      const style = { ...(annotation.style ?? {}) }, bad = Object.keys(style).filter((key) => !["color", "opacity", "width"].includes(key) && style[key] != null).sort();
+      const style = { ...(annotation.style ?? {}) }, bad = Object.keys(style).filter((key) => !["color", "opacity", "width", "label_background"].includes(key) && style[key] != null).sort();
       if (bad.length) throw new RangeError(`Scene callout style does not encode ${JSON.stringify(bad)}`);
       const opacity = annotationNumber(style, "opacity", 1, "callout opacity"), width = annotationNumber(style, "width", 1.5, "callout width");
       if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1 || !Number.isFinite(width) || width <= 0) throw new RangeError("Scene callout opacity must be in [0, 1] and width must be positive");
       const x = annotationNumber(annotation, "x", undefined, "callout x"), y = annotationNumber(annotation, "y", undefined, "callout y"), dx = annotationNumber(annotation, "dx", 36, "callout dx"), dy = annotationNumber(annotation, "dy", -30, "callout dy");
       const anchorCode = { start: 0, middle: 1, end: 2 }[annotation.anchor ?? "start"];
       if (anchorCode == null) throw new RangeError("Scene callout anchor must be start, middle, or end");
-      // XYAC v1 rows are LE dddd4sddB3xI (60 fixed bytes), followed by the
-      // UTF-8 text: data x/y, pixel dx/dy, literal RGBA, opacity, width,
-      // anchor code (start=0/middle=1/end=2), three zero reserved bytes, and
-      // u32 text length. Rust derives identity from record order.
-      cartesianCallouts.push({ x, y, dx, dy, rgba: rgba8(annotationColor(style, "color", "#344054", "callout color"), 1, "callout"), opacity, width, anchorCode, text });
+      // XYAC v1 rows are LE dddd4sddB3xI (60 fixed bytes), followed by UTF-8
+      // text.  When any callout requests a label background, XYAC v2 retains
+      // those bytes and appends one literal label-fill RGBA8 before each text.
+      // Rust derives identity, layout, and label-box geometry from record order.
+      const labelFill = style.label_background == null ? null : rgba8(annotationColor(style, "label_background", "", "callout label background"), 1, "callout label background");
+      cartesianCallouts.push({ x, y, dx, dy, rgba: rgba8(annotationColor(style, "color", "#344054", "callout color"), 1, "callout"), opacity, width, anchorCode, text, labelFill });
       continue;
     }
     if (!["rule", "band", "marker"].includes(kind)) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
@@ -816,8 +817,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     for (const row of attachedLabels) { xyalView.setBigUint64(at, row.stableId, true); xyal.set(row.rgba, at + 8); xyalView.setUint32(at + 12, row.text.length, true); xyal.set(row.text, at + 16); at += 16 + row.text.length; }
     const xyar = new Uint8Array(12 + straightArrows.length * 60), xyarView = new DataView(xyar.buffer); xyar.set(textEncoder.encode("XYAR")); xyarView.setUint32(4, 1, true); xyarView.setUint32(8, straightArrows.length, true); at = 12;
     for (const row of straightArrows) { xyarView.setBigUint64(at, row.stableId, true); xyarView.setFloat64(at + 8, row.x0, true); xyarView.setFloat64(at + 16, row.y0, true); xyarView.setFloat64(at + 24, row.x1, true); xyarView.setFloat64(at + 32, row.y1, true); xyar.set(row.rgba, at + 40); xyarView.setFloat64(at + 44, row.opacity, true); xyarView.setFloat64(at + 52, row.width, true); at += 60; }
-    const xyac = new Uint8Array(12 + cartesianCallouts.reduce((n, row) => n + 60 + row.text.length, 0)), xyacView = new DataView(xyac.buffer); xyac.set(textEncoder.encode("XYAC")); xyacView.setUint32(4, 1, true); xyacView.setUint32(8, cartesianCallouts.length, true); at = 12;
-    for (const row of cartesianCallouts) { xyacView.setFloat64(at, row.x, true); xyacView.setFloat64(at + 8, row.y, true); xyacView.setFloat64(at + 16, row.dx, true); xyacView.setFloat64(at + 24, row.dy, true); xyac.set(row.rgba, at + 32); xyacView.setFloat64(at + 36, row.opacity, true); xyacView.setFloat64(at + 44, row.width, true); xyacView.setUint8(at + 52, row.anchorCode); xyacView.setUint32(at + 56, row.text.length, true); xyac.set(row.text, at + 60); at += 60 + row.text.length; }
+    const xyacV2 = cartesianCallouts.some((row) => row.labelFill != null), xyacFixedBytes = xyacV2 ? 64 : 60;
+    const xyac = new Uint8Array(12 + cartesianCallouts.reduce((n, row) => n + xyacFixedBytes + row.text.length, 0)), xyacView = new DataView(xyac.buffer); xyac.set(textEncoder.encode("XYAC")); xyacView.setUint32(4, xyacV2 ? 2 : 1, true); xyacView.setUint32(8, cartesianCallouts.length, true); at = 12;
+    for (const row of cartesianCallouts) { xyacView.setFloat64(at, row.x, true); xyacView.setFloat64(at + 8, row.y, true); xyacView.setFloat64(at + 16, row.dx, true); xyacView.setFloat64(at + 24, row.dy, true); xyac.set(row.rgba, at + 32); xyacView.setFloat64(at + 36, row.opacity, true); xyacView.setFloat64(at + 44, row.width, true); xyacView.setUint8(at + 52, row.anchorCode); xyacView.setUint32(at + 56, row.text.length, true); if (xyacV2) xyac.set(row.labelFill ?? [0, 0, 0, 0], at + 60); xyac.set(row.text, at + xyacFixedBytes); at += xyacFixedBytes + row.text.length; }
     const out = new Uint8Array(24 + xyat.length + xyal.length + xyar.length + xyac.length); const view = new DataView(out.buffer); out.set(textEncoder.encode("XYAD")); view.setUint32(4, 2, true); view.setUint32(8, xyat.length, true); view.setUint32(12, xyal.length, true); view.setUint32(16, xyar.length, true); view.setUint32(20, xyac.length, true); out.set(xyat, 24); out.set(xyal, 24 + xyat.length); out.set(xyar, 24 + xyat.length + xyal.length); out.set(xyac, 24 + xyat.length + xyal.length + xyar.length); return out;
   })();
   const title = figure.title ?? "";

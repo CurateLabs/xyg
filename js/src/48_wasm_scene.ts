@@ -157,7 +157,7 @@ function compilePainter(painter: ArrayBuffer) {
   // resolved labels. This is deliberately the Rust-owned painter ceiling, not
   // merely the host-framed input ceiling.
   const maxColorbarPainterBytes = 4_600 + 24 + 16 + (32 + 124) * 16 + 32 * 32;
-  if (legendLength > XYG_WASM_PAINTER_MAX_LEGEND_BYTES || colorbarLength > maxColorbarPainterBytes || sceneLabelLength > 14_000 || nextString + legendLength + colorbarLength + sceneLabelLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter decoration range is invalid");
+  if (legendLength > XYG_WASM_PAINTER_MAX_LEGEND_BYTES || colorbarLength > maxColorbarPainterBytes || sceneLabelLength > 18_960 || nextString + legendLength + colorbarLength + sceneLabelLength !== bytes.length) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter decoration range is invalid");
   let legend: any = null;
   if (legendLength) {
     const start = nextString;
@@ -229,22 +229,34 @@ function compilePainter(painter: ArrayBuffer) {
     colorbar = { domain: [lo, hi], orientation: flags & 1 ? "horizontal" : "vertical", placement: "scene", levels: count - 1, boundaries: stops.map((stop) => stop.value), band_colors: stops.slice(0, -1).map((_, index) => Array.from(bytes.subarray(start + 64 + index * 12, start + 68 + index * 12))), ticks: resolvedTicks.slice(0, majorCount).map((tick) => tick.value), minor_ticks: Boolean(flags & 4), text_color: rgba(bytes.subarray(start + 40, start + 44)), label: title || null, resolved: { bounds: [f32(geometry + 8), f32(geometry + 12), f32(geometry + 16), f32(geometry + 20)], major_ticks: resolvedTicks.slice(0, majorCount), minor_ticks: resolvedTicks.slice(majorCount) } };
   }
   nextString += colorbarLength;
-  const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; anchor: number; text: string}> = [];
+  const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; anchor: number; text: string; box?: {x: number; y: number; width: number; height: number; fill: string}}> = [];
   if (sceneLabelLength) {
     const start = nextString, end = start + sceneLabelLength;
     const version = u32(start + 4);
-    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || (version !== 1 && version !== 2)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
-    const count = u32(start + 8), textBytes = u32(start + 12), recordBytes = version === 1 ? 40 : 44, tableEnd = start + 16 + count * recordBytes;
+    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || (version !== 1 && version !== 2 && version !== 3)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
+    const count = u32(start + 8), textBytes = u32(start + 12), recordBytes = version === 1 ? 40 : version === 2 ? 44 : 84, tableEnd = start + 16 + count * recordBytes;
     if (count > 128 || textBytes > 8192 || tableEnd + textBytes !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label table is invalid");
     let textOffset = tableEnd;
     for (let index = 0; index < count; index++) {
       const record = start + 16 + index * recordBytes, x = f64(record + 8), y = f64(record + 16), fontSize = f64(record + 24);
       const anchor = version === 1 ? 0 : bytes[record + 36];
       const length = u32(record + (version === 1 ? 36 : 40));
-      if (!(x >= 0 && x <= width && y >= 0 && y <= height && fontSize >= 1 && fontSize <= 1000) || anchor > 2 || (version === 2 && bytes.subarray(record + 37, record + 40).some((value) => value !== 0)) || textOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label geometry is invalid");
+      if (!(x >= 0 && x <= width && y >= 0 && y <= height && fontSize >= 1 && fontSize <= 1000) || anchor > 2 || (version >= 2 && bytes.subarray(record + 37, record + 40).some((value) => value !== 0)) || textOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label geometry is invalid");
       let label: string; try { label = decoder.decode(bytes.subarray(textOffset, textOffset + length)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid UTF-8"); }
       if (!label || label.includes("\0")) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid");
-      sceneLabels.push({stableId: view.getBigUint64(record, true), x, y, fontSize, color: rgba(bytes.subarray(record + 32, record + 36)), anchor, text: label});
+      let box: {x: number; y: number; width: number; height: number; fill: string} | undefined;
+      if (version === 3) {
+        const flags = bytes[record + 44];
+        const boxX = f64(record + 48), boxY = f64(record + 56), boxWidth = f64(record + 64), boxHeight = f64(record + 72), fill = bytes.subarray(record + 80, record + 84);
+        if (flags > 1 || bytes.subarray(record + 45, record + 48).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label box flags are invalid");
+        if (flags) {
+          if (!(Number.isFinite(boxX) && Number.isFinite(boxY) && boxWidth > 0 && boxHeight > 0 && boxX >= 0 && boxY >= 0 && boxX + boxWidth <= width && boxY + boxHeight <= height && fill[3] > 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label box geometry is invalid");
+          box = {x: boxX, y: boxY, width: boxWidth, height: boxHeight, fill: rgba(fill)};
+        } else if (boxX !== 0 || boxY !== 0 || boxWidth !== 0 || boxHeight !== 0 || fill.some((value) => value !== 0)) {
+          throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label box is noncanonical");
+        }
+      }
+      sceneLabels.push({stableId: view.getBigUint64(record, true), x, y, fontSize, color: rgba(bytes.subarray(record + 32, record + 36)), anchor, text: label, ...(box ? {box} : {})});
       textOffset += length;
     }
     if (textOffset !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text has trailing bytes");
@@ -295,9 +307,17 @@ export function hydrateWasmPainter(
     Object.assign(layer.style, {position:"absolute", inset:"0", pointerEvents:"none"});
     layer.dataset.xyChrome = "graph_labels"; layer.setAttribute("role", "list"); layer.setAttribute("aria-label", "Graph labels");
     for (const label of compiled.sceneLabels) {
-      const item = document.createElement("span");
       const labelType = label.stableId & 0xffff_ff00_0000_0000n;
       const annotation = labelType === 0x5859_0400_0000_0000n || labelType === 0x5859_0600_0000_0000n;
+      if (label.box) {
+        const box = document.createElement("span");
+        box.dataset.xySlot = annotation ? "annotation_label_box" : "graph_label_box";
+        box.dataset.xyStableId = label.stableId.toString();
+        box.setAttribute("aria-hidden", "true");
+        Object.assign(box.style, {position:"absolute", left:`${label.box.x}px`, top:`${label.box.y}px`, width:`${label.box.width}px`, height:`${label.box.height}px`, backgroundColor:label.box.fill});
+        layer.appendChild(box);
+      }
+      const item = document.createElement("span");
       item.dataset.xySlot = annotation ? "annotation_label" : "graph_label"; item.dataset.xyStableId = label.stableId.toString(); item.setAttribute("role", annotation ? "note" : "listitem"); item.textContent = label.text;
       const translateX = label.anchor === 0 ? "0" : label.anchor === 1 ? "-50%" : "-100%";
       Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, transform:`translateX(${translateX})`, whiteSpace:"nowrap"});

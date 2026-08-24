@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import xyg._scene_v3 as scene_v3
 from xyg import _native, _svg
 from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3, _colorbar_input
@@ -78,7 +79,6 @@ def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> Non
         figure.colorbar_options["stops"] = stops
         with pytest.raises(UnsupportedSceneV3, match="strictly increasing"):
             _colorbar_input(figure)
-
     figure.colorbar_options = {
         "domain": [0.0, 1.0],
         "stops": [(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
@@ -86,6 +86,41 @@ def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> Non
     }
     with pytest.raises(UnsupportedSceneV3, match="uses literal RGBA"):
         _colorbar_input(figure)
+
+
+def test_python_callout_label_background_uses_xyac_v2_only_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[bytes] = []
+
+    def capture_scene_batch_encode(**kwargs: object) -> bytes:
+        value = kwargs["authored_text_annotations"]
+        assert isinstance(value, bytes)
+        captured.append(value)
+        return b"scene"
+
+    monkeypatch.setattr(scene_v3._native, "scene_batch_encode", capture_scene_batch_encode)
+    plain = Figure().callout(0.5, 0.5, "plain")
+    assert scene_v3.figure_scene(plain) == b"scene"
+    v1 = captured.pop()
+    xyac_start = 24 + sum(struct.unpack_from("<IIII", v1, 8)[:3])
+    assert v1[xyac_start : xyac_start + 8] == b"XYAC\x01\x00\x00\x00"
+    assert len(v1) - xyac_start == 12 + 60 + len(b"plain")
+
+    mixed = Figure().callout(0.25, 0.25, "clear")
+    mixed.callout(0.75, 0.75, "filled", style={"label_background": "#123456"})
+    assert scene_v3.figure_scene(mixed) == b"scene"
+    v2 = captured.pop()
+    xyac_start = 24 + sum(struct.unpack_from("<IIII", v2, 8)[:3])
+    assert v2[xyac_start : xyac_start + 8] == b"XYAC\x02\x00\x00\x00"
+    first = xyac_start + 12
+    second = first + 64 + len(b"clear")
+    assert v2[first + 60 : first + 64] == b"\0\0\0\0"
+    assert v2[second + 60 : second + 64] == bytes((18, 52, 86, 255))
+
+    invalid = Figure().callout(0.5, 0.5, "bad", style={"label_background": 7})
+    with pytest.raises(ValueError, match="label background"):
+        scene_v3.figure_scene(invalid)
 
 
 def test_scene_v19_colorbar_python_framer_encodes_bounded_ticks_and_minor_flag() -> None:
@@ -135,7 +170,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 19
+    assert int.from_bytes(encoded[4:8], "little") == 20
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -251,7 +286,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 19
+    assert int.from_bytes(encoded[4:8], "little") == 20
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -562,7 +597,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 19
+    assert _native.scene_version() == 20
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:

@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 19 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 20 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v19, so additive emission is not safe.
+bitmap or schema negotiation in Scene v20, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v19 batch layout,
+WASM lifecycle foundation; it validates the current Scene v20 batch layout,
 including the shared fixed header/mark widths retained since version 4, bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -421,6 +421,22 @@ that occupancy policy moves into Rust. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
 declarations fail closed.
+
+## Version 20 bounded callout label backgrounds
+
+Scene v20 evolves `XYAC` to v2 for an optional literal RGBA8 callout-label
+background. Version 1 frames remain byte-for-byte valid; version 2 extends
+each fixed callout row from 60 to 64 bytes by appending the background at
+bytes 60--63. A transparent background is absence. Rust alone measures the
+fixed 12px built-in label, applies the fixed 3px inset, rejects any nonfinite,
+empty, or viewport-escaping rectangle, and lowers the resolved result to
+`XYLB` v3. Its 84-byte records retain v2 fields, then carry a one-bit box flag,
+three zero reserved bytes, f64 x/y/width/height at 48--79, and RGBA8 fill at
+80--83. Records without a box have all box fields zero. SVG and raster paint
+the resolved rectangle before its label; browser DOM projects the exact
+geometry as an `aria-hidden` box before the `role=note` label. Borders, radius,
+author padding, wrapping, collision, markup, custom fonts/CSS/classes, and
+leader routing remain unsupported.
 
 ## Version 19 Rust-owned bounded colorbar ticks
 

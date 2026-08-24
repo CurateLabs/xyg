@@ -808,7 +808,18 @@ def figure_scene(
     # (start=0/middle=1/end=2), three required zero bytes, and u32 text
     # byte length. Rust derives the callout identity from record order.
     cartesian_callouts: list[
-        tuple[float, float, float, float, tuple[int, int, int, int], float, float, int, bytes]
+        tuple[
+            float,
+            float,
+            float,
+            float,
+            tuple[int, int, int, int],
+            float,
+            float,
+            int,
+            bytes,
+            tuple[int, int, int, int] | None,
+        ]
     ] = []
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
@@ -863,7 +874,8 @@ def figure_scene(
             bad = sorted(
                 key
                 for key, style_value in style.items()
-                if key not in {"color", "opacity", "width"} and style_value is not None
+                if key not in {"color", "opacity", "width", "label_background"}
+                and style_value is not None
             )
             if bad:
                 raise UnsupportedSceneV3(f"Scene callout style does not encode {bad!r}")
@@ -888,6 +900,14 @@ def figure_scene(
             dy = annotation_number(annotation, "dy", -30.0, "callout dy")
             if not all(np.isfinite(number) for number in (x, y, dx, dy)):
                 raise ValueError("Scene callout coordinates and offsets must be finite")
+            label_background = style.get("label_background")
+            label_fill = (
+                _rgba(
+                    annotation_color(style, "label_background", "", "callout label background"), 1.0
+                )
+                if label_background is not None
+                else None
+            )
             cartesian_callouts.append(
                 (
                     x,
@@ -899,6 +919,7 @@ def figure_scene(
                     width_value,
                     anchor_code,
                     encoded,
+                    label_fill,
                 )
             )
             continue
@@ -1114,10 +1135,24 @@ def figure_scene(
         xyar.extend(
             struct.pack("<Qdddd4sdd", stable_id, x0, y0, x1, y1, bytes(rgba), opacity, width_value)
         )
+    xyac_v2 = any(label_fill is not None for *_, label_fill in cartesian_callouts)
     xyac = bytearray(
-        b"XYAC" + (1).to_bytes(4, "little") + len(cartesian_callouts).to_bytes(4, "little")
+        b"XYAC"
+        + (2 if xyac_v2 else 1).to_bytes(4, "little")
+        + len(cartesian_callouts).to_bytes(4, "little")
     )
-    for x, y, dx, dy, rgba, opacity, width_value, anchor_code, encoded in cartesian_callouts:
+    for (
+        x,
+        y,
+        dx,
+        dy,
+        rgba,
+        opacity,
+        width_value,
+        anchor_code,
+        encoded,
+        label_fill,
+    ) in cartesian_callouts:
         xyac.extend(
             struct.pack(
                 "<dddd4sddB3xI",
@@ -1132,6 +1167,8 @@ def figure_scene(
                 len(encoded),
             )
         )
+        if xyac_v2:
+            xyac.extend(bytes(label_fill or (0, 0, 0, 0)))
         xyac.extend(encoded)
     framed_annotations = bytearray(
         b"XYAD"

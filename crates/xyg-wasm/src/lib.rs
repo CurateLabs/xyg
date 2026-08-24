@@ -19,7 +19,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 20;
+pub const WASM_ABI_VERSION: u32 = 21;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -2000,9 +2000,15 @@ mod tests {
         );
         with_instance_mut(handle, |instance| {
             assert_eq!(&instance.output[..4], b"XYPB");
-            assert_eq!(u32::from_le_bytes(instance.output[20..24].try_into().unwrap()), 3);
+            assert_eq!(
+                u32::from_le_bytes(instance.output[20..24].try_into().unwrap()),
+                3
+            );
             let head = scene::BROWSER_PAINTER_HEADER_BYTES + 2 * scene::BROWSER_PAINTER_TRACE_BYTES;
-            assert_eq!(instance.output[head], scene::SceneRecordKind::PolyFill as u8);
+            assert_eq!(
+                instance.output[head],
+                scene::SceneRecordKind::PolyFill as u8
+            );
             assert_eq!(instance.output[head + 2], 5);
         })
         .unwrap();
