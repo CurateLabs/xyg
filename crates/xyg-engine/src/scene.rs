@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 14;
+pub const SCENE_VERSION: u32 = 15;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -32,6 +32,7 @@ pub const MAX_SCENE_LEGEND_ENTRIES: usize = 128;
 pub const MAX_SCENE_LEGEND_TEXT_BYTES: usize = 16_384;
 pub const MAX_SCENE_LABELS: usize = 128;
 pub const MAX_SCENE_LABEL_TEXT_BYTES: usize = 8_192;
+pub const MAX_AUTHORED_TEXT_ANNOTATIONS: usize = 128;
 /// Literal color tables are deliberately small so every renderer can consume
 /// exactly the same resolved Scene decoration without a host colormap registry.
 pub const MAX_SCENE_COLORBAR_STOPS: usize = 16;
@@ -1650,6 +1651,74 @@ pub fn encode_tick_labels(labels: Option<&[String]>) -> Result<Vec<u8>, SceneErr
     Ok(out)
 }
 
+/// Decode bounded host-framed Cartesian text annotations and project them in
+/// Rust. `XYAT` deliberately carries data coordinates, never host-resolved
+/// pixels; the returned `SceneLabel`s are the canonical SVG/raster/painter
+/// decoration shared by every consumer.
+pub fn decode_authored_text_annotations(
+    bytes: &[u8],
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    layout: PlotLayout,
+) -> Result<Vec<SceneLabel>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < 12 || &bytes[..4] != b"XYAT" || batch_u32(bytes, 4)? != 1 {
+        return Err(SceneError::Length);
+    }
+    let count = batch_u32(bytes, 8)? as usize;
+    if count > MAX_AUTHORED_TEXT_ANNOTATIONS {
+        return Err(SceneError::Limit);
+    }
+    let mut at = 12usize;
+    let mut total = 0usize;
+    let mut labels = Vec::with_capacity(count);
+    for index in 0..count {
+        let end_fixed = at.checked_add(24).ok_or(SceneError::Limit)?;
+        let fixed = bytes.get(at..end_fixed).ok_or(SceneError::Length)?;
+        let x = f64::from_le_bytes(fixed[0..8].try_into().unwrap());
+        let y = f64::from_le_bytes(fixed[8..16].try_into().unwrap());
+        let len = u32::from_le_bytes(fixed[20..24].try_into().unwrap()) as usize;
+        let end = end_fixed.checked_add(len).ok_or(SceneError::Limit)?;
+        let text = std::str::from_utf8(bytes.get(end_fixed..end).ok_or(SceneError::Length)?)
+            .map_err(|_| SceneError::Length)?;
+        total = total.checked_add(len).ok_or(SceneError::Limit)?;
+        if !x.is_finite()
+            || !y.is_finite()
+            || text.is_empty()
+            || text.contains('\0')
+            || total > MAX_SCENE_TEXT_BYTES
+        {
+            return Err(SceneError::Limit);
+        }
+        let px = x_scale.pixel(x);
+        let py = y_scale.pixel(y);
+        if !px.is_finite()
+            || !py.is_finite()
+            || px < layout.left
+            || px > layout.right
+            || py < layout.top
+            || py > layout.bottom
+        {
+            return Err(SceneError::Length);
+        }
+        labels.push(SceneLabel {
+            stable_id: 0x5859_0400_0000_0000 | index as u64,
+            x: px,
+            y: py,
+            font_size: 12.0,
+            rgba: fixed[16..20].try_into().unwrap(),
+            text: text.to_owned(),
+        });
+        at = end;
+    }
+    if at != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(labels)
+}
+
 type SceneChromeTrailer = (
     SceneChromeStyle,
     SceneChromeText,
@@ -2560,6 +2629,7 @@ impl<'a> SceneBatch<'a> {
         text: SceneChromeText,
         legend: Option<SceneLegend>,
         colorbar: Option<SceneColorbar>,
+        labels: Vec<SceneLabel>,
         kinds: &'a [u8],
         stable_ids: &'a [u64],
         style_refs: &'a [u32],
@@ -2583,7 +2653,7 @@ impl<'a> SceneBatch<'a> {
             text,
             legend,
             colorbar,
-            Vec::new(),
+            labels,
             kinds,
             stable_ids,
             style_refs,
