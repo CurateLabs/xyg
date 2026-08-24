@@ -418,8 +418,8 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 18,
-    expectedSceneVersion: 17,
+    expectedAbiVersion: 19,
+    expectedSceneVersion: 18,
   };
 }
 
