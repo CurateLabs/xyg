@@ -144,6 +144,11 @@ type AttachedLabelRow = (
     Option<SceneLabelBorder>,
     String,
 );
+type WrappedAnnotationRows = (
+    Vec<SceneLabel>,
+    Vec<Option<SceneLabelBox>>,
+    Vec<CartesianCallout>,
+);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SceneLabel {
@@ -2208,14 +2213,7 @@ fn decode_xyaw(
     x_scale: AxisScale,
     y_scale: AxisScale,
     layout: PlotLayout,
-) -> Result<
-    (
-        Vec<SceneLabel>,
-        Vec<Option<SceneLabelBox>>,
-        Vec<CartesianCallout>,
-    ),
-    SceneError,
-> {
+) -> Result<WrappedAnnotationRows, SceneError> {
     if bytes.is_empty() {
         return Ok((Vec::new(), Vec::new(), Vec::new()));
     }
@@ -5794,13 +5792,13 @@ impl SceneDocument {
                 for (index, line) in label.text.split('\n').enumerate() {
                     out.push_str("<tspan x=\"");
                     push_num(out, label.x);
-                    out.push_str("\"");
+                    out.push('"');
                     if index != 0 {
                         out.push_str(" dy=\"");
                         push_num(out, label.font_size * WRAPPED_LABEL_LINE_HEIGHT);
-                        out.push_str("\"");
+                        out.push('"');
                     }
-                    out.push_str(">");
+                    out.push('>');
                     push_escaped_attribute(out, line);
                     out.push_str("</tspan>");
                 }
