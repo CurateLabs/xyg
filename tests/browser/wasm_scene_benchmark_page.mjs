@@ -2,6 +2,22 @@ import { createXygWasmWorker, hydrateWasmPainter, renderWasmChart, XygWasmError 
 
 async function frame() { await new Promise((resolve) => requestAnimationFrame(resolve)); }
 
+function visualEvidence(view) {
+  // The Scene frame carries resolved f32 screen coordinates.  A WebGL canvas
+  // may land on a device pixel either side of that coordinate after DPR
+  // rounding, so one device pixel is the explicit cross-renderer tolerance.
+  const canvas = view.canvas;
+  // ChartView may use its shared WebGL host; in that case the visible canvas
+  // is the 2D presentation surface that receives the authoritative readback.
+  const present = canvas?.getContext("2d");
+  if (!present || !canvas.width || !canvas.height) throw new Error("authored Scene did not retain a visible presentation canvas");
+  const pixels = present.getImageData(0, 0, canvas.width, canvas.height).data;
+  let litPixels = 0;
+  for (let index = 3; index < pixels.length; index += 4) if (pixels[index] !== 0) litPixels++;
+  if (!litPixels) throw new Error("authored Scene WebGL canvas is visually blank");
+  return { browserVisualTolerancePx: 1, visibleCanvasPixels: litPixels };
+}
+
 async function run() {
   const wasm = await WebAssembly.compile(await (await fetch("/packages/xy-client/dist/xyg-wasm.wasm")).arrayBuffer());
   const rows = [];
@@ -52,6 +68,7 @@ async function run() {
       annotationSemantics,
       ...prepared,
       ...view.wasmMetrics,
+      ...visualEvidence(view),
     });
     await view.destroy(); host.remove(); await sceneWorker.dispose();
   }

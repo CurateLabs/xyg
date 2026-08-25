@@ -141,3 +141,13 @@ major/minor ticks, and a fixed-background callout. The smoke asserts the
 browser's structural and computed-style projection under `default-src 'none'`
 and same-origin `script-src`/`worker-src`; it is not evidence for polar,
 custom-font, CSS/class, or richer annotation semantics.
+
+For the bounded #116 authored-Scene evidence track, the nightly changed-main
+job regenerates 100, 10k, 100k, and 1m point artifacts independently through
+the public Python and Node `Figure` APIs. It retains both manifests and
+SHA-keyed native/browser reports. Python and Node bytes must match exactly;
+Rust SVG, raster commands, and browser painter must each preserve the authored
+chrome text; direct-browser hydration must expose the chrome/a11y slots and a
+nonblank WebGL readback within one device pixel of resolved-coordinate rounding.
+These are reproducible evidence artifacts, not a widening of the supported
+public export predicate.

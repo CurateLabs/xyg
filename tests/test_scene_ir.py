@@ -41,6 +41,31 @@ def test_strict_csp_authored_scene_fixture_is_public_figure_bytes() -> None:
     assert all(chunk in scene for chunk in (b"XYGS", b"XYLG", b"XYCB", b"XYLB"))
 
 
+@pytest.mark.parametrize("count", (100, 10_000, 100_000, 1_000_000))
+def test_authored_scene_evidence_tiers_keep_rust_chrome_consumers(count: int) -> None:
+    """#116 retains one deterministic public workload at every evidence tier."""
+    from scripts.generate_authored_scene_benchmark import authored_scene
+
+    scene = authored_scene(count)
+    assert scene == authored_scene(count)
+    svg = _native.scene_svg(scene)
+    raster = _native.scene_raster_commands(scene)
+    painter = _native.scene_browser_painter(scene)
+    for text in (
+        "Authored Scene evidence",
+        "Fraction",
+        "Signal",
+        "Series",
+        "observations",
+        "Intensity",
+        "representative callout",
+    ):
+        assert text in svg
+        assert text.encode() in raster
+        assert text.encode() in painter
+    assert all(chunk in painter for chunk in (b"XYLG", b"XYCB", b"XYLB"))
+
+
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     assert _native.scene_support_reason(0) == ""
     assert _native.scene_support_reason((1 << 6) | (1 << 1)) == (

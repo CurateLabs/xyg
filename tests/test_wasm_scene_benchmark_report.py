@@ -39,6 +39,8 @@ def report() -> dict[str, object]:
                     "workerPrepareMs": 1.0,
                     "hydrateUploadMs": 1.0,
                     "firstPaintMs": 1.0,
+                    "browserVisualTolerancePx": 1,
+                    "visibleCanvasPixels": 64,
                     "copyCount": 1,
                     "copyBytesLo": count * 16,
                     "copyBytesHi": 0,
@@ -106,3 +108,13 @@ def test_rejects_empty_authored_scene_payload(tmp_path: Path) -> None:
     result = verify(tmp_path, value)
     assert result.returncode != 0
     assert "empty payload" in result.stderr
+
+
+def test_rejects_authored_scene_visual_tolerance_failure(tmp_path: Path) -> None:
+    value = report()
+    rows = value["measurements"]
+    assert isinstance(rows, list) and isinstance(rows[4], dict)
+    rows[4]["browserVisualTolerancePx"] = 2
+    result = verify(tmp_path, value)
+    assert result.returncode != 0
+    assert "visual-tolerance" in result.stderr

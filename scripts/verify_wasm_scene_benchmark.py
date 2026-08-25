@@ -77,10 +77,14 @@ def main() -> int:
                 "workerPrepareMs",
                 "hydrateUploadMs",
                 "firstPaintMs",
+                "browserVisualTolerancePx",
+                "visibleCanvasPixels",
             ),
         )
         if row["sceneBytes"] <= 0 or row["painterBytes"] <= 0:
             raise SystemExit("authored-Scene browser evidence has an empty payload")
+        if row["browserVisualTolerancePx"] > 1 or row["visibleCanvasPixels"] <= 0:
+            raise SystemExit("authored-Scene browser evidence failed the visual-tolerance probe")
         require_staging_copy(row, kind="authored-Scene")
         for key in ("legendSemantics", "colorbarSemantics", "annotationSemantics"):
             if row.get(key) is not True:

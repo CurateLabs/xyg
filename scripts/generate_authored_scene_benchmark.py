@@ -234,7 +234,17 @@ def main() -> int:
         args.output_dir.mkdir(parents=True, exist_ok=True)
     for count, scene in generated:
         filename = f"authored-scene-{count}.bin"
-        report.append({"count": count, "file": filename, "sceneBytes": len(scene)})
+        # The manifest is deliberately checked alongside Node's independently
+        # authored output.  Keeping the digest here means the retained
+        # four-tier artifact is useful without checking in its 1M-point blob.
+        report.append(
+            {
+                "count": count,
+                "file": filename,
+                "sceneBytes": len(scene),
+                "sceneSha256": hashlib.sha256(scene).hexdigest(),
+            }
+        )
         if args.output_dir:
             (args.output_dir / filename).write_bytes(scene)
     result = {"schema": "xyg-authored-scene-workload-v1", "measurements": report}

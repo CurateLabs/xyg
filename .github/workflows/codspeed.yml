@@ -146,6 +146,7 @@ jobs:
       - name: Build strict-CSP direct-browser assets
         run: |
           npm ci
+          npm ci --prefix packages/xy-node
           cargo build --release
           cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
           uv venv .venv
@@ -159,6 +160,8 @@ jobs:
           XYG_EVIDENCE_PATH: authored-scene-browser-${{ github.sha }}.json
         run: |
           .venv/bin/python scripts/generate_authored_scene_benchmark.py --output-dir "$XYG_AUTHORED_SCENE_DIR"
+          node packages/xy-node/scripts/generate_authored_scene_benchmark.mjs --output-dir authored-scenes-node
+          .venv/bin/python scripts/verify_authored_scene_artifacts.py "$XYG_AUTHORED_SCENE_DIR" authored-scenes-node > authored-scene-native-${{ github.sha }}.json
           node benchmarks/bench_wasm_scene.mjs > "$XYG_EVIDENCE_PATH"
           python3 scripts/verify_wasm_scene_benchmark.py "$XYG_EVIDENCE_PATH" --sha "${{ github.sha }}"
       - name: Upload SHA-keyed raw authored-Scene evidence
@@ -166,4 +169,8 @@ jobs:
         with:
           name: authored-scene-browser-${{ github.sha }}
           if-no-files-found: error
-          path: authored-scene-browser-${{ github.sha }}.json
+          path: |
+            authored-scene-browser-${{ github.sha }}.json
+            authored-scene-native-${{ github.sha }}.json
+            authored-scenes/authored-scene-manifest.json
+            authored-scenes-node/authored-scene-manifest.json
