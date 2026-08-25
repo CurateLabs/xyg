@@ -550,6 +550,8 @@ F3, still pending (above).
   compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
+  the bounded linear/log/symlog/category/angular/time tick ladders exposed to
+  both native hosts through one ABI,
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;
   fully hidden Cartesian chrome is omitted by Rust lowering without changing

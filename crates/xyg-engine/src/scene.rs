@@ -1292,32 +1292,7 @@ impl AxisScale {
         match self.kind {
             ScaleKind::Log => log_ticks(lo, hi, target),
             ScaleKind::Linear => linear_ticks(lo, hi, target),
-            ScaleKind::SymLog => {
-                let coordinates = linear_ticks(self.coord(lo), self.coord(hi), target)?;
-                let mut ticks: Vec<f64> = coordinates
-                    .ticks
-                    .iter()
-                    .map(|coordinate| self.value(*coordinate))
-                    .collect();
-                if lo.min(hi) <= 0.0
-                    && lo.max(hi) >= 0.0
-                    && !ticks.iter().any(|value| value.abs() < 1e-12)
-                {
-                    ticks.push(0.0);
-                    ticks.sort_by(|a, b| {
-                        if lo > hi {
-                            b.total_cmp(a)
-                        } else {
-                            a.total_cmp(b)
-                        }
-                    });
-                }
-                Ok(AxisTicks {
-                    labeled: ticks.clone(),
-                    ticks,
-                    step: self.value(coordinates.step).abs(),
-                })
-            }
+            ScaleKind::SymLog => symlog_ticks(lo, hi, self.constant, target),
         }
     }
 
@@ -1451,6 +1426,55 @@ pub fn log_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneErro
         ticks,
         labeled,
         step: 1.0,
+    })
+}
+
+/// Symmetric-log ticks generated in scale-coordinate space, then returned in
+/// canonical f64 data units. `constant` is the positive width of the linear
+/// region around zero.
+pub fn symlog_ticks(
+    lo: f64,
+    hi: f64,
+    constant: f64,
+    target: usize,
+) -> Result<AxisTicks, SceneError> {
+    if !lo.is_finite()
+        || !hi.is_finite()
+        || !constant.is_finite()
+        || constant <= 0.0
+        || target == 0
+        || target > MAX_AXIS_TICKS
+    {
+        return Err(SceneError::NonFinite);
+    }
+    let coordinate = |value: f64| value.signum() * (value.abs() / constant).ln_1p();
+    let value = |coordinate: f64| coordinate.signum() * constant * coordinate.abs().exp_m1();
+    let coordinates = linear_ticks(coordinate(lo), coordinate(hi), target)?;
+    let mut ticks: Vec<f64> = coordinates.ticks.iter().map(|tick| value(*tick)).collect();
+    if ticks.iter().any(|tick| !tick.is_finite()) {
+        return Err(SceneError::NonFinite);
+    }
+    if lo.min(hi) <= 0.0 && lo.max(hi) >= 0.0 && !ticks.iter().any(|tick| tick.abs() < 1e-12) {
+        if ticks.len() >= MAX_AXIS_TICKS {
+            return Err(SceneError::Limit);
+        }
+        ticks.push(0.0);
+        ticks.sort_by(|a, b| {
+            if lo > hi {
+                b.total_cmp(a)
+            } else {
+                a.total_cmp(b)
+            }
+        });
+    }
+    let step = value(coordinates.step).abs();
+    if !step.is_finite() {
+        return Err(SceneError::NonFinite);
+    }
+    Ok(AxisTicks {
+        labeled: ticks.clone(),
+        ticks,
+        step,
     })
 }
 
@@ -9910,6 +9934,37 @@ mod tests {
         );
         assert_eq!(log.labeled, vec![0.1, 1.0, 10.0, 100.0]);
         assert_eq!(log.step, 1.0);
+    }
+
+    #[test]
+    fn canonical_symlog_ticks_share_axis_scale_policy_and_fail_closed() {
+        let expected = 2.0 * 1.0_f64.exp_m1();
+        let ticks = symlog_ticks(-10.0, 10.0, 2.0, 4).unwrap();
+        assert_eq!(ticks.ticks, vec![-expected, 0.0, expected]);
+        assert_eq!(ticks.labeled, ticks.ticks);
+        assert_eq!(ticks.step, expected);
+
+        let scale = AxisScale::new(ScaleKind::SymLog, -10.0, 10.0, 0.0, 320.0, 2.0, false).unwrap();
+        assert_eq!(scale.ticks(320.0, true).unwrap(), ticks);
+
+        let boundary = symlog_ticks(-1e12, 1e12, 1.0, MAX_AXIS_TICKS).unwrap();
+        assert!(!boundary.ticks.is_empty());
+        assert!(boundary.ticks.len() <= MAX_AXIS_TICKS);
+        for (lo, hi, constant, target) in [
+            (-1.0, 1.0, 1.0, 0),
+            (-1.0, 1.0, 1.0, MAX_AXIS_TICKS + 1),
+            (-1.0, 1.0, 0.0, 6),
+            (-1.0, 1.0, -1.0, 6),
+            (-1.0, 1.0, f64::NAN, 6),
+            (-1.0, 1.0, f64::INFINITY, 6),
+            (f64::NAN, 1.0, 1.0, 6),
+            (-1.0, f64::INFINITY, 1.0, 6),
+        ] {
+            assert_eq!(
+                symlog_ticks(lo, hi, constant, target),
+                Err(SceneError::NonFinite)
+            );
+        }
     }
 
     #[test]

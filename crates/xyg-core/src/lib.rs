@@ -268,6 +268,7 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
 /// - `3` angular degrees
 /// - `4` angular radians
 /// - `5` time (UTC milliseconds since epoch)
+/// - `6` symmetric log (`aux` = positive linear-region constant)
 ///
 /// Returns the required tick count or `usize::MAX` for invalid arguments. The
 /// labeled count and step are written only when `out_cap` is sufficient.
@@ -300,6 +301,7 @@ pub unsafe extern "C" fn xyg_scene_axis_ticks(
         3 => scene::angular_ticks(lo, hi, true, target).ok(),
         4 => scene::angular_ticks(lo, hi, false, target).ok(),
         5 => scene::time_ticks(lo, hi, target).ok(),
+        6 => scene::symlog_ticks(lo, hi, aux, target).ok(),
         _ => None,
     });
     let Some(result) = result else {

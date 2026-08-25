@@ -2906,19 +2906,7 @@ def axis_ticks(
         return _log_ticks(lo, hi, target)
     if axis.get("scale") == "symlog":
         constant = float(axis.get("constant", 1.0))
-
-        def transform(value: float) -> float:
-            return float(np.sign(value) * np.log1p(abs(value) / constant))
-
-        def inverse(value: float) -> float:
-            return float(np.sign(value) * constant * np.expm1(abs(value)))
-
-        coords, step = _linear_ticks(float(transform(lo)), float(transform(hi)), target)
-        ticks = [float(inverse(v)) for v in coords]
-        if min(lo, hi) <= 0 <= max(lo, hi) and not any(abs(v) < 1e-12 for v in ticks):
-            ticks.append(0.0)
-            ticks.sort(reverse=lo > hi)
-        return ticks, ticks, abs(float(inverse(step)))
+        return _native.scene_axis_ticks(6, lo, hi, target, aux=constant)
     if kind == "time":
         t, step = _time_ticks(lo, hi, target)
         return t, t, step

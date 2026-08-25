@@ -1740,7 +1740,8 @@ def scene_axis_ticks(
 
     ``kind`` is ``0`` linear, ``1`` log, ``2`` category (``aux`` = category
     count), ``3`` angular degrees, ``4`` angular radians, or ``5`` time
-    (UTC milliseconds since epoch; calendar steps for long spans).
+    (UTC milliseconds since epoch; calendar steps for long spans), or ``6``
+    symmetric log (``aux`` = positive linear-region constant).
     """
     # Calendar time ladders can emit up to ~1000 first-of-month ticks.
     capacity = 1000 if kind == 5 else 200
