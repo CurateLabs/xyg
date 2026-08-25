@@ -1435,10 +1435,12 @@ def scene_export_support_reason(
 
     This is deliberately narrower than :func:`figure_scene`: the explicit
     Scene API can exercise a migrating record before the public compatibility
-    renderer's complete output contract is modeled. Only the proven
-    constant-style circle-scatter subset routes automatically. Input errors
-    (for example a non-finite opacity) are not a routing question and
-    propagate unchanged.
+    renderer's complete output contract is modeled. Besides the basic
+    constant-style circle-scatter subset, the proven literal Cartesian chrome
+    slice routes automatically: backgrounds, title, authored axes/ticks,
+    primary legend, literal colorbar, and one callout. Input errors (for
+    example a non-finite opacity) are not a routing question and propagate
+    unchanged.
     """
     # The compatibility exporter resolves fluid authoring dimensions at its
     # document boundary.  Scene records require concrete viewport dimensions;
@@ -1448,16 +1450,16 @@ def scene_export_support_reason(
         height is None and not isinstance(figure.height, int)
     ):
         return "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
-    # ``figure_scene`` deliberately has a wider explicit-API contract than the
-    # public exporter: vertical migration lets its Rust consumers exercise
-    # newly framed records before every legacy static-output detail is proven.
-    # Public routing is narrower.  Keep any legacy styling, layout, annotation,
-    # legend, or screen-bounded LOD behavior on the compatibility renderer
-    # until it is modeled end-to-end, rather than accepting it merely because
-    # the Scene encoder can serialize part of it.
-    if getattr(figure, "style", None) or getattr(figure, "chrome_styles", None):
+    # This public slice is strictly literal. The Scene compiler owns all
+    # accepted layout/default decisions after this preflight, but themes,
+    # custom fonts, CSS/classes, and host-resolved styling remain compatibility
+    # behavior until separately proven.
+    style = getattr(figure, "style", None) or {}
+    if any(key not in {"background", "--chart-bg"} for key in style) or getattr(
+        figure, "chrome_styles", None
+    ):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-    if getattr(figure, "title", None) or getattr(figure, "title_options", None):
+    if getattr(figure, "title_options", None):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
     annotations = list(getattr(figure, "annotations", None) or [])
     if annotations and (len(annotations) != 1 or annotations[0].get("kind") != "callout"):
@@ -1468,11 +1470,10 @@ def scene_export_support_reason(
         # exception into broad annotation support merely because the explicit
         # Scene API can encode more record kinds.
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
-    if getattr(figure, "legend_options", None) or any(
-        getattr(trace, "name", None) for trace in figure.traces
-    ):
+    legend = getattr(figure, "legend_options", None) or {}
+    if any(key not in {"loc", "title", "highlight", "toggle"} for key in legend):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND"
-    for axis_id, options in figure.axis_options.items():
+    for _axis_id, options in figure.axis_options.items():
         axis_style = options.get("style") or {}
         # The public ``ticks=`` / ``text=`` switches lower to these exact
         # compatibility-renderer style records.  Scene has not yet carried
@@ -1485,15 +1486,29 @@ def scene_export_support_reason(
             and axis_style.get("label_color") == "#00000000"
         ):
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS_VISIBILITY"
-        if options.get("label") is not None or options.get("side") != (
-            "bottom" if axis_id == "x" else "left"
+        allowed_axis_keys = {
+            "domain",
+            "label",
+            "side",
+            "tick_sides",
+            "tick_label_sides",
+            "tick_values",
+            "tick_labels",
+            "minor_tick_values",
+            "style",
+            "minor_style",
+        }
+        # ``Figure`` materializes a superset of legacy axis slots with None
+        # (and ``reverse=False``) defaults. They are not authored chrome and
+        # must not make an otherwise literal canonical axis fall back.
+        if any(
+            key not in allowed_axis_keys and value not in (None, False)
+            for key, value in options.items()
         ):
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-        if any(
-            options.get(key) not in (None, False, [], {})
-            for key in ("style", "minor_style", "tick_values", "tick_labels", "minor_tick_values")
-        ) or any(options.get(key) for key in ("tick_sides", "tick_label_sides")):
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    colorbar = getattr(figure, "colorbar_options", None) or {}
+    if any(key not in {"domain", "stops", "ticks", "minor_ticks", "title"} for key in colorbar):
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
     # Until the compatibility raster's line/rect sampling, palette choices,
     # and SVG spelling are represented in the whole-scene consumers, public
     # auto-routing is deliberately limited to constant-style circle scatter.

@@ -27,9 +27,11 @@ hosts reject polar Scene compilation until the Scene schema records that mode.
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
-constant-style Cartesian circle-scatter public subset, plus exactly one bounded
-Cartesian callout with documented literal fields, to the Rust Scene SVG and
-raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid
+constant-style Cartesian circle-scatter public subset, plus the proven literal
+static chrome contract (chart/plot backgrounds, title, authored axis
+labels/sides/major-minor ticks, primary legend, literal colorbar), and exactly
+one bounded Cartesian callout with documented literal fields, to the Rust Scene
+SVG and raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid
 PDF independently route each supported panel through that same Rust SVG
 consumer, namespacing its closed clip-id vocabulary only for nested-document
 composition; panel backgrounds and unsupported panels deliberately select
@@ -37,9 +39,9 @@ compatibility before compilation. `python/xyg/_scene_v3.py` is the single
 preflight/orchestration seam for that subset: `public_static_export` owns the
 Scene-format selection, while Python entry points only retain host options and
 the documented compatibility exceptions. `_svg.py`, `_raster.py`, and
-`_pdf.py` remain compatibility owners for text, legends, every annotation other
-than that one callout, themes, custom axis chrome, non-circle symbols,
-non-scatter marks, LOD inputs, export
+`_pdf.py` remain compatibility owners for rich text and legend variants, every
+annotation other than that one callout, themes, custom fonts or CSS/classes,
+nonliteral/custom chrome, non-circle symbols, non-scatter marks, LOD inputs, export
 background overrides, and any other unmodeled output contract; #58/#117 must
 retire each exception only with cross-host differential and performance proof.
 

@@ -82,6 +82,13 @@ def public_callout_figure() -> Figure:
     return figure
 
 
+def public_authored_chrome_figure() -> Figure:
+    """The complete bounded literal-chrome public-routing contract."""
+    from scripts.generate_authored_scene_benchmark import authored_scene_figure
+
+    return authored_scene_figure(100)
+
+
 def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     scene = representative_figure().to_scene()
     assert hashlib.sha256(scene).hexdigest() == FIXTURE["expected_sha256"]
@@ -233,8 +240,11 @@ def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
         _native.scene_raster_commands(huge_width)
 
 
-def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.MonkeyPatch) -> None:
-    figure = public_callout_figure()
+@pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
+def test_supported_public_exports_route_through_rust_scene(
+    monkeypatch: pytest.MonkeyPatch, factory
+) -> None:
+    figure = factory()
 
     scene_svg = _native.scene_svg
     scene_raster_commands = _native.scene_raster_commands
@@ -252,7 +262,10 @@ def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.M
     monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
     svg = figure.to_svg()
     assert "XYGS" not in svg  # the public string is Rust's rendered SVG, not Scene bytes
-    assert 'role="listitem"' in svg and "Public Rust" in svg
+    if factory is public_callout_figure:
+        assert 'role="listitem"' in svg and "Public Rust" in svg
+    else:
+        assert "Authored Scene evidence" in svg and "representative callout" in svg
     assert figure.to_scene()[:4] == b"XYGS"
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
@@ -280,8 +293,9 @@ def test_public_exporters_share_one_scene_selection_seam(
     assert formats == ["svg", "png", "pdf"]
 
 
+@pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
 def test_supported_file_exports_match_the_canonical_rust_scene(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, factory
 ) -> None:
     """The single-file and batch public journeys share the Scene consumers.
 
@@ -292,11 +306,13 @@ def test_supported_file_exports_match_the_canonical_rust_scene(
     """
     from xyg import _pdf, export
 
-    figure = public_callout_figure()
+    figure = factory()
     scene = figure.to_scene()
     expected = {
         "svg": _native.scene_svg(scene).encode("utf-8"),
-        "png": kernels.rasterize_png(_native.scene_raster_commands(scene), 320, 240),
+        "png": kernels.rasterize_png(
+            _native.scene_raster_commands(scene), figure.width, figure.height
+        ),
     }
     expected["pdf"] = _pdf.svg_to_pdf(expected["svg"].decode("utf-8"))
 
@@ -350,14 +366,21 @@ def test_unsupported_public_exports_stay_on_compatibility_path(
 @pytest.mark.parametrize(
     "mutate,reason",
     [
-        (lambda figure: setattr(figure, "title", "legacy text"), "PUBLIC_TEXT"),
+        (
+            lambda figure: setattr(figure, "style", {"background": "#fff", "theme": "dark"}),
+            "PUBLIC_STYLE",
+        ),
+        (
+            lambda figure: figure.chrome_styles.update({"title": {"font_family": "Custom"}}),
+            "PUBLIC_STYLE",
+        ),
+        (lambda figure: setattr(figure, "class_name", "legacy-css"), "UNSUPPORTED_BROWSER_CSS"),
         (
             lambda figure: figure.annotations.append({"kind": "marker", "x": 1, "y": 2}),
             "PUBLIC_ANNOTATION",
         ),
-        (lambda figure: figure.set_axis("x", label="legacy axis"), "PUBLIC_AXIS"),
-        (lambda figure: figure.line([0, 1], [0, 1], name="legacy legend"), "PUBLIC_LEGEND"),
-        (lambda figure: figure.line(range(10_001), range(10_001)), "PUBLIC_LOD"),
+        (lambda figure: figure.line([0, 1], [0, 1]), "PUBLIC_MARK"),
+        (lambda figure: figure.scatter(range(10_001), range(10_001)), "PUBLIC_LOD"),
     ],
 )
 def test_public_router_preflights_legacy_export_contracts(mutate, reason: str) -> None:
@@ -371,9 +394,10 @@ def test_non_circle_symbols_keep_the_legacy_rust_scatter_svg_contract() -> None:
     assert "PUBLIC_SYMBOL" in (_scene_v3.scene_export_support_reason(figure) or "")
 
 
-def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> None:
+@pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
+def test_supported_public_exports_match_rust_consumers_and_are_repeatable(factory) -> None:
     """The public journey must not merely produce valid files beside Scene."""
-    figure = public_callout_figure()
+    figure = factory()
     svg = _scene_v3.figure_svg(figure)
     png = _scene_v3.try_public_png(figure, scale=1)
     pdf = _scene_v3.try_public_pdf(figure)
@@ -386,8 +410,11 @@ def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> N
     assert figure.to_image(format="pdf") == figure.to_image(format="pdf")
 
 
-def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
-    figure = public_callout_figure()
+@pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
+def test_supported_public_export_failure_never_falls_back(
+    monkeypatch: pytest.MonkeyPatch, factory
+) -> None:
+    figure = factory()
 
     def broken_scene(*_args: object, **_kwargs: object) -> str:
         raise ValueError("broken Scene consumer")
@@ -408,6 +435,26 @@ def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.Mo
     monkeypatch.setattr(_raster, "to_png", unexpected_compatibility)
     with pytest.raises(ValueError, match="broken Scene consumer"):
         figure.to_png(scale=1)
+
+
+def test_malformed_public_literal_propagates_without_compatibility_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An invalid canonical literal is an input failure, not a fallback cue."""
+    figure = public_authored_chrome_figure()
+
+    def malformed_scene(*_args: object, **_kwargs: object) -> bytes:
+        raise ValueError("malformed canonical literal")
+
+    def unexpected_compatibility(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("malformed canonical input must not select compatibility")
+
+    from xyg import _svg
+
+    monkeypatch.setattr(_native, "scene_batch_encode", malformed_scene)
+    monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
+    with pytest.raises(ValueError, match="malformed canonical literal"):
+        figure.to_svg()
 
 
 def test_try_public_scene_helpers_select_migrated_subset() -> None:
