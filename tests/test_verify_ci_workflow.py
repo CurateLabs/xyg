@@ -1360,6 +1360,46 @@ def test_codspeed_workflow_rejects_non_strict_native_install(tmp_path: Path) -> 
     )
 
 
+def test_codspeed_workflow_rejects_missing_authored_scene_node_native_path(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "          XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so\n", ""
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any(
+        "Generate and measure four-size authored-Scene first paint" in error
+        and "native library" in error
+        for error in errors
+    )
+
+
+def test_codspeed_workflow_rejects_scoped_authored_scene_node_native_path_duplication(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            "          XYG_AUTHORED_SCENE_DIR: authored-scenes\n",
+            "          XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so\n"
+            "          XYG_AUTHORED_SCENE_DIR: authored-scenes\n",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any("only to the authored-Scene measurement step" in error for error in errors)
+
+
 def test_codspeed_workflow_rejects_missing_native_kernel_benches(tmp_path: Path) -> None:
     workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
     path = tmp_path / "codspeed.yml"
