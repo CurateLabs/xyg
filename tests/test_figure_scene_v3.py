@@ -389,8 +389,8 @@ def test_public_router_preflights_legacy_export_contracts(mutate, reason: str) -
     assert reason in (_scene_v3.scene_export_support_reason(figure) or "")
 
 
-def test_non_circle_symbols_keep_the_legacy_rust_scatter_svg_contract() -> None:
-    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], symbol="diamond")
+def test_symbols_other_than_diamond_keep_the_legacy_rust_scatter_svg_contract() -> None:
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], symbol="square")
     assert "PUBLIC_SYMBOL" in (_scene_v3.scene_export_support_reason(figure) or "")
 
 

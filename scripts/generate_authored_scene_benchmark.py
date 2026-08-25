@@ -89,7 +89,14 @@ AUTHORED_AUTHORING = {
     "title": "Authored Scene evidence",
     "style": {"background": "#f0f8ff", "--chart-bg": "#f8fafc"},
     "axes": AUTHORED_AXES,
-    "scatter": {"id": 0, "color": "#3987e5", "size": 4.0, "opacity": 0.8, "name": "observations"},
+    "scatter": {
+        "id": 0,
+        "color": "#3987e5",
+        "size": 4.0,
+        "opacity": 0.8,
+        "symbol": "diamond",
+        "name": "observations",
+    },
     "legend": {"loc": "upper right", "title": "Series", "highlight": False, "toggle": False},
     "colorbar": {
         "domain": [0.0, 1.0],
@@ -131,10 +138,11 @@ def authored_scene_figure(count: int) -> Figure:
     figure.scatter(
         x,
         y,
-        color="#3987e5",
-        size=4.0,
-        opacity=0.8,
-        name="observations",
+        color=AUTHORED_AUTHORING["scatter"]["color"],
+        size=AUTHORED_AUTHORING["scatter"]["size"],
+        opacity=AUTHORED_AUTHORING["scatter"]["opacity"],
+        symbol=AUTHORED_AUTHORING["scatter"]["symbol"],
+        name=AUTHORED_AUTHORING["scatter"]["name"],
         density=False,
     )
     # The shared Node authoring fixture pins identity explicitly; defaults are

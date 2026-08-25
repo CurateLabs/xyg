@@ -1511,8 +1511,10 @@ def scene_export_support_reason(
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
     # Until the compatibility raster's line/rect sampling, palette choices,
     # and SVG spelling are represented in the whole-scene consumers, public
-    # auto-routing is deliberately limited to constant-style circle scatter.
-    # The broader mark set remains available through explicit ``to_scene``.
+    # auto-routing is deliberately limited to constant-style circle/diamond
+    # scatter. Diamond is the one non-circle symbol with a fully proven
+    # canonical SVG/raster/browser extent contract; the broader mark and
+    # symbol sets remain available through explicit ``to_scene``.
     public_kinds = {"scatter"}
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size"},
@@ -1530,10 +1532,14 @@ def scene_export_support_reason(
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
         if trace.kind not in public_kinds:
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-        if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") != "circle":
-            # The long-standing public diamond/other-symbol route uses the
-            # compatibility scatter SVG wrapper, whose exact SVG spelling is
-            # part of the current export contract.
+        if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") not in {
+            "circle",
+            "diamond",
+        }:
+            # Keep all remaining symbols on the compatibility route. In
+            # particular, line-only and asymmetric symbols have separate
+            # stroke/extent contracts that this public increment does not yet
+            # prove across static consumers.
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL"
         if any(
             value is not None and key not in public_style_keys[trace.kind]

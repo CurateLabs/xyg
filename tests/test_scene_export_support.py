@@ -179,11 +179,12 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
     [
         (lambda: _supported().line([0, 1], [0, 1]), "PUBLIC_MARK"),
         (lambda: _supported().bar([0, 1], [1, 2]), "PUBLIC_MARK"),
-        (lambda: _supported().scatter([0, 1], [1, 2], symbol="diamond"), "PUBLIC_SYMBOL"),
+        (lambda: _supported().scatter([0, 1], [1, 2], symbol="square"), "PUBLIC_SYMBOL"),
+        (lambda: _supported().scatter([0, 1], [1, 2], symbol="diamond"), None),
         (lambda: _supported(), None),
     ],
 )
-def test_public_router_selects_only_the_proven_circle_scatter_subset(
+def test_public_router_selects_only_the_proven_circle_diamond_scatter_subset(
     factory, reason: str | None
 ) -> None:
     assert scene_export_support_reason(factory()) == (

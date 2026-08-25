@@ -200,7 +200,7 @@ Cartesian annotation records. Those APIs only retain authored objects; they do
 not duplicate coordinate, style, resource-limit, or support-predicate policy.
 `figureSceneV3` remains the Node packing seam and Rust remains the decoder,
 layout, and rendering authority.
-Public Python SVG/PNG/PDF route the proven constant-style circle-scatter
+Public Python SVG/PNG/PDF route the proven constant-style circle/diamond-scatter
 literal Cartesian static contract through Rust Scene: chart/plot backgrounds,
 title, authored axis labels/sides/major-minor ticks, primary legend, literal
 colorbar, and one bounded callout. Other public exports remain on the
@@ -393,11 +393,11 @@ Remaining polar marks and richer legend variants stay explicit compatibility
 exceptions. Public SVG and native PNG auto-route supported figures through
 Rust Scene; PDF consumes that Rust SVG. The first public annotation route is
 exactly one bounded Cartesian callout on the otherwise proven constant-style
-circle-scatter slice. Its literal color, opacity, width, anchor, offsets, and
+circle/diamond-scatter slice. Its literal color, opacity, width, anchor, offsets, and
 literal label background/border compile through the same Scene contract; Rust
 alone validates them and resolves its leader and label box. A second callout,
 every other annotation kind, themes, classes/CSS/custom fonts, nonliteral
-chrome, non-circle symbols, non-scatter marks, and LOD remain compatibility
+chrome, symbols other than circle/diamond, non-scatter marks, and LOD remain compatibility
 preflight exceptions. ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
 that need an optional result. Unlabeled cartesian annotations remain rejected

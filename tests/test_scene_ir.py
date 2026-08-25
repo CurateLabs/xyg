@@ -38,6 +38,8 @@ def test_strict_csp_authored_scene_fixture_is_public_figure_bytes() -> None:
     assert fixture["scene_sha256"] == hashlib.sha256(scene).hexdigest()
     assert fixture["authoring"]["axes"]["x"]["side"] == "top"
     assert fixture["authoring"]["axes"]["y"]["side"] == "right"
+    assert fixture["authoring"]["scatter"]["symbol"] == "diamond"
+    assert '<path d="M ' in _native.scene_svg(scene)  # canonical Rust diamond geometry
     assert all(chunk in scene for chunk in (b"XYGS", b"XYLG", b"XYCB", b"XYLB"))
 
 
@@ -727,20 +729,20 @@ def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
     )
 
 
-def test_public_svg_scatter_routes_builtin_symbols_through_rust(monkeypatch) -> None:
-    original = _native.scene_scatter_svg
-    calls: list[int] = []
+def test_public_svg_diamond_routes_through_the_whole_scene_consumer(monkeypatch) -> None:
+    original = _native.scene_svg
+    calls: list[bytes] = []
 
     def record(*args, **kwargs):
-        calls.append(len(args[0]))
+        calls.append(args[0][:4])
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(_native, "scene_scatter_svg", record)
+    monkeypatch.setattr(_native, "scene_svg", record)
     svg = Figure().scatter([0.0, 1.0], [1.0, 0.0], symbol="diamond").to_svg()
 
-    assert calls == [2]
+    assert calls == [b"XYGS"]
     assert '<path d="M ' in svg
-    assert 'fill="#3987e5"' in svg
+    assert 'fill="rgb(57,135,229)" fill-opacity="0.8"' in svg
 
 
 def test_scene_plot_layout_owns_cartesian_gutters() -> None:
