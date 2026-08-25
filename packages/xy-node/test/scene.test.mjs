@@ -790,7 +790,25 @@ test("Node matches every Rust-owned axis tick family in the shared cross-host fi
     if (value.categories !== undefined) args.categories = new Array(value.categories);
     if (value.unit !== undefined) args.unit = value.unit;
     if (value.constant !== undefined) args.constant = value.constant;
-    assert.deepEqual(axisTicks(args), value.expected, value.name);
+    const actual = axisTicks(args);
+    if (value.tolerance === undefined) {
+      assert.deepEqual(actual, value.expected, value.name);
+      continue;
+    }
+    for (const field of ["ticks", "labeled"]) {
+      assert.equal(actual[field].length, value.expected[field].length, value.name);
+      actual[field].forEach((item, index) => {
+        const expected = value.expected[field][index];
+        assert.ok(
+          Math.abs(item - expected) <= value.tolerance * Math.max(1, Math.abs(expected)),
+          `${value.name}: ${field}[${index}]`,
+        );
+      });
+    }
+    assert.ok(
+      Math.abs(actual.step - value.expected.step) <= value.tolerance * Math.max(1, Math.abs(value.expected.step)),
+      `${value.name}: step`,
+    );
   }
 });
 

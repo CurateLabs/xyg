@@ -48,9 +48,12 @@ The same schema owns bounded f64 tick records for linear, base-10 log, and
 symmetric-log axes, plus vectorized linear, log, and symlog scale records.
 Each record carries all tick positions, the labeled subset, and the canonical
 step. Rust applies the existing 1/2/2.5/5/10 linear ladder and 1/2/5 log
-ladder, with a hard 200-tick ceiling. Python's SVG and raster exporters call
-this record through `_svg._linear_ticks` and `_svg._log_ticks`; Node exposes it
-as `axisTicks`. Invalid domains and target counts fail closed at the ABI.
+ladder, with a hard 200-tick ceiling. Python's SVG and raster exporters consume
+these records through `_svg.axis_ticks`; Node exposes them as `axisTicks`.
+Cross-platform conformance keeps algebraic tick families bit-exact and permits
+one part in 10^15 for symmetric-log values whose final inverse transform uses
+the platform math library. Invalid domains and target counts fail closed at the
+ABI.
 Scale records own domain-to-coordinate, domain-to-pixel, and inverse-coordinate
 mapping, including reversed pixel ranges, log clip/mask behavior, and symlog's
 positive constant. Python's `_Scale` and Node's `scaleMap` consume the same

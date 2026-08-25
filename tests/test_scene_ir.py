@@ -680,7 +680,20 @@ def test_all_axis_tick_families_match_the_shared_cross_host_fixture() -> None:
         ticks, labeled, step = _native.scene_axis_ticks(
             code, case["lo"], case["hi"], case["target"], aux=aux
         )
-        assert {"ticks": ticks, "labeled": labeled, "step": step} == case["expected"], case["name"]
+        actual = {"ticks": ticks, "labeled": labeled, "step": step}
+        tolerance = case.get("tolerance")
+        if tolerance is None:
+            assert actual == case["expected"], case["name"]
+        else:
+            assert actual["ticks"] == pytest.approx(
+                case["expected"]["ticks"], rel=tolerance, abs=tolerance
+            ), case["name"]
+            assert actual["labeled"] == pytest.approx(
+                case["expected"]["labeled"], rel=tolerance, abs=tolerance
+            ), case["name"]
+            assert actual["step"] == pytest.approx(
+                case["expected"]["step"], rel=tolerance, abs=tolerance
+            ), case["name"]
 
 
 @pytest.mark.parametrize(
