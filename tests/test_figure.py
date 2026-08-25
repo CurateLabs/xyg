@@ -102,10 +102,18 @@ def test_build_payload_split_matches_packed():
 
 
 def test_build_payload_split_density_tier():
-    # The density tier ships grid + sampled-overlay columns; the split repack
-    # must cover those column shapes too, byte-for-byte.
+    # Ordinary density payloads ship grid + sampled-overlay columns; the split
+    # repack must cover those column shapes too, byte-for-byte.  The bounded
+    # direct-WASM full-source transport is tested separately: it is deliberately
+    # absent from packed/export payloads (§29).
     rng = np.random.default_rng(6)
-    fig = Figure().scatter(rng.normal(size=20_000), rng.normal(size=20_000), density=True)
+    values = rng.normal(size=20_000)
+    fig = Figure().scatter(
+        values,
+        rng.normal(size=20_000),
+        color=values,
+        density=True,
+    )
     spec_p, blob = fig.build_payload()
     spec_s, bufs = fig.build_payload_split()
     assert spec_p["traces"][0]["tier"] == "density"

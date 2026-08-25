@@ -142,11 +142,11 @@ class _PayloadWriter:
     def ship_f64(self, values: np.ndarray) -> int:
         """Ship a canonical f64 column for an explicitly bounded WASM source.
 
-        This is deliberately separate from painter geometry.  Packed and split
-        payloads encode it in the same position so split remains a byte-exact
-        transport repack (§29).  Only the live split host advertises it as a
-        transferable Worker source; it is never decoded from offset f32 on the
-        UI thread.
+        This is deliberately separate from painter geometry and is valid only
+        in the live split transport.  Packed payloads serve export/notebook
+        consumers and retain their screen-bounded painter contract; only the
+        browser host transfers this canonical source to the dedicated Worker.
+        It is never decoded from offset f32 on the UI thread.
         """
         return self._append(
             np.ascontiguousarray(values, dtype="<f8").reshape(-1),
@@ -1402,7 +1402,7 @@ class PayloadMixin(_Host):
             and not t.y.zone.null_count
             and 0 < int(t.n_points) <= wasm_capacity
         )
-        if wasm_supported:
+        if pw._split and wasm_supported:
             density["wasm_source"] = {
                 "kind": "cartesian-count-f64-v1",
                 "x": pw.ship_f64(t.x.values),
