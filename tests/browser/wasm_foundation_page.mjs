@@ -1,5 +1,6 @@
 import {
   aggregateWasmBin2d,
+  attachStandaloneWasmDensity,
   attachWasmDensity,
   ChartView,
   createXygWasmWorker,
@@ -680,6 +681,48 @@ async function run() {
   densityView.destroy();
   await densityWorker.dispose();
   densityHost.remove();
+
+  foundationStage = "kernel-less retained-sample density uses local Rust/WASM";
+  const standaloneDensityHost = document.createElement("div");
+  standaloneDensityHost.style.cssText = "width:320px;height:240px";
+  document.body.append(standaloneDensityHost);
+  const standaloneDensityView = directDensityFixture(standaloneDensityHost);
+  const standaloneTrace = standaloneDensityView.gpuTraces.find((trace) => trace.tier === "density");
+  standaloneTrace.sampleOverlay = {
+    trace: { color: null },
+    _cpu: {
+      x: new Float32Array([0.05, 0.2, 0.75, 0.95]),
+      y: new Float32Array([0.05, 0.8, 0.25, 0.95]),
+      xMeta: { scale: 1, offset: 0 }, yMeta: { scale: 1, offset: 0 },
+    },
+  };
+  const standaloneHandle = await attachStandaloneWasmDensity(standaloneDensityView, {
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024, delay: 0,
+  });
+  const standaloneRevision = standaloneDensityView._scheduleViewRequest(
+    { ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } }, { delay: 0 },
+  );
+  for (let attempt = 0; attempt < 100 && standaloneHandle.diagnostics() === null; attempt++) await nextTask();
+  const standaloneDiagnostics = standaloneHandle.diagnostics();
+  if (!standaloneDiagnostics || standaloneDiagnostics.sequence !== standaloneRevision
+      || standaloneTrace.density.xRange.join(",") !== "0.25,0.75"
+      || standaloneDensityView._rebinWorker || !standaloneTrace._sampleRebinned) {
+    throw new Error(`standalone WASM density retained-sample path failed: ${JSON.stringify({
+      standaloneDiagnostics, xRange: standaloneTrace.density.xRange,
+      rebinWorker: !!standaloneDensityView._rebinWorker, rebinned: standaloneTrace._sampleRebinned,
+    })}`);
+  }
+  standaloneDensityView._scheduleViewRequest({ ranges: { x: [0, 1], y: [0, 1] } }, { delay: 0 });
+  await nextTask();
+  if (standaloneTrace.density.xRange.join(",") !== "0,1" || standaloneTrace._sampleRebinned) {
+    throw new Error("standalone WASM density did not restore the full-data home grid");
+  }
+  standaloneDensityView.destroy();
+  await nextTask();
+  if (standaloneDensityView._wasmDensity !== null) {
+    throw new Error("destroyed standalone density retained its owned WASM handle");
+  }
+  standaloneDensityHost.remove();
 
   foundationStage = "direct WASM ChartView density multi-trace supersession and scales";
   const multiDensityHost = document.createElement("div");

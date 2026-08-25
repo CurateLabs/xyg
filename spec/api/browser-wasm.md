@@ -96,6 +96,24 @@ snapshot, `diagnostics()` remains `null`, and the last painted density surface
 is retained. This is a failed transport-contract boundary, not an invalid
 application request; disposing an owned attachment still releases its Worker.
 
+### Kernel-less retained-sample adapter
+
+`attachStandaloneWasmDensity(view, { workerUrl, wasm, maxArenaBytes, delay })`
+is the bounded migration path for a kernel-less `ChartView` with exactly one
+retained-sample density trace. It creates an owned direct Rust/WASM Worker from
+the caller's explicit local assets, decodes the already-shipped sample once,
+and routes the normal viewport lifecycle through `XYAG`/`XYAO`. The full-data
+home grid remains visible for pans and zoom-outs; only a zoom-in replaces it
+with the explicitly badged sample grid. Destroying the ChartView disposes the
+owned handle and Worker, while stale and failed results cannot paint.
+
+It rejects kernel-backed, multi-trace, missing, or empty-sample views rather
+than selecting a JavaScript aggregate. This is not automatic asset discovery:
+self-contained HTML export does not yet package a static WASM Worker and
+artifact, so unsupported journeys keep the documented legacy path. The legacy
+worker is intentionally retained until that asset contract and parity evidence
+make its deletion safe.
+
 ## Cross-host fixture contract
 
 Regenerate `tests/fixtures/xyts_cross_host.json` with
