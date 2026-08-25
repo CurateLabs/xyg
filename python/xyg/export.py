@@ -104,7 +104,9 @@ _STANDALONE_CSP = (
 
 def _bundled_js(which: str = "standalone") -> str:
     """Read a bundled client build without importing the notebook widget stack."""
-    name = "index.js" if which == "widget" else "standalone.js"
+    name = {"widget": "index.js", "standalone": "standalone.js", "xyg-wasm-inline": "xyg-wasm-inline.js"}.get(which)
+    if name is None:
+        raise ValueError(f"unknown bundled client asset {which!r}")
     path = _STATIC / name
     if not path.exists():
         raise FileNotFoundError(

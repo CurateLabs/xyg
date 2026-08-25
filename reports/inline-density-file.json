@@ -1,0 +1,52 @@
+{
+  "schema": "xyg-inline-density-file-v1",
+  "gitSha": "ba010b47a37bbe2b0c3a600121dcb685bed89dce",
+  "measurements": [
+    {
+      "count": 100,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 16.28525002161041,
+      "interactionMs": 0.0,
+      "htmlBytes": 1426045,
+      "jsHeapBytes": 0,
+      "visualTolerancePx": 1
+    },
+    {
+      "count": 10000,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 3.3549159998074174,
+      "interactionMs": 0.0,
+      "htmlBytes": 1512592,
+      "jsHeapBytes": 0,
+      "visualTolerancePx": 1
+    },
+    {
+      "count": 100000,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 3.6208340316079557,
+      "interactionMs": 0.0,
+      "htmlBytes": 1512679,
+      "jsHeapBytes": 0,
+      "visualTolerancePx": 1
+    },
+    {
+      "count": 1000000,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 6.838542001787573,
+      "interactionMs": 0.0,
+      "htmlBytes": 1515211,
+      "jsHeapBytes": 0,
+      "visualTolerancePx": 1
+    }
+  ],
+  "lifecycle": {
+    "cancel": true,
+    "malformed": true,
+    "trap": true,
+    "dispose": true
+  }
+}

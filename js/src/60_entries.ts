@@ -135,6 +135,11 @@ export function renderStandalone(el, spec, arrayBuffer) {
       });
     });
   }
+  // Test/host observability only: no runtime policy is selected from this
+  // hook. It lets strict-CSP file evidence distinguish successful attachment
+  // from a later density worker failure.
+  const observer = (globalThis as any).__xygStandaloneObserver;
+  if (typeof observer === "function") observer({ phase: "attached", inline: !!inline, view });
   return view;
 }
 
