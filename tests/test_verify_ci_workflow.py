@@ -1367,7 +1367,7 @@ def test_codspeed_workflow_rejects_missing_authored_scene_node_native_path(
     path = tmp_path / "codspeed.yml"
     path.write_text(
         workflow.replace(
-            "          XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so\n", ""
+            "          XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so\n", ""
         ),
         encoding="utf-8",
     )
@@ -1389,7 +1389,7 @@ def test_codspeed_workflow_rejects_scoped_authored_scene_node_native_path_duplic
     path.write_text(
         workflow.replace(
             "          XYG_AUTHORED_SCENE_DIR: authored-scenes\n",
-            "          XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so\n"
+            "          XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so\n"
             "          XYG_AUTHORED_SCENE_DIR: authored-scenes\n",
         ),
         encoding="utf-8",

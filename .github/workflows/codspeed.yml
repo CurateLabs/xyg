@@ -158,7 +158,9 @@ jobs:
         env:
           # Node's package resolver intentionally never probes checkout paths;
           # this one evidence step consumes the just-built development cdylib.
-          XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so
+          # Workflow env values do not expand shell variables, so this GitHub
+          # expression is required to give Node the absolute checkout path.
+          XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so
           XYG_AUTHORED_SCENE_DIR: authored-scenes
           XYG_EVIDENCE_PATH: authored-scene-browser-${{ github.sha }}.json
         run: |
