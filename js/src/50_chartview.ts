@@ -4854,6 +4854,15 @@ export class ChartView {
     g.yBuf = this._upload(sm ? sm.y : y);
     g.baseBuf = this._upload(sm ? sm.extra : base);
     if (sm) g.n = sm.n;
+    const outlineX = sm ? sm.x : x;
+    const outlineY = sm ? sm.y : y;
+    const outlineBase = sm ? sm.extra : base;
+    if (t.style?.stroke_perimeter && g.n >= 2) {
+      g.bandLeftXBuf = this._upload(new Float32Array([outlineX[0], outlineX[0]]));
+      g.bandLeftYBuf = this._upload(new Float32Array([outlineY[0], outlineBase[0]]));
+      g.bandRightXBuf = this._upload(new Float32Array([outlineX[g.n - 1], outlineX[g.n - 1]]));
+      g.bandRightYBuf = this._upload(new Float32Array([outlineY[g.n - 1], outlineBase[g.n - 1]]));
+    }
     g._dashX = sm ? sm.x : x;
     g._dashY = sm ? sm.y : y;
     g.color = parseColor(this.root, t.style && t.style.color, [0.3, 0.47, 0.66, 1]);

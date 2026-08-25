@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import struct
@@ -421,7 +422,7 @@ def test_unsupported_public_exports_stay_on_compatibility_path(
         # A literal primary marker is now part of the bounded public Scene
         # annotation family; the remaining rows continue to prove the legacy
         # preflight boundaries.
-        (lambda figure: figure.error_band([0, 1], [0, 0], [1, 1]), "PUBLIC_MARK"),
+        (lambda figure: figure.error_band([0, 1], [0, 0], [1, 1]), "PUBLIC_AXIS"),
         (lambda figure: figure.scatter(range(10_001), range(10_001)), "PUBLIC_LOD"),
     ],
 )
@@ -553,7 +554,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 24
+    assert int.from_bytes(encoded[4:8], "little") == 25
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -621,7 +622,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (24).to_bytes(4, "little")
+    assert scene[4:8] == (25).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -642,21 +643,49 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
 
 
 def test_python_scene_compiles_area_and_error_band() -> None:
-    area = Figure(width=240, height=160)
-    area.axis_options["x"]["domain"] = (0.0, 2.0)
-    area.axis_options["y"]["domain"] = (0.0, 3.0)
-    area.area([0.0, 1.0, 2.0], [1.0, 2.0, 1.5], base=0.0, color="#3987e5", opacity=0.5)
-    scene = area.to_scene()
-    assert scene[4:8] == (24).to_bytes(4, "little")
-    svg = _native.scene_svg(scene)
-    assert '<path d="M ' in svg
-    assert ' Z"' in svg
+    for mode, options, symbol in (
+        ("top", {}, 1),
+        ("perimeter", {"stroke_perimeter": True}, 2),
+        ("none", {"line_width": 0.0}, 0),
+    ):
+        area = Figure(width=240, height=160)
+        area.axis_options["x"]["domain"] = (0.0, 2.0)
+        area.axis_options["y"]["domain"] = (0.0, 3.0)
+        area.area(
+            [0.0, 1.0, 2.0],
+            [1.0, 2.0, 1.5],
+            base=0.0,
+            color="#3987e5",
+            opacity=0.5,
+            line_color="#112233",
+            line_width=options.get("line_width", 2.0),
+            line_opacity=0.4,
+            stroke_perimeter=options.get("stroke_perimeter", False),
+            style={"fill-opacity": 0.8, "stroke-opacity": 0.5},
+        )
+        area.traces[0].id = 7
+        scene = area.to_scene()
+        expected = FIXTURE["band_outlines"][mode]
+        assert scene == base64.b64decode(expected["scene_base64"])
+        assert hashlib.sha256(scene).hexdigest() == expected["sha256"]
+        assert scene[4:8] == (25).to_bytes(4, "little")
+        assert scene[160:168] == bytes((57, 135, 229, 102, 17, 34, 51, 26))
+        assert scene[160 + 16 + 2] == symbol
+        svg = _native.scene_svg(scene)
+        assert svg.count('<path d="') == (2 if mode == "top" else 1)
+        assert bool('fill="none"' in svg) is (mode == "top")
+        assert bool('stroke="none"' in svg) is (mode != "perimeter")
+        assert _native.scene_raster_commands(scene, 1.0)
+        painter = _native.scene_browser_painter(scene)
+        assert painter[300 + 1] == symbol
 
     band = Figure(width=240, height=160)
     band.axis_options["x"]["domain"] = (0.0, 2.0)
     band.axis_options["y"]["domain"] = (0.0, 3.0)
     band.error_band([0.0, 1.0, 2.0], [0.7, 1.2, 0.9], [1.3, 1.8, 1.5], color="#22c55e")
-    assert '<path d="M ' in _native.scene_svg(band.to_scene())
+    band_scene = band.to_scene()
+    assert band_scene[160 + 16 + 2] == 0
+    assert '<path d="M ' in _native.scene_svg(band_scene)
 
 
 def test_python_scene_compiles_box_and_contour() -> None:
@@ -776,7 +805,7 @@ def test_python_scene_attached_label_background_uses_xyal_v3_and_rust_box() -> N
     figure = representative_figure()
     figure.marker(2.0, 2.0, text="threshold", style={"label_background": "#ffffff"})
     scene = figure.to_scene()
-    assert scene[:8] == b"XYGS\x18\x00\x00\x00"
+    assert scene[:8] == b"XYGS\x19\x00\x00\x00"
     assert b"XYLB\x03\x00\x00\x00" in scene
     svg = _native.scene_svg(scene)
     assert "threshold" in svg
@@ -793,7 +822,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (24).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (25).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg

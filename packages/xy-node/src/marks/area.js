@@ -14,6 +14,10 @@ import { composeLine, prepareLineSeries } from "./line.js";
  *   style?: object,
  *   color?: string,
  *   opacity?: number,
+ *   lineColor?: string,
+ *   lineWidth?: number,
+ *   lineOpacity?: number,
+ *   strokePerimeter?: boolean,
  * }} [opts]
  */
 export function composeArea(x, y, opts = {}) {
@@ -32,9 +36,15 @@ export function composeArea(x, y, opts = {}) {
   const style = {
     color: opts.color ?? "#3987e5",
     opacity: opts.opacity ?? 0.35,
+    line_width: opts.lineWidth ?? 1.2,
+    line_opacity: opts.lineOpacity ?? 1.0,
+    stroke_perimeter: opts.strokePerimeter ?? false,
     role: "area",
     ...(opts.style ?? {}),
   };
+  if (opts.lineColor != null && !("line_color" in (opts.style ?? {}))) {
+    style.line_color = opts.lineColor;
+  }
   return {
     traces: [
       {

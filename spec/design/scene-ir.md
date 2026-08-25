@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 24 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 25 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v24, so additive emission is not safe.
+bitmap or schema negotiation in Scene v25, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v24 batch layout,
+WASM lifecycle foundation; it validates the current Scene v25 batch layout,
 including the shared fixed header/mark widths retained since version 4, bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -82,7 +82,8 @@ each 16-byte style stores fill RGBA8, stroke RGBA8, and f64 stroke width.
 Each 56-byte mark record contains its kind (`ScatterScene`, `PolylineScene`
 vertex, `RectScene`, or `BandScene`), visibility/clipping flag, scatter symbol, stable u64
 id, u32 style-table index, four f64 screen coordinates, and scatter diameter.
-Non-scatter records must set symbol and diameter to zero.
+Non-scatter records must set symbol and diameter to zero except that Scene v25
+Band records use symbol as the versioned outline-mode descriptor below.
 
 Rust validates finite non-negative viewport/margins, a non-empty plot region,
 all scale fields, known record kinds, equal array lengths, finite input values,
@@ -172,11 +173,15 @@ invalid.
 - **Band sample (kind 3):** `x0,y0` is one top sample and `x1,y1` is the paired
   base sample (same authored x is typical for area/error bands). All four
   inputs are finite-checked and scale-mapped; a log-masked corner hides the
-  sample. Symbol and diameter are zero. Consecutive visible kind-3 records with
-  the same stable ID and `style_ref` form one filled polygon: tops in record
+  sample. Diameter is zero. Scene v25 defines `symbol` as `0=None`, `1=Top`,
+  or `2=Perimeter`; another value is malformed. Consecutive visible kind-3 records with
+  the same stable ID, `style_ref`, and outline mode form one filled polygon: tops in record
   order, then bases in reverse order, closed. Unlike Rect, Band does not
   min/max-normalize corners — sample order is preserved so the polygon matches
-  the authored series.
+  the authored series. `Top` strokes only the top samples in record order;
+  `Perimeter` strokes the closed top/end/base/end polygon. Rust canonicalizes
+  any requested mode to `None` when stroke width or resolved stroke alpha is
+  zero, and decoders reject a noncanonical visible mode with invisible stroke.
 
 Decoders must require the exact header/record widths for the declared version,
 reject unknown kinds, and enforce the reserved-zero fields above. They must not
@@ -207,7 +212,8 @@ layout authority for that already-versioned bounded contract.
 `figureSceneV3` remains the Node packing seam and Rust remains the decoder,
 layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven literal Cartesian static contract
-through Rust Scene: constant-style circle/diamond scatter; constant-style
+through Rust Scene: constant-style circle/diamond scatter; ordinary finite,
+fixed-domain area/error-band Bands; constant-style
 polyline (including host-expanded literal steps); and the ordinary Rect family
 (`bar`/`column`/`histogram`); plus bounded literal disconnected endpoint pairs
 for `segments`, error-bar stems/caps, and `stem` with its immediate generated
@@ -572,6 +578,28 @@ line count. Text contains Rust-selected LF separators. SVG emits those lines as
 `white-space: pre` plus the fixed 1.2 line height. v1--v4 label tables and
 `XYAD` v1/v2 remain valid. Public Python and Node host packing now emit this
 bounded v3 section; host entry points retain no wrapping or placement policy.
+
+## Version 25 Band outline topology
+
+Scene v25 gives Band record byte 2 a bounded outline descriptor: `0=None`,
+`1=Top`, and `2=Perimeter`. Rust owns canonicalization, run boundaries, SVG
+paths, raster display-list topology, and the browser painter descriptor. A
+zero-width or transparent resolved stroke is encoded canonically as `None`;
+`Top` is an open top polyline; `Perimeter` is the complete closed polygon,
+including both end faces. Python and Node only resolve literal paint/default
+inputs and select the authored top/perimeter request before calling the batch
+encoder. Their exact ordinary Cartesian area bytes are shared fixtures.
+
+The public static route is deliberately limited to finite equal-length
+`x`/`y`/`base` columns of 2--10,000 samples on explicit primary Cartesian
+domains and default axis sides. Area defaults to `Top`; error bands default to
+`None`. Curves, dash, gradients, polar coordinates, missing-data breaks, LOD,
+ribbon expansion, and `fill_betweenx` remain outside this increment.
+
+The older direct-browser `XYTS` v2 area descriptor has no outline-mode field.
+To preserve its pre-v25 native Scene semantics, Rust lowers a positive-width,
+nontransparent area stroke to `Perimeter` and all other strokes to canonical
+`None`; TypeScript remains a framing-only host.
 
 The combined public-host fixture is generated from
 `scripts/generate_authored_scene_benchmark.py` into the legacy-named

@@ -175,7 +175,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   for (const annotation of figureSceneFixture.node_public_annotations) figure.annotate(annotation);
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.node_public_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 24);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 25);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -277,7 +277,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 24);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 25);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "boxed", style: { label_background: "#ffffff" } }];
@@ -523,7 +523,7 @@ test("Node Figure axis visibility cases match the public Python Scene fixture", 
   }
 });
 
-test("Node public Figure matches the combined Python authored Scene v24 fixture", () => {
+test("Node public Figure matches the combined Python authored Scene v25 fixture", () => {
   const fixture = authoredSceneFixture.authoring;
   const count = authoredSceneFixture.count;
   const x = Float64Array.from({ length: count }, (_, index) => index / (count - 1));
@@ -558,7 +558,7 @@ test("Node public Figure matches the combined Python authored Scene v24 fixture"
     },
   });
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 24);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 25);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
   const svg = sceneSvg(scene), raster = sceneRasterCommands(scene);
   for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "reference", "Intensity", "representative callout", "wrapped annotation", "evidence", "second line"]) {
@@ -607,7 +607,7 @@ test("Node public Scene chrome setters snapshot literals and retain Rust validat
   }
 });
 
-test("Node Scene v24 wrapped annotations reject host layout features", () => {
+test("Node Scene v25 wrapped annotations reject host layout features", () => {
   for (const [field, value, reason] of [
     ["class_name", "browser-only", /BROWSER_CSS|class behavior/],
     ["style", { font_family: "Example Sans" }, /custom fonts/],
@@ -754,7 +754,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 24);
+  assert.equal(sceneVersion(), 25);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -795,7 +795,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 24);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 25);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });
@@ -870,6 +870,45 @@ test("Node Scene compiles segments, step lines, and stem", () => {
   stem.stem([0, 1], [1, 2], { color: "#22c55e", name: null });
   const stemSvg = sceneSvg(stem.toScene());
   assert.equal((stemSvg.match(/<polyline /g) ?? []).length, 2);
+});
+
+test("Node area matches Python Scene v25 Band outline bytes and consumers", () => {
+  for (const [mode, options, symbol] of [
+    ["top", {}, 1],
+    ["perimeter", { strokePerimeter: true }, 2],
+    ["none", { lineWidth: 0 }, 0],
+  ]) {
+    const figure = new Figure({ width: 240, height: 160 });
+    figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 3]);
+    figure.area([0, 1, 2], [1, 2, 1.5], {
+      base: 0, id: 7, color: "#3987e5", opacity: 0.5,
+      lineColor: "#112233", lineWidth: options.lineWidth ?? 2,
+      lineOpacity: 0.4, strokePerimeter: options.strokePerimeter ?? false,
+      style: { fill_opacity: 0.8, stroke_opacity: 0.5 },
+    });
+    const scene = figure.toScene();
+    const expected = figureSceneFixture.band_outlines[mode];
+    assert.deepEqual(scene, Uint8Array.from(Buffer.from(expected.scene_base64, "base64")));
+    assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), expected.sha256);
+    assert.deepEqual(scene.slice(160, 168), Uint8Array.of(57, 135, 229, 102, 17, 34, 51, 26));
+    assert.equal(scene[178], symbol);
+    const svg = sceneSvg(scene);
+    assert.equal((svg.match(/<path d="/g) ?? []).length, mode === "top" ? 2 : 1);
+    assert.equal(svg.includes('fill="none"'), mode === "top");
+    assert.equal(svg.includes('stroke="none"'), mode !== "perimeter");
+    assert.ok(sceneRasterCommands(scene).byteLength > 0);
+    assert.equal(sceneBrowserPainter(scene)[301], symbol);
+  }
+
+  const band = new Figure({ width: 240, height: 160 });
+  band.setAxisDomain("x", [0, 2]); band.setAxisDomain("y", [0, 3]);
+  band.errorBand([0, 1, 2], [0.7, 1.2, 0.9], [1.3, 1.8, 1.5], { id: 7 });
+  assert.equal(band.toScene()[178], 0);
+
+  const inherited = new Figure({ width: 240, height: 160 });
+  inherited.setAxisDomain("x", [0, 2]); inherited.setAxisDomain("y", [0, 3]);
+  inherited.area([0, 1, 2], [1, 2, 1.5], { style: { color: "#aabbcc" } });
+  assert.deepEqual(inherited.toScene().slice(160, 167), Uint8Array.of(170, 187, 204, 89, 170, 187, 204));
 });
 
 test("Node frames literal v23 borders for text, attached, and callout label boxes", () => {

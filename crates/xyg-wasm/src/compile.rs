@@ -10,8 +10,8 @@ use xyg_engine::graph_style::{
     MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
 };
 use xyg_engine::scene::{
-    self, AxisScale, CartesianLayoutRequest, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle,
-    SceneChromeText, SceneError,
+    self, AxisScale, BandOutline, CartesianLayoutRequest, PlotLayout, ScaleKind, SceneBatch,
+    SceneChromeStyle, SceneChromeText, SceneError,
 };
 
 pub const COMPILE_MAGIC: &[u8; 4] = b"XYCC";
@@ -1042,8 +1042,16 @@ fn compile_series_request(bytes: &[u8], peak_budget: usize) -> Result<CompiledSc
             style_refs.push(series_index as u32);
             symbols.push(if kind == KIND_SCATTER {
                 symbol as u8
+            } else if kind == KIND_AREA
+                && stroke_width[series_index] > 0.0
+                && stroke_rgba[series_index * 4 + 3] != 0
+            {
+                // XYTS v2 predates Scene's explicit Band topology. Preserve
+                // its native Scene SVG/raster contract: a visible authored
+                // area stroke is the complete closed perimeter.
+                BandOutline::Perimeter as u8
             } else {
-                0
+                BandOutline::None as u8
             });
             diameter.push(if kind == KIND_SCATTER {
                 diameters.as_ref().map(|values| values[index]).unwrap_or(

@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 24;
+pub const SCENE_VERSION: u32 = 25;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -20,7 +20,7 @@ pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
-pub const BROWSER_PAINTER_VERSION: u32 = 13;
+pub const BROWSER_PAINTER_VERSION: u32 = 14;
 pub const BROWSER_PAINTER_HEADER_BYTES: usize = 300;
 pub const BROWSER_PAINTER_TRACE_BYTES: usize = 64;
 pub const BROWSER_PAINTER_TICK_BYTES: usize = 16;
@@ -3085,7 +3085,14 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 }
             }
             SceneRecordKind::Band => {
-                if symbol != 0 || diameter != 0.0 {
+                let outline = BandOutline::from_code(symbol)?;
+                let style_offset = styles_offset + style * SCENE_STYLE_RECORD_BYTES;
+                let stroke_width = batch_f64(bytes, style_offset + 8)?;
+                let stroke_alpha = bytes[style_offset + 7];
+                if diameter != 0.0
+                    || (outline != BandOutline::None
+                        && (stroke_width == 0.0 || stroke_alpha == 0))
+                {
                     return Err(SceneError::Length);
                 }
             }
@@ -3259,6 +3266,39 @@ pub enum SceneRecordKind {
     /// at least three vertices form one closed fill (triangle mesh hosts emit
     /// one three-vertex run per triangle).
     PolyFill = 4,
+}
+
+/// Rust-owned outline topology for a Scene Band run (Scene v25).
+///
+/// The code reuses the Band record's formerly-reserved `symbol` byte.  Hosts
+/// select from the bounded authored modes; Rust canonicalizes an invisible
+/// stroke to `None` and owns every consumer's resulting path topology.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum BandOutline {
+    None = 0,
+    Top = 1,
+    Perimeter = 2,
+}
+
+impl BandOutline {
+    fn from_code(value: u8) -> Result<Self, SceneError> {
+        match value {
+            0 => Ok(Self::None),
+            1 => Ok(Self::Top),
+            2 => Ok(Self::Perimeter),
+            _ => Err(SceneError::Length),
+        }
+    }
+
+    fn canonical(value: u8, stroke_width: f64, stroke_alpha: u8) -> Result<Self, SceneError> {
+        let requested = Self::from_code(value)?;
+        Ok(if stroke_width == 0.0 || stroke_alpha == 0 {
+            Self::None
+        } else {
+            requested
+        })
+    }
 }
 
 impl SceneRecordKind {
@@ -3894,13 +3934,25 @@ impl<'a> SceneBatch<'a> {
         }
         for (index, kind) in kinds.iter().enumerate() {
             let kind = SceneRecordKind::from_code(*kind)?;
-            if style_refs[index] as usize >= style_count
-                || (kind == SceneRecordKind::Scatter
-                    && symbols[index] > ScatterSymbol::VerticalLine as u8)
-                || (kind != SceneRecordKind::Scatter
-                    && (diameter[index] != 0.0 || symbols[index] != 0))
-            {
+            if style_refs[index] as usize >= style_count {
                 return Err(SceneError::Length);
+            }
+            match kind {
+                SceneRecordKind::Scatter => {
+                    if symbols[index] > ScatterSymbol::VerticalLine as u8 {
+                        return Err(SceneError::Length);
+                    }
+                }
+                SceneRecordKind::Band => {
+                    BandOutline::from_code(symbols[index])?;
+                    if diameter[index] != 0.0 {
+                        return Err(SceneError::Length);
+                    }
+                }
+                _ if diameter[index] != 0.0 || symbols[index] != 0 => {
+                    return Err(SceneError::Length);
+                }
+                _ => {}
             }
         }
         // Scene v12 annotation records use ordinary paint primitives but a
@@ -4152,7 +4204,18 @@ impl<'a> SceneBatch<'a> {
                 };
             out.push(kind as u8);
             out.push(u8::from(visible));
-            out.push(self.symbols[index]);
+            let symbol = if kind == SceneRecordKind::Band {
+                let style = self.style_refs[index] as usize;
+                BandOutline::canonical(
+                    self.symbols[index],
+                    self.stroke_width[style],
+                    self.stroke_rgba[style * 4 + 3],
+                )
+                .expect("validated Band outline") as u8
+            } else {
+                self.symbols[index]
+            };
+            out.push(symbol);
             out.push(if !self.annotations_from_ids {
                 0x80
             } else if is_scene_annotation_id(self.stable_ids[index]) {
@@ -4628,6 +4691,7 @@ fn valid_straight_arrow_run(records: &[EncodedRecord]) -> bool {
 fn same_record_run(left: EncodedRecord, right: EncodedRecord) -> bool {
     left.annotation_tag == right.annotation_tag
         && (left.annotation_tag == 0x80 || left.stable_id == right.stable_id)
+        && (left.kind != SceneRecordKind::Band || left.symbol == right.symbol)
 }
 
 fn format_tick(value: f64, step: f64, kind: ScaleKind) -> String {
@@ -5281,7 +5345,9 @@ impl SceneDocument {
             let annotation_tag = bytes[offset + 3];
             if !matches!(annotation_tag, 0..=6 | 0x80)
                 || (kind == SceneRecordKind::Scatter && symbol > ScatterSymbol::VerticalLine as u8)
-                || (kind != SceneRecordKind::Scatter && symbol != 0)
+                || (kind == SceneRecordKind::Band && BandOutline::from_code(symbol).is_err())
+                || (!matches!(kind, SceneRecordKind::Scatter | SceneRecordKind::Band)
+                    && symbol != 0)
             {
                 return Err(SceneError::Length);
             }
@@ -5291,6 +5357,12 @@ impl SceneDocument {
                     .expect("bounded record"),
             ) as usize;
             if style_ref >= styles.len() {
+                return Err(SceneError::Length);
+            }
+            if kind == SceneRecordKind::Band
+                && symbol != BandOutline::None as u8
+                && (styles[style_ref].stroke_width == 0.0 || styles[style_ref].stroke[3] == 0)
+            {
                 return Err(SceneError::Length);
             }
             let stable_id = u64::from_le_bytes(
@@ -5342,7 +5414,7 @@ impl SceneDocument {
                     // Worst-case per-sample share of a closed Band fill (and optional
                     // stroke): a two-sample run emits 41 fill bytes, so reserve 21 each.
                     SceneRecordKind::Band => {
-                        21 + if styles[style_ref].stroke_width > 0.0 {
+                        21 + if symbol != BandOutline::None as u8 {
                             26
                         } else {
                             0
@@ -6019,7 +6091,7 @@ impl SceneDocument {
                         }
                         out.push_str(" Z\"");
                         push_paint(&mut out, "fill", style.fill, None);
-                        if style.stroke_width > 0.0 {
+                        if record.symbol == BandOutline::Perimeter as u8 {
                             push_paint(&mut out, "stroke", style.stroke, None);
                             out.push_str(" stroke-width=\"");
                             push_num(&mut out, style.stroke_width);
@@ -6028,6 +6100,24 @@ impl SceneDocument {
                             out.push_str(" stroke=\"none\"");
                         }
                         out.push_str("/>");
+                        if record.symbol == BandOutline::Top as u8 {
+                            out.push_str("<path d=\"M ");
+                            push_num(&mut out, run[0].coordinates[0]);
+                            out.push(' ');
+                            push_num(&mut out, run[0].coordinates[1]);
+                            for point in &run[1..] {
+                                out.push_str(" L ");
+                                push_num(&mut out, point.coordinates[0]);
+                                out.push(' ');
+                                push_num(&mut out, point.coordinates[1]);
+                            }
+                            out.push('"');
+                            out.push_str(" fill=\"none\"");
+                            push_paint(&mut out, "stroke", style.stroke, None);
+                            out.push_str(" stroke-width=\"");
+                            push_num(&mut out, style.stroke_width);
+                            out.push_str("\"/>");
+                        }
                     }
                 }
                 SceneRecordKind::PolyFill => {
@@ -6963,20 +7053,24 @@ impl SceneDocument {
                             push_raster_f32(out, point.coordinates[3], scale)?;
                         }
                         out.extend_from_slice(&style.fill);
-                        if style.stroke_width > 0.0 {
+                        if record.symbol != BandOutline::None as u8 {
+                            let perimeter = record.symbol == BandOutline::Perimeter as u8;
+                            let stroke_count = if perimeter { count } else { run.len() as u32 };
                             out.push(3); // OP_STROKE
-                            out.extend_from_slice(&count.to_le_bytes());
+                            out.extend_from_slice(&stroke_count.to_le_bytes());
                             for point in run {
                                 push_raster_f32(out, point.coordinates[0], scale)?;
                                 push_raster_f32(out, point.coordinates[1], scale)?;
                             }
-                            for point in run.iter().rev() {
-                                push_raster_f32(out, point.coordinates[2], scale)?;
-                                push_raster_f32(out, point.coordinates[3], scale)?;
+                            if perimeter {
+                                for point in run.iter().rev() {
+                                    push_raster_f32(out, point.coordinates[2], scale)?;
+                                    push_raster_f32(out, point.coordinates[3], scale)?;
+                                }
                             }
                             push_raster_f32(out, style.stroke_width, scale)?;
                             out.extend_from_slice(&style.stroke);
-                            out.push(1); // closed
+                            out.push(u8::from(perimeter)); // closed only for perimeter
                             out.extend_from_slice(&0u32.to_le_bytes());
                             out.push(1);
                         }
@@ -8144,7 +8238,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 24);
+        assert_eq!(SCENE_VERSION, 25);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -9468,6 +9562,116 @@ mod tests {
             .to_raster_commands(1.0)
             .unwrap();
         assert!(commands.contains(&1), "band fill poly opcode missing");
+    }
+
+    #[test]
+    fn scene_v25_band_outline_mode_is_canonical_and_shared_by_consumers() {
+        let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            2.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            2.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let encode = |outline: BandOutline, width: f64, alpha: u8| {
+            SceneBatch::new(
+                layout,
+                1,
+                2,
+                x,
+                y,
+                &[3, 3],
+                &[9, 9],
+                &[0, 0],
+                &[57, 99, 235, 180],
+                &[17, 24, 39, alpha],
+                &[width],
+                &[0.0, 0.0],
+                &[outline as u8, outline as u8],
+                &[0.0, 2.0],
+                &[1.0, 1.5],
+                &[0.0, 2.0],
+                &[0.0, 0.0],
+            )
+            .unwrap()
+            .encode()
+        };
+
+        let top = encode(BandOutline::Top, 1.2, 255);
+        let perimeter = encode(BandOutline::Perimeter, 1.2, 255);
+        let none = encode(BandOutline::Top, 1.2, 0);
+        let first_record = SCENE_BATCH_HEADER_BYTES + SCENE_STYLE_RECORD_BYTES;
+        assert_eq!(top[first_record + 2], BandOutline::Top as u8);
+        assert_eq!(perimeter[first_record + 2], BandOutline::Perimeter as u8);
+        assert_eq!(none[first_record + 2], BandOutline::None as u8);
+
+        let top_document = SceneDocument::decode(&top).unwrap();
+        let perimeter_document = SceneDocument::decode(&perimeter).unwrap();
+        let none_document = SceneDocument::decode(&none).unwrap();
+        let top_svg = top_document.to_svg();
+        let perimeter_svg = perimeter_document.to_svg();
+        let none_svg = none_document.to_svg();
+        assert_eq!(top_svg.matches("<path d=\"").count(), 2);
+        assert_eq!(perimeter_svg.matches("<path d=\"").count(), 1);
+        assert_eq!(none_svg.matches("<path d=\"").count(), 1);
+        assert!(top_svg.contains("stroke=\"none\"") && top_svg.contains("fill=\"none\""));
+        assert!(!perimeter_svg.contains("stroke=\"none\""));
+        assert!(none_svg.contains("stroke=\"none\""));
+
+        let top_raster = top_document.to_raster_commands(1.0).unwrap();
+        let perimeter_raster = perimeter_document.to_raster_commands(1.0).unwrap();
+        let none_raster = none_document.to_raster_commands(1.0).unwrap();
+        let grid_count = top_document.resolved_axis_ticks(true).unwrap().ticks.len()
+            + top_document.resolved_axis_ticks(false).unwrap().ticks.len();
+        let mark_offset = 82 + 17 + grid_count * 35;
+        let stroke_offset = mark_offset + 41;
+        assert_eq!(top_raster[mark_offset], 1);
+        assert_eq!(top_raster[stroke_offset], 3);
+        assert_eq!(
+            u32::from_le_bytes(top_raster[stroke_offset + 1..stroke_offset + 5].try_into().unwrap()),
+            2
+        );
+        assert_eq!(top_raster[stroke_offset + 29], 0);
+        assert_eq!(perimeter_raster[stroke_offset], 3);
+        assert_eq!(
+            u32::from_le_bytes(
+                perimeter_raster[stroke_offset + 1..stroke_offset + 5]
+                    .try_into()
+                    .unwrap()
+            ),
+            4
+        );
+        assert_eq!(perimeter_raster[stroke_offset + 45], 1);
+        assert_ne!(none_raster[stroke_offset], 3);
+        assert_eq!(
+            top_document.to_browser_painter(16_384).unwrap()
+                [BROWSER_PAINTER_HEADER_BYTES + 1],
+            BandOutline::Top as u8
+        );
+        assert_eq!(
+            perimeter_document.to_browser_painter(16_384).unwrap()
+                [BROWSER_PAINTER_HEADER_BYTES + 1],
+            BandOutline::Perimeter as u8
+        );
+        assert_eq!(
+            none_document.to_browser_painter(16_384).unwrap()
+                [BROWSER_PAINTER_HEADER_BYTES + 1],
+            BandOutline::None as u8
+        );
     }
 
     #[test]

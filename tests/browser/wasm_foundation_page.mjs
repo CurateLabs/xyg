@@ -155,7 +155,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 248 + textBytes + xTickLabels.length + yTickLabels.length + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 24, true);
+  view.setUint32(4, 25, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -221,7 +221,7 @@ function primaryAnnotationSceneV10() {
   const body = records + recordCount * 56;
   const bytes = new Uint8Array(body + 248), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 24, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 25, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -253,7 +253,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 248);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 24, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 25, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -377,7 +377,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    22, 24, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    22, 25, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0, 0,
@@ -487,7 +487,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 22,
-    expectedSceneVersion: 24,
+    expectedSceneVersion: 25,
   };
 }
 
@@ -545,8 +545,32 @@ async function run() {
     const expectedPainter = fromHex(fixture.painter_hex), actualPainter = new Uint8Array(prepared.painter);
     if (actualPainter.length !== expectedPainter.length
         || actualPainter.some((value, index) => value !== expectedPainter[index])) {
-      throw new Error(`direct WASM painter v9 drifted from Rust-generated fixture ${fixture.name}`);
+      throw new Error(`direct WASM painter v14 drifted from Rust-generated fixture ${fixture.name}`);
     }
+    if (fixture.name === "area_visible_stroke_perimeter"
+        && (actual[160 + fixture.styles * 16 + 2] !== 2 || actualPainter[301] !== 2)) {
+      throw new Error("XYTS v2 visible area stroke lost its legacy perimeter topology");
+    }
+  }
+  for (const [mode, expectedSymbol] of [["top", 1], ["perimeter", 2], ["none", 0]]) {
+    const encoded = Uint8Array.from(atob(sharedFixture.band_outlines[mode].scene_base64), (char) => char.charCodeAt(0));
+    const prepared = await fixtureWorker.prepareScene(encoded, {
+      sequence: fixtureSequence++, transfer: false,
+    }).result;
+    const painter = new Uint8Array(prepared.painter);
+    if (painter[301] !== expectedSymbol) {
+      throw new Error(`Rust Band ${mode} painter descriptor lost its outline mode`);
+    }
+    const host = document.body.appendChild(document.createElement("div"));
+    const view = hydrateWasmPainter(host, prepared);
+    const band = view.gpuTraces.find((candidate) => candidate.trace?.kind === "area");
+    if (!band || band.trace.style.line_width !== (mode === "none" ? 0 : 2)
+        || band.trace.style.stroke_perimeter !== (mode === "perimeter")
+        || Boolean(band.bandLeftXBuf) !== (mode === "perimeter")
+        || Boolean(band.bandRightYBuf) !== (mode === "perimeter")) {
+      throw new Error(`browser Band ${mode} did not consume Rust-owned outline topology`);
+    }
+    view.destroy(); host.remove();
   }
   const failureContract = {
     wrong_version: ["XYG_WASM_SCENE_VERSION", 4],
@@ -647,7 +671,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 22 || ready.sceneVersion !== 24) {
+  if (ready.abiVersion !== 22 || ready.sceneVersion !== 25) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1624,7 +1648,7 @@ async function run() {
   // authored Cartesian chrome subset through the real strict-CSP Worker.
   foundationStage = "strict-CSP full authored Cartesian Scene chrome";
   const authoredFixture = await (await fetch("/tests/fixtures/authored_scene_v20.json")).json();
-  if (authoredFixture.schema !== "xyg-authored-scene-v24-fixture-v1") {
+  if (authoredFixture.schema !== "xyg-authored-scene-v25-fixture-v1") {
     throw new Error(`unexpected authored Scene fixture schema: ${authoredFixture.schema}`);
   }
   const authoredScene = Uint8Array.from(atob(authoredFixture.scene_base64), (byte) => byte.charCodeAt(0));
