@@ -60,7 +60,8 @@ retire each exception only with cross-host differential and performance proof.
 The ABI 96 primary numeric-format slice removes one more duplicated host
 decision from that compatibility boundary. For Scene-eligible linear, log, and
 symlog x/y axes, `crates/xyg-engine/src/scene.rs` exclusively parses
-`<prefix>(,).N[f|%]<suffix>`, resolves final labels (including invalid-format
+`<prefix>(,).N[f|%]<suffix>` with precision `N` from 0 through 100, resolves
+final labels (including invalid-format
 fallback, log sub-unit collapse protection, and explicit-label precedence),
 and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded

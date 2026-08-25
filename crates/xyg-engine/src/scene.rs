@@ -16,6 +16,9 @@ pub const MAX_SCENE_TEXT_BYTES: usize = 4_096;
 /// Authored numeric axis formats are bounded authoring input. They compile to
 /// ordinary canonical tick labels and never reach Scene consumers verbatim.
 pub const MAX_SCENE_AXIS_FORMAT_BYTES: usize = 256;
+/// Shared upper bound of the existing browser fixed-decimal compatibility
+/// formatter and the bounded canonical tick-label resource contract.
+const MAX_NUMERIC_TICK_FORMAT_PRECISION: usize = 100;
 pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
 pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
@@ -5042,6 +5045,9 @@ impl<'a> NumericTickFormat<'a> {
             return None;
         }
         let digits = after_dot[..digit_bytes].parse::<usize>().ok()?;
+        if digits > MAX_NUMERIC_TICK_FORMAT_PRECISION {
+            return None;
+        }
         let mut rest = &after_dot[digit_bytes..];
         let explicit_f = rest.starts_with('f');
         if explicit_f {
@@ -10270,6 +10276,15 @@ mod tests {
                 Some(&"x".repeat(MAX_SCENE_AXIS_FORMAT_BYTES + 1))
             ),
             "1"
+        );
+        let boundary = format!(".{MAX_NUMERIC_TICK_FORMAT_PRECISION}f");
+        let boundary_label = format_numeric_tick(1.25, 1.0, ScaleKind::Linear, Some(&boundary));
+        assert_eq!(boundary_label.len(), MAX_NUMERIC_TICK_FORMAT_PRECISION + 2);
+        assert!(boundary_label.starts_with("1.25"));
+        let oversized = format!(".{}f", MAX_NUMERIC_TICK_FORMAT_PRECISION + 1);
+        assert_eq!(
+            format_numeric_tick(1.25, 1.0, ScaleKind::Linear, Some(&oversized)),
+            format_numeric_tick(1.25, 1.0, ScaleKind::Linear, None)
         );
     }
 

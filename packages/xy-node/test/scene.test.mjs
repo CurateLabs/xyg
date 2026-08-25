@@ -92,6 +92,18 @@ test("Node authored tick labels override the format envelope byte-for-byte", () 
   assert.deepEqual(Buffer.from(build("$,.1f USD")), Buffer.from(build(null)));
 });
 
+test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
+  const build = (format, width = 320) => {
+    const figure = new Figure({ width, height: 240 });
+    figure.setAxis("x", { domain: [0, 4], format });
+    figure.setAxisDomain("y", [0, 5]);
+    figure.scatter([1, 2], [2, 3], { id: 0 });
+    return figure.toScene();
+  };
+  assert.match(sceneSvg(build(".100f", 1600)), new RegExp(`>0\\.${"0".repeat(100)}<`));
+  assert.deepEqual(Buffer.from(build(".101f")), Buffer.from(build(null)));
+});
+
 test("Node forwards nonlinear axis policy exactly like Python", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.setAxis("x", { type: "symlog", constant: 2, domain: [-10, 10] });

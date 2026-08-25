@@ -570,7 +570,8 @@ F3, still pending (above).
   ABI 96 adds bounded primary Cartesian numeric-format authoring for
   linear/log/symlog. Hosts pack at most 256 NUL-free UTF-8 bytes per axis in
   the versioned `XYAF` envelope; Rust parses
-  `<prefix>(,).N[f|%]<suffix>`, resolves final labels and gutters, preserves
+  `<prefix>(,).N[f|%]<suffix>` with precision `N` from 0 through 100, resolves
+  final labels and gutters, preserves
   explicit-label precedence and default-label fallback, then emits existing
   explicit-major plus `XYTL` records. Scene stays v25, legacy raw `XYAD`
   remains valid, and the envelope keeps the batch function below Koffi's

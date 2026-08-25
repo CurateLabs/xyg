@@ -418,13 +418,14 @@ automatic formatter. The two accepted grammars are narrow.
 **Primary Cartesian numeric axes.** The public Rust Scene static slice accepts
 exactly
 
-```
+```text
 <prefix>(,).N[f|%]<suffix>
 ```
 
 That is: a literal prefix, optional comma grouping immediately before the
-decimal point, one or more precision digits, optional `f` or percent scaling
-and sign, then a literal suffix. Examples include `.2f`, `,.0f`, `.1%`,
+decimal point, one or more ASCII precision digits whose parsed value is from 0
+through 100, optional `f` or percent scaling and sign, then a literal suffix.
+Examples include `.2f`, `,.0f`, `.1%`,
 `$,.0f`, and `€,.1f EUR`. Rust uses deterministic ASCII comma grouping rather
 than a host locale. There is no sign flag, `e`/`g`/`s` type, explicit width, or
 fill. Formats are bounded to 256 NUL-free UTF-8 bytes. Python and Node only

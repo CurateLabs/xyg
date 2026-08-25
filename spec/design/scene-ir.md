@@ -600,8 +600,10 @@ ABI 96 moves the bounded primary Cartesian numeric `format` decision into
 `xyg-engine` for linear, log, and symmetric-log axes. The accepted grammar is
 `<prefix>(,).N[f|%]<suffix>`: an optional literal prefix, optional comma
 grouping, a required decimal precision, optional `f` or percent scaling/sign,
-and a literal suffix. Each authored format is at most 256 UTF-8 bytes and must
-not contain NUL. Explicit authored tick labels retain precedence. Invalid
+and a literal suffix. Precision is bounded from 0 through 100, matching the
+existing browser fixed-decimal ceiling; each authored format is at most 256
+UTF-8 bytes and must not contain NUL. Explicit authored tick labels retain
+precedence. Invalid
 grammar deliberately produces the ordinary deterministic label instead of an
 error, and a sub-unit log value that would collapse to formatted zero also
 uses its ordinary distinguishable label without affixes.

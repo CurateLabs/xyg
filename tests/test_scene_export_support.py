@@ -127,6 +127,16 @@ def test_authored_numeric_tick_labels_override_format_and_invalid_format_falls_b
     assert b"XYTL" not in invalid_scene
     assert ">0<" in _native.scene_svg(invalid_scene)
 
+    boundary = _supported()
+    boundary.width = 1600
+    boundary.axis_options["x"]["format"] = ".100f"
+    boundary_scene = figure_scene(boundary)
+    assert f">0.{('0' * 100)}<" in _native.scene_svg(boundary_scene)
+
+    oversized = _supported()
+    oversized.axis_options["x"]["format"] = ".101f"
+    assert figure_scene(oversized) == figure_scene(_supported())
+
 
 def _labeled_annotation() -> Figure:
     figure = _supported()

@@ -125,8 +125,9 @@ not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.
 
 ABI 96 additionally admits the bounded primary Cartesian numeric format
-grammar `<prefix>(,).N[f|%]<suffix>` on linear, log, and symlog axes without a
-Scene-version change. Python and Node frame the authored strings in the same
+grammar `<prefix>(,).N[f|%]<suffix>` with precision `N` from 0 through 100 on
+linear, log, and symlog axes without a Scene-version change. Python and Node
+frame the authored strings in the same
 versioned `XYAF` authoring envelope; Rust alone parses the grammar, resolves
 labels and gutters, and emits existing explicit-major plus `XYTL` bytes. Shared
 fixtures pin exact Python/Node formatted Scene bytes and the Node forwarding of
