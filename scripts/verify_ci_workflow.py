@@ -1872,9 +1872,9 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         jobs["authored-scene-browser-evidence"],
         "Generate and measure four-size authored-Scene first paint",
         "the explicit just-built native library for Node authored-Scene generation",
-        "XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so",
+        "XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so",
     )
-    if text.count("XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so") != 1:
+    if text.count("XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so") != 1:
         errors.append(
             "CodSpeed must expose the checkout native library only to the authored-Scene measurement step"
         )
