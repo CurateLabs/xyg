@@ -1868,6 +1868,7 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "scripts/inline_density_file_benchmark.py",
         "scripts/verify_inline_density_benchmark.py",
         "hosted-density-browser-${{ github.sha }}.json",
+        'XYG_CHROMIUM="$(node -e \'process.stdout.write(require("playwright").chromium.executablePath())\')"',
         "actions/upload-artifact@",
     )
     _require_step_contains(
