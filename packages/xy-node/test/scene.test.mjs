@@ -11,6 +11,11 @@ const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fi
 const authoredSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/authored_scene_v20.json", import.meta.url), "utf8"));
 const axisVisibilityFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/public_axis_visibility_scene.json", import.meta.url), "utf8"));
 const axisTickFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/axis_ticks.json", import.meta.url), "utf8"));
+const BUILTIN_SYMBOLS = [
+  "circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star",
+  "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel",
+  "thin_diamond", "plus_line", "x_line", "horizontal_line", "vertical_line",
+];
 
 test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal(sceneSupportReason(0), "");
@@ -66,6 +71,41 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture"
   assert.match(svg, /data-xy-chrome="axes"/);
   assert.equal((svg.match(/<text /g) ?? []).length, 6);
   assert.ok(sceneRasterCommands(encoded).length > 100);
+});
+
+test("Node matches Python bytes for all constant built-in scatter symbols", () => {
+  const figure = new Figure({ width: 760, height: 720 });
+  figure.setAxisDomain("x", [-1, 19]); figure.setAxisDomain("y", [0, 1]);
+  for (const [code, symbol] of BUILTIN_SYMBOLS.entries()) {
+    figure.scatter([code], [0.5], {
+      id: code,
+      name: symbol,
+      style: { color: "#3987e5", size: 8, opacity: 1, symbol },
+    });
+  }
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_builtin_symbols_sha256,
+  );
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/role="listitem"/g) ?? []).length, 19);
+  for (const symbol of BUILTIN_SYMBOLS) assert.match(svg, new RegExp(`>${symbol}</text>`));
+  assert.ok((svg.match(/fill="none" stroke="rgb\(57,135,229\)" stroke-width="1"/g) ?? []).length >= 8);
+
+  const painter = sceneBrowserPainter(scene);
+  const view = new DataView(painter.buffer, painter.byteOffset, painter.byteLength);
+  assert.equal(view.getUint32(20, true), 19);
+  const headerBytes = view.getUint32(12, true);
+  const descriptorBytes = view.getUint32(16, true);
+  for (let code = 0; code < 19; code += 1) {
+    const descriptor = headerBytes + code * descriptorBytes;
+    assert.equal(painter[descriptor], 0);
+    assert.equal(painter[descriptor + 1], code);
+    assert.equal(view.getFloat32(descriptor + 40, true), code >= 15 ? 1 : 0);
+  }
+  assert.ok(Buffer.from(painter).includes(Buffer.from("XYLG")));
+  assert.ok(sceneRasterCommands(scene).length > 100);
 });
 
 test("Node numeric tick formats match Python bytes and every Rust Scene consumer", () => {

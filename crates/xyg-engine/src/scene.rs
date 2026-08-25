@@ -3097,7 +3097,10 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         }
         match kind {
             SceneRecordKind::Scatter => {
-                if symbol > ScatterSymbol::X as u8 || coords[2] != 0.0 || coords[3] != 0.0 {
+                if symbol > ScatterSymbol::VerticalLine as u8
+                    || coords[2] != 0.0
+                    || coords[3] != 0.0
+                {
                     return Err(SceneError::Length);
                 }
             }
@@ -10170,23 +10173,33 @@ mod tests {
             2,
             scale,
             scale,
-            &[0, 0, 0, 0],
-            &[1, 2, 3, 4],
-            &[0; 4],
+            &[0; 10],
+            &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            &[0; 10],
             &[0; 4],
             &[0; 4],
             &[0.0],
-            &[20.0; 4],
+            &[20.0; 10],
             &[
                 ScatterSymbol::Diamond as u8,
                 ScatterSymbol::Diamond as u8,
                 ScatterSymbol::ThinDiamond as u8,
                 ScatterSymbol::ThinDiamond as u8,
+                ScatterSymbol::TriangleRight as u8,
+                ScatterSymbol::TriangleRight as u8,
+                ScatterSymbol::TriangleLeft as u8,
+                ScatterSymbol::TriangleLeft as u8,
+                ScatterSymbol::TriangleDown as u8,
+                ScatterSymbol::TriangleDown as u8,
             ],
-            &[-12.0, -14.2, 40.0, 40.0],
-            &[40.0, 40.0, -12.0, -14.2],
-            &[0.0; 4],
-            &[0.0; 4],
+            &[
+                -12.0, -14.2, 40.0, 40.0, -9.9, -10.1, 89.9, 90.1, 40.0, 40.0,
+            ],
+            &[
+                40.0, 40.0, -12.0, -14.2, 40.0, 40.0, 40.0, 40.0, -9.9, -10.1,
+            ],
+            &[0.0; 10],
+            &[0.0; 10],
         )
         .unwrap();
         let encoded = batch.encode();
@@ -10195,6 +10208,13 @@ mod tests {
         assert_eq!(encoded[records + SCENE_BATCH_RECORD_BYTES + 1], 0);
         assert_eq!(encoded[records + 2 * SCENE_BATCH_RECORD_BYTES + 1], 1);
         assert_eq!(encoded[records + 3 * SCENE_BATCH_RECORD_BYTES + 1], 0);
+        for index in [4, 6, 8] {
+            assert_eq!(encoded[records + index * SCENE_BATCH_RECORD_BYTES + 1], 1);
+            assert_eq!(
+                encoded[records + (index + 1) * SCENE_BATCH_RECORD_BYTES + 1],
+                0
+            );
+        }
 
         let line = MarkerGeometry::new(ScatterSymbol::PlusLine, 0.0, 0.0);
         assert_eq!(line.radius, 0.0);
@@ -10534,7 +10554,7 @@ mod tests {
             &[0; 19],
             &[57, 135, 229, 255],
             &[0, 0, 0, 255],
-            &[1.0],
+            &[0.0],
             &[8.0; 19],
             &codes,
             &x,
@@ -10544,16 +10564,41 @@ mod tests {
         )
         .unwrap()
         .encode();
-        let commands = SceneDocument::decode(&encoded)
-            .unwrap()
-            .to_raster_commands(1.0)
-            .unwrap();
+        assert_eq!(validate_scene_batch(&encoded).unwrap().records, 19);
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let commands = document.to_raster_commands(1.0).unwrap();
+        let painter = document.to_browser_painter(64 * 1024).unwrap();
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 19);
         let grid_count = linear_ticks(0.0, 18.0, 3).unwrap().ticks.len()
             + linear_ticks(0.0, 1.0, 3).unwrap().ticks.len();
         let mut offset = 82 + 17 + grid_count * 35; // two backgrounds, clip, grid
         for code in 0..=18 {
             assert_eq!(commands[offset], 4);
             assert_eq!(commands[offset + 13], code);
+            assert_eq!(
+                f32::from_le_bytes(commands[offset + 18..offset + 22].try_into().unwrap()),
+                if code >= ScatterSymbol::PlusLine as u8 {
+                    1.0
+                } else {
+                    0.0
+                }
+            );
+            let descriptor =
+                BROWSER_PAINTER_HEADER_BYTES + code as usize * BROWSER_PAINTER_TRACE_BYTES;
+            assert_eq!(painter[descriptor], SceneRecordKind::Scatter as u8);
+            assert_eq!(painter[descriptor + 1], code);
+            assert_eq!(
+                f32::from_le_bytes(
+                    painter[descriptor + 40..descriptor + 44]
+                        .try_into()
+                        .unwrap()
+                ),
+                if code >= ScatterSymbol::PlusLine as u8 {
+                    1.0
+                } else {
+                    0.0
+                }
+            );
             offset += 26;
         }
     }
@@ -11447,10 +11492,19 @@ mod tests {
         let mut nul_label = legend.clone();
         nul_label.entries[0].label = "bad\0label".into();
         assert_eq!(build(nul_label).err(), Some(SceneError::Limit));
-        let mut boundary_symbol = legend.clone();
-        boundary_symbol.entries[0].symbol = ScatterSymbol::VerticalLine as u8;
-        let boundary_encoded = build(boundary_symbol).unwrap().encode();
-        assert!(SceneDocument::decode(&boundary_encoded).is_ok());
+        for code in 0..=ScatterSymbol::VerticalLine as u8 {
+            let mut symbol_legend = legend.clone();
+            symbol_legend.entries[0].symbol = code;
+            let symbol_encoded = build(symbol_legend).unwrap().encode();
+            let symbol_document = SceneDocument::decode(&symbol_encoded).unwrap();
+            assert!(symbol_document.to_svg().contains("role=\"listitem\""));
+            assert!(symbol_document.to_raster_commands(1.0).is_ok());
+            assert!(symbol_document
+                .to_browser_painter(16_384)
+                .unwrap()
+                .windows(4)
+                .any(|bytes| bytes == b"XYLG"));
+        }
         let mut invalid_scatter = legend.clone();
         invalid_scatter.entries[0].symbol = ScatterSymbol::VerticalLine as u8 + 1;
         assert_eq!(build(invalid_scatter).err(), Some(SceneError::Length));

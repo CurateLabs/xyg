@@ -99,7 +99,12 @@ diameters/stroke widths must be finite and non-negative. The canonical marker
 policy shared with the version-1 SVG wrapper is:
 
 - line-only symbols (`plus_line`, `x_line`, `horizontal_line`, `vertical_line`)
-  use an implicit 1px stroke only when authored stroke width is zero;
+  use an implicit 1px stroke only when authored stroke width is zero; when no
+  stroke paint is authored, the thin host packing seams preserve the constant
+  fill paint as the stroke, while an explicitly transparent stroke stays
+  transparent. The current public static-export route admits the no-authored-
+  stroke case only; authored scatter stroke paint/width remains available at
+  the explicit Scene seam but stays on the compatibility renderer publicly;
 - path radius is `max(diameter / 2 - effective_stroke_width / 2, 0)`, with no
   hidden minimum-radius clamp;
 - most symbols have path x/y extent equal to radius; diamond uses `sqrt(2) ×
@@ -221,12 +226,12 @@ layout authority for that already-versioned bounded contract.
 `figureSceneV3` remains the Node packing seam and Rust remains the decoder,
 layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven literal Cartesian static contract
-through Rust Scene: constant-style circle/diamond scatter; ordinary finite,
+through Rust Scene: all 19 constant built-in scatter symbols; ordinary finite,
 fixed-domain area/error-band Bands; constant-style
 polyline (including Rust-expanded literal steps); and the ordinary Rect family
 (`bar`/`column`/`histogram`); plus bounded literal disconnected endpoint pairs
 for `segments`, error-bar stems/caps, and `stem` with its immediate generated
-circle/diamond marker; plus finite literal solid-color ribbons whose two-row
+built-in constant marker; plus finite literal solid-color ribbons whose two-row
 host ingress Rust-expands after axis transformation. The geometry records are
 byte-identical for the shared
 Python/Node line+bar and disconnected-segment fixtures, with separate exact
@@ -470,9 +475,9 @@ validates them and resolves leaders, label boxes, and wrapped line breaks.
 Unwrapped text offsets/anchors and marker-label offsets/anchors are not Scene
 fields and deliberately remain compatibility exceptions. Other annotation
 combinations/kinds, themes, classes/CSS/custom fonts, nonliteral chrome,
-symbols other than circle/diamond, unmodeled marks, and LOD remain compatibility
+custom marker paths/glyphs, data-driven symbol channels, unmodeled marks, and LOD remain compatibility
 preflight exceptions. Literal disconnected segments, error-bar stems/caps,
-and stems with their immediate generated circle/diamond markers share the
+and stems with their immediate generated constant built-in markers share the
 selected Scene with ordinary polylines and Rects; other segment-like roles and
 styles remain compatibility exceptions. ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
