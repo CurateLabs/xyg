@@ -96,7 +96,7 @@ and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF select the Rust
 Scene consumers only for the proven bounded literal Cartesian geometry subset:
-constant-style circle/diamond scatter and polylines, ordinary area/error-band
+all 19 constant built-in scatter symbols and constant-style polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
 pairs with bounded stem markers, and finite literal solid ribbons. For ribbons,
 Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the

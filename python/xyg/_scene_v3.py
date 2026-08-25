@@ -550,7 +550,17 @@ def figure_scene(
         ):
             raise ValueError("trace opacity channels must be finite and in [0, 1]")
         fill = _rgba(fill_value, opacity * fill_opacity)
-        stroke_default = color if trace.kind in _STROKE_KINDS else "transparent"
+        symbol_name = str(style.get("symbol", "circle"))
+        if symbol_name not in _SYMBOL_CODES:
+            raise UnsupportedSceneV3(f"Scene v12 does not support scatter symbol {symbol_name!r}")
+        stroke_default = (
+            color
+            if trace.kind in _STROKE_KINDS
+            or (
+                trace.kind == "scatter" and _SYMBOL_CODES[symbol_name] >= _SYMBOL_CODES["plus_line"]
+            )
+            else "transparent"
+        )
         if trace.kind in _RIBBON_KINDS:
             stroke_default = str(style.get("stroke", color))
         elif trace.kind in _POLYFILL_KINDS:
@@ -572,9 +582,6 @@ def figure_scene(
         stroke_width = float(width_value)
         styles.append((fill, stroke, stroke_width))
         style_ref = len(styles) - 1
-        symbol_name = str(style.get("symbol", "circle"))
-        if symbol_name not in _SYMBOL_CODES:
-            raise UnsupportedSceneV3(f"Scene v12 does not support scatter symbol {symbol_name!r}")
         diameter = (
             float(trace.size_ch.constant)
             if trace.kind == "scatter" and trace.size_ch is not None
@@ -1552,7 +1559,7 @@ def scene_export_support_reason(
     This is deliberately narrower than :func:`figure_scene`: the explicit
     Scene API can exercise a migrating record before the public compatibility
     renderer's complete output contract is modeled. The bounded literal
-    Cartesian geometry subset routes circle/diamond scatter, polylines,
+    Cartesian geometry subset routes all constant built-in scatter symbols, polylines,
     ordinary Rects, disconnected segment/error-bar/stem endpoint pairs, and
     bounded solid ribbons expanded by Rust in axis-transformed space.
     The proven literal Cartesian chrome slice also routes automatically:
@@ -1837,14 +1844,12 @@ def scene_export_support_reason(
             )
         ):
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") not in {
-            "circle",
-            "diamond",
-        }:
-            # Keep all remaining symbols on the compatibility route. In
-            # particular, line-only and asymmetric symbols have separate
-            # stroke/extent contracts that this public increment does not yet
-            # prove across static consumers.
+        if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") not in (
+            _SYMBOL_CODES
+        ):
+            # Custom marker paths/glyphs and data-driven symbol channels remain
+            # compatibility behavior. The fixed built-in vocabulary is fully
+            # represented by the canonical Scene record.
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL"
         if any(
             value is not None and key not in public_style_keys[trace.kind]

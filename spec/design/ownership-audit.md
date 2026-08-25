@@ -32,11 +32,18 @@ Python and Node pack two adjacent compact endpoint rows, while Rust transforms
 the endpoints through the selected Cartesian axes and expands the fixed
 96-interval cubic into ordinary Scene v25 Band samples. Host-local ribbon
 polygon helpers remain compatibility-renderer code, not canonical Scene policy.
+The public constant built-in marker slice admits all 19 fixed symbol codes when
+the scatter mark does not author a separate stroke or stroke width. Python and
+Node preserve the constant fill paint in the Scene style table, including
+fill-as-stroke for line-only symbols, while Rust owns implicit 1px line-only
+width, symbol paths, extent-aware clipping, legend swatches, and
+SVG/raster/browser lowering. Authored scatter stroke paint/width remains on the
+compatibility route for a later bounded cutover.
 
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
-literal Cartesian public geometry subset—constant-style circle/diamond
+literal Cartesian public geometry subset—constant-style built-in scatter symbols
 scatter and polylines, ordinary finite fixed-domain area/error-band Bands,
 ordinary bar/column/histogram Rects, bounded disconnected
 segment/error-bar/stem endpoint pairs, and finite literal solid-color ribbons
@@ -58,7 +65,7 @@ the documented compatibility exceptions. `_svg.py`, `_raster.py`, and
 `_pdf.py` remain compatibility owners for rich text and legend variants, every
 annotation outside that bounded primary Cartesian family (including rotation,
 collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,
-nonliteral/custom chrome, symbols other than circle/diamond, unmodeled marks or
+nonliteral/custom chrome, custom marker paths/glyphs, data-driven symbol channels, unmodeled marks or
 segment roles/styles, LOD inputs, export background overrides, and any other
 unmodeled output contract; #58/#117 must
 retire each exception only with cross-host differential and performance proof.

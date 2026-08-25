@@ -611,11 +611,20 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const fillDefault = SEGMENT_KINDS.has(trace.kind) ? "#00000000" : color;
     const fillCss = style.fill ?? fillDefault;
     if (typeof fillCss !== "string") throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
+    const symbolCode = sceneSymbolCode(style.symbol ?? 0);
     const strokeCss = BAND_KINDS.has(trace.kind)
       ? (style.line_color ?? color)
       : RIBBON_KINDS.has(trace.kind)
         ? (style.stroke ?? color)
-        : (style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000"));
+        : (style.stroke ?? (
+            STROKE_KINDS.has(trace.kind)
+            || (
+              trace.kind === "scatter"
+              && symbolCode >= SYMBOL_CODES.get("plus_line")
+            )
+              ? color
+              : "#00000000"
+          ));
     const width = Number(
       style.stroke_width ?? style.width ?? style.line_width ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
     );

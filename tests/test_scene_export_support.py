@@ -27,6 +27,9 @@ from xyg._scene_v3 import (
     figure_scene,
     scene_export_support_reason,
 )
+from xyg.marks import _SYMBOL_CODES
+
+BUILTIN_SYMBOLS = tuple(_SYMBOL_CODES)
 
 
 def _supported() -> Figure:
@@ -34,6 +37,25 @@ def _supported() -> Figure:
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
     figure.scatter([1, 2], [2, 3], color="#3987e5", size=6, opacity=0.8)
+    return figure
+
+
+def _public_builtin_symbols() -> Figure:
+    """Every constant built-in symbol, with deterministic cross-host identity."""
+    figure = Figure(width=760, height=720)
+    figure.axis_options["x"]["domain"] = (-1.0, 19.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    for code, symbol in enumerate(BUILTIN_SYMBOLS):
+        figure.scatter(
+            [float(code)],
+            [0.5],
+            name=symbol,
+            color="#3987e5",
+            size=8,
+            opacity=1.0,
+            symbol=symbol,
+        )
+        figure.traces[-1].id = code
     return figure
 
 
@@ -403,6 +425,87 @@ def test_public_solid_ribbon_routes_svg_png_pdf_through_the_exact_scene() -> Non
     assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
 
 
+def test_all_builtin_symbols_match_exact_cross_host_scene_and_public_consumers() -> None:
+    """The full fixed marker vocabulary leaves no Python static-policy fork."""
+    from xyg import _native, _pdf, kernels
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_builtin_symbols()
+    assert tuple(_SYMBOL_CODES.values()) == tuple(range(19))
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["public_builtin_symbols_sha256"]
+    svg = _native.scene_svg(scene)
+    assert svg.count('role="listitem"') == 19
+    assert all(f">{symbol}</text>" in svg for symbol in BUILTIN_SYMBOLS)
+    assert svg.count('fill="none" stroke="rgb(57,135,229)" stroke-width="1"') >= 8
+    assert figure.to_svg() == svg
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), figure.width, figure.height
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+
+    painter = _native.scene_browser_painter(scene)
+    assert int.from_bytes(painter[20:24], "little") == 19
+    header_bytes = int.from_bytes(painter[12:16], "little")
+    descriptor_bytes = int.from_bytes(painter[16:20], "little")
+    for code in range(19):
+        descriptor = header_bytes + code * descriptor_bytes
+        assert painter[descriptor] == 0
+        assert painter[descriptor + 1] == code
+        stroke_width = np.frombuffer(painter[descriptor + 40 : descriptor + 44], dtype="<f4")[0]
+        assert stroke_width == (1.0 if code >= 15 else 0.0)
+    assert b"XYLG" in painter
+
+
+@pytest.mark.parametrize(
+    ("style_key", "style_value"),
+    [("stroke", "transparent"), ("stroke", "#ff0000"), ("stroke_width", 2.0)],
+)
+def test_authored_scatter_stroke_stays_on_compatibility_route(
+    style_key: str, style_value: str | float
+) -> None:
+    """The all-symbol increment does not widen authored scatter paint policy."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.scatter([1.0], [1.0], symbol="plus_line", color="#3987e5")
+    figure.traces[-1].style[style_key] = style_value
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+
+
+@pytest.mark.parametrize("symbol", BUILTIN_SYMBOLS)
+def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
+    from xyg import _native
+
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.stem([1.0], [1.5], base=0.25, symbol=symbol)
+    assert figure.traces[-1].style.get("role") == "stem-marker"
+    assert scene_export_support_reason(figure) is None
+    assert figure.to_svg() == _native.scene_svg(figure_scene(figure))
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda figure: figure.traces[0].style.__setitem__("marker_path", {"contours": []}),
+        lambda figure: figure.traces[0].style.__setitem__("marker_glyph", "A"),
+        lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], symbol=["circle", "square"]),
+        lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], color=[0.0, 1.0]),
+        lambda figure: setattr(figure, "coords", "polar"),
+        lambda figure: figure.scatter(range(10_001), range(10_001)),
+    ],
+)
+def test_builtin_symbol_cutover_keeps_nonliteral_scatter_fail_closed(
+    mutate: Callable[[Figure], None],
+) -> None:
+    figure = _supported()
+    mutate(figure)
+    assert scene_export_support_reason(figure) is not None
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
@@ -523,7 +626,7 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
         (lambda: _supported().histogram([0, 1, 1, 2], bins=2), None),
         (lambda: _supported().area([0, 1], [1, 2]), None),
         (lambda: _supported().error_band([0, 1], [0, 1], [1, 2]), None),
-        (lambda: _supported().scatter([0, 1], [1, 2], symbol="square"), "PUBLIC_SYMBOL"),
+        (lambda: _supported().scatter([0, 1], [1, 2], symbol="square"), None),
         (lambda: _supported().scatter([0, 1], [1, 2], symbol="diamond"), None),
         (lambda: _supported(), None),
     ],
@@ -613,7 +716,6 @@ def test_public_router_routes_literal_disconnected_segments_through_all_static_c
         (lambda figure: figure.traces[0].style.__setitem__("dash", "4,2"), "PUBLIC_STYLE"),
         (lambda figure: figure.traces[0].style.__setitem__("role", "custom"), "PUBLIC_STYLE"),
         (lambda figure: figure.traces[0].x0.values.__setitem__(0, np.nan), "missing-data"),
-        (lambda figure: figure.traces[-1].style.__setitem__("symbol", "square"), "PUBLIC_SYMBOL"),
     ],
 )
 def test_public_disconnected_segment_router_fails_closed(
