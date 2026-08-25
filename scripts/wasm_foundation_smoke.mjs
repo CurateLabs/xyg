@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), ".."));
+const browserPackage = process.env.XYG_BROWSER_DIST ? resolve(process.env.XYG_BROWSER_DIST) : null;
+const browserDist = browserPackage ? join(browserPackage, "dist") : join(root, "packages/xy-client/dist");
 const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
   "/tests/fixtures/figure_scene_v3.json",
@@ -13,8 +16,15 @@ const allowed = new Set([
   "/tests/fixtures/xyts_cross_host.json",
   "/tests/fixtures/graphforge/semantic_compound.json",
   "/packages/xy-client/dist/index.js",
+  "/packages/xy-client/dist/standalone.js",
   "/packages/xy-client/dist/wasm-worker.js",
   "/packages/xy-client/dist/xyg-wasm.wasm",
+]);
+const packagedAssets = new Map([
+  ["/packages/xy-client/dist/index.js", "index.js"],
+  ["/packages/xy-client/dist/standalone.js", "standalone.js"],
+  ["/packages/xy-client/dist/wasm-worker.js", "wasm-worker.js"],
+  ["/packages/xy-client/dist/xyg-wasm.wasm", "xyg-wasm.wasm"],
 ]);
 const requests = [];
 const delayedResponses = [];
@@ -33,6 +43,17 @@ const contentType = {
   ".wasm": "application/wasm",
   ".json": "application/json",
 };
+
+if (browserPackage) {
+  const manifest = JSON.parse(await readFile(join(browserPackage, "ASSET-MANIFEST.json"), "utf8"));
+  if (manifest.schemaVersion !== 1 || manifest.package !== "@curatelabs/xyg" || !manifest.assets) throw new Error("published browser package has an invalid asset manifest");
+  if (Object.keys(manifest.assets).sort().join(",") !== [...packagedAssets.values()].sort().join(",")) throw new Error("published browser package asset manifest does not describe the exact four artifacts");
+  for (const name of packagedAssets.values()) {
+    const payload = await readFile(join(browserDist, name));
+    const entry = manifest.assets[name];
+    if (!entry || entry.bytes !== payload.length || entry.sha256 !== createHash("sha256").update(payload).digest("hex")) throw new Error(`published browser package integrity mismatch for ${name}`);
+  }
+}
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, "http://127.0.0.1");
@@ -61,7 +82,7 @@ const server = createServer(async (request, response) => {
     return;
   }
   if (url.pathname === "/release-delayed") {
-    const bytes = await readFile(join(root, "packages/xy-client/dist/xyg-wasm.wasm"));
+    const bytes = await readFile(join(browserDist, "xyg-wasm.wasm"));
     for (const delayed of delayedResponses.splice(0)) {
       delayed.setHeader("Content-Type", "application/wasm");
       delayed.end(bytes);
@@ -75,7 +96,8 @@ const server = createServer(async (request, response) => {
     return;
   }
   try {
-    const path = join(root, url.pathname);
+    const packaged = packagedAssets.get(url.pathname);
+    const path = packaged ? join(browserDist, packaged) : join(root, url.pathname);
     response.setHeader("Content-Type", contentType[extname(path)] ?? "application/octet-stream");
     response.end(await readFile(path));
   } catch (error) {
@@ -103,13 +125,15 @@ try {
   ]);
   if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
+  await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
+  if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function")) throw new Error("published standalone IIFE did not expose window.xy");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);
   const known = new Set([
     "/", "/redirect.wasm", "/delayed.wasm", "/await-delayed", "/release-delayed", ...allowed,
   ]);
   const unknown = requests.filter((path) => !known.has(path));
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);
-  console.log("strict-CSP local-only WASM worker lifecycle smoke passed");
+  console.log(`strict-CSP local-only WASM worker lifecycle smoke passed (${browserPackage ? "published package" : "source dist"})`);
 } finally {
   await browser.close();
   await new Promise((resolve) => server.close(resolve));

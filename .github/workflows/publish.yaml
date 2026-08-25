@@ -256,6 +256,12 @@ jobs:
           mkdir packed
           npm pack ./staged/xyg-browser --pack-destination packed
           npm publish packed/*.tgz --dry-run --tag next --provenance=false
+      - name: Prove clean published browser assets under strict CSP
+        shell: bash
+        run: |
+          mkdir unpacked-browser
+          tar -xzf packed/*.tgz -C unpacked-browser
+          XYG_BROWSER_DIST="$PWD/unpacked-browser/package" node scripts/wasm_foundation_smoke.mjs
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: browser-package

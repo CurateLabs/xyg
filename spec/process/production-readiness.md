@@ -479,7 +479,12 @@ and records the wire protocol, WASM ABI, Scene, and painter versions. Staging
 rejects extra files (including source maps), symlinked assets,
 CDN/repository/fork-origin paths, runtime dependencies, npm lifecycle scripts
 or executable bins, invalid WASM headers, and per-file or aggregate budget
-overruns. The tarball is packed and dry-published on every release rehearsal,
+overruns. The tarball is then unpacked into a clean directory and the existing
+strict-CSP/local-only lifecycle harness serves only its ESM, IIFE, Worker, and
+WASM assets. It rechecks every manifest SHA-256 and byte length before loading,
+requires the IIFE to expose `window.xy`, and exercises the Worker ABI mismatch,
+trap, and disposal negatives without a network fallback. The tarball is packed
+and dry-published on every release rehearsal,
 blocks the PyPI release gate if it cannot be produced, and is attached to the
 matching GitHub Release. Registry publication and clean browser-application
 conformance remain the explicit completion work for issue 53.
