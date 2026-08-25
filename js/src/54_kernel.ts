@@ -6,6 +6,7 @@ import {
   lodDrillServesView, lodDropDrill, lodFilterKey, lodPromoteCachedDrill, lodRememberDensity,
 } from "./45_lod";
 import { xyCreateRebinWorker } from "./46_worker";
+import { provisionKernelWasmDensity } from "./49_wasm_density";
 import { ChartView } from "./50_chartview";
 
 // Streaming-append refine cadence (§17 stale-while-revalidate): the append
@@ -29,6 +30,11 @@ Object.assign(ChartView.prototype, {
     // its supported trace even when this ChartView has a kernel transport.
     // Do not also send a density_view fallback that could race its XYAO grid.
     if (this._wasmDensity) return this._wasmDensity.schedule(viewOverride, opts);
+    // Normal kernel-backed retained-sample density owns a packaged Rust/WASM
+    // aggregate worker. Provisioning is async; the existing kernel route stays
+    // available only until that bounded supported path has established itself.
+    if (this.comm && !this._wasmDensityProvision) provisionKernelWasmDensity(this, viewOverride, opts);
+    if (this._wasmDensityProvision) return;
     if (!this.comm) {
       // Kernel-less (standalone HTML): density traces refine via the bundled
       // re-bin worker instead of a kernel round-trip.

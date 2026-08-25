@@ -17,7 +17,7 @@ import {
   decodeWasmAggregateOutput,
   encodeWasmAggregate,
 } from "./49_wasm_aggregate";
-import { attachStandaloneWasmDensity, attachWasmDensity, XygWasmDensityHandle } from "./49_wasm_density";
+import { attachStandaloneWasmDensity, attachWasmDensity, provisionKernelWasmDensity, XygWasmDensityHandle } from "./49_wasm_density";
 import { XygWasmTemporalController } from "./49_wasm_temporal";
 import { XygWasmTemporalGraph, decodeWasmTemporalGraphFrame, encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 import { decodeWasmGraphCheckpoint, encodeWasmCose, layoutWasmCose } from "./49_wasm_graph";
@@ -148,6 +148,7 @@ export {
   aggregateWasmBin2d,
   attachWasmDensity,
   attachStandaloneWasmDensity,
+  provisionKernelWasmDensity,
   XygWasmDensityHandle,
   XygWasmTemporalController,
   XygWasmTemporalGraph,

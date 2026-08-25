@@ -47,6 +47,7 @@ function directDensityFixture(host, comm = null, multi = false) {
     }],
     columns: [{ byte_offset: 0, len: grid.length, dtype: "f32" }],
     backend: "native", show_legend: false,
+    wasm_density: { automatic: true },
     view: { ranges: { x: [0, 1], y: [0, 1] } },
   };
   if (multi) {
@@ -681,6 +682,50 @@ async function run() {
   densityView.destroy();
   await densityWorker.dispose();
   densityHost.remove();
+
+  foundationStage = "automatic kernel-backed WASM density lifecycle";
+  const automaticDensityHost = document.createElement("div");
+  automaticDensityHost.style.cssText = "width:320px;height:240px";
+  document.body.append(automaticDensityHost);
+  const automaticKernelRequests = [];
+  const automaticDensityView = directDensityFixture(automaticDensityHost, {
+    send: (message) => automaticKernelRequests.push(message), onMessage: () => () => {},
+  });
+  const automaticTrace = automaticDensityView.gpuTraces.find((trace) => trace.tier === "density");
+  automaticTrace.sampleOverlay = {
+    trace: { color: null },
+    _cpu: {
+      x: new Float32Array([0.05, 0.2, 0.75, 0.95]),
+      y: new Float32Array([0.05, 0.8, 0.25, 0.95]),
+      xMeta: { scale: 1, offset: 0 }, yMeta: { scale: 1, offset: 0 },
+    },
+  };
+  const automaticRevision = automaticDensityView._scheduleViewRequest(
+    { ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } }, { delay: 0 },
+  );
+  for (let attempt = 0; attempt < 100 && !automaticDensityView._wasmDensity?.diagnostics(); attempt++) await nextTask();
+  if (!automaticDensityView._wasmDensity?.diagnostics()
+      || automaticTrace.density.xRange.join(",") !== "0.25,0.75"
+      || automaticTrace.density.yRange.join(",") !== "0.25,0.75"
+      || automaticDensityView._rebinWorker || automaticKernelRequests.length
+      || automaticRevision !== undefined) {
+    throw new Error(`automatic kernel-backed WASM density failed: ${JSON.stringify({
+      automaticRevision, diagnostics: automaticDensityView._wasmDensity?.diagnostics(),
+      xRange: automaticTrace.density.xRange, yRange: automaticTrace.density.yRange,
+      rebinWorker: !!automaticDensityView._rebinWorker, automaticKernelRequests,
+    })}`);
+  }
+  automaticDensityView._scheduleViewRequest({ ranges: { x: [0, 1], y: [0, 1] } }, { delay: 0 });
+  for (let attempt = 0; attempt < 100 && automaticTrace.density.xRange.join(",") !== "0,1"; attempt++) await nextTask();
+  if (automaticTrace.density.xRange.join(",") !== "0,1") {
+    throw new Error("automatic kernel-backed WASM density did not aggregate the home viewport");
+  }
+  automaticDensityView.destroy();
+  await nextTask();
+  if (automaticDensityView._wasmDensity !== null) {
+    throw new Error("destroyed automatic kernel-backed density retained its owned worker");
+  }
+  automaticDensityHost.remove();
 
   foundationStage = "kernel-less retained-sample density uses local Rust/WASM";
   const standaloneDensityHost = document.createElement("div");
