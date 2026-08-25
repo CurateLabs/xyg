@@ -142,9 +142,11 @@ class _PayloadWriter:
     def ship_f64(self, values: np.ndarray) -> int:
         """Ship a canonical f64 column for an explicitly bounded WASM source.
 
-        This is deliberately separate from painter geometry.  It is emitted
-        only by the live split host path, then ownership moves directly to the
-        dedicated Worker; it is never decoded from offset f32 on the UI thread.
+        This is deliberately separate from painter geometry.  Packed and split
+        payloads encode it in the same position so split remains a byte-exact
+        transport repack (§29).  Only the live split host advertises it as a
+        transferable Worker source; it is never decoded from offset f32 on the
+        UI thread.
         """
         return self._append(
             np.ascontiguousarray(values, dtype="<f8").reshape(-1),
@@ -307,7 +309,7 @@ class PayloadMixin(_Host):
         # One Cartesian count-only source is intentionally the first vertical.
         # Multiple/color/chunked sources remain on the authoritative kernel
         # route and are marked explicitly by the browser client.
-        if len(wasm_sources) == 1:
+        if pw._split and len(wasm_sources) == 1:
             spec["wasm_density"] = {"automatic": True, "source": wasm_sources[0]}
         elif any(entry.get("tier") == "density" for entry in spec_traces) and pw._split:
             spec["wasm_density"] = {
@@ -1390,8 +1392,7 @@ class PayloadMixin(_Host):
         # request/output peak at the maximum 2048² count grid.
         wasm_capacity = 338_598
         wasm_supported = (
-            pw._split
-            and self.coords == "cartesian"
+            self.coords == "cartesian"
             and self._axis_scale(t.x_axis) == "linear"
             and self._axis_scale(t.y_axis) == "linear"
             # A resolved constant fill remains count-only: it changes only
