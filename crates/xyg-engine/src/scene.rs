@@ -3097,7 +3097,10 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         }
         match kind {
             SceneRecordKind::Scatter => {
-                if symbol > ScatterSymbol::X as u8 || coords[2] != 0.0 || coords[3] != 0.0 {
+                if symbol > ScatterSymbol::VerticalLine as u8
+                    || coords[2] != 0.0
+                    || coords[3] != 0.0
+                {
                     return Err(SceneError::Length);
                 }
             }
@@ -10561,6 +10564,7 @@ mod tests {
         )
         .unwrap()
         .encode();
+        assert_eq!(validate_scene_batch(&encoded).unwrap().records, 19);
         let document = SceneDocument::decode(&encoded).unwrap();
         let commands = document.to_raster_commands(1.0).unwrap();
         let painter = document.to_browser_painter(64 * 1024).unwrap();
