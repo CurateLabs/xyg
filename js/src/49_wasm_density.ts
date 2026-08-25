@@ -347,14 +347,15 @@ export function provisionKernelWasmDensity(
   const targets = (view.gpuTraces || []).filter((g: any) =>
     g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu,
   );
-  if (targets.length !== 1) return null;
-  const input = retainedSampleInput(view, targets[0]);
-  if (!input) return null;
+  if (!targets.length) return null;
+  const inputs = targets.map((target: any) => retainedSampleInput(view, target));
+  if (inputs.some((input) => input === null)) return null;
+  const typedInputs = inputs as XygWasmDensityInput[];
   const provision = (async () => {
     try {
       const worker = createXygWasmWorker(packagedDensityWorkerOptions());
       const handle = await attachWasmDensity(view, {
-        worker, input, workerOwnership: "own", delay: 0,
+        worker, inputs: typedInputs, workerOwnership: "own", delay: 0,
       });
       if (view._destroyed || view._wasmDensity !== handle) {
         await handle.dispose();
@@ -369,7 +370,7 @@ export function provisionKernelWasmDensity(
         code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR",
         message: cause instanceof Error ? cause.message : "WASM density provisioning failed",
         diagnostics: cause instanceof XygWasmError ? cause.diagnostics : null,
-        traceId: input.traceId,
+        traceId: typedInputs[0].traceId,
       });
       return null;
     } finally {
