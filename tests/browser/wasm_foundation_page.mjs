@@ -24,7 +24,7 @@ import {
   XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
 
-function directDensityFixture(host, comm = null, multi = false) {
+function directDensityFixture(host, comm = null, multi = false, fullSource = false) {
   const width = 16, height = 16;
   const grid = new Float32Array(width * height);
   grid[0] = 1;
@@ -50,6 +50,21 @@ function directDensityFixture(host, comm = null, multi = false) {
     wasm_density: { automatic: true },
     view: { ranges: { x: [0, 1], y: [0, 1] } },
   };
+  if (fullSource) {
+    const x = new Float64Array([0.05, 0.2, 0.75, 0.95]);
+    const y = new Float64Array([0.05, 0.8, 0.25, 0.95]);
+    spec.buffer_layout = "split";
+    spec.columns = [
+      { buf: 0, byte_offset: 0, len: grid.length, dtype: "f32" },
+      { buf: 1, byte_offset: 0, len: x.length, dtype: "f64", worker_owned: true },
+      { buf: 2, byte_offset: 0, len: y.length, dtype: "f64", worker_owned: true },
+    ];
+    spec.wasm_density = { automatic: true, source: {
+      kind: "cartesian-count-f64-v1", x: 1, y: 2, trace_id: 0,
+      point_count: 4, capacity: 338598, ownership: "transfer-to-worker",
+    } };
+    return new ChartView(host, spec, [new Uint8Array(grid.buffer), new Uint8Array(x.buffer), new Uint8Array(y.buffer)], comm);
+  }
   if (multi) {
     spec.axes.x2 = { id: "x2", kind: "linear", label: null, range: [10, 20], side: "top" };
     spec.axes.y2 = { id: "y2", kind: "linear", label: null, range: [100, 200], side: "right" };
@@ -726,6 +741,43 @@ async function run() {
     throw new Error("destroyed automatic kernel-backed density retained its owned worker");
   }
   automaticDensityHost.remove();
+
+  foundationStage = "full-source kernel WASM density lifecycle";
+  const fullSourceHost = document.createElement("div");
+  fullSourceHost.style.cssText = "width:320px;height:240px";
+  document.body.append(fullSourceHost);
+  const fullSourceEvents = [], fullSourceRequests = [];
+  const fullSourceView = directDensityFixture(fullSourceHost, {
+    send: (message) => fullSourceRequests.push(message), onMessage: () => () => {},
+  }, false, true);
+  fullSourceView.root.addEventListener("xy:wasm_density_error", (event) => fullSourceEvents.push(event.detail));
+  const fullSourceTrace = fullSourceView.gpuTraces.find((trace) => trace.tier === "density");
+  const fullSourceOverview = fullSourceTrace.density;
+  fullSourceView._scheduleViewRequest({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } }, { delay: 0 });
+  for (let attempt = 0; attempt < 100 && !fullSourceView._wasmDensity?.diagnostics(); attempt++) await nextTask();
+  if (!fullSourceView._wasmDensity?.diagnostics() || fullSourceTrace.density === fullSourceOverview
+      || fullSourceView.spec.wasm_density.source || fullSourceView._payload[1].byteLength || fullSourceView._payload[2].byteLength
+      || fullSourceRequests.length) {
+    throw new Error(`full-source automatic WASM density did not transfer/replace source correctly: ${JSON.stringify({
+      diagnostics: fullSourceView._wasmDensity?.diagnostics(), source: fullSourceView.spec.wasm_density.source,
+      payload: [fullSourceView._payload[1]?.byteLength, fullSourceView._payload[2]?.byteLength], requests: fullSourceRequests, events: fullSourceEvents,
+      ranges: fullSourceTrace.density.xRange,
+    })}`);
+  }
+  const fullSourceGrid = fullSourceTrace.density;
+  // Force an invalid viewport after source ownership has moved. This exercises
+  // the owned-source Worker framing error under the same strict-CSP module
+  // Worker—not the separate inline-only lifecycle evidence hook.
+  fullSourceView._wasmDensity.schedule({ ranges: { x: [0.5, 0.5], y: [0.25, 0.75] } }, { delay: 0, force: true });
+  for (let attempt = 0; attempt < 100 && !fullSourceEvents.length; attempt++) await nextTask();
+  if (fullSourceTrace.density !== fullSourceGrid || fullSourceEvents.length !== 1
+      || fullSourceEvents[0].code !== "XYG_WASM_RESOURCE_LIMIT") {
+    throw new Error(`full-source forced Worker failure did not retain overview/event: ${JSON.stringify(fullSourceEvents)}`);
+  }
+  fullSourceView._scheduleViewRequest({ ranges: { x: [0, 1], y: [0, 1] } }, { delay: 0 });
+  for (let attempt = 0; attempt < 100 && fullSourceTrace.density.xRange.join(",") !== "0,1"; attempt++) await nextTask();
+  if (fullSourceTrace.density.xRange.join(",") !== "0,1") throw new Error("full-source WASM density did not recover after validation failure");
+  fullSourceView.destroy(); fullSourceHost.remove();
 
   foundationStage = "kernel-less retained-sample density uses local Rust/WASM";
   const standaloneDensityHost = document.createElement("div");

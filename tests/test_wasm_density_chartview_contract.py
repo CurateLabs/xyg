@@ -7,7 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_direct_wasm_density_is_a_chartview_lifecycle_adapter_not_a_second_algorithm() -> None:
     source = (ROOT / "js" / "src" / "49_wasm_density.ts").read_text(encoding="utf-8")
-    assert 'import { aggregateWasmBin2d } from "./49_wasm_aggregate";' in source
+    assert "aggregateWasmBin2d" in source
+    assert "decodeWasmAggregateOutput" in source
     assert "_applySampleRebinGrid" in source
     assert "_uploadGrid" in source
     assert "xyCreateRebinWorker" not in source
@@ -107,11 +108,16 @@ def test_kernel_backed_density_automatically_provisions_one_supported_typed_sour
     assert "automatic kernel-backed WASM density lifecycle" in browser
 
 
-def test_kernel_backed_typed_source_contract_provisions_all_supported_density_traces() -> None:
+def test_kernel_backed_typed_source_contract_accepts_the_owned_full_source_without_removing_sample_support() -> (
+    None
+):
     source = (ROOT / "js" / "src" / "49_wasm_density.ts").read_text(encoding="utf-8")
     assert "const typedInputs = inputs as XygWasmDensityInput[]" in source
     assert "worker, inputs: typedInputs" in source
-    assert "if (!targets.length) return null" in source
+    assert "const full = fullSourceInput(view)" in source
+    assert "if (!full && !targets.length) return null" in source
+    assert "worker.installAggregateSource" in source
+    assert "retireTransferredFullSource" in source
 
 
 def test_standalone_adapter_accepts_supported_multi_trace_sources_without_js_aggregation() -> None:

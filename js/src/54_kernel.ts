@@ -33,6 +33,11 @@ Object.assign(ChartView.prototype, {
     // aggregate worker. Provisioning is async; the existing kernel route stays
     // available only until that bounded supported path has established itself.
     if (this.comm && !this._wasmDensityProvision) provisionKernelWasmDensity(this, viewOverride, opts);
+    const unsupported = this.spec?.wasm_density?.unsupported;
+    if (unsupported) this._reportDensityNoRefinement(
+      unsupported.code || "XYG_WASM_SOURCE_UNSUPPORTED",
+      unsupported.message || "direct WASM density source is unsupported",
+    );
     if (this._wasmDensityProvision) return;
     if (!this.comm) {
       // Kernel-less exports may refine only through the attached inline Rust/
