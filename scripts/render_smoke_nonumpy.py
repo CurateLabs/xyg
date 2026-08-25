@@ -298,7 +298,7 @@ def main() -> None:
     # every probe below, including the blob-URL re-bin worker, runs under the
     # same policy a real to_html export ships.
     csp = (
-        "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+        "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; "
         "img-src data:; font-src data:; connect-src 'none'; worker-src blob:; "
         "object-src 'none'; "
         "base-uri 'none'; form-action 'none'"

@@ -131,6 +131,10 @@ export class XygWasmDensityHandle {
   diagnostics(): XygWasmDensityDiagnostics | null {
     return this.latest ? { ...this.latest } : null;
   }
+  /** Evidence/control boundary: cancel only the currently pending viewport. */
+  cancel() { this.task?.cancel(); this.task = null; }
+  /** @internal Strict-CSP lifecycle evidence only; capability-gated by worker. */
+  evidenceLifecycle(action: "malformed" | "trap") { return this.worker.evidenceLifecycle(action); }
 
   /** Called by ChartView's normal standalone density scheduling path. */
   schedule(viewOverride = this.view.view, options: any = {}) {
@@ -146,7 +150,7 @@ export class XygWasmDensityHandle {
       const [hy0, hy1] = this.view._axisRange(trace.yAxis, this.view.view0);
       const atHome = Math.abs(vx1 - vx0) >= Math.max(Math.abs(hx1 - hx0), 1e-300) * (1 - 1e-6)
         && Math.abs(vy1 - vy0) >= Math.max(Math.abs(hy1 - hy0), 1e-300) * (1 - 1e-6);
-      if (atHome) {
+      if (atHome && options.force !== true) {
         if (trace.density !== trace._homeDensity) {
           const home = trace._homeDensity;
           this.view._applySampleRebinGrid(trace, {

@@ -23,6 +23,8 @@ export interface XygWasmWorkerOptions {
 export interface XygInlineWasmWorkerOptions {
   inline: { base64: string; classicWorkerSource: string };
   maxArenaBytes?: number;
+  /** @internal Evidence-only capability; never selected by normal runtime policy. */
+  evidenceCapability?: string;
 }
 
 export interface XygWasmDiagnostics {
@@ -188,6 +190,7 @@ export class XygWasmWorker {
   private readonly maxArenaBytes: number;
   private readonly inline: boolean;
   private readonly inlineBlobUrl: string | null;
+  private readonly evidenceCapability: string | null;
   readonly ready: Promise<XygWasmDiagnostics>;
 
   constructor(options: XygWasmWorkerOptions | XygInlineWasmWorkerOptions) {
@@ -209,6 +212,8 @@ export class XygWasmWorker {
     }
     this.maxArenaBytes = maxArenaBytes;
     this.inline = inline;
+    this.evidenceCapability = inline && typeof (options as XygInlineWasmWorkerOptions).evidenceCapability === "string"
+      ? (options as XygInlineWasmWorkerOptions).evidenceCapability : null;
     const blobUrl = inline ? URL.createObjectURL(new Blob([(options as XygInlineWasmWorkerOptions).inline.classicWorkerSource], { type: "application/javascript" })) : null;
     this.inlineBlobUrl = blobUrl;
     this.worker = inline
@@ -236,6 +241,7 @@ export class XygWasmWorker {
           type: "init",
           requestId,
           ...(inline ? { base64: (options as XygInlineWasmWorkerOptions).inline.base64 } : { source: loaded!.source }),
+          ...(this.evidenceCapability ? { evidenceCapability: this.evidenceCapability } : {}),
           maxArenaBytes,
           expectedAbiVersion: XYG_WASM_ABI_VERSION,
           expectedSceneVersion: XYG_WASM_SCENE_VERSION,
@@ -373,6 +379,18 @@ export class XygWasmWorker {
     options: XygWasmAggregateTaskOptions = {},
   ): XygWasmTask<XygWasmSceneValidation & { aggregate: ArrayBuffer }> {
     return this.sceneTask("aggregate.bin2d", request, options);
+  }
+
+  /** Gated test-only worker boundary used by the offline lifecycle proof. */
+  evidenceLifecycle(action: "malformed" | "trap"): Promise<never> {
+    this.assertLive();
+    if (!this.inline || !this.evidenceCapability) {
+      throw new XygWasmError("XYG_WASM_EVIDENCE_DISABLED", "inline lifecycle evidence is not enabled");
+    }
+    const requestId = this.allocateRequest();
+    const result = this.promiseFor<never>(requestId);
+    this.worker.postMessage({ type: "evidence.lifecycle", requestId, capability: this.evidenceCapability, action });
+    return result;
   }
 
   /** Submit one packed Rust-owned `XYDP` dashboard resource plan. */

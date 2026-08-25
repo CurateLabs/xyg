@@ -19,6 +19,7 @@ let handle = 0;
 let maxArenaBytes = 0;
 let sequenceWatermark = 0;
 let lifecycle: "idle" | "initializing" | "initialized" | "failed" | "disposed" = "idle";
+let evidenceCapability: string | null = null;
 const queued = new Map<number, number>();
 let active: { requestId: number; sequence: number; timer: number } | null = null;
 
@@ -71,6 +72,8 @@ async function initialize(message: any) {
     if (!Number.isInteger(budget) || budget <= 0 || budget > bound.xyg_wasm_max_arena_bytes()) throw new Error("maxArenaBytes exceeds the Rust adapter bound");
     const created = bound.xyg_wasm_instance_new(budget) >>> 0;
     if (!created) throw new Error("XYG WASM instance budget is exhausted");
+    evidenceCapability = typeof message.evidenceCapability === "string" && message.evidenceCapability.length >= 24
+      ? message.evidenceCapability : null;
     exports = bound; handle = created; maxArenaBytes = budget; lifecycle = "initialized";
     reply(message.requestId, snapshot());
   } catch (cause) {
@@ -127,6 +130,30 @@ function aggregate(message: any) {
     finish(message, status);
   } catch (cause) { lifecycle = "failed"; disposeRust(); fail(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM aggregate trapped"); }
 }
+function evidenceLifecycle(message: any) {
+  if (!evidenceCapability || message.capability !== evidenceCapability) {
+    return fail(message.requestId, "XYG_WASM_EVIDENCE_DISABLED", "lifecycle evidence is not enabled");
+  }
+  if (message.action === "malformed") {
+    // Exercise Rust validation while retaining the initialized instance so the
+    // following valid viewport proves malformed-input recovery.
+    if (!exports || !handle) return fail(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
+    // Sequence zero is rejected by Rust before it can advance the resumable
+    // operation watermark, so the following normal viewport proves recovery.
+    const status = exports.xyg_wasm_aggregate_bin2d(handle, 0, 0, 0);
+    return fail(message.requestId, code(status), readXygWasmError(exports, handle), status);
+  }
+  if (message.action === "trap") {
+    // Deliberately take the same WebAssembly-error path as a Rust trap. This
+    // capability-gated hook exists solely in the generated evidence worker.
+    try { throw new WebAssembly.RuntimeError("evidence-injected Rust/WASM trap"); }
+    catch (cause) {
+      lifecycle = "failed"; disposeRust();
+      return fail(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM aggregate trapped");
+    }
+  }
+  return fail(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "unknown lifecycle evidence action");
+}
 scope.onmessage = (event: MessageEvent<any>) => {
   const message = event.data;
   if (message?.type === "init") { void initialize(message); return; }
@@ -136,6 +163,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     if (sequence <= sequenceWatermark) return fail(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE);
     sequenceWatermark = sequence; aggregate(message); return;
   }
+  if (message?.type === "evidence.lifecycle") { evidenceLifecycle(message); return; }
   if (message?.type === "diagnostics") { try { reply(message.requestId, snapshot()); } catch (cause) { fail(message.requestId, "XYG_WASM_NOT_READY", cause instanceof Error ? cause.message : "worker is not initialized"); } return; }
   if (message?.type === "cancel") {
     const timer = queued.get(message.requestId); if (timer !== undefined) { clearTimeout(timer); queued.delete(message.requestId); }
