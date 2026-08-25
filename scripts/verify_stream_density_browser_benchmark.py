@@ -70,12 +70,28 @@ def main():
         observations = row.get("streamObservations")
         if not isinstance(observations, list):
             raise SystemExit("capability-gated Worker stream observations missing")
-        cancelled = [
-            o for o in observations if isinstance(o, dict) and o.get("phase") == "cancelled"
-        ]
-        if not cancelled:
+        cancelled_stream = row.get("cancelledStream")
+        cancelled_observation = row.get("cancelledObservation")
+        if not (
+            isinstance(cancelled_stream, dict)
+            and all(isinstance(cancelled_stream.get(k), int) for k in ("requestId", "sequence"))
+            and isinstance(cancelled_observation, dict)
+            and cancelled_observation.get("phase") == "cancelled"
+            and all(
+                cancelled_observation.get(k) == cancelled_stream[k]
+                for k in ("requestId", "sequence")
+            )
+            and any(
+                isinstance(observation, dict)
+                and observation.get("phase") == "cancelled"
+                and all(
+                    observation.get(k) == cancelled_stream[k] for k in ("requestId", "sequence")
+                )
+                for observation in observations
+            )
+        ):
             raise SystemExit(
-                "Worker did not acknowledge cancellation of the superseded XYAS stream"
+                "Worker did not acknowledge cancellation of the exact superseded XYAS stream"
             )
         applied = row.get("applicationSequences")
         if not isinstance(applied, list) or any(not isinstance(v, int) for v in applied):

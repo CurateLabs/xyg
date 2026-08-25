@@ -95,8 +95,10 @@ const observationStart=worker.evidenceStreamObservations().length;
 const cancelRevision=schedule({{...view.view,x0:view.view.x0+.1,x1:view.view.x1-.1}});
 await wait(()=>worker.evidenceStreamObservations().slice(observationStart).some(o=>o.phase==="begin"));
 const cancelledStream=worker.evidenceStreamObservations().slice(observationStart).find(o=>o.phase==="begin");
+if (!cancelledStream || !Number.isInteger(cancelledStream.requestId) || !Number.isInteger(cancelledStream.sequence)) throw Error("cancelled stream identity was not observed");
 handle.cancel();
-await wait(()=>worker.evidenceStreamObservations().some(o=>o.phase==="cancelled"&&o.requestId===cancelledStream?.requestId&&o.sequence===cancelledStream?.sequence));
+await wait(()=>worker.evidenceStreamObservations().some(o=>o.phase==="cancelled"&&o.requestId===cancelledStream.requestId&&o.sequence===cancelledStream.sequence));
+const cancelledObservation=worker.evidenceStreamObservations().find(o=>o.phase==="cancelled"&&o.requestId===cancelledStream.requestId&&o.sequence===cancelledStream.sequence);
 const oldRevision=schedule({{...view.view,x0:view.view.x0+.2,x1:view.view.x1-.2}}); const newest=schedule({{...view.view,x0:view.view.x0+.3,x1:view.view.x1-.3}}); await wait(()=>handle.diagnostics()?.sequence===newest);
 const latest=handle.diagnostics(); const payload=view.gpuTraces[0].density;
 const firstWorkerObservations=worker.evidenceStreamObservations();
@@ -110,7 +112,7 @@ const raster=document.querySelector("canvas")?.toDataURL()||"";
 await handle.dispose(); view.destroy();
 const streamObservations=[...firstWorkerObservations,...worker.evidenceStreamObservations()];
 const applicationSequences=[...firstApplicationSequences,...handle.evidenceApplicationSequences()];
-globalThis.__xygStreamEvidence={{initial, cancelRevision, oldRevision, newest, recovery, initialDiagnostics, latest, paints, initialPaint, visible:latest.sequence, rendered, events, sends, streamObservations, applicationSequences, sourceBytes:x.byteLength+y.byteLength, sourceRetained:x.byteLength>0&&y.byteLength>0, chunkPoints:32768, streamPushes:latest?.streamPushes, payloadBytes:(payload?.grid?.byteLength||0)+(payload?.rgba?.byteLength||0), disposed:null, raster, csp:document.policy?.allowedFeatures||null}};
+globalThis.__xygStreamEvidence={{initial, cancelRevision, oldRevision, newest, recovery, initialDiagnostics, latest, paints, initialPaint, visible:latest.sequence, rendered, events, sends, streamObservations, applicationSequences, cancelledStream:{{requestId:cancelledStream.requestId,sequence:cancelledStream.sequence}}, cancelledObservation:cancelledObservation&&{{requestId:cancelledObservation.requestId,sequence:cancelledObservation.sequence,phase:cancelledObservation.phase}}, sourceBytes:x.byteLength+y.byteLength, sourceRetained:x.byteLength>0&&y.byteLength>0, chunkPoints:32768, streamPushes:latest?.streamPushes, payloadBytes:(payload?.grid?.byteLength||0)+(payload?.rgba?.byteLength||0), disposed:null, raster, csp:document.policy?.allowedFeatures||null}};
 }} catch (error) {{
 globalThis.__xygStreamEvidence={{failure:String(error?.stack||error), failures:globalThis.__xygStreamFailures, events, sends, observations:worker?.evidenceStreamObservations?.()||[], applications:handle?.evidenceApplicationSequences?.()||[], sourceBytes:x.byteLength+y.byteLength, sourceRetained:x.byteLength>0&&y.byteLength>0}};
 }}
