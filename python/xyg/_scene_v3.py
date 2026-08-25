@@ -1142,9 +1142,7 @@ def figure_scene(
         text_rows.append((x, y, rgba, label_fill, encoded))
     xyat_v2 = any(label_fill is not None for _, _, _, label_fill, _ in text_rows)
     xyat = bytearray(
-        b"XYAT"
-        + (2 if xyat_v2 else 1).to_bytes(4, "little")
-        + len(text_rows).to_bytes(4, "little")
+        b"XYAT" + (2 if xyat_v2 else 1).to_bytes(4, "little") + len(text_rows).to_bytes(4, "little")
     )
     for x, y, rgba, label_fill, encoded in text_rows:
         xyat.extend(struct.pack("<dd4s", x, y, bytes(rgba)))

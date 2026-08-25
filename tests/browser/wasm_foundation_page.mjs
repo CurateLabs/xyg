@@ -1176,7 +1176,9 @@ async function run() {
   // `XYAD` encloses `XYAT`, which carries only data coordinates and plain text. The strict CSP page
   // below proves the real worker/WASM path projects it through the decoded
   // Scene rather than evaluating or inserting host markup.
-  const xyatText = "<Rust note>";
+  // Keep the fixed 12px/inset box wholly inside this 100px test viewport;
+  // overflow remains a fail-closed Rust geometry error.
+  const xyatText = "note";
   const xyatTextBytes = new TextEncoder().encode(xyatText);
   const xyat = new Uint8Array(12 + 28 + xyatTextBytes.length);
   xyat.set([0x58, 0x59, 0x41, 0x54]); // XYAT v2

@@ -9206,6 +9206,88 @@ mod tests {
     }
 
     #[test]
+    fn xyat_v2_envelope_preserves_canonical_chrome_trailer() {
+        let layout = PlotLayout::new(120.0, 90.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let chrome = SceneChromeStyle {
+            chart_background_rgba: [240, 248, 255, 255],
+            plot_background_rgba: [248, 250, 252, 255],
+            ..SceneChromeStyle::default()
+        };
+        let batch = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            chrome.clone(),
+            SceneChromeText::default(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap();
+        let mut xyat = Vec::new();
+        xyat.extend_from_slice(b"XYAT");
+        xyat.extend_from_slice(&2u32.to_le_bytes());
+        xyat.extend_from_slice(&1u32.to_le_bytes());
+        xyat.extend_from_slice(&0.5f64.to_le_bytes());
+        xyat.extend_from_slice(&0.5f64.to_le_bytes());
+        xyat.extend_from_slice(&[1, 2, 3, 255]);
+        xyat.extend_from_slice(&[255, 255, 255, 255]);
+        xyat.extend_from_slice(&4u32.to_le_bytes());
+        xyat.extend_from_slice(b"note");
+        let mut envelope = Vec::new();
+        envelope.extend_from_slice(b"XYAD");
+        envelope.extend_from_slice(&1u32.to_le_bytes());
+        envelope.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&xyat);
+
+        let decorated = batch
+            .with_authored_annotations(&envelope)
+            .unwrap()
+            .encode();
+        let body = SCENE_BATCH_HEADER_BYTES;
+        assert_eq!(&decorated[body..body + 8], &[240, 248, 255, 255, 248, 250, 252, 255]);
+        let painter = SceneDocument::decode(&decorated)
+            .unwrap()
+            .to_browser_painter(16_384)
+            .unwrap();
+        let style_input = chrome.style_input();
+        assert_eq!(&painter[64..72], &style_input[..8]);
+    }
+
+    #[test]
     fn scene_v8_cartesian_chrome_round_trips_all_consumers_and_bounds() {
         let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
         let x = AxisScale::new(
