@@ -234,6 +234,56 @@ def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.M
     assert calls["raster"] >= 1
 
 
+def test_supported_file_exports_match_the_canonical_rust_scene(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The single-file and batch public journeys share the Scene consumers.
+
+    ``write_images`` does not call ``to_image`` because it amortizes browser
+    setup, so this test must cover it separately. The supported native paths
+    must nevertheless produce the exact bytes of the one encoded Rust Scene,
+    rather than re-introducing an exporter-specific policy choice.
+    """
+    from xyg import _pdf, export
+
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    scene = figure.to_scene()
+    expected = {
+        "svg": _native.scene_svg(scene).encode("utf-8"),
+        "png": kernels.rasterize_png(_native.scene_raster_commands(scene), 320, 240),
+    }
+    expected["pdf"] = _pdf.svg_to_pdf(expected["svg"].decode("utf-8"))
+
+    scene_svg = _native.scene_svg
+    scene_raster_commands = _native.scene_raster_commands
+    calls = {"svg": 0, "raster": 0}
+
+    def observed_scene_svg(*args: object, **kwargs: object) -> str:
+        calls["svg"] += 1
+        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+
+    def observed_scene_raster_commands(*args: object, **kwargs: object) -> bytes:
+        calls["raster"] += 1
+        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster_commands)
+
+    single_paths = {fmt: tmp_path / f"single.{fmt}" for fmt in expected}
+    for fmt, path in single_paths.items():
+        assert figure.write_image(path, scale=1) == expected[fmt]
+        assert path.read_bytes() == expected[fmt]
+
+    batch_paths = [tmp_path / f"batch.{fmt}" for fmt in expected]
+    batch = export.write_images([figure] * len(batch_paths), batch_paths, scale=1)
+    assert batch == [expected[path.suffix[1:]] for path in batch_paths]
+    for path in batch_paths:
+        assert path.read_bytes() == expected[path.suffix[1:]]
+
+    # SVG and PDF both consume Rust SVG; PNG consumes Rust's display list.
+    assert calls == {"svg": 4, "raster": 2}
+
+
 def test_unsupported_public_exports_stay_on_compatibility_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
