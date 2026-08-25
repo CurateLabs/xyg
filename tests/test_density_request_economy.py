@@ -41,7 +41,6 @@ _PROBE = """
   try {
     view._drawNow();
     view._raf = null;
-    view._sampleRebinDisabled = true;
     const g = view.gpuTraces.find((t) => t.tier === "density");
     let clk = 100000;
     view._now = () => clk;

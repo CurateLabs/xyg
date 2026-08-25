@@ -510,7 +510,6 @@ def test_client_quiesces_and_rebuilds_repeated_context_loss() -> None:
         'this._dispatchChartEvent("context_lost"',
         'this._dispatchChartEvent("context_restored"',
         "clearTimeout(this._viewTimer);",
-        "clearTimeout(this._rebinTimer);",
         "if (this._destroyed || this._glLost || !this.gl) return;",
         "if (this._destroyed || this._contextRecoveryError) return;",
         'if (this._glLost && msg.type !== "append" && msg.type !== "pick_result") return;',
@@ -949,26 +948,23 @@ def test_rect_gradient_preserves_per_item_alpha_stack() -> None:
             assert marker in text, f"{path} drops gradient alpha marker {marker!r}"
 
 
-def test_standalone_density_rebin_worker() -> None:
-    """Kernel-less pages refine density charts by re-binning the retained
-    §28 sample in a bundled blob-URL worker — off the main thread, recorded
-    as a badge, falling back to the stretched overview when workers are
-    unavailable. The smoke proves it end-to-end under the production CSP."""
-    required = (
-        "XY_REBIN_WORKER_SRC",  # worker source ships inside the bundle
-        "xyCreateRebinWorker(",
-        "_scheduleSampleRebin(",  # standalone branch of the view-request path
-        "_requestSampleRebin(",
-        '"zoom re-binned from sample"',  # §28: the reduction is badged
-        "this._rebinWorker.terminate();",  # lifecycle: destroy() tears it down
+def test_standalone_density_refinement_has_no_javascript_worker_fallback() -> None:
+    """A self-contained density chart either uses Rust/WASM or preserves its
+    existing overview and emits `xy:wasm_density_no_refinement`. There is no
+    Blob-source JavaScript aggregation worker left in any shipped client."""
+    forbidden = (
+        "46_worker",
+        "XY_REBIN_WORKER_SRC",
+        "xyCreateRebinWorker",
+        "_rebinWorker",
+        "_requestSampleRebin",
     )
     for path, text in CLIENT_FILES:
-        for marker in required:
-            assert marker in text, f"{path} lost standalone re-bin marker {marker!r}"
-    # The worker result path never touches the retained sample overlay (it is
-    # the re-bin source); only the grid/texture swap.
+        for marker in forbidden:
+            assert marker not in text, f"{path} retains legacy density worker marker {marker!r}"
     src = _CLIENT_SRC[1]
-    assert "_applySampleRebinGrid(g" in src
+    assert '"wasm_density_no_refinement"' in src
+    assert "_reportDensityNoRefinement" in src
 
 
 def test_standalone_csp_allows_blob_workers_and_matches_smoke() -> None:

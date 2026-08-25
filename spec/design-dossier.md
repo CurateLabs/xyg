@@ -576,11 +576,11 @@ F3, still pending (above).
   neither SharedArrayBuffer nor cross-origin isolation (COOP/COEP) is required —
   which is what lets the client run in Jupyter, embedded iframes, and third-party
   contexts that cannot set those headers.
-- One Web Worker exists client-side today, and it is not the core: `js/src/46_worker.ts`
-  re-bins the retained density sample for kernel-less standalone exports (`to_html`),
-  off the main thread, booted from a Blob URL. Environments without workers fall back
-  to the stretched overview texture.
-- Under #59 this fallback is replaced by a thin Worker adapter around Rust/WASM.
+- Kernel-less standalone density refinement uses a thin Worker adapter around
+  Rust/WASM. When its explicit retained typed source or Worker/WASM artifact
+  is unavailable, the client retains the Rust-authored overview texture and
+  dispatches `xy:wasm_density_no_refinement`; it never runs a JavaScript
+  aggregation fallback.
   The first foundation now builds a static strict-CSP Worker plus a raw adapter over
   `xyg-engine`; it validates exact Scene v9 and now compiles transferable
   scatter/line/bar/area typed series with Rust-owned identities and defaults,

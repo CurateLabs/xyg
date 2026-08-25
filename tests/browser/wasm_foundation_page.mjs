@@ -666,11 +666,11 @@ async function run() {
       || firstDensityRevision >= secondDensityRevision
       || densityTrace.density.xRange.join(",") !== "0.25,1"
       || densityTrace.density.yRange.join(",") !== "0.25,1"
-      || densityView._rebinWorker || kernelDensityRequests.length) {
+      || kernelDensityRequests.length) {
     throw new Error(`direct WASM density failed supersession: ${JSON.stringify({
       firstDensityRevision, secondDensityRevision, densityDiagnostics,
       xRange: densityTrace?.density?.xRange, yRange: densityTrace?.density?.yRange,
-      rebinWorker: !!densityView._rebinWorker, kernelDensityRequests,
+      kernelDensityRequests,
     })}`);
   }
   await densityHandle.dispose();
@@ -707,12 +707,12 @@ async function run() {
   if (!automaticDensityView._wasmDensity?.diagnostics()
       || automaticTrace.density.xRange.join(",") !== "0.25,0.75"
       || automaticTrace.density.yRange.join(",") !== "0.25,0.75"
-      || automaticDensityView._rebinWorker || automaticKernelRequests.length
+      || automaticKernelRequests.length
       || automaticRevision !== undefined) {
     throw new Error(`automatic kernel-backed WASM density failed: ${JSON.stringify({
       automaticRevision, diagnostics: automaticDensityView._wasmDensity?.diagnostics(),
       xRange: automaticTrace.density.xRange, yRange: automaticTrace.density.yRange,
-      rebinWorker: !!automaticDensityView._rebinWorker, automaticKernelRequests,
+      automaticKernelRequests,
     })}`);
   }
   automaticDensityView._scheduleViewRequest({ ranges: { x: [0, 1], y: [0, 1] } }, { delay: 0 });
@@ -751,10 +751,10 @@ async function run() {
   const standaloneDiagnostics = standaloneHandle.diagnostics();
   if (!standaloneDiagnostics || standaloneDiagnostics.sequence !== standaloneRevision
       || standaloneTrace.density.xRange.join(",") !== "0.25,0.75"
-      || standaloneDensityView._rebinWorker || !standaloneTrace._sampleRebinned) {
+      || !standaloneTrace._sampleRebinned) {
     throw new Error(`standalone WASM density retained-sample path failed: ${JSON.stringify({
       standaloneDiagnostics, xRange: standaloneTrace.density.xRange,
-      rebinWorker: !!standaloneDensityView._rebinWorker, rebinned: standaloneTrace._sampleRebinned,
+      rebinned: standaloneTrace._sampleRebinned,
     })}`);
   }
   standaloneDensityView._scheduleViewRequest({ ranges: { x: [0, 1], y: [0, 1] } }, { delay: 0 });
@@ -810,7 +810,6 @@ async function run() {
       || multiTraces[0]?.density?.yRange.join(",") !== "0.3,0.7"
       || multiTraces[1]?.density?.xRange.join(",") !== "12,18"
       || multiTraces[1]?.density?.yRange.join(",") !== "120,180"
-      || multiDensityView._rebinWorker
       || multiApplies.some((apply) => apply.xRange.join(",") === "0.1,0.9")) {
     throw new Error(`standalone WASM density multi-trace supersession/scales drifted: ${JSON.stringify({
       obsoleteMultiRevision, multiRevision, diagnostics: multiDensityHandle.diagnostics(),
@@ -885,10 +884,9 @@ async function run() {
   const malformedDensityTrace = malformedDensityView.gpuTraces.find((trace) => trace.tier === "density");
   if (malformedDensityErrors.length !== 1 || malformedDensityErrors[0]?.code !== "XYG_WASM_MALFORMED_OUTPUT"
       || malformedDensityErrors[0]?.diagnostics?.copyCount !== 1 || malformedDensityHandle.diagnostics() !== null
-      || malformedDensityTrace.density.xRange.join(",") !== "0,1" || malformedDensityView._rebinWorker) {
+      || malformedDensityTrace.density.xRange.join(",") !== "0,1") {
     throw new Error(`direct WASM density malformed output retained state: ${JSON.stringify({
       malformedDensityErrors, diagnostics: malformedDensityHandle.diagnostics(), xRange: malformedDensityTrace?.density?.xRange,
-      rebinWorker: !!malformedDensityView._rebinWorker,
     })}`);
   }
   await malformedDensityHandle.dispose();

@@ -14,18 +14,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _xy_browser import (  # noqa: E402
     chart_payload,
-    chromium_gl_flags,
-    find_chromium,
     json_bytes,
     page_for_charts,
     run_json_probe,
@@ -239,15 +234,6 @@ def _probe_js(reps: int) -> str:
     document.getElementById("root").appendChild(el);
     const mountT0 = performance.now();
     const view = xy.renderStandalone(el, payload.spec, xyBytesFromPayload(payload));
-    // Under --virtual-time-budget an outstanding Web Worker round-trip pauses
-    // virtual time forever: the first density zoom schedules the standalone
-    // sample-rebin worker and the page deadlocks until the wall-clock timeout
-    // (bisected: real worker + rebin hangs even when the reply is ignored; a
-    // stubbed worker completes). Same class the render smoke already dropped
-    // its worker probe for. Disable the rebin here — density interactions
-    // measure the stretched-overview path, all visual invariants still run;
-    // the worker path itself needs a non-virtual-time harness (see PR notes).
-    view._sampleRebinDisabled = true;
     view._drawNow();
     settlePixels();
     const firstPaintMs = performance.now() - mountT0;
@@ -685,163 +671,6 @@ def _flatten_probe_metrics(row: dict[str, Any], result: dict[str, Any]) -> None:
 # gets matching headroom; a healthy probe never comes near either limit.
 PROBE_VIRTUAL_TIME_MS = 120_000
 PROBE_TIMEOUT_S = 600
-WORKER_PROBE_TIMEOUT_S = 60
-
-
-def _worker_density_figure() -> Any:
-    if np is None:
-        raise SystemExit("numpy is required for benchmarks/bench_interaction.py")
-    from xyg._figure import Figure
-
-    rng = np.random.default_rng(91_017)
-    n = 250_000
-    x = rng.normal(0.0, 1.0, n).astype(np.float64, copy=False)
-    y = (0.58 * x + rng.normal(0.0, 0.72, n)).astype(np.float64, copy=False)
-    return Figure(width=RENDER_W, height=RENDER_H, title="density worker probe").scatter(
-        x, y, density=True
-    )
-
-
-def _worker_probe_js() -> str:
-    return """
-(() => {
-  try {
-    const payload = XY_CHARTS[0];
-    const el = document.createElement("div");
-    document.getElementById("root").appendChild(el);
-    const view = xy.renderStandalone(el, payload.spec, xyBytesFromPayload(payload));
-    const g = view.gpuTraces[0];
-    if (!g || !g.sampleOverlay || !g.sampleOverlay._cpu) {
-      xyReport("XY_WORKER", {status: "failed(no retained sample)"});
-      return;
-    }
-    const before = {...view.view};
-    const xSpan = before.x1 - before.x0;
-    const ySpan = before.y1 - before.y0;
-    const target = {
-      x0: before.x0 + xSpan * 0.18, x1: before.x0 + xSpan * 0.52,
-      y0: before.y0 + ySpan * 0.21, y1: before.y0 + ySpan * 0.61,
-    };
-    const started = performance.now();
-    view._setView(target, {animate: false, request: true});
-    const poll = () => {
-      if (g._sampleRebinned === true) {
-        view._drawNow();
-        xyReport("XY_WORKER", {
-          status: "ok",
-          worker_rebinned: true,
-          nonblank_pixels: xyNonblankPixels(view),
-          worker_created: !!view._rebinWorker,
-          x_range_changed: !!(g.density && g.density.xRange &&
-            Math.abs(g.density.xRange[0] - before.x0) > xSpan * 0.05),
-        });
-        return;
-      }
-      if (performance.now() - started >= 12_000) {
-        xyReport("XY_WORKER", {
-          status: "failed(timeout)",
-          worker_created: !!view._rebinWorker,
-          sample_rebinned: !!g._sampleRebinned,
-        });
-        return;
-      }
-      setTimeout(poll, 25);
-    };
-    setTimeout(poll, 150);
-  } catch (err) {
-    xyFail("XY_WORKER", err);
-  }
-})();
-"""
-
-
-def run_worker_probe(*, chromium: str | None = None) -> dict[str, Any]:
-    """Exercise standalone density rebinning with real wall-clock workers.
-
-    This intentionally omits Chromium's virtual-time flag: a real Worker
-    round-trip can deadlock virtual time, which is why the broader interaction
-    probe disables this path.
-    """
-    fig = _worker_density_figure()
-    spec, blob = fig.build_payload()
-    html = page_for_charts(
-        [chart_payload("worker", spec, blob)],
-        _worker_probe_js(),
-        title="xy density worker probe",
-    )
-    exe = find_chromium(chromium)
-    if not exe:
-        return {"status": "skipped(no chromium)"}
-    try:
-        dependency = subprocess.run(
-            ["node", "-e", "require.resolve('playwright')"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-    except FileNotFoundError:
-        return {"status": "failed(Node.js is required; run make setup-browser)"}
-    except subprocess.TimeoutExpired:
-        return {"status": "failed(Playwright preflight timed out; run make setup-browser)"}
-    if dependency.returncode != 0:
-        return {
-            "status": "failed(Playwright is not installed; run make setup-browser or npm install)"
-        }
-    node_script = r"""
-const { chromium } = require("playwright");
-(async () => {
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath: process.env.XYG_CHROMIUM,
-    args: JSON.parse(process.env.XY_CHROME_ARGS || "[]"),
-  });
-  try {
-    const page = await browser.newPage();
-    page.on("pageerror", (err) => console.error("PAGEERROR", err.stack || err));
-    page.on("console", (msg) => console.error("CONSOLE", msg.text()));
-    await page.goto(process.env.XY_PROBE, {waitUntil: "load"});
-    try {
-      await page.waitForFunction(() => document.title.startsWith("XY_WORKER "), null, {timeout: 12000});
-    } catch (err) {
-      console.error("TITLE", await page.title());
-      throw err;
-    }
-    console.log(await page.title());
-  } finally {
-    await browser.close();
-  }
-})().catch((err) => { console.error(err.stack || err); process.exit(1); });
-"""
-    with tempfile.TemporaryDirectory() as td:
-        page = Path(td) / "worker.html"
-        page.write_text(html, encoding="utf-8")
-        env = os.environ.copy()
-        env["XYG_CHROMIUM"] = exe
-        env["XY_PROBE"] = page.as_uri()
-        env["XY_CHROME_ARGS"] = json.dumps(chromium_gl_flags())
-        try:
-            completed = subprocess.run(
-                ["node", "-e", node_script],
-                capture_output=True,
-                text=True,
-                env=env,
-                timeout=WORKER_PROBE_TIMEOUT_S,
-            )
-        except FileNotFoundError:
-            return {"status": "failed(Node.js is required; run make setup-browser)"}
-        except subprocess.TimeoutExpired:
-            return {"status": "failed(timeout)"}
-    if completed.returncode != 0:
-        error = (completed.stderr or completed.stdout).strip().splitlines()
-        detail = " ".join(error[-4:]) if error else "playwright"
-        return {"status": f"failed({detail[:480]})"}
-    title = completed.stdout.strip().splitlines()[-1] if completed.stdout.strip() else ""
-    if not title.startswith("XY_WORKER "):
-        return {"status": "failed(no worker probe title)"}
-    try:
-        return json.loads(title[len("XY_WORKER ") :])
-    except json.JSONDecodeError as exc:
-        return {"status": f"failed(bad worker probe JSON: {exc})"}
 
 
 def _probe_with_retries(

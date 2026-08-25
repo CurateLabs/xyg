@@ -5,7 +5,6 @@ import {
   lodAggregateStands, lodAggregateStepWindow, lodApplyDensityUpdate, lodApplyDrill,
   lodDrillServesView, lodDropDrill, lodFilterKey, lodPromoteCachedDrill, lodRememberDensity,
 } from "./45_lod";
-import { xyCreateRebinWorker } from "./46_worker";
 import { provisionKernelWasmDensity } from "./49_wasm_density";
 import { ChartView } from "./50_chartview";
 
@@ -36,9 +35,10 @@ Object.assign(ChartView.prototype, {
     if (this.comm && !this._wasmDensityProvision) provisionKernelWasmDensity(this, viewOverride, opts);
     if (this._wasmDensityProvision) return;
     if (!this.comm) {
-      // Kernel-less (standalone HTML): density traces refine via the bundled
-      // re-bin worker instead of a kernel round-trip.
-      this._scheduleSampleRebin(viewOverride, opts);
+      // Kernel-less exports may refine only through the attached inline Rust/
+      // WASM handle. Unsupported/missing provisioning keeps the authoritative
+      // overview rather than silently running a second JS aggregator.
+      this._reportDensityNoRefinement("XYG_WASM_UNAVAILABLE");
       return;
     }
     // opts.decimated === false: the caller knows the shipped decimation
@@ -244,109 +244,20 @@ Object.assign(ChartView.prototype, {
     });
   },
 
-  // Standalone (kernel-less) density refinement. Debounced like the kernel
-  // request path, then the retained §28 sample re-bins in the bundled worker —
-  // off the main thread — and applies like a density_update.
+  // Compatibility entrypoint for callers that used the former standalone
+  // sample re-bin path. Only an attached Rust/WASM handle may refine.
   _scheduleSampleRebin(viewOverride = this.view, opts: any = {}) {
-    if (this._destroyed || this._glLost || this._sampleRebinDisabled) return;
-    // A direct-WASM density attachment owns the exact same viewport lifecycle
-    // as the standalone re-bin path. It retains the existing surface while
-    // Rust aggregates and rejects obsolete viewport results by sequence.
+    if (this._destroyed || this._glLost) return;
+    // Direct Rust/WASM owns the only browser density aggregation path. It
+    // retains the existing surface while it aggregates and rejects obsolete
+    // viewport results by sequence.
     if (this._wasmDensity) return this._wasmDensity.schedule(viewOverride, opts);
-    const targets = (this.gpuTraces || []).filter(
-      (g) => g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu
-    );
-    if (!targets.length) return;
-    const seq = opts.seq ?? ++this.seq;
-    const view = this._copyView(viewOverride);
-    clearTimeout(this._rebinTimer);
-    this._rebinTimer = setTimeout(() => {
-      if (this._destroyed || seq !== this.seq) return;
-      for (const g of targets) this._requestSampleRebin(g, view, seq);
-    }, opts.delay ?? 120);
-  },
-
-  _requestSampleRebin(g, view, seq) {
-    if (!g._homeDensity) g._homeDensity = g.density;
-    // The full overview grid — binned kernel-side from every source point at
-    // export — has enough resolution for any view that is not zoomed in
-    // *tighter* than the home extent. Re-binning the retained §28 sample only
-    // adds resolution once the user zooms in; doing it on a mere pan (or a
-    // zoom-out) would swap the full-data grid for a noisier sample-derived
-    // grid that normalizes against a different, much smaller maximum, so the
-    // density visibly jumps between the overview and the sample on the
-    // slightest drag. Gate on view *span*, not position: keep (and restore)
-    // the overview for pans and zoom-outs; only a real zoom-in re-bins. Spans
-    // are read per axis (§9.2) so multi-axis views compare like for like.
-    const [vx0, vx1] = this._axisRange(g.xAxis, view);
-    const [vy0, vy1] = this._axisRange(g.yAxis, view);
-    const [hx0, hx1] = this._axisRange(g.xAxis, this.view0);
-    const [hy0, hy1] = this._axisRange(g.yAxis, this.view0);
-    const homeSpanX = Math.max(Math.abs(hx1 - hx0), 1e-300);
-    const homeSpanY = Math.max(Math.abs(hy1 - hy0), 1e-300);
-    const viewSpanX = Math.abs(vx1 - vx0);
-    const viewSpanY = Math.abs(vy1 - vy0);
-    // 1e-6 slack absorbs float drift so a pan at home zoom never trips a re-bin.
-    const notZoomedIn =
-      viewSpanX >= homeSpanX * (1 - 1e-6) && viewSpanY >= homeSpanY * (1 - 1e-6);
-    if (notZoomedIn) {
-      if (g.density !== g._homeDensity) {
-        const hd = g._homeDensity;
-        this._applySampleRebinGrid(g, {
-          ...hd,
-          tex: this._uploadGrid(
-            hd.grid, hd.w, hd.h, hd.normMax || hd.max || 1, hd.rgba, hd.filter,
-            this._fillOpacity(g.trace.style),
-          ),
-        }, false);
-      }
-      return;
-    }
-    if (this._sampleRebinDisabled) return;
-    if (!this._rebinWorker) {
-      this._rebinWorker = xyCreateRebinWorker();
-      if (!this._rebinWorker) {
-        this._sampleRebinDisabled = true; // no worker: stretched overview stays
-        return;
-      }
-      this._rebinWorker.onmessage = (e) => this._onRebinResult(e.data);
-      this._rebinInit = new Set();
-    }
-    if (!this._rebinInit.has(g.trace.id)) {
-      // Decode the offset-encoded sample once (f64, §16); the worker keeps it,
-      // along with the sample's resolved point colors so re-binned grids keep
-      // the mean-color surface (LOD doc §2).
-      const cpu = g.sampleOverlay._cpu;
-      const n = Math.min(cpu.x.length, cpu.y.length);
-      const xs = new Float64Array(n);
-      const ys = new Float64Array(n);
-      for (let i = 0; i < n; i++) {
-        xs[i] = this._decodeValue(cpu.x, cpu.xMeta, i);
-        ys[i] = this._decodeValue(cpu.y, cpu.yMeta, i);
-      }
-      const rgba = this._sampleBinColors(g, n);
-      this._rebinWorker.postMessage(
-        {
-          type: "init", trace: g.trace.id, x: xs.buffer, y: ys.buffer,
-          rgba: rgba ? rgba.buffer : null,
-        },
-        rgba ? [xs.buffer, ys.buffer, rgba.buffer] : [xs.buffer, ys.buffer]
-      );
-      this._rebinInit.add(g.trace.id);
-    }
-    this._rebinWorker.postMessage({
-      type: "rebin", trace: g.trace.id, seq,
-      x0: Math.min(vx0, vx1), x1: Math.max(vx0, vx1),
-      y0: Math.min(vy0, vy1), y1: Math.max(vy0, vy1),
-      w: Math.max(16, Math.min(2048, Math.round(this.plot.w))),
-      h: Math.max(16, Math.min(2048, Math.round(this.plot.h))),
-    });
+    this._reportDensityNoRefinement("XYG_WASM_UNAVAILABLE");
   },
 
   // Straight-alpha RGBA8 per retained-sample point, resolved from the
-  // overlay's shipped channel exactly as the point shader draws it — the
-  // worker's mean-color source (LOD doc §2). Constant-color traces return
-  // null: their count-only grid is tinted by the draw path instead.
+  // overlay's shipped channel exactly as the point shader draws it. This is
+  // source provisioning for Rust/WASM, never browser aggregation.
   _sampleBinColors(g, n) {
     const overlay = g.sampleOverlay;
     const cpu = overlay && overlay._cpu;
@@ -382,24 +293,18 @@ Object.assign(ChartView.prototype, {
     return null;
   },
 
-  _onRebinResult(msg) {
-    if (this._destroyed || this._glLost || !msg || msg.type !== "grid" || msg.seq !== this.seq) return;
-    const g = this.gpuTraces.find((t) => t.trace.id === msg.trace && t.tier === "density");
-    if (!g) return;
-    const grid = new Float32Array(msg.grid);
-    const rgba = msg.rgba ? new Uint8Array(msg.rgba) : null;
-    this._applySampleRebinGrid(g, {
-      w: msg.w, h: msg.h, max: msg.max, normMax: msg.max,
-      colormap: g.density.colormap,
-      xRange: [msg.x0, msg.x1], yRange: [msg.y0, msg.y1],
-      grid,
-      rgba,
-      tex: this._uploadGrid(
-        grid, msg.w, msg.h, msg.max || 1, rgba, "linear",
-        this._fillOpacity(g.trace.style),
-      ),
-      lut: g.density.lut,
-    }, true);
+  // An unavailable or unsupported browser source is a deliberate degraded
+  // state: keep the Rust-authored overview texture and make that fact visible
+  // to the host. Never substitute a second JavaScript aggregation algorithm.
+  _reportDensityNoRefinement(code, message = "Rust/WASM density refinement is unavailable; retaining the overview") {
+    const traces = (this.gpuTraces || []).filter((g) => g.tier === "density");
+    if (!traces.length || this._destroyed) return;
+    const key = `${code}:${traces.map((g) => g.trace.id).join(",")}`;
+    if (this._lastWasmDensityNoRefinement === key) return;
+    this._lastWasmDensityNoRefinement = key;
+    this._dispatchChartEvent?.("wasm_density_no_refinement", {
+      code, message, traceIds: traces.map((g) => g.trace.id),
+    });
   },
 
   // Swap the density grid/texture only — unlike lodApplyDensityUpdate this

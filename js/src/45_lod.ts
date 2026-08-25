@@ -605,7 +605,7 @@ function lodDrillOutgrown(view, g, d) {
 // deletes a texture that is about to be bound. Besides the active grid, the
 // previous grid, and the crossfade source, `_shownDensity` (what the tier last
 // drew — it becomes the next `_densitySwitchPrev`) and `_homeDensity` (the
-// standalone overview restore point) are live too. Missing `_shownDensity` here
+// Rust/WASM standalone overview restore point) are live too. Missing `_shownDensity` here
 // let its texture be evicted while still referenced; the next crossfade bound
 // the freed handle → "bindTexture: attempt to use a deleted object", a dropped
 // density frame, and drilled points left stranded over a stale surface.

@@ -4,8 +4,8 @@
  * This is deliberately an adapter over the existing painter/lifecycle rather
  * than a second renderer: Rust owns the XYAG -> XYAO aggregate and ChartView
  * uploads the returned typed grid through its ordinary density texture path.
- * The legacy standalone re-bin worker remains available for unsupported
- * charts while #119 gathers parity and performance evidence.
+ * Unsupported charts retain their Rust-authored overview and report an
+ * explicit no-refinement diagnostic; they never run a second JS aggregator.
  */
 import { aggregateWasmBin2d } from "./49_wasm_aggregate";
 import {
@@ -289,8 +289,8 @@ export async function attachWasmDensity(
     options.sampleRebin === true,
   );
   view._wasmDensity = handle;
-  // Fail early for an accidental trace id instead of silently retaining the
-  // JS fallback. The density grid stays painted throughout all later updates.
+  // Fail early for an accidental trace id. The existing density grid stays
+  // painted throughout all later updates.
   if (!supplied.every((input) => view.gpuTraces.some((g: any) =>
     g.tier === "density" && g.trace?.id === input.traceId))) {
     await handle.dispose();
@@ -364,7 +364,7 @@ export async function attachInlineStandaloneWasmDensity(
 /**
  * Begin the normal kernel-backed ChartView migration without an application
  * attachment. Only one retained-sample Cartesian density trace is supported
- * here; everything else keeps the kernel/legacy route. The packaged worker is
+ * here; other inputs keep the kernel route. The packaged worker is
  * owned by the view and all values cross into Rust through XYAG/XYAO.
  */
 export function provisionKernelWasmDensity(

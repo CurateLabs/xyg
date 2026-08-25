@@ -39,7 +39,6 @@ _PROBE = """
   try {
     view._drawNow();
     view._raf = null;
-    view._sampleRebinDisabled = true;
     const g = view.gpuTraces.find((t) => t.tier === "density");
     // Deterministic virtual clock so fades advance per synthetic frame.
     let clk = 100000;

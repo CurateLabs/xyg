@@ -6,7 +6,8 @@ WASM ABI 5 adds a resumable Rust-owned density aggregate operation. TypeScript
 only frames the generated `XYAG` request, transfers it to the static Worker,
 schedules bounded checkpoints, and decodes the generated `XYAO` output header.
 The shared Rust `bin_2d` and mean-color kernels own binning policy and numeric
-behavior; this does not replace the existing density worker or close #59.
+behavior; standalone density refinement now uses this path exclusively, while
+the remaining #59 evidence requirements remain open.
 
 The generated ABI manifest is authoritative for request/output offsets, aligned
 strides, copy factors, the 32,768-point checkpoint, and the 64 MiB aggregate
@@ -49,10 +50,8 @@ attachment. Normal kernel-backed ChartViews with exactly one retained typed
 density source use automatic source provisioning to own a packaged same-origin
 WASM worker and pass
 decoded canonical f64 source values through the same XYAG/XYAO adapter; this
-does not apply TypeScript aggregation or alter the bounded kernel-less fallback.
-While retirement of the legacy
-standalone worker remain outside this supported contract pending parity,
-strict-CSP browser, and performance evidence for #119.
+does not apply TypeScript aggregation. Unsupported kernel-less sources retain
+their overview and dispatch an explicit no-refinement diagnostic.
 
 An `XYAO` reply that passes Worker transport but fails its generated header,
 length, or typed-plane validation reports `XYG_WASM_MALFORMED_OUTPUT`, rather
@@ -510,8 +509,8 @@ are not performance evidence.
 - aggregate production paths beyond direct Scene records;
 - interpreted budgets/comparisons after collecting the SHA-keyed
   small-through-massive CodSpeed and browser artifacts; and
-- replacement (not expansion) of `46_worker.ts` only after WASM covers its
-  density contract without regression.
+- ongoing hosted performance and visual evidence for the Rust/WASM density
+  contract, including its explicit no-refinement degradation boundary.
 
 Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
 typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps

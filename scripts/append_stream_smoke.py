@@ -261,7 +261,6 @@ const readCanvas=(v)=>{{
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 (async()=>{{try{{
   const v=xy.renderStandalone(document.getElementById("chart"),spec0,blob0.buffer);
-  v._sampleRebinDisabled=true;
   v._drawNow();
   const comm={{sent:[],send(m){{this.sent.push(m);}}}};
   v.comm=comm;
@@ -287,7 +286,6 @@ const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
   const last=ticks[ticks.length-1];
   const vf=xy.renderStandalone(document.getElementById("fresh"),
     JSON.parse(JSON.stringify(last.spec)),b64(last.blob).buffer);
-  vf._sampleRebinDisabled=true;
   const freshPx=readCanvas(vf);
   const incPx=readCanvas(v);
   let mismatch=0;
@@ -315,7 +313,6 @@ const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
   const dprTicks={json.dumps(dpr_ticks)};
   const vd=xy.renderStandalone(document.getElementById("dpr"),
     dprTicks[0].spec,b64(dprTicks[0].blob).buffer);
-  vd._sampleRebinDisabled=true;
   vd._drawNow();
   const gd0=vd.gpuTraces[0];
   const hasStyleBuf=gd0.styleBuf?1:0;

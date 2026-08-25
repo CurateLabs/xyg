@@ -123,8 +123,9 @@ export function renderStandalone(el, spec, arrayBuffer) {
   }
   // `to_html()` embeds the checked bytes plus a classic IIFE only for density
   // documents. This establishes the Rust-owned path without a module URL or
-  // network fetch; an unavailable/invalid artifact leaves the established
-  // legacy sample worker intact during the transition.
+  // network fetch. An unavailable/invalid artifact deliberately leaves the
+  // existing Rust-authored overview in place; it never starts a JavaScript
+  // aggregation fallback.
   const inline = (globalThis as any).__xygInlineWasm;
   const observer = (globalThis as any).__xygStandaloneObserver;
   // This opaque capability exists only when CDP has installed the evidence
@@ -138,7 +139,13 @@ export function renderStandalone(el, spec, arrayBuffer) {
     densityHandle = handle;
     return handle;
   };
-  if (inline && view.gpuTraces.some((g: any) => g.tier === "density" && g.sampleOverlay?._cpu)) {
+  const densityTraces = view.gpuTraces.filter((g: any) => g.tier === "density");
+  const retainedDensity = densityTraces.some((g: any) => g.sampleOverlay?._cpu);
+  if (densityTraces.length && !inline) {
+    view._reportDensityNoRefinement?.("XYG_WASM_UNAVAILABLE", "self-contained Rust/WASM density artifact is unavailable");
+  } else if (densityTraces.length && !retainedDensity) {
+    view._reportDensityNoRefinement?.("XYG_WASM_SOURCE_UNAVAILABLE", "density refinement requires a retained typed source");
+  } else if (inline && retainedDensity) {
     void attachInline().then((handle) => {
       if (!handle) return;
       // The exported document has no kernel viewport message to trigger the
@@ -146,12 +153,10 @@ export function renderStandalone(el, spec, arrayBuffer) {
       handle.schedule(view.view, { delay: 0, force: true });
       if (typeof observer === "function") observer({ phase: "density_ready", diagnostics: handle.diagnostics() });
     }).catch((cause) => {
-      if (!view._destroyed) view._dispatchChartEvent?.("wasm_density_error", {
-        code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR",
-        message: cause instanceof Error ? cause.message : "inline WASM density provisioning failed",
-        diagnostics: cause instanceof XygWasmError ? cause.diagnostics : null,
-      });
-      if (typeof observer === "function") observer({ phase: "density_error", code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR", message: cause instanceof Error ? cause.message : "inline WASM density provisioning failed" });
+      const code = cause instanceof XygWasmError ? cause.code : "XYG_WASM_UNAVAILABLE";
+      const message = cause instanceof Error ? cause.message : "inline WASM density provisioning failed";
+      view._reportDensityNoRefinement?.(code, message);
+      if (typeof observer === "function") observer({ phase: "density_no_refinement", code, message });
     });
   }
   // Test/host observability only: no runtime policy is selected from this

@@ -1843,8 +1843,6 @@ export class ChartView {
       this._cancelViewAnimation();
       clearTimeout(this._viewTimer);
       this._viewTimer = null;
-      clearTimeout(this._rebinTimer);
-      this._rebinTimer = null;
       this._viewRequestBurstStart = null;
       this._dispatchChartEvent("context_lost", {
         loss_count: this._contextLossCount,
@@ -8294,16 +8292,10 @@ export class ChartView {
     this._ctxRecoveryTimer = null;
     clearTimeout(this._glHostRecoveryTimer);
     this._glHostRecoveryTimer = null;
-    clearTimeout(this._rebinTimer);
     // Direct-WASM density may own a dedicated Worker; dispose its request and
     // Worker lifecycle before the ChartView releases WebGL state.
     this._wasmDensity?.destroy?.();
     this._wasmDensity = null;
-    if (this._rebinWorker) {
-      this._rebinWorker.terminate();
-      if (this._rebinWorker._fcUrl) URL.revokeObjectURL(this._rebinWorker._fcUrl);
-      this._rebinWorker = null;
-    }
     this._ro?.disconnect();
     this._io?.disconnect();
     this._io = null;
