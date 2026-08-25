@@ -240,6 +240,7 @@ back. This is a migration boundary, not a silent approximation.
 ABI 95 supplies a parallel `u8 step_modes` column (`0=none`, `1=pre`,
 `2=mid`, `3=post`) to the whole-Scene encoder. A nonzero mode is valid only for
 one contiguous Polyline stable-id run whose style and mode are constant. Rust
+requires the unused secondary endpoint columns (`x1`/`y1`) to remain zero and
 rejects malformed, nonfinite, midpoint-overflowing, or over-budget expansion
 before any consumer sees a Scene. Scene v25 bytes are unchanged because the
 enum is an authoring ingress only. `XYTS` v2 intentionally has no step field and

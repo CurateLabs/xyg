@@ -2181,7 +2181,6 @@ async function run() {
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: -1 },
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: [2] },
     { kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style: { fillRgba: [1, 2, 3, 4] } },
-    { kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style: { step: "mid" } },
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), stableIdBase: 1n, stableIds: new BigUint64Array([2n]) },
   ]) {
     try {
@@ -2190,6 +2189,35 @@ async function run() {
     } catch (error) {
       if (!(error instanceof TypeError)) throw error;
     }
+  }
+  for (const style of [null, 1, []]) {
+    try {
+      frameWasmChart({
+        width: 10, height: 10,
+        series: [{ kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style }],
+      });
+      throw new Error("chart ergonomics accepted a non-object or array style");
+    } catch (error) {
+      if (!(error instanceof TypeError) || !String(error.message).includes("style must be a non-array object")) throw error;
+    }
+  }
+  frameWasmChart({
+    width: 10, height: 10,
+    series: [{
+      kind: "line", x: new Float64Array([0]), y: new Float64Array([1]),
+      style: { strokeRgba: [1, 2, 3, 255], strokeWidth: 1 },
+    }],
+  });
+  try {
+    frameWasmChart({
+      width: 10, height: 10,
+      series: [{
+        kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style: { step: "mid" },
+      }],
+    });
+    throw new Error("chart ergonomics accepted an unsupported style key");
+  } catch (error) {
+    if (!(error instanceof TypeError) || !String(error.message).includes("style step is not supported")) throw error;
   }
   const oversizedX = new Float64Array(4_000), oversizedY = new Float64Array(4_000);
   try {

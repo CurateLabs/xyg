@@ -678,6 +678,8 @@ test("Node Scene v4 rejects malformed batches", () => {
   };
   assert.throws(() => sceneBatchEncode({ ...line, styles: [base.styles[0], base.styles[0]], styleRefs: [0, 1], stepModes: [1, 1] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...line, x0: [0, Number.NaN], stepModes: [2, 2] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...line, x1: [1, 0], stepModes: [1, 1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...line, y1: [0, 1], stepModes: [1, 1] }), /invalid canonical scene batch/);
 });
 
 test("Node Scene v4 validates unsigned fields before typed-array coercion", () => {

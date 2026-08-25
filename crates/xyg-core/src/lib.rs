@@ -9580,6 +9580,7 @@ mod tests {
         let values = [0.5f64];
         let chrome = scene::SceneChromeStyle::default().style_input();
         let mut output = [0u8; 464];
+        let step_modes_ptr = std::cell::Cell::new(step_modes.as_ptr());
         let mut call = |kind, mask, len, kinds_ptr, major_ptr, major_count, major_auto| unsafe {
             xyg_scene_batch_encode(
                 100.0,
@@ -9627,7 +9628,7 @@ mod tests {
                 1,
                 diameter.as_ptr(),
                 symbols.as_ptr(),
-                step_modes.as_ptr(),
+                step_modes_ptr.get(),
                 values.as_ptr(),
                 values.as_ptr(),
                 values.as_ptr(),
@@ -9660,6 +9661,12 @@ mod tests {
             call(0, 0, 1, std::ptr::null(), std::ptr::null(), 0, 1),
             usize::MAX
         );
+        step_modes_ptr.set(std::ptr::null());
+        assert_eq!(
+            call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1),
+            usize::MAX
+        );
+        step_modes_ptr.set(step_modes.as_ptr());
         assert_eq!(
             call(
                 0,

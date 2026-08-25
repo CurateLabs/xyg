@@ -3338,6 +3338,14 @@ impl SceneStepMode {
     }
 }
 
+fn scene_step_run_end(stable_ids: &[u64], start: usize) -> usize {
+    let stable_id = stable_ids[start];
+    stable_ids[start + 1..]
+        .iter()
+        .position(|candidate| *candidate != stable_id)
+        .map_or(stable_ids.len(), |offset| start + 1 + offset)
+}
+
 /// Borrowed record columns entering Rust-owned compact-step expansion.
 pub struct SceneStepInput<'a> {
     pub kinds: &'a [u8],
@@ -3435,11 +3443,7 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
     // zero-mode prefix and stepped suffix could be emitted as one path.
     let mut run_cursor = 0usize;
     while run_cursor < len {
-        let stable_id = input.stable_ids[run_cursor];
-        let run_end = input.stable_ids[run_cursor + 1..]
-            .iter()
-            .position(|candidate| *candidate != stable_id)
-            .map_or(len, |offset| run_cursor + 1 + offset);
+        let run_end = scene_step_run_end(input.stable_ids, run_cursor);
         let mode = SceneStepMode::from_code(input.step_modes[run_cursor])?;
         if input.step_modes[run_cursor..run_end]
             .iter()
@@ -3462,12 +3466,8 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
         if input.kinds[cursor] != SceneRecordKind::Polyline as u8 {
             return Err(SceneError::Length);
         }
-        let stable_id = input.stable_ids[cursor];
         let style_ref = input.style_refs[cursor];
-        let run_end = input.stable_ids[cursor + 1..]
-            .iter()
-            .position(|candidate| *candidate != stable_id)
-            .map_or(len, |offset| cursor + 1 + offset);
+        let run_end = scene_step_run_end(input.stable_ids, cursor);
         for index in cursor..run_end {
             if input.kinds[index] != SceneRecordKind::Polyline as u8
                 || input.style_refs[index] != style_ref
@@ -3477,8 +3477,15 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
             {
                 return Err(SceneError::Length);
             }
-            if !input.x0[index].is_finite() || !input.y0[index].is_finite() {
+            if !input.x0[index].is_finite()
+                || !input.y0[index].is_finite()
+                || !input.x1[index].is_finite()
+                || !input.y1[index].is_finite()
+            {
                 return Err(SceneError::NonFinite);
+            }
+            if input.x1[index] != 0.0 || input.y1[index] != 0.0 {
+                return Err(SceneError::Length);
             }
         }
         let run_len = run_end - cursor;
@@ -3513,10 +3520,7 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
         }
         let stable_id = input.stable_ids[cursor];
         let style_ref = input.style_refs[cursor];
-        let run_end = input.stable_ids[cursor + 1..]
-            .iter()
-            .position(|candidate| *candidate != stable_id)
-            .map_or(len, |offset| cursor + 1 + offset);
+        let run_end = scene_step_run_end(input.stable_ids, cursor);
         output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
         for index in cursor + 1..run_end {
             let previous = index - 1;
@@ -8532,6 +8536,35 @@ mod tests {
         );
         assert_eq!(
             base(&[1, 1], &[0, 0], &[f64::MAX, f64::MAX], &[2, 2]),
+            Err(SceneError::NonFinite)
+        );
+        let kinds = [1u8];
+        let ids = [1u64];
+        let styles = [0u32];
+        let zeros = [0.0f64];
+        let symbols = [0u8];
+        let values = [1.0f64];
+        let modes = [1u8];
+        let nonzero = [2.0f64];
+        let rejected_reserved = |x1: &[f64], y1: &[f64]| {
+            let mut input = compact_step_input(
+                &kinds, &ids, &styles, &zeros, &symbols, &values, &values, &modes,
+            );
+            input.x1 = x1;
+            input.y1 = y1;
+            expand_scene_steps(input)
+        };
+        assert_eq!(
+            rejected_reserved(&nonzero, &zeros),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            rejected_reserved(&zeros, &nonzero),
+            Err(SceneError::Length)
+        );
+        let nonfinite = [f64::NAN];
+        assert_eq!(
+            rejected_reserved(&nonfinite, &zeros),
             Err(SceneError::NonFinite)
         );
     }

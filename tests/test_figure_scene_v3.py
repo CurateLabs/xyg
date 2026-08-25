@@ -294,6 +294,10 @@ def test_python_step_mode_ingress_fails_closed_before_scene_encoding() -> None:
         )
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
         _native.scene_batch_encode(**{**base, "x0": [0.0, np.nan]}, step_modes=[2, 2])
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(**{**base, "x1": [1.0, 0.0]}, step_modes=[1, 1])
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(**{**base, "y1": [0.0, 1.0]}, step_modes=[1, 1])
 
 
 @pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
