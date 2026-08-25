@@ -1645,20 +1645,68 @@ def scene_export_support_reason(
     colorbar = getattr(figure, "colorbar_options", None) or {}
     if any(key not in {"domain", "stops", "ticks", "minor_ticks", "title"} for key in colorbar):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
-    # Until the compatibility raster's line/rect sampling, palette choices,
-    # and SVG spelling are represented in the whole-scene consumers, public
-    # auto-routing is deliberately limited to constant-style circle/diamond
-    # scatter. Diamond is the one non-circle symbol with a fully proven
-    # canonical SVG/raster/browser extent contract; the broader mark and
-    # symbol sets remain available through explicit ``to_scene``.
-    public_kinds = {"scatter"}
+    # This is the bounded literal geometry increment.  The Rust consumers
+    # already own the record semantics for ordinary polylines and rectangles,
+    # so use those exact records for public static output too.  Keep this
+    # deliberately narrower than the explicit ``to_scene``
+    # seam: it does not bless generated palettes, density/LOD, gradients,
+    # rounded geometry, rich text, polar coordinates, or the other migrating
+    # mark families merely because an internal record happens to exist.
+    public_kinds = {"scatter", "line", "bar", "column", "histogram"}
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size"},
+        # A literal ``step`` is expanded before Scene packing; Rust then owns
+        # the resulting polyline, clipping, raster, and SVG policy.
         "line": {"color", "opacity", "width", "step"},
-        "bar": {"color", "opacity", "role", "orientation"},
-        "column": {"color", "opacity", "role", "orientation"},
-        "histogram": {"color", "opacity", "role", "orientation"},
+        # Literal fill/stroke are represented in the batch-local style table.
+        # ``_reject_rect_extras`` below keeps gradients, non-zero radii, and
+        # wedges outside this public route.
+        "bar": {
+            "color",
+            "opacity",
+            "role",
+            "orientation",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+            "wedge_gap",
+        },
+        "column": {
+            "color",
+            "opacity",
+            "role",
+            "orientation",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+            "wedge_gap",
+        },
+        "histogram": {
+            "color",
+            "opacity",
+            "role",
+            "cumulative",
+            "density",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+        },
     }
+    has_new_geometry = any(
+        trace.kind in {"line", "bar", "column", "histogram"} for trace in figure.traces
+    )
+    # The new geometry route is intentionally anchored to an explicit
+    # Cartesian viewport. The compatibility writer's implicit domains and
+    # alternate axis-side label offsets remain separate byte/pixel contracts.
+    if has_new_geometry:
+        for axis_id in ("x", "y"):
+            axis = figure.axis_options.get(axis_id, {})
+            default_side = "bottom" if axis_id == "x" else "left"
+            if axis.get("domain") is None or axis.get("side") not in (None, default_side):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
     for trace in figure.traces:
         opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
