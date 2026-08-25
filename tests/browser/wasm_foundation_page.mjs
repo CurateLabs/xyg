@@ -23,7 +23,7 @@ import {
   XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
 
-function directDensityFixture(host, comm = null) {
+function directDensityFixture(host, comm = null, multi = false) {
   const width = 16, height = 16;
   const grid = new Float32Array(width * height);
   grid[0] = 1;
@@ -48,6 +48,19 @@ function directDensityFixture(host, comm = null) {
     backend: "native", show_legend: false,
     view: { ranges: { x: [0, 1], y: [0, 1] } },
   };
+  if (multi) {
+    spec.axes.x2 = { id: "x2", kind: "linear", label: null, range: [10, 20], side: "top" };
+    spec.axes.y2 = { id: "y2", kind: "linear", label: null, range: [100, 200], side: "right" };
+    spec.traces.push({
+      ...spec.traces[0], id: 1, x_axis: "x2", y_axis: "y2",
+      density: { ...spec.traces[0].density, buf: 1, x_range: [10, 20], y_range: [100, 200] },
+    });
+    spec.columns.push({ byte_offset: grid.byteLength, len: grid.length, dtype: "f32" });
+    spec.view = { ranges: { x: [0, 1], y: [0, 1], x2: [10, 20], y2: [100, 200] } };
+    const payload = new Uint8Array(grid.byteLength * 2);
+    payload.set(new Uint8Array(grid.buffer)); payload.set(new Uint8Array(grid.buffer), grid.byteLength);
+    return new ChartView(host, spec, payload, comm);
+  }
   return new ChartView(host, spec, new Uint8Array(grid.buffer), comm);
 }
 
@@ -665,6 +678,42 @@ async function run() {
   densityView.destroy();
   await densityWorker.dispose();
   densityHost.remove();
+
+  foundationStage = "direct WASM ChartView density multi-trace scales";
+  const multiDensityHost = document.createElement("div");
+  multiDensityHost.style.cssText = "width:320px;height:240px";
+  document.body.append(multiDensityHost);
+  const multiDensityView = directDensityFixture(multiDensityHost, null, true);
+  const multiDensityWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
+  });
+  const multiDensityHandle = await attachWasmDensity(multiDensityView, {
+    worker: multiDensityWorker,
+    inputs: [
+      { traceId: 0, x: new Float64Array([0.05, 0.95]), y: new Float64Array([0.1, 0.9]) },
+      { traceId: 1, x: new Float64Array([10.5, 19.5]), y: new Float64Array([105, 195]) },
+    ], delay: 0,
+  });
+  const multiRevision = multiDensityView._scheduleViewRequest({
+    ranges: { x: [0.2, 0.8], y: [0.3, 0.7], x2: [12, 18], y2: [120, 180] },
+  }, { delay: 0 });
+  for (let attempt = 0; attempt < 200 && multiDensityHandle.diagnostics()?.traceId !== 1; attempt++) await nextTask();
+  const multiTraces = multiDensityView.gpuTraces.filter((trace) => trace.tier === "density");
+  if (multiDensityHandle.diagnostics()?.sequence !== multiRevision
+      || multiDensityHandle.diagnostics()?.traceId !== 1
+      || multiTraces[0]?.density?.xRange.join(",") !== "0.2,0.8"
+      || multiTraces[0]?.density?.yRange.join(",") !== "0.3,0.7"
+      || multiTraces[1]?.density?.xRange.join(",") !== "12,18"
+      || multiTraces[1]?.density?.yRange.join(",") !== "120,180"
+      || multiDensityView._rebinWorker) {
+    throw new Error(`direct WASM density multi-trace scales drifted: ${JSON.stringify({
+      diagnostics: multiDensityHandle.diagnostics(), traces: multiTraces.map((trace) => trace.density),
+    })}`);
+  }
+  await multiDensityHandle.dispose();
+  multiDensityView.destroy();
+  await multiDensityWorker.dispose();
+  multiDensityHost.remove();
 
   foundationStage = "direct WASM ChartView density resource diagnostic";
   const constrainedHost = document.createElement("div");
