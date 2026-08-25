@@ -173,11 +173,13 @@ carries the supported Cartesian authored-chrome subset together: chart/plot
 backgrounds, axes (including independent literal `ticks=False` / `text=False`
 visibility), primary legend, literal banded colorbar with Rust-resolved
 major/minor ticks, and a fixed-background/border callout. Public static exports
-also admit up to two ordinary unwrapped literal Cartesian callouts; the fixture
-continues to exercise the separately bounded ordinary-plus-wrapped pair. The smoke asserts the
-browser's structural and computed-style projection under `default-src 'none'`
-and same-origin `script-src`/`worker-src`; it is not evidence for polar,
-custom-font, CSS/class, wrapping/rich text, or richer annotation semantics.
+also admit the bounded primary Cartesian annotation family: unoffset plain text,
+labelled rules/bands/markers, unlabeled straight arrows, ordinary callouts, and
+bounded wrapped text/callouts. This existing smoke is structural/computed-style
+evidence for its authored-chrome/callout fixture only; it is not yet a
+full-family browser proof. It runs under `default-src 'none'` and same-origin
+`script-src`/`worker-src`; it is not evidence for polar, custom-font, CSS/class,
+markup, rotation, collision/layout policy, or richer annotation semantics.
 
 For the bounded #116 authored-Scene evidence track, the nightly changed-main
 job regenerates 100, 10k, 100k, and 1m point artifacts independently through

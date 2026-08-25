@@ -33,9 +33,10 @@ Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 constant-style Cartesian circle/diamond-scatter public subset, plus the proven literal
 static chrome contract (chart/plot backgrounds, title, authored axis
 labels/sides/major-minor ticks, independent literal `ticks`/`text` visibility
-switches, primary legend, literal colorbar), and exactly
-one bounded Cartesian callout with documented literal fields, optionally followed
-by one bounded wrapped Cartesian callout from the shared public-host fixture, to the Rust Scene
+switches, primary legend, literal colorbar), and the existing bounded primary
+Cartesian annotation family: unoffset plain text, Rust-positioned labelled rules/bands/markers,
+unlabelled straight arrows, ordinary callouts, and bounded wrapped text/callouts,
+to the Rust Scene
 SVG and raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid
 PDF independently route each supported panel through that same Rust SVG
 consumer, namespacing its closed clip-id vocabulary only for nested-document
@@ -45,7 +46,8 @@ preflight/orchestration seam for that subset: `public_static_export` owns the
 Scene-format selection, while Python entry points only retain host options and
 the documented compatibility exceptions. `_svg.py`, `_raster.py`, and
 `_pdf.py` remain compatibility owners for rich text and legend variants, every
-annotation outside that proven ordinary-plus-wrapped callout pair, themes, custom fonts or CSS/classes,
+annotation outside that bounded primary Cartesian family (including rotation,
+collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,
 nonliteral/custom chrome, symbols other than circle/diamond, non-scatter marks, LOD inputs, export
 background overrides, and any other unmodeled output contract; #58/#117 must
 retire each exception only with cross-host differential and performance proof.

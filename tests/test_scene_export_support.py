@@ -93,6 +93,17 @@ def _callout() -> Figure:
     return figure
 
 
+def _public_annotation_family() -> Figure:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter([0.0, 1.0], [0.0, 1.0], color="#3987e5", size=6, opacity=0.8)
+    figure.traces[-1].id = 0
+    figure.annotations = fixture["public_annotation_family"]
+    return figure
+
+
 def _dashed_line() -> Figure:
     figure = _supported().line([1, 2, 3], [1, 4, 2], color="#ef4444", width=2)
     figure.traces[-1].style["dash"] = "4,2"
@@ -118,7 +129,7 @@ def test_supported_figure_has_no_reason() -> None:
     assert scene_export_support_reason(figure) is None
 
 
-def test_up_to_two_ordinary_bounded_cartesian_callouts_are_a_supported_public_scene_slice() -> None:
+def test_bounded_primary_cartesian_annotation_family_is_a_supported_public_scene_slice() -> None:
     figure = _callout()
     assert scene_export_support_reason(figure) is None
     assert b"here" in figure_scene(figure)
@@ -137,23 +148,58 @@ def test_proven_ordinary_and_wrapped_callout_fixture_is_a_supported_public_slice
     assert b"XYLB" in figure_scene(figure)
 
 
+def test_primary_annotation_family_routes_all_public_static_exports_and_matches_scene_bytes() -> (
+    None
+):
+    from xyg import _native, _pdf, kernels
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_annotation_family()
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["public_annotation_family_sha256"]
+    svg = _native.scene_svg(scene)
+    for text in ("plain", "rule", "band", "marker", "callout", "wrapped", "text"):
+        assert text in svg
+    assert figure.to_svg().encode() == svg.encode()
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), figure.width, figure.height
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+
+
 @pytest.mark.parametrize(
-    "annotations",
+    "annotation",
     [
-        [{"kind": "marker", "x": 1.0, "y": 2.0, "text": "peak"}],
-        [
-            {"kind": "callout", "x": 1.0, "y": 2.0, "text": "first"},
-            {"kind": "callout", "x": 2.0, "y": 3.0, "text": "second"},
-            {"kind": "callout", "x": 3.0, "y": 4.0, "text": "third"},
-        ],
-        [{"kind": "callout", "x": 1.0, "y": 2.0, "text": "wrapped", "wrap": 96.0}],
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "collision", "collision": "hide"},
+        {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"},
+        {"kind": "callout", "x": 0.5, "y": 0.5, "text": "css", "class_name": "custom"},
     ],
 )
-def test_only_two_ordinary_bounded_callouts_enter_the_public_annotation_slice(
-    annotations: list[dict[str, object]],
+def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css(
+    annotation: dict[str, object],
 ) -> None:
     figure = _supported()
-    figure.annotations = annotations
+    figure.annotations = [annotation]
+    reason = scene_export_support_reason(figure) or ""
+    assert "UNSUPPORTED" in reason
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6},
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+    ],
+)
+def test_public_annotation_router_rejects_unencoded_text_and_marker_label_layout(
+    annotation: dict[str, object],
+) -> None:
+    figure = _supported()
+    figure.annotations = [annotation]
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
 
 

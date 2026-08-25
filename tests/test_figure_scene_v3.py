@@ -418,10 +418,9 @@ def test_unsupported_public_exports_stay_on_compatibility_path(
             "PUBLIC_STYLE",
         ),
         (lambda figure: setattr(figure, "class_name", "legacy-css"), "UNSUPPORTED_BROWSER_CSS"),
-        (
-            lambda figure: figure.annotations.append({"kind": "marker", "x": 1, "y": 2}),
-            "PUBLIC_ANNOTATION",
-        ),
+        # A literal primary marker is now part of the bounded public Scene
+        # annotation family; the remaining rows continue to prove the legacy
+        # preflight boundaries.
         (lambda figure: figure.line([0, 1], [0, 1]), "PUBLIC_MARK"),
         (lambda figure: figure.scatter(range(10_001), range(10_001)), "PUBLIC_LOD"),
     ],

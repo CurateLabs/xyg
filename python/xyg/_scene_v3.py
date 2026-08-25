@@ -1545,9 +1545,11 @@ def scene_export_support_reason(
     renderer's complete output contract is modeled. Besides the basic
     constant-style circle-scatter subset, the proven literal Cartesian chrome
     slice routes automatically: backgrounds, title, authored axes/ticks,
-    primary legend, literal colorbar, and up to two ordinary callouts. Input
-    errors (for example a non-finite opacity) are not a routing question and
-    propagate unchanged.
+    primary legend, literal colorbar, and the existing bounded primary
+    Cartesian annotation family: unoffset plain text, labelled rules/bands/markers,
+    unlabeled straight arrows, ordinary callouts, and bounded wrapped text or
+    callouts. Input errors (for example a non-finite opacity) are not a
+    routing question and propagate unchanged.
     """
     # The compatibility exporter resolves fluid authoring dimensions at its
     # document boundary.  Scene records require concrete viewport dimensions;
@@ -1569,25 +1571,52 @@ def scene_export_support_reason(
     if getattr(figure, "title_options", None):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
     annotations = list(getattr(figure, "annotations", None) or [])
-    ordinary_callouts = 1 <= len(annotations) <= 2 and all(
-        annotation.get("kind") == "callout" and "wrap" not in annotation
+    # The core accepts these exact literal records today. Keep a host-side
+    # shape allowlist: rotation, rich content, collision/layout directives,
+    # CSS classes, and future host-only fields must keep selecting the
+    # compatibility route until Scene models them. Field values, byte limits,
+    # finite geometry, label-box rules, and all projection/paint policy remain
+    # compiler/Rust validation below.
+    annotation_fields = {
+        "text": {"kind", "x", "y", "text", "dx", "dy", "anchor", "wrap", "style", "class_name"},
+        "rule": {"kind", "axis", "value", "text", "style", "class_name"},
+        "band": {"kind", "axis", "start", "end", "text", "style", "class_name"},
+        "marker": {
+            "kind",
+            "x",
+            "y",
+            "text",
+            "dx",
+            "dy",
+            "anchor",
+            "size",
+            "symbol",
+            "style",
+            "class_name",
+        },
+        "arrow": {"kind", "x0", "y0", "x1", "y1", "text", "style", "class_name"},
+        "callout": {"kind", "x", "y", "text", "dx", "dy", "anchor", "wrap", "style", "class_name"},
+    }
+    if any(
+        not isinstance(annotation, dict)
+        or annotation.get("kind") not in annotation_fields
+        or set(annotation) - annotation_fields[annotation["kind"]]
         for annotation in annotations
-    )
-    ordinary_and_wrapped_callout = (
-        len(annotations) == 2
-        and annotations[0].get("kind") == "callout"
-        and "wrap" not in annotations[0]
-        and annotations[1].get("kind") == "callout"
-        and "wrap" in annotations[1]
-    )
-    if annotations and not (ordinary_callouts or ordinary_and_wrapped_callout):
-        # The proven public annotation slice is one or two ordinary bounded
-        # Cartesian callouts, plus the separately evidenced ordinary-and-wrapped
-        # pair. ``figure_scene`` below remains the sole authority for its
-        # literal field validation, resource limits, Rust projection, and
-        # label-box semantics. Do not turn this structural exception into broad
-        # annotation support merely because the explicit Scene API can encode
-        # more record kinds.
+    ):
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+    # XYAT v1 has no unwrapped text offset/anchor fields and XYAL derives a
+    # labelled marker's placement from the marker identity. Do not silently
+    # accept host layout values merely because the current compiler can omit
+    # them. Wrapped text is different: XYAW explicitly encodes those fields.
+    if any(
+        (annotation["kind"] == "marker" and {"dx", "dy", "anchor"} & set(annotation))
+        or (
+            annotation["kind"] == "text"
+            and "wrap" not in annotation
+            and {"dx", "dy", "anchor"} & set(annotation)
+        )
+        for annotation in annotations
+    ):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
     legend = getattr(figure, "legend_options", None) or {}
     if any(key not in {"loc", "title", "highlight", "toggle"} for key in legend):
