@@ -62,7 +62,7 @@ raster-only option that was passed non-default.
 
 | Format | Native backend | Chromium backend |
 |---|---|---|
-| PNG | Supported public Cartesian circle-scatter exports use the Rust Scene raster display list. Their bounded primary annotation family is plain text, labelled rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded wrapped text/callouts; every other supported native chart uses `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode`. | `Page.captureScreenshot` |
+| PNG | Supported public Cartesian circle-scatter exports use the Rust Scene raster display list. Their bounded primary annotation family is unoffset plain text, Rust-positioned labelled rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded wrapped text/callouts; every other supported native chart uses `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode`. | `Page.captureScreenshot` |
 | JPEG | `_raster.to_rgba` → `_jpeg.encode` (pure numpy/stdlib baseline JFIF, 4:4:4) | `Page.captureScreenshot` |
 | WebP | `_raster.to_rgba` → `_webp.encode` (pure numpy/stdlib VP8L, **lossless only**) | `Page.captureScreenshot` (lossy) |
 | SVG | Supported public Cartesian circle-scatter exports use Rust Scene SVG, including the bounded primary annotation family listed for PNG. `FacetGrid` applies that same route independently to each supported, no-background-override panel and namespaces the closed Scene clip-id vocabulary before nested composition. `_svg.to_svg` remains the compatibility backend for every other panel. | none — SVG is native-only |

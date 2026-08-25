@@ -399,14 +399,16 @@ clipping, identity, tick generation, or label formatting policy.
 
 Remaining polar marks and richer legend variants stay explicit compatibility
 exceptions. Public SVG and native PNG auto-route supported figures through
-Rust Scene; PDF consumes that Rust SVG. The public annotation route is one
-bounded Cartesian callout, optionally followed by the one bounded wrapped
-Cartesian callout from the shared public-host fixture, on the otherwise proven
-constant-style circle/diamond-scatter slice. Their literal color, opacity,
-width, anchor, offsets, and literal label background/border compile through the
-same Scene contract; Rust alone validates them and resolves their leader, label
-box, and wrapped line breaks. Other annotation combinations/kinds, themes,
-classes/CSS/custom fonts, nonliteral
+Rust Scene; PDF consumes that Rust SVG. The public annotation route is the
+bounded primary Cartesian family on the otherwise proven constant-style
+circle/diamond-scatter slice: unoffset plain text, Rust-positioned labelled
+rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded
+wrapped text/callouts. Ordinary/wrapped callouts retain literal color, opacity,
+width, anchor, offsets, and literal label background/border; Rust alone
+validates them and resolves leaders, label boxes, and wrapped line breaks.
+Unwrapped text offsets/anchors and marker-label offsets/anchors are not Scene
+fields and deliberately remain compatibility exceptions. Other annotation
+combinations/kinds, themes, classes/CSS/custom fonts, nonliteral
 chrome, symbols other than circle/diamond, non-scatter marks, and LOD remain compatibility
 preflight exceptions. ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
@@ -712,12 +714,15 @@ ordinary native batch callers must not use that prefix for data identities.
 The XYTS v2 direct-browser ingress has an explicit literal-identity mode and
 therefore preserves every authored u64, including values inside that prefix.
 
-The supported surface is unlabeled axis-aligned rules, axis-aligned bands, and
-unlabeled built-in markers with solid literal colors, opacity, and bounded
-width/size. Text labels, callouts, arrows, classes, dash/span overrides,
-coordinate-space transforms, and unknown styles fail closed with a precise
-migration diagnostic. In particular, a marker label never disappears silently.
-Those deferred kinds are the next #116 annotation slice. Existing nightly
+The explicit Scene compiler supports the bounded primary Cartesian annotation
+family: unoffset plain text, labelled axis-aligned rules/bands/built-in markers,
+unlabeled straight arrows, ordinary callouts, and bounded wrapped text/callouts,
+all with literal solid paint and bounded geometry. Unknown styles, classes,
+dash/span overrides, coordinate-space transforms, rotation, collision policy,
+and unencoded unwrapped text/marker-label offsets or anchors fail closed with a
+precise migration diagnostic; a marker label never disappears silently. The
+existing direct-browser smoke remains evidence only for its authored-chrome and
+callout fixture, not the whole family. Existing nightly
 `scene_v3_batch_encode`, SVG, raster-command, and browser-painter benchmark rows
 exercise the same record paths; no per-PR CodSpeed job is added.
 

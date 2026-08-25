@@ -186,6 +186,23 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     assert "UNSUPPORTED" in reason
 
 
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6},
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+    ],
+)
+def test_public_annotation_router_rejects_unencoded_text_and_marker_label_layout(
+    annotation: dict[str, object],
+) -> None:
+    figure = _supported()
+    figure.annotations = [annotation]
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+
+
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))
 def test_unsupported_feature_reported(name: str) -> None:
     factory, token = UNSUPPORTED[name]

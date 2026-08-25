@@ -34,7 +34,7 @@ constant-style Cartesian circle/diamond-scatter public subset, plus the proven l
 static chrome contract (chart/plot backgrounds, title, authored axis
 labels/sides/major-minor ticks, independent literal `ticks`/`text` visibility
 switches, primary legend, literal colorbar), and the existing bounded primary
-Cartesian annotation family: plain text, labelled rules/bands/markers,
+Cartesian annotation family: unoffset plain text, Rust-positioned labelled rules/bands/markers,
 unlabelled straight arrows, ordinary callouts, and bounded wrapped text/callouts,
 to the Rust Scene
 SVG and raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid

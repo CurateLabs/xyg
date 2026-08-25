@@ -1546,7 +1546,7 @@ def scene_export_support_reason(
     constant-style circle-scatter subset, the proven literal Cartesian chrome
     slice routes automatically: backgrounds, title, authored axes/ticks,
     primary legend, literal colorbar, and the existing bounded primary
-    Cartesian annotation family: plain text, labelled rules/bands/markers,
+    Cartesian annotation family: unoffset plain text, labelled rules/bands/markers,
     unlabeled straight arrows, ordinary callouts, and bounded wrapped text or
     callouts. Input errors (for example a non-finite opacity) are not a
     routing question and propagate unchanged.
@@ -1601,6 +1601,20 @@ def scene_export_support_reason(
         not isinstance(annotation, dict)
         or annotation.get("kind") not in annotation_fields
         or set(annotation) - annotation_fields[annotation["kind"]]
+        for annotation in annotations
+    ):
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+    # XYAT v1 has no unwrapped text offset/anchor fields and XYAL derives a
+    # labelled marker's placement from the marker identity. Do not silently
+    # accept host layout values merely because the current compiler can omit
+    # them. Wrapped text is different: XYAW explicitly encodes those fields.
+    if any(
+        (annotation["kind"] == "marker" and {"dx", "dy", "anchor"} & set(annotation))
+        or (
+            annotation["kind"] == "text"
+            and "wrap" not in annotation
+            and {"dx", "dy", "anchor"} & set(annotation)
+        )
         for annotation in annotations
     ):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
