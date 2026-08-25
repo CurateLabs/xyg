@@ -393,11 +393,16 @@ Rust Scene; PDF consumes that Rust SVG. ``try_public_svg`` /
 that need an optional result. Unlabeled cartesian annotations remain rejected
 rather than being approximated as marks.
 
-The public router the auto-routing slice wires consults one support predicate,
+The public router has one selection seam,
+``_scene_v3.public_static_export``. It consults the one support predicate,
 ``_scene_v3.scene_export_support_reason``, which returns the stable
 ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's bounded message) for a
 figure outside the migrated subset and ``None`` when the Rust Scene path
-applies. Parity with the compiler is by construction — the predicate runs
+applies. ``public_static_export`` returns ``None`` only for that explicit
+pre-compilation compatibility decision; every selected Scene compiler and
+consumer error propagates. Figure methods and both legacy/unified Python export
+entry points delegate to it rather than independently selecting a Scene consumer.
+Parity with the compiler is by construction — the predicate runs
 ``figure_scene`` — so a router built on it can never disagree with the encoder it
 guards, and it never triggers a silent fallback: input errors (for example a
 non-finite opacity) propagate rather than being reported as a routing reason.

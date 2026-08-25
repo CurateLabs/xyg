@@ -32,8 +32,10 @@ raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid
 PDF independently route each supported panel through that same Rust SVG
 consumer, namespacing its closed clip-id vocabulary only for nested-document
 composition; panel backgrounds and unsupported panels deliberately select
-compatibility before compilation. `python/xyg/_scene_v3.py` is only a
-preflight/orchestration seam for that subset. `_svg.py`, `_raster.py`, and
+compatibility before compilation. `python/xyg/_scene_v3.py` is the single
+preflight/orchestration seam for that subset: `public_static_export` owns the
+Scene-format selection, while Python entry points only retain host options and
+the documented compatibility exceptions. `_svg.py`, `_raster.py`, and
 `_pdf.py` remain compatibility owners for text, legends, annotations, themes,
 custom axis chrome, non-circle symbols, non-scatter marks, LOD inputs, export
 background overrides, and any other unmodeled output contract; #58/#117 must
