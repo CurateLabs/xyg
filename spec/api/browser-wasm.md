@@ -172,7 +172,9 @@ fixture is byte-for-byte output of the public Python `Figure` workload and
 carries the supported Cartesian authored-chrome subset together: chart/plot
 backgrounds, axes (including independent literal `ticks=False` / `text=False`
 visibility), primary legend, literal banded colorbar with Rust-resolved
-major/minor ticks, and a fixed-background/border callout. The smoke asserts the
+major/minor ticks, and a fixed-background/border callout. Public static exports
+also admit up to two ordinary unwrapped literal Cartesian callouts; the fixture
+continues to exercise the separately bounded ordinary-plus-wrapped pair. The smoke asserts the
 browser's structural and computed-style projection under `default-src 'none'`
 and same-origin `script-src`/`worker-src`; it is not evidence for polar,
 custom-font, CSS/class, wrapping/rich text, or richer annotation semantics.

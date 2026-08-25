@@ -82,6 +82,21 @@ def public_callout_figure() -> Figure:
     return figure
 
 
+def public_two_callout_figure() -> Figure:
+    """The bounded two-ordinary-callout public-routing contract."""
+    figure = public_callout_figure()
+    figure.callout(
+        0.8,
+        0.25,
+        "Second public Rust callout",
+        dx=-20,
+        dy=20,
+        anchor="end",
+        style={"color": "#344054", "opacity": 0.9, "width": 1.5},
+    )
+    return figure
+
+
 def public_authored_chrome_figure() -> Figure:
     """The complete bounded literal-chrome public-routing contract."""
     from scripts.generate_authored_scene_benchmark import authored_scene_figure
@@ -291,6 +306,34 @@ def test_public_exporters_share_one_scene_selection_seam(
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
     assert formats == ["svg", "png", "pdf"]
+
+
+def test_two_ordinary_callouts_route_all_public_static_exports_through_scene(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The two-callout bound is proven through every public static consumer."""
+    figure = public_two_callout_figure()
+    scene_svg = _native.scene_svg
+    scene_raster_commands = _native.scene_raster_commands
+    calls = {"svg": 0, "raster": 0}
+
+    def observed_scene_svg(*args: object, **kwargs: object) -> str:
+        calls["svg"] += 1
+        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+
+    def observed_scene_raster(*args: object, **kwargs: object) -> bytes:
+        calls["raster"] += 1
+        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
+    svg = figure.to_svg()
+    assert "Public Rust" in svg
+    assert "Second public Rust callout" in svg
+    assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
+    assert figure.to_image(format="pdf").startswith(b"%PDF-")
+    assert calls["svg"] >= 2
+    assert calls["raster"] >= 1
 
 
 @pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
