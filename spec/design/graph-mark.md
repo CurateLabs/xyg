@@ -516,7 +516,7 @@ omission is already enforced at this seam.
 evidence corpus for this contract. It combines all five canonical class,
 epistemic, and status values; selected and pinned state; node and edge labels;
 a transitive collapsed hierarchy; a boundary edge; an internal omitted edge;
-and a self-loop. Exact SHA-256 goldens cover Scene v12, browser-painter bytes,
+and a self-loop. Exact SHA-256 goldens cover Scene v22, browser-painter bytes,
 SVG, raster commands, and PNG in light and dark themes. The native evidence
 asserts preserved node/edge source IDs, collapse remapping, omitted descendants,
 accepted label output, and non-flat raster output. The browser smoke reuses

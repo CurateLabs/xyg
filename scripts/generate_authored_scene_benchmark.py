@@ -21,7 +21,7 @@ from xyg import _scene_v3
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
-SCENE_VERSION = 21
+SCENE_VERSION = 22
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
 
 
@@ -104,7 +104,7 @@ def _authored_annotation_input(figure: Figure) -> bytes:
 
 
 def authored_scene(count: int) -> bytes:
-    """Return a validated Scene 21 workload for one canonical evidence tier."""
+    """Return a validated Scene 22 workload for one canonical evidence tier."""
     figure = authored_scene_figure(count)
     annotation_input = _authored_annotation_input(figure)
     if not annotation_input.startswith(b"XYAD\x02\x00\x00\x00"):
@@ -112,7 +112,7 @@ def authored_scene(count: int) -> bytes:
 
     scene = figure.to_scene()
     if scene[:4] != b"XYGS" or int.from_bytes(scene[4:8], "little") != SCENE_VERSION:
-        raise AssertionError("authored Scene workload must compile as Scene 21")
+        raise AssertionError("authored Scene workload must compile as Scene 22")
     missing = [chunk.decode("ascii") for chunk in _FINAL_SCENE_CHUNKS if chunk not in scene]
     if missing:
         raise AssertionError(f"authored Scene workload is missing resolved chunks: {missing}")

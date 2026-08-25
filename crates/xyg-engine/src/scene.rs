@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 21;
+pub const SCENE_VERSION: u32 = 22;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -125,6 +125,8 @@ struct SceneLabelBox {
     height: f64,
     rgba: [u8; 4],
 }
+
+type AttachedLabelRow = (u64, [u8; 4], Option<[u8; 4]>, String);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SceneLabel {
@@ -1819,11 +1821,15 @@ fn decode_xyat(
     x_scale: AxisScale,
     y_scale: AxisScale,
     layout: PlotLayout,
-) -> Result<Vec<SceneLabel>, SceneError> {
+) -> Result<(Vec<SceneLabel>, Vec<Option<SceneLabelBox>>), SceneError> {
     if bytes.is_empty() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), Vec::new()));
     }
-    if bytes.len() < 12 || &bytes[..4] != b"XYAT" || batch_u32(bytes, 4)? != 1 {
+    if bytes.len() < 12 || &bytes[..4] != b"XYAT" {
+        return Err(SceneError::Length);
+    }
+    let version = batch_u32(bytes, 4)?;
+    if version != 1 && version != 2 {
         return Err(SceneError::Length);
     }
     let count = batch_u32(bytes, 8)? as usize;
@@ -1833,12 +1839,21 @@ fn decode_xyat(
     let mut at = 12usize;
     let mut total = 0usize;
     let mut labels = Vec::with_capacity(count);
+    let mut backgrounds = Vec::with_capacity(count);
     for index in 0..count {
-        let end_fixed = at.checked_add(24).ok_or(SceneError::Limit)?;
+        let fixed_bytes = if version == 1 { 24 } else { 28 };
+        let end_fixed = at.checked_add(fixed_bytes).ok_or(SceneError::Limit)?;
         let fixed = bytes.get(at..end_fixed).ok_or(SceneError::Length)?;
         let x = f64::from_le_bytes(fixed[0..8].try_into().unwrap());
         let y = f64::from_le_bytes(fixed[8..16].try_into().unwrap());
-        let len = u32::from_le_bytes(fixed[20..24].try_into().unwrap()) as usize;
+        let background = if version == 2 {
+            let rgba: [u8; 4] = fixed[20..24].try_into().unwrap();
+            (rgba[3] != 0).then_some(rgba)
+        } else {
+            None
+        };
+        let len_at = if version == 1 { 20 } else { 24 };
+        let len = u32::from_le_bytes(fixed[len_at..len_at + 4].try_into().unwrap()) as usize;
         let end = end_fixed.checked_add(len).ok_or(SceneError::Limit)?;
         let text = std::str::from_utf8(bytes.get(end_fixed..end).ok_or(SceneError::Length)?)
             .map_err(|_| SceneError::Length)?;
@@ -1862,7 +1877,7 @@ fn decode_xyat(
         {
             return Err(SceneError::Length);
         }
-        labels.push(SceneLabel {
+        let label = SceneLabel {
             stable_id: 0x5859_0400_0000_0000 | index as u64,
             x: px,
             y: py,
@@ -1870,20 +1885,31 @@ fn decode_xyat(
             rgba: fixed[16..20].try_into().unwrap(),
             anchor: 0,
             text: text.to_owned(),
+        };
+        backgrounds.push(match background {
+            Some(fill) => resolved_callout_label_background(
+                label.x,
+                label.y,
+                label.font_size,
+                label.anchor,
+                &label.text,
+                fill,
+                layout,
+            )?,
+            None => None,
         });
+        labels.push(label);
         at = end;
     }
     if at != bytes.len() {
         return Err(SceneError::Length);
     }
-    Ok(labels)
+    Ok((labels, backgrounds))
 }
 
 /// Decode the bounded, host-authored literal paint for labels attached to
 /// canonical Scene annotation records. Rust retains placement and typography
 /// policy; hosts only supply an already-resolved RGBA literal and text.
-type AttachedLabelRow = (u64, [u8; 4], Option<[u8; 4]>, String);
-
 fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<AttachedLabelRow>, SceneError> {
     if bytes.is_empty() {
         return Ok(Vec::new());
@@ -2068,7 +2094,7 @@ fn decode_annotation_envelope(
     if end != bytes.len() {
         return Err(SceneError::Length);
     }
-    let mut labels = decode_xyat(
+    let (mut labels, mut label_backgrounds) = decode_xyat(
         &bytes[payload_start..xyat_end],
         document.x_scale,
         document.y_scale,
@@ -2090,7 +2116,6 @@ fn decode_annotation_envelope(
     for (index, label) in attached.iter_mut().enumerate() {
         label.stable_id = 0x5859_0500_0000_0000 | index as u64;
     }
-    let mut label_backgrounds = vec![None; labels.len()];
     labels.append(&mut attached);
     label_backgrounds.append(&mut attached_backgrounds);
     let callouts = decode_xyac(
@@ -2961,13 +2986,12 @@ impl<'a> SceneBatch<'a> {
         if end != bytes.len() {
             return Err(SceneError::Length);
         }
-        let mut labels = decode_xyat(
+        let (mut labels, mut label_backgrounds) = decode_xyat(
             &bytes[start..xyat_end],
             self.x_scale,
             self.y_scale,
             self.layout,
         )?;
-        let mut label_backgrounds = vec![None; labels.len()];
         let attached = &bytes[xyat_end..xyal_end];
         if !attached.is_empty() {
             for (index, (stable_id, rgba, background, text)) in
@@ -7666,7 +7690,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 21);
+        assert_eq!(SCENE_VERSION, 22);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -9179,6 +9203,88 @@ mod tests {
         assert!(svg.contains("data-xy-chrome=\"title\""));
         assert!(svg.contains("Cartesian title"));
         assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn xyat_v2_envelope_preserves_canonical_chrome_trailer() {
+        let layout = PlotLayout::new(120.0, 90.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let chrome = SceneChromeStyle {
+            chart_background_rgba: [240, 248, 255, 255],
+            plot_background_rgba: [248, 250, 252, 255],
+            ..SceneChromeStyle::default()
+        };
+        let batch = SceneBatch::new_with_chrome(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            chrome.clone(),
+            SceneChromeText::default(),
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        )
+        .unwrap();
+        let mut xyat = Vec::new();
+        xyat.extend_from_slice(b"XYAT");
+        xyat.extend_from_slice(&2u32.to_le_bytes());
+        xyat.extend_from_slice(&1u32.to_le_bytes());
+        xyat.extend_from_slice(&0.5f64.to_le_bytes());
+        xyat.extend_from_slice(&0.5f64.to_le_bytes());
+        xyat.extend_from_slice(&[1, 2, 3, 255]);
+        xyat.extend_from_slice(&[255, 255, 255, 255]);
+        xyat.extend_from_slice(&4u32.to_le_bytes());
+        xyat.extend_from_slice(b"note");
+        let mut envelope = Vec::new();
+        envelope.extend_from_slice(b"XYAD");
+        envelope.extend_from_slice(&1u32.to_le_bytes());
+        envelope.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.extend_from_slice(&xyat);
+
+        let decorated = batch
+            .with_authored_annotations(&envelope)
+            .unwrap()
+            .encode();
+        let body = SCENE_BATCH_HEADER_BYTES;
+        assert_eq!(&decorated[body..body + 8], &[240, 248, 255, 255, 248, 250, 252, 255]);
+        let painter = SceneDocument::decode(&decorated)
+            .unwrap()
+            .to_browser_painter(16_384)
+            .unwrap();
+        let style_input = chrome.style_input();
+        assert_eq!(&painter[64..72], &style_input[..8]);
     }
 
     #[test]

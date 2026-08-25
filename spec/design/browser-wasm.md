@@ -231,7 +231,7 @@ TypeScript does not scan Scene
 records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
-Scene v21 retains record metadata byte 3 explicitly: `0` retains legacy
+Scene v22 retains record metadata byte 3 explicitly: `0` retains legacy
 trace/run identity, `1..6` identifies the bounded annotation kinds (with `5`
 for Rust-projected straight arrows and `6` for Rust-resolved Cartesian
 callout leaders), and `128`
@@ -241,9 +241,9 @@ in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
 Painter contract v13 begins with `XYPB`, independent painter version 13, canonical
-Scene v21 (`SCENE_VERSION = 21`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
+Scene v22 (`SCENE_VERSION = 22`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
-UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v21
+UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v22
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
 geometry); bytes 264–275 carry the bounded figure-title/x-label/y-label UTF-8
 lengths and bytes 276–279 are reserved zeros. The shared string table stores
