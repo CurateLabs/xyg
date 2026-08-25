@@ -12,6 +12,7 @@ import numpy as np
 
 from . import _native, channels, interaction, kernels, lod
 from ._trace import Trace
+from ._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 from .columns import Column
 from .config import (
     DECIMATION_THRESHOLD,
@@ -1390,7 +1391,7 @@ class PayloadMixin(_Host):
         # replay on every pan.  The worker only receives one ABI-generated
         # 32,768-point raw chunk at a time; this source capacity is the
         # generated aggregate ABI's declared point limit.
-        wasm_capacity = 8_000_000
+        wasm_capacity = WASM_AGGREGATE_MAX_POINTS
         wasm_supported = (
             self.coords == "cartesian"
             and self._axis_scale(t.x_axis) == "linear"

@@ -158,8 +158,9 @@ export class XygWasmDensityHandle {
   /** Evidence/control boundary: cancel only the currently pending viewport. */
   cancel() { this.task?.cancel(); this.task = null; }
   /** @internal Strict-CSP lifecycle evidence only; capability-gated by worker. */
-  evidenceLifecycle(action: "malformed" | "resource" | "trap") {
-    return this.worker.evidenceLifecycle(action).catch((cause) => {
+  evidenceLifecycle(action: "malformed" | "resource" | "trap" | "stream_resource") {
+    const sequence = action === "stream_resource" ? ++this.aggregateSequence : undefined;
+    return this.worker.evidenceLifecycle(action, sequence).catch((cause) => {
       const error = cause instanceof XygWasmError ? cause : new XygWasmError(
         "XYG_WASM_WORKER_ERROR", cause instanceof Error ? cause.message : "WASM lifecycle failed",
       );

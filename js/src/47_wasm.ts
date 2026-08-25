@@ -22,6 +22,8 @@ export interface XygWasmWorkerOptions {
   wasm: XygWasmSource;
   /** Logical staging bound. The Rust adapter also enforces its compile-time ceiling. */
   maxArenaBytes?: number;
+  /** @internal Capability-gated browser lifecycle evidence; never runtime policy. */
+  evidenceCapability?: string;
 }
 
 /** Checked bytes plus a generated classic Worker IIFE for a file: export. */
@@ -221,8 +223,8 @@ export class XygWasmWorker {
     }
     this.maxArenaBytes = maxArenaBytes;
     this.inline = inline;
-    this.evidenceCapability = inline && typeof (options as XygInlineWasmWorkerOptions).evidenceCapability === "string"
-      ? (options as XygInlineWasmWorkerOptions).evidenceCapability : null;
+    this.evidenceCapability = typeof options.evidenceCapability === "string"
+      ? options.evidenceCapability : null;
     const blobUrl = inline ? URL.createObjectURL(new Blob([(options as XygInlineWasmWorkerOptions).inline.classicWorkerSource], { type: "application/javascript" })) : null;
     this.inlineBlobUrl = blobUrl;
     this.worker = inline
@@ -442,14 +444,17 @@ export class XygWasmWorker {
   }
 
   /** Gated test-only worker boundary used by the strict-CSP lifecycle proof. */
-  evidenceLifecycle(action: "malformed" | "resource" | "trap"): Promise<never> {
+  evidenceLifecycle(action: "malformed" | "resource" | "trap" | "stream_resource", sequence?: number): Promise<never> {
     this.assertLive();
-    if (!this.inline || !this.evidenceCapability) {
-      throw new XygWasmError("XYG_WASM_EVIDENCE_DISABLED", "inline lifecycle evidence is not enabled");
+    if (!this.evidenceCapability) {
+      throw new XygWasmError("XYG_WASM_EVIDENCE_DISABLED", "lifecycle evidence is not enabled");
+    }
+    if (action === "stream_resource" && (!Number.isInteger(sequence) || !sequence || sequence > 0xffffffff)) {
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", "stream lifecycle evidence requires a nonzero sequence");
     }
     const requestId = this.allocateRequest();
     const result = this.promiseFor<never>(requestId);
-    this.worker.postMessage({ type: "evidence.lifecycle", requestId, capability: this.evidenceCapability, action });
+    this.worker.postMessage({ type: "evidence.lifecycle", requestId, capability: this.evidenceCapability, action, sequence });
     return result;
   }
 

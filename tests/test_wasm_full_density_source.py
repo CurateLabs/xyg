@@ -2,18 +2,10 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import numpy as np
 
 import xyg
-
-
-def _generated_count_only_capacity() -> int:
-    abi = json.loads((Path(__file__).parents[1] / "spec" / "wasm" / "abi.json").read_text())
-    a = abi["aggregate"]
-    return a["max_points"]
+from xyg._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 
 
 def test_split_density_payload_retains_one_replayable_canonical_f64_source() -> None:
@@ -33,7 +25,7 @@ def test_split_density_payload_retains_one_replayable_canonical_f64_source() -> 
         "y": source["y"],
         "point_count": n,
         "trace_id": 0,
-        "capacity": _generated_count_only_capacity(),
+        "capacity": WASM_AGGREGATE_MAX_POINTS,
         "ownership": "retain-host-replay",
     }
     x_meta, y_meta = spec["columns"][source["x"]], spec["columns"][source["y"]]
@@ -87,6 +79,6 @@ def test_full_density_source_is_not_advertised_for_color_or_over_capacity() -> N
     unsupported = colored.figure().build_payload_split()[0]["wasm_density"]
     assert unsupported["automatic"] is False
     assert unsupported["unsupported"]["code"] == "XYG_WASM_SOURCE_UNSUPPORTED"
-    assert _generated_count_only_capacity() == 8_000_000
+    assert WASM_AGGREGATE_MAX_POINTS == 8_000_000
     # Avoid allocating the >8 MiB source here: the public gate is explicitly
     # bounded and exercised by its capacity metadata above.

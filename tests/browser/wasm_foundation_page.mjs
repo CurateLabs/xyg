@@ -757,6 +757,18 @@ async function run() {
     send: (message) => fullSourceRequests.push(message), onMessage: () => () => {},
   }, false, true);
   fullSourceView.root.addEventListener("xy:wasm_density_error", (event) => fullSourceEvents.push(event.detail));
+  const fullSourceWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule,
+    maxArenaBytes: 8 * 1024 * 1024, evidenceCapability: "strict-csp-stream-resource-proof",
+  });
+  const fullSourceHandle = await attachWasmDensity(fullSourceView, {
+    worker: fullSourceWorker, workerOwnership: "own", delay: 0, streamSource: true,
+    input: {
+      traceId: 0,
+      x: new Float64Array(fullSourceView._payload[1].buffer),
+      y: new Float64Array(fullSourceView._payload[2].buffer),
+    },
+  });
   const fullSourceTrace = fullSourceView.gpuTraces.find((trace) => trace.tier === "density");
   const fullSourceOverview = fullSourceTrace.density;
   fullSourceView._scheduleViewRequest({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } }, { delay: 0 });
@@ -771,19 +783,42 @@ async function run() {
     })}`);
   }
   const fullSourceGrid = fullSourceTrace.density;
-  // Force an invalid viewport after a successful replay. This exercises the
-  // stream declaration failure under the same strict-CSP module
-  // Worker—not the separate inline-only lifecycle evidence hook.
-  fullSourceView._wasmDensity.schedule({ ranges: { x: [0.5, 0.5], y: [0.25, 0.75] } }, { delay: 0, force: true });
+  // A capability-gated *Worker-side* XYAS declaration crosses the Rust
+  // resource guard (4097² cells), then the ordinary viewport recovers on the
+  // same strict-CSP module Worker. This is deliberately not a host-side
+  // invalid-argument short circuit.
+  await rejected(fullSourceHandle.evidenceLifecycle("stream_resource"), "XYG_WASM_RESOURCE_LIMIT");
   for (let attempt = 0; attempt < 100 && !fullSourceEvents.length; attempt++) await nextTask();
   if (fullSourceTrace.density !== fullSourceGrid || fullSourceEvents.length !== 1
-      || fullSourceEvents[0].code !== "XYG_WASM_INVALID_ARGUMENT") {
+      || fullSourceEvents[0].code !== "XYG_WASM_RESOURCE_LIMIT") {
     throw new Error(`full-source forced Worker failure did not retain overview/event: ${JSON.stringify(fullSourceEvents)}`);
   }
   fullSourceView._scheduleViewRequest({ ranges: { x: [0, 1], y: [0, 1] } }, { delay: 0 });
   for (let attempt = 0; attempt < 100 && fullSourceTrace.density.xRange.join(",") !== "0,1"; attempt++) await nextTask();
   if (fullSourceTrace.density.xRange.join(",") !== "0,1") throw new Error("full-source WASM density did not recover after validation failure");
   fullSourceView.destroy(); fullSourceHost.remove();
+
+  foundationStage = "concurrent public XYAS stream supersession";
+  const concurrentWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8 * 1024 * 1024,
+  });
+  await concurrentWorker.ready;
+  const concurrentX = new Float64Array(65_537), concurrentY = new Float64Array(65_537);
+  for (let index = 0; index < concurrentX.length; index++) {
+    concurrentX[index] = index / concurrentX.length; concurrentY[index] = 1 - concurrentX[index];
+  }
+  const firstStream = concurrentWorker.aggregateStream({ x: concurrentX, y: concurrentY }, {
+    x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
+  }, { sequence: 1 });
+  const secondStream = concurrentWorker.aggregateStream({ x: concurrentX, y: concurrentY }, {
+    x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
+  }, { sequence: 2 });
+  await rejected(firstStream.result, "XYG_WASM_CANCELLED");
+  const secondStreamResult = await secondStream.result;
+  if (!(secondStreamResult.aggregate instanceof ArrayBuffer) || !secondStreamResult.aggregate.byteLength) {
+    throw new Error("newer public XYAS stream did not settle after superseding its predecessor");
+  }
+  await concurrentWorker.dispose();
 
   foundationStage = "kernel-less retained-sample density uses local Rust/WASM";
   const standaloneDensityHost = document.createElement("div");

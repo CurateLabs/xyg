@@ -68,6 +68,9 @@ def test_generated_typescript_and_rust_contracts_are_exact() -> None:
     assert (
         ROOT / "crates/xyg-wasm/src/typed_series_abi_generated.rs"
     ).read_text() == GEN.render_typed_series_rust(value)
+    assert (
+        ROOT / "python/xyg/_wasm_aggregate_generated.py"
+    ).read_text() == GEN.render_python_aggregate(value)
 
 
 def test_rust_decoder_consumes_generated_contract_without_wire_constants() -> None:
@@ -166,3 +169,7 @@ def test_streaming_aggregate_manifest_is_count_only_and_generated() -> None:
     generated = (ROOT / "js/src/wasm_abi_generated.ts").read_text()
     assert 'XYG_WASM_AGGREGATE_STREAM_MAGIC = "XYAS"' in generated
     assert "raw.xyg_wasm_aggregate_stream_push" in generated
+    assert (
+        "WASM_AGGREGATE_MAX_POINTS = 8000000"
+        in (ROOT / "python/xyg/_wasm_aggregate_generated.py").read_text()
+    )

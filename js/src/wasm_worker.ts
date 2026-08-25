@@ -27,6 +27,7 @@ let handle = 0;
 type Lifecycle = "idle" | "initializing" | "initialized" | "failed" | "disposed";
 let lifecycle: Lifecycle = "idle";
 let operationBudgetBytes = 0;
+let evidenceCapability: string | null = null;
 let initializedModule: WebAssembly.Module | null = null;
 let compileLeaf = false;
 let operationSequenceWatermark = 0;
@@ -112,6 +113,8 @@ async function initialize(message: any) {
   let bound: XygWasmExports | null = null;
   let created = 0;
   try {
+    evidenceCapability = typeof message.evidenceCapability === "string" && message.evidenceCapability.length >= 24
+      ? message.evidenceCapability : null;
     const module = await loadModule(message.source);
     if (isDisposed()) return;
     if (WebAssembly.Module.imports(module).length !== 0) {
@@ -190,12 +193,59 @@ function streamFailure(message: any, status: number) {
   rustError(message.requestId, statusCode(status), readXygWasmError(exports!, handle), status);
 }
 
+/** Capability-gated strict-CSP evidence of a real Rust `XYAS` refusal. */
+function evidenceLifecycle(message: any) {
+  if (!evidenceCapability || message.capability !== evidenceCapability) {
+    error(message.requestId, "XYG_WASM_EVIDENCE_DISABLED", "lifecycle evidence is not enabled"); return;
+  }
+  if (message.action !== "stream_resource") {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "unknown lifecycle evidence action", XYG_WASM_STATUS.INVALID_ARGUMENT); return;
+  }
+  if (!exports || !handle || lifecycle !== "initialized") {
+    error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return;
+  }
+  const sequence = Number(message.sequence);
+  if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "stream evidence sequence is malformed", XYG_WASM_STATUS.INVALID_ARGUMENT); return;
+  }
+  try {
+    // Valid XYAS framing with a grid one cell beyond Rust's declared bound.
+    // This executes the production stream begin/export in this Worker rather
+    // than rejecting on the host validation path.
+    const header = new ArrayBuffer(XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES);
+    const bytes = new Uint8Array(header), view = new DataView(header);
+    bytes.set([0x58, 0x59, 0x41, 0x53]);
+    view.setUint32(4, 1, true); view.setUint32(8, XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES, true);
+    view.setUint32(16, 1, true); view.setUint32(20, 4097, true); view.setUint32(24, 4097, true);
+    view.setFloat64(32, 0, true); view.setFloat64(40, 1, true);
+    view.setFloat64(48, 0, true); view.setFloat64(56, 1, true);
+    const staged = streamStage(header, XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES);
+    if (staged !== XYG_WASM_STATUS.OK) { streamFailure(message, staged); return; }
+    const status = exports.xyg_wasm_aggregate_stream_begin(handle, sequence, 0, header.byteLength);
+    if (status === XYG_WASM_STATUS.OK || status === XYG_WASM_STATUS.PENDING) {
+      throw new Error("stream evidence unexpectedly accepted an over-limit grid");
+    }
+    streamFailure(message, status);
+  } catch (cause) {
+    error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "stream lifecycle evidence trapped");
+  }
+}
+
 function beginAggregateStream(message: any) {
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
     if (!(message.header instanceof ArrayBuffer) || message.header.byteLength !== XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES) throw new TypeError("aggregate stream header is malformed");
     if (activeAggregate) throw new Error("an aggregate request is already active");
-    if (activeAggregateStream) { exports.xyg_wasm_cancel(handle, activeAggregateStream.sequence); activeAggregateStream = null; }
+    if (activeAggregateStream) {
+      const previous = activeAggregateStream;
+      if (Number(message.sequence) <= previous.sequence) {
+        error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "aggregate stream sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE);
+        return;
+      }
+      exports.xyg_wasm_cancel(handle, previous.sequence);
+      activeAggregateStream = null;
+      error(previous.requestId, "XYG_WASM_CANCELLED", "aggregate stream was superseded by a newer request", XYG_WASM_STATUS.CANCELLED);
+    }
     const staged = streamStage(message.header, XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES);
     if (staged !== XYG_WASM_STATUS.OK) { streamFailure(message, staged); return; }
     const status = exports.xyg_wasm_aggregate_stream_begin(handle, Number(message.sequence), 0, message.header.byteLength);
@@ -834,6 +884,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     void initialize(message);
     return;
   }
+  if (message?.type === "evidence.lifecycle") { evidenceLifecycle(message); return; }
   if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (message?.type === "aggregate.stream_push") { pushAggregateStream(message); return; }
   if (message?.type === "aggregate.stream_finish") { finishAggregateStream(message); return; }
