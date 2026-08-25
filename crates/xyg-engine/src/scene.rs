@@ -8369,6 +8369,8 @@ pub fn cartesian_scene_margins(
 mod tests {
     use super::*;
 
+    // Keep every borrowed column explicit so this fixture mirrors the Scene ABI.
+    #[allow(clippy::too_many_arguments)]
     fn compact_step_input<'a>(
         kinds: &'a [u8],
         ids: &'a [u64],
