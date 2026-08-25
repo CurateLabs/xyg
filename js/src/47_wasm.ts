@@ -381,8 +381,8 @@ export class XygWasmWorker {
     return this.sceneTask("aggregate.bin2d", request, options);
   }
 
-  /** Gated test-only worker boundary used by the offline lifecycle proof. */
-  evidenceLifecycle(action: "malformed" | "trap"): Promise<never> {
+  /** Gated test-only worker boundary used by the strict-CSP lifecycle proof. */
+  evidenceLifecycle(action: "malformed" | "resource" | "trap"): Promise<never> {
     this.assertLive();
     if (!this.inline || !this.evidenceCapability) {
       throw new XygWasmError("XYG_WASM_EVIDENCE_DISABLED", "inline lifecycle evidence is not enabled");

@@ -1865,6 +1865,9 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "scripts/verify_authored_scene_artifacts.py",
         "scripts/verify_wasm_scene_benchmark.py",
         "authored-scene-browser-${{ github.sha }}.json",
+        "scripts/inline_density_file_benchmark.py",
+        "scripts/verify_inline_density_benchmark.py",
+        "hosted-density-browser-${{ github.sha }}.json",
         "actions/upload-artifact@",
     )
     _require_step_contains(

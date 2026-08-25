@@ -17,27 +17,30 @@ def main() -> int:
     p.add_argument("--sha")
     a = p.parse_args()
     report = json.loads(a.report.read_text())
-    if report.get("schema") != "xyg-inline-density-file-v1":
+    if report.get("schema") != "xyg-hosted-density-browser-v2":
         raise SystemExit("unexpected inline density evidence schema")
     if a.sha and report.get("gitSha") != a.sha:
         raise SystemExit("inline density evidence SHA mismatch")
     rows = report.get("measurements")
     if (
         not isinstance(rows, list)
-        or [r.get("count") for r in rows if isinstance(r, dict) and r.get("offlineDensity")]
+        or [r.get("count") for r in rows if isinstance(r, dict) and r.get("strictCspFile")]
         != COUNTS
     ):
         raise SystemExit("missing canonical offline density sizes")
     for row in rows:
-        if not isinstance(row, dict) or not row.get("offlineDensity"):
+        if not isinstance(row, dict) or not row.get("strictCspFile"):
             continue
         for key in (
-            "firstPaintMs",
+            "htmlBuildMs",
+            "browserFirstPaintMs",
             "interactionMs",
             "htmlBytes",
             "jsHeapBytes",
             "rasterBytes",
             "visualTolerancePx",
+            "canvasPixels",
+            "payloadBytes",
         ):
             value = row.get(key)
             if (
@@ -51,13 +54,23 @@ def main() -> int:
             row["htmlBytes"] <= 0
             or row["rasterBytes"] <= 1024
             or row["jsHeapBytes"] <= 0
+            or row["canvasPixels"] <= 0
+            or row["payloadBytes"] <= 0
             or row["visualTolerancePx"] > 1
             or row.get("inlineWorker") is not True
+            or row.get("cspNoNetwork") is not True
+            or not isinstance(row.get("htmlSha256"), str)
+            or len(row["htmlSha256"]) != 64
+            or not isinstance(row.get("obsoleteRevision"), int)
+            or not isinstance(row.get("visibleRevision"), int)
+            or row["obsoleteRevision"] >= row["visibleRevision"]
+            or row.get("stalePaints") != 0
+            or row.get("disposedDiagnostics") is not None
         ):
-            raise SystemExit("offline density visual/payload/memory contract failed")
+            raise SystemExit("hosted density visual/payload/memory contract failed")
         observed = row.get("lifecycleObserved")
         if not isinstance(observed, list):
-            raise SystemExit("offline density lifecycle observations are missing")
+            raise SystemExit("hosted density lifecycle observations are missing")
         phases = [event.get("phase") for event in observed if isinstance(event, dict)]
         if not {
             "attached",
@@ -67,31 +80,50 @@ def main() -> int:
             "zoom",
             "revision",
             "malformed",
+            "resource",
             "trap",
             "recovered",
             "disposed",
         }.issubset(phases):
-            raise SystemExit("offline density lifecycle observations are incomplete")
+            raise SystemExit("hosted density lifecycle observations are incomplete")
         codes = {
             event.get("phase"): event.get("code") for event in observed if isinstance(event, dict)
         }
         if (
             codes.get("malformed") != "XYG_WASM_INVALID_ARGUMENT"
+            or codes.get("resource") != "XYG_WASM_RESOURCE_LIMIT"
             or codes.get("trap") != "XYG_WASM_TRAP"
         ):
-            raise SystemExit("offline density lifecycle errors are placeholders or wrong")
+            raise SystemExit("hosted density lifecycle errors are placeholders or wrong")
         if any(
             not isinstance(event.get("at"), (int, float))
             for event in observed
             if isinstance(event, dict)
         ):
-            raise SystemExit("offline density lifecycle timestamps are missing")
+            raise SystemExit("hosted density lifecycle timestamps are missing")
         if (
             not isinstance(row.get("initialDiagnostics"), dict)
             or row["initialDiagnostics"].get("sequence") != 1
+            or not isinstance(row.get("latestDiagnostics"), dict)
+            or row["latestDiagnostics"].get("sequence") != row["visibleRevision"]
         ):
-            raise SystemExit("offline density initial Rust revision is missing")
-    print("validated four-size offline inline-density evidence")
+            raise SystemExit("hosted density initial Rust revision is missing")
+        for diagnostics in (row["initialDiagnostics"], row["latestDiagnostics"]):
+            for key in (
+                "copyCount",
+                "copyBytesLo",
+                "copyBytesHi",
+                "arenaBytes",
+                "arenaHighWaterBytes",
+                "memoryBytes",
+                "memoryHighWaterBytes",
+            ):
+                value = diagnostics.get(key)
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    raise SystemExit(f"density diagnostics has invalid {key}")
+            if diagnostics["copyCount"] < 1 or diagnostics["memoryHighWaterBytes"] <= 0:
+                raise SystemExit("density diagnostics did not record bounded Rust/WASM work")
+    print("validated four-size hosted strict-CSP density evidence")
     return 0
 
 

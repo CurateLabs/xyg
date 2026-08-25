@@ -1381,6 +1381,26 @@ def test_codspeed_workflow_rejects_missing_authored_scene_node_native_path(
     )
 
 
+def test_codspeed_workflow_rejects_missing_hosted_density_evidence(tmp_path: Path) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            '          .venv/bin/python scripts/verify_inline_density_benchmark.py "hosted-density-browser-${{ github.sha }}.json" --sha "${{ github.sha }}"\n',
+            "",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any(
+        "changed-main authored-Scene browser evidence" in error
+        and "verify_inline_density_benchmark" in error
+        for error in errors
+    )
+
+
 def test_codspeed_workflow_rejects_scoped_authored_scene_node_native_path_duplication(
     tmp_path: Path,
 ) -> None:
