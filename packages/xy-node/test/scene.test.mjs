@@ -173,7 +173,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   for (const annotation of figureSceneFixture.node_public_annotations) figure.annotate(annotation);
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.node_public_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 21);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 22);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -222,9 +222,11 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 21);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 22);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
+  figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "boxed", style: { label_background: "#ffffff" } }];
+  assert.match(sceneSvg(figure.toScene()), /data-xy-slot="annotation_label_box"[^>]*fill="rgba\(255,255,255,1\.000000\)"/);
   figure.annotations = [{ kind: "text", x: 2, y: 0.5, text: "outside" }];
   assert.throws(() => figure.toScene(), /invalid canonical scene batch/);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "" }];
@@ -551,7 +553,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 21);
+  assert.equal(sceneVersion(), 22);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -592,7 +594,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 21);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 22);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

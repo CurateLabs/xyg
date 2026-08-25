@@ -1112,9 +1112,9 @@ def figure_scene(
     ]
     if len(cartesian_callouts) > 128:
         raise UnsupportedSceneV3("Scene callouts are limited to 128 entries")
-    xyat = bytearray(
-        b"XYAT" + (1).to_bytes(4, "little") + len(text_annotations).to_bytes(4, "little")
-    )
+    text_rows: list[
+        tuple[float, float, tuple[int, int, int, int], tuple[int, int, int, int] | None, bytes]
+    ] = []
     for annotation in text_annotations:
         value = annotation.get("text")
         if not isinstance(value, str) or not value or "\0" in value:
@@ -1125,13 +1125,32 @@ def figure_scene(
         x = annotation_number(annotation, "x", None, "text x")
         y = annotation_number(annotation, "y", None, "text y")
         style = dict(annotation.get("style") or {})
-        if set(style) - {"color", "opacity"}:
-            raise UnsupportedSceneV3("Scene v16 text annotations support only color and opacity")
+        if set(style) - {"color", "opacity", "label_background"}:
+            raise UnsupportedSceneV3(
+                "Scene v22 text annotations support only color, opacity, and label_background"
+            )
         rgba = _rgba(
             annotation_color(style, "color", "#667085", "text color"),
             annotation_number(style, "opacity", 1.0, "text opacity"),
         )
-        xyat.extend(struct.pack("<dd4sI", x, y, bytes(rgba), len(encoded)))
+        label_background = style.get("label_background")
+        label_fill = (
+            _rgba(annotation_color(style, "label_background", "", "text label background"), 1.0)
+            if label_background is not None
+            else None
+        )
+        text_rows.append((x, y, rgba, label_fill, encoded))
+    xyat_v2 = any(label_fill is not None for _, _, _, label_fill, _ in text_rows)
+    xyat = bytearray(
+        b"XYAT"
+        + (2 if xyat_v2 else 1).to_bytes(4, "little")
+        + len(text_rows).to_bytes(4, "little")
+    )
+    for x, y, rgba, label_fill, encoded in text_rows:
+        xyat.extend(struct.pack("<dd4s", x, y, bytes(rgba)))
+        if xyat_v2:
+            xyat.extend(bytes(label_fill or (0, 0, 0, 0)))
+        xyat.extend(struct.pack("<I", len(encoded)))
         xyat.extend(encoded)
     xyal_v3 = any(label_fill is not None for _, _, label_fill, _ in attached_labels)
     xyal = bytearray(

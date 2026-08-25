@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 21 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 22 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -482,6 +482,20 @@ anchor and rejects a non-finite or viewport-escaping box before encoding the
 existing `XYLB` v3 output. SVG, raster, and browser consume that output only.
 Borders, padding, radius, wrapping, collision, custom typography, CSS/classes,
 and host-resolved coordinates remain unsupported.
+
+## Version 22 bounded text-annotation backgrounds
+
+Scene v22 evolves `XYAT` to v2 for an optional literal RGBA8 background on a
+freestanding Cartesian text annotation. Each v2 row retains its v1 Cartesian
+f64 anchor and label RGBA, adds the background at bytes 20--23, and moves the
+UTF-8 length to bytes 24--27. A transparent fill is absence, so a mixed batch
+uses v2 with transparent rows for notes without boxes. Rust alone projects the
+anchor, derives the fixed-inset built-in-font rectangle, and rejects a
+non-finite or viewport-escaping box before lowering the existing `XYLB` v3
+output. SVG, raster, and browser consume that output only. XYAT v1 remains
+valid. Offsets, padding, borders, radius, wrapping, collision, rich markup,
+custom typography, CSS/classes, and host-resolved coordinates remain
+unsupported.
 
 ## Version 19 Rust-owned bounded colorbar ticks
 

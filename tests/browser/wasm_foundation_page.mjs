@@ -136,7 +136,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 248 + textBytes + xTickLabels.length + yTickLabels.length + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 21, true);
+  view.setUint32(4, 22, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -202,7 +202,7 @@ function primaryAnnotationSceneV10() {
   const body = records + recordCount * 56;
   const bytes = new Uint8Array(body + 248), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 21, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 22, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -234,7 +234,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 248);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 21, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 22, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -355,7 +355,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    21, 21, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    21, 22, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -464,7 +464,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 21,
-    expectedSceneVersion: 21,
+    expectedSceneVersion: 22,
   };
 }
 
@@ -624,7 +624,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 21 || ready.sceneVersion !== 21) {
+  if (ready.abiVersion !== 21 || ready.sceneVersion !== 22) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1178,20 +1178,20 @@ async function run() {
   // Scene rather than evaluating or inserting host markup.
   const xyatText = "<Rust note>";
   const xyatTextBytes = new TextEncoder().encode(xyatText);
-  const xyat = new Uint8Array(12 + 24 + xyatTextBytes.length);
-  xyat.set([0x58, 0x59, 0x41, 0x54]); // XYAT
+  const xyat = new Uint8Array(12 + 28 + xyatTextBytes.length);
+  xyat.set([0x58, 0x59, 0x41, 0x54]); // XYAT v2
   const xyatView = new DataView(xyat.buffer);
-  xyatView.setUint32(4, 1, true); xyatView.setUint32(8, 1, true);
+  xyatView.setUint32(4, 2, true); xyatView.setUint32(8, 1, true);
   xyatView.setFloat64(12, 0.5, true); xyatView.setFloat64(20, 0.5, true);
-  xyat.set([1, 2, 3, 255], 28); xyatView.setUint32(32, xyatTextBytes.length, true);
-  xyat.set(xyatTextBytes, 36);
+  xyat.set([1, 2, 3, 255], 28); xyat.set([255, 255, 255, 255], 32);
+  xyatView.setUint32(36, xyatTextBytes.length, true); xyat.set(xyatTextBytes, 40);
   const xyad = new Uint8Array(20 + xyat.length);
   xyad.set([0x58, 0x59, 0x41, 0x44]); // XYAD
   const xyadView = new DataView(xyad.buffer);
   xyadView.setUint32(4, 1, true); xyadView.setUint32(8, xyat.length, true);
   xyad.set(xyat, 20);
   const textWorker = createXygWasmWorker({
-    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4096,
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8192,
   });
   await textWorker.ready;
   const textPaint = await textWorker.prepareSceneAnnotations(canonicalSceneV9(), xyad, { transfer: false }).result;
@@ -1199,8 +1199,10 @@ async function run() {
   const textView = hydrateWasmPainter(textHost, textPaint);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const textNote = textHost.querySelector('[role="note"]');
-  if (textNote?.textContent !== xyatText || textNote.querySelector("*") !== null) {
-    throw new Error("strict-CSP direct WASM XYAT text was not exposed as plain role=note content");
+  const textBox = textHost.querySelector('[data-xy-slot="annotation_label_box"][aria-hidden="true"]');
+  if (textNote?.textContent !== xyatText || textNote.querySelector("*") !== null || !textBox
+      || getComputedStyle(textBox).backgroundColor !== "rgb(255, 255, 255)") {
+    throw new Error("strict-CSP direct WASM XYAT v2 did not preserve Rust-owned text-box semantics");
   }
   textView.destroy(); textHost.remove(); await textWorker.dispose();
 
