@@ -796,7 +796,9 @@ def figure_scene(
 
     # XYAL v2 carries only literal RGBA paint with the annotation identity and
     # text. Rust still owns the anchor, clipping, typography, and paint order.
-    attached_labels: list[tuple[int, tuple[int, int, int, int], str]] = []
+    attached_labels: list[
+        tuple[int, tuple[int, int, int, int], tuple[int, int, int, int] | None, str]
+    ] = []
     straight_arrows: list[
         tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
     ] = []
@@ -937,7 +939,7 @@ def figure_scene(
         style = dict(annotation.get("style") or {})
         allowed = {"color", "opacity"}
         if attached_text not in (None, ""):
-            allowed |= {"label_color", "label_opacity"}
+            allowed |= {"label_color", "label_opacity", "label_background"}
         if kind == "rule":
             allowed.add("width")
         elif kind == "marker":
@@ -986,7 +988,17 @@ def figure_scene(
                     f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
                 )
             label_color = annotation_color(style, "label_color", "#667085", f"{kind} label color")
-            attached_labels.append((stable_id, _rgba(label_color, label_opacity), attached_text))
+            label_background = style.get("label_background")
+            label_fill = (
+                _rgba(
+                    annotation_color(style, "label_background", "", f"{kind} label background"), 1.0
+                )
+                if label_background is not None
+                else None
+            )
+            attached_labels.append(
+                (stable_id, _rgba(label_color, label_opacity), label_fill, attached_text)
+            )
 
         def append_record(
             record_kind: int,
@@ -1121,12 +1133,18 @@ def figure_scene(
         )
         xyat.extend(struct.pack("<dd4sI", x, y, bytes(rgba), len(encoded)))
         xyat.extend(encoded)
+    xyal_v3 = any(label_fill is not None for _, _, label_fill, _ in attached_labels)
     xyal = bytearray(
-        b"XYAL" + (2).to_bytes(4, "little") + len(attached_labels).to_bytes(4, "little")
+        b"XYAL"
+        + (3 if xyal_v3 else 2).to_bytes(4, "little")
+        + len(attached_labels).to_bytes(4, "little")
     )
-    for stable_id, rgba, value in attached_labels:
+    for stable_id, rgba, label_fill, value in attached_labels:
         encoded = value.encode("utf-8")
-        xyal.extend(struct.pack("<Q4sI", stable_id, bytes(rgba), len(encoded)))
+        xyal.extend(struct.pack("<Q4s", stable_id, bytes(rgba)))
+        if xyal_v3:
+            xyal.extend(bytes(label_fill or (0, 0, 0, 0)))
+        xyal.extend(struct.pack("<I", len(encoded)))
         xyal.extend(encoded)
     xyar = bytearray(
         b"XYAR" + (1).to_bytes(4, "little") + len(straight_arrows).to_bytes(4, "little")

@@ -9,6 +9,7 @@ surface exercises the same public Python chart construction and Scene bytes.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 from collections.abc import Iterator
 from pathlib import Path
@@ -20,7 +21,7 @@ from xyg import _scene_v3
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
-SCENE_VERSION = 20
+SCENE_VERSION = 21
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
 
 
@@ -103,7 +104,7 @@ def _authored_annotation_input(figure: Figure) -> bytes:
 
 
 def authored_scene(count: int) -> bytes:
-    """Return a validated Scene 20 workload for one canonical evidence tier."""
+    """Return a validated Scene 21 workload for one canonical evidence tier."""
     figure = authored_scene_figure(count)
     annotation_input = _authored_annotation_input(figure)
     if not annotation_input.startswith(b"XYAD\x02\x00\x00\x00"):
@@ -111,7 +112,7 @@ def authored_scene(count: int) -> bytes:
 
     scene = figure.to_scene()
     if scene[:4] != b"XYGS" or int.from_bytes(scene[4:8], "little") != SCENE_VERSION:
-        raise AssertionError("authored Scene workload must compile as Scene 20")
+        raise AssertionError("authored Scene workload must compile as Scene 21")
     missing = [chunk.decode("ascii") for chunk in _FINAL_SCENE_CHUNKS if chunk not in scene]
     if missing:
         raise AssertionError(f"authored Scene workload is missing resolved chunks: {missing}")
@@ -132,9 +133,29 @@ def main() -> int:
         type=Path,
         help="write deterministic .bin fixtures and authored-scene-manifest.json here",
     )
+    parser.add_argument(
+        "--write-browser-fixture",
+        type=Path,
+        help="regenerate the strict-CSP browser fixture from the public Figure workload",
+    )
     args = parser.parse_args()
     selected = tuple(args.count) if args.count else COUNTS
     generated = list(scenes(selected))
+    if args.write_browser_fixture:
+        if selected != (100,):
+            raise ValueError("--write-browser-fixture requires exactly --count 100")
+        args.write_browser_fixture.write_text(
+            json.dumps(
+                {
+                    "schema": "xyg-authored-scene-v20-fixture-v1",
+                    "count": 100,
+                    "scene_base64": base64.b64encode(generated[0][1]).decode("ascii"),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     report = []
     if args.output_dir:
         args.output_dir.mkdir(parents=True, exist_ok=True)

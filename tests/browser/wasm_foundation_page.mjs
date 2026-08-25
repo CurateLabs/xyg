@@ -136,7 +136,7 @@ function canonicalSceneV9({ authored = false, legend = false, legendSymbols = nu
   const bytes = new Uint8Array(body + 248 + textBytes + xTickLabels.length + yTickLabels.length + ticks.length * 8 + legendBytes.length);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 20, true);
+  view.setUint32(4, 21, true);
   view.setUint32(8, 160, true);
   view.setUint32(12, 56, true);
   view.setBigUint64(16, 1n, true);
@@ -202,7 +202,7 @@ function primaryAnnotationSceneV10() {
   const body = records + recordCount * 56;
   const bytes = new Uint8Array(body + 248), view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0); // XYGS
-  view.setUint32(4, 20, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 21, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(recordCount), true); view.setBigUint64(24, BigInt(styleCount), true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -234,7 +234,7 @@ function fragmentedScene(count) {
   const bytes = new Uint8Array(body + 248);
   const view = new DataView(bytes.buffer);
   bytes.set([88, 89, 71, 83], 0);
-  view.setUint32(4, 20, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
+  view.setUint32(4, 21, true); view.setUint32(8, 160, true); view.setUint32(12, 56, true);
   view.setBigUint64(16, BigInt(count), true); view.setBigUint64(24, 1n, true);
   [100, 80, 10, 10, 90, 70].forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   view.setBigUint64(80, 1n, true); view.setBigUint64(88, 2n, true);
@@ -355,7 +355,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    21, 20, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    21, 21, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0,
@@ -464,7 +464,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 21,
-    expectedSceneVersion: 20,
+    expectedSceneVersion: 21,
   };
 }
 
@@ -619,10 +619,12 @@ async function run() {
   const worker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,
-    maxArenaBytes: 4096,
+    // Canonical Scene browser paint now exceeds the deliberately tiny 4 KiB
+    // fixture budget; resource-limit probes below retain their narrow caps.
+    maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 21 || ready.sceneVersion !== 20) {
+  if (ready.abiVersion !== 21 || ready.sceneVersion !== 21) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -1201,6 +1203,51 @@ async function run() {
     throw new Error("strict-CSP direct WASM XYAT text was not exposed as plain role=note content");
   }
   textView.destroy(); textHost.remove(); await textWorker.dispose();
+
+  // `XYAL` v3 can supply one literal label background, but not placement or
+  // box geometry. Rust resolves the box for this existing marker annotation.
+  foundationStage = "strict-CSP direct WASM XYAL attached-label background";
+  const attachedText = "box";
+  const attachedTextBytes = new TextEncoder().encode(attachedText);
+  const xyalV3 = new Uint8Array(12 + 20 + attachedTextBytes.length);
+  xyalV3.set([0x58, 0x59, 0x41, 0x4c]); // XYAL v3
+  const xyalV3View = new DataView(xyalV3.buffer);
+  xyalV3View.setUint32(4, 3, true); xyalV3View.setUint32(8, 1, true);
+  xyalV3View.setBigUint64(12, 0x5859030000000002n, true);
+  xyalV3.set([102, 112, 133, 255], 20); // resolved label paint
+  xyalV3.set([255, 255, 255, 255], 24); // literal fill; no box coordinates
+  xyalV3View.setUint32(28, attachedTextBytes.length, true); xyalV3.set(attachedTextBytes, 32);
+  const attachedTextEmpty = new Uint8Array(12), attachedArrowEmpty = new Uint8Array(12);
+  attachedTextEmpty.set([0x58, 0x59, 0x41, 0x54]); // XYAT v1
+  attachedArrowEmpty.set([0x58, 0x59, 0x41, 0x52]); // XYAR v1
+  new DataView(attachedTextEmpty.buffer).setUint32(4, 1, true);
+  new DataView(attachedArrowEmpty.buffer).setUint32(4, 1, true);
+  const attachedCalloutEmpty = new Uint8Array(12);
+  attachedCalloutEmpty.set([0x58, 0x59, 0x41, 0x43]); // XYAC v1
+  new DataView(attachedCalloutEmpty.buffer).setUint32(4, 1, true);
+  const attachedEnvelope = new Uint8Array(24 + attachedTextEmpty.length + xyalV3.length + attachedArrowEmpty.length + attachedCalloutEmpty.length);
+  attachedEnvelope.set([0x58, 0x59, 0x41, 0x44]); // XYAD v2
+  const attachedEnvelopeView = new DataView(attachedEnvelope.buffer);
+  attachedEnvelopeView.setUint32(4, 2, true); attachedEnvelopeView.setUint32(8, attachedTextEmpty.length, true);
+  attachedEnvelopeView.setUint32(12, xyalV3.length, true); attachedEnvelopeView.setUint32(16, attachedArrowEmpty.length, true);
+  attachedEnvelopeView.setUint32(20, attachedCalloutEmpty.length, true);
+  let attachedAt = 24; for (const part of [attachedTextEmpty, xyalV3, attachedArrowEmpty, attachedCalloutEmpty]) { attachedEnvelope.set(part, attachedAt); attachedAt += part.length; }
+  const attachedWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
+  });
+  await attachedWorker.ready;
+  const attachedPaint = await attachedWorker.prepareSceneAnnotations(primaryAnnotationSceneV10(), attachedEnvelope, { transfer: false }).result;
+  const attachedHost = document.body.appendChild(document.createElement("div"));
+  const attachedView = hydrateWasmPainter(attachedHost, attachedPaint);
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const attachedNote = [...attachedHost.querySelectorAll('[data-xy-slot="annotation_label"][role="note"]')]
+    .find((node) => node.textContent === attachedText);
+  const attachedBox = attachedHost.querySelector('[data-xy-slot="annotation_label_box"][aria-hidden="true"]');
+  if (attachedNote?.textContent !== attachedText || !attachedBox
+      || getComputedStyle(attachedBox).backgroundColor !== "rgb(255, 255, 255)") {
+    throw new Error("strict-CSP direct WASM XYAL v3 did not preserve Rust-owned attached-label box semantics");
+  }
+  attachedView.destroy(); attachedHost.remove(); await attachedWorker.dispose();
 
   // `XYAC` v2 carries only a Cartesian data anchor, bounded pixel offset,
   // literal paint, fixed leader width, anchor code, UTF-8 text, and optional
