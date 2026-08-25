@@ -65,8 +65,8 @@ raster-only option that was passed non-default.
 | PNG | Supported public Cartesian circle-scatter exports use the Rust Scene raster display list; every other supported native chart uses `_raster.to_png` → Rust rasterizer (`crates/xyg-engine/src/raster.rs`), encoded by the fused Rust path or `_png.encode`. | `Page.captureScreenshot` |
 | JPEG | `_raster.to_rgba` → `_jpeg.encode` (pure numpy/stdlib baseline JFIF, 4:4:4) | `Page.captureScreenshot` |
 | WebP | `_raster.to_rgba` → `_webp.encode` (pure numpy/stdlib VP8L, **lossless only**) | `Page.captureScreenshot` (lossy) |
-| SVG | Supported public Cartesian circle-scatter exports use Rust Scene SVG; `_svg.to_svg` remains the compatibility backend. | none — SVG is native-only |
-| PDF | Supported public Cartesian circle-scatter exports consume Rust Scene SVG through `_pdf.svg_to_pdf`; the compatibility path is `_svg.to_svg` → `_pdf.svg_to_pdf`. | `Page.printToPDF` |
+| SVG | Supported public Cartesian circle-scatter exports use Rust Scene SVG. `FacetGrid` applies that same route independently to each supported, no-background-override panel and namespaces the closed Scene clip-id vocabulary before nested composition; `_svg.to_svg` remains the compatibility backend for every other panel. | none — SVG is native-only |
+| PDF | Supported public Cartesian circle-scatter exports consume Rust Scene SVG through `_pdf.svg_to_pdf`; this includes independently supported `FacetGrid` panels. The compatibility path is `_svg.to_svg` → `_pdf.svg_to_pdf`. | `Page.printToPDF` |
 
 `_png.encode` auto-selects an indexed-palette PNG (color type 3 + `tRNS`) when
 the image has ≤256 distinct RGBA colors. `optimize=True` selects this
