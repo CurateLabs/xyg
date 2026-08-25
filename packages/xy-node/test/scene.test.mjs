@@ -435,7 +435,16 @@ test("Node public Figure matches the combined Python authored Scene v23 fixture"
   figure.style = fixture.style;
   figure.setAxis("x", fixture.axes.x); figure.setAxis("y", fixture.axes.y);
   figure.colorbarOptions = fixture.colorbar;
-  figure.scatter(x, y, fixture.scatter);
+  figure.scatter(x, y, {
+    id: fixture.scatter.id,
+    name: fixture.scatter.name,
+    style: {
+      color: fixture.scatter.color,
+      size: fixture.scatter.size,
+      opacity: fixture.scatter.opacity,
+      symbol: fixture.scatter.symbol,
+    },
+  });
   const scene = figure.toScene();
   assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 23);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
