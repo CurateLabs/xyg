@@ -18,6 +18,8 @@ struct Series {
     y1: Option<Vec<f64>>,
     stable_base: Option<u64>,
     stable_ids: Option<Vec<u64>>,
+    stroke_width: Option<f64>,
+    stroke_rgba: Option<[u8; 4]>,
 }
 
 fn put_u32(out: &mut [u8], offset: usize, value: u32) {
@@ -64,7 +66,11 @@ fn pack(series: &[Series], x_domain: [f64; 2], y_domain: [f64; 2]) -> Vec<u8> {
             value.x.len() as u32,
         );
         put_f64(&mut out, descriptor + DESCRIPTOR_DIAMETER, f64::NAN);
-        put_f64(&mut out, descriptor + DESCRIPTOR_STROKE_WIDTH, f64::NAN);
+        put_f64(
+            &mut out,
+            descriptor + DESCRIPTOR_STROKE_WIDTH,
+            value.stroke_width.unwrap_or(f64::NAN),
+        );
         let mut flags = 0;
         if value.y0.is_some() {
             flags |= DESCRIPTOR_FLAG_Y0;
@@ -78,6 +84,11 @@ fn pack(series: &[Series], x_domain: [f64; 2], y_domain: [f64; 2]) -> Vec<u8> {
         }
         if value.stable_ids.is_some() {
             flags |= DESCRIPTOR_FLAG_STABLE_IDS;
+        }
+        if let Some(rgba) = value.stroke_rgba {
+            flags |= DESCRIPTOR_FLAG_STROKE_RGBA;
+            out[descriptor + DESCRIPTOR_STROKE_RGBA..descriptor + DESCRIPTOR_STROKE_RGBA + 4]
+                .copy_from_slice(&rgba);
         }
         put_u32(&mut out, descriptor + DESCRIPTOR_FLAGS, flags);
 
@@ -156,6 +167,8 @@ fn render() -> String {
                 y1: None,
                 stable_base: None,
                 stable_ids: Some(vec![annotation_prefix, 91]),
+                stroke_width: None,
+                stroke_rgba: None,
             },
             Series {
                 kind: KIND_LINE,
@@ -165,6 +178,8 @@ fn render() -> String {
                 y1: None,
                 stable_base: Some(0x8000_0000_0000_0001),
                 stable_ids: None,
+                stroke_width: None,
+                stroke_rgba: None,
             },
             Series {
                 kind: KIND_BAR,
@@ -174,6 +189,8 @@ fn render() -> String {
                 y1: None,
                 stable_base: None,
                 stable_ids: None,
+                stroke_width: None,
+                stroke_rgba: None,
             },
             Series {
                 kind: KIND_AREA,
@@ -183,6 +200,8 @@ fn render() -> String {
                 y1: None,
                 stable_base: Some(700),
                 stable_ids: None,
+                stroke_width: None,
+                stroke_rgba: None,
             },
         ],
         [5.0, -5.0],
@@ -197,6 +216,8 @@ fn render() -> String {
             y1: None,
             stable_base: Some(44),
             stable_ids: None,
+            stroke_width: None,
+            stroke_rgba: None,
         }],
         [10.0, 0.0],
         [0.0, 5.0],
@@ -210,9 +231,26 @@ fn render() -> String {
             y1: Some(vec![5.0, 6.0]),
             stable_base: Some(800),
             stable_ids: None,
+            stroke_width: None,
+            stroke_rgba: None,
         }],
         [0.0, 1.0],
         [0.0, 6.0],
+    );
+    let visible_area_stroke = pack(
+        &[Series {
+            kind: KIND_AREA,
+            x: vec![0.0, 1.0, 2.0],
+            y: vec![1.0, 2.0, 1.5],
+            y0: Some(vec![0.0, 0.0, 0.0]),
+            y1: None,
+            stable_base: Some(900),
+            stable_ids: None,
+            stroke_width: Some(2.0),
+            stroke_rgba: Some([17, 34, 51, 128]),
+        }],
+        [0.0, 2.0],
+        [0.0, 3.0],
     );
 
     let mut wrong_version = singleton_bar.clone();
@@ -232,6 +270,8 @@ fn render() -> String {
             y1: None,
             stable_base: Some(u64::MAX),
             stable_ids: None,
+            stroke_width: None,
+            stroke_rgba: None,
         }],
         [0.0, 1.0],
         [0.0, 1.0],
@@ -260,7 +300,8 @@ fn render() -> String {
         [
             success("all_marks_reversed_domain", all_marks),
             success("singleton_bar_reversed_domain", singleton_bar),
-            success("area_explicit_bounds", explicit_bounds)
+            success("area_explicit_bounds", explicit_bounds),
+            success("area_visible_stroke_perimeter", visible_area_stroke)
         ]
         .join(",\n"),
         [

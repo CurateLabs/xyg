@@ -566,14 +566,33 @@ def figure_scene(
         fill_value = style.get("fill", fill_default)
         if not isinstance(fill_value, str):
             raise UnsupportedSceneV3(f"Scene v12 does not yet encode {trace.kind} non-CSS fills")
-        fill = _rgba(fill_value, opacity)
+        fill_opacity = stroke_opacity = line_opacity = 1.0
+        if trace.kind in _BAND_KINDS:
+            fill_opacity = float(style.get("fill_opacity", 1.0))
+            stroke_opacity = float(style.get("stroke_opacity", 1.0))
+            line_opacity = float(style.get("line_opacity", 1.0))
+            if any(
+                not np.isfinite(value) or not 0.0 <= value <= 1.0
+                for value in (fill_opacity, stroke_opacity, line_opacity)
+            ):
+                raise ValueError("trace opacity channels must be finite and in [0, 1]")
+        fill = _rgba(fill_value, opacity * fill_opacity)
         stroke_default = color if trace.kind in _STROKE_KINDS else "transparent"
         if trace.kind in _RIBBON_KINDS | _POLYFILL_KINDS:
             stroke_default = str(style.get("stroke", "transparent"))
-        stroke = _rgba(str(style.get("stroke", stroke_default)), opacity)
+        if trace.kind in _BAND_KINDS:
+            stroke_value = str(style.get("line_color", color))
+            stroke_alpha = opacity * stroke_opacity * line_opacity
+        else:
+            stroke_value = str(style.get("stroke", stroke_default))
+            stroke_alpha = opacity * stroke_opacity
+        stroke = _rgba(stroke_value, stroke_alpha)
         width_value = style.get(
             "stroke_width",
-            style.get("width", 1.5 if trace.kind in _STROKE_KINDS else 0.0),
+            style.get(
+                "width",
+                style.get("line_width", 1.5 if trace.kind in _STROKE_KINDS else 0.0),
+            ),
         )
         stroke_width = float(width_value)
         styles.append((fill, stroke, stroke_width))
@@ -639,7 +658,7 @@ def figure_scene(
                     stable_ids.append(stable_id)
                     style_refs.append(style_ref)
                     diameters.append(0.0)
-                    symbols.append(0)
+                    symbols.append(2)
                     coordinates[0].append(float(tops_x[sample]))
                     coordinates[1].append(float(tops_y[sample]))
                     coordinates[2].append(float(bases_x[sample]))
@@ -689,12 +708,16 @@ def figure_scene(
                 raise UnsupportedSceneV3(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
+            stroke_perimeter = style.get("stroke_perimeter", False)
+            if not isinstance(stroke_perimeter, bool):
+                raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
+            outline = 2 if stroke_perimeter else 1
             for index in range(len(xv)):
                 kinds.append(3)
                 stable_ids.append(int(trace.id))
                 style_refs.append(style_ref)
                 diameters.append(0.0)
-                symbols.append(0)
+                symbols.append(outline)
                 coordinates[0].append(float(xv[index]))
                 coordinates[1].append(float(yv[index]))
                 coordinates[2].append(float(xv[index]))
@@ -1663,6 +1686,8 @@ def scene_export_support_reason(
         "segments",
         "errorbar",
         "stem",
+        "area",
+        "error_band",
     }
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size", "role"},
@@ -1708,9 +1733,41 @@ def scene_export_support_reason(
         "segments": {"color", "opacity", "width", "role"},
         "errorbar": {"color", "opacity", "width", "role"},
         "stem": {"color", "opacity", "width", "role"},
+        "area": {
+            "color",
+            "opacity",
+            "line_color",
+            "line_width",
+            "line_opacity",
+            "stroke_perimeter",
+            "fill",
+            "fill_opacity",
+            "stroke_opacity",
+        },
+        "error_band": {
+            "color",
+            "opacity",
+            "line_width",
+            "line_opacity",
+            "role",
+            "fill",
+            "fill_opacity",
+            "stroke_opacity",
+        },
     }
     has_literal_geometry = any(
-        trace.kind in {"line", "bar", "column", "histogram", "segments", "errorbar", "stem"}
+        trace.kind
+        in {
+            "line",
+            "bar",
+            "column",
+            "histogram",
+            "segments",
+            "errorbar",
+            "stem",
+            "area",
+            "error_band",
+        }
         for trace in figure.traces
     )
     # The literal geometry route is intentionally anchored to an explicit
@@ -1729,6 +1786,10 @@ def scene_export_support_reason(
         x_column = getattr(trace, "x", None)
         if x_column is not None and len(x_column.values) > 10_000:
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+        if trace.kind in _BAND_KINDS and (x_column is None or len(x_column.values) < 2):
+            # SVG/raster/browser Band topology requires a polygon run. Keep
+            # singleton/empty compatibility semantics until Scene defines it.
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_BAND"
         if trace.kind not in public_kinds:
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
         if trace.kind in _SEGMENT_KINDS:

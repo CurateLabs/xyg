@@ -1165,6 +1165,12 @@ the default area `opacity=0.35` produces a `0.35`-alpha outline. For a faint
 fill with an opaque outline, keep whole-mark opacity at `1` and set
 `style={"fill-opacity": 0.35, "stroke-opacity": 1}`.
 
+For ordinary finite Cartesian static exports, Scene v25 makes the outline
+topology backend-independent. `stroke_perimeter=False` strokes only the value
+curve; `stroke_perimeter=True` strokes the complete closed perimeter including
+both endpoint faces. A zero `line_width` or zero effective outline alpha is
+canonical fill-only output. Error bands default to that fill-only mode.
+
 ### Vectorized instance styles
 
 Instanced 2-D primitives accept scalar or per-item styles without splitting a

@@ -41,3 +41,14 @@ test("native Node retains arbitrary u64 data identity from the Rust fixture", ()
   assert.equal(view.getBigUint64(records + 2 * 56 + 8, true), 0x8000000000000001n);
   assert.equal(view.getBigUint64(records + 5 * 56 + 8, true), 0x8000000000000002n);
 });
+
+test("native Node retains the legacy XYTS v2 visible area perimeter", () => {
+  const value = fixture.successful.find((entry) => entry.name === "area_visible_stroke_perimeter");
+  const scene = Uint8Array.from(Buffer.from(value.scene_hex, "hex"));
+  const records = 160 + value.styles * 16;
+  assert.equal(scene[records + 2], 2);
+  const svg = sceneSvg(scene);
+  assert.match(svg, /stroke="rgb\(17,34,51\)"/);
+  assert.match(svg, /stroke-opacity="0\.5"/);
+  assert.equal(sceneBrowserPainter(scene)[301], 2);
+});

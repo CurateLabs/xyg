@@ -31,7 +31,7 @@ def test_strict_csp_authored_scene_fixture_is_public_figure_bytes() -> None:
     fixture = json.loads(
         (Path(__file__).parent / "fixtures" / "authored_scene_v20.json").read_text()
     )
-    assert fixture["schema"] == "xyg-authored-scene-v24-fixture-v1"
+    assert fixture["schema"] == "xyg-authored-scene-v25-fixture-v1"
     assert fixture["count"] == 100
     scene = base64.b64decode(fixture["scene_base64"], validate=True)
     assert scene == authored_scene(100)
@@ -81,7 +81,7 @@ def test_authored_scene_evidence_tiers_keep_rust_chrome_consumers(count: int) ->
         ("style", {"collision": "avoid"}, "collision"),
     ],
 )
-def test_scene_v24_wrapped_annotations_fail_closed_for_host_layout_features(
+def test_scene_v25_wrapped_annotations_fail_closed_for_host_layout_features(
     field: str,
     value: object,
     message: str,
@@ -283,7 +283,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 24
+    assert int.from_bytes(encoded[4:8], "little") == 25
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -399,7 +399,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 24
+    assert int.from_bytes(encoded[4:8], "little") == 25
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -726,7 +726,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 24
+    assert _native.scene_version() == 25
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:

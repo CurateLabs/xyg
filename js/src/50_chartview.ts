@@ -4854,6 +4854,27 @@ export class ChartView {
     g.yBuf = this._upload(sm ? sm.y : y);
     g.baseBuf = this._upload(sm ? sm.extra : base);
     if (sm) g.n = sm.n;
+    const outlineX = sm ? sm.x : x;
+    const outlineY = sm ? sm.y : y;
+    const outlineBase = sm ? sm.extra : base;
+    if (t.style?.stroke_perimeter && g.n >= 2) {
+      // One line draw has one y metadata uniform.  The value curve and base
+      // may use different offset-f32 encodings, so move the two base endpoint
+      // values into the value curve's encoded space before pairing them with
+      // outlineY.  Otherwise large-offset baselines close at the wrong data
+      // coordinates even though the two interior boundaries render correctly.
+      const baseScale = g.baseMeta.scale || 1;
+      const baseOffset = Number.isFinite(g.baseMeta.offset) ? g.baseMeta.offset : 0;
+      const yScale = g.yMeta.scale || 1;
+      const yOffset = Number.isFinite(g.yMeta.offset) ? g.yMeta.offset : 0;
+      const baseInYSpace = (value) => (value / baseScale + baseOffset - yOffset) * yScale;
+      g.bandLeftXBuf = this._upload(new Float32Array([outlineX[0], outlineX[0]]));
+      g.bandLeftYBuf = this._upload(new Float32Array([outlineY[0], baseInYSpace(outlineBase[0])]));
+      g.bandRightXBuf = this._upload(new Float32Array([outlineX[g.n - 1], outlineX[g.n - 1]]));
+      g.bandRightYBuf = this._upload(new Float32Array([
+        outlineY[g.n - 1], baseInYSpace(outlineBase[g.n - 1]),
+      ]));
+    }
     g._dashX = sm ? sm.x : x;
     g._dashY = sm ? sm.y : y;
     g.color = parseColor(this.root, t.style && t.style.color, [0.3, 0.47, 0.66, 1]);

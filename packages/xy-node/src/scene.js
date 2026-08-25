@@ -589,17 +589,29 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (RECT_KINDS.has(trace.kind)) rejectRectExtras(style, trace.kind);
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
+    const fillOpacity = BAND_KINDS.has(trace.kind) ? Number(style.fill_opacity ?? 1) : 1;
+    const strokeOpacity = BAND_KINDS.has(trace.kind) ? Number(style.stroke_opacity ?? 1) : 1;
+    const lineOpacity = BAND_KINDS.has(trace.kind) ? Number(style.line_opacity ?? 1) : 1;
+    if (BAND_KINDS.has(trace.kind) && [fillOpacity, strokeOpacity, lineOpacity].some((value) => !Number.isFinite(value) || value < 0 || value > 1)) {
+      throw new RangeError("trace opacity channels must be in [0, 1]");
+    }
     const color = style.color
       ?? (typeof trace.color === "string" ? trace.color : trace.color?.color)
       ?? "#3987e5";
     const fillDefault = SEGMENT_KINDS.has(trace.kind) ? "#00000000" : color;
     const fillCss = style.fill ?? fillDefault;
     if (typeof fillCss !== "string") throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
-    const strokeCss = style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000");
+    const strokeCss = BAND_KINDS.has(trace.kind)
+      ? (style.line_color ?? color)
+      : (style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000"));
     const width = Number(
       style.stroke_width ?? style.width ?? style.line_width ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
     );
-    styles.push({ fillRgba: rgba8(fillCss, opacity, "fill"), strokeRgba: rgba8(strokeCss, opacity, "stroke"), strokeWidth: width });
+    styles.push({
+      fillRgba: rgba8(fillCss, opacity * fillOpacity, "fill"),
+      strokeRgba: rgba8(strokeCss, opacity * strokeOpacity * (BAND_KINDS.has(trace.kind) ? lineOpacity : 1), "stroke"),
+      strokeWidth: width,
+    });
     const styleRef = styles.length - 1;
     if (trace.name != null && String(trace.name).length > 0 && figure.showLegend !== false) {
       const legendKind = trace.kind === "scatter" ? 0 : STROKE_KINDS.has(trace.kind) ? 1 : 2;
@@ -628,7 +640,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         const stableId = (BigInt(id) << 32n) | BigInt(bandIndex);
         for (let sample = 0; sample < upper.x.length; sample += 1) {
           kinds.push(3); stableIds.push(stableId); styleRefs.push(styleRef);
-          diameter.push(0); symbols.push(0);
+          diameter.push(0); symbols.push(2);
           x0.push(upper.x[sample]); y0.push(upper.y[sample]);
           x1.push(lower.x[sample]); y1.push(lower.y[sample]);
         }
@@ -679,9 +691,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       ) {
         throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
       }
+      const strokePerimeter = style.stroke_perimeter === undefined ? false : style.stroke_perimeter;
+      if (typeof strokePerimeter !== "boolean") {
+        throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
+      }
+      const outline = strokePerimeter ? 2 : 1;
       for (let index = 0; index < xv.length; index += 1) {
         kinds.push(3); stableIds.push(id); styleRefs.push(styleRef);
-        diameter.push(0); symbols.push(0);
+        diameter.push(0); symbols.push(outline);
         x0.push(xv[index]); y0.push(yv[index]); x1.push(xv[index]); y1.push(base[index]);
       }
       continue;

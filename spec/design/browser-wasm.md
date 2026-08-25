@@ -229,7 +229,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 24 for this contract.
+`SCENE_VERSION` remains independently versioned and is 25 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -246,17 +246,17 @@ TypeScript does not scan Scene
 records, map data, decide clipping or grouping, narrow f64 geometry, copy
 columns, or run a fallback algorithm. Stable u64 IDs remain split lo/hi binary
 columns and are exposed by `view.sceneStableId(traceIndex, rowIndex)`.
-Scene v23 retains record metadata byte 3 explicitly: `0` retains legacy
+Scene v25 retains record metadata byte 3 explicitly: `0` retains legacy
 trace/run identity, `1..6` identifies the bounded annotation kinds (with `5`
 for Rust-projected straight arrows and `6` for Rust-resolved Cartesian
 callout leaders), and `128`
 marks literal per-row identity whose value must never classify annotations or
-split connected line/area geometry. Painter v13 retains only the annotation tag
+split connected line/area geometry. Painter v14 retains only the annotation tag
 in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
-Painter contract v13 begins with `XYPB`, independent painter version 13, canonical
-Scene v23 (`SCENE_VERSION = 23`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
+Painter contract v14 begins with `XYPB`, independent painter version 14, canonical
+Scene v25 (`SCENE_VERSION = 25`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v23
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor
@@ -302,6 +302,13 @@ not generate ticks, format labels, or choose layout. Reserved fields, exact
 offsets, finite geometry, known kinds and symbols, valid UTF-8, and exact final
 length fail closed before hydration.
 
+For a Band descriptor, byte 1 is the Rust-owned Scene v25 outline mode
+(`None`, `Top`, or `Perimeter`). TypeScript projects that mode into the existing
+area painter only: `Top` draws the top boundary, `Perimeter` additionally draws
+the base and both endpoint faces, and `None` allocates no outline buffers. It
+does not infer topology from paint alpha or reconstruct a closed path from
+host defaults.
+
 The descriptor graph has an independent Rust-enforced ceiling of 1,024 trace
 runs, recorded as `painter_max_traces` in the generated WASM contract. A valid
 Scene can alternate stable IDs, styles, or symbols on every record; without
@@ -332,7 +339,11 @@ performs bounded descriptor validation and transfers exact full-buffer
 `Float64Array` columns as canonical compile ingress. Rust expands
 scatter/line/bar/area and performs the only f64-to-offset-f32 lowering,
 assigns or preserves stable identities, and owns default diameter, line width,
-bar width/baseline, area baseline, colors, domains, and margins. The default
+bar width/baseline, area baseline, colors, domains, and margins. The XYTS v2
+descriptor predates an explicit Band topology field, so Rust preserves its
+established contract deterministically: an area with positive stroke width and
+nontransparent stroke paint uses `Perimeter`; otherwise it uses canonical
+`None`. TypeScript does not infer that topology. The default
 bar width is 80% of the minimum positive spacing between sorted x values. A
 singleton or all-coincident series uses 80% of the absolute authored x-domain
 span (including reversed domains); invalid or degenerate fallback domains fail
@@ -353,10 +364,10 @@ covers scatter, line, bar, and area; generated and authored arbitrary u64
 identities (including the legacy annotation-prefix range); reversed and
 singleton bar defaults; explicit area bounds; incompatible versions,
 unsupported kinds, nonfinite geometry, and identity overflow. The committed
-request, exact Scene v20 bytes, and exact painter v13 bytes are checked by the
+request, exact Scene v25 bytes, and exact painter v14 bytes are checked by the
 strict-CSP direct-WASM runtime. Native Python, native Node, and real Pyodide
 consume the same generated Scene bytes through the shared native
-`xyg_scene_browser_painter` ABI and byte-compare its painter-v13 result with the
+`xyg_scene_browser_painter` ABI and byte-compare its painter-v14 result with the
 Rust-generated golden. They do
 not decode XYTS: XYTS is the direct-browser authoring ingress, while Scene is
 the portable cross-host output contract. Exact Scene and painter bytes are

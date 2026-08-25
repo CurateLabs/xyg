@@ -131,6 +131,23 @@ const AREA_MARK = {
         g.yBuf = yBuf;
         g.yMeta = yMeta;
         g._dashY = dashY;
+        if (g.bandLeftXBuf && g.bandLeftYBuf && g.bandRightXBuf && g.bandRightYBuf) {
+          const xBuf = g.xBuf, n = g.n, dashX = g._dashX;
+          g.n = 2;
+          g.xBuf = g.bandLeftXBuf;
+          g.yBuf = g.bandLeftYBuf;
+          g._dashX = null;
+          g._dashY = null;
+          view._drawLine(g, xm, ym, g.lineColor, g.trace.style.line_width, g.trace.style.line_opacity ?? 1);
+          g.xBuf = g.bandRightXBuf;
+          g.yBuf = g.bandRightYBuf;
+          view._drawLine(g, xm, ym, g.lineColor, g.trace.style.line_width, g.trace.style.line_opacity ?? 1);
+          g.xBuf = xBuf;
+          g.yBuf = yBuf;
+          g.n = n;
+          g._dashX = dashX;
+          g._dashY = dashY;
+        }
       }
     }
   },

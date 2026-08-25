@@ -77,7 +77,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (24).to_bytes(4, "little")
+    assert encoded[4:8] == (25).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -194,7 +194,7 @@ def test_bounded_primary_cartesian_annotation_family_is_a_supported_public_scene
 
 
 def test_proven_ordinary_and_wrapped_callout_fixture_is_a_supported_public_slice() -> None:
-    """The v24 public evidence fixture must not fall back before Rust sees XYAW."""
+    """The v25 public evidence fixture must not fall back before Rust sees XYAW."""
     from scripts.generate_authored_scene_benchmark import authored_scene_figure
 
     figure = authored_scene_figure(100)
@@ -332,7 +332,8 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
         (lambda: _supported().bar([0, 1], [1, 2]), None),
         (lambda: _supported().column([0, 1], [1, 2]), None),
         (lambda: _supported().histogram([0, 1, 1, 2], bins=2), None),
-        (lambda: _supported().area([0, 1], [1, 2]), "PUBLIC_MARK"),
+        (lambda: _supported().area([0, 1], [1, 2]), None),
+        (lambda: _supported().error_band([0, 1], [0, 1], [1, 2]), None),
         (lambda: _supported().scatter([0, 1], [1, 2], symbol="square"), "PUBLIC_SYMBOL"),
         (lambda: _supported().scatter([0, 1], [1, 2], symbol="diamond"), None),
         (lambda: _supported(), None),
@@ -353,8 +354,10 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
             [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
         ),
         lambda: _supported().column([0, 1], [1, 2], corner_radius=2),
-        lambda: _supported().area([0, 1], [1, 2]),
-        lambda: _supported().error_band([0, 1], [0, 1], [1, 2]),
+        lambda: _supported().area([0, 1], [1, 2], curve="smooth"),
+        lambda: _supported().area(
+            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
+        ),
         lambda: _supported().scatter(range(10_001), range(10_001)),
     ],
 )
@@ -362,6 +365,27 @@ def test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior(fa
     """A successful internal record must not silently widen static routing."""
     reason = scene_export_support_reason(factory()) or ""
     assert reason
+
+
+@pytest.mark.parametrize(
+    "kind,count", [("area", 0), ("area", 1), ("error_band", 0), ("error_band", 1)]
+)
+def test_public_band_with_fewer_than_two_samples_retains_compatibility_export(
+    kind: str, count: int
+) -> None:
+    from xyg import _svg
+
+    figure = _supported()
+    values = list(range(count))
+    if kind == "area":
+        figure.area(values, [1.0] * count)
+    else:
+        figure.error_band(values, [0.5] * count, [1.5] * count)
+
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_BAND"
+    assert figure.to_svg() == _svg.to_svg(figure)
+    if kind == "area" and count == 1:
+        assert figure.to_svg().count('<path d="') == 2
 
 
 def test_public_router_routes_literal_disconnected_segments_through_all_static_consumers() -> None:

@@ -60,10 +60,21 @@ function compilePainter(painter: ArrayBuffer) {
       if (symbol !== 0 || diameter !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust rectangle descriptor is invalid");
       trace = { kind: "box", x0: x, y0: y, x1: column(descriptor, 16, count), y1: column(descriptor, 20, count), style: { color: fill, stroke, stroke_width: strokeWidth } };
     } else if (kind === 3) {
-      if (symbol !== 0 || diameter !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust band descriptor is invalid");
+      if (symbol > 2 || diameter !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust band descriptor is invalid");
       const x1 = column(descriptor, 16, count), y1 = column(descriptor, 20, count);
       // Area paint uses one x with a y-base; Rust rejects unequal band x pairs.
-      trace = { kind: "area", x, y, base: y1, style: { color: fill, fill, stroke, stroke_width: strokeWidth, opacity: 1 } };
+      trace = {
+        kind: "area", x, y, base: y1,
+        style: {
+          color: fill,
+          fill,
+          line_color: stroke,
+          line_width: symbol === 0 ? 0 : strokeWidth,
+          line_opacity: 1,
+          stroke_perimeter: symbol === 2,
+          opacity: 1,
+        },
+      };
       void x1;
     } else if (kind === 4) {
       if (symbol !== 0 || diameter !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust polyfill descriptor is invalid");

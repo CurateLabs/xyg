@@ -8,13 +8,14 @@ This ledger answers ownership file by file without treating language percentages
 
 The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
 
-Migration status: Scene v24 now moves canonical viewport/plot bounds, numeric
+Migration status: Scene v25 now moves canonical viewport/plot bounds, numeric
 axis transforms, chart/plot backgrounds, authored axis side and visibility,
 explicit major/minor tick geometry and paint, bounded primary static legend
 entry order/placement/frame/text/swatch policy, bounded semantic graph label
 collision/truncation/final screen geometry and source identity, default numeric
 tick/label/grid/spine chrome, clipping visibility, and scatter/polyline/rectangle record
-encoding into `crates/xyg-engine/src/scene.rs`. `python/xyg/_native.py` and
+encoding plus Band `None`/`Top`/`Perimeter` outline topology into
+`crates/xyg-engine/src/scene.rs`. `python/xyg/_native.py` and
 `packages/xy-node/src/scene.js` only coerce typed arrays and call the generated
 batch ABI. Their remaining migration classification covers figure-to-record
 assembly, additional mark families, and legacy static-export consumers. ABI 84
@@ -31,7 +32,8 @@ Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
 literal Cartesian public geometry subset—constant-style circle/diamond
-scatter and polylines, ordinary bar/column/histogram Rects, and bounded
+scatter and polylines, ordinary finite fixed-domain area/error-band Bands,
+ordinary bar/column/histogram Rects, and bounded
 disconnected segment/error-bar/stem endpoint pairs—plus the proven literal static
 chrome contract (chart/plot backgrounds, title, authored axis
 labels/sides/major-minor ticks, independent literal `ticks`/`text` visibility
