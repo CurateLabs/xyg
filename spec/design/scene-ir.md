@@ -202,8 +202,12 @@ not duplicate coordinate, style, resource-limit, or support-predicate policy.
 layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven constant-style circle/diamond-scatter
 literal Cartesian static contract through Rust Scene: chart/plot backgrounds,
-title, authored axis labels/sides/major-minor ticks, primary legend, literal
-colorbar, and one bounded callout. Other public exports remain on the
+title, authored axis labels/sides/major-minor ticks, the independent public
+`x_axis(..., ticks=False|text=False)` and `y_axis(..., ticks=False|text=False)`
+visibility switches, primary legend, literal colorbar, and one bounded callout.
+`ticks=False` lowers only major tick geometry to zero and retains labels;
+`text=False` lowers only tick-label/title paint to transparent and retains tick
+geometry. Other public exports remain on the
 established compatibility renderers until their output contract is encoded;
 they must not silently select a semantically incomplete scene. Missing/nonfinite
 coordinates and malformed selected literals fail closed rather than falling
@@ -370,9 +374,10 @@ fonts, and polar chrome likewise remain explicit unsupported boundaries.
 
 
 Rust unit tests pin schema validation and byte-deterministic SVG. Python tests
-prove explicit Scene consumption while public exports preserve ticks, grids,
-text, and customization through the compatibility path. Node tests consume the
-same scene fixture and reject the same unsupported subset. ABI generation,
+prove explicit Scene consumption; the proven public slice additionally routes
+independent axis tick/text visibility through Rust while rich/customized chrome
+remains on the compatibility path. Node tests consume the same scene fixture
+and reject the same unsupported subset. ABI generation,
 parity, and version-first loading cover both hosts.
 
 The first browser consumer accepts the exact v8 bytes through the static WASM
@@ -527,6 +532,12 @@ backgrounds, top/right Cartesian sides with deterministic major/minor ticks,
 legend, literal-banded colorbar, and a callout label background. Python
 generates the canonical Scene and SHA-256; the Node public `Figure` test
 independently reconstructs the same authoring and requires byte identity.
+`tests/fixtures/public_axis_visibility_scene.json` separately pins all eight
+axis/visibility combinations (x/y × ticks/text on/off): Python and Node require
+the exact Scene SHA-256, and Python feeds every record to the Rust browser
+painter. Its public SVG/PNG/PDF route tests compare visible primitive counts
+and native-raster pixels with the established compatibility outputs; invisible
+compatibility SVG nodes are not treated as visible geometry.
 The strict-CSP browser foundation page consumes only that frame through the
 WASM worker and checks the resolved SVG/raster-accessible chrome. The #116
 evidence job regenerates the same public workload at 100, 10k, 100k, and 1m

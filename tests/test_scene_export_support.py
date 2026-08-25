@@ -10,9 +10,14 @@ preflight so the router cannot silently select a partial consumer.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from collections.abc import Callable
+from io import BytesIO
+from pathlib import Path
 
+import numpy as np
 import pytest
 
 import xyg
@@ -199,39 +204,128 @@ def test_fluid_viewport_uses_compatibility_until_static_dimensions_are_given() -
     assert scene_export_support_reason(figure, width=320, height=240) is None
 
 
-@pytest.mark.parametrize("axis", [xyg.x_axis(ticks=False), xyg.x_axis(text=False)])
-def test_axis_visibility_switches_preflight_to_compatibility(
-    axis: xyg.Axis,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The legacy static raster owns independent ticks/text visibility today."""
+def _axis_visibility_figure(axis_name: str, *, ticks: bool, text: bool) -> Figure:
+    axis = (xyg.x_axis if axis_name == "x" else xyg.y_axis)(ticks=ticks, text=text)
     chart = xyg.scatter_chart(
         xyg.scatter([1, 2, 3], [1, 2, 3]),
         axis,
         width=420,
         height=260,
     )
-    figure = chart.figure()
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS_VISIBILITY"
+    return chart.figure()
+
+
+@pytest.mark.parametrize("axis_name", ["x", "y"])
+@pytest.mark.parametrize(
+    ("ticks", "text"), [(True, True), (False, True), (True, False), (False, False)]
+)
+def test_axis_visibility_switches_route_all_public_static_exports_through_scene(
+    axis_name: str,
+    ticks: bool,
+    text: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The switches are independent canonical Scene chrome semantics."""
+    figure = _axis_visibility_figure(axis_name, ticks=ticks, text=text)
+    assert scene_export_support_reason(figure) is None
 
     from xyg import _native
 
-    def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("axis visibility must select compatibility before Scene compilation")
+    scene_svg = _native.scene_svg
+    scene_raster_commands = _native.scene_raster_commands
+    calls = {"svg": 0, "raster": 0}
 
-    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
-    assert chart.to_png().startswith(b"\x89PNG\r\n\x1a\n")
+    def observed_scene_svg(*args: object, **kwargs: object) -> str:
+        calls["svg"] += 1
+        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+
+    def observed_scene_raster_commands(*args: object, **kwargs: object) -> bytes:
+        calls["raster"] += 1
+        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster_commands)
+    svg = figure.to_svg()
+    assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
+    assert figure.to_image(format="pdf").startswith(b"%PDF-")
+    assert calls == {"svg": 2, "raster": 1}
+
+    # Both axis labels are present by default (three per axis). The switched
+    # axis owns exactly three independently visible tick marks and labels.
+    assert svg.count("<text ") == 6 - (0 if text else 3)
+    assert svg.count("<line ") == 14 - (0 if ticks else 3)
 
 
-def test_ticks_off_compatibility_svg_keeps_scene_route_label_paint() -> None:
-    """A compatibility switch must not make the routed default labels disappear."""
-    chart = xyg.scatter_chart(
-        xyg.scatter([1, 2, 3], [1, 2, 3]),
-        xyg.x_axis(ticks=False),
-        width=420,
-        height=260,
+@pytest.mark.parametrize("axis_name", ["x", "y"])
+@pytest.mark.parametrize(
+    ("ticks", "text"), [(True, True), (False, True), (True, False), (False, False)]
+)
+def test_axis_visibility_scene_public_route_matches_compatibility_structure_and_pixels(
+    axis_name: str, ticks: bool, text: bool
+) -> None:
+    """Pin the migration against the established static-renderer contract."""
+    from xyg import _raster, _svg
+
+    Image = pytest.importorskip(
+        "PIL.Image", reason="Pillow is required only for the raster pixel differential"
     )
-    labels = re.findall(r'<text[^>]+fill="([^"]+)"[^>]*>([123])</text>', chart.to_svg())
-    assert len(labels) == 6
-    assert all(paint != "#00000000" for paint, _text in labels)
-    assert {paint for paint, _text in labels} == {"rgba(32,32,32,0.85)"}
+
+    figure = _axis_visibility_figure(axis_name, ticks=ticks, text=text)
+    compatibility_svg = _svg.to_svg(figure)
+    public_svg = figure.to_svg()
+    # Compatibility leaves invisible SVG elements in its structure. Scene
+    # omits zero-paint primitives, so compare their visible contract instead.
+    assert public_svg.count("<text ") == 6 - (0 if text else 3)
+    assert public_svg.count("<line ") == 14 - (0 if ticks else 3)
+    if not text:
+        assert compatibility_svg.count('fill="#00000000"') == 3
+    if not ticks:
+        assert compatibility_svg.count('stroke-width="0"') == 3
+
+    compatibility = np.asarray(
+        Image.open(BytesIO(_raster.to_png(figure, scale=1))).convert("RGBA"), dtype=np.int16
+    )
+    public = np.asarray(Image.open(BytesIO(figure.to_png(scale=1))).convert("RGBA"), dtype=np.int16)
+    delta = np.abs(compatibility - public)
+    # The two raster consumers have distinct antialiasing, so this is a visual
+    # differential rather than byte identity. Visibility-only variants are
+    # exact today; the all-visible reference bounds their established paint
+    # spelling difference without concealing a missing chrome element.
+    assert float(delta.mean()) <= 0.11
+    assert float(np.mean(delta.max(axis=2) > 24)) <= 0.0018
+
+
+def test_axis_visibility_keeps_ticks_and_text_semantics_independent() -> None:
+    ticks_off = _axis_visibility_figure("x", ticks=False, text=True).to_svg()
+    text_off = _axis_visibility_figure("x", ticks=True, text=False).to_svg()
+    assert re.findall(r"<text[^>]+>([123])</text>", ticks_off)
+    assert '<line x1="56.36" y1="224" x2="56.36" y2="228"' not in ticks_off
+    assert text_off.count("<text ") == 3  # y labels remain visible
+    assert '<line x1="56.36" y1="224" x2="56.36" y2="228"' in text_off
+
+
+def test_axis_visibility_python_fixture_and_browser_painter_are_exact() -> None:
+    """The public switches stay one canonical Scene across Python and browser use."""
+    from xyg import _native
+
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures" / "public_axis_visibility_scene.json").read_text()
+    )
+    assert fixture["schema"] == "xyg-public-axis-visibility-scene-v1"
+    for case in fixture["cases"]:
+        figure = _axis_visibility_figure(
+            str(case["axis"]), ticks=bool(case["ticks"]), text=bool(case["text"])
+        )
+        scene = figure.to_scene()
+        assert hashlib.sha256(scene).hexdigest() == case["sha256"]
+        painter = _native.scene_browser_painter(scene)
+        assert painter.startswith(b"XYPB")
+        assert len(painter) > 300
+
+
+def test_axis_visibility_stays_bounded_before_the_public_scene_route() -> None:
+    """Removing the visibility preflight must not weaken Scene resource limits."""
+    figure = _axis_visibility_figure("x", ticks=False, text=True)
+    figure.axis_options["x"]["tick_values"] = list(range(201))
+    with pytest.raises(ValueError, match="axis tick lists are limited"):
+        scene_export_support_reason(figure)
