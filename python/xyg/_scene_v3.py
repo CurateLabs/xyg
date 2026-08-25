@@ -1652,7 +1652,7 @@ def scene_export_support_reason(
     # seam: it does not bless generated palettes, density/LOD, gradients,
     # rounded geometry, rich text, polar coordinates, or the other migrating
     # mark families merely because an internal record happens to exist.
-    public_kinds = {"scatter", "line", "bar", "column", "histogram", "area"}
+    public_kinds = {"scatter", "line", "bar", "column", "histogram"}
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size"},
         # A literal ``step`` is expanded before Scene packing; Rust then owns
@@ -1694,17 +1694,19 @@ def scene_export_support_reason(
             "stroke_width",
             "corner_radius",
         },
-        # Area's public default has no perimeter.  Its retained line controls
-        # are intentionally accepted only at those no-op defaults; a visible
-        # perimeter would be silently omitted by the current Band record.
-        "area": {
-            "color",
-            "opacity",
-            "line_width",
-            "line_opacity",
-            "stroke_perimeter",
-        },
     }
+    has_new_geometry = any(
+        trace.kind in {"line", "bar", "column", "histogram", "area"} for trace in figure.traces
+    )
+    # The new geometry route is intentionally anchored to an explicit
+    # Cartesian viewport. The compatibility writer's implicit domains and
+    # alternate axis-side label offsets remain separate byte/pixel contracts.
+    if has_new_geometry:
+        for axis_id in ("x", "y"):
+            axis = figure.axis_options.get(axis_id, {})
+            default_side = "bottom" if axis_id == "x" else "left"
+            if axis.get("domain") is None or axis.get("side") not in (None, default_side):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
     for trace in figure.traces:
         opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
@@ -1726,13 +1728,6 @@ def scene_export_support_reason(
         if any(
             value is not None and key not in public_style_keys[trace.kind]
             for key, value in (getattr(trace, "style", None) or {}).items()
-        ):
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        trace_style = getattr(trace, "style", None) or {}
-        if trace.kind == "area" and (
-            float(trace_style.get("line_width", 1.2)) != 1.2
-            or float(trace_style.get("line_opacity", 1.0)) != 1.0
-            or bool(trace_style.get("stroke_perimeter", False))
         ):
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
     try:

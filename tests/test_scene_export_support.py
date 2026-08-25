@@ -111,7 +111,7 @@ def _dashed_line() -> Figure:
 
 
 def _public_literal_geometry() -> Figure:
-    """One cross-host fixture for the public line/rect/band Scene slice."""
+    """One cross-host fixture for the public line/rect Scene slice."""
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
@@ -119,10 +119,6 @@ def _public_literal_geometry() -> Figure:
     figure.traces[-1].id = 0
     figure.bar([0.5, 1.5], [2, 3], color="#22c55e", opacity=0.8)
     figure.traces[-1].id = 1
-    # Default area perimeter controls are deliberately no-op in this bounded
-    # Band record; a visible perimeter stays on compatibility.
-    figure.area([0, 1, 2], [1, 2, 1], base=0.0, color="#0ea5e9", opacity=0.8)
-    figure.traces[-1].id = 2
     return figure
 
 
@@ -185,7 +181,7 @@ def test_primary_annotation_family_routes_all_public_static_exports_and_matches_
 
 
 def test_literal_geometry_routes_all_public_static_exports_and_matches_scene_bytes() -> None:
-    """Lines, Rects, and Bands consume one Rust-owned public Scene."""
+    """Lines and Rects consume one Rust-owned public Scene."""
     from xyg import _native, _pdf, kernels
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
@@ -196,7 +192,6 @@ def test_literal_geometry_routes_all_public_static_exports_and_matches_scene_byt
     svg = _native.scene_svg(scene)
     assert "<polyline " in svg
     assert "<rect " in svg
-    assert "<path " in svg
     assert figure.to_svg().encode() == svg.encode()
     assert figure.to_png(scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
@@ -283,7 +278,7 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
         (lambda: _supported().bar([0, 1], [1, 2]), None),
         (lambda: _supported().column([0, 1], [1, 2]), None),
         (lambda: _supported().histogram([0, 1, 1, 2], bins=2), None),
-        (lambda: _supported().area([0, 1], [1, 2]), None),
+        (lambda: _supported().area([0, 1], [1, 2]), "PUBLIC_MARK"),
         (lambda: _supported().scatter([0, 1], [1, 2], symbol="square"), "PUBLIC_SYMBOL"),
         (lambda: _supported().scatter([0, 1], [1, 2], symbol="diamond"), None),
         (lambda: _supported(), None),
@@ -304,7 +299,7 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
             [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
         ),
         lambda: _supported().column([0, 1], [1, 2], corner_radius=2),
-        lambda: _supported().area([0, 1], [1, 2], stroke_perimeter=True),
+        lambda: _supported().area([0, 1], [1, 2]),
         lambda: _supported().error_band([0, 1], [0, 1], [1, 2]),
         lambda: _supported().scatter(range(10_001), range(10_001)),
     ],

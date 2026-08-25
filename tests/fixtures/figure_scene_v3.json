@@ -55,7 +55,7 @@
     {"kind": "text", "x": 0.8, "y": 0.18, "text": "wrapped\ntext", "dx": -12, "dy": 14, "anchor": "end", "wrap": 72, "style": {"color": "#0f766e", "label_background": "#f0fdfa"}}
   ],
   "public_annotation_family_sha256": "d7b8a56c2daa3ccdfb86873a229e263af184a0916c99e87c3cf2c931f3f69589",
-  "public_literal_geometry_sha256": "dbe6a06109b4b10b75d405f13bb1bbc42a13c5cebf72adbda775c6e95802b411",
+  "public_literal_geometry_sha256": "675d6401a20d85491a91e54e3970d79884539b2010c18fee58141e2e75560e3e",
   "cartesian_callout_sha256": "bc32ae759236c27cbf477ae5b6c7d46ba38b01da25ea7a06d92ce0fb0483b17a",
   "wasm_typed_series_v2": {
     "magic": "XYTS",
