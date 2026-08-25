@@ -175,8 +175,8 @@ def render_public() -> str:
         "This page describes the full public renderer surface. The Rust Scene static-",
         "export route is deliberately narrower; its proven v23 subset and loud",
         "unsupported boundaries (including rich/wrapped/custom typography) are",
-        "specified in [the Scene IR contract](/docs/xy/design/scene-ir/), not inferred",
-        "from a slot's renderer support here.",
+        "specified in the repository's Scene IR contract, not inferred from a slot's",
+        "renderer support here.",
         "",
         f"- **{counts['mark_style_properties_shipped']}** mark style properties across "
         f"**{counts['mark_kinds']}** mark kinds, {claim}.",

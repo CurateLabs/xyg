@@ -14,8 +14,8 @@ registry the implementation is checked against.
 This page describes the full public renderer surface. The Rust Scene static-
 export route is deliberately narrower; its proven v23 subset and loud
 unsupported boundaries (including rich/wrapped/custom typography) are
-specified in [the Scene IR contract](/docs/xy/design/scene-ir/), not inferred
-from a slot's renderer support here.
+specified in the repository's Scene IR contract, not inferred from a slot's
+renderer support here.
 
 - **11** mark style properties across **21** mark kinds, drawn by all three renderers.
 - **48** stable chrome slots for CSS and Tailwind in the browser.
