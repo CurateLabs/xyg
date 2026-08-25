@@ -415,19 +415,22 @@ With no `format=` on the axis, labels come from the step:
 `fmtAxis` consults the axis's `format` string before falling back to the
 automatic formatter. The two accepted grammars are narrow.
 
-**Numeric axes** (`fmtNumberSpec`). One optional trailing `%` is stripped
-first; the remainder must match exactly
+**Primary Cartesian numeric axes.** The public Rust Scene static slice accepts
+exactly
 
 ```
-/^(,)?\.([0-9]+)f?$/
+<prefix>(,).N[f|%]<suffix>
 ```
 
-That is: an optional thousands-separator comma, a literal `.`, one or more
-digits of precision, and an optional trailing `f`. The comma selects
-`toLocaleString` with fixed fraction digits; without it the value goes through
-`toFixed`. A `%` suffix multiplies by 100 and re-appends `%`. So `.2f`,
-`,.0f`, `.1%` and `,.2f%` are the entire accepted surface. There is no
-currency prefix, no sign flag, no `e`/`g`/`s` type, no explicit width or fill.
+That is: a literal prefix, optional comma grouping immediately before the
+decimal point, one or more precision digits, optional `f` or percent scaling
+and sign, then a literal suffix. Examples include `.2f`, `,.0f`, `.1%`,
+`$,.0f`, and `€,.1f EUR`. Rust uses deterministic ASCII comma grouping rather
+than a host locale. There is no sign flag, `e`/`g`/`s` type, explicit width, or
+fill. Formats are bounded to 256 NUL-free UTF-8 bytes. Python and Node only
+frame the string; Rust owns parsing, final label selection, and gutter
+measurement. The dynamic TypeScript `fmtNumberSpec` remains a compatibility
+implementation until #59 and is intentionally not extended by this slice.
 
 **Time axes** (`fmtTimeSpec`). A strftime *subset* substituted by
 `/%[YmdHMSbB]/g`: `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`, `%b` (short month name),
@@ -442,17 +445,11 @@ a low decade is not labelled as a row of zeros.
 
 ### 6.4 Sharp edge: silent fallback on unmatched formats
 
-`fmtNumberSpec` returns `null` on anything the regex rejects, and `fmtAxis`
-treats that as "no format" — it silently uses the automatic formatter. No
-warning is raised anywhere on the path: the Python side stores `format` as free
-text with no validation (`python/xyg/_figure.py:204` via `_optional_text`), so
-an unsupported spec survives the whole pipeline and simply does nothing.
-
-The in-tree example is `tests/test_components.py:555`, which sets
-`format="$,.0f"` on a y-axis. The leading `$` cannot match the regex, so the
-whole format is discarded and the axis renders with `fmtLinear` — the `$` never
-appears. The test does not catch this because it asserts on the emitted spec,
-not on rendered labels.
+The Rust parser and compatibility `fmtNumberSpec` both treat unmatched syntax
+as "no format" and silently use the automatic formatter. No warning is raised:
+the Python side stores `format` as free text so an unsupported spec survives
+the pipeline and deliberately yields default labels. Explicit authored tick
+labels take precedence over a valid format.
 
 Two consequences to keep in mind when extending this: the failure mode for a
 typo'd numeric format is a *plausible-looking wrong label*, not an error; and

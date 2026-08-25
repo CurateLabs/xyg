@@ -594,6 +594,34 @@ line count. Text contains Rust-selected LF separators. SVG emits those lines as
 `XYAD` v1/v2 remain valid. Public Python and Node host packing now emit this
 bounded v3 section; host entry points retain no wrapping or placement policy.
 
+## ABI 96 primary numeric tick formats (Scene v25 unchanged)
+
+ABI 96 moves the bounded primary Cartesian numeric `format` decision into
+`xyg-engine` for linear, log, and symmetric-log axes. The accepted grammar is
+`<prefix>(,).N[f|%]<suffix>`: an optional literal prefix, optional comma
+grouping, a required decimal precision, optional `f` or percent scaling/sign,
+and a literal suffix. Each authored format is at most 256 UTF-8 bytes and must
+not contain NUL. Explicit authored tick labels retain precedence. Invalid
+grammar deliberately produces the ordinary deterministic label instead of an
+error, and a sub-unit log value that would collapse to formatted zero also
+uses its ordinary distinguishable label without affixes.
+
+Python and Node pack only those strings. Rust parses them, resolves the final
+major positions and labels, measures their gutters, and materializes the result
+as the existing explicit-major arrays plus `XYTL`; SVG, raster, and browser
+painter therefore consume identical labels without a new Scene record. This is
+why `SCENE_VERSION` remains 25. The batch ABI stays at 63 parameters: optional
+formats use the versioned `XYAF` v1 authoring envelope (`magic`, version,
+x-format length, y-format length, legacy-annotation length, then those exact
+payloads). Exact lengths are overflow-checked; malformed, trailing, invalid
+UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw `XYAD` bytes
+remain accepted byte-for-byte. This envelope deliberately avoids Koffi's
+64-parameter function ceiling.
+
+Time/category/polar/secondary axes and broader numeric grammars remain on their
+documented compatibility routes. `js/src/30_ticks.ts` is unchanged: its dynamic
+browser-runtime cutover belongs to #59, not this #58 static-Scene slice.
+
 ## Version 25 Band outline topology
 
 Scene v25 gives Band record byte 2 a bounded outline descriptor: `0=None`,

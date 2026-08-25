@@ -567,6 +567,14 @@ F3, still pending (above).
   expanded-record budget before Scene v25 encoding. The direct-browser `XYTS`
   v2 vocabulary has no step-mode field
   and continues to reject step authoring rather than inferring host policy.
+  ABI 96 adds bounded primary Cartesian numeric-format authoring for
+  linear/log/symlog. Hosts pack at most 256 NUL-free UTF-8 bytes per axis in
+  the versioned `XYAF` envelope; Rust parses
+  `<prefix>(,).N[f|%]<suffix>`, resolves final labels and gutters, preserves
+  explicit-label precedence and default-label fallback, then emits existing
+  explicit-major plus `XYTL` records. Scene stays v25, legacy raw `XYAD`
+  remains valid, and the envelope keeps the batch function below Koffi's
+  64-parameter ceiling. Dynamic browser formatting remains #59 work.
   Unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. ABI 84 adds a versioned
   authored-feature presence predicate whose ordered actionable diagnostic is

@@ -863,6 +863,23 @@ def test_scene_plot_layout_owns_cartesian_gutters() -> None:
     assert float(np.frombuffer(view[48:56], dtype="<f8")[0]) == left
 
 
+def test_scene_plot_layout_validates_and_measures_numeric_formats() -> None:
+    axes = {
+        "viewport": (640, 360),
+        "x_axis": (0, 0.0, 1.0, 1.0, False),
+        "y_axis": (0, 0.0, 100_000.0, 1.0, False),
+    }
+    plain = _native.scene_plot_layout(**axes)
+    formatted = _native.scene_plot_layout(**axes, x_format=".1%", y_format="$,.0f USD")
+    assert formatted[0] > plain[0]
+    with pytest.raises(ValueError, match="256 UTF-8 bytes"):
+        _native.scene_plot_layout(**axes, x_format="x" * 257)
+    with pytest.raises(ValueError, match="NUL-free"):
+        _native.scene_plot_layout(**axes, y_format="$.1f\0USD")
+    with pytest.raises(TypeError, match="string or None"):
+        _native.scene_plot_layout(**axes, x_format=1)  # type: ignore[arg-type]
+
+
 def test_scene_colorbar_side_is_framed_before_rust_resolves_gutters() -> None:
     for side, edge_offset, viewport in (("right", 64, 320.0), ("bottom", 72, 240.0)):
         figure = Figure(width=320, height=240).scatter([0.0, 1.0], [0.0, 1.0])

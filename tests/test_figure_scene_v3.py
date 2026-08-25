@@ -58,6 +58,24 @@ def cartesian_callout_figure() -> Figure:
     return figure
 
 
+def numeric_tick_format_figure() -> Figure:
+    figure = Figure(width=420, height=260)
+    figure.axis_options["x"].update(domain=(0.0, 1.0), format=".1%")
+    figure.axis_options["y"].update(domain=(-15_000.0, 15_000.0), format="$,.0f USD")
+    figure.scatter([0.0, 1.0], [-10_000.0, 10_000.0])
+    figure.traces[-1].id = 0
+    return figure
+
+
+def nonlinear_axis_figure() -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.set_axis("x", type_="symlog", constant=2.0, domain=(-10.0, 10.0))
+    figure.set_axis("y", type_="log", nonpositive="mask", domain=(0.1, 10.0))
+    figure.scatter([-1.0, 1.0], [0.5, 2.0])
+    figure.traces[-1].id = 0
+    return figure
+
+
 def public_callout_figure() -> Figure:
     """The one-callout public-routing contract, including the v23 label box."""
     figure = Figure(width=320, height=240)
@@ -151,6 +169,26 @@ def test_python_scene_v20_cartesian_callout_matches_node_bytes_and_consumers() -
     assert 'data-xy-stable-id="6366126145334673408"' in svg
     assert b"Rust" in _native.scene_raster_commands(scene)
     assert b"XYLB" in _native.scene_browser_painter(scene)
+
+
+def test_python_numeric_tick_formats_match_node_bytes_and_all_consumers() -> None:
+    scene = numeric_tick_format_figure().to_scene()
+    assert hashlib.sha256(scene).hexdigest() == FIXTURE["numeric_tick_format_sha256"]
+    labels = (b"0.0%", b"50.0%", b"100.0%", b"$-10,000 USD", b"$0 USD", b"$10,000 USD")
+    consumers = (
+        _native.scene_svg(scene).encode(),
+        _native.scene_raster_commands(scene),
+        _native.scene_browser_painter(scene),
+    )
+    for label in labels:
+        assert all(label in consumer for consumer in consumers)
+
+
+def test_python_nonlinear_axis_descriptor_matches_node_bytes() -> None:
+    scene = nonlinear_axis_figure().to_scene()
+    assert hashlib.sha256(scene).hexdigest() == FIXTURE["nonlinear_axis_forwarding_sha256"]
+    assert (scene[96], scene[97], scene[104], scene[105]) == (2, 0, 1, 1)
+    assert struct.unpack_from("<d", scene, 144)[0] == 2.0
 
 
 def test_python_scene_v9_primary_legend_matches_node_bytes_and_consumers() -> None:

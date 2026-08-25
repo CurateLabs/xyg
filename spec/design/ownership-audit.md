@@ -57,6 +57,17 @@ segment roles/styles, LOD inputs, export background overrides, and any other
 unmodeled output contract; #58/#117 must
 retire each exception only with cross-host differential and performance proof.
 
+The ABI 96 primary numeric-format slice removes one more duplicated host
+decision from that compatibility boundary. For Scene-eligible linear, log, and
+symlog x/y axes, `crates/xyg-engine/src/scene.rs` exclusively parses
+`<prefix>(,).N[f|%]<suffix>`, resolves final labels (including invalid-format
+fallback, log sub-unit collapse protection, and explicit-label precedence),
+and measures gutters. `python/xyg/_scene_v3.py` and
+`packages/xy-node/src/scene.js` only retain authoring options and pack bounded
+UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
+canonical-policy debt for the dynamic browser path under #59; this slice does
+not duplicate or extend it.
+
 ## Binding seam decision
 
 XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ctypes and Node uses Koffi; Koffi itself is built on Node-API, but XYG is not an N-API addon. PyO3/abi3 and napi-rs would create separate host-specific native artifacts, packaging paths, and version seams. They are not the default while the product requires one core artifact usable by CPython versions, Node, VS Code, and future adapters. Issue #57 generated both low-level bindings and the C header from one typed ABI contract; measured evidence may revisit the seam later.

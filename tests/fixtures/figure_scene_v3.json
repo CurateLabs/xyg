@@ -67,6 +67,8 @@
     "post": "21844b6bb665ff71368d4810323c13a8c4f8e6317868bbe4a94f9b2b63910319"
   },
   "cartesian_callout_sha256": "59984f323d1c6a21bf57002e3da733eb187e96379e26a51e72c0a2cacd624c4d",
+  "numeric_tick_format_sha256": "1f7b76c8f529b34d2533e2b86c782b3ed2d82bfdccfbc92462de1cb2069d6a60",
+  "nonlinear_axis_forwarding_sha256": "3820421d0781d81577ab46b85756f759da408e675f7f591ac22ae9e5b982ad8e",
   "public_disconnected_segments_sha256": "3b825fea6dbf97acfb128d7a248a86293994c5fdd277ab65d34597afc8d47629",
   "band_outlines": {
     "top": {
