@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 95;
+pub const ABI_VERSION: u32 = 96;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -139,7 +139,10 @@ pub unsafe extern "C" fn xyg_scene_support_reason(
 /// Writes `left`, `right`, `top`, `bottom` into `out_margins` (length 4) on
 /// success and returns 4. `authored_padding` may be null (use compact/regular
 /// defaults) or address four f64 values in `(top, right, bottom, left)` order.
-/// Title and axis-label buffers may be null when the matching length is 0.
+/// Title, axis-label, and numeric-format buffers may be null when the matching
+/// length is 0. Numeric formats are bounded UTF-8 without embedded NUL and use
+/// the engine-owned `<prefix>(,).N[f|%]<suffix>` grammar; invalid grammar
+/// preserves deterministic default labels.
 /// `colorbar_side` is `0` for none, `1` for right, or `2` for bottom; Rust
 /// reserves the bounded outer lane when present.
 ///
@@ -167,6 +170,10 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
     x_label_len: usize,
     y_label: *const u8,
     y_label_len: usize,
+    x_format: *const u8,
+    x_format_len: usize,
+    y_format: *const u8,
+    y_format_len: usize,
     colorbar_side: u32,
     out_margins: *mut f64,
 ) -> usize {
@@ -175,9 +182,13 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
         || y_label_len > scene::MAX_SCENE_TEXT_BYTES
+        || x_format_len > scene::MAX_SCENE_AXIS_FORMAT_BYTES
+        || y_format_len > scene::MAX_SCENE_AXIS_FORMAT_BYTES
         || (title_len > 0 && title.is_null())
         || (x_label_len > 0 && x_label.is_null())
         || (y_label_len > 0 && y_label.is_null())
+        || (x_format_len > 0 && x_format.is_null())
+        || (y_format_len > 0 && y_format.is_null())
         || out_margins.is_null()
     {
         return usize::MAX;
@@ -227,6 +238,19 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
             Err(_) => return usize::MAX,
         }
     };
+    let axis_format = |pointer: *const u8, length: usize| -> Option<Option<&str>> {
+        if length == 0 {
+            return Some(None);
+        }
+        let text = std::str::from_utf8(std::slice::from_raw_parts(pointer, length)).ok()?;
+        (!text.contains('\0')).then_some(Some(text))
+    };
+    let (Some(x_format), Some(y_format)) = (
+        axis_format(x_format, x_format_len),
+        axis_format(y_format, y_format_len),
+    ) else {
+        return usize::MAX;
+    };
     let Some(margins) = ffi_guard(None, || {
         scene::cartesian_scene_margins(scene::CartesianLayoutRequest {
             viewport_width,
@@ -240,11 +264,13 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
             x_hi,
             x_constant,
             x_mask_nonpositive: x_mask_nonpositive != 0,
+            x_format,
             y_kind,
             y_lo,
             y_hi,
             y_constant,
             y_mask_nonpositive: y_mask_nonpositive != 0,
+            y_format,
             colorbar_side,
         })
         .ok()
@@ -383,20 +409,57 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
     })
 }
 
+/// Decode the optional versioned authoring envelope while accepting legacy raw
+/// `XYAD` annotation bytes unchanged.
+fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&str>, &[u8])> {
+    if !bytes.starts_with(b"XYAF") {
+        return Some((None, None, bytes));
+    }
+    if bytes.len() < 20 || u32::from_le_bytes(bytes[4..8].try_into().ok()?) != 1 {
+        return None;
+    }
+    let x_len = u32::from_le_bytes(bytes[8..12].try_into().ok()?) as usize;
+    let y_len = u32::from_le_bytes(bytes[12..16].try_into().ok()?) as usize;
+    let annotation_len = u32::from_le_bytes(bytes[16..20].try_into().ok()?) as usize;
+    if x_len > scene::MAX_SCENE_AXIS_FORMAT_BYTES || y_len > scene::MAX_SCENE_AXIS_FORMAT_BYTES {
+        return None;
+    }
+    let x_end = 20usize.checked_add(x_len)?;
+    let y_end = x_end.checked_add(y_len)?;
+    let end = y_end.checked_add(annotation_len)?;
+    if end != bytes.len() {
+        return None;
+    }
+    fn decode_format(value: &[u8]) -> Option<Option<&str>> {
+        if value.is_empty() {
+            return Some(None);
+        }
+        let value = std::str::from_utf8(value).ok()?;
+        (!value.contains('\0')).then_some(Some(value))
+    }
+    Some((
+        decode_format(&bytes[20..x_end])?,
+        decode_format(&bytes[x_end..y_end])?,
+        &bytes[y_end..end],
+    ))
+}
+
 /// Encode a bounded backend-neutral Scene v12 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
 /// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
-/// null when the corresponding length is zero. Returns required bytes or
-/// `usize::MAX` on error.
+/// null when the corresponding length is zero. `authored_text_annotations` may
+/// carry the ABI 96 `XYAF` envelope for bounded primary-axis numeric formats;
+/// this keeps the function below the 64-parameter host-binding ceiling without
+/// changing Scene v25. Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
 /// Every record input array must address `len` readable elements. The chrome
 /// style pointer must address exactly `SCENE_CHROME_STYLE_INPUT_BYTES` bytes;
-/// `step_modes` must address `len` bytes, each in the bounded ABI 95 enum;
+/// `step_modes` must address `len` bytes, each in the bounded ABI 96 enum;
 /// each tick pointer must address its corresponding count when non-zero. Text
 /// and bounded legend-input pointers must address `*_len` readable bytes when
-/// non-zero. If capacity is
-/// sufficient, `out` must address `out_cap` writable bytes.
+/// non-zero. If capacity is sufficient, `out` must address `out_cap` writable
+/// bytes.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C" fn xyg_scene_batch_encode(
@@ -491,6 +554,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             > scene::MAX_SCENE_LABEL_TEXT_BYTES
                 + scene::MAX_AUTHORED_TEXT_ANNOTATIONS * 24
                 + 44
+                + 20
+                + scene::MAX_SCENE_AXIS_FORMAT_BYTES * 2
         || (authored_text_annotations_len > 0 && authored_text_annotations.is_null())
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
@@ -541,11 +606,13 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             std::slice::from_raw_parts(y_tick_labels, y_tick_labels_len)
         })
         .ok()?;
-        let authored_text_bytes = if authored_text_annotations_len == 0 {
+        let authored_input = if authored_text_annotations_len == 0 {
             &[]
         } else {
             std::slice::from_raw_parts(authored_text_annotations, authored_text_annotations_len)
         };
+        let (x_format, y_format, authored_text_bytes) =
+            decode_scene_authoring_input(authored_input)?;
         // Final canonical gutters belong to Rust, after it has validated the
         // exact strings that all consumers will paint.  No host font/layout
         // measurement participates in this decision.
@@ -726,6 +793,15 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         .ok()?;
         chrome.x_tick_labels = x_tick_label_values;
         chrome.y_tick_labels = y_tick_label_values;
+        scene::resolve_numeric_tick_formats(
+            layout,
+            x_scale,
+            y_scale,
+            &mut chrome,
+            x_format,
+            y_format,
+        )
+        .ok()?;
         let chrome = chrome.validated().ok()?;
         let batch = scene::SceneBatch::new_with_decorations_colorbar(
             layout,
@@ -9567,6 +9643,95 @@ mod tests {
                 1
             );
         }
+    }
+
+    #[test]
+    fn scene_layout_axis_format_abi_is_bounded_utf8_without_nul() {
+        let mut margins = [0.0; 4];
+        let call = |format: *const u8, format_len: usize, margins: &mut [f64; 4]| unsafe {
+            xyg_scene_plot_layout(
+                320.0,
+                240.0,
+                std::ptr::null(),
+                0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                format,
+                format_len,
+                std::ptr::null(),
+                0,
+                0,
+                margins.as_mut_ptr(),
+            )
+        };
+        let valid = b"$,.1f USD";
+        assert_eq!(call(valid.as_ptr(), valid.len(), &mut margins), 4);
+        assert!(margins.iter().all(|value| value.is_finite()));
+        let nul = b"$.1f\0USD";
+        assert_eq!(call(nul.as_ptr(), nul.len(), &mut margins), usize::MAX);
+        let invalid_utf8 = [0xff];
+        assert_eq!(
+            call(invalid_utf8.as_ptr(), invalid_utf8.len(), &mut margins),
+            usize::MAX
+        );
+        let oversized = vec![b'x'; scene::MAX_SCENE_AXIS_FORMAT_BYTES + 1];
+        assert_eq!(
+            call(oversized.as_ptr(), oversized.len(), &mut margins),
+            usize::MAX
+        );
+        assert_eq!(call(std::ptr::null(), 1, &mut margins), usize::MAX);
+    }
+
+    #[test]
+    fn scene_authoring_envelope_is_exact_bounded_and_legacy_compatible() {
+        let legacy = b"XYADlegacy";
+        let (x, y, annotations) = decode_scene_authoring_input(legacy).unwrap();
+        assert_eq!((x, y, annotations), (None, None, legacy.as_slice()));
+
+        let x_format = b".1%";
+        let y_format = b"$,.0f USD";
+        let mut envelope = b"XYAF".to_vec();
+        envelope.extend_from_slice(&1u32.to_le_bytes());
+        envelope.extend_from_slice(&(x_format.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&(y_format.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(&(legacy.len() as u32).to_le_bytes());
+        envelope.extend_from_slice(x_format);
+        envelope.extend_from_slice(y_format);
+        envelope.extend_from_slice(legacy);
+        assert_eq!(
+            decode_scene_authoring_input(&envelope),
+            Some((Some(".1%"), Some("$,.0f USD"), legacy.as_slice()))
+        );
+
+        let mut malformed = envelope.clone();
+        malformed[4..8].copy_from_slice(&2u32.to_le_bytes());
+        assert!(decode_scene_authoring_input(&malformed).is_none());
+        let mut trailing = envelope.clone();
+        trailing.push(0);
+        assert!(decode_scene_authoring_input(&trailing).is_none());
+        let mut nul = envelope.clone();
+        nul[20] = 0;
+        assert!(decode_scene_authoring_input(&nul).is_none());
+        let mut invalid_utf8 = envelope.clone();
+        invalid_utf8[20] = 0xff;
+        assert!(decode_scene_authoring_input(&invalid_utf8).is_none());
+        let mut oversized = envelope;
+        oversized[8..12]
+            .copy_from_slice(&((scene::MAX_SCENE_AXIS_FORMAT_BYTES + 1) as u32).to_le_bytes());
+        assert!(decode_scene_authoring_input(&oversized).is_none());
     }
 
     #[test]

@@ -229,6 +229,7 @@ export function sceneBatchEncode({
   title = "", xLabel = "", yLabel = "", chromeStyle = null,
   xMajorTicks = null, xMinorTicks = [], yMajorTicks = null, yMinorTicks = [],
   xTickLabels = null, yTickLabels = null,
+  xFormat = null, yFormat = null,
   legendInput = null, colorbarInput = null, authoredTextAnnotations = null,
 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
@@ -288,12 +289,34 @@ export function sceneBatchEncode({
   };
   const xTickLabelBytes = frameTickLabels(xTickLabels, "xTickLabels");
   const yTickLabelBytes = frameTickLabels(yTickLabels, "yTickLabels");
+  const frameAxisFormat = (value, name) => {
+    if (value == null) return new Uint8Array();
+    if (typeof value !== "string") throw new TypeError(`${name} must be a string or null`);
+    const encoded = new TextEncoder().encode(value);
+    if (encoded.length > 256 || encoded.includes(0)) throw new RangeError(`${name} must be NUL-free and at most 256 UTF-8 bytes`);
+    return encoded;
+  };
+  const xFormatBytes = frameAxisFormat(xFormat, "xFormat");
+  const yFormatBytes = frameAxisFormat(yFormat, "yFormat");
   const legend = legendInput == null ? new Uint8Array() : asUnsignedArray(legendInput, "legendInput", 255, Uint8Array);
   const colorbar = colorbarInput == null ? new Uint8Array() : asUnsignedArray(colorbarInput, "colorbarInput", 255, Uint8Array);
   const authoredText = authoredTextAnnotations == null ? new Uint8Array() : asUnsignedArray(authoredTextAnnotations, "authoredTextAnnotations", 255, Uint8Array);
+  const authoredInput = xFormatBytes.length || yFormatBytes.length ? (() => {
+    const out = new Uint8Array(20 + xFormatBytes.length + yFormatBytes.length + authoredText.length);
+    const view = new DataView(out.buffer);
+    out.set(new TextEncoder().encode("XYAF"));
+    view.setUint32(4, 1, true);
+    view.setUint32(8, xFormatBytes.length, true);
+    view.setUint32(12, yFormatBytes.length, true);
+    view.setUint32(16, authoredText.length, true);
+    out.set(xFormatBytes, 20);
+    out.set(yFormatBytes, 20 + xFormatBytes.length);
+    out.set(authoredText, 20 + xFormatBytes.length + yFormatBytes.length);
+    return out;
+  })() : authoredText;
   if (colorbar.length > 4_600) throw new RangeError("scene colorbar input is limited to 4,600 bytes");
   if (tickArrays.some((value) => value != null && value.length > 200)) throw new RangeError("scene axis tick lists are limited to 200 values");
-  let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + authoredText.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
+  let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + authoredInput.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
@@ -305,7 +328,7 @@ export function sceneBatchEncode({
       f64Ptr(tickArrays[3]), BigInt(tickArrays[3]?.length ?? 0),
       xTickLabelBytes.length ? u8Ptr(xTickLabelBytes) : 0, BigInt(xTickLabelBytes.length),
       yTickLabelBytes.length ? u8Ptr(yTickLabelBytes) : 0, BigInt(yTickLabelBytes.length),
-      authoredText.length ? u8Ptr(authoredText) : 0, BigInt(authoredText.length),
+      authoredInput.length ? u8Ptr(authoredInput) : 0, BigInt(authoredInput.length),
       u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
       u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
       f64Ptr(diameters), u8Ptr(symbolCodes), u8Ptr(stepModeCodes),
@@ -558,6 +581,21 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [], stepRuns = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
+  const sceneAxis = (axis, id, domain) => {
+    const options = figure[`${axis}Axis`] ?? figure[`${axis}_axis`] ?? {};
+    return {
+      id,
+      kind: options.kind ?? options.type ?? "linear",
+      domain,
+      constant: options.constant ?? 1,
+      nonpositive: options.nonpositive ?? "clip",
+      format: options.format ?? null,
+    };
+  };
+  const xSceneAxis = sceneAxis("x", 1, xDomain);
+  const ySceneAxis = sceneAxis("y", 2, yDomain);
+  const xSceneDescriptor = axisDescriptor(xSceneAxis, "xAxis");
+  const ySceneDescriptor = axisDescriptor(ySceneAxis, "yAxis");
   for (const trace of figure.traces) {
     if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v12 currently supports only the primary x/y axes");
     if (
@@ -879,13 +917,21 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const titleBytes = new TextEncoder().encode(String(title));
     const xLabelBytes = new TextEncoder().encode(String(xLabel));
     const yLabelBytes = new TextEncoder().encode(String(yLabel));
+    const xAxisOptions = figure.xAxis ?? figure.x_axis ?? {};
+    const yAxisOptions = figure.yAxis ?? figure.y_axis ?? {};
+    const xLayoutFormat = (xAxisOptions.tickLabels ?? xAxisOptions.tick_labels) == null ? xSceneAxis.format : null;
+    const yLayoutFormat = (yAxisOptions.tickLabels ?? yAxisOptions.tick_labels) == null ? ySceneAxis.format : null;
+    const xFormatBytes = xLayoutFormat == null ? new Uint8Array() : new TextEncoder().encode(String(xLayoutFormat));
+    const yFormatBytes = yLayoutFormat == null ? new Uint8Array() : new TextEncoder().encode(String(yLayoutFormat));
+    if ([xFormatBytes, yFormatBytes].some((value) => value.length > 256 || value.includes(0))) throw new RangeError("Scene axis format must be NUL-free and at most 256 UTF-8 bytes");
     const written = xyScenePlotLayout(
       Number(figure.width), Number(figure.height), 0,
-      0, Number(xDomain[0]), Number(xDomain[1]), 1, 0,
-      0, Number(yDomain[0]), Number(yDomain[1]), 1, 0,
+      ...xSceneDescriptor.slice(1), ...ySceneDescriptor.slice(1),
       titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
       xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
       yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
+      xFormatBytes.length ? u8Ptr(xFormatBytes) : 0, BigInt(xFormatBytes.length),
+      yFormatBytes.length ? u8Ptr(yFormatBytes) : 0, BigInt(yFormatBytes.length),
       encodedColorbar.length ? (encodedColorbar[8] & 1 ? 2 : 1) : 0,
       f64Ptr(out),
     );
@@ -893,9 +939,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     resolvedMargins = [out[0], out[1], out[2], out[3]];
   }
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
-    xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
+    xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, stepModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
   });
 }
 

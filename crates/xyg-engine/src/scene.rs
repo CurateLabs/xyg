@@ -13,6 +13,12 @@ pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
 pub const MAX_SCENE_TEXT_BYTES: usize = 4_096;
+/// Authored numeric axis formats are bounded authoring input. They compile to
+/// ordinary canonical tick labels and never reach Scene consumers verbatim.
+pub const MAX_SCENE_AXIS_FORMAT_BYTES: usize = 256;
+/// Shared upper bound of the existing browser fixed-decimal compatibility
+/// formatter and the bounded canonical tick-label resource contract.
+const MAX_NUMERIC_TICK_FORMAT_PRECISION: usize = 100;
 pub const SCENE_BATCH_HEADER_BYTES: usize = 160;
 pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
@@ -3114,8 +3120,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                 let stroke_width = batch_f64(bytes, style_offset + 8)?;
                 let stroke_alpha = bytes[style_offset + 7];
                 if diameter != 0.0
-                    || (outline != BandOutline::None
-                        && (stroke_width == 0.0 || stroke_alpha == 0))
+                    || (outline != BandOutline::None && (stroke_width == 0.0 || stroke_alpha == 0))
                 {
                     return Err(SceneError::Length);
                 }
@@ -3635,10 +3640,20 @@ impl<'a> SceneBatch<'a> {
             batch_u32(bytes, 20)? as usize
         };
         let xyaw_len = if version == 3 {
-            if bytes.len() < 28 { return Err(SceneError::Length); }
+            if bytes.len() < 28 {
+                return Err(SceneError::Length);
+            }
             batch_u32(bytes, 24)? as usize
-        } else { 0 };
-        let start: usize = if version == 1 { 20 } else if version == 2 { 24 } else { 28 };
+        } else {
+            0
+        };
+        let start: usize = if version == 1 {
+            20
+        } else if version == 2 {
+            24
+        } else {
+            28
+        };
         let xyat_end = start.checked_add(xyat_len).ok_or(SceneError::Limit)?;
         let xyal_end = xyat_end.checked_add(xyal_len).ok_or(SceneError::Limit)?;
         let xyar_end = xyal_end.checked_add(xyar_len).ok_or(SceneError::Limit)?;
@@ -3815,7 +3830,12 @@ impl<'a> SceneBatch<'a> {
         // resolved backgrounds are emitted in the matching XYLB entries.  Do
         // not also append them to `self.labels`: that would duplicate labels
         // and lose the background on the first copy during a Scene round trip.
-        let (mut wrapped, mut wrapped_backgrounds, mut wrapped_callouts) = decode_xyaw(&bytes[xyac_end..end], self.x_scale, self.y_scale, self.layout)?;
+        let (mut wrapped, mut wrapped_backgrounds, mut wrapped_callouts) = decode_xyaw(
+            &bytes[xyac_end..end],
+            self.x_scale,
+            self.y_scale,
+            self.layout,
+        )?;
         self.labels.append(&mut wrapped);
         self.label_backgrounds.append(&mut wrapped_backgrounds);
         callouts.append(&mut wrapped_callouts);
@@ -4987,6 +5007,217 @@ fn format_tick(value: f64, step: f64, kind: ScaleKind) -> String {
         decimals += 1;
     }
     format!("{value:.decimals$}")
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct NumericTickFormat<'a> {
+    prefix: &'a str,
+    suffix: &'a str,
+    digits: usize,
+    grouped: bool,
+    percent: bool,
+}
+
+impl<'a> NumericTickFormat<'a> {
+    /// Parse the deliberately small public numeric grammar:
+    /// `<prefix>(,).N[f|%]<suffix>`. Invalid syntax is not an error; callers
+    /// preserve the public contract by falling back to the default formatter.
+    fn parse(value: &'a str) -> Option<Self> {
+        if value.len() > MAX_SCENE_AXIS_FORMAT_BYTES || value.contains('\0') {
+            return None;
+        }
+        let (before_dot, after_dot) = value.split_once('.')?;
+        if after_dot.contains('.') {
+            return None;
+        }
+        let (prefix, grouped) = before_dot
+            .strip_suffix(',')
+            .map_or((before_dot, false), |prefix| (prefix, true));
+        if prefix.contains([',', '%']) {
+            return None;
+        }
+        let digit_bytes = after_dot
+            .as_bytes()
+            .iter()
+            .take_while(|byte| byte.is_ascii_digit())
+            .count();
+        if digit_bytes == 0 {
+            return None;
+        }
+        let digits = after_dot[..digit_bytes].parse::<usize>().ok()?;
+        if digits > MAX_NUMERIC_TICK_FORMAT_PRECISION {
+            return None;
+        }
+        let mut rest = &after_dot[digit_bytes..];
+        let explicit_f = rest.starts_with('f');
+        if explicit_f {
+            rest = &rest[1..];
+        }
+        let percent = rest.starts_with('%');
+        if percent {
+            rest = &rest[1..];
+        }
+        if rest.contains([',', '.', '%'])
+            || (!explicit_f && !percent && (!prefix.is_empty() || !rest.is_empty()))
+        {
+            return None;
+        }
+        Some(Self {
+            prefix,
+            suffix: rest,
+            digits,
+            grouped,
+            percent,
+        })
+    }
+
+    fn fixed_number(self, value: f64) -> Option<String> {
+        let value = if self.percent { value * 100.0 } else { value };
+        if !value.is_finite() {
+            return None;
+        }
+        let raw = format!("{value:.digits$}", digits = self.digits);
+        if !self.grouped {
+            return Some(raw);
+        }
+        let (sign, unsigned) = raw
+            .strip_prefix('-')
+            .map_or(("", raw.as_str()), |value| ("-", value));
+        let (integer, fraction) = unsigned
+            .split_once('.')
+            .map_or((unsigned, None), |(integer, fraction)| {
+                (integer, Some(fraction))
+            });
+        let mut grouped = String::with_capacity(raw.len() + integer.len() / 3);
+        grouped.push_str(sign);
+        let leading = integer.len() % 3;
+        if leading != 0 {
+            grouped.push_str(&integer[..leading]);
+        }
+        for chunk in integer.as_bytes()[leading..].chunks(3) {
+            if grouped.len() > sign.len() {
+                grouped.push(',');
+            }
+            grouped.push_str(std::str::from_utf8(chunk).expect("ASCII fixed integer"));
+        }
+        if let Some(fraction) = fraction {
+            grouped.push('.');
+            grouped.push_str(fraction);
+        }
+        Some(grouped)
+    }
+
+    fn format(self, value: f64, step: f64, kind: ScaleKind) -> String {
+        let Some(number) = self.fixed_number(value) else {
+            return format_tick(value, step, kind);
+        };
+        if kind == ScaleKind::Log
+            && value > 0.0
+            && value < 1.0
+            && number
+                .replace(',', "")
+                .parse::<f64>()
+                .is_ok_and(|value| value == 0.0)
+        {
+            return format_tick(value, step, kind);
+        }
+        format!(
+            "{}{number}{}{}",
+            self.prefix,
+            if self.percent { "%" } else { "" },
+            self.suffix
+        )
+    }
+}
+
+/// Resolve one primary Cartesian numeric tick label. Authored invalid syntax
+/// deliberately falls back to the same deterministic default formatter.
+pub fn format_numeric_tick(value: f64, step: f64, kind: ScaleKind, format: Option<&str>) -> String {
+    format.and_then(NumericTickFormat::parse).map_or_else(
+        || format_tick(value, step, kind),
+        |format| format.format(value, step, kind),
+    )
+}
+
+/// Compile bounded authored numeric formats into the existing canonical major
+/// positions and `XYTL` labels. Explicit authored labels retain precedence.
+/// Automatic minor positions are materialized too so log grids do not change
+/// when automatic majors become explicit canonical positions.
+pub fn resolve_numeric_tick_formats(
+    layout: PlotLayout,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    chrome: &mut SceneChromeStyle,
+    x_format: Option<&str>,
+    y_format: Option<&str>,
+) -> Result<(), SceneError> {
+    let resolve = |scale: AxisScale,
+                   length: f64,
+                   is_x: bool,
+                   pixel_min: f64,
+                   pixel_max: f64,
+                   major: &mut Option<Vec<f64>>,
+                   minor: &mut Vec<f64>,
+                   labels: &mut Option<Vec<String>>,
+                   authored_format: Option<&str>|
+     -> Result<(), SceneError> {
+        let Some(format) = authored_format.and_then(NumericTickFormat::parse) else {
+            return Ok(());
+        };
+        if labels.is_some() {
+            return Ok(());
+        }
+        let resolved = resolved_axis_ticks(
+            scale,
+            length,
+            is_x,
+            pixel_min,
+            pixel_max,
+            major.as_deref(),
+            minor,
+        )?;
+        if major.is_none() {
+            *minor = resolved
+                .ticks
+                .iter()
+                .copied()
+                .filter(|value| !resolved.labeled.contains(value))
+                .collect();
+            *major = Some(resolved.labeled.clone());
+        }
+        let values = major.as_deref().unwrap_or_default();
+        *labels = Some(
+            values
+                .iter()
+                .map(|value| format.format(*value, resolved.step, scale.kind))
+                .collect(),
+        );
+        Ok(())
+    };
+    resolve(
+        x_scale,
+        layout.right - layout.left,
+        true,
+        layout.left,
+        layout.right,
+        &mut chrome.x_major_ticks,
+        &mut chrome.x_minor_ticks,
+        &mut chrome.x_tick_labels,
+        x_format,
+    )?;
+    resolve(
+        y_scale,
+        layout.bottom - layout.top,
+        false,
+        layout.top,
+        layout.bottom,
+        &mut chrome.y_major_ticks,
+        &mut chrome.y_minor_ticks,
+        &mut chrome.y_tick_labels,
+        y_format,
+    )?;
+    chrome.clone().validated()?;
+    Ok(())
 }
 
 fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str, width: f64) {
@@ -8227,11 +8458,13 @@ pub struct CartesianLayoutRequest<'a> {
     pub x_hi: f64,
     pub x_constant: f64,
     pub x_mask_nonpositive: bool,
+    pub x_format: Option<&'a str>,
     pub y_kind: ScaleKind,
     pub y_lo: f64,
     pub y_hi: f64,
     pub y_constant: f64,
     pub y_mask_nonpositive: bool,
+    pub y_format: Option<&'a str>,
     pub colorbar_side: ColorbarSide,
 }
 
@@ -8256,11 +8489,13 @@ pub fn cartesian_scene_margins(
         x_hi,
         x_constant,
         x_mask_nonpositive,
+        x_format,
         y_kind,
         y_lo,
         y_hi,
         y_constant,
         y_mask_nonpositive,
+        y_format,
         colorbar_side,
     } = request;
     if ![viewport_width, viewport_height]
@@ -8324,7 +8559,7 @@ pub fn cartesian_scene_margins(
     let mut tick_label_width = 0.0_f64;
     for value in &y_ticks.labeled {
         tick_label_width = tick_label_width.max(text_advance(
-            &format_tick(*value, y_ticks.step, y_kind),
+            &format_numeric_tick(*value, y_ticks.step, y_kind, y_format),
             LABEL_FONT_PX,
         ));
     }
@@ -8376,8 +8611,14 @@ pub fn cartesian_scene_margins(
         }
         let first = x_ticks.labeled[0];
         let last = *x_ticks.labeled.last().expect("non-empty");
-        let first_w = text_advance(&format_tick(first, x_ticks.step, x_kind), LABEL_FONT_PX);
-        let last_w = text_advance(&format_tick(last, x_ticks.step, x_kind), LABEL_FONT_PX);
+        let first_w = text_advance(
+            &format_numeric_tick(first, x_ticks.step, x_kind, x_format),
+            LABEL_FONT_PX,
+        );
+        let last_w = text_advance(
+            &format_numeric_tick(last, x_ticks.step, x_kind, x_format),
+            LABEL_FONT_PX,
+        );
         let first_x = x_scale.pixel(first);
         let last_x = x_scale.pixel(last);
         let next_left = left.max(AXIS_TEXT_EDGE_PAD + first_w * 0.5 - first_x);
@@ -8578,14 +8819,8 @@ mod tests {
             input.y1 = y1;
             expand_scene_steps(input)
         };
-        assert_eq!(
-            rejected_reserved(&nonzero, &zeros),
-            Err(SceneError::Length)
-        );
-        assert_eq!(
-            rejected_reserved(&zeros, &nonzero),
-            Err(SceneError::Length)
-        );
+        assert_eq!(rejected_reserved(&nonzero, &zeros), Err(SceneError::Length));
+        assert_eq!(rejected_reserved(&zeros, &nonzero), Err(SceneError::Length));
         let nonfinite = [f64::NAN];
         assert_eq!(
             rejected_reserved(&nonfinite, &zeros),
@@ -8661,11 +8896,13 @@ mod tests {
             x_hi: 4.0,
             x_constant: 1.0,
             x_mask_nonpositive: false,
+            x_format: None,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 5.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
+            y_format: None,
             colorbar_side: ColorbarSide::None,
         })
         .unwrap();
@@ -8674,6 +8911,46 @@ mod tests {
         assert!(top >= 6.0, "top={top}");
         assert!(bottom >= 36.0, "bottom={bottom}");
         PlotLayout::new(320.0, 240.0, left, right, top, bottom).unwrap();
+    }
+
+    #[test]
+    fn cartesian_scene_margins_measure_the_rust_resolved_numeric_labels() {
+        let request = CartesianLayoutRequest {
+            viewport_width: 640.0,
+            viewport_height: 360.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 0.0,
+            x_hi: 1.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            x_format: None,
+            y_kind: ScaleKind::Linear,
+            y_lo: 0.0,
+            y_hi: 100_000.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+            y_format: None,
+            colorbar_side: ColorbarSide::None,
+        };
+        let plain = cartesian_scene_margins(request).unwrap();
+        let formatted = cartesian_scene_margins(CartesianLayoutRequest {
+            x_format: Some(".1%"),
+            y_format: Some("$,.0f USD"),
+            ..request
+        })
+        .unwrap();
+        assert!(
+            formatted.0 > plain.0,
+            "plain={plain:?} formatted={formatted:?}"
+        );
+        assert!(
+            formatted.1 >= plain.1,
+            "plain={plain:?} formatted={formatted:?}"
+        );
     }
 
     #[test]
@@ -8690,11 +8967,13 @@ mod tests {
             x_hi: 1.0,
             x_constant: 1.0,
             x_mask_nonpositive: false,
+            x_format: None,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 1.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
+            y_format: None,
             colorbar_side,
         };
         let right = cartesian_scene_margins(request(ColorbarSide::Right)).unwrap();
@@ -9968,6 +10247,104 @@ mod tests {
     }
 
     #[test]
+    fn bounded_numeric_tick_format_owns_affixes_grouping_percent_and_fallback() {
+        assert_eq!(
+            format_numeric_tick(12_345.678, 1.0, ScaleKind::Linear, Some("$,.1f ms")),
+            "$12,345.7 ms"
+        );
+        assert_eq!(
+            format_numeric_tick(0.125, 0.1, ScaleKind::Linear, Some(".1%")),
+            "12.5%"
+        );
+        assert_eq!(
+            format_numeric_tick(-2_500.4, 1.0, ScaleKind::SymLog, Some("€,.0f EUR")),
+            "€-2,500 EUR"
+        );
+        assert_eq!(
+            format_numeric_tick(0.125, 0.1, ScaleKind::Linear, Some("$.1x")),
+            format_numeric_tick(0.125, 0.1, ScaleKind::Linear, None)
+        );
+        assert_eq!(
+            format_numeric_tick(0.001, 1.0, ScaleKind::Log, Some("$,.0f USD")),
+            format_numeric_tick(0.001, 1.0, ScaleKind::Log, None)
+        );
+        assert_eq!(
+            format_numeric_tick(
+                1.0,
+                1.0,
+                ScaleKind::Linear,
+                Some(&"x".repeat(MAX_SCENE_AXIS_FORMAT_BYTES + 1))
+            ),
+            "1"
+        );
+        let boundary = format!(".{MAX_NUMERIC_TICK_FORMAT_PRECISION}f");
+        let boundary_label = format_numeric_tick(1.25, 1.0, ScaleKind::Linear, Some(&boundary));
+        assert_eq!(boundary_label.len(), MAX_NUMERIC_TICK_FORMAT_PRECISION + 2);
+        assert!(boundary_label.starts_with("1.25"));
+        let oversized = format!(".{}f", MAX_NUMERIC_TICK_FORMAT_PRECISION + 1);
+        assert_eq!(
+            format_numeric_tick(1.25, 1.0, ScaleKind::Linear, Some(&oversized)),
+            format_numeric_tick(1.25, 1.0, ScaleKind::Linear, None)
+        );
+    }
+
+    #[test]
+    fn numeric_tick_formats_materialize_canonical_labels_and_preserve_authored_labels() {
+        let layout = PlotLayout::new(420.0, 260.0, 50.0, 20.0, 20.0, 40.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Log,
+            0.1,
+            100.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::SymLog,
+            -10.0,
+            10.0,
+            layout.bottom,
+            layout.top,
+            2.0,
+            false,
+        )
+        .unwrap();
+        let mut chrome = SceneChromeStyle::default();
+        resolve_numeric_tick_formats(layout, x, y, &mut chrome, Some("$,.0f"), Some(".1f units"))
+            .unwrap();
+        assert!(chrome
+            .x_major_ticks
+            .as_ref()
+            .is_some_and(|ticks| !ticks.is_empty()));
+        assert!(!chrome.x_minor_ticks.is_empty());
+        assert_eq!(
+            chrome.x_major_ticks.as_ref().unwrap().len(),
+            chrome.x_tick_labels.as_ref().unwrap().len()
+        );
+        assert_eq!(chrome.x_tick_labels.as_ref().unwrap()[0], "0.1");
+        assert!(chrome
+            .y_tick_labels
+            .as_ref()
+            .unwrap()
+            .iter()
+            .all(|label| label.ends_with(" units")));
+
+        let mut authored = SceneChromeStyle {
+            x_major_ticks: Some(vec![0.1, 1.0]),
+            x_tick_labels: Some(vec!["low".into(), "high".into()]),
+            ..SceneChromeStyle::default()
+        };
+        resolve_numeric_tick_formats(layout, x, y, &mut authored, Some("$,.0f"), None).unwrap();
+        assert_eq!(authored.x_major_ticks, Some(vec![0.1, 1.0]));
+        assert_eq!(
+            authored.x_tick_labels,
+            Some(vec!["low".into(), "high".into()])
+        );
+    }
+
+    #[test]
     fn category_and_angular_ticks_match_host_policy() {
         assert_eq!(
             category_ticks(-0.5, 9.5, 10, 5).unwrap().ticks,
@@ -10153,7 +10530,11 @@ mod tests {
         assert_eq!(top_raster[mark_offset], 1);
         assert_eq!(top_raster[stroke_offset], 3);
         assert_eq!(
-            u32::from_le_bytes(top_raster[stroke_offset + 1..stroke_offset + 5].try_into().unwrap()),
+            u32::from_le_bytes(
+                top_raster[stroke_offset + 1..stroke_offset + 5]
+                    .try_into()
+                    .unwrap()
+            ),
             2
         );
         assert_eq!(top_raster[stroke_offset + 29], 0);
@@ -10169,8 +10550,7 @@ mod tests {
         assert_eq!(perimeter_raster[stroke_offset + 45], 1);
         assert_ne!(none_raster[stroke_offset], 3);
         assert_eq!(
-            top_document.to_browser_painter(16_384).unwrap()
-                [BROWSER_PAINTER_HEADER_BYTES + 1],
+            top_document.to_browser_painter(16_384).unwrap()[BROWSER_PAINTER_HEADER_BYTES + 1],
             BandOutline::Top as u8
         );
         assert_eq!(
@@ -10179,8 +10559,7 @@ mod tests {
             BandOutline::Perimeter as u8
         );
         assert_eq!(
-            none_document.to_browser_painter(16_384).unwrap()
-                [BROWSER_PAINTER_HEADER_BYTES + 1],
+            none_document.to_browser_painter(16_384).unwrap()[BROWSER_PAINTER_HEADER_BYTES + 1],
             BandOutline::None as u8
         );
     }

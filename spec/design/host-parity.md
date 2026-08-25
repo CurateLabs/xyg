@@ -88,7 +88,7 @@ load. The Pyodide gate calls every stub and checks its documented sentinel and
 signature; it never emulates filesystem policy in Python or JavaScript. These
 stubs are Emscripten-specific, not a blanket policy for every WASM target.
 
-The #58 scene migration is active: scene schema version 23 provides one
+The #58 scene migration is active: scene schema version 25 provides one
 backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,
 scatter, polyline, rectangle, and versioned bounded decoration records through both host bindings. The v1
 scatter SVG wrapper remains temporarily for scatter-only compatibility. Python
@@ -123,6 +123,18 @@ Extra legends, named/advanced colorbars, other deferred
 [scene-ir.md](scene-ir.md). Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.
+
+ABI 96 additionally admits the bounded primary Cartesian numeric format
+grammar `<prefix>(,).N[f|%]<suffix>` with precision `N` from 0 through 100 on
+linear, log, and symlog axes without a Scene-version change. Python and Node
+frame the authored strings in the same
+versioned `XYAF` authoring envelope; Rust alone parses the grammar, resolves
+labels and gutters, and emits existing explicit-major plus `XYTL` bytes. Shared
+fixtures pin exact Python/Node formatted Scene bytes and the Node forwarding of
+scale kind, symlog constant, and log nonpositive policy. Explicit authored
+labels win, invalid grammar retains default labels, and legacy raw `XYAD`
+annotation input remains accepted. Dynamic browser tick formatting remains the
+#59 cutover boundary.
 
 For the migrated subset, public Python SVG and native PNG now use the Rust
 Scene consumers and public PDF consumes their Rust SVG. The shared predicate

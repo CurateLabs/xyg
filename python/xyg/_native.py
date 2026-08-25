@@ -1826,6 +1826,8 @@ def scene_plot_layout(
     title: str = "",
     x_label: str = "",
     y_label: str = "",
+    x_format: str | None = None,
+    y_format: str | None = None,
     padding: tuple[float, float, float, float] | None = None,
     colorbar_side: str | None = None,
 ) -> tuple[float, float, float, float]:
@@ -1837,6 +1839,19 @@ def scene_plot_layout(
     title_b = title.encode("utf-8")
     xlabel_b = x_label.encode("utf-8")
     ylabel_b = y_label.encode("utf-8")
+
+    def axis_format_bytes(value: str | None, name: str) -> bytes:
+        if value is None:
+            return b""
+        if not isinstance(value, str):
+            raise TypeError(f"{name} must be a string or None")
+        encoded = value.encode("utf-8")
+        if len(encoded) > 256 or b"\0" in encoded:
+            raise ValueError(f"{name} must be NUL-free and at most 256 UTF-8 bytes")
+        return encoded
+
+    xformat_b = axis_format_bytes(x_format, "scene x axis format")
+    yformat_b = axis_format_bytes(y_format, "scene y axis format")
     out = (ctypes.c_double * 4)()
     pad_buf = None
     pad_ptr = None
@@ -1866,6 +1881,10 @@ def scene_plot_layout(
         len(xlabel_b),
         ylabel_b if ylabel_b else None,
         len(ylabel_b),
+        xformat_b if xformat_b else None,
+        len(xformat_b),
+        yformat_b if yformat_b else None,
+        len(yformat_b),
         side,
         out,
     )
@@ -1903,6 +1922,8 @@ def scene_batch_encode(
     y_minor_ticks: npt.ArrayLike = (),
     x_tick_labels: list[str] | tuple[str, ...] | None = None,
     y_tick_labels: list[str] | tuple[str, ...] | None = None,
+    x_format: str | None = None,
+    y_format: str | None = None,
     legend_input: bytes = b"",
     colorbar_input: bytes = b"",
     authored_text_annotations: bytes = b"",
@@ -1976,7 +1997,6 @@ def scene_batch_encode(
     ylabel_b = y_label.encode("utf-8")
     if not isinstance(authored_text_annotations, bytes):
         raise TypeError("authored_text_annotations must be bytes")
-    authored_text_array = np.frombuffer(authored_text_annotations, dtype=np.uint8)
     if any(len(value) > _MAX_SCENE_TEXT_BYTES for value in (title_b, xlabel_b, ylabel_b)):
         raise ValueError(
             f"scene title and axis labels are limited to {_MAX_SCENE_TEXT_BYTES:,} UTF-8 bytes each"
@@ -2028,6 +2048,32 @@ def scene_batch_encode(
 
     x_tick_label_array = tick_label_input(x_tick_labels, "scene x tick labels")
     y_tick_label_array = tick_label_input(y_tick_labels, "scene y tick labels")
+
+    def axis_format_input(value: str | None, name: str) -> bytes:
+        if value is None:
+            return b""
+        if not isinstance(value, str):
+            raise TypeError(f"{name} must be a string or None")
+        encoded = value.encode("utf-8")
+        if len(encoded) > 256 or b"\0" in encoded:
+            raise ValueError(f"{name} must be NUL-free and at most 256 UTF-8 bytes")
+        return encoded
+
+    x_format_b = axis_format_input(x_format, "scene x axis format")
+    y_format_b = axis_format_input(y_format, "scene y axis format")
+    authored_input = authored_text_annotations
+    if x_format_b or y_format_b:
+        authored_input = (
+            b"XYAF"
+            + (1).to_bytes(4, "little")
+            + len(x_format_b).to_bytes(4, "little")
+            + len(y_format_b).to_bytes(4, "little")
+            + len(authored_text_annotations).to_bytes(4, "little")
+            + x_format_b
+            + y_format_b
+            + authored_text_annotations
+        )
+    authored_text_array = np.frombuffer(authored_input, dtype=np.uint8)
     if len(legend_array) > MAX_SCENE_LEGEND_INPUT_BYTES:
         raise ValueError(f"scene legend input is limited to {MAX_SCENE_LEGEND_INPUT_BYTES:,} bytes")
     if len(colorbar_array) > MAX_SCENE_COLORBAR_INPUT_BYTES:

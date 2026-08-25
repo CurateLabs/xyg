@@ -493,6 +493,7 @@ def figure_scene(
             "tick_values",
             "tick_labels",
             "minor_tick_values",
+            "format",
         }
         if any(
             key not in supported_axis_keys and value not in (None, False, [], {})
@@ -1191,6 +1192,12 @@ def figure_scene(
             colorbar_side=("bottom" if colorbar_input[8] & 1 else "right")
             if colorbar_input
             else None,
+            x_format=None
+            if figure.axis_options["x"].get("tick_labels") is not None
+            else figure.axis_options["x"].get("format"),
+            y_format=None
+            if figure.axis_options["y"].get("tick_labels") is not None
+            else figure.axis_options["y"].get("format"),
         )
     else:
         left, right, top, bottom = margins
@@ -1473,9 +1480,11 @@ def figure_scene(
         chrome_style=_scene_chrome_style(figure),
         x_major_ticks=figure.axis_options["x"].get("tick_values"),
         x_tick_labels=figure.axis_options["x"].get("tick_labels"),
+        x_format=figure.axis_options["x"].get("format"),
         x_minor_ticks=figure.axis_options["x"].get("minor_tick_values") or (),
         y_major_ticks=figure.axis_options["y"].get("tick_values"),
         y_tick_labels=figure.axis_options["y"].get("tick_labels"),
+        y_format=figure.axis_options["y"].get("format"),
         y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
@@ -1635,6 +1644,9 @@ def scene_export_support_reason(
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND"
     for _axis_id, options in figure.axis_options.items():
         allowed_axis_keys = {
+            "type",
+            "constant",
+            "nonpositive",
             "domain",
             "label",
             "side",
@@ -1645,7 +1657,15 @@ def scene_export_support_reason(
             "minor_tick_values",
             "style",
             "minor_style",
+            "format",
         }
+        if figure._axis_kind(_axis_id) != "linear" or options.get("type") not in {
+            None,
+            "linear",
+            "log",
+            "symlog",
+        }:
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
         # ``Figure`` materializes a superset of legacy axis slots with None
         # (and ``reverse=False``) defaults. They are not authored chrome and
         # must not make an otherwise literal canonical axis fall back.

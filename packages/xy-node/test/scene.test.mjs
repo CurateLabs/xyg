@@ -68,6 +68,54 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture"
   assert.ok(sceneRasterCommands(encoded).length > 100);
 });
 
+test("Node numeric tick formats match Python bytes and every Rust Scene consumer", () => {
+  const figure = new Figure({ width: 420, height: 260 });
+  figure.setAxis("x", { domain: [0, 1], format: ".1%" });
+  figure.setAxis("y", { domain: [-15000, 15000], format: "$,.0f USD" });
+  figure.scatter([0, 1], [-10000, 10000], { id: 0 });
+  const scene = figure.toScene();
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.numeric_tick_format_sha256);
+  const consumers = [Buffer.from(sceneSvg(scene)), Buffer.from(sceneRasterCommands(scene)), Buffer.from(sceneBrowserPainter(scene))];
+  for (const label of ["0.0%", "50.0%", "100.0%", "$-10,000 USD", "$0 USD", "$10,000 USD"]) {
+    assert.ok(consumers.every((consumer) => consumer.includes(Buffer.from(label))), label);
+  }
+});
+
+test("Node authored tick labels override the format envelope byte-for-byte", () => {
+  const build = (format) => {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxis("x", { domain: [0, 1], tick_values: [0, 1], tick_labels: ["low", "high"], format });
+    figure.setAxisDomain("y", [0, 1]);
+    figure.scatter([0, 1], [0, 1], { id: 0 });
+    return figure.toScene();
+  };
+  assert.deepEqual(Buffer.from(build("$,.1f USD")), Buffer.from(build(null)));
+});
+
+test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
+  const build = (format, width = 320) => {
+    const figure = new Figure({ width, height: 240 });
+    figure.setAxis("x", { domain: [0, 4], format });
+    figure.setAxisDomain("y", [0, 5]);
+    figure.scatter([1, 2], [2, 3], { id: 0 });
+    return figure.toScene();
+  };
+  assert.match(sceneSvg(build(".100f", 1600)), new RegExp(`>0\\.${"0".repeat(100)}<`));
+  assert.deepEqual(Buffer.from(build(".101f")), Buffer.from(build(null)));
+});
+
+test("Node forwards nonlinear axis policy exactly like Python", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxis("x", { type: "symlog", constant: 2, domain: [-10, 10] });
+  figure.setAxis("y", { type: "log", nonpositive: "mask", domain: [0.1, 10] });
+  figure.scatter([-1, 1], [0.5, 2], { id: 0 });
+  const scene = figure.toScene();
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.nonlinear_axis_forwarding_sha256);
+  const view = new DataView(scene.buffer, scene.byteOffset, scene.byteLength);
+  assert.deepEqual([view.getUint8(96), view.getUint8(97), view.getUint8(104), view.getUint8(105)], [2, 0, 1, 1]);
+  assert.equal(view.getFloat64(144, true), 2);
+});
+
 test("Node figure defaults match Python Scene bytes and canonical values", () => {
   assert.deepEqual(figureSceneFixture.wasm_typed_series_v2, {
     magic: "XYTS", scatter_diameter: 8, line_stroke_width: 1.5,
@@ -654,6 +702,9 @@ test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {
     () => sceneBatchEncode({ ...input, title: "x".repeat(4097) }),
     /4096 UTF-8 bytes/,
   );
+  assert.throws(() => sceneBatchEncode({ ...input, xFormat: "x".repeat(257) }), /256 UTF-8 bytes/);
+  assert.throws(() => sceneBatchEncode({ ...input, yFormat: "$.1f\0USD" }), /NUL-free/);
+  assert.doesNotThrow(() => sceneBatchEncode({ ...input, xFormat: "not-a-format" }));
 });
 
 test("Node Scene v4 rejects malformed batches", () => {

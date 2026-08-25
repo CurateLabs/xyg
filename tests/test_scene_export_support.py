@@ -81,6 +81,63 @@ def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> Non
     assert b"XYTL" in encoded
 
 
+@pytest.mark.parametrize(
+    "kind,domain,constant",
+    [
+        ("linear", (-10_000.0, 10_000.0), None),
+        ("log", (0.001, 1.0), None),
+        ("symlog", (-10.0, 10.0), 2.0),
+    ],
+)
+def test_primary_numeric_axis_format_routes_through_rust_scene(
+    kind: str, domain: tuple[float, float], constant: float | None
+) -> None:
+    from xyg import _native
+
+    figure = _supported()
+    figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert scene[4:8] == (25).to_bytes(4, "little")
+    assert b"XYTL" in scene
+    svg = _native.scene_svg(scene)
+    if kind == "log":
+        # Fixed precision would collapse sub-unit log ticks; Rust preserves
+        # the default distinguishable labels and deliberately drops affixes.
+        assert ">0.001<" in svg and "$0 USD" not in svg
+    else:
+        assert "$" in svg and " USD" in svg
+
+
+def test_authored_numeric_tick_labels_override_format_and_invalid_format_falls_back() -> None:
+    from xyg import _native
+
+    authored = _authored_tick_labels()
+    authored.axis_options["x"]["format"] = "$,.1f USD"
+    authored_scene = figure_scene(authored)
+    assert authored_scene == figure_scene(_authored_tick_labels())
+    authored_svg = _native.scene_svg(authored_scene)
+    assert all(label in authored_svg for label in (">zero<", ">two<", ">four<"))
+    assert "$" not in authored_svg
+
+    invalid = _supported()
+    invalid.axis_options["x"]["format"] = "not-a-format"
+    assert scene_export_support_reason(invalid) is None
+    invalid_scene = figure_scene(invalid)
+    assert b"XYTL" not in invalid_scene
+    assert ">0<" in _native.scene_svg(invalid_scene)
+
+    boundary = _supported()
+    boundary.width = 1600
+    boundary.axis_options["x"]["format"] = ".100f"
+    boundary_scene = figure_scene(boundary)
+    assert f">0.{('0' * 100)}<" in _native.scene_svg(boundary_scene)
+
+    oversized = _supported()
+    oversized.axis_options["x"]["format"] = ".101f"
+    assert figure_scene(oversized) == figure_scene(_supported())
+
+
 def _labeled_annotation() -> Figure:
     figure = _supported()
     figure.annotations = [{"kind": "marker", "x": 1.0, "y": 2.0, "text": "peak"}]
