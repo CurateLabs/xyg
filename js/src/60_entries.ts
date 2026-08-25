@@ -173,7 +173,24 @@ export function renderStandalone(el, spec, arrayBuffer) {
       observer({ phase: "zoom", revision: revision || null });
       if (revision) observer({ phase: "revision", revision }); return revision;
     },
+    supersede: () => {
+      const oldRevision = densityHandle?.schedule(
+        { ...view.view, x0: view.view.x0 + 0.5, x1: view.view.x1 - 0.5 },
+        { delay: 0, force: true },
+      );
+      const revision = densityHandle?.schedule(
+        { ...view.view, x0: view.view.x0 + 1, x1: view.view.x1 - 1 },
+        { delay: 0, force: true },
+      );
+      observer({ phase: "superseded", oldRevision: oldRevision || null, revision: revision || null });
+      return { oldRevision, revision };
+    },
     diagnostics: () => densityHandle?.diagnostics() || null,
+    payload: () => {
+      const density = densityTraces[0]?.density;
+      const bytes = (density?.grid?.byteLength || 0) + (density?.rgba?.byteLength || 0);
+      return { bytes, xRange: density?.xRange || null, yRange: density?.yRange || null };
+    },
     cancel: () => {
       densityHandle?.schedule({ ...view.view, x0: view.view.x0 + 1, x1: view.view.x1 - 1 }, { delay: 100 });
       densityHandle?.cancel(); observer({ phase: "cancelled" });
@@ -182,6 +199,11 @@ export function renderStandalone(el, spec, arrayBuffer) {
       try { await densityHandle?.evidenceLifecycle("malformed"); }
       catch (cause) { observer({ phase: "malformed", code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR" }); return; }
       throw new Error("malformed lifecycle evidence unexpectedly succeeded");
+    },
+    resource: async () => {
+      try { await densityHandle?.evidenceLifecycle("resource"); }
+      catch (cause) { observer({ phase: "resource", code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR" }); return; }
+      throw new Error("resource lifecycle evidence unexpectedly succeeded");
     },
     trap: async () => {
       try { await densityHandle?.evidenceLifecycle("trap"); }

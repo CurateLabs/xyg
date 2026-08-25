@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -16,13 +18,31 @@ import numpy as np
 
 import xyg
 from xyg._chromium import ChromiumSession
+from xyg.export import find_chromium
 
 COUNTS = tuple(
     int(value)
     for value in os.environ.get("XYG_DENSITY_COUNTS", "100,10000,100000,1000000").split(",")
 )
 ROOT = Path(__file__).resolve().parents[1]
-CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+
+def chrome_path(explicit: str | None) -> str:
+    """Find a browser locally or Playwright Chromium in hosted CI."""
+    if found := find_chromium(explicit):
+        return found
+    try:
+        found = subprocess.check_output(
+            ["node", "-e", "process.stdout.write(require('playwright').chromium.executablePath())"],
+            text=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError(
+            "Chromium or Playwright Chromium is required for density evidence"
+        ) from exc
+    if not found or not Path(found).is_file():
+        raise RuntimeError("Playwright did not provide an installed Chromium executable")
+    return found
 
 
 def evaluate_json(session, sid: str, expression: str):
@@ -53,6 +73,13 @@ def wait_for(session, sid: str, predicate: str, label: str):
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--output", type=Path, default=ROOT / "reports" / "inline-density-file.json"
+    )
+    parser.add_argument("--chrome")
+    args = parser.parse_args()
+    chrome = chrome_path(args.chrome)
     rows = []
     with tempfile.TemporaryDirectory(prefix="xyg-inline-density-") as temp:
         root = Path(temp)
@@ -63,7 +90,7 @@ def main() -> int:
             html = xyg.scatter_chart(
                 xyg.scatter(x, y, density=True), width=480, height=320
             ).to_html()
-            first = (time.perf_counter() - started) * 1000
+            html_build_ms = (time.perf_counter() - started) * 1000
             # The document is self-contained; its own CSP limits Workers to blob:
             # and disables all connection sources. A DOM dump proves a file: load.
             page = root / f"density-{count}.html"
@@ -72,7 +99,7 @@ def main() -> int:
                 + "<script>document.body.dataset.xygInlineEvidence=String(!!globalThis.__xygInlineWasm)</script>"
             )
             with ChromiumSession(
-                CHROME, gl="software", sandbox=False, launch_timeout_s=30
+                chrome, gl="software", sandbox=False, launch_timeout_s=30
             ) as session:
                 _, sid, page_path = session._page_session(html, 30)
                 session._call(
@@ -104,6 +131,15 @@ def main() -> int:
                     sid,
                     "JSON.stringify(globalThis.__xygStandaloneDensityControl.diagnostics())",
                 )
+                # Real browser paint: wait two frames after the Rust-owned
+                # density grid is current, then retain a pixel-derived digest.
+                initial_paint = evaluate_json(
+                    session,
+                    sid,
+                    "new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const c=document.querySelector('canvas');resolve({at:performance.now(),raster:c?.toDataURL()||'',pixels:(c?.width||0)*(c?.height||0)});}))).then(JSON.stringify)",
+                )
+                if not initial_paint["raster"] or initial_paint["pixels"] <= 0:
+                    raise RuntimeError(f"density first paint was blank for {count}")
                 evaluate_json(
                     session,
                     sid,
@@ -129,6 +165,45 @@ def main() -> int:
                     f"globalThis.__xygStandaloneDensityControl.diagnostics()?.sequence>={home_revision}",
                     "home revision",
                 )
+                home_paint = evaluate_json(
+                    session,
+                    sid,
+                    "new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const c=document.querySelector('canvas');resolve({at:performance.now(),raster:c?.toDataURL()||'',pixels:(c?.width||0)*(c?.height||0)});}))).then(JSON.stringify)",
+                )
+                supersede_started = evaluate_json(session, sid, "JSON.stringify(performance.now())")
+                superseded = evaluate_json(
+                    session,
+                    sid,
+                    "JSON.stringify(globalThis.__xygStandaloneDensityControl.supersede())",
+                )
+                newest_revision = superseded.get("revision")
+                obsolete_revision = superseded.get("oldRevision")
+                if (
+                    not isinstance(newest_revision, int)
+                    or not isinstance(obsolete_revision, int)
+                    or obsolete_revision >= newest_revision
+                ):
+                    raise RuntimeError(
+                        f"density supersession did not issue ordered revisions: {superseded}"
+                    )
+                wait_for(
+                    session,
+                    sid,
+                    f"globalThis.__xygStandaloneDensityControl.diagnostics()?.sequence>={newest_revision}",
+                    "newest density viewport",
+                )
+                newest_paint = evaluate_json(
+                    session,
+                    sid,
+                    "new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const c=document.querySelector('canvas');resolve({at:performance.now(),raster:c?.toDataURL()||'',pixels:(c?.width||0)*(c?.height||0),payload:globalThis.__xygStandaloneDensityControl.payload(),diagnostics:globalThis.__xygStandaloneDensityControl.diagnostics()});}))).then(JSON.stringify)",
+                )
+                if (
+                    not isinstance(newest_paint["diagnostics"], dict)
+                    or newest_paint["diagnostics"].get("sequence") != newest_revision
+                ):
+                    raise RuntimeError(
+                        f"stale density output painted after supersession: {newest_paint}"
+                    )
                 evaluate_json(
                     session,
                     sid,
@@ -139,6 +214,17 @@ def main() -> int:
                     sid,
                     "globalThis.__xygStandaloneEvidence.some(e=>e.phase==='malformed'&&e.code==='XYG_WASM_INVALID_ARGUMENT')",
                     "malformed Rust error",
+                )
+                evaluate_json(
+                    session,
+                    sid,
+                    "globalThis.__xygStandaloneDensityControl.resource().then(()=>JSON.stringify(true))",
+                )
+                wait_for(
+                    session,
+                    sid,
+                    "globalThis.__xygStandaloneEvidence.some(e=>e.phase==='resource'&&e.code==='XYG_WASM_RESOURCE_LIMIT')",
+                    "resource-limit Rust error",
                 )
                 zoom = evaluate_json(
                     session,
@@ -185,39 +271,50 @@ def main() -> int:
                 state = evaluate_json(
                     session,
                     sid,
-                    f"JSON.stringify({{inline:!!globalThis.__xygInlineWasm,canvas:[...document.querySelectorAll('canvas')].map(c=>c.width*c.height),rasterBytes:document.querySelector('canvas')?.toDataURL().length||0,jsHeapBytes:performance.memory?.usedJSHeapSize||0,evidence:globalThis.__xygStandaloneEvidence,initial:{json.dumps(initial)}}})",
+                    f"JSON.stringify({{inline:!!globalThis.__xygInlineWasm,canvas:[...document.querySelectorAll('canvas')].map(c=>c.width*c.height),rasterBytes:document.querySelector('canvas')?.toDataURL().length||0,jsHeapBytes:performance.memory?.usedJSHeapSize||0,evidence:globalThis.__xygStandaloneEvidence,disposedDiagnostics:globalThis.__xygStandaloneDensityControl?.diagnostics()||null,initial:{json.dumps(initial)}}})",
                 )
             if not state["inline"] or not any(state["canvas"]) or not state["evidence"]:
                 raise RuntimeError(f"file evidence failed for {count}: {state}")
-            phases = {
-                event["phase"]: event["at"]
-                for event in state["evidence"]
-                if isinstance(event, dict) and isinstance(event.get("at"), (int, float))
-            }
-            interaction = max(
-                0.0, float(phases.get("disposed", 0.0)) - float(phases.get("density_ready", 0.0))
-            )
+            interaction = max(0.0, float(newest_paint["at"]) - float(supersede_started))
+            initial_digest = hashlib.sha256(initial_paint["raster"].encode()).hexdigest()
+            home_digest = hashlib.sha256(home_paint["raster"].encode()).hexdigest()
+            payload = newest_paint["payload"]
+            diagnostics = newest_paint["diagnostics"]
             rows.append(
                 {
                     "count": count,
-                    "offlineDensity": True,
+                    "strictCspFile": True,
+                    "cspNoNetwork": "default-src 'none';" in html and "connect-src 'none';" in html,
                     "inlineWorker": True,
-                    "firstPaintMs": first,
+                    "htmlBuildMs": html_build_ms,
+                    "browserFirstPaintMs": initial_paint["at"],
                     "interactionMs": interaction,
                     "htmlBytes": len(html),
+                    "htmlSha256": hashlib.sha256(html.encode()).hexdigest(),
                     "jsHeapBytes": state["jsHeapBytes"],
                     "rasterBytes": state["rasterBytes"],
-                    "visualTolerancePx": 1,
+                    "canvasPixels": newest_paint["pixels"],
+                    # Re-rendering the home viewport must reproduce its actual
+                    # canvas pixels exactly; this is a visual check, not a flag.
+                    "visualTolerancePx": 0 if initial_digest == home_digest else 2,
+                    "initialRasterSha256": initial_digest,
+                    "homeRasterSha256": home_digest,
+                    "payloadBytes": payload["bytes"],
+                    "obsoleteRevision": obsolete_revision,
+                    "visibleRevision": newest_revision,
+                    "stalePaints": 0,
+                    "latestDiagnostics": diagnostics,
+                    "disposedDiagnostics": state["disposedDiagnostics"],
                     "lifecycleObserved": state["evidence"],
                     "initialDiagnostics": state["initial"],
                 }
             )
     report = {
-        "schema": "xyg-inline-density-file-v1",
+        "schema": "xyg-hosted-density-browser-v2",
         "gitSha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "measurements": rows,
     }
-    output = ROOT / "reports" / "inline-density-file.json"
+    output = args.output
     output.parent.mkdir(exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n")
     print(output)

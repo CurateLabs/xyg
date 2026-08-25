@@ -134,7 +134,7 @@ export class XygWasmDensityHandle {
   /** Evidence/control boundary: cancel only the currently pending viewport. */
   cancel() { this.task?.cancel(); this.task = null; }
   /** @internal Strict-CSP lifecycle evidence only; capability-gated by worker. */
-  evidenceLifecycle(action: "malformed" | "trap") { return this.worker.evidenceLifecycle(action); }
+  evidenceLifecycle(action: "malformed" | "resource" | "trap") { return this.worker.evidenceLifecycle(action); }
 
   /** Called by ChartView's normal standalone density scheduling path. */
   schedule(viewOverride = this.view.view, options: any = {}) {

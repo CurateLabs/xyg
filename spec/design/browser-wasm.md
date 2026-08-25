@@ -504,6 +504,15 @@ CI. This slice makes no startup, throughput, memory, bundle-size, or
 competitive-win claim before a hosted artifact is available; raw local timings
 are not performance evidence.
 
+The same changed-main browser-evidence job also runs the self-contained
+strict-CSP density ChartView journey at 100, 10k, 100k, and 1m points. Its
+SHA-keyed `hosted-density-browser-<sha>.json` records browser first paint,
+newest-viewport supersession, cancellation, malformed/resource/trap recovery,
+disposal, typed `XYAO` payload bytes, Rust copy/memory counters, and an actual
+home-viewport canvas comparison. `verify_inline_density_benchmark.py` rejects
+absent or placeholder rows. This remains nightly/manual-only evidence, never
+PR CI or a CodSpeed simulation claim.
+
 ## Remaining #59 work
 
 - aggregate production paths beyond direct Scene records;

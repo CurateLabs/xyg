@@ -311,6 +311,15 @@ node benchmarks/bench_wasm_scene.mjs > typed-series-browser-local.json
 python3 scripts/verify_wasm_scene_benchmark.py typed-series-browser-local.json
 ```
 
+The same changed-main/manual job emits a second SHA-keyed
+`hosted-density-browser-<git-sha>.json`. It uses a real `file:` standalone
+document under the production strict CSP and rejects a missing 100/10k/100k/1m
+ladder, blank first paint, stale supersession result, missing typed payload or
+Rust diagnostics, lifecycle failure, or home-viewport visual drift. Reproduce
+it with `uv run python scripts/inline_density_file_benchmark.py --output
+hosted-density-browser-local.json` followed by `uv run python
+scripts/verify_inline_density_benchmark.py hosted-density-browser-local.json`.
+
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and

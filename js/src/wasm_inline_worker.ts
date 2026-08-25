@@ -143,6 +143,12 @@ function evidenceLifecycle(message: any) {
     const status = exports.xyg_wasm_aggregate_bin2d(handle, 0, 0, 0);
     return fail(message.requestId, code(status), readXygWasmError(exports, handle), status);
   }
+  if (message.action === "resource") {
+    // Exercise the same stable resource-limit transport boundary without
+    // changing the live instance. A subsequent viewport proves that a refused
+    // request neither leaks nor poisons the bounded density lifecycle.
+    return fail(message.requestId, "XYG_WASM_RESOURCE_LIMIT", "aggregate request exceeds the instance operation budget", XYG_WASM_STATUS.RESOURCE_LIMIT);
+  }
   if (message.action === "trap") {
     // Deliberately take the same WebAssembly-error path as a Rust trap. This
     // capability-gated hook exists solely in the generated evidence worker.
