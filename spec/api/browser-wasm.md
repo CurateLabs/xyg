@@ -130,7 +130,7 @@ contains no source values. Stable codes are `XYG_WASM_UNAVAILABLE` and
 
 Regenerate `tests/fixtures/xyts_cross_host.json` with
 `cargo run -p xyg-wasm --bin xyts_conformance`; use `-- --check` in validation.
-The JSON carries canonical XYTS requests plus exact Scene v20 and painter v13
+The JSON carries canonical XYTS requests plus exact Scene v23 and painter v13
 bytes. Browser tests submit the requests to a real Worker/WASM instance. Native
 Python, native Node, and Pyodide validate the resulting Scene through their
 Rust consumers, because XYTS itself is browser-only ingress. Consumers must
@@ -140,11 +140,12 @@ The strict-CSP direct-browser smoke also hydrates the checked-in
 `tests/fixtures/authored_scene_v20.json` fixture through that same Worker. The
 fixture is byte-for-byte output of the public Python `Figure` workload and
 carries the supported Cartesian authored-chrome subset together: chart/plot
-backgrounds, axes, primary legend, literal banded colorbar with Rust-resolved
-major/minor ticks, and a fixed-background callout. The smoke asserts the
+backgrounds, axes (including independent literal `ticks=False` / `text=False`
+visibility), primary legend, literal banded colorbar with Rust-resolved
+major/minor ticks, and a fixed-background/border callout. The smoke asserts the
 browser's structural and computed-style projection under `default-src 'none'`
 and same-origin `script-src`/`worker-src`; it is not evidence for polar,
-custom-font, CSS/class, or richer annotation semantics.
+custom-font, CSS/class, wrapping/rich text, or richer annotation semantics.
 
 For the bounded #116 authored-Scene evidence track, the nightly changed-main
 job regenerates 100, 10k, 100k, and 1m point artifacts independently through

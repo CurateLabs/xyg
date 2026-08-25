@@ -11,12 +11,12 @@ This document is the version contract for that migration.
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v20, so additive emission is not safe.
+bitmap or schema negotiation in Scene v23, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v20 batch layout,
+WASM lifecycle foundation; it validates the current Scene v23 batch layout,
 including the shared fixed header/mark widths retained since version 4, bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -267,14 +267,16 @@ The public SVG/PNG/PDF router now selects these Rust consumers only for the
 proven constant-style Cartesian circle-scatter subset. Explicit Scene APIs may
 exercise broader migrating records, but line/rect/band/segment/ribbon marks,
 non-circle symbols, annotations, text, legends, themes/style tokens, customized
-axis chrome (including the independent ``ticks=False`` / ``text=False``
-visibility switches), export-only backgrounds, fluid or too-small viewports, and
+axis chrome beyond the supported literal contract, export-only backgrounds,
+fluid or too-small viewports, and
 screen-bounded LOD inputs remain on the compatibility renderer before
 compilation. Malformed input and Rust consumer failures propagate and never
-cause fallback. For those visibility-switch exceptions, the compatibility SVG
-and raster consumers retain the otherwise-default Scene chrome (12 px labels
-and 4 px major ticks) so changing one switch does not visibly re-style the
-other axis merely by crossing the routing boundary.
+cause fallback. The public literal `ticks=False` / `text=False` switches are
+no longer exceptions: they route through the same Rust Scene contract for the
+bounded circle/diamond-scatter static subset. `ticks=False` hides only major
+tick geometry; `text=False` hides only tick-label/title paint. All other
+literal chrome remains unchanged, so either switch cannot re-style the other
+axis by crossing the routing boundary.
 
 ## Version 6: Band filled polygons
 
@@ -471,7 +473,7 @@ declarations fail closed.
 
 ## Version 20 bounded callout label backgrounds
 
-Scene v20 evolves `XYAC` to v2 for an optional literal RGBA8 callout-label
+Scene v20 evolved `XYAC` to v2 for an optional literal RGBA8 callout-label
 background. Version 1 frames remain byte-for-byte valid; version 2 extends
 each fixed callout row from 60 to 64 bytes by appending the background at
 bytes 60--63. A transparent background is absence. Rust alone measures the
@@ -487,7 +489,7 @@ leader routing remain unsupported.
 
 ## Version 21 bounded attached-label backgrounds
 
-Scene v21 evolves `XYAL` to v3 for an optional literal RGBA8 background on an
+Scene v21 evolved `XYAL` to v3 for an optional literal RGBA8 background on an
 already-supported attached rule, band, or marker label. Each v3 row retains
 the v2 stable id and label RGBA, adds the background at bytes 12--15, and moves
 the UTF-8 length to bytes 16--19. A transparent fill is absence, so a mixed
@@ -500,7 +502,7 @@ and host-resolved coordinates remain unsupported.
 
 ## Version 22 bounded text-annotation backgrounds
 
-Scene v22 evolves `XYAT` to v2 for an optional literal RGBA8 background on a
+Scene v22 evolved `XYAT` to v2 for an optional literal RGBA8 background on a
 freestanding Cartesian text annotation. Each v2 row retains its v1 Cartesian
 f64 anchor and label RGBA, adds the background at bytes 20--23, and moves the
 UTF-8 length to bytes 24--27. A transparent fill is absence, so a mixed batch

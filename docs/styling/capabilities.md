@@ -11,6 +11,12 @@ Every styling question about XYG has the same two halves: *can I change this*,
 and *does the change survive where I need it*. This page answers both from the
 registry the implementation is checked against.
 
+This page describes the full public renderer surface. The Rust Scene static-
+export route is deliberately narrower; its proven v23 subset and loud
+unsupported boundaries (including rich/wrapped/custom typography) are
+specified in the repository's Scene IR contract, not inferred from a slot's
+renderer support here.
+
 - **11** mark style properties across **21** mark kinds, drawn by all three renderers.
 - **48** stable chrome slots for CSS and Tailwind in the browser.
 - **1** way to add a mark kind XYG does not ship, without forking it.
