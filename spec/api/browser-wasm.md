@@ -43,7 +43,8 @@ frames transferable columns and schedules lifecycle checkpoints.
 ## Opt-in ChartView density refinement
 
 `attachWasmDensity(view, { worker, input })` attaches the Rust `XYAG` to
-`XYAO` aggregate seam to one already-painted Cartesian density scatter. It is
+`XYAO` aggregate seam to explicitly sourced already-painted Cartesian density
+scatters. It is
 explicit: standalone and kernel-backed ChartViews retain their existing routes
 until an application attaches a handle. Once attached, it intercepts the
 normal viewport refinement before a kernel `density_view` fallback is sent. The source
@@ -77,11 +78,17 @@ returns `null` before a successful aggregate or after a failure.
 
 Worker-reported failures dispatch a bubbling `xy:wasm_density_error`
 `CustomEvent` on the ChartView root. Its detail is `{ code, message,
-diagnostics }`, where `code` is the stable `XygWasmError` code and diagnostics
-is either the Rust snapshot or `null`. It never includes source values. The
-currently supported contract is one explicitly attached density scatter trace;
-multiple traces, automatic source provisioning, fallback deletion, and claims
-of full-product density parity remain outside this API.
+diagnostics, traceId }`, where `code` is the stable `XygWasmError` code and diagnostics
+is either the Rust snapshot or `null`. `traceId` identifies the failed explicit
+source. It never includes source values. The
+supported contract accepts either `input` for one trace or `inputs` for
+distinct trace ids. A single WASM instance deliberately processes those inputs
+in order: each remains a separate Rust-owned request and therefore retains its
+own axis scale without TypeScript aggregation. A newer viewport cancels the
+active request and prevents the remaining old viewport inputs from publishing.
+`diagnostics()` identifies the trace that produced its latest snapshot.
+While automatic source provisioning, fallback deletion, and claims of full-product
+density parity remain outside this API.
 
 ## Cross-host fixture contract
 

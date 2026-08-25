@@ -1,5 +1,5 @@
 /**
- * Direct-WASM density refinement for a supported ChartView density trace.
+ * Direct-WASM density refinement for supported ChartView density traces.
  *
  * This is deliberately an adapter over the existing painter/lifecycle rather
  * than a second renderer: Rust owns the XYAG -> XYAO aggregate and ChartView
@@ -12,7 +12,7 @@ import { XygWasmError, type XygWasmTask, type XygWasmWorker } from "./47_wasm";
 import type { ChartView } from "./50_chartview";
 
 export interface XygWasmDensityInput {
-  /** The one density trace to refine. Multiple traces remain on the legacy path. */
+  /** The density trace to refine. */
   traceId: number;
   /** Canonical CPU-side source columns. They remain owned by the caller. */
   x: Float64Array;
@@ -23,7 +23,13 @@ export interface XygWasmDensityInput {
 
 export interface XygWasmDensityOptions {
   worker: XygWasmWorker;
-  input: XygWasmDensityInput;
+  /** One explicitly supplied density source (the original convenience form). */
+  input?: XygWasmDensityInput;
+  /**
+   * Explicit sources for every attached density trace.  Requests run in this
+   * order because one Rust/WASM instance has one resumable aggregate slot.
+   */
+  inputs?: readonly XygWasmDensityInput[];
   /** Borrow by default; only an explicitly dedicated Worker is disposed here. */
   workerOwnership?: "borrow" | "own";
   /** Debounce viewport changes; default matches the existing density path. */
@@ -32,6 +38,8 @@ export interface XygWasmDensityOptions {
 
 export interface XygWasmDensityDiagnostics {
   sequence: number;
+  /** Trace whose Rust aggregate produced this snapshot. */
+  traceId: number;
   copyCount: number;
   copyBytesLo: number;
   copyBytesHi: number;
@@ -63,13 +71,17 @@ export class XygWasmDensityHandle {
   private task: XygWasmTask<any> | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private sequence = 0;
+  // Rust's resumable operation sequence identifies individual aggregate
+  // requests; a viewport sequence may contain several explicitly attached
+  // traces and therefore cannot be reused for every worker request.
+  private aggregateSequence = 0;
   private disposed = false;
   private latest: XygWasmDensityDiagnostics | null = null;
 
   constructor(
     private readonly view: ChartView & any,
     private readonly worker: XygWasmWorker,
-    private readonly input: XygWasmDensityInput,
+    private readonly inputs: readonly XygWasmDensityInput[],
     private readonly ownWorker: boolean,
     private readonly delay: number,
   ) {}
@@ -81,8 +93,7 @@ export class XygWasmDensityHandle {
   /** Called by ChartView's normal standalone density scheduling path. */
   schedule(viewOverride = this.view.view, options: any = {}) {
     if (this.disposed || this.view._destroyed || this.view._glLost) return;
-    const g = this.trace();
-    if (!g) return;
+    if (!this.inputs.some((input) => this.trace(input))) return;
     const sequence = ++this.sequence;
     this.task?.cancel();
     this.task = null;
@@ -95,14 +106,25 @@ export class XygWasmDensityHandle {
     return sequence;
   }
 
-  private trace() {
+  private trace(input: XygWasmDensityInput) {
     return this.view.gpuTraces.find((g: any) =>
-      g.tier === "density" && g.trace?.id === this.input.traceId) || null;
+      g.tier === "density" && g.trace?.id === input.traceId) || null;
   }
 
   private async start(sequence: number, snapshot: any, _options: any) {
     if (this.disposed || sequence !== this.sequence || this.view._destroyed || this.view._glLost) return;
-    const g = this.trace();
+    // A worker has one resumable aggregate state.  Serializing independently
+    // framed trace requests preserves Rust ownership and permits density
+    // traces on different axis scales without a TypeScript aggregate.
+    for (const input of this.inputs) {
+      await this.startTrace(sequence, snapshot, input);
+      if (this.disposed || sequence !== this.sequence || this.view._destroyed || this.view._glLost
+          || this.view._wasmDensity !== this) return;
+    }
+  }
+
+  private async startTrace(sequence: number, snapshot: any, input: XygWasmDensityInput) {
+    const g = this.trace(input);
     if (!g) return;
     const [x0, x1] = this.view._axisRange(g.xAxis, snapshot);
     const [y0, y1] = this.view._axisRange(g.yAxis, snapshot);
@@ -111,10 +133,10 @@ export class XygWasmDensityHandle {
     let task: XygWasmTask<any> | null = null;
     try {
       task = aggregateWasmBin2d(this.worker, {
-        x: this.input.x, y: this.input.y, rgba: this.input.rgba,
+        x: input.x, y: input.y, rgba: input.rgba,
         x0: Math.min(x0, x1), x1: Math.max(x0, x1),
         y0: Math.min(y0, y1), y1: Math.max(y0, y1), width, height,
-      }, { sequence });
+      }, { sequence: ++this.aggregateSequence });
       this.task = task;
       const result = await task.result;
       // The request identity includes this viewport revision. Do not let an
@@ -122,7 +144,7 @@ export class XygWasmDensityHandle {
       // replacement density attachment.
       if (this.disposed || sequence !== this.sequence || this.task !== task
           || this.view._destroyed || this.view._glLost || this.view._wasmDensity !== this) return;
-      const current = this.trace();
+      const current = this.trace(input);
       if (!current) return;
       this.view._applySampleRebinGrid(current, {
         w: result.width, h: result.height, max: result.maxCount, normMax: result.maxCount,
@@ -135,7 +157,7 @@ export class XygWasmDensityHandle {
         lut: current.density.lut,
       }, true);
       this.latest = {
-        sequence, copyCount: result.copyCount, copyBytesLo: result.copyBytesLo, copyBytesHi: result.copyBytesHi,
+        sequence, traceId: input.traceId, copyCount: result.copyCount, copyBytesLo: result.copyBytesLo, copyBytesHi: result.copyBytesHi,
         arenaBytes: result.arenaBytes, arenaHighWaterBytes: result.arenaHighWaterBytes,
         memoryBytes: result.memoryBytes, memoryHighWaterBytes: result.memoryHighWaterBytes,
       };
@@ -150,6 +172,7 @@ export class XygWasmDensityHandle {
       );
       this.view._dispatchChartEvent?.("wasm_density_error", {
         code: error.code, message: error.message, diagnostics: error.diagnostics ?? null,
+        traceId: input.traceId,
       });
     }
   }
@@ -168,7 +191,7 @@ export class XygWasmDensityHandle {
   destroy() { void this.dispose(); }
 }
 
-/** Attach direct Rust/WASM refinement to one already-painted density ChartView. */
+/** Attach direct Rust/WASM refinement to explicitly sourced density ChartView traces. */
 export async function attachWasmDensity(
   view: ChartView & any,
   options: XygWasmDensityOptions,
@@ -176,8 +199,15 @@ export async function attachWasmDensity(
   if (!view || typeof view._scheduleSampleRebin !== "function" || view._destroyed) {
     throw new TypeError("attachWasmDensity requires a live ChartView");
   }
-  if (!options || !options.worker || !options.input) throw new TypeError("worker and input are required");
-  validInput(options.input);
+  if (!options || !options.worker) throw new TypeError("worker is required");
+  const supplied = options.input === undefined ? options.inputs : options.inputs === undefined ? [options.input] : null;
+  if (!supplied || !Array.isArray(supplied) || !supplied.length) {
+    throw new TypeError("provide exactly one of input or non-empty inputs");
+  }
+  supplied.forEach(validInput);
+  if (new Set(supplied.map((input) => input.traceId)).size !== supplied.length) {
+    throw new TypeError("WASM density inputs must name distinct traceIds");
+  }
   if (options.workerOwnership !== undefined && options.workerOwnership !== "borrow" && options.workerOwnership !== "own") {
     throw new TypeError("workerOwnership must be borrow or own");
   }
@@ -187,14 +217,15 @@ export async function attachWasmDensity(
   await options.worker.ready;
   await view._wasmDensity?.dispose();
   const handle = new XygWasmDensityHandle(
-    view, options.worker, options.input, options.workerOwnership === "own", options.delay ?? 120,
+    view, options.worker, supplied, options.workerOwnership === "own", options.delay ?? 120,
   );
   view._wasmDensity = handle;
   // Fail early for an accidental trace id instead of silently retaining the
   // JS fallback. The density grid stays painted throughout all later updates.
-  if (!view.gpuTraces.some((g: any) => g.tier === "density" && g.trace?.id === options.input.traceId)) {
+  if (!supplied.every((input) => view.gpuTraces.some((g: any) =>
+    g.tier === "density" && g.trace?.id === input.traceId))) {
     await handle.dispose();
-    throw new RangeError("WASM density traceId does not name a density trace in this ChartView");
+    throw new RangeError("each WASM density traceId must name a density trace in this ChartView");
   }
   return handle;
 }
