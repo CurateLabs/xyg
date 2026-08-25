@@ -33,14 +33,13 @@ a separate asset.
 
 #### Status as of 2026-07-20 (XY-SEC-2026-01)
 
-`worker-src` is no longer `'none'`. It was relaxed to `worker-src blob:` on
-2026-07-08 in commit b353dea ("Standalone density re-bin in a Web Worker"), so
-the standalone density re-bin worker can boot from a Blob URL of its own
-bundled source. No external worker script can load under that directive. The
-shipped policy is `_STANDALONE_CSP` in `python/xyg/export.py`; every other
-directive listed above is unchanged. `tests/test_static_client_security.py`
-asserts the directive is exactly `worker-src blob:`, and
-`docs/guides/serving-csp-and-offline-use.md` documents it for host operators.
+`worker-src` is no longer `'none'`. It is limited to `worker-src blob:` for the
+self-contained Rust/WASM Worker bootstrap; no external worker script can load
+under that directive. The shipped policy is `_STANDALONE_CSP` in
+`python/xyg/export.py`; every other directive listed above is unchanged.
+`tests/test_static_client_security.py` asserts the directive is exactly
+`worker-src blob:`, and `docs/guides/serving-csp-and-offline-use.md` documents
+it for host operators.
 
 #### Status as of 2026-07-24 (XY-SEC-2026-01)
 

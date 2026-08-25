@@ -331,9 +331,10 @@ def to_html(
     inline_wasm_js = ""
     if any(trace.get("tier") == "density" for trace in spec.get("traces", [])):
         # A raw source checkout can build the ordinary TypeScript client
-        # without a wasm32 toolchain. Keep its established bounded legacy
-        # density route rather than emitting a broken partial inline contract;
-        # release/direct-browser packaging force-includes the checked artifact
+        # without a wasm32 toolchain. Preserve the existing overview rather
+        # than emitting a broken partial inline contract; runtime reports its
+        # explicit no-refinement diagnostic in that case. Release/direct-browser
+        # packaging force-includes the checked artifact
         # when it has been compiled.
         with suppress(FileNotFoundError):
             inline_wasm_js = _javascript_for_inline_script(_bundled_js("xyg-wasm-inline"))

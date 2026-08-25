@@ -318,7 +318,6 @@ unalignedOwner.set(bytes,1);
 const unalignedBytes=unalignedOwner.subarray(1);
 try{{
   const v=xy.renderStandalone(document.getElementById("chart"),spec,unalignedBytes);
-  v._sampleRebinDisabled = true; // probes below hand-feed kernel msgs
   setTimeout(()=>{{try{{
     v._drawNow();
     const gl=v.gl,w=v.canvas.width,h=v.canvas.height,px=new Uint8Array(w*h*4);
@@ -1007,11 +1006,8 @@ try{{
       for (let i = 0; i < p2.length; i++) {{ hsh ^= p2[i]; hsh = (hsh * 0x01000193) >>> 0; }}
       return hsh;
     }};
-    // NOTE: the standalone density re-bin worker is deliberately NOT exercised
-    // here. This deterministic probe hand-feeds its density updates; worker
-    // source is asserted in tests/test_static_client_security.py and runtime
-    // behavior is covered separately. Probe charts that can schedule a re-bin
-    // set `_sampleRebinDisabled = true`.
+    // This deterministic probe hand-feeds density updates; the separate
+    // strict-CSP inline-WASM lifecycle probe covers browser refinement.
     const dv1 = xy.renderStandalone(mk(), JSON.parse(JSON.stringify(spec)), bytes.buffer);
     const dv2 = xy.renderStandalone(mk(), JSON.parse(JSON.stringify(spec)), bytes.buffer);
     if (dv1.gpuTraces) for (const gg of dv1.gpuTraces) gg._densityNormAnim = null;
@@ -1026,7 +1022,6 @@ try{{
     const splitBufs = spec.columns.map((c) =>
       bytes.buffer.slice(c.byte_offset, c.byte_offset + c.len * 4));
     const sv1 = new xy.ChartView(mk(), splitSpec, splitBufs, null);
-    sv1._sampleRebinDisabled = true;
     if (sv1.gpuTraces) for (const gg of sv1.gpuTraces) gg._densityNormAnim = null;
     const splitPix = pixhash(sv1) === pixhash(dv1) ? 1 : 0;
     const splitLoud =
@@ -1246,7 +1241,6 @@ try{{
     holder.style.height="300px";
     document.body.appendChild(holder);
     const v2=xy.renderStandalone(holder,spec2,bytes.buffer);
-    v2._sampleRebinDisabled = true;
     const fluid0=(v2.fluid===true && v2.fluidH===true && v2.size.w===400 && v2.size.h===300
       && v2.root.style.width==="100%" && v2.root.style.height==="100%")?1:0;
     holder.style.width="640px";
@@ -1340,7 +1334,7 @@ try{{
           await waitFor(()=>v4._glLost===true,`loss ${{cycle+1}}`);
           v4.draw();
           if(v4._raf!==null || v4._wheelZoomRaf!==null || v4._animRaf!==null
-              || v4._viewTimer!==null || v4._rebinTimer!==null
+              || v4._viewTimer!==null
               || v4.seq<=seqBeforeLoss || v4.root.dataset.xyContextState!=="lost") ctxquiet=0;
           ext.restoreContext();
           await waitFor(()=>v4._glLost===false && v4.root.dataset.xyContextState==="ready",

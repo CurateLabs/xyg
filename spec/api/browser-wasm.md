@@ -88,14 +88,14 @@ own axis scale without TypeScript aggregation. A newer viewport cancels the
 active request and prevents the remaining old viewport inputs from publishing.
 `diagnostics()` identifies the trace that produced its latest snapshot.
 For the normal kernel-backed Cartesian `ChartView` journey, automatic source provisioning
-decodes one retained typed sample to canonical f64 source values and provisions it
+decodes retained typed samples to canonical f64 source values and provisions them
 to an owned packaged same-origin module Worker. No application attachment is
 required: normal viewport scheduling waits for that bounded Rust `XYAG` →
 `XYAO` route, then stale-result, revision, error, and ChartView-destroy
-semantics are the same as an explicit handle. The support predicate is exactly
-one density trace with retained typed x/y source; multi-trace, missing-source,
-and unsupported journeys retain their existing routes. This is not fallback
-deletion of the legacy worker or a claim of full-product density parity.
+semantics are the same as an explicit handle. The support predicate is retained
+typed x/y source for every density trace; supported multi-trace journeys are
+serialized through the same Rust Worker. Kernel-backed journeys without that
+optional browser source retain their kernel route.
 
 If a Worker success response contains an invalid `XYAO` payload, the event code
 is `XYG_WASM_MALFORMED_OUTPUT`. Its diagnostics preserve the Worker accounting
@@ -119,9 +119,12 @@ contains retained sources: it embeds a checked base64 artifact and a generated
 classic-IIFE Worker under its `worker-src blob:`/`file:` CSP. The classic worker
 accepts no module URL or fetch path, runs the same bounded aggregate
 checkpoints, and returns transferred `XYAO` buffers. Missing/empty sources or
-an invalid inline artifact leave the legacy standalone re-bin route available.
-The legacy worker is intentionally retained until full parity and performance
-evidence make deletion safe.
+an unavailable/invalid inline artifact retain the already-painted Rust-authored
+overview and dispatch exactly one bubbling `xy:wasm_density_no_refinement`
+event for the trace set. Its detail is `{ code, message, traceIds }`; it
+contains no source values. Stable codes are `XYG_WASM_UNAVAILABLE` and
+`XYG_WASM_SOURCE_UNAVAILABLE` (a Worker-reported failure may use its stable
+`XygWasmError` code). There is no JavaScript density aggregation fallback.
 
 ## Cross-host fixture contract
 

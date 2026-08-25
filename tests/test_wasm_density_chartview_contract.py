@@ -25,7 +25,7 @@ def test_standalone_retained_sample_can_create_an_explicit_local_wasm_adapter() 
     assert "if (this._wasmDensity) return this._wasmDensity.schedule(viewOverride, opts);" in kernel
     assert "kernel-less retained-sample density uses local Rust/WASM" in browser
     assert "attachStandaloneWasmDensity(standaloneDensityView" in browser
-    assert "standaloneDensityView._rebinWorker" in browser
+    assert "_rebinWorker" not in browser
 
 
 def test_direct_wasm_density_rejects_stale_work_and_chart_destroy_disposes_it() -> None:
@@ -66,7 +66,7 @@ def test_self_contained_density_uses_only_the_inline_classic_wasm_contract() -> 
     assert "distinct trace ids" in api
     assert "kernel `density_view` fallback" in api
     assert "automatic source provisioning" in api
-    assert "legacy worker" in api
+    assert "no JavaScript density aggregation fallback" in api
 
 
 def test_direct_wasm_density_multitrace_keeps_rust_as_the_only_aggregator() -> None:
@@ -76,6 +76,23 @@ def test_direct_wasm_density_multitrace_keeps_rust_as_the_only_aggregator() -> N
     assert "this.view._axisRange(g.xAxis, snapshot)" in source
     assert "aggregateWasmBin2d(this.worker" in source
     assert "xyCreateRebinWorker" not in source
+
+
+def test_legacy_density_worker_is_absent_and_unsupported_exports_are_explicit() -> None:
+    kernel = (ROOT / "js" / "src" / "54_kernel.ts").read_text(encoding="utf-8")
+    entries = (ROOT / "js" / "src" / "60_entries.ts").read_text(encoding="utf-8")
+    assert not (ROOT / "js" / "src" / "46_worker.ts").exists()
+    for marker in (
+        "xyCreateRebinWorker",
+        "_rebinWorker",
+        "_rebinInit",
+        "_requestSampleRebin",
+        "_onRebinResult",
+    ):
+        assert marker not in kernel
+    assert '"wasm_density_no_refinement"' in kernel
+    assert "XYG_WASM_SOURCE_UNAVAILABLE" in entries
+    assert "XYG_WASM_UNAVAILABLE" in entries
 
 
 def test_kernel_backed_density_automatically_provisions_one_supported_typed_source() -> None:

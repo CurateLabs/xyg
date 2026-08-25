@@ -46,7 +46,6 @@ REQUIRED_FILES = {
     "js/src/30_ticks.ts",
     "js/src/40_gl.ts",
     "js/src/45_lod.ts",
-    "js/src/46_worker.ts",
     "js/src/50_chartview.ts",
     "js/src/51_annotations.ts",
     "js/src/52_tooltip.ts",
@@ -271,19 +270,23 @@ def _require_exact_file(path: str, root: str, member: str, expected: bytes) -> N
 HOST_NEUTRAL_BUNDLES = {
     "packages/xy-client/dist/index.js",
     "packages/xy-client/dist/standalone.js",
+    "xyg/static/xyg-wasm-inline.js",
 }
 
 
 def _forbidden_sdist_member(name: str) -> bool:
     parts = PurePosixPath(name).parts
+    # Hatch maps force-included package data to its installed package path in
+    # an sdist. Keep that exception exact; all other top-level members remain
+    # constrained to the source layout below.
+    if name in HOST_NEUTRAL_BUNDLES:
+        return False
     if parts[0] not in ALLOWED_TOP_LEVEL:
         return True
     if parts[0] == "python" and parts[:2] not in {("python", "reflex_xy"), ("python", "xyg")}:
         return True
     if parts[0] == "packages" and parts[:2] != ("packages", "xy-client"):
         return True
-    if name in HOST_NEUTRAL_BUNDLES:
-        return False
     if any(part in FORBIDDEN_PARTS for part in parts):
         return True
     return any(name.endswith(suffix) for suffix in FORBIDDEN_SUFFIXES)

@@ -643,14 +643,6 @@
       "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     },
     {
-      "path": "js/src/46_worker.ts",
-      "current_owner": "Shared TypeScript fallback compute",
-      "policy": "browser-wasm-migration",
-      "disposition": "replace-with-rust-wasm",
-      "follow_up_issue": 59,
-      "rationale": "Issue #59 replaces kernel-less JavaScript compute with the same Rust engine compiled to WebAssembly."
-    },
-    {
       "path": "js/src/47_wasm.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",

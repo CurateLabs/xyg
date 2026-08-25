@@ -163,7 +163,7 @@ there is O(sample), not O(N).
    fits, orphan only on growth (the `_lineDash` path already models this).
 6. **Cached density tiers retain their CPU f32 grids** (`45_lod.ts:508`,
    cache depth 8). Only the active grid (tone-map animation) and
-   `_homeDensity` (standalone rebin) need CPU copies; cached crossfade
+   `_homeDensity` (standalone Rust/WASM overview restore) need CPU copies; cached crossfade
    entries need only their texture. Tens of MB per density-heavy trace at
    high DPI. Fix: null `.grid` on non-active cached entries.
 7. **General (>256-unique) factorization is serial**
@@ -197,9 +197,6 @@ there is O(sample), not O(N).
 13. **`local_log_density` allocates a fresh screen-sized grid per
     interaction call** (`kernels.rs:4380`) — reusable scratch would remove
     per-frame churn; bounded by screen size, so low.
-14. **Standalone rebin worker keeps its bounded sample as f64**
-    (`46_worker.ts:21`) — f32 halves a fixed-size buffer; per-bin math does
-    not need f64.
 
 Non-findings recorded to prevent re-litigating: `bin_2d`'s per-thread u32
 grids and re-read merge are a documented, bounded tradeoff (`bin_2d_threads`
