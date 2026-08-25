@@ -1,0 +1,382 @@
+{
+  "schema": "xyg-inline-density-file-v1",
+  "gitSha": "2290a8ff1f7feb6b914b2cfc9261818405db3e75",
+  "measurements": [
+    {
+      "count": 100,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 22.660499962512404,
+      "interactionMs": 1123.7000000476837,
+      "htmlBytes": 1429082,
+      "jsHeapBytes": 11200000,
+      "rasterBytes": 6206,
+      "visualTolerancePx": 1,
+      "lifecycleObserved": [
+        {
+          "phase": "attached",
+          "inline": true,
+          "code": null,
+          "message": null,
+          "at": 865
+        },
+        {
+          "phase": "density_ready",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 886.1999999880791
+        },
+        {
+          "phase": "cancelled",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 924.8000000119209
+        },
+        {
+          "phase": "home",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 925.5
+        },
+        {
+          "phase": "malformed",
+          "inline": false,
+          "code": "XYG_WASM_INVALID_ARGUMENT",
+          "message": null,
+          "at": 982.1000000238419
+        },
+        {
+          "phase": "zoom",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 982.6999999880791
+        },
+        {
+          "phase": "revision",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 982.6999999880791
+        },
+        {
+          "phase": "trap",
+          "inline": false,
+          "code": "XYG_WASM_TRAP",
+          "message": null,
+          "at": 1039.1000000238419
+        },
+        {
+          "phase": "recovered",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1537.4000000357628
+        },
+        {
+          "phase": "disposed",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2009.9000000357628
+        }
+      ],
+      "initialDiagnostics": {
+        "sequence": 1,
+        "traceId": 0,
+        "copyCount": 1,
+        "copyBytesLo": 1664,
+        "copyBytesHi": 0,
+        "arenaBytes": 0,
+        "arenaHighWaterBytes": 1664,
+        "memoryBytes": 2228224,
+        "memoryHighWaterBytes": 2228224
+      }
+    },
+    {
+      "count": 10000,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 4.246749973390251,
+      "interactionMs": 611.1000000238419,
+      "htmlBytes": 1515629,
+      "jsHeapBytes": 10000000,
+      "rasterBytes": 6242,
+      "visualTolerancePx": 1,
+      "lifecycleObserved": [
+        {
+          "phase": "attached",
+          "inline": true,
+          "code": null,
+          "message": null,
+          "at": 1056.300000011921
+        },
+        {
+          "phase": "density_ready",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1796.5
+        },
+        {
+          "phase": "cancelled",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1818.3999999761581
+        },
+        {
+          "phase": "home",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1824.199999988079
+        },
+        {
+          "phase": "malformed",
+          "inline": false,
+          "code": "XYG_WASM_INVALID_ARGUMENT",
+          "message": null,
+          "at": 1828.199999988079
+        },
+        {
+          "phase": "zoom",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1834.5
+        },
+        {
+          "phase": "revision",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1834.5
+        },
+        {
+          "phase": "trap",
+          "inline": false,
+          "code": "XYG_WASM_TRAP",
+          "message": null,
+          "at": 2280.699999988079
+        },
+        {
+          "phase": "recovered",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2351.5
+        },
+        {
+          "phase": "disposed",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2407.600000023842
+        }
+      ],
+      "initialDiagnostics": {
+        "sequence": 1,
+        "traceId": 0,
+        "copyCount": 1,
+        "copyBytesLo": 131568,
+        "copyBytesHi": 0,
+        "arenaBytes": 0,
+        "arenaHighWaterBytes": 131568,
+        "memoryBytes": 2424832,
+        "memoryHighWaterBytes": 2424832
+      }
+    },
+    {
+      "count": 100000,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 5.646791949402541,
+      "interactionMs": 635.3000000119209,
+      "htmlBytes": 1515716,
+      "jsHeapBytes": 10600000,
+      "rasterBytes": 6242,
+      "visualTolerancePx": 1,
+      "lifecycleObserved": [
+        {
+          "phase": "attached",
+          "inline": true,
+          "code": null,
+          "message": null,
+          "at": 1200.800000011921
+        },
+        {
+          "phase": "density_ready",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1754.300000011921
+        },
+        {
+          "phase": "cancelled",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2152.400000035763
+        },
+        {
+          "phase": "home",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2154.100000023842
+        },
+        {
+          "phase": "malformed",
+          "inline": false,
+          "code": "XYG_WASM_INVALID_ARGUMENT",
+          "message": null,
+          "at": 2244.7000000476837
+        },
+        {
+          "phase": "zoom",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2245.800000011921
+        },
+        {
+          "phase": "revision",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2245.800000011921
+        },
+        {
+          "phase": "trap",
+          "inline": false,
+          "code": "XYG_WASM_TRAP",
+          "message": null,
+          "at": 2311.400000035763
+        },
+        {
+          "phase": "recovered",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2333.300000011921
+        },
+        {
+          "phase": "disposed",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 2389.600000023842
+        }
+      ],
+      "initialDiagnostics": {
+        "sequence": 1,
+        "traceId": 0,
+        "copyCount": 1,
+        "copyBytesLo": 131696,
+        "copyBytesHi": 0,
+        "arenaBytes": 0,
+        "arenaHighWaterBytes": 131696,
+        "memoryBytes": 2424832,
+        "memoryHighWaterBytes": 2424832
+      }
+    },
+    {
+      "count": 1000000,
+      "offlineDensity": true,
+      "inlineWorker": true,
+      "firstPaintMs": 6.145708030089736,
+      "interactionMs": 456.7999999523163,
+      "htmlBytes": 1518248,
+      "jsHeapBytes": 10600000,
+      "rasterBytes": 6242,
+      "visualTolerancePx": 1,
+      "lifecycleObserved": [
+        {
+          "phase": "attached",
+          "inline": true,
+          "code": null,
+          "message": null,
+          "at": 831
+        },
+        {
+          "phase": "density_ready",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 851.1000000238419
+        },
+        {
+          "phase": "cancelled",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 890.6000000238419
+        },
+        {
+          "phase": "home",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 891.1000000238419
+        },
+        {
+          "phase": "malformed",
+          "inline": false,
+          "code": "XYG_WASM_INVALID_ARGUMENT",
+          "message": null,
+          "at": 947.3999999761581
+        },
+        {
+          "phase": "zoom",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 947.8000000119209
+        },
+        {
+          "phase": "revision",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 947.8000000119209
+        },
+        {
+          "phase": "trap",
+          "inline": false,
+          "code": "XYG_WASM_TRAP",
+          "message": null,
+          "at": 1002.1999999880791
+        },
+        {
+          "phase": "recovered",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1020.1000000238419
+        },
+        {
+          "phase": "disposed",
+          "inline": false,
+          "code": null,
+          "message": null,
+          "at": 1307.8999999761581
+        }
+      ],
+      "initialDiagnostics": {
+        "sequence": 1,
+        "traceId": 0,
+        "copyCount": 1,
+        "copyBytesLo": 135488,
+        "copyBytesHi": 0,
+        "arenaBytes": 0,
+        "arenaHighWaterBytes": 135488,
+        "memoryBytes": 2424832,
+        "memoryHighWaterBytes": 2424832
+      }
+    }
+  ]
+}

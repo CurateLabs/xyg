@@ -154,9 +154,26 @@ async function buildWasmWorker(outDir) {
   });
 }
 
+/** The self-contained export needs a classic Blob worker: this IIFE has no
+ * module loader, URL, or network dependency and is embedded by package-wasm. */
+async function buildInlineWasmWorker(outDir) {
+  await build({
+    configFile: false, root: here, logLevel: "warn", clearScreen: false,
+    build: {
+      outDir, emptyOutDir: false, copyPublicDir: false, target: "es2022", minify: true,
+      reportCompressedSize: false,
+      rollupOptions: {
+        input: join(here, "src", "wasm_inline_worker.ts"),
+        output: { format: "iife", entryFileNames: "wasm-inline-worker.js", name: "xygInlineWorker" },
+      },
+    },
+  });
+}
+
 mkdirSync(clientDir, { recursive: true });
 await buildBundles(clientDir);
 await buildWasmWorker(clientDir);
+await buildInlineWasmWorker(clientDir);
 mkdirSync(staticDir, { recursive: true });
 for (const name of PYTHON_BUNDLES) {
   copyFileSync(join(clientDir, name), join(staticDir, name));

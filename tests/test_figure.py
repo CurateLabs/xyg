@@ -1145,7 +1145,8 @@ def test_to_html_includes_defensive_csp_before_scripts():
     assert f'content="{export_module._STANDALONE_CSP}"' in head
     assert head.index("Content-Security-Policy") < html.index("<script>")
     assert "default-src 'none'" in head
-    assert "script-src 'unsafe-inline'" in head
+    assert "script-src 'unsafe-inline' 'wasm-unsafe-eval'" in head
+    assert "'unsafe-eval'" not in head
     assert "connect-src 'none'" in head
     assert "base-uri 'none'" in head
 

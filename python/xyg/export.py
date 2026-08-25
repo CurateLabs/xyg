@@ -85,7 +85,10 @@ _BROWSER_FALLBACKS = (
 _STATIC = Path(__file__).parent / "static"
 _STANDALONE_CSP = (
     "default-src 'none'; "
-    "script-src 'unsafe-inline'; "
+    # Inline Rust/WASM density aggregation uses WebAssembly.compile from the
+    # document's checked, embedded bytes. This is deliberately the narrow
+    # WebAssembly exception, never broad JavaScript 'unsafe-eval'.
+    "script-src 'unsafe-inline' 'wasm-unsafe-eval'; "
     "style-src 'unsafe-inline'; "
     "img-src data:; "
     # data: only — `custom_css` may embed a brand face as a data-URL
@@ -104,7 +107,13 @@ _STANDALONE_CSP = (
 
 def _bundled_js(which: str = "standalone") -> str:
     """Read a bundled client build without importing the notebook widget stack."""
-    name = "index.js" if which == "widget" else "standalone.js"
+    name = {
+        "widget": "index.js",
+        "standalone": "standalone.js",
+        "xyg-wasm-inline": "xyg-wasm-inline.js",
+    }.get(which)
+    if name is None:
+        raise ValueError(f"unknown bundled client asset {which!r}")
     path = _STATIC / name
     if not path.exists():
         raise FileNotFoundError(
@@ -315,6 +324,19 @@ def to_html(
         )
     spec_js = _json_for_inline_script(spec)
     client_js = _javascript_for_inline_script(_bundled_js("standalone"))
+    # Density exports retain a bounded source sample; include the generated
+    # classic Rust/WASM worker beside that self-contained payload so file: URLs
+    # do not need a module worker or sibling fetch. Ordinary charts pay none
+    # of this byte cost.
+    inline_wasm_js = ""
+    if any(trace.get("tier") == "density" for trace in spec.get("traces", [])):
+        # A raw source checkout can build the ordinary TypeScript client
+        # without a wasm32 toolchain. Keep its established bounded legacy
+        # density route rather than emitting a broken partial inline contract;
+        # release/direct-browser packaging force-includes the checked artifact
+        # when it has been compiled.
+        with suppress(FileNotFoundError):
+            inline_wasm_js = _javascript_for_inline_script(_bundled_js("xyg-wasm-inline"))
     title_html = _html.escape(fig.title or "xy")
     # One <script> block PER chunk: a script element's source is itself a V8
     # string, so folding every chunk into one block would rebuild the very
@@ -346,6 +368,7 @@ html,body{{margin:0;width:100%;min-height:100%;font-family:system-ui,sans-serif;
 <body>
 <div id="chart"></div>
 <script>""",
+        inline_wasm_js,
         client_js,
         """</script>
 <script>var __xyChunks = [];</script>

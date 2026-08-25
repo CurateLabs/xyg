@@ -17,7 +17,7 @@ import {
   decodeWasmAggregateOutput,
   encodeWasmAggregate,
 } from "./49_wasm_aggregate";
-import { attachStandaloneWasmDensity, attachWasmDensity, provisionKernelWasmDensity, XygWasmDensityHandle } from "./49_wasm_density";
+import { attachInlineStandaloneWasmDensity, attachStandaloneWasmDensity, attachWasmDensity, provisionKernelWasmDensity, XygWasmDensityHandle } from "./49_wasm_density";
 import { XygWasmTemporalController } from "./49_wasm_temporal";
 import { XygWasmTemporalGraph, decodeWasmTemporalGraphFrame, encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 import { decodeWasmGraphCheckpoint, encodeWasmCose, layoutWasmCose } from "./49_wasm_graph";
@@ -121,6 +121,76 @@ export function renderStandalone(el, spec, arrayBuffer) {
       }
     }
   }
+  // `to_html()` embeds the checked bytes plus a classic IIFE only for density
+  // documents. This establishes the Rust-owned path without a module URL or
+  // network fetch; an unavailable/invalid artifact leaves the established
+  // legacy sample worker intact during the transition.
+  const inline = (globalThis as any).__xygInlineWasm;
+  const observer = (globalThis as any).__xygStandaloneObserver;
+  // This opaque capability exists only when CDP has installed the evidence
+  // observer. Normal self-contained exports do not expose failure controls.
+  const evidenceCapability = typeof observer === "function"
+    ? `xyg-evidence-${crypto.getRandomValues(new Uint32Array(6)).join("-")}` : undefined;
+  let densityHandle: XygWasmDensityHandle | null = null;
+  const attachInline = async () => {
+    if (!inline) return null;
+    const handle = await attachInlineStandaloneWasmDensity(view, { inline, delay: 0, evidenceCapability });
+    densityHandle = handle;
+    return handle;
+  };
+  if (inline && view.gpuTraces.some((g: any) => g.tier === "density" && g.sampleOverlay?._cpu)) {
+    void attachInline().then((handle) => {
+      if (!handle) return;
+      // The exported document has no kernel viewport message to trigger the
+      // first refinement. Start the initial Rust-owned grid explicitly.
+      handle.schedule(view.view, { delay: 0, force: true });
+      if (typeof observer === "function") observer({ phase: "density_ready", diagnostics: handle.diagnostics() });
+    }).catch((cause) => {
+      if (!view._destroyed) view._dispatchChartEvent?.("wasm_density_error", {
+        code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR",
+        message: cause instanceof Error ? cause.message : "inline WASM density provisioning failed",
+        diagnostics: cause instanceof XygWasmError ? cause.diagnostics : null,
+      });
+      if (typeof observer === "function") observer({ phase: "density_error", code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR", message: cause instanceof Error ? cause.message : "inline WASM density provisioning failed" });
+    });
+  }
+  // Test/host observability only: no runtime policy is selected from this
+  // hook. It lets strict-CSP file evidence distinguish successful attachment
+  // from a later density worker failure.
+  if (typeof observer === "function") observer({ phase: "attached", inline: !!inline, view });
+  if (typeof observer === "function") (globalThis as any).__xygStandaloneDensityControl = {
+    home: () => {
+      const revision = densityHandle?.schedule(view.view0, { delay: 0, force: true });
+      observer({ phase: "home", revision: revision || null }); return revision;
+    },
+    zoom: () => {
+      const revision = densityHandle?.schedule({ ...view.view, x0: view.view.x0 + 1, x1: view.view.x1 - 1 }, { delay: 0, force: true });
+      observer({ phase: "zoom", revision: revision || null });
+      if (revision) observer({ phase: "revision", revision }); return revision;
+    },
+    diagnostics: () => densityHandle?.diagnostics() || null,
+    cancel: () => {
+      densityHandle?.schedule({ ...view.view, x0: view.view.x0 + 1, x1: view.view.x1 - 1 }, { delay: 100 });
+      densityHandle?.cancel(); observer({ phase: "cancelled" });
+    },
+    malformed: async () => {
+      try { await densityHandle?.evidenceLifecycle("malformed"); }
+      catch (cause) { observer({ phase: "malformed", code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR" }); return; }
+      throw new Error("malformed lifecycle evidence unexpectedly succeeded");
+    },
+    trap: async () => {
+      try { await densityHandle?.evidenceLifecycle("trap"); }
+      catch (cause) {
+        observer({ phase: "trap", code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR" });
+        await densityHandle?.dispose(); densityHandle = null;
+        const recovered = await attachInline();
+        recovered?.schedule(view.view, { delay: 0, force: true });
+        observer({ phase: "recovered", diagnostics: recovered?.diagnostics() || null }); return;
+      }
+      throw new Error("trap lifecycle evidence unexpectedly succeeded");
+    },
+    dispose: async () => { await densityHandle?.dispose(); densityHandle = null; observer({ phase: "disposed" }); },
+  };
   return view;
 }
 
@@ -147,6 +217,7 @@ export {
   decodeWasmAggregateOutput,
   aggregateWasmBin2d,
   attachWasmDensity,
+  attachInlineStandaloneWasmDensity,
   attachStandaloneWasmDensity,
   provisionKernelWasmDensity,
   XygWasmDensityHandle,

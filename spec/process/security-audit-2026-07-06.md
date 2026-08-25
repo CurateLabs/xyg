@@ -24,7 +24,7 @@ Fix:
 - Added a standalone `Content-Security-Policy` meta tag with
   `default-src 'none'`, `connect-src 'none'`, `img-src data:`, `worker-src
   'none'`, `object-src 'none'`, `base-uri 'none'`, and `form-action 'none'`.
-- Kept `script-src 'unsafe-inline'` and `style-src 'unsafe-inline'` because the
+- Kept `script-src 'unsafe-inline' 'wasm-unsafe-eval'` and `style-src 'unsafe-inline'` because the
   file is intentionally portable and self-contained.
 - Added regression coverage that the CSP is emitted before scripts.
 

@@ -14,6 +14,7 @@ import {
   type XygWasmTask,
   type XygWasmWorker,
   type XygWasmWorkerOptions,
+  type XygInlineWasmWorkerOptions,
 } from "./47_wasm";
 import type { ChartView } from "./50_chartview";
 
@@ -130,6 +131,10 @@ export class XygWasmDensityHandle {
   diagnostics(): XygWasmDensityDiagnostics | null {
     return this.latest ? { ...this.latest } : null;
   }
+  /** Evidence/control boundary: cancel only the currently pending viewport. */
+  cancel() { this.task?.cancel(); this.task = null; }
+  /** @internal Strict-CSP lifecycle evidence only; capability-gated by worker. */
+  evidenceLifecycle(action: "malformed" | "trap") { return this.worker.evidenceLifecycle(action); }
 
   /** Called by ChartView's normal standalone density scheduling path. */
   schedule(viewOverride = this.view.view, options: any = {}) {
@@ -145,7 +150,7 @@ export class XygWasmDensityHandle {
       const [hy0, hy1] = this.view._axisRange(trace.yAxis, this.view.view0);
       const atHome = Math.abs(vx1 - vx0) >= Math.max(Math.abs(hx1 - hx0), 1e-300) * (1 - 1e-6)
         && Math.abs(vy1 - vy0) >= Math.max(Math.abs(hy1 - hy0), 1e-300) * (1 - 1e-6);
-      if (atHome) {
+      if (atHome && options.force !== true) {
         if (trace.density !== trace._homeDensity) {
           const home = trace._homeDensity;
           this.view._applySampleRebinGrid(trace, {
@@ -327,6 +332,33 @@ export async function attachStandaloneWasmDensity(
     await worker.dispose();
     throw error;
   }
+}
+
+/**
+ * File-safe counterpart of attachStandaloneWasmDensity. The caller supplies
+ * the generated inline artifact from the self-contained document; this path
+ * never resolves a module URL or fetches a sibling WASM file.
+ */
+export async function attachInlineStandaloneWasmDensity(
+  view: ChartView & any,
+  options: XygInlineWasmWorkerOptions & { delay?: number },
+): Promise<XygWasmDensityHandle> {
+  if (!view || typeof view._scheduleSampleRebin !== "function" || view._destroyed || view.comm) {
+    throw new TypeError("attachInlineStandaloneWasmDensity requires a live kernel-less ChartView");
+  }
+  const targets = view.gpuTraces.filter((g: any) =>
+    g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu,
+  );
+  if (!targets.length) throw new RangeError("inline standalone density requires retained-sample density traces");
+  const inputs = targets.map((trace: any) => retainedSampleInput(view, trace));
+  if (inputs.some((input) => input === null)) throw new RangeError("inline standalone density sample is empty or unsupported");
+  const worker = createXygWasmWorker(options);
+  try {
+    return await attachWasmDensity(view, {
+      worker, inputs: inputs as XygWasmDensityInput[], workerOwnership: "own", delay: options.delay,
+      sampleRebin: targets.length === 1,
+    });
+  } catch (error) { await worker.dispose(); throw error; }
 }
 
 /**

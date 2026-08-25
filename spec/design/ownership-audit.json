@@ -851,6 +851,14 @@
       "rationale": "The raw WebAssembly boundary must not drift independently across Rust, TypeScript, and the checked-in manifest."
     },
     {
+      "path": "js/src/wasm_inline_worker.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
       "path": "js/src/wasm_worker.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",

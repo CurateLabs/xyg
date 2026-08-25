@@ -94,9 +94,8 @@ required: normal viewport scheduling waits for that bounded Rust `XYAG` →
 `XYAO` route, then stale-result, revision, error, and ChartView-destroy
 semantics are the same as an explicit handle. The support predicate is exactly
 one density trace with retained typed x/y source; multi-trace, missing-source,
-and self-contained/kernel-less journeys retain their existing routes. This is
-not fallback deletion of the legacy worker or a claim of full-product density
-parity.
+and unsupported journeys retain their existing routes. This is not fallback
+deletion of the legacy worker or a claim of full-product density parity.
 
 If a Worker success response contains an invalid `XYAO` payload, the event code
 is `XYG_WASM_MALFORMED_OUTPUT`. Its diagnostics preserve the Worker accounting
@@ -107,20 +106,22 @@ application request; disposing an owned attachment still releases its Worker.
 ### Kernel-less retained-sample adapter
 
 `attachStandaloneWasmDensity(view, { workerUrl, wasm, maxArenaBytes, delay })`
-is the bounded migration path for a kernel-less `ChartView` with exactly one
-retained-sample density trace. It creates an owned direct Rust/WASM Worker from
-the caller's explicit local assets, decodes the already-shipped sample once,
-and routes the normal viewport lifecycle through `XYAG`/`XYAO`. The full-data
-home grid remains visible for pans and zoom-outs; only a zoom-in replaces it
-with the explicitly badged sample grid. Destroying the ChartView disposes the
-owned handle and Worker, while stale and failed results cannot paint.
+is the bounded migration path for a kernel-less `ChartView` with retained-sample
+density traces. It creates an owned direct Rust/WASM Worker from the caller's
+explicit local assets, decodes the already-shipped sample once, and routes the
+normal viewport lifecycle through `XYAG`/`XYAO`. The full-data home grid remains
+visible for pans and zoom-outs; only a zoom-in replaces it with the explicitly
+badged sample grid. Destroying the ChartView disposes the owned handle and
+Worker, while stale and failed results cannot paint.
 
-It rejects kernel-backed, multi-trace, missing, or empty-sample views rather
-than selecting a JavaScript aggregate. This is not automatic asset discovery:
-self-contained HTML export does not yet package a static WASM Worker and
-artifact, so unsupported journeys keep the documented legacy path. The legacy
-worker is intentionally retained until that asset contract and parity evidence
-make its deletion safe.
+`to_html()` supplies the same contract automatically when a density document
+contains retained sources: it embeds a checked base64 artifact and a generated
+classic-IIFE Worker under its `worker-src blob:`/`file:` CSP. The classic worker
+accepts no module URL or fetch path, runs the same bounded aggregate
+checkpoints, and returns transferred `XYAO` buffers. Missing/empty sources or
+an invalid inline artifact leave the legacy standalone re-bin route available.
+The legacy worker is intentionally retained until full parity and performance
+evidence make deletion safe.
 
 ## Cross-host fixture contract
 

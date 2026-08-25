@@ -142,6 +142,7 @@ def _cargo_target() -> Optional[str]:
 # The two render-client bundles `node js/build.mjs` emits into the host-neutral
 # `@curatelabs/xyg` dist, then copies into python/xyg/static for the Python wheel.
 _JS_BUNDLES = ("index.js", "standalone.js")
+_INLINE_WASM_BUNDLE = "xyg-wasm-inline.js"
 
 
 def _static_dir(root: Path) -> Path:
@@ -181,7 +182,17 @@ class CustomBuildHook(BuildHookInterface):
         # native core; `verify_wheel.py` enforces the client in pure wheels too)
         # — so a build that can't produce it fails loudly instead of shipping a
         # broken distribution. XYG_SKIP_NODE=1 opts out (prebuilt-bundle steps).
-        self._provision_js(root, require=os.environ.get("XYG_SKIP_NODE") != "1")
+        static_dir = self._provision_js(root, require=os.environ.get("XYG_SKIP_NODE") != "1")
+        # The inline density artifact additionally needs a compiled wasm32
+        # module. Release/direct-browser jobs prepackage it with
+        # `js/package-wasm.mjs`; a docs editable build intentionally does not
+        # require Rust or that target merely to build the ordinary client.
+        if static_dir is not None:
+            inline_wasm = static_dir / _INLINE_WASM_BUNDLE
+            if inline_wasm.is_file():
+                build_data.setdefault("force_include", {})[str(inline_wasm)] = (
+                    f"xyg/static/{_INLINE_WASM_BUNDLE}"
+                )
 
         # The native core is a wheel-only, per-platform artifact.
         if self.target_name != "wheel":
