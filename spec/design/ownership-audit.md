@@ -29,7 +29,8 @@ Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `write_images` now delegate the proven
 constant-style Cartesian circle/diamond-scatter public subset, plus the proven literal
 static chrome contract (chart/plot backgrounds, title, authored axis
-labels/sides/major-minor ticks, primary legend, literal colorbar), and exactly
+labels/sides/major-minor ticks, independent literal `ticks`/`text` visibility
+switches, primary legend, literal colorbar), and exactly
 one bounded Cartesian callout with documented literal fields, to the Rust Scene
 SVG and raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid
 PDF independently route each supported panel through that same Rust SVG

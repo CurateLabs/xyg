@@ -9,6 +9,7 @@ import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
 const authoredSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/authored_scene_v20.json", import.meta.url), "utf8"));
+const axisVisibilityFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/public_axis_visibility_scene.json", import.meta.url), "utf8"));
 
 test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal(sceneSupportReason(0), "");
@@ -420,6 +421,27 @@ test("Node Figure authored chrome matches the Python Figure fixture bytes", () =
   assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), fixture.sha256);
   assert.match(sceneSvg(encoded), /data-xy-chrome="chart-background"/);
   assert.match(sceneSvg(encoded), /stroke="rgba\(23,24,25,1\.000000\)"/);
+});
+
+test("Node Figure axis visibility cases match the public Python Scene fixture", () => {
+  assert.equal(axisVisibilityFixture.schema, "xyg-public-axis-visibility-scene-v1");
+  for (const entry of axisVisibilityFixture.cases) {
+    const figure = new Figure({
+      width: axisVisibilityFixture.viewport[0], height: axisVisibilityFixture.viewport[1],
+    });
+    figure.setAxis("x", { domain: axisVisibilityFixture.domain });
+    figure.setAxis("y", { domain: axisVisibilityFixture.domain });
+    figure.setAxis(entry.axis, { domain: axisVisibilityFixture.domain, style: entry.style });
+    figure.scatter(axisVisibilityFixture.scatter.x, axisVisibilityFixture.scatter.y, {
+      id: axisVisibilityFixture.scatter.id,
+      style: axisVisibilityFixture.scatter.style,
+      _composed: true,
+    });
+    const encoded = figure.toScene();
+    assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), entry.sha256);
+    const painter = sceneBrowserPainter(encoded);
+    assert.ok(painter.byteLength > 300);
+  }
 });
 
 test("Node public Figure matches the combined Python authored Scene v23 fixture", () => {

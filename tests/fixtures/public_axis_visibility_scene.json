@@ -1,0 +1,16 @@
+{
+  "schema": "xyg-public-axis-visibility-scene-v1",
+  "viewport": [420, 260],
+  "domain": [0.94, 3.06],
+  "scatter": {"x": [1, 2, 3], "y": [1, 2, 3], "id": 0, "style": {"color": "#3987e5", "size": 4, "opacity": 0.8}},
+  "cases": [
+    {"axis": "x", "ticks": true, "text": true, "style": {}, "sha256": "17fe0b3c782b96fbad67dd7ff0a950dcd1ef3f9849580d6e231f32f75cbdfae5"},
+    {"axis": "x", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "f83ff258f1d11a6bb9f3ad041ffb98f50931fbb5ab5f2bf1731c605e4cecdacf"},
+    {"axis": "x", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "76c8d5d087b1c91bd89b0f9dbf1a6ada7561215262a7f0f776b1ebdaf66db2bb"},
+    {"axis": "x", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "2ec4b0b241b51990f7f0474c8a16093aead3331441f0b36c92a0a5b72eb24edf"},
+    {"axis": "y", "ticks": true, "text": true, "style": {}, "sha256": "17fe0b3c782b96fbad67dd7ff0a950dcd1ef3f9849580d6e231f32f75cbdfae5"},
+    {"axis": "y", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "ab479c0cdb35d00f2d8415c3c3a287e077382d638c8c21435cadf6b078081bfc"},
+    {"axis": "y", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "1981aea4da6d4d2a0c2ca1bac1e53b821bd7156676f82309c378b61c620b619b"},
+    {"axis": "y", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "92cec497ddc9c53123060b5b08b06bba51e86db93cefd2681aaa51643693eb21"}
+  ]
+}
