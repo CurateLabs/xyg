@@ -80,6 +80,22 @@ function optionalBoolean(value, name) {
   return value;
 }
 
+function copyAnnotation(annotation) {
+  return {
+    ...annotation,
+    ...(annotation.style != null && typeof annotation.style === "object" && !Array.isArray(annotation.style)
+      ? { style: { ...annotation.style } }
+      : {}),
+  };
+}
+
+function requireAnnotationObject(annotation) {
+  if (annotation == null || typeof annotation !== "object" || Array.isArray(annotation)) {
+    throw new TypeError("annotation must be an object");
+  }
+  return annotation;
+}
+
 function finiteBounds(arr) {
   const mm = minMax(arr);
   return mm == null ? [0.0, 0.0] : mm;
@@ -197,6 +213,13 @@ export class Figure {
     this.coords = opts.coords ?? "cartesian";
     this.showLegend = opts.showLegend ?? true;
     this.legend = opts.legend ?? {};
+    if (opts.annotations != null && !Array.isArray(opts.annotations)) {
+      throw new TypeError("annotations must be an array");
+    }
+    // Keep this as a host-side collection only.  `figureSceneV3` remains the
+    // single validation/packing seam for the bounded Rust-owned annotation
+    // contract, so Node cannot acquire a second annotation policy.
+    this.annotations = (opts.annotations ?? []).map((annotation) => copyAnnotation(requireAnnotationObject(annotation)));
     this.traces = [];
     this._graphMeta = null;
     this._axisRange = { x: null, y: null };
@@ -242,6 +265,19 @@ export class Figure {
     if (axisId !== "x" && axisId !== "y") throw new RangeError("axisId must be x or y");
     this[`${axisId}Axis`] = { ...(this[`${axisId}Axis`] ?? {}), ...options };
     if (options.domain != null) this.setAxisDomain(axisId, options.domain);
+    return this;
+  }
+
+  /**
+   * Add one authored Cartesian annotation to the canonical Scene input.
+   *
+   * The Scene compiler validates the bounded record kinds, style vocabulary,
+   * resource limits, and coordinates when `toScene()` is requested.  Keeping
+   * those decisions there makes this a thin public authoring seam rather than
+   * a parallel Node implementation of Scene policy.
+  */
+  annotate(annotation) {
+    this.annotations.push(copyAnnotation(requireAnnotationObject(annotation)));
     return this;
   }
 
