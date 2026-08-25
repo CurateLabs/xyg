@@ -635,18 +635,23 @@ def test_public_triangle_mesh_keeps_nonliteral_geometry_fail_closed(
 
 
 @pytest.mark.parametrize(
-    ("style_key", "style_value"),
-    [("stroke", "transparent"), ("stroke", "#ff0000"), ("stroke_width", 2.0)],
+    "stroke",
+    ["transparent", "#ff0000"],
 )
-def test_authored_scatter_stroke_stays_on_compatibility_route(
-    style_key: str, style_value: str | float
-) -> None:
-    """The all-symbol increment does not widen authored scatter paint policy."""
+def test_authored_constant_scatter_stroke_uses_public_scene(stroke: str) -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 2.0)
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
-    figure.scatter([1.0], [1.0], symbol="plus_line", color="#3987e5")
-    figure.traces[-1].style[style_key] = style_value
+    figure.scatter([1.0], [1.0], symbol="plus_line", color="#3987e5", stroke=stroke)
+    assert figure.traces[-1].style["stroke_width"] == 1.0
+    assert scene_export_support_reason(figure) is None
+
+
+def test_width_only_scatter_stroke_stays_on_compatibility_route() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.scatter([1.0], [1.0], symbol="plus_line", color="#3987e5", stroke_width=2.0)
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
 
 

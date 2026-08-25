@@ -626,7 +626,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
               : "#00000000"
           ));
     const width = Number(
-      style.stroke_width ?? style.width ?? style.line_width ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
+      style.stroke_width
+      ?? style.width
+      ?? style.line_width
+      ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
     );
     styles.push({
       fillRgba: rgba8(fillCss, opacity * fillOpacity, "fill"),

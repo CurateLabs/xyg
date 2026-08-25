@@ -541,7 +541,9 @@ F3, still pending (above).
   compiles constant-style cartesian scatter/line/bar figures in Python and Node,
   then exposes the exact same Scene v12 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports route the proven
-  literal Cartesian subset through those consumers: all 19 constant built-in scatter symbols,
+  literal Cartesian subset through those consumers: all 19 constant built-in scatter symbols
+  either without authored stroke or with an authored literal constant CSS
+  stroke and optional finite non-negative scalar width (default 1px),
   constant-style polyline, ordinary area/error-band Bands,
   bar/column/histogram rectangles, at most 1,024 fill-only unjoined
   constant-color triangle-mesh faces, solid ribbons, and

@@ -103,8 +103,10 @@ policy shared with the version-1 SVG wrapper is:
   stroke paint is authored, the thin host packing seams preserve the constant
   fill paint as the stroke, while an explicitly transparent stroke stays
   transparent. The current public static-export route admits the no-authored-
-  stroke case only; authored scatter stroke paint/width remains available at
-  the explicit Scene seam but stays on the compatibility renderer publicly;
+  stroke case. The public bounded constant-scatter slice also admits a literal
+  constant CSS stroke with a finite non-negative scalar width; an authored
+  stroke with no width uses the public 1px default. Width-only match-fill and
+  per-item stroke/width remain compatibility;
 - path radius is `max(diameter / 2 - effective_stroke_width / 2, 0)`, with no
   hidden minimum-radius clamp;
 - most symbols have path x/y extent equal to radius; diamond uses `sqrt(2) ×
@@ -226,7 +228,8 @@ layout authority for that already-versioned bounded contract.
 `figureSceneV3` remains the Node packing seam and Rust remains the decoder,
 layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven literal Cartesian static contract
-through Rust Scene: all 19 constant built-in scatter symbols; ordinary finite,
+through Rust Scene: all 19 constant built-in scatter symbols, including bounded
+constant CSS marker strokes and scalar widths; ordinary finite,
 fixed-domain area/error-band Bands; constant-style
 polyline (including Rust-expanded literal steps); and the ordinary Rect family
 (`bar`/`column`/`histogram`); plus bounded literal disconnected endpoint pairs

@@ -542,6 +542,85 @@ def test_all_builtin_symbols_use_the_public_rust_scatter_contract() -> None:
     assert figure.to_svg() == _scene_v3.figure_svg(figure)
 
 
+def test_constant_scatter_stroke_uses_the_public_rust_scene_contract() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.scatter(
+        [0.25, 1.75],
+        [0.5, 1.5],
+        color="#336699",
+        opacity=0.75,
+        size=12,
+        symbol="diamond",
+        stroke="#ff8800",
+        stroke_width=3.5,
+        name="outlined",
+    )
+    figure.traces[-1].id = 41
+    scene = figure.to_scene()
+    assert hashlib.sha256(scene).hexdigest() == FIXTURE["public_scatter_stroke_sha256"]
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    svg = _native.scene_svg(scene)
+    assert 'stroke="rgb(255,136,0)" stroke-opacity="0.75"' in svg
+    assert 'stroke-width="3.5"' in svg
+    assert "outlined" in svg
+    assert figure.to_svg() == svg
+    assert figure.to_png(scale=1) == _scene_v3.try_public_png(figure, scale=1)
+    assert figure.to_image(format="pdf") == _scene_v3.try_public_pdf(figure)
+    assert _native.scene_raster_commands(scene)
+    assert _native.scene_browser_painter(scene)
+
+
+def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stroke_only = Figure(width=320, height=240).scatter(
+        [0.5], [0.5], color="#336699", stroke="#ff8800"
+    )
+    assert stroke_only.traces[-1].style["stroke_width"] == 1.0
+    assert _scene_v3.scene_export_support_reason(stroke_only) is None
+
+    width_only = Figure(width=320, height=240).scatter(
+        [0.5], [0.5], color="#336699", stroke_width=2.0
+    )
+    assert "PUBLIC_STYLE" in (_scene_v3.scene_export_support_reason(width_only) or "")
+
+    plain_line_symbol = Figure(width=320, height=240).scatter(
+        [0.5], [0.5], color="#336699", symbol="plus_line"
+    )
+    plain_svg = _scene_v3.figure_svg(plain_line_symbol)
+    assert 'stroke="rgb(51,102,153)" stroke-opacity="0.8"' in plain_svg
+    assert 'stroke-width="1"' in plain_svg
+
+    compatibility = []
+    for kwargs in (
+        {"stroke": ["#111111", "#222222"]},
+        {"stroke_width": [1.0, 2.0]},
+    ):
+        figure = Figure(width=320, height=240).scatter([0.5, 1.0], [0.5, 1.0], **kwargs)
+        assert _scene_v3.scene_export_support_reason(figure) is not None
+        compatibility.append(figure)
+    compatibility.append(width_only)
+
+    for opacity_key in ("fill_opacity", "stroke_opacity"):
+        figure = Figure(width=320, height=240).scatter([0.5], [0.5])
+        figure.traces[-1].style[opacity_key] = 0.5
+        assert "PUBLIC_STYLE" in (_scene_v3.scene_export_support_reason(figure) or "")
+        compatibility.append(figure)
+
+    def unexpected_scene(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("per-item scatter styling must stay on compatibility")
+
+    monkeypatch.setattr(_native, "scene_svg", unexpected_scene)
+    for figure in compatibility:
+        assert figure.to_svg().startswith("<svg")
+
+    for invalid_width in (-1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="scatter stroke_width"):
+            Figure().scatter([0.5], [0.5], stroke_width=invalid_width)
+
+
 @pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
 def test_supported_public_exports_match_rust_consumers_and_are_repeatable(factory) -> None:
     """The public journey must not merely produce valid files beside Scene."""
