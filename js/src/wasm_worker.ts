@@ -198,6 +198,15 @@ function evidenceLifecycle(message: any) {
   if (!evidenceCapability || message.capability !== evidenceCapability) {
     error(message.requestId, "XYG_WASM_EVIDENCE_DISABLED", "lifecycle evidence is not enabled"); return;
   }
+  if (message.action === "trap") {
+    // Capability-gated evidence only: exercise the same terminal lifecycle
+    // boundary a Rust/WASM trap takes, so the host must rebuild a Worker and
+    // replay its retained split source.
+    lifecycle = "failed";
+    disposeRust();
+    error(message.requestId, "XYG_WASM_TRAP", "evidence-injected Rust/WASM trap");
+    return;
+  }
   if (message.action !== "stream_resource") {
     error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "unknown lifecycle evidence action", XYG_WASM_STATUS.INVALID_ARGUMENT); return;
   }

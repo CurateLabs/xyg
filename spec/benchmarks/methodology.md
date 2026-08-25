@@ -320,6 +320,21 @@ it with `uv run python scripts/inline_density_file_benchmark.py --output
 hosted-density-browser-local.json` followed by `uv run python
 scripts/verify_inline_density_benchmark.py hosted-density-browser-local.json`.
 
+The same main-only/manual lane emits
+`hosted-stream-density-browser-<git-sha>.json`: strict-CSP loopback-hosted
+evidence for the live split-payload ChartView route. The Python host emits
+`build_payload_split()`, ChartView retains canonical f64 source, and the
+packaged module Worker streams bounded `XYAS` chunks before returning typed
+`XYAO`. Its 100/10k/100k/1M ladder proves multi-chunk 1M replay,
+cancellation/supersession, resource refusal, trap recovery, disposal, no
+kernel `density_view`, source/payload/raster, and Rust copy/arena/memory
+counters. This is wall-clock lifecycle evidence, not a CodSpeed simulation and
+never PR CI. Reproduce with `uv run python
+scripts/stream_density_browser_benchmark.py --output
+hosted-stream-density-browser-local.json`, then `python3
+scripts/verify_stream_density_browser_benchmark.py
+hosted-stream-density-browser-local.json`.
+
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
