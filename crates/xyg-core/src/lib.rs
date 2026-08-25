@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 96;
+pub const ABI_VERSION: u32 = 97;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -455,7 +455,7 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 /// # Safety
 /// Every record input array must address `len` readable elements. The chrome
 /// style pointer must address exactly `SCENE_CHROME_STYLE_INPUT_BYTES` bytes;
-/// `step_modes` must address `len` bytes, each in the bounded ABI 96 enum;
+/// `expansion_modes` must address `len` bytes, each in the bounded ABI 97 enum;
 /// each tick pointer must address its corresponding count when non-zero. Text
 /// and bounded legend-input pointers must address `*_len` readable bytes when
 /// non-zero. If capacity is sufficient, `out` must address `out_cap` writable
@@ -508,7 +508,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     style_count: usize,
     diameter: *const f64,
     symbols: *const u8,
-    step_modes: *const u8,
+    expansion_modes: *const u8,
     x0: *const f64,
     y0: *const f64,
     x1: *const f64,
@@ -569,7 +569,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
                 || style_refs.is_null()
                 || diameter.is_null()
                 || symbols.is_null()
-                || step_modes.is_null()
+                || expansion_modes.is_null()
                 || x0.is_null()
                 || y0.is_null()
                 || x1.is_null()
@@ -730,23 +730,27 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         let source_y0 = f64s(y0);
         let source_x1 = f64s(x1);
         let source_y1 = f64s(y1);
-        let step_modes = if len == 0 {
+        let expansion_modes = if len == 0 {
             &[]
         } else {
-            std::slice::from_raw_parts(step_modes, len)
+            std::slice::from_raw_parts(expansion_modes, len)
         };
-        let records = scene::expand_scene_steps(scene::SceneStepInput {
-            kinds,
-            stable_ids,
-            style_refs,
-            diameter,
-            symbols,
-            x0: source_x0,
-            y0: source_y0,
-            x1: source_x1,
-            y1: source_y1,
-            step_modes,
-        })
+        let records = scene::expand_scene_records(
+            scene::SceneExpansionInput {
+                kinds,
+                stable_ids,
+                style_refs,
+                diameter,
+                symbols,
+                x0: source_x0,
+                y0: source_y0,
+                x1: source_x1,
+                y1: source_y1,
+                expansion_modes,
+            },
+            x_scale,
+            y_scale,
+        )
         .ok()?;
         let title = if title_len == 0 {
             ""
@@ -9743,11 +9747,11 @@ mod tests {
         let widths = [1.0f64];
         let diameter = [8.0f64];
         let symbols = [2u8];
-        let step_modes = [0u8];
+        let expansion_modes = [0u8];
         let values = [0.5f64];
         let chrome = scene::SceneChromeStyle::default().style_input();
         let mut output = [0u8; 464];
-        let step_modes_ptr = std::cell::Cell::new(step_modes.as_ptr());
+        let expansion_modes_ptr = std::cell::Cell::new(expansion_modes.as_ptr());
         let mut call = |kind, mask, len, kinds_ptr, major_ptr, major_count, major_auto| unsafe {
             xyg_scene_batch_encode(
                 100.0,
@@ -9795,7 +9799,7 @@ mod tests {
                 1,
                 diameter.as_ptr(),
                 symbols.as_ptr(),
-                step_modes_ptr.get(),
+                expansion_modes_ptr.get(),
                 values.as_ptr(),
                 values.as_ptr(),
                 values.as_ptr(),
@@ -9828,12 +9832,12 @@ mod tests {
             call(0, 0, 1, std::ptr::null(), std::ptr::null(), 0, 1),
             usize::MAX
         );
-        step_modes_ptr.set(std::ptr::null());
+        expansion_modes_ptr.set(std::ptr::null());
         assert_eq!(
             call(0, 0, 1, kinds.as_ptr(), std::ptr::null(), 0, 1),
             usize::MAX
         );
-        step_modes_ptr.set(step_modes.as_ptr());
+        expansion_modes_ptr.set(expansion_modes.as_ptr());
         assert_eq!(
             call(
                 0,
@@ -9864,7 +9868,7 @@ mod tests {
         let reserved_or_corner = [0.0f64; 4];
         let log_diameter = [6.0f64, 0.0, 0.0, 0.0];
         let log_symbols = [0u8; 4];
-        let log_step_modes = [0u8; 4];
+        let log_expansion_modes = [0u8; 4];
         let mut log_output = [0u8; 648];
         assert_eq!(
             unsafe {
@@ -9914,7 +9918,7 @@ mod tests {
                     1,
                     log_diameter.as_ptr(),
                     log_symbols.as_ptr(),
-                    log_step_modes.as_ptr(),
+                    log_expansion_modes.as_ptr(),
                     log_x0.as_ptr(),
                     log_y0.as_ptr(),
                     reserved_or_corner.as_ptr(),

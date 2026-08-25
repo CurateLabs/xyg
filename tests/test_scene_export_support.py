@@ -207,6 +207,34 @@ def _public_step_mode(where: str) -> Figure:
     return figure
 
 
+def _public_ribbon(scale: str) -> Figure:
+    """One bounded solid ribbon whose compact pair Rust expands for every host."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 10.0)
+    if scale == "linear":
+        figure.set_axis("y", type_="linear", domain=(-10.0, 1000.0))
+    elif scale == "log":
+        figure.set_axis("y", type_="log", domain=(1.0, 1000.0))
+    elif scale == "symlog":
+        figure.set_axis("y", type_="symlog", domain=(-10.0, 1000.0), constant=2.0)
+    else:  # pragma: no cover - closed fixture vocabulary
+        raise AssertionError(f"unknown ribbon scale {scale!r}")
+    figure.ribbon(
+        [1.0],
+        [9.0],
+        [1.0],
+        [10.0],
+        [100.0],
+        [1000.0],
+        color="#7c3aed",
+        opacity=0.75,
+        stroke_width=2.0,
+        style={"fill-opacity": 0.8, "stroke-opacity": 0.5},
+    )
+    figure.traces[-1].id = 7
+    return figure
+
+
 def _public_disconnected_segments() -> Figure:
     """One ordered literal fixture for the public endpoint-pair slice."""
     figure = Figure(width=320, height=240)
@@ -341,14 +369,77 @@ def test_rust_step_modes_match_exact_cross_host_bytes_and_every_static_consumer(
     assert painter.startswith(b"XYPB") and len(painter) > 300
 
 
+@pytest.mark.parametrize("scale", ["linear", "log", "symlog"])
+def test_rust_ribbon_expansion_matches_exact_cross_host_bytes(scale: str) -> None:
+    from xyg import _native
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_ribbon(scale)
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["rust_ribbon_expansion_sha256"][scale]
+    assert int.from_bytes(scene[16:24], "little") == 97
+    assert scene[160:168] == bytes((124, 58, 237, 153, 124, 58, 237, 96))
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="') == 1
+    assert 'fill="rgb(124,58,237)" fill-opacity="0.6"' in svg
+    assert 'stroke="rgb(124,58,237)" stroke-opacity="0.38"' in svg
+    assert 'stroke-width="2"' in svg
+    assert _native.scene_raster_commands(scene)
+    painter = _native.scene_browser_painter(scene)
+    assert painter.startswith(b"XYPB") and len(painter) > 300
+
+
+def test_public_solid_ribbon_routes_svg_png_pdf_through_the_exact_scene() -> None:
+    from xyg import _native, _pdf, kernels
+
+    figure = _public_ribbon("linear")
+    scene = figure_scene(figure)
+    svg = _native.scene_svg(scene)
+    assert figure.to_svg() == svg
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), figure.width, figure.height
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda figure: setattr(figure.traces[0], "color2_ch", figure.traces[0].color_ch),
+        lambda figure: figure.traces[0].style.__setitem__("role", "custom-ribbon"),
+        lambda figure: setattr(figure, "coords", "polar"),
+    ],
+)
+def test_public_ribbon_route_fails_closed_for_unmodeled_behavior(
+    mutate: Callable[[Figure], None],
+) -> None:
+    figure = _public_ribbon("linear")
+    mutate(figure)
+    assert scene_export_support_reason(figure) is not None
+
+
+def test_public_ribbon_route_enforces_the_authored_band_ceiling() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    values = np.zeros(10_001)
+    figure.ribbon(values, values + 1, values, values + 0.1, values + 0.2, values + 0.3)
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+
+
 def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     root = Path(__file__).parents[1]
     python_packer = (root / "python/xyg/_scene_v3.py").read_text()
     node_packer = (root / "packages/xy-node/src/scene.js").read_text()
     assert "def _step_arrays" not in python_packer
     assert "function stepArrays" not in node_packer
-    assert "step_modes=step_modes" in python_packer
-    assert "stepModes, x0, y0" in node_packer
+    assert "expansion_modes=expansion_modes" in python_packer
+    assert "expansionModes, x0, y0" in node_packer
+    assert "_ribbon_band_samples" not in python_packer
+    assert "ribbon_edge" not in python_packer
+    assert "function ribbonEdge" not in node_packer
+    assert "RIBBON_STEPS" not in node_packer
 
 
 @pytest.mark.parametrize(

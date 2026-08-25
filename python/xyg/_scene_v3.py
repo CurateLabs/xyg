@@ -14,7 +14,6 @@ from typing import Any
 import numpy as np
 
 from . import _native
-from ._scene import RIBBON_STEPS, ribbon_edge
 from .marks import _SYMBOL_CODES
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
@@ -418,15 +417,6 @@ def _band_columns(trace: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return xv, yv, base
 
 
-def _ribbon_band_samples(
-    x0: float, x1: float, source_lo: float, source_hi: float, target_lo: float, target_hi: float
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Tessellate one flow band into Band top/base samples (data space)."""
-    upper = ribbon_edge(x0, x1, source_hi, target_hi, RIBBON_STEPS)
-    lower = ribbon_edge(x0, x1, source_lo, target_lo, RIBBON_STEPS)
-    return upper[:, 0], upper[:, 1], lower[:, 0], lower[:, 1]
-
-
 def figure_scene(
     figure: Any,
     *,
@@ -515,7 +505,7 @@ def figure_scene(
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
-    step_runs: list[tuple[int, int, int]] = []
+    expansion_runs: list[tuple[int, int, int]] = []
     legend_entries: list[tuple[int, int, int, str]] = []
     for trace in figure.traces:
         if trace.x_axis != "x" or trace.y_axis != "y":
@@ -549,18 +539,21 @@ def figure_scene(
         if not isinstance(fill_value, str):
             raise UnsupportedSceneV3(f"Scene v12 does not yet encode {trace.kind} non-CSS fills")
         fill_opacity = stroke_opacity = line_opacity = 1.0
-        if trace.kind in _BAND_KINDS:
+        if trace.kind in _BAND_KINDS | _RIBBON_KINDS:
             fill_opacity = float(style.get("fill_opacity", 1.0))
             stroke_opacity = float(style.get("stroke_opacity", 1.0))
+        if trace.kind in _BAND_KINDS:
             line_opacity = float(style.get("line_opacity", 1.0))
-            if any(
-                not np.isfinite(value) or not 0.0 <= value <= 1.0
-                for value in (fill_opacity, stroke_opacity, line_opacity)
-            ):
-                raise ValueError("trace opacity channels must be finite and in [0, 1]")
+        if trace.kind in _BAND_KINDS | _RIBBON_KINDS and any(
+            not np.isfinite(value) or not 0.0 <= value <= 1.0
+            for value in (fill_opacity, stroke_opacity, line_opacity)
+        ):
+            raise ValueError("trace opacity channels must be finite and in [0, 1]")
         fill = _rgba(fill_value, opacity * fill_opacity)
         stroke_default = color if trace.kind in _STROKE_KINDS else "transparent"
-        if trace.kind in _RIBBON_KINDS | _POLYFILL_KINDS:
+        if trace.kind in _RIBBON_KINDS:
+            stroke_default = str(style.get("stroke", color))
+        elif trace.kind in _POLYFILL_KINDS:
             stroke_default = str(style.get("stroke", "transparent"))
         if trace.kind in _BAND_KINDS:
             stroke_value = str(style.get("line_color", color))
@@ -626,25 +619,22 @@ def figure_scene(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             for band_index in range(len(x0s)):
-                tops_x, tops_y, bases_x, bases_y = _ribbon_band_samples(
-                    float(x0s[band_index]),
-                    float(x1s[band_index]),
-                    float(source_lo[band_index]),
-                    float(source_hi[band_index]),
-                    float(target_lo[band_index]),
-                    float(target_hi[band_index]),
-                )
                 stable_id = (int(trace.id) << 32) | band_index
-                for sample in range(len(tops_x)):
+                run_start = len(kinds)
+                for start_y, end_y in (
+                    (source_hi[band_index], target_hi[band_index]),
+                    (source_lo[band_index], target_lo[band_index]),
+                ):
                     kinds.append(3)
                     stable_ids.append(stable_id)
                     style_refs.append(style_ref)
                     diameters.append(0.0)
                     symbols.append(2)
-                    coordinates[0].append(float(tops_x[sample]))
-                    coordinates[1].append(float(tops_y[sample]))
-                    coordinates[2].append(float(bases_x[sample]))
-                    coordinates[3].append(float(bases_y[sample]))
+                    coordinates[0].append(float(x0s[band_index]))
+                    coordinates[1].append(float(start_y))
+                    coordinates[2].append(float(x1s[band_index]))
+                    coordinates[3].append(float(end_y))
+                expansion_runs.append((run_start, len(kinds), 4))
             continue
 
         if trace.kind in _POLYFILL_KINDS:
@@ -771,7 +761,7 @@ def figure_scene(
             coordinates[2].append(0.0)
             coordinates[3].append(0.0)
         if where is not None:
-            step_runs.append((run_start, len(kinds), {"pre": 1, "mid": 2, "post": 3}[where]))
+            expansion_runs.append((run_start, len(kinds), {"pre": 1, "mid": 2, "post": 3}[where]))
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
     # canonical records with a reserved stable-id namespace. Rust therefore
@@ -1154,9 +1144,9 @@ def figure_scene(
     fill_rgba = [channel for fill, _, _ in styles for channel in fill]
     stroke_rgba = [channel for _, stroke, _ in styles for channel in stroke]
     stroke_width = [value for _, _, value in styles]
-    step_modes = [0] * len(kinds)
-    for start, end, mode in step_runs:
-        step_modes[start:end] = [mode] * (end - start)
+    expansion_modes = [0] * len(kinds)
+    for start, end, mode in expansion_runs:
+        expansion_modes[start:end] = [mode] * (end - start)
     kind_codes = {"linear": 0, "log": 1, "symlog": 2}
 
     def axis(axis_id: str, stable_id: int) -> tuple[int, int, float, float, float, bool]:
@@ -1469,7 +1459,7 @@ def figure_scene(
         stroke_width=stroke_width,
         diameter=diameters,
         symbols=symbols,
-        step_modes=step_modes,
+        expansion_modes=expansion_modes,
         x0=coordinates[0],
         y0=coordinates[1],
         x1=coordinates[2],
@@ -1563,7 +1553,8 @@ def scene_export_support_reason(
     Scene API can exercise a migrating record before the public compatibility
     renderer's complete output contract is modeled. The bounded literal
     Cartesian geometry subset routes circle/diamond scatter, polylines,
-    ordinary Rects, and disconnected segment/error-bar/stem endpoint pairs.
+    ordinary Rects, disconnected segment/error-bar/stem endpoint pairs, and
+    bounded solid ribbons expanded by Rust in axis-transformed space.
     The proven literal Cartesian chrome slice also routes automatically:
     backgrounds, title, authored axes/ticks,
     primary legend, literal colorbar, and the existing bounded primary
@@ -1695,6 +1686,7 @@ def scene_export_support_reason(
         "stem",
         "area",
         "error_band",
+        "ribbon",
     }
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size", "role"},
@@ -1761,6 +1753,14 @@ def scene_export_support_reason(
             "fill_opacity",
             "stroke_opacity",
         },
+        "ribbon": {
+            "opacity",
+            "role",
+            "stroke",
+            "stroke_width",
+            "fill_opacity",
+            "stroke_opacity",
+        },
     }
     has_literal_geometry = any(
         trace.kind
@@ -1774,6 +1774,7 @@ def scene_export_support_reason(
             "stem",
             "area",
             "error_band",
+            "ribbon",
         }
         for trace in figure.traces
     )
@@ -1817,6 +1818,8 @@ def scene_export_support_reason(
             }[trace.kind]
             if (trace.style or {}).get("role") not in accepted_roles:
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        if trace.kind in _RIBBON_KINDS and (trace.style or {}).get("role") != "ribbon":
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         # The only generated companion scatter accepted here is the immediate
         # endpoint marker for a preceding stem. This preserves author order
         # and prevents a generic role from leaking into the public contract.

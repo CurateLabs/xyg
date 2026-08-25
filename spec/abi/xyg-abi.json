@@ -1,9 +1,9 @@
 {
-  "abi_version": 96,
+  "abi_version": 97,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "8f35aa672feffa558ef1fc507b8334a63cd7caacf542467ffef489782e608414",
+  "signature_sha256": "afbad4c9531e530a26cfa0c24d300d10419c235dbecab47e039f8f4a98a995fc",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -15191,7 +15191,7 @@
           }
         },
         {
-          "name": "step_modes",
+          "name": "expansion_modes",
           "type": {
             "rust": "*const u8",
             "c": "const uint8_t *",
@@ -15484,7 +15484,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "size_t xyg_scene_batch_encode(double viewport_width, double viewport_height, double margin_left, double margin_right, double margin_top, double margin_bottom, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * chrome_style, size_t chrome_style_len, const double * x_major_ticks, size_t x_major_count, int32_t x_major_auto, const double * x_minor_ticks, size_t x_minor_count, const double * y_major_ticks, size_t y_major_count, int32_t y_major_auto, const double * y_minor_ticks, size_t y_minor_count, const uint8_t * x_tick_labels, size_t x_tick_labels_len, const uint8_t * y_tick_labels, size_t y_tick_labels_len, const uint8_t * authored_text_annotations, size_t authored_text_annotations_len, const uint8_t * kinds, const uint64_t * stable_ids, const uint32_t * style_refs, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, size_t style_count, const double * diameter, const uint8_t * symbols, const uint8_t * step_modes, const double * x0, const double * y0, const double * x1, const double * y1, size_t len, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * legend_input, size_t legend_input_len, const uint8_t * colorbar_input, size_t colorbar_input_len, uint8_t * out, size_t out_cap)"
+      "c_signature": "size_t xyg_scene_batch_encode(double viewport_width, double viewport_height, double margin_left, double margin_right, double margin_top, double margin_bottom, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * chrome_style, size_t chrome_style_len, const double * x_major_ticks, size_t x_major_count, int32_t x_major_auto, const double * x_minor_ticks, size_t x_minor_count, const double * y_major_ticks, size_t y_major_count, int32_t y_major_auto, const double * y_minor_ticks, size_t y_minor_count, const uint8_t * x_tick_labels, size_t x_tick_labels_len, const uint8_t * y_tick_labels, size_t y_tick_labels_len, const uint8_t * authored_text_annotations, size_t authored_text_annotations_len, const uint8_t * kinds, const uint64_t * stable_ids, const uint32_t * style_refs, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, size_t style_count, const double * diameter, const uint8_t * symbols, const uint8_t * expansion_modes, const double * x0, const double * y0, const double * x1, const double * y1, size_t len, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * legend_input, size_t legend_input_len, const uint8_t * colorbar_input, size_t colorbar_input_len, uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_scene_browser_painter",

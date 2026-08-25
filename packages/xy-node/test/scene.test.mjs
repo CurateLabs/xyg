@@ -319,6 +319,36 @@ test("Node matches Python exact Rust-expanded step bytes in every mode and consu
   }
 });
 
+test("Node matches Python exact Rust-expanded ribbon bytes across axis scales and consumers", () => {
+  const variants = [
+    ["linear", { type: "linear", domain: [-10, 1000] }],
+    ["log", { type: "log", domain: [1, 1000] }],
+    ["symlog", { type: "symlog", domain: [-10, 1000], constant: 2 }],
+  ];
+  for (const [scale, yAxis] of variants) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [0, 10]); figure.setAxis("y", yAxis);
+    figure.ribbon([1], [9], [1], [10], [100], [1000], {
+      id: 7, color: "#7c3aed", opacity: 0.75, strokeWidth: 2,
+      style: { fill_opacity: 0.8, stroke_opacity: 0.5 },
+    });
+    const scene = figure.toScene();
+    assert.equal(
+      crypto.createHash("sha256").update(scene).digest("hex"),
+      figureSceneFixture.rust_ribbon_expansion_sha256[scale],
+    );
+    assert.equal(new DataView(scene.buffer, scene.byteOffset).getBigUint64(16, true), 97n);
+    assert.deepEqual(scene.slice(160, 168), Uint8Array.of(124, 58, 237, 153, 124, 58, 237, 96));
+    const svg = sceneSvg(scene);
+    assert.equal((svg.match(/<path d="/g) ?? []).length, 1);
+    assert.match(svg, /fill="rgb\(124,58,237\)" fill-opacity="0\.6"/);
+    assert.match(svg, /stroke="rgb\(124,58,237\)" stroke-opacity="0\.38"/);
+    assert.match(svg, /stroke-width="2"/);
+    assert.ok(sceneRasterCommands(scene).length > 100);
+    assert.ok(sceneBrowserPainter(scene).length > 300);
+  }
+});
+
 test("Node Figure authoring accepts bounded annotations without exposing a second policy", () => {
   const source = { kind: "text", x: 0.5, y: 0.5, text: "owned by Rust", style: { color: "#ff0000" } };
   const fromConstructor = new Figure({ width: 320, height: 240, annotations: [source] });
@@ -719,19 +749,31 @@ test("Node Scene v4 rejects malformed batches", () => {
   assert.throws(() => sceneBatchEncode({ ...base, kinds: [9] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, styleRefs: [1] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
-  assert.throws(() => sceneBatchEncode({ ...base, stepModes: [] }), /stepModes must have length 1/);
-  assert.throws(() => sceneBatchEncode({ ...base, stepModes: [4] }), /stepModes values must be integers from 0 through 3/);
-  assert.throws(() => sceneBatchEncode({ ...base, stepModes: [1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [] }), /expansionModes must have length 1/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [5] }), /expansionModes values must be integers from 0 through 4/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [1] }), /invalid canonical scene batch/);
 
   const line = {
     ...base,
     kinds: [1, 1], stableIds: [2, 2], styleRefs: [0, 0],
     diameter: [0, 0], symbols: [0, 0], x0: [0, 1], y0: [0, 1], x1: [0, 0], y1: [0, 0],
   };
-  assert.throws(() => sceneBatchEncode({ ...line, styles: [base.styles[0], base.styles[0]], styleRefs: [0, 1], stepModes: [1, 1] }), /invalid canonical scene batch/);
-  assert.throws(() => sceneBatchEncode({ ...line, x0: [0, Number.NaN], stepModes: [2, 2] }), /invalid canonical scene batch/);
-  assert.throws(() => sceneBatchEncode({ ...line, x1: [1, 0], stepModes: [1, 1] }), /invalid canonical scene batch/);
-  assert.throws(() => sceneBatchEncode({ ...line, y1: [0, 1], stepModes: [1, 1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...line, styles: [base.styles[0], base.styles[0]], styleRefs: [0, 1], expansionModes: [1, 1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...line, x0: [0, Number.NaN], expansionModes: [2, 2] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...line, x1: [1, 0], expansionModes: [1, 1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...line, y1: [0, 1], expansionModes: [1, 1] }), /invalid canonical scene batch/);
+
+  const ribbon = {
+    ...base,
+    kinds: [3, 3], stableIds: [7, 7], styleRefs: [0, 0],
+    diameter: [0, 0], symbols: [2, 2], x0: [0, 0], y0: [0.8, 0.2], x1: [1, 1], y1: [0.9, 0.3],
+    expansionModes: [4, 4],
+  };
+  assert.equal(new DataView(sceneBatchEncode(ribbon).buffer).getBigUint64(16, true), 97n);
+  assert.throws(() => sceneBatchEncode({ ...ribbon, stableIds: [7, 8] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...ribbon, symbols: [2, 1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...ribbon, x0: [0, 0.1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...ribbon, x1: [1, 0.9] }), /invalid canonical scene batch/);
 });
 
 test("Node Scene v4 validates unsigned fields before typed-array coercion", () => {

@@ -202,7 +202,10 @@ constant-style cartesian subset plus two axes: scatter/line (with compact
 (`bar`/`column`/`histogram`/`violin`/`box`), segment-family marks
 (`segments`/`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`) as
 disconnected Scene Polyline runs (unique stable id per segment), and
-band-family marks (`area`/`error_band`/solid `ribbon`) as Scene Band samples, and `triangle_mesh` as Scene PolyFill vertex runs. Gradient fills,
+band-family marks (`area`/`error_band`/solid `ribbon`) as Scene Band samples, and `triangle_mesh` as Scene PolyFill vertex runs. For the bounded solid-ribbon
+subset, Python and Node pack two endpoint rows per ribbon and ABI 97 expands
+them in Rust after axis transformation into 97 paired Band samples across 96
+fixed cubic intervals. Gradient fills,
 non-zero `corner_radius`, and density-tier scatter are rejected until dedicated
 records exist. Their explicit Scene SVG/raster APIs exercise the Rust consumers.
 Node's public `Figure` accepts an `annotations` constructor array and exposes
@@ -223,12 +226,15 @@ fixed-domain area/error-band Bands; constant-style
 polyline (including Rust-expanded literal steps); and the ordinary Rect family
 (`bar`/`column`/`histogram`); plus bounded literal disconnected endpoint pairs
 for `segments`, error-bar stems/caps, and `stem` with its immediate generated
-circle/diamond marker. The geometry records are byte-identical for the shared
+circle/diamond marker; plus finite literal solid-color ribbons whose two-row
+host ingress Rust-expands after axis transformation. The geometry records are
+byte-identical for the shared
 Python/Node line+bar and disconnected-segment fixtures, with separate exact
 cross-host fixtures for step expansion, histogram bins, and Python
-`column`/Node `bar` Rect equivalence. Newly selected line, Rect, and endpoint-pair
-figures require explicit Cartesian domains on the default axis sides and at
-most 10,000 host trace rows per trace. For segment-family traces, one row is
+`column`/Node `bar` Rect equivalence. Newly selected line, Rect, endpoint-pair,
+and ribbon figures require explicit Cartesian domains on the default axis sides
+and must remain inside the bounded host-input and expanded-record budgets. For
+segment-family traces, one row is
 one emitted endpoint pair, so generated error-bar cap pairs count toward that
 limit independently of their source observation. Chart/plot backgrounds, title, authored
 axis labels/sides/major-minor ticks, the independent public
@@ -243,14 +249,28 @@ they must not silently select a semantically incomplete scene. Missing/nonfinite
 coordinates and malformed selected literals fail closed rather than falling
 back. This is a migration boundary, not a silent approximation.
 
-ABI 95 supplies a parallel `u8 step_modes` column (`0=none`, `1=pre`,
+ABI 95 introduced a parallel `u8 step_modes` column (`0=none`, `1=pre`,
 `2=mid`, `3=post`) to the whole-Scene encoder. A nonzero mode is valid only for
 one contiguous Polyline stable-id run whose style and mode are constant. Rust
 requires the unused secondary endpoint columns (`x1`/`y1`) to remain zero and
 rejects malformed, nonfinite, midpoint-overflowing, or over-budget expansion
 before any consumer sees a Scene. Scene v25 bytes are unchanged because the
-enum is an authoring ingress only. `XYTS` v2 intentionally has no step field and
-remains fail-closed.
+enum is an authoring ingress only. ABI 97 supersedes that parameter name with
+the `expansion_modes` vocabulary below. `XYTS` v2 intentionally has no step
+field and remains fail-closed.
+
+ABI 97 generalizes the parallel authoring enum to `expansion_modes`:
+`None=0`, `Pre=1`, `Mid=2`, `Post=3`, and `Ribbon=4`. A ribbon is exactly two
+adjacent compact Band rows with the same stable ID, style, and outline, ordered
+upper endpoint then lower endpoint. Python and Node only pack those authored
+values. Rust applies the Cartesian axis transforms before evaluating the
+cubics, then emits exactly 97 paired Band samples spanning
+`SCENE_RIBBON_STEPS=96` intervals. It validates grouping, finite scale
+projections, and the expanded-record budget before Scene encoding. The output
+is ordinary Scene v25 Band geometry, so the Scene schema and its SVG, raster,
+and browser-painter consumers remain unchanged. Two-ended gradients, polar
+ribbons, LOD/density, and direct-browser `XYTS` authoring remain fail-closed;
+the dynamic-browser cutover is #59 work.
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -327,15 +347,17 @@ Node. Whole-scene SVG emits one closed `<path>` per band run; raster emits
 `OP_FILL_POLY`; the browser painter lowers bands as area geometry with a
 `base` column. Version 5 consumers must reject version-6 batches.
 
-## Version 7: PolyFill vertices and ribbon Band tessellation
+## Version 7: PolyFill vertices and ribbon Band representation
 
 Version 7 keeps the version-6 header, style table, mark record width, and
 chrome trailer. It adds `PolyFill` (kind 4): consecutive vertices with the same
 stable ID and style form one closed filled polygon (triangle-mesh hosts emit
-one three-vertex run per triangle). Solid-color `ribbon` marks tessellate on
-the host into Scene Band samples using the shared `RIBBON_STEPS` cubic edge
-contract; two-ended gradients remain rejected until a Scene gradient record
-exists. Version 6 consumers must reject version-7 batches.
+one three-vertex run per triangle). Solid-color `ribbon` marks are represented
+as Scene Band samples. ABI 97 supersedes the former host tessellation for the
+bounded static subset: hosts pack two endpoint rows and Rust expands the
+axis-transformed cubic into 97 samples. Two-ended gradients remain rejected
+until a Scene gradient record exists. Version 6 consumers must reject
+version-7 batches.
 
 ## Version 8: authored Cartesian backgrounds and axis geometry
 
@@ -639,7 +661,9 @@ The public static route is deliberately limited to finite equal-length
 `x`/`y`/`base` columns of 2--10,000 samples on explicit primary Cartesian
 domains and default axis sides. Area defaults to `Top`; error bands default to
 `None`. Curves, dash, gradients, polar coordinates, missing-data breaks, LOD,
-ribbon expansion, and `fill_betweenx` remain outside this increment.
+and `fill_betweenx` remain outside this increment. Ribbon expansion is a
+separate ABI 97 ingress mode and does not alter the v25 outline-topology
+contract.
 
 The older direct-browser `XYTS` v2 area descriptor has no outline-mode field.
 To preserve its pre-v25 native Scene semantics, Rust lowers a positive-width,
@@ -879,6 +903,9 @@ segment-family hosts (`segments`, `errorbar`, `stem`, `contour`,
 `box_whisker`, `box_median`) and Rust-expanded stepped lines share Scene
 Polyline records;
 band-family hosts (`area`, `error_band`, solid `ribbon`) share Scene Band
-records; `triangle_mesh` shares Scene PolyFill records. Browser DOM measurement and
+records. ABI 97 makes Rust the sole owner of solid-ribbon cubic expansion:
+native hosts supply the two compact endpoint rows, and Rust transforms then
+emits the fixed 96-interval Band sequence. `triangle_mesh` shares Scene PolyFill
+records. Browser DOM measurement and
 WebGL paint remain environment-specific consumers with documented layout
 tolerances (§7 and §21).

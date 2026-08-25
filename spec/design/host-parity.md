@@ -96,10 +96,15 @@ and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF select the Rust
 Scene consumers only for the proven bounded literal Cartesian geometry subset:
-constant-style circle/diamond scatter and polylines, ordinary
-bar/column/histogram Rects, and disconnected segment/error-bar/stem endpoint
-pairs with bounded stem markers. Every unmodeled output contract remains an
-explicit compatibility route. Scene v13 covers solid chart/plot backgrounds, authored
+constant-style circle/diamond scatter and polylines, ordinary area/error-band
+Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
+pairs with bounded stem markers, and finite literal solid ribbons. For ribbons,
+Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the
+axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
+Band samples. Two-ended gradients, polar projection, LOD/density, and
+direct-browser ribbon authoring remain explicit boundaries; the last is #59
+work. Every unmodeled output contract remains an explicit compatibility route.
+Scene v13 covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a
   bounded literal RGBA banded colorbar (right/bottom). Scene v19 evolves that

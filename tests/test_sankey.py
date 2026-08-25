@@ -2,10 +2,11 @@
 geometry.
 
 The layout is pinned by direct assertions on `_sankey.compute_layout`; the
-geometry is pinned by comparing both static exporters against
-`_scene.ribbon_polygon`, the single reference the contract names — the failure
-mode being guarded is a renderer quietly keeping its own curve (or falling
-through to the rect family, which shares the ribbon's column names).
+compatibility geometry is pinned by comparing the fallback static exporters
+against `_scene.ribbon_polygon`; canonical solid-ribbon Scene geometry is
+separately expanded by Rust. The failure mode guarded here is a fallback
+renderer quietly keeping its own curve (or falling through to the rect family,
+which shares the ribbon's column names).
 """
 
 from __future__ import annotations
@@ -431,8 +432,7 @@ def test_raster_ribbon_curves_in_axis_transformed_space_on_log_axes() -> None:
 
 
 def test_exporters_share_the_reference_flattening() -> None:
-    """`ribbon_polygon` is the single geometry source; its ends must be exactly
-    the four corners and its width exact at every step."""
+    """The compatibility polygon has exact corners and shared edge samples."""
     poly = ribbon_polygon(0.0, 1.0, 0.1, 0.3, 0.6, 0.8)
     assert poly.shape == (2 * (RIBBON_STEPS + 1), 2)
     upper, lower = poly[: RIBBON_STEPS + 1], poly[RIBBON_STEPS + 1 :][::-1]

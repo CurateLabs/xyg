@@ -3343,31 +3343,38 @@ impl SceneRecordKind {
     }
 }
 
-/// Compact authored step mode accepted by the whole-Scene ABI. The enum is
-/// deliberately not serialized into Scene: Rust expands each compact source
-/// run to ordinary canonical Polyline records before Scene v25 encoding.
+/// Compact authored expansion mode accepted by the whole-Scene ABI. The enum is
+/// deliberately not serialized into Scene: Rust expands compact step and
+/// ribbon inputs to ordinary canonical records before Scene v25 encoding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
-pub enum SceneStepMode {
+pub enum SceneExpansionMode {
     None = 0,
     Pre = 1,
     Mid = 2,
     Post = 3,
+    /// Two adjacent Band rows describe upper then lower cubic edge endpoints.
+    Ribbon = 4,
 }
 
-impl SceneStepMode {
+impl SceneExpansionMode {
     fn from_code(value: u8) -> Result<Self, SceneError> {
         match value {
             0 => Ok(Self::None),
             1 => Ok(Self::Pre),
             2 => Ok(Self::Mid),
             3 => Ok(Self::Post),
+            4 => Ok(Self::Ribbon),
             _ => Err(SceneError::Length),
         }
     }
 }
 
-fn scene_step_run_end(stable_ids: &[u64], start: usize) -> usize {
+/// Fixed segments per canonical ribbon edge. The count is product policy: it
+/// is intentionally view-independent and shared by every Scene consumer.
+pub const SCENE_RIBBON_STEPS: usize = 96;
+
+fn scene_expansion_run_end(stable_ids: &[u64], start: usize) -> usize {
     let stable_id = stable_ids[start];
     stable_ids[start + 1..]
         .iter()
@@ -3375,8 +3382,8 @@ fn scene_step_run_end(stable_ids: &[u64], start: usize) -> usize {
         .map_or(stable_ids.len(), |offset| start + 1 + offset)
 }
 
-/// Borrowed record columns entering Rust-owned compact-step expansion.
-pub struct SceneStepInput<'a> {
+/// Borrowed record columns entering Rust-owned compact record expansion.
+pub struct SceneExpansionInput<'a> {
     pub kinds: &'a [u8],
     pub stable_ids: &'a [u64],
     pub style_refs: &'a [u32],
@@ -3386,10 +3393,10 @@ pub struct SceneStepInput<'a> {
     pub y0: &'a [f64],
     pub x1: &'a [f64],
     pub y1: &'a [f64],
-    pub step_modes: &'a [u8],
+    pub expansion_modes: &'a [u8],
 }
 
-/// Owned canonical record columns after compact steps have been expanded.
+/// Owned canonical record columns after compact authoring records are expanded.
 #[derive(Debug, PartialEq)]
 pub struct ExpandedSceneRecords {
     pub kinds: Vec<u8>,
@@ -3418,7 +3425,7 @@ impl ExpandedSceneRecords {
         }
     }
 
-    fn push_source(&mut self, input: &SceneStepInput<'_>, index: usize) {
+    fn push_source(&mut self, input: &SceneExpansionInput<'_>, index: usize) {
         self.kinds.push(input.kinds[index]);
         self.stable_ids.push(input.stable_ids[index]);
         self.style_refs.push(input.style_refs[index]);
@@ -3441,14 +3448,36 @@ impl ExpandedSceneRecords {
         self.x1.push(0.0);
         self.y1.push(0.0);
     }
+
+    fn push_ribbon_sample(
+        &mut self,
+        stable_id: u64,
+        style_ref: u32,
+        outline: u8,
+        top: [f64; 2],
+        base: [f64; 2],
+    ) {
+        self.kinds.push(SceneRecordKind::Band as u8);
+        self.stable_ids.push(stable_id);
+        self.style_refs.push(style_ref);
+        self.diameter.push(0.0);
+        self.symbols.push(outline);
+        self.x0.push(top[0]);
+        self.y0.push(top[1]);
+        self.x1.push(base[0]);
+        self.y1.push(base[1]);
+    }
 }
 
-/// Expand compact `pre`/`mid`/`post` source runs into canonical Polyline
-/// vertices. A run is one contiguous stable identity; every row in a stepped
-/// run must agree on kind, style, and mode, so adjacent records cannot silently
-/// merge two differently-authored traces. The expanded count is checked before
-/// allocating or emitting any output.
-pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneRecords, SceneError> {
+/// Expand compact step runs and two-row ribbon pairs into canonical Scene
+/// records. Ribbon cubics are evaluated in axis-transformed space, as required
+/// by the public ribbon contract; the inverse transform produces values that
+/// the existing Scene encoder maps to those same canonical pixels.
+pub fn expand_scene_records(
+    input: SceneExpansionInput<'_>,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+) -> Result<ExpandedSceneRecords, SceneError> {
     let len = input.kinds.len();
     if [
         input.stable_ids.len(),
@@ -3459,7 +3488,7 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
         input.y0.len(),
         input.x1.len(),
         input.y1.len(),
-        input.step_modes.len(),
+        input.expansion_modes.len(),
     ]
     .into_iter()
     .any(|column_len| column_len != len)
@@ -3472,11 +3501,11 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
     // zero-mode prefix and stepped suffix could be emitted as one path.
     let mut run_cursor = 0usize;
     while run_cursor < len {
-        let run_end = scene_step_run_end(input.stable_ids, run_cursor);
-        let mode = SceneStepMode::from_code(input.step_modes[run_cursor])?;
-        if input.step_modes[run_cursor..run_end]
+        let run_end = scene_expansion_run_end(input.stable_ids, run_cursor);
+        let mode = SceneExpansionMode::from_code(input.expansion_modes[run_cursor])?;
+        if input.expansion_modes[run_cursor..run_end]
             .iter()
-            .any(|candidate| SceneStepMode::from_code(*candidate) != Ok(mode))
+            .any(|candidate| SceneExpansionMode::from_code(*candidate) != Ok(mode))
         {
             return Err(SceneError::Length);
         }
@@ -3486,23 +3515,25 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
     let mut expanded_len = 0usize;
     let mut cursor = 0usize;
     while cursor < len {
-        let mode = SceneStepMode::from_code(input.step_modes[cursor])?;
-        if mode == SceneStepMode::None {
+        let mode = SceneExpansionMode::from_code(input.expansion_modes[cursor])?;
+        if mode == SceneExpansionMode::None {
             expanded_len = expanded_len.checked_add(1).ok_or(SceneError::Limit)?;
             cursor += 1;
             continue;
         }
-        if input.kinds[cursor] != SceneRecordKind::Polyline as u8 {
-            return Err(SceneError::Length);
-        }
         let style_ref = input.style_refs[cursor];
-        let run_end = scene_step_run_end(input.stable_ids, cursor);
+        let run_end = scene_expansion_run_end(input.stable_ids, cursor);
         for index in cursor..run_end {
-            if input.kinds[index] != SceneRecordKind::Polyline as u8
+            let expected_kind = if mode == SceneExpansionMode::Ribbon {
+                SceneRecordKind::Band as u8
+            } else {
+                SceneRecordKind::Polyline as u8
+            };
+            if input.kinds[index] != expected_kind
                 || input.style_refs[index] != style_ref
-                || SceneStepMode::from_code(input.step_modes[index])? != mode
+                || SceneExpansionMode::from_code(input.expansion_modes[index])? != mode
                 || input.diameter[index] != 0.0
-                || input.symbols[index] != 0
+                || (mode != SceneExpansionMode::Ribbon && input.symbols[index] != 0)
             {
                 return Err(SceneError::Length);
             }
@@ -3513,21 +3544,34 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
             {
                 return Err(SceneError::NonFinite);
             }
-            if input.x1[index] != 0.0 || input.y1[index] != 0.0 {
+            if mode != SceneExpansionMode::Ribbon
+                && (input.x1[index] != 0.0 || input.y1[index] != 0.0)
+            {
                 return Err(SceneError::Length);
             }
         }
         let run_len = run_end - cursor;
         let required = match mode {
-            SceneStepMode::None => unreachable!(),
-            SceneStepMode::Pre | SceneStepMode::Post => run_len
+            SceneExpansionMode::None => unreachable!(),
+            SceneExpansionMode::Pre | SceneExpansionMode::Post => run_len
                 .checked_mul(2)
                 .and_then(|value| value.checked_sub(1))
                 .ok_or(SceneError::Limit)?,
-            SceneStepMode::Mid => run_len
+            SceneExpansionMode::Mid => run_len
                 .checked_mul(3)
                 .and_then(|value| value.checked_sub(2))
                 .ok_or(SceneError::Limit)?,
+            SceneExpansionMode::Ribbon => {
+                if run_len != 2
+                    || input.symbols[cursor] != input.symbols[cursor + 1]
+                    || BandOutline::from_code(input.symbols[cursor]).is_err()
+                    || input.x0[cursor] != input.x0[cursor + 1]
+                    || input.x1[cursor] != input.x1[cursor + 1]
+                {
+                    return Err(SceneError::Length);
+                }
+                SCENE_RIBBON_STEPS + 1
+            }
         };
         expanded_len = expanded_len
             .checked_add(required)
@@ -3541,15 +3585,56 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
     let mut output = ExpandedSceneRecords::with_capacity(expanded_len);
     cursor = 0;
     while cursor < len {
-        let mode = SceneStepMode::from_code(input.step_modes[cursor])?;
-        if mode == SceneStepMode::None {
+        let mode = SceneExpansionMode::from_code(input.expansion_modes[cursor])?;
+        if mode == SceneExpansionMode::None {
             output.push_source(&input, cursor);
             cursor += 1;
             continue;
         }
         let stable_id = input.stable_ids[cursor];
         let style_ref = input.style_refs[cursor];
-        let run_end = scene_step_run_end(input.stable_ids, cursor);
+        let run_end = scene_expansion_run_end(input.stable_ids, cursor);
+        if mode == SceneExpansionMode::Ribbon {
+            let upper = cursor;
+            let lower = cursor + 1;
+            let cx0 = x_scale.coord(input.x0[upper]);
+            let cx1 = x_scale.coord(input.x1[upper]);
+            let upper_y0 = y_scale.coord(input.y0[upper]);
+            let upper_y1 = y_scale.coord(input.y1[upper]);
+            let lower_y0 = y_scale.coord(input.y0[lower]);
+            let lower_y1 = y_scale.coord(input.y1[lower]);
+            if [cx0, cx1, upper_y0, upper_y1, lower_y0, lower_y1]
+                .into_iter()
+                .any(|value| !value.is_finite())
+            {
+                return Err(SceneError::NonFinite);
+            }
+            let midpoint = (cx0 + cx1) * 0.5;
+            if !midpoint.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            for sample in 0..=SCENE_RIBBON_STEPS {
+                let t = sample as f64 / SCENE_RIBBON_STEPS as f64;
+                let u = 1.0 - t;
+                let cubic = |a: f64, c0: f64, c1: f64, b: f64| {
+                    u.powi(3) * a
+                        + 3.0 * u.powi(2) * t * c0
+                        + 3.0 * u * t.powi(2) * c1
+                        + t.powi(3) * b
+                };
+                let x_coord = cubic(cx0, midpoint, midpoint, cx1);
+                let top_y_coord = cubic(upper_y0, upper_y0, upper_y1, upper_y1);
+                let base_y_coord = cubic(lower_y0, lower_y0, lower_y1, lower_y1);
+                let top = [x_scale.value(x_coord), y_scale.value(top_y_coord)];
+                let base = [x_scale.value(x_coord), y_scale.value(base_y_coord)];
+                if top.into_iter().chain(base).any(|value| !value.is_finite()) {
+                    return Err(SceneError::NonFinite);
+                }
+                output.push_ribbon_sample(stable_id, style_ref, input.symbols[upper], top, base);
+            }
+            cursor = run_end;
+            continue;
+        }
         output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
         for index in cursor + 1..run_end {
             let previous = index - 1;
@@ -3558,11 +3643,11 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
             let current_x = input.x0[index];
             let current_y = input.y0[index];
             match mode {
-                SceneStepMode::Pre => {
+                SceneExpansionMode::Pre => {
                     output.push_step(stable_id, style_ref, previous_x, current_y);
                     output.push_step(stable_id, style_ref, current_x, current_y);
                 }
-                SceneStepMode::Mid => {
+                SceneExpansionMode::Mid => {
                     // Preserve the historical host contract exactly. If this
                     // addition overflows, reject rather than emitting infinity.
                     let midpoint = (previous_x + current_x) * 0.5;
@@ -3573,11 +3658,11 @@ pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneReco
                     output.push_step(stable_id, style_ref, midpoint, current_y);
                     output.push_step(stable_id, style_ref, current_x, current_y);
                 }
-                SceneStepMode::Post => {
+                SceneExpansionMode::Post => {
                     output.push_step(stable_id, style_ref, current_x, previous_y);
                     output.push_step(stable_id, style_ref, current_x, current_y);
                 }
-                SceneStepMode::None => unreachable!(),
+                SceneExpansionMode::None | SceneExpansionMode::Ribbon => unreachable!(),
             }
         }
         cursor = run_end;
@@ -8638,6 +8723,14 @@ pub fn cartesian_scene_margins(
 mod tests {
     use super::*;
 
+    fn test_linear_x_scale() -> AxisScale {
+        AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 0.0, 100.0, 1.0, false).unwrap()
+    }
+
+    fn test_linear_y_scale() -> AxisScale {
+        AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 100.0, 0.0, 1.0, false).unwrap()
+    }
+
     // Keep every borrowed column explicit so this fixture mirrors the Scene ABI.
     #[allow(clippy::too_many_arguments)]
     fn compact_step_input<'a>(
@@ -8649,8 +8742,8 @@ mod tests {
         x: &'a [f64],
         y: &'a [f64],
         modes: &'a [u8],
-    ) -> SceneStepInput<'a> {
-        SceneStepInput {
+    ) -> SceneExpansionInput<'a> {
+        SceneExpansionInput {
             kinds,
             stable_ids: ids,
             style_refs: styles,
@@ -8660,7 +8753,7 @@ mod tests {
             y0: y,
             x1: zeros,
             y1: zeros,
-            step_modes: modes,
+            expansion_modes: modes,
         }
     }
 
@@ -8709,9 +8802,11 @@ mod tests {
         ];
         for (mode, expected) in cases {
             let modes = [mode; 3];
-            let expanded = expand_scene_steps(compact_step_input(
-                &kinds, &ids, &styles, &zeros, &symbols, &x, &y, &modes,
-            ))
+            let expanded = expand_scene_records(
+                compact_step_input(&kinds, &ids, &styles, &zeros, &symbols, &x, &y, &modes),
+                test_linear_x_scale(),
+                test_linear_y_scale(),
+            )
             .unwrap();
             assert_eq!(
                 expanded.x0.into_iter().zip(expanded.y0).collect::<Vec<_>>(),
@@ -8725,45 +8820,48 @@ mod tests {
 
     #[test]
     fn compact_steps_preserve_empty_singleton_and_distinct_runs() {
-        let empty = expand_scene_steps(SceneStepInput {
-            kinds: &[],
-            stable_ids: &[],
-            style_refs: &[],
-            diameter: &[],
-            symbols: &[],
-            x0: &[],
-            y0: &[],
-            x1: &[],
-            y1: &[],
-            step_modes: &[],
-        })
+        let empty = expand_scene_records(
+            SceneExpansionInput {
+                kinds: &[],
+                stable_ids: &[],
+                style_refs: &[],
+                diameter: &[],
+                symbols: &[],
+                x0: &[],
+                y0: &[],
+                x1: &[],
+                y1: &[],
+                expansion_modes: &[],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
         .unwrap();
         assert!(empty.kinds.is_empty());
 
-        let singleton = expand_scene_steps(compact_step_input(
-            &[1],
-            &[9],
-            &[0],
-            &[0.0],
-            &[0],
-            &[3.0],
-            &[4.0],
-            &[2],
-        ))
+        let singleton = expand_scene_records(
+            compact_step_input(&[1], &[9], &[0], &[0.0], &[0], &[3.0], &[4.0], &[2]),
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
         .unwrap();
         assert_eq!(singleton.x0, [3.0]);
         assert_eq!(singleton.y0, [4.0]);
 
-        let separate = expand_scene_steps(compact_step_input(
-            &[1, 1],
-            &[9, 10],
-            &[0, 0],
-            &[0.0, 0.0],
-            &[0, 0],
-            &[3.0, 5.0],
-            &[4.0, 6.0],
-            &[2, 2],
-        ))
+        let separate = expand_scene_records(
+            compact_step_input(
+                &[1, 1],
+                &[9, 10],
+                &[0, 0],
+                &[0.0, 0.0],
+                &[0, 0],
+                &[3.0, 5.0],
+                &[4.0, 6.0],
+                &[2, 2],
+            ),
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
         .unwrap();
         assert_eq!(separate.x0, [3.0, 5.0]);
         assert_eq!(separate.stable_ids, [9, 10]);
@@ -8777,9 +8875,11 @@ mod tests {
             let zeros = vec![0.0; len];
             let symbols = vec![0u8; len];
             let y = vec![1.0; len];
-            expand_scene_steps(compact_step_input(
-                kinds, &ids, styles, &zeros, &symbols, x, &y, modes,
-            ))
+            expand_scene_records(
+                compact_step_input(kinds, &ids, styles, &zeros, &symbols, x, &y, modes),
+                test_linear_x_scale(),
+                test_linear_y_scale(),
+            )
         };
         assert_eq!(base(&[0], &[0], &[1.0], &[1]), Err(SceneError::Length));
         assert_eq!(base(&[1], &[0], &[1.0], &[4]), Err(SceneError::Length));
@@ -8817,7 +8917,7 @@ mod tests {
             );
             input.x1 = x1;
             input.y1 = y1;
-            expand_scene_steps(input)
+            expand_scene_records(input, test_linear_x_scale(), test_linear_y_scale())
         };
         assert_eq!(rejected_reserved(&nonzero, &zeros), Err(SceneError::Length));
         assert_eq!(rejected_reserved(&zeros, &nonzero), Err(SceneError::Length));
@@ -8838,9 +8938,271 @@ mod tests {
         let symbols = vec![0u8; len];
         let modes = vec![2u8; len];
         assert_eq!(
-            expand_scene_steps(compact_step_input(
-                &kinds, &ids, &styles, &zeros, &symbols, &zeros, &zeros, &modes,
-            )),
+            expand_scene_records(
+                compact_step_input(&kinds, &ids, &styles, &zeros, &symbols, &zeros, &zeros, &modes),
+                test_linear_x_scale(),
+                test_linear_y_scale(),
+            ),
+            Err(SceneError::Limit)
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn compact_ribbon_input<'a>(
+        ids: &'a [u64],
+        styles: &'a [u32],
+        symbols: &'a [u8],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+        modes: &'a [u8],
+    ) -> SceneExpansionInput<'a> {
+        SceneExpansionInput {
+            kinds: &[3, 3],
+            stable_ids: ids,
+            style_refs: styles,
+            diameter: &[0.0, 0.0],
+            symbols,
+            x0,
+            y0,
+            x1,
+            y1,
+            expansion_modes: modes,
+        }
+    }
+
+    #[test]
+    fn compact_ribbon_expands_in_transformed_space_with_stable_identity() {
+        let x_scale = AxisScale::new(ScaleKind::Log, 1.0, 100.0, 0.0, 100.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Log, 1.0, 1000.0, 100.0, 0.0, 1.0, false).unwrap();
+        let expanded = expand_scene_records(
+            compact_ribbon_input(
+                &[42, 42],
+                &[7, 7],
+                &[2, 2],
+                &[1.0, 1.0],
+                &[10.0, 1.0],
+                &[100.0, 100.0],
+                &[1000.0, 100.0],
+                &[4, 4],
+            ),
+            x_scale,
+            y_scale,
+        )
+        .unwrap();
+
+        assert_eq!(expanded.kinds.len(), SCENE_RIBBON_STEPS + 1);
+        assert!(expanded.kinds.iter().all(|kind| *kind == 3));
+        assert!(expanded.stable_ids.iter().all(|stable_id| *stable_id == 42));
+        assert!(expanded.style_refs.iter().all(|style_ref| *style_ref == 7));
+        assert!(expanded.symbols.iter().all(|symbol| *symbol == 2));
+        assert_eq!((expanded.x0[0], expanded.x1[0]), (1.0, 1.0));
+        assert_eq!((expanded.y0[0], expanded.y1[0]), (10.0, 1.0));
+        assert_eq!(
+            (
+                expanded.x0[SCENE_RIBBON_STEPS],
+                expanded.x1[SCENE_RIBBON_STEPS]
+            ),
+            (100.0, 100.0)
+        );
+        assert_eq!(
+            (
+                expanded.y0[SCENE_RIBBON_STEPS],
+                expanded.y1[SCENE_RIBBON_STEPS]
+            ),
+            (1000.0, 100.0)
+        );
+
+        let midpoint = SCENE_RIBBON_STEPS / 2;
+        assert!((expanded.x0[midpoint] - 10.0).abs() < 1e-12);
+        assert!((expanded.y0[midpoint] - 100.0).abs() < 1e-12);
+        assert!((expanded.y1[midpoint] - 10.0).abs() < 1e-12);
+        assert_ne!(expanded.y0[midpoint], 505.0);
+    }
+
+    #[test]
+    fn compact_ribbon_symlog_midpoint_is_exactly_scale_lowered() {
+        let y_scale =
+            AxisScale::new(ScaleKind::SymLog, 0.0, 1000.0, 100.0, 0.0, 2.0, false).unwrap();
+        let expanded = expand_scene_records(
+            compact_ribbon_input(
+                &[9, 9],
+                &[0, 0],
+                &[1, 1],
+                &[0.0, 0.0],
+                &[10.0, 1.0],
+                &[10.0, 10.0],
+                &[1000.0, 100.0],
+                &[4, 4],
+            ),
+            test_linear_x_scale(),
+            y_scale,
+        )
+        .unwrap();
+        let midpoint = SCENE_RIBBON_STEPS / 2;
+        let expected_top = y_scale.value((y_scale.coord(10.0) + y_scale.coord(1000.0)) * 0.5);
+        let expected_base = y_scale.value((y_scale.coord(1.0) + y_scale.coord(100.0)) * 0.5);
+        assert!((expanded.y0[midpoint] - expected_top).abs() < 1e-12);
+        assert!((expanded.y1[midpoint] - expected_base).abs() < 1e-12);
+        assert_ne!(expanded.y0[midpoint], 505.0);
+    }
+
+    #[test]
+    fn compact_ribbon_preserves_source_order_across_adjacent_pairs() {
+        let expanded = expand_scene_records(
+            SceneExpansionInput {
+                kinds: &[0, 3, 3, 3, 3],
+                stable_ids: &[1, 7, 7, 8, 8],
+                style_refs: &[0, 2, 2, 3, 3],
+                diameter: &[4.0, 0.0, 0.0, 0.0, 0.0],
+                symbols: &[0, 2, 2, 1, 1],
+                x0: &[5.0, 0.0, 0.0, 2.0, 2.0],
+                y0: &[5.0, 2.0, 1.0, 4.0, 3.0],
+                x1: &[0.0, 1.0, 1.0, 8.0, 8.0],
+                y1: &[0.0, 3.0, 2.0, 5.0, 4.0],
+                expansion_modes: &[0, 4, 4, 4, 4],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(expanded.stable_ids[0], 1);
+        assert!(expanded.stable_ids[1..SCENE_RIBBON_STEPS + 2]
+            .iter()
+            .all(|stable_id| *stable_id == 7));
+        assert!(expanded.stable_ids[SCENE_RIBBON_STEPS + 2..]
+            .iter()
+            .all(|stable_id| *stable_id == 8));
+        assert_eq!(expanded.style_refs[1], 2);
+        assert_eq!(expanded.style_refs[SCENE_RIBBON_STEPS + 2], 3);
+        assert_eq!(expanded.symbols[1], 2);
+        assert_eq!(expanded.symbols[SCENE_RIBBON_STEPS + 2], 1);
+    }
+
+    #[test]
+    fn compact_ribbon_fails_closed_for_malformed_pairs_and_budget() {
+        let rejected = |ids: &[u64],
+                        styles: &[u32],
+                        symbols: &[u8],
+                        x0: &[f64],
+                        y0: &[f64],
+                        x1: &[f64],
+                        y1: &[f64],
+                        modes: &[u8]| {
+            expand_scene_records(
+                compact_ribbon_input(ids, styles, symbols, x0, y0, x1, y1, modes),
+                test_linear_x_scale(),
+                test_linear_y_scale(),
+            )
+        };
+        assert_eq!(
+            rejected(
+                &[1, 2],
+                &[0, 0],
+                &[2, 2],
+                &[0.0, 0.0],
+                &[2.0, 1.0],
+                &[1.0, 1.0],
+                &[3.0, 2.0],
+                &[4, 4]
+            ),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            rejected(
+                &[1, 1],
+                &[0, 1],
+                &[2, 2],
+                &[0.0, 0.0],
+                &[2.0, 1.0],
+                &[1.0, 1.0],
+                &[3.0, 2.0],
+                &[4, 4]
+            ),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            rejected(
+                &[1, 1],
+                &[0, 0],
+                &[2, 1],
+                &[0.0, 0.0],
+                &[2.0, 1.0],
+                &[1.0, 1.0],
+                &[3.0, 2.0],
+                &[4, 4]
+            ),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            rejected(
+                &[1, 1],
+                &[0, 0],
+                &[2, 2],
+                &[0.0, 0.5],
+                &[2.0, 1.0],
+                &[1.0, 1.0],
+                &[3.0, 2.0],
+                &[4, 4]
+            ),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            rejected(
+                &[1, 1],
+                &[0, 0],
+                &[2, 2],
+                &[0.0, 0.0],
+                &[f64::NAN, 1.0],
+                &[1.0, 1.0],
+                &[3.0, 2.0],
+                &[4, 4]
+            ),
+            Err(SceneError::NonFinite)
+        );
+        assert_eq!(
+            rejected(
+                &[1, 1],
+                &[0, 0],
+                &[2, 2],
+                &[0.0, 0.0],
+                &[2.0, 1.0],
+                &[1.0, 1.0],
+                &[3.0, 2.0],
+                &[4, 3]
+            ),
+            Err(SceneError::Length)
+        );
+
+        let pair_count = MAX_SCENE_MARKS / (SCENE_RIBBON_STEPS + 1) + 1;
+        let len = pair_count * 2;
+        let ids = (0..pair_count)
+            .flat_map(|id| [id as u64, id as u64])
+            .collect::<Vec<_>>();
+        let kinds = vec![3; len];
+        let styles = vec![0; len];
+        let diameter = vec![0.0; len];
+        let symbols = vec![2; len];
+        let x0 = vec![0.0; len];
+        let y0 = vec![1.0; len];
+        let x1 = vec![1.0; len];
+        let y1 = vec![2.0; len];
+        let modes = vec![4; len];
+        let input = SceneExpansionInput {
+            kinds: &kinds,
+            stable_ids: &ids,
+            style_refs: &styles,
+            diameter: &diameter,
+            symbols: &symbols,
+            x0: &x0,
+            y0: &y0,
+            x1: &x1,
+            y1: &y1,
+            expansion_modes: &modes,
+        };
+        assert_eq!(
+            expand_scene_records(input, test_linear_x_scale(), test_linear_y_scale()),
             Err(SceneError::Limit)
         );
     }

@@ -27,14 +27,20 @@ reject markup, CSS/classes, custom fonts, and collision policy. Rust also owns
 whether resolved Cartesian Scene chrome produces SVG/raster
 primitives. Host paint alpha is data, not an implicit polar-mode signal; both
 hosts reject polar Scene compilation until the Scene schema records that mode.
+ABI 97 also makes Rust authoritative for bounded solid-ribbon Scene geometry:
+Python and Node pack two adjacent compact endpoint rows, while Rust transforms
+the endpoints through the selected Cartesian axes and expands the fixed
+96-interval cubic into ordinary Scene v25 Band samples. Host-local ribbon
+polygon helpers remain compatibility-renderer code, not canonical Scene policy.
 
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
 literal Cartesian public geometry subset—constant-style circle/diamond
 scatter and polylines, ordinary finite fixed-domain area/error-band Bands,
-ordinary bar/column/histogram Rects, and bounded
-disconnected segment/error-bar/stem endpoint pairs—plus the proven literal static
+ordinary bar/column/histogram Rects, bounded disconnected
+segment/error-bar/stem endpoint pairs, and finite literal solid-color ribbons
+expanded by Rust—plus the proven literal static
 chrome contract (chart/plot backgrounds, title, authored axis
 labels/sides/major-minor ticks, independent literal `ticks`/`text` visibility
 switches, primary legend, literal colorbar), and the existing bounded primary
@@ -56,6 +62,9 @@ nonliteral/custom chrome, symbols other than circle/diamond, unmodeled marks or
 segment roles/styles, LOD inputs, export background overrides, and any other
 unmodeled output contract; #58/#117 must
 retire each exception only with cross-host differential and performance proof.
+Two-ended ribbon gradients, polar ribbons, and LOD/density ribbon policy remain
+explicit compatibility exceptions, and direct-browser ribbon authoring remains
+under #59.
 
 The ABI 96 primary numeric-format slice removes one more duplicated host
 decision from that compatibility boundary. For Scene-eligible linear, log, and
