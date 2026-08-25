@@ -294,7 +294,7 @@ def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
         _native.scene_raster_commands(huge_width)
 
 
-def test_python_step_mode_ingress_fails_closed_before_scene_encoding() -> None:
+def test_python_expansion_mode_ingress_fails_closed_before_scene_encoding() -> None:
     base = {
         "viewport": (100.0, 80.0),
         "margins": (10.0, 10.0, 10.0, 10.0),
@@ -314,11 +314,11 @@ def test_python_step_mode_ingress_fails_closed_before_scene_encoding() -> None:
         "y1": [0.0, 0.0],
     }
     with pytest.raises(ValueError, match="equal length"):
-        _native.scene_batch_encode(**base, step_modes=[1])
+        _native.scene_batch_encode(**base, expansion_modes=[1])
     with pytest.raises(ValueError, match="unsigned integer range"):
-        _native.scene_batch_encode(**base, step_modes=[4, 4])
+        _native.scene_batch_encode(**base, expansion_modes=[5, 5])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
-        _native.scene_batch_encode(**{**base, "kinds": [0, 0]}, step_modes=[1, 1])
+        _native.scene_batch_encode(**{**base, "kinds": [0, 0]}, expansion_modes=[1, 1])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
         _native.scene_batch_encode(
             **{
@@ -328,14 +328,36 @@ def test_python_step_mode_ingress_fails_closed_before_scene_encoding() -> None:
                 "stroke_rgba": [0, 0, 0, 255] * 2,
                 "stroke_width": [1.0, 1.0],
             },
-            step_modes=[1, 1],
+            expansion_modes=[1, 1],
         )
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
-        _native.scene_batch_encode(**{**base, "x0": [0.0, np.nan]}, step_modes=[2, 2])
+        _native.scene_batch_encode(**{**base, "x0": [0.0, np.nan]}, expansion_modes=[2, 2])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
-        _native.scene_batch_encode(**{**base, "x1": [1.0, 0.0]}, step_modes=[1, 1])
+        _native.scene_batch_encode(**{**base, "x1": [1.0, 0.0]}, expansion_modes=[1, 1])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
-        _native.scene_batch_encode(**{**base, "y1": [0.0, 1.0]}, step_modes=[1, 1])
+        _native.scene_batch_encode(**{**base, "y1": [0.0, 1.0]}, expansion_modes=[1, 1])
+
+    compact_ribbon = {
+        **base,
+        "kinds": [3, 3],
+        "stable_ids": [7, 7],
+        "diameter": [0.0, 0.0],
+        "symbols": [2, 2],
+        "x0": [0.0, 0.0],
+        "y0": [2.0, 1.0],
+        "x1": [1.0, 1.0],
+        "y1": [3.0, 2.0],
+    }
+    expanded = _native.scene_batch_encode(**compact_ribbon, expansion_modes=[4, 4])
+    assert int.from_bytes(expanded[16:24], "little") == 97
+    for malformed in (
+        {"stable_ids": [7, 8]},
+        {"symbols": [2, 1]},
+        {"x0": [0.0, 0.1]},
+        {"x1": [1.0, 0.9]},
+    ):
+        with pytest.raises(ValueError, match="invalid canonical scene batch"):
+            _native.scene_batch_encode(**{**compact_ribbon, **malformed}, expansion_modes=[4, 4])
 
 
 @pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])

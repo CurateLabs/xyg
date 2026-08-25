@@ -1,4 +1,4 @@
-"""Engine-neutral geometry producers shared by the raster PNG path.
+"""Compatibility geometry producers shared by the legacy static paths.
 
 The SVG exporter (`_svg.py`) bakes coordinates into SVG `d`/arc/`<image>` strings
 that its string-marker tests pin, so it stays the home of the pure math
@@ -66,8 +66,9 @@ def ribbon_polygon(
     One polygon, not two triangles or a mesh: the seam-free fill paths in both
     exporters require a single uniform-alpha shape, and a gradient across a
     triangle mesh is impossible anyway (the contract explains why). This is the
-    single reference both static exporters and the golden geometry test consume,
-    so SVG and PNG cannot drift from each other.
+    compatibility reference the gradient/static fallback exporters and their
+    golden geometry tests consume. Canonical solid-ribbon Scene expansion is
+    owned by Rust and deliberately does not call this helper.
     """
     upper = ribbon_edge(x0, x1, src_hi, dst_hi, steps)
     lower = ribbon_edge(x0, x1, src_lo, dst_lo, steps)

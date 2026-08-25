@@ -1911,7 +1911,7 @@ def scene_batch_encode(
     y0: npt.ArrayLike,
     x1: npt.ArrayLike,
     y1: npt.ArrayLike,
-    step_modes: npt.ArrayLike | None = None,
+    expansion_modes: npt.ArrayLike | None = None,
     title: str = "",
     x_label: str = "",
     y_label: str = "",
@@ -1968,11 +1968,11 @@ def scene_batch_encode(
     widths = _as_f64(np.asarray(stroke_width), "scene style stroke_width")
     diameters = _as_f64(np.asarray(diameter), "scene diameter")
     symbol_codes = scene_uint(symbols, np.uint8, np.iinfo(np.uint8).max, "scene symbols")
-    step_mode_codes = scene_uint(
-        np.zeros(len(kind_array), dtype=np.uint8) if step_modes is None else step_modes,
+    expansion_mode_codes = scene_uint(
+        np.zeros(len(kind_array), dtype=np.uint8) if expansion_modes is None else expansion_modes,
         np.uint8,
-        3,
-        "scene step_modes",
+        4,
+        "scene expansion_modes",
     )
     coordinates = [
         _as_f64(np.asarray(value), name)
@@ -1987,7 +1987,7 @@ def scene_batch_encode(
         raise ValueError(f"scene style tables are limited to {_MAX_SCENE_STYLES:,} entries")
     if any(
         len(value) != n
-        for value in [ids, styles, diameters, symbol_codes, step_mode_codes, *coordinates]
+        for value in [ids, styles, diameters, symbol_codes, expansion_mode_codes, *coordinates]
     ):
         raise ValueError("scene batch arrays must have equal length")
     if len(fills) != len(widths) * 4 or len(strokes) != len(widths) * 4:
@@ -2133,7 +2133,7 @@ def scene_batch_encode(
             len(widths),
             _ptr_f64(diameters) if n else 0,
             _ptr_u8(symbol_codes) if n else 0,
-            _ptr_u8(step_mode_codes) if n else 0,
+            _ptr_u8(expansion_mode_codes) if n else 0,
             *(_ptr_f64(value) if n else 0 for value in coordinates),
             n,
             ctypes.c_char_p(title_b) if title_b else None,

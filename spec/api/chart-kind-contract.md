@@ -102,10 +102,21 @@ lower edge: (x1, x)  C (xm, x)  (xm, y0) -> (x0, y0)
 closed path: M x0,y1  C…  L x1,x  C…  Z
 ```
 
-The raster flattens each edge at 96 steps; the client sweeps a triangle strip of
-the same 96 segments. Both consume the same Python reference,
-`_scene.ribbon_polygon`, so a divergence is a test failure rather than a
-rendering difference.
+For the bounded static-Scene route, hosts pack each ribbon as two adjacent Band
+rows with the same stable ID, style, and outline: the upper endpoint row
+followed by the lower endpoint row. ABI 97 marks both with
+`SceneExpansionMode::Ribbon`. Rust maps their endpoints through the selected
+axis scales first, then evaluates the two cubics at `SCENE_RIBBON_STEPS=96`
+(97 paired Band samples including both ends). SVG, raster, PDF-through-SVG, and
+the browser painter therefore consume the same canonical Scene geometry.
+Python `_scene.ribbon_polygon` remains compatibility-renderer code and is not
+an owner of Scene ribbon tessellation.
+
+This ABI 97 route covers finite, literal, solid-color ribbons on the bounded
+primary Cartesian static contract. Two-ended gradients, polar projection,
+LOD/density policy, and direct-browser authoring remain explicit non-goals; the
+last belongs to #59. Unsupported ribbons stay on the documented compatibility
+route rather than selecting an incomplete Scene.
 
 **Paint.** The gradient runs along the **flow axis**, from `x0` to `x1` — not
 along a value axis, which is what separates a ribbon from every other filled

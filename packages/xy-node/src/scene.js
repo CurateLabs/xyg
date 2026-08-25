@@ -225,7 +225,7 @@ function figureChromeStyle(figure) {
 /** Encode the shared backend-neutral Scene v12 typed batch. */
 export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
-  stepModes = null,
+  expansionModes = null,
   title = "", xLabel = "", yLabel = "", chromeStyle = null,
   xMajorTicks = null, xMinorTicks = [], yMajorTicks = null, yMinorTicks = [],
   xTickLabels = null, yTickLabels = null,
@@ -246,9 +246,9 @@ export function sceneBatchEncode({
   const styleRefArray = asUnsignedArray(styleRefs, "styleRefs", 0xffff_ffff, Uint32Array);
   const diameters = asF64Array(diameter, "diameter");
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
-  const stepModeCodes = stepModes == null
+  const expansionModeCodes = expansionModes == null
     ? new Uint8Array(kindArray.length)
-    : asUnsignedArray(stepModes, "stepModes", 3, Uint8Array);
+    : asUnsignedArray(expansionModes, "expansionModes", 4, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -263,7 +263,7 @@ export function sceneBatchEncode({
   }
   const coordinates = [x0, y0, x1, y1].map((value, index) => asF64Array(value, ["x0", "y0", "x1", "y1"][index]));
   const length = kindArray.length;
-  for (const [value, name] of [[ids, "stableIds"], [styleRefArray, "styleRefs"], [diameters, "diameter"], [symbolCodes, "symbols"], [stepModeCodes, "stepModes"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
+  for (const [value, name] of [[ids, "stableIds"], [styleRefArray, "styleRefs"], [diameters, "diameter"], [symbolCodes, "symbols"], [expansionModeCodes, "expansionModes"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
   const xd = axisDescriptor(xAxis, "xAxis");
   const yd = axisDescriptor(yAxis, "yAxis");
   const titleBytes = new TextEncoder().encode(String(title ?? ""));
@@ -331,7 +331,7 @@ export function sceneBatchEncode({
       authoredInput.length ? u8Ptr(authoredInput) : 0, BigInt(authoredInput.length),
       u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
       u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
-      f64Ptr(diameters), u8Ptr(symbolCodes), u8Ptr(stepModeCodes),
+      f64Ptr(diameters), u8Ptr(symbolCodes), u8Ptr(expansionModeCodes),
       ...coordinates.map(f64Ptr), BigInt(length),
       titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
       xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
@@ -434,8 +434,6 @@ export function sceneSupportReason(features, requestVersion = 1) {
   if (Number(written) !== required) throw new Error("native Scene support predicate returned an inconsistent length");
   return new TextDecoder("utf-8", { fatal: true }).decode(output);
 }
-const RIBBON_STEPS = 96;
-
 const LEGEND_LOCATIONS = new Map([["upper right", 0], ["upper left", 1], ["lower left", 2], ["lower right", 3], ["center right", 4], ["center left", 5], ["upper center", 6], ["lower center", 7], ["center", 8]]);
 
 function legendInput(figure, entries, styles) {
@@ -501,20 +499,6 @@ function colorbarInput(figure) {
   out.set(titleBytes, ticksStart + ticks.length * 8); return out;
 }
 
-function ribbonEdge(x0, x1, ya, yb, steps = RIBBON_STEPS) {
-  const outX = new Float64Array(steps + 1);
-  const outY = new Float64Array(steps + 1);
-  const mid = (x0 + x1) * 0.5;
-  for (let i = 0; i <= steps; i += 1) {
-    const t = i / steps;
-    const u = 1 - t;
-    outX[i] = u ** 3 * x0 + 3 * u ** 2 * t * mid + 3 * u * t ** 2 * mid + t ** 3 * x1;
-    outY[i] = u ** 3 * ya + 3 * u ** 2 * t * ya + 3 * u * t ** 2 * yb + t ** 3 * yb;
-  }
-  return { x: outX, y: outY };
-}
-
-
 function rejectRectExtras(style, kind) {
   if (style.fill != null && typeof style.fill === "object") {
     throw new RangeError(`Scene v12 does not yet encode ${kind} gradient fills`);
@@ -578,7 +562,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   if (reason) throw new RangeError(reason);
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
   if (unsupported) throw new RangeError(`Scene v12 figure compilation does not yet support ${unsupported.kind}`);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [], stepRuns = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [], expansionRuns = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -615,10 +599,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (RECT_KINDS.has(trace.kind)) rejectRectExtras(style, trace.kind);
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
-    const fillOpacity = BAND_KINDS.has(trace.kind) ? Number(style.fill_opacity ?? 1) : 1;
-    const strokeOpacity = BAND_KINDS.has(trace.kind) ? Number(style.stroke_opacity ?? 1) : 1;
+    const fillOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.fill_opacity ?? 1) : 1;
+    const strokeOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.stroke_opacity ?? 1) : 1;
     const lineOpacity = BAND_KINDS.has(trace.kind) ? Number(style.line_opacity ?? 1) : 1;
-    if (BAND_KINDS.has(trace.kind) && [fillOpacity, strokeOpacity, lineOpacity].some((value) => !Number.isFinite(value) || value < 0 || value > 1)) {
+    if ((BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind)) && [fillOpacity, strokeOpacity, lineOpacity].some((value) => !Number.isFinite(value) || value < 0 || value > 1)) {
       throw new RangeError("trace opacity channels must be in [0, 1]");
     }
     const color = style.color
@@ -629,7 +613,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (typeof fillCss !== "string") throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
     const strokeCss = BAND_KINDS.has(trace.kind)
       ? (style.line_color ?? color)
-      : (style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000"));
+      : RIBBON_KINDS.has(trace.kind)
+        ? (style.stroke ?? color)
+        : (style.stroke ?? (STROKE_KINDS.has(trace.kind) ? color : "#00000000"));
     const width = Number(
       style.stroke_width ?? style.width ?? style.line_width ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
     );
@@ -661,15 +647,18 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
       }
       for (let bandIndex = 0; bandIndex < count; bandIndex += 1) {
-        const upper = ribbonEdge(Number(trace.x0[bandIndex]), Number(trace.x1[bandIndex]), Number(trace.y1[bandIndex]), Number(trace.y[bandIndex]));
-        const lower = ribbonEdge(Number(trace.x0[bandIndex]), Number(trace.x1[bandIndex]), Number(trace.y0[bandIndex]), Number(trace.x[bandIndex]));
         const stableId = (BigInt(id) << 32n) | BigInt(bandIndex);
-        for (let sample = 0; sample < upper.x.length; sample += 1) {
+        const runStart = kinds.length;
+        for (const [startY, endY] of [
+          [trace.y1[bandIndex], trace.y[bandIndex]],
+          [trace.y0[bandIndex], trace.x[bandIndex]],
+        ]) {
           kinds.push(3); stableIds.push(stableId); styleRefs.push(styleRef);
           diameter.push(0); symbols.push(2);
-          x0.push(upper.x[sample]); y0.push(upper.y[sample]);
-          x1.push(lower.x[sample]); y1.push(lower.y[sample]);
+          x0.push(Number(trace.x0[bandIndex])); y0.push(Number(startY));
+          x1.push(Number(trace.x1[bandIndex])); y1.push(Number(endY));
         }
+        expansionRuns.push([runStart, kinds.length, 4]);
       }
       continue;
     }
@@ -776,7 +765,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
       x0.push(xv[index]); y0.push(yv[index]); x1.push(0); y1.push(0);
     }
-    if (where != null) stepRuns.push([runStart, kinds.length, { pre: 1, mid: 2, post: 3 }[where]]);
+    if (where != null) expansionRuns.push([runStart, kinds.length, { pre: 1, mid: 2, post: 3 }[where]]);
   }
   const annotationPrefix = 0x5859000000000000n, attachedLabels = [], straightArrows = [], cartesianCallouts = [], wrappedAnnotations = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
@@ -904,8 +893,8 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const xyadV3 = wrapped.length > 0, header = xyadV3 ? 28 : 24, out = new Uint8Array(header + xyat.length + xyal.length + xyar.length + xyac.length + (xyadV3 ? xyaw.length : 0)), view = new DataView(out.buffer); out.set(textEncoder.encode("XYAD")); view.setUint32(4,xyadV3 ? 3 : 2,true); view.setUint32(8,xyat.length,true); view.setUint32(12,xyal.length,true); view.setUint32(16,xyar.length,true); view.setUint32(20,xyac.length,true); if (xyadV3) view.setUint32(24,xyaw.length,true); out.set(xyat,header); out.set(xyal,header+xyat.length); out.set(xyar,header+xyat.length+xyal.length); out.set(xyac,header+xyat.length+xyal.length+xyar.length); if (xyadV3) out.set(xyaw,header+xyat.length+xyal.length+xyar.length+xyac.length); return out;
   })();
   const title = figure.title ?? "";
-  const stepModes = new Uint8Array(kinds.length);
-  for (const [start, end, mode] of stepRuns) stepModes.fill(mode, start, end);
+  const expansionModes = new Uint8Array(kinds.length);
+  for (const [start, end, mode] of expansionRuns) expansionModes.fill(mode, start, end);
   // `Figure.setAxis({ label })` is the public Node authoring form, matching
   // Python's `axis_options`; do not silently drop those bytes before the Rust
   // layout/Scene seam.
@@ -940,7 +929,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   }
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
-    kinds, stableIds, styleRefs, styles, diameter, symbols, stepModes, x0, y0, x1, y1,
+    kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
     title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
   });
 }

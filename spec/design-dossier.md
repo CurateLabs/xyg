@@ -542,11 +542,13 @@ F3, still pending (above).
   then exposes the exact same Scene v12 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports route the proven
   literal Cartesian subset through those consumers: circle/diamond scatter,
-  constant-style polyline, ordinary bar/column/histogram rectangles, and
+  constant-style polyline, ordinary area/error-band Bands,
+  bar/column/histogram rectangles, solid ribbons, and
   disconnected `segments`/error-bar/stem endpoint pairs (including the
   immediately-following generated circle/diamond stem marker). Gradients,
-  rounded corners, areas, dashed or data-driven segment styles, LOD/density,
-  nonliteral palettes, polar geometry, and unmodeled marks retain their
+  rounded corners, dashed or data-driven segment styles, LOD/density,
+  nonliteral palettes, two-ended ribbon gradients, polar geometry, and
+  unmodeled marks retain their
   compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
@@ -576,6 +578,13 @@ F3, still pending (above).
   explicit-major plus `XYTL` records. Scene stays v25, legacy raw `XYAD`
   remains valid, and the envelope keeps the batch function below Koffi's
   64-parameter ceiling. Dynamic browser formatting remains #59 work.
+  ABI 97 generalizes the parallel step-mode column to `expansion_modes` and
+  removes static ribbon tessellation from the hosts. Python and Node pack two
+  adjacent endpoint rows per finite literal solid ribbon; Rust applies the
+  Cartesian axis transforms and expands the curve into 97 paired Band samples
+  across `SCENE_RIBBON_STEPS=96` intervals before any consumer sees it. Scene
+  stays v25. Gradient, polar, LOD/density, and direct-browser ribbon authoring
+  remain explicit boundaries; the browser cutover belongs to #59.
   Unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. ABI 84 adds a versioned
   authored-feature presence predicate whose ordered actionable diagnostic is
