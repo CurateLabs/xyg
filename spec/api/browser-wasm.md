@@ -65,10 +65,12 @@ the required cancellation/supersession checkpoint before another chunk is
 staged. A finish before the declared count, an empty/oversized/misaligned
 chunk, flags, mean-color data, or domain/grid mismatch fails closed.
 
-This ABI foundation deliberately does **not** wire a host payload yet: it does
-not authorize a JavaScript binner, a full-source `XYAG` request, color planes,
-or a change to export routes. The next vertical must make ChartView transfer
-only these bounded chunks and prove its strict-CSP lifecycle.
+ChartView's supported split-payload vertical uses this seam for exactly one
+linear Cartesian count-only trace. It retains canonical f64 columns for replay
+and transfers only bounded chunks to the Worker; it does not authorize a
+JavaScript binner, a full-source `XYAG` request, color planes, or any export
+route change. Cancellation, supersession, and disposal are observed between
+chunk pushes.
 
 ```js
 const density = await attachWasmDensity(view, {
@@ -115,13 +117,13 @@ typed x/y source for every density trace; supported multi-trace journeys are
 serialized through the same Rust Worker. Kernel-backed journeys without that
 optional browser source retain their kernel route.
 
-`cartesian-count-f64-v1` is the automatic public split-payload contract for
-one linear Cartesian count-only density trace. Its x/y f64 buffers transfer
-once to the owned Worker and are retired from ChartView payload state after the
-handoff. Later viewports send only bounds and grid shape; Worker-side bounded
-O(N) XYAG framing precedes Rust XYAO aggregation, so no equivalent O(N) work
-runs on the UI thread. Its generated-ABI full-peak admission is 338,598 rows
-at 2048², including Worker canonical source plus Rust staging/output. Unsupported
+`cartesian-count-f64-stream-v1` is the automatic public split-payload contract
+for one linear Cartesian count-only density trace. Its x/y f64 buffers remain
+in ChartView payload state for future views. Each viewport sends an `XYAS`
+header and at most 32,768 raw f64 pairs per transferable chunk; Rust owns every
+domain, binning, grid, and LOD decision. The capacity equals the generated ABI
+aggregate limit (8,000,000 points), while source/chunk policy above one million
+points is deliberately not promised by this first host vertical. Unsupported
 inputs carry the stable `XYG_WASM_SOURCE_UNSUPPORTED` no-refinement diagnostic
 and stay on the kernel route.
 

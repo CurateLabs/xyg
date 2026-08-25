@@ -51,17 +51,19 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
     view: { ranges: { x: [0, 1], y: [0, 1] } },
   };
   if (fullSource) {
-    const x = new Float64Array([0.05, 0.2, 0.75, 0.95]);
-    const y = new Float64Array([0.05, 0.8, 0.25, 0.95]);
+    // Cross the generated 32,768-point stream boundary twice. The source
+    // remains in ChartView for the subsequent pan/recovery proof.
+    const n = 65_537, x = new Float64Array(n), y = new Float64Array(n);
+    for (let i = 0; i < n; i++) { x[i] = (i % 1024) / 1023; y[i] = ((i * 37) % 1024) / 1023; }
     spec.buffer_layout = "split";
     spec.columns = [
       { buf: 0, byte_offset: 0, len: grid.length, dtype: "f32" },
-      { buf: 1, byte_offset: 0, len: x.length, dtype: "f64", worker_owned: true },
-      { buf: 2, byte_offset: 0, len: y.length, dtype: "f64", worker_owned: true },
+      { buf: 1, byte_offset: 0, len: x.length, dtype: "f64" },
+      { buf: 2, byte_offset: 0, len: y.length, dtype: "f64" },
     ];
     spec.wasm_density = { automatic: true, source: {
-      kind: "cartesian-count-f64-v1", x: 1, y: 2, trace_id: 0,
-      point_count: 4, capacity: 338598, ownership: "transfer-to-worker",
+      kind: "cartesian-count-f64-stream-v1", x: 1, y: 2, trace_id: 0,
+      point_count: n, capacity: 8000000, ownership: "retain-host-replay",
     } };
     return new ChartView(host, spec, [new Uint8Array(grid.buffer), new Uint8Array(x.buffer), new Uint8Array(y.buffer)], comm);
   }
@@ -755,24 +757,37 @@ async function run() {
     send: (message) => fullSourceRequests.push(message), onMessage: () => () => {},
   }, false, true);
   fullSourceView.root.addEventListener("xy:wasm_density_error", (event) => fullSourceEvents.push(event.detail));
+  const fullSourceWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule,
+    maxArenaBytes: 8 * 1024 * 1024, evidenceCapability: "strict-csp-stream-resource-proof",
+  });
+  const fullSourceHandle = await attachWasmDensity(fullSourceView, {
+    worker: fullSourceWorker, workerOwnership: "own", delay: 0, streamSource: true,
+    input: {
+      traceId: 0,
+      x: new Float64Array(fullSourceView._payload[1].buffer),
+      y: new Float64Array(fullSourceView._payload[2].buffer),
+    },
+  });
   const fullSourceTrace = fullSourceView.gpuTraces.find((trace) => trace.tier === "density");
   const fullSourceOverview = fullSourceTrace.density;
   fullSourceView._scheduleViewRequest({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } }, { delay: 0 });
   for (let attempt = 0; attempt < 100 && !fullSourceView._wasmDensity?.diagnostics(); attempt++) await nextTask();
   if (!fullSourceView._wasmDensity?.diagnostics() || fullSourceTrace.density === fullSourceOverview
-      || fullSourceView.spec.wasm_density.source || fullSourceView._payload[1].byteLength || fullSourceView._payload[2].byteLength
+      || !fullSourceView.spec.wasm_density.source || fullSourceView._payload[1].byteLength !== 65_537 * 8 || fullSourceView._payload[2].byteLength !== 65_537 * 8
       || fullSourceRequests.length) {
-    throw new Error(`full-source automatic WASM density did not transfer/replace source correctly: ${JSON.stringify({
+    throw new Error(`full-source automatic WASM density did not retain/replay source correctly: ${JSON.stringify({
       diagnostics: fullSourceView._wasmDensity?.diagnostics(), source: fullSourceView.spec.wasm_density.source,
       payload: [fullSourceView._payload[1]?.byteLength, fullSourceView._payload[2]?.byteLength], requests: fullSourceRequests, events: fullSourceEvents,
       ranges: fullSourceTrace.density.xRange,
     })}`);
   }
   const fullSourceGrid = fullSourceTrace.density;
-  // Force an invalid viewport after source ownership has moved. This exercises
-  // the owned-source Worker framing error under the same strict-CSP module
-  // Worker—not the separate inline-only lifecycle evidence hook.
-  fullSourceView._wasmDensity.schedule({ ranges: { x: [0.5, 0.5], y: [0.25, 0.75] } }, { delay: 0, force: true });
+  // A capability-gated *Worker-side* XYAS declaration crosses the Rust
+  // resource guard (4097² cells), then the ordinary viewport recovers on the
+  // same strict-CSP module Worker. This is deliberately not a host-side
+  // invalid-argument short circuit.
+  await rejected(fullSourceHandle.evidenceLifecycle("stream_resource"), "XYG_WASM_RESOURCE_LIMIT");
   for (let attempt = 0; attempt < 100 && !fullSourceEvents.length; attempt++) await nextTask();
   if (fullSourceTrace.density !== fullSourceGrid || fullSourceEvents.length !== 1
       || fullSourceEvents[0].code !== "XYG_WASM_RESOURCE_LIMIT") {
@@ -782,6 +797,28 @@ async function run() {
   for (let attempt = 0; attempt < 100 && fullSourceTrace.density.xRange.join(",") !== "0,1"; attempt++) await nextTask();
   if (fullSourceTrace.density.xRange.join(",") !== "0,1") throw new Error("full-source WASM density did not recover after validation failure");
   fullSourceView.destroy(); fullSourceHost.remove();
+
+  foundationStage = "concurrent public XYAS stream supersession";
+  const concurrentWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 8 * 1024 * 1024,
+  });
+  await concurrentWorker.ready;
+  const concurrentX = new Float64Array(65_537), concurrentY = new Float64Array(65_537);
+  for (let index = 0; index < concurrentX.length; index++) {
+    concurrentX[index] = index / concurrentX.length; concurrentY[index] = 1 - concurrentX[index];
+  }
+  const firstStream = concurrentWorker.aggregateStream({ x: concurrentX, y: concurrentY }, {
+    x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
+  }, { sequence: 1 });
+  const secondStream = concurrentWorker.aggregateStream({ x: concurrentX, y: concurrentY }, {
+    x0: 0, x1: 1, y0: 0, y1: 1, width: 64, height: 64,
+  }, { sequence: 2 });
+  await rejected(firstStream.result, "XYG_WASM_CANCELLED");
+  const secondStreamResult = await secondStream.result;
+  if (!(secondStreamResult.aggregate instanceof ArrayBuffer) || !secondStreamResult.aggregate.byteLength) {
+    throw new Error("newer public XYAS stream did not settle after superseding its predecessor");
+  }
+  await concurrentWorker.dispose();
 
   foundationStage = "kernel-less retained-sample density uses local Rust/WASM";
   const standaloneDensityHost = document.createElement("div");

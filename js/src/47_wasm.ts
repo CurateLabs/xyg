@@ -4,6 +4,11 @@ import {
   XYG_WASM_SCENE_VERSION,
   XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS,
   XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS,
+  XYG_WASM_AGGREGATE_STREAM_MAGIC,
+  XYG_WASM_AGGREGATE_STREAM_VERSION,
+  XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES,
+  XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS,
+  XYG_WASM_AGGREGATE_STREAM_CHUNK_POINTS,
 } from "./wasm_abi_generated";
 import type { XygWasmTypedSeriesRequest } from "./49_wasm_chart";
 import type { XygWasmGraphCheckpoint } from "./49_wasm_graph";
@@ -17,6 +22,8 @@ export interface XygWasmWorkerOptions {
   wasm: XygWasmSource;
   /** Logical staging bound. The Rust adapter also enforces its compile-time ceiling. */
   maxArenaBytes?: number;
+  /** @internal Capability-gated browser lifecycle evidence; never runtime policy. */
+  evidenceCapability?: string;
 }
 
 /** Checked bytes plus a generated classic Worker IIFE for a file: export. */
@@ -90,13 +97,7 @@ export interface XygWasmAggregateTaskOptions {
   transfer?: true;
 }
 
-export interface XygWasmOwnedAggregateSource {
-  x: ArrayBuffer;
-  y: ArrayBuffer;
-  pointCount: number;
-}
-
-export interface XygWasmOwnedAggregateRequest {
+export interface XygWasmAggregateStreamRequest {
   x0: number; x1: number; y0: number; y1: number; width: number; height: number;
 }
 
@@ -222,8 +223,8 @@ export class XygWasmWorker {
     }
     this.maxArenaBytes = maxArenaBytes;
     this.inline = inline;
-    this.evidenceCapability = inline && typeof (options as XygInlineWasmWorkerOptions).evidenceCapability === "string"
-      ? (options as XygInlineWasmWorkerOptions).evidenceCapability : null;
+    this.evidenceCapability = typeof options.evidenceCapability === "string"
+      ? options.evidenceCapability : null;
     const blobUrl = inline ? URL.createObjectURL(new Blob([(options as XygInlineWasmWorkerOptions).inline.classicWorkerSource], { type: "application/javascript" })) : null;
     this.inlineBlobUrl = blobUrl;
     this.worker = inline
@@ -391,29 +392,50 @@ export class XygWasmWorker {
     return this.sceneTask("aggregate.bin2d", request, options);
   }
 
-  /** Transfer one canonical count-only f64 source into this Worker. */
-  installAggregateSource(source: XygWasmOwnedAggregateSource): Promise<void> {
+  /**
+   * Stream replayable host-owned canonical f64 columns through the bounded
+   * `XYAS` seam. Each transferred chunk is at most one Rust checkpoint; the
+   * source buffers themselves are never transferred or detached.
+   */
+  aggregateStream(source: { x: Float64Array; y: Float64Array }, request: XygWasmAggregateStreamRequest, options: XygWasmAggregateTaskOptions = {}): XygWasmTask<XygWasmSceneValidation & { aggregate: ArrayBuffer }> {
     this.assertLive();
-    if (!(source?.x instanceof ArrayBuffer) || !(source.y instanceof ArrayBuffer)
-        || !Number.isSafeInteger(source.pointCount) || source.pointCount <= 0
-        || source.x.byteLength !== source.pointCount * 8 || source.y.byteLength !== source.pointCount * 8) {
-      throw new TypeError("owned aggregate source must contain matching f64 ArrayBuffers");
-    }
-    const requestId = this.allocateRequest(), result = this.promiseFor<void>(requestId);
-    try { this.worker.postMessage({ type: "aggregate.source", requestId, source }, [source.x, source.y]); }
-    catch (cause) { this.pending.delete(requestId); throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer aggregate source"); }
-    return result;
-  }
-
-  /** Aggregate the Worker-owned canonical source; no source loop runs on the UI thread. */
-  aggregateOwnedSource(request: XygWasmOwnedAggregateRequest, options: XygWasmAggregateTaskOptions = {}): XygWasmTask<XygWasmSceneValidation & { aggregate: ArrayBuffer }> {
-    this.assertLive();
+    if (!(source?.x instanceof Float64Array) || !(source.y instanceof Float64Array)
+        || source.x.length !== source.y.length || !source.x.length) throw new TypeError("aggregate stream requires matching non-empty f64 columns");
+    if (![request?.x0, request?.x1, request?.y0, request?.y1].every(Number.isFinite)
+        || !(request.x1 > request.x0) || !(request.y1 > request.y0)
+        || !Number.isInteger(request.width) || !Number.isInteger(request.height) || request.width <= 0 || request.height <= 0) throw new TypeError("aggregate stream request is malformed");
     const sequence = options.sequence ?? this.nextSequence++;
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
     const requestId = this.allocateRequest(), result = this.promiseFor<XygWasmSceneValidation & { aggregate: ArrayBuffer }>(requestId);
-    try { this.worker.postMessage({ type: "aggregate.owned_source", requestId, sequence, request }); }
-    catch (cause) { this.pending.delete(requestId); throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not request aggregate"); }
+    const header = new ArrayBuffer(XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES), bytes = new Uint8Array(header), view = new DataView(header);
+    bytes.set(new TextEncoder().encode(XYG_WASM_AGGREGATE_STREAM_MAGIC), 0);
+    view.setUint32(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.version, XYG_WASM_AGGREGATE_STREAM_VERSION, true);
+    view.setUint32(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.header_bytes, XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES, true);
+    view.setUint32(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.point_count, source.x.length, true);
+    view.setUint32(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.width, request.width, true);
+    view.setUint32(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.height, request.height, true);
+    view.setFloat64(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.x0, request.x0, true); view.setFloat64(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.x1, request.x1, true);
+    view.setFloat64(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.y0, request.y0, true); view.setFloat64(XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS.y1, request.y1, true);
+    try {
+      this.worker.postMessage({ type: "aggregate.stream_begin", requestId, sequence, header }, [header]);
+      let offset = 0;
+      const push = () => {
+        if (this.disposed || !this.pending.has(requestId)) return;
+        if (offset >= source.x.length) { this.worker.postMessage({ type: "aggregate.stream_finish", requestId, sequence }); return; }
+        const count = Math.min(XYG_WASM_AGGREGATE_STREAM_CHUNK_POINTS, source.x.length - offset);
+        // `slice` is the bounded transfer copy. It preserves the canonical
+        // split payload for later view replay and never exposes a whole source
+        // buffer to the Worker.
+        const chunk = new Uint8Array(count * 16);
+        chunk.set(new Uint8Array(source.x.buffer, source.x.byteOffset + offset * 8, count * 8), 0);
+        chunk.set(new Uint8Array(source.y.buffer, source.y.byteOffset + offset * 8, count * 8), count * 8);
+        offset += count;
+        this.worker.postMessage({ type: "aggregate.stream_push", requestId, sequence, chunk: chunk.buffer }, [chunk.buffer]);
+        setTimeout(push, 0);
+      };
+      setTimeout(push, 0);
+    } catch (cause) { this.pending.delete(requestId); throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not start aggregate stream"); }
     return { requestId, sequence, result, cancel: () => {
       const pending = this.pending.get(requestId); if (!pending) return;
       this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "aggregate was cancelled", 6));
@@ -422,14 +444,17 @@ export class XygWasmWorker {
   }
 
   /** Gated test-only worker boundary used by the strict-CSP lifecycle proof. */
-  evidenceLifecycle(action: "malformed" | "resource" | "trap"): Promise<never> {
+  evidenceLifecycle(action: "malformed" | "resource" | "trap" | "stream_resource", sequence?: number): Promise<never> {
     this.assertLive();
-    if (!this.inline || !this.evidenceCapability) {
-      throw new XygWasmError("XYG_WASM_EVIDENCE_DISABLED", "inline lifecycle evidence is not enabled");
+    if (!this.evidenceCapability) {
+      throw new XygWasmError("XYG_WASM_EVIDENCE_DISABLED", "lifecycle evidence is not enabled");
+    }
+    if (action === "stream_resource" && (!Number.isInteger(sequence) || !sequence || sequence > 0xffffffff)) {
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", "stream lifecycle evidence requires a nonzero sequence");
     }
     const requestId = this.allocateRequest();
     const result = this.promiseFor<never>(requestId);
-    this.worker.postMessage({ type: "evidence.lifecycle", requestId, capability: this.evidenceCapability, action });
+    this.worker.postMessage({ type: "evidence.lifecycle", requestId, capability: this.evidenceCapability, action, sequence });
     return result;
   }
 

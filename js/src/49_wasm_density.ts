@@ -16,20 +16,7 @@ import {
   type XygWasmWorkerOptions,
   type XygInlineWasmWorkerOptions,
 } from "./47_wasm";
-import {
-  XYG_WASM_AGGREGATE_HEADER_BYTES,
-  XYG_WASM_AGGREGATE_MAX_POINTS,
-  XYG_WASM_AGGREGATE_MAX_GRID_CELLS,
-  XYG_WASM_AGGREGATE_ACCUMULATOR_STRIDE_COUNT,
-  XYG_WASM_AGGREGATE_OUTPUT_HEADER_BYTES,
-  XYG_WASM_AGGREGATE_OUTPUT_STRIDE_COUNT,
-  XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
-  XYG_WASM_AGGREGATE_CHECKPOINT_STRIDE_COUNT,
-  XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
-  XYG_WASM_AGGREGATE_OUTPUT_COPY_FACTOR,
-  XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT,
-  XYG_WASM_AGGREGATE_TOTAL_MEMORY_BYTES,
-} from "./wasm_abi_generated";
+import { XYG_WASM_AGGREGATE_MAX_POINTS, XYG_WASM_AGGREGATE_TOTAL_MEMORY_BYTES } from "./wasm_abi_generated";
 import type { ChartView } from "./50_chartview";
 
 export interface XygWasmDensityInput {
@@ -57,8 +44,8 @@ export interface XygWasmDensityOptions {
   delay?: number;
   /** @internal Keep the standalone retained-sample zoom/home-grid policy. */
   sampleRebin?: boolean;
-  /** @internal Source has already been validated and becomes Worker-owned after attach. */
-  ownedSource?: boolean;
+  /** @internal Automatic split-payload source streams without detaching it. */
+  streamSource?: boolean;
 }
 
 /** Explicit local assets for one standalone retained-sample density trace. */
@@ -90,20 +77,11 @@ export interface XygWasmDensityDiagnostics {
   memoryHighWaterBytes: number;
 }
 
-function generatedCountOnlyCapacity(): number {
-  const cells = XYG_WASM_AGGREGATE_MAX_GRID_CELLS;
-  const fixed = XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR * XYG_WASM_AGGREGATE_HEADER_BYTES
-    + cells * XYG_WASM_AGGREGATE_ACCUMULATOR_STRIDE_COUNT
-    + XYG_WASM_AGGREGATE_OUTPUT_COPY_FACTOR * (XYG_WASM_AGGREGATE_OUTPUT_HEADER_BYTES + cells * XYG_WASM_AGGREGATE_OUTPUT_STRIDE_COUNT)
-    + Math.min(XYG_WASM_AGGREGATE_CHECKPOINT_POINTS, XYG_WASM_AGGREGATE_MAX_POINTS) * XYG_WASM_AGGREGATE_CHECKPOINT_STRIDE_COUNT;
-  return Math.min(XYG_WASM_AGGREGATE_MAX_POINTS, Math.floor((XYG_WASM_AGGREGATE_TOTAL_MEMORY_BYTES - fixed) / (XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR * XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT + 16)));
-}
-
 function fullSourceInput(view: ChartView & any): XygWasmDensityInput | null {
   const source = view.spec?.wasm_density?.source;
-  if (source?.kind !== "cartesian-count-f64-v1" || source.ownership !== "transfer-to-worker"
+  if (source?.kind !== "cartesian-count-f64-stream-v1" || source.ownership !== "retain-host-replay"
       || !Number.isSafeInteger(source.point_count) || source.point_count <= 0
-      || source.point_count > generatedCountOnlyCapacity() || source.capacity !== generatedCountOnlyCapacity()
+      || source.point_count > XYG_WASM_AGGREGATE_MAX_POINTS || source.capacity !== XYG_WASM_AGGREGATE_MAX_POINTS
       || !Number.isInteger(source.x) || !Number.isInteger(source.y) || !Number.isInteger(source.trace_id)) return null;
   try {
     const x = view._columnView(view._payload, view.spec.columns[source.x]);
@@ -114,20 +92,6 @@ function fullSourceInput(view: ChartView & any): XygWasmDensityInput | null {
         || x.byteOffset !== 0 || y.byteOffset !== 0 || x.byteLength !== xBuffer.byteLength || y.byteLength !== yBuffer.byteLength) return null;
     return { traceId: source.trace_id, x, y };
   } catch { return null; }
-}
-
-function retireTransferredFullSource(view: ChartView & any, source: any) {
-  // postMessage detaches transferred ArrayBuffers synchronously, including
-  // when Worker-side validation rejects them. Do not retain either detached
-  // buffer in the live ChartView payload/spec afterwards.
-  for (const index of [source?.x, source?.y]) {
-    const column = view.spec?.columns?.[index];
-    if (column && Number.isInteger(column.buf) && Array.isArray(view._payload)) {
-      view._payload[column.buf] = new Uint8Array(0);
-      column.worker_owned = true;
-    }
-  }
-  delete view.spec?.wasm_density?.source;
 }
 
 function validInput(input: XygWasmDensityInput) {
@@ -185,7 +149,7 @@ export class XygWasmDensityHandle {
     private readonly ownWorker: boolean,
     private readonly delay: number,
     private readonly sampleRebin: boolean,
-    private readonly ownedSource = false,
+    private readonly streamSource = false,
   ) {}
 
   diagnostics(): XygWasmDensityDiagnostics | null {
@@ -194,8 +158,9 @@ export class XygWasmDensityHandle {
   /** Evidence/control boundary: cancel only the currently pending viewport. */
   cancel() { this.task?.cancel(); this.task = null; }
   /** @internal Strict-CSP lifecycle evidence only; capability-gated by worker. */
-  evidenceLifecycle(action: "malformed" | "resource" | "trap") {
-    return this.worker.evidenceLifecycle(action).catch((cause) => {
+  evidenceLifecycle(action: "malformed" | "resource" | "trap" | "stream_resource") {
+    const sequence = action === "stream_resource" ? ++this.aggregateSequence : undefined;
+    return this.worker.evidenceLifecycle(action, sequence).catch((cause) => {
       const error = cause instanceof XygWasmError ? cause : new XygWasmError(
         "XYG_WASM_WORKER_ERROR", cause instanceof Error ? cause.message : "WASM lifecycle failed",
       );
@@ -271,8 +236,8 @@ export class XygWasmDensityHandle {
     const height = Math.max(16, Math.min(2048, Math.round(this.view.plot.h)));
     let task: XygWasmTask<any> | null = null;
     try {
-      task = this.ownedSource
-        ? this.worker.aggregateOwnedSource({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: Math.min(y0, y1), y1: Math.max(y0, y1), width, height }, { sequence: ++this.aggregateSequence })
+      task = this.streamSource
+        ? this.worker.aggregateStream(input, { x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: Math.min(y0, y1), y1: Math.max(y0, y1), width, height }, { sequence: ++this.aggregateSequence })
         : aggregateWasmBin2d(this.worker, {
           x: input.x, y: input.y, rgba: input.rgba,
           x0: Math.min(x0, x1), x1: Math.max(x0, x1),
@@ -280,11 +245,11 @@ export class XygWasmDensityHandle {
         }, { sequence: ++this.aggregateSequence });
       this.task = task;
       const rawResult = await task.result;
-      // aggregateOwnedSource returns the same Worker XYAO envelope as the
-      // normal adapter. Decode at the shared transport boundary; it is not a
+      // The XYAS stream returns the same Worker XYAO envelope as the normal
+      // adapter. Decode at the shared transport boundary; it is not a
       // JavaScript aggregation path.
       let result = rawResult;
-      if (this.ownedSource) {
+      if (this.streamSource) {
         try {
           result = { ...rawResult, ...decodeWasmAggregateOutput(rawResult.aggregate) };
         } catch (cause) {
@@ -375,7 +340,7 @@ export async function attachWasmDensity(
   await view._wasmDensity?.dispose();
   const handle = new XygWasmDensityHandle(
     view, options.worker, supplied, options.workerOwnership === "own", options.delay ?? 120,
-    options.sampleRebin === true, options.ownedSource === true,
+    options.sampleRebin === true, options.streamSource === true,
   );
   view._wasmDensity = handle;
   // Fail early for an accidental trace id. The existing density grid stays
@@ -480,24 +445,8 @@ export function provisionKernelWasmDensity(
         // attachWasmDensity performs the public Float64Array/trace validation
         // while the source is still live. Do not postMessage-transfer first:
         // that would detach the views before this validation boundary.
-        ownedSource: full !== null,
+        streamSource: full !== null,
       });
-      if (full) {
-        const source = view.spec.wasm_density.source;
-        try {
-          await worker.installAggregateSource({
-            x: full.x.buffer as ArrayBuffer, y: full.y.buffer as ArrayBuffer, pointCount: full.x.length,
-          });
-        } catch (cause) {
-          await handle.dispose();
-          throw cause;
-        } finally {
-          // The transfer itself may fail/reject after detaching. In either
-          // case retire the payload contract rather than leave detached spans
-          // visible to a future ChartView operation.
-          retireTransferredFullSource(view, source);
-        }
-      }
       if (view._destroyed || view._wasmDensity !== handle) {
         await handle.dispose();
         return null;

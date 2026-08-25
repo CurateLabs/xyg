@@ -2,32 +2,13 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import numpy as np
 
 import xyg
+from xyg._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 
 
-def _generated_count_only_capacity() -> int:
-    abi = json.loads((Path(__file__).parents[1] / "spec" / "wasm" / "abi.json").read_text())
-    a = abi["aggregate"]
-    cells = a["max_grid_cells"]
-    fixed = (
-        a["request_copy_factor"] * a["header_bytes"]
-        + cells * a["accumulator_stride_count"]
-        + a["output_copy_factor"] * (a["output_header_bytes"] + cells * a["output_stride_count"])
-        + min(a["checkpoint_points"], a["max_points"]) * a["checkpoint_stride_count"]
-    )
-    return min(
-        a["max_points"],
-        (a["total_memory_bytes"] - fixed)
-        // (a["request_copy_factor"] * a["request_stride_count"] + 16),
-    )
-
-
-def test_split_density_payload_transfers_one_bounded_canonical_f64_source() -> None:
+def test_split_density_payload_retains_one_replayable_canonical_f64_source() -> None:
     n = 10_000
     chart = xyg.scatter_chart(
         xyg.scatter(np.linspace(-1.0, 1.0, n), np.linspace(1.0, -1.0, n), density=True),
@@ -39,17 +20,17 @@ def test_split_density_payload_transfers_one_bounded_canonical_f64_source() -> N
     spec, buffers = chart.figure().build_payload_split()
     source = spec["wasm_density"]["source"]
     assert source == {
-        "kind": "cartesian-count-f64-v1",
+        "kind": "cartesian-count-f64-stream-v1",
         "x": source["x"],
         "y": source["y"],
         "point_count": n,
         "trace_id": 0,
-        "capacity": _generated_count_only_capacity(),
-        "ownership": "transfer-to-worker",
+        "capacity": WASM_AGGREGATE_MAX_POINTS,
+        "ownership": "retain-host-replay",
     }
     x_meta, y_meta = spec["columns"][source["x"]], spec["columns"][source["y"]]
     assert x_meta["dtype"] == y_meta["dtype"] == "f64"
-    assert x_meta["worker_owned"] is y_meta["worker_owned"] is True
+    assert "worker_owned" not in x_meta and "worker_owned" not in y_meta
     assert (
         np.frombuffer(buffers[x_meta["buf"]], dtype="<f8").tolist()
         == np.linspace(-1.0, 1.0, n).tolist()
@@ -81,13 +62,13 @@ def test_packed_density_payload_keeps_the_screen_bounded_export_contract() -> No
     assert len(blob) < n * 16
 
     # This is the sole intentional exception to normal packed/split byte
-    # parity: the live split route adds two worker-owned f64 spans and names
+    # parity: the live split route adds two replayable f64 spans and names
     # them in a browser-only top-level contract.
     source = split["wasm_density"]["source"]
     source_bytes = sum(buffers[split["columns"][source[key]]["buf"]].nbytes for key in ("x", "y"))
     assert source_bytes == n * 16
     assert len(split["columns"]) == len(packed["columns"]) + 2
-    assert all(split["columns"][source[key]]["worker_owned"] is True for key in ("x", "y"))
+    assert all("worker_owned" not in split["columns"][source[key]] for key in ("x", "y"))
 
 
 def test_full_density_source_is_not_advertised_for_color_or_over_capacity() -> None:
@@ -98,6 +79,6 @@ def test_full_density_source_is_not_advertised_for_color_or_over_capacity() -> N
     unsupported = colored.figure().build_payload_split()[0]["wasm_density"]
     assert unsupported["automatic"] is False
     assert unsupported["unsupported"]["code"] == "XYG_WASM_SOURCE_UNSUPPORTED"
-    assert _generated_count_only_capacity() == 338_598
+    assert WASM_AGGREGATE_MAX_POINTS == 8_000_000
     # Avoid allocating the >8 MiB source here: the public gate is explicitly
     # bounded and exercised by its capacity metadata above.

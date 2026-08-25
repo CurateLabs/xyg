@@ -394,6 +394,7 @@ Forbidden:
 | `python/reflex_xy/vars.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/__init__.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_abi_generated.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
+| `python/xyg/_wasm_aggregate_generated.py` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
 | `python/xyg/_annotations.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_arrowgeom.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_benchmark_theme.py` | Python host | `python-host` | `keep-host` | — |
