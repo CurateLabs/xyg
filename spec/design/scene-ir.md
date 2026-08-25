@@ -535,8 +535,10 @@ nonnegative wrap width, and NUL-free literal text.  Width zero preserves only
 explicit newlines; positive width uses Rust's built-in 12px metrics and ASCII
 whitespace word breaking. Rust rejects blank lines, unbreakable tokens, more
 than 16 resolved lines, malformed reserved bytes, and any viewport-escaping
-leader or box. There is no markup, CSS/class, font, padding/radius, collision,
-hyphenation, Unicode line-breaking, or browser-resolved layout seam.
+leader or box. There is no markup, CSS/class, custom font, padding/radius,
+collision policy, hyphenation, Unicode line-breaking, or browser-resolved
+layout seam. Both public hosts reject each of those authored fields before the
+ABI; a positive `wrap` is Rust-owned layout, not permission for host shaping.
 
 The canonical result is `XYLB` v5: v4's fixed box/border record plus a resolved
 line count. Text contains Rust-selected LF separators. SVG emits those lines as

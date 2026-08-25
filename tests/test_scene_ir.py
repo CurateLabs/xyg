@@ -39,6 +39,7 @@ def test_strict_csp_authored_scene_fixture_is_public_figure_bytes() -> None:
     assert fixture["authoring"]["axes"]["x"]["side"] == "top"
     assert fixture["authoring"]["axes"]["y"]["side"] == "right"
     assert fixture["authoring"]["scatter"]["symbol"] == "diamond"
+    assert fixture["authoring"]["wrapped_callout"]["wrap"] == 128.0
     assert '<path d="M ' in _native.scene_svg(scene)  # canonical Rust diamond geometry
     assert all(chunk in scene for chunk in (b"XYGS", b"XYLG", b"XYCB", b"XYLB"))
 
@@ -61,11 +62,38 @@ def test_authored_scene_evidence_tiers_keep_rust_chrome_consumers(count: int) ->
         "observations",
         "Intensity",
         "representative callout",
+        "wrapped annotation",
+        "evidence",
+        "second line",
     ):
         assert text in svg
         assert text.encode() in raster
         assert text.encode() in painter
     assert all(chunk in painter for chunk in (b"XYLG", b"XYCB", b"XYLB"))
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("class_name", "browser-only", "BROWSER_CSS|class_name"),
+        ("style", {"font_family": "Example Sans"}, "font_family"),
+        ("style", {"markup": "<b>rich</b>"}, "markup"),
+        ("style", {"collision": "avoid"}, "collision"),
+    ],
+)
+def test_scene_v24_wrapped_annotations_fail_closed_for_host_layout_features(
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    """Wrapping is Rust layout, never a host markup/typography/collision seam."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.callout(0.5, 0.5, "wrapped annotation", wrap=96.0)
+    figure.annotations[0][field] = value
+    with pytest.raises(UnsupportedSceneV3, match=message):
+        figure.to_scene()
 
 
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:

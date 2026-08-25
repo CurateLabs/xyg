@@ -8,7 +8,7 @@ This ledger answers ownership file by file without treating language percentages
 
 The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
 
-Migration status: Scene v23 now moves canonical viewport/plot bounds, numeric
+Migration status: Scene v24 now moves canonical viewport/plot bounds, numeric
 axis transforms, chart/plot backgrounds, authored axis side and visibility,
 explicit major/minor tick geometry and paint, bounded primary static legend
 entry order/placement/frame/text/swatch policy, bounded semantic graph label
@@ -20,7 +20,10 @@ batch ABI. Their remaining migration classification covers figure-to-record
 assembly, additional mark families, and legacy static-export consumers. ABI 84
 also makes Rust authoritative for the ordered, stable failure reason attached
 to deferred authored Scene features; hosts only pack the versioned presence mask.
-Rust also owns whether resolved Cartesian Scene chrome produces SVG/raster
+Rust also owns bounded multiline/wrapped annotation line breaking, line count,
+and screen-space box/leader bounds; public hosts only pack literal inputs and
+reject markup, CSS/classes, custom fonts, and collision policy. Rust also owns
+whether resolved Cartesian Scene chrome produces SVG/raster
 primitives. Host paint alpha is data, not an implicit polar-mode signal; both
 hosts reject polar Scene compilation until the Scene schema records that mode.
 
@@ -325,7 +328,7 @@ Forbidden:
 | `js/src/49_wasm_temporal.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_temporal_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/50_chartview.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
-| `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `literal-projection-only`; Scene v23 owns rule/band/marker geometry, order, clipping, defaults, bounded attached-label anchors, literal Cartesian straight-arrow projection/head geometry, bounded Cartesian callout leader/label anchoring, and fixed literal label backgrounds/borders in Rust; rich annotation forms remain migration debt | #116 |
+| `js/src/51_annotations.ts` | Shared TypeScript browser client | `browser-client` | `literal-projection-only`; Scene v24 owns rule/band/marker geometry, order, clipping, defaults, bounded attached-label anchors, literal Cartesian straight-arrow projection/head geometry, bounded Cartesian callout leader/label anchoring, fixed literal label backgrounds/borders, and wrapped-line/box geometry in Rust; markup, CSS/classes, custom fonts, and collision policy remain migration debt | #116 |
 | `js/src/52_tooltip.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/53_interaction.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/54_kernel.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
