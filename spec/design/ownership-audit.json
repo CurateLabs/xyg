@@ -1283,6 +1283,14 @@
       "rationale": "The low-level declarations must be generated from the typed shared ABI contract."
     },
     {
+      "path": "python/xyg/_wasm_aggregate_generated.py",
+      "current_owner": "Generated cross-host WASM contract binding",
+      "policy": "browser-wasm-generated",
+      "disposition": "generate",
+      "follow_up_issue": 59,
+      "rationale": "The raw WebAssembly boundary must not drift independently across Rust, TypeScript, and the checked-in manifest."
+    },
+    {
       "path": "python/xyg/_annotations.py",
       "current_owner": "Python host with canonical-policy debt",
       "policy": "python-scene-migration",
