@@ -8,7 +8,13 @@
  * charts while #119 gathers parity and performance evidence.
  */
 import { aggregateWasmBin2d } from "./49_wasm_aggregate";
-import { XygWasmError, type XygWasmTask, type XygWasmWorker } from "./47_wasm";
+import {
+  createXygWasmWorker,
+  XygWasmError,
+  type XygWasmTask,
+  type XygWasmWorker,
+  type XygWasmWorkerOptions,
+} from "./47_wasm";
 import type { ChartView } from "./50_chartview";
 
 export interface XygWasmDensityInput {
@@ -33,6 +39,13 @@ export interface XygWasmDensityOptions {
   /** Borrow by default; only an explicitly dedicated Worker is disposed here. */
   workerOwnership?: "borrow" | "own";
   /** Debounce viewport changes; default matches the existing density path. */
+  delay?: number;
+  /** @internal Keep the standalone retained-sample zoom/home-grid policy. */
+  sampleRebin?: boolean;
+}
+
+/** Explicit local assets for one standalone retained-sample density trace. */
+export interface XygStandaloneWasmDensityOptions extends XygWasmWorkerOptions {
   delay?: number;
 }
 
@@ -84,6 +97,7 @@ export class XygWasmDensityHandle {
     private readonly inputs: readonly XygWasmDensityInput[],
     private readonly ownWorker: boolean,
     private readonly delay: number,
+    private readonly sampleRebin: boolean,
   ) {}
 
   diagnostics(): XygWasmDensityDiagnostics | null {
@@ -93,7 +107,29 @@ export class XygWasmDensityHandle {
   /** Called by ChartView's normal standalone density scheduling path. */
   schedule(viewOverride = this.view.view, options: any = {}) {
     if (this.disposed || this.view._destroyed || this.view._glLost) return;
-    if (!this.inputs.some((input) => this.trace(input))) return;
+    const trace = this.inputs.length === 1 ? this.trace(this.inputs[0]) : null;
+    if (!trace && !this.inputs.some((input) => this.trace(input))) return;
+    if (this.sampleRebin && trace) {
+      if (!trace._homeDensity) trace._homeDensity = trace.density;
+      const snapshot = this.view._copyView(viewOverride);
+      const [vx0, vx1] = this.view._axisRange(trace.xAxis, snapshot);
+      const [vy0, vy1] = this.view._axisRange(trace.yAxis, snapshot);
+      const [hx0, hx1] = this.view._axisRange(trace.xAxis, this.view.view0);
+      const [hy0, hy1] = this.view._axisRange(trace.yAxis, this.view.view0);
+      const atHome = Math.abs(vx1 - vx0) >= Math.max(Math.abs(hx1 - hx0), 1e-300) * (1 - 1e-6)
+        && Math.abs(vy1 - vy0) >= Math.max(Math.abs(hy1 - hy0), 1e-300) * (1 - 1e-6);
+      if (atHome) {
+        if (trace.density !== trace._homeDensity) {
+          const home = trace._homeDensity;
+          this.view._applySampleRebinGrid(trace, {
+            ...home,
+            tex: this.view._uploadGrid(home.grid, home.w, home.h, home.normMax || home.max || 1,
+              home.rgba, home.filter, this.view._fillOpacity(trace.trace.style)),
+          }, false);
+        }
+        return;
+      }
+    }
     const sequence = ++this.sequence;
     this.task?.cancel();
     this.task = null;
@@ -218,6 +254,7 @@ export async function attachWasmDensity(
   await view._wasmDensity?.dispose();
   const handle = new XygWasmDensityHandle(
     view, options.worker, supplied, options.workerOwnership === "own", options.delay ?? 120,
+    options.sampleRebin === true,
   );
   view._wasmDensity = handle;
   // Fail early for an accidental trace id instead of silently retaining the
@@ -228,4 +265,45 @@ export async function attachWasmDensity(
     throw new RangeError("each WASM density traceId must name a density trace in this ChartView");
   }
   return handle;
+}
+
+/**
+ * Locally create a Rust/WASM worker for the one retained-sample density trace
+ * in a kernel-less ChartView. Asset URLs/bytes remain explicit: no CDN, path
+ * guessing, Blob worker, or TypeScript aggregation is introduced.
+ */
+export async function attachStandaloneWasmDensity(
+  view: ChartView & any,
+  options: XygStandaloneWasmDensityOptions,
+): Promise<XygWasmDensityHandle> {
+  if (!view || typeof view._scheduleSampleRebin !== "function" || view._destroyed || view.comm) {
+    throw new TypeError("attachStandaloneWasmDensity requires a live kernel-less ChartView");
+  }
+  const targets = view.gpuTraces.filter((g: any) =>
+    g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu,
+  );
+  if (targets.length !== 1) {
+    throw new RangeError("attachStandaloneWasmDensity requires exactly one retained-sample density trace");
+  }
+  const trace = targets[0], cpu = trace.sampleOverlay._cpu;
+  const count = Math.min(cpu.x.length, cpu.y.length);
+  if (!count) throw new RangeError("standalone density sample is empty");
+  const x = new Float64Array(count), y = new Float64Array(count);
+  for (let index = 0; index < count; index++) {
+    x[index] = view._decodeValue(cpu.x, cpu.xMeta, index);
+    y[index] = view._decodeValue(cpu.y, cpu.yMeta, index);
+  }
+  const worker = createXygWasmWorker(options);
+  try {
+    return await attachWasmDensity(view, {
+      worker,
+      input: { traceId: trace.trace.id, x, y, rgba: view._sampleBinColors(trace, count) || undefined },
+      workerOwnership: "own",
+      delay: options.delay,
+      sampleRebin: true,
+    });
+  } catch (error) {
+    await worker.dispose();
+    throw error;
+  }
 }
