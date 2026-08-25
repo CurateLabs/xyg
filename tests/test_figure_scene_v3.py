@@ -57,6 +57,31 @@ def cartesian_callout_figure() -> Figure:
     return figure
 
 
+def public_callout_figure() -> Figure:
+    """The one-callout public-routing contract, including the v23 label box."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter([0.0, 1.0], [0.0, 1.0], color="#3987e5", size=6, opacity=0.8)
+    figure.callout(
+        0.5,
+        0.5,
+        "Public Rust",
+        dx=-12,
+        dy=-18,
+        anchor="middle",
+        style={
+            "color": "#344054",
+            "opacity": 0.9,
+            "width": 1.5,
+            "label_background": "#ffffff",
+            "label_border_color": "#98a2b3",
+            "label_border_width": 1.0,
+        },
+    )
+    return figure
+
+
 def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     scene = representative_figure().to_scene()
     assert hashlib.sha256(scene).hexdigest() == FIXTURE["expected_sha256"]
@@ -209,7 +234,7 @@ def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
 
 
 def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.MonkeyPatch) -> None:
-    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    figure = public_callout_figure()
 
     scene_svg = _native.scene_svg
     scene_raster_commands = _native.scene_raster_commands
@@ -227,6 +252,7 @@ def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.M
     monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
     svg = figure.to_svg()
     assert "XYGS" not in svg  # the public string is Rust's rendered SVG, not Scene bytes
+    assert 'role="listitem"' in svg and "Public Rust" in svg
     assert figure.to_scene()[:4] == b"XYGS"
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
@@ -238,7 +264,7 @@ def test_public_exporters_share_one_scene_selection_seam(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Format routing belongs to Scene orchestration, not each Python exporter."""
-    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    figure = public_callout_figure()
     public_static_export = _scene_v3.public_static_export
     formats: list[str] = []
 
@@ -266,7 +292,7 @@ def test_supported_file_exports_match_the_canonical_rust_scene(
     """
     from xyg import _pdf, export
 
-    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    figure = public_callout_figure()
     scene = figure.to_scene()
     expected = {
         "svg": _native.scene_svg(scene).encode("utf-8"),
@@ -347,7 +373,7 @@ def test_non_circle_symbols_keep_the_legacy_rust_scatter_svg_contract() -> None:
 
 def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> None:
     """The public journey must not merely produce valid files beside Scene."""
-    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    figure = public_callout_figure()
     svg = _scene_v3.figure_svg(figure)
     png = _scene_v3.try_public_png(figure, scale=1)
     pdf = _scene_v3.try_public_pdf(figure)
@@ -361,7 +387,7 @@ def test_supported_public_exports_match_rust_consumers_and_are_repeatable() -> N
 
 
 def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
-    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    figure = public_callout_figure()
 
     def broken_scene(*_args: object, **_kwargs: object) -> str:
         raise ValueError("broken Scene consumer")
@@ -369,7 +395,7 @@ def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.Mo
     def unexpected_compatibility(*_args: object, **_kwargs: object) -> str:
         raise AssertionError("a Scene consumer error must not select compatibility")
 
-    from xyg import _svg
+    from xyg import _raster, _svg
 
     monkeypatch.setattr(_native, "scene_svg", broken_scene)
     monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
@@ -377,6 +403,11 @@ def test_supported_public_export_failure_never_falls_back(monkeypatch: pytest.Mo
         figure.to_svg()
     with pytest.raises(ValueError, match="broken Scene consumer"):
         figure.to_image(format="pdf")
+
+    monkeypatch.setattr(_native, "scene_raster_commands", broken_scene)
+    monkeypatch.setattr(_raster, "to_png", unexpected_compatibility)
+    with pytest.raises(ValueError, match="broken Scene consumer"):
+        figure.to_png(scale=1)
 
 
 def test_try_public_scene_helpers_select_migrated_subset() -> None:

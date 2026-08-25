@@ -141,11 +141,17 @@ def _local(tag: Any) -> str:
 
 def _check_attrs(el: ET.Element, tag: str, allowed: frozenset[str]) -> None:
     for name in el.attrib:
-        if name not in allowed and not name.startswith("data-"):
+        if name not in allowed and not name.startswith("data-") and name not in _INERT_A11Y_ATTRS:
             # data-* is inert marker metadata (the polar chrome tags its rings
             # and spokes for tests); it carries no geometry or paint, so the
             # strict subset can ignore it rather than refuse the document.
             _unsupported(f"<{tag}> attribute {name!r}")
+
+
+# Scene SVG carries these only for assistive technology.  They neither select
+# geometry nor alter PDF paint, so the vector converter deliberately preserves
+# its strict visual vocabulary while ignoring this inert metadata.
+_INERT_A11Y_ATTRS = frozenset({"aria-hidden", "aria-label", "role"})
 
 
 def _float(value: Optional[str], default: float, what: str) -> float:

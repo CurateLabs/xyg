@@ -6251,6 +6251,10 @@ impl SceneDocument {
                     .saturating_add(30)
                     .saturating_add(label.text.len())
                     .saturating_add(usize::from(background.is_some()).saturating_mul(41))
+                    .saturating_add(
+                        usize::from(background.as_ref().and_then(|value| value.border.as_ref()).is_some())
+                            .saturating_mul(59),
+                    )
             },
         );
         let colorbar_capacity = self.colorbar.as_ref().map_or(0, |value| {
@@ -6304,7 +6308,7 @@ impl SceneDocument {
                 if let Some(border) = &background.border {
                     // Repeat the rectangle as a Rust-owned closed polyline for
                     // the native command consumer; no host derives geometry.
-                    out.push(2);
+                    out.push(3); // OP_STROKE
                     out.extend_from_slice(&5u32.to_le_bytes());
                     for (x, y) in [
                         (background.x, background.y),
@@ -6316,8 +6320,11 @@ impl SceneDocument {
                         push_raster_f32(out, x, scale)?;
                         push_raster_f32(out, y, scale)?;
                     }
-                    out.extend_from_slice(&border.rgba);
                     push_raster_f32(out, border.width, scale)?;
+                    out.extend_from_slice(&border.rgba);
+                    out.push(1); // closed
+                    out.extend_from_slice(&0u32.to_le_bytes()); // no dash
+                    out.push(1); // round cap
                 }
             }
             out.push(6);

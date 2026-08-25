@@ -161,6 +161,16 @@ def test_unsupported_svg_features_raise() -> None:
         svg_to_pdf(f'<svg {ns} width="100" height="50"><path d="M 0 0 Q 5 5 10 0"/></svg>')
 
 
+def test_scene_accessibility_metadata_is_inert_for_vector_pdf() -> None:
+    ns = 'xmlns="http://www.w3.org/2000/svg"'
+    pdf = svg_to_pdf(
+        f'<svg {ns} width="100" height="50"><g role="list" aria-label="Labels">'
+        '<rect aria-hidden="true" x="0" y="0" width="10" height="10" fill="#fff"/>'
+        '<text role="listitem" x="2" y="12">note</text></g></svg>'
+    )
+    assert pdf.startswith(b"%PDF-")
+
+
 def test_pdf_output_is_deterministic() -> None:
     svg = _basic_figure().to_svg()
     assert svg_to_pdf(svg) == svg_to_pdf(svg)
