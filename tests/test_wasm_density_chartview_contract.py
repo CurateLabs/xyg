@@ -77,3 +77,10 @@ def test_kernel_backed_density_automatically_provisions_one_supported_typed_sour
     assert 'workerOwnership: "own"' in source
     assert "provisionKernelWasmDensity(this, viewOverride, opts)" in kernel
     assert "automatic kernel-backed WASM density lifecycle" in browser
+
+
+def test_kernel_backed_typed_source_contract_provisions_all_supported_density_traces() -> None:
+    source = (ROOT / "js" / "src" / "49_wasm_density.ts").read_text(encoding="utf-8")
+    assert "const typedInputs = inputs as XygWasmDensityInput[]" in source
+    assert "worker, inputs: typedInputs" in source
+    assert "if (!targets.length) return null" in source
