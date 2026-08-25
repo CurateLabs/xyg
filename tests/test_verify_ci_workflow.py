@@ -1401,6 +1401,27 @@ def test_codspeed_workflow_rejects_missing_hosted_density_evidence(tmp_path: Pat
     )
 
 
+def test_codspeed_workflow_rejects_missing_shell_safe_density_chromium_lookup(
+    tmp_path: Path,
+) -> None:
+    workflow = Path(".github/workflows/codspeed.yml").read_text(encoding="utf-8")
+    path = tmp_path / "codspeed.yml"
+    path.write_text(
+        workflow.replace(
+            '          XYG_CHROMIUM="$(node -e \'process.stdout.write(require("playwright").chromium.executablePath())\')"\n',
+            "",
+        ),
+        encoding="utf-8",
+    )
+
+    errors = verify_ci_workflow.validate_codspeed_workflow(path)
+
+    assert any(
+        "changed-main authored-Scene browser evidence" in error and "XYG_CHROMIUM" in error
+        for error in errors
+    )
+
+
 def test_codspeed_workflow_rejects_scoped_authored_scene_node_native_path_duplication(
     tmp_path: Path,
 ) -> None:

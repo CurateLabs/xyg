@@ -169,8 +169,9 @@ jobs:
           .venv/bin/python scripts/verify_authored_scene_artifacts.py "$XYG_AUTHORED_SCENE_DIR" authored-scenes-node > authored-scene-native-${{ github.sha }}.json
           node benchmarks/bench_wasm_scene.mjs > "$XYG_EVIDENCE_PATH"
           python3 scripts/verify_wasm_scene_benchmark.py "$XYG_EVIDENCE_PATH" --sha "${{ github.sha }}"
+          XYG_CHROMIUM="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
           .venv/bin/python scripts/inline_density_file_benchmark.py \
-            --chrome "$(node -e \"process.stdout.write(require('playwright').chromium.executablePath())\")" \
+            --chrome "$XYG_CHROMIUM" \
             --output "hosted-density-browser-${{ github.sha }}.json"
           .venv/bin/python scripts/verify_inline_density_benchmark.py "hosted-density-browser-${{ github.sha }}.json" --sha "${{ github.sha }}"
       - name: Upload SHA-keyed raw authored-Scene evidence
