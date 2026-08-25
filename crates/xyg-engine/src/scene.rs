@@ -1882,9 +1882,9 @@ fn decode_xyat(
 /// Decode the bounded, host-authored literal paint for labels attached to
 /// canonical Scene annotation records. Rust retains placement and typography
 /// policy; hosts only supply an already-resolved RGBA literal and text.
-fn decode_xyal_rows(
-    bytes: &[u8],
-) -> Result<Vec<(u64, [u8; 4], Option<[u8; 4]>, String)>, SceneError> {
+type AttachedLabelRow = (u64, [u8; 4], Option<[u8; 4]>, String);
+
+fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<AttachedLabelRow>, SceneError> {
     if bytes.is_empty() {
         return Ok(Vec::new());
     }
