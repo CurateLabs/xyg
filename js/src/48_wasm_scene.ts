@@ -233,8 +233,8 @@ function compilePainter(painter: ArrayBuffer) {
   if (sceneLabelLength) {
     const start = nextString, end = start + sceneLabelLength;
     const version = u32(start + 4);
-    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || (version !== 1 && version !== 2 && version !== 3 && version !== 4)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
-    const count = u32(start + 8), textBytes = u32(start + 12), recordBytes = version === 1 ? 40 : version === 2 ? 44 : version === 3 ? 84 : 100, tableEnd = start + 16 + count * recordBytes;
+    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
+    const count = u32(start + 8), textBytes = u32(start + 12), recordBytes = version === 1 ? 40 : version === 2 ? 44 : version === 3 ? 84 : version === 4 ? 100 : 104, tableEnd = start + 16 + count * recordBytes;
     if (count > 128 || textBytes > 8192 || tableEnd + textBytes !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label table is invalid");
     let textOffset = tableEnd;
     for (let index = 0; index < count; index++) {
@@ -244,6 +244,7 @@ function compilePainter(painter: ArrayBuffer) {
       if (!(x >= 0 && x <= width && y >= 0 && y <= height && fontSize >= 1 && fontSize <= 1000) || anchor > 2 || (version >= 2 && bytes.subarray(record + 37, record + 40).some((value) => value !== 0)) || textOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label geometry is invalid");
       let label: string; try { label = decoder.decode(bytes.subarray(textOffset, textOffset + length)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid UTF-8"); }
       if (!label || label.includes("\0")) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid");
+      if (version === 5) { const lines = u32(record + 100); if (lines === 0 || lines > 16 || label.split("\n").length !== lines || label.split("\n").some((line) => !line)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter wrapped label is invalid"); }
       let box: {x: number; y: number; width: number; height: number; fill: string; border?: {color: string; width: number}} | undefined;
       if (version >= 3) {
         const flags = bytes[record + 44];
@@ -314,7 +315,7 @@ export function hydrateWasmPainter(
     layer.dataset.xyChrome = "graph_labels"; layer.setAttribute("role", "list"); layer.setAttribute("aria-label", "Graph labels");
     for (const label of compiled.sceneLabels) {
       const labelType = label.stableId & 0xffff_ff00_0000_0000n;
-      const annotation = labelType === 0x5859_0400_0000_0000n || labelType === 0x5859_0600_0000_0000n;
+      const annotation = labelType === 0x5859_0400_0000_0000n || labelType === 0x5859_0600_0000_0000n || labelType === 0x5859_0700_0000_0000n;
       if (label.box) {
         const box = document.createElement("span");
         box.dataset.xySlot = annotation ? "annotation_label_box" : "graph_label_box";
@@ -326,7 +327,7 @@ export function hydrateWasmPainter(
       const item = document.createElement("span");
       item.dataset.xySlot = annotation ? "annotation_label" : "graph_label"; item.dataset.xyStableId = label.stableId.toString(); item.setAttribute("role", annotation ? "note" : "listitem"); item.textContent = label.text;
       const translateX = label.anchor === 0 ? "0" : label.anchor === 1 ? "-50%" : "-100%";
-      Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, transform:`translateX(${translateX})`, whiteSpace:"nowrap"});
+      Object.assign(item.style, {position:"absolute", left:`${label.x}px`, top:`${label.y - label.fontSize}px`, color:label.color, fontSize:`${label.fontSize}px`, lineHeight:`${label.fontSize * 1.2}px`, transform:`translateX(${translateX})`, whiteSpace:label.text.includes("\n") ? "pre" : "nowrap"});
       layer.appendChild(item);
     }
     view.root.appendChild(layer);

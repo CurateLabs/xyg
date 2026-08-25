@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 23 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 24 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v23, so additive emission is not safe.
+bitmap or schema negotiation in Scene v24, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v23 batch layout,
+WASM lifecycle foundation; it validates the current Scene v24 batch layout,
 including the shared fixed header/mark widths retained since version 4, bounds,
 reserved bytes, kinds, style references, finite coordinates, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
@@ -525,6 +525,25 @@ the resolved border. SVG, raster, and browser consume those Rust-owned bounds
 and paint order. Older ingress and `XYLB` v1--v3 frames remain byte-valid.
 Padding, radius, wrapping, collision, markup, custom typography, CSS/classes,
 and host-resolved coordinates remain unsupported.
+
+## Version 24 bounded multiline and wrapped annotations
+
+`XYAD` v3 adds one exact-length `XYAW` v1 section after `XYAC`.  A row carries
+only Cartesian data coordinates, screen offsets, literal RGBA text/optional
+box/border paint, a `label`/fixed-head `callout` kind, an anchor, a finite
+nonnegative wrap width, and NUL-free literal text.  Width zero preserves only
+explicit newlines; positive width uses Rust's built-in 12px metrics and ASCII
+whitespace word breaking. Rust rejects blank lines, unbreakable tokens, more
+than 16 resolved lines, malformed reserved bytes, and any viewport-escaping
+leader or box. There is no markup, CSS/class, font, padding/radius, collision,
+hyphenation, Unicode line-breaking, or browser-resolved layout seam.
+
+The canonical result is `XYLB` v5: v4's fixed box/border record plus a resolved
+line count. Text contains Rust-selected LF separators. SVG emits those lines as
+`tspan`s, raster emits their Rust-resolved baselines, and the browser uses
+`white-space: pre` plus the fixed 1.2 line height. v1--v4 label tables and
+`XYAD` v1/v2 remain valid. The new consumer support is intentionally dormant
+until public Python and Node host packing lands in a separate slice.
 
 The combined public-host fixture is generated from
 `scripts/generate_authored_scene_benchmark.py` into the legacy-named
