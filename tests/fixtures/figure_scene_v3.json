@@ -11,11 +11,11 @@
     0,
     5
   ],
-  "expected_sha256": "3e9fc8cf05a9502b9aeb0a2f728ebfc91bb9f3b6c4f29e36f5f4133e1fe05486",
-  "default_scatter_sha256": "27ba3021f5b7462985ecc7d99063f2a9787a5ecce7f4f85d0e94c452fd1373e0",
-  "default_line_sha256": "31da9b756afcefe8e289fd687daa954c7a9479d20a10f4baa6334f4dc40e7d47",
+  "expected_sha256": "6806569b7cc2dccd19b0cda4af138b3e79391a715f12700b8172e0c3ef2a9069",
+  "default_scatter_sha256": "a51fc6e25b70065ab1b2785be1e0b10c7cc727d10892b4060e58705648aefdaf",
+  "default_line_sha256": "d958a1f3138dace291280ffeeb3ade50a218c77d8b95021ee4d97565ba7b27e8",
   "primary_legend_sha256": "495eccbc7316895d08b96c2da901ccc3f3976efca0c48414edd8035ca3bbee11",
-  "primary_annotations_sha256": "d0f0afe9836553997bab9e7d08f94ead0a5f2c6fcdaec5d8a467a0d9f23d2ae3",
+  "primary_annotations_sha256": "c620870bf384dec45df2ba58fc29c4f4b9d71f326a82a9987c569c86eaf9b953",
   "node_public_annotations": [
     {
       "kind": "rule",
@@ -44,8 +44,8 @@
       }
     }
   ],
-  "node_public_annotations_sha256": "d0f0afe9836553997bab9e7d08f94ead0a5f2c6fcdaec5d8a467a0d9f23d2ae3",
-  "cartesian_callout_sha256": "06d3eedaf487e62fc5d8da0c63b913ef74740ac5c79f021d4db33f872dabff05",
+  "node_public_annotations_sha256": "c620870bf384dec45df2ba58fc29c4f4b9d71f326a82a9987c569c86eaf9b953",
+  "cartesian_callout_sha256": "e07cfb882365f0220bf6c639ea1b45c598e188c42b87dcde1b2dc654d63cb268",
   "wasm_typed_series_v2": {
     "magic": "XYTS",
     "scatter_diameter": 8,

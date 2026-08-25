@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 20 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 21 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -469,6 +469,19 @@ the resolved rectangle before its label; browser DOM projects the exact
 geometry as an `aria-hidden` box before the `role=note` label. Borders, radius,
 author padding, wrapping, collision, markup, custom fonts/CSS/classes, and
 leader routing remain unsupported.
+
+## Version 21 bounded attached-label backgrounds
+
+Scene v21 evolves `XYAL` to v3 for an optional literal RGBA8 background on an
+already-supported attached rule, band, or marker label. Each v3 row retains
+the v2 stable id and label RGBA, adds the background at bytes 12--15, and moves
+the UTF-8 length to bytes 16--19. A transparent fill is absence, so a mixed
+batch uses v3 with transparent rows for labels without boxes. Rust alone
+derives the fixed-inset built-in-font rectangle from the existing resolved
+anchor and rejects a non-finite or viewport-escaping box before encoding the
+existing `XYLB` v3 output. SVG, raster, and browser consume that output only.
+Borders, padding, radius, wrapping, collision, custom typography, CSS/classes,
+and host-resolved coordinates remain unsupported.
 
 ## Version 19 Rust-owned bounded colorbar ticks
 

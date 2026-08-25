@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 20;
+pub const SCENE_VERSION: u32 = 21;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -1882,7 +1882,9 @@ fn decode_xyat(
 /// Decode the bounded, host-authored literal paint for labels attached to
 /// canonical Scene annotation records. Rust retains placement and typography
 /// policy; hosts only supply an already-resolved RGBA literal and text.
-fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<(u64, [u8; 4], String)>, SceneError> {
+fn decode_xyal_rows(
+    bytes: &[u8],
+) -> Result<Vec<(u64, [u8; 4], Option<[u8; 4]>, String)>, SceneError> {
     if bytes.is_empty() {
         return Ok(Vec::new());
     }
@@ -1890,7 +1892,7 @@ fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<(u64, [u8; 4], String)>, SceneEr
         return Err(SceneError::Length);
     }
     let version = batch_u32(bytes, 4)?;
-    if version != 1 && version != 2 {
+    if !(1..=3).contains(&version) {
         return Err(SceneError::Length);
     }
     let count = batch_u32(bytes, 8)? as usize;
@@ -1902,7 +1904,12 @@ fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<(u64, [u8; 4], String)>, SceneEr
     let mut seen = std::collections::BTreeSet::new();
     let mut rows = Vec::with_capacity(count);
     for _ in 0..count {
-        let fixed_bytes = if version == 1 { 12 } else { 16 };
+        let fixed_bytes = match version {
+            1 => 12,
+            2 => 16,
+            3 => 20,
+            _ => unreachable!(),
+        };
         let fixed_end = at.checked_add(fixed_bytes).ok_or(SceneError::Limit)?;
         let fixed = bytes.get(at..fixed_end).ok_or(SceneError::Length)?;
         let stable_id = u64::from_le_bytes(fixed[..8].try_into().unwrap());
@@ -1911,7 +1918,19 @@ fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<(u64, [u8; 4], String)>, SceneEr
         } else {
             fixed[8..12].try_into().unwrap()
         };
-        let len_at = if version == 1 { 8 } else { 12 };
+        let background = if version == 3 {
+            let rgba: [u8; 4] = fixed[12..16].try_into().unwrap();
+            (rgba[3] != 0).then_some(rgba)
+        } else {
+            None
+        };
+        let len_at = if version == 1 {
+            8
+        } else if version == 2 {
+            12
+        } else {
+            16
+        };
         let len = u32::from_le_bytes(fixed[len_at..len_at + 4].try_into().unwrap()) as usize;
         let end = fixed_end.checked_add(len).ok_or(SceneError::Limit)?;
         let text = std::str::from_utf8(bytes.get(fixed_end..end).ok_or(SceneError::Length)?)
@@ -1924,7 +1943,7 @@ fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<(u64, [u8; 4], String)>, SceneEr
         {
             return Err(SceneError::Limit);
         }
-        rows.push((stable_id, rgba, text.to_owned()));
+        rows.push((stable_id, rgba, background, text.to_owned()));
         at = end;
     }
     if at != bytes.len() {
@@ -1936,10 +1955,14 @@ fn decode_xyal_rows(bytes: &[u8]) -> Result<Vec<(u64, [u8; 4], String)>, SceneEr
 /// Decode labels attached to existing canonical Scene v12 annotation records.
 /// `XYAL` contains identities, literal paint, and text only: Rust derives every
 /// anchor from validated Scene geometry, so hosts cannot choose pixels or placement policy.
-fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>, SceneError> {
+fn decode_xyal(
+    bytes: &[u8],
+    document: &SceneDocument,
+) -> Result<(Vec<SceneLabel>, Vec<Option<SceneLabelBox>>), SceneError> {
     let rows = decode_xyal_rows(bytes)?;
     let mut labels = Vec::with_capacity(rows.len());
-    for (index, (stable_id, rgba, text)) in rows.into_iter().enumerate() {
+    let mut backgrounds = Vec::with_capacity(rows.len());
+    for (index, (stable_id, rgba, background, text)) in rows.into_iter().enumerate() {
         let records: Vec<_> = document
             .records
             .iter()
@@ -1970,7 +1993,7 @@ fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>
             }
             _ => return Err(SceneError::Length),
         };
-        labels.push(SceneLabel {
+        let label = SceneLabel {
             stable_id: 0x5859_0500_0000_0000 | index as u64,
             x,
             y,
@@ -1978,15 +2001,29 @@ fn decode_xyal(bytes: &[u8], document: &SceneDocument) -> Result<Vec<SceneLabel>
             rgba,
             anchor: 0,
             text,
+        };
+        backgrounds.push(match background {
+            Some(fill) => resolved_callout_label_background(
+                label.x,
+                label.y,
+                label.font_size,
+                label.anchor,
+                &label.text,
+                fill,
+                document.layout,
+            )?,
+            None => None,
         });
+        labels.push(label);
     }
-    Ok(labels)
+    Ok((labels, backgrounds))
 }
 
 /// Decode the bounded annotation-decoration envelope.  The envelope keeps
 /// standalone `XYAT` and attached `XYAL` records independently versioned.
 struct AnnotationEnvelope {
     labels: Vec<SceneLabel>,
+    label_backgrounds: Vec<Option<SceneLabelBox>>,
     arrows: Vec<StraightArrow>,
     callouts: Vec<CartesianCallout>,
 }
@@ -1998,6 +2035,7 @@ fn decode_annotation_envelope(
     if bytes.is_empty() {
         return Ok(AnnotationEnvelope {
             labels: Vec::new(),
+            label_backgrounds: Vec::new(),
             arrows: Vec::new(),
             callouts: Vec::new(),
         });
@@ -2036,7 +2074,8 @@ fn decode_annotation_envelope(
         document.y_scale,
         document.layout,
     )?;
-    let mut attached = decode_xyal(&bytes[xyat_end..xyal_end], document)?;
+    let (mut attached, mut attached_backgrounds) =
+        decode_xyal(&bytes[xyat_end..xyal_end], document)?;
     if labels
         .len()
         .checked_add(attached.len())
@@ -2051,7 +2090,9 @@ fn decode_annotation_envelope(
     for (index, label) in attached.iter_mut().enumerate() {
         label.stable_id = 0x5859_0500_0000_0000 | index as u64;
     }
+    let mut label_backgrounds = vec![None; labels.len()];
     labels.append(&mut attached);
+    label_backgrounds.append(&mut attached_backgrounds);
     let callouts = decode_xyac(
         &bytes[xyar_end..end],
         document.x_scale,
@@ -2070,6 +2111,7 @@ fn decode_annotation_envelope(
     }
     Ok(AnnotationEnvelope {
         labels,
+        label_backgrounds,
         arrows: decode_xyar(&bytes[xyal_end..xyar_end])?,
         callouts,
     })
@@ -2869,6 +2911,7 @@ pub struct SceneBatch<'a> {
     legend: Option<SceneLegend>,
     colorbar: Option<SceneColorbar>,
     labels: Vec<SceneLabel>,
+    label_backgrounds: Vec<Option<SceneLabelBox>>,
     arrows: Vec<StraightArrow>,
     callouts: Vec<CartesianCallout>,
     kinds: &'a [u8],
@@ -2924,9 +2967,10 @@ impl<'a> SceneBatch<'a> {
             self.y_scale,
             self.layout,
         )?;
+        let mut label_backgrounds = vec![None; labels.len()];
         let attached = &bytes[xyat_end..xyal_end];
         if !attached.is_empty() {
-            for (index, (stable_id, rgba, text)) in
+            for (index, (stable_id, rgba, background, text)) in
                 decode_xyal_rows(attached)?.into_iter().enumerate()
             {
                 let indices: Vec<_> = self
@@ -2980,7 +3024,7 @@ impl<'a> SceneBatch<'a> {
                 if !x.is_finite() || !y.is_finite() {
                     return Err(SceneError::Length);
                 }
-                labels.push(SceneLabel {
+                let label = SceneLabel {
                     stable_id: 0x5859_0500_0000_0000 | index as u64,
                     x,
                     y,
@@ -2988,7 +3032,20 @@ impl<'a> SceneBatch<'a> {
                     rgba,
                     anchor: 0,
                     text,
+                };
+                label_backgrounds.push(match background {
+                    Some(fill) => resolved_callout_label_background(
+                        label.x,
+                        label.y,
+                        label.font_size,
+                        label.anchor,
+                        &label.text,
+                        fill,
+                        self.layout,
+                    )?,
+                    None => None,
                 });
+                labels.push(label);
             }
         }
         if labels.len() > MAX_SCENE_LABELS {
@@ -3006,6 +3063,7 @@ impl<'a> SceneBatch<'a> {
             }
         }
         self.labels = labels;
+        self.label_backgrounds = label_backgrounds;
         let arrows = decode_xyar(&bytes[xyal_end..xyar_end])?;
         if self
             .stroke_width
@@ -3559,6 +3617,7 @@ impl<'a> SceneBatch<'a> {
             text,
             legend,
             colorbar,
+            label_backgrounds: vec![None; labels.len()],
             labels,
             arrows: Vec::new(),
             callouts: Vec::new(),
@@ -3580,7 +3639,7 @@ impl<'a> SceneBatch<'a> {
 
     pub fn encode(&self) -> Vec<u8> {
         let mut labels = self.labels.clone();
-        let mut label_backgrounds = vec![None; labels.len()];
+        let mut label_backgrounds = self.label_backgrounds.clone();
         for callout in &self.callouts {
             labels.push(callout.label.clone());
             label_backgrounds.push(callout.label_background.clone());
@@ -4473,10 +4532,8 @@ impl SceneDocument {
         for (index, label) in labels.iter_mut().enumerate() {
             label.stable_id = 0x5859_0400_0000_0000 | (existing + index) as u64;
         }
-        let added_label_count = labels.len();
         self.labels.append(&mut labels);
-        self.label_backgrounds
-            .extend(std::iter::repeat_n(None, added_label_count));
+        self.label_backgrounds.extend(envelope.label_backgrounds);
         self = self.with_straight_arrows(&envelope.arrows)?;
         self = self.with_cartesian_callouts(&envelope.callouts)?;
         Ok(self)
@@ -7609,7 +7666,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 20);
+        assert_eq!(SCENE_VERSION, 21);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
