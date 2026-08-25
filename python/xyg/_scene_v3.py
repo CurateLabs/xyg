@@ -797,7 +797,13 @@ def figure_scene(
     # XYAL v2 carries only literal RGBA paint with the annotation identity and
     # text. Rust still owns the anchor, clipping, typography, and paint order.
     attached_labels: list[
-        tuple[int, tuple[int, int, int, int], tuple[int, int, int, int] | None, str]
+        tuple[
+            int,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+            str,
+        ]
     ] = []
     straight_arrows: list[
         tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
@@ -821,6 +827,7 @@ def figure_scene(
             int,
             bytes,
             tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
         ]
     ] = []
     for annotation_index, annotation in enumerate(annotations):
@@ -876,7 +883,15 @@ def figure_scene(
             bad = sorted(
                 key
                 for key, style_value in style.items()
-                if key not in {"color", "opacity", "width", "label_background"}
+                if key
+                not in {
+                    "color",
+                    "opacity",
+                    "width",
+                    "label_background",
+                    "label_border_color",
+                    "label_border_width",
+                }
                 and style_value is not None
             )
             if bad:
@@ -910,6 +925,29 @@ def figure_scene(
                 if label_background is not None
                 else None
             )
+            border_color = style.get("label_border_color")
+            border_width = style.get("label_border_width")
+            if (border_color is None) != (border_width is None):
+                raise UnsupportedSceneV3("Scene v23 label border requires color and width")
+            label_border = (
+                (
+                    _rgba(
+                        annotation_color(style, "label_border_color", "", "callout label border"),
+                        1.0,
+                    ),
+                    annotation_number(
+                        style, "label_border_width", None, "callout label border width"
+                    ),
+                )
+                if border_color is not None
+                else None
+            )
+            if label_border is not None and (
+                not np.isfinite(label_border[1]) or label_border[1] <= 0
+            ):
+                raise ValueError("Scene v23 label border width must be positive and finite")
+            if label_border is not None and label_fill is None:
+                raise UnsupportedSceneV3("Scene v23 label border requires label_background")
             cartesian_callouts.append(
                 (
                     x,
@@ -922,6 +960,7 @@ def figure_scene(
                     anchor_code,
                     encoded,
                     label_fill,
+                    label_border,
                 )
             )
             continue
@@ -939,7 +978,13 @@ def figure_scene(
         style = dict(annotation.get("style") or {})
         allowed = {"color", "opacity"}
         if attached_text not in (None, ""):
-            allowed |= {"label_color", "label_opacity", "label_background"}
+            allowed |= {
+                "label_color",
+                "label_opacity",
+                "label_background",
+                "label_border_color",
+                "label_border_width",
+            }
         if kind == "rule":
             allowed.add("width")
         elif kind == "marker":
@@ -996,8 +1041,37 @@ def figure_scene(
                 if label_background is not None
                 else None
             )
+            border_color = style.get("label_border_color")
+            border_width = style.get("label_border_width")
+            if (border_color is None) != (border_width is None):
+                raise UnsupportedSceneV3("Scene v23 label border requires color and width")
+            label_border = (
+                (
+                    _rgba(
+                        annotation_color(style, "label_border_color", "", f"{kind} label border"),
+                        1.0,
+                    ),
+                    annotation_number(
+                        style, "label_border_width", None, f"{kind} label border width"
+                    ),
+                )
+                if border_color is not None
+                else None
+            )
+            if label_border is not None and (
+                not np.isfinite(label_border[1]) or label_border[1] <= 0
+            ):
+                raise ValueError("Scene v23 label border width must be positive and finite")
+            if label_border is not None and label_fill is None:
+                raise UnsupportedSceneV3("Scene v23 label border requires label_background")
             attached_labels.append(
-                (stable_id, _rgba(label_color, label_opacity), label_fill, attached_text)
+                (
+                    stable_id,
+                    _rgba(label_color, label_opacity),
+                    label_fill,
+                    label_border,
+                    attached_text,
+                )
             )
 
         def append_record(
@@ -1113,7 +1187,14 @@ def figure_scene(
     if len(cartesian_callouts) > 128:
         raise UnsupportedSceneV3("Scene callouts are limited to 128 entries")
     text_rows: list[
-        tuple[float, float, tuple[int, int, int, int], tuple[int, int, int, int] | None, bytes]
+        tuple[
+            float,
+            float,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+            bytes,
+        ]
     ] = []
     for annotation in text_annotations:
         value = annotation.get("text")
@@ -1125,9 +1206,15 @@ def figure_scene(
         x = annotation_number(annotation, "x", None, "text x")
         y = annotation_number(annotation, "y", None, "text y")
         style = dict(annotation.get("style") or {})
-        if set(style) - {"color", "opacity", "label_background"}:
+        if set(style) - {
+            "color",
+            "opacity",
+            "label_background",
+            "label_border_color",
+            "label_border_width",
+        }:
             raise UnsupportedSceneV3(
-                "Scene v22 text annotations support only color, opacity, and label_background"
+                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
             )
         rgba = _rgba(
             annotation_color(style, "color", "#667085", "text color"),
@@ -1139,28 +1226,56 @@ def figure_scene(
             if label_background is not None
             else None
         )
-        text_rows.append((x, y, rgba, label_fill, encoded))
-    xyat_v2 = any(label_fill is not None for _, _, _, label_fill, _ in text_rows)
+        border_color, border_width = (
+            style.get("label_border_color"),
+            style.get("label_border_width"),
+        )
+        if (border_color is None) != (border_width is None):
+            raise UnsupportedSceneV3("Scene v23 label border requires color and width")
+        label_border = (
+            (
+                _rgba(annotation_color(style, "label_border_color", "", "text label border"), 1.0),
+                annotation_number(style, "label_border_width", None, "text label border width"),
+            )
+            if border_color is not None
+            else None
+        )
+        if label_border is not None and (not np.isfinite(label_border[1]) or label_border[1] <= 0):
+            raise ValueError("Scene v23 label border width must be positive and finite")
+        if label_border is not None and label_fill is None:
+            raise UnsupportedSceneV3("Scene v23 label border requires label_background")
+        text_rows.append((x, y, rgba, label_fill, label_border, encoded))
+    xyat_v3 = any(label_border is not None for _, _, _, _, label_border, _ in text_rows)
+    xyat_v2 = any(label_fill is not None for _, _, _, label_fill, _, _ in text_rows)
     xyat = bytearray(
-        b"XYAT" + (2 if xyat_v2 else 1).to_bytes(4, "little") + len(text_rows).to_bytes(4, "little")
+        b"XYAT"
+        + (3 if xyat_v3 else 2 if xyat_v2 else 1).to_bytes(4, "little")
+        + len(text_rows).to_bytes(4, "little")
     )
-    for x, y, rgba, label_fill, encoded in text_rows:
+    for x, y, rgba, label_fill, label_border, encoded in text_rows:
         xyat.extend(struct.pack("<dd4s", x, y, bytes(rgba)))
-        if xyat_v2:
+        if xyat_v3 or xyat_v2:
             xyat.extend(bytes(label_fill or (0, 0, 0, 0)))
+        if xyat_v3:
+            xyat.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
+            xyat.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
         xyat.extend(struct.pack("<I", len(encoded)))
         xyat.extend(encoded)
-    xyal_v3 = any(label_fill is not None for _, _, label_fill, _ in attached_labels)
+    xyal_v4 = any(label_border is not None for _, _, _, label_border, _ in attached_labels)
+    xyal_v3 = any(label_fill is not None for _, _, label_fill, _, _ in attached_labels)
     xyal = bytearray(
         b"XYAL"
-        + (3 if xyal_v3 else 2).to_bytes(4, "little")
+        + (4 if xyal_v4 else 3 if xyal_v3 else 2).to_bytes(4, "little")
         + len(attached_labels).to_bytes(4, "little")
     )
-    for stable_id, rgba, label_fill, value in attached_labels:
+    for stable_id, rgba, label_fill, label_border, value in attached_labels:
         encoded = value.encode("utf-8")
         xyal.extend(struct.pack("<Q4s", stable_id, bytes(rgba)))
-        if xyal_v3:
+        if xyal_v4 or xyal_v3:
             xyal.extend(bytes(label_fill or (0, 0, 0, 0)))
+        if xyal_v4:
+            xyal.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
+            xyal.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
         xyal.extend(struct.pack("<I", len(encoded)))
         xyal.extend(encoded)
     xyar = bytearray(
@@ -1170,10 +1285,11 @@ def figure_scene(
         xyar.extend(
             struct.pack("<Qdddd4sdd", stable_id, x0, y0, x1, y1, bytes(rgba), opacity, width_value)
         )
-    xyac_v2 = any(label_fill is not None for *_, label_fill in cartesian_callouts)
+    xyac_v3 = any(label_border is not None for *_, label_border in cartesian_callouts)
+    xyac_v2 = any(label_fill is not None for *_, label_fill, _ in cartesian_callouts)
     xyac = bytearray(
         b"XYAC"
-        + (2 if xyac_v2 else 1).to_bytes(4, "little")
+        + (3 if xyac_v3 else 2 if xyac_v2 else 1).to_bytes(4, "little")
         + len(cartesian_callouts).to_bytes(4, "little")
     )
     for (
@@ -1187,6 +1303,7 @@ def figure_scene(
         anchor_code,
         encoded,
         label_fill,
+        label_border,
     ) in cartesian_callouts:
         xyac.extend(
             struct.pack(
@@ -1202,8 +1319,11 @@ def figure_scene(
                 len(encoded),
             )
         )
-        if xyac_v2:
+        if xyac_v3 or xyac_v2:
             xyac.extend(bytes(label_fill or (0, 0, 0, 0)))
+        if xyac_v3:
+            xyac.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
+            xyac.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
         xyac.extend(encoded)
     framed_annotations = bytearray(
         b"XYAD"

@@ -102,8 +102,9 @@ record. Scene v13 covers solid chart/plot backgrounds, authored
   consumers, and
   rule, band, marker annotations, bounded Rust-anchored attached labels, and
   bounded Rust-projected literal straight arrows, and bounded Rust-resolved
-  Cartesian callouts. Scene v20 adds only fixed Rust-resolved literal
-  callout-label backgrounds; rich label-box styling remains unsupported. Extra legends, named/advanced colorbars, other deferred
+  Cartesian callouts. Scene v20--v23 add fixed Rust-resolved literal label
+  backgrounds and bounded literal label-box borders; padding, radius, and
+  advanced text layout remain unsupported. Extra legends, named/advanced colorbars, other deferred
   annotation forms, custom
   tick strings, and advanced text layout remain loud unsupported boundaries.
   ABI 84's versioned support predicate makes the
