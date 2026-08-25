@@ -1658,8 +1658,9 @@ async function run() {
   const fullChromeStyle = fullChromeSurface ? getComputedStyle(fullChromeSurface) : null;
   if (fullChromeAxisCount < 2
       || !fullChromeLegend
-      || fullChromeLegendRows.length !== 1
+      || fullChromeLegendRows.length !== 2
       || fullChromeLegendRows[0].getAttribute("aria-label") !== "observations"
+      || fullChromeLegendRows[1].getAttribute("aria-label") !== "reference"
       || fullChromeColorbarTicks.length !== 3
       || fullChromeColorbarMinors.length !== 8
       || !fullChromeText.includes("Intensity")
