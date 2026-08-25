@@ -216,7 +216,9 @@ Python/Node line+bar and disconnected-segment fixtures, with separate exact
 cross-host fixtures for step expansion, histogram bins, and Python
 `column`/Node `bar` Rect equivalence. Newly selected line, Rect, and endpoint-pair
 figures require explicit Cartesian domains on the default axis sides and at
-most 10,000 source records per trace. Chart/plot backgrounds, title, authored
+most 10,000 host trace rows per trace. For segment-family traces, one row is
+one emitted endpoint pair, so generated error-bar cap pairs count toward that
+limit independently of their source observation. Chart/plot backgrounds, title, authored
 axis labels/sides/major-minor ticks, the independent public
 `x_axis(..., ticks=False|text=False)` and `y_axis(..., ticks=False|text=False)`
 visibility switches, primary legend, literal colorbar, one bounded callout, and

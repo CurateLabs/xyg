@@ -62,7 +62,7 @@
     "column_bar": "f69588c01e1ddaebfe66a9f38fd4aa207f97e653ffdf6802c54ea15690700e53"
   },
   "cartesian_callout_sha256": "bc32ae759236c27cbf477ae5b6c7d46ba38b01da25ea7a06d92ce0fb0483b17a",
-  "public_disconnected_segments_sha256": "efc5842efe9f4f6b262a0d11d4794ddb98da33a45cba54d7c294041025455db2",
+  "public_disconnected_segments_sha256": "a8215620f0b397a6e521c5d3d6b9824e9a548202a68a835d12e57497d850be66",
   "wasm_typed_series_v2": {
     "magic": "XYTS",
     "scatter_diameter": 8,

@@ -148,6 +148,16 @@ def _public_disconnected_segments() -> Figure:
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
     figure.segments([0.25, 2.5], [0.5, 0.75], [1.25, 3.5], [1.5, 2.0], color="#ef4444")
     figure.errorbar([1.0, 2.0], [2.0, 3.0], yerr=[0.25, 0.5], cap_size=0.2, color="#16a34a")
+    # One combined, capless call proves both admitted error-bar roles without
+    # duplicating the cap geometry already exercised above.
+    figure.errorbar(
+        [0.75, 1.5],
+        [4.25, 4.5],
+        yerr=[0.15, 0.25],
+        xerr=[0.1, 0.2],
+        cap_size=0.0,
+        color="#9333ea",
+    )
     figure.stem([3.0, 3.5], [3.5, 4.0], base=1.0, color="#2563eb", symbol="diamond")
     for index, trace in enumerate(figure.traces):
         trace.id = index
@@ -359,13 +369,22 @@ def test_public_router_routes_literal_disconnected_segments_through_all_static_c
 
     figure = _public_disconnected_segments()
     assert scene_export_support_reason(figure) is None
+    assert [trace.style.get("role") for trace in figure.traces] == [
+        "segments",
+        "y-errorbar",
+        "y-errorbar",
+        "x-errorbar",
+        "stem",
+        "stem-marker",
+    ]
     scene = figure_scene(figure)
     fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
     assert hashlib.sha256(scene).hexdigest() == fixture["public_disconnected_segments_sha256"]
-    # Two user segments, six error-bar stem/cap pairs, then two stems and
-    # their endpoint scatter. This order is the public paint contract.
+    # Two user segments, six capped vertical error-bar pairs, four capless
+    # combined x/y error-bar pairs, then two stems and their endpoint scatter.
+    # This order is the public paint contract.
     svg = _native.scene_svg(scene)
-    assert svg.count("<polyline ") == 10
+    assert svg.count("<polyline ") == 14
     assert svg.count("<path ") == 2  # two diamond endpoint markers
     assert svg.rfind("<polyline ") < svg.rfind("<path ")  # endpoint markers paint last
     assert figure.to_svg().encode() == svg.encode()
