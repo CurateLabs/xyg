@@ -691,7 +691,11 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       ) {
         throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
       }
-      const outline = style.stroke_perimeter === true ? 2 : 1;
+      const strokePerimeter = style.stroke_perimeter === undefined ? false : style.stroke_perimeter;
+      if (typeof strokePerimeter !== "boolean") {
+        throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
+      }
+      const outline = strokePerimeter ? 2 : 1;
       for (let index = 0; index < xv.length; index += 1) {
         kinds.push(3); stableIds.push(id); styleRefs.push(styleRef);
         diameter.push(0); symbols.push(outline);

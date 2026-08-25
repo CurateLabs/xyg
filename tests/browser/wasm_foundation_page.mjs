@@ -572,6 +572,30 @@ async function run() {
     }
     view.destroy(); host.remove();
   }
+  const encodedBandHarness = {
+    spec: { columns: [
+      { buf: 0, offset: 0, scale: 1 },
+      { buf: 1, offset: 100, scale: 0.25 },
+      { buf: 2, offset: -50, scale: 2 },
+    ] },
+    _columnView: (buffers, meta) => buffers[meta.buf],
+    _smoothArrays: () => null,
+    _upload: (values) => values,
+    root: document.body,
+    _resolveMarkFill: () => null,
+  };
+  const encodedBand = {};
+  ChartView.prototype._buildAreaMark.call(encodedBandHarness, encodedBand, {
+    x: 0, y: 1, base: 2, style: { stroke_perimeter: true },
+  }, [
+    new Float32Array([0, 1]),
+    new Float32Array([-20, -18]),
+    new Float32Array([100, 120]),
+  ]);
+  if (Array.from(encodedBand.bandLeftYBuf).join(",") !== "-20,-25"
+      || Array.from(encodedBand.bandRightYBuf).join(",") !== "-18,-22.5") {
+    throw new Error("browser Band perimeter endpoints mixed distinct y/base offset encodings");
+  }
   const failureContract = {
     wrong_version: ["XYG_WASM_SCENE_VERSION", 4],
     unsupported_kind: ["XYG_WASM_INVALID_ARGUMENT", 2],

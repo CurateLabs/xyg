@@ -687,6 +687,15 @@ def test_python_scene_compiles_area_and_error_band() -> None:
     assert band_scene[160 + 16 + 2] == 0
     assert '<path d="M ' in _native.scene_svg(band_scene)
 
+    invalid = Figure(width=240, height=160)
+    invalid.axis_options["x"]["domain"] = (0.0, 1.0)
+    invalid.axis_options["y"]["domain"] = (0.0, 1.0)
+    invalid.area([0.0, 1.0], [0.25, 0.75], base=0.0)
+    for invalid_value in ("true", 1, None):
+        invalid.traces[0].style["stroke_perimeter"] = invalid_value
+        with pytest.raises(UnsupportedSceneV3, match="stroke_perimeter must be a boolean"):
+            invalid.to_scene()
+
 
 def test_python_scene_compiles_box_and_contour() -> None:
     box = Figure(width=240, height=160)

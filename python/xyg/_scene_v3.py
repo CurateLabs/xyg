@@ -708,7 +708,10 @@ def figure_scene(
                 raise UnsupportedSceneV3(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
-            outline = 2 if bool(style.get("stroke_perimeter", False)) else 1
+            stroke_perimeter = style.get("stroke_perimeter", False)
+            if not isinstance(stroke_perimeter, bool):
+                raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
+            outline = 2 if stroke_perimeter else 1
             for index in range(len(xv)):
                 kinds.append(3)
                 stable_ids.append(int(trace.id))

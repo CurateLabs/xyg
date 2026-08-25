@@ -909,6 +909,14 @@ test("Node area matches Python Scene v25 Band outline bytes and consumers", () =
   inherited.setAxisDomain("x", [0, 2]); inherited.setAxisDomain("y", [0, 3]);
   inherited.area([0, 1, 2], [1, 2, 1.5], { style: { color: "#aabbcc" } });
   assert.deepEqual(inherited.toScene().slice(160, 167), Uint8Array.of(170, 187, 204, 89, 170, 187, 204));
+
+  const invalid = new Figure({ width: 240, height: 160 });
+  invalid.setAxisDomain("x", [0, 1]); invalid.setAxisDomain("y", [0, 1]);
+  invalid.area([0, 1], [0.25, 0.75]);
+  for (const invalidValue of ["true", 1, null]) {
+    invalid.traces[0].style.stroke_perimeter = invalidValue;
+    assert.throws(() => invalid.toScene(), /stroke_perimeter must be a boolean/);
+  }
 });
 
 test("Node frames literal v23 borders for text, attached, and callout label boxes", () => {
