@@ -45,6 +45,16 @@
     }
   ],
   "node_public_annotations_sha256": "2b0fcda60668b090aab50ec82aa8870283de22958bf1fca475da36ffb3b14de0",
+  "public_annotation_family": [
+    {"kind": "text", "x": 0.12, "y": 0.12, "text": "plain", "style": {"color": "#344054"}},
+    {"kind": "rule", "axis": "x", "value": 0.25, "text": "rule", "style": {"color": "#ef4444", "width": 2, "opacity": 1, "label_color": "#ef4444"}},
+    {"kind": "band", "axis": "y", "start": 0.3, "end": 0.42, "text": "band", "style": {"color": "#16a34a", "opacity": 0.2, "label_color": "#166534"}},
+    {"kind": "marker", "x": 0.7, "y": 0.72, "text": "marker", "size": 10, "symbol": "diamond", "style": {"color": "#2563eb", "stroke_color": "#ffffff", "stroke_width": 1.5, "opacity": 1, "label_color": "#1d4ed8"}},
+    {"kind": "arrow", "x0": 0.1, "y0": 0.85, "x1": 0.32, "y1": 0.68, "style": {"color": "#7c3aed", "width": 2, "opacity": 0.8}},
+    {"kind": "callout", "x": 0.5, "y": 0.54, "text": "callout", "dx": 24, "dy": -20, "anchor": "middle", "style": {"color": "#344054", "width": 1.5, "opacity": 1, "label_background": "#ffffff", "label_border_color": "#98a2b3", "label_border_width": 1}},
+    {"kind": "text", "x": 0.8, "y": 0.18, "text": "wrapped\ntext", "dx": -12, "dy": 14, "anchor": "end", "wrap": 72, "style": {"color": "#0f766e", "label_background": "#f0fdfa"}}
+  ],
+  "public_annotation_family_sha256": "d7b8a56c2daa3ccdfb86873a229e263af184a0916c99e87c3cf2c931f3f69589",
   "cartesian_callout_sha256": "bc32ae759236c27cbf477ae5b6c7d46ba38b01da25ea7a06d92ce0fb0483b17a",
   "wasm_typed_series_v2": {
     "magic": "XYTS",

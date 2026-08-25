@@ -201,6 +201,24 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   }
 });
 
+test("Node matches Python bytes for the full bounded public annotation family", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.scatter([0, 1], [0, 1], { id: 0, style: { color: "#3987e5", size: 6, opacity: 0.8 } });
+  for (const annotation of figureSceneFixture.public_annotation_family) figure.annotate(annotation);
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_annotation_family_sha256,
+  );
+  const svg = sceneSvg(scene);
+  for (const text of ["plain", "rule", "band", "marker", "callout", "wrapped", "text"]) {
+    assert.match(svg, new RegExp(text));
+  }
+  assert.ok(sceneRasterCommands(scene).length > 100);
+  assert.ok(Buffer.from(sceneBrowserPainter(scene)).includes(Buffer.from("wrapped")));
+});
+
 test("Node Figure authoring accepts bounded annotations without exposing a second policy", () => {
   const source = { kind: "text", x: 0.5, y: 0.5, text: "owned by Rust", style: { color: "#ff0000" } };
   const fromConstructor = new Figure({ width: 320, height: 240, annotations: [source] });
