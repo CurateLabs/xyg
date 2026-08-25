@@ -3314,6 +3314,249 @@ impl SceneRecordKind {
     }
 }
 
+/// Compact authored step mode accepted by the whole-Scene ABI. The enum is
+/// deliberately not serialized into Scene: Rust expands each compact source
+/// run to ordinary canonical Polyline records before Scene v25 encoding.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum SceneStepMode {
+    None = 0,
+    Pre = 1,
+    Mid = 2,
+    Post = 3,
+}
+
+impl SceneStepMode {
+    fn from_code(value: u8) -> Result<Self, SceneError> {
+        match value {
+            0 => Ok(Self::None),
+            1 => Ok(Self::Pre),
+            2 => Ok(Self::Mid),
+            3 => Ok(Self::Post),
+            _ => Err(SceneError::Length),
+        }
+    }
+}
+
+fn scene_step_run_end(stable_ids: &[u64], start: usize) -> usize {
+    let stable_id = stable_ids[start];
+    stable_ids[start + 1..]
+        .iter()
+        .position(|candidate| *candidate != stable_id)
+        .map_or(stable_ids.len(), |offset| start + 1 + offset)
+}
+
+/// Borrowed record columns entering Rust-owned compact-step expansion.
+pub struct SceneStepInput<'a> {
+    pub kinds: &'a [u8],
+    pub stable_ids: &'a [u64],
+    pub style_refs: &'a [u32],
+    pub diameter: &'a [f64],
+    pub symbols: &'a [u8],
+    pub x0: &'a [f64],
+    pub y0: &'a [f64],
+    pub x1: &'a [f64],
+    pub y1: &'a [f64],
+    pub step_modes: &'a [u8],
+}
+
+/// Owned canonical record columns after compact steps have been expanded.
+#[derive(Debug, PartialEq)]
+pub struct ExpandedSceneRecords {
+    pub kinds: Vec<u8>,
+    pub stable_ids: Vec<u64>,
+    pub style_refs: Vec<u32>,
+    pub diameter: Vec<f64>,
+    pub symbols: Vec<u8>,
+    pub x0: Vec<f64>,
+    pub y0: Vec<f64>,
+    pub x1: Vec<f64>,
+    pub y1: Vec<f64>,
+}
+
+impl ExpandedSceneRecords {
+    fn with_capacity(capacity: usize) -> Self {
+        Self {
+            kinds: Vec::with_capacity(capacity),
+            stable_ids: Vec::with_capacity(capacity),
+            style_refs: Vec::with_capacity(capacity),
+            diameter: Vec::with_capacity(capacity),
+            symbols: Vec::with_capacity(capacity),
+            x0: Vec::with_capacity(capacity),
+            y0: Vec::with_capacity(capacity),
+            x1: Vec::with_capacity(capacity),
+            y1: Vec::with_capacity(capacity),
+        }
+    }
+
+    fn push_source(&mut self, input: &SceneStepInput<'_>, index: usize) {
+        self.kinds.push(input.kinds[index]);
+        self.stable_ids.push(input.stable_ids[index]);
+        self.style_refs.push(input.style_refs[index]);
+        self.diameter.push(input.diameter[index]);
+        self.symbols.push(input.symbols[index]);
+        self.x0.push(input.x0[index]);
+        self.y0.push(input.y0[index]);
+        self.x1.push(input.x1[index]);
+        self.y1.push(input.y1[index]);
+    }
+
+    fn push_step(&mut self, stable_id: u64, style_ref: u32, x: f64, y: f64) {
+        self.kinds.push(SceneRecordKind::Polyline as u8);
+        self.stable_ids.push(stable_id);
+        self.style_refs.push(style_ref);
+        self.diameter.push(0.0);
+        self.symbols.push(0);
+        self.x0.push(x);
+        self.y0.push(y);
+        self.x1.push(0.0);
+        self.y1.push(0.0);
+    }
+}
+
+/// Expand compact `pre`/`mid`/`post` source runs into canonical Polyline
+/// vertices. A run is one contiguous stable identity; every row in a stepped
+/// run must agree on kind, style, and mode, so adjacent records cannot silently
+/// merge two differently-authored traces. The expanded count is checked before
+/// allocating or emitting any output.
+pub fn expand_scene_steps(input: SceneStepInput<'_>) -> Result<ExpandedSceneRecords, SceneError> {
+    let len = input.kinds.len();
+    if [
+        input.stable_ids.len(),
+        input.style_refs.len(),
+        input.diameter.len(),
+        input.symbols.len(),
+        input.x0.len(),
+        input.y0.len(),
+        input.x1.len(),
+        input.y1.len(),
+        input.step_modes.len(),
+    ]
+    .into_iter()
+    .any(|column_len| column_len != len)
+    {
+        return Err(SceneError::Length);
+    }
+
+    // Stable identity is the canonical Polyline run boundary. Reject any
+    // attempt to switch step mode inside one contiguous identity before a
+    // zero-mode prefix and stepped suffix could be emitted as one path.
+    let mut run_cursor = 0usize;
+    while run_cursor < len {
+        let run_end = scene_step_run_end(input.stable_ids, run_cursor);
+        let mode = SceneStepMode::from_code(input.step_modes[run_cursor])?;
+        if input.step_modes[run_cursor..run_end]
+            .iter()
+            .any(|candidate| SceneStepMode::from_code(*candidate) != Ok(mode))
+        {
+            return Err(SceneError::Length);
+        }
+        run_cursor = run_end;
+    }
+
+    let mut expanded_len = 0usize;
+    let mut cursor = 0usize;
+    while cursor < len {
+        let mode = SceneStepMode::from_code(input.step_modes[cursor])?;
+        if mode == SceneStepMode::None {
+            expanded_len = expanded_len.checked_add(1).ok_or(SceneError::Limit)?;
+            cursor += 1;
+            continue;
+        }
+        if input.kinds[cursor] != SceneRecordKind::Polyline as u8 {
+            return Err(SceneError::Length);
+        }
+        let style_ref = input.style_refs[cursor];
+        let run_end = scene_step_run_end(input.stable_ids, cursor);
+        for index in cursor..run_end {
+            if input.kinds[index] != SceneRecordKind::Polyline as u8
+                || input.style_refs[index] != style_ref
+                || SceneStepMode::from_code(input.step_modes[index])? != mode
+                || input.diameter[index] != 0.0
+                || input.symbols[index] != 0
+            {
+                return Err(SceneError::Length);
+            }
+            if !input.x0[index].is_finite()
+                || !input.y0[index].is_finite()
+                || !input.x1[index].is_finite()
+                || !input.y1[index].is_finite()
+            {
+                return Err(SceneError::NonFinite);
+            }
+            if input.x1[index] != 0.0 || input.y1[index] != 0.0 {
+                return Err(SceneError::Length);
+            }
+        }
+        let run_len = run_end - cursor;
+        let required = match mode {
+            SceneStepMode::None => unreachable!(),
+            SceneStepMode::Pre | SceneStepMode::Post => run_len
+                .checked_mul(2)
+                .and_then(|value| value.checked_sub(1))
+                .ok_or(SceneError::Limit)?,
+            SceneStepMode::Mid => run_len
+                .checked_mul(3)
+                .and_then(|value| value.checked_sub(2))
+                .ok_or(SceneError::Limit)?,
+        };
+        expanded_len = expanded_len
+            .checked_add(required)
+            .ok_or(SceneError::Limit)?;
+        cursor = run_end;
+    }
+    if expanded_len > MAX_SCENE_MARKS {
+        return Err(SceneError::Limit);
+    }
+
+    let mut output = ExpandedSceneRecords::with_capacity(expanded_len);
+    cursor = 0;
+    while cursor < len {
+        let mode = SceneStepMode::from_code(input.step_modes[cursor])?;
+        if mode == SceneStepMode::None {
+            output.push_source(&input, cursor);
+            cursor += 1;
+            continue;
+        }
+        let stable_id = input.stable_ids[cursor];
+        let style_ref = input.style_refs[cursor];
+        let run_end = scene_step_run_end(input.stable_ids, cursor);
+        output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
+        for index in cursor + 1..run_end {
+            let previous = index - 1;
+            let previous_x = input.x0[previous];
+            let previous_y = input.y0[previous];
+            let current_x = input.x0[index];
+            let current_y = input.y0[index];
+            match mode {
+                SceneStepMode::Pre => {
+                    output.push_step(stable_id, style_ref, previous_x, current_y);
+                    output.push_step(stable_id, style_ref, current_x, current_y);
+                }
+                SceneStepMode::Mid => {
+                    // Preserve the historical host contract exactly. If this
+                    // addition overflows, reject rather than emitting infinity.
+                    let midpoint = (previous_x + current_x) * 0.5;
+                    if !midpoint.is_finite() {
+                        return Err(SceneError::NonFinite);
+                    }
+                    output.push_step(stable_id, style_ref, midpoint, previous_y);
+                    output.push_step(stable_id, style_ref, midpoint, current_y);
+                    output.push_step(stable_id, style_ref, current_x, current_y);
+                }
+                SceneStepMode::Post => {
+                    output.push_step(stable_id, style_ref, current_x, previous_y);
+                    output.push_step(stable_id, style_ref, current_x, current_y);
+                }
+                SceneStepMode::None => unreachable!(),
+            }
+        }
+        cursor = run_end;
+    }
+    debug_assert_eq!(output.kinds.len(), expanded_len);
+    Ok(output)
+}
+
 pub struct SceneBatch<'a> {
     layout: PlotLayout,
     x_axis_id: u64,
@@ -8129,6 +8372,219 @@ pub fn cartesian_scene_margins(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Keep every borrowed column explicit so this fixture mirrors the Scene ABI.
+    #[allow(clippy::too_many_arguments)]
+    fn compact_step_input<'a>(
+        kinds: &'a [u8],
+        ids: &'a [u64],
+        styles: &'a [u32],
+        zeros: &'a [f64],
+        symbols: &'a [u8],
+        x: &'a [f64],
+        y: &'a [f64],
+        modes: &'a [u8],
+    ) -> SceneStepInput<'a> {
+        SceneStepInput {
+            kinds,
+            stable_ids: ids,
+            style_refs: styles,
+            diameter: zeros,
+            symbols,
+            x0: x,
+            y0: y,
+            x1: zeros,
+            y1: zeros,
+            step_modes: modes,
+        }
+    }
+
+    #[test]
+    fn compact_steps_expand_in_exact_pre_mid_post_order() {
+        let kinds = [1u8; 3];
+        let ids = [42u64; 3];
+        let styles = [7u32; 3];
+        let zeros = [0.0; 3];
+        let symbols = [0u8; 3];
+        let x = [0.0, 2.0, 4.0];
+        let y = [10.0, 20.0, 30.0];
+        let cases = [
+            (
+                1u8,
+                vec![
+                    (0.0, 10.0),
+                    (0.0, 20.0),
+                    (2.0, 20.0),
+                    (2.0, 30.0),
+                    (4.0, 30.0),
+                ],
+            ),
+            (
+                2u8,
+                vec![
+                    (0.0, 10.0),
+                    (1.0, 10.0),
+                    (1.0, 20.0),
+                    (2.0, 20.0),
+                    (3.0, 20.0),
+                    (3.0, 30.0),
+                    (4.0, 30.0),
+                ],
+            ),
+            (
+                3u8,
+                vec![
+                    (0.0, 10.0),
+                    (2.0, 10.0),
+                    (2.0, 20.0),
+                    (4.0, 20.0),
+                    (4.0, 30.0),
+                ],
+            ),
+        ];
+        for (mode, expected) in cases {
+            let modes = [mode; 3];
+            let expanded = expand_scene_steps(compact_step_input(
+                &kinds, &ids, &styles, &zeros, &symbols, &x, &y, &modes,
+            ))
+            .unwrap();
+            assert_eq!(
+                expanded.x0.into_iter().zip(expanded.y0).collect::<Vec<_>>(),
+                expected
+            );
+            assert!(expanded.kinds.iter().all(|kind| *kind == 1));
+            assert!(expanded.stable_ids.iter().all(|id| *id == 42));
+            assert!(expanded.style_refs.iter().all(|style| *style == 7));
+        }
+    }
+
+    #[test]
+    fn compact_steps_preserve_empty_singleton_and_distinct_runs() {
+        let empty = expand_scene_steps(SceneStepInput {
+            kinds: &[],
+            stable_ids: &[],
+            style_refs: &[],
+            diameter: &[],
+            symbols: &[],
+            x0: &[],
+            y0: &[],
+            x1: &[],
+            y1: &[],
+            step_modes: &[],
+        })
+        .unwrap();
+        assert!(empty.kinds.is_empty());
+
+        let singleton = expand_scene_steps(compact_step_input(
+            &[1],
+            &[9],
+            &[0],
+            &[0.0],
+            &[0],
+            &[3.0],
+            &[4.0],
+            &[2],
+        ))
+        .unwrap();
+        assert_eq!(singleton.x0, [3.0]);
+        assert_eq!(singleton.y0, [4.0]);
+
+        let separate = expand_scene_steps(compact_step_input(
+            &[1, 1],
+            &[9, 10],
+            &[0, 0],
+            &[0.0, 0.0],
+            &[0, 0],
+            &[3.0, 5.0],
+            &[4.0, 6.0],
+            &[2, 2],
+        ))
+        .unwrap();
+        assert_eq!(separate.x0, [3.0, 5.0]);
+        assert_eq!(separate.stable_ids, [9, 10]);
+    }
+
+    #[test]
+    fn compact_steps_fail_closed_for_malformed_nonfinite_and_overflow() {
+        let base = |kinds: &[u8], styles: &[u32], x: &[f64], modes: &[u8]| {
+            let len = kinds.len();
+            let ids = vec![1u64; len];
+            let zeros = vec![0.0; len];
+            let symbols = vec![0u8; len];
+            let y = vec![1.0; len];
+            expand_scene_steps(compact_step_input(
+                kinds, &ids, styles, &zeros, &symbols, x, &y, modes,
+            ))
+        };
+        assert_eq!(base(&[0], &[0], &[1.0], &[1]), Err(SceneError::Length));
+        assert_eq!(base(&[1], &[0], &[1.0], &[4]), Err(SceneError::Length));
+        assert_eq!(
+            base(&[1, 1], &[0, 1], &[1.0, 2.0], &[1, 1]),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            base(&[1, 1], &[0, 0], &[1.0, 2.0], &[1, 3]),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            base(&[1, 1], &[0, 0], &[1.0, 2.0], &[0, 1]),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            base(&[1], &[0], &[f64::NAN], &[1]),
+            Err(SceneError::NonFinite)
+        );
+        assert_eq!(
+            base(&[1, 1], &[0, 0], &[f64::MAX, f64::MAX], &[2, 2]),
+            Err(SceneError::NonFinite)
+        );
+        let kinds = [1u8];
+        let ids = [1u64];
+        let styles = [0u32];
+        let zeros = [0.0f64];
+        let symbols = [0u8];
+        let values = [1.0f64];
+        let modes = [1u8];
+        let nonzero = [2.0f64];
+        let rejected_reserved = |x1: &[f64], y1: &[f64]| {
+            let mut input = compact_step_input(
+                &kinds, &ids, &styles, &zeros, &symbols, &values, &values, &modes,
+            );
+            input.x1 = x1;
+            input.y1 = y1;
+            expand_scene_steps(input)
+        };
+        assert_eq!(
+            rejected_reserved(&nonzero, &zeros),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            rejected_reserved(&zeros, &nonzero),
+            Err(SceneError::Length)
+        );
+        let nonfinite = [f64::NAN];
+        assert_eq!(
+            rejected_reserved(&nonfinite, &zeros),
+            Err(SceneError::NonFinite)
+        );
+    }
+
+    #[test]
+    fn compact_step_expansion_enforces_the_canonical_record_budget() {
+        let len = MAX_SCENE_MARKS / 3 + 2;
+        let kinds = vec![1u8; len];
+        let ids = vec![1u64; len];
+        let styles = vec![0u32; len];
+        let zeros = vec![0.0; len];
+        let symbols = vec![0u8; len];
+        let modes = vec![2u8; len];
+        assert_eq!(
+            expand_scene_steps(compact_step_input(
+                &kinds, &ids, &styles, &zeros, &symbols, &zeros, &zeros, &modes,
+            )),
+            Err(SceneError::Limit)
+        );
+    }
 
     fn raster_text_count(commands: &[u8]) -> Option<usize> {
         let mut offset = 0usize;

@@ -256,6 +256,50 @@ def test_python_scene_raster_rejects_nonrepresentable_f32_commands() -> None:
         _native.scene_raster_commands(huge_width)
 
 
+def test_python_step_mode_ingress_fails_closed_before_scene_encoding() -> None:
+    base = {
+        "viewport": (100.0, 80.0),
+        "margins": (10.0, 10.0, 10.0, 10.0),
+        "x_axis": (1, 0, 0.0, 1.0, 1.0, False),
+        "y_axis": (2, 0, 0.0, 1.0, 1.0, False),
+        "kinds": [1, 1],
+        "stable_ids": [1, 1],
+        "style_refs": [0, 0],
+        "fill_rgba": [0, 0, 0, 0],
+        "stroke_rgba": [0, 0, 0, 255],
+        "stroke_width": [1.0],
+        "diameter": [0.0, 0.0],
+        "symbols": [0, 0],
+        "x0": [0.0, 1.0],
+        "y0": [0.0, 1.0],
+        "x1": [0.0, 0.0],
+        "y1": [0.0, 0.0],
+    }
+    with pytest.raises(ValueError, match="equal length"):
+        _native.scene_batch_encode(**base, step_modes=[1])
+    with pytest.raises(ValueError, match="unsigned integer range"):
+        _native.scene_batch_encode(**base, step_modes=[4, 4])
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(**{**base, "kinds": [0, 0]}, step_modes=[1, 1])
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(
+            **{
+                **base,
+                "style_refs": [0, 1],
+                "fill_rgba": [0, 0, 0, 0] * 2,
+                "stroke_rgba": [0, 0, 0, 255] * 2,
+                "stroke_width": [1.0, 1.0],
+            },
+            step_modes=[1, 1],
+        )
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(**{**base, "x0": [0.0, np.nan]}, step_modes=[2, 2])
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(**{**base, "x1": [1.0, 0.0]}, step_modes=[1, 1])
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
+        _native.scene_batch_encode(**{**base, "y1": [0.0, 1.0]}, step_modes=[1, 1])
+
+
 @pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
 def test_supported_public_exports_route_through_rust_scene(
     monkeypatch: pytest.MonkeyPatch, factory

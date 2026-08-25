@@ -191,8 +191,8 @@ The existing `xyg_scene_scatter_svg` entry point remains a compatibility
 wrapper during migration. Version 3 intentionally has no mark-specific new SVG
 ABIs: whole-scene SVG/raster consumers attach to the single scene batch.
 Python `Figure.to_scene()` and Node `Figure.toScene()` compile the migrated
-constant-style cartesian subset plus two axes: scatter/line (with host-side
-`step` expansion for `pre`/`post`/`mid`), rect-family marks
+constant-style cartesian subset plus two axes: scatter/line (with compact
+`pre`/`post`/`mid` samples expanded by Rust), rect-family marks
 (`bar`/`column`/`histogram`/`violin`/`box`), segment-family marks
 (`segments`/`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`) as
 disconnected Scene Polyline runs (unique stable id per segment), and
@@ -214,7 +214,7 @@ layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven literal Cartesian static contract
 through Rust Scene: constant-style circle/diamond scatter; ordinary finite,
 fixed-domain area/error-band Bands; constant-style
-polyline (including host-expanded literal steps); and the ordinary Rect family
+polyline (including Rust-expanded literal steps); and the ordinary Rect family
 (`bar`/`column`/`histogram`); plus bounded literal disconnected endpoint pairs
 for `segments`, error-bar stems/caps, and `stem` with its immediate generated
 circle/diamond marker. The geometry records are byte-identical for the shared
@@ -236,6 +236,15 @@ established compatibility renderers until their output contract is encoded;
 they must not silently select a semantically incomplete scene. Missing/nonfinite
 coordinates and malformed selected literals fail closed rather than falling
 back. This is a migration boundary, not a silent approximation.
+
+ABI 95 supplies a parallel `u8 step_modes` column (`0=none`, `1=pre`,
+`2=mid`, `3=post`) to the whole-Scene encoder. A nonzero mode is valid only for
+one contiguous Polyline stable-id run whose style and mode are constant. Rust
+requires the unused secondary endpoint columns (`x1`/`y1`) to remain zero and
+rejects malformed, nonfinite, midpoint-overflowing, or over-budget expansion
+before any consumer sees a Scene. Scene v25 bytes are unchanged because the
+enum is an authoring ingress only. `XYTS` v2 intentionally has no step field and
+remains fail-closed.
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -827,7 +836,8 @@ paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
 gutters, including the selected literal-colorbar outer lane, for Scene compilation. Cartesian rect-family hosts
 (`bar`, `column`, `histogram`, `violin`, `box`) share Scene Rect records;
 segment-family hosts (`segments`, `errorbar`, `stem`, `contour`,
-`box_whisker`, `box_median`) and stepped lines share Scene Polyline records;
+`box_whisker`, `box_median`) and Rust-expanded stepped lines share Scene
+Polyline records;
 band-family hosts (`area`, `error_band`, solid `ribbon`) share Scene Band
 records; `triangle_mesh` shares Scene PolyFill records. Browser DOM measurement and
 WebGL paint remain environment-specific consumers with documented layout

@@ -377,7 +377,7 @@ Forbidden:
 | `packages/xy-node/src/marks/scatter.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/segments.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/stem.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
-| `packages/xy-node/src/marks/step.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/marks/step.js` | Node compact authoring adapter | `node-host-authoring` | `keep-thin`; ABI 95 passes compact step mode/source columns and Rust owns canonical Scene expansion | #58 |
 | `packages/xy-node/src/marks/triangle_mesh.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/violin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/native-path.js` | Node host | `node-host` | `keep-host` | — |

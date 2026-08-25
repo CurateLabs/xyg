@@ -61,6 +61,11 @@
     "histogram": "a87d6f536cfc06b0ea9fdeda0bfaeb4389dd75f4993fb5eccf0ce79658279622",
     "column_bar": "61ef592dcdb2d97614e21b56629bc53a1193f468b7ab124dceaae5f2be9e427a"
   },
+  "rust_step_modes_sha256": {
+    "pre": "f950d8696f1089f54158821f2731168bab030d26fe5b790fb47950cfce22cd6f",
+    "mid": "5516ae43c68d22b268639eeb73fcca809995b5210bfd023051bf80f454091388",
+    "post": "21844b6bb665ff71368d4810323c13a8c4f8e6317868bbe4a94f9b2b63910319"
+  },
   "cartesian_callout_sha256": "59984f323d1c6a21bf57002e3da733eb187e96379e26a51e72c0a2cacd624c4d",
   "public_disconnected_segments_sha256": "3b825fea6dbf97acfb128d7a248a86293994c5fdd277ab65d34597afc8d47629",
   "band_outlines": {
