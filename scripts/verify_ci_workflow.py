@@ -1861,6 +1861,8 @@ def validate_codspeed_workflow(path: Path = DEFAULT_CODSPEED_WORKFLOW) -> list[s
         "needs.detect.outputs.should_run == 'true'",
         "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
         "node benchmarks/bench_wasm_scene.mjs",
+        "packages/xy-node/scripts/generate_authored_scene_benchmark.mjs",
+        "scripts/verify_authored_scene_artifacts.py",
         "scripts/verify_wasm_scene_benchmark.py",
         "authored-scene-browser-${{ github.sha }}.json",
         "actions/upload-artifact@",

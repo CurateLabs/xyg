@@ -525,7 +525,13 @@ legend, literal-banded colorbar, and a callout label background. Python
 generates the canonical Scene and SHA-256; the Node public `Figure` test
 independently reconstructs the same authoring and requires byte identity.
 The strict-CSP browser foundation page consumes only that frame through the
-WASM worker and checks the resolved SVG/raster-accessible chrome. Custom
+WASM worker and checks the resolved SVG/raster-accessible chrome. The #116
+evidence job regenerates the same public workload at 100, 10k, 100k, and 1m
+points from both Python and Node; it retains SHA-256 manifests plus the
+SHA-keyed native/browser reports as CI artifacts. `scripts/verify_authored_scene_artifacts.py`
+requires byte identity and direct Rust SVG/raster/browser-painter chrome for
+every tier. The browser report additionally requires a nonblank WebGL readback
+and an explicit <=1-device-pixel rounding tolerance. Custom
 fonts, CSS/classes, and continuous gradients are rejected by both hosts before
 they can form a Scene frame.
 
