@@ -173,4 +173,6 @@ jobs:
             authored-scene-browser-${{ github.sha }}.json
             authored-scene-native-${{ github.sha }}.json
             authored-scenes/authored-scene-manifest.json
+            authored-scenes/*.svg
+            authored-scenes/*.png
             authored-scenes-node/authored-scene-manifest.json

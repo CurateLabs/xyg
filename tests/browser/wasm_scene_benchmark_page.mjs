@@ -2,7 +2,7 @@ import { createXygWasmWorker, hydrateWasmPainter, renderWasmChart, XygWasmError 
 
 async function frame() { await new Promise((resolve) => requestAnimationFrame(resolve)); }
 
-function visualEvidence(view) {
+async function visualEvidence(view, count) {
   // The Scene frame carries resolved f32 screen coordinates.  A WebGL canvas
   // may land on a device pixel either side of that coordinate after DPR
   // rounding, so one device pixel is the explicit cross-renderer tolerance.
@@ -15,7 +15,37 @@ function visualEvidence(view) {
   let litPixels = 0;
   for (let index = 3; index < pixels.length; index += 4) if (pixels[index] !== 0) litPixels++;
   if (!litPixels) throw new Error("authored Scene WebGL canvas is visually blank");
-  return { browserVisualTolerancePx: 1, visibleCanvasPixels: litPixels };
+  const baseline = await createImageBitmap(await (await fetch(`/authored-scenes/authored-scene-${count}.png`)).blob());
+  const expected = document.createElement("canvas");
+  expected.width = canvas.width; expected.height = canvas.height;
+  // Rust's resolved plot box is [62, 40, 856, 458] for this fixed authored
+  // fixture. ChartView paints the same scene into its device-sized plot box.
+  expected.getContext("2d").drawImage(baseline, 62, 40, 856, 458, 0, 0, canvas.width, canvas.height);
+  const expectedPixels = expected.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+  let delta = 0, different = 0;
+  for (let index = 0; index < pixels.length; index += 4) {
+    const pixelDelta = Math.abs(pixels[index] - expectedPixels[index]) + Math.abs(pixels[index + 1] - expectedPixels[index + 1]) + Math.abs(pixels[index + 2] - expectedPixels[index + 2]);
+    delta += pixelDelta;
+    if (pixelDelta > 24) different++;
+  }
+  const svg = await (await fetch(`/authored-scenes/authored-scene-${count}.svg`)).text();
+  const match = /data-xy-slot="annotation_label_box"[^>]* x="([0-9.]+)" y="([0-9.]+)" width="([0-9.]+)" height="([0-9.]+)"/.exec(svg);
+  const box = view.root.querySelector('[data-xy-slot="annotation_label_box"]');
+  if (!match || !box) throw new Error("authored Scene callout geometry is missing");
+  const nativeBox = match.slice(1).map(Number);
+  const browserBox = [box.style.left, box.style.top, box.style.width, box.style.height].map(parseFloat);
+  const calloutGeometryDeltaPx = Math.max(...nativeBox.map((value, index) => Math.abs(value - browserBox[index])));
+  return {
+    browserVisualTolerancePx: 1,
+    visibleCanvasPixels: litPixels,
+    browserCanvasWidth: canvas.width,
+    browserCanvasHeight: canvas.height,
+    rustRasterWidth: baseline.width,
+    rustRasterHeight: baseline.height,
+    plotMeanRgbDelta: delta / (canvas.width * canvas.height * 3),
+    plotDifferingFraction: different / (canvas.width * canvas.height),
+    calloutGeometryDeltaPx,
+  };
 }
 
 async function run() {
@@ -68,7 +98,7 @@ async function run() {
       annotationSemantics,
       ...prepared,
       ...view.wasmMetrics,
-      ...visualEvidence(view),
+      ...await visualEvidence(view, count),
     });
     await view.destroy(); host.remove(); await sceneWorker.dispose();
   }
