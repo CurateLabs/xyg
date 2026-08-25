@@ -8,6 +8,7 @@ import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
+const authoredSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/authored_scene_v20.json", import.meta.url), "utf8"));
 
 test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal(sceneSupportReason(0), "");
@@ -419,6 +420,45 @@ test("Node Figure authored chrome matches the Python Figure fixture bytes", () =
   assert.equal(crypto.createHash("sha256").update(encoded).digest("hex"), fixture.sha256);
   assert.match(sceneSvg(encoded), /data-xy-chrome="chart-background"/);
   assert.match(sceneSvg(encoded), /stroke="rgba\(23,24,25,1\.000000\)"/);
+});
+
+test("Node public Figure matches the combined Python authored Scene v23 fixture", () => {
+  const fixture = authoredSceneFixture.authoring;
+  const count = authoredSceneFixture.count;
+  const x = Float64Array.from({ length: count }, (_, index) => index / (count - 1));
+  const y = Float64Array.from({ length: count }, (_, index) => ((index * 37) % 997) / 498 - 1);
+  const figure = new Figure({
+    width: fixture.viewport[0], height: fixture.viewport[1], title: fixture.title,
+    legend: fixture.legend,
+    annotations: [{ kind: "callout", ...fixture.callout }],
+  });
+  figure.style = fixture.style;
+  figure.setAxis("x", fixture.axes.x); figure.setAxis("y", fixture.axes.y);
+  figure.colorbarOptions = fixture.colorbar;
+  figure.scatter(x, y, fixture.scatter);
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 23);
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
+  const svg = sceneSvg(scene), raster = sceneRasterCommands(scene);
+  for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "Intensity", "representative callout"]) {
+    assert.match(svg, new RegExp(text));
+    assert.ok(Buffer.from(raster).includes(Buffer.from(text)));
+  }
+  assert.ok(raster.byteLength > 100);
+  assert.match(svg, /data-xy-chrome="chart-background"/);
+  assert.match(svg, /data-xy-chrome="plot-background"/);
+  assert.match(svg, /data-xy-chrome="legend"/);
+  assert.match(svg, /data-xy-slot="colorbar_tick"/);
+  assert.match(svg, /data-xy-slot="annotation_label_box"/);
+  for (const [mutate, reason] of [
+    [(value) => { value.chromeStyles = { title: { fontFamily: "Example Sans" } }; }, /CUSTOM_FONT/],
+    [(value) => { value.className = "browser-only"; }, /BROWSER_CSS/],
+    [(value) => { value.traces[0].style.fill = { type: "linear" }; }, /GRADIENT/],
+  ]) {
+    const rejected = new Figure({ width: fixture.viewport[0], height: fixture.viewport[1] });
+    rejected.scatter(x, y, fixture.scatter); mutate(rejected);
+    assert.throws(() => rejected.toScene(), reason);
+  }
 });
 
 test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 from collections.abc import Iterator
 from pathlib import Path
@@ -23,6 +24,87 @@ from xyg._figure import Figure
 COUNTS = (100, 10_000, 100_000, 1_000_000)
 SCENE_VERSION = 23
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
+
+# One shared, declarative Cartesian chrome workload. The Node parity test reads
+# the same value from ``tests/fixtures/authored_scene_v20.json``; keep all
+# layout-affecting literals here rather than letting either host inherit an
+# unrelated default.
+AUTHORED_AXES = {
+    "x": {
+        "domain": (0.0, 1.0),
+        "label": "Fraction",
+        "side": "top",
+        "tick_sides": ("bottom", "top"),
+        "tick_label_sides": ("top",),
+        "tick_values": (0.0, 0.5, 1.0),
+        "minor_tick_values": (0.25, 0.75),
+        "style": {
+            "axis_color": "#0b0c0d",
+            "grid_color": "#0e0f10",
+            "tick_color": "#111213",
+            "axis_width": 2.0,
+            "grid_width": 1.25,
+            "tick_width": 2.5,
+            "tick_length": 7.0,
+        },
+        "minor_style": {
+            "grid_color": "#141516",
+            "tick_color": "#171819",
+            "grid_width": 0.5,
+            "tick_width": 1.25,
+            "tick_length": 3.0,
+            "tick_direction": "in",
+        },
+    },
+    "y": {
+        "domain": (-1.0, 1.0),
+        "label": "Signal",
+        "side": "right",
+        "tick_sides": ("left", "right"),
+        "tick_label_sides": ("right",),
+        "tick_values": (-1.0, 0.0, 1.0),
+        "minor_tick_values": (-0.5, 0.5),
+        "style": {
+            "axis_color": "#0b0c0d",
+            "grid_color": "#0e0f10",
+            "tick_color": "#111213",
+            "axis_width": 2.0,
+            "grid_width": 1.25,
+            "tick_width": 2.5,
+            "tick_length": 7.0,
+        },
+        "minor_style": {
+            "grid_color": "#141516",
+            "tick_color": "#171819",
+            "grid_width": 0.5,
+            "tick_width": 1.25,
+            "tick_length": 3.0,
+            "tick_direction": "in",
+        },
+    },
+}
+
+AUTHORED_AUTHORING = {
+    "viewport": [960, 540],
+    "title": "Authored Scene evidence",
+    "style": {"background": "#f0f8ff", "--chart-bg": "#f8fafc"},
+    "axes": AUTHORED_AXES,
+    "scatter": {"id": 0, "color": "#3987e5", "size": 4.0, "opacity": 0.8, "name": "observations"},
+    "legend": {"loc": "upper right", "title": "Series", "highlight": False, "toggle": False},
+    "colorbar": {
+        "domain": [0.0, 1.0],
+        "stops": [[0.0, [15, 23, 42, 255]], [0.5, [14, 165, 233, 255]], [1.0, [253, 224, 71, 255]]],
+        "ticks": [0.0, 0.5, 1.0],
+        "minor_ticks": True,
+        "title": "Intensity",
+    },
+    "callout": {
+        "x": 0.75,
+        "y": 0.5,
+        "text": "representative callout",
+        "style": {"label_background": "#ffffff"},
+    },
+}
 
 
 def authored_scene_figure(count: int) -> Figure:
@@ -43,9 +125,9 @@ def authored_scene_figure(count: int) -> Figure:
     y = ((indices * 37.0) % 997.0) / 498.0 - 1.0
 
     figure = Figure(width=960, height=540, title="Authored Scene evidence")
-    figure.style = {"background": "#f0f8ff", "--chart-bg": "#f8fafc"}
-    figure.axis_options["x"]["domain"] = (0.0, 1.0)
-    figure.axis_options["y"]["domain"] = (-1.0, 1.0)
+    figure.style = dict(AUTHORED_AUTHORING["style"])
+    for axis, options in AUTHORED_AXES.items():
+        figure.set_axis(axis, **options)
     figure.scatter(
         x,
         y,
@@ -55,24 +137,13 @@ def authored_scene_figure(count: int) -> Figure:
         name="observations",
         density=False,
     )
-    figure.legend_options = {
-        "loc": "upper right",
-        "title": "Series",
-        # The Scene subset is static; do not let interactive legend policy
-        # make this representative fixture fail closed.
-        "highlight": False,
-        "toggle": False,
-    }
+    # The shared Node authoring fixture pins identity explicitly; defaults are
+    # host-local allocation detail, not canonical Scene policy.
+    figure.traces[-1].id = 0
+    figure.legend_options = dict(AUTHORED_AUTHORING["legend"])
     figure.colorbar_options = {
-        "domain": [0.0, 1.0],
-        "stops": [
-            (0.0, [15, 23, 42, 255]),
-            (0.5, [14, 165, 233, 255]),
-            (1.0, [253, 224, 71, 255]),
-        ],
-        "ticks": [0.0, 0.5, 1.0],
-        "minor_ticks": True,
-        "title": "Intensity",
+        **AUTHORED_AUTHORING["colorbar"],
+        "stops": [tuple(stop) for stop in AUTHORED_AUTHORING["colorbar"]["stops"]],
     }
     figure.callout(
         0.75,
@@ -104,7 +175,7 @@ def _authored_annotation_input(figure: Figure) -> bytes:
 
 
 def authored_scene(count: int) -> bytes:
-    """Return a validated Scene 22 workload for one canonical evidence tier."""
+    """Return a validated Scene 23 workload for one canonical evidence tier."""
     figure = authored_scene_figure(count)
     annotation_input = _authored_annotation_input(figure)
     if not annotation_input.startswith(b"XYAD\x02\x00\x00\x00"):
@@ -112,7 +183,7 @@ def authored_scene(count: int) -> bytes:
 
     scene = figure.to_scene()
     if scene[:4] != b"XYGS" or int.from_bytes(scene[4:8], "little") != SCENE_VERSION:
-        raise AssertionError("authored Scene workload must compile as Scene 22")
+        raise AssertionError("authored Scene workload must compile as Scene 23")
     missing = [chunk.decode("ascii") for chunk in _FINAL_SCENE_CHUNKS if chunk not in scene]
     if missing:
         raise AssertionError(f"authored Scene workload is missing resolved chunks: {missing}")
@@ -147,9 +218,11 @@ def main() -> int:
         args.write_browser_fixture.write_text(
             json.dumps(
                 {
-                    "schema": "xyg-authored-scene-v20-fixture-v1",
+                    "schema": "xyg-authored-scene-v23-fixture-v1",
                     "count": 100,
+                    "authoring": AUTHORED_AUTHORING,
                     "scene_base64": base64.b64encode(generated[0][1]).decode("ascii"),
+                    "scene_sha256": hashlib.sha256(generated[0][1]).hexdigest(),
                 },
                 indent=2,
             )

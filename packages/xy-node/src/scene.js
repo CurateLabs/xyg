@@ -858,8 +858,11 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const out = new Uint8Array(24 + xyat.length + xyal.length + xyar.length + xyac.length); const view = new DataView(out.buffer); out.set(textEncoder.encode("XYAD")); view.setUint32(4, 2, true); view.setUint32(8, xyat.length, true); view.setUint32(12, xyal.length, true); view.setUint32(16, xyar.length, true); view.setUint32(20, xyac.length, true); out.set(xyat, 24); out.set(xyal, 24 + xyat.length); out.set(xyar, 24 + xyat.length + xyal.length); out.set(xyac, 24 + xyat.length + xyal.length + xyar.length); return out;
   })();
   const title = figure.title ?? "";
-  const xLabel = figure.xLabel ?? figure.x_label ?? "";
-  const yLabel = figure.yLabel ?? figure.y_label ?? "";
+  // `Figure.setAxis({ label })` is the public Node authoring form, matching
+  // Python's `axis_options`; do not silently drop those bytes before the Rust
+  // layout/Scene seam.
+  const xLabel = figure.xLabel ?? figure.x_label ?? figure.xAxis?.label ?? figure.x_axis?.label ?? "";
+  const yLabel = figure.yLabel ?? figure.y_label ?? figure.yAxis?.label ?? figure.y_axis?.label ?? "";
   let resolvedMargins = margins;
   if (resolvedMargins == null) {
     const out = new Float64Array(4);

@@ -1493,6 +1493,9 @@ async function run() {
   // authored Cartesian chrome subset through the real strict-CSP Worker.
   foundationStage = "strict-CSP full authored Cartesian Scene chrome";
   const authoredFixture = await (await fetch("/tests/fixtures/authored_scene_v20.json")).json();
+  if (authoredFixture.schema !== "xyg-authored-scene-v23-fixture-v1") {
+    throw new Error(`unexpected authored Scene fixture schema: ${authoredFixture.schema}`);
+  }
   const authoredScene = Uint8Array.from(atob(authoredFixture.scene_base64), (byte) => byte.charCodeAt(0));
   const fullChromeWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
@@ -1507,7 +1510,7 @@ async function run() {
   const fullChromeSurface = fullChromeHost.firstElementChild;
   const fullChromeText = fullChromeRoot?.textContent ?? "";
   const fullChromeAxisCount = fullChromeHost.querySelectorAll(
-    '[data-xy-axis-side="bottom"], [data-xy-axis-side="left"]',
+    '[data-xy-axis-side="top"], [data-xy-axis-side="right"]',
   ).length;
   const fullChromeLegend = fullChromeHost.querySelector('[data-xy-slot="legend"][role="list"]');
   const fullChromeLegendRows = [...fullChromeHost.querySelectorAll(
@@ -1529,6 +1532,8 @@ async function run() {
       || fullChromeColorbarTicks.length !== 3
       || fullChromeColorbarMinors.length !== 8
       || !fullChromeText.includes("Intensity")
+      || !fullChromeText.includes("Fraction")
+      || !fullChromeText.includes("Signal")
       || fullChromeCallout?.textContent !== "representative callout"
       || !fullChromeCalloutBox
       || fullChromeStyle?.backgroundColor !== "rgb(240, 248, 255)"
