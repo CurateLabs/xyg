@@ -28,7 +28,11 @@ Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
 constant-style Cartesian circle-scatter public subset to the Rust Scene SVG and
-raster consumers (PDF consumes Rust SVG). `python/xyg/_scene_v3.py` is only a
+raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid
+PDF independently route each supported panel through that same Rust SVG
+consumer, namespacing its closed clip-id vocabulary only for nested-document
+composition; panel backgrounds and unsupported panels deliberately select
+compatibility before compilation. `python/xyg/_scene_v3.py` is only a
 preflight/orchestration seam for that subset. `_svg.py`, `_raster.py`, and
 `_pdf.py` remain compatibility owners for text, legends, annotations, themes,
 custom axis chrome, non-circle symbols, non-scatter marks, LOD inputs, export

@@ -240,10 +240,33 @@ for(const p of panels){{
         # grid title is drawn exactly once below. The export background flows
         # into every panel too, so panel theme paints cannot bury the grid
         # backdrop (each panel then paints backdrop-colored/transparent).
-        panel_svgs = [
-            _svg.to_svg(fig, id_prefix=f"xy{i}-", background=background)
-            for i, fig in enumerate(self.figures)
-        ]
+        panel_svgs = []
+        for i, fig in enumerate(self.figures):
+            # A facet's public vector output is still a public static-export
+            # journey.  Route an independently supported panel through its
+            # canonical Scene consumer rather than bypassing it merely because
+            # the outer grid owns placement.  The current Scene SVG has one
+            # stable clip id; namespace just that closed vocabulary before
+            # nesting so sibling panels cannot cross-clip.  Background
+            # overrides remain on the documented compatibility path: the
+            # Scene public subset has not yet modeled that whole-grid contract.
+            if background is None:
+                from . import _scene_v3
+
+                if _scene_v3.scene_export_support_reason(fig) is None:
+                    svg = _scene_v3.figure_svg(fig)
+                    scene_clip = "xy-scene-plot"
+                    panel_clip = f"xy{i}-{scene_clip}"
+                    svg = svg.replace(f'id="{scene_clip}"', f'id="{panel_clip}"')
+                    svg = svg.replace(f"url(#{scene_clip})", f"url(#{panel_clip})")
+                    # This is an invariant of the Scene consumer vocabulary,
+                    # not a fallback boundary.  If it changes, fail instead
+                    # of emitting a composed document with cross-panel ids.
+                    if f'id="{scene_clip}"' in svg or f"url(#{scene_clip})" in svg:
+                        raise RuntimeError("unexpected un-namespaced Scene SVG id")
+                    panel_svgs.append(svg)
+                    continue
+            panel_svgs.append(_svg.to_svg(fig, id_prefix=f"xy{i}-", background=background))
         total_h = self.grid_height + self._title_height
         body: list[str] = []
         for i, svg in enumerate(panel_svgs):

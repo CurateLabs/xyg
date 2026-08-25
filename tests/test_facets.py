@@ -8,7 +8,8 @@ import numpy as np
 import pytest
 
 import xyg
-from xyg.facets import _facet_values, _subset_data
+from xyg._figure import Figure
+from xyg.facets import FacetGrid, _facet_values, _subset_data
 
 
 def _table() -> dict[str, list]:
@@ -183,6 +184,57 @@ def test_facet_svg_ids_are_unique_and_refs_resolve() -> None:
     assert len(ids) == len(set(ids))
     refs = re.findall(r"url\(#([^)]+)\)", svg)
     assert refs and set(refs) <= set(ids)
+
+
+def test_supported_facet_svg_routes_each_panel_through_the_canonical_scene(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Grid placement must not bypass an otherwise supported public export."""
+    from xyg import _native
+
+    figures = [
+        Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5"),
+        Figure(width=240, height=160).scatter([1, 2], [3, 2], color="#ef4444"),
+    ]
+    grid = FacetGrid(figures, labels=("left", "right"), cols=2, width=480, height=160)
+    scene_svg = _native.scene_svg
+    calls = 0
+
+    def observed_scene_svg(*args: object, **kwargs: object) -> str:
+        nonlocal calls
+        calls += 1
+        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    svg = grid.to_svg()
+
+    assert calls == 2
+    assert 'id="xy0-xy-scene-plot"' in svg
+    assert 'id="xy1-xy-scene-plot"' in svg
+    assert "url(#xy0-xy-scene-plot)" in svg
+    assert "url(#xy1-xy-scene-plot)" in svg
+    assert _native.scene_svg is observed_scene_svg
+    assert grid.to_image("pdf").startswith(b"%PDF-")
+
+
+def test_supported_facet_scene_failure_never_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from xyg import _native, _svg
+
+    figure = Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5")
+    grid = FacetGrid([figure], labels=("only",), cols=1, width=240, height=160)
+
+    def broken_scene(*_args: object, **_kwargs: object) -> str:
+        raise ValueError("broken Scene consumer")
+
+    def unexpected_compatibility(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("supported facet must not fall back")
+
+    monkeypatch.setattr(_native, "scene_svg", broken_scene)
+    monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
+    with pytest.raises(ValueError, match="broken Scene consumer"):
+        grid.to_svg()
 
 
 def test_facet_labels_and_grid_title_render_once() -> None:
