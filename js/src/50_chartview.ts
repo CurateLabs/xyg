@@ -5040,13 +5040,14 @@ export class ChartView {
         !Number.isSafeInteger(length) || length < 0) {
       throw new RangeError("column offset/length must be non-negative safe integers");
     }
-    const bytesPerElement = meta.dtype === "u8" ? 1 : 4;
+    const bytesPerElement = meta.dtype === "u8" ? 1 : meta.dtype === "f64" ? 8 : 4;
     const absoluteOffset = span.byteOffset + relativeOffset;
     const end = relativeOffset + length * bytesPerElement;
     if (end > span.byteLength) throw new RangeError("column extends past chart payload");
     if (absoluteOffset % bytesPerElement !== 0) throw new RangeError("column is misaligned");
     if (meta.dtype === "u8") return new Uint8Array(span.buffer, absoluteOffset, length);
     if (meta.dtype === "u32") return new Uint32Array(span.buffer, absoluteOffset, length);
+    if (meta.dtype === "f64") return new Float64Array(span.buffer, absoluteOffset, length);
     return new Float32Array(span.buffer, absoluteOffset, length);
   }
 

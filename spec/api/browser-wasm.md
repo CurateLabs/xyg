@@ -97,6 +97,16 @@ typed x/y source for every density trace; supported multi-trace journeys are
 serialized through the same Rust Worker. Kernel-backed journeys without that
 optional browser source retain their kernel route.
 
+`cartesian-count-f64-v1` is the automatic public split-payload contract for
+one linear Cartesian count-only density trace. Its x/y f64 buffers transfer
+once to the owned Worker and are retired from ChartView payload state after the
+handoff. Later viewports send only bounds and grid shape; Worker-side bounded
+O(N) XYAG framing precedes Rust XYAO aggregation, so no equivalent O(N) work
+runs on the UI thread. Its generated-ABI full-peak admission is 338,598 rows
+at 2048², including Worker canonical source plus Rust staging/output. Unsupported
+inputs carry the stable `XYG_WASM_SOURCE_UNSUPPORTED` no-refinement diagnostic
+and stay on the kernel route.
+
 If a Worker success response contains an invalid `XYAO` payload, the event code
 is `XYG_WASM_MALFORMED_OUTPUT`. Its diagnostics preserve the Worker accounting
 snapshot, `diagnostics()` remains `null`, and the last painted density surface

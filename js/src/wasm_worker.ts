@@ -7,7 +7,19 @@ import {
   XYG_WASM_ABI_VERSION,
   XYG_WASM_SCENE_VERSION,
   XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
+  XYG_WASM_AGGREGATE_HEADER_BYTES,
+  XYG_WASM_AGGREGATE_MAGIC,
+  XYG_WASM_AGGREGATE_MAX_POINTS,
+  XYG_WASM_AGGREGATE_MAX_GRID_CELLS,
+  XYG_WASM_AGGREGATE_ACCUMULATOR_STRIDE_COUNT,
+  XYG_WASM_AGGREGATE_OUTPUT_HEADER_BYTES,
+  XYG_WASM_AGGREGATE_OUTPUT_STRIDE_COUNT,
+  XYG_WASM_AGGREGATE_CHECKPOINT_STRIDE_COUNT,
+  XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT,
+  XYG_WASM_AGGREGATE_TOTAL_MEMORY_BYTES,
+  XYG_WASM_AGGREGATE_VERSION,
   XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
+  XYG_WASM_AGGREGATE_OUTPUT_COPY_FACTOR,
   XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS,
   XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS,
   XYG_WASM_GRAPH_FIRST_PAINT_STEPS,
@@ -28,6 +40,7 @@ let compileLeaf = false;
 let operationSequenceWatermark = 0;
 const queued = new Map<number, number>();
 let activeAggregate: { requestId: number; sequence: number; timer: number } | null = null;
+let ownedAggregateSource: { x: ArrayBuffer; y: ArrayBuffer; pointCount: number } | null = null;
 let activeGraph: { requestId: number; sequence: number; revision: number; timer: number; chunkSteps: number; started: number; maxWallMs: number; first: boolean } | null = null;
 let activeCompile: { requestId: number; sequence: number; timer: number; paint: boolean; leaf?: Worker; loweringAnnounced?: boolean } | null = null;
 const COMPILE_CHECKPOINT_RECORDS = 4096;
@@ -166,6 +179,51 @@ function diagnostics() {
     records: exports.xyg_wasm_last_scene_records(handle) >>> 0,
     styles: exports.xyg_wasm_last_scene_styles(handle) >>> 0,
   };
+}
+
+// The capacity is derived from generated ABI quantities, not duplicated policy:
+// the count-only XYAG has a 64-byte header + 16 bytes per row and Rust retains
+// two request copies inside its generated aggregate budget.
+function ownedAggregateCapacity(): number {
+  const cells = XYG_WASM_AGGREGATE_MAX_GRID_CELLS;
+  const fixed = XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR * XYG_WASM_AGGREGATE_HEADER_BYTES
+    + cells * XYG_WASM_AGGREGATE_ACCUMULATOR_STRIDE_COUNT
+    + XYG_WASM_AGGREGATE_OUTPUT_COPY_FACTOR * (XYG_WASM_AGGREGATE_OUTPUT_HEADER_BYTES + cells * XYG_WASM_AGGREGATE_OUTPUT_STRIDE_COUNT)
+    + Math.min(XYG_WASM_AGGREGATE_CHECKPOINT_POINTS, XYG_WASM_AGGREGATE_MAX_POINTS) * XYG_WASM_AGGREGATE_CHECKPOINT_STRIDE_COUNT;
+  return Math.min(XYG_WASM_AGGREGATE_MAX_POINTS, Math.floor((XYG_WASM_AGGREGATE_TOTAL_MEMORY_BYTES - fixed) / (XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR * XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT + 16)));
+}
+
+function installOwnedAggregateSource(message: any) {
+  const source = message?.source;
+  if (!(source?.x instanceof ArrayBuffer) || !(source?.y instanceof ArrayBuffer)
+      || !Number.isSafeInteger(source.pointCount) || source.pointCount <= 0
+      || source.x.byteLength !== source.pointCount * 8 || source.y.byteLength !== source.pointCount * 8
+      || source.pointCount > ownedAggregateCapacity()) {
+    error(message?.requestId, "XYG_WASM_RESOURCE_LIMIT", "aggregate source exceeds generated count-only capacity", XYG_WASM_STATUS.RESOURCE_LIMIT); return;
+  }
+  ownedAggregateSource = source;
+  reply(message.requestId, undefined);
+}
+
+function frameOwnedAggregate(message: any): ArrayBuffer {
+  if (!ownedAggregateSource) throw new Error("no owned aggregate source is installed");
+  const { x, y, pointCount } = ownedAggregateSource;
+  const request = message.request;
+  const fields = [request?.x0, request?.x1, request?.y0, request?.y1];
+  if (!fields.every(Number.isFinite) || !(request.x1 > request.x0) || !(request.y1 > request.y0)
+      || !Number.isInteger(request.width) || !Number.isInteger(request.height) || request.width <= 0 || request.height <= 0) {
+    throw new TypeError("owned aggregate request is malformed");
+  }
+  const byteLength = XYG_WASM_AGGREGATE_HEADER_BYTES + pointCount * XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT;
+  if (byteLength * XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR > operationBudgetBytes) throw new RangeError("owned aggregate exceeds worker operation budget");
+  const out = new ArrayBuffer(byteLength), bytes = new Uint8Array(out), view = new DataView(out);
+  bytes.set(new TextEncoder().encode(XYG_WASM_AGGREGATE_MAGIC), 0);
+  view.setUint32(4, XYG_WASM_AGGREGATE_VERSION, true); view.setUint32(8, XYG_WASM_AGGREGATE_HEADER_BYTES, true);
+  view.setUint32(16, pointCount, true); view.setUint32(20, request.width, true); view.setUint32(24, request.height, true);
+  view.setFloat64(32, request.x0, true); view.setFloat64(40, request.x1, true); view.setFloat64(48, request.y0, true); view.setFloat64(56, request.y1, true);
+  bytes.set(new Uint8Array(x), XYG_WASM_AGGREGATE_HEADER_BYTES);
+  bytes.set(new Uint8Array(y), XYG_WASM_AGGREGATE_HEADER_BYTES + pointCount * 8);
+  return out;
 }
 
 function advanceAggregate(message: any) {
@@ -771,6 +829,21 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "init") {
     void initialize(message);
     return;
+  }
+  if (message?.type === "aggregate.source") {
+    installOwnedAggregateSource(message);
+    return;
+  }
+  if (message?.type === "aggregate.owned_source") {
+    try {
+      // This framing copy runs in the Worker after a one-time ownership
+      // transfer.  The ChartView/UI thread never visits source rows.
+      message.scene = frameOwnedAggregate(message);
+      message.type = "aggregate.bin2d";
+    } catch (cause) {
+      error(message.requestId, "XYG_WASM_RESOURCE_LIMIT", cause instanceof Error ? cause.message : "owned aggregate source is unavailable", XYG_WASM_STATUS.RESOURCE_LIMIT);
+      return;
+    }
   }
   const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint" || message?.type === "scene.paint_annotations"
     || message?.type === "scene.compile" || message?.type === "scene.compile_paint"

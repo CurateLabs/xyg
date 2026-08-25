@@ -139,6 +139,20 @@ class _PayloadWriter:
         enc = np.ascontiguousarray(values, dtype="<u4").reshape(-1)
         return self._append(enc, {"dtype": "u32"})
 
+    def ship_f64(self, values: np.ndarray) -> int:
+        """Ship a canonical f64 column for an explicitly bounded WASM source.
+
+        This is deliberately separate from painter geometry and is valid only
+        in the live split transport.  Packed payloads serve export/notebook
+        consumers and retain their screen-bounded painter contract; only the
+        browser host transfers this canonical source to the dedicated Worker.
+        It is never decoded from offset f32 on the UI thread.
+        """
+        return self._append(
+            np.ascontiguousarray(values, dtype="<f8").reshape(-1),
+            {"dtype": "f64", "worker_owned": True},
+        )
+
     def borrow_f64(self, values: np.ndarray) -> int:
         """Register canonical f64 storage as a synchronous raster-only span.
 
@@ -290,6 +304,24 @@ class PayloadMixin(_Host):
                 "ranges": {axis_id: list(axis["range"]) for axis_id, axis in axis_specs.items()}
             },
         }
+        wasm_sources = [entry.get("density", {}).get("wasm_source") for entry in spec_traces]
+        wasm_sources = [source for source in wasm_sources if source is not None]
+        # One Cartesian count-only source is intentionally the first vertical.
+        # Multiple/color/chunked sources remain on the authoritative kernel
+        # route and are marked explicitly by the browser client.
+        if pw._split and len(wasm_sources) == 1:
+            spec["wasm_density"] = {"automatic": True, "source": wasm_sources[0]}
+        elif any(entry.get("tier") == "density" for entry in spec_traces) and pw._split:
+            spec["wasm_density"] = {
+                "automatic": False,
+                "unsupported": {
+                    "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+                    "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+                    "trace_ids": [
+                        entry["id"] for entry in spec_traces if entry.get("tier") == "density"
+                    ],
+                },
+            }
         if self.title_options:
             spec["title_options"] = [
                 {
@@ -1353,6 +1385,33 @@ class PayloadMixin(_Host):
             "binning": binning,
             "reduction": "pyramid-count" if binning.startswith("pyramid-") else "bin2d",
         }
+        # Live hosts use split buffers, so these two canonical f64 spans can
+        # transfer ownership to the module Worker without detaching any paint
+        # buffer or forcing a main-thread f32 decode/re-encode.  The bound is
+        # generated ABI preflight includes Worker-owned x/y plus the Rust
+        # request/output peak at the maximum 2048² count grid.
+        wasm_capacity = 338_598
+        wasm_supported = (
+            self.coords == "cartesian"
+            and self._axis_scale(t.x_axis) == "linear"
+            and self._axis_scale(t.y_axis) == "linear"
+            # A resolved constant fill remains count-only: it changes only
+            # texture tint, not the per-point aggregation algebra.
+            and (t.color_ch is None or t.color_ch.mode == "constant")
+            and not t.x.zone.null_count
+            and not t.y.zone.null_count
+            and 0 < int(t.n_points) <= wasm_capacity
+        )
+        if pw._split and wasm_supported:
+            density["wasm_source"] = {
+                "kind": "cartesian-count-f64-v1",
+                "x": pw.ship_f64(t.x.values),
+                "y": pw.ship_f64(t.y.values),
+                "point_count": int(t.n_points),
+                "trace_id": int(t.id),
+                "capacity": wasm_capacity,
+                "ownership": "transfer-to-worker",
+            }
         if tiles_meta is not None:
             density["tiles"] = tiles_meta
         if rgba_from_pyramid is not None:

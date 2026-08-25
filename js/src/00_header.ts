@@ -111,10 +111,11 @@ export function bytesToSpan(b) {
 export function payloadCoherent(spec, raw) {
   const cols = spec?.columns;
   if (!Array.isArray(cols)) return false;
-  const size = (c) => (c.dtype === "u8" ? 1 : 4);
+  const size = (c) => c.dtype === "u8" ? 1 : c.dtype === "f64" ? 8 : 4;
   if (spec.buffer_layout === "split") {
     if (!Array.isArray(raw)) return false;
     return cols.every((c) => {
+      if (c.worker_owned === true) return true;
       if (!Number.isInteger(c.buf)) return true; // raster-only borrowed span
       const b = raw[c.buf];
       return !!b && c.len * size(c) <= b.byteLength;

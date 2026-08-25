@@ -90,6 +90,16 @@ export interface XygWasmAggregateTaskOptions {
   transfer?: true;
 }
 
+export interface XygWasmOwnedAggregateSource {
+  x: ArrayBuffer;
+  y: ArrayBuffer;
+  pointCount: number;
+}
+
+export interface XygWasmOwnedAggregateRequest {
+  x0: number; x1: number; y0: number; y1: number; width: number; height: number;
+}
+
 type AggregateTransferContract = Exclude<XygWasmAggregateTaskOptions["transfer"], undefined>;
 type AssertTrue<T extends true> = T;
 type AggregateTransferMustRemainTrue = AssertTrue<AggregateTransferContract>;
@@ -379,6 +389,36 @@ export class XygWasmWorker {
     options: XygWasmAggregateTaskOptions = {},
   ): XygWasmTask<XygWasmSceneValidation & { aggregate: ArrayBuffer }> {
     return this.sceneTask("aggregate.bin2d", request, options);
+  }
+
+  /** Transfer one canonical count-only f64 source into this Worker. */
+  installAggregateSource(source: XygWasmOwnedAggregateSource): Promise<void> {
+    this.assertLive();
+    if (!(source?.x instanceof ArrayBuffer) || !(source.y instanceof ArrayBuffer)
+        || !Number.isSafeInteger(source.pointCount) || source.pointCount <= 0
+        || source.x.byteLength !== source.pointCount * 8 || source.y.byteLength !== source.pointCount * 8) {
+      throw new TypeError("owned aggregate source must contain matching f64 ArrayBuffers");
+    }
+    const requestId = this.allocateRequest(), result = this.promiseFor<void>(requestId);
+    try { this.worker.postMessage({ type: "aggregate.source", requestId, source }, [source.x, source.y]); }
+    catch (cause) { this.pending.delete(requestId); throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer aggregate source"); }
+    return result;
+  }
+
+  /** Aggregate the Worker-owned canonical source; no source loop runs on the UI thread. */
+  aggregateOwnedSource(request: XygWasmOwnedAggregateRequest, options: XygWasmAggregateTaskOptions = {}): XygWasmTask<XygWasmSceneValidation & { aggregate: ArrayBuffer }> {
+    this.assertLive();
+    const sequence = options.sequence ?? this.nextSequence++;
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
+    this.nextSequence = Math.max(this.nextSequence, sequence + 1);
+    const requestId = this.allocateRequest(), result = this.promiseFor<XygWasmSceneValidation & { aggregate: ArrayBuffer }>(requestId);
+    try { this.worker.postMessage({ type: "aggregate.owned_source", requestId, sequence, request }); }
+    catch (cause) { this.pending.delete(requestId); throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not request aggregate"); }
+    return { requestId, sequence, result, cancel: () => {
+      const pending = this.pending.get(requestId); if (!pending) return;
+      this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "aggregate was cancelled", 6));
+      if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
+    } };
   }
 
   /** Gated test-only worker boundary used by the strict-CSP lifecycle proof. */
