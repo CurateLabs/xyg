@@ -44,12 +44,15 @@ visibility, deterministic numeric formatting, and SVG fragment construction.
 Unknown symbol codes fail closed to the circle shape, matching the existing
 compatibility fallback.
 
-The same schema owns bounded f64 tick records for linear, base-10 log, and
-symmetric-log axes, plus vectorized linear, log, and symlog scale records.
-Each record carries all tick positions, the labeled subset, and the canonical
-step. Rust applies the existing 1/2/2.5/5/10 linear ladder and 1/2/5 log
-ladder, with a hard 200-tick ceiling. Python's SVG and raster exporters consume
-these records through `_svg.axis_ticks`; Node exposes them as `axisTicks`.
+The same schema and `xyg_scene_axis_ticks` ABI own bounded f64 tick records for
+linear, base-10 log, symmetric-log, category, angular, and time/calendar axes,
+plus vectorized linear, log, and symlog scale records. Each tick record carries
+all positions, the labeled subset, and the canonical step. Rust applies the
+existing 1/2/2.5/5/10 linear ladder and 1/2/5 log ladder, with a hard 200-tick
+ceiling. Node exposes every ABI family as `axisTicks`. Python's SVG and raster
+`_svg.axis_ticks` path currently consumes only symmetric-log kind 6 from this
+ABI; its linear, log, category, angular, and time branches retain their local
+compatibility helpers until their individual cutovers.
 Cross-platform conformance keeps algebraic tick families bit-exact and permits
 one part in 10^15 for symmetric-log values whose final inverse transform uses
 the platform math library. Invalid domains and target counts fail closed at the
@@ -833,9 +836,12 @@ source-indexed labels.
 
 Authored solid chart/plot backgrounds, axis sides, and major/minor tick
 geometry/styles are Scene v8.
-Category, angular, time/calendar, and symmetric-log tick ladders already move
-through `xyg_scene_axis_ticks` kinds 2–6 (`aux` is the positive symlog
-linear-region constant for kind 6); Scene v5 carries authored chrome
+The `xyg_scene_axis_ticks` ABI supports category, angular, time/calendar, and
+symmetric-log ladders as kinds 2–6 (`aux` is the positive symlog linear-region
+constant for kind 6). Node routes those families through the ABI; Python's
+`_svg.axis_ticks` currently routes only kind 6 through it and retains local
+compatibility helpers for linear, log, category, angular, and time until their
+cutovers. Scene v5 carries authored chrome
 paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
 gutters, including the selected literal-colorbar outer lane, for Scene compilation. Cartesian rect-family hosts
 (`bar`, `column`, `histogram`, `violin`, `box`) share Scene Rect records;
