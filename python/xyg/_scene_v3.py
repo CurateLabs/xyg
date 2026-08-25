@@ -1569,13 +1569,26 @@ def scene_export_support_reason(
     if getattr(figure, "title_options", None):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
     annotations = list(getattr(figure, "annotations", None) or [])
-    if annotations and (len(annotations) != 1 or annotations[0].get("kind") != "callout"):
-        # #117's first annotation public-route slice is intentionally one
-        # bounded Cartesian callout.  ``figure_scene`` below remains the sole
-        # authority for its literal field validation, resource limits, Rust
-        # projection, and label-box semantics.  Do not turn this structural
-        # exception into broad annotation support merely because the explicit
-        # Scene API can encode more record kinds.
+    ordinary_callout = (
+        len(annotations) == 1
+        and annotations[0].get("kind") == "callout"
+        and "wrap" not in annotations[0]
+    )
+    ordinary_and_wrapped_callout = (
+        len(annotations) == 2
+        and annotations[0].get("kind") == "callout"
+        and "wrap" not in annotations[0]
+        and annotations[1].get("kind") == "callout"
+        and "wrap" in annotations[1]
+    )
+    if annotations and not (ordinary_callout or ordinary_and_wrapped_callout):
+        # The proven public annotation slice is one ordinary bounded Cartesian
+        # callout, optionally followed by one bounded wrapped Cartesian
+        # callout. ``figure_scene`` below remains the sole authority for its
+        # literal field validation, resource limits, Rust projection, and
+        # label-box semantics. Do not turn this structural exception into broad
+        # annotation support merely because the explicit Scene API can encode
+        # more record kinds.
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
     legend = getattr(figure, "legend_options", None) or {}
     if any(key not in {"loc", "title", "highlight", "toggle"} for key in legend):

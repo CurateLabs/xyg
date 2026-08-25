@@ -171,6 +171,26 @@ def test_scene_accessibility_metadata_is_inert_for_vector_pdf() -> None:
     assert pdf.startswith(b"%PDF-")
 
 
+def test_pdf_preserves_safe_rust_multiline_tspan_dy_offsets() -> None:
+    ns = 'xmlns="http://www.w3.org/2000/svg"'
+    pdf = svg_to_pdf(
+        f'<svg {ns} width="100" height="50"><text x="2" y="12">'
+        '<tspan x="2">first</tspan><tspan x="2" dy="14.4">second</tspan>'
+        "</text></svg>"
+    )
+    content = _content(pdf)
+    assert b"(first) Tj" in content and b"(second) Tj" in content
+    # PDF text matrices retain the parent baseline, then Rust's relative line
+    # offset; neither line may silently collapse to y=0.
+    assert re.search(rb" 2 12 Tm\n\(first\) Tj", content)
+    assert re.search(rb" 2 26\.4 Tm\n\(second\) Tj", content)
+    with pytest.raises(ValueError, match="combining y and dy"):
+        svg_to_pdf(
+            f'<svg {ns} width="100" height="50"><text x="2" y="12">'
+            '<tspan x="2" y="12" dy="14.4">unsafe</tspan></text></svg>'
+        )
+
+
 def test_pdf_output_is_deterministic() -> None:
     svg = _basic_figure().to_svg()
     assert svg_to_pdf(svg) == svg_to_pdf(svg)

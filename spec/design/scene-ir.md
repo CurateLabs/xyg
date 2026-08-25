@@ -204,7 +204,8 @@ Public Python SVG/PNG/PDF route the proven constant-style circle/diamond-scatter
 literal Cartesian static contract through Rust Scene: chart/plot backgrounds,
 title, authored axis labels/sides/major-minor ticks, the independent public
 `x_axis(..., ticks=False|text=False)` and `y_axis(..., ticks=False|text=False)`
-visibility switches, primary legend, literal colorbar, and one bounded callout.
+visibility switches, primary legend, literal colorbar, one bounded callout, and
+its one bounded wrapped-callout companion.
 `ticks=False` lowers only major tick geometry to zero and retains labels;
 `text=False` lowers only tick-label/title paint to transparent and retains tick
 geometry. Other public exports remain on the
@@ -398,12 +399,14 @@ clipping, identity, tick generation, or label formatting policy.
 
 Remaining polar marks and richer legend variants stay explicit compatibility
 exceptions. Public SVG and native PNG auto-route supported figures through
-Rust Scene; PDF consumes that Rust SVG. The first public annotation route is
-exactly one bounded Cartesian callout on the otherwise proven constant-style
-circle/diamond-scatter slice. Its literal color, opacity, width, anchor, offsets, and
-literal label background/border compile through the same Scene contract; Rust
-alone validates them and resolves its leader and label box. A second callout,
-every other annotation kind, themes, classes/CSS/custom fonts, nonliteral
+Rust Scene; PDF consumes that Rust SVG. The public annotation route is one
+bounded Cartesian callout, optionally followed by the one bounded wrapped
+Cartesian callout from the shared public-host fixture, on the otherwise proven
+constant-style circle/diamond-scatter slice. Their literal color, opacity,
+width, anchor, offsets, and literal label background/border compile through the
+same Scene contract; Rust alone validates them and resolves their leader, label
+box, and wrapped line breaks. Other annotation combinations/kinds, themes,
+classes/CSS/custom fonts, nonliteral
 chrome, symbols other than circle/diamond, non-scatter marks, and LOD remain compatibility
 preflight exceptions. ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
@@ -544,15 +547,16 @@ The canonical result is `XYLB` v5: v4's fixed box/border record plus a resolved
 line count. Text contains Rust-selected LF separators. SVG emits those lines as
 `tspan`s, raster emits their Rust-resolved baselines, and the browser uses
 `white-space: pre` plus the fixed 1.2 line height. v1--v4 label tables and
-`XYAD` v1/v2 remain valid. The new consumer support is intentionally dormant
-until public Python and Node host packing lands in a separate slice.
+`XYAD` v1/v2 remain valid. Public Python and Node host packing now emit this
+bounded v3 section; host entry points retain no wrapping or placement policy.
 
 The combined public-host fixture is generated from
 `scripts/generate_authored_scene_benchmark.py` into the legacy-named
 `tests/fixtures/authored_scene_v20.json`, whose schema explicitly identifies
-the v23 frame. Its declarative authoring record covers chart and plot
+the v24 frame. Its declarative authoring record covers chart and plot
 backgrounds, top/right Cartesian sides with deterministic major/minor ticks,
-legend, literal-banded colorbar, and a callout label background. Python
+legend, literal-banded colorbar, an ordinary callout, and a wrapped callout
+with literal box/border paint. Python
 generates the canonical Scene and SHA-256; the Node public `Figure` test
 independently reconstructs the same authoring and requires byte identity.
 `tests/fixtures/public_axis_visibility_scene.json` separately pins all eight
