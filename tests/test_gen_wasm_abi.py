@@ -135,3 +135,34 @@ def test_dashboard_planner_export_is_generated_and_signature_checked() -> None:
         in generated
     )
     assert "raw.xyg_wasm_dashboard_plan" in generated
+
+
+def test_streaming_aggregate_manifest_is_count_only_and_generated() -> None:
+    value = manifest()
+    aggregate = value["aggregate"]
+    assert aggregate["stream_magic"] == "XYAS"
+    assert aggregate["stream_version"] == 1
+    assert aggregate["stream_header_bytes"] == 64
+    assert aggregate["stream_header_offsets"] == aggregate["request_offsets"]
+    assert aggregate["stream_chunk_points"] == aggregate["checkpoint_points"]
+    assert aggregate["stream_chunk_bytes"] == aggregate["stream_chunk_points"] * 16
+    assert aggregate["stream_chunk_copy_factor"] == 2
+    exports = {item["name"]: item for item in value["exports"]}
+    assert exports["xyg_wasm_aggregate_stream_begin"] == {
+        "name": "xyg_wasm_aggregate_stream_begin",
+        "params": ["u32", "u32", "usize", "usize"],
+        "result": "i32",
+    }
+    assert exports["xyg_wasm_aggregate_stream_push"] == {
+        "name": "xyg_wasm_aggregate_stream_push",
+        "params": ["u32", "u32", "usize", "usize"],
+        "result": "i32",
+    }
+    assert exports["xyg_wasm_aggregate_stream_finish"] == {
+        "name": "xyg_wasm_aggregate_stream_finish",
+        "params": ["u32", "u32"],
+        "result": "i32",
+    }
+    generated = (ROOT / "js/src/wasm_abi_generated.ts").read_text()
+    assert 'XYG_WASM_AGGREGATE_STREAM_MAGIC = "XYAS"' in generated
+    assert "raw.xyg_wasm_aggregate_stream_push" in generated

@@ -1,11 +1,14 @@
 # Host parity — Python and Node
 
-The browser WASM host exposes packed `XYAG` to resumable Rust aggregation and
-returns packed `XYAO`. Hosts only frame generated fields and schedule
-checkpoints; grid policy, exact mean-color accumulation, cancellation cleanup,
-and the 64 MiB aggregate peak model remain Rust-owned. Native hosts continue to
-use the same `xyg-engine` binning kernels. Wiring `XYAO` into the complete live
-density/LOD product path remains part of #59.
+The browser WASM host retains packed `XYAG` for the compatibility seam and now
+exposes `XYAS` v1 for the product-path successor: a header/domain/grid plus
+bounded canonical f64 x/y chunks, all binned count-only by Rust and finished as
+the existing packed `XYAO`. Hosts may frame and transfer chunks, but cannot
+scan, bin, or select a grid/domain policy. Exact mean-color accumulation stays
+on the legacy seam until its separately bounded stream contract exists.
+Cancellation cleanup and the aggregate peak model remain Rust-owned. Native
+hosts continue to use the same `xyg-engine` binning kernels. Wiring streamed
+`XYAO` into the complete live density/LOD product path remains part of #59.
 
 **Status:** requirements locked and **ready for review** with
 [graph-fork-requirements.md](graph-fork-requirements.md); implementation design

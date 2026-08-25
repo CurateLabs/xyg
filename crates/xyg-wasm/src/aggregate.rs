@@ -22,6 +22,17 @@ pub const CHECKPOINT_STRIDE_COLOR: usize = 20;
 pub const REQUEST_COPY_FACTOR: usize = 2;
 pub const OUTPUT_COPY_FACTOR: usize = 2;
 pub const CHECKPOINT_POINTS: usize = 32 * 1024;
+/// Streaming count-only aggregate header. Unlike `XYAG`, no full source
+/// columns follow this header: the host supplies bounded x/y chunks through
+/// the lifecycle ABI below.
+pub const STREAM_MAGIC: &[u8; 4] = b"XYAS";
+pub const STREAM_VERSION: u32 = 1;
+pub const STREAM_HEADER_BYTES: usize = 64;
+pub const STREAM_CHUNK_POINTS: usize = 32 * 1024;
+pub const STREAM_CHUNK_BYTES: usize = 524_288;
+pub const STREAM_CHUNK_COPY_FACTOR: usize = 2;
+const _: () = assert!(STREAM_CHUNK_POINTS == CHECKPOINT_POINTS);
+const _: () = assert!(STREAM_CHUNK_BYTES == STREAM_CHUNK_POINTS * REQUEST_STRIDE_COUNT);
 pub const REQUEST_OFFSETS: [usize; 11] = [4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56];
 pub const OUTPUT_OFFSETS: [usize; 7] = [4, 8, 12, 16, 20, 24, 28];
 
@@ -53,6 +64,22 @@ pub struct AggregateJob {
     accumulator: Accumulator,
 }
 
+/// A count-only aggregate which never retains the full source. The header
+/// declares the final point count and grid/domain; each pushed chunk is the
+/// canonical little-endian layout `[x: f64; n][y: f64; n]`.
+#[derive(Debug)]
+pub struct StreamAggregateJob {
+    expected_points: usize,
+    received_points: usize,
+    width: usize,
+    height: usize,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    counts: Vec<u32>,
+}
+
 fn u32_at(bytes: &[u8], offset: usize) -> Result<u32, AggregateError> {
     Ok(u32::from_le_bytes(
         bytes
@@ -73,6 +100,28 @@ fn f64_at(bytes: &[u8], offset: usize) -> Result<f64, AggregateError> {
 }
 fn domain_ok(lo: f64, hi: f64) -> bool {
     lo.is_finite() && hi.is_finite() && hi > lo
+}
+
+fn count_output(width: usize, height: usize, counts: Vec<u32>) -> Vec<u8> {
+    let cells = width * height;
+    let mut out = vec![0; OUTPUT_HEADER_BYTES];
+    out.reserve(cells * OUTPUT_STRIDE_COUNT);
+    out[..4].copy_from_slice(OUTPUT_MAGIC);
+    for (offset, value) in [
+        (OUTPUT_OFFSETS[0], OUTPUT_VERSION),
+        (OUTPUT_OFFSETS[1], OUTPUT_HEADER_BYTES as u32),
+        (OUTPUT_OFFSETS[2], 0),
+        (OUTPUT_OFFSETS[3], width as u32),
+        (OUTPUT_OFFSETS[4], height as u32),
+    ] {
+        out[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+    }
+    let max = counts.iter().copied().max().unwrap_or(0) as f32;
+    out[OUTPUT_OFFSETS[5]..OUTPUT_OFFSETS[5] + 4].copy_from_slice(&max.to_le_bytes());
+    for n in counts {
+        out.extend_from_slice(&(n as f32).to_le_bytes());
+    }
+    out
 }
 
 impl AggregateJob {
@@ -238,47 +287,164 @@ impl AggregateJob {
         Ok(end == self.point_count)
     }
     pub fn finish(self) -> Vec<u8> {
-        let color = matches!(self.accumulator, Accumulator::Colors(_));
         let cells = self.width * self.height;
+        let colors = match self.accumulator {
+            Accumulator::Counts(counts) => return count_output(self.width, self.height, counts),
+            Accumulator::Colors(colors) => colors,
+        };
         let mut out = vec![0; OUTPUT_HEADER_BYTES];
-        out.reserve(cells * if color { 8 } else { 4 });
+        out.reserve(cells * 8);
         out[..4].copy_from_slice(OUTPUT_MAGIC);
         for (offset, value) in [
             (OUTPUT_OFFSETS[0], OUTPUT_VERSION),
             (OUTPUT_OFFSETS[1], OUTPUT_HEADER_BYTES as u32),
-            (OUTPUT_OFFSETS[2], if color { 1 } else { 0 }),
+            (OUTPUT_OFFSETS[2], 1),
             (OUTPUT_OFFSETS[3], self.width as u32),
             (OUTPUT_OFFSETS[4], self.height as u32),
         ] {
             out[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
         }
-        let max = match &self.accumulator {
-            Accumulator::Counts(v) => v.iter().copied().max().unwrap_or(0),
-            Accumulator::Colors(v) => v.iter().map(|c| c.count).max().unwrap_or(0),
-        } as f32;
+        let max = colors.iter().map(|c| c.count).max().unwrap_or(0) as f32;
         out[OUTPUT_OFFSETS[5]..OUTPUT_OFFSETS[5] + 4].copy_from_slice(&max.to_le_bytes());
-        match self.accumulator {
-            Accumulator::Counts(v) => {
-                for n in v {
-                    out.extend_from_slice(&(n as f32).to_le_bytes())
-                }
-            }
-            Accumulator::Colors(v) => {
-                for c in &v {
-                    out.extend_from_slice(&(c.count as f32).to_le_bytes())
-                }
-                for c in &v {
-                    out.extend_from_slice(&c.rgba8())
-                }
-            }
+        for c in &colors {
+            out.extend_from_slice(&(c.count as f32).to_le_bytes())
+        }
+        for c in &colors {
+            out.extend_from_slice(&c.rgba8())
         }
         out
+    }
+}
+
+impl StreamAggregateJob {
+    pub fn begin(header: &[u8], budget: usize) -> Result<Self, AggregateError> {
+        if header.len() != STREAM_HEADER_BYTES || &header[..4] != STREAM_MAGIC {
+            return Err(AggregateError::Length);
+        }
+        if u32_at(header, REQUEST_OFFSETS[0])? != STREAM_VERSION {
+            return Err(AggregateError::Version);
+        }
+        if u32_at(header, REQUEST_OFFSETS[1])? as usize != STREAM_HEADER_BYTES
+            || u32_at(header, REQUEST_OFFSETS[2])? != 0
+            || u32_at(header, REQUEST_OFFSETS[6])? != 0
+        {
+            return Err(AggregateError::Length);
+        }
+        let expected_points = u32_at(header, REQUEST_OFFSETS[3])? as usize;
+        let width = u32_at(header, REQUEST_OFFSETS[4])? as usize;
+        let height = u32_at(header, REQUEST_OFFSETS[5])? as usize;
+        if expected_points > MAX_POINTS || width == 0 || height == 0 {
+            return Err(AggregateError::Limit);
+        }
+        let x0 = f64_at(header, REQUEST_OFFSETS[7])?;
+        let x1 = f64_at(header, REQUEST_OFFSETS[8])?;
+        let y0 = f64_at(header, REQUEST_OFFSETS[9])?;
+        let y1 = f64_at(header, REQUEST_OFFSETS[10])?;
+        if !domain_ok(x0, x1) || !domain_ok(y0, y1) {
+            return Err(AggregateError::Domain);
+        }
+        let cells = width.checked_mul(height).ok_or(AggregateError::Limit)?;
+        if cells > MAX_GRID_CELLS {
+            return Err(AggregateError::Limit);
+        }
+        let accumulator = cells
+            .checked_mul(ACCUMULATOR_STRIDE_COUNT)
+            .ok_or(AggregateError::Limit)?;
+        let output = OUTPUT_HEADER_BYTES
+            .checked_add(cells.checked_mul(OUTPUT_STRIDE_COUNT).ok_or(AggregateError::Limit)?)
+            .ok_or(AggregateError::Limit)?;
+        let peak = STREAM_HEADER_BYTES
+            .checked_add(accumulator)
+            .and_then(|v| v.checked_add(output.saturating_mul(OUTPUT_COPY_FACTOR)))
+            .and_then(|v| v.checked_add(STREAM_CHUNK_BYTES * STREAM_CHUNK_COPY_FACTOR))
+            .ok_or(AggregateError::Limit)?;
+        if peak > budget {
+            return Err(AggregateError::Limit);
+        }
+        Ok(Self {
+            expected_points,
+            received_points: 0,
+            width,
+            height,
+            x0,
+            x1,
+            y0,
+            y1,
+            counts: vec![0; cells],
+        })
+    }
+
+    /// Adds exactly one bounded source chunk. Returning `false` makes the
+    /// caller yield/check cancellation before staging another chunk.
+    pub fn push(&mut self, chunk: &[u8]) -> Result<bool, AggregateError> {
+        if chunk.is_empty() || chunk.len() % REQUEST_STRIDE_COUNT != 0 {
+            return Err(AggregateError::Length);
+        }
+        let points = chunk.len() / REQUEST_STRIDE_COUNT;
+        if points > STREAM_CHUNK_POINTS
+            || self
+                .received_points
+                .checked_add(points)
+                .ok_or(AggregateError::Limit)?
+                > self.expected_points
+        {
+            return Err(AggregateError::Limit);
+        }
+        let mut x = Vec::with_capacity(points);
+        let mut y = Vec::with_capacity(points);
+        for index in 0..points {
+            x.push(f64_at(chunk, index * 8)?);
+            y.push(f64_at(chunk, points * 8 + index * 8)?);
+        }
+        kernels::bin_2d_count_scalar(
+            &x,
+            &y,
+            self.x0,
+            self.x1,
+            self.y0,
+            self.y1,
+            self.width,
+            self.height,
+            &mut self.counts,
+        );
+        self.received_points += points;
+        Ok(false)
+    }
+
+    pub fn finish(self) -> Result<Vec<u8>, AggregateError> {
+        if self.received_points != self.expected_points {
+            return Err(AggregateError::Length);
+        }
+        Ok(count_output(self.width, self.height, self.counts))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn stream_header(n: u32) -> Vec<u8> {
+        let mut o = vec![0; STREAM_HEADER_BYTES];
+        o[..4].copy_from_slice(STREAM_MAGIC);
+        o[4..8].copy_from_slice(&STREAM_VERSION.to_le_bytes());
+        o[8..12].copy_from_slice(&(STREAM_HEADER_BYTES as u32).to_le_bytes());
+        o[16..20].copy_from_slice(&n.to_le_bytes());
+        o[20..24].copy_from_slice(&4u32.to_le_bytes());
+        o[24..28].copy_from_slice(&4u32.to_le_bytes());
+        for (p, v) in [(32, 0.), (40, 4.), (48, 0.), (56, 4.)] {
+            o[p..p + 8].copy_from_slice(&f64::to_le_bytes(v));
+        }
+        o
+    }
+    fn stream_chunk(points: &[(f64, f64)]) -> Vec<u8> {
+        let mut o = Vec::with_capacity(points.len() * REQUEST_STRIDE_COUNT);
+        for (x, _) in points {
+            o.extend_from_slice(&x.to_le_bytes());
+        }
+        for (_, y) in points {
+            o.extend_from_slice(&y.to_le_bytes());
+        }
+        o
+    }
     fn pack(n: u32, color: bool) -> Vec<u8> {
         let mut o = vec![0; 64];
         o[..4].copy_from_slice(b"XYAG");
@@ -354,5 +520,27 @@ mod tests {
             assert_eq!(&output[..4], OUTPUT_MAGIC);
             assert!(output[OUTPUT_HEADER_BYTES..].iter().all(|byte| *byte == 0));
         }
+    }
+
+    #[test]
+    fn stream_keeps_only_count_grid_and_one_bounded_chunk() {
+        let mut job = StreamAggregateJob::begin(&stream_header(3), 8 << 20).unwrap();
+        assert!(!job.push(&stream_chunk(&[(0.5, 0.5), (1.5, 1.5)])).unwrap());
+        assert_eq!(job.finish().unwrap_err(), AggregateError::Length);
+
+        let mut job = StreamAggregateJob::begin(&stream_header(3), 8 << 20).unwrap();
+        assert!(!job.push(&stream_chunk(&[(0.5, 0.5), (1.5, 1.5)])).unwrap());
+        assert!(!job.push(&stream_chunk(&[(2.5, 2.5)])).unwrap());
+        let output = job.finish().unwrap();
+        assert_eq!(&output[..4], OUTPUT_MAGIC);
+        assert_eq!(f32::from_le_bytes(output[OUTPUT_HEADER_BYTES..][..4].try_into().unwrap()), 1.0);
+
+        let mut job = StreamAggregateJob::begin(&stream_header(1), 8 << 20).unwrap();
+        assert_eq!(job.push(&[]).unwrap_err(), AggregateError::Length);
+        assert_eq!(
+            job.push(&vec![0; STREAM_CHUNK_BYTES + REQUEST_STRIDE_COUNT])
+                .unwrap_err(),
+            AggregateError::Limit
+        );
     }
 }
