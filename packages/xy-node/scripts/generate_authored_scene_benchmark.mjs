@@ -34,7 +34,20 @@ function authoredScene(count) {
   // Match Python's explicit ``density=False``: the evidence exercises the
   // supported direct Scene transport at every tier, not Node's interactive
   // density heuristic.
-  figure.scatter(x, y, { ...authoring.scatter, force_direct: true });
+  // Node's public Figure keeps paint options under ``style``.  Preserve the
+  // fixture's declarative values explicitly rather than relying on Node's
+  // matching defaults: Python's public authoring makes the diamond literal.
+  figure.scatter(x, y, {
+    id: authoring.scatter.id,
+    name: authoring.scatter.name,
+    style: {
+      color: authoring.scatter.color,
+      size: authoring.scatter.size,
+      opacity: authoring.scatter.opacity,
+      symbol: authoring.scatter.symbol,
+    },
+    force_direct: true,
+  });
   return figure.toScene();
 }
 
