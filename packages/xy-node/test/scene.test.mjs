@@ -108,6 +108,45 @@ test("Node matches Python bytes for all constant built-in scatter symbols", () =
   assert.ok(sceneRasterCommands(scene).length > 100);
 });
 
+test("Node matches Python bytes for the bounded public literal triangle mesh", () => {
+  const figure = new Figure({ width: 360, height: 260 });
+  figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 2]);
+  figure.triangleMesh(
+    [-0.25, 1], [0.25, 0.5], [0.75, 2.25], [0.25, 0.5], [0.25, 1.5], [1.25, 1.75],
+    { id: 0, name: "literal mesh", color: "#22c55e", opacity: 0.75 },
+  );
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_triangle_mesh_sha256,
+  );
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<path d="M /g) ?? []).length, 2);
+  assert.match(svg, /<g clip-path="url\(#xy-scene-plot\)">/);
+  assert.match(svg, />literal mesh<\/text>/);
+  assert.ok(svg.indexOf("</g>", svg.indexOf("clip-path")) < svg.indexOf('data-xy-chrome="legend"'));
+  const raster = sceneRasterCommands(scene);
+  assert.ok(raster.length > 100);
+  assert.ok(Buffer.from(raster).includes(Buffer.from("literal mesh")));
+
+  const painter = sceneBrowserPainter(scene);
+  const view = new DataView(painter.buffer, painter.byteOffset, painter.byteLength);
+  const headerBytes = view.getUint32(12, true);
+  const descriptorBytes = view.getUint32(16, true);
+  assert.equal(view.getUint32(20, true), 2);
+  for (let group = 0; group < 2; group += 1) {
+    const descriptor = headerBytes + group * descriptorBytes;
+    assert.equal(painter[descriptor], 4);
+    assert.equal(view.getUint32(descriptor + 4, true), 3);
+    assert.deepEqual(Array.from(painter.subarray(descriptor + 32, descriptor + 36)), [34, 197, 94, 191]);
+    assert.deepEqual(Array.from(painter.subarray(descriptor + 36, descriptor + 40)), [0, 0, 0, 0]);
+    assert.equal(view.getFloat32(descriptor + 40, true), 0);
+  }
+  const firstXOffset = view.getUint32(headerBytes + 8, true);
+  assert.ok(view.getFloat32(firstXOffset, true) < view.getFloat32(32, true));
+  assert.ok(Buffer.from(painter).includes(Buffer.from("XYLG")));
+});
+
 test("Node numeric tick formats match Python bytes and every Rust Scene consumer", () => {
   const figure = new Figure({ width: 420, height: 260 });
   figure.setAxis("x", { domain: [0, 1], format: ".1%" });

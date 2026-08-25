@@ -59,6 +59,32 @@ def _public_builtin_symbols() -> Figure:
     return figure
 
 
+def _public_triangle_mesh(count: int = 2) -> Figure:
+    """Literal unjoined PolyFill rows with deterministic cross-host identity."""
+    figure = Figure(width=360, height=260)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    x0 = np.resize(np.asarray([-0.25, 1.0], dtype=np.float64), count)
+    y0 = np.resize(np.asarray([0.25, 0.5], dtype=np.float64), count)
+    x1 = np.resize(np.asarray([0.75, 2.25], dtype=np.float64), count)
+    y1 = np.resize(np.asarray([0.25, 0.5], dtype=np.float64), count)
+    x2 = np.resize(np.asarray([0.25, 1.5], dtype=np.float64), count)
+    y2 = np.resize(np.asarray([1.25, 1.75], dtype=np.float64), count)
+    figure.triangle_mesh(
+        x0,
+        y0,
+        x1,
+        y1,
+        x2,
+        y2,
+        name="literal mesh",
+        color="#22c55e",
+        opacity=0.75,
+    )
+    figure.traces[-1].id = 0
+    return figure
+
+
 def _polar() -> Figure:
     figure = _supported()
     figure.coords = "polar"
@@ -456,6 +482,156 @@ def test_all_builtin_symbols_match_exact_cross_host_scene_and_public_consumers()
         stroke_width = np.frombuffer(painter[descriptor + 40 : descriptor + 44], dtype="<f4")[0]
         assert stroke_width == (1.0 if code >= 15 else 0.0)
     assert b"XYLG" in painter
+
+
+def test_public_triangle_mesh_matches_exact_cross_host_scene_and_consumers() -> None:
+    """Two clipped literal triangles keep one canonical run per face."""
+    from xyg import _native, _pdf, kernels
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_triangle_mesh()
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["public_triangle_mesh_sha256"]
+
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="M ') == 2
+    assert '<g clip-path="url(#xy-scene-plot)">' in svg
+    assert svg.count('role="listitem"') == 1
+    assert ">literal mesh</text>" in svg
+    assert figure.to_svg() == svg
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), figure.width, figure.height
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+
+    painter = _native.scene_browser_painter(scene)
+    header_bytes = int.from_bytes(painter[12:16], "little")
+    descriptor_bytes = int.from_bytes(painter[16:20], "little")
+    assert int.from_bytes(painter[20:24], "little") == 2
+    plot_left = np.frombuffer(painter[32:36], dtype="<f4")[0]
+    for group in range(2):
+        descriptor = header_bytes + group * descriptor_bytes
+        assert painter[descriptor] == 4
+        assert int.from_bytes(painter[descriptor + 4 : descriptor + 8], "little") == 3
+        if group == 0:
+            x_offset = int.from_bytes(painter[descriptor + 8 : descriptor + 12], "little")
+            assert np.frombuffer(painter[x_offset : x_offset + 4], dtype="<f4")[0] < plot_left
+    assert b"XYLG" in painter
+
+
+def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
+    from xyg import _native
+
+    boundary = _public_triangle_mesh(1024)
+    assert scene_export_support_reason(boundary) is None
+    painter = _native.scene_browser_painter(figure_scene(boundary))
+    assert int.from_bytes(painter[20:24], "little") == 1024
+    assert (
+        scene_export_support_reason(_public_triangle_mesh(1025))
+        == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+    )
+
+    aggregate = _public_triangle_mesh(513)
+    trace = aggregate.traces[0]
+    aggregate.triangle_mesh(
+        trace.x0.values,
+        trace.y0.values,
+        trace.x1.values,
+        trace.y1.values,
+        trace.x.values,
+        trace.y.values,
+        color="#22c55e",
+    )
+    assert scene_export_support_reason(aggregate) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+
+    mixed = _public_triangle_mesh(1024)
+    mixed.scatter([1.0], [1.0], color="#3987e5")
+    assert scene_export_support_reason(mixed) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+
+
+@pytest.mark.parametrize(
+    ("style_key", "style_value"),
+    [
+        ("joined_fill", True),
+        ("fill_opacity", 0.5),
+        ("stroke_opacity", 0.5),
+        ("stroke", "#ff0000"),
+        ("stroke_width", 2.0),
+        ("role", "custom-mesh"),
+    ],
+)
+def test_public_triangle_mesh_keeps_broader_styles_on_compatibility(
+    style_key: str, style_value: object
+) -> None:
+    figure = _public_triangle_mesh()
+    figure.traces[0].style[style_key] = style_value
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: Figure(width=360, height=260).triangle_mesh(
+            [0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], color=[0.0, 1.0]
+        ),
+        lambda: Figure(width=360, height=260).triangle_mesh(
+            [0, 1],
+            [0, 0],
+            [0.5, 1.5],
+            [1, 1],
+            [1, 2],
+            [0, 0],
+            color=np.asarray([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64),
+        ),
+        lambda: Figure(width=360, height=260).triangle_mesh(
+            [0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], opacity=[0.5, 1.0]
+        ),
+        lambda: Figure(width=360, height=260).triangle_mesh(
+            [0, 1],
+            [0, 0],
+            [0.5, 1.5],
+            [1, 1],
+            [1, 2],
+            [0, 0],
+            stroke=["#ff0000", "#00ff00"],
+        ),
+        lambda: Figure(width=360, height=260).triangle_mesh(
+            [0, 1],
+            [0, 0],
+            [0.5, 1.5],
+            [1, 1],
+            [1, 2],
+            [0, 0],
+            stroke_width=[1.0, 2.0],
+        ),
+    ],
+)
+def test_public_triangle_mesh_keeps_per_item_paint_on_compatibility(factory) -> None:
+    figure = factory()
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    assert scene_export_support_reason(figure) is not None
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda figure: setattr(figure, "coords", "polar"),
+        lambda figure: setattr(figure.traces[0], "x_axis", "x2"),
+        lambda figure: figure.axis_options["x"].__setitem__("domain", None),
+        lambda figure: figure.axis_options["y"].__setitem__("domain", None),
+        lambda figure: setattr(figure.traces[0], "hidden", True),
+        lambda figure: figure.traces[0].x0.values.__setitem__(0, np.nan),
+        lambda figure: setattr(figure.traces[0].x0, "values", np.asarray([0.0])),
+    ],
+)
+def test_public_triangle_mesh_keeps_nonliteral_geometry_fail_closed(
+    mutate: Callable[[Figure], None],
+) -> None:
+    figure = _public_triangle_mesh()
+    mutate(figure)
+    assert scene_export_support_reason(figure) is not None
 
 
 @pytest.mark.parametrize(
