@@ -11,6 +11,12 @@ implementation does not compile or omit one it does.
 draws something the notes have to qualify. `none` means it does not draw it —
 which is sometimes deliberate, and the notes say which.
 
+This matrix describes the full public renderer surface. The Rust Scene static-
+export route is deliberately narrower: its proven v23 subset and loud
+unsupported boundaries (including rich/wrapped/custom typography) are
+specified in [scene-ir.md](../design/scene-ir.md), not inferred from a
+slot's renderer support here.
+
 ## In one line
 
 - **11** mark style properties across **21** mark kinds, drawn by all three renderers.

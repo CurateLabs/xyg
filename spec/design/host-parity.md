@@ -71,7 +71,7 @@ estimates retained Rust resources.
 
 `tests/fixtures/xyts_cross_host.json` is generated from the Rust XYTS decoder,
 never authored by a host. Direct WASM recompiles every request and matches the
-exact Scene v20 output under a local-only strict CSP. Native Python and Node
+exact Scene v23 output under a local-only strict CSP. Native Python and Node
 load those Scene bytes through the shared `xyg_scene_browser_painter` C ABI and
 byte-compare Rust's painter-v13 lowering; the Pyodide wheel executes that same
 native ABI inside an actual Pyodide runtime with network access disabled for
@@ -85,15 +85,16 @@ load. The Pyodide gate calls every stub and checks its documented sentinel and
 signature; it never emulates filesystem policy in Python or JavaScript. These
 stubs are Emscripten-specific, not a blanket policy for every WASM target.
 
-The #58 scene migration is active: scene schema version 9 provides one
+The #58 scene migration is active: scene schema version 23 provides one
 backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,
-scatter, polyline, and rectangle records through both host bindings. The v1
+scatter, polyline, rectangle, and versioned bounded decoration records through both host bindings. The v1
 scatter SVG wrapper remains temporarily for scatter-only compatibility. Python
 and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
-Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF retain the
-compatibility renderer until Rust owns every remaining layout/gutter and Scene
-record. Scene v13 covers solid chart/plot backgrounds, authored
+Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF select the Rust
+Scene consumers only for the proven bounded constant-style circle/diamond-scatter
+static subset; every unmodeled output contract remains an explicit compatibility
+route. Scene v13 covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a
   bounded literal RGBA banded colorbar (right/bottom). Scene v19 evolves that
@@ -103,8 +104,9 @@ record. Scene v13 covers solid chart/plot backgrounds, authored
   rule, band, marker annotations, bounded Rust-anchored attached labels, and
   bounded Rust-projected literal straight arrows, and bounded Rust-resolved
   Cartesian callouts. Scene v20--v23 add fixed Rust-resolved literal label
-  backgrounds and bounded literal label-box borders; padding, radius, and
-  advanced text layout remain unsupported. Extra legends, named/advanced colorbars, other deferred
+backgrounds and bounded literal label-box borders; padding, radius, wrapping,
+rich markup, custom typography, and advanced text layout remain unsupported.
+Extra legends, named/advanced colorbars, other deferred
   annotation forms, custom
   tick strings, and advanced text layout remain loud unsupported boundaries.
   ABI 84's versioned support predicate makes the
@@ -123,6 +125,12 @@ chooses the compatibility renderer only before Scene compilation for an
 explicit unsupported feature, an export-only background override, or a valid
 viewport too small for bounded Scene chrome. A malformed input or Rust
 consumer failure remains an error rather than a fallback signal.
+
+The public literal `x_axis`/`y_axis` `ticks=False` and `text=False` switches
+are inside that migrated static subset: Rust preserves the independent
+semantics in all three consumers (major-tick geometry versus tick-label/title
+paint). This does not widen the boundary to rich tick strings, wrapping,
+custom fonts, CSS/classes, theme-driven chrome, or arbitrary annotation text.
 
 ### Contracts (MUST)
 

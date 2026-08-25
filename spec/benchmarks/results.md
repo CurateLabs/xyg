@@ -28,7 +28,7 @@ The xy-only arm also runs with no dependencies via
 
 ## Direct-browser WASM Scene evidence
 
-The changed-main nightly CodSpeed workflow owns the hosted #118 and #116 browser
+The changed-main nightly/manual CodSpeed workflow owns the hosted #118 and #116 browser
 evidence paths; it does not run for pull requests. Rust simulation rows cover
 100, 10k, 100k, and 1M-record XYTS v2 expansion. A separate strict-CSP Chromium
 job measures those sizes both through `renderWasmChart` and through deterministic
