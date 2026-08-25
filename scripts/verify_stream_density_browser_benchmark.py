@@ -64,8 +64,28 @@ def main():
             or row.get("disposed") is not None
         ):
             raise SystemExit("newest-only/cancel/dispose proof failed")
-        if row["count"] == 1_000_000 and row.get("streamChunks", 0) <= 1:
-            raise SystemExit("1M did not traverse multiple XYAS chunks")
+        expected_pushes = (row["count"] + 32_768 - 1) // 32_768
+        if row.get("streamPushes") != expected_pushes:
+            raise SystemExit("production Worker did not report the exact XYAS push count")
+        observations = row.get("streamObservations")
+        if not isinstance(observations, list):
+            raise SystemExit("capability-gated Worker stream observations missing")
+        cancelled = [
+            o for o in observations if isinstance(o, dict) and o.get("phase") == "cancelled"
+        ]
+        if not cancelled:
+            raise SystemExit(
+                "Worker did not acknowledge cancellation of the superseded XYAS stream"
+            )
+        applied = row.get("applicationSequences")
+        if not isinstance(applied, list) or any(not isinstance(v, int) for v in applied):
+            raise SystemExit("capability-gated ChartView application observations missing")
+        if (
+            row["cancelRevision"] in applied
+            or row["oldRevision"] in applied
+            or row["newest"] not in applied
+        ):
+            raise SystemExit("cancelled/old revision painted or newest revision was not applied")
     print("validated split-payload strict-CSP XYAS browser evidence")
 
 
