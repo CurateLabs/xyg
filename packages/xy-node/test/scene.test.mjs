@@ -219,6 +219,27 @@ test("Node matches Python bytes for the full bounded public annotation family", 
   assert.ok(Buffer.from(sceneBrowserPainter(scene)).includes(Buffer.from("wrapped")));
 });
 
+test("Node matches Python bytes for the bounded public literal geometry family", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+  figure.line([0, 1, 2], [1, 3, 2], { id: 0, color: "#ef4444", width: 2 });
+  figure.bar([0.5, 1.5], [2, 3], { id: 1, color: "#22c55e", opacity: 0.8 });
+  // The public area slice is a fill-only Band. A visible perimeter remains
+  // intentionally outside the automatic static Scene route.
+  figure.area([0, 1, 2], [1, 2, 1], { id: 2, base: 0, color: "#0ea5e9", opacity: 0.8 });
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_literal_geometry_sha256,
+  );
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<polyline /);
+  assert.match(svg, /<rect /);
+  assert.match(svg, /<path /);
+  assert.ok(sceneRasterCommands(scene).length > 100);
+  assert.ok(sceneBrowserPainter(scene).length > 300);
+});
+
 test("Node Figure authoring accepts bounded annotations without exposing a second policy", () => {
   const source = { kind: "text", x: 0.5, y: 0.5, text: "owned by Rust", style: { color: "#ff0000" } };
   const fromConstructor = new Figure({ width: 320, height: 240, annotations: [source] });

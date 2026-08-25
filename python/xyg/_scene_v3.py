@@ -1645,19 +1645,65 @@ def scene_export_support_reason(
     colorbar = getattr(figure, "colorbar_options", None) or {}
     if any(key not in {"domain", "stops", "ticks", "minor_ticks", "title"} for key in colorbar):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
-    # Until the compatibility raster's line/rect sampling, palette choices,
-    # and SVG spelling are represented in the whole-scene consumers, public
-    # auto-routing is deliberately limited to constant-style circle/diamond
-    # scatter. Diamond is the one non-circle symbol with a fully proven
-    # canonical SVG/raster/browser extent contract; the broader mark and
-    # symbol sets remain available through explicit ``to_scene``.
-    public_kinds = {"scatter"}
+    # This is the bounded literal geometry increment.  The Rust consumers
+    # already own the record semantics for ordinary polylines, rectangles,
+    # and top/base bands, so use those exact records for public static output
+    # too.  Keep this deliberately narrower than the explicit ``to_scene``
+    # seam: it does not bless generated palettes, density/LOD, gradients,
+    # rounded geometry, rich text, polar coordinates, or the other migrating
+    # mark families merely because an internal record happens to exist.
+    public_kinds = {"scatter", "line", "bar", "column", "histogram", "area"}
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size"},
+        # A literal ``step`` is expanded before Scene packing; Rust then owns
+        # the resulting polyline, clipping, raster, and SVG policy.
         "line": {"color", "opacity", "width", "step"},
-        "bar": {"color", "opacity", "role", "orientation"},
-        "column": {"color", "opacity", "role", "orientation"},
-        "histogram": {"color", "opacity", "role", "orientation"},
+        # Literal fill/stroke are represented in the batch-local style table.
+        # ``_reject_rect_extras`` below keeps gradients, non-zero radii, and
+        # wedges outside this public route.
+        "bar": {
+            "color",
+            "opacity",
+            "role",
+            "orientation",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+            "wedge_gap",
+        },
+        "column": {
+            "color",
+            "opacity",
+            "role",
+            "orientation",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+            "wedge_gap",
+        },
+        "histogram": {
+            "color",
+            "opacity",
+            "role",
+            "cumulative",
+            "density",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+        },
+        # Area's public default has no perimeter.  Its retained line controls
+        # are intentionally accepted only at those no-op defaults; a visible
+        # perimeter would be silently omitted by the current Band record.
+        "area": {
+            "color",
+            "opacity",
+            "line_width",
+            "line_opacity",
+            "stroke_perimeter",
+        },
     }
     for trace in figure.traces:
         opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
@@ -1680,6 +1726,13 @@ def scene_export_support_reason(
         if any(
             value is not None and key not in public_style_keys[trace.kind]
             for key, value in (getattr(trace, "style", None) or {}).items()
+        ):
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        trace_style = getattr(trace, "style", None) or {}
+        if trace.kind == "area" and (
+            float(trace_style.get("line_width", 1.2)) != 1.2
+            or float(trace_style.get("line_opacity", 1.0)) != 1.0
+            or bool(trace_style.get("stroke_perimeter", False))
         ):
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
     try:

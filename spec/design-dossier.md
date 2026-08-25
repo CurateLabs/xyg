@@ -540,8 +540,12 @@ F3, still pending (above).
   wrapper remains only as a migration consumer. The first #58 whole-scene slice
   compiles constant-style cartesian scatter/line/bar figures in Python and Node,
   then exposes the exact same Scene v12 bytes to explicit Rust SVG and
-  native-raster command consumers. Public static exports keep their compatibility
-  renderers until canonical layout and authored text/style records land. Rust
+  native-raster command consumers. Public static exports route the proven
+  literal Cartesian subset through those consumers: circle/diamond scatter,
+  constant-style polyline, ordinary bar/column/histogram rectangles, and
+  fill-only area bands. Gradients, rounded corners, visible area perimeters,
+  LOD/density, nonliteral palettes, polar geometry, and unmodeled marks retain
+  their compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
   chrome ordering, plus bounded primary static legend entry ordering,
