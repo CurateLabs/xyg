@@ -2238,8 +2238,9 @@ class Figure(AnnotationsMixin, PayloadMixin):
         """
         from . import _scene_v3, _svg
 
-        if _scene_v3.scene_export_support_reason(self, width=width, height=height) is None:
-            svg = _scene_v3.figure_svg(self, width=width, height=height)
+        data = _scene_v3.public_static_export(self, "svg", width=width, height=height)
+        if data is not None:
+            svg = data.decode("utf-8")
             if path is not None:
                 export._atomic_write_text(path, svg)
             return svg

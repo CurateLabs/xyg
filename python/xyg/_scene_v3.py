@@ -1225,6 +1225,44 @@ def figure_raster_commands(figure: Any, *, scale: float = 1.0, **options: Any) -
     return _native.scene_raster_commands(figure_scene(figure, **options), scale)
 
 
+def public_static_export(
+    figure: Any,
+    format: str,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+    scale: float = 1.0,
+) -> bytes | None:
+    """Render one supported public static format from the canonical Scene.
+
+    This is the only selection seam for the migrated public SVG/PNG/PDF
+    subset.  It returns ``None`` only after the explicit support predicate
+    selects compatibility *before* Scene compilation.  Once selected, every
+    compiler or consumer error propagates: it is never a request to retry a
+    compatibility renderer.
+    """
+    if scene_export_support_reason(figure, width=width, height=height) is not None:
+        return None
+    if format == "svg":
+        return figure_svg(figure, width=width, height=height).encode("utf-8")
+    if format == "png":
+        from . import kernels
+
+        commands = figure_raster_commands(figure, width=width, height=height, scale=scale)
+        w = int(width if width is not None else figure.width)
+        h = int(height if height is not None else figure.height)
+        return kernels.rasterize_png(
+            commands,
+            max(1, int(round(w * float(scale)))),
+            max(1, int(round(h * float(scale)))),
+        )
+    if format == "pdf":
+        from . import _pdf
+
+        return _pdf.svg_to_pdf(figure_svg(figure, width=width, height=height))
+    raise ValueError(f"Scene public static format must be svg, png, or pdf, got {format!r}")
+
+
 def scene_export_support_reason(
     figure: Any,
     *,

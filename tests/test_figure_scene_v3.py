@@ -234,6 +234,26 @@ def test_supported_public_exports_route_through_rust_scene(monkeypatch: pytest.M
     assert calls["raster"] >= 1
 
 
+def test_public_exporters_share_one_scene_selection_seam(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Format routing belongs to Scene orchestration, not each Python exporter."""
+    figure = Figure(width=320, height=240).scatter([1, 2], [2, 3], color="#3987e5")
+    public_static_export = _scene_v3.public_static_export
+    formats: list[str] = []
+
+    def observed_public_static_export(*args: object, **kwargs: object) -> bytes | None:
+        formats.append(str(args[1]))
+        return public_static_export(*args, **kwargs)
+
+    monkeypatch.setattr(_scene_v3, "public_static_export", observed_public_static_export)
+
+    assert figure.to_svg().startswith("<svg")
+    assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
+    assert figure.to_image(format="pdf").startswith(b"%PDF-")
+    assert formats == ["svg", "png", "pdf"]
+
+
 def test_supported_file_exports_match_the_canonical_rust_scene(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
