@@ -108,7 +108,7 @@ def test_kernel_backed_density_automatically_provisions_one_supported_typed_sour
     assert "automatic kernel-backed WASM density lifecycle" in browser
 
 
-def test_kernel_backed_typed_source_contract_accepts_the_owned_full_source_without_removing_sample_support() -> (
+def test_kernel_backed_typed_source_contract_streams_replayable_full_source_without_removing_sample_support() -> (
     None
 ):
     source = (ROOT / "js" / "src" / "49_wasm_density.ts").read_text(encoding="utf-8")
@@ -116,8 +116,10 @@ def test_kernel_backed_typed_source_contract_accepts_the_owned_full_source_witho
     assert "worker, inputs: typedInputs" in source
     assert "const full = fullSourceInput(view)" in source
     assert "if (!full && !targets.length) return null" in source
-    assert "worker.installAggregateSource" in source
-    assert "retireTransferredFullSource" in source
+    assert "this.worker.aggregateStream" in source
+    assert "streamSource: full !== null" in source
+    assert "installAggregateSource" not in source
+    assert "retireTransferredFullSource" not in source
 
 
 def test_standalone_adapter_accepts_supported_multi_trace_sources_without_js_aggregation() -> None:

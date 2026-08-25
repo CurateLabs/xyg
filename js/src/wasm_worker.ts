@@ -7,19 +7,11 @@ import {
   XYG_WASM_ABI_VERSION,
   XYG_WASM_SCENE_VERSION,
   XYG_WASM_AGGREGATE_CHECKPOINT_POINTS,
-  XYG_WASM_AGGREGATE_HEADER_BYTES,
-  XYG_WASM_AGGREGATE_MAGIC,
-  XYG_WASM_AGGREGATE_MAX_POINTS,
-  XYG_WASM_AGGREGATE_MAX_GRID_CELLS,
-  XYG_WASM_AGGREGATE_ACCUMULATOR_STRIDE_COUNT,
+  XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
   XYG_WASM_AGGREGATE_OUTPUT_HEADER_BYTES,
   XYG_WASM_AGGREGATE_OUTPUT_STRIDE_COUNT,
-  XYG_WASM_AGGREGATE_CHECKPOINT_STRIDE_COUNT,
-  XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT,
-  XYG_WASM_AGGREGATE_TOTAL_MEMORY_BYTES,
-  XYG_WASM_AGGREGATE_VERSION,
-  XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR,
-  XYG_WASM_AGGREGATE_OUTPUT_COPY_FACTOR,
+  XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES,
+  XYG_WASM_AGGREGATE_STREAM_CHUNK_BYTES,
   XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS,
   XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS,
   XYG_WASM_GRAPH_FIRST_PAINT_STEPS,
@@ -40,7 +32,7 @@ let compileLeaf = false;
 let operationSequenceWatermark = 0;
 const queued = new Map<number, number>();
 let activeAggregate: { requestId: number; sequence: number; timer: number } | null = null;
-let ownedAggregateSource: { x: ArrayBuffer; y: ArrayBuffer; pointCount: number } | null = null;
+let activeAggregateStream: { requestId: number; sequence: number } | null = null;
 let activeGraph: { requestId: number; sequence: number; revision: number; timer: number; chunkSteps: number; started: number; maxWallMs: number; first: boolean } | null = null;
 let activeCompile: { requestId: number; sequence: number; timer: number; paint: boolean; leaf?: Worker; loweringAnnounced?: boolean } | null = null;
 const COMPILE_CHECKPOINT_RECORDS = 4096;
@@ -181,49 +173,61 @@ function diagnostics() {
   };
 }
 
-// The capacity is derived from generated ABI quantities, not duplicated policy:
-// the count-only XYAG has a 64-byte header + 16 bytes per row and Rust retains
-// two request copies inside its generated aggregate budget.
-function ownedAggregateCapacity(): number {
-  const cells = XYG_WASM_AGGREGATE_MAX_GRID_CELLS;
-  const fixed = XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR * XYG_WASM_AGGREGATE_HEADER_BYTES
-    + cells * XYG_WASM_AGGREGATE_ACCUMULATOR_STRIDE_COUNT
-    + XYG_WASM_AGGREGATE_OUTPUT_COPY_FACTOR * (XYG_WASM_AGGREGATE_OUTPUT_HEADER_BYTES + cells * XYG_WASM_AGGREGATE_OUTPUT_STRIDE_COUNT)
-    + Math.min(XYG_WASM_AGGREGATE_CHECKPOINT_POINTS, XYG_WASM_AGGREGATE_MAX_POINTS) * XYG_WASM_AGGREGATE_CHECKPOINT_STRIDE_COUNT;
-  return Math.min(XYG_WASM_AGGREGATE_MAX_POINTS, Math.floor((XYG_WASM_AGGREGATE_TOTAL_MEMORY_BYTES - fixed) / (XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR * XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT + 16)));
+function streamStage(bytes: ArrayBuffer, limit: number): number {
+  if (!exports || !handle) throw new Error("worker is not initialized");
+  if (bytes.byteLength <= 0 || bytes.byteLength > limit) throw new RangeError("aggregate stream frame exceeds its generated bound");
+  const status = exports.xyg_wasm_arena_resize(handle, bytes.byteLength);
+  if (status !== XYG_WASM_STATUS.OK) return status;
+  const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
+  if (!ptr || ptr + bytes.byteLength > exports.memory.buffer.byteLength) throw new Error("aggregate stream staging range is invalid");
+  new Uint8Array(exports.memory.buffer, ptr, bytes.byteLength).set(new Uint8Array(bytes));
+  return XYG_WASM_STATUS.OK;
 }
 
-function installOwnedAggregateSource(message: any) {
-  const source = message?.source;
-  if (!(source?.x instanceof ArrayBuffer) || !(source?.y instanceof ArrayBuffer)
-      || !Number.isSafeInteger(source.pointCount) || source.pointCount <= 0
-      || source.x.byteLength !== source.pointCount * 8 || source.y.byteLength !== source.pointCount * 8
-      || source.pointCount > ownedAggregateCapacity()) {
-    error(message?.requestId, "XYG_WASM_RESOURCE_LIMIT", "aggregate source exceeds generated count-only capacity", XYG_WASM_STATUS.RESOURCE_LIMIT); return;
-  }
-  ownedAggregateSource = source;
-  reply(message.requestId, undefined);
+function streamFailure(message: any, status: number) {
+  activeAggregateStream = null;
+  if (exports && handle) exports.xyg_wasm_arena_resize(handle, 0);
+  rustError(message.requestId, statusCode(status), readXygWasmError(exports!, handle), status);
 }
 
-function frameOwnedAggregate(message: any): ArrayBuffer {
-  if (!ownedAggregateSource) throw new Error("no owned aggregate source is installed");
-  const { x, y, pointCount } = ownedAggregateSource;
-  const request = message.request;
-  const fields = [request?.x0, request?.x1, request?.y0, request?.y1];
-  if (!fields.every(Number.isFinite) || !(request.x1 > request.x0) || !(request.y1 > request.y0)
-      || !Number.isInteger(request.width) || !Number.isInteger(request.height) || request.width <= 0 || request.height <= 0) {
-    throw new TypeError("owned aggregate request is malformed");
-  }
-  const byteLength = XYG_WASM_AGGREGATE_HEADER_BYTES + pointCount * XYG_WASM_AGGREGATE_REQUEST_STRIDE_COUNT;
-  if (byteLength * XYG_WASM_AGGREGATE_REQUEST_COPY_FACTOR > operationBudgetBytes) throw new RangeError("owned aggregate exceeds worker operation budget");
-  const out = new ArrayBuffer(byteLength), bytes = new Uint8Array(out), view = new DataView(out);
-  bytes.set(new TextEncoder().encode(XYG_WASM_AGGREGATE_MAGIC), 0);
-  view.setUint32(4, XYG_WASM_AGGREGATE_VERSION, true); view.setUint32(8, XYG_WASM_AGGREGATE_HEADER_BYTES, true);
-  view.setUint32(16, pointCount, true); view.setUint32(20, request.width, true); view.setUint32(24, request.height, true);
-  view.setFloat64(32, request.x0, true); view.setFloat64(40, request.x1, true); view.setFloat64(48, request.y0, true); view.setFloat64(56, request.y1, true);
-  bytes.set(new Uint8Array(x), XYG_WASM_AGGREGATE_HEADER_BYTES);
-  bytes.set(new Uint8Array(y), XYG_WASM_AGGREGATE_HEADER_BYTES + pointCount * 8);
-  return out;
+function beginAggregateStream(message: any) {
+  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
+  try {
+    if (!(message.header instanceof ArrayBuffer) || message.header.byteLength !== XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES) throw new TypeError("aggregate stream header is malformed");
+    if (activeAggregate) throw new Error("an aggregate request is already active");
+    if (activeAggregateStream) { exports.xyg_wasm_cancel(handle, activeAggregateStream.sequence); activeAggregateStream = null; }
+    const staged = streamStage(message.header, XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES);
+    if (staged !== XYG_WASM_STATUS.OK) { streamFailure(message, staged); return; }
+    const status = exports.xyg_wasm_aggregate_stream_begin(handle, Number(message.sequence), 0, message.header.byteLength);
+    if (status !== XYG_WASM_STATUS.PENDING) { streamFailure(message, status); return; }
+    activeAggregateStream = { requestId: message.requestId, sequence: Number(message.sequence) };
+  } catch (cause) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "aggregate stream begin failed", XYG_WASM_STATUS.INVALID_ARGUMENT); }
+}
+
+function pushAggregateStream(message: any) {
+  const active = activeAggregateStream;
+  if (!active || active.requestId !== message.requestId || active.sequence !== Number(message.sequence)) return;
+  try {
+    if (!(message.chunk instanceof ArrayBuffer) || !message.chunk.byteLength || message.chunk.byteLength > XYG_WASM_AGGREGATE_STREAM_CHUNK_BYTES || message.chunk.byteLength % 16) throw new TypeError("aggregate stream chunk is malformed");
+    const staged = streamStage(message.chunk, XYG_WASM_AGGREGATE_STREAM_CHUNK_BYTES);
+    if (staged !== XYG_WASM_STATUS.OK) { streamFailure(message, staged); return; }
+    const status = exports!.xyg_wasm_aggregate_stream_push(handle, active.sequence, 0, message.chunk.byteLength);
+    if (status !== XYG_WASM_STATUS.PENDING) streamFailure(message, status);
+  } catch (cause) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "aggregate stream push failed", XYG_WASM_STATUS.INVALID_ARGUMENT); activeAggregateStream = null; }
+}
+
+function finishAggregateStream(message: any) {
+  const active = activeAggregateStream;
+  if (!active || active.requestId !== message.requestId || active.sequence !== Number(message.sequence) || !exports || !handle) return;
+  try {
+    const status = exports.xyg_wasm_aggregate_stream_finish(handle, active.sequence);
+    activeAggregateStream = null;
+    if (status !== XYG_WASM_STATUS.OK) { streamFailure(message, status); return; }
+    const ptr = exports.xyg_wasm_output_ptr(handle) >>> 0, len = exports.xyg_wasm_output_len(handle) >>> 0;
+    if (!ptr || !len || ptr + len > exports.memory.buffer.byteLength) throw new Error("Rust stream aggregate output returned an invalid range");
+    const aggregate = new Uint8Array(exports.memory.buffer, ptr, len).slice().buffer;
+    reply(message.requestId, { sequence: active.sequence, ...diagnostics(), arenaBytes: 0, aggregate }, [aggregate]);
+  } catch (cause) { activeAggregateStream = null; lifecycle = "failed"; disposeRust(); error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM aggregate stream trapped"); }
 }
 
 function advanceAggregate(message: any) {
@@ -830,21 +834,9 @@ scope.onmessage = (event: MessageEvent<any>) => {
     void initialize(message);
     return;
   }
-  if (message?.type === "aggregate.source") {
-    installOwnedAggregateSource(message);
-    return;
-  }
-  if (message?.type === "aggregate.owned_source") {
-    try {
-      // This framing copy runs in the Worker after a one-time ownership
-      // transfer.  The ChartView/UI thread never visits source rows.
-      message.scene = frameOwnedAggregate(message);
-      message.type = "aggregate.bin2d";
-    } catch (cause) {
-      error(message.requestId, "XYG_WASM_RESOURCE_LIMIT", cause instanceof Error ? cause.message : "owned aggregate source is unavailable", XYG_WASM_STATUS.RESOURCE_LIMIT);
-      return;
-    }
-  }
+  if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
+  if (message?.type === "aggregate.stream_push") { pushAggregateStream(message); return; }
+  if (message?.type === "aggregate.stream_finish") { finishAggregateStream(message); return; }
   const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint" || message?.type === "scene.paint_annotations"
     || message?.type === "scene.compile" || message?.type === "scene.compile_paint"
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
@@ -904,6 +896,10 @@ scope.onmessage = (event: MessageEvent<any>) => {
         exports.xyg_wasm_aggregate_step(handle, Number(message.sequence), 1);
         activeAggregate = null;
       }
+      if (activeAggregateStream?.requestId === message.requestId && exports && handle) {
+        exports.xyg_wasm_cancel(handle, Number(message.sequence));
+        activeAggregateStream = null;
+      }
       if (activeGraph?.requestId === message.requestId) { clearTimeout(activeGraph.timer); activeGraph = null; }
       if (activeCompile?.requestId === message.requestId) terminateActiveCompile("cancellation", false);
     } catch (cause) {
@@ -924,6 +920,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     if (activeGraph) clearTimeout(activeGraph.timer);
     if (activeCompile) terminateActiveCompile("disposal", false);
     activeGraph = null;
+    activeAggregateStream = null;
     activeCompile = null;
     queued.clear();
     disposeRust();

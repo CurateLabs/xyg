@@ -144,13 +144,14 @@ class _PayloadWriter:
 
         This is deliberately separate from painter geometry and is valid only
         in the live split transport.  Packed payloads serve export/notebook
-        consumers and retain their screen-bounded painter contract; only the
-        browser host transfers this canonical source to the dedicated Worker.
-        It is never decoded from offset f32 on the UI thread.
+        consumers and retain their screen-bounded painter contract; the
+        browser host retains this canonical source and transfers only bounded
+        replay chunks to the dedicated Worker. It is never decoded from
+        offset f32 on the UI thread.
         """
         return self._append(
             np.ascontiguousarray(values, dtype="<f8").reshape(-1),
-            {"dtype": "f64", "worker_owned": True},
+            {"dtype": "f64"},
         )
 
     def borrow_f64(self, values: np.ndarray) -> int:
@@ -1385,12 +1386,11 @@ class PayloadMixin(_Host):
             "binning": binning,
             "reduction": "pyramid-count" if binning.startswith("pyramid-") else "bin2d",
         }
-        # Live hosts use split buffers, so these two canonical f64 spans can
-        # transfer ownership to the module Worker without detaching any paint
-        # buffer or forcing a main-thread f32 decode/re-encode.  The bound is
-        # generated ABI preflight includes Worker-owned x/y plus the Rust
-        # request/output peak at the maximum 2048² count grid.
-        wasm_capacity = 338_598
+        # `XYAS` v1 retains the canonical split f64 columns in the host for
+        # replay on every pan.  The worker only receives one ABI-generated
+        # 32,768-point raw chunk at a time; this source capacity is the
+        # generated aggregate ABI's declared point limit.
+        wasm_capacity = 8_000_000
         wasm_supported = (
             self.coords == "cartesian"
             and self._axis_scale(t.x_axis) == "linear"
@@ -1404,13 +1404,13 @@ class PayloadMixin(_Host):
         )
         if pw._split and wasm_supported:
             density["wasm_source"] = {
-                "kind": "cartesian-count-f64-v1",
+                "kind": "cartesian-count-f64-stream-v1",
                 "x": pw.ship_f64(t.x.values),
                 "y": pw.ship_f64(t.y.values),
                 "point_count": int(t.n_points),
                 "trace_id": int(t.id),
                 "capacity": wasm_capacity,
-                "ownership": "transfer-to-worker",
+                "ownership": "retain-host-replay",
             }
         if tiles_meta is not None:
             density["tiles"] = tiles_meta

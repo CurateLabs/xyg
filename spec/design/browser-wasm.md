@@ -53,16 +53,16 @@ decoded canonical f64 source values through the same XYAG/XYAO adapter; this
 does not apply TypeScript aggregation. Unsupported kernel-less sources retain
 their overview and dispatch an explicit no-refinement diagnostic.
 
-The first full host vertical is deliberately one bounded Cartesian linear,
-count-only trace. A split payload transfers its canonical f64 x/y buffers once
-to the packaged Worker; ChartView immediately retires those detached spans from
-live payload state. Viewport requests carry only ranges and dimensions. The
-Worker performs bounded O(N) XYAG framing off the UI thread, then Rust owns
-XYAG-to-XYAO aggregation. Generated ABI full-peak admission (Worker source plus
-Rust request/output/checkpoint) at maximum 2048² is 338,598 rows. Colors,
-multiple traces, nonlinear axes, chunks, and excess rows stay on the kernel
-route and emit `XYG_WASM_SOURCE_UNSUPPORTED` when no refinement is available;
-there is no JavaScript aggregation fallback.
+The first full host vertical is deliberately one Cartesian linear count-only
+trace. A split payload retains its canonical f64 x/y columns in ChartView so a
+later pan can replay them. Each viewport sends an `XYAS` declaration followed
+by transferable raw chunks of at most 32,768 points; no Worker retains a whole
+source and no TypeScript scans, bins, grids, derives domains, or chooses LOD.
+Rust owns `XYAS`-to-`XYAO` aggregation. The capacity is the generated ABI
+aggregate limit (8,000,000 rows); source/chunk policy beyond one million rows,
+colors, multiple traces, and nonlinear axes remain out of this vertical and
+emit `XYG_WASM_SOURCE_UNSUPPORTED` when no refinement is available. There is
+no JavaScript aggregation fallback.
 
 An `XYAO` reply that passes Worker transport but fails its generated header,
 length, or typed-plane validation reports `XYG_WASM_MALFORMED_OUTPUT`, rather

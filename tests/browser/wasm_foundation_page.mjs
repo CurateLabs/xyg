@@ -51,17 +51,19 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
     view: { ranges: { x: [0, 1], y: [0, 1] } },
   };
   if (fullSource) {
-    const x = new Float64Array([0.05, 0.2, 0.75, 0.95]);
-    const y = new Float64Array([0.05, 0.8, 0.25, 0.95]);
+    // Cross the generated 32,768-point stream boundary twice. The source
+    // remains in ChartView for the subsequent pan/recovery proof.
+    const n = 65_537, x = new Float64Array(n), y = new Float64Array(n);
+    for (let i = 0; i < n; i++) { x[i] = (i % 1024) / 1023; y[i] = ((i * 37) % 1024) / 1023; }
     spec.buffer_layout = "split";
     spec.columns = [
       { buf: 0, byte_offset: 0, len: grid.length, dtype: "f32" },
-      { buf: 1, byte_offset: 0, len: x.length, dtype: "f64", worker_owned: true },
-      { buf: 2, byte_offset: 0, len: y.length, dtype: "f64", worker_owned: true },
+      { buf: 1, byte_offset: 0, len: x.length, dtype: "f64" },
+      { buf: 2, byte_offset: 0, len: y.length, dtype: "f64" },
     ];
     spec.wasm_density = { automatic: true, source: {
-      kind: "cartesian-count-f64-v1", x: 1, y: 2, trace_id: 0,
-      point_count: 4, capacity: 338598, ownership: "transfer-to-worker",
+      kind: "cartesian-count-f64-stream-v1", x: 1, y: 2, trace_id: 0,
+      point_count: n, capacity: 8000000, ownership: "retain-host-replay",
     } };
     return new ChartView(host, spec, [new Uint8Array(grid.buffer), new Uint8Array(x.buffer), new Uint8Array(y.buffer)], comm);
   }
@@ -760,22 +762,22 @@ async function run() {
   fullSourceView._scheduleViewRequest({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } }, { delay: 0 });
   for (let attempt = 0; attempt < 100 && !fullSourceView._wasmDensity?.diagnostics(); attempt++) await nextTask();
   if (!fullSourceView._wasmDensity?.diagnostics() || fullSourceTrace.density === fullSourceOverview
-      || fullSourceView.spec.wasm_density.source || fullSourceView._payload[1].byteLength || fullSourceView._payload[2].byteLength
+      || !fullSourceView.spec.wasm_density.source || fullSourceView._payload[1].byteLength !== 65_537 * 8 || fullSourceView._payload[2].byteLength !== 65_537 * 8
       || fullSourceRequests.length) {
-    throw new Error(`full-source automatic WASM density did not transfer/replace source correctly: ${JSON.stringify({
+    throw new Error(`full-source automatic WASM density did not retain/replay source correctly: ${JSON.stringify({
       diagnostics: fullSourceView._wasmDensity?.diagnostics(), source: fullSourceView.spec.wasm_density.source,
       payload: [fullSourceView._payload[1]?.byteLength, fullSourceView._payload[2]?.byteLength], requests: fullSourceRequests, events: fullSourceEvents,
       ranges: fullSourceTrace.density.xRange,
     })}`);
   }
   const fullSourceGrid = fullSourceTrace.density;
-  // Force an invalid viewport after source ownership has moved. This exercises
-  // the owned-source Worker framing error under the same strict-CSP module
+  // Force an invalid viewport after a successful replay. This exercises the
+  // stream declaration failure under the same strict-CSP module
   // Worker—not the separate inline-only lifecycle evidence hook.
   fullSourceView._wasmDensity.schedule({ ranges: { x: [0.5, 0.5], y: [0.25, 0.75] } }, { delay: 0, force: true });
   for (let attempt = 0; attempt < 100 && !fullSourceEvents.length; attempt++) await nextTask();
   if (fullSourceTrace.density !== fullSourceGrid || fullSourceEvents.length !== 1
-      || fullSourceEvents[0].code !== "XYG_WASM_RESOURCE_LIMIT") {
+      || fullSourceEvents[0].code !== "XYG_WASM_INVALID_ARGUMENT") {
     throw new Error(`full-source forced Worker failure did not retain overview/event: ${JSON.stringify(fullSourceEvents)}`);
   }
   fullSourceView._scheduleViewRequest({ ranges: { x: [0, 1], y: [0, 1] } }, { delay: 0 });
