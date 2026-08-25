@@ -31,10 +31,13 @@ def test_strict_csp_authored_scene_fixture_is_public_figure_bytes() -> None:
     fixture = json.loads(
         (Path(__file__).parent / "fixtures" / "authored_scene_v20.json").read_text()
     )
-    assert fixture["schema"] == "xyg-authored-scene-v20-fixture-v1"
+    assert fixture["schema"] == "xyg-authored-scene-v23-fixture-v1"
     assert fixture["count"] == 100
     scene = base64.b64decode(fixture["scene_base64"], validate=True)
     assert scene == authored_scene(100)
+    assert fixture["scene_sha256"] == hashlib.sha256(scene).hexdigest()
+    assert fixture["authoring"]["axes"]["x"]["side"] == "top"
+    assert fixture["authoring"]["axes"]["y"]["side"] == "right"
     assert all(chunk in scene for chunk in (b"XYGS", b"XYLG", b"XYCB", b"XYLB"))
 
 

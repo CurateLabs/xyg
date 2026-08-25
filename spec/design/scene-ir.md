@@ -509,6 +509,19 @@ and paint order. Older ingress and `XYLB` v1--v3 frames remain byte-valid.
 Padding, radius, wrapping, collision, markup, custom typography, CSS/classes,
 and host-resolved coordinates remain unsupported.
 
+The combined public-host fixture is generated from
+`scripts/generate_authored_scene_benchmark.py` into the legacy-named
+`tests/fixtures/authored_scene_v20.json`, whose schema explicitly identifies
+the v23 frame. Its declarative authoring record covers chart and plot
+backgrounds, top/right Cartesian sides with deterministic major/minor ticks,
+legend, literal-banded colorbar, and a callout label background. Python
+generates the canonical Scene and SHA-256; the Node public `Figure` test
+independently reconstructs the same authoring and requires byte identity.
+The strict-CSP browser foundation page consumes only that frame through the
+WASM worker and checks the resolved SVG/raster-accessible chrome. Custom
+fonts, CSS/classes, and continuous gradients are rejected by both hosts before
+they can form a Scene frame.
+
 ## Version 19 Rust-owned bounded colorbar ticks
 
 Scene v19 evolves the optional `XYCB` colorbar decoration to v2. Its only authorable
