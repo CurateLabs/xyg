@@ -4,13 +4,13 @@
   "domain": [0.94, 3.06],
   "scatter": {"x": [1, 2, 3], "y": [1, 2, 3], "id": 0, "style": {"color": "#3987e5", "size": 4, "opacity": 0.8}},
   "cases": [
-    {"axis": "x", "ticks": true, "text": true, "style": {}, "sha256": "17fe0b3c782b96fbad67dd7ff0a950dcd1ef3f9849580d6e231f32f75cbdfae5"},
-    {"axis": "x", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "f83ff258f1d11a6bb9f3ad041ffb98f50931fbb5ab5f2bf1731c605e4cecdacf"},
-    {"axis": "x", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "76c8d5d087b1c91bd89b0f9dbf1a6ada7561215262a7f0f776b1ebdaf66db2bb"},
-    {"axis": "x", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "2ec4b0b241b51990f7f0474c8a16093aead3331441f0b36c92a0a5b72eb24edf"},
-    {"axis": "y", "ticks": true, "text": true, "style": {}, "sha256": "17fe0b3c782b96fbad67dd7ff0a950dcd1ef3f9849580d6e231f32f75cbdfae5"},
-    {"axis": "y", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "ab479c0cdb35d00f2d8415c3c3a287e077382d638c8c21435cadf6b078081bfc"},
-    {"axis": "y", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "1981aea4da6d4d2a0c2ca1bac1e53b821bd7156676f82309c378b61c620b619b"},
-    {"axis": "y", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "92cec497ddc9c53123060b5b08b06bba51e86db93cefd2681aaa51643693eb21"}
+    {"axis": "x", "ticks": true, "text": true, "style": {}, "sha256": "0e13e96b8c09bce9061c53f6b960de6ee41ebf6f00e1fe5954ca9ed0267645c3"},
+    {"axis": "x", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "34a7776e2367d2ed41d86d692bfa0225c268c48f15aab2211daf2704bc2e56df"},
+    {"axis": "x", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "d55270788bd6063852940246ba7a4fec14cae04ca49aecaa66ec4dbfe21abc70"},
+    {"axis": "x", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "0910822f1af17c6ec1ea1dede9a65addaa038c3468884247b3c7b376256d490c"},
+    {"axis": "y", "ticks": true, "text": true, "style": {}, "sha256": "0e13e96b8c09bce9061c53f6b960de6ee41ebf6f00e1fe5954ca9ed0267645c3"},
+    {"axis": "y", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "63f069fc23e5d265f28ee99b18e4251ba3c97dc0b513d7a8300d7f621ec85b69"},
+    {"axis": "y", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "bde1ef622002d1fb33bb8adb10a78feaa2214b468ae9f52fa085830b476ab5c4"},
+    {"axis": "y", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "97ec0be7280827f7a7bafc971064cd7d27b03672b9bf65328214c28acd2cc24a"}
   ]
 }
