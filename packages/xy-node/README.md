@@ -136,6 +136,32 @@ XYG_NATIVE_LIB=$PWD/../../target/release/libxyg_core.so \\
 npm run golden:circle   # JSON positions + f32 hex for inspection
 ```
 
+### Bounded Rust Scene chrome
+
+`Figure.toScene()` is the public Node seam for the bounded, literal Cartesian
+Scene contract. Constructor options and fluent setters only snapshot authored
+literals; Rust still validates them and resolves all ticks, gutters, legend,
+colorbar, and render geometry.
+
+```js
+const fig = createEngine({
+  width: 640, height: 400,
+  style: { background: "#f0f8ff", "--chart-bg": "#f8fafc" },
+  legend: { loc: "upper right", title: "Series", toggle: false, highlight: false },
+  xAxis: { domain: [0, 1], side: "top", tick_values: [0, 0.5, 1] },
+  yAxis: { domain: [0, 1], side: "right", minor_tick_values: [0.25, 0.75] },
+});
+fig.setColorbar({
+  domain: [0, 1],
+  stops: [[0, [15, 23, 42, 255]], [1, [253, 224, 71, 255]]],
+});
+fig.scatter([0.25, 0.75], [0.4, 0.6], { name: "observations", style: { symbol: "diamond" } });
+const scene = fig.toScene();
+```
+
+Unsupported CSS, custom typography, gradients, non-Cartesian layout, and rich
+annotation policy fail closed; do not implement them in Node.
+
 ### Python ↔ Node mark parity (scatter encode / M4 / hist)
 
 ```bash

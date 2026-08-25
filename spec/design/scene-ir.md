@@ -198,6 +198,12 @@ Node's public `Figure` accepts an `annotations` constructor array and exposes
 fluent `annotate(annotation)` authoring for the already-versioned bounded
 Cartesian annotation records. Those APIs only retain authored objects; they do
 not duplicate coordinate, style, resource-limit, or support-predicate policy.
+For the same reason, Node exposes literal `style`, `legend`, `colorbar`,
+`xAxis`, and `yAxis` constructor options plus fluent `setStyle`, `setLegend`,
+`setColorbar`, and `setAxis` setters. They defensively snapshot input only;
+they neither resolve CSS/defaults nor calculate gutters, ticks, legend bounds,
+or colorbar geometry. `figureSceneV3` and Rust remain the sole validation and
+layout authority for that already-versioned bounded contract.
 `figureSceneV3` remains the Node packing seam and Rust remains the decoder,
 layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven constant-style circle/diamond-scatter
@@ -558,7 +564,7 @@ The combined public-host fixture is generated from
 the v24 frame. Its declarative authoring record covers chart and plot
 backgrounds, top/right Cartesian sides with deterministic major/minor ticks,
 legend, literal-banded colorbar, an ordinary callout, and a wrapped callout
-with literal box/border paint. Python
+with literal box/border paint, plus circle and diamond scatter series. Python
 generates the canonical Scene and SHA-256; the Node public `Figure` test
 independently reconstructs the same authoring and requires byte identity.
 `tests/fixtures/public_axis_visibility_scene.json` separately pins all eight
