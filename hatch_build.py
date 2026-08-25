@@ -141,7 +141,7 @@ def _cargo_target() -> Optional[str]:
 
 # The two render-client bundles `node js/build.mjs` emits into the host-neutral
 # `@curatelabs/xyg` dist, then copies into python/xyg/static for the Python wheel.
-_JS_BUNDLES = ("index.js", "standalone.js")
+_JS_BUNDLES = ("index.js", "standalone.js", "xyg-wasm-inline.js")
 
 
 def _static_dir(root: Path) -> Path:
